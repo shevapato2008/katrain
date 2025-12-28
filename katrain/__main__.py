@@ -93,7 +93,7 @@ from katrain.gui.popups import (
 )
 from katrain.gui.sound import play_sound
 from katrain.core.base_katrain import KaTrainBase
-from katrain.core.engine import KataGoEngine
+from katrain.core.engine import create_engine
 from katrain.core.contribute_engine import KataGoContributeEngine
 from katrain.core.game import Game, IllegalMoveException, KaTrainSGF, BaseGame
 from katrain.core.sgf_parser import Move, ParseError
@@ -138,23 +138,27 @@ class KaTrainGui(Screen, KaTrainBase):
 
     def log(self, message, level=OUTPUT_INFO):
         super().log(message, level)
-        if level == OUTPUT_KATAGO_STDERR and "ERROR" not in self.controls.status.text:
-            if self.contributing:
-                self.controls.set_status(message, STATUS_INFO)
-            elif "starting" in message.lower():
-                self.controls.set_status("KataGo engine starting...", STATUS_INFO)
-            elif message.startswith("Tuning"):
-                self.controls.set_status(
-                    "KataGo is tuning settings for first startup, please wait." + message, STATUS_INFO
-                )
+        def _update_ui(_dt):
+            if not getattr(self, "controls", None):
                 return
-            elif "ready" in message.lower():
-                self.controls.set_status("KataGo engine ready.", STATUS_INFO)
-        if (
-            level == OUTPUT_ERROR
-            or (level == OUTPUT_KATAGO_STDERR and "error" in message.lower() and "tuning" not in message.lower())
-        ) and getattr(self, "controls", None):
-            self.controls.set_status(f"ERROR: {message}", STATUS_ERROR)
+            if level == OUTPUT_KATAGO_STDERR and "ERROR" not in self.controls.status.text:
+                if self.contributing:
+                    self.controls.set_status(message, STATUS_INFO)
+                elif "starting" in message.lower():
+                    self.controls.set_status("KataGo engine starting...", STATUS_INFO)
+                elif message.startswith("Tuning"):
+                    self.controls.set_status(
+                        "KataGo is tuning settings for first startup, please wait." + message, STATUS_INFO
+                    )
+                    return
+                elif "ready" in message.lower():
+                    self.controls.set_status("KataGo engine ready.", STATUS_INFO)
+            if (
+                level == OUTPUT_ERROR
+                or (level == OUTPUT_KATAGO_STDERR and "error" in message.lower() and "tuning" not in message.lower())
+            ):
+                self.controls.set_status(f"ERROR: {message}", STATUS_ERROR)
+        Clock.schedule_once(_update_ui, 0)
 
     def handle_animations(self, *_args):
         if self.contributing and self.animate_contributing:
@@ -187,7 +191,7 @@ class KaTrainGui(Screen, KaTrainBase):
         if self.engine:
             return
         self.board_gui.trainer_config = self.config("trainer")
-        self.engine = KataGoEngine(self, self.config("engine"))
+        self.engine = create_engine(self, self.config("engine"))
         threading.Thread(target=self._message_loop_thread, daemon=True).start()
         sgf_args = [
             f

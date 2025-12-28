@@ -39,7 +39,7 @@ from katrain.core.constants import (
     PLAYER_HUMAN,
     ADDITIONAL_MOVE_ORDER,
 )
-from katrain.core.engine import KataGoEngine
+from katrain.core.engine import BaseEngine, create_engine
 from katrain.core.lang import i18n, rank_label
 from katrain.core.sgf_parser import Move
 from katrain.core.utils import PATHS, find_package_resource, evaluation_class
@@ -778,11 +778,11 @@ class ConfigPopup(BaseConfigPopup):
                 self.katrain.log(f"Restarting Engine after {detected_restart} settings change")
                 self.katrain.controls.set_status(i18n._("restarting engine"), STATUS_INFO)
 
-                old_engine = self.katrain.engine  # type: KataGoEngine
+                old_engine = self.katrain.engine  # type: BaseEngine
                 old_proc = old_engine.katago_process
                 if old_proc:
                     old_engine.shutdown(finish=False)
-                new_engine = KataGoEngine(self.katrain, self.katrain.config("engine"))
+                new_engine = create_engine(self.katrain, self.katrain.config("engine"))
                 self.katrain.engine = new_engine
                 self.katrain.game.engines = {"B": new_engine, "W": new_engine}
                 self.katrain.game.analyze_all_nodes(

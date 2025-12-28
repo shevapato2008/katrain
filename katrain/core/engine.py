@@ -1,3 +1,6 @@
+import multiprocessing
+import requests
+import logging
 import copy
 import json
 import os
@@ -10,6 +13,7 @@ import time
 import traceback
 from typing import Callable, Dict, List, Optional
 
+import urllib3
 from kivy.utils import platform as kivy_platform
 
 from katrain.core.constants import (
@@ -28,6 +32,7 @@ from katrain.core.utils import find_package_resource, json_truncate_arrays
 
 
 class BaseEngine:  # some common elements between analysis and contribute engine
+    PONDER_KEY = "_kt_continuous"
 
     RULESETS_ABBR = [
         ("jp", "japanese"),
@@ -43,6 +48,8 @@ class BaseEngine:  # some common elements between analysis and contribute engine
     def __init__(self, katrain, config):
         self.katrain = katrain
         self.config = config
+        self.base_priority = 0
+        self.override_settings = {}
 
     @staticmethod
     def get_rules(ruleset):
@@ -90,11 +97,99 @@ class BaseEngine:  # some common elements between analysis and contribute engine
     def on_error(self, message, code, allow_popup):
         print("ERROR", message, code)
 
+    def build_analysis_query(
+        self,
+        analysis_node: GameNode,
+        visits: int = None,
+        analyze_fast: bool = False,
+        time_limit=True,
+        find_alternatives: bool = False,
+        region_of_interest: Optional[List] = None,
+        priority: int = 0,
+        ponder=False,  # infinite visits, cancellable
+        ownership: Optional[bool] = None,
+        next_move: Optional[GameNode] = None,
+        extra_settings: Optional[Dict] = None,
+        include_policy=True,
+        report_every: Optional[float] = None,
+    ):
+        nodes = analysis_node.nodes_from_root
+        moves = [m for node in nodes for m in node.moves]
+        initial_stones = [m for node in nodes for m in node.placements]
+        clear_placements = [m for node in nodes for m in node.clear_placements]
+        if clear_placements:  # TODO: support these
+            self.katrain.log(f"Not analyzing node {analysis_node} as there are AE commands in the path", OUTPUT_DEBUG)
+            return None, visits
+
+        if next_move:
+            moves.append(next_move)
+        if ownership is None:
+            ownership = self.config["_enable_ownership"] and not next_move
+
+        if visits is None:
+            visits = self.config["max_visits"]
+            if analyze_fast and self.config.get("fast_visits"):
+                visits = self.config["fast_visits"]
+
+        size_x, size_y = analysis_node.board_size
+
+        if find_alternatives:
+            avoid = [
+                {
+                    "moves": list(analysis_node.analysis["moves"].keys()),
+                    "player": analysis_node.next_player,
+                    "untilDepth": 1,
+                }
+            ]
+        elif region_of_interest:
+            xmin, xmax, ymin, ymax = region_of_interest
+            avoid = [
+                {
+                    "moves": [
+                        Move((x, y)).gtp()
+                        for x in range(0, size_x)
+                        for y in range(0, size_y)
+                        if x < xmin or x > xmax or y < ymin or y > ymax
+                    ],
+                    "player": player,
+                    "untilDepth": 1,  # tried a large number here, or 2, but this seems more natural
+                }
+                for player in "BW"
+            ]
+        else:
+            avoid = []
+
+        settings = copy.copy(self.override_settings)
+        settings["wideRootNoise"] = self.config["wide_root_noise"]
+        if time_limit:
+            settings["maxTime"] = self.config["max_time"]
+
+        query = {
+            "rules": self.get_rules(analysis_node.ruleset),
+            "priority": self.base_priority + priority,
+            "analyzeTurns": [len(moves)],
+            "maxVisits": visits,
+            "komi": analysis_node.komi,
+            "boardXSize": size_x,
+            "boardYSize": size_y,
+            "includeOwnership": ownership and not next_move,
+            "includeMovesOwnership": ownership and not next_move,
+            "includePolicy": include_policy,
+            "initialStones": [[m.player, m.gtp()] for m in initial_stones],
+            "initialPlayer": analysis_node.initial_player,
+            "moves": [[m.player, m.gtp()] for m in moves],
+            "overrideSettings": {**settings, **(extra_settings or {})},
+            self.PONDER_KEY: ponder,
+        }
+        if report_every is not None:
+            query["reportDuringSearchEvery"] = report_every
+        if avoid:
+            query["avoidMoves"] = avoid
+        return query, visits
+
 
 class KataGoEngine(BaseEngine):
     """Starts and communicates with the KataGO analysis engine"""
-
-    PONDER_KEY = "_kt_continuous"
 
     def __init__(self, katrain, config):
         super().__init__(katrain, config)
@@ -395,77 +490,280 @@ class KataGoEngine(BaseEngine):
         include_policy=True,
         report_every: Optional[float] = None,
     ):
-        nodes = analysis_node.nodes_from_root
-        moves = [m for node in nodes for m in node.moves]
-        initial_stones = [m for node in nodes for m in node.placements]
-        clear_placements = [m for node in nodes for m in node.clear_placements]
-        if clear_placements:  # TODO: support these
-            self.katrain.log(f"Not analyzing node {analysis_node} as there are AE commands in the path", OUTPUT_DEBUG)
+        query, visits = self.build_analysis_query(
+            analysis_node=analysis_node,
+            visits=visits,
+            analyze_fast=analyze_fast,
+            time_limit=time_limit,
+            find_alternatives=find_alternatives,
+            region_of_interest=region_of_interest,
+            priority=priority,
+            ponder=ponder,
+            ownership=ownership,
+            next_move=next_move,
+            extra_settings=extra_settings,
+            include_policy=include_policy,
+            report_every=report_every,
+        )
+        if not query:
             return
-
-        if next_move:
-            moves.append(next_move)
-        if ownership is None:
-            ownership = self.config["_enable_ownership"] and not next_move
-
-        if visits is None:
-            visits = self.config["max_visits"]
-            if analyze_fast and self.config.get("fast_visits"):
-                visits = self.config["fast_visits"]
-
-        size_x, size_y = analysis_node.board_size
-
-        if find_alternatives:
-            avoid = [
-                {
-                    "moves": list(analysis_node.analysis["moves"].keys()),
-                    "player": analysis_node.next_player,
-                    "untilDepth": 1,
-                }
-            ]
-        elif region_of_interest:
-            xmin, xmax, ymin, ymax = region_of_interest
-            avoid = [
-                {
-                    "moves": [
-                        Move((x, y)).gtp()
-                        for x in range(0, size_x)
-                        for y in range(0, size_y)
-                        if x < xmin or x > xmax or y < ymin or y > ymax
-                    ],
-                    "player": player,
-                    "untilDepth": 1,  # tried a large number here, or 2, but this seems more natural
-                }
-                for player in "BW"
-            ]
-        else:
-            avoid = []
-
-        settings = copy.copy(self.override_settings)
-        settings["wideRootNoise"] = self.config["wide_root_noise"]
-        if time_limit:
-            settings["maxTime"] = self.config["max_time"]
-
-        query = {
-            "rules": self.get_rules(analysis_node.ruleset),
-            "priority": self.base_priority + priority,
-            "analyzeTurns": [len(moves)],
-            "maxVisits": visits,
-            "komi": analysis_node.komi,
-            "boardXSize": size_x,
-            "boardYSize": size_y,
-            "includeOwnership": ownership and not next_move,
-            "includeMovesOwnership": ownership and not next_move,
-            "includePolicy": include_policy,
-            "initialStones": [[m.player, m.gtp()] for m in initial_stones],
-            "initialPlayer": analysis_node.initial_player,
-            "moves": [[m.player, m.gtp()] for m in moves],
-            "overrideSettings": {**settings, **(extra_settings or {})},
-            self.PONDER_KEY: ponder,
-        }
-        if report_every is not None:
-            query["reportDuringSearchEvery"] = report_every
-        if avoid:
-            query["avoidMoves"] = avoid
         self.send_query(query, callback, error_callback, next_move, analysis_node)
         analysis_node.analysis_visits_requested = max(analysis_node.analysis_visits_requested, visits)
+
+
+class HttpEngineStatus:
+    def __init__(self, engine):
+        self.engine = engine
+
+    def poll(self):
+        return None if self.engine.available else 1
+
+
+class KataGoHttpEngine(BaseEngine):
+    """Communicates with a KataGo HTTP analysis service."""
+
+    def __init__(self, katrain, config):
+        super().__init__(katrain, config)
+        self.allow_recovery = self.config.get("allow_recovery", False)
+        self.queries = {}  # outstanding query id -> start time and callback
+        self.ponder_query = None
+        self.query_counter = 0
+        self.base_priority = 0
+        self.override_settings = {"reportAnalysisWinratesAs": "BLACK"}  # force these settings
+        self.write_queue = queue.Queue()
+        self.thread_lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._available = True
+
+        base_url = self.config.get("http_url") or self.config.get("api_url") or "http://127.0.0.1:8000"
+        self.base_url = base_url.rstrip("/")
+        self.analyze_path = self.config.get("http_analyze_path", "/analyze")
+        self.health_path = self.config.get("http_health_path", "/health")
+        self.http_timeout = self.config.get("http_timeout", self.config.get("max_time", 8.0) + 30.0)
+        self._timeout = urllib3.Timeout(total=self.http_timeout)
+        self._headers = {"Content-Type": "application/json", "Connection": "close"}
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        self.katago_process = HttpEngineStatus(self)
+        self.worker_thread = None
+        self.start()
+
+    @property
+    def available(self):
+        return self._available
+
+    def on_error(self, message, code=None, allow_popup=False):
+        self.katrain.log(message, OUTPUT_ERROR)
+        if self.allow_recovery and allow_popup:
+            self.katrain("engine_recovery_popup", message, code)
+
+    def start(self):
+        self._stop_event.clear()
+        self.worker_thread = threading.Thread(target=self._request_loop, daemon=True)
+        self.worker_thread.start()
+
+    def restart(self):
+        self.shutdown(finish=False)
+        self.start()
+
+    def on_new_game(self):
+        self.base_priority += 1
+        if not self.is_idle():
+            with self.thread_lock:
+                self.write_queue = queue.Queue()
+                self.terminate_queries(only_for_node=None, lock=False)
+                self.ponder_query = None
+                self.queries = {}
+
+    def terminate_queries(self, only_for_node=None, lock=True):
+        if lock:
+            with self.thread_lock:
+                return self.terminate_queries(only_for_node=only_for_node, lock=False)
+        for query_id, (_, _, _, _, node) in list(self.queries.items()):
+            if only_for_node is None or only_for_node is node:
+                self.terminate_query(query_id)
+
+    def stop_pondering(self):
+        pq = self.ponder_query
+        if pq:
+            self.terminate_query(pq["id"], ignore_further_results=False)
+        self.ponder_query = None
+
+    def terminate_query(self, query_id, ignore_further_results=True):
+        self.katrain.log(f"Terminating query {query_id}", OUTPUT_DEBUG)
+        if query_id is not None:
+            if ignore_further_results:
+                self.queries.pop(query_id, None)
+
+    def shutdown(self, finish=False):
+        self._stop_event.set()
+        if self.worker_thread:
+            self.worker_thread.join()
+            self.worker_thread = None
+
+    def is_idle(self):
+        return not self.queries and self.write_queue.empty()
+
+    def queries_remaining(self):
+        return len(self.queries) + int(not self.write_queue.empty())
+
+    def _request_loop(self):
+        while not self._stop_event.is_set():
+            try:
+                query, callback, error_callback, next_move, node = self.write_queue.get(block=True, timeout=0.1)
+            except queue.Empty:
+                continue
+            with self.thread_lock:
+                if "id" not in query:
+                    self.query_counter += 1
+                    query["id"] = f"HTTP:{str(self.query_counter)}"
+                query_id = query["id"]
+                ponder = query.pop(self.PONDER_KEY, False)
+                if ponder:
+                    self.ponder_query = {"id": query_id}
+                self.queries[query_id] = (callback, error_callback, time.time(), next_move, node)
+            self.katrain.log(f"Sending http query {query_id}: {json.dumps(query)}", OUTPUT_DEBUG)
+            print(f"DEBUG_THREAD: Calling _post_json in {threading.current_thread().name}")
+            try:
+                analysis = self._post_json(query)
+                print(f"DEBUG_THREAD: _post_json returned in {threading.current_thread().name}")
+                if analysis is None:
+                    raise RuntimeError("Empty response from HTTP engine")
+                self._available = True
+            except Exception as e:
+                self._available = False
+                with self.thread_lock:
+                    entry = self.queries.pop(query_id, None)
+                error_msg = f"HTTP analysis request failed: {e}"
+                if entry:
+                    _, error_callback, _, _, _ = entry
+                    if error_callback:
+                        error_callback({"error": error_msg, "id": query_id})
+                    else:
+                        self.on_error(i18n._("Engine died unexpectedly").format(error=error_msg), code="KATAGO-HTTP")
+                else:
+                    self.on_error(i18n._("Engine died unexpectedly").format(error=error_msg), code="KATAGO-HTTP")
+                continue
+
+            analysis.setdefault("id", query_id)
+            with self.thread_lock:
+                entry = self.queries.get(query_id)
+                if not entry:
+                    continue
+                callback, error_callback, start_time, next_move, _ = entry
+            if "error" in analysis:
+                with self.thread_lock:
+                    self.queries.pop(query_id, None)
+                if error_callback:
+                    error_callback(analysis)
+                else:
+                    self.katrain.log(f"{analysis} received from KataGo HTTP", OUTPUT_ERROR)
+            else:
+                partial_result = analysis.get("isDuringSearch", False)
+                if not partial_result:
+                    with self.thread_lock:
+                        self.queries.pop(query_id, None)
+                time_taken = time.time() - start_time
+                results_exist = not analysis.get("noResults", False)
+                self.katrain.log(
+                    f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis['rootInfo']['visits'] if results_exist else 'n/a'} visits",
+                    OUTPUT_DEBUG,
+                )
+                self.katrain.log(json_truncate_arrays(analysis), OUTPUT_EXTRA_DEBUG)
+                try:
+                    if callback and results_exist:
+                        callback(analysis, partial_result)
+                except Exception as e:
+                    self.katrain.log(f"Error in engine callback for query {query_id}: {e}", OUTPUT_ERROR)
+                    traceback.print_exc()
+            if getattr(self.katrain, "update_state", None):  # easier mocking etc
+                self.katrain.update_state()
+
+    def _post_json(self, payload: Dict) -> Dict:
+        url = f"{self.base_url}{self.analyze_path}"
+        print(f"DEBUG_THREAD: sending request to {url} via multiprocessing")
+        ctx = multiprocessing.get_context("spawn")
+        q = ctx.Queue()
+        p = ctx.Process(target=_do_request_process, args=(url, payload, self._headers, 5.0, q))
+        p.start()
+        try:
+            print("DEBUG_THREAD: waiting for queue get")
+            res = q.get(timeout=6.0)
+            print("DEBUG_THREAD: got data from queue")
+        except queue.Empty:
+            print("DEBUG_THREAD: queue empty/timeout")
+            if p.is_alive():
+                p.terminate()
+            p.join()
+            raise RuntimeError("HTTP request timed out or returned no data")
+        
+        p.join(timeout=1.0)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+
+        if "error" in res:
+            raise RuntimeError(res["error"])
+        return res["data"]
+
+    def send_query(self, query, callback, error_callback, next_move=None, node=None):
+        self.write_queue.put((query, callback, error_callback, next_move, node))
+
+    def request_analysis(
+        self,
+        analysis_node: GameNode,
+        callback: Callable,
+        error_callback: Optional[Callable] = None,
+        visits: int = None,
+        analyze_fast: bool = False,
+        time_limit=True,
+        find_alternatives: bool = False,
+        region_of_interest: Optional[List] = None,
+        priority: int = 0,
+        ponder=False,  # infinite visits, cancellable
+        ownership: Optional[bool] = None,
+        next_move: Optional[GameNode] = None,
+        extra_settings: Optional[Dict] = None,
+        include_policy=True,
+        report_every: Optional[float] = None,
+    ):
+        query, visits = self.build_analysis_query(
+            analysis_node=analysis_node,
+            visits=visits,
+            analyze_fast=analyze_fast,
+            time_limit=time_limit,
+            find_alternatives=find_alternatives,
+            region_of_interest=region_of_interest,
+            priority=priority,
+            ponder=ponder,
+            ownership=ownership,
+            next_move=next_move,
+            extra_settings=extra_settings,
+            include_policy=include_policy,
+            report_every=report_every,
+        )
+        if not query:
+            return
+        self.send_query(query, callback, error_callback, next_move, analysis_node)
+        analysis_node.analysis_visits_requested = max(analysis_node.analysis_visits_requested, visits)
+
+
+def create_engine(katrain, config):
+    backend = str(config.get("backend", "local")).lower()
+    if backend in ["http", "remote", "cloud"]:
+        return KataGoHttpEngine(katrain, config)
+    return KataGoEngine(katrain, config)
+
+def _do_request_process(url, payload, headers, timeout, result_queue):
+    import logging
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    try:
+        import requests
+        print(f"DEBUG_SUBPROCESS: starting request in {multiprocessing.current_process().name}")
+        response = requests.post(url, json=payload, headers=headers, timeout=timeout)
+        if response.status_code >= 400:
+            result_queue.put({"error": f"HTTP {response.status_code}"})
+        else:
+            print("DEBUG_SUBPROCESS: putting data to queue")
+            result_queue.put({"data": response.json()})
+    except Exception as e:
+        result_queue.put({"error": str(e)})

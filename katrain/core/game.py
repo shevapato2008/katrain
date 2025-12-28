@@ -27,7 +27,7 @@ from katrain.core.constants import (
     PRIORITY_EQUALIZE,
     PRIORITY_DEFAULT,
 )
-from katrain.core.engine import KataGoEngine
+from katrain.core.engine import BaseEngine
 from katrain.core.game_node import GameNode
 from katrain.core.lang import i18n, rank_label
 from katrain.core.sgf_parser import SGF, Move
@@ -318,7 +318,7 @@ class BaseGame:
 
     @property
     def rules(self):
-        return KataGoEngine.get_rules(self.root.ruleset)
+        return BaseEngine.get_rules(self.root.ruleset)
 
     @property
     def manual_score(self):
@@ -436,7 +436,7 @@ class Game(BaseGame):
     def __init__(
         self,
         katrain,
-        engine: Union[Dict, KataGoEngine],
+        engine: Union[Dict, BaseEngine],
         move_tree: GameNode = None,
         analyze_fast=False,
         game_properties: Optional[Dict] = None,

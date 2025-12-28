@@ -2,6 +2,11 @@
     "engine": {
         "katago": "",
         "altcommand": "",
+        "backend": "local",
+        "http_url": "http://127.0.0.1:8000",
+        "http_analyze_path": "/analyze",
+        "http_health_path": "/health",
+        "http_timeout": 30.0,
         "model": "katrain/models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz",
         "humanlike_model": "",
         "config": "katrain/KataGo/analysis_config.cfg",

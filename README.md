@@ -23,6 +23,7 @@ KaTrain is a tool for analyzing games and playing go with AI feedback from KataG
   - [  Preview and Youtube Videos](#--preview-and-youtube-videos)
   - [ Installation](#-installation)
   - [  Configuring KataGo](#--configuring-katago)
+  - [  HTTP KataGo Engine (Request API)](#--http-katago-engine-request-api)
   - [ Play against AI](#-play-against-ai)
     - [Instant feedback](#instant-feedback)
     - [AIs](#ais)
@@ -82,6 +83,37 @@ set up: [see here for more details](https://github.com/lightvector/KataGo#opencl
 Finally, you can override the entire command used to start the analysis engine, which 
  can be useful for connecting to a remote server. Do keep in mind that KaTrain uses the *analysis engine*
  of KataGo, and not the GTP engine.
+
+## <a name="http-katago-engine"></a>  HTTP KataGo Engine (Request API)
+
+KaTrain can use a KataGo HTTP server (Request API) instead of starting a local subprocess. This is useful
+if you already run KataGo as a service or want to route analysis to a remote machine.
+
+1. Start your KataGo HTTP server and confirm it responds to `POST /analyze` and `GET /health`.
+2. Edit your user config at `~/.katrain/config.json` and set the HTTP engine fields:
+
+```json
+"engine": {
+  "backend": "http",
+  "http_url": "http://127.0.0.1:8000",
+  "http_analyze_path": "/analyze",
+  "http_health_path": "/health",
+  "http_timeout": 30.0
+}
+```
+
+3. Optional: set `"general": { "debug_level": 1 }` to see HTTP request logs in the terminal.
+4. Start KaTrain:
+   - Default config: `python -m katrain`
+   - Custom config file: `python -m katrain /path/to/config.json`
+5. Verify it is using HTTP:
+   - KaTrain logs show `Sending http query ...` and `KataGo HTTP analysis received ...`.
+   - Your KataGo server logs show `POST /analyze`.
+   - Analysis suggestions appear on the board as you play or review moves.
+
+Notes:
+- The HTTP engine currently uses one-shot `/analyze` requests (no WebSocket streaming yet).
+- If you want to switch back to local KataGo, set `"backend": "local"` in the same config section.
 
 
 ## <a name="ai"></a> Play against AI
@@ -248,6 +280,5 @@ See [these instructions](THEMES.md) for how to modify the look of any graphics o
  * Ideas, feedback, and contributions to code or translations are all very welcome.
     * For suggestions and planned improvements, see [open issues](http://github.com/sanderland/katrain/issues) on github to check if the functionality is already planned.
 * You can join the [Computer Go Community Discord (formerly Leela Zero & Friends)](http://discord.gg/AjTPFpN) (use the #gui channel) to get help, discuss improvements, or simply show your appreciation. Please do not use github issues to ask for technical help, this is only for bugs, suggestions and discussing contributions.
-
 
 

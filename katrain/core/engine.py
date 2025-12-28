@@ -680,10 +680,10 @@ class KataGoHttpEngine(BaseEngine):
         url = f"{self.base_url}{self.analyze_path}"
         ctx = multiprocessing.get_context("spawn")
         q = ctx.Queue()
-        p = ctx.Process(target=_do_request_process, args=(url, payload, self._headers, 5.0, q))
+        p = ctx.Process(target=_do_request_process, args=(url, payload, self._headers, self.http_timeout, q))
         p.start()
         try:
-            res = q.get(timeout=6.0)
+            res = q.get(timeout=self.http_timeout + 1.0)
             q.close()
         except queue.Empty:
             q.close()

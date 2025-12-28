@@ -790,13 +790,45 @@ def _do_request_process(url, payload, headers, timeout, conn):
         response = requests.post(url, json=payload, headers=headers, timeout=timeout)
         print(f"DEBUG_SUBPROCESS: requests.post returned {response.status_code}")
         sys.stdout.flush()
+        
         if response.status_code >= 400:
+            print(f"DEBUG_SUBPROCESS: Error status {response.status_code}")
+            sys.stdout.flush()
             conn.send({"error": f"HTTP {response.status_code}"})
         else:
+            content_len = len(response.content)
+            print(f"DEBUG_SUBPROCESS: response content length: {content_len} bytes")
+            sys.stdout.flush()
+            
+            try:
+                data = response.json()
+                print("DEBUG_SUBPROCESS: JSON parsed successfully")
+                sys.stdout.flush()
+            except Exception as e:
+                print(f"DEBUG_SUBPROCESS: JSON parse failed: {e}")
+                sys.stdout.flush()
+                raise e
+
             print("DEBUG_SUBPROCESS: sending data to pipe")
             sys.stdout.flush()
-            conn.send({"data": response.json()})
+            # Split data sending to isolate if pickling is the issue
+            try:
+                conn.send({"data": data})
+                print("DEBUG_SUBPROCESS: data sent to pipe")
+                sys.stdout.flush()
+            except Exception as e:
+                print(f"DEBUG_SUBPROCESS: conn.send failed: {e}")
+                sys.stdout.flush()
+                raise e
+
     except Exception as e:
-        conn.send({"error": str(e)})
+        print(f"DEBUG_SUBPROCESS: Exception caught: {e}")
+        sys.stdout.flush()
+        try:
+            conn.send({"error": str(e)})
+        except:
+            pass
     finally:
         conn.close()
+        print("DEBUG_SUBPROCESS: pipe closed")
+        sys.stdout.flush()

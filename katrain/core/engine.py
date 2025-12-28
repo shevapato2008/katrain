@@ -622,10 +622,8 @@ class KataGoHttpEngine(BaseEngine):
                     self.ponder_query = {"id": query_id}
                 self.queries[query_id] = (callback, error_callback, time.time(), next_move, node)
             self.katrain.log(f"Sending http query {query_id}: {json.dumps(query)}", OUTPUT_DEBUG)
-            print(f"DEBUG_THREAD: Calling _post_json in {threading.current_thread().name}")
             try:
                 analysis = self._post_json(query)
-                print(f"DEBUG_THREAD: _post_json returned in {threading.current_thread().name}")
                 if analysis is None:
                     raise RuntimeError("Empty response from HTTP engine")
                 self._available = True
@@ -680,17 +678,15 @@ class KataGoHttpEngine(BaseEngine):
 
     def _post_json(self, payload: Dict) -> Dict:
         url = f"{self.base_url}{self.analyze_path}"
-        print(f"DEBUG_THREAD: sending request to {url} via multiprocessing")
         ctx = multiprocessing.get_context("spawn")
         q = ctx.Queue()
         p = ctx.Process(target=_do_request_process, args=(url, payload, self._headers, 5.0, q))
         p.start()
         try:
-            print("DEBUG_THREAD: waiting for queue get")
             res = q.get(timeout=6.0)
-            print("DEBUG_THREAD: got data from queue")
+            q.close()
         except queue.Empty:
-            print("DEBUG_THREAD: queue empty/timeout")
+            q.close()
             if p.is_alive():
                 p.terminate()
             p.join()
@@ -758,12 +754,10 @@ def _do_request_process(url, payload, headers, timeout, result_queue):
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     try:
         import requests
-        print(f"DEBUG_SUBPROCESS: starting request in {multiprocessing.current_process().name}")
         response = requests.post(url, json=payload, headers=headers, timeout=timeout)
         if response.status_code >= 400:
             result_queue.put({"error": f"HTTP {response.status_code}"})
         else:
-            print("DEBUG_SUBPROCESS: putting data to queue")
             result_queue.put({"data": response.json()})
     except Exception as e:
         result_queue.put({"error": str(e)})

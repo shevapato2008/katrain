@@ -433,8 +433,6 @@ class KataGoEngine(BaseEngine):
         while self.katago_process is not None:
             try:
                 query, callback, error_callback, next_move, node = self.write_queue.get(block=True, timeout=0.1)
-                print(f"DEBUG: _request_loop got query {query.get('id')} from write_queue")
-                sys.stdout.flush()
             except queue.Empty:
                 continue
             with self.thread_lock:
@@ -613,8 +611,6 @@ class KataGoHttpEngine(BaseEngine):
         while not self._stop_event.is_set():
             try:
                 query, callback, error_callback, next_move, node = self.write_queue.get(block=True, timeout=0.1)
-                print(f"DEBUG: _request_loop got query {query.get('id')} from write_queue")
-                sys.stdout.flush()
             except queue.Empty:
                 continue
             with self.thread_lock:
@@ -687,25 +683,15 @@ class KataGoHttpEngine(BaseEngine):
 
     def _post_json(self, payload: Dict) -> Dict:
         url = f"{self.base_url}{self.analyze_path}"
-        print(f"DEBUG: calling _post_json for {payload.get('id')} ")
-        sys.stdout.flush()
-        print(f"DEBUG: _post_json start for {payload.get('id')}")
-        sys.stdout.flush()
         ctx = multiprocessing.get_context("spawn")
         parent_conn, child_conn = ctx.Pipe(duplex=False)
         p = ctx.Process(target=_do_request_process, args=(url, payload, self._headers, self.http_timeout, child_conn))
-        print("DEBUG: subprocess started")
-        sys.stdout.flush()
         p.start()
         child_conn.close()
         
         try:
-            print("DEBUG: waiting for pipe recv...")
-            sys.stdout.flush()
             if parent_conn.poll(self.http_timeout + 1.0):
                 res = parent_conn.recv()
-                print("DEBUG: got data from pipe")
-                sys.stdout.flush()
             else:
                 if p.is_alive():
                     p.terminate()
@@ -726,8 +712,6 @@ class KataGoHttpEngine(BaseEngine):
 
         if "error" in res:
             raise RuntimeError(res["error"])
-        print(f"DEBUG: _post_json returned for {payload.get('id')} ")
-        sys.stdout.flush()
         return res["data"]
     def send_query(self, query, callback, error_callback, next_move=None, node=None):
         self.write_queue.put((query, callback, error_callback, next_move, node))
@@ -774,61 +758,46 @@ class KataGoHttpEngine(BaseEngine):
 def create_engine(katrain, config):
     backend = str(config.get("backend", "local")).lower()
     if backend in ["http", "remote", "cloud"]:
-        return KataGoHttpEngine(katrain, config)
+        try:
+            url = config.get("http_url") or config.get("api_url") or "http://127.0.0.1:8000"
+            if not url.startswith("http"):
+                url = "http://" + url
+            health_path = config.get("http_health_path", "/health")
+            target = f"{url.rstrip('/')}{health_path}"
+            katrain.log(f"Checking HTTP engine status at {target}...", OUTPUT_DEBUG)
+            requests.get(target, timeout=2.0)
+            return KataGoHttpEngine(katrain, config)
+        except Exception as e:
+            katrain.log(f"Could not connect to HTTP engine: {e}. Falling back to local engine.", OUTPUT_ERROR)
+            config["backend"] = "local"
+
     return KataGoEngine(katrain, config)
 
 def _do_request_process(url, payload, headers, timeout, conn):
     import sys
     import logging
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-    print(f"DEBUG_SUBPROCESS: _do_request_process started in {multiprocessing.current_process().name}")
-    sys.stdout.flush()
     try:
         import requests
-        print(f"DEBUG_SUBPROCESS: calling requests.post to {url}")
-        sys.stdout.flush()
         response = requests.post(url, json=payload, headers=headers, timeout=timeout)
-        print(f"DEBUG_SUBPROCESS: requests.post returned {response.status_code}")
-        sys.stdout.flush()
         
         if response.status_code >= 400:
-            print(f"DEBUG_SUBPROCESS: Error status {response.status_code}")
-            sys.stdout.flush()
             conn.send({"error": f"HTTP {response.status_code}"})
         else:
-            content_len = len(response.content)
-            print(f"DEBUG_SUBPROCESS: response content length: {content_len} bytes")
-            sys.stdout.flush()
-            
             try:
                 data = response.json()
-                print("DEBUG_SUBPROCESS: JSON parsed successfully")
-                sys.stdout.flush()
             except Exception as e:
-                print(f"DEBUG_SUBPROCESS: JSON parse failed: {e}")
-                sys.stdout.flush()
                 raise e
 
-            print("DEBUG_SUBPROCESS: sending data to pipe")
-            sys.stdout.flush()
-            # Split data sending to isolate if pickling is the issue
             try:
                 conn.send({"data": data})
-                print("DEBUG_SUBPROCESS: data sent to pipe")
-                sys.stdout.flush()
             except Exception as e:
-                print(f"DEBUG_SUBPROCESS: conn.send failed: {e}")
-                sys.stdout.flush()
                 raise e
 
     except Exception as e:
-        print(f"DEBUG_SUBPROCESS: Exception caught: {e}")
-        sys.stdout.flush()
         try:
             conn.send({"error": str(e)})
         except:
             pass
     finally:
         conn.close()
-        print("DEBUG_SUBPROCESS: pipe closed")
-        sys.stdout.flush()

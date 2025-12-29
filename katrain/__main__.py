@@ -23,7 +23,7 @@ from katrain.core.utils import find_package_resource, PATHS
 from kivy.config import Config
 
 if kivy_platform == "macosx":
-    ICON = find_package_resource("katrain/img/icon.icns")
+    ICON = find_package_resource("katrain/img/icon.ico")
 else:
     ICON = find_package_resource("katrain/img/icon.ico")
 Config.set("kivy", "window_icon", ICON)
@@ -910,8 +910,11 @@ class KaTrainApp(MDApp):
         self.gui.log(f"Setting window size to {win_size} and position to {[win_left, win_top]}", OUTPUT_DEBUG)
         Window.size = (win_size[0], win_size[1])
         if win_left is not None and win_top is not None and self.is_valid_window_position(win_left, win_top, win_size[0], win_size[1]):
-            Window.left = win_left
-            Window.top = win_top
+            try:
+                Window.left = win_left
+                Window.top = win_top
+            except TypeError:
+                pass
 
         return self.gui
 

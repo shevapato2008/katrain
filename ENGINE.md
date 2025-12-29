@@ -71,4 +71,31 @@ The most common KataGo issue relates to incompatible library versions, leading t
 ### Getting more information about errors
 
 * Check the terminal output around startup time.
+
 * Start KataGo by itself using `katrain/KataGo/katago` when running from source and check output.
+
+
+
+## HTTP Backend (Remote Service)
+
+
+
+KaTrain supports using a remote KataGo service via HTTP. This is useful for offloading heavy analysis to a more powerful server.
+
+
+
+### Falling back to local engine
+
+
+
+If you have configured a remote HTTP engine but the service is unreachable (e.g., service is down, network issues, or incorrect IP), KaTrain will:
+
+1. Log a connection error.
+
+2. **Automatically fallback** to the local KataGo engine for the current session.
+
+3. Use the local engine so that the application remains functional.
+
+
+
+This behavior ensures that a dead remote service does not prevent you from using the application.

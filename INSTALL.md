@@ -44,6 +44,16 @@ Installation from sources is essentially the same as for Linux, see [here](#Linu
 
 If you encounter SSL errors on downloading model files, you may need to follow [these](https://stackoverflow.com/questions/52805115/certificate-verify-failed-unable-to-get-local-issuer-certificate) instructions to fix your certificates.
 
+#### SDL2 / ffpyplayer Conflicts on macOS
+
+When running from source on macOS, you may encounter an error like `Class SDLApplication is implemented in both...`. This happens because `kivy` and `ffpyplayer` bundle their own versions of SDL2. To fix this, you should reinstall them from source linking against a single system SDL2:
+
+```bash
+brew install sdl2 sdl2_image sdl2_ttf sdl2_mixer pkg-config ffmpeg@6
+export PKG_CONFIG_PATH="/opt/homebrew/opt/ffmpeg@6/lib/pkgconfig:$PKG_CONFIG_PATH"
+USE_OSX_FRAMEWORKS=0 pip3 install kivy ffpyplayer pygame --no-binary kivy,ffpyplayer,pygame
+```
+
 ## <img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Windows_logo_-_2012.svg" alt="Windows" height="35"/> Installation for Windows users
 
 ### <a name="WindowsQuick"></a>Quick install guide

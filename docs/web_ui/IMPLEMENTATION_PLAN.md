@@ -47,12 +47,22 @@ The system will follow a classic Client-Server architecture.
     *   `POST /api/undo`: Undo last move.
     *   `POST /api/redo`: Redo move.
     *   `POST /api/nav/{node_id}`: Jump to specific node.
+    *   `POST /api/new-game`: Start a new game with settings.
+    *   `POST /api/config`: Update config sections (engine, trainer, timer, theme, ai, game).
+    *   `POST /api/sgf/load`: Load SGF/NGF/GIB into the session.
+    *   `POST /api/sgf/save`: Export SGF from the current session.
+    *   `POST /api/analysis/toggle`: Toggle continuous analysis.
+    *   `POST /api/contribute/start`: Start contribution mode.
+    *   `POST /api/contribute/stop`: Stop contribution mode.
+    *   `GET /api/logs`: Stream or fetch recent log/status messages.
 *   **WebSockets (`/ws/{session_id}`):**
-    *   **Client -> Server:**
-        *   Requests for analysis (`analyze_node`).
-    *   **Server -> Client:**
-        *   `game_update`: Full or partial state update (e.g., after a move).
-        *   `analysis_update`: Streaming JSON from KataGo (winrate, policy, ownership).
+*   **Client -> Server:**
+    *   Requests for analysis (`analyze_node`).
+    *   UI state updates (panel visibility, overlay toggles, graph view).
+*   **Server -> Client:**
+    *   `game_update`: Full or partial state update (e.g., after a move).
+    *   `analysis_update`: Streaming JSON from KataGo (winrate, policy, ownership).
+    *   `log_update`: Engine and system log updates.
 
 ### 2.4. Entry Point Refactoring
 *   **Task:** Update `katrain.py` / `__main__.py`.
@@ -66,6 +76,7 @@ The system will follow a classic Client-Server architecture.
 ### 3.1. Project Setup
 *   Initialize a standard React project (Vite is recommended for speed).
 *   Setup TypeScript, ESLint, Prettier.
+*   Configure static asset bundling so the FastAPI server can serve the built WebUI.
 
 ### 3.2. Board Component (`<Goban />`)
 *   **Tech:** `Canvas` API is preferred over DOM elements for performance with many overlays (heatmaps).
@@ -79,6 +90,17 @@ The system will follow a classic Client-Server architecture.
 ### 3.3. State Management
 *   Use React Context or a lightweight store (Zustand/Jotai) to manage the Game State received from the server.
 *   The WebSocket connection should feed directly into this store.
+
+### 3.4. Kivy Parity UI Components
+*   **Top Bar/Toolbar:** Match layout and actions from Kivy.
+*   **Left/Right Panels:** Move list, analysis, settings, and stats.
+*   **Graph Panel:** Winrate/score graph with Kivy-like styling.
+*   **Settings Dialogs:** Recreate teacher, timer, AI, engine, and general settings with the same defaults.
+*   **Status and Logs:** Match Kivy status messages, analysis indicators, and error banners.
+
+### 3.5. Localization and Assets
+*   Reuse KaTrain fonts, icons, and board textures.
+*   Map i18n keys to WebUI labels to keep translations aligned.
 
 ## 4. Development Milestones
 
@@ -108,3 +130,20 @@ The system will follow a classic Client-Server architecture.
 2.  SGF Upload/Download.
 3.  Responsiveness (Mobile layout).
 4.  Performance tuning (Engine pooling if needed).
+
+### Phase 5: Feature Parity (Kivy)
+1.  Trainer and teacher prompts, thresholds, and feedback saving.
+2.  Analysis toggles (policy/ownership/hints) and continuous analysis controls.
+3.  Graph panel parity (score/winrate toggles and styling).
+4.  Game tree and variation navigation (branch, prune, add, delete).
+5.  Timer and sound settings with parity to Kivy.
+6.  Theme selection and UI state persistence.
+7.  Contribute mode dashboard and controls.
+
+### Phase 6: QA, Parity Audit, and Release
+1.  Create a parity checklist covering all Kivy controls and workflows.
+2.  Add regression tests for API and state updates.
+3.  Manual QA across browsers and platforms.
+4.  Package static assets and document deployment.
+
+Reference: `docs/web_ui/PARITY_CHECKLIST.md`.

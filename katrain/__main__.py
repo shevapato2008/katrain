@@ -1,8 +1,65 @@
-"""isort:skip_file"""
-
-# first, logging level lower
 import os
 import sys
+
+def _requested_ui(argv):
+    for i, arg in enumerate(argv):
+        if arg == "--ui" and i + 1 < len(argv):
+            return argv[i + 1].lower()
+        if arg.startswith("--ui="):
+            return arg.split("=", 1)[1].lower()
+    return None
+
+# Force headless mode if web UI is requested, BEFORE any imports
+if _requested_ui(sys.argv) == "web":
+    os.environ["KIVY_NO_ARGS"] = "1"
+    os.environ["KIVY_NO_FILELOG"] = "1"
+    os.environ["KIVY_NO_WINDOW"] = "1"
+    os.environ["KIVY_USE_ASSET_LOADER"] = "1"
+    os.environ["KCFG_KIVY_LOG_LEVEL"] = "warning"
+
+import json
+
+from katrain.core.constants import DATA_FOLDER
+from katrain.core.utils import find_package_resource
+
+def _requested_ui(argv):
+    for i, arg in enumerate(argv):
+        if arg == "--ui" and i + 1 < len(argv):
+            return argv[i + 1].lower()
+        if arg.startswith("--ui="):
+            return arg.split("=", 1)[1].lower()
+    return None
+
+
+def _config_start_mode(argv):
+    config_file = None
+    if len(argv) > 1 and argv[1].endswith("config.json"):
+        config_file = os.path.abspath(argv[1])
+    else:
+        user_config_file = find_package_resource(os.path.join(DATA_FOLDER, "config.json"))
+        if os.path.exists(user_config_file):
+            config_file = user_config_file
+        else:
+            config_file = find_package_resource("katrain/config.json")
+    try:
+        with open(config_file, "r", encoding="utf-8") as config_handle:
+            config = json.load(config_handle)
+    except Exception:
+        return None
+    session_config = config.get("session", {})
+    if isinstance(session_config, dict):
+        mode = session_config.get("mode")
+        if isinstance(mode, str):
+            return mode.lower()
+    return None
+
+
+start_mode = _requested_ui(sys.argv) or _config_start_mode(sys.argv)
+if start_mode == "web":
+    from katrain.web.server import run_web
+
+    run_web()
+    sys.exit(0)
 
 os.environ["KCFG_KIVY_LOG_LEVEL"] = os.environ.get("KCFG_KIVY_LOG_LEVEL", "warning")
 
@@ -39,7 +96,6 @@ if getattr(sys, "frozen", False):
 
 import re
 import signal
-import json
 import threading
 import traceback
 from queue import Queue

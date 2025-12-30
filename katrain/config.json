@@ -27,6 +27,9 @@
         "savepath": "./dist_sgf/",
         "savesgf": false
     },
+    "session": {
+        "mode": "gui"
+    },
     "general": {
         "sgf_load": "~/Downloads",
         "sgf_save": "./sgfout",

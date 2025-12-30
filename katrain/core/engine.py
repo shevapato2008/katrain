@@ -21,6 +21,7 @@ from katrain.core.constants import (
     OUTPUT_DEBUG,
     OUTPUT_ERROR,
     OUTPUT_EXTRA_DEBUG,
+    OUTPUT_INFO,
     OUTPUT_KATAGO_STDERR,
     DATA_FOLDER,
     KATAGO_EXCEPTION,
@@ -757,6 +758,9 @@ class KataGoHttpEngine(BaseEngine):
 
 def create_engine(katrain, config):
     backend = str(config.get("backend", "local")).lower()
+    katrain.log(f"Engine backend requested: {backend}", OUTPUT_INFO)
+    katrain.log(f"Engine config: {json_truncate_arrays(config)}", OUTPUT_DEBUG)
+
     if backend in ["http", "remote", "cloud"]:
         try:
             url = config.get("http_url") or config.get("api_url") or "http://127.0.0.1:8000"
@@ -764,13 +768,15 @@ def create_engine(katrain, config):
                 url = "http://" + url
             health_path = config.get("http_health_path", "/health")
             target = f"{url.rstrip('/')}{health_path}"
-            katrain.log(f"Checking HTTP engine status at {target}...", OUTPUT_DEBUG)
+            katrain.log(f"Checking HTTP engine status at {target}...", OUTPUT_INFO)
             requests.get(target, timeout=2.0)
+            katrain.log("HTTP engine found and healthy.", OUTPUT_INFO)
             return KataGoHttpEngine(katrain, config)
         except Exception as e:
             katrain.log(f"Could not connect to HTTP engine: {e}. Falling back to local engine.", OUTPUT_ERROR)
             config["backend"] = "local"
 
+    katrain.log("Starting local KataGo engine...", OUTPUT_INFO)
     return KataGoEngine(katrain, config)
 
 def _do_request_process(url, payload, headers, timeout, conn):

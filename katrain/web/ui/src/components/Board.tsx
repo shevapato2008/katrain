@@ -97,12 +97,14 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
       ctx.drawImage(imagesRef.current.board, layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
     }
 
-    // Grid, Stars, Coordinates (Same as before)
+    // Grid, Stars, Coordinates
     drawGrid(ctx, layout, boardSize);
     drawStars(ctx, layout, boardSize);
-    drawCoordinates(ctx, layout, boardSize);
+    if (analysisToggles.coords) {
+      drawCoordinates(ctx, layout, boardSize);
+    }
 
-    // Ownership Heatmap
+    // ... Ownership, Policy, Hints ...
     if (analysisToggles.ownership && gameState.analysis?.ownership) {
       // ... same as before ...
       const ownership = gameState.analysis.ownership;
@@ -178,11 +180,24 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
 
     // Stones
     const stoneSize = layout.gridSize * 0.505;
-    gameState.stones.forEach(([player, coords, scoreLoss]) => {
+    gameState.stones.forEach(([player, coords, scoreLoss], index) => {
       if (!coords) return;
       const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
       const img = player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
       if (img) ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+
+      // Move numbers for all stones
+      if (analysisToggles.numbers) {
+        ctx.fillStyle = player === "B" ? "white" : "black";
+        ctx.font = `bold ${Math.max(8, layout.gridSize * 0.25)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        // We need the actual move number from the history or stone index.
+        // For now using index+1 as a proxy, but better to use node index if available.
+        // Actually gameState.stones might not be in order.
+        // Better: history stores node_id. We can find the node index for this coordinate.
+        ctx.fillText((index + 1).toString(), pos.x, pos.y);
+      }
 
       // Eval dots
       if (analysisToggles.eval && scoreLoss !== null && scoreLoss !== undefined) {
@@ -217,16 +232,14 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
       const size = layout.gridSize * 0.28;
       ctx.drawImage(imagesRef.current.lastMove, pos.x - size, pos.y - size, size * 2, size * 2);
 
-      // Move number
+      // Move number for last move if not showing all
       const moveNumber = gameState.current_node_index;
-      if (moveNumber > 0) {
-        ctx.fillStyle = gameState.player_to_move === "B" ? "white" : "black"; // current player is next, so last stone was opposite
-        // Actually player_to_move is who is next. If next is B, last was W.
-        // Wait, if last_move exists, we check the player of the last stone.
+      if (moveNumber > 0 && !analysisToggles.numbers) {
         const lastStone = gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
         const lastPlayer = lastStone ? lastStone[0] : null;
         ctx.fillStyle = lastPlayer === "B" ? "white" : "black";
-        
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.font = `bold ${Math.max(8, layout.gridSize * 0.25)}px sans-serif`;
         ctx.fillText(moveNumber.toString(), pos.x, pos.y);
       }

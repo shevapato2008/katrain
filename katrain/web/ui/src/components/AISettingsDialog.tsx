@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
-  Button, TextField, MenuItem, Box, Typography, Divider 
+  Button, TextField, MenuItem, Box, Typography, Divider, ListSubheader
 } from '@mui/material';
 import { type GameState } from '../api';
 
@@ -12,23 +12,74 @@ interface AISettingsDialogProps {
   onConfirm: (bw: 'B' | 'W', strategy: string) => void;
 }
 
-const STRATEGIES = [
-  { value: 'ai:default', label: 'Recommended' },
-  { value: 'ai:human', label: 'Human Style' },
-  { value: 'ai:pro', label: 'Pro Style' },
-  { value: 'ai:p:rank', label: 'Rank Based' },
-  { value: 'ai:handicap', label: 'Handicap' },
-  { value: 'ai:scoreloss', label: 'Score Loss' },
+const STRATEGY_GROUPS = [
+  {
+    label: 'Recommended',
+    options: [
+      { value: 'ai:default', label: 'AI: Recommended' },
+      { value: 'ai:human', label: 'AI: Human Style' },
+      { value: 'ai:pro', label: 'AI: Pro Style' },
+      { value: 'ai:p:rank', label: 'AI: Rank Based' },
+    ]
+  },
+  {
+    label: 'Strength Based',
+    options: [
+      { value: 'ai:handicap', label: 'AI: Handicap' },
+      { value: 'ai:scoreloss', label: 'AI: Score Loss' },
+      { value: 'ai:simple', label: 'AI: Simple Ownership' },
+    ]
+  },
+  {
+    label: 'Policy Based',
+    options: [
+      { value: 'ai:policy', label: 'AI: Policy' },
+      { value: 'ai:p:weighted', label: 'AI: Weighted' },
+      { value: 'ai:jigo', label: 'AI: Jigo' },
+      { value: 'ai:antimirror', label: 'AI: Antimirror' },
+    ]
+  },
+  {
+    label: 'Experimental',
+    options: [
+      { value: 'ai:p:pick', label: 'AI: Pick' },
+      { value: 'ai:p:local', label: 'AI: Local' },
+      { value: 'ai:p:tenuki', label: 'AI: Tenuki' },
+      { value: 'ai:p:territory', label: 'AI: Territory' },
+      { value: 'ai:p:influence', label: 'AI: Influence' },
+    ]
+  }
 ];
 
 const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, onClose, onConfirm }) => {
-  const [bStrategy, setBStrategy] = useState(gameState?.players_info.B.player_subtype || 'ai:default');
-  const [wStrategy, setWStrategy] = useState(gameState?.players_info.W.player_subtype || 'ai:default');
+  const getInitialStrategy = (bw: 'B' | 'W') => {
+    const info = gameState?.players_info[bw];
+    if (info?.player_type === 'player:human') return 'player:human';
+    return info?.player_subtype || 'ai:default';
+  };
+
+  const [bStrategy, setBStrategy] = useState(getInitialStrategy('B'));
+  const [wStrategy, setWStrategy] = useState(getInitialStrategy('W'));
 
   const handleConfirm = () => {
     onConfirm('B', bStrategy);
     onConfirm('W', wStrategy);
     onClose();
+  };
+
+  const renderMenuItems = () => {
+    const items = [
+      <MenuItem key="player:human" value="player:human">Human</MenuItem>
+    ];
+    
+    STRATEGY_GROUPS.forEach(group => {
+      items.push(<ListSubheader key={group.label}>{group.label}</ListSubheader>);
+      group.options.forEach(opt => {
+        items.push(<MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>);
+      });
+    });
+    
+    return items;
   };
 
   return (
@@ -45,9 +96,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, on
               fullWidth
               size="small"
             >
-              {STRATEGIES.map((s) => (
-                <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
-              ))}
+              {renderMenuItems()}
             </TextField>
           </Box>
           
@@ -62,9 +111,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, on
               fullWidth
               size="small"
             >
-              {STRATEGIES.map((s) => (
-                <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
-              ))}
+              {renderMenuItems()}
             </TextField>
           </Box>
         </Box>

@@ -5,9 +5,11 @@ import { type GameState } from '../api';
 interface ScoreGraphProps {
   gameState: GameState | null;
   onNavigate: (nodeId: number) => void;
+  showScore?: boolean;
+  showWinrate?: boolean;
 }
 
-const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate }) => {
+const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate, showScore = true, showWinrate = true }) => {
   const history = gameState?.history || [];
   const currentIndex = gameState?.current_node_index ?? -1;
 
@@ -68,9 +70,9 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate }) => {
 
   return (
     <Box sx={{ width: '100%', mt: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1 }}>
-        <Typography variant="caption" sx={{ color: '#3f51b5' }}>Score: {scoreScale}</Typography>
-        <Typography variant="caption" sx={{ color: '#4caf50' }}>Winrate: {50+winrateScale}%</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: 16 }}>
+        {showScore ? <Typography variant="caption" sx={{ color: '#3f51b5' }}>Score: {scoreScale}</Typography> : <Box />}
+        {showWinrate ? <Typography variant="caption" sx={{ color: '#4caf50' }}>Winrate: {50+winrateScale}%</Typography> : <Box />}
       </Box>
       <svg 
         width="100%" 
@@ -83,20 +85,24 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate }) => {
         <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="#ccc" strokeWidth="1" />
         
         {/* Winrate line */}
-        <polyline
-          fill="none"
-          stroke="#4caf50"
-          strokeWidth="2"
-          points={winratePoints}
-        />
+        {showWinrate && (
+          <polyline
+            fill="none"
+            stroke="#4caf50"
+            strokeWidth="2"
+            points={winratePoints}
+          />
+        )}
 
         {/* Score line */}
-        <polyline
-          fill="none"
-          stroke="#3f51b5"
-          strokeWidth="2"
-          points={scorePoints}
-        />
+        {showScore && (
+          <polyline
+            fill="none"
+            stroke="#3f51b5"
+            strokeWidth="2"
+            points={scorePoints}
+          />
+        )}
 
         {/* Current marker */}
         {currentIndex !== -1 && (
@@ -107,9 +113,9 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate }) => {
           />
         )}
       </svg>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1 }}>
-        <Typography variant="caption" sx={{ color: '#3f51b5' }}>Score: -{scoreScale}</Typography>
-        <Typography variant="caption" sx={{ color: '#4caf50' }}>Winrate: {50-winrateScale}%</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: 16 }}>
+        {showScore ? <Typography variant="caption" sx={{ color: '#3f51b5' }}>Score: -{scoreScale}</Typography> : <Box />}
+        {showWinrate ? <Typography variant="caption" sx={{ color: '#4caf50' }}>Winrate: {50-winrateScale}%</Typography> : <Box />}
       </Box>
     </Box>
   );

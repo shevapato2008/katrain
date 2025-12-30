@@ -10,6 +10,7 @@ import PlayerCard from './components/PlayerCard';
 import ScoreGraph from './components/ScoreGraph';
 import NewGameDialog from './components/NewGameDialog';
 import AISettingsDialog from './components/AISettingsDialog';
+import GameReportDialog from './components/GameReportDialog';
 
 const theme = createTheme({
   palette: {
@@ -29,12 +30,18 @@ function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isNewGameDialogOpen, setNewGameDialogOpen] = useState(false);
   const [isAISettingsDialogOpen, setAISettingsDialogOpen] = useState(false);
+  const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
+  const [gameReport, setGameReport] = useState<any>(null);
   const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({
     children: false,
     eval: true,
     hints: true,
     policy: false,
-    ownership: false
+    ownership: false,
+    coords: true,
+    numbers: false,
+    score: true,
+    winrate: true
   });
 
   useEffect(() => {
@@ -54,6 +61,11 @@ function App() {
             setGameState(msg.state);
           } else if (msg.type === 'log') {
             setStatusMessage(msg.data.message);
+          } else if (msg.type === 'sound') {
+            playSound(msg.data.sound);
+          } else if (msg.type === 'game_report') {
+            setGameReport(msg.data);
+            setGameReportDialogOpen(true);
           }
         };
       } catch (error) {
@@ -63,6 +75,11 @@ function App() {
     };
     initSession();
   }, []);
+
+  const playSound = (sound: string) => {
+    const audio = new Audio(`/assets/sounds/${sound}.wav`);
+    audio.play().catch(e => console.warn("Failed to play sound", e));
+  };
 
   const handleMove = async (x: number, y: number) => {
     if (!sessionId) return;
@@ -79,6 +96,7 @@ function App() {
     try {
       let data;
       if (action === 'pass') data = await API.playMove(sessionId, null);
+      else if (action === 'undo') data = await API.undo(sessionId, 'smart');
       else if (action === 'back') data = await API.undo(sessionId, 1);
       else if (action === 'back-10') data = await API.undo(sessionId, 10);
       else if (action === 'start') data = await API.undo(sessionId, 9999);
@@ -86,6 +104,10 @@ function App() {
       else if (action === 'forward-10') data = await API.redo(sessionId, 10);
       else if (action === 'end') data = await API.redo(sessionId, 9999);
       else if (action === 'ai-move') data = await API.aiMove(sessionId);
+      else if (action === 'resign') data = await API.resign(sessionId);
+      else if (action === 'rotate') data = await API.rotate(sessionId);
+      else if (action === 'mistake-prev') data = await API.findMistake(sessionId, 'undo');
+      else if (action === 'mistake-next') data = await API.findMistake(sessionId, 'redo');
       
       if (data) setGameState(data.state);
     } catch (error) {
@@ -112,10 +134,37 @@ function App() {
   const handleAISettingsConfirm = async (bw: 'B' | 'W', strategy: string) => {
     if (!sessionId) return;
     try {
-      const data = await API.updatePlayer(sessionId, bw, undefined, strategy);
+      const isHuman = strategy === 'player:human';
+      const data = await API.updatePlayer(
+        sessionId, 
+        bw, 
+        isHuman ? 'player:human' : 'player:ai', 
+        isHuman ? 'game:normal' : strategy
+      );
       setGameState(data.state);
     } catch (error) {
       console.error("AI Settings update failed", error);
+    }
+  };
+
+  const handleAnalyzeGame = async () => {
+    if (!sessionId) return;
+    try {
+      const data = await API.analyzeGame(sessionId);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Analyze game failed", error);
+    }
+  };
+
+  const handleGameReport = async () => {
+    if (!sessionId) return;
+    try {
+      const data = await API.getGameReport(sessionId);
+      setGameReport(data.report);
+      setGameReportDialogOpen(true);
+    } catch (error) {
+      console.error("Game report failed", error);
     }
   };
 
@@ -150,6 +199,13 @@ function App() {
 
   const handleToggleChange = (toggle: string) => {
     setAnalysisToggles(prev => ({ ...prev, [toggle]: !prev[toggle] }));
+    if (sessionId) {
+      // Mapping toggle names to backend config keys if necessary, or using them directly
+      // Based on interface.py, it uses self.show_xxx, but update_config can set them if we add them to _do_toggle_ui or similar.
+      // Wait, interface.py has _do_toggle_ui(setting) which toggles show_{setting}.
+      // We should use an endpoint for this. We have /api/ui/toggle.
+      API.toggleUI(sessionId, toggle).catch(e => console.error("Toggle UI failed", e));
+    }
   };
 
   const handleNavigate = async (nodeId: number) => {
@@ -159,6 +215,21 @@ function App() {
       setGameState(data.state);
     } catch (error) {
       console.error("Navigation failed", error);
+    }
+  };
+
+  const handleNodeAction = async (action: string) => {
+    if (!sessionId || !gameState) return;
+    try {
+      let data;
+      if (action === 'delete') data = await API.deleteNode(sessionId);
+      else if (action === 'prune') data = await API.pruneBranch(sessionId);
+      else if (action === 'make-main') data = await API.makeMainBranch(sessionId);
+      else if (action === 'toggle-collapse') data = await API.toggleCollapse(sessionId);
+      
+      if (data) setGameState(data.state);
+    } catch (error) {
+      console.error("Node action failed", error);
     }
   };
 
@@ -186,6 +257,8 @@ function App() {
               onLoadSGF={handleLoadSGF} 
               onSaveSGF={handleSaveSGF} 
               onAISettings={() => setAISettingsDialogOpen(true)}
+              onAnalyzeGame={handleAnalyzeGame}
+              onGameReport={handleGameReport}
             />
           )}
           
@@ -224,13 +297,18 @@ function App() {
             <Divider />
             
             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-              <AnalysisPanel gameState={gameState} />
+              <AnalysisPanel gameState={gameState} onNodeAction={handleNodeAction} />
             </Box>
             
             <Divider />
             <Box sx={{ p: 1, bgcolor: '#fff' }}>
               <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>GRAPH</Typography>
-              <ScoreGraph gameState={gameState} onNavigate={handleNavigate} />
+              <ScoreGraph 
+                gameState={gameState} 
+                onNavigate={handleNavigate} 
+                showScore={analysisToggles.score}
+                showWinrate={analysisToggles.winrate}
+              />
             </Box>
           </Box>
         </Box>
@@ -244,6 +322,11 @@ function App() {
           gameState={gameState}
           onClose={() => setAISettingsDialogOpen(false)}
           onConfirm={handleAISettingsConfirm}
+        />
+        <GameReportDialog
+          open={isGameReportDialogOpen}
+          onClose={() => setGameReportDialogOpen(false)}
+          report={gameReport}
         />
         </Box>
       )}

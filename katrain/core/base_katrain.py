@@ -30,9 +30,11 @@ class Player:
         self.update(player_type, player_subtype)
         self.periods_used = periods_used
 
-    def update(self, player_type=PLAYER_HUMAN, player_subtype=PLAYING_NORMAL):
-        self.player_type = player_type
-        self.player_subtype = player_subtype
+    def update(self, player_type=None, player_subtype=None):
+        if player_type is not None:
+            self.player_type = player_type
+        if player_subtype is not None:
+            self.player_subtype = player_subtype
 
     @property
     def ai(self):

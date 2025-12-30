@@ -3,7 +3,7 @@
         "katago": "",
         "altcommand": "",
         "backend": "local",
-        "http_url": "http://127.0.0.1:8000",
+        "http_url": "http://192.168.0.106:8000",
         "http_analyze_path": "/analyze",
         "http_health_path": "/health",
         "http_timeout": 30.0,

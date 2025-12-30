@@ -1301,6 +1301,14 @@ class HumanStyleStrategy(AIStrategy):
     def generate_move(self) -> Tuple[Move, str]:
         self.game.katrain.log(f"[HumanStyleStrategy] Starting move generation", OUTPUT_DEBUG)
         
+        engine = self.game.engines[self.cn.player]
+        if not getattr(engine, "has_human_model", False):
+            self.game.katrain.log(
+                f"[HumanStyleStrategy] Engine does not have a human model loaded. Falling back to PolicyStrategy.",
+                OUTPUT_INFO,
+            )
+            return PolicyStrategy(self.game, self.settings).generate_move()
+
         if "human_kyu_rank" in self.settings:
             human_kyu_rank = round(self.settings["human_kyu_rank"])
             human_style = "rank" if self.settings["modern_style"] else "preaz"

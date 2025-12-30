@@ -58,7 +58,7 @@ export const API = {
       coords: coords ? [coords.x, coords.y] : null,
       pass_move: coords === null,
     }),
-  undo: (sessionId: string, nTimes: number = 1): Promise<SessionResponse> =>
+  undo: (sessionId: string, nTimes: number | string = 1): Promise<SessionResponse> =>
     apiPost("/api/undo", { session_id: sessionId, n_times: nTimes }),
   redo: (sessionId: string, nTimes: number = 1): Promise<SessionResponse> =>
     apiPost("/api/redo", { session_id: sessionId, n_times: nTimes }),
@@ -66,7 +66,7 @@ export const API = {
     apiPost("/api/new-game", { session_id: sessionId, ...settings }),
   aiMove: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/ai-move", { session_id: sessionId }),
-  navigate: (sessionId: string, nodeId: number): Promise<SessionResponse> =>
+  navigate: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
     apiPost("/api/nav", { session_id: sessionId, node_id: nodeId }),
   loadSGF: (sessionId: string, sgf: string): Promise<SessionResponse> =>
     apiPost("/api/sgf/load", { session_id: sessionId, sgf }),
@@ -80,4 +80,26 @@ export const API = {
     apiPost("/api/config", { session_id: sessionId, setting, value }),
   updatePlayer: (sessionId: string, bw: string, playerType?: string, playerSubtype?: string): Promise<SessionResponse> =>
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype }),
+  resign: (sessionId: string): Promise<SessionResponse> =>
+    apiPost("/api/resign", { session_id: sessionId }),
+  rotate: (sessionId: string): Promise<SessionResponse> =>
+    apiPost("/api/rotate", { session_id: sessionId }),
+  findMistake: (sessionId: string, fn: "redo" | "undo"): Promise<SessionResponse> =>
+    apiPost("/api/nav/mistake", { session_id: sessionId, fn }),
+  setMode: (sessionId: string, mode: string): Promise<SessionResponse> =>
+    apiPost("/api/mode", { session_id: sessionId, mode }),
+  deleteNode: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
+    apiPost("/api/node/delete", { session_id: sessionId, node_id: nodeId }),
+  pruneBranch: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
+    apiPost("/api/node/prune", { session_id: sessionId, node_id: nodeId }),
+  makeMainBranch: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
+    apiPost("/api/node/make-main", { session_id: sessionId, node_id: nodeId }),
+  toggleCollapse: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
+    apiPost("/api/node/toggle-collapse", { session_id: sessionId, node_id: nodeId }),
+  toggleUI: (sessionId: string, setting: string): Promise<SessionResponse> =>
+    apiPost("/api/ui/toggle", { session_id: sessionId, setting }),
+  analyzeGame: (sessionId: string, visits?: number, mistakesOnly: boolean = false): Promise<SessionResponse> =>
+    apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only: mistakesOnly }),
+  getGameReport: (sessionId: string, depthFilter?: number[]): Promise<{ session_id: string; report: any }> =>
+    apiPost("/api/analysis/report", { session_id: sessionId, depth_filter: depthFilter }),
 };

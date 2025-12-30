@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Callable, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
@@ -16,6 +17,8 @@ from katrain.core.constants import (
 )
 from katrain.core.engine import create_engine
 from katrain.core.game import Game
+from katrain.core.lang import i18n
+from katrain.gui.theme import Theme
 
 # Configure standard logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +26,9 @@ logger = logging.getLogger("katrain_web")
 
 
 class NullEngine:
+    def __init__(self):
+        self.config = {"max_visits": 10, "fast_visits": 5}
+
     def on_new_game(self):
         return None
 
@@ -39,9 +45,21 @@ class NullEngine:
         return None
 
 
+class MockMoveTree:
+    def __init__(self):
+        self.insert_node = None
+
+    def redraw(self):
+        pass
+
+    def redraw_tree_trigger(self):
+        pass
+
+
 class MockControls:
     def __init__(self, katrain):
         self.katrain = katrain
+        self.move_tree = MockMoveTree()
 
     def set_status(self, message, level=OUTPUT_INFO, **_kwargs):
         self.katrain.log(message, level)
@@ -70,6 +88,16 @@ class WebKaTrain(KaTrainBase):
         self.controls = MockControls(self)
         self.play_analyze_mode = MODE_PLAY
         self.pondering = False
+        self.timer_paused = True
+        self.last_timer_update = time.time()
+        self.show_children = True
+        self.show_dots = True
+        self.show_hints = True
+        self.show_policy = False
+        self.show_ownership = False
+        self.show_move_numbers = True
+        self.show_coordinates = True
+        self.zen_mode = False
 
     def start(self):
         """Initializes the engine and starts a new game."""
@@ -98,7 +126,14 @@ class WebKaTrain(KaTrainBase):
 
     def log(self, message, level=OUTPUT_INFO):
         """Redirect logs to Python logger."""
-        message = str(message)
+        if isinstance(message, dict):
+            # Avoid dumping raw analysis JSON to the status bar
+            if "moveInfos" in message or "rootInfo" in message:
+                return
+            message = str(message)
+        else:
+            message = str(message)
+
         if level == OUTPUT_ERROR:
             logger.error(message)
         elif level == OUTPUT_DEBUG:
@@ -115,6 +150,7 @@ class WebKaTrain(KaTrainBase):
         if not self.game:
             return {"error": "No game active"}
 
+        self.update_timer()
         cn = self.game.current_node
         last_move = cn.move.coords if cn.move else None
 
@@ -204,6 +240,7 @@ class WebKaTrain(KaTrainBase):
             "stones": stones_with_eval,
             "last_move": list(last_move) if last_move else None,
             "prisoner_count": self.game.prisoner_count,
+            "note": cn.note,
             "analysis": analysis,
             "is_root": cn.is_root,
             "is_pass": cn.is_pass,
@@ -219,7 +256,30 @@ class WebKaTrain(KaTrainBase):
                 for bw, p in self.players_info.items()
             },
             "play_analyze_mode": self.play_analyze_mode,
+            "insert_mode": getattr(self.game, "insert_mode", False),
             "pondering": self.pondering,
+            "language": i18n.lang,
+            "available_languages": ["cn", "de", "en", "es", "fr", "jp", "ko", "ru", "tr", "tw", "ua"],
+            "theme": self.config("trainer/theme"),
+            "available_themes": list(Theme.EVAL_COLORS.keys()),
+            "eval_colors": Theme.EVAL_COLORS[self.config("trainer/theme")],
+            "timer": {
+                "paused": self.timer_paused,
+                "main_time_used": self.game.main_time_used,
+                "current_node_time_used": cn.time_used,
+                "next_player_periods_used": self.next_player_info.periods_used,
+                "settings": self.config("timer")
+            },
+            "ui_state": {
+                "show_children": self.show_children,
+                "show_dots": self.show_dots,
+                "show_hints": self.show_hints,
+                "show_policy": self.show_policy,
+                "show_ownership": self.show_ownership,
+                "show_move_numbers": self.show_move_numbers,
+                "show_coordinates": self.show_coordinates,
+                "zen_mode": self.zen_mode,
+            }
         }
 
     def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None):
@@ -250,6 +310,27 @@ class WebKaTrain(KaTrainBase):
         
         self.update_state()
 
+    def _do_edit_game(self, size=None, handicap=None, komi=None, rules=None):
+        changed = False
+        if size and list(self.game.board_size) != [size, size]:
+            self.game.root.set_property("SZ", size)
+            changed = True
+        if handicap is not None and self.game.root.handicap != handicap:
+            self.game.root.set_property("HA", handicap)
+            changed = True
+        if komi is not None and self.game.root.komi != komi:
+            self.game.root.set_property("KM", komi)
+            changed = True
+        if rules and self.game.root.ruleset != rules:
+            self.game.root.set_property("RU", rules)
+            changed = True
+        
+        if changed:
+            if self.engine:
+                self.engine.on_new_game()
+            self.game.analyze_all_nodes(analyze_fast=True)
+            self.update_state()
+
     def update_state(self, **_kwargs):
         """Called when the game state changes."""
         self._do_update_state()
@@ -270,6 +351,30 @@ class WebKaTrain(KaTrainBase):
                 self.game.analyze_extra("ponder")
             else:
                 self.engine.stop_pondering()
+
+    def update_timer(self):
+        now = time.time()
+        dt = now - self.last_timer_update
+        self.last_timer_update = now
+
+        if self.timer_paused or self.play_analyze_mode != MODE_PLAY:
+            return
+
+        cn = self.game.current_node
+        if cn.children or self.next_player_info.ai:
+            return
+
+        main_time = self.config("timer/main_time", 0) * 60
+        byo_len = max(1, self.config("timer/byo_length"))
+        byo_num = max(1, self.config("timer/byo_periods"))
+
+        if main_time - self.game.main_time_used > 0:
+            self.game.main_time_used += dt
+        else:
+            cn.time_used += dt
+            while cn.time_used > byo_len and self.next_player_info.periods_used < byo_num:
+                cn.time_used -= byo_len
+                self.next_player_info.periods_used += 1
 
     def __call__(self, message, *args, **kwargs):
         """
@@ -333,6 +438,12 @@ class WebKaTrain(KaTrainBase):
         from katrain.core.game import IllegalMoveException, Move
         try:
             self.game.play(Move(coords, player=self.next_player_info.player))
+            if self.message_callback:
+                if self.game.last_capture:
+                    self.message_callback("sound", {"sound": "capturing"})
+                else:
+                    import random
+                    self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
         except IllegalMoveException as e:
             self.log(f"Illegal Move: {e}", OUTPUT_ERROR)
 
@@ -390,8 +501,93 @@ class WebKaTrain(KaTrainBase):
         # coords should be [xmin, xmax, ymin, ymax]
         self.game.set_region_of_interest(coords)
 
+    def _do_delete_node(self, node_id=None):
+        node = self._find_node_by_id(node_id) if node_id else self.game.current_node
+        if node and node.parent:
+            if node.shortcut_from:
+                parent = node.shortcut_from
+                via = [v for m, v in parent.shortcuts_to if m == node]
+                node.remove_shortcut()
+                if via:
+                    parent.children.remove(via[0])
+            else:
+                parent = node.parent
+                parent.children.remove(node)
+            self.game.set_current_node(parent)
+
+    def _do_prune_branch(self, node_id=None):
+        node = self._find_node_by_id(node_id) if node_id else self.game.current_node
+        if node and node.parent:
+            curr = node
+            while curr.parent is not None:
+                curr.parent.children = [curr]
+                curr = curr.parent
+            self.game.set_current_node(node)
+
+    def _do_make_main_branch(self, node_id=None):
+        node = self._find_node_by_id(node_id) if node_id else self.game.current_node
+        if node and node.parent:
+            curr = node
+            while curr.parent is not None:
+                curr.parent.children.remove(curr)
+                curr.parent.children.insert(0, curr)
+                curr = curr.parent
+            self.game.set_current_node(node)
+
+    def _do_toggle_collapse(self, node_id=None):
+        node = self._find_node_by_id(node_id) if node_id else self.game.current_node
+        if node and node.parent:
+            if node.shortcut_from:
+                node.remove_shortcut()
+            else:
+                parent = node.parent
+                while len(parent.children) == 1 and not parent.is_root and not parent.shortcut_from:
+                    parent = parent.parent
+                parent.add_shortcut(node)
+
+    def _do_toggle_ui(self, setting):
+        attr = f"show_{setting}"
+        if setting == "zen_mode":
+            attr = "zen_mode"
+        if hasattr(self, attr):
+            setattr(self, attr, not getattr(self, attr))
+
+    def _do_switch_lang(self, lang):
+        i18n.switch_lang(lang)
+        self.update_config("general/language", lang)
+
+    def _do_switch_theme(self, theme):
+        self.update_config("trainer/theme", theme)
+
+    def _do_analyze_extra(self, mode, **kwargs):
+        self.game.analyze_extra(mode, **kwargs)
+
+    def _do_insert_mode(self, mode="toggle"):
+        self.game.set_insert_mode(mode)
+
     def _do_reset_analysis(self):
         self.game.reset_current_analysis()
+
+    def _do_game_analysis(self, **kwargs):
+        self.game.analyze_extra("game", **kwargs)
+
+    def _do_game_report(self, depth_filter=None):
+        from katrain.core.ai import game_report
+        thresholds = self.config("trainer/eval_thresholds")
+        sum_stats, histogram, player_ptloss = game_report(self.game, thresholds, depth_filter=depth_filter)
+        if self.message_callback:
+            self.message_callback("game_report", {
+                "sum_stats": sum_stats,
+                "histogram": histogram,
+                "player_ptloss": player_ptloss,
+                "thresholds": thresholds
+            })
+        return {
+            "sum_stats": sum_stats,
+            "histogram": histogram,
+            "player_ptloss": player_ptloss,
+            "thresholds": thresholds
+        }
 
     def _do_resign(self):
         self.game.current_node.end_state = f"{self.game.current_node.player}+R"
@@ -408,6 +604,21 @@ class WebKaTrain(KaTrainBase):
             self._config[cat][key] = value
         else:
             self._config[setting] = value
+        
+        # Logic from ConfigPopup.update_config to restart engine if needed
+        ignore = {"max_visits", "fast_visits", "max_time", "enable_ownership", "wide_root_noise"}
+        if "engine" in setting and not any(ig in setting for ig in ignore):
+            self.log(f"Restarting Engine after {setting} settings change")
+            if self.engine:
+                try:
+                    self.engine.shutdown(finish=False)
+                except Exception:
+                    pass
+            self.engine = create_engine(self, self.config("engine"))
+            if self.game:
+                self.game.engines = {"B": self.engine, "W": self.engine}
+                self.game.analyze_all_nodes(analyze_fast=True)
+            self.update_state()
 
     def shutdown(self):
         if self.engine:

@@ -21,7 +21,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-          {['children', 'eval', 'hints', 'policy', 'ownership'].map((t) => (
+          {['children', 'eval', 'hints', 'policy', 'ownership', 'coords', 'numbers', 'score', 'winrate'].map((t) => (
             <Button 
               key={t}
               size="small" 

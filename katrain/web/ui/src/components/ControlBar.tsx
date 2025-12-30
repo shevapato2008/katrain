@@ -6,9 +6,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
-import RotateLeftIcon from '@mui/icons-material/RotateLeft';
+import RotateRightIcon from '@mui/icons-material/RotateRight';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import FlagIcon from '@mui/icons-material/Flag';
+import UndoIcon from '@mui/icons-material/Undo';
 
 interface ControlBarProps {
   onAction: (action: string) => void;
@@ -18,21 +20,39 @@ interface ControlBarProps {
 const ControlBar: React.FC<ControlBarProps> = ({ onAction, nextPlayer }) => {
   return (
     <Box sx={{ height: 60, borderTop: '1px solid #ddd', display: 'flex', alignItems: 'center', px: 2, bgcolor: '#fff' }}>
-      <Tooltip title="Pass">
-        <IconButton onClick={() => onAction('pass')}>
-          <Typography variant="button">PASS</Typography>
-        </IconButton>
-      </Tooltip>
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        <Tooltip title="Pass">
+          <IconButton onClick={() => onAction('pass')} size="small">
+            <Typography variant="button" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>PASS</Typography>
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Resign">
+          <IconButton onClick={() => onAction('resign')} size="small" color="error">
+            <FlagIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
-      <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-        <IconButton onClick={() => onAction('mistake-prev')} disabled><WarningAmberIcon /></IconButton>
-        <IconButton onClick={() => onAction('start')}><SkipPreviousIcon /></IconButton>
-        <IconButton onClick={() => onAction('back-10')}><FastRewindIcon /></IconButton>
-        <IconButton onClick={() => onAction('back')}><ArrowBackIcon /></IconButton>
+      <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
+        <Tooltip title="Previous Mistake">
+          <IconButton onClick={() => onAction('mistake-prev')} size="small"><WarningAmberIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="Start of Game">
+          <IconButton onClick={() => onAction('start')} size="small"><SkipPreviousIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="Back 10 Moves">
+          <IconButton onClick={() => onAction('back-10')} size="small"><FastRewindIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="Undo (Smart)">
+          <IconButton onClick={() => onAction('undo')} color="primary" size="small"><UndoIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="Back 1 Move">
+          <IconButton onClick={() => onAction('back')} size="small"><ArrowBackIcon fontSize="small" /></IconButton>
+        </Tooltip>
         
-        <Box sx={{ mx: 2, display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ mx: 1, display: 'flex', alignItems: 'center' }}>
           <Box sx={{ 
-            width: 30, height: 30, borderRadius: '50%', 
+            width: 28, height: 28, borderRadius: '50%', 
             bgcolor: nextPlayer === 'B' ? 'black' : 'white',
             border: '2px solid',
             borderColor: '#3f51b5',
@@ -40,19 +60,29 @@ const ControlBar: React.FC<ControlBarProps> = ({ onAction, nextPlayer }) => {
           }} />
         </Box>
 
-        <IconButton onClick={() => onAction('forward')}><ArrowForwardIcon /></IconButton>
-        <IconButton onClick={() => onAction('forward-10')}><FastForwardIcon /></IconButton>
-        <IconButton onClick={() => onAction('end')}><SkipNextIcon /></IconButton>
+        <Tooltip title="Forward 1 Move">
+          <IconButton onClick={() => onAction('forward')} size="small"><ArrowForwardIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="Forward 10 Moves">
+          <IconButton onClick={() => onAction('forward-10')} size="small"><FastForwardIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="End of Game">
+          <IconButton onClick={() => onAction('end')} size="small"><SkipNextIcon fontSize="small" /></IconButton>
+        </Tooltip>
         <Tooltip title="AI Move">
-          <IconButton onClick={() => onAction('ai-move')} color="primary">
-            <PsychologyIcon />
+          <IconButton onClick={() => onAction('ai-move')} color="primary" size="small">
+            <PsychologyIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <IconButton onClick={() => onAction('mistake-next')} disabled><WarningAmberIcon /></IconButton>
-        <IconButton onClick={() => onAction('rotate')} disabled><RotateLeftIcon /></IconButton>
+        <Tooltip title="Next Mistake">
+          <IconButton onClick={() => onAction('mistake-next')} size="small"><WarningAmberIcon fontSize="small" /></IconButton>
+        </Tooltip>
+        <Tooltip title="Rotate Board">
+          <IconButton onClick={() => onAction('rotate')} size="small"><RotateRightIcon fontSize="small" /></IconButton>
+        </Tooltip>
       </Box>
 
-      <Typography variant="body2" color="textSecondary">Engine: Idle</Typography>
+      <Typography variant="caption" color="textSecondary" sx={{ minWidth: 80, textAlign: 'right' }}>Engine: Idle</Typography>
     </Box>
   );
 };

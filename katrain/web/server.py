@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any, List, Optional, Union
 
@@ -24,7 +25,7 @@ class UndoRedoRequest(BaseModel):
 
 class NavRequest(BaseModel):
     session_id: str
-    node_id: int
+    node_id: Optional[int] = None
 
 
 class NewGameRequest(BaseModel):
@@ -32,6 +33,14 @@ class NewGameRequest(BaseModel):
     size: Optional[int] = 19
     handicap: Optional[int] = 0
     komi: Optional[float] = 6.5
+
+
+class EditGameRequest(BaseModel):
+    session_id: str
+    size: Optional[int] = None
+    handicap: Optional[int] = None
+    komi: Optional[float] = None
+    rules: Optional[str] = None
 
 
 class LoadSGFRequest(BaseModel):
@@ -59,6 +68,26 @@ class ToggleAnalysisRequest(BaseModel):
 class ModeRequest(BaseModel):
     session_id: str
     mode: str
+
+
+class InsertModeRequest(BaseModel):
+    session_id: str
+    mode: str = "toggle"
+
+
+class UIToggleRequest(BaseModel):
+    session_id: str
+    setting: str
+
+
+class LanguageRequest(BaseModel):
+    session_id: str
+    lang: str
+
+
+class ThemeRequest(BaseModel):
+    session_id: str
+    theme: str
 
 
 class AnalyzeExtraRequest(BaseModel):
@@ -94,8 +123,22 @@ class SelectBoxRequest(BaseModel):
     coords: List[int]
 
 
+class GameAnalysisRequest(BaseModel):
+    session_id: str
+    visits: Optional[int] = None
+    mistakes_only: bool = False
+    move_range: Optional[List[int]] = None
+
+
+class GameReportRequest(BaseModel):
+    session_id: str
+    depth_filter: Optional[List[float]] = None
+
+
 def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
-    print("DEBUG: create_app start")
+    # Set logging levels for our application
+    logging.getLogger("katrain_web").setLevel(logging.INFO)
+    
     app = FastAPI()
     static_root = Path(__file__).resolve().parent / "static"
     assets_root = Path(__file__).resolve().parent.parent
@@ -103,6 +146,7 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
     # Specific asset mounts first
     app.mount("/assets/img", StaticFiles(directory=assets_root / "img"), name="img")
     app.mount("/assets/fonts", StaticFiles(directory=assets_root / "fonts"), name="fonts")
+    app.mount("/assets/sounds", StaticFiles(directory=assets_root / "sounds"), name="sounds")
 
     manager = SessionManager(
         session_timeout=session_timeout,
@@ -113,14 +157,12 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
 
     @app.on_event("startup")
     async def _startup():
-        print("DEBUG: Pre-initializing Kivy on main thread...")
         try:
             from katrain.web.interface import WebKaTrain
             # Just init to trigger imports and config loading
             WebKaTrain(force_package_config=True, enable_engine=False)
-            print("DEBUG: Kivy pre-initialization complete.")
         except Exception as e:
-            print(f"DEBUG: Kivy pre-initialization failed: {e}")
+            logging.getLogger("katrain_web").error(f"Kivy pre-initialization failed: {e}")
 
         manager.attach_loop(asyncio.get_running_loop())
         app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
@@ -138,22 +180,18 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
 
     @app.post("/api/session")
     def create_session():
-        print("API: create_session called")
         try:
             session = manager.create_session()
-            print(f"API: create_session success, id={session.session_id}")
         except Exception as exc:
-            print(f"API: create_session failed: {exc}")
+            logging.getLogger("katrain_web").error(f"API: create_session failed: {exc}")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return {"session_id": session.session_id, "state": session.last_state}
 
     @app.get("/api/state")
     def get_state(session_id: str):
-        print(f"API: get_state called for {session_id}")
         try:
             session = manager.get_session(session_id)
         except KeyError as exc:
-            print(f"API: session {session_id} not found")
             raise HTTPException(status_code=404, detail="Session not found") from exc
         return {"session_id": session.session_id, "state": session.last_state or session.katrain.get_state()}
 
@@ -208,6 +246,15 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             session.katrain("new_game", size=request.size, handicap=request.handicap, komi=request.komi)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/edit-game")
+    def edit_game(request: EditGameRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("edit_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -332,11 +379,115 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    @app.post("/api/timer/pause")
+    def pause_timer(request: ToggleAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain.timer_paused = not session.katrain.timer_paused
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "paused": session.katrain.timer_paused}
+
     @app.post("/api/rotate")
     def rotate(request: ToggleAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             session.katrain("rotate")
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/node/delete")
+    def delete_node(request: NavRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("delete_node", node_id=request.node_id)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/node/prune")
+    def prune_branch(request: NavRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("prune_branch", node_id=request.node_id)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/node/make-main")
+    def make_main_branch(request: NavRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("make_main_branch", node_id=request.node_id)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/node/toggle-collapse")
+    def toggle_collapse(request: NavRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("toggle_collapse", node_id=request.node_id)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/ui/toggle")
+    def toggle_ui(request: UIToggleRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("toggle_ui", setting=request.setting)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/language")
+    def switch_language(request: LanguageRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("switch_lang", lang=request.lang)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "language": session.katrain.config("general/language")}
+
+    @app.post("/api/theme")
+    def switch_theme(request: ThemeRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("switch_theme", theme=request.theme)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "theme": session.katrain.config("trainer/theme")}
+
+    @app.post("/api/analysis/game")
+    def analyze_game(request: GameAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            kwargs = {
+                "visits": request.visits,
+                "mistakes_only": request.mistakes_only,
+                "move_range": request.move_range,
+            }
+            # remove None values
+            kwargs = {k: v for k, v in kwargs.items() if v is not None}
+            session.katrain("game_analysis", **kwargs)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/report")
+    def get_game_report(request: GameReportRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            report = session.katrain._do_game_report(depth_filter=request.depth_filter)
+        return {"session_id": session.session_id, "report": report}
+
+    @app.post("/api/mode/insert")
+    def set_insert_mode(request: InsertModeRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("insert_mode", mode=request.mode)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -362,12 +513,8 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         finally:
             session.sockets.discard(websocket)
 
-    @app.get("/")
-    def index():
-        return FileResponse(static_root / "index.html")
-
     # Catch-all for other static files (like vite.svg and JS/CSS in assets/)
-    app.mount("/", StaticFiles(directory=static_root), name="root")
+    app.mount("/", StaticFiles(directory=static_root, html=True), name="root")
 
     return app
 
@@ -390,14 +537,40 @@ def run_web():
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--reload", action="store_true")
-    parser.add_argument("--log-level", default="info")
+    parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
     parser.add_argument("--ui", default=None)
     args, _unknown = parser.parse_known_args()
 
     import uvicorn
 
-    print(f"Starting KaTrain Web UI on http://{args.host}:{args.port}")
+    host = args.host
+    port = args.port
+    
+    # Configure uvicorn logging to reduce noise
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["formatters"]["default"]["fmt"] = "% (levelname)s:     %(message)s"
+    log_config["formatters"]["access"]["fmt"] = "% (levelname)s:     %(message)s"
+
+    print(f"\n" + "=" * 50)
+    print(f"Starting KaTrain Web UI")
+    if host == "0.0.0.0":
+        print(f"Local access: http://127.0.0.1:{port}")
+        print(f"Network access: http://<your-ip-address>:{port}")
+    else:
+        print(f"Access: http://{host}:{port}")
+    print("=" * 50 + "\n")
+
     app = create_app(enable_engine=not args.disable_engine)
-    print("DEBUG: calling uvicorn.run")
-    uvicorn.run(app, host=args.host, port=args.port, reload=args.reload, log_level=args.log_level)
+    uvicorn.run(
+        app, 
+        host=host, 
+        port=port, 
+        reload=args.reload, 
+        log_level=args.log_level,
+        access_log=False # Disable access logs to keep console clean for KataGo logs
+    )
+
+
+if __name__ == "__main__":
+    run_web()

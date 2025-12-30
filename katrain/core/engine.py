@@ -209,6 +209,7 @@ class KataGoEngine(BaseEngine):
         self.shell = False
         self.write_queue = queue.Queue()
         self.thread_lock = threading.Lock()
+        self.has_human_model = False
         if config.get("altcommand", ""):
             self.command = config["altcommand"]
             self.shell = True
@@ -227,6 +228,7 @@ class KataGoEngine(BaseEngine):
                     self.command = shlex.split(
                         f'"{exe}" analysis -model "{model}" -human-model "{human_model_path}" -config "{cfg}" -override-config "homeDataDir={os.path.expanduser(DATA_FOLDER)}"'
                     )
+                    self.has_human_model = True
                 else:
                     self.katrain.log(f"Human model not found at {human_model_path}", -1)
                     # Fall back to regular command without human model
@@ -249,7 +251,7 @@ class KataGoEngine(BaseEngine):
         with self.thread_lock:
             self.write_queue = queue.Queue()
             try:
-                self.katrain.log(f"Starting KataGo with {self.command}", OUTPUT_DEBUG)
+                self.katrain.log(f"Starting local KataGo engine with command: {' '.join(self.command)}", OUTPUT_INFO)
                 startupinfo = None
                 if hasattr(subprocess, "STARTUPINFO"):
                     startupinfo = subprocess.STARTUPINFO()
@@ -262,6 +264,7 @@ class KataGoEngine(BaseEngine):
                     stderr=subprocess.PIPE,
                     shell=self.shell,
                 )
+                self.katrain.log(f"KataGo process started with PID: {self.katago_process.pid}", OUTPUT_INFO)
             except (FileNotFoundError, PermissionError, OSError) as e:
                 self.on_error(i18n._("Starting Kata failed").format(command=self.command, error=e), code="c")
                 return  # don't start

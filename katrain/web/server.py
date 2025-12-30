@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
@@ -19,7 +19,7 @@ class MoveRequest(BaseModel):
 
 class UndoRedoRequest(BaseModel):
     session_id: str
-    n_times: int = 1
+    n_times: Union[int, str] = 1
 
 
 class NavRequest(BaseModel):
@@ -50,6 +50,48 @@ class UpdatePlayerRequest(BaseModel):
     bw: str
     player_type: Optional[str] = None
     player_subtype: Optional[str] = None
+
+
+class ToggleAnalysisRequest(BaseModel):
+    session_id: str
+
+
+class ModeRequest(BaseModel):
+    session_id: str
+    mode: str
+
+
+class AnalyzeExtraRequest(BaseModel):
+    session_id: str
+    mode: str
+    kwargs: Optional[dict] = None
+
+
+class FindMistakeRequest(BaseModel):
+    session_id: str
+    fn: str = "redo"
+
+
+class SwitchBranchRequest(BaseModel):
+    session_id: str
+    direction: int
+
+
+class TsumegoRequest(BaseModel):
+    session_id: str
+    ko: bool = False
+    margin: Optional[int] = None
+
+
+class SelfPlayRequest(BaseModel):
+    session_id: str
+    until_move: Any
+    target_b_advantage: Optional[float] = None
+
+
+class SelectBoxRequest(BaseModel):
+    session_id: str
+    coords: List[int]
 
 
 def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
@@ -202,6 +244,99 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             session.katrain("update_player", bw=request.bw, player_type=request.player_type, player_subtype=request.player_subtype)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/continuous")
+    def toggle_continuous_analysis(request: ToggleAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain.pondering = not session.katrain.pondering
+            session.katrain.update_state()
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "pondering": session.katrain.pondering}
+
+    @app.post("/api/analysis/extra")
+    def analyze_extra(request: AnalyzeExtraRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            kwargs = request.kwargs or {}
+            session.katrain("analyze_extra", mode=request.mode, **kwargs)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/mode")
+    def set_mode(request: ModeRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain.play_analyze_mode = request.mode
+            session.katrain.update_state()
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "mode": session.katrain.play_analyze_mode}
+
+    @app.post("/api/nav/mistake")
+    def find_mistake(request: FindMistakeRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("find_mistake", fn=request.fn)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/nav/branch")
+    def switch_branch(request: SwitchBranchRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("switch_branch", direction=request.direction)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/tsumego")
+    def tsumego_frame(request: TsumegoRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("tsumego_frame", ko=request.ko, margin=request.margin)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/selfplay")
+    def selfplay(request: SelfPlayRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("selfplay_setup", until_move=request.until_move, target_b_advantage=request.target_b_advantage)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/region")
+    def set_region(request: SelectBoxRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("select_box", coords=request.coords)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/resign")
+    def resign(request: ToggleAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("resign")
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/rotate")
+    def rotate(request: ToggleAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("rotate")
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}

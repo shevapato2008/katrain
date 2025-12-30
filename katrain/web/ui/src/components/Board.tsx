@@ -282,8 +282,10 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
 
     const boardSize = gameState.board_size[0];
     const layout = boardLayout(canvas, boardSize);

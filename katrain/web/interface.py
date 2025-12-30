@@ -6,7 +6,14 @@ from katrain.web.kivy_compat import ensure_kivy
 ensure_kivy()
 
 from katrain.core.base_katrain import KaTrainBase
-from katrain.core.constants import OUTPUT_DEBUG, OUTPUT_ERROR, OUTPUT_INFO
+from katrain.core.constants import (
+    MODE_ANALYZE,
+    MODE_PLAY,
+    OUTPUT_DEBUG,
+    OUTPUT_ERROR,
+    OUTPUT_INFO,
+    PLAYING_NORMAL,
+)
 from katrain.core.engine import create_engine
 from katrain.core.game import Game
 
@@ -61,6 +68,8 @@ class WebKaTrain(KaTrainBase):
         self.update_state_callback: Optional[Callable] = None
         self.message_callback: Optional[Callable] = None
         self.controls = MockControls(self)
+        self.play_analyze_mode = MODE_PLAY
+        self.pondering = False
 
     def start(self):
         """Initializes the engine and starts a new game."""
@@ -89,6 +98,7 @@ class WebKaTrain(KaTrainBase):
 
     def log(self, message, level=OUTPUT_INFO):
         """Redirect logs to Python logger."""
+        message = str(message)
         if level == OUTPUT_ERROR:
             logger.error(message)
         elif level == OUTPUT_DEBUG:
@@ -135,7 +145,8 @@ class WebKaTrain(KaTrainBase):
             if h_node.move and h_node.move.coords:
                 coord_to_eval[h_node.move.coords] = h_node.points_lost
 
-        for player, coords in self.game.stones:
+        for move in self.game.stones:
+            player, coords = move.player, move.coords
             score_loss = coord_to_eval.get(tuple(coords)) if coords else None
             stones_with_eval.append([player, list(coords) if coords else None, score_loss])
 
@@ -206,7 +217,9 @@ class WebKaTrain(KaTrainBase):
                     "calculated_rank": p.calculated_rank
                 }
                 for bw, p in self.players_info.items()
-            }
+            },
+            "play_analyze_mode": self.play_analyze_mode,
+            "pondering": self.pondering,
         }
 
     def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None):
@@ -239,8 +252,24 @@ class WebKaTrain(KaTrainBase):
 
     def update_state(self, **_kwargs):
         """Called when the game state changes."""
+        self._do_update_state()
         if self.update_state_callback:
             self.update_state_callback(self.get_state())
+
+    def _do_update_state(self):
+        if not self.game or not self.game.current_node:
+            return
+        cn = self.game.current_node
+        if self.play_analyze_mode == MODE_PLAY:
+            next_player = self.players_info[cn.next_player]
+            if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result:
+                self._do_ai_move(cn)
+
+        if self.engine:
+            if getattr(self, "pondering", False):
+                self.game.analyze_extra("ponder")
+            else:
+                self.engine.stop_pondering()
 
     def __call__(self, message, *args, **kwargs):
         """
@@ -308,10 +337,64 @@ class WebKaTrain(KaTrainBase):
             self.log(f"Illegal Move: {e}", OUTPUT_ERROR)
 
     def _do_undo(self, n_times=1):
+        if n_times == "smart":
+            n_times = 1
+            if self.play_analyze_mode == MODE_PLAY and self.last_player_info.ai and self.next_player_info.human:
+                n_times = 2
         self.game.undo(n_times)
 
     def _do_redo(self, n_times=1):
         self.game.redo(n_times)
+
+    def _do_rotate(self):
+        # Rotation is primarily a UI concern, but we can store it or just trigger state update
+        self.update_state()
+
+    def _do_find_mistake(self, fn="redo"):
+        threshold = self.config("trainer/eval_thresholds")[-4]
+        getattr(self.game, fn)(9999, stop_on_mistake=threshold)
+
+    def _do_switch_branch(self, direction):
+        # In Kivy, this is in MoveTree
+        cn = self.game.current_node
+        if cn.parent:
+            siblings = cn.parent.ordered_children
+            idx = siblings.index(cn)
+            new_idx = (idx + direction) % len(siblings)
+            self.game.set_current_node(siblings[new_idx])
+
+    def _do_tsumego_frame(self, ko=False, margin=None):
+        from katrain.core.tsumego_frame import tsumego_frame_from_katrain_game
+        if not self.game.stones:
+            return
+        black_to_play_p = self.next_player_info.player == "B"
+        node, analysis_region = tsumego_frame_from_katrain_game(
+            self.game, self.game.komi, black_to_play_p, ko_p=ko, margin=margin
+        )
+        self.game.set_current_node(node)
+        self.play_analyze_mode = MODE_ANALYZE
+        if analysis_region:
+            flattened_region = [
+                analysis_region[0][1],
+                analysis_region[0][0],
+                analysis_region[1][1],
+                analysis_region[1][0],
+            ]
+            self.game.set_region_of_interest(flattened_region)
+        node.analyze(self.game.engines[node.next_player])
+
+    def _do_selfplay_setup(self, until_move, target_b_advantage=None):
+        self.game.selfplay(int(until_move) if isinstance(until_move, float) else until_move, target_b_advantage)
+
+    def _do_select_box(self, coords):
+        # coords should be [xmin, xmax, ymin, ymax]
+        self.game.set_region_of_interest(coords)
+
+    def _do_reset_analysis(self):
+        self.game.reset_current_analysis()
+
+    def _do_resign(self):
+        self.game.current_node.end_state = f"{self.game.current_node.player}+R"
 
     def _do_engine_recovery_popup(self, error_message, code):
         self.log(f"Engine Error: {error_message} (Code: {code})", OUTPUT_ERROR)

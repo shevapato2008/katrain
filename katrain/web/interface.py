@@ -71,6 +71,10 @@ class WebKaTrain(KaTrainBase):
     """
 
     def __init__(self, force_package_config=False, debug_level=None, enable_engine=True, **kwargs):
+        # Initialize attributes used in log() before super().__init__
+        self.message_callback: Optional[Callable] = None
+        self.enable_engine = enable_engine
+
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
         super().__init__(force_package_config, debug_level, **kwargs)
@@ -82,9 +86,7 @@ class WebKaTrain(KaTrainBase):
             pass
 
         self.engine = None
-        self.enable_engine = enable_engine
         self.update_state_callback: Optional[Callable] = None
-        self.message_callback: Optional[Callable] = None
         self.controls = MockControls(self)
         self.play_analyze_mode = MODE_PLAY
         self.pondering = False
@@ -428,6 +430,14 @@ class WebKaTrain(KaTrainBase):
     def _do_update_player(self, bw, player_type=None, player_subtype=None):
         self.update_player(bw, player_type=player_type, player_subtype=player_subtype)
 
+    def play_stone_sound(self):
+        if self.message_callback:
+            if self.game.last_capture:
+                self.message_callback("sound", {"sound": "capturing"})
+            elif not self.game.current_node.is_pass:
+                import random
+                self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+
     def _do_ai_move(self, node=None):
         if node is None or self.game.current_node == node:
             mode = self.next_player_info.strategy
@@ -435,6 +445,7 @@ class WebKaTrain(KaTrainBase):
             if settings is not None:
                 from katrain.core.ai import generate_ai_move
                 generate_ai_move(self.game, mode, settings)
+                self.play_stone_sound()
             else:
                 self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 
@@ -442,12 +453,7 @@ class WebKaTrain(KaTrainBase):
         from katrain.core.game import IllegalMoveException, Move
         try:
             self.game.play(Move(coords, player=self.next_player_info.player))
-            if self.message_callback:
-                if self.game.last_capture:
-                    self.message_callback("sound", {"sound": "capturing"})
-                else:
-                    import random
-                    self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+            self.play_stone_sound()
         except IllegalMoveException as e:
             self.log(f"Illegal Move: {e}", OUTPUT_ERROR)
 

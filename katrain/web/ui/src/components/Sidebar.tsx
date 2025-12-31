@@ -25,15 +25,15 @@ interface SidebarProps {
 }
 
 const LANGUAGES = [
-  { code: 'en', flag: '🇬🇧', name: 'English' },
-  { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
-  { code: 'fr', flag: '🇫🇷', name: 'Français' },
-  { code: 'ru', flag: '🇷🇺', name: 'Русский' },
-  { code: 'cn', flag: '🇨🇳', name: '简体中文' },
-  { code: 'tw', flag: '🇹🇼', name: '繁體中文' },
-  { code: 'ko', flag: '🇰🇷', name: '한국어' },
-  { code: 'jp', flag: '🇯🇵', name: '日本語' },
-  { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
+  { code: 'en', flag: 'flag-uk.png', name: 'English' },
+  { code: 'de', flag: 'flag-de.png', name: 'Deutsch' },
+  { code: 'fr', flag: 'flag-fr.png', name: 'Français' },
+  { code: 'ru', flag: 'flag-ru.png', name: 'Русский' },
+  { code: 'cn', flag: 'flag-cn.png', name: '简体中文' },
+  { code: 'tw', flag: 'flag-tw.png', name: '繁體中文' },
+  { code: 'ko', flag: 'flag-ko.png', name: '한국어' },
+  { code: 'jp', flag: 'flag-jp.png', name: '日本語' },
+  { code: 'tr', flag: 'flag-tr.png', name: 'Türkçe' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange }) => {
@@ -170,9 +170,9 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
               <IconButton 
                 size="small" 
                 onClick={() => onLanguageChange(lang.code)}
-                sx={{ fontSize: '1.2rem', p: 0.5, bgcolor: gameState?.language === lang.code ? '#e0e0e0' : 'transparent' }}
+                sx={{ p: 0.5, bgcolor: gameState?.language === lang.code ? '#e0e0e0' : 'transparent', borderRadius: 1 }}
               >
-                {lang.flag}
+                <img src={`/assets/img/flags/${lang.flag}`} alt={lang.name} style={{ width: 24, height: 16, objectFit: 'cover' }} />
               </IconButton>
             </Tooltip>
           ))}

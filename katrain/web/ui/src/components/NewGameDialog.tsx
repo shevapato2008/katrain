@@ -3,6 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, 
   Button, TextField, MenuItem, Box 
 } from '@mui/material';
+import { i18n } from '../i18n';
 
 interface NewGameDialogProps {
   open: boolean;
@@ -21,12 +22,12 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, onClose, onConfirm 
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>New Game</DialogTitle>
+      <DialogTitle>{i18n.t("New Game title")}</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             select
-            label="Board Size"
+            label={i18n.t("Board Size")}
             value={size}
             onChange={(e) => setSize(Number(e.target.value))}
             fullWidth
@@ -37,7 +38,7 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, onClose, onConfirm 
           </TextField>
           
           <TextField
-            label="Handicap"
+            label={i18n.t("Handicap")}
             type="number"
             value={handicap}
             onChange={(e) => setHandicap(Number(e.target.value))}
@@ -46,7 +47,7 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, onClose, onConfirm 
           />
 
           <TextField
-            label="Komi"
+            label={i18n.t("komi")}
             type="number"
             value={komi}
             onChange={(e) => setKomi(Number(e.target.value))}
@@ -56,8 +57,8 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, onClose, onConfirm 
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleConfirm} variant="contained">Start</Button>
+        <Button onClick={onClose}>{i18n.t("Cancel")}</Button>
+        <Button onClick={handleConfirm} variant="contained">{i18n.t("Start")}</Button>
       </DialogActions>
     </Dialog>
   );

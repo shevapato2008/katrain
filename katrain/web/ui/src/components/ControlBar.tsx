@@ -11,6 +11,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import FlagIcon from '@mui/icons-material/Flag';
 import UndoIcon from '@mui/icons-material/Undo';
+import { i18n } from '../i18n';
 
 interface ControlBarProps {
   onAction: (action: string) => void;
@@ -21,12 +22,12 @@ const ControlBar: React.FC<ControlBarProps> = ({ onAction, nextPlayer }) => {
   return (
     <Box sx={{ height: 60, borderTop: '1px solid #ddd', display: 'flex', alignItems: 'center', px: 2, bgcolor: '#fff' }}>
       <Box sx={{ display: 'flex', gap: 0.5 }}>
-        <Tooltip title="Pass">
+        <Tooltip title={i18n.t("Pass")}>
           <IconButton onClick={() => onAction('pass')} size="small">
-            <Typography variant="button" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>PASS</Typography>
+            <Typography variant="button" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>{i18n.t("PASS")}</Typography>
           </IconButton>
         </Tooltip>
-        <Tooltip title="Resign">
+        <Tooltip title={i18n.t("Resign")}>
           <IconButton onClick={() => onAction('resign')} size="small" color="error">
             <FlagIcon fontSize="small" />
           </IconButton>
@@ -34,19 +35,19 @@ const ControlBar: React.FC<ControlBarProps> = ({ onAction, nextPlayer }) => {
       </Box>
 
       <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
-        <Tooltip title="Previous Mistake">
+        <Tooltip title={i18n.t("Previous Mistake")}>
           <IconButton onClick={() => onAction('mistake-prev')} size="small"><WarningAmberIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="Start of Game">
+        <Tooltip title={i18n.t("Start of Game")}>
           <IconButton onClick={() => onAction('start')} size="small"><SkipPreviousIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="Back 10 Moves">
+        <Tooltip title={i18n.t("Back 10 Moves")}>
           <IconButton onClick={() => onAction('back-10')} size="small"><FastRewindIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="Undo (Smart)">
+        <Tooltip title={i18n.t("Undo (Smart)")}>
           <IconButton onClick={() => onAction('undo')} color="primary" size="small"><UndoIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="Back 1 Move">
+        <Tooltip title={i18n.t("Back 1 Move")}>
           <IconButton onClick={() => onAction('back')} size="small"><ArrowBackIcon fontSize="small" /></IconButton>
         </Tooltip>
         
@@ -60,29 +61,29 @@ const ControlBar: React.FC<ControlBarProps> = ({ onAction, nextPlayer }) => {
           }} />
         </Box>
 
-        <Tooltip title="Forward 1 Move">
+        <Tooltip title={i18n.t("Forward 1 Move")}>
           <IconButton onClick={() => onAction('forward')} size="small"><ArrowForwardIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="Forward 10 Moves">
+        <Tooltip title={i18n.t("Forward 10 Moves")}>
           <IconButton onClick={() => onAction('forward-10')} size="small"><FastForwardIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="End of Game">
+        <Tooltip title={i18n.t("End of Game")}>
           <IconButton onClick={() => onAction('end')} size="small"><SkipNextIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="AI Move">
+        <Tooltip title={i18n.t("AI Move")}>
           <IconButton onClick={() => onAction('ai-move')} color="primary" size="small">
             <PsychologyIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Next Mistake">
+        <Tooltip title={i18n.t("Next Mistake")}>
           <IconButton onClick={() => onAction('mistake-next')} size="small"><WarningAmberIcon fontSize="small" /></IconButton>
         </Tooltip>
-        <Tooltip title="Rotate Board">
+        <Tooltip title={i18n.t("Rotate Board")}>
           <IconButton onClick={() => onAction('rotate')} size="small"><RotateRightIcon fontSize="small" /></IconButton>
         </Tooltip>
       </Box>
 
-      <Typography variant="caption" color="textSecondary" sx={{ minWidth: 80, textAlign: 'right' }}>Engine: Idle</Typography>
+      <Typography variant="caption" color="textSecondary" sx={{ minWidth: 80, textAlign: 'right' }}>{i18n.t("Engine")}: {i18n.t("Idle")}</Typography>
     </Box>
   );
 };

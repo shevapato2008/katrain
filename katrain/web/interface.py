@@ -98,6 +98,10 @@ class WebKaTrain(KaTrainBase):
         self.show_move_numbers = True
         self.show_coordinates = True
         self.zen_mode = False
+        
+        # Initialize language from config
+        lang = self.config("general/lang") or self.config("general/language") or "en"
+        i18n.switch_lang(lang)
 
     def start(self):
         """Initializes the engine and starts a new game."""

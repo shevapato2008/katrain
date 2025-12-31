@@ -110,8 +110,14 @@ export const API = {
     apiPost("/api/node/toggle-collapse", { session_id: sessionId, node_id: nodeId }),
   toggleUI: (sessionId: string, setting: string): Promise<SessionResponse> =>
     apiPost("/api/ui/toggle", { session_id: sessionId, setting }),
-  analyzeGame: (sessionId: string, visits?: number, mistakesOnly: boolean = false): Promise<SessionResponse> =>
-    apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only: mistakesOnly }),
-  getGameReport: (sessionId: string, depthFilter?: number[]): Promise<{ session_id: string; report: any }> =>
-    apiPost("/api/analysis/report", { session_id: sessionId, depth_filter: depthFilter }),
+  analyzeGame: (sessionId: string, visits?: number, mistakes_only: boolean = false): Promise<SessionResponse> => 
+    apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only }),
+  getGameReport: (sessionId: string, depth_filter?: number[]): Promise<any> => 
+    apiPost("/api/analysis/report", { session_id: sessionId, depth_filter }),
+  getTranslations: async (lang: string) => {
+    const params = new URLSearchParams({ lang });
+    const response = await fetch(`/api/translations?${params.toString()}`);
+    if (!response.ok) throw new Error("Failed to fetch translations");
+    return response.json();
+  }
 };

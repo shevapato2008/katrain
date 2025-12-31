@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import { type PlayerInfo } from '../api';
+import { i18n } from '../i18n';
 
 interface PlayerCardProps {
   player: 'B' | 'W';
@@ -32,7 +33,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active 
             mr: 1
           }} />
           <Typography variant="body2" fontWeight="bold" noWrap sx={{ maxWidth: 80 }}>
-            {info.name || (isBlack ? 'Black' : 'White')}
+            {info.name || (isBlack ? i18n.t('Black') : i18n.t('White'))}
           </Typography>
         </Box>
         <Typography variant="caption" sx={{ opacity: 0.8 }}>
@@ -40,8 +41,8 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active 
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-        <Typography variant="caption">Captures: {captures}</Typography>
-        <Typography variant="caption">{info.player_type}</Typography>
+        <Typography variant="caption">{i18n.t("Captures")}: {captures}</Typography>
+        <Typography variant="caption">{i18n.t(info.player_type)}</Typography>
       </Box>
     </Paper>
   );

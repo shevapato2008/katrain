@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography } from '@mui/material';
 import { API, type GameState } from './api';
+import { i18n } from './i18n';
 import Board from './components/Board';
 import Sidebar from './components/Sidebar';
 import ControlBar from './components/ControlBar';
@@ -32,6 +33,7 @@ function App() {
   const [isAISettingsDialogOpen, setAISettingsDialogOpen] = useState(false);
   const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
   const [gameReport, setGameReport] = useState<any>(null);
+
   const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({
     children: false,
     eval: true,
@@ -65,6 +67,11 @@ function App() {
         const data = await API.createSession();
         setSessionId(data.session_id);
         setGameState(data.state);
+        
+        const initialLang = data.state?.language || "en";
+        await i18n.loadTranslations(initialLang);
+
+        
         setStatusMessage("Ready");
 
         // Setup WebSocket
@@ -256,6 +263,8 @@ function App() {
     if (!sessionId) return;
     try {
       const data = await API.updateConfig(sessionId, 'general/language', lang);
+      await i18n.loadTranslations(lang);
+
       setGameState(data.state);
     } catch (error) {
       console.error("Language change failed", error);
@@ -267,7 +276,7 @@ function App() {
       <CssBaseline />
       {!sessionId || !gameState ? (
         <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#cfd8dc' }}>
-          <Typography variant="h5">Initializing KaTrain...</Typography>
+          <Typography variant="h5">{i18n.t("Initializing KaTrain...")}</Typography>
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
@@ -332,7 +341,7 @@ function App() {
             
             <Divider />
             <Box sx={{ p: 1, bgcolor: '#fff' }}>
-              <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>GRAPH</Typography>
+              <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>{i18n.t("GRAPH")}</Typography>
               <ScoreGraph 
                 gameState={gameState} 
                 onNavigate={handleNavigate} 

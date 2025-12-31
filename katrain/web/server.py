@@ -451,6 +451,16 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
             session.last_state = state
         return {"session_id": session.session_id, "state": state, "language": session.katrain.config("general/language")}
 
+    @app.get("/api/translations")
+    def get_translations(lang: str):
+        from katrain.core.lang import i18n
+        # Switch language temporarily to get the catalog if needed, 
+        # but i18n.switch_lang is global.
+        # However, the frontend will call this when it wants to refresh its labels.
+        i18n.switch_lang(lang)
+        catalog = getattr(i18n.ugettext.__self__, "_catalog", {})
+        return {"lang": lang, "translations": catalog}
+
     @app.post("/api/theme")
     def switch_theme(request: ThemeRequest):
         session = _get_session_or_404(manager, request.session_id)

@@ -8,6 +8,7 @@ import ContentCutIcon from '@mui/icons-material/ContentCut';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import { type GameState } from '../api';
+import { i18n } from '../i18n';
 
 interface AnalysisPanelProps {
   gameState: GameState | null;
@@ -35,16 +36,16 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#f5f5f5' }}>
       <Box sx={{ p: 0.5, bgcolor: '#e0e0e0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', gap: 0 }}>
-          <Tooltip title="Delete Node">
+          <Tooltip title={i18n.t("Delete Node")}>
             <IconButton size="small" onClick={() => onNodeAction?.('delete')}><DeleteIcon fontSize="small" /></IconButton>
           </Tooltip>
-          <Tooltip title="Prune Branch">
+          <Tooltip title={i18n.t("Prune Branch")}>
             <IconButton size="small" onClick={() => onNodeAction?.('prune')}><ContentCutIcon fontSize="small" /></IconButton>
           </Tooltip>
-          <Tooltip title="Make Main Branch">
+          <Tooltip title={i18n.t("Make Main Branch")}>
             <IconButton size="small" onClick={() => onNodeAction?.('make-main')}><CallMergeIcon fontSize="small" /></IconButton>
           </Tooltip>
-          <Tooltip title="Collapse/Expand Branch">
+          <Tooltip title={i18n.t("Collapse/Expand Branch")}>
             <IconButton size="small" onClick={() => onNodeAction?.('toggle-collapse')}><UnfoldLessIcon fontSize="small" /></IconButton>
           </Tooltip>
         </Box>
@@ -53,19 +54,19 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
       <Box sx={{ p: 1, bgcolor: '#fff', borderBottom: '1px solid #ddd' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="textSecondary">Win Rate</Typography>
+            <Typography variant="caption" color="textSecondary">{i18n.t("Info:winrate").split('\n')[0]}</Typography>
             <Typography variant="body2" fontWeight="bold" sx={{ color: '#2e7d32' }}>
               {analysis ? `${(analysis.winrate * 100).toFixed(1)}%` : '--'}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="textSecondary">Estimated Score</Typography>
+            <Typography variant="caption" color="textSecondary">{i18n.t("Info:score").split('\n')[0]}</Typography>
             <Typography variant="body2" fontWeight="bold" sx={{ color: '#0288d1' }}>
               {analysis ? (analysis.score >= 0 ? `B+${analysis.score.toFixed(1)}` : `W+${Math.abs(analysis.score).toFixed(1)}`) : '--'}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="textSecondary">Points Lost</Typography>
+            <Typography variant="caption" color="textSecondary">{i18n.t("Info:point loss").split('\n')[0]}</Typography>
             <Typography variant="body2" fontWeight="bold" sx={{ color: pointsLost && pointsLost > 2 ? '#d32f2f' : '#fbc02d' }}>
               {pointsLost !== null ? pointsLost.toFixed(1) : '--'}
             </Typography>
@@ -75,9 +76,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#fff' }}>
         <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" sx={{ minHeight: 32 }}>
-          <Tab label="Info" sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
-          <Tab label="Details" sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
-          <Tab label="Notes" sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
+          <Tab label={i18n.t("Info")} sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
+          <Tab label={i18n.t("Details")} sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
+          <Tab label={i18n.t("Notes")} sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
         </Tabs>
       </Box>
 
@@ -89,10 +90,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }}>Move</TableCell>
-                      <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }} align="right">Loss</TableCell>
+                      <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }}>{i18n.t("Move")}</TableCell>
+                      <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }} align="right">{i18n.t("Loss")}</TableCell>
                       <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }} align="right">Win%</TableCell>
-                      <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }} align="right">Visits</TableCell>
+                      <TableCell sx={{ fontSize: '0.7rem', py: 0.5, fontWeight: 'bold' }} align="right">{i18n.t("Visits")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -111,7 +112,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
               </TableContainer>
             ) : (
               <Box sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="caption" color="textSecondary">Analyzing move...</Typography>
+                <Typography variant="caption" color="textSecondary">{i18n.t("Analyzing move...")}</Typography>
               </Box>
             )}
           </Box>
@@ -119,7 +120,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
         
         {tabValue === 1 && (
           <Box sx={{ p: 2, overflow: 'auto' }}>
-            <Typography variant="caption" color="textSecondary">Detailed analysis data will appear here.</Typography>
+            <Typography variant="caption" color="textSecondary">{i18n.t("Detailed analysis data will appear here.")}</Typography>
           </Box>
         )}
 
@@ -136,7 +137,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
                 fontSize: '0.8rem',
                 resize: 'none'
               }}
-              placeholder="Your SGF notes for this position here."
+              placeholder={i18n.t("Your SGF notes for this position here.")}
               value={gameState.note || ''}
               readOnly
             />

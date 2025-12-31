@@ -24,6 +24,18 @@ export interface GameState {
   end_result: string | null;
   children: [string, [number, number] | null][];
   players_info: { B: PlayerInfo; W: PlayerInfo };
+  note: string;
+  ui_state: {
+    show_children: boolean;
+    show_dots: boolean;
+    show_hints: boolean;
+    show_policy: boolean;
+    show_ownership: boolean;
+    show_move_numbers: boolean;
+    show_coordinates: boolean;
+    zen_mode: boolean;
+  };
+  language: string;
 }
 
 export interface SessionResponse {

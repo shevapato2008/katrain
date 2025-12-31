@@ -45,6 +45,21 @@ function App() {
   });
 
   useEffect(() => {
+    if (gameState && gameState.ui_state) {
+      setAnalysisToggles(prev => ({
+        ...prev,
+        children: gameState.ui_state.show_children,
+        eval: gameState.ui_state.show_dots,
+        hints: gameState.ui_state.show_hints,
+        policy: gameState.ui_state.show_policy,
+        ownership: gameState.ui_state.show_ownership,
+        coords: gameState.ui_state.show_coordinates,
+        numbers: gameState.ui_state.show_move_numbers,
+      }));
+    }
+  }, [gameState]);
+
+  useEffect(() => {
     const initSession = async () => {
       try {
         const data = await API.createSession();
@@ -197,14 +212,18 @@ function App() {
     }
   };
 
-  const handleToggleChange = (toggle: string) => {
+  const handleToggleChange = async (toggle: string) => {
+    // Optimistic update
     setAnalysisToggles(prev => ({ ...prev, [toggle]: !prev[toggle] }));
     if (sessionId) {
-      // Mapping toggle names to backend config keys if necessary, or using them directly
-      // Based on interface.py, it uses self.show_xxx, but update_config can set them if we add them to _do_toggle_ui or similar.
-      // Wait, interface.py has _do_toggle_ui(setting) which toggles show_{setting}.
-      // We should use an endpoint for this. We have /api/ui/toggle.
-      API.toggleUI(sessionId, toggle).catch(e => console.error("Toggle UI failed", e));
+      try {
+        const data = await API.toggleUI(sessionId, toggle);
+        setGameState(data.state);
+      } catch (error) {
+        console.error("Toggle UI failed", error);
+        // Revert on error
+        setAnalysisToggles(prev => ({ ...prev, [toggle]: !prev[toggle] }));
+      }
     }
   };
 

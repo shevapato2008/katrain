@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip } from '@mui/material';
+import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip, IconButton } from '@mui/material';
 import { type GameState } from '../api';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FileOpenIcon from '@mui/icons-material/FileOpen';

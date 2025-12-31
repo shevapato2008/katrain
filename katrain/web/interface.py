@@ -546,9 +546,18 @@ class WebKaTrain(KaTrainBase):
                 parent.add_shortcut(node)
 
     def _do_toggle_ui(self, setting):
-        attr = f"show_{setting}"
+        # Map frontend keys to backend attributes
+        mapping = {
+            "eval": "dots",
+            "coords": "coordinates",
+            "numbers": "move_numbers"
+        }
+        key = mapping.get(setting, setting)
+        attr = f"show_{key}"
+        
         if setting == "zen_mode":
             attr = "zen_mode"
+            
         if hasattr(self, attr):
             setattr(self, attr, not getattr(self, attr))
 

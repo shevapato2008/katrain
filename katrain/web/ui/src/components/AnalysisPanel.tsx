@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Box, Typography, Divider, Paper, Table, TableBody, TableCell, 
+  Box, Typography, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, Tooltip, Tabs, Tab 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -23,8 +23,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
   const topMoves = analysis?.moves || [];
   
   // Get point loss for current node
-  const currentNodeId = gameState.current_node_id;
-  const currentNode = gameState.history.find(h => h.node_id === currentNodeId);
   // Actually stones array in state has score_loss
   const currentStone = gameState.stones.find(s => s[1] && gameState.last_move && s[1][0] === gameState.last_move[0] && s[1][1] === gameState.last_move[1]);
   const pointsLost = currentStone ? currentStone[2] : null;
@@ -76,7 +74,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#fff' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" size="small" sx={{ minHeight: 32 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" sx={{ minHeight: 32 }}>
           <Tab label="Info" sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
           <Tab label="Details" sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />
           <Tab label="Notes" sx={{ py: 0.5, minHeight: 32, fontSize: '0.75rem' }} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, IconButton, FormControlLabel, Checkbox } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 
 interface TopBarProps {
@@ -20,18 +20,35 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
           KaTrain <Typography variant="caption" sx={{ ml: 1, mt: 0.5 }}>WEB UI</Typography>
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-          {['children', 'eval', 'hints', 'policy', 'ownership', 'coords', 'numbers', 'score', 'winrate'].map((t) => (
-            <Button 
-              key={t}
-              size="small" 
-              variant={analysisToggles[t] ? "contained" : "outlined"}
-              onClick={() => onToggleChange(t)}
-              sx={{ px: 1, minWidth: 0 }}
-            >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </Button>
-          ))}
+        <Box sx={{ display: 'flex', gap: 2, mr: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          {['children', 'eval', 'hints', 'policy', 'ownership', 'coords', 'numbers', 'score', 'winrate'].map((t) => {
+            const labels: Record<string, string> = {
+              children: 'Next Move',
+              eval: 'Show Dots',
+              hints: 'Top Moves',
+              policy: 'Policy Moves',
+              ownership: 'Expected Territory',
+              coords: 'Coords',
+              numbers: 'Numbers',
+              score: 'Score',
+              winrate: 'Win Rate'
+            };
+            return (
+              <FormControlLabel
+                key={t}
+                control={
+                  <Checkbox
+                    checked={analysisToggles[t] || false}
+                    onChange={() => onToggleChange(t)}
+                    size="small"
+                    sx={{ p: 0.5 }}
+                  />
+                }
+                label={<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{labels[t] || t}</Typography>}
+                sx={{ mr: 0, ml: 0.5 }}
+              />
+            );
+          })}
         </Box>
 
         <Typography variant="body2" color="textSecondary" noWrap sx={{ maxWidth: 300 }}>

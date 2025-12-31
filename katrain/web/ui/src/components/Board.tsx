@@ -55,7 +55,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
   }, [gameState, analysisToggles]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
-    const gridMargins = { x: [1.5, 0.75], y: [1.5, 0.75] };
+    const gridMargins = { x: [2.0, 0.5], y: [2.0, 0.5] }; // Left, Right, Bottom, Top
     const xGridSpaces = boardSize - 1 + gridMargins.x[0] + gridMargins.x[1];
     const yGridSpaces = boardSize - 1 + gridMargins.y[0] + gridMargins.y[1];
     const gridSize = Math.floor(Math.min(canvas.width / xGridSpaces, canvas.height / yGridSpaces));
@@ -225,22 +225,17 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
     }
 
     // Last Move
-    if (gameState.last_move && imagesRef.current.lastMove) {
+    if (gameState.last_move) {
       const pos = gridToCanvas(layout, gameState.last_move[0], gameState.last_move[1], boardSize);
-      const size = layout.gridSize * 0.28;
-      ctx.drawImage(imagesRef.current.lastMove, pos.x - size, pos.y - size, size * 2, size * 2);
+      const lastStone = gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
+      const lastPlayer = lastStone ? lastStone[0] : null;
 
-      // Move number for last move if not showing all
-      const moveNumber = gameState.current_node_index;
-      if (moveNumber > 0 && !analysisToggles.numbers) {
-        const lastStone = gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
-        const lastPlayer = lastStone ? lastStone[0] : null;
-        ctx.fillStyle = lastPlayer === "B" ? "white" : "black";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = `bold ${Math.max(8, layout.gridSize * 0.25)}px sans-serif`;
-        ctx.fillText(moveNumber.toString(), pos.x, pos.y);
-      }
+      const circleRadius = layout.gridSize * 0.35; // SET SIZE HERE (0.35 * gridSize)
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, circleRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = lastPlayer === "B" ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)";
+      ctx.lineWidth = Math.max(2, layout.gridSize * 0.08);
+      ctx.stroke();
     }
   };
 
@@ -273,18 +268,16 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
   const drawCoordinates = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
     const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
     ctx.fillStyle = "rgba(0,0,0,0.8)";
-    ctx.font = `${Math.max(10, layout.gridSize * 0.35)}px sans-serif`;
+    ctx.font = `bold ${Math.max(14, layout.gridSize * 0.6)}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (let i = 0; i < boardSize; i++) {
-      const pos = gridToCanvas(layout, i, boardSize - 1, boardSize);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.gridSize * 0.35);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 0.35);
+      const pos = gridToCanvas(layout, i, 0, boardSize);
+      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 1.0);
     }
     for (let j = 0; j < boardSize; j++) {
       const pos = gridToCanvas(layout, 0, j, boardSize);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 0.35, pos.y);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.35, pos.y);
+      ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 1.0, pos.y);
     }
   };
 

@@ -92,12 +92,12 @@ class WebKaTrain(KaTrainBase):
         self.pondering = False
         self.timer_paused = True
         self.last_timer_update = time.time()
-        self.show_children = True
-        self.show_dots = True
-        self.show_hints = True
+        self.show_children = False
+        self.show_dots = False
+        self.show_hints = False
         self.show_policy = False
         self.show_ownership = False
-        self.show_move_numbers = True
+        self.show_move_numbers = False
         self.show_coordinates = True
         self.zen_mode = False
         

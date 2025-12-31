@@ -36,8 +36,8 @@ function App() {
 
   const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({
     children: false,
-    eval: true,
-    hints: true,
+    eval: false,
+    hints: false,
     policy: false,
     ownership: false,
     coords: true,

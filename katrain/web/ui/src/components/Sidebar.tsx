@@ -20,6 +20,7 @@ interface SidebarProps {
   onAISettings: () => void;
   onAnalyzeGame: () => void;
   onGameReport: () => void;
+  onLanguageChange: (lang: string) => void;
 }
 
 const LANGUAGES = [
@@ -34,7 +35,7 @@ const LANGUAGES = [
   { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport }) => {
+const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,7 +166,11 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1 }}>
           {LANGUAGES.map(lang => (
             <Tooltip key={lang.code} title={lang.name}>
-              <IconButton size="small" sx={{ fontSize: '1.2rem', p: 0.5, bgcolor: gameState?.language === lang.code ? '#e0e0e0' : 'transparent' }}>
+              <IconButton 
+                size="small" 
+                onClick={() => onLanguageChange(lang.code)}
+                sx={{ fontSize: '1.2rem', p: 0.5, bgcolor: gameState?.language === lang.code ? '#e0e0e0' : 'transparent' }}
+              >
                 {lang.flag}
               </IconButton>
             </Tooltip>

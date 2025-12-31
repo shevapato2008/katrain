@@ -252,6 +252,16 @@ function App() {
     }
   };
 
+  const handleLanguageChange = async (lang: string) => {
+    if (!sessionId) return;
+    try {
+      const data = await API.updateConfig(sessionId, 'general/language', lang);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Language change failed", error);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -278,6 +288,7 @@ function App() {
               onAISettings={() => setAISettingsDialogOpen(true)}
               onAnalyzeGame={handleAnalyzeGame}
               onGameReport={handleGameReport}
+              onLanguageChange={handleLanguageChange}
             />
           )}
           

@@ -171,20 +171,20 @@ class WebKaTrain(KaTrainBase):
             })
         current_node_index = len(history) - 1
 
-        # Format stones with evaluation
+        # Format stones with evaluation and move numbers
         stones_with_eval = []
-        # We can reconstruct board state evaluation by looking at the nodes in the current path
-        # Actually, self.game.stones returns stones on the board for the current node.
-        # To get evaluation for each stone, we map coordinates to nodes in history.
-        coord_to_eval = {}
-        for h_node in nodes:
+        # To get evaluation and move number for each stone, we map coordinates to nodes in history.
+        coord_to_info = {}
+        for idx, h_node in enumerate(nodes):
             if h_node.move and h_node.move.coords:
-                coord_to_eval[h_node.move.coords] = h_node.points_lost
+                coord_to_info[h_node.move.coords] = {"score_loss": h_node.points_lost, "move_number": idx}
 
         for move in self.game.stones:
             player, coords = move.player, move.coords
-            score_loss = coord_to_eval.get(tuple(coords)) if coords else None
-            stones_with_eval.append([player, list(coords) if coords else None, score_loss])
+            info = coord_to_info.get(tuple(coords), {})
+            score_loss = info.get("score_loss")
+            move_number = info.get("move_number")
+            stones_with_eval.append([player, list(coords) if coords else None, score_loss, move_number])
 
         # Format analysis data for the frontend
         analysis = None
@@ -613,6 +613,11 @@ class WebKaTrain(KaTrainBase):
             self._config[cat][key] = value
         else:
             self._config[setting] = value
+
+        # Handle language change
+        if setting == "general/language":
+            i18n.switch_lang(value)
+            self.update_state()
         
         # Logic from ConfigPopup.update_config to restart engine if needed
         ignore = {"max_visits", "fast_visits", "max_time", "enable_ownership", "wide_root_noise"}

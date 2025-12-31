@@ -180,7 +180,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
 
     // Stones
     const stoneSize = layout.gridSize * 0.505;
-    gameState.stones.forEach(([player, coords, scoreLoss], index) => {
+    gameState.stones.forEach(([player, coords, scoreLoss, moveNumber], index) => {
       if (!coords) return;
       const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
       const img = player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
@@ -192,11 +192,9 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
         ctx.font = `bold ${Math.max(8, layout.gridSize * 0.25)}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        // We need the actual move number from the history or stone index.
-        // For now using index+1 as a proxy, but better to use node index if available.
-        // Actually gameState.stones might not be in order.
-        // Better: history stores node_id. We can find the node index for this coordinate.
-        ctx.fillText((index + 1).toString(), pos.x, pos.y);
+        // Use the actual move number from backend if available, fallback to index+1
+        const numToDisplay = moveNumber !== null && moveNumber !== undefined ? moveNumber : index + 1;
+        ctx.fillText(numToDisplay.toString(), pos.x, pos.y);
       }
 
       // Eval dots

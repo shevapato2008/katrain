@@ -15,7 +15,7 @@ export interface GameState {
   current_node_index: number;
   history: { node_id: number; score: number | null; winrate: number | null }[];
   player_to_move: string;
-  stones: [string, [number, number] | null, number | null][];
+  stones: [string, [number, number] | null, number | null, number | null][];
   last_move: [number, number] | null;
   prisoner_count: { B: number; W: number };
   analysis: any;

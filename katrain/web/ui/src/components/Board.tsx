@@ -237,6 +237,23 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
       ctx.lineWidth = Math.max(2, layout.gridSize * 0.08);
       ctx.stroke();
     }
+
+    // Game End Result
+    if (gameState.end_result) {
+      const centerX = layout.offsetX + layout.boardWidth / 2;
+      const centerY = layout.offsetY + layout.boardHeight / 2;
+
+      // Overlay
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Text
+      ctx.fillStyle = "white";
+      ctx.font = \`bold \${layout.gridSize * 1.5}px sans-serif\`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(gameState.end_result, centerX, centerY);
+    }
   };
 
   // Helper draw functions

@@ -249,7 +249,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
 
       // Text
       ctx.fillStyle = "white";
-      ctx.font = \`bold \${layout.gridSize * 1.5}px sans-serif\`;
+      ctx.font = `bold ${layout.gridSize * 1.5}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(gameState.end_result, centerX, centerY);

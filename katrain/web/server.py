@@ -160,7 +160,7 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         try:
             from katrain.web.interface import WebKaTrain
             # Just init to trigger imports and config loading
-            WebKaTrain(force_package_config=True, enable_engine=False)
+            WebKaTrain(force_package_config=False, enable_engine=False)
         except Exception as e:
             logging.getLogger("katrain_web").error(f"Kivy pre-initialization failed: {e}")
 

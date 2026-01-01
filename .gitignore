@@ -160,3 +160,4 @@ dmypy.json
 
 # Gemini
 .gemini-clipboard/
+.playwright-mcp/

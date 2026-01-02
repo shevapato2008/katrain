@@ -52,6 +52,14 @@ class BaseEngine:  # some common elements between analysis and contribute engine
         self.config = config
         self.base_priority = 0
         self.override_settings = {}
+        self.game_id = None
+        self.user_id = None
+
+    def set_game_id(self, game_id):
+        self.game_id = game_id
+
+    def set_user_id(self, user_id):
+        self.user_id = user_id
 
     @staticmethod
     def get_rules(ruleset):
@@ -183,6 +191,10 @@ class BaseEngine:  # some common elements between analysis and contribute engine
             "overrideSettings": {**settings, **(extra_settings or {})},
             self.PONDER_KEY: ponder,
         }
+        if self.game_id:
+            query["gameId"] = self.game_id
+        if self.user_id:
+            query["userId"] = self.user_id
         if report_every is not None:
             query["reportDuringSearchEvery"] = report_every
         if avoid:

@@ -3,6 +3,7 @@ import math
 import os
 import re
 import threading
+import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
@@ -31,7 +32,7 @@ from katrain.core.engine import BaseEngine
 from katrain.core.game_node import GameNode
 from katrain.core.lang import i18n, rank_label
 from katrain.core.sgf_parser import SGF, Move
-from katrain.core.utils import var_to_grid, weighted_selection_without_replacement
+from katrain.core.utils import var_to_grid, weighted_selection_without_replacement, generate_id
 
 
 class IllegalMoveException(Exception):
@@ -57,7 +58,7 @@ class BaseGame:
     ):
         self.katrain = katrain
         self._lock = threading.Lock()
-        self.game_id = datetime.strftime(datetime.now(), "%Y-%m-%d %H %M %S")
+        self.game_id = generate_id("game")
         self.sgf_filename = sgf_filename
 
         self.insert_mode = False
@@ -441,6 +442,7 @@ class Game(BaseGame):
         analyze_fast=False,
         game_properties: Optional[Dict] = None,
         sgf_filename=None,
+        user_id: Optional[str] = None,
     ):
         super().__init__(
             katrain=katrain, move_tree=move_tree, game_properties=game_properties, sgf_filename=sgf_filename
@@ -448,6 +450,12 @@ class Game(BaseGame):
         if not isinstance(engine, Dict):
             engine = {"B": engine, "W": engine}
         self.engines = engine
+
+        for eng in self.engines.values():
+            if hasattr(eng, 'set_game_id'):
+                eng.set_game_id(self.game_id)
+            if user_id and hasattr(eng, 'set_user_id'):
+                eng.set_user_id(user_id)
 
         self.insert_mode = False
         self.insert_after = None

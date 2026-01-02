@@ -4,6 +4,8 @@ from pathlib import Path
 import random
 import struct
 import sys
+import uuid
+import datetime
 from typing import List, Tuple, TypeVar
 
 import importlib.resources as pkg_resources
@@ -95,3 +97,22 @@ def weighted_selection_without_replacement(items: List[Tuple], pick_n: int) -> L
     """For a list of tuples where the second element is a weight, returns random items with those weights, without replacement."""
     elt = [(math.log(random.random()) / (item[1] + 1e-18), item) for item in items]  # magic
     return [e[1] for e in heapq.nlargest(pick_n, elt)]  # NB fine if too small
+
+
+def generate_id(prefix: str) -> str:
+    """
+    Generates a unique ID with a type prefix.
+    Example: generate_id("user") -> "user_a1b2c3d4..."
+    """
+    # Using UUID4 for pure randomness (Standard for Users)
+    if prefix == "user":
+        return f"user_{uuid.uuid4()}"
+    
+    # Keeping your timestamp preference for Games
+    if prefix == "game":
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H %M %S')
+        random_suffix = uuid.uuid4().hex[:8]
+        return f"game_{timestamp}_{random_suffix}"
+        
+    return f"{prefix}_{uuid.uuid4()}"
+

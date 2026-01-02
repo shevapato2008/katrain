@@ -110,7 +110,7 @@ def generate_id(prefix: str) -> str:
     
     # Keeping your timestamp preference for Games
     if prefix == "game":
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H %M %S')
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         random_suffix = uuid.uuid4().hex[:8]
         return f"game_{timestamp}_{random_suffix}"
         

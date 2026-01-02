@@ -15,4 +15,4 @@ PyYAML==6.0.1
 pytest==8.0.1
 pytest-asyncio
 httpx
-requests==2.32.5uvicorn[standard]
+requests==2.32.5

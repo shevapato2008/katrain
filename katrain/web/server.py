@@ -160,9 +160,28 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         try:
             from katrain.web.interface import WebKaTrain
             # Just init to trigger imports and config loading
-            WebKaTrain(force_package_config=False, enable_engine=False)
+            kt = WebKaTrain(force_package_config=False, enable_engine=False)
+            
+            # Auto-test HTTP Engine
+            engine_cfg = kt.config("engine")
+            if engine_cfg.get("backend") == "http":
+                import httpx
+                url = engine_cfg.get("http_url")
+                health = engine_cfg.get("http_health_path", "/health")
+                full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"
+                print(f"Testing KataGo Engine at {full_url}...")
+                try:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.get(full_url, timeout=5.0)
+                        if resp.status_code == 200:
+                            print(f"KataGo Engine is reachable: {resp.json()}")
+                        else:
+                            print(f"WARNING: KataGo Engine returned status {resp.status_code}")
+                except Exception as e:
+                    print(f"WARNING: Failed to connect to KataGo Engine: {e}")
+
         except Exception as e:
-            logging.getLogger("katrain_web").error(f"Kivy pre-initialization failed: {e}")
+            logging.getLogger("katrain_web").error(f"Initialization failed: {e}")
 
         manager.attach_loop(asyncio.get_running_loop())
         app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
@@ -544,7 +563,7 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
 
 def run_web():
     parser = argparse.ArgumentParser(description="Run KaTrain Web UI server")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to. Use 127.0.0.1 if using a reverse proxy like Nginx.")
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind the server to. Use 127.0.0.1 if using a reverse proxy like Nginx.")
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--reload", action="store_true")
     parser.add_argument("--log-level", default="warning")

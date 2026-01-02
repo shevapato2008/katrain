@@ -544,12 +544,12 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
 
 def run_web():
     parser = argparse.ArgumentParser(description="Run KaTrain Web UI server")
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to. Use 127.0.0.1 if using a reverse proxy like Nginx.")
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--reload", action="store_true")
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
-    parser.add_argument("--ui", default=None)
+    parser.add_argument("--ui", default=None, help="Interface mode to use. "web" (default) starts the FastAPI server, while "desktop" launches the Kivy GUI.")
     args, _unknown = parser.parse_known_args()
 
     import uvicorn

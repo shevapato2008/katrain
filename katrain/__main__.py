@@ -1,60 +1,52 @@
 import os
 import sys
+import json
 
-def _requested_ui(argv):
+def _determine_start_mode(argv):
+    # 1. CLI args
     for i, arg in enumerate(argv):
         if arg == "--ui" and i + 1 < len(argv):
             return argv[i + 1].lower()
         if arg.startswith("--ui="):
             return arg.split("=", 1)[1].lower()
-    return None
+
+    # 2. Config file (User or Explicit)
+    config_file = None
+    if len(argv) > 1 and argv[1].endswith("config.json"):
+        config_file = os.path.abspath(argv[1])
+    else:
+        # Check user config only. Ignore package config to change default to web.
+        # Logic from constants.py: DATA_FOLDER = "~/.katrain"
+        user_config_file = os.path.abspath(os.path.expanduser("~/.katrain/config.json"))
+        if os.path.exists(user_config_file):
+            config_file = user_config_file
+    
+    if config_file:
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                mode = config.get("session", {}).get("mode")
+                if isinstance(mode, str):
+                    return mode.lower()
+        except Exception:
+            pass
+
+    # 3. Default to web
+    return "web"
+
+start_mode = _determine_start_mode(sys.argv)
 
 # Force headless mode if web UI is requested, BEFORE any imports
-if _requested_ui(sys.argv) == "web":
+if start_mode == "web":
     os.environ["KIVY_NO_ARGS"] = "1"
     os.environ["KIVY_NO_FILELOG"] = "1"
     os.environ["KIVY_NO_WINDOW"] = "1"
     os.environ["KIVY_USE_ASSET_LOADER"] = "1"
     os.environ["KCFG_KIVY_LOG_LEVEL"] = "warning"
 
-import json
-
 from katrain.core.constants import DATA_FOLDER
 from katrain.core.utils import find_package_resource
 
-def _requested_ui(argv):
-    for i, arg in enumerate(argv):
-        if arg == "--ui" and i + 1 < len(argv):
-            return argv[i + 1].lower()
-        if arg.startswith("--ui="):
-            return arg.split("=", 1)[1].lower()
-    return None
-
-
-def _config_start_mode(argv):
-    config_file = None
-    if len(argv) > 1 and argv[1].endswith("config.json"):
-        config_file = os.path.abspath(argv[1])
-    else:
-        user_config_file = find_package_resource(os.path.join(DATA_FOLDER, "config.json"))
-        if os.path.exists(user_config_file):
-            config_file = user_config_file
-        else:
-            config_file = find_package_resource("katrain/config.json")
-    try:
-        with open(config_file, "r", encoding="utf-8") as config_handle:
-            config = json.load(config_handle)
-    except Exception:
-        return None
-    session_config = config.get("session", {})
-    if isinstance(session_config, dict):
-        mode = session_config.get("mode")
-        if isinstance(mode, str):
-            return mode.lower()
-    return None
-
-
-start_mode = _requested_ui(sys.argv) or _config_start_mode(sys.argv)
 if start_mode == "web":
     from katrain.web.server import run_web
 

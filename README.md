@@ -24,6 +24,7 @@ KaTrain is a tool for analyzing games and playing go with AI feedback from KataG
   - [ Installation](#-installation)
   - [  Configuring KataGo](#--configuring-katago)
   - [  HTTP KataGo Engine (Request API)](#--http-katago-engine-request-api)
+  - [ Web GUI](#-web-gui)
   - [ Play against AI](#-play-against-ai)
     - [Instant feedback](#instant-feedback)
     - [AIs](#ais)
@@ -115,6 +116,39 @@ Notes:
 - The HTTP engine currently uses one-shot `/analyze` requests (no WebSocket streaming yet).
 - If you want to switch back to local KataGo, set `"backend": "local"` in the same config section.
 
+
+
+## <a name="web-gui"></a> Web GUI
+
+To run the **web GUI** for KaTrain, you can use the following command:
+
+```bash
+python3 -m katrain --host 127.0.0.1
+```
+
+### Why run it this way?
+- **Security**: Binding to `127.0.0.1` (localhost) ensures that the service is only accessible from the server itself. This prevents direct exposure to the public internet.
+- **Reverse Proxy**: It is strongly recommended to use a reverse proxy like **Nginx** or **Apache** to handle public traffic (on port 80/443) and forward it to KaTrain. This provides better performance, SSL support, and centralized logging.
+
+### Details:
+- **URL**: Once started and proxied, access it via your domain (e.g., `http://api-go.sailorvoyage.top/`).
+- **Dependencies**: The web GUI requires `fastapi`, `uvicorn`, and `pydantic`. Install them via:
+  ```bash
+  pip install fastapi uvicorn pydantic
+  # Or use the provided requirements file
+  pip install -r requirements.txt
+  ```
+- **Manual Start**: You can also run the server module directly:
+  ```bash
+  python3 katrain/web/server.py --host 127.0.0.1 --port 8001
+  ```
+
+- **Desktop Mode**: To run the original Kivy-based desktop version instead of the web GUI, use:
+  ```bash
+  python3 -m katrain --ui desktop
+  ```
+
+The web interface is built using **React** and **TypeScript** (located in `katrain/web/ui`), and the backend is a **FastAPI** server that communicates with the KaTrain engine.
 
 ## <a name="ai"></a> Play against AI
 

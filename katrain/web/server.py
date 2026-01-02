@@ -559,8 +559,8 @@ def run_web():
     
     # Configure uvicorn logging to reduce noise
     log_config = uvicorn.config.LOGGING_CONFIG
-    log_config["formatters"]["default"]["fmt"] = "% (levelname)s:     %(message)s"
-    log_config["formatters"]["access"]["fmt"] = "% (levelname)s:     %(message)s"
+    log_config["formatters"]["default"]["fmt"] = "%(levelname)s:     %(message)s"
+    log_config["formatters"]["access"]["fmt"] = "%(levelname)s:     %(message)s"
 
     print(f"\n" + "=" * 50)
     print(f"Starting KaTrain Web UI")

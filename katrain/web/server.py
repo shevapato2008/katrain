@@ -166,6 +166,9 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
             engine_cfg = kt.config("engine")
             if engine_cfg.get("backend") == "http":
                 import httpx
+                import logging
+                logging.getLogger("httpx").setLevel(logging.WARNING)
+                logging.getLogger("httpcore").setLevel(logging.WARNING)
                 url = engine_cfg.get("http_url")
                 health = engine_cfg.get("http_health_path", "/health")
                 full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"

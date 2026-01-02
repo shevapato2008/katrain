@@ -549,7 +549,7 @@ def run_web():
     parser.add_argument("--reload", action="store_true")
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
-    parser.add_argument("--ui", default=None, help="Interface mode to use. "web" (default) starts the FastAPI server, while "desktop" launches the Kivy GUI.")
+    parser.add_argument("--ui", default=None, help="Interface mode to use. 'web' (default) starts the FastAPI server, while 'desktop' launches the Kivy GUI.")
     args, _unknown = parser.parse_known_args()
 
     import uvicorn

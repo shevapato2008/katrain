@@ -638,8 +638,7 @@ class KataGoHttpEngine(BaseEngine):
                 if ponder:
                     self.ponder_query = {"id": query_id}
                 self.queries[query_id] = (callback, error_callback, time.time(), next_move, node)
-            self.katrain.log(f"Sending KataGo HTTP analysis query {query_id} to {self.base_url}{self.analyze_path}...", OUTPUT_INFO)
-            self.katrain.log(f"Query details: {json_truncate_arrays(query)}", OUTPUT_DEBUG)
+            self.katrain.log(f"Sending KataGo HTTP analysis query {query_id} to {self.base_url}{self.analyze_path} with payload: {json.dumps(json_truncate_arrays(query))}", OUTPUT_INFO)
             try:
                 analysis = self._post_json(query)
                 if analysis is None:

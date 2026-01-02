@@ -660,6 +660,9 @@ class KataGoHttpEngine(BaseEngine):
                     self.on_error(i18n._("Engine died unexpectedly").format(error=error_msg), code="KATAGO-HTTP")
                 continue
 
+            if isinstance(analysis, list):
+                self.katrain.log(f"KataGo HTTP returned warnings: {analysis}", OUTPUT_INFO)
+                analysis = {"id": query_id, "noResults": True, "warnings": analysis}
             analysis.setdefault("id", query_id)
             with self.thread_lock:
                 entry = self.queries.get(query_id)

@@ -171,7 +171,7 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
                 full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"
                 print(f"Testing KataGo Engine at {full_url}...")
                 try:
-                    async with httpx.AsyncClient() as client:
+                    async with httpx.AsyncClient(trust_env=False) as client:
                         resp = await client.get(full_url, timeout=5.0)
                         if resp.status_code == 200:
                             print(f"KataGo Engine is reachable: {resp.json()}")

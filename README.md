@@ -148,6 +148,17 @@ python3 -m katrain --host 127.0.0.1
   python3 -m katrain --ui desktop
   ```
 
+### Docker
+You can also run KaTrain using Docker:
+
+```bash
+# Build the image
+docker build -t katrain .
+
+# Run the container (maps port 8001)
+docker run -p 8001:8001 katrain
+```
+
 The web interface is built using **React** and **TypeScript** (located in `katrain/web/ui`), and the backend is a **FastAPI** server that communicates with the KaTrain engine.
 
 ## <a name="ai"></a> Play against AI

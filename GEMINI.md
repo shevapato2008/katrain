@@ -51,6 +51,14 @@ KaTrain is a tool for analyzing games and playing Go (Baduk/Weiqi) with AI feedb
     ```bash
     python -m katrain
     ```
+### Docker
+
+Build and run using Docker:
+```bash
+docker build -t katrain .
+docker run -p 8001:8001 katrain
+```
+
 
 ## Development Conventions
 

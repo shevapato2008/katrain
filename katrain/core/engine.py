@@ -427,7 +427,7 @@ class KataGoEngine(BaseEngine):
                     if not partial_result:
                         del self.queries[query_id]
                     time_taken = time.time() - start_time
-                    results_exist = not analysis.get("noResults", False)
+                    results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
                     self.katrain.log(
                         f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
                         OUTPUT_DEBUG,
@@ -682,7 +682,7 @@ class KataGoHttpEngine(BaseEngine):
                     with self.thread_lock:
                         self.queries.pop(query_id, None)
                 time_taken = time.time() - start_time
-                results_exist = not analysis.get("noResults", False)
+                results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
                 self.katrain.log(
                     f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
                     OUTPUT_DEBUG,

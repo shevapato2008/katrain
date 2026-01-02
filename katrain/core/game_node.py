@@ -237,29 +237,29 @@ class GameNode(SGFNode):
         partial_result: bool = False,
     ):
         if refine_move:
-            pvtail = analysis_json["moveInfos"][0]["pv"] if analysis_json["moveInfos"] else []
+            pvtail = analysis_json.get("moveInfos", [])[0]["pv"] if analysis_json.get("moveInfos", []) else []
             self.update_move_analysis(
-                {"pv": [refine_move.gtp()] + pvtail, **analysis_json["rootInfo"]}, refine_move.gtp()
+                {"pv": [refine_move.gtp()] + pvtail, **analysis_json.get("rootInfo", {})}, refine_move.gtp()
             )
         else:
             if additional_moves:  # additional moves: old order matters, ignore new order
-                for m in analysis_json["moveInfos"]:
+                for m in analysis_json.get("moveInfos", []):
                     del m["order"]
             elif refine_move is None:  # normal update: old moves to end, new order matters. also for region?
                 for move_dict in self.analysis["moves"].values():
                     move_dict["order"] = ADDITIONAL_MOVE_ORDER  # old moves to end
-            for move_analysis in analysis_json["moveInfos"]:
+            for move_analysis in analysis_json.get("moveInfos", []):
                 self.update_move_analysis(move_analysis, move_analysis["move"])
             self.analysis["ownership"] = analysis_json.get("ownership")
             self.analysis["policy"] = analysis_json.get("policy")
             if not additional_moves and not region_of_interest:
-                self.analysis["root"] = analysis_json["rootInfo"]
+                self.analysis["root"] = analysis_json.get("rootInfo", {})
                 if self.parent and self.move:
-                    analysis_json["rootInfo"]["pv"] = [self.move.gtp()] + (
-                        analysis_json["moveInfos"][0]["pv"] if analysis_json["moveInfos"] else []
+                    analysis_json.get("rootInfo", {})["pv"] = [self.move.gtp()] + (
+                        analysis_json.get("moveInfos", [])[0]["pv"] if analysis_json.get("moveInfos", []) else []
                     )
                     self.parent.update_move_analysis(
-                        analysis_json["rootInfo"], self.move.gtp()
+                        analysis_json.get("rootInfo", {}), self.move.gtp()
                     )  # update analysis in parent for consistency
             is_normal_query = refine_move is None and not additional_moves
             self.analysis["completed"] = self.analysis["completed"] or (is_normal_query and not partial_result)

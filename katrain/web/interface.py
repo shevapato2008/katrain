@@ -70,10 +70,11 @@ class WebKaTrain(KaTrainBase):
     A headless version of KaTrain for the Web UI.
     """
 
-    def __init__(self, force_package_config=False, debug_level=None, enable_engine=True, **kwargs):
+    def __init__(self, force_package_config=False, debug_level=None, enable_engine=True, user_id=None, **kwargs):
         # Initialize attributes used in log() before super().__init__
         self.message_callback: Optional[Callable] = None
         self.enable_engine = enable_engine
+        self.user_id = user_id
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
@@ -306,7 +307,8 @@ class WebKaTrain(KaTrainBase):
             move_tree=move_tree,
             analyze_fast=analyze_fast or not move_tree,
             sgf_filename=sgf_filename,
-            game_properties=game_properties
+            game_properties=game_properties,
+            user_id=self.user_id,
         )
         # Update player info based on game settings
         for bw, player_info in self.players_info.items():

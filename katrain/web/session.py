@@ -43,7 +43,7 @@ class SessionManager:
                 if len(self._sessions) >= self.max_sessions:
                     raise RuntimeError("Session limit reached")
             session_id = uuid.uuid4().hex
-            katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine)
+            katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine, user_id=session_id)
             session = WebSession(session_id=session_id, katrain=katrain)
             self._sessions[session_id] = session
 

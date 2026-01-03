@@ -156,8 +156,15 @@ You can also run KaTrain using Docker:
 docker build -t katrain .
 
 # Run the container (maps port 8001)
-docker run -p 8001:8001 katrain
+docker run -d -p 8001:8001 katrain
+
+# View logs
+docker logs -f <container_id_or_name>
+
+# Stop container
+docker stop <container_id_or_name>
 ```
+To run the katrain image in the background (detached mode), use the `-d` flag.
 
 The web interface is built using **React** and **TypeScript** (located in `katrain/web/ui`), and the backend is a **FastAPI** server that communicates with the KaTrain engine.
 

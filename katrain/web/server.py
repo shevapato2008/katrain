@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import Any, List, Optional, Union
 
@@ -564,10 +565,31 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 def run_web():
+    default_host = os.environ.get("KATRAIN_HOST", "0.0.0.0")
+    default_port = _env_int("KATRAIN_PORT", 8001)
     parser = argparse.ArgumentParser(description="Run KaTrain Web UI server")
-    parser.add_argument("--host", default="127.0.0.1", help="Host to bind the server to. Use 127.0.0.1 if using a reverse proxy like Nginx.")
-    parser.add_argument("--port", type=int, default=8001)
+    parser.add_argument(
+        "--host",
+        default=default_host,
+        help="Host to bind the server to. Default: $KATRAIN_HOST or 0.0.0.0.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=default_port,
+        help="Port to bind the server to. Default: $KATRAIN_PORT or 8001.",
+    )
     parser.add_argument("--reload", action="store_true")
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")

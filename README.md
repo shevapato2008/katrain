@@ -123,25 +123,27 @@ Notes:
 To run the **web GUI** for KaTrain, you can use the following command:
 
 ```bash
-python3 -m katrain --host 127.0.0.1
+python3 -m katrain --ui web
 ```
 
 ### Why run it this way?
-- **Security**: Binding to `127.0.0.1` (localhost) ensures that the service is only accessible from the server itself. This prevents direct exposure to the public internet.
+- **Security**: If you do not want public exposure, bind to `127.0.0.1` (localhost) and use a reverse proxy.
 - **Reverse Proxy**: It is strongly recommended to use a reverse proxy like **Nginx** or **Apache** to handle public traffic (on port 80/443) and forward it to KaTrain. This provides better performance, SSL support, and centralized logging.
 
 ### Details:
-- **URL**: Once started and proxied, access it via your domain (e.g., `http://api-go.sailorvoyage.top/`).
+- **Defaults**: `python3 -m katrain --ui web` binds to `0.0.0.0:8001`.
+- **URL**: Access locally at `http://127.0.0.1:8001` or from the network at `http://<your-ip>:8001`.
 - **Dependencies**: The web GUI requires `fastapi`, `uvicorn`, and `pydantic`. Install them via:
   ```bash
   pip install fastapi uvicorn pydantic
   # Or use the provided requirements file
   pip install -r requirements.txt
   ```
-- **Manual Start**: You can also run the server module directly:
+- **Custom host/port**: You can override the defaults:
   ```bash
-  python3 katrain/web/server.py --host 127.0.0.1 --port 8001
+  python3 -m katrain --ui web --host 127.0.0.1 --port 8001
   ```
+  You can also set `KATRAIN_HOST` and `KATRAIN_PORT` environment variables.
 
 - **Desktop Mode**: To run the original Kivy-based desktop version instead of the web GUI, use:
   ```bash
@@ -155,7 +157,7 @@ You can also run KaTrain using Docker:
 # Build the image
 docker build -t katrain .
 
-# Run the container (maps port 8001)
+# Run the container (web UI, maps port 8001)
 docker run -d -p 8001:8001 katrain
 
 # View logs
@@ -165,6 +167,19 @@ docker logs -f <container_id_or_name>
 docker stop <container_id_or_name>
 ```
 To run the katrain image in the background (detached mode), use the `-d` flag.
+
+The Docker image supports both the web UI and the Kivy desktop UI:
+
+```bash
+# Web UI (default)
+docker run -d -p 8001:8001 katrain
+
+# Web UI with custom host/port
+docker run -d -e KATRAIN_HOST=0.0.0.0 -e KATRAIN_PORT=8002 -p 8002:8002 katrain
+
+# Desktop UI (requires X11 forwarding)
+docker run -e KATRAIN_UI=desktop -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
+```
 
 The web interface is built using **React** and **TypeScript** (located in `katrain/web/ui`), and the backend is a **FastAPI** server that communicates with the KaTrain engine.
 
@@ -332,5 +347,3 @@ See [these instructions](THEMES.md) for how to modify the look of any graphics o
  * Ideas, feedback, and contributions to code or translations are all very welcome.
     * For suggestions and planned improvements, see [open issues](http://github.com/sanderland/katrain/issues) on github to check if the functionality is already planned.
 * You can join the [Computer Go Community Discord (formerly Leela Zero & Friends)](http://discord.gg/AjTPFpN) (use the #gui channel) to get help, discuss improvements, or simply show your appreciation. Please do not use github issues to ask for technical help, this is only for bugs, suggestions and discussing contributions.
-
-

@@ -139,6 +139,12 @@ The system will follow a classic Client-Server architecture.
 5.  Timer and sound settings with parity to Kivy.
 6.  Theme selection and UI state persistence.
 7.  Contribute mode dashboard and controls.
+8.  **New Game / Edit Game Dialog Parity:**
+    *   Implement multi-tab dialog (Start New Game, Set up Position, Edit Game Info).
+    *   Dynamic "Game Type" vs "AI Strategy" based on player selection (Human/AI).
+    *   Include ruleset, handicap, komi, and board size options.
+    *   Add "Target Score" and "Generate until move" for position setup.
+    *   Ensure all labels and options are fully localized and reactive to language changes.
 
 ### Phase 6: QA, Parity Audit, and Release
 1.  Create a parity checklist covering all Kivy controls and workflows.

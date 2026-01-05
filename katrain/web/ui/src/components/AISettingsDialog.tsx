@@ -4,7 +4,7 @@ import {
   Button, TextField, MenuItem, Box, Typography, Divider, ListSubheader
 } from '@mui/material';
 import { type GameState } from '../api';
-import { i18n } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface AISettingsDialogProps {
   open: boolean;
@@ -14,41 +14,42 @@ interface AISettingsDialogProps {
 }
 
 const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, onClose, onConfirm }) => {
+  const { t } = useTranslation();
   const STRATEGY_GROUPS = [
     {
-      label: i18n.t('Recommended'),
+      label: t('Recommended'),
       options: [
-        { value: 'ai:default', label: i18n.t('AI: Recommended') },
-        { value: 'ai:human', label: i18n.t('AI: Human Style') },
-        { value: 'ai:pro', label: i18n.t('AI: Pro Style') },
-        { value: 'ai:p:rank', label: i18n.t('AI: Rank Based') },
+        { value: 'ai:default', label: t('AI: Recommended') },
+        { value: 'ai:human', label: t('AI: Human Style') },
+        { value: 'ai:pro', label: t('AI: Pro Style') },
+        { value: 'ai:p:rank', label: t('AI: Rank Based') },
       ]
     },
     {
-      label: i18n.t('Strength Based'),
+      label: t('Strength Based'),
       options: [
-        { value: 'ai:handicap', label: i18n.t('AI: Handicap') },
-        { value: 'ai:scoreloss', label: i18n.t('AI: Score Loss') },
-        { value: 'ai:simple', label: i18n.t('AI: Simple Ownership') },
+        { value: 'ai:handicap', label: t('AI: Handicap') },
+        { value: 'ai:scoreloss', label: t('AI: Score Loss') },
+        { value: 'ai:simple', label: t('AI: Simple Ownership') },
       ]
     },
     {
-      label: i18n.t('Policy Based'),
+      label: t('Policy Based'),
       options: [
-        { value: 'ai:policy', label: i18n.t('AI: Policy') },
-        { value: 'ai:p:weighted', label: i18n.t('AI: Weighted') },
-        { value: 'ai:jigo', label: i18n.t('AI: Jigo') },
-        { value: 'ai:antimirror', label: i18n.t('AI: Antimirror') },
+        { value: 'ai:policy', label: t('AI: Policy') },
+        { value: 'ai:p:weighted', label: t('AI: Weighted') },
+        { value: 'ai:jigo', label: t('AI: Jigo') },
+        { value: 'ai:antimirror', label: t('AI: Antimirror') },
       ]
     },
     {
-      label: i18n.t('Experimental'),
+      label: t('Experimental'),
       options: [
-        { value: 'ai:p:pick', label: i18n.t('AI: Pick') },
-        { value: 'ai:p:local', label: i18n.t('AI: Local') },
-        { value: 'ai:p:tenuki', label: i18n.t('AI: Tenuki') },
-        { value: 'ai:p:territory', label: i18n.t('AI: Territory') },
-        { value: 'ai:p:influence', label: i18n.t('AI: Influence') },
+        { value: 'ai:p:pick', label: t('AI: Pick') },
+        { value: 'ai:p:local', label: t('AI: Local') },
+        { value: 'ai:p:tenuki', label: t('AI: Tenuki') },
+        { value: 'ai:p:territory', label: t('AI: Territory') },
+        { value: 'ai:p:influence', label: t('AI: Influence') },
       ]
     }
   ];
@@ -70,7 +71,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, on
 
   const renderMenuItems = () => {
     const items = [
-      <MenuItem key="player:human" value="player:human">{i18n.t("Human")}</MenuItem>
+      <MenuItem key="player:human" value="player:human">{t("Human")}</MenuItem>
     ];
     
     STRATEGY_GROUPS.forEach(group => {
@@ -85,11 +86,11 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, on
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>{i18n.t("AI Settings")}</DialogTitle>
+      <DialogTitle>{t("AI Settings")}</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Box>
-            <Typography variant="subtitle2" gutterBottom>{i18n.t("Black Player AI")}</Typography>
+            <Typography variant="subtitle2" gutterBottom>{t("Black Player AI")}</Typography>
             <TextField
               select
               value={bStrategy}
@@ -104,7 +105,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, on
           <Divider />
 
           <Box>
-            <Typography variant="subtitle2" gutterBottom>{i18n.t("White Player AI")}</Typography>
+            <Typography variant="subtitle2" gutterBottom>{t("White Player AI")}</Typography>
             <TextField
               select
               value={wStrategy}
@@ -118,8 +119,8 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, on
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>{i18n.t("Cancel")}</Button>
-        <Button onClick={handleConfirm} variant="contained">{i18n.t("Apply")}</Button>
+        <Button onClick={onClose}>{t("Cancel")}</Button>
+        <Button onClick={handleConfirm} variant="contained">{t("Apply")}</Button>
       </DialogActions>
     </Dialog>
   );

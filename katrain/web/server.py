@@ -3,7 +3,7 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, Dict
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
@@ -29,19 +29,35 @@ class NavRequest(BaseModel):
     node_id: Optional[int] = None
 
 
+class PlayerSetupInfo(BaseModel):
+    name: str
+    player_type: str
+    player_subtype: str
+
+
 class NewGameRequest(BaseModel):
     session_id: str
-    size: Optional[int] = 19
+    size: Optional[Union[int, str]] = 19
     handicap: Optional[int] = 0
     komi: Optional[float] = 6.5
+    rules: Optional[str] = "japanese"
+    clear_cache: bool = False
+    players: Optional[Dict[str, PlayerSetupInfo]] = None
 
 
 class EditGameRequest(BaseModel):
     session_id: str
-    size: Optional[int] = None
+    size: Optional[Union[int, str]] = None
     handicap: Optional[int] = None
     komi: Optional[float] = None
     rules: Optional[str] = None
+    players: Optional[Dict[str, PlayerSetupInfo]] = None
+
+
+class GameSettingsRequest(BaseModel):
+    session_id: str
+    mode: str  # newgame, setupposition, editgame
+    settings: Dict[str, Any]
 
 
 class LoadSGFRequest(BaseModel):
@@ -273,7 +289,41 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
     def new_game(request: NewGameRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
+            if request.players:
+                for bw, p in request.players.items():
+                    session.katrain("update_player", bw=bw, player_type=p.player_type, player_subtype=p.player_subtype)
+            
+            if request.clear_cache:
+                session.katrain.engine.on_new_game()
+
             session.katrain("new_game", size=request.size, handicap=request.handicap, komi=request.komi)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/game/setup")
+    def game_setup(request: GameSettingsRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        mode = request.mode
+        settings = request.settings
+        with session.lock:
+            # Update players
+            players = settings.get("players")
+            if players:
+                for bw, p in players.items():
+                    session.katrain("update_player", bw=bw, player_type=p["player_type"], player_subtype=p["player_subtype"])
+                    if p.get("name"):
+                        session.katrain.game.root.set_property("P" + bw, p["name"])
+
+            if mode == "newgame" or mode == "setupposition":
+                if settings.get("clear_cache"):
+                    session.katrain.engine.on_new_game()
+                session.katrain("new_game", size=settings.get("size"), handicap=settings.get("handicap"), komi=settings.get("komi"))
+                if mode == "setupposition":
+                    session.katrain("selfplay_setup", until_move=settings.get("setup_move"), target_b_advantage=settings.get("setup_advantage"))
+            elif mode == "editgame":
+                session.katrain("_do_edit_game", size=settings.get("size"), handicap=settings.get("handicap"), komi=settings.get("komi"), rules=settings.get("rules"))
+            
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Box, IconButton, FormControlLabel, Checkbox } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { i18n } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -11,6 +11,7 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleChange, status }) => {
+  const { t } = useTranslation();
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar variant="dense">
@@ -18,34 +19,34 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
           <MenuIcon />
         </IconButton>
         <Typography variant="h6" color="inherit" component="div" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-          KaTrain <Typography variant="caption" sx={{ ml: 1, mt: 0.5 }}>{i18n.t('WEB UI')}</Typography>
+          KaTrain <Typography variant="caption" sx={{ ml: 1, mt: 0.5 }}>{t('WEB UI')}</Typography>
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 2, mr: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          {['children', 'eval', 'hints', 'policy', 'ownership', 'coords', 'numbers', 'score', 'winrate'].map((t) => {
+          {['children', 'eval', 'hints', 'policy', 'ownership', 'coords', 'numbers', 'score', 'winrate'].map((t_key) => {
             const labels: Record<string, string> = {
-              children: i18n.t('analysis:nextmoves').replace('\n', ' '),
-              eval: i18n.t('analysis:dots').replace('\n', ' '),
-              hints: i18n.t('analysis:topmoves').replace('\n', ' '),
-              policy: i18n.t('analysis:policy').replace('\n', ' '),
-              ownership: i18n.t('analysis:territory').replace('\n', ' '),
-              coords: i18n.t('analysis:coordinates') || 'Coords',
-              numbers: i18n.t('analysis:numbers') || 'Numbers',
-              score: i18n.t('Score'),
-              winrate: i18n.t('Win Rate')
+              children: t('analysis:nextmoves').replace('\n', ' '),
+              eval: t('analysis:dots').replace('\n', ' '),
+              hints: t('analysis:topmoves').replace('\n', ' '),
+              policy: t('analysis:policy').replace('\n', ' '),
+              ownership: t('analysis:territory').replace('\n', ' '),
+              coords: t('analysis:coordinates', 'Coordinates'),
+              numbers: t('analysis:numbers', 'Numbers'),
+              score: t('tab:score'),
+              winrate: t('tab:winrate')
             };
             return (
               <FormControlLabel
-                key={t}
+                key={t_key}
                 control={
                   <Checkbox
-                    checked={analysisToggles[t] || false}
-                    onChange={() => onToggleChange(t)}
+                    checked={analysisToggles[t_key] || false}
+                    onChange={() => onToggleChange(t_key)}
                     size="small"
                     sx={{ p: 0.5 }}
                   />
                 }
-                label={<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{labels[t] || t}</Typography>}
+                label={<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{labels[t_key] || t_key}</Typography>}
                 sx={{ mr: 0, ml: 0.5 }}
               />
             );

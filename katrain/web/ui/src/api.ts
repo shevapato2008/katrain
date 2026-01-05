@@ -78,6 +78,8 @@ export const API = {
     apiPost("/api/redo", { session_id: sessionId, n_times: nTimes }),
   newGame: (sessionId: string, settings?: any): Promise<SessionResponse> =>
     apiPost("/api/new-game", { session_id: sessionId, ...settings }),
+  gameSetup: (sessionId: string, mode: string, settings: any): Promise<SessionResponse> =>
+    apiPost("/api/game/setup", { session_id: sessionId, mode, settings }),
   aiMove: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/ai-move", { session_id: sessionId }),
   navigate: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>

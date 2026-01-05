@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip, IconButton } from '@mui/material';
 import { type GameState } from '../api';
-import { i18n } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 import SaveIcon from '@mui/icons-material/Save';
@@ -27,7 +27,6 @@ interface SidebarProps {
 }
 
 const LANGUAGES = [
-// ... (omitting for brevity in this thought, but I should keep them in the real replacement)
   { code: 'en', flag: 'flag-uk.png', name: 'English' },
   { code: 'de', flag: 'flag-de.png', name: 'Deutsch' },
   { code: 'fr', flag: 'flag-fr.png', name: 'Français' },
@@ -41,6 +40,7 @@ const LANGUAGES = [
 
 const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,8 +56,8 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
 
   const getPlayerDisplay = (bw: 'B' | 'W') => {
     const info = gameState?.players_info[bw];
-    if (!info) return i18n.t('Loading...');
-    if (info.player_type === 'player:human') return i18n.t('player:human');
+    if (!info) return t('Loading...');
+    if (info.player_type === 'player:human') return t('player:human');
     return info.player_subtype.replace('ai:', '').toUpperCase();
   };
 
@@ -77,8 +77,8 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
 
       <Box sx={{ p: 2, flexGrow: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="subtitle2" color="textSecondary">{i18n.t('menu:playersetup').toUpperCase()}</Typography>
-          <Tooltip title={i18n.t("Swap Players")}>
+          <Typography variant="subtitle2" color="textSecondary">{t('menu:playersetup').toUpperCase()}</Typography>
+          <Tooltip title={t("Swap Players")}>
             <IconButton size="small" onClick={onSwapPlayers} sx={{ p: 0.5 }}>
               <SwapCallsIcon fontSize="small" />
             </IconButton>
@@ -88,92 +88,92 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Box sx={{ width: 20, height: 20, bgcolor: 'black', borderRadius: '50%', mr: 1, border: '1px solid #444' }} />
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{i18n.t('Black')}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{t('Black')}</Typography>
             </Box>
             <Typography variant="caption" sx={{ bgcolor: '#eee', px: 0.5, borderRadius: 0.5 }}>{getPlayerDisplay('B')}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Box sx={{ width: 20, height: 20, bgcolor: 'white', border: '1px solid #000', borderRadius: '50%', mr: 1 }} />
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{i18n.t('White')}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{t('White')}</Typography>
             </Box>
             <Typography variant="caption" sx={{ bgcolor: '#eee', px: 0.5, borderRadius: 0.5 }}>{getPlayerDisplay('W')}</Typography>
           </Box>
         </Box>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{i18n.t('GAME')}</Typography>
+        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('GAME')}</Typography>
         <List dense sx={{ py: 0 }}>
           <ListItem disablePadding>
             <ListItemButton onClick={onNewGame}>
               <ListItemIcon sx={{ minWidth: 36 }}><PlayArrowIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:newgame')} secondary="Ctrl-N" />
+              <ListItemText primary={t('menu:newgame')} secondary="Ctrl-N" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton onClick={onSaveSGF}>
               <ListItemIcon sx={{ minWidth: 36 }}><SaveIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:save')} secondary="Ctrl-S" />
+              <ListItemText primary={t('menu:save')} secondary="Ctrl-S" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton onClick={() => fileInputRef.current?.click()}>
               <ListItemIcon sx={{ minWidth: 36 }}><FileOpenIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:load')} secondary="Ctrl-L" />
+              <ListItemText primary={t('menu:load')} secondary="Ctrl-L" />
             </ListItemButton>
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{i18n.t('menu:settings').toUpperCase()}</Typography>
+        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('menu:settings').toUpperCase()}</Typography>
         <List dense sx={{ py: 0 }}>
           <ListItem disablePadding>
             <ListItemButton onClick={onAISettings}>
               <ListItemIcon sx={{ minWidth: 36 }}><SettingsIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:aisettings')} secondary="F7" />
+              <ListItemText primary={t('menu:aisettings')} secondary="F7" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
               <ListItemIcon sx={{ minWidth: 36 }}><TimerIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:timesettings')} secondary="F5" />
+              <ListItemText primary={t('menu:clocksettings')} secondary="F5" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
               <ListItemIcon sx={{ minWidth: 36 }}><SchoolIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:teachingsettings')} secondary="F6" />
+              <ListItemText primary={t('menu:teachsettings')} secondary="F6" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
               <ListItemIcon sx={{ minWidth: 36 }}><EngineeringIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:generalsettings')} secondary="F8" />
+              <ListItemText primary={t('menu:settings')} secondary="F8" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
               <ListItemIcon sx={{ minWidth: 36 }}><HubIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('menu:distribute')} secondary="F9" />
+              <ListItemText primary={t('menu:distributed')} secondary="F9" />
             </ListItemButton>
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{i18n.t('ANALYSIS')}</Typography>
+        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('ANALYSIS')}</Typography>
         <List dense sx={{ py: 0 }}>
           <ListItem disablePadding>
             <ListItemButton onClick={onAnalyzeGame}>
               <ListItemIcon sx={{ minWidth: 36 }}><AnalyticsIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('analysis:extra')} secondary="F2" />
+              <ListItemText primary={t('analysis:extra')} secondary="F2" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton onClick={onGameReport}>
               <ListItemIcon sx={{ minWidth: 36 }}><AssessmentIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={i18n.t('analysis:report')} secondary="F3" />
+              <ListItemText primary={t('analysis:report')} secondary="F3" />
             </ListItemButton>
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{i18n.t('menu:lang').toUpperCase()}</Typography>
+        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('menu:lang').toUpperCase()}</Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1 }}>
           {LANGUAGES.map(lang => (
             <Tooltip key={lang.code} title={lang.name}>
@@ -191,11 +191,11 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
 
       <Box sx={{ p: 2, borderTop: '1px solid #ddd', bgcolor: '#eee' }}>
         <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
-          {i18n.t('CAPTURES').toUpperCase()}
+          {t('CAPTURES').toUpperCase()}
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="caption">{i18n.t('Black')}: {gameState?.prisoner_count.B}</Typography>
-          <Typography variant="caption">{i18n.t('White')}: {gameState?.prisoner_count.W}</Typography>
+          <Typography variant="caption">{t('Black')}: {gameState?.prisoner_count.B}</Typography>
+          <Typography variant="caption">{t('White')}: {gameState?.prisoner_count.W}</Typography>
         </Box>
       </Box>
     </Box>

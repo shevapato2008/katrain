@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import { type PlayerInfo } from '../api';
-import { i18n } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PlayerCardProps {
   player: 'B' | 'W';
@@ -11,6 +11,7 @@ interface PlayerCardProps {
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active }) => {
+  const { t } = useTranslation();
   const isBlack = player === 'B';
   return (
     <Paper 
@@ -33,7 +34,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active 
             mr: 1
           }} />
           <Typography variant="body2" fontWeight="bold" noWrap sx={{ maxWidth: 80 }}>
-            {info.name || (isBlack ? i18n.t('Black') : i18n.t('White'))}
+            {info.name || (isBlack ? t('Black') : t('White'))}
           </Typography>
         </Box>
         <Typography variant="caption" sx={{ opacity: 0.8 }}>
@@ -41,9 +42,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active 
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-        <Typography variant="caption">{i18n.t("Captures")}: {captures}</Typography>
+        <Typography variant="caption">{t("Captures")}: {captures}</Typography>
         <Typography variant="caption" sx={{ fontWeight: info.player_type === 'player:ai' ? 'bold' : 'normal' }}>
-          {info.player_type === 'player:human' ? i18n.t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
+          {info.player_type === 'player:human' ? t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
         </Typography>
       </Box>
     </Paper>

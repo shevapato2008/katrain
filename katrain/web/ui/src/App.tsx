@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography } from '@mui/material';
 import { API, type GameState } from './api';
 import { i18n } from './i18n';
+import { useTranslation } from './hooks/useTranslation';
 import Board from './components/Board';
 import Sidebar from './components/Sidebar';
 import ControlBar from './components/ControlBar';
@@ -28,7 +29,8 @@ const theme = createTheme({
 function App() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string>("Initializing...");
+  const { t } = useTranslation();
+  const [statusMessage, setStatusMessage] = useState<string>(t("Initializing..."));
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isNewGameDialogOpen, setNewGameDialogOpen] = useState(false);
   const [isAISettingsDialogOpen, setAISettingsDialogOpen] = useState(false);
@@ -74,7 +76,7 @@ function App() {
         await i18n.loadTranslations(initialLang);
 
         
-        setStatusMessage("Ready");
+        setStatusMessage(t("Ready"));
 
         // Setup WebSocket
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -143,15 +145,15 @@ function App() {
     setNewGameDialogOpen(true);
   };
 
-  const handleNewGameConfirm = async (settings: any) => {
+  const handleNewGameConfirm = async (mode: string, settings: any) => {
     if (!sessionId) return;
     try {
-      const data = await API.newGame(sessionId, settings);
+      const data = await API.gameSetup(sessionId, mode, settings);
       setGameState(data.state);
       setNewGameDialogOpen(false);
       setSidebarOpen(false);
     } catch (error) {
-      console.error("New game failed", error);
+      console.error("Game setup failed", error);
     }
   };
 
@@ -366,7 +368,7 @@ function App() {
       />
       {!sessionId || !gameState ? (
         <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#cfd8dc' }}>
-          <Typography variant="h5">{i18n.t("Initializing KaTrain...")}</Typography>
+          <Typography variant="h5">{t("Initializing KaTrain...")}</Typography>
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
@@ -442,7 +444,7 @@ function App() {
             
             <Divider />
             <Box sx={{ p: 1, bgcolor: '#fff' }}>
-              <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>{i18n.t("GRAPH")}</Typography>
+              <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>{t("GRAPH")}</Typography>
               <ScoreGraph 
                 gameState={gameState} 
                 onNavigate={handleNavigate} 
@@ -454,6 +456,7 @@ function App() {
         </Box>
         <NewGameDialog 
           open={isNewGameDialogOpen} 
+          gameState={gameState}
           onClose={() => setNewGameDialogOpen(false)} 
           onConfirm={handleNewGameConfirm} 
         />

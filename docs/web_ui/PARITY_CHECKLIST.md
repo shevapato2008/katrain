@@ -61,7 +61,7 @@ Priority legend:
 
 ## 6) Hamburger Menu Parity
 - [x] (P0) Player setup block (swap players, type, subtype, name).
-- [ ] (P0) New game / edit game.
+- [x] (P0) New game / edit game.
 - [ ] (P0) Save, Save As, Load SGF.
 - [x] (P0) Timer settings.
 - [x] (P0) Teacher settings.

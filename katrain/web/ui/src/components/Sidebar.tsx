@@ -12,6 +12,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import SchoolIcon from '@mui/icons-material/School';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import HubIcon from '@mui/icons-material/Hub';
+import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 
 interface SidebarProps {
   gameState: GameState | null;
@@ -22,9 +23,11 @@ interface SidebarProps {
   onAnalyzeGame: () => void;
   onGameReport: () => void;
   onLanguageChange: (lang: string) => void;
+  onSwapPlayers?: () => void;
 }
 
 const LANGUAGES = [
+// ... (omitting for brevity in this thought, but I should keep them in the real replacement)
   { code: 'en', flag: 'flag-uk.png', name: 'English' },
   { code: 'de', flag: 'flag-de.png', name: 'Deutsch' },
   { code: 'fr', flag: 'flag-fr.png', name: 'Français' },
@@ -36,7 +39,7 @@ const LANGUAGES = [
   { code: 'tr', flag: 'flag-tr.png', name: 'Türkçe' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,21 +76,28 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
       </Box>
 
       <Box sx={{ p: 2, flexGrow: 1 }}>
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom>{i18n.t('menu:playersetup').toUpperCase()}</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle2" color="textSecondary">{i18n.t('menu:playersetup').toUpperCase()}</Typography>
+          <Tooltip title={i18n.t("Swap Players")}>
+            <IconButton size="small" onClick={onSwapPlayers} sx={{ p: 0.5 }}>
+              <SwapCallsIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
         <Box sx={{ mb: 2, bgcolor: '#fff', p: 1, borderRadius: 1, border: '1px solid #ddd' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 24, height: 24, bgcolor: 'black', borderRadius: '50%', mr: 1 }} />
+              <Box sx={{ width: 20, height: 20, bgcolor: 'black', borderRadius: '50%', mr: 1, border: '1px solid #444' }} />
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{i18n.t('Black')}</Typography>
             </Box>
-            <Typography variant="body2">{getPlayerDisplay('B')}</Typography>
+            <Typography variant="caption" sx={{ bgcolor: '#eee', px: 0.5, borderRadius: 0.5 }}>{getPlayerDisplay('B')}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 24, height: 24, bgcolor: 'white', border: '1px solid #000', borderRadius: '50%', mr: 1 }} />
+              <Box sx={{ width: 20, height: 20, bgcolor: 'white', border: '1px solid #000', borderRadius: '50%', mr: 1 }} />
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{i18n.t('White')}</Typography>
             </Box>
-            <Typography variant="body2">{getPlayerDisplay('W')}</Typography>
+            <Typography variant="caption" sx={{ bgcolor: '#eee', px: 0.5, borderRadius: 0.5 }}>{getPlayerDisplay('W')}</Typography>
           </Box>
         </Box>
 

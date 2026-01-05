@@ -66,6 +66,11 @@ class ToggleAnalysisRequest(BaseModel):
     session_id: str
 
 
+class PVRequest(BaseModel):
+    session_id: str
+    pv: str
+
+
 class ModeRequest(BaseModel):
     session_id: str
     mode: str
@@ -318,6 +323,15 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    @app.post("/api/player/swap")
+    def swap_players(request: ToggleAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("swap_players")
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
     @app.post("/api/analysis/continuous")
     def toggle_continuous_analysis(request: ToggleAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
@@ -334,6 +348,24 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         with session.lock:
             kwargs = request.kwargs or {}
             session.katrain("analyze_extra", mode=request.mode, **kwargs)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/show-pv")
+    def show_pv(request: PVRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("_do_show_pv", request.pv)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/clear-pv")
+    def clear_pv(request: ToggleAnalysisRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("_do_clear_pv")
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}

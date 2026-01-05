@@ -42,7 +42,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active 
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
         <Typography variant="caption">{i18n.t("Captures")}: {captures}</Typography>
-        <Typography variant="caption">{i18n.t(info.player_type)}</Typography>
+        <Typography variant="caption" sx={{ fontWeight: info.player_type === 'player:ai' ? 'bold' : 'normal' }}>
+          {info.player_type === 'player:human' ? i18n.t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
+        </Typography>
       </Box>
     </Paper>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography } from '@mui/material';
 import { API, type GameState } from './api';
 import { i18n } from './i18n';
@@ -12,6 +12,7 @@ import ScoreGraph from './components/ScoreGraph';
 import NewGameDialog from './components/NewGameDialog';
 import AISettingsDialog from './components/AISettingsDialog';
 import GameReportDialog from './components/GameReportDialog';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const theme = createTheme({
   palette: {
@@ -33,6 +34,7 @@ function App() {
   const [isAISettingsDialogOpen, setAISettingsDialogOpen] = useState(false);
   const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
   const [gameReport, setGameReport] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({
     children: false,
@@ -169,6 +171,16 @@ function App() {
     }
   };
 
+  const handleSwapPlayers = async () => {
+    if (!sessionId) return;
+    try {
+      const data = await API.swapPlayers(sessionId);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Swap players failed", error);
+    }
+  };
+
   const handleAnalyzeGame = async () => {
     if (!sessionId) return;
     try {
@@ -220,17 +232,37 @@ function App() {
   };
 
   const handleToggleChange = async (toggle: string) => {
+    if (!sessionId) return;
+    
+    if (toggle === 'continuous_analysis') {
+      try {
+        // We don't have a direct API for this in the provided list, 
+        // but let's assume one exists or map it to something relevant. 
+        // Actually, the backend likely has /api/analysis/continuous
+        const response = await fetch('/api/analysis/continuous', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        if (response.ok) {
+           const data = await response.json();
+           setGameState(data.state);
+        }
+      } catch (e) {
+        console.error("Continuous analysis toggle failed", e);
+      }
+      return;
+    }
+
     // Optimistic update
     setAnalysisToggles(prev => ({ ...prev, [toggle]: !prev[toggle] }));
-    if (sessionId) {
-      try {
-        const data = await API.toggleUI(sessionId, toggle);
-        setGameState(data.state);
-      } catch (error) {
-        console.error("Toggle UI failed", error);
-        // Revert on error
-        setAnalysisToggles(prev => ({ ...prev, [toggle]: !prev[toggle] }));
-      }
+    try {
+      const data = await API.toggleUI(sessionId, toggle);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Toggle UI failed", error);
+      // Revert on error
+      setAnalysisToggles(prev => ({ ...prev, [toggle]: !prev[toggle] }));
     }
   };
 
@@ -271,9 +303,67 @@ function App() {
     }
   };
 
+  const handleShowPV = async (pv: string) => {
+    if (!sessionId) return;
+    try {
+      const data = await API.showPV(sessionId, pv);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Show PV failed", error);
+    }
+  };
+
+  const handleClearPV = async () => {
+    if (!sessionId) return;
+    try {
+      const data = await API.clearPV(sessionId);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Clear PV failed", error);
+    }
+  };
+
+  useKeyboardShortcuts({
+    onAction: handleAction,
+    onNewGame: handleNewGame,
+    onLoadSGF: () => fileInputRef.current?.click(),
+    onSaveSGF: handleSaveSGF,
+    onToggleUI: handleToggleChange,
+    onOpenPopup: (popup) => {
+      if (popup === 'analysis') { /* TODO: Extra analysis popup */ }
+      if (popup === 'report') handleGameReport();
+      if (popup === 'timer') { /* TODO: Timer popup */ }
+      if (popup === 'teacher') { /* TODO: Teacher popup */ }
+      if (popup === 'ai') setAISettingsDialogOpen(true);
+      if (popup === 'config') { /* TODO: Config popup */ }
+      if (popup === 'contribute') { /* TODO: Contribute popup */ }
+      if (popup === 'tsumego') { /* TODO: Tsumego popup */ }
+    }
+  });
+
+  // Hidden file input for shortcut
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const content = ev.target?.result as string;
+        handleLoadSGF(content);
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        accept=".sgf,.ngf,.gib" 
+        onChange={handleFileChange} 
+      />
       {!sessionId || !gameState ? (
         <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#cfd8dc' }}>
           <Typography variant="h5">{i18n.t("Initializing KaTrain...")}</Typography>
@@ -298,17 +388,23 @@ function App() {
               onAnalyzeGame={handleAnalyzeGame}
               onGameReport={handleGameReport}
               onLanguageChange={handleLanguageChange}
+              onSwapPlayers={handleSwapPlayers}
             />
           )}
           
           <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#cfd8dc', position: 'relative' }}>
             <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 1 }}>
               {gameState && (
-                <Board 
-                  gameState={gameState} 
-                  onMove={handleMove} 
-                  analysisToggles={analysisToggles} 
-                />
+            <Board 
+              gameState={gameState} 
+              onMove={(x, y) => {
+                 if (gameState.player_to_move === 'B' || gameState.player_to_move === 'W') {
+                    handleMove(x, y);
+                 }
+              }}
+              onNavigate={handleNavigate}
+              analysisToggles={analysisToggles} 
+            />
               )}
             </Box>
             <ControlBar onAction={handleAction} nextPlayer={gameState?.player_to_move || 'B'} />
@@ -336,7 +432,12 @@ function App() {
             <Divider />
             
             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-              <AnalysisPanel gameState={gameState} onNodeAction={handleNodeAction} />
+              <AnalysisPanel 
+                gameState={gameState} 
+                onNodeAction={handleNodeAction} 
+                onShowPV={handleShowPV}
+                onClearPV={handleClearPV}
+              />
             </Box>
             
             <Divider />

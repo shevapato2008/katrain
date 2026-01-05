@@ -19,10 +19,12 @@ export interface GameState {
   last_move: [number, number] | null;
   prisoner_count: { B: number; W: number };
   analysis: any;
+  commentary: string;
   is_root: boolean;
   is_pass: boolean;
   end_result: string | null;
   children: [string, [number, number] | null][];
+  ghost_stones: [string, [number, number] | null][];
   players_info: { B: PlayerInfo; W: PlayerInfo };
   note: string;
   ui_state: {
@@ -92,10 +94,16 @@ export const API = {
     apiPost("/api/config", { session_id: sessionId, setting, value }),
   updatePlayer: (sessionId: string, bw: string, playerType?: string, playerSubtype?: string): Promise<SessionResponse> =>
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype }),
+  swapPlayers: (sessionId: string): Promise<SessionResponse> =>
+    apiPost("/api/player/swap", { session_id: sessionId }),
   resign: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/resign", { session_id: sessionId }),
   rotate: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/rotate", { session_id: sessionId }),
+  showPV: (sessionId: string, pv: string): Promise<SessionResponse> =>
+    apiPost("/api/analysis/show-pv", { session_id: sessionId, pv }),
+  clearPV: (sessionId: string): Promise<SessionResponse> =>
+    apiPost("/api/analysis/clear-pv", { session_id: sessionId }),
   findMistake: (sessionId: string, fn: "redo" | "undo"): Promise<SessionResponse> =>
     apiPost("/api/nav/mistake", { session_id: sessionId, fn }),
   setMode: (sessionId: string, mode: string): Promise<SessionResponse> =>

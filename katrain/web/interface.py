@@ -101,6 +101,7 @@ class WebKaTrain(KaTrainBase):
         self.show_move_numbers = False
         self.show_coordinates = True
         self.zen_mode = False
+        self.preview_pv = []
         
         # Initialize language from config
         lang = self.config("general/lang") or self.config("general/language") or "en"
@@ -248,11 +249,13 @@ class WebKaTrain(KaTrainBase):
             "last_move": list(last_move) if last_move else None,
             "prisoner_count": self.game.prisoner_count,
             "note": cn.note,
+            "commentary": cn.comment(details=self.play_analyze_mode == MODE_ANALYZE or not self.config("trainer/lock_ai"), interactive=True),
             "analysis": analysis,
             "is_root": cn.is_root,
             "is_pass": cn.is_pass,
             "end_result": self.game.end_result,
             "children": [[c.move.player, list(c.move.coords) if c.move.coords else None] for c in cn.children if c.move],
+            "ghost_stones": [[c.move.player, list(c.move.coords) if c.move.coords else None] for c in cn.children if c.move] + self.preview_pv,
             "players_info": {
                 bw: {
                     "player_type": p.player_type,
@@ -351,7 +354,20 @@ class WebKaTrain(KaTrainBase):
         cn = self.game.current_node
         if self.play_analyze_mode == MODE_PLAY:
             next_player = self.players_info[cn.next_player]
-            if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result:
+            teaching_undo = self.config("trainer/teaching") and self.last_player_info.human
+            
+            if (
+                teaching_undo
+                and cn.analysis_complete
+                and cn.parent 
+                and cn.parent.analysis_complete
+                and not cn.children
+                and not self.game.end_result
+            ):
+                self.game.analyze_undo(cn)
+                cn = self.game.current_node # Re-fetch if undo happened
+
+            if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
                 self._do_ai_move(cn)
 
         if self.engine:
@@ -414,6 +430,35 @@ class WebKaTrain(KaTrainBase):
 
     # --- Minimal implementations of _do_* methods needed for core functionality ---
 
+    def _do_show_pv(self, pv_str):
+        from katrain.core.sgf_parser import Move
+        stones = []
+        parts = pv_str.split()
+        if not parts:
+            return
+        player = parts[0][0] # First char is player B or W
+        first_move_gtp = parts[0][1:]
+        
+        # Handle cases like "B D4 Q16" or "BD4 Q16"
+        if first_move_gtp:
+            moves_gtp = [first_move_gtp] + parts[1:]
+        else:
+            moves_gtp = parts[1:]
+
+        for i, gtp in enumerate(moves_gtp):
+            try:
+                m = Move.from_gtp(gtp)
+                if m.coords:
+                    stones.append(["B" if (player == "B") == (i % 2 == 0) else "W", list(m.coords)])
+            except Exception:
+                pass
+        self.preview_pv = stones
+        self.update_state()
+
+    def _do_clear_pv(self):
+        self.preview_pv = []
+        self.update_state()
+
     def _do_nav(self, node_id):
         node = self._find_node_by_id(node_id)
         if node:
@@ -428,6 +473,12 @@ class WebKaTrain(KaTrainBase):
             self._do_new_game(move_tree=move_tree)
         except Exception as e:
             self.log(f"Failed to load SGF: {e}", OUTPUT_ERROR)
+
+    def _do_swap_players(self):
+        self.players_info["B"], self.players_info["W"] = self.players_info["W"], self.players_info["B"]
+        self.players_info["B"].player = "B"
+        self.players_info["W"].player = "W"
+        self.update_state()
 
     def _do_update_player(self, bw, player_type=None, player_subtype=None):
         self.update_player(bw, player_type=player_type, player_subtype=player_subtype)

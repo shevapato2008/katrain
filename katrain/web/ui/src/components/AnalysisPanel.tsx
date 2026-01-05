@@ -13,9 +13,11 @@ import { i18n } from '../i18n';
 interface AnalysisPanelProps {
   gameState: GameState | null;
   onNodeAction?: (action: string) => void;
+  onShowPV?: (pv: string) => void;
+  onClearPV?: () => void;
 }
 
-const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }) => {
+const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction, onShowPV, onClearPV }) => {
   const [tabValue, setTabValue] = useState(0);
 
   if (!gameState) return null;
@@ -24,12 +26,64 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
   const topMoves = analysis?.moves || [];
   
   // Get point loss for current node
-  // Actually stones array in state has score_loss
   const currentStone = gameState.stones.find(s => s[1] && gameState.last_move && s[1][0] === gameState.last_move[0] && s[1][1] === gameState.last_move[1]);
   const pointsLost = currentStone ? currentStone[2] : null;
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const renderRichText = (text: string) => {
+    if (!text) return null;
+    
+    // Simple parser for [b], [i], [u], [color=...], [ref=...]
+    const parts = text.split(/(\[.*?\])/g);
+    let key = 0;
+    const elements: React.ReactNode[] = [];
+    const stack: { type: string, props?: any }[] = [];
+
+    parts.forEach(part => {
+      if (part.startsWith('[') && part.endsWith(']')) {
+        const tag = part.slice(1, -1);
+        if (tag.startsWith('/')) {
+          stack.pop();
+        } else {
+          const [name, val] = tag.split('=');
+          stack.push({ type: name, props: val });
+        }
+      } else if (part) {
+        let element: React.ReactNode = part;
+        [...stack].reverse().forEach(style => {
+          if (style.type === 'u') element = <u key={key++}>{element}</u>;
+          if (style.type === 'b') element = <strong key={key++}>{element}</strong>;
+          if (style.type === 'i') element = <em key={key++}>{element}</em>;
+          if (style.type === 'color') element = <span key={key++} style={{ color: style.props }}>{element}</span>;
+          if (style.type === 'ref') {
+             element = (
+               <Typography 
+                 component="span" 
+                 key={key++} 
+                 sx={{ 
+                   cursor: 'pointer', 
+                   color: 'primary.main', 
+                   textDecoration: 'underline',
+                   fontSize: 'inherit',
+                   '&:hover': { color: 'primary.dark' }
+                 }}
+                 onMouseEnter={() => onShowPV?.(style.props)}
+                 onMouseLeave={() => onClearPV?.()}
+                 onClick={() => onShowPV?.(style.props)}
+               >
+                 {element}
+               </Typography>
+             );
+          }
+        });
+        elements.push(<React.Fragment key={key++}>{element}</React.Fragment>);
+      }
+    });
+
+    return <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem' }}>{elements}</Typography>;
   };
 
   return (
@@ -69,6 +123,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
             <Typography variant="caption" color="textSecondary">{i18n.t("Info:point loss").split('\n')[0]}</Typography>
             <Typography variant="body2" fontWeight="bold" sx={{ color: pointsLost && pointsLost > 2 ? '#d32f2f' : '#fbc02d' }}>
               {pointsLost !== null ? pointsLost.toFixed(1) : '--'}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="textSecondary">{i18n.t("Visits")}</Typography>
+            <Typography variant="body2" fontWeight="bold">
+              {analysis ? analysis.visits : '--'}
             </Typography>
           </Box>
         </Box>
@@ -120,7 +180,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ gameState, onNodeAction }
         
         {tabValue === 1 && (
           <Box sx={{ p: 2, overflow: 'auto' }}>
-            <Typography variant="caption" color="textSecondary">{i18n.t("Detailed analysis data will appear here.")}</Typography>
+            {renderRichText(gameState.commentary)}
           </Box>
         )}
 

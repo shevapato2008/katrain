@@ -31,13 +31,13 @@ Priority legend:
 - [x] (P1) Setup position and self-play setup.
 - [x] (P0) Display last move marker and move number.
 - [x] (P0) Board coordinates, star points, and overlay rendering.
-- [ ] (P1) Keyboard shortcuts for navigation and analysis actions.
+- [x] (P1) Keyboard shortcuts for navigation and analysis actions.
 
 ## 3) Play/Analyze/Contribute Modes
 - [x] (P0) Play/Analyze toggle with saved UI state per mode.
 - [x] (P0) AI vs human selection with player setup controls.
-- [ ] (P1) Teaching mode behaviors (undo prompts, hints).
-- [ ] (P1) Show PV from comments interaction.
+- [x] (P1) Teaching mode behaviors (undo prompts, hints).
+- [x] (P1) Show PV from comments interaction.
 - [ ] (P2) Contribute mode dashboard, start/stop, and status output.
 
 ## 4) Analysis Controls and Actions
@@ -53,14 +53,14 @@ Priority legend:
 
 ## 5) Panels and Widgets
 - [x] (P0) Graph panel with score/winrate toggles and click navigation.
-- [ ] (P0) Stats panel with score/winrate/points toggles.
+- [x] (P0) Stats panel with score/winrate/points toggles.
 - [x] (P0) Notes panel with info/info-details/notes toggles.
 - [x] (P0) Timer panel and play clock behavior.
 - [ ] (P1) Move tree panel in analyze mode.
-- [ ] (P0) Player info cards with captures, names, ranks, and AI strategy.
+- [x] (P0) Player info cards with captures, names, ranks, and AI strategy.
 
 ## 6) Hamburger Menu Parity
-- [ ] (P0) Player setup block (swap players, type, subtype, name).
+- [x] (P0) Player setup block (swap players, type, subtype, name).
 - [ ] (P0) New game / edit game.
 - [ ] (P0) Save, Save As, Load SGF.
 - [x] (P0) Timer settings.

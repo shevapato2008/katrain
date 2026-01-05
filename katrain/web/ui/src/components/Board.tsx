@@ -4,6 +4,7 @@ import { type GameState } from '../api';
 interface BoardProps {
   gameState: GameState;
   onMove: (x: number, y: number) => void;
+  onNavigate?: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
 }
 
@@ -24,7 +25,7 @@ const EVAL_COLORS = [
   "rgba(30, 150, 0, 0.8)",     // Green <= 0.5
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => {
+const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
 
@@ -212,10 +213,10 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
       }
     });
 
-    // Children (Ghost Stones)
-    if (analysisToggles.children && gameState.children) {
+    // Ghost Stones
+    if (analysisToggles.children && gameState.ghost_stones) {
       ctx.globalAlpha = 0.5;
-      gameState.children.forEach(([player, coords]) => {
+      gameState.ghost_stones.forEach(([player, coords]) => {
         if (!coords) return;
         const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
         const img = player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
@@ -317,7 +318,21 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, analysisToggles }) => 
     const gridY = boardSize - 1 - invertedY;
 
     if (gridX >= 0 && gridX < boardSize && gridY >= 0 && gridY < boardSize) {
-      onMove(gridX, gridY);
+      // Check for existing stone
+      const clickedStone = gameState.stones.find(s => s[1] && s[1][0] === gridX && s[1][1] === gridY);
+      
+      if (clickedStone && onNavigate) {
+        const moveNumber = clickedStone[3];
+        if (moveNumber !== null && moveNumber !== undefined) {
+          // moveNumber corresponds to history index
+          if (moveNumber >= 0 && moveNumber < gameState.history.length) {
+            const nodeId = gameState.history[moveNumber].node_id;
+            onNavigate(nodeId);
+          }
+        }
+      } else {
+        onMove(gridX, gridY);
+      }
     }
   };
 

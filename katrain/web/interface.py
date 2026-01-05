@@ -370,6 +370,19 @@ class WebKaTrain(KaTrainBase):
             if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
                 self._do_ai_move(cn)
 
+        if self.game.end_result and not getattr(self, "_game_end_reported", False):
+            self._game_end_reported = True
+            sum_stats, histogram, player_ptloss = self._do_game_report()
+            self.message_callback("game_report", {
+                "sum_stats": sum_stats,
+                "histogram": histogram,
+                "player_ptloss": player_ptloss,
+                "thresholds": self.config("trainer/eval_thresholds"),
+                "end_result": self.game.end_result
+            })
+        elif not self.game.end_result:
+            self._game_end_reported = False
+
         if self.engine:
             if getattr(self, "pondering", False):
                 self.game.analyze_extra("ponder")
@@ -646,20 +659,7 @@ class WebKaTrain(KaTrainBase):
     def _do_game_report(self, depth_filter=None):
         from katrain.core.ai import game_report
         thresholds = self.config("trainer/eval_thresholds")
-        sum_stats, histogram, player_ptloss = game_report(self.game, thresholds, depth_filter=depth_filter)
-        if self.message_callback:
-            self.message_callback("game_report", {
-                "sum_stats": sum_stats,
-                "histogram": histogram,
-                "player_ptloss": player_ptloss,
-                "thresholds": thresholds
-            })
-        return {
-            "sum_stats": sum_stats,
-            "histogram": histogram,
-            "player_ptloss": player_ptloss,
-            "thresholds": thresholds
-        }
+        return game_report(self.game, thresholds, depth_filter=depth_filter)
 
     def _do_resign(self):
         self.game.current_node.end_state = f"{self.game.current_node.player}+R"

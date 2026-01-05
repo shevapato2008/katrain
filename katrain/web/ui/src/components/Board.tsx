@@ -250,10 +250,19 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
 
       // Text
       ctx.fillStyle = "white";
-      ctx.font = `bold ${layout.gridSize * 1.5}px sans-serif`;
+      const fontSize = layout.gridSize * 1.5;
+      ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(gameState.end_result, centerX, centerY);
+      
+      const lines = gameState.end_result.split('\n');
+      if (lines.length > 1) {
+        lines.forEach((line, i) => {
+          ctx.fillText(line, centerX, centerY + (i - (lines.length - 1) / 2) * fontSize * 1.2);
+        });
+      } else {
+        ctx.fillText(gameState.end_result, centerX, centerY);
+      }
     }
   };
 

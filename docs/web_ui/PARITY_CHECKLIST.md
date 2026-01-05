@@ -18,6 +18,7 @@ Priority legend:
 - [x] (P0) Click/tap to place stones with correct coordinate mapping.
 - [x] (P0) Pass button behavior matches desktop.
 - [x] (P0) Resign button behavior matches desktop.
+- [x] (P0) End game handling (clear indication of game over and final result).
 - [x] (P0) Navigation: jump to start/end, step +/-1, step +/-10.
 - [x] (P1) Previous/next mistake navigation.
 - [x] (P1) Rotate board.

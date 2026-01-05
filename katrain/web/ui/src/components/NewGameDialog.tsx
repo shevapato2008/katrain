@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Dialog, DialogContent, DialogActions, 
+  Dialog, DialogTitle, DialogContent, DialogActions, 
   Button, TextField, MenuItem, Box, Tabs, Tab, Typography, Divider, 
   FormControlLabel, Checkbox, Slider, ListSubheader
 } from '@mui/material';
@@ -149,6 +149,9 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>
+        {tabValue === 0 ? t("New Game title") : tabValue === 1 ? t("setupposition") : t("editgame")}
+      </DialogTitle>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} variant="fullWidth">
           <Tab label={t("newgame")} />

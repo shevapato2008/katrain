@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
   Button, TextField, MenuItem, Box, Tabs, Tab, Typography, Divider, 
-  FormControlLabel, Checkbox, Slider, ListSubheader
+  FormControlLabel, Checkbox, Slider
 } from '@mui/material';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
@@ -73,33 +73,24 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
     onConfirm(mode, settings);
   };
 
-  const STRATEGY_GROUPS = [
-    {
-      label: t('Recommended'),
-      options: [
-        { value: 'ai:default', label: t('AI: Recommended') },
-        { value: 'ai:human', label: t('AI: Human Style') },
-        { value: 'ai:pro', label: t('AI: Pro Style') },
-        { value: 'ai:p:rank', label: t('AI: Rank Based') },
-      ]
-    },
-    {
-      label: t('Strength Based'),
-      options: [
-        { value: 'ai:handicap', label: t('AI: Handicap') },
-        { value: 'ai:scoreloss', label: t('AI: Score Loss') },
-        { value: 'ai:simple', label: t('AI: Simple Ownership') },
-      ]
-    },
-    {
-      label: t('Policy Based'),
-      options: [
-        { value: 'ai:policy', label: t('AI: Policy') },
-        { value: 'ai:p:weighted', label: t('AI: Weighted') },
-        { value: 'ai:jigo', label: t('AI: Jigo') },
-        { value: 'ai:antimirror', label: t('AI: Antimirror') },
-      ]
-    }
+  // AI Strategies in recommended order (matching Kivy)
+  const AI_STRATEGIES = [
+    { value: 'ai:default', label: t('ai:default') },
+    { value: 'ai:human', label: t('ai:human') },
+    { value: 'ai:pro', label: t('ai:pro') },
+    { value: 'ai:p:rank', label: t('ai:p:rank') },
+    { value: 'ai:handicap', label: t('ai:handicap') },
+    { value: 'ai:simple', label: t('ai:simple') },
+    { value: 'ai:scoreloss', label: t('ai:scoreloss') },
+    { value: 'ai:policy', label: t('ai:policy') },
+    { value: 'ai:p:weighted', label: t('ai:p:weighted') },
+    { value: 'ai:jigo', label: t('ai:jigo') },
+    { value: 'ai:antimirror', label: t('ai:antimirror') },
+    { value: 'ai:p:pick', label: t('ai:p:pick') },
+    { value: 'ai:p:local', label: t('ai:p:local') },
+    { value: 'ai:p:tenuki', label: t('ai:p:tenuki') },
+    { value: 'ai:p:territory', label: t('ai:p:territory') },
+    { value: 'ai:p:influence', label: t('ai:p:influence') },
   ];
 
   const RULESETS = [
@@ -122,8 +113,8 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
           fullWidth
           size="small"
         >
-          <MenuItem value="game:normal">{t("Normal Game")}</MenuItem>
-          <MenuItem value="game:teach">{t("Teaching Game")}</MenuItem>
+          <MenuItem value="game:normal">{t("game:normal")}</MenuItem>
+          <MenuItem value="game:teach">{t("game:teach")}</MenuItem>
         </TextField>
       );
     } else {
@@ -136,12 +127,9 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
           fullWidth
           size="small"
         >
-          {STRATEGY_GROUPS.map(group => [
-            <ListSubheader key={group.label}>{group.label}</ListSubheader>,
-            ...group.options.map(opt => (
-              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-            ))
-          ])}
+          {AI_STRATEGIES.map(opt => (
+            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+          ))}
         </TextField>
       );
     }

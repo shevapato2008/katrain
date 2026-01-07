@@ -49,6 +49,8 @@ The system will follow a classic Client-Server architecture.
     *   `POST /api/nav/{node_id}`: Jump to specific node.
     *   `POST /api/new-game`: Start a new game with settings.
     *   `POST /api/config`: Update config sections (engine, trainer, timer, theme, ai, game).
+    *   `GET /api/ai-constants`: Get AI strategy constants and option definitions.
+    *   `POST /api/ai/estimate-rank`: Get estimated rank for a given strategy and settings.
     *   `POST /api/sgf/load`: Load SGF/NGF/GIB into the session.
     *   `POST /api/sgf/save`: Export SGF from the current session.
     *   `POST /api/analysis/toggle`: Toggle continuous analysis.
@@ -139,9 +141,16 @@ The system will follow a classic Client-Server architecture.
 5.  Timer and sound settings with parity to Kivy.
 6.  Theme selection and UI state persistence.
 7.  Contribute mode dashboard and controls.
-8.  **New Game / Edit Game Dialog Parity:**
+8.  **AI Settings Dialog Parity:**
+    *   Implement `ConfigAIPopup` equivalent in WebUI.
+    *   Dynamic form generation based on `AI_OPTION_VALUES` from backend.
+    *   Real-time rank estimation via API.
+    *   Localization of strategy names and help text.
+9.  **New Game / Edit Game Dialog Parity:**
     *   Implement multi-tab dialog (Start New Game, Set up Position, Edit Game Info).
     *   Dynamic "Game Type" vs "AI Strategy" based on player selection (Human/AI).
+    *   **AI Options Alignment:** Include all strategies (Recommended, Strength, Policy, Style) matching Kivy's `AI_STRATEGIES_RECOMMENDED_ORDER`.
+    *   **Translation:** Ensure all dropdown options (strategies, rulesets) use correct i18n keys and react to language changes.
     *   Include ruleset, handicap, komi, and board size options.
     *   Add "Target Score" and "Generate until move" for position setup.
     *   Ensure all labels and options are fully localized and reactive to language changes.

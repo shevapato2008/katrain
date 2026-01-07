@@ -157,6 +157,11 @@ class GameReportRequest(BaseModel):
     depth_filter: Optional[List[float]] = None
 
 
+class RankEstimationRequest(BaseModel):
+    strategy: str
+    settings: Dict[str, Any]
+
+
 def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
     # Set logging levels for our application
     logging.getLogger("katrain_web").setLevel(logging.INFO)
@@ -354,6 +359,13 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
+
+    @app.get("/api/config")
+    def get_config(session_id: str, setting: str):
+        session = _get_session_or_404(manager, session_id)
+        # config is thread-safe enough for read
+        value = session.katrain.config(setting)
+        return {"setting": setting, "value": value}
 
     @app.post("/api/config")
     def update_config(request: ConfigUpdateRequest):
@@ -565,6 +577,49 @@ def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
         i18n.switch_lang(lang)
         catalog = getattr(i18n.ugettext.__self__, "_catalog", {})
         return {"lang": lang, "translations": catalog}
+
+    @app.get("/api/ai-constants")
+    def get_ai_constants():
+        from katrain.core.constants import (
+            AI_STRATEGIES_RECOMMENDED_ORDER,
+            AI_OPTION_VALUES,
+            AI_KEY_PROPERTIES,
+            AI_CONFIG_DEFAULT
+        )
+        # Convert range objects to lists for JSON serialization
+        json_option_values = {}
+        for k, v in AI_OPTION_VALUES.items():
+            if isinstance(v, range):
+                json_option_values[k] = list(v)
+            elif isinstance(v, list):
+                # Check for tuples inside list (value, label)
+                new_list = []
+                for item in v:
+                    if isinstance(item, tuple):
+                        new_list.append(list(item))
+                    else:
+                        new_list.append(item)
+                json_option_values[k] = new_list
+            else:
+                json_option_values[k] = v
+
+        return {
+            "strategies": AI_STRATEGIES_RECOMMENDED_ORDER,
+            "options": json_option_values,
+            "key_properties": list(AI_KEY_PROPERTIES),
+            "default_strategy": AI_CONFIG_DEFAULT
+        }
+
+    @app.post("/api/ai/estimate-rank")
+    def estimate_rank(request: RankEstimationRequest):
+        from katrain.core.ai import ai_rank_estimation
+        from katrain.core.lang import rank_label
+        try:
+            rank = ai_rank_estimation(request.strategy, request.settings)
+            return {"rank": rank_label(rank)}
+        except Exception as e:
+            logging.getLogger("katrain_web").error(f"Rank estimation failed: {e}")
+            return {"rank": "??"}
 
     @app.post("/api/theme")
     def switch_theme(request: ThemeRequest):

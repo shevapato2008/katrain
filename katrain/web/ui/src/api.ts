@@ -92,6 +92,12 @@ export const API = {
     if (!response.ok) throw new Error("Failed to save SGF");
     return response.json();
   },
+  getConfig: async (sessionId: string, setting: string): Promise<any> => {
+    const params = new URLSearchParams({ session_id: sessionId, setting });
+    const response = await fetch(`/api/config?${params.toString()}`);
+    if (!response.ok) throw new Error("Failed to get config");
+    return (await response.json()).value;
+  },
   updateConfig: (sessionId: string, setting: string, value: any): Promise<SessionResponse> =>
     apiPost("/api/config", { session_id: sessionId, setting, value }),
   updatePlayer: (sessionId: string, bw: string, playerType?: string, playerSubtype?: string): Promise<SessionResponse> =>
@@ -124,6 +130,13 @@ export const API = {
     apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only }),
   getGameReport: (sessionId: string, depth_filter?: number[]): Promise<any> => 
     apiPost("/api/analysis/report", { session_id: sessionId, depth_filter }),
+  getAIConstants: async (): Promise<{ strategies: string[], options: Record<string, any>, key_properties: string[], default_strategy: string }> => {
+    const response = await fetch('/api/ai-constants');
+    if (!response.ok) throw new Error("Failed to fetch AI constants");
+    return response.json();
+  },
+  estimateRank: (strategy: string, settings: any): Promise<{ rank: string }> =>
+    apiPost("/api/ai/estimate-rank", { strategy, settings }),
   getTranslations: async (lang: string) => {
     const params = new URLSearchParams({ lang });
     const response = await fetch(`/api/translations?${params.toString()}`);

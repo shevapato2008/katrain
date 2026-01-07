@@ -157,22 +157,6 @@ function App() {
     }
   };
 
-  const handleAISettingsConfirm = async (bw: 'B' | 'W', strategy: string) => {
-    if (!sessionId) return;
-    try {
-      const isHuman = strategy === 'player:human';
-      const data = await API.updatePlayer(
-        sessionId, 
-        bw, 
-        isHuman ? 'player:human' : 'player:ai', 
-        isHuman ? 'game:normal' : strategy
-      );
-      setGameState(data.state);
-    } catch (error) {
-      console.error("AI Settings update failed", error);
-    }
-  };
-
   const handleSwapPlayers = async () => {
     if (!sessionId) return;
     try {
@@ -462,9 +446,9 @@ function App() {
         />
         <AISettingsDialog
           open={isAISettingsDialogOpen}
+          sessionId={sessionId}
           gameState={gameState}
           onClose={() => setAISettingsDialogOpen(false)}
-          onConfirm={handleAISettingsConfirm}
         />
         <GameReportDialog
           open={isGameReportDialogOpen}

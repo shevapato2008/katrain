@@ -65,8 +65,8 @@ Priority legend:
 - [x] (P0) New game / edit game.
 - [ ] (P0) Save, Save As, Load SGF.
 - [x] (P0) Timer settings.
-- [x] (P0) Teacher settings.
-- [x] (P0) AI settings.
+- [ ] (P0) Teacher settings.
+- [x] (P0) AI settings (Strategy configuration, dynamic options, rank estimation).
 - [x] (P0) General settings.
 - [ ] (P2) Contribute settings.
 - [x] (P1) Language switcher.
@@ -78,7 +78,7 @@ Priority legend:
 - [x] (P0) AI config popup (strategy options, estimated rank).
 - [x] (P0) Teacher/trainer config popup (thresholds, prompts, dots, theme).
 - [x] (P0) Timer config popup (main time, byo-yomi, sound).
-- [x] (P0) New game and edit game popups (rules, komi, handicap).
+- [x] (P0) New game and edit game popups (rules, komi, handicap, full AI strategy list).
 - [ ] (P2) Contribute popup (credentials, settings, save path).
 - [ ] (P1) Engine recovery popup.
 - [x] (P1) Re-analyze game popup.

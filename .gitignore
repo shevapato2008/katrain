@@ -161,3 +161,6 @@ dmypy.json
 # Gemini
 .gemini-clipboard/
 .playwright-mcp/
+
+# MacOS
+.DS_Store

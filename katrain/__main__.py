@@ -36,6 +36,21 @@ def _determine_start_mode(argv):
 
 start_mode = _determine_start_mode(sys.argv)
 
+# Strip --ui argument from sys.argv to prevent Kivy from failing
+new_argv = []
+skip_next = False
+for i, arg in enumerate(sys.argv):
+    if skip_next:
+        skip_next = False
+        continue
+    if arg == "--ui":
+        skip_next = True
+        continue
+    if arg.startswith("--ui="):
+        continue
+    new_argv.append(arg)
+sys.argv = new_argv
+
 # Force headless mode if web UI is requested, BEFORE any imports
 if start_mode == "web":
     os.environ["KIVY_NO_ARGS"] = "1"

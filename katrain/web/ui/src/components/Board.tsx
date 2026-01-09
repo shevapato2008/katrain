@@ -17,12 +17,12 @@ const ASSETS = {
 };
 
 const EVAL_COLORS = [
-  "rgba(114, 33, 107, 0.8)", // Purple > 12
-  "rgba(204, 0, 0, 0.8)",     // Red > 6
-  "rgba(230, 102, 25, 0.8)",   // Orange > 3
-  "rgba(242, 242, 0, 0.8)",    // Yellow > 1.5
-  "rgba(171, 230, 46, 0.8)",   // Light Green > 0.5
-  "rgba(30, 150, 0, 0.8)",     // Green <= 0.5
+  "rgba(150, 50, 140, 0.85)", // Purple > 12 (blunder)
+  "rgba(225, 107, 92, 0.85)",  // Red > 6 (big mistake)
+  "rgba(212, 165, 116, 0.85)", // Warm orange > 3 (mistake)
+  "rgba(232, 200, 100, 0.85)", // Yellow > 1.5 (inaccuracy)
+  "rgba(171, 200, 100, 0.85)", // Light Green > 0.5 (ok)
+  "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
 const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles }) => {
@@ -231,12 +231,21 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       const lastStone = gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
       const lastPlayer = lastStone ? lastStone[0] : null;
 
-      const circleRadius = layout.gridSize * 0.35; // SET SIZE HERE (0.35 * gridSize)
+      const circleRadius = layout.gridSize * 0.35;
+
+      // Outer glow for emphasis
+      ctx.shadowColor = lastPlayer === "B" ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.4)";
+      ctx.shadowBlur = 8;
+
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, circleRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = lastPlayer === "B" ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)";
-      ctx.lineWidth = Math.max(2, layout.gridSize * 0.08);
+      ctx.strokeStyle = lastPlayer === "B" ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
+      ctx.lineWidth = Math.max(2.5, layout.gridSize * 0.09);
       ctx.stroke();
+
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
     }
 
     // Game End Result
@@ -268,34 +277,44 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
 
   // Helper draw functions
   const drawGrid = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
-    ctx.strokeStyle = "rgba(0,0,0,0.75)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = "round";
+
     for (let i = 0; i < boardSize; i++) {
       const start = gridToCanvas(layout, i, 0, boardSize);
       const end = gridToCanvas(layout, i, boardSize - 1, boardSize);
-      ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(Math.round(start.x) + 0.5, Math.round(start.y) + 0.5);
+      ctx.lineTo(Math.round(end.x) + 0.5, Math.round(end.y) + 0.5);
+      ctx.stroke();
     }
     for (let j = 0; j < boardSize; j++) {
       const start = gridToCanvas(layout, 0, j, boardSize);
       const end = gridToCanvas(layout, boardSize - 1, j, boardSize);
-      ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(Math.round(start.x) + 0.5, Math.round(start.y) + 0.5);
+      ctx.lineTo(Math.round(end.x) + 0.5, Math.round(end.y) + 0.5);
+      ctx.stroke();
     }
   };
 
   const drawStars = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
     const stars = boardSize === 19 ? [3, 9, 15] : boardSize === 13 ? [3, 6, 9] : boardSize === 9 ? [2, 4, 6] : [];
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
-    const starRadius = layout.gridSize * 0.1;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    const starRadius = layout.gridSize * 0.11;
     stars.forEach(x => stars.forEach(y => {
       const pos = gridToCanvas(layout, x, y, boardSize);
-      ctx.beginPath(); ctx.arc(pos.x, pos.y, starRadius, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, starRadius, 0, Math.PI * 2);
+      ctx.fill();
     }));
   };
 
   const drawCoordinates = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
     const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
-    ctx.font = `bold ${Math.max(14, layout.gridSize * 0.6)}px sans-serif`;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    ctx.font = `600 ${Math.max(14, layout.gridSize * 0.55)}px 'IBM Plex Mono', monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (let i = 0; i < boardSize; i++) {
@@ -346,13 +365,27 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+    <div style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '16px'
+    }}>
       <canvas
         ref={canvasRef}
         width={800}
         height={800}
         onClick={handleCanvasClick}
-        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+          borderRadius: '4px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',
+          cursor: 'pointer'
+        }}
       />
     </div>
   );

@@ -422,7 +422,7 @@ function App() {
           <Typography variant="h5" sx={{ color: '#f5f3f0' }}>{t("Initializing KaTrain...")}</Typography>
         </Box>
       ) : (
-        <Box className="app-container">
+        <Box className="app-container animate-fade-in">
           <TopBar
             onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
             analysisToggles={analysisToggles}

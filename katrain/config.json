@@ -2,8 +2,8 @@
     "engine": {
         "katago": "",
         "altcommand": "",
-        "backend": "local",
-        "http_url": "http://192.168.0.106:8000",
+        "backend": "http",
+        "http_url": "http://127.0.0.1:8000",
         "http_analyze_path": "/analyze",
         "http_health_path": "/health",
         "http_timeout": 30.0,
@@ -14,7 +14,8 @@
         "fast_visits": 25,
         "max_time": 8.0,
         "wide_root_noise": 0.04,
-        "_enable_ownership": true
+        "_enable_ownership": true,
+        "http_has_human_model": false
     },
     "contribute": {
         "katago": "",

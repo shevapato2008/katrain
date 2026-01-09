@@ -2,32 +2,41 @@
 
 This document outlines the steps to enable human-like model support for the HTTP backend and details the data flow from the Web UI to the engine.
 
-## 1. Core Implementation (`katrain/core`)
+## Phase 1: Server-Side Implementation (Prerequisite)
 
-### 1.1 Update Configuration
+Before modifying the KaTrain client, the remote HTTP engine must be updated to support the new capability handshake.
+
+*   **Specification:** See [SERVER_SIDE_REQUIREMENTS.md](SERVER_SIDE_REQUIREMENTS.md) for full details.
+*   **Key Tasks:**
+    1.  Update HTTP wrapper to detect `-human-model` usage.
+    2.  Expose `{"has_human_model": true}` in the `/health` endpoint JSON.
+    3.  Ensure `humanSLProfile` is passed through in `overrideSettings`.
+
+## Phase 2: Core Implementation (`katrain/core`)
+
+### 2.1 Update Configuration
 *   **File:** `katrain/config.json` (Default)
 *   **Action:** Add a new key `http_has_human_model` under the `engine` section.
-*   **Default:** `false` (safest default).
+*   **Default:** `false`.
+*   **Purpose:** Serves as a manual override or fallback if the server does not support automated detection.
 
-### 1.2 Update `KataGoHttpEngine`
-*   **File:** `katrain/core/engine.py`
-*   **Class:** `KataGoHttpEngine`
-*   **Change:**
-    *   In `__init__`, read the new config value:
-        ```python
-        self.has_human_model = self.config.get("http_has_human_model", False)
-        ```
-    *   (Optional) If we want to be smarter, we could try to send a "dummy" query with `humanSLProfile` and check for errors, but a config flag is more robust for now.
+### 2.2 Automated Model Detection (Handshake)
+*   **Goal:** Move beyond a simple connectivity check to a capability-aware handshake.
+*   **Protocol Definition:**
+    *   **Request:** `GET` request to `http_health_path`.
+    *   **Response:** `{"status": "ok", "has_human_model": true, "version": "..."}`
+*   **Client-Side Modifications (KaTrain):**
+    *   **File:** `katrain/core/engine.py`
+    *   **Logic:** Update `create_engine` to use `response.json()` and check for `has_human_model`.
+    *   **Internal Flag:** `KataGoHttpEngine` must set `self.has_human_model = server_res.get("has_human_model", config_val)`.
+*   **Server-Side Modifications (KataGo Wrapper):**
+    *   **Capability Check:** The wrapper script must detect if the `-human-model` argument was used during KataGo initialization.
+    *   **Endpoint Update:** Update the health/status endpoint to return the capability flag.
+    *   **Query Pass-through:** Ensure the `/analyze` (or equivalent) endpoint passes `overrideSettings` (specifically `humanSLProfile`) faithfully to the engine.
 
 ### 1.3 Verify Query Construction
-*   **File:** `katrain/core/engine.py`
-*   **Method:** `BaseEngine.build_analysis_query`
-*   **Verification:** Ensure `extra_settings` (which carries `humanSLProfile`) is merged into `overrideSettings` correctly.
-    *   *Current Code check:*
-        ```python
-        "overrideSettings": {**settings, **(extra_settings or {})},
-        ```
-    *   *Conclusion:* This is already correct. No changes needed here.
+*   **Verification:** `katrain/core/ai.py` generates strings like `rank_5k`, `preaz_1d`, or `proyear_1940`. 
+*   **Compatibility:** These are native to KataGo's human model. No changes are needed to the KataGo binary itself, provided the server-side wrapper does not filter these keys.
 
 ## 2. Data Flow & Web UI Integration
 

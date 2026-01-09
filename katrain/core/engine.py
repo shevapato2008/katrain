@@ -551,6 +551,7 @@ class KataGoHttpEngine(BaseEngine):
         self.thread_lock = threading.Lock()
         self._stop_event = threading.Event()
         self._available = True
+        self.has_human_model = self.config.get("http_has_human_model", False)
 
         base_url = self.config.get("http_url") or self.config.get("api_url") or "http://127.0.0.1:8000"
         self.base_url = base_url.rstrip("/")
@@ -567,6 +568,13 @@ class KataGoHttpEngine(BaseEngine):
     @property
     def available(self):
         return self._available
+
+    def check_alive(self, os_error="", exception_if_dead=False, maybe_open_recovery=False):
+        ok = self._available and self.worker_thread and self.worker_thread.is_alive()
+        if not ok and exception_if_dead:
+            msg = i18n._("Engine died unexpectedly").format(error=os_error or "HTTP engine unavailable")
+            self.on_error(msg, code="KATAGO-HTTP", allow_popup=maybe_open_recovery)
+        return ok
 
     def on_error(self, message, code=None, allow_popup=False):
         self.katrain.log(message, OUTPUT_ERROR)
@@ -626,75 +634,83 @@ class KataGoHttpEngine(BaseEngine):
     def _request_loop(self):
         while not self._stop_event.is_set():
             try:
-                query, callback, error_callback, next_move, node = self.write_queue.get(block=True, timeout=0.1)
+                item = self.write_queue.get(block=True, timeout=0.1)
             except queue.Empty:
                 continue
+            
+            # Process in a separate thread to avoid head-of-line blocking
+            threading.Thread(target=self._handle_request, args=(item,), daemon=True).start()
+
+    def _handle_request(self, item):
+        query, callback, error_callback, next_move, node = item
+        
+        with self.thread_lock:
+            if "id" not in query:
+                self.query_counter += 1
+                query["id"] = f"HTTP:{str(self.query_counter)}"
+            query_id = query["id"]
+            ponder = query.pop(self.PONDER_KEY, False)
+            if ponder:
+                self.ponder_query = {"id": query_id}
+            self.queries[query_id] = (callback, error_callback, time.time(), next_move, node)
+
+        self.katrain.log(f"Sending KataGo HTTP analysis query {query_id} to {self.base_url}{self.analyze_path} with payload: {json.dumps(json_truncate_arrays(query))}", OUTPUT_INFO)
+        try:
+            analysis = self._post_json(query)
+            if analysis is None:
+                raise RuntimeError("Empty response from HTTP engine")
+            self._available = True
+        except Exception as e:
+            self._available = False
             with self.thread_lock:
-                if "id" not in query:
-                    self.query_counter += 1
-                    query["id"] = f"HTTP:{str(self.query_counter)}"
-                query_id = query["id"]
-                ponder = query.pop(self.PONDER_KEY, False)
-                if ponder:
-                    self.ponder_query = {"id": query_id}
-                self.queries[query_id] = (callback, error_callback, time.time(), next_move, node)
-            self.katrain.log(f"Sending KataGo HTTP analysis query {query_id} to {self.base_url}{self.analyze_path} with payload: {json.dumps(json_truncate_arrays(query))}", OUTPUT_INFO)
-            try:
-                analysis = self._post_json(query)
-                if analysis is None:
-                    raise RuntimeError("Empty response from HTTP engine")
-                self._available = True
-            except Exception as e:
-                self._available = False
-                with self.thread_lock:
-                    entry = self.queries.pop(query_id, None)
-                error_msg = f"HTTP analysis request failed: {e}"
-                if entry:
-                    _, error_callback, _, _, _ = entry
-                    if error_callback:
-                        error_callback({"error": error_msg, "id": query_id})
-                    else:
-                        self.on_error(i18n._("Engine died unexpectedly").format(error=error_msg), code="KATAGO-HTTP")
+                entry = self.queries.pop(query_id, None)
+            error_msg = f"HTTP analysis request failed: {e}"
+            if entry:
+                _, error_callback, _, _, _ = entry
+                if error_callback:
+                    error_callback({"error": error_msg, "id": query_id})
                 else:
                     self.on_error(i18n._("Engine died unexpectedly").format(error=error_msg), code="KATAGO-HTTP")
-                continue
+            else:
+                self.on_error(i18n._("Engine died unexpectedly").format(error=error_msg), code="KATAGO-HTTP")
+            return
 
-            if isinstance(analysis, list):
-                self.katrain.log(f"KataGo HTTP returned warnings: {analysis}", OUTPUT_INFO)
-                analysis = {"id": query_id, "noResults": True, "warnings": analysis}
-            analysis.setdefault("id", query_id)
+        if isinstance(analysis, list):
+            self.katrain.log(f"KataGo HTTP returned warnings: {analysis}", OUTPUT_INFO)
+            analysis = {"id": query_id, "noResults": True, "warnings": analysis}
+        analysis.setdefault("id", query_id)
+        with self.thread_lock:
+            entry = self.queries.get(query_id)
+            if not entry:
+                return
+            callback, error_callback, start_time, next_move, _ = entry
+        if "error" in analysis:
             with self.thread_lock:
-                entry = self.queries.get(query_id)
-                if not entry:
-                    continue
-                callback, error_callback, start_time, next_move, _ = entry
-            if "error" in analysis:
+                self.queries.pop(query_id, None)
+            if error_callback:
+                error_callback(analysis)
+            else:
+                self.katrain.log(f"{analysis} received from KataGo HTTP", OUTPUT_ERROR)
+        else:
+            partial_result = analysis.get("isDuringSearch", False)
+            if not partial_result:
                 with self.thread_lock:
                     self.queries.pop(query_id, None)
-                if error_callback:
-                    error_callback(analysis)
-                else:
-                    self.katrain.log(f"{analysis} received from KataGo HTTP", OUTPUT_ERROR)
-            else:
-                partial_result = analysis.get("isDuringSearch", False)
-                if not partial_result:
-                    with self.thread_lock:
-                        self.queries.pop(query_id, None)
-                time_taken = time.time() - start_time
-                results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
-                self.katrain.log(
-                    f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
-                    OUTPUT_DEBUG,
-                )
-                self.katrain.log(json_truncate_arrays(analysis), OUTPUT_EXTRA_DEBUG)
-                try:
-                    if callback and results_exist:
-                        callback(analysis, partial_result)
-                except Exception as e:
-                    self.katrain.log(f"Error in engine callback for query {query_id}: {e}", OUTPUT_ERROR)
-                    traceback.print_exc()
-            if getattr(self.katrain, "update_state", None):  # easier mocking etc
-                self.katrain.update_state()
+            time_taken = time.time() - start_time
+            results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
+            self.katrain.log(
+                f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
+                OUTPUT_DEBUG,
+            )
+            self.katrain.log(json_truncate_arrays(analysis), OUTPUT_EXTRA_DEBUG)
+            try:
+                if callback and results_exist:
+                    callback(analysis, partial_result)
+            except Exception as e:
+                self.katrain.log(f"Error in engine callback for query {query_id}: {e}", OUTPUT_ERROR)
+                traceback.print_exc()
+        if getattr(self.katrain, "update_state", None):  # easier mocking etc
+            self.katrain.update_state()
 
     def _post_json(self, payload: Dict) -> Dict:
         url = f"{self.base_url}{self.analyze_path}"
@@ -783,9 +799,25 @@ def create_engine(katrain, config):
             health_path = config.get("http_health_path", "/health")
             target = f"{url.rstrip('/')}{health_path}"
             katrain.log(f"Checking HTTP engine status at {target}...", OUTPUT_INFO)
-            requests.get(target, timeout=2.0)
-            katrain.log("HTTP engine found and healthy.", OUTPUT_INFO)
-            return KataGoHttpEngine(katrain, config)
+            response = requests.get(target, timeout=2.0)
+            katrain.log(f"HTTP engine found and healthy. Status code: {response.status_code}", OUTPUT_INFO)
+            
+            # Auto-detect human model support
+            server_has_human_model = False
+            try:
+                data = response.json()
+                if isinstance(data, dict):
+                    server_has_human_model = data.get("has_human_model", False)
+                    if server_has_human_model:
+                        katrain.log("Server reports support for human-like models.", OUTPUT_INFO)
+            except Exception:
+                pass  # Use fallback
+                
+            engine = KataGoHttpEngine(katrain, config)
+            # Use detected capability or fallback to config
+            engine.has_human_model = server_has_human_model or config.get("http_has_human_model", False)
+            return engine
+            
         except Exception as e:
             katrain.log(f"Could not connect to HTTP engine: {e}. Falling back to local engine.", OUTPUT_ERROR)
             config["backend"] = "local"

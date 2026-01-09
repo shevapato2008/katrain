@@ -22,12 +22,14 @@ This project aims to extend support for Human-Like strategies to the HTTP engine
 ## 5. Technical Requirements
 
 ### 5.1 Server-Side (KataGo Context)
-*   The remote KataGo instance **must** be started with the `-human-model` flag pointing to a valid `.bin.gz` human model.
-*   The server must accept `humanSLProfile` in the `overrideSettings` JSON field of the analysis query.
+*   **Engine:** The remote KataGo instance **must** be started with the `-human-model` flag pointing to a valid `.bin.gz` human model.
+*   **Protocol:** The server **should** expose its capabilities in the health check response (e.g., `{"has_human_model": true}`).
+*   **API:** The server must accept `humanSLProfile` in the `overrideSettings` JSON field and pass it through to the engine.
 
 ### 5.2 Client-Side (KaTrain Core)
-*   `KataGoHttpEngine` must expose `has_human_model` status.
-*   Configuration must allow toggling this status (e.g., `engine/http_has_human_model`).
+*   `KataGoHttpEngine` must attempt to detect `has_human_model` from the server's health check response.
+*   Configuration (`engine/http_has_human_model`) will serve as a fallback or forced override.
+*   `KataGoHttpEngine` must expose `has_human_model` status to the strategies.
 
 ### 5.3 Web UI / State Management
 *   **Strategy Selection:** The UI needs to map user choices (e.g., "Pro", "Ranked") to the underlying `Player` object's `player_subtype`.

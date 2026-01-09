@@ -1,5 +1,6 @@
 import logging
 import time
+import threading
 from typing import Callable, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
@@ -75,6 +76,7 @@ class WebKaTrain(KaTrainBase):
         self.message_callback: Optional[Callable] = None
         self.enable_engine = enable_engine
         self.user_id = user_id
+        self.ai_lock = threading.Lock()
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
@@ -505,15 +507,16 @@ class WebKaTrain(KaTrainBase):
                 self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
 
     def _do_ai_move(self, node=None):
-        if node is None or self.game.current_node == node:
-            mode = self.next_player_info.strategy
-            settings = self.config(f"ai/{mode}")
-            if settings is not None:
-                from katrain.core.ai import generate_ai_move
-                generate_ai_move(self.game, mode, settings)
-                self.play_stone_sound()
-            else:
-                self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
+        with self.ai_lock:
+            if node is None or self.game.current_node == node:
+                mode = self.next_player_info.strategy
+                settings = self.config(f"ai/{mode}")
+                if settings is not None:
+                    from katrain.core.ai import generate_ai_move
+                    generate_ai_move(self.game, mode, settings)
+                    self.play_stone_sound()
+                else:
+                    self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 
     def _do_play(self, coords):
         from katrain.core.game import IllegalMoveException, Move

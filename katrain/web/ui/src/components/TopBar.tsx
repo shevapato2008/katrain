@@ -13,16 +13,60 @@ interface TopBarProps {
 const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleChange, status }) => {
   const { t } = useTranslation();
   return (
-    <AppBar position="static" color="default" elevation={1}>
-      <Toolbar variant="dense">
-        <IconButton edge="start" color="inherit" aria-label="menu" onClick={onMenuClick} sx={{ mr: 2 }}>
+    <AppBar
+      position="static"
+      elevation={0}
+      sx={{
+        bgcolor: 'rgba(26, 26, 26, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      }}
+    >
+      <Toolbar variant="dense" sx={{ minHeight: 56 }}>
+        <IconButton
+          edge="start"
+          aria-label="menu"
+          onClick={onMenuClick}
+          sx={{
+            mr: 2,
+            color: '#b8b5b0',
+            '&:hover': {
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
+              color: '#4a6b5c',
+            },
+          }}
+        >
           <MenuIcon />
         </IconButton>
-        <Typography variant="h6" color="inherit" component="div" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-          KaTrain <Typography variant="caption" sx={{ ml: 1, mt: 0.5 }}>{t('WEB UI')}</Typography>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            color: '#f5f3f0',
+            fontWeight: 600,
+            fontSize: '1.125rem',
+          }}
+        >
+          KaTrain
+          <Typography
+            variant="caption"
+            sx={{
+              ml: 1,
+              color: '#7a7772',
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}
+          >
+            {t('WEB UI')}
+          </Typography>
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, mr: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1, mr: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           {['children', 'eval', 'hints', 'policy', 'ownership', 'coords', 'numbers', 'score', 'winrate'].map((t_key) => {
             const labels: Record<string, string> = {
               children: t('analysis:nextmoves').replace('\n', ' '),
@@ -43,19 +87,73 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
                     checked={analysisToggles[t_key] || false}
                     onChange={() => onToggleChange(t_key)}
                     size="small"
-                    sx={{ p: 0.5 }}
+                    sx={{
+                      p: 0.5,
+                      color: '#7a7772',
+                      '&.Mui-checked': {
+                        color: '#4a6b5c',
+                      },
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                      },
+                    }}
                   />
                 }
-                label={<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{labels[t_key] || t_key}</Typography>}
-                sx={{ mr: 0, ml: 0.5 }}
+                label={
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      whiteSpace: 'nowrap',
+                      color: analysisToggles[t_key] ? '#f5f3f0' : '#b8b5b0',
+                      fontSize: '0.875rem',
+                      fontWeight: analysisToggles[t_key] ? 600 : 400,
+                      transition: 'color 150ms',
+                    }}
+                  >
+                    {labels[t_key] || t_key}
+                  </Typography>
+                }
+                sx={{
+                  mr: 0,
+                  ml: 0,
+                  '&:hover': {
+                    '& .MuiTypography-root': {
+                      color: '#f5f3f0',
+                    },
+                  },
+                }}
               />
             );
           })}
         </Box>
 
-        <Typography variant="body2" color="textSecondary" noWrap sx={{ maxWidth: 300 }}>
-          {status}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              bgcolor: '#30a06e',
+              animation: 'pulse 2s ease-in-out infinite',
+              '@keyframes pulse': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.5 },
+              },
+            }}
+          />
+          <Typography
+            variant="body2"
+            noWrap
+            sx={{
+              maxWidth: 300,
+              color: '#b8b5b0',
+              fontSize: '0.875rem',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            {status}
+          </Typography>
+        </Box>
       </Toolbar>
     </AppBar>
   );

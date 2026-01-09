@@ -17,11 +17,78 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const theme = createTheme({
   palette: {
+    mode: 'dark',
     primary: {
-      main: '#3f51b5',
+      main: '#4a6b5c', // Muted jade accent
+      light: '#5d8270',
+      dark: '#2f4539',
     },
     background: {
-      default: '#cfd8dc',
+      default: '#0f0f0f', // Deep charcoal
+      paper: '#252525', // Tertiary bg
+    },
+    text: {
+      primary: '#f5f3f0', // Primary text
+      secondary: '#b8b5b0', // Secondary text
+      disabled: '#4a4845',
+    },
+    divider: 'rgba(255, 255, 255, 0.05)',
+    success: {
+      main: '#30a06e',
+    },
+    warning: {
+      main: '#e89639',
+    },
+    error: {
+      main: '#e16b5c',
+    },
+    info: {
+      main: '#5b9bd5',
+    },
+  },
+  typography: {
+    fontFamily: "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+    fontSize: 16,
+    h1: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+    h2: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+    h3: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+    h4: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+    h5: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+    h6: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+    body1: { fontFamily: "'Manrope', sans-serif" },
+    body2: { fontFamily: "'Manrope', sans-serif" },
+    button: { fontFamily: "'Manrope', sans-serif", fontWeight: 600 },
+  },
+  shape: {
+    borderRadius: 8,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: '8px',
+          padding: '8px 16px',
+          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'scale(1.02)',
+          },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: '12px',
+        },
+      },
     },
   },
 });
@@ -351,25 +418,25 @@ function App() {
         onChange={handleFileChange} 
       />
       {!sessionId || !gameState ? (
-        <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#cfd8dc' }}>
-          <Typography variant="h5">{t("Initializing KaTrain...")}</Typography>
+        <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#0f0f0f' }}>
+          <Typography variant="h5" sx={{ color: '#f5f3f0' }}>{t("Initializing KaTrain...")}</Typography>
         </Box>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-          <TopBar 
-            onMenuClick={() => setSidebarOpen(!isSidebarOpen)} 
-            analysisToggles={analysisToggles} 
+        <Box className="app-container">
+          <TopBar
+            onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
+            analysisToggles={analysisToggles}
             onToggleChange={handleToggleChange}
             status={statusMessage}
           />
-        
-        <Box sx={{ flexGrow: 1, display: 'flex', overflow: 'hidden' }}>
+
+        <Box className="main-content">
           {isSidebarOpen && (
-            <Sidebar 
-              gameState={gameState} 
-              onNewGame={handleNewGame} 
-              onLoadSGF={handleLoadSGF} 
-              onSaveSGF={handleSaveSGF} 
+            <Sidebar
+              gameState={gameState}
+              onNewGame={handleNewGame}
+              onLoadSGF={handleLoadSGF}
+              onSaveSGF={handleSaveSGF}
               onAISettings={() => setAISettingsDialogOpen(true)}
               onAnalyzeGame={handleAnalyzeGame}
               onGameReport={handleGameReport}
@@ -377,26 +444,26 @@ function App() {
               onSwapPlayers={handleSwapPlayers}
             />
           )}
-          
-          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#cfd8dc', position: 'relative' }}>
-            <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 1 }}>
+
+          <Box className="board-container">
+            <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
               {gameState && (
-            <Board 
-              gameState={gameState} 
+            <Board
+              gameState={gameState}
               onMove={(x, y) => {
                  if (gameState.player_to_move === 'B' || gameState.player_to_move === 'W') {
                     handleMove(x, y);
                  }
               }}
               onNavigate={handleNavigate}
-              analysisToggles={analysisToggles} 
+              analysisToggles={analysisToggles}
             />
               )}
             </Box>
             <ControlBar onAction={handleAction} nextPlayer={gameState?.player_to_move || 'B'} />
           </Box>
 
-          <Box sx={{ width: 320, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #ddd', bgcolor: '#fafafa' }}>
+          <Box sx={{ width: 320, display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255, 255, 255, 0.05)', bgcolor: '#1a1a1a' }}>
             <Box sx={{ p: 1, display: 'flex', gap: 1 }}>
               {gameState && (
                 <>
@@ -415,23 +482,23 @@ function App() {
                 </>
               )}
             </Box>
-            <Divider />
-            
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)' }} />
+
             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-              <AnalysisPanel 
-                gameState={gameState} 
-                onNodeAction={handleNodeAction} 
+              <AnalysisPanel
+                gameState={gameState}
+                onNodeAction={handleNodeAction}
                 onShowPV={handleShowPV}
                 onClearPV={handleClearPV}
               />
             </Box>
-            
-            <Divider />
-            <Box sx={{ p: 1, bgcolor: '#fff' }}>
-              <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>{t("GRAPH")}</Typography>
-              <ScoreGraph 
-                gameState={gameState} 
-                onNavigate={handleNavigate} 
+
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)' }} />
+            <Box sx={{ p: 1, bgcolor: '#252525' }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: '#7a7772', fontSize: '0.75rem', letterSpacing: '0.5px' }}>{t("GRAPH")}</Typography>
+              <ScoreGraph
+                gameState={gameState}
+                onNavigate={handleNavigate}
                 showScore={analysisToggles.score}
                 showWinrate={analysisToggles.winrate}
               />

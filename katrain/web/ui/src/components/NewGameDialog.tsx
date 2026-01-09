@@ -136,27 +136,80 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          bgcolor: '#252525',
+          backgroundImage: 'none',
+        }
+      }}
+    >
+      <DialogTitle sx={{ color: '#f5f3f0', fontWeight: 600, borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
         {tabValue === 0 ? t("New Game title") : tabValue === 1 ? t("setupposition") : t("editgame")}
       </DialogTitle>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} variant="fullWidth">
-          <Tab label={t("newgame")} />
-          <Tab label={t("setupposition")} />
-          <Tab label={t("editgame")} />
+      <Box sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', bgcolor: '#2a2a2a' }}>
+        <Tabs
+          value={tabValue}
+          onChange={(_, v) => setTabValue(v)}
+          variant="fullWidth"
+          sx={{
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#4a6b5c',
+              height: 2,
+            }
+          }}
+        >
+          <Tab
+            label={t("newgame")}
+            sx={{
+              color: '#7a7772',
+              '&.Mui-selected': { color: '#f5f3f0' },
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' }
+            }}
+          />
+          <Tab
+            label={t("setupposition")}
+            sx={{
+              color: '#7a7772',
+              '&.Mui-selected': { color: '#f5f3f0' },
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' }
+            }}
+          />
+          <Tab
+            label={t("editgame")}
+            sx={{
+              color: '#7a7772',
+              '&.Mui-selected': { color: '#f5f3f0' },
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' }
+            }}
+          />
         </Tabs>
       </Box>
-      <DialogContent>
+      <DialogContent sx={{ bgcolor: '#1a1a1a' }}>
         <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Player Setup Block */}
           <Box>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>{t("menu:playersetup").toUpperCase()}</Typography>
+            <Typography
+              variant="subtitle2"
+              gutterBottom
+              sx={{
+                color: '#7a7772',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.5px'
+              }}
+            >
+              {t("menu:playersetup").toUpperCase()}
+            </Typography>
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                   <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: 'black' }} />
-                   <Typography variant="body2">{t("Black")}</Typography>
+                   <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#0a0a0a', border: '1px solid #444' }} />
+                   <Typography variant="body2" sx={{ color: '#f5f3f0', fontWeight: 600 }}>{t("Black")}</Typography>
                 </Box>
                 <TextField
                   select
@@ -181,11 +234,11 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
                   fullWidth 
                 />
               </Box>
-              <Divider orientation="vertical" flexItem />
+              <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                   <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: 'white', border: '1px solid #000' }} />
-                   <Typography variant="body2">{t("White")}</Typography>
+                   <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#f8f6f3', border: '1px solid #888' }} />
+                   <Typography variant="body2" sx={{ color: '#f5f3f0', fontWeight: 600 }}>{t("White")}</Typography>
                 </Box>
                 <TextField
                   select
@@ -213,7 +266,7 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
             </Box>
           </Box>
 
-          <Divider />
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
           {/* Game Settings */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -263,39 +316,90 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
 
           {tabValue === 0 && (
             <FormControlLabel
-              control={<Checkbox checked={clearCache} onChange={e => setClearCache(e.target.checked)} />}
-              label={<Typography variant="body2">{t("clear cache")} ({t("avoids replaying")})</Typography>}
+              control={
+                <Checkbox
+                  checked={clearCache}
+                  onChange={e => setClearCache(e.target.checked)}
+                  sx={{
+                    color: '#7a7772',
+                    '&.Mui-checked': { color: '#4a6b5c' }
+                  }}
+                />
+              }
+              label={
+                <Typography variant="body2" sx={{ color: '#b8b5b0' }}>
+                  {t("clear cache")} ({t("avoids replaying")})
+                </Typography>
+              }
             />
           )}
 
           {tabValue === 1 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="body2" color="textSecondary">{t("setup position explanation")}</Typography>
+              <Typography variant="body2" sx={{ color: '#b8b5b0', fontStyle: 'italic' }}>
+                {t("setup position explanation")}
+              </Typography>
               <Box>
-                <Typography variant="caption">{t("setup position black score")}: {setupAdvantage > 0 ? `B+${setupAdvantage}` : setupAdvantage < 0 ? `W+${Math.abs(setupAdvantage)}` : '0'}</Typography>
-                <Slider 
-                  value={setupAdvantage} 
-                  min={-150} max={150} 
-                  onChange={(_, v) => setSetupAdvantage(v as number)} 
+                <Typography variant="caption" sx={{ color: '#f5f3f0', fontFamily: 'var(--font-mono)' }}>
+                  {t("setup position black score")}: {setupAdvantage > 0 ? `B+${setupAdvantage}` : setupAdvantage < 0 ? `W+${Math.abs(setupAdvantage)}` : '0'}
+                </Typography>
+                <Slider
+                  value={setupAdvantage}
+                  min={-150} max={150}
+                  onChange={(_, v) => setSetupAdvantage(v as number)}
                   valueLabelDisplay="auto"
+                  sx={{
+                    color: '#4a6b5c',
+                    '& .MuiSlider-thumb': {
+                      '&:hover, &.Mui-focusVisible': { boxShadow: '0 0 0 8px rgba(74, 107, 92, 0.16)' }
+                    },
+                    '& .MuiSlider-rail': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
+                  }}
                 />
               </Box>
               <Box>
-                <Typography variant="caption">{t("setup position move number")}: {setupMove}</Typography>
-                <Slider 
-                  value={setupMove} 
-                  min={0} max={400} 
-                  onChange={(_, v) => setSetupMove(v as number)} 
+                <Typography variant="caption" sx={{ color: '#f5f3f0', fontFamily: 'var(--font-mono)' }}>
+                  {t("setup position move number")}: {setupMove}
+                </Typography>
+                <Slider
+                  value={setupMove}
+                  min={0} max={400}
+                  onChange={(_, v) => setSetupMove(v as number)}
                   valueLabelDisplay="auto"
+                  sx={{
+                    color: '#4a6b5c',
+                    '& .MuiSlider-thumb': {
+                      '&:hover, &.Mui-focusVisible': { boxShadow: '0 0 0 8px rgba(74, 107, 92, 0.16)' }
+                    },
+                    '& .MuiSlider-rail': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
+                  }}
                 />
               </Box>
             </Box>
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t("Cancel")}</Button>
-        <Button onClick={handleConfirm} variant="contained">
+      <DialogActions sx={{ bgcolor: '#252525', borderTop: '1px solid rgba(255, 255, 255, 0.05)', px: 3, py: 2 }}>
+        <Button
+          onClick={onClose}
+          sx={{
+            color: '#b8b5b0',
+            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: '#f5f3f0' }
+          }}
+        >
+          {t("Cancel")}
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          variant="contained"
+          sx={{
+            bgcolor: '#4a6b5c',
+            color: '#f5f3f0',
+            fontWeight: 600,
+            '&:hover': { bgcolor: '#5d8270' },
+            boxShadow: '0 2px 8px rgba(74, 107, 92, 0.3)'
+          }}
+        >
           {tabValue === 0 ? t("newgame") : tabValue === 1 ? t("setupposition") : t("editgame")}
         </Button>
       </DialogActions>

@@ -69,53 +69,132 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate, showScor
   };
 
   return (
-    <Box sx={{ width: '100%', mt: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: 16 }}>
-        {showScore ? <Typography variant="caption" sx={{ color: '#3f51b5' }}>Score: {scoreScale}</Typography> : <Box />}
-        {showWinrate ? <Typography variant="caption" sx={{ color: '#4caf50' }}>Winrate: {50+winrateScale}%</Typography> : <Box />}
+    <Box sx={{ width: '100%', mt: 1, bgcolor: '#2a2a2a', borderRadius: 1, p: 1.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, mb: 1 }}>
+        {showScore ? (
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#7a9cc6',
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Score: {scoreScale}
+          </Typography>
+        ) : <Box />}
+        {showWinrate ? (
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#5d8270',
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Winrate: {50+winrateScale}%
+          </Typography>
+        ) : <Box />}
       </Box>
-      <svg 
-        width="100%" 
-        height={height} 
-        viewBox={`0 0 ${width} ${height}`} 
-        style={{ backgroundColor: '#f0f0f0', cursor: 'pointer', display: 'block' }}
+      <svg
+        width="100%"
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        style={{
+          backgroundColor: '#1a1a1a',
+          cursor: 'pointer',
+          display: 'block',
+          borderRadius: '4px',
+          border: '1px solid rgba(255, 255, 255, 0.05)'
+        }}
         onClick={handleSvgClick}
       >
-        {/* Grid lines */}
-        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="#ccc" strokeWidth="1" />
-        
-        {/* Winrate line */}
-        {showWinrate && (
-          <polyline
-            fill="none"
-            stroke="#4caf50"
-            strokeWidth="2"
-            points={winratePoints}
-          />
-        )}
+        {/* Grid lines - horizontal center and quarters */}
+        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="rgba(255, 255, 255, 0.1)" strokeWidth="1" />
+        <line x1="0" y1={height/4} x2={width} y2={height/4} stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" strokeDasharray="3,3" />
+        <line x1="0" y1={3*height/4} x2={width} y2={3*height/4} stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" strokeDasharray="3,3" />
 
         {/* Score line */}
-        {showScore && (
+        {showScore && scorePoints && (
           <polyline
             fill="none"
-            stroke="#3f51b5"
+            stroke="#7a9cc6"
             strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             points={scorePoints}
+            style={{ filter: 'drop-shadow(0 0 2px rgba(122, 156, 198, 0.3))' }}
           />
         )}
 
-        {/* Current marker */}
-        {currentIndex !== -1 && (
-          <line 
-            x1={currentIndex * xStep} y1="0" 
-            x2={currentIndex * xStep} y2={height} 
-            stroke="rgba(0,0,0,0.5)" strokeWidth="1" 
+        {/* Winrate line */}
+        {showWinrate && winratePoints && (
+          <polyline
+            fill="none"
+            stroke="#5d8270"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            points={winratePoints}
+            style={{ filter: 'drop-shadow(0 0 3px rgba(93, 130, 112, 0.4))' }}
           />
         )}
+
+        {/* Current move marker */}
+        {currentIndex !== -1 && (
+          <>
+            <line
+              x1={currentIndex * xStep} y1="0"
+              x2={currentIndex * xStep} y2={height}
+              stroke="#4a6b5c"
+              strokeWidth="2"
+              opacity="0.8"
+            />
+            <circle
+              cx={currentIndex * xStep}
+              cy={height/2}
+              r="4"
+              fill="#4a6b5c"
+              stroke="#f5f3f0"
+              strokeWidth="1.5"
+              style={{ filter: 'drop-shadow(0 0 4px rgba(74, 107, 92, 0.6))' }}
+            />
+          </>
+        )}
       </svg>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: 16 }}>
-        {showScore ? <Typography variant="caption" sx={{ color: '#3f51b5' }}>Score: -{scoreScale}</Typography> : <Box />}
-        {showWinrate ? <Typography variant="caption" sx={{ color: '#4caf50' }}>Winrate: {50-winrateScale}%</Typography> : <Box />}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, mt: 1 }}>
+        {showScore ? (
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#7a9cc6',
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Score: -{scoreScale}
+          </Typography>
+        ) : <Box />}
+        {showWinrate ? (
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#5d8270',
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Winrate: {50-winrateScale}%
+          </Typography>
+        ) : <Box />}
       </Box>
     </Box>
   );

@@ -186,11 +186,28 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, se
   const otherOptions = Object.keys(settings).sort().filter(k => !(k in constants.options));
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t("AI Settings")}</DialogTitle>
-      <DialogContent>
-        {loading && <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress /></Box>}
-        
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          bgcolor: '#252525',
+          backgroundImage: 'none',
+        }
+      }}
+    >
+      <DialogTitle sx={{ color: '#f5f3f0', fontWeight: 600, borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        {t("AI Settings")}
+      </DialogTitle>
+      <DialogContent sx={{ bgcolor: '#1a1a1a' }}>
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <CircularProgress sx={{ color: '#4a6b5c' }} />
+          </Box>
+        )}
+
         <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             select
@@ -207,16 +224,49 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, se
             ))}
           </TextField>
 
-          <Typography variant="body2" color="textSecondary" sx={{ bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              bgcolor: '#2a2a2a',
+              color: '#b8b5b0',
+              p: 1.5,
+              borderRadius: 1,
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              fontStyle: 'italic',
+              fontSize: '0.85rem'
+            }}
+          >
             {t(selectedStrategy.replace('ai:', 'aihelp:'))}
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#e3f2fd', p: 1, borderRadius: 1 }}>
-             <Typography variant="subtitle2">{t("estimated strength")}</Typography>
-             <Typography variant="h6" color="primary">{estimatedRank}</Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: '#2a2a2a',
+              p: 1.5,
+              borderRadius: 1,
+              border: '1px solid rgba(74, 107, 92, 0.3)',
+              boxShadow: '0 0 12px rgba(74, 107, 92, 0.1)'
+            }}
+          >
+             <Typography variant="subtitle2" sx={{ color: '#b8b5b0' }}>
+               {t("estimated strength")}
+             </Typography>
+             <Typography
+               variant="h6"
+               sx={{
+                 color: '#4a6b5c',
+                 fontWeight: 700,
+                 fontFamily: 'var(--font-mono)'
+               }}
+             >
+               {estimatedRank}
+             </Typography>
           </Box>
 
-          <Divider />
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {currentOptions.map(key => (
@@ -247,9 +297,29 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, se
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t("Cancel")}</Button>
-        <Button onClick={handleSave} variant="contained">{t("update ai settings")}</Button>
+      <DialogActions sx={{ bgcolor: '#252525', borderTop: '1px solid rgba(255, 255, 255, 0.05)', px: 3, py: 2 }}>
+        <Button
+          onClick={onClose}
+          sx={{
+            color: '#b8b5b0',
+            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: '#f5f3f0' }
+          }}
+        >
+          {t("Cancel")}
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          sx={{
+            bgcolor: '#4a6b5c',
+            color: '#f5f3f0',
+            fontWeight: 600,
+            '&:hover': { bgcolor: '#5d8270' },
+            boxShadow: '0 2px 8px rgba(74, 107, 92, 0.3)'
+          }}
+        >
+          {t("update ai settings")}
+        </Button>
       </DialogActions>
     </Dialog>
   );

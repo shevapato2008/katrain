@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
   };
 
   return (
-    <Box sx={{ width: 280, borderRight: '1px solid #ddd', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#f5f5f5', overflowY: 'auto' }}>
+    <Box sx={{ width: 280, borderRight: '1px solid rgba(255, 255, 255, 0.05)', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#252525', overflowY: 'auto' }}>
       <input
         type="file"
         ref={fileInputRef}
@@ -71,116 +71,172 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
         onChange={handleFileChange}
       />
       <Box sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom>KaTrain Web</Typography>
-        <Divider />
+        <Typography variant="h6" gutterBottom sx={{ color: '#f5f3f0', fontWeight: 600 }}>KaTrain Web</Typography>
+        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
       </Box>
 
       <Box sx={{ p: 2, flexGrow: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="subtitle2" color="textSecondary">{t('menu:playersetup').toUpperCase()}</Typography>
+          <Typography variant="subtitle2" sx={{ color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t('menu:playersetup').toUpperCase()}</Typography>
           <Tooltip title={t("Swap Players")}>
-            <IconButton size="small" onClick={onSwapPlayers} sx={{ p: 0.5 }}>
+            <IconButton size="small" onClick={onSwapPlayers} sx={{ p: 0.5, color: '#b8b5b0', '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: '#4a6b5c' } }}>
               <SwapCallsIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
-        <Box sx={{ mb: 2, bgcolor: '#fff', p: 1, borderRadius: 1, border: '1px solid #ddd' }}>
+        <Box sx={{ mb: 2, bgcolor: '#2a2a2a', p: 1.5, borderRadius: 1, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 20, height: 20, bgcolor: 'black', borderRadius: '50%', mr: 1, border: '1px solid #444' }} />
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{t('Black')}</Typography>
+              <Box sx={{ width: 20, height: 20, bgcolor: '#0a0a0a', borderRadius: '50%', mr: 1, border: '1px solid #444' }} />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#f5f3f0' }}>{t('Black')}</Typography>
             </Box>
-            <Typography variant="caption" sx={{ bgcolor: '#eee', px: 0.5, borderRadius: 0.5 }}>{getPlayerDisplay('B')}</Typography>
+            <Typography variant="caption" sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', px: 0.75, py: 0.25, borderRadius: 0.5, color: '#b8b5b0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>{getPlayerDisplay('B')}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 20, height: 20, bgcolor: 'white', border: '1px solid #000', borderRadius: '50%', mr: 1 }} />
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{t('White')}</Typography>
+              <Box sx={{ width: 20, height: 20, bgcolor: '#f8f6f3', border: '1px solid #888', borderRadius: '50%', mr: 1 }} />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#f5f3f0' }}>{t('White')}</Typography>
             </Box>
-            <Typography variant="caption" sx={{ bgcolor: '#eee', px: 0.5, borderRadius: 0.5 }}>{getPlayerDisplay('W')}</Typography>
+            <Typography variant="caption" sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', px: 0.75, py: 0.25, borderRadius: 0.5, color: '#b8b5b0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>{getPlayerDisplay('W')}</Typography>
           </Box>
         </Box>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('GAME')}</Typography>
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t('GAME')}</Typography>
         <List dense sx={{ py: 0 }}>
           <ListItem disablePadding>
-            <ListItemButton onClick={onNewGame}>
-              <ListItemIcon sx={{ minWidth: 36 }}><PlayArrowIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:newgame')} secondary="Ctrl-N" />
+            <ListItemButton onClick={onNewGame} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><PlayArrowIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:newgame')}
+                secondary="Ctrl-N"
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={onSaveSGF}>
-              <ListItemIcon sx={{ minWidth: 36 }}><SaveIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:save')} secondary="Ctrl-S" />
+            <ListItemButton onClick={onSaveSGF} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><SaveIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:save')}
+                secondary="Ctrl-S"
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => fileInputRef.current?.click()}>
-              <ListItemIcon sx={{ minWidth: 36 }}><FileOpenIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:load')} secondary="Ctrl-L" />
+            <ListItemButton onClick={() => fileInputRef.current?.click()} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><FileOpenIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:load')}
+                secondary="Ctrl-L"
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('menu:settings').toUpperCase()}</Typography>
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t('menu:settings').toUpperCase()}</Typography>
         <List dense sx={{ py: 0 }}>
           <ListItem disablePadding>
-            <ListItemButton onClick={onAISettings}>
-              <ListItemIcon sx={{ minWidth: 36 }}><SettingsIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:aisettings')} secondary="F7" />
+            <ListItemButton onClick={onAISettings} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><SettingsIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:aisettings')}
+                secondary="F7"
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
-              <ListItemIcon sx={{ minWidth: 36 }}><TimerIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:clocksettings')} secondary="F5" />
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a4845' }}><TimerIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:clocksettings')}
+                secondary="F5"
+                primaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
-              <ListItemIcon sx={{ minWidth: 36 }}><SchoolIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:teachsettings')} secondary="F6" />
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a4845' }}><SchoolIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:teachsettings')}
+                secondary="F6"
+                primaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
-              <ListItemIcon sx={{ minWidth: 36 }}><EngineeringIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:settings')} secondary="F8" />
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a4845' }}><EngineeringIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:settings')}
+                secondary="F8"
+                primaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton disabled>
-              <ListItemIcon sx={{ minWidth: 36 }}><HubIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('menu:distributed')} secondary="F9" />
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a4845' }}><HubIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('menu:distributed')}
+                secondary="F9"
+                primaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('ANALYSIS')}</Typography>
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t('ANALYSIS')}</Typography>
         <List dense sx={{ py: 0 }}>
           <ListItem disablePadding>
-            <ListItemButton onClick={onAnalyzeGame}>
-              <ListItemIcon sx={{ minWidth: 36 }}><AnalyticsIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('analysis:extra')} secondary="F2" />
+            <ListItemButton onClick={onAnalyzeGame} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><AnalyticsIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('analysis:extra')}
+                secondary="F2"
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={onGameReport}>
-              <ListItemIcon sx={{ minWidth: 36 }}><AssessmentIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary={t('analysis:report')} secondary="F3" />
+            <ListItemButton onClick={onGameReport} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><AssessmentIcon fontSize="small" /></ListItemIcon>
+              <ListItemText
+                primary={t('analysis:report')}
+                secondary="F3"
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+              />
             </ListItemButton>
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>{t('menu:lang').toUpperCase()}</Typography>
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t('menu:lang').toUpperCase()}</Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1 }}>
           {LANGUAGES.map(lang => (
             <Tooltip key={lang.code} title={lang.name}>
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={() => onLanguageChange(lang.code)}
-                sx={{ p: 0.5, bgcolor: gameState?.language === lang.code ? '#e0e0e0' : 'transparent', borderRadius: 1 }}
+                sx={{
+                  p: 0.5,
+                  bgcolor: gameState?.language === lang.code ? 'rgba(74, 107, 92, 0.2)' : 'transparent',
+                  borderRadius: 1,
+                  border: gameState?.language === lang.code ? '1px solid #4a6b5c' : '1px solid transparent',
+                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' }
+                }}
               >
                 <img src={`/assets/img/flags/${lang.flag}`} alt={lang.name} style={{ width: 24, height: 16, objectFit: 'cover' }} />
               </IconButton>
@@ -189,13 +245,13 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
         </Box>
       </Box>
 
-      <Box sx={{ p: 2, borderTop: '1px solid #ddd', bgcolor: '#eee' }}>
-        <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)', bgcolor: '#1a1a1a' }}>
+        <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: '#7a7772', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
           {t('CAPTURES').toUpperCase()}
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="caption">{t('Black')}: {gameState?.prisoner_count.B}</Typography>
-          <Typography variant="caption">{t('White')}: {gameState?.prisoner_count.W}</Typography>
+          <Typography variant="caption" sx={{ color: '#b8b5b0', fontFamily: 'var(--font-mono)' }}>{t('Black')}: {gameState?.prisoner_count.B}</Typography>
+          <Typography variant="caption" sx={{ color: '#b8b5b0', fontFamily: 'var(--font-mono)' }}>{t('White')}: {gameState?.prisoner_count.W}</Typography>
         </Box>
       </Box>
     </Box>

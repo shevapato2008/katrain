@@ -1,0 +1,6 @@
+(;GM[1]FF[4]CA[UTF-8]AP[GeminiCLI]SZ[19]
+C[白先 死活题]
+AB[re][qe][qc][qb][qd]
+AW[pb][qg][pc][rf][pa][pf][pe][pd]
+PL[W]
+(;W[qa]C[正解](;B[ra](;W[rb](;B[sb](;W[sa]C[白的先手劫。])(;W[rc](;B[sc](;W[sa])))))(;W[sb]C[失败图](;B[rc]C[黑棋净活。](;W[se](;B[sd](;W[rb](;B[sc]C[A位漏的气太关健了。]))))(;W[sd](;B[se](;W[sc](;B[rb]))))))(;W[rc](;B[rb](;W[sb](;B[sd](;W[sc])))))))(;W[sd](;B[se](;W[qa](;B[ra](;W[rb](;B[sb](;W[sa])))))(;W[rb](;B[qa](;W[rc](;B[sb](;W[ra](;B[rd]))))))))(;W[rb](;B[ra](;W[qa](;B[sb]))(;W[rc](;B[sb](;W[qa](;B[sc](;W[sa])))(;W[sc](;B[qa](;W[sa](;B[se]))(;W[se](;B[sd](;W[sa](;B[sf](;W[sg](;B[rd])))))))))))(;B[qa](;W[rc](;B[sb](;W[ra](;B[sd](;W[sf]))))))))

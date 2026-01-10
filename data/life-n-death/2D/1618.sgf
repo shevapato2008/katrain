@@ -1,0 +1,6 @@
+(;GM[1]FF[4]CA[UTF-8]AP[GeminiCLI]SZ[19]
+C[黑先 死活题]
+AB[lb][me][rf][qe][na][mc][lc][oa][pf][ne][ob][pd]
+AW[mb][qc][ma][nb][nc][oc]
+PL[B]
+(;B[rb]C[变化](;W[rc](;B[sb](;W[sc](;B[pb](;W[pc](;B[qb]C[恭喜答对])))(;B[pc](;W[pb](;B[qb](;W[qa]))))(;B[qb](;W[pb](;B[pc](;W[qa])))))(;W[pb](;B[sc]C[恭喜答对]))(;W[qb](;B[sc](;W[rd](;B[sd])))(;B[pc](;W[pb](;B[sc])))))(;B[sc](;W[sb](;B[sd](;W[ra]C[失败，重来吧]))(;B[sa](;W[sd](;B[rd](;W[sb]))))))(;B[pc](;W[pb](;B[qb](;W[qa]))(;B[sc](;W[sd](;B[sb](;W[rd](;B[qb](;W[qa]))))))))(;B[qb](;W[pb](;B[sb](;W[sc](;B[pc](;W[qa]))))))))(;B[qb]C[失败2](;W[pb](;B[rb](;W[rc](;B[pc](;W[qa]C[失败，重来吧]))))(;B[rc](;W[rb](;B[sb](;W[qa](;B[ra])))))))(;B[pc]C[失败1](;W[pb](;B[qb](;W[qa](;B[rb](;W[rc])))))))

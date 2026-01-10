@@ -1,0 +1,6 @@
+(;GM[1]FF[4]CA[UTF-8]AP[GeminiCLI]SZ[19]
+C[白先 死活题]
+AB[ml][pn][qf][qh][od][sh][sg][nn][rn][rl][pa][ni][rh][pd][pb][pc][rf][pi][on][qd][pj][qn][nd][mj][nj][rm]
+AW[qk][rk][mh][ok][ol][qj][nc][ob][qm][om][qg][qc][pf][md][qi][nh][oc][ph][me][pg][mi][nf][ri][mc][qb][rg][ql]
+PL[W]
+(;W[qe]C[正解](;B[re](;W[rd]C[白棋于1位挖，黑2时白3断进去这一手为好棋。](;B[pe](;W[sd]C[对黑4，白于5位立，把白A做活和B扑之接不归当作相对点。])(;W[sf](;B[se](;W[si](;B[sf](;W[sd](;B[qe](;W[sb](;B[rc](;W[sc](;B[ra](;W[rb](;B[qa])))))))))))))(;B[rc]C[参考](;W[si]C[接不归](;B[pe](;W[sf])))(;W[sf](;B[se](;W[si]))))(;B[sf](;W[sd])))(;W[sf]C[失败2](;B[se](;W[si](;B[sf](;W[rd](;B[pe](;W[sd](;B[qe]C[次白A则黑B，白死。](;W[sb](;B[rc](;W[sc](;B[qa](;W[rb](;B[ra](;W[oe](;B[sa]C[黑棋快一气胜]))))))))))))))))))(;W[rd]C[失败1](;B[qe](;W[rb](;B[sc](;W[se](;B[re]C[白棋若下在1位，被黑棋于2位棒粘，单在角上是下不出棋的。白若3，则黑6止结束。])))))))

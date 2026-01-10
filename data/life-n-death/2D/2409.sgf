@@ -1,0 +1,6 @@
+(;GM[1]FF[4]CA[UTF-8]AP[GeminiCLI]SZ[19]
+C[黑先 死活题]
+AB[rd][ld][me][lb][sd][qc][la][lc][qf][le][ma][oe][ne][qd][pd]
+AW[rb][mb][mc][nd][qb][nb][md][od][oc][rc]
+PL[B]
+(;B[pb]C[黑1扳，是首先的一手，无论从哪里攻击，如被白棋占有这个点，则白做活没有问题。 参考图](;W[oa](;B[pc](;W[pa](;B[na](;W[ob](;B[ra](;W[sc](;B[sb]C[恭喜答对])))(;B[sb](;W[sc](;B[ra])))))(;B[ob](;W[na](;B[sb](;W[sc](;B[ra])))(;B[ra](;W[sc](;B[sb])))))(;B[sb](;W[sc](;B[na](;W[qa]))(;B[ob](;W[qa]))))(;B[ra](;W[qa](;B[ob](;W[sc](;B[na](;W[sa]))))(;B[sb](;W[sc](;B[na](;W[sa](;B[ob])))))))))(;B[pa](;W[pc](;B[sb](;W[qa])))))(;W[pc]C[??](;B[oa](;W[na](;B[ra](;W[qa](;B[sb](;W[sa](;B[sc]C[白2普通断，黑3尖，白4时，黑5碰是妙手，以下至黑9，成两面不能紧气之形，白死。]))))))))(;W[ob](;B[pa](;W[pc](;B[na]C[黑扳出时，白2应，则黑得意外的结果。黑5止，白撞紧气。黑3如走4位，则白3位，便回到正解图。]))))(;W[pa](;B[oa]C[白2有問題  黑3就死了吧。])))(;B[oa](;W[pb])))

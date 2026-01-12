@@ -1407,8 +1407,9 @@ class HumanStyleStrategy(AIStrategy):
         self.game.katrain.log(f"[HumanStyleStrategy] Board size: {board_size}", OUTPUT_DEBUG)
         human_policy = analysis["humanPolicy"]
         self.game.katrain.log(f"[HumanStyleStrategy] Human policy length: {len(human_policy)}", OUTPUT_DEBUG)
-        if len(human_policy) != 362:
-            self.game.katrain.log(f"[HumanStyleStrategy] WARNING: Human policy length {len(human_policy)} != 362", OUTPUT_ERROR)
+        expected_len = board_size[0] * board_size[1] + 1
+        if len(human_policy) != expected_len:
+            self.game.katrain.log(f"[HumanStyleStrategy] WARNING: Human policy length {len(human_policy)} != {expected_len}", OUTPUT_ERROR)
         
         # Create a list of moves with their human policy weights
         moves = []

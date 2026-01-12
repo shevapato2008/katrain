@@ -1073,3 +1073,63 @@ msgstr "Distance of wall"
 #. tsumego: ko is good enough?
 msgid "tsumego:ko"
 msgstr "Ko allowed?"
+
+msgid "Black"
+msgstr "Black"
+
+msgid "White"
+msgstr "White"
+
+msgid "Passed"
+msgstr "Passed"
+
+msgid "Game Ended"
+msgstr "Game Ended"
+
+msgid "Pass"
+msgstr "Pass"
+
+msgid "Pass Alert"
+msgstr "Pass Alert"
+
+msgid "Pass Sound"
+msgstr "Pass Sound"
+
+msgid "Game End Alert"
+msgstr "Game End Alert"
+
+msgid "Game End Sound"
+msgstr "Game End Sound"
+
+msgid "Game Report"
+msgstr "Game Report"
+
+msgid "Summary Statistics"
+msgstr "Summary Statistics"
+
+msgid "Player"
+msgstr "Player"
+
+msgid "Avg Pt Loss"
+msgstr "Avg Pt Loss"
+
+msgid "Mistakes"
+msgstr "Mistakes"
+
+msgid "Blunders"
+msgstr "Blunders"
+
+msgid "Move Quality Distribution"
+msgstr "Move Quality Distribution"
+
+msgid "Threshold (pts)"
+msgstr "Threshold (pts)"
+
+msgid "Best"
+msgstr "Best"
+
+msgid "Close"
+msgstr "Close"
+
+msgid "NOTIFICATIONS"
+msgstr "NOTIFICATIONS"

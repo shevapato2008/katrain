@@ -998,3 +998,42 @@ msgstr ""
 #. TODO
 msgid "engine:humanlike_model"
 msgstr "Path to human-like model"
+
+msgid "Game Report"
+msgstr "对局报告"
+
+msgid "Summary Statistics"
+msgstr "关键数据"
+
+msgid "Player"
+msgstr "棋手"
+
+msgid "Avg Pt Loss"
+msgstr "平均目数损失"
+
+msgid "Mistakes"
+msgstr "失误"
+
+msgid "Blunders"
+msgstr "恶手"
+
+msgid "Black"
+msgstr "黑方"
+
+msgid "White"
+msgstr "白方"
+
+msgid "Move Quality Distribution"
+msgstr "选点质量分布"
+
+msgid "Threshold (pts)"
+msgstr "损失门槛 (目)"
+
+msgid "Best"
+msgstr "最佳"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "NOTIFICATIONS"
+msgstr "通知"

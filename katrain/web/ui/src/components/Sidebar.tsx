@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip, IconButton, Switch } from '@mui/material';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -13,9 +13,17 @@ import SchoolIcon from '@mui/icons-material/School';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import HubIcon from '@mui/icons-material/Hub';
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 interface SidebarProps {
   gameState: GameState | null;
+  settings: {
+    showPassAlert: boolean;
+    playPassSound: boolean;
+    showEndAlert: boolean;
+    playEndSound: boolean;
+  };
+  onUpdateSettings: (key: string, value: boolean) => void;
   onNewGame: () => void;
   onLoadSGF: (sgf: string) => void;
   onSaveSGF: () => void;
@@ -38,7 +46,7 @@ const LANGUAGES = [
   { code: 'tr', flag: 'flag-tr.png', name: 'Türkçe' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers }) => {
+const Sidebar: React.FC<SidebarProps> = ({ gameState, settings, onUpdateSettings, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
@@ -135,6 +143,46 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
                 secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
               />
             </ListItemButton>
+          </ListItem>
+        </List>
+
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t("NOTIFICATIONS")}</Typography>
+        <List dense sx={{ py: 0 }}>
+          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
+            <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><NotificationsIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary={t("Pass Alert")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
+            <Switch
+              size="small"
+              checked={settings.showPassAlert}
+              onChange={(e) => onUpdateSettings('showPassAlert', e.target.checked)}
+            />
+          </ListItem>
+          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
+            <ListItemIcon sx={{ minWidth: 36 }} />
+            <ListItemText primary={t("Pass Sound")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
+            <Switch
+              size="small"
+              checked={settings.playPassSound}
+              onChange={(e) => onUpdateSettings('playPassSound', e.target.checked)}
+            />
+          </ListItem>
+          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
+            <ListItemIcon sx={{ minWidth: 36 }} />
+            <ListItemText primary={t("Game End Alert")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
+            <Switch
+              size="small"
+              checked={settings.showEndAlert}
+              onChange={(e) => onUpdateSettings('showEndAlert', e.target.checked)}
+            />
+          </ListItem>
+          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
+            <ListItemIcon sx={{ minWidth: 36 }} />
+            <ListItemText primary={t("Game End Sound")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
+            <Switch
+              size="small"
+              checked={settings.playEndSound}
+              onChange={(e) => onUpdateSettings('playEndSound', e.target.checked)}
+            />
           </ListItem>
         </List>
 

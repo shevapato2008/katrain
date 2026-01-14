@@ -96,7 +96,6 @@ const theme = createTheme({
 
 function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-  const [user, setUser] = useState<any>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const { t } = useTranslation();
@@ -191,6 +190,7 @@ function App() {
     const initSession = async () => {
       try {
         if (!token) {
+          console.log("No token found, opening login dialog");
           setLoginDialogOpen(true);
           return;
         }
@@ -223,8 +223,7 @@ function App() {
 
         // Get user info
         try {
-          const userData = await API.getMe(token);
-          setUser(userData);
+          await API.getMe(token);
         } catch (e) {
           console.error("Failed to get user info, token might be expired", e);
           localStorage.removeItem('token');
@@ -543,7 +542,12 @@ function App() {
         accept=".sgf,.ngf,.gib" 
         onChange={handleFileChange} 
       />
-      {!sessionId || !gameState ? (
+      {!token ? (
+        <LoginDialog 
+          open={isLoginDialogOpen} 
+          onLoginSuccess={handleLoginSuccess} 
+        />
+      ) : !sessionId || !gameState ? (
         <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#0f0f0f' }}>
           <Typography variant="h5" sx={{ color: '#f5f3f0' }}>{t("Initializing KaTrain...")}</Typography>
         </Box>

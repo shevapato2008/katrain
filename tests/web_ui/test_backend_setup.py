@@ -35,6 +35,23 @@ def test_settings_override(monkeypatch):
     new_settings = Settings()
     assert new_settings.KATRAIN_PORT == 9000
 
+def test_models_validation():
+    from katrain.web.models import MoveRequest
+    import pytest
+    from pydantic import ValidationError
+    
+    # Valid
+    req = MoveRequest(session_id="test", coords=[1, 2])
+    assert req.session_id == "test"
+    
+    # Invalid coords length
+    with pytest.raises(ValidationError):
+        MoveRequest(session_id="test", coords=[1])
+    
+    # Invalid type
+    with pytest.raises(ValidationError):
+        MoveRequest(session_id="test", coords="invalid")
+
 @pytest.mark.asyncio
 async def test_static_mounts(client):
     # Check routes in app

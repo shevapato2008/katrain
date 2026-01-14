@@ -28,9 +28,9 @@
 - [x] **Task 1: Engine Configuration & Client** fe9cb83
     - [x] Sub-task: Write tests for the internal KataGo HTTP client.
     - [x] Sub-task: Implement an asynchronous HTTP client to communicate with external KataGo APIs.
-- [ ] **Task 2: Request Routing Proxy**
-    - [ ] Sub-task: Write tests for the routing logic (Play vs Analysis).
-    - [ ] Sub-task: Implement the `/analyze` endpoint that routes requests based on payload to Local or Cloud engines.
+- [x] **Task 2: Request Routing Proxy** 821f8da
+    - [x] Sub-task: Write tests for the routing logic (Play vs Analysis).
+    - [x] Sub-task: Implement the `/analyze` endpoint that routes requests based on payload to Local or Cloud engines.
 - [ ] **Task: Conductor - User Manual Verification 'Dual-Engine Routing Logic' (Protocol in workflow.md)**
 
 ## Phase 4: Integration & Visualization

@@ -15,13 +15,13 @@
 - [x] **Task 1: User Data Persistence** 186146b
     - [x] Sub-task: Write tests for user registration/lookup logic.
     - [x] Sub-task: Implement a simple SQLite-based user repository.
-- [~] **Task 2: JWT Authentication API**
-    - [ ] Sub-task: Write tests for the `/login` endpoint and token verification.
-    - [ ] Sub-task: Implement JWT creation and middleware for protected routes.
-- [ ] **Task 3: Basic Login UI**
-    - [ ] Sub-task: Create a simple Login page in React.
-    - [ ] Sub-task: Integrate with the `/login` API.
-- [ ] **Task: Conductor - User Manual Verification 'Authentication System' (Protocol in workflow.md)**
+- [x] **Task 2: JWT Authentication API** 7d92098
+    - [x] Sub-task: Write tests for the `/login` endpoint and token verification.
+    - [x] Sub-task: Implement JWT creation and middleware for protected routes.
+- [x] **Task 3: Basic Login UI** 4e78cc7
+    - [x] Sub-task: Create a simple Login page in React.
+    - [x] Sub-task: Integrate with the `/login` API.
+- [~] **Task: Conductor - User Manual Verification 'Authentication System' (Protocol in workflow.md)**
 
 ## Phase 3: Dual-Engine Routing Logic
 

@@ -23,6 +23,17 @@ async def lifespan(app: FastAPI):
     repo.init_db()
     app.state.user_repo = repo
 
+    # Initialize Engine Clients and Router
+    from katrain.web.core.engine_client import KataGoClient
+    from katrain.web.core.router import RequestRouter
+    
+    local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
+    cloud_client = None
+    if settings.CLOUD_KATAGO_URL:
+        cloud_client = KataGoClient(url=settings.CLOUD_KATAGO_URL)
+    
+    app.state.router = RequestRouter(local_client=local_client, cloud_client=cloud_client)
+
     manager = app.state.session_manager
     try:
         from katrain.web.interface import WebKaTrain

@@ -1,0 +1,8 @@
+{
+  "track_id": "webui_core_20260114",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-14T10:00:00Z",
+  "updated_at": "2026-01-14T10:00:00Z",
+  "description": "Build the core Web UI infrastructure, including user authentication and dual-engine HTTP routing logic."
+}

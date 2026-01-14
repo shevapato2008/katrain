@@ -15,6 +15,9 @@ class Settings(BaseModel):
     # Engine Settings
     LOCAL_KATAGO_URL: str = "http://127.0.0.1:8000"
     CLOUD_KATAGO_URL: str = ""
+    
+    # Persistence
+    DATABASE_PATH: str = "db.sqlite3"
 
     def __init__(self, **data):
         # Override with env vars if not provided in data
@@ -24,6 +27,7 @@ class Settings(BaseModel):
         data.setdefault("MAX_SESSIONS", int(os.getenv("KATRAIN_MAX_SESSIONS", 100)))
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
+        data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
         super().__init__(**data)
 
 settings = Settings()

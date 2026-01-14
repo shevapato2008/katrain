@@ -123,3 +123,11 @@ class GameReportRequest(BaseModel):
 class RankEstimationRequest(BaseModel):
     strategy: str
     settings: Dict[str, Any]
+
+class User(BaseModel):
+    id: Optional[int] = None
+    username: str
+    created_at: Optional[str] = None
+
+class UserInDB(User):
+    hashed_password: str

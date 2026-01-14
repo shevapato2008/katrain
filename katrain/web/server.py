@@ -41,6 +41,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.on_event("startup")
     async def _startup():
+        # Initialize User Persistence
+        from katrain.web.core.auth import SQLiteUserRepository
+        repo = SQLiteUserRepository(settings.DATABASE_PATH)
+        repo.init_db()
+        app.state.user_repo = repo
+
         try:
             from katrain.web.interface import WebKaTrain
             # Just init to trigger imports and config loading

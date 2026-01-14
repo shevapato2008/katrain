@@ -13,6 +13,7 @@ import ScoreGraph from './components/ScoreGraph';
 import NewGameDialog from './components/NewGameDialog';
 import AISettingsDialog from './components/AISettingsDialog';
 import GameReportDialog from './components/GameReportDialog';
+import LoginDialog from './components/LoginDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const theme = createTheme({
@@ -94,6 +95,8 @@ const theme = createTheme({
 });
 
 function App() {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+  const [user, setUser] = useState<any>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const { t } = useTranslation();
@@ -102,6 +105,7 @@ function App() {
   const [isNewGameDialogOpen, setNewGameDialogOpen] = useState(false);
   const [isAISettingsDialogOpen, setAISettingsDialogOpen] = useState(false);
   const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
+  const [isLoginDialogOpen, setLoginDialogOpen] = useState(false);
   const [gameReport, setGameReport] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -186,6 +190,11 @@ function App() {
   useEffect(() => {
     const initSession = async () => {
       try {
+        if (!token) {
+          setLoginDialogOpen(true);
+          return;
+        }
+
         const data = await API.createSession();
         setSessionId(data.session_id);
         setGameState(data.state);
@@ -193,7 +202,6 @@ function App() {
         const initialLang = data.state?.language || "en";
         await i18n.loadTranslations(initialLang);
 
-        
         setStatusMessage(t("Ready"));
 
         // Setup WebSocket
@@ -212,13 +220,31 @@ function App() {
             setGameReportDialogOpen(true);
           }
         };
+
+        // Get user info
+        try {
+          const userData = await API.getMe(token);
+          setUser(userData);
+        } catch (e) {
+          console.error("Failed to get user info, token might be expired", e);
+          localStorage.removeItem('token');
+          setToken(null);
+          setLoginDialogOpen(true);
+        }
+
       } catch (error) {
         console.error("Failed to initialize session", error);
         setStatusMessage("Error: Failed to connect");
       }
     };
     initSession();
-  }, []);
+  }, [token]);
+
+  const handleLoginSuccess = (newToken: string) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setLoginDialogOpen(false);
+  };
 
   useEffect(() => {
     if (!gameState) return;
@@ -623,6 +649,10 @@ function App() {
           open={isGameReportDialogOpen}
           onClose={() => setGameReportDialogOpen(false)}
           report={gameReport}
+        />
+        <LoginDialog 
+          open={isLoginDialogOpen} 
+          onLoginSuccess={handleLoginSuccess} 
         />
         <Snackbar 
           open={notification.open} 

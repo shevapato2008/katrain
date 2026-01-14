@@ -142,5 +142,24 @@ export const API = {
     const response = await fetch(`/api/translations?${params.toString()}`);
     if (!response.ok) throw new Error("Failed to fetch translations");
     return response.json();
+  },
+  login: async (username: string, password: string): Promise<{ access_token: string, token_type: string }> => {
+    const response = await fetch("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Login failed ${response.status}: ${body}`);
+    }
+    return response.json();
+  },
+  getMe: async (token: string): Promise<any> => {
+    const response = await fetch("/api/v1/auth/me", {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to get user info");
+    return response.json();
   }
 };

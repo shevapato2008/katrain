@@ -12,10 +12,10 @@
 
 ## Phase 2: Authentication System
 
-- [ ] **Task 1: User Data Persistence**
-    - [ ] Sub-task: Write tests for user registration/lookup logic.
-    - [ ] Sub-task: Implement a simple SQLite-based user repository.
-- [ ] **Task 2: JWT Authentication API**
+- [x] **Task 1: User Data Persistence** 186146b
+    - [x] Sub-task: Write tests for user registration/lookup logic.
+    - [x] Sub-task: Implement a simple SQLite-based user repository.
+- [~] **Task 2: JWT Authentication API**
     - [ ] Sub-task: Write tests for the `/login` endpoint and token verification.
     - [ ] Sub-task: Implement JWT creation and middleware for protected routes.
 - [ ] **Task 3: Basic Login UI**

@@ -31,9 +31,9 @@
 - [x] **Task 2: Request Routing Proxy** 821f8da
     - [x] Sub-task: Write tests for the routing logic (Play vs Analysis).
     - [x] Sub-task: Implement the `/analyze` endpoint that routes requests based on payload to Local or Cloud engines.
-- [ ] **Task: Conductor - User Manual Verification 'Dual-Engine Routing Logic' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Dual-Engine Routing Logic' (Protocol in workflow.md)** 5d04fe7
 
-## Phase 4: Integration & Visualization
+## Phase 4: Integration & Visualization [checkpoint: 5d04fe7]
 
 - [ ] **Task 1: Engine Status Visualization**
     - [ ] Sub-task: Add UI indicators to show which engine is currently processing.

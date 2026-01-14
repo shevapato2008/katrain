@@ -6,14 +6,24 @@ class Settings(BaseModel):
     VERSION: str = "1.17.1"
     API_V1_STR: str = "/api/v1"
     
-    KATRAIN_HOST: str = os.getenv("KATRAIN_HOST", "0.0.0.0")
-    KATRAIN_PORT: int = int(os.getenv("KATRAIN_PORT", 8001))
+    KATRAIN_HOST: str = "0.0.0.0"
+    KATRAIN_PORT: int = 8001
     
-    SESSION_TIMEOUT: int = int(os.getenv("KATRAIN_SESSION_TIMEOUT", 3600))
-    MAX_SESSIONS: int = int(os.getenv("KATRAIN_MAX_SESSIONS", 100))
+    SESSION_TIMEOUT: int = 3600
+    MAX_SESSIONS: int = 100
     
     # Engine Settings
-    LOCAL_KATAGO_URL: str = os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000")
-    CLOUD_KATAGO_URL: str = os.getenv("CLOUD_KATAGO_URL", "")
+    LOCAL_KATAGO_URL: str = "http://127.0.0.1:8000"
+    CLOUD_KATAGO_URL: str = ""
+
+    def __init__(self, **data):
+        # Override with env vars if not provided in data
+        data.setdefault("KATRAIN_HOST", os.getenv("KATRAIN_HOST", "0.0.0.0"))
+        data.setdefault("KATRAIN_PORT", int(os.getenv("KATRAIN_PORT", 8001)))
+        data.setdefault("SESSION_TIMEOUT", int(os.getenv("KATRAIN_SESSION_TIMEOUT", 3600)))
+        data.setdefault("MAX_SESSIONS", int(os.getenv("KATRAIN_MAX_SESSIONS", 100)))
+        data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
+        data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
+        super().__init__(**data)
 
 settings = Settings()

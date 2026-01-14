@@ -81,8 +81,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         manager.cleanup_expired()
 
     @app.get("/health")
-    def health():
-        return {"status": "ok"}
+    async def health():
+        from katrain.web.api.v1.endpoints.health import health as health_v1
+        return await health_v1()
 
     @app.post("/api/session")
     def create_session():

@@ -5,9 +5,9 @@
 - [x] **Task 1: Setup FastAPI Backend Structure** 0cf61e1
     - [x] Sub-task: Create the basic FastAPI application directory and files.
     - [x] Sub-task: Define basic configuration management (environment variables).
-- [ ] **Task 2: Implement Health Check & Engine Verification**
-    - [ ] Sub-task: Write tests for health check endpoints.
-    - [ ] Sub-task: Implement `/health` endpoint that checks connectivity to configured KataGo engines.
+- [x] **Task 2: Implement Health Check & Engine Verification** 75f3a1c
+    - [x] Sub-task: Write tests for health check endpoints.
+    - [x] Sub-task: Implement `/health` endpoint that checks connectivity to configured KataGo engines.
 - [ ] **Task: Conductor - User Manual Verification 'Infrastructure & Backend Scaffolding' (Protocol in workflow.md)**
 
 ## Phase 2: Authentication System

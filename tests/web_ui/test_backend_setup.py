@@ -13,13 +13,19 @@ async def client():
 async def test_health_check(client):
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "engines" in data
 
 @pytest.mark.asyncio
 async def test_versioned_health_check(client):
     response = await client.get("/api/v1/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "engines" in data
+    assert "local" in data["engines"]
+    assert "cloud" in data["engines"]
 
 def test_settings_override(monkeypatch):
     monkeypatch.setenv("KATRAIN_PORT", "9000")

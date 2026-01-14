@@ -1,6 +1,6 @@
 # Plan: Web UI Core Infrastructure & Dual-Engine Routing
 
-## Phase 1: Infrastructure & Backend Scaffolding
+## Phase 1: Infrastructure & Backend Scaffolding [checkpoint: 35dee7f]
 
 - [x] **Task 1: Setup FastAPI Backend Structure** 0cf61e1
     - [x] Sub-task: Create the basic FastAPI application directory and files.
@@ -8,7 +8,7 @@
 - [x] **Task 2: Implement Health Check & Engine Verification** 75f3a1c
     - [x] Sub-task: Write tests for health check endpoints.
     - [x] Sub-task: Implement `/health` endpoint that checks connectivity to configured KataGo engines.
-- [ ] **Task: Conductor - User Manual Verification 'Infrastructure & Backend Scaffolding' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Infrastructure & Backend Scaffolding' (Protocol in workflow.md)**
 
 ## Phase 2: Authentication System
 

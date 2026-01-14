@@ -38,6 +38,7 @@ export interface GameState {
     zen_mode: boolean;
   };
   language: string;
+  engine?: "local" | "cloud";
 }
 
 export interface SessionResponse {
@@ -126,6 +127,8 @@ export const API = {
     apiPost("/api/node/toggle-collapse", { session_id: sessionId, node_id: nodeId }),
   toggleUI: (sessionId: string, setting: string): Promise<SessionResponse> =>
     apiPost("/api/ui/toggle", { session_id: sessionId, setting }),
+  analyze: (sessionId: string, payload: any): Promise<any> =>
+    apiPost("/api/v1/analysis/analyze", { session_id: sessionId, payload }),
   analyzeGame: (sessionId: string, visits?: number, mistakes_only: boolean = false): Promise<SessionResponse> => 
     apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only }),
   getGameReport: (sessionId: string, depth_filter?: number[]): Promise<any> => 

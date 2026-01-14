@@ -10,6 +10,10 @@ class RequestRouter:
         is_analysis = payload.get("is_analysis", False)
         
         if is_analysis and self.cloud_client:
-            return await self.cloud_client.analyze(payload)
+            result = await self.cloud_client.analyze(payload)
+            result["engine"] = "cloud"
+            return result
         
-        return await self.local_client.analyze(payload)
+        result = await self.local_client.analyze(payload)
+        result["engine"] = "local"
+        return result

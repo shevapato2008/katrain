@@ -291,7 +291,8 @@ class WebKaTrain(KaTrainBase):
                 "show_move_numbers": self.show_move_numbers,
                 "show_coordinates": self.show_coordinates,
                 "zen_mode": self.zen_mode,
-            }
+            },
+            "engine": getattr(self, "last_engine", None)
         }
 
     def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None):

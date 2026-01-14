@@ -8,9 +8,10 @@ interface TopBarProps {
   analysisToggles: Record<string, boolean>;
   onToggleChange: (key: string) => void;
   status: string;
+  engine?: "local" | "cloud" | null;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleChange, status }) => {
+const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleChange, status, engine }) => {
   const { t } = useTranslation();
   return (
     <AppBar
@@ -128,6 +129,25 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {engine && (
+            <Typography
+              variant="caption"
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                bgcolor: engine === 'cloud' ? 'rgba(91, 155, 213, 0.2)' : 'rgba(48, 160, 110, 0.2)',
+                color: engine === 'cloud' ? '#5b9bd5' : '#30a06e',
+                fontWeight: 700,
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                border: '1px solid',
+                borderColor: engine === 'cloud' ? 'rgba(91, 155, 213, 0.3)' : 'rgba(48, 160, 110, 0.3)',
+              }}
+            >
+              {engine}
+            </Typography>
+          )}
           <Box
             sx={{
               width: 6,

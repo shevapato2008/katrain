@@ -41,6 +41,11 @@ async def test_analyze_routing_integration(app):
     repo = app.state.user_repo
     repo.create_user("testuser", get_password_hash("testpassword"))
 
+    # Create a session to test against
+    manager = app.state.session_manager
+    session = manager.create_session()
+    sid = session.session_id
+
     # Mock both engines
     respx.post("http://local-engine:8000/analyze").mock(return_value=Response(200, json={"engine": "local"}))
     respx.post("http://cloud-engine:8000/analyze").mock(return_value=Response(200, json={"engine": "cloud"}))
@@ -56,17 +61,19 @@ async def test_analyze_routing_integration(app):
 
         # Test Play Request (routes to local)
         resp_play = await ac.post("/api/v1/analysis/analyze", 
-                                 json={"is_analysis": False, "id": "play"}, 
+                                 json={"session_id": sid, "payload": {"is_analysis": False, "id": "play"}}, 
                                  headers=headers)
         assert resp_play.status_code == 200
         assert resp_play.json()["engine"] == "local"
+        assert session.katrain.last_engine == "local"
 
         # Test Analysis Request (routes to cloud)
         resp_analysis = await ac.post("/api/v1/analysis/analyze", 
-                                     json={"is_analysis": True, "id": "analysis"}, 
+                                     json={"session_id": sid, "payload": {"is_analysis": True, "id": "analysis"}}, 
                                      headers=headers)
         assert resp_analysis.status_code == 200
         assert resp_analysis.json()["engine"] == "cloud"
+        assert session.katrain.last_engine == "cloud"
 
 @pytest.mark.asyncio
 async def test_analyze_unauthorized(app):

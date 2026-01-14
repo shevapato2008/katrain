@@ -120,6 +120,10 @@ class GameReportRequest(BaseModel):
     session_id: str
     depth_filter: Optional[List[float]] = None
 
+class AnalyzeRequest(BaseModel):
+    session_id: str
+    payload: Dict[str, Any]
+
 class RankEstimationRequest(BaseModel):
     strategy: str
     settings: Dict[str, Any]

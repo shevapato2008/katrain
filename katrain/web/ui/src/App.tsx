@@ -98,6 +98,7 @@ function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [activeEngine, setActiveEngine] = useState<"local" | "cloud" | null>(null);
   const { t } = useTranslation();
   const [statusMessage, setStatusMessage] = useState<string>(t("Initializing..."));
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -211,6 +212,9 @@ function App() {
           const msg = JSON.parse(event.data);
           if (msg.type === 'game_update') {
             setGameState(msg.state);
+            if (msg.state.engine) {
+              setActiveEngine(msg.state.engine);
+            }
           } else if (msg.type === 'log') {
             setStatusMessage(msg.data.message);
           } else if (msg.type === 'sound') {
@@ -558,6 +562,7 @@ function App() {
             analysisToggles={analysisToggles}
             onToggleChange={handleToggleChange}
             status={statusMessage}
+            engine={activeEngine}
           />
 
         <Box className="main-content">

@@ -2,9 +2,9 @@
 
 ## Phase 1: Infrastructure & Backend Scaffolding
 
-- [ ] **Task 1: Setup FastAPI Backend Structure**
-    - [ ] Sub-task: Create the basic FastAPI application directory and files.
-    - [ ] Sub-task: Define basic configuration management (environment variables).
+- [~] **Task 1: Setup FastAPI Backend Structure**
+    - [x] Sub-task: Create the basic FastAPI application directory and files.
+    - [~] Sub-task: Define basic configuration management (environment variables).
 - [ ] **Task 2: Implement Health Check & Engine Verification**
     - [ ] Sub-task: Write tests for health check endpoints.
     - [ ] Sub-task: Implement `/health` endpoint that checks connectivity to configured KataGo engines.

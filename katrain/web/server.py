@@ -8,165 +8,22 @@ from typing import Any, List, Optional, Union, Dict
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
 
+from katrain.web.api.v1.api import api_router
+from katrain.web.core.config import settings
 from katrain.web.session import SessionManager
+from katrain.web.models import *
 
-
-class MoveRequest(BaseModel):
-    session_id: str
-    coords: Optional[List[int]] = Field(default=None, min_items=2, max_items=2)
-    pass_move: bool = False
-
-
-class UndoRedoRequest(BaseModel):
-    session_id: str
-    n_times: Union[int, str] = 1
-
-
-class NavRequest(BaseModel):
-    session_id: str
-    node_id: Optional[int] = None
-
-
-class PlayerSetupInfo(BaseModel):
-    name: str
-    player_type: str
-    player_subtype: str
-
-
-class NewGameRequest(BaseModel):
-    session_id: str
-    size: Optional[Union[int, str]] = 19
-    handicap: Optional[int] = 0
-    komi: Optional[float] = 6.5
-    rules: Optional[str] = "japanese"
-    clear_cache: bool = False
-    players: Optional[Dict[str, PlayerSetupInfo]] = None
-
-
-class EditGameRequest(BaseModel):
-    session_id: str
-    size: Optional[Union[int, str]] = None
-    handicap: Optional[int] = None
-    komi: Optional[float] = None
-    rules: Optional[str] = None
-    players: Optional[Dict[str, PlayerSetupInfo]] = None
-
-
-class GameSettingsRequest(BaseModel):
-    session_id: str
-    mode: str  # newgame, setupposition, editgame
-    settings: Dict[str, Any]
-
-
-class LoadSGFRequest(BaseModel):
-    session_id: str
-    sgf: str
-
-
-class ConfigUpdateRequest(BaseModel):
-    session_id: str
-    setting: str
-    value: Any
-
-
-class UpdatePlayerRequest(BaseModel):
-    session_id: str
-    bw: str
-    player_type: Optional[str] = None
-    player_subtype: Optional[str] = None
-
-
-class ToggleAnalysisRequest(BaseModel):
-    session_id: str
-
-
-class PVRequest(BaseModel):
-    session_id: str
-    pv: str
-
-
-class ModeRequest(BaseModel):
-    session_id: str
-    mode: str
-
-
-class InsertModeRequest(BaseModel):
-    session_id: str
-    mode: str = "toggle"
-
-
-class UIToggleRequest(BaseModel):
-    session_id: str
-    setting: str
-
-
-class LanguageRequest(BaseModel):
-    session_id: str
-    lang: str
-
-
-class ThemeRequest(BaseModel):
-    session_id: str
-    theme: str
-
-
-class AnalyzeExtraRequest(BaseModel):
-    session_id: str
-    mode: str
-    kwargs: Optional[dict] = None
-
-
-class FindMistakeRequest(BaseModel):
-    session_id: str
-    fn: str = "redo"
-
-
-class SwitchBranchRequest(BaseModel):
-    session_id: str
-    direction: int
-
-
-class TsumegoRequest(BaseModel):
-    session_id: str
-    ko: bool = False
-    margin: Optional[int] = None
-
-
-class SelfPlayRequest(BaseModel):
-    session_id: str
-    until_move: Any
-    target_b_advantage: Optional[float] = None
-
-
-class SelectBoxRequest(BaseModel):
-    session_id: str
-    coords: List[int]
-
-
-class GameAnalysisRequest(BaseModel):
-    session_id: str
-    visits: Optional[int] = None
-    mistakes_only: bool = False
-    move_range: Optional[List[int]] = None
-
-
-class GameReportRequest(BaseModel):
-    session_id: str
-    depth_filter: Optional[List[float]] = None
-
-
-class RankEstimationRequest(BaseModel):
-    strategy: str
-    settings: Dict[str, Any]
-
-
-def create_app(enable_engine=True, session_timeout=3600, max_sessions=100):
+def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
+    if session_timeout is None:
+        session_timeout = settings.SESSION_TIMEOUT
+    if max_sessions is None:
+        max_sessions = settings.MAX_SESSIONS
     # Set logging levels for our application
     logging.getLogger("katrain_web").setLevel(logging.INFO)
     
     app = FastAPI()
+    app.include_router(api_router, prefix="/api/v1")
     static_root = Path(__file__).resolve().parent / "static"
     assets_root = Path(__file__).resolve().parent.parent
     
@@ -702,19 +559,9 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
-def _env_int(name: str, default: int) -> int:
-    value = os.environ.get(name)
-    if value is None:
-        return default
-    try:
-        return int(value)
-    except ValueError:
-        return default
-
-
 def run_web():
-    default_host = os.environ.get("KATRAIN_HOST", "0.0.0.0")
-    default_port = _env_int("KATRAIN_PORT", 8001)
+    default_host = settings.KATRAIN_HOST
+    default_port = settings.KATRAIN_PORT
     parser = argparse.ArgumentParser(description="Run KaTrain Web UI server")
     parser.add_argument(
         "--host",

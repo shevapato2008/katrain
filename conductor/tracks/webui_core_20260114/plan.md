@@ -21,9 +21,9 @@
 - [x] **Task 3: Basic Login UI** 4e78cc7
     - [x] Sub-task: Create a simple Login page in React.
     - [x] Sub-task: Integrate with the `/login` API.
-- [~] **Task: Conductor - User Manual Verification 'Authentication System' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Authentication System' (Protocol in workflow.md)** bb1fe9c
 
-## Phase 3: Dual-Engine Routing Logic
+## Phase 3: Dual-Engine Routing Logic [checkpoint: bb1fe9c]
 
 - [ ] **Task 1: Engine Configuration & Client**
     - [ ] Sub-task: Write tests for the internal KataGo HTTP client.

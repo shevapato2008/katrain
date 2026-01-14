@@ -8,11 +8,60 @@ from typing import Any, List, Optional, Union, Dict
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 
 from katrain.web.api.v1.api import api_router
 from katrain.web.core.config import settings
 from katrain.web.session import SessionManager
 from katrain.web.models import *
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize User Persistence
+    from katrain.web.core.auth import SQLiteUserRepository
+    repo = SQLiteUserRepository(settings.DATABASE_PATH)
+    repo.init_db()
+    app.state.user_repo = repo
+
+    manager = app.state.session_manager
+    try:
+        from katrain.web.interface import WebKaTrain
+        # Just init to trigger imports and config loading
+        kt = WebKaTrain(force_package_config=False, enable_engine=False)
+        
+        # Auto-test HTTP Engine
+        engine_cfg = kt.config("engine")
+        if engine_cfg.get("backend") == "http":
+            import httpx
+            import logging
+            logging.getLogger("httpx").setLevel(logging.WARNING)
+            logging.getLogger("httpcore").setLevel(logging.WARNING)
+            url = engine_cfg.get("http_url")
+            health = engine_cfg.get("http_health_path", "/health")
+            full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"
+            print(f"Testing KataGo Engine at {full_url}...")
+            try:
+                async with httpx.AsyncClient(trust_env=False) as client:
+                    resp = await client.get(full_url, timeout=5.0)
+                    if resp.status_code == 200:
+                        print(f"KataGo Engine is reachable: {resp.json()}")
+                    else:
+                        print(f"WARNING: KataGo Engine returned status {resp.status_code}")
+            except Exception as e:
+                print(f"WARNING: Failed to connect to KataGo Engine: {e}")
+
+    except Exception as e:
+        logging.getLogger("katrain_web").error(f"Initialization failed: {e}")
+
+    manager.attach_loop(asyncio.get_running_loop())
+    app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+    
+    yield
+    
+    task = getattr(app.state, "cleanup_task", None)
+    if task:
+        task.cancel()
+    manager.cleanup_expired()
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     if session_timeout is None:
@@ -22,7 +71,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     # Set logging levels for our application
     logging.getLogger("katrain_web").setLevel(logging.INFO)
     
-    app = FastAPI()
+    app = FastAPI(lifespan=lifespan)
     app.include_router(api_router, prefix="/api/v1")
     static_root = Path(__file__).resolve().parent / "static"
     assets_root = Path(__file__).resolve().parent.parent
@@ -38,53 +87,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         enable_engine=enable_engine,
     )
     app.state.session_manager = manager
-
-    @app.on_event("startup")
-    async def _startup():
-        # Initialize User Persistence
-        from katrain.web.core.auth import SQLiteUserRepository
-        repo = SQLiteUserRepository(settings.DATABASE_PATH)
-        repo.init_db()
-        app.state.user_repo = repo
-
-        try:
-            from katrain.web.interface import WebKaTrain
-            # Just init to trigger imports and config loading
-            kt = WebKaTrain(force_package_config=False, enable_engine=False)
-            
-            # Auto-test HTTP Engine
-            engine_cfg = kt.config("engine")
-            if engine_cfg.get("backend") == "http":
-                import httpx
-                import logging
-                logging.getLogger("httpx").setLevel(logging.WARNING)
-                logging.getLogger("httpcore").setLevel(logging.WARNING)
-                url = engine_cfg.get("http_url")
-                health = engine_cfg.get("http_health_path", "/health")
-                full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"
-                print(f"Testing KataGo Engine at {full_url}...")
-                try:
-                    async with httpx.AsyncClient(trust_env=False) as client:
-                        resp = await client.get(full_url, timeout=5.0)
-                        if resp.status_code == 200:
-                            print(f"KataGo Engine is reachable: {resp.json()}")
-                        else:
-                            print(f"WARNING: KataGo Engine returned status {resp.status_code}")
-                except Exception as e:
-                    print(f"WARNING: Failed to connect to KataGo Engine: {e}")
-
-        except Exception as e:
-            logging.getLogger("katrain_web").error(f"Initialization failed: {e}")
-
-        manager.attach_loop(asyncio.get_running_loop())
-        app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
-
-    @app.on_event("shutdown")
-    async def _shutdown():
-        task = getattr(app.state, "cleanup_task", None)
-        if task:
-            task.cancel()
-        manager.cleanup_expired()
 
     @app.get("/health")
     async def health():

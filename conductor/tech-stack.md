@@ -21,5 +21,5 @@
 ## Deployment & Security
 *   **Infrastructure:** Ubuntu Kiosk mode (RK3588 Hardware)
 *   **Containerization:** Docker
-*   **Authentication:** JWT (JSON Web Tokens) or similar for user login and session management.
+*   **Authentication:** JWT (JSON Web Tokens) using `python-jose[cryptography]` and `passlib[bcrypt]` for password hashing.
 *   **Reverse Proxy:** Nginx (Recommended for production/public access)

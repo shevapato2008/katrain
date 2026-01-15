@@ -158,6 +158,18 @@ export const API = {
     }
     return response.json();
   },
+  register: async (username: string, password: string): Promise<any> => {
+    const response = await fetch("/api/v1/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Registration failed ${response.status}: ${body}`);
+    }
+    return response.json();
+  },
   getMe: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/me", {
       headers: { "Authorization": `Bearer ${token}` },

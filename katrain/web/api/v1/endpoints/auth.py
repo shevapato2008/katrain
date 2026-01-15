@@ -53,6 +53,22 @@ async def login(request: Request, login_data: LoginRequest) -> Any:
     access_token = create_access_token(data={"sub": user_dict["username"]})
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.post("/register", response_model=User)
+async def register(request: Request, register_data: LoginRequest) -> Any:
+    from katrain.web.core.auth import get_password_hash
+    repo = request.app.state.user_repo
+    try:
+        user_dict = repo.create_user(
+            username=register_data.username, 
+            hashed_password=get_password_hash(register_data.password)
+        )
+        return User(**user_dict)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
     return current_user

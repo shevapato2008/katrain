@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert } from '@mui/material';
+import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert, Button } from '@mui/material';
 import { API, type GameState } from './api';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
@@ -14,6 +14,7 @@ import NewGameDialog from './components/NewGameDialog';
 import AISettingsDialog from './components/AISettingsDialog';
 import GameReportDialog from './components/GameReportDialog';
 import LoginDialog from './components/LoginDialog';
+import RegisterDialog from './components/RegisterDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const theme = createTheme({
@@ -106,6 +107,8 @@ function App() {
   const [isAISettingsDialogOpen, setAISettingsDialogOpen] = useState(false);
   const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
   const [isLoginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [isRegisterDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const [gameReport, setGameReport] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -190,12 +193,6 @@ function App() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        if (!token) {
-          console.log("No token found, opening login dialog");
-          setLoginDialogOpen(true);
-          return;
-        }
-
         const data = await API.createSession();
         setSessionId(data.session_id);
         setGameState(data.state);
@@ -225,14 +222,17 @@ function App() {
           }
         };
 
-        // Get user info
-        try {
-          await API.getMe(token);
-        } catch (e) {
-          console.error("Failed to get user info, token might be expired", e);
-          localStorage.removeItem('token');
-          setToken(null);
-          setLoginDialogOpen(true);
+        // Get user info if token exists
+        if (token) {
+          try {
+            const userData = await API.getMe(token);
+            setUser(userData);
+          } catch (e) {
+            console.error("Failed to get user info, token might be expired", e);
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
+          }
         }
 
       } catch (error) {
@@ -247,6 +247,12 @@ function App() {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setLoginDialogOpen(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
   };
 
   useEffect(() => {
@@ -546,12 +552,7 @@ function App() {
         accept=".sgf,.ngf,.gib" 
         onChange={handleFileChange} 
       />
-      {!token ? (
-        <LoginDialog 
-          open={isLoginDialogOpen} 
-          onLoginSuccess={handleLoginSuccess} 
-        />
-      ) : !sessionId || !gameState ? (
+      {!sessionId || !gameState ? (
         <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#0f0f0f' }}>
           <Typography variant="h5" sx={{ color: '#f5f3f0' }}>{t("Initializing KaTrain...")}</Typography>
         </Box>
@@ -563,6 +564,10 @@ function App() {
             onToggleChange={handleToggleChange}
             status={statusMessage}
             engine={activeEngine}
+            user={user}
+            onLoginClick={() => setLoginDialogOpen(true)}
+            onRegisterClick={() => setRegisterDialogOpen(true)}
+            onLogoutClick={handleLogout}
           />
 
         <Box className="main-content">
@@ -661,7 +666,16 @@ function App() {
         />
         <LoginDialog 
           open={isLoginDialogOpen} 
+          onClose={() => setLoginDialogOpen(false)}
           onLoginSuccess={handleLoginSuccess} 
+        />
+        <RegisterDialog
+          open={isRegisterDialogOpen}
+          onClose={() => setRegisterDialogOpen(false)}
+          onRegisterSuccess={(username) => {
+            setNotification({ open: true, message: `User ${username} registered successfully!`, severity: 'success' });
+            setLoginDialogOpen(true);
+          }}
         />
         <Snackbar 
           open={notification.open} 

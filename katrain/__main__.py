@@ -62,11 +62,12 @@ if start_mode == "web":
 from katrain.core.constants import DATA_FOLDER
 from katrain.core.utils import find_package_resource
 
-if start_mode == "web":
-    from katrain.web.server import run_web
+if __name__ == "__main__":
+    if start_mode == "web":
+        from katrain.web.server import run_web
 
-    run_web()
-    sys.exit(0)
+        run_web()
+        sys.exit(0)
 
 os.environ["KCFG_KIVY_LOG_LEVEL"] = os.environ.get("KCFG_KIVY_LOG_LEVEL", "warning")
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box, IconButton, FormControlLabel, Checkbox } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, IconButton, FormControlLabel, Checkbox, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -9,9 +9,16 @@ interface TopBarProps {
   onToggleChange: (key: string) => void;
   status: string;
   engine?: "local" | "cloud" | null;
+  user?: any;
+  onLoginClick: () => void;
+  onRegisterClick: () => void;
+  onLogoutClick: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleChange, status, engine }) => {
+const TopBar: React.FC<TopBarProps> = ({ 
+  onMenuClick, analysisToggles, onToggleChange, status, engine, 
+  user, onLoginClick, onRegisterClick, onLogoutClick 
+}) => {
   const { t } = useTranslation();
   return (
     <AppBar
@@ -49,6 +56,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
             color: '#f5f3f0',
             fontWeight: 600,
             fontSize: '1.125rem',
+            mr: 2
           }}
         >
           KaTrain
@@ -128,51 +136,75 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, analysisToggles, onToggleC
           })}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {engine && (
-            <Typography
-              variant="caption"
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {engine && (
+              <Typography
+                variant="caption"
+                sx={{
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: engine === 'cloud' ? 'rgba(91, 155, 213, 0.2)' : 'rgba(48, 160, 110, 0.2)',
+                  color: engine === 'cloud' ? '#5b9bd5' : '#30a06e',
+                  fontWeight: 700,
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  border: '1px solid',
+                  borderColor: engine === 'cloud' ? 'rgba(91, 155, 213, 0.3)' : 'rgba(48, 160, 110, 0.3)',
+                }}
+              >
+                {engine}
+              </Typography>
+            )}
+            <Box
               sx={{
-                px: 1,
-                py: 0.25,
-                borderRadius: 1,
-                bgcolor: engine === 'cloud' ? 'rgba(91, 155, 213, 0.2)' : 'rgba(48, 160, 110, 0.2)',
-                color: engine === 'cloud' ? '#5b9bd5' : '#30a06e',
-                fontWeight: 700,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                border: '1px solid',
-                borderColor: engine === 'cloud' ? 'rgba(91, 155, 213, 0.3)' : 'rgba(48, 160, 110, 0.3)',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                bgcolor: '#30a06e',
+                animation: 'pulse 2s ease-in-out infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                },
+              }}
+            />
+            <Typography
+              variant="body2"
+              noWrap
+              sx={{
+                maxWidth: 200,
+                color: '#b8b5b0',
+                fontSize: '0.875rem',
+                fontFamily: 'var(--font-mono)',
               }}
             >
-              {engine}
+              {status}
             </Typography>
-          )}
-          <Box
-            sx={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              bgcolor: '#30a06e',
-              animation: 'pulse 2s ease-in-out infinite',
-              '@keyframes pulse': {
-                '0%, 100%': { opacity: 1 },
-                '50%': { opacity: 0.5 },
-              },
-            }}
-          />
-          <Typography
-            variant="body2"
-            noWrap
-            sx={{
-              maxWidth: 300,
-              color: '#b8b5b0',
-              fontSize: '0.875rem',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            {status}
-          </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {user ? (
+              <>
+                <Typography variant="body2" sx={{ alignSelf: 'center', color: '#f5f3f0', fontWeight: 600 }}>
+                  {user.username}
+                </Typography>
+                <Button size="small" variant="outlined" color="inherit" onClick={onLogoutClick} sx={{ color: '#b8b5b0', borderColor: 'rgba(255,255,255,0.2)' }}>
+                  {t("Logout")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="small" variant="outlined" color="primary" onClick={onLoginClick}>
+                  {t("Login")}
+                </Button>
+                <Button size="small" variant="contained" color="primary" onClick={onRegisterClick}>
+                  {t("Register")}
+                </Button>
+              </>
+            )}
+          </Box>
         </Box>
       </Toolbar>
     </AppBar>

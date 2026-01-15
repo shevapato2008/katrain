@@ -162,7 +162,11 @@ For running the Web UI/API service:
 docker build -f Dockerfile.web -t katrain-web .
 
 # Run the container (maps port 8001)
-docker run -d -p 8001:8001 katrain-web
+docker run -d \
+  --name funny_jones \
+  --network host \
+  -v ~/.katrain:/root/.katrain \
+  katrain-web
 ```
 
 #### Desktop Application

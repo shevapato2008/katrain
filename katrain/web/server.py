@@ -18,9 +18,15 @@ from katrain.web.models import *
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize User Persistence
-    from katrain.web.core.auth import SQLiteUserRepository
+    from katrain.web.core.auth import SQLiteUserRepository, get_password_hash
     repo = SQLiteUserRepository(settings.DATABASE_PATH)
     repo.init_db()
+
+    # Create default admin user if no users exist
+    if not repo.list_users():
+        logging.getLogger("katrain_web").info("No users found. Creating default admin user (admin/admin)")
+        repo.create_user("admin", get_password_hash("admin"))
+
     app.state.user_repo = repo
 
     # Initialize Engine Clients and Router

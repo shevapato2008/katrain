@@ -23,6 +23,8 @@ class Settings(BaseModel):
     SECRET_KEY: str = "katrain-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    
+    DEFAULT_LANG: str = "cn"
 
     def __init__(self, **data):
         # Override with env vars if not provided in data
@@ -34,6 +36,7 @@ class Settings(BaseModel):
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
+        data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
         super().__init__(**data)
 
 settings = Settings()

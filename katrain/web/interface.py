@@ -106,7 +106,17 @@ class WebKaTrain(KaTrainBase):
         self.preview_pv = []
         
         # Initialize language from config
-        lang = self.config("general/lang") or self.config("general/language") or "en"
+        from katrain.web.core.config import settings
+        lang = self.config("general/lang") or self.config("general/language") or settings.DEFAULT_LANG
+        
+        # Force update default language if config is 'en' but system default is set to something else (e.g. 'cn')
+        # This fixes the issue where existing user configs with 'en' prevent the new default from applying
+        if lang == 'en' and settings.DEFAULT_LANG != 'en':
+            self.log(f"Updating default language from 'en' to '{settings.DEFAULT_LANG}'", OUTPUT_INFO)
+            lang = settings.DEFAULT_LANG
+            self.update_config("general/lang", lang)
+            self.save_config("general")
+
         i18n.switch_lang(lang)
 
     def start(self):

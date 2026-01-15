@@ -40,6 +40,15 @@ async def lifespan(app: FastAPI):
         # Just init to trigger imports and config loading
         kt = WebKaTrain(force_package_config=False, enable_engine=False)
         
+        # Sync configuration with Environment Settings
+        engine_cfg = kt.config("engine")
+        if settings.LOCAL_KATAGO_URL and engine_cfg.get("http_url") != settings.LOCAL_KATAGO_URL:
+            if engine_cfg.get("backend") == "http":
+                print(f"Syncing KataGo URL to {settings.LOCAL_KATAGO_URL} from environment")
+                kt.update_config("engine/http_url", settings.LOCAL_KATAGO_URL)
+                kt.save_config("engine")
+                engine_cfg = kt.config("engine") # Reload local ref
+        
         # Auto-test HTTP Engine
         engine_cfg = kt.config("engine")
         if engine_cfg.get("backend") == "http":
@@ -610,14 +619,14 @@ def run_web():
     log_config["formatters"]["default"]["fmt"] = "%(levelname)s:     %(message)s"
     log_config["formatters"]["access"]["fmt"] = "%(levelname)s:     %(message)s"
 
-    print(f"\n" + "=" * 50)
-    print(f"Starting KaTrain Web UI")
+    print(f"\n" + "=" * 50, flush=True)
+    print(f"Starting KaTrain Web UI", flush=True)
     if host == "0.0.0.0":
-        print(f"Local access: http://127.0.0.1:{port}")
-        print(f"Network access: http://<your-ip-address>:{port}")
+        print(f"Local access: http://127.0.0.1:{port}", flush=True)
+        print(f"Network access: http://<your-ip-address>:{port}", flush=True)
     else:
-        print(f"Access: http://{host}:{port}")
-    print("=" * 50 + "\n")
+        print(f"Access: http://{host}:{port}", flush=True)
+    print("=" * 50 + "\n", flush=True)
 
     app = create_app(enable_engine=not args.disable_engine)
     uvicorn.run(

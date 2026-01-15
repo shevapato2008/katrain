@@ -151,34 +151,39 @@ python3 -m katrain --ui web
   ```
 
 ### Docker
-You can also run KaTrain using Docker:
+
+KaTrain provides optimized Dockerfiles for both Desktop and Web usage.
+
+#### Web Service
+For running the Web UI/API service:
 
 ```bash
-# Build the image
-docker build -t katrain .
+# Build the web image
+docker build -f Dockerfile.web -t katrain-web .
 
-# Run the container (web UI, maps port 8001)
-docker run -d -p 8001:8001 katrain
-
-# View logs
-docker logs -f <container_id_or_name>
-
-# Stop container
-docker stop <container_id_or_name>
+# Run the container (maps port 8001)
+docker run -d -p 8001:8001 katrain-web
 ```
-To run the katrain image in the background (detached mode), use the `-d` flag.
 
-The Docker image supports both the web UI and the Kivy desktop UI:
+#### Desktop Application
+For running the Desktop GUI (requires X11 forwarding):
 
 ```bash
-# Web UI (default)
-docker run -d -p 8001:8001 katrain
+# Build the desktop image
+docker build -f Dockerfile.desktop -t katrain-desktop .
 
-# Web UI with custom host/port
-docker run -d -e KATRAIN_HOST=0.0.0.0 -e KATRAIN_PORT=8002 -p 8002:8002 katrain
+# Run the desktop app (example for Linux)
+xhost +local:docker
+docker run -it --rm \
+    -e DISPLAY=$DISPLAY \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    katrain-desktop
+```
 
-# Desktop UI (requires X11 forwarding)
-docker run -e KATRAIN_UI=desktop -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
+#### Unified Image (Legacy)
+The root `Dockerfile` is kept for backward compatibility and builds an image capable of both, defaulting to Web.
+```bash
+docker build -t katrain .
 ```
 
 The web interface is built using **React** and **TypeScript** (located in `katrain/web/ui`), and the backend is a **FastAPI** server that communicates with the KaTrain engine.

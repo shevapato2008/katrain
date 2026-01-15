@@ -3,7 +3,7 @@ chardet==5.2.0
 
 # Dependencies for Real-Time API (Step 2 Implementation)
 fastapi==0.109.2
-uvicorn==0.27.1
+uvicorn[standard]==0.27.1
 pydantic==2.6.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4

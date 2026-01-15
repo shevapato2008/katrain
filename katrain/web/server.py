@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
     repo.init_db()
 
     # Create default admin user if no users exist
+    # Create default admin user if no users exist
     if not repo.list_users():
         logging.getLogger("katrain_web").info("No users found. Creating default admin user (admin/admin)")
         repo.create_user("admin", get_password_hash("admin"))
@@ -59,9 +60,6 @@ async def lifespan(app: FastAPI):
         engine_cfg = kt.config("engine")
         if engine_cfg.get("backend") == "http":
             import httpx
-            import logging
-            logging.getLogger("httpx").setLevel(logging.WARNING)
-            logging.getLogger("httpcore").setLevel(logging.WARNING)
             url = engine_cfg.get("http_url")
             health = engine_cfg.get("http_health_path", "/health")
             full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"

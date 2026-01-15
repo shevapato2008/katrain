@@ -1,6 +1,7 @@
 import threading
 import time
 import uuid
+import asyncio
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Set
 
@@ -76,8 +77,7 @@ class SessionManager:
         expired = [sid for sid, s in self._sessions.items() if now - s.last_access > self.session_timeout]
         for sid in expired:
             session = self._sessions.pop(sid, None)
-            if session:
-                session.katrain.shutdown()
+            if session:               session.katrain.shutdown()
 
     def _on_state(self, session_id: str, state: Dict):
         try:
@@ -88,8 +88,7 @@ class SessionManager:
         self._schedule_broadcast(session, {"type": "game_update", "state": state})
 
     def _on_message(self, session_id: str, msg_type: str, data: Dict):
-        try:
-            session = self.get_session(session_id)
+        try:            session = self.get_session(session_id)
         except KeyError:
             return
         self._schedule_broadcast(session, {"type": msg_type, "data": data})
@@ -97,14 +96,12 @@ class SessionManager:
     def _schedule_broadcast(self, session: WebSession, payload: Dict):
         if not self._loop or not self._loop.is_running():
             return
+        
         if threading.get_ident() == self._loop_thread_id:
-            import asyncio
-
-            asyncio.create_task(self._broadcast_payload(session, payload))
+            self._loop.create_task(self._broadcast_payload(session, payload))
         else:
-            import asyncio
-
-            asyncio.run_coroutine_threadsafe(self._broadcast_payload(session, payload), self._loop)
+            future = asyncio.run_coroutine_threadsafe(self._broadcast_payload(session, payload), self._loop)
+            future.add_done_callback(lambda f: f.exception() and print(f"Error in broadcast task: {f.exception()}", flush=True))
 
     async def _broadcast_payload(self, session: WebSession, payload: Dict):
         if not session.sockets:

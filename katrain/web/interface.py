@@ -66,6 +66,19 @@ class MockControls:
         self.katrain.log(message, level)
 
 
+class WebGame(Game):
+    def set_current_node(self, node):
+        # Update timer for the *previous* node/player before switching
+        if self.katrain and hasattr(self.katrain, "update_timer"):
+            self.katrain.update_timer()
+        
+        super().set_current_node(node)
+        
+        # Reset timer baseline for the *new* node/player
+        if self.katrain and hasattr(self.katrain, "last_timer_update"):
+            self.katrain.last_timer_update = time.time()
+
+
 class WebKaTrain(KaTrainBase):
     """
     A headless version of KaTrain for the Web UI.
@@ -318,7 +331,7 @@ class WebKaTrain(KaTrainBase):
         if komi is not None:
             game_properties["KM"] = komi
 
-        self.game = Game(
+        self.game = WebGame(
             self,
             self.engine,
             move_tree=move_tree,
@@ -327,6 +340,11 @@ class WebKaTrain(KaTrainBase):
             game_properties=game_properties,
             user_id=self.user_id,
         )
+        
+        # Reset timer state for new game
+        self.main_time_used_by_player = {"B": 0, "W": 0}
+        self.reset_players() # Resets periods_used
+        
         # Update player info based on game settings
         for bw, player_info in self.players_info.items():
             player_info.sgf_rank = self.game.root.get_property(bw + "R")

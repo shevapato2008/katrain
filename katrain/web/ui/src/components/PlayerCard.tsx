@@ -33,17 +33,48 @@ const formatTime = (seconds: number) => {
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer, onPauseTimer }) => {
   const { t } = useTranslation();
   const isBlack = player === 'B';
+  const [clientElapsed, setClientElapsed] = React.useState(0);
+
+  React.useEffect(() => {
+    setClientElapsed(0);
+    if (!active || !timer || timer.paused) return;
+
+    const start = Date.now();
+    const interval = setInterval(() => {
+      setClientElapsed((Date.now() - start) / 1000);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [active, timer?.paused, timer?.main_time_used, timer?.current_node_time_used, timer?.next_player_periods_used]);
 
   let timeDisplay = null;
   if (active && timer && timer.settings) {
     const mainTimeTotal = timer.settings.main_time * 60;
-    const mainTimeLeft = mainTimeTotal - timer.main_time_used;
+    // Apply elapsed time to main time first, then to current node time (byoyomi)
+    const effectiveMainTimeUsed = timer.main_time_used + (mainTimeTotal > timer.main_time_used ? clientElapsed : 0);
+    const mainTimeLeft = mainTimeTotal - effectiveMainTimeUsed;
 
     if (mainTimeLeft > 0) {
       timeDisplay = formatTime(mainTimeLeft);
     } else {
+      // Logic: if main time was already exhausted from backend, applied to node time.
+      // If main time exhausted DURING client tick, we should transition.
+      // Simplify: if backend says main time left, we consume it.
+      // If backend says main time exhausted, we consume node time.
+      
+      let effectiveNodeTimeUsed = timer.current_node_time_used;
+      if (timer.main_time_used >= mainTimeTotal) {
+          effectiveNodeTimeUsed += clientElapsed;
+      } else {
+          // Transition phase: some client elapsed consumed remaining main time, rest to node time
+          const overrun = effectiveMainTimeUsed - mainTimeTotal;
+          if (overrun > 0) {
+              effectiveNodeTimeUsed += overrun;
+          }
+      }
+
       const periodsLeft = Math.max(0, timer.settings.byo_periods - timer.next_player_periods_used);
-      const currentPeriodTimeLeft = Math.max(0, timer.settings.byo_length - timer.current_node_time_used);
+      const currentPeriodTimeLeft = Math.max(0, timer.settings.byo_length - effectiveNodeTimeUsed);
       timeDisplay = `${formatTime(currentPeriodTimeLeft)} (${periodsLeft}x)`;
     }
   }

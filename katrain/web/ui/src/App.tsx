@@ -15,6 +15,8 @@ import AISettingsDialog from './components/AISettingsDialog';
 import GameReportDialog from './components/GameReportDialog';
 import LoginDialog from './components/LoginDialog';
 import RegisterDialog from './components/RegisterDialog';
+import TimeSettingsDialog from './components/TimeSettingsDialog';
+import TeachingSettingsDialog from './components/TeachingSettingsDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const theme = createTheme({
@@ -108,6 +110,8 @@ function App() {
   const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
   const [isLoginDialogOpen, setLoginDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [isTimeSettingsDialogOpen, setTimeSettingsDialogOpen] = useState(false);
+  const [isTeachingSettingsDialogOpen, setTeachingSettingsDialogOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [gameReport, setGameReport] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -520,8 +524,8 @@ function App() {
     onOpenPopup: (popup) => {
       if (popup === 'analysis') { /* TODO: Extra analysis popup */ }
       if (popup === 'report') handleGameReport();
-      if (popup === 'timer') { /* TODO: Timer popup */ }
-      if (popup === 'teacher') { /* TODO: Teacher popup */ }
+      if (popup === 'timer') setTimeSettingsDialogOpen(true);
+      if (popup === 'teacher') setTeachingSettingsDialogOpen(true);
       if (popup === 'ai') setAISettingsDialogOpen(true);
       if (popup === 'config') { /* TODO: Config popup */ }
       if (popup === 'contribute') { /* TODO: Contribute popup */ }
@@ -584,6 +588,8 @@ function App() {
               onGameReport={handleGameReport}
               onLanguageChange={handleLanguageChange}
               onSwapPlayers={handleSwapPlayers}
+              onTimeSettings={() => setTimeSettingsDialogOpen(true)}
+              onTeachingSettings={() => setTeachingSettingsDialogOpen(true)}
             />
           )}
 
@@ -676,6 +682,14 @@ function App() {
             setNotification({ open: true, message: `User ${username} registered successfully!`, severity: 'success' });
             setLoginDialogOpen(true);
           }}
+        />
+        <TimeSettingsDialog 
+          open={isTimeSettingsDialogOpen} 
+          onClose={() => setTimeSettingsDialogOpen(false)} 
+        />
+        <TeachingSettingsDialog 
+          open={isTeachingSettingsDialogOpen} 
+          onClose={() => setTeachingSettingsDialogOpen(false)} 
         />
         <Snackbar 
           open={notification.open} 

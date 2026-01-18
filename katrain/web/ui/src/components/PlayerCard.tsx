@@ -25,8 +25,10 @@ interface PlayerCardProps {
 }
 
 const formatTime = (seconds: number) => {
-  const m = Math.floor(Math.max(0, seconds) / 60);
-  const s = Math.floor(Math.max(0, seconds) % 60);
+  // KaTrain rounds up (+0.99 logic). Math.ceil is a close approximation.
+  const totalSeconds = Math.ceil(Math.max(0, seconds));
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 

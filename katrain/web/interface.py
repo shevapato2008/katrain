@@ -355,6 +355,8 @@ class WebKaTrain(KaTrainBase):
         )
         
         # Reset timer state for new game
+        self.timer_paused = True
+        self.last_timer_update = time.time()
         self.main_time_used_by_player = {"B": 0, "W": 0}
         self.reset_players() # Resets periods_used
         
@@ -565,6 +567,24 @@ class WebKaTrain(KaTrainBase):
 
     def _do_play(self, coords):
         from katrain.core.game import IllegalMoveException, Move
+        from katrain.core.constants import STATUS_TEACHING
+        
+        game = self.game
+        current_node = game and self.game.current_node
+        if (
+            current_node
+            and not current_node.children
+            and not self.next_player_info.ai
+            and not self.timer_paused
+            and self.play_analyze_mode == MODE_PLAY
+            and self.config("timer/main_time", 0) * 60 - self.main_time_used_by_player.get(self.next_player_info.player, 0) <= 0
+            and current_node.time_used < self.config("timer/minimal_use", 0)
+        ):
+            self.controls.set_status(
+                i18n._("move too fast").format(num=self.config("timer/minimal_use", 0)), STATUS_TEACHING
+            )
+            return
+
         try:
             self.game.play(Move(coords, player=self.next_player_info.player))
             self.play_stone_sound()

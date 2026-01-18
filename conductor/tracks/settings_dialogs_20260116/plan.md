@@ -1,7 +1,7 @@
 # Implementation Plan: Time and Teaching Settings Dialogs
 
 ## Phase 1: Session-Scoped State Management
-- [ ] Task: Define TypeScript interfaces for Time and Teaching settings.
+- [x] Task: Define TypeScript interfaces for Time and Teaching settings. 298417e
 - [ ] Task: Create a custom hook `useSessionSettings` to manage `sessionStorage` sync and state updates.
     - [ ] Write tests for the hook (verify isolation, persistence on reload).
     - [ ] Implement the hook using `sessionStorage`.

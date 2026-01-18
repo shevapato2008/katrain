@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { TimeSettings, TeachingSettings, DEFAULT_TIME_SETTINGS, DEFAULT_TEACHING_SETTINGS } from '../types/settings';
+import { useState } from 'react';
+import { type TimeSettings, type TeachingSettings, DEFAULT_TIME_SETTINGS, DEFAULT_TEACHING_SETTINGS } from '../types/settings';
 
 const TIME_SETTINGS_KEY = 'katrain_time_settings';
 const TEACHING_SETTINGS_KEY = 'katrain_teaching_settings';

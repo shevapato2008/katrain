@@ -9,7 +9,6 @@ import {
   FormControlLabel,
   Checkbox,
   Box,
-  Typography,
 } from '@mui/material';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSessionSettings } from '../hooks/useSessionSettings';

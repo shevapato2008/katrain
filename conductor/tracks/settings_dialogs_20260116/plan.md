@@ -8,9 +8,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: State Management' (Protocol in workflow.md) [checkpoint: ddcf273]
 
 ## Phase 2: Time Settings Dialog (F5)
-- [ ] Task: Create the `TimeSettingsDialog.tsx` component using MUI.
-    - [ ] Write unit tests for component rendering and user input changes.
-    - [ ] Implement the dialog layout and logic using `useSessionSettings`.
+- [x] Task: Create the `TimeSettingsDialog.tsx` component using MUI.
+    - [x] Write unit tests for component rendering and user input changes.
+    - [x] Implement the dialog layout and logic using `useSessionSettings`.
 - [ ] Task: Add i18n keys for Time Settings in translation files.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Time Settings' (Protocol in workflow.md)
 

@@ -78,6 +78,19 @@ class WebGame(Game):
         if self.katrain and hasattr(self.katrain, "last_timer_update"):
             self.katrain.last_timer_update = time.time()
 
+    def play(self, move, ignore_ko=False, analyze=True):
+        # Update timer for the *previous* node/player before switching
+        if self.katrain and hasattr(self.katrain, "update_timer"):
+            self.katrain.update_timer()
+
+        node = super().play(move, ignore_ko=ignore_ko, analyze=analyze)
+
+        # Reset timer baseline for the *new* node/player
+        if self.katrain and hasattr(self.katrain, "last_timer_update"):
+            self.katrain.last_timer_update = time.time()
+        
+        return node
+
 
 class WebKaTrain(KaTrainBase):
     """

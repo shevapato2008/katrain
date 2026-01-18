@@ -1,6 +1,7 @@
 import logging
 import time
 import threading
+import copy
 from typing import Callable, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
@@ -131,7 +132,8 @@ class WebKaTrain(KaTrainBase):
         self.show_coordinates = True
         self.zen_mode = False
         self.preview_pv = []
-        
+        self.active_game_timer = self.config("timer")
+
         # Initialize language from config
         from katrain.web.core.config import settings
         lang = self.config("general/lang") or self.config("general/language") or settings.DEFAULT_LANG
@@ -319,7 +321,7 @@ class WebKaTrain(KaTrainBase):
                 "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
                 "current_node_time_used": cn.time_used,
                 "next_player_periods_used": self.next_player_info.periods_used,
-                "settings": self.config("timer")
+                "settings": self.active_game_timer
             },
             "ui_state": {
                 "show_children": self.show_children,
@@ -338,6 +340,8 @@ class WebKaTrain(KaTrainBase):
         if self.engine:
             self.engine.on_new_game()
         
+        self.active_game_timer = copy.deepcopy(self.config("timer"))
+
         game_properties = {}
         if size:
             game_properties["SZ"] = size
@@ -450,9 +454,9 @@ class WebKaTrain(KaTrainBase):
         if cn.children or self.next_player_info.ai:
             return
 
-        main_time = self.config("timer/main_time", 0) * 60
-        byo_len = max(1, self.config("timer/byo_length"))
-        byo_num = max(1, self.config("timer/byo_periods"))
+        main_time = self.active_game_timer.get("main_time", 0) * 60
+        byo_len = max(1, self.active_game_timer.get("byo_length", 30))
+        byo_num = max(1, self.active_game_timer.get("byo_periods", 5))
         
         current_player = self.next_player_info.player
         main_time_used = self.main_time_used_by_player.get(current_player, 0)
@@ -585,11 +589,11 @@ class WebKaTrain(KaTrainBase):
             and not self.next_player_info.ai
             and not self.timer_paused
             and self.play_analyze_mode == MODE_PLAY
-            and self.config("timer/main_time", 0) * 60 - self.main_time_used_by_player.get(self.next_player_info.player, 0) <= 0
-            and current_node.time_used < self.config("timer/minimal_use", 0)
+            and self.active_game_timer.get("main_time", 0) * 60 - self.main_time_used_by_player.get(self.next_player_info.player, 0) <= 0
+            and current_node.time_used < self.active_game_timer.get("minimal_use", 0)
         ):
             self.controls.set_status(
-                i18n._("move too fast").format(num=self.config("timer/minimal_use", 0)), STATUS_TEACHING
+                i18n._("move too fast").format(num=self.active_game_timer.get("minimal_use", 0)), STATUS_TEACHING
             )
             return
 

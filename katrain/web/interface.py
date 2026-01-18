@@ -143,9 +143,8 @@ class WebKaTrain(KaTrainBase):
         if lang == 'en' and settings.DEFAULT_LANG != 'en':
             self.log(f"Updating default language from 'en' to '{settings.DEFAULT_LANG}'", OUTPUT_INFO)
             lang = settings.DEFAULT_LANG
-            self.update_config("general/lang", lang)
-            self.save_config("general")
-
+        
+        # Actually switch the global i18n context to this instance's language
         i18n.switch_lang(lang)
 
     def start(self):
@@ -456,7 +455,7 @@ class WebKaTrain(KaTrainBase):
             return
 
         cn = self.game.current_node
-        if cn.children or self.next_player_info.ai:
+        if cn.children: # Only count time for the active leaf node
             return
 
         main_time = self.active_game_timer.get("main_time", 0) * 60
@@ -752,6 +751,9 @@ class WebKaTrain(KaTrainBase):
         self.game.current_node.end_state = f"{self.game.current_node.player}+R"
 
     def _do_engine_recovery_popup(self, error_message, code):
+        # Sync global i18n before logging translated strings
+        current_lang = self.config("general/language") or self.config("general/lang") or "en"
+        i18n.switch_lang(current_lang)
         self.log(f"Engine Error: {error_message} (Code: {code})", OUTPUT_ERROR)
         # In web context, push error notification to client
 

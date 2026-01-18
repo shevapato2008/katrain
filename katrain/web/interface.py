@@ -753,17 +753,18 @@ class WebKaTrain(KaTrainBase):
                 self._config[cat] = {}
             self._config[cat][key] = value
         else:
+            cat, key = None, setting
             self._config[setting] = value
 
         # Handle language change
         if setting == "general/language":
             i18n.switch_lang(value)
             self.update_state()
-        
+
         if setting.startswith("ai/"):
             self.update_calculated_ranks()
             self.update_state()
-        
+
         # Logic from ConfigPopup.update_config to restart engine if needed
         ignore = {"max_visits", "fast_visits", "max_time", "enable_ownership", "wide_root_noise"}
         if "engine" in setting and not any(ig in setting for ig in ignore):
@@ -778,6 +779,10 @@ class WebKaTrain(KaTrainBase):
                 self.game.engines = {"B": self.engine, "W": self.engine}
                 self.game.analyze_all_nodes(analyze_fast=True)
             self.update_state()
+
+        # Session isolation: do not save timer or trainer settings to global config.json
+        if cat not in ["timer", "trainer"]:
+            self.save_config(cat)
 
     def shutdown(self):
         if self.engine:

@@ -1,0 +1,8 @@
+{
+  "track_id": "settings_dialogs_20260116",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-16T14:30:00Z",
+  "updated_at": "2026-01-16T14:30:00Z",
+  "description": "Implement Time Settings (F5) and Teaching/Analysis Settings (F6) dialogs with session-scoped isolation."
+}

@@ -37,6 +37,19 @@ export interface GameState {
     show_coordinates: boolean;
     zen_mode: boolean;
   };
+  timer?: {
+    paused: boolean;
+    main_time_used: number;
+    current_node_time_used: number;
+    next_player_periods_used: number;
+    settings: {
+      main_time: number;
+      byo_length: number;
+      byo_periods: number;
+      minimal_time_usage: number;
+      sound: boolean;
+    };
+  };
   language: string;
   engine?: "local" | "cloud";
 }

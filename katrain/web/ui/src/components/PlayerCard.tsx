@@ -8,11 +8,43 @@ interface PlayerCardProps {
   info: PlayerInfo;
   captures: number;
   active: boolean;
+  timer?: {
+    paused: boolean;
+    main_time_used: number;
+    current_node_time_used: number;
+    next_player_periods_used: number;
+    settings: {
+      main_time: number;
+      byo_length: number;
+      byo_periods: number;
+    };
+  };
 }
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active }) => {
+const formatTime = (seconds: number) => {
+  const m = Math.floor(Math.max(0, seconds) / 60);
+  const s = Math.floor(Math.max(0, seconds) % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer }) => {
   const { t } = useTranslation();
   const isBlack = player === 'B';
+
+  let timeDisplay = null;
+  if (active && timer && timer.settings) {
+    const mainTimeTotal = timer.settings.main_time * 60;
+    const mainTimeLeft = mainTimeTotal - timer.main_time_used;
+
+    if (mainTimeLeft > 0) {
+      timeDisplay = formatTime(mainTimeLeft);
+    } else {
+      const periodsLeft = Math.max(0, timer.settings.byo_periods - timer.next_player_periods_used);
+      const currentPeriodTimeLeft = Math.max(0, timer.settings.byo_length - timer.current_node_time_used);
+      timeDisplay = `${formatTime(currentPeriodTimeLeft)} (${periodsLeft}x)`;
+    }
+  }
+
   return (
     <Paper
       elevation={0}
@@ -64,28 +96,44 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active 
           {info.calculated_rank || '?'}
         </Typography>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#7a7772',
-            fontSize: '0.7rem',
-            fontFamily: 'var(--font-mono)',
-          }}
-        >
-          {t("Captures")}: {captures}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontWeight: info.player_type === 'player:ai' ? 600 : 400,
-            color: info.player_type === 'player:ai' ? '#4a6b5c' : '#b8b5b0',
-            fontSize: '0.7rem',
-            fontFamily: 'var(--font-mono)',
-          }}
-        >
-          {info.player_type === 'player:human' ? t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#7a7772',
+              fontSize: '0.7rem',
+              fontFamily: 'var(--font-mono)',
+              display: 'block',
+            }}
+          >
+            {t("Captures")}: {captures}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: info.player_type === 'player:ai' ? 600 : 400,
+              color: info.player_type === 'player:ai' ? '#4a6b5c' : '#b8b5b0',
+              fontSize: '0.7rem',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            {info.player_type === 'player:human' ? t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
+          </Typography>
+        </Box>
+        {timeDisplay && (
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#e89639',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+            }}
+          >
+            {timeDisplay}
+          </Typography>
+        )}
       </Box>
     </Paper>
   );

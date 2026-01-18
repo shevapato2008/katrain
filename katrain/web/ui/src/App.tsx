@@ -620,12 +620,14 @@ function App() {
                     info={gameState.players_info.B} 
                     captures={gameState.prisoner_count.B} 
                     active={gameState.player_to_move === 'B'} 
+                    timer={gameState.timer}
                   />
                   <PlayerCard 
                     player="W" 
                     info={gameState.players_info.W} 
                     captures={gameState.prisoner_count.W} 
                     active={gameState.player_to_move === 'W'} 
+                    timer={gameState.timer}
                   />
                 </>
               )}

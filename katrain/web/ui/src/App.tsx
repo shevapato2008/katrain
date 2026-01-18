@@ -515,6 +515,16 @@ function App() {
     }
   };
 
+  const handlePauseTimer = async () => {
+    if (!sessionId) return;
+    try {
+      const data = await API.pauseTimer(sessionId);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Pause timer failed", error);
+    }
+  };
+
   useKeyboardShortcuts({
     onAction: handleAction,
     onNewGame: handleNewGame,
@@ -621,6 +631,7 @@ function App() {
                     captures={gameState.prisoner_count.B} 
                     active={gameState.player_to_move === 'B'} 
                     timer={gameState.timer}
+                    onPauseTimer={handlePauseTimer}
                   />
                   <PlayerCard 
                     player="W" 
@@ -628,6 +639,7 @@ function App() {
                     captures={gameState.prisoner_count.W} 
                     active={gameState.player_to_move === 'W'} 
                     timer={gameState.timer}
+                    onPauseTimer={handlePauseTimer}
                   />
                 </>
               )}

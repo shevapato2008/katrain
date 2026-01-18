@@ -120,6 +120,8 @@ export const API = {
     apiPost("/api/player/swap", { session_id: sessionId }),
   resign: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/resign", { session_id: sessionId }),
+  pauseTimer: (sessionId: string): Promise<SessionResponse> =>
+    apiPost("/api/timer/pause", { session_id: sessionId }),
   rotate: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/rotate", { session_id: sessionId }),
   showPV: (sessionId: string, pv: string): Promise<SessionResponse> =>

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, IconButton } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -19,6 +21,7 @@ interface PlayerCardProps {
       byo_periods: number;
     };
   };
+  onPauseTimer?: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -27,7 +30,7 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer }) => {
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer, onPauseTimer }) => {
   const { t } = useTranslation();
   const isBlack = player === 'B';
 
@@ -121,19 +124,34 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active,
             {info.player_type === 'player:human' ? t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
           </Typography>
         </Box>
-        {timeDisplay && (
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#e89639',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-            }}
-          >
-            {timeDisplay}
-          </Typography>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {timeDisplay && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#e89639',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+              }}
+            >
+              {timeDisplay}
+            </Typography>
+          )}
+          {active && timer && onPauseTimer && (
+            <IconButton 
+              size="small" 
+              onClick={onPauseTimer}
+              sx={{ 
+                p: 0.5, 
+                color: '#b8b5b0', 
+                '&:hover': { color: '#f5f3f0', bgcolor: 'rgba(255, 255, 255, 0.1)' } 
+              }}
+            >
+              {timer.paused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+            </IconButton>
+          )}
+        </Box>
       </Box>
     </Paper>
   );

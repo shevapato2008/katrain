@@ -32,6 +32,8 @@ interface SidebarProps {
   onGameReport: () => void;
   onLanguageChange: (lang: string) => void;
   onSwapPlayers?: () => void;
+  onTimeSettings: () => void;
+  onTeachingSettings: () => void;
 }
 
 const LANGUAGES = [
@@ -46,7 +48,7 @@ const LANGUAGES = [
   { code: 'tr', flag: 'flag-tr.png', name: 'Türkçe' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ gameState, settings, onUpdateSettings, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers }) => {
+const Sidebar: React.FC<SidebarProps> = ({ gameState, settings, onUpdateSettings, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers, onTimeSettings, onTeachingSettings }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
@@ -200,24 +202,24 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, settings, onUpdateSettings
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton disabled>
-              <ListItemIcon sx={{ minWidth: 36, color: '#4a4845' }}><TimerIcon fontSize="small" /></ListItemIcon>
+            <ListItemButton onClick={onTimeSettings} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><TimerIcon fontSize="small" /></ListItemIcon>
               <ListItemText
                 primary={t('menu:clocksettings')}
                 secondary="F5"
-                primaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.875rem' } }}
-                secondaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
               />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton disabled>
-              <ListItemIcon sx={{ minWidth: 36, color: '#4a4845' }}><SchoolIcon fontSize="small" /></ListItemIcon>
+            <ListItemButton onClick={onTeachingSettings} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' } }}>
+              <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><SchoolIcon fontSize="small" /></ListItemIcon>
               <ListItemText
                 primary={t('menu:teachsettings')}
                 secondary="F6"
-                primaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.875rem' } }}
-                secondaryTypographyProps={{ sx: { color: '#4a4845', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
+                primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }}
+                secondaryTypographyProps={{ sx: { color: '#7a7772', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' } }}
               />
             </ListItemButton>
           </ListItem>

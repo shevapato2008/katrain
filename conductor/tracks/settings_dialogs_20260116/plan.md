@@ -2,9 +2,9 @@
 
 ## Phase 1: Session-Scoped State Management
 - [x] Task: Define TypeScript interfaces for Time and Teaching settings. 298417e
-- [ ] Task: Create a custom hook `useSessionSettings` to manage `sessionStorage` sync and state updates.
-    - [ ] Write tests for the hook (verify isolation, persistence on reload).
-    - [ ] Implement the hook using `sessionStorage`.
+- [x] Task: Create a custom hook `useSessionSettings` to manage `sessionStorage` sync and state updates. 4452617
+    - [x] Write tests for the hook (verify isolation, persistence on reload).
+    - [x] Implement the hook using `sessionStorage`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: State Management' (Protocol in workflow.md)
 
 ## Phase 2: Time Settings Dialog (F5)

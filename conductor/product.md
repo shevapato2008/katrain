@@ -11,6 +11,7 @@ The primary goal is to achieve and exceed feature parity between the new Web GUI
 ## Core Goals
 *   **Surpass Desktop Functionality:** Deliver a superior feature set in the Web UI compared to the legacy Kivy implementation.
 *   **Simplified Configuration:** Abstract engine and model settings (formerly "General & Engine Settings F8") away from the UI. The Web UI now acts as a pure client, delegating optimal model selection and management to the KataGo Engine.
+*   **Session-Isolated Stability:** Implement a snapshot-based configuration system (e.g., Timer Snapshotting) ensuring that mid-game settings changes never disrupt an active session, while still providing global persistence for future games.
 *   **Intelligent Request Routing (Dual-Engine):** Implement logic to route lightweight "playing" requests to the local RK3588 CPU-based engine (Eigen mode) and heavy-duty "analysis" requests to high-performance remote GPU servers.
 
 ## Key Features & Requirements

@@ -45,3 +45,10 @@ This plan focuses on implementing a snapshot-based timer system and aligning tea
 - [x] Task: Execute Verification using Chrome MCP (394fb58)
     - [x] Run the test script and capture logs/screenshots to prove isolation and snapshotting.
 - [x] Task: Conductor - User Manual Verification 'Phase 4: Testing & Final Sign-off' (Protocol in workflow.md)
+
+## Bug Fixes & Refinements (Final Cleanup) [checkpoint: c4affd6]
+- [x] Fix: AI Timer reset bug by allowing AI to consume time in `update_timer`.
+- [x] Fix: Global i18n contamination (French error message) by syncing language on instance init and error entry.
+- [x] UI: Hide "Notifications" from Sidebar.
+- [x] i18n: Unified "Human" translation key and completed AI strategy labels for 11 languages.
+- [x] Build: Fixed TypeScript errors in Sidebar and App components.

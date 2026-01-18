@@ -3,6 +3,8 @@ export interface PlayerInfo {
   player_subtype: string;
   name: string;
   calculated_rank: string | null;
+  periods_used: number;
+  main_time_used: number;
 }
 
 export interface GameState {

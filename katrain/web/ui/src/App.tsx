@@ -632,6 +632,7 @@ function App() {
                     active={gameState.player_to_move === 'B'} 
                     timer={gameState.timer}
                     onPauseTimer={handlePauseTimer}
+                    onPlaySound={playSound}
                   />
                   <PlayerCard 
                     player="W" 
@@ -640,6 +641,7 @@ function App() {
                     active={gameState.player_to_move === 'W'} 
                     timer={gameState.timer}
                     onPauseTimer={handlePauseTimer}
+                    onPlaySound={playSound}
                   />
                 </>
               )}

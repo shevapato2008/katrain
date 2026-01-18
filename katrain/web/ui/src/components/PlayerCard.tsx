@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Box, Typography, Paper, IconButton } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -19,9 +19,11 @@ interface PlayerCardProps {
       main_time: number;
       byo_length: number;
       byo_periods: number;
+      sound: boolean;
     };
   };
   onPauseTimer?: () => void;
+  onPlaySound?: (sound: string) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -32,10 +34,11 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer, onPauseTimer }) => {
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer, onPauseTimer, onPlaySound }) => {
   const { t } = useTranslation();
   const isBlack = player === 'B';
   const [clientElapsed, setClientElapsed] = React.useState(0);
+  const soundTriggeredRef = useRef<number | null>(null);
 
   React.useEffect(() => {
     setClientElapsed(0);
@@ -43,41 +46,65 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active,
 
     const start = Date.now();
     const interval = setInterval(() => {
-      setClientElapsed((Date.now() - start) / 1000);
+      const elapsed = (Date.now() - start) / 1000;
+      setClientElapsed(elapsed);
     }, 100);
 
     return () => clearInterval(interval);
-  }, [active, timer?.paused, timer?.main_time_used, timer?.current_node_time_used, timer?.next_player_periods_used]);
+  }, [active, timer?.paused, info.main_time_used, timer?.current_node_time_used, info.periods_used]);
 
   let timeDisplay = null;
-  if (active && timer && timer.settings) {
+  if (timer && timer.settings) {
+    const byoNum = timer.settings.byo_periods;
+    const byoLen = timer.settings.byo_length;
     const mainTimeTotal = timer.settings.main_time * 60;
-    // Apply elapsed time to main time first, then to current node time (byoyomi)
-    const effectiveMainTimeUsed = timer.main_time_used + (mainTimeTotal > timer.main_time_used ? clientElapsed : 0);
-    const mainTimeLeft = mainTimeTotal - effectiveMainTimeUsed;
 
-    if (mainTimeLeft > 0) {
-      timeDisplay = formatTime(mainTimeLeft);
-    } else {
-      // Logic: if main time was already exhausted from backend, applied to node time.
-      // If main time exhausted DURING client tick, we should transition.
-      // Simplify: if backend says main time left, we consume it.
-      // If backend says main time exhausted, we consume node time.
-      
-      let effectiveNodeTimeUsed = timer.current_node_time_used;
-      if (timer.main_time_used >= mainTimeTotal) {
-          effectiveNodeTimeUsed += clientElapsed;
+    if (active) {
+      // Apply elapsed time to main time first, then to current node time (byoyomi)
+      const effectiveMainTimeUsed = info.main_time_used + (mainTimeTotal > info.main_time_used ? clientElapsed : 0);
+      const mainTimeLeft = mainTimeTotal - effectiveMainTimeUsed;
+
+      if (mainTimeLeft > 0) {
+        timeDisplay = formatTime(mainTimeLeft);
       } else {
-          // Transition phase: some client elapsed consumed remaining main time, rest to node time
-          const overrun = effectiveMainTimeUsed - mainTimeTotal;
-          if (overrun > 0) {
-              effectiveNodeTimeUsed += overrun;
-          }
-      }
+        let effectiveNodeTimeUsed = timer.current_node_time_used;
+        if (info.main_time_used >= mainTimeTotal) {
+            effectiveNodeTimeUsed += clientElapsed;
+        } else {
+            // Transition phase: some client elapsed consumed remaining main time, rest to node time
+            const overrun = effectiveMainTimeUsed - mainTimeTotal;
+            if (overrun > 0) {
+                effectiveNodeTimeUsed += overrun;
+            }
+        }
 
-      const periodsLeft = Math.max(0, timer.settings.byo_periods - timer.next_player_periods_used);
-      const currentPeriodTimeLeft = Math.max(0, timer.settings.byo_length - effectiveNodeTimeUsed);
-      timeDisplay = `${formatTime(currentPeriodTimeLeft)} (${periodsLeft}x)`;
+        let periodsUsed = info.periods_used;
+        while (effectiveNodeTimeUsed > byoLen && periodsUsed < byoNum) {
+            effectiveNodeTimeUsed -= byoLen;
+            periodsUsed += 1;
+        }
+
+        const periodsLeft = Math.max(0, byoNum - periodsUsed);
+        const currentPeriodTimeLeft = periodsUsed === byoNum ? 0 : Math.max(0, byoLen - effectiveNodeTimeUsed);
+        timeDisplay = `${formatTime(currentPeriodTimeLeft)} (${periodsLeft}x)`;
+
+        // Sound Logic: last 5 seconds (5.2 in Kivy)
+        if (timer.settings.sound && onPlaySound && periodsUsed < byoNum) {
+            if (currentPeriodTimeLeft > 0 && currentPeriodTimeLeft <= 5.2 && soundTriggeredRef.current !== periodsUsed) {
+                onPlaySound('countdownbeep');
+                soundTriggeredRef.current = periodsUsed;
+            }
+        }
+      }
+    } else {
+      // Inactive player: show remaining main time or periods left
+      const mainTimeLeft = mainTimeTotal - info.main_time_used;
+      const periodsLeft = Math.max(0, byoNum - info.periods_used);
+      if (mainTimeLeft > 0) {
+        timeDisplay = formatTime(mainTimeLeft);
+      } else {
+        timeDisplay = `${formatTime(byoLen)} (${periodsLeft}x)`;
+      }
     }
   }
 

@@ -300,7 +300,9 @@ class WebKaTrain(KaTrainBase):
                     "player_type": p.player_type,
                     "player_subtype": p.player_subtype,
                     "name": p.name,
-                    "calculated_rank": p.calculated_rank
+                    "calculated_rank": p.calculated_rank,
+                    "periods_used": p.periods_used,
+                    "main_time_used": self.main_time_used_by_player.get(bw, 0)
                 }
                 for bw, p in self.players_info.items()
             },
@@ -441,7 +443,7 @@ class WebKaTrain(KaTrainBase):
         dt = now - self.last_timer_update
         self.last_timer_update = now
 
-        if self.timer_paused or self.play_analyze_mode != MODE_PLAY:
+        if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
             return
 
         cn = self.game.current_node
@@ -453,10 +455,15 @@ class WebKaTrain(KaTrainBase):
         byo_num = max(1, self.config("timer/byo_periods"))
         
         current_player = self.next_player_info.player
+        main_time_used = self.main_time_used_by_player.get(current_player, 0)
+        main_time_left = main_time - main_time_used
+
+        if main_time_left > 0:
+            used_main = min(dt, main_time_left)
+            self.main_time_used_by_player[current_player] = main_time_used + used_main
+            dt -= used_main
         
-        if main_time - self.main_time_used_by_player.get(current_player, 0) > 0:
-            self.main_time_used_by_player[current_player] = self.main_time_used_by_player.get(current_player, 0) + dt
-        else:
+        if dt > 0:
             cn.time_used += dt
             while cn.time_used > byo_len and self.next_player_info.periods_used < byo_num:
                 cn.time_used -= byo_len
@@ -569,6 +576,7 @@ class WebKaTrain(KaTrainBase):
         from katrain.core.game import IllegalMoveException, Move
         from katrain.core.constants import STATUS_TEACHING
         
+        self.update_timer()
         game = self.game
         current_node = game and self.game.current_node
         if (
@@ -590,6 +598,8 @@ class WebKaTrain(KaTrainBase):
             self.play_stone_sound()
         except IllegalMoveException as e:
             self.log(f"Illegal Move: {e}", OUTPUT_ERROR)
+        finally:
+            self.last_timer_update = time.time()
 
     def _do_undo(self, n_times=1):
         if n_times == "smart":

@@ -12,10 +12,10 @@
     - [x] Write unit tests for component rendering and user input changes.
     - [x] Implement the dialog layout and logic using `useSessionSettings`.
 - [x] Task: Add i18n keys for Time Settings in translation files.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Time Settings' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Time Settings' (Protocol in workflow.md) [checkpoint: 78c3981]
 
 ## Phase 3: Teaching/Analysis Settings Dialog (F6)
-- [ ] Task: Create the `TeachingSettingsDialog.tsx` component using MUI.
+- [~] Task: Create the `TeachingSettingsDialog.tsx` component using MUI.
     - [ ] Write unit tests for rendering and complex input handling (sliders, multiple checkboxes).
     - [ ] Implement the dialog layout and logic using `useSessionSettings`.
 - [ ] Task: Add i18n keys for Teaching/Analysis Settings in translation files.

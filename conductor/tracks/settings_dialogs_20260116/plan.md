@@ -11,7 +11,7 @@
 - [x] Task: Create the `TimeSettingsDialog.tsx` component using MUI.
     - [x] Write unit tests for component rendering and user input changes.
     - [x] Implement the dialog layout and logic using `useSessionSettings`.
-- [ ] Task: Add i18n keys for Time Settings in translation files.
+- [x] Task: Add i18n keys for Time Settings in translation files.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Time Settings' (Protocol in workflow.md)
 
 ## Phase 3: Teaching/Analysis Settings Dialog (F6)

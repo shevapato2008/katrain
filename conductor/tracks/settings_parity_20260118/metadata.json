@@ -1,0 +1,8 @@
+{
+  "track_id": "settings_parity_20260118",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-18T14:30:00Z",
+  "updated_at": "2026-01-18T14:30:00Z",
+  "description": "Setting Alignment and Bug Fixes: Timer update fix, Teaching settings parity, and Session isolation."
+}

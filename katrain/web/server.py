@@ -272,6 +272,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    @app.post("/api/config/bulk")
+    def update_config_bulk(request: ConfigBulkUpdateRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            for setting, value in request.updates.items():
+                session.katrain.update_config(setting, value)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
     @app.post("/api/player")
     def update_player(request: UpdatePlayerRequest):
         session = _get_session_or_404(manager, request.session_id)

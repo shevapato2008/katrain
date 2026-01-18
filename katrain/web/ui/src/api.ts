@@ -116,6 +116,8 @@ export const API = {
   },
   updateConfig: (sessionId: string, setting: string, value: any): Promise<SessionResponse> =>
     apiPost("/api/config", { session_id: sessionId, setting, value }),
+  updateConfigBulk: (sessionId: string, updates: Record<string, any>): Promise<SessionResponse> =>
+    apiPost("/api/config/bulk", { session_id: sessionId, updates }),
   updatePlayer: (sessionId: string, bw: string, playerType?: string, playerSubtype?: string): Promise<SessionResponse> =>
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype }),
   swapPlayers: (sessionId: string): Promise<SessionResponse> =>

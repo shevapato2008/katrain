@@ -10,17 +10,35 @@ import {
   Checkbox,
   Box,
 } from '@mui/material';
+import { API } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSessionSettings } from '../hooks/useSessionSettings';
 
 interface TimeSettingsDialogProps {
   open: boolean;
+  sessionId: string | null;
   onClose: () => void;
 }
 
-const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }) => {
+const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId, onClose }) => {
   const { t } = useTranslation();
   const { timeSettings, updateTimeSettings } = useSessionSettings();
+
+  const handleUpdate = async () => {
+    if (!sessionId) return;
+    try {
+      await API.updateConfigBulk(sessionId, {
+        'timer/main_time': timeSettings.mainTime,
+        'timer/byo_length': timeSettings.byoyomiLength,
+        'timer/byo_periods': timeSettings.byoyomiPeriods,
+        'timer/minimal_use': timeSettings.minimalTimeUsage,
+        'timer/sound': timeSettings.sound,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Failed to update timer settings", error);
+    }
+  };
 
   const handleChange = (field: keyof typeof timeSettings) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10);
@@ -82,6 +100,9 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }
         </Box>
       </DialogContent>
       <DialogActions>
+        <Button onClick={handleUpdate} color="primary" variant="contained">
+          {t('Update Timer')}
+        </Button>
         <Button onClick={onClose} color="primary">
           {t('Close')}
         </Button>

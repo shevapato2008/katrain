@@ -51,6 +51,10 @@ class ConfigUpdateRequest(BaseModel):
     setting: str
     value: Any
 
+class ConfigBulkUpdateRequest(BaseModel):
+    session_id: str
+    updates: Dict[str, Any]
+
 class UpdatePlayerRequest(BaseModel):
     session_id: str
     bw: str

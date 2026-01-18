@@ -24,17 +24,38 @@ import {
   Switch,
   Divider,
 } from '@mui/material';
+import { API } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSessionSettings } from '../hooks/useSessionSettings';
 
 interface TeachingSettingsDialogProps {
   open: boolean;
+  sessionId: string | null;
   onClose: () => void;
 }
 
-const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, onClose }) => {
+const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, sessionId, onClose }) => {
   const { t } = useTranslation();
   const { teachingSettings, updateTeachingSettings } = useSessionSettings();
+
+  const handleUpdate = async () => {
+    if (!sessionId) return;
+    try {
+      await API.updateConfigBulk(sessionId, {
+        'trainer/eval_thresholds': teachingSettings.evalThresholds,
+        'trainer/show_dots': teachingSettings.showDots,
+        'trainer/save_feedback': teachingSettings.saveFeedback,
+        'trainer/eval_show_ai': teachingSettings.showAI,
+        'trainer/top_moves_show': teachingSettings.topMovesShow,
+        'trainer/low_visits': teachingSettings.visits.low,
+        'engine/fast_visits': teachingSettings.visits.fast,
+        'engine/max_visits': teachingSettings.visits.max,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Failed to update teaching settings", error);
+    }
+  };
 
   const handleArrayToggle = (field: 'showDots' | 'saveFeedback', index: number) => {
     const newArray = [...teachingSettings[field]];
@@ -195,6 +216,9 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, o
         </Box>
       </DialogContent>
       <DialogActions>
+        <Button onClick={handleUpdate} color="primary" variant="contained">
+          {t('Update Feedback Settings')}
+        </Button>
         <Button onClick={onClose} color="primary">
           {t('Close')}
         </Button>

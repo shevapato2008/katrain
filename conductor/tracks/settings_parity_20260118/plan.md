@@ -5,12 +5,12 @@ This plan focuses on implementing a snapshot-based timer system and aligning tea
 ## Phase 1: Backend Session Isolation & Timer Snapshotting
 - [x] Task: Disable Global Persistence (330f779)
     - [ ] Modify `WebKaTrain.update_config` to skip `self.save_config()` for `timer/` and `trainer/` domains.
-- [ ] Task: Implement Timer Snapshot Logic
-    - [ ] Add `self.active_game_timer` attribute to `WebKaTrain`.
-    - [ ] Modify `WebKaTrain._do_new_game` to clone `self.config("timer")` into `self.active_game_timer`.
-- [ ] Task: Refactor Timer Calculation
-    - [ ] Update `WebKaTrain.update_timer` to read `main_time`, `byo_length`, and `byo_periods` exclusively from `self.active_game_timer`.
-    - [ ] Ensure `update_state` correctly broadcasts the snapshotted settings to the frontend.
+- [x] Task: Implement Timer Snapshot Logic (5ab7255)
+    - [x] Add `self.active_game_timer` attribute to `WebKaTrain`.
+    - [x] Modify `WebKaTrain._do_new_game` to clone `self.config("timer")` into `self.active_game_timer`.
+- [x] Task: Refactor Timer Calculation (5ab7255)
+    - [x] Update `WebKaTrain.update_timer` to read `main_time`, `byo_length`, and `byo_periods` exclusively from `self.active_game_timer`.
+    - [x] Ensure `update_state` correctly broadcasts the snapshotted settings to the frontend.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Snapshot Logic' (Protocol in workflow.md)
 
 ## Phase 2: Teaching/Analysis Settings Parity (Frontend)

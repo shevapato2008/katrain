@@ -2,7 +2,7 @@
 
 This plan focuses on implementing a snapshot-based timer system and aligning teaching settings with the Kivy GUI, ensuring session-level isolation and mid-game stability.
 
-## Phase 1: Backend Session Isolation & Timer Snapshotting
+## Phase 1: Backend Session Isolation & Timer Snapshotting [checkpoint: 36dd1a7]
 - [x] Task: Disable Global Persistence (330f779)
     - [ ] Modify `WebKaTrain.update_config` to skip `self.save_config()` for `timer/` and `trainer/` domains.
 - [x] Task: Implement Timer Snapshot Logic (5ab7255)

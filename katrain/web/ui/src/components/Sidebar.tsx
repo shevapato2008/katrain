@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip, IconButton, Switch } from '@mui/material';
+import { Box, Typography, Divider, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Tooltip, IconButton } from '@mui/material';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -13,17 +13,9 @@ import SchoolIcon from '@mui/icons-material/School';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import HubIcon from '@mui/icons-material/Hub';
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 
 interface SidebarProps {
   gameState: GameState | null;
-  settings: {
-    showPassAlert: boolean;
-    playPassSound: boolean;
-    showEndAlert: boolean;
-    playEndSound: boolean;
-  };
-  onUpdateSettings: (key: string, value: boolean) => void;
   onNewGame: () => void;
   onLoadSGF: (sgf: string) => void;
   onSaveSGF: () => void;
@@ -48,7 +40,7 @@ const LANGUAGES = [
   { code: 'tr', flag: 'flag-tr.png', name: 'Türkçe' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ gameState, settings, onUpdateSettings, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers, onTimeSettings, onTeachingSettings }) => {
+const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSaveSGF, onAISettings, onAnalyzeGame, onGameReport, onLanguageChange, onSwapPlayers, onTimeSettings, onTeachingSettings }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 

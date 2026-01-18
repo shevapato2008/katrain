@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, type GameState } from './api';
 import { i18n } from './i18n';
@@ -116,32 +116,11 @@ function App() {
   const [gameReport, setGameReport] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Notifications Settings
-  const [showPassAlert, setShowPassAlert] = useState(() => localStorage.getItem('showPassAlert') !== 'false');
-  const [playPassSound, setPlayPassSound] = useState(() => localStorage.getItem('playPassSound') !== 'false');
-  const [showEndAlert, setShowEndAlert] = useState(() => localStorage.getItem('showEndAlert') !== 'false');
-  const [playEndSound, setPlayEndSound] = useState(() => localStorage.getItem('playEndSound') !== 'false');
-  
   const [notification, setNotification] = useState<{ open: boolean; message: string; severity: 'info' | 'success' }>({
     open: false,
     message: '',
     severity: 'info'
   });
-
-  const settings = useMemo(() => ({
-    showPassAlert,
-    playPassSound,
-    showEndAlert,
-    playEndSound
-  }), [showPassAlert, playPassSound, showEndAlert, playEndSound]);
-
-  const handleUpdateSettings = (key: string, value: boolean) => {
-    localStorage.setItem(key, String(value));
-    if (key === 'showPassAlert') setShowPassAlert(value);
-    if (key === 'playPassSound') setPlayPassSound(value);
-    if (key === 'showEndAlert') setShowEndAlert(value);
-    if (key === 'playEndSound') setPlayEndSound(value);
-  };
 
   // Detection Refs
   const prevGameId = useRef<string | null>(null);
@@ -271,47 +250,12 @@ function App() {
         return; 
     }
 
-    const isNewMove = gameState.history.length > prevHistoryLen.current;
-    const isDifferentNode = gameState.current_node_id !== prevNodeId.current;
-    const isAtTip = gameState.current_node_index === gameState.history.length - 1;
-
-    // 1. Pass Detection
-    if (isNewMove && isDifferentNode && isAtTip && gameState.is_pass) {
-        let passedPlayer = 'Unknown';
-        if (gameState.player_to_move === 'B') passedPlayer = 'White';
-        else if (gameState.player_to_move === 'W') passedPlayer = 'Black';
-
-        if (showPassAlert) {
-            const msg = passedPlayer === 'Unknown' 
-                ? t('Pass') 
-                : `${t(passedPlayer)} ${t('Passed')}`;
-            setNotification({ 
-                open: true, 
-                message: msg, 
-                severity: 'info' 
-            });
-        }
-        if (playPassSound) playSound('boing');
-    }
-
-    // 2. Game End Detection
-    if (gameState.end_result && !prevGameEnded.current) {
-         if (showEndAlert) {
-             setNotification({ 
-                 open: true, 
-                 message: `${t('Game Ended')}: ${gameState.end_result}`, 
-                 severity: 'success' 
-             });
-         }
-         if (playEndSound) playSound('countdownbeep');
-    }
-
     // Update refs
     prevNodeId.current = gameState.current_node_id;
     prevHistoryLen.current = gameState.history.length;
     prevGameEnded.current = !!gameState.end_result;
 
-  }, [gameState, showPassAlert, playPassSound, showEndAlert, playEndSound, t]);
+  }, [gameState, t]);
 
   const handleMove = async (x: number, y: number) => {
     if (!sessionId) return;
@@ -588,8 +532,6 @@ function App() {
           {isSidebarOpen && (
             <Sidebar
               gameState={gameState}
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
               onNewGame={handleNewGame}
               onLoadSGF={handleLoadSGF}
               onSaveSGF={handleSaveSGF}

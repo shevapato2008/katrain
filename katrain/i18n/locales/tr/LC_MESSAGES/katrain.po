@@ -48,7 +48,7 @@ msgid "player:type"
 msgstr "Oyuncu"
 
 msgid "player:human"
-msgstr "İnsan"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "AI"
@@ -60,10 +60,10 @@ msgid "gametype"
 msgstr "Oyun Türü"
 
 msgid "game:normal"
-msgstr "Normal Oyun"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Eğitici Oyun"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -754,7 +754,7 @@ msgid "strength:dan"
 msgstr "d"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -791,7 +791,7 @@ msgstr ""
 " için kullanılabilir."
 
 msgid "ai:antimirror"
-msgstr "KataAntiSimetri"
+msgstr "KataAntiMirror"
 
 msgid "aihelp:antimirror"
 msgstr "KataGo'nun Simetri Karşıtı Go Modu"
@@ -1217,3 +1217,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "İptal"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

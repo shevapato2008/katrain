@@ -47,7 +47,7 @@ msgid "player:type"
 msgstr "대국자"
 
 msgid "player:human"
-msgstr "사람"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "인공지능"
@@ -59,10 +59,10 @@ msgid "gametype"
 msgstr "대국 종류"
 
 msgid "game:normal"
-msgstr "일반 대국"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "지도대국"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -462,7 +462,7 @@ msgid "strength:dan"
 msgstr "단"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -912,7 +912,7 @@ msgid "Prune Branch"
 msgstr "변화 잘라내기"
 
 msgid "ai:antimirror"
-msgstr "흉내바둑 타파"
+msgstr "KataAntiMirror"
 
 msgid "aihelp:antimirror"
 msgstr "흉내바둑을 타파하는 KataGo 모드입니다."
@@ -1081,3 +1081,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "취소"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

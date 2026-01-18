@@ -222,7 +222,7 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
                   fullWidth
                   size="small"
                 >
-                  <MenuItem value="player:human">{t("Human")}</MenuItem>
+                  <MenuItem value="player:human">{t("player:human")}</MenuItem>
                   <MenuItem value="player:ai">{t("AI")}</MenuItem>
                 </TextField>
                 {renderPlayerSubtypeSelect(blackType, blackSubtype, setBlackSubtype)}
@@ -251,7 +251,7 @@ const NewGameDialog: React.FC<NewGameDialogProps> = ({ open, gameState, onClose,
                   fullWidth
                   size="small"
                 >
-                  <MenuItem value="player:human">{t("Human")}</MenuItem>
+                  <MenuItem value="player:human">{t("player:human")}</MenuItem>
                   <MenuItem value="player:ai">{t("AI")}</MenuItem>
                 </TextField>
                 {renderPlayerSubtypeSelect(whiteType, whiteSubtype, setWhiteSubtype)}

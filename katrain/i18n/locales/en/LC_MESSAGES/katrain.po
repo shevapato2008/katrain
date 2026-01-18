@@ -66,10 +66,10 @@ msgid "gametype"
 msgstr "Game Type"
 
 msgid "game:normal"
-msgstr "Normal Game"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Teaching Game"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -774,7 +774,7 @@ msgid "strength:dan"
 msgstr "d"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -1160,3 +1160,9 @@ msgstr "Save in SGF (marks)"
 
 msgid "cancel"
 msgstr "Cancel"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

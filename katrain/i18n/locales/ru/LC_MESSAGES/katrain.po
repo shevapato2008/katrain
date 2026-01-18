@@ -45,7 +45,7 @@ msgid "player:type"
 msgstr "Игрок"
 
 msgid "player:human"
-msgstr "Человек"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "Компьютер"
@@ -57,10 +57,10 @@ msgid "gametype"
 msgstr "Тип игры"
 
 msgid "game:normal"
-msgstr "Обычная"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Обучающая"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -491,7 +491,7 @@ msgid "strength:dan"
 msgstr "д"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -936,7 +936,7 @@ msgid "Entire Game"
 msgstr "Полная игра"
 
 msgid "ai:antimirror"
-msgstr "Противозеркальная"
+msgstr "KataAntiMirror"
 
 #. on move tree editing, deletes all other branches splitting off from
 #. the
@@ -1117,3 +1117,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "Отмена"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

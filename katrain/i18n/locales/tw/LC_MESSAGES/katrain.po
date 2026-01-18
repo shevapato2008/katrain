@@ -60,10 +60,10 @@ msgid "gametype"
 msgstr "對局類型"
 
 msgid "game:normal"
-msgstr "分先對局"
+msgstr "普通模式"
 
 msgid "game:teach"
-msgstr "指導棋"
+msgstr "教學模式"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -578,7 +578,7 @@ msgid "strength:dan"
 msgstr "段"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "推薦 (Recommended)"
 
 msgid "aihelp:default"
 msgstr ""
@@ -604,7 +604,7 @@ msgstr ""
 "attachment_penalty)。權重可以是負數使對局複雜化，而寬根雜訊(在一般設定中)的使用，可以以棋力強度作為代價，加強風格。"
 
 msgid "ai:jigo"
-msgstr "Kata控目"
+msgstr "和棋模式 (KataJigo)"
 
 msgid "aihelp:jigo"
 msgstr "在沒有更多限制的情況下，嘗試按指定目數(預設0.5)赢棋。"
@@ -953,7 +953,7 @@ msgid "Entire Game"
 msgstr "全局"
 
 msgid "ai:antimirror"
-msgstr "Kata反鏡射"
+msgstr "反鏡像 (KataAntiMirror)"
 
 #. on move tree editing, deletes all other branches splitting off from
 #. the path UP TO this node
@@ -998,11 +998,11 @@ msgstr "(Stored as plain text, do not re-use this anywhere)"
 
 #. TODO
 msgid "ai:human"
-msgstr "Human-like"
+msgstr "類人 AI (Human-like)"
 
 #. TODO
 msgid "ai:pro"
-msgstr "Historical Pro"
+msgstr "歷史職業棋手 (Historical Pro)"
 
 #. TODO
 msgid "aihelp:pro"
@@ -1136,3 +1136,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "取消"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "人類"

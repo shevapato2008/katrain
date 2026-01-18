@@ -45,7 +45,7 @@ msgid "player:type"
 msgstr "Joueur"
 
 msgid "player:human"
-msgstr "Humain"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "Artificiel"
@@ -60,7 +60,7 @@ msgid "game:normal"
 msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Étudiant"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -540,7 +540,7 @@ msgid "strength:dan"
 msgstr "d"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -972,7 +972,7 @@ msgid "Entire Game"
 msgstr "Partie entière"
 
 msgid "ai:antimirror"
-msgstr "Anti-symétrique"
+msgstr "KataAntiMirror"
 
 msgid "Prune Branch"
 msgstr "Élaguer les autres branches"
@@ -1151,3 +1151,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "Annuler"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

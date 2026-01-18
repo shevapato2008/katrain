@@ -66,10 +66,10 @@ msgid "gametype"
 msgstr "对局类型"
 
 msgid "game:normal"
-msgstr "普通对局"
+msgstr "普通模式"
 
 msgid "game:teach"
-msgstr "教学对局"
+msgstr "教学模式"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -662,7 +662,7 @@ msgid "strength:dan"
 msgstr "段"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "推荐 (Recommended)"
 
 msgid "aihelp:default"
 msgstr ""
@@ -686,10 +686,10 @@ msgstr ""
 "fac），避免脱先（5路以上，偏向值tenuki_penalty），避免碰（偏向值attachment_penalty）的手法。偏向值可以设为复数捣乱局面，宽根噪声（通用设置）可以棋力代价更加符合风格。"
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "和棋模式 (KataJigo)"
 
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "反镜像 (KataAntiMirror)"
 
 msgid "aihelp:antimirror"
 msgstr "Anti Mirror-go Mode of KataGo."
@@ -765,14 +765,14 @@ msgid "aihelp:p:rank"
 msgstr "从随机生成的选点集合里选出最佳. 更强的设置拥有更大的随机选点集合. 既然没有 0 级/段, 则3 段 = -2 级。"
 
 msgid "ai:human"
-msgstr "人类风格"
+msgstr "类人 AI (Human-like)"
 
 msgid "aihelp:human"
 msgstr ""
 "根据人类风格的 KataGo 模型选点。如果勾选了 'modern_style'，该模型将采用 2016 年后 AlphaZero 的布局风格。"
 
 msgid "ai:pro"
-msgstr "历史职业"
+msgstr "历史职业棋手 (Historical Pro)"
 
 msgid "aihelp:pro"
 msgstr "根据人类风格的 KataGo 模型选点。具体来说，根据指定年份及周边年份的历史对局记录，模仿职业棋手和强力院生的招法。"
@@ -989,3 +989,9 @@ msgstr ""
 "last move and plays the best one. Plays top move if policy value is above "
 "'pick_override' to avoid obvious mistakes. A higher 'stddev' makes it play "
 "further away."
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "人类"

@@ -45,7 +45,7 @@ msgid "player:type"
 msgstr "Jugador"
 
 msgid "player:human"
-msgstr "Humano"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "IA"
@@ -60,7 +60,7 @@ msgid "game:normal"
 msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Enseñanza"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -451,7 +451,7 @@ msgid "strength:dan"
 msgstr "d"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -1029,3 +1029,19 @@ msgstr "Ko allowed?"
 #. TODO - Menu option for tsumego frame around position
 msgid "analysis:tsumegoframe"
 msgstr "Tsumego Frame"
+
+
+msgid "ai:human"
+msgstr "Human-like"
+
+
+msgid "ai:pro"
+msgstr "Historical Pro"
+
+
+msgid "AI"
+msgstr "AI"
+
+
+msgid "Human"
+msgstr "Human"

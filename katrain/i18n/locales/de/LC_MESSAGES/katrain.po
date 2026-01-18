@@ -45,7 +45,7 @@ msgid "player:type"
 msgstr "Spieler"
 
 msgid "player:human"
-msgstr "Mensch"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "AI"
@@ -57,10 +57,10 @@ msgid "gametype"
 msgstr "Partieart"
 
 msgid "game:normal"
-msgstr "Normale Partie"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Übungspartie"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -451,7 +451,7 @@ msgid "strength:dan"
 msgstr "d"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -1182,3 +1182,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "Abbrechen"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

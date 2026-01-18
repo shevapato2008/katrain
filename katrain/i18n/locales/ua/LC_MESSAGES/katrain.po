@@ -48,7 +48,7 @@ msgid "player:type"
 msgstr "Гравець"
 
 msgid "player:human"
-msgstr "Людина"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "AI"
@@ -60,10 +60,10 @@ msgid "gametype"
 msgstr "Тип гри"
 
 msgid "game:normal"
-msgstr "Звичайна"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Навчальна"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -772,7 +772,7 @@ msgid "strength:dan"
 msgstr "д"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -811,7 +811,7 @@ msgid "ai:jigo"
 msgstr "KataJigo"
 
 msgid "ai:antimirror"
-msgstr "Анти-дзеркальний"
+msgstr "KataAntiMirror"
 
 msgid "aihelp:antimirror"
 msgstr "Режим проти дзеркальної гри в KataGo."
@@ -1063,7 +1063,7 @@ msgstr "Дозволити ко?"
 
 #. TODO
 msgid "ai:human"
-msgstr "Humanlike Model"
+msgstr "Human-like"
 
 #. TODO
 msgid "ai:pro"
@@ -1201,3 +1201,9 @@ msgstr "Passed"
 
 msgid "cancel"
 msgstr "Скасувати"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

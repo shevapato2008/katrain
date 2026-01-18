@@ -148,45 +148,6 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, settings, onUpdateSettings
           </ListItem>
         </List>
 
-        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t("NOTIFICATIONS")}</Typography>
-        <List dense sx={{ py: 0 }}>
-          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 36, color: '#4a6b5c' }}><NotificationsIcon fontSize="small" /></ListItemIcon>
-            <ListItemText primary={t("Pass Alert")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
-            <Switch
-              size="small"
-              checked={settings.showPassAlert}
-              onChange={(e) => onUpdateSettings('showPassAlert', e.target.checked)}
-            />
-          </ListItem>
-          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 36 }} />
-            <ListItemText primary={t("Pass Sound")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
-            <Switch
-              size="small"
-              checked={settings.playPassSound}
-              onChange={(e) => onUpdateSettings('playPassSound', e.target.checked)}
-            />
-          </ListItem>
-          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 36 }} />
-            <ListItemText primary={t("Game End Alert")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
-            <Switch
-              size="small"
-              checked={settings.showEndAlert}
-              onChange={(e) => onUpdateSettings('showEndAlert', e.target.checked)}
-            />
-          </ListItem>
-          <ListItem disablePadding sx={{ px: 2, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 36 }} />
-            <ListItemText primary={t("Game End Sound")} primaryTypographyProps={{ sx: { color: '#f5f3f0', fontSize: '0.875rem' } }} />
-            <Switch
-              size="small"
-              checked={settings.playEndSound}
-              onChange={(e) => onUpdateSettings('playEndSound', e.target.checked)}
-            />
-          </ListItem>
-        </List>
 
         <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, color: '#7a7772', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>{t('menu:settings').toUpperCase()}</Typography>
         <List dense sx={{ py: 0 }}>

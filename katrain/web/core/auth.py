@@ -27,6 +27,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+from sqlalchemy.orm import Session
+from katrain.web.core import models_db
+
 class UserRepository(ABC):
     @abstractmethod
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
@@ -40,51 +43,52 @@ class UserRepository(ABC):
     def list_users(self) -> List[Dict[str, Any]]:
         pass
 
-class SQLiteUserRepository(UserRepository):
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-
-    def _get_connection(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+class SQLAlchemyUserRepository(UserRepository):
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
 
     def init_db(self):
-        with self._get_connection() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    hashed_password TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            conn.commit()
+        # With SQLAlchemy, we typically use Alembic for migrations.
+        # But for simplicity/dev, we can use Base.metadata.create_all
+        from katrain.web.core.db import engine
+        models_db.Base.metadata.create_all(bind=engine)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
+        session = self.session_factory()
         try:
-            with self._get_connection() as conn:
-                conn.execute(
-                    "INSERT INTO users (username, hashed_password) VALUES (?, ?)",
-                    (username, hashed_password),
-                )
-                conn.commit()
-                return self.get_user_by_username(username)
-        except sqlite3.IntegrityError:
+            db_user = models_db.User(username=username, hashed_password=hashed_password)
+            session.add(db_user)
+            session.commit()
+            session.refresh(db_user)
+            return self._to_dict(db_user)
+        except Exception: # IntegrityError usually
+            session.rollback()
             raise ValueError("User already exists")
+        finally:
+            session.close()
 
     def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
-        with self._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM users WHERE username = ?", (username,)
-            ).fetchone()
-            if row:
-                return dict(row)
-        return None
+        session = self.session_factory()
+        try:
+            user = session.query(models_db.User).filter(models_db.User.username == username).first()
+            if user:
+                return self._to_dict(user)
+            return None
+        finally:
+            session.close()
 
     def list_users(self) -> List[Dict[str, Any]]:
-        with self._get_connection() as conn:
-            rows = conn.execute("SELECT * FROM users").fetchall()
-            return [dict(row) for row in rows]
+        session = self.session_factory()
+        try:
+            users = session.query(models_db.User).all()
+            return [self._to_dict(user) for user in users]
+        finally:
+            session.close()
+
+    def _to_dict(self, user_obj: models_db.User) -> Dict[str, Any]:
+        return {
+            "id": user_obj.id,
+            "username": user_obj.username,
+            "hashed_password": user_obj.hashed_password,
+            "created_at": user_obj.created_at
+        }

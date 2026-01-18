@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert, Button } from '@mui/material';
+import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, type GameState } from './api';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';

@@ -25,4 +25,4 @@
 - [x] Task: Enable "Time Settings" and "Teaching/Analysis Settings" buttons in `Sidebar.tsx`.
 - [x] Task: Implement F5/F6 keyboard shortcuts in `App.tsx` or the keyboard shortcuts hook.
 - [x] Task: Integrate the new dialogs into the main `App.tsx` component.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Integration' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Integration' (Protocol in workflow.md) [checkpoint: 542d637]

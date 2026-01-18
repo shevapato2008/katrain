@@ -37,11 +37,11 @@ describe('TimeSettingsDialog', () => {
     render(<TimeSettingsDialog open={true} onClose={vi.fn()} />);
     
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Main Time/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Byoyomi Length/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Byoyomi Periods/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Minimal time usage/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Sound/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/main time/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/byoyomi length/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/byoyomi periods/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/minimal time use/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/count down sound/i)).toBeInTheDocument();
   });
 
   it('does not render when closed', () => {
@@ -52,7 +52,7 @@ describe('TimeSettingsDialog', () => {
   it('updates main time on input change', () => {
     render(<TimeSettingsDialog open={true} onClose={vi.fn()} />);
     
-    const input = screen.getByLabelText(/Main Time/i);
+    const input = screen.getByLabelText(/main time/i);
     fireEvent.change(input, { target: { value: '90' } });
     
     expect(mockUpdateTimeSettings).toHaveBeenCalledWith({ mainTime: 90 });
@@ -61,7 +61,7 @@ describe('TimeSettingsDialog', () => {
   it('updates sound toggle on click', () => {
     render(<TimeSettingsDialog open={true} onClose={vi.fn()} />);
     
-    const checkbox = screen.getByLabelText(/Sound/i);
+    const checkbox = screen.getByLabelText(/count down sound/i);
     fireEvent.click(checkbox);
     
     expect(mockUpdateTimeSettings).toHaveBeenCalledWith({ sound: false });

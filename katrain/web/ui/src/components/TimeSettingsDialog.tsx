@@ -36,11 +36,11 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{t('Time Settings')}</DialogTitle>
+      <DialogTitle>{t('timer settings')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <TextField
-            label={t('Main Time (minutes)')}
+            label={t('main time')}
             type="number"
             value={timeSettings.mainTime}
             onChange={handleChange('mainTime')}
@@ -48,7 +48,7 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }
             size="small"
           />
           <TextField
-            label={t('Byoyomi Length (seconds)')}
+            label={t('byoyomi length')}
             type="number"
             value={timeSettings.byoyomiLength}
             onChange={handleChange('byoyomiLength')}
@@ -56,7 +56,7 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }
             size="small"
           />
           <TextField
-            label={t('Byoyomi Periods')}
+            label={t('byoyomi periods')}
             type="number"
             value={timeSettings.byoyomiPeriods}
             onChange={handleChange('byoyomiPeriods')}
@@ -64,7 +64,7 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }
             size="small"
           />
           <TextField
-            label={t('Minimal time usage (seconds)')}
+            label={t('minimal time use')}
             type="number"
             value={timeSettings.minimalTimeUsage}
             onChange={handleChange('minimalTimeUsage')}
@@ -78,7 +78,7 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, onClose }
                 onChange={handleToggle('sound')}
               />
             }
-            label={t('Sound')}
+            label={t('count down sound')}
           />
         </Box>
       </DialogContent>

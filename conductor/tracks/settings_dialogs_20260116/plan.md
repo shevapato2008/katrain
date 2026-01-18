@@ -15,9 +15,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Time Settings' (Protocol in workflow.md) [checkpoint: 78c3981]
 
 ## Phase 3: Teaching/Analysis Settings Dialog (F6)
-- [~] Task: Create the `TeachingSettingsDialog.tsx` component using MUI.
-    - [ ] Write unit tests for rendering and complex input handling (sliders, multiple checkboxes).
-    - [ ] Implement the dialog layout and logic using `useSessionSettings`.
+- [x] Task: Create the `TeachingSettingsDialog.tsx` component using MUI.
+    - [x] Write unit tests for rendering and complex input handling (sliders, multiple checkboxes).
+    - [x] Implement the dialog layout and logic using `useSessionSettings`.
 - [ ] Task: Add i18n keys for Teaching/Analysis Settings in translation files.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Teaching Settings' (Protocol in workflow.md)
 

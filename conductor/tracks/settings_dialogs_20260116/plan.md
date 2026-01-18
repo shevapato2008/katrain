@@ -18,7 +18,7 @@
 - [x] Task: Create the `TeachingSettingsDialog.tsx` component using MUI.
     - [x] Write unit tests for rendering and complex input handling (sliders, multiple checkboxes).
     - [x] Implement the dialog layout and logic using `useSessionSettings`.
-- [ ] Task: Add i18n keys for Teaching/Analysis Settings in translation files.
+- [x] Task: Add i18n keys for Teaching/Analysis Settings in translation files.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Teaching Settings' (Protocol in workflow.md)
 
 ## Phase 4: UI Integration and Shortcuts

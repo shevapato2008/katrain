@@ -1037,3 +1037,23 @@ msgstr "关闭"
 
 msgid "NOTIFICATIONS"
 msgstr "通知"
+
+msgid "Very Good"
+msgstr "非常好"
+
+msgid "Good"
+msgstr "良好"
+
+msgid "Slack"
+msgstr "缓着"
+
+msgid "Mistake"
+msgstr "失误"
+
+msgid "Blunder"
+msgstr "恶手"
+
+
+msgid "low_visits"
+msgstr "低计算量"
+

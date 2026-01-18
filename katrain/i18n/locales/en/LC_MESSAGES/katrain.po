@@ -1133,3 +1133,23 @@ msgstr "Close"
 
 msgid "NOTIFICATIONS"
 msgstr "NOTIFICATIONS"
+
+msgid "Very Good"
+msgstr "Very Good"
+
+msgid "Good"
+msgstr "Good"
+
+msgid "Slack"
+msgstr "Slack"
+
+msgid "Mistake"
+msgstr "Mistake"
+
+msgid "Blunder"
+msgstr "Blunder"
+
+
+msgid "low_visits"
+msgstr "Low Visits"
+

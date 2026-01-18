@@ -95,6 +95,7 @@ class WebKaTrain(KaTrainBase):
         self.pondering = False
         self.timer_paused = True
         self.last_timer_update = time.time()
+        self.main_time_used_by_player = {"B": 0, "W": 0}
         self.show_children = False
         self.show_dots = False
         self.show_hints = False
@@ -287,7 +288,7 @@ class WebKaTrain(KaTrainBase):
             "eval_colors": Theme.EVAL_COLORS[self.config("trainer/theme")],
             "timer": {
                 "paused": self.timer_paused,
-                "main_time_used": self.game.main_time_used,
+                "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
                 "current_node_time_used": cn.time_used,
                 "next_player_periods_used": self.next_player_info.periods_used,
                 "settings": self.config("timer")
@@ -417,9 +418,11 @@ class WebKaTrain(KaTrainBase):
         main_time = self.config("timer/main_time", 0) * 60
         byo_len = max(1, self.config("timer/byo_length"))
         byo_num = max(1, self.config("timer/byo_periods"))
-
-        if main_time - self.game.main_time_used > 0:
-            self.game.main_time_used += dt
+        
+        current_player = self.next_player_info.player
+        
+        if main_time - self.main_time_used_by_player.get(current_player, 0) > 0:
+            self.main_time_used_by_player[current_player] = self.main_time_used_by_player.get(current_player, 0) + dt
         else:
             cn.time_used += dt
             while cn.time_used > byo_len and self.next_player_info.periods_used < byo_num:

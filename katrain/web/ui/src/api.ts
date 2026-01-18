@@ -48,12 +48,24 @@ export interface GameState {
       main_time: number;
       byo_length: number;
       byo_periods: number;
-      minimal_time_usage: number;
+      minimal_use: number;
       sound: boolean;
     };
   };
   language: string;
   engine?: "local" | "cloud";
+  trainer_settings?: {
+    eval_thresholds: number[];
+    show_dots: boolean[];
+    save_feedback: boolean[];
+    save_marks: boolean[];
+    eval_show_ai: boolean;
+    lock_ai: boolean;
+    top_moves_show: string;
+    low_visits: number;
+    fast_visits?: number;
+    max_visits?: number;
+  };
 }
 
 export interface SessionResponse {

@@ -966,3 +966,118 @@ msgstr ""
 #. TODO
 msgid "engine:humanlike_model"
 msgstr "Path to human-like model"
+
+#. TODO
+msgid "Slack"
+msgstr "Slack"
+
+#. TODO
+msgid "lock ai"
+msgstr "Hide engine analysis while playing"
+
+#. TODO
+msgid "Pass Alert"
+msgstr "Pass Alert"
+
+#. TODO
+msgid "Game End Sound"
+msgstr "Game End Sound"
+
+#. TODO
+msgid "Pass"
+msgstr "Pass"
+
+#. TODO
+msgid "Close"
+msgstr "Close"
+
+#. TODO
+msgid "Best"
+msgstr "Best"
+
+#. TODO
+msgid "Game Ended"
+msgstr "Game Ended"
+
+#. TODO
+msgid "White"
+msgstr "White"
+
+#. TODO
+msgid "NOTIFICATIONS"
+msgstr "NOTIFICATIONS"
+
+#. TODO
+msgid "Blunder"
+msgstr "Blunder"
+
+#. TODO
+msgid "Very Good"
+msgstr "Very Good"
+
+#. TODO
+msgid "save marks"
+msgstr "Save in SGF (marks)"
+
+#. TODO
+msgid "Black"
+msgstr "Black"
+
+#. TODO
+msgid "low_visits"
+msgstr "Low Visits"
+
+#. TODO
+msgid "Mistakes"
+msgstr "Mistakes"
+
+#. TODO
+msgid "Pass Sound"
+msgstr "Pass Sound"
+
+#. TODO
+msgid "Avg Pt Loss"
+msgstr "Avg Pt Loss"
+
+#. TODO
+msgid "Blunders"
+msgstr "Blunders"
+
+#. TODO
+msgid "Summary Statistics"
+msgstr "Summary Statistics"
+
+#. TODO
+msgid "Good"
+msgstr "Good"
+
+#. TODO
+msgid "Move Quality Distribution"
+msgstr "Move Quality Distribution"
+
+#. TODO
+msgid "Mistake"
+msgstr "Mistake"
+
+#. TODO
+msgid "Game Report"
+msgstr "Game Report"
+
+#. TODO
+msgid "Threshold (pts)"
+msgstr "Threshold (pts)"
+
+#. TODO
+msgid "Game End Alert"
+msgstr "Game End Alert"
+
+#. TODO
+msgid "Player"
+msgstr "Player"
+
+#. TODO
+msgid "Passed"
+msgstr "Passed"
+
+msgid "cancel"
+msgstr "취소"

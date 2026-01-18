@@ -10,10 +10,12 @@ export interface TeachingSettings {
   // Teaching Settings
   showDots: boolean[]; // array of booleans for different move ranges
   saveFeedback: boolean[]; // array of booleans
+  saveMarks: boolean[]; // array of booleans
   evalThresholds: number[]; // array of thresholds
 
   // Analysis Settings
   showAI: boolean;
+  lockAI: boolean;
   topMovesShow: string; // e.g., 'top_move_delta_score'
   visits: {
     fast: number;
@@ -38,8 +40,10 @@ export const DEFAULT_TIME_SETTINGS: TimeSettings = {
 export const DEFAULT_TEACHING_SETTINGS: TeachingSettings = {
   showDots: [true, true, true, true, true, true],
   saveFeedback: [true, true, true, true, false, false],
+  saveMarks: [true, true, true, true, true, true],
   evalThresholds: [12, 6, 3, 1.5, 0.5, 0],
   showAI: true,
+  lockAI: false,
   topMovesShow: 'top_move_delta_score',
   visits: {
     fast: 25,

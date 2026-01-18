@@ -316,6 +316,11 @@ class WebKaTrain(KaTrainBase):
             "theme": self.config("trainer/theme"),
             "available_themes": list(Theme.EVAL_COLORS.keys()),
             "eval_colors": Theme.EVAL_COLORS[self.config("trainer/theme")],
+            "trainer_settings": {
+                **self.config("trainer"),
+                "fast_visits": self.config("engine/fast_visits"),
+                "max_visits": self.config("engine/max_visits")
+            },
             "timer": {
                 "paused": self.timer_paused,
                 "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
@@ -784,9 +789,8 @@ class WebKaTrain(KaTrainBase):
                 self.game.analyze_all_nodes(analyze_fast=True)
             self.update_state()
 
-        # Session isolation: do not save timer or trainer settings to global config.json
-        if cat not in ["timer", "trainer"]:
-            self.save_config(cat)
+        # Persist to ~/.katrain/config.json just like Kivy GUI
+        self.save_config(cat)
 
     def shutdown(self):
         if self.engine:

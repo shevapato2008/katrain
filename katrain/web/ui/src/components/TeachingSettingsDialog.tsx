@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,16 +27,41 @@ import {
 import { API } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSessionSettings } from '../hooks/useSessionSettings';
+import { DEFAULT_TEACHING_SETTINGS } from '../types/settings';
+import type { GameState } from '../api';
 
 interface TeachingSettingsDialogProps {
   open: boolean;
   sessionId: string | null;
+  gameState: GameState | null;
   onClose: () => void;
 }
 
-const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, sessionId, onClose }) => {
+const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, sessionId, gameState, onClose }) => {
   const { t } = useTranslation();
   const { teachingSettings, updateTeachingSettings } = useSessionSettings();
+  const wasOpen = React.useRef(open);
+
+  useEffect(() => {
+    if (open && !wasOpen.current && gameState?.trainer_settings) {
+      const ts = gameState.trainer_settings;
+      updateTeachingSettings({
+        evalThresholds: ts.eval_thresholds,
+        showDots: ts.show_dots,
+        saveFeedback: ts.save_feedback,
+        saveMarks: ts.save_marks,
+        showAI: ts.eval_show_ai,
+        lockAI: ts.lock_ai,
+        topMovesShow: ts.top_moves_show,
+        visits: {
+          low: ts.low_visits,
+          fast: ts.fast_visits || DEFAULT_TEACHING_SETTINGS.visits.fast,
+          max: ts.max_visits || DEFAULT_TEACHING_SETTINGS.visits.max
+        }
+      });
+    }
+    wasOpen.current = open;
+  }, [open, gameState, updateTeachingSettings]); // Added missing dependencies
 
   const handleUpdate = async () => {
     if (!sessionId) return;
@@ -45,7 +70,9 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
         'trainer/eval_thresholds': teachingSettings.evalThresholds,
         'trainer/show_dots': teachingSettings.showDots,
         'trainer/save_feedback': teachingSettings.saveFeedback,
+        'trainer/save_marks': teachingSettings.saveMarks,
         'trainer/eval_show_ai': teachingSettings.showAI,
+        'trainer/lock_ai': teachingSettings.lockAI,
         'trainer/top_moves_show': teachingSettings.topMovesShow,
         'trainer/low_visits': teachingSettings.visits.low,
         'engine/fast_visits': teachingSettings.visits.fast,
@@ -57,26 +84,26 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
     }
   };
 
-  const handleArrayToggle = (field: 'showDots' | 'saveFeedback', index: number) => {
+  const handleArrayToggle = (field: 'showDots' | 'saveFeedback' | 'saveMarks', index: number) => {
     const newArray = [...teachingSettings[field]];
     newArray[index] = !newArray[index];
     updateTeachingSettings({ [field]: newArray });
   };
 
   const handleThresholdChange = (index: number, value: string) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      const numValue = parseFloat(value);
       const newThresholds = [...teachingSettings.evalThresholds];
-      newThresholds[index] = numValue;
+      newThresholds[index] = isNaN(numValue) ? 0 : numValue;
       updateTeachingSettings({ evalThresholds: newThresholds });
     }
   };
 
   const handleVisitChange = (field: 'fast' | 'low' | 'max', value: string) => {
-    const numValue = parseInt(value, 10);
-    if (!isNaN(numValue)) {
+    if (value === '' || /^\d+$/.test(value)) {
+      const numValue = parseInt(value, 10);
       updateTeachingSettings({
-        visits: { ...teachingSettings.visits, [field]: numValue },
+        visits: { ...teachingSettings.visits, [field]: isNaN(numValue) ? 0 : numValue },
       });
     }
   };
@@ -105,6 +132,7 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
                   <TableCell align="center">{t('point loss threshold')}</TableCell>
                   <TableCell align="center">{t('show dots')}</TableCell>
                   <TableCell align="center">{t('save dots')}</TableCell>
+                  <TableCell align="center">{t('save marks')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -119,12 +147,10 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
                     <TableCell align="center">
                       {index < 5 ? (
                         <TextField
-                          type="number"
                           size="small"
                           value={teachingSettings.evalThresholds[index]}
                           onChange={(e) => handleThresholdChange(index, e.target.value)}
                           sx={{ width: 80 }}
-                          inputProps={{ step: 0.5, min: 0 }}
                         />
                       ) : (
                         '-'
@@ -144,6 +170,14 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
                         onChange={() => handleArrayToggle('saveFeedback', index)}
                         size="small"
                         inputProps={{ 'aria-label': t('save dots') }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Checkbox
+                        checked={teachingSettings.saveMarks[index]}
+                        onChange={() => handleArrayToggle('saveMarks', index)}
+                        size="small"
+                        inputProps={{ 'aria-label': t('save marks') }}
                       />
                     </TableCell>
                   </TableRow>
@@ -167,6 +201,15 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
                 }
                 label={t('show ai dots')}
               />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={teachingSettings.lockAI}
+                    onChange={(e) => updateTeachingSettings({ lockAI: e.target.checked })}
+                  />
+                }
+                label={t('lock ai')}
+              />
               <FormControl fullWidth size="small">
                 <InputLabel>{t('stats on top move')}</InputLabel>
                 <Select
@@ -188,7 +231,6 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
               <Typography variant="subtitle2" color="primary">{t('Visits Settings')}</Typography>
               <TextField
                 label={t('engine:fast_visits')}
-                type="number"
                 size="small"
                 value={teachingSettings.visits.fast}
                 onChange={(e) => handleVisitChange('fast', e.target.value)}
@@ -196,7 +238,6 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
               />
               <TextField
                 label={t('low_visits', 'Low Visits')}
-                type="number"
                 size="small"
                 value={teachingSettings.visits.low}
                 onChange={(e) => handleVisitChange('low', e.target.value)}
@@ -204,7 +245,6 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
               />
               <TextField
                 label={t('engine:max_visits')}
-                type="number"
                 size="small"
                 value={teachingSettings.visits.max}
                 onChange={(e) => handleVisitChange('max', e.target.value)}
@@ -216,11 +256,11 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleUpdate} color="primary" variant="contained">
-          {t('Update Feedback Settings')}
-        </Button>
         <Button onClick={onClose} color="primary">
-          {t('Close')}
+          {t('cancel')}
+        </Button>
+        <Button onClick={handleUpdate} color="primary" variant="contained">
+          {t('update teacher')}
         </Button>
       </DialogActions>
     </Dialog>

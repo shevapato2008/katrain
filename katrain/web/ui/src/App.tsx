@@ -702,11 +702,13 @@ function App() {
         <TimeSettingsDialog 
           open={isTimeSettingsDialogOpen} 
           sessionId={sessionId}
+          gameState={gameState}
           onClose={() => setTimeSettingsDialogOpen(false)} 
         />
         <TeachingSettingsDialog 
           open={isTeachingSettingsDialogOpen} 
           sessionId={sessionId}
+          gameState={gameState}
           onClose={() => setTeachingSettingsDialogOpen(false)} 
         />
         <Snackbar 

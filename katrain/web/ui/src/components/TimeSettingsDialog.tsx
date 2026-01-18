@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,16 +13,34 @@ import {
 import { API } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSessionSettings } from '../hooks/useSessionSettings';
+import type { GameState } from '../api';
 
 interface TimeSettingsDialogProps {
   open: boolean;
   sessionId: string | null;
+  gameState: GameState | null;
   onClose: () => void;
 }
 
-const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId, onClose }) => {
+const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId, gameState, onClose }) => {
   const { t } = useTranslation();
   const { timeSettings, updateTimeSettings } = useSessionSettings();
+
+  const wasOpen = React.useRef(open);
+
+  useEffect(() => {
+    if (open && !wasOpen.current && gameState?.timer?.settings) {
+      const s = gameState.timer.settings;
+      updateTimeSettings({
+        mainTime: s.main_time,
+        byoyomiLength: s.byo_length,
+        byoyomiPeriods: s.byo_periods,
+        minimalTimeUsage: s.minimal_use, // Fixed: backend uses minimal_use
+        sound: s.sound
+      });
+    }
+    wasOpen.current = open;
+  }, [open, gameState, updateTimeSettings]);
 
   const handleUpdate = async () => {
     if (!sessionId) return;
@@ -41,8 +59,13 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId
   };
 
   const handleChange = (field: keyof typeof timeSettings) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(event.target.value, 10);
-    if (!isNaN(value)) {
+    const rawValue = event.target.value;
+    if (rawValue === '') {
+      updateTimeSettings({ [field]: 0 as any });
+      return;
+    }
+    const value = parseInt(rawValue, 10);
+    if (/^\d+$/.test(rawValue) && !isNaN(value)) {
       updateTimeSettings({ [field]: value });
     }
   };
@@ -58,7 +81,6 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <TextField
             label={t('main time')}
-            type="number"
             value={timeSettings.mainTime}
             onChange={handleChange('mainTime')}
             fullWidth
@@ -66,7 +88,6 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId
           />
           <TextField
             label={t('byoyomi length')}
-            type="number"
             value={timeSettings.byoyomiLength}
             onChange={handleChange('byoyomiLength')}
             fullWidth
@@ -74,7 +95,6 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId
           />
           <TextField
             label={t('byoyomi periods')}
-            type="number"
             value={timeSettings.byoyomiPeriods}
             onChange={handleChange('byoyomiPeriods')}
             fullWidth
@@ -82,7 +102,6 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId
           />
           <TextField
             label={t('minimal time use')}
-            type="number"
             value={timeSettings.minimalTimeUsage}
             onChange={handleChange('minimalTimeUsage')}
             fullWidth
@@ -100,11 +119,11 @@ const TimeSettingsDialog: React.FC<TimeSettingsDialogProps> = ({ open, sessionId
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleUpdate} color="primary" variant="contained">
-          {t('Update Timer')}
-        </Button>
         <Button onClick={onClose} color="primary">
-          {t('Close')}
+          {t('cancel')}
+        </Button>
+        <Button onClick={handleUpdate} color="primary" variant="contained">
+          {t('update timer')}
         </Button>
       </DialogActions>
     </Dialog>

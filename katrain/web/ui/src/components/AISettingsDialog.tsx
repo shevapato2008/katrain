@@ -305,7 +305,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, gameState, se
             '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: '#f5f3f0' }
           }}
         >
-          {t("Cancel")}
+          {t("cancel")}
         </Button>
         <Button
           onClick={handleSave}

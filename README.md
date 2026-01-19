@@ -185,12 +185,16 @@ For running the Web UI/API service:
 
 ```bash
 # Build the web image
+# 1. Create .dockerignore to avoid permission errors if .postgres_data exists
+echo ".postgres_data" > .dockerignore
+
 docker build -f Dockerfile.web -t katrain-web .
 
 # Run the container (maps port 8001)
 docker run -d \
-  --name funny_jones \
+  --name katrain-web \
   --network host \
+  -e KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@127.0.0.1:5432/katrain_db" \
   -v ~/.katrain:/root/.katrain \
   katrain-web
 ```

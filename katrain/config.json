@@ -1,6 +1,6 @@
 {
     "server": {
-        "database_url": "postgresql://katrain_user:katrain_secure_password_CHANGE_ME@127.0.0.1:5432/katrain_db"
+        "database_url": ""
     },
     "engine": {
         "katago": "",

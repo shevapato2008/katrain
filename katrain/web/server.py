@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
             logging.getLogger("httpcore").setLevel(logging.WARNING)
             url = engine_cfg.get("http_url")
             health = engine_cfg.get("http_health_path", "/health")
-            full_url = f"{url.rstrip(/)}/{health.lstrip(/)}"
+            full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"
             print(f"Testing KataGo Engine at {full_url}...")
             try:
                 async with httpx.AsyncClient(trust_env=False) as client:

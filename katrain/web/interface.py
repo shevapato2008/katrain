@@ -1,6 +1,7 @@
 import logging
 import time
 import threading
+import copy
 from typing import Callable, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
@@ -66,6 +67,32 @@ class MockControls:
         self.katrain.log(message, level)
 
 
+class WebGame(Game):
+    def set_current_node(self, node):
+        # Update timer for the *previous* node/player before switching
+        if self.katrain and hasattr(self.katrain, "update_timer"):
+            self.katrain.update_timer()
+        
+        super().set_current_node(node)
+        
+        # Reset timer baseline for the *new* node/player
+        if self.katrain and hasattr(self.katrain, "last_timer_update"):
+            self.katrain.last_timer_update = time.time()
+
+    def play(self, move, ignore_ko=False, analyze=True):
+        # Update timer for the *previous* node/player before switching
+        if self.katrain and hasattr(self.katrain, "update_timer"):
+            self.katrain.update_timer()
+
+        node = super().play(move, ignore_ko=ignore_ko, analyze=analyze)
+
+        # Reset timer baseline for the *new* node/player
+        if self.katrain and hasattr(self.katrain, "last_timer_update"):
+            self.katrain.last_timer_update = time.time()
+        
+        return node
+
+
 class WebKaTrain(KaTrainBase):
     """
     A headless version of KaTrain for the Web UI.
@@ -95,6 +122,7 @@ class WebKaTrain(KaTrainBase):
         self.pondering = False
         self.timer_paused = True
         self.last_timer_update = time.time()
+        self.main_time_used_by_player = {"B": 0, "W": 0}
         self.show_children = False
         self.show_dots = False
         self.show_hints = False
@@ -104,7 +132,8 @@ class WebKaTrain(KaTrainBase):
         self.show_coordinates = True
         self.zen_mode = False
         self.preview_pv = []
-        
+        self.active_game_timer = self.config("timer")
+
         # Initialize language from config
         from katrain.web.core.config import settings
         lang = self.config("general/lang") or self.config("general/language") or settings.DEFAULT_LANG
@@ -114,9 +143,8 @@ class WebKaTrain(KaTrainBase):
         if lang == 'en' and settings.DEFAULT_LANG != 'en':
             self.log(f"Updating default language from 'en' to '{settings.DEFAULT_LANG}'", OUTPUT_INFO)
             lang = settings.DEFAULT_LANG
-            self.update_config("general/lang", lang)
-            self.save_config("general")
-
+        
+        # Actually switch the global i18n context to this instance's language
         i18n.switch_lang(lang)
 
     def start(self):
@@ -273,7 +301,9 @@ class WebKaTrain(KaTrainBase):
                     "player_type": p.player_type,
                     "player_subtype": p.player_subtype,
                     "name": p.name,
-                    "calculated_rank": p.calculated_rank
+                    "calculated_rank": p.calculated_rank,
+                    "periods_used": p.periods_used,
+                    "main_time_used": self.main_time_used_by_player.get(bw, 0)
                 }
                 for bw, p in self.players_info.items()
             },
@@ -285,12 +315,17 @@ class WebKaTrain(KaTrainBase):
             "theme": self.config("trainer/theme"),
             "available_themes": list(Theme.EVAL_COLORS.keys()),
             "eval_colors": Theme.EVAL_COLORS[self.config("trainer/theme")],
+            "trainer_settings": {
+                **self.config("trainer"),
+                "fast_visits": self.config("engine/fast_visits"),
+                "max_visits": self.config("engine/max_visits")
+            },
             "timer": {
                 "paused": self.timer_paused,
-                "main_time_used": self.game.main_time_used,
+                "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
                 "current_node_time_used": cn.time_used,
                 "next_player_periods_used": self.next_player_info.periods_used,
-                "settings": self.config("timer")
+                "settings": self.active_game_timer
             },
             "ui_state": {
                 "show_children": self.show_children,
@@ -309,6 +344,8 @@ class WebKaTrain(KaTrainBase):
         if self.engine:
             self.engine.on_new_game()
         
+        self.active_game_timer = copy.deepcopy(self.config("timer"))
+
         game_properties = {}
         if size:
             game_properties["SZ"] = size
@@ -317,7 +354,7 @@ class WebKaTrain(KaTrainBase):
         if komi is not None:
             game_properties["KM"] = komi
 
-        self.game = Game(
+        self.game = WebGame(
             self,
             self.engine,
             move_tree=move_tree,
@@ -326,6 +363,13 @@ class WebKaTrain(KaTrainBase):
             game_properties=game_properties,
             user_id=self.user_id,
         )
+        
+        # Reset timer state for new game
+        self.timer_paused = True
+        self.last_timer_update = time.time()
+        self.main_time_used_by_player = {"B": 0, "W": 0}
+        self.reset_players() # Resets periods_used
+        
         # Update player info based on game settings
         for bw, player_info in self.players_info.items():
             player_info.sgf_rank = self.game.root.get_property(bw + "R")
@@ -407,20 +451,27 @@ class WebKaTrain(KaTrainBase):
         dt = now - self.last_timer_update
         self.last_timer_update = now
 
-        if self.timer_paused or self.play_analyze_mode != MODE_PLAY:
+        if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
             return
 
         cn = self.game.current_node
-        if cn.children or self.next_player_info.ai:
+        if cn.children: # Only count time for the active leaf node
             return
 
-        main_time = self.config("timer/main_time", 0) * 60
-        byo_len = max(1, self.config("timer/byo_length"))
-        byo_num = max(1, self.config("timer/byo_periods"))
+        main_time = self.active_game_timer.get("main_time", 0) * 60
+        byo_len = max(1, self.active_game_timer.get("byo_length", 30))
+        byo_num = max(1, self.active_game_timer.get("byo_periods", 5))
+        
+        current_player = self.next_player_info.player
+        main_time_used = self.main_time_used_by_player.get(current_player, 0)
+        main_time_left = main_time - main_time_used
 
-        if main_time - self.game.main_time_used > 0:
-            self.game.main_time_used += dt
-        else:
+        if main_time_left > 0:
+            used_main = min(dt, main_time_left)
+            self.main_time_used_by_player[current_player] = main_time_used + used_main
+            dt -= used_main
+        
+        if dt > 0:
             cn.time_used += dt
             while cn.time_used > byo_len and self.next_player_info.periods_used < byo_num:
                 cn.time_used -= byo_len
@@ -531,11 +582,32 @@ class WebKaTrain(KaTrainBase):
 
     def _do_play(self, coords):
         from katrain.core.game import IllegalMoveException, Move
+        from katrain.core.constants import STATUS_TEACHING
+        
+        self.update_timer()
+        game = self.game
+        current_node = game and self.game.current_node
+        if (
+            current_node
+            and not current_node.children
+            and not self.next_player_info.ai
+            and not self.timer_paused
+            and self.play_analyze_mode == MODE_PLAY
+            and self.active_game_timer.get("main_time", 0) * 60 - self.main_time_used_by_player.get(self.next_player_info.player, 0) <= 0
+            and current_node.time_used < self.active_game_timer.get("minimal_use", 0)
+        ):
+            self.controls.set_status(
+                i18n._("move too fast").format(num=self.active_game_timer.get("minimal_use", 0)), STATUS_TEACHING
+            )
+            return
+
         try:
             self.game.play(Move(coords, player=self.next_player_info.player))
             self.play_stone_sound()
         except IllegalMoveException as e:
             self.log(f"Illegal Move: {e}", OUTPUT_ERROR)
+        finally:
+            self.last_timer_update = time.time()
 
     def _do_undo(self, n_times=1):
         if n_times == "smart":
@@ -679,6 +751,9 @@ class WebKaTrain(KaTrainBase):
         self.game.current_node.end_state = f"{self.game.current_node.player}+R"
 
     def _do_engine_recovery_popup(self, error_message, code):
+        # Sync global i18n before logging translated strings
+        current_lang = self.config("general/language") or self.config("general/lang") or "en"
+        i18n.switch_lang(current_lang)
         self.log(f"Engine Error: {error_message} (Code: {code})", OUTPUT_ERROR)
         # In web context, push error notification to client
 
@@ -689,17 +764,18 @@ class WebKaTrain(KaTrainBase):
                 self._config[cat] = {}
             self._config[cat][key] = value
         else:
+            cat, key = None, setting
             self._config[setting] = value
 
         # Handle language change
         if setting == "general/language":
             i18n.switch_lang(value)
             self.update_state()
-        
+
         if setting.startswith("ai/"):
             self.update_calculated_ranks()
             self.update_state()
-        
+
         # Logic from ConfigPopup.update_config to restart engine if needed
         ignore = {"max_visits", "fast_visits", "max_time", "enable_ownership", "wide_root_noise"}
         if "engine" in setting and not any(ig in setting for ig in ignore):
@@ -714,6 +790,9 @@ class WebKaTrain(KaTrainBase):
                 self.game.engines = {"B": self.engine, "W": self.engine}
                 self.game.analyze_all_nodes(analyze_fast=True)
             self.update_state()
+
+        # Persist to ~/.katrain/config.json just like Kivy GUI
+        self.save_config(cat)
 
     def shutdown(self):
         if self.engine:

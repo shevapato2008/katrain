@@ -66,10 +66,10 @@ msgid "gametype"
 msgstr "Game Type"
 
 msgid "game:normal"
-msgstr "Normal Game"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "Teaching Game"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -774,7 +774,7 @@ msgid "strength:dan"
 msgstr "d"
 
 msgid "ai:default"
-msgstr "KataGo"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -801,8 +801,8 @@ msgstr ""
 "Plays moves that lead to simplifying the board state. Of moves that lose at "
 "most 'max_points_lost' points and with at least 'min_visits', prefer moves "
 "that lose fewer points, settle own territory more (with importance "
-"settled_weight), settle opponent's territory more (importance settled_weight"
-" * opponent_fac), avoid tenuki (more than 5 spaces, importance "
+"settled_weight), settle opponent's territory more (importance "
+"settled_weight* opponent_fac), avoid tenuki (more than 5 spaces, importance "
 "tenuki_penalty), and avoid attachments (importance attachment_penalty). "
 "Weights can be negative to make it complicate the game instead, and wide "
 "root noise (in general settings) can be used to play more according to the "
@@ -1133,3 +1133,36 @@ msgstr "Close"
 
 msgid "NOTIFICATIONS"
 msgstr "NOTIFICATIONS"
+
+msgid "Very Good"
+msgstr "Very Good"
+
+msgid "Good"
+msgstr "Good"
+
+msgid "Slack"
+msgstr "Slack"
+
+msgid "Mistake"
+msgstr "Mistake"
+
+msgid "Blunder"
+msgstr "Blunder"
+
+msgid "low_visits"
+msgstr "Low Visits"
+
+msgid "lock ai"
+msgstr "Hide engine analysis while playing"
+
+msgid "save marks"
+msgstr "Save in SGF (marks)"
+
+msgid "cancel"
+msgstr "Cancel"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

@@ -45,7 +45,7 @@ msgid "player:type"
 msgstr "プレイヤー"
 
 msgid "player:human"
-msgstr "人間"
+msgstr "Human"
 
 msgid "player:ai"
 msgstr "AI"
@@ -57,10 +57,10 @@ msgid "gametype"
 msgstr "対局の種類"
 
 msgid "game:normal"
-msgstr "通常対局"
+msgstr "Normal"
 
 msgid "game:teach"
-msgstr "指導対局"
+msgstr "Teaching"
 
 #. buttons at the top - should all include a line break
 msgid "analysis:nextmoves"
@@ -488,7 +488,7 @@ msgid "strength:dan"
 msgstr "段"
 
 msgid "ai:default"
-msgstr "手加減なし"
+msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
@@ -506,7 +506,7 @@ msgstr ""
 "適切な値をKaTrainが自動的にみつけます."
 
 msgid "ai:jigo"
-msgstr "Kata持碁"
+msgstr "KataJigo"
 
 msgid "aihelp:jigo"
 msgstr "指定された目差ちょうど（デフォルトは半目）だけ勝つことをめざします. それ以外は制限なし."
@@ -971,7 +971,7 @@ msgid "Entire Game"
 msgstr "全局"
 
 msgid "ai:antimirror"
-msgstr "Kataマネ碁破り"
+msgstr "KataAntiMirror"
 
 #. on move tree editing, deletes all other branches splitting off from
 #. the path UP TO this node
@@ -1039,3 +1039,124 @@ msgstr ""
 #. TODO
 msgid "engine:humanlike_model"
 msgstr "Path to human-like model"
+
+#. TODO
+msgid "Slack"
+msgstr "Slack"
+
+#. TODO
+msgid "lock ai"
+msgstr "Hide engine analysis while playing"
+
+#. TODO
+msgid "Pass Alert"
+msgstr "Pass Alert"
+
+#. TODO
+msgid "Game End Sound"
+msgstr "Game End Sound"
+
+#. TODO
+msgid "Pass"
+msgstr "Pass"
+
+#. TODO
+msgid "Close"
+msgstr "Close"
+
+#. TODO
+msgid "Best"
+msgstr "Best"
+
+#. TODO
+msgid "Game Ended"
+msgstr "Game Ended"
+
+#. TODO
+msgid "White"
+msgstr "White"
+
+#. TODO
+msgid "NOTIFICATIONS"
+msgstr "NOTIFICATIONS"
+
+#. TODO
+msgid "Blunder"
+msgstr "Blunder"
+
+#. TODO
+msgid "Very Good"
+msgstr "Very Good"
+
+#. TODO
+msgid "save marks"
+msgstr "Save in SGF (marks)"
+
+#. TODO
+msgid "Black"
+msgstr "Black"
+
+#. TODO
+msgid "low_visits"
+msgstr "Low Visits"
+
+#. TODO
+msgid "Mistakes"
+msgstr "Mistakes"
+
+#. TODO
+msgid "Pass Sound"
+msgstr "Pass Sound"
+
+#. TODO
+msgid "Avg Pt Loss"
+msgstr "Avg Pt Loss"
+
+#. TODO
+msgid "Blunders"
+msgstr "Blunders"
+
+#. TODO
+msgid "Summary Statistics"
+msgstr "Summary Statistics"
+
+#. TODO
+msgid "Good"
+msgstr "Good"
+
+#. TODO
+msgid "Move Quality Distribution"
+msgstr "Move Quality Distribution"
+
+#. TODO
+msgid "Mistake"
+msgstr "Mistake"
+
+#. TODO
+msgid "Game Report"
+msgstr "Game Report"
+
+#. TODO
+msgid "Threshold (pts)"
+msgstr "Threshold (pts)"
+
+#. TODO
+msgid "Game End Alert"
+msgstr "Game End Alert"
+
+#. TODO
+msgid "Player"
+msgstr "Player"
+
+#. TODO
+msgid "Passed"
+msgstr "Passed"
+
+msgid "cancel"
+msgstr "キャンセル"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Human"
+msgstr "Human"

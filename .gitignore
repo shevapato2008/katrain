@@ -158,9 +158,16 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Gemini
+# AI Tools
+.claude/
+.codex/
+.shared/
 .gemini-clipboard/
+.gemini/
 .playwright-mcp/
 
 # MacOS
 .DS_Store
+
+# Database
+.postgres_data/

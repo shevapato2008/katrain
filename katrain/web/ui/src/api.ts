@@ -3,6 +3,8 @@ export interface PlayerInfo {
   player_subtype: string;
   name: string;
   calculated_rank: string | null;
+  periods_used: number;
+  main_time_used: number;
 }
 
 export interface GameState {
@@ -37,8 +39,33 @@ export interface GameState {
     show_coordinates: boolean;
     zen_mode: boolean;
   };
+  timer?: {
+    paused: boolean;
+    main_time_used: number;
+    current_node_time_used: number;
+    next_player_periods_used: number;
+    settings: {
+      main_time: number;
+      byo_length: number;
+      byo_periods: number;
+      minimal_use: number;
+      sound: boolean;
+    };
+  };
   language: string;
   engine?: "local" | "cloud";
+  trainer_settings?: {
+    eval_thresholds: number[];
+    show_dots: boolean[];
+    save_feedback: boolean[];
+    save_marks: boolean[];
+    eval_show_ai: boolean;
+    lock_ai: boolean;
+    top_moves_show: string;
+    low_visits: number;
+    fast_visits?: number;
+    max_visits?: number;
+  };
 }
 
 export interface SessionResponse {
@@ -101,12 +128,16 @@ export const API = {
   },
   updateConfig: (sessionId: string, setting: string, value: any): Promise<SessionResponse> =>
     apiPost("/api/config", { session_id: sessionId, setting, value }),
+  updateConfigBulk: (sessionId: string, updates: Record<string, any>): Promise<SessionResponse> =>
+    apiPost("/api/config/bulk", { session_id: sessionId, updates }),
   updatePlayer: (sessionId: string, bw: string, playerType?: string, playerSubtype?: string): Promise<SessionResponse> =>
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype }),
   swapPlayers: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/player/swap", { session_id: sessionId }),
   resign: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/resign", { session_id: sessionId }),
+  pauseTimer: (sessionId: string): Promise<SessionResponse> =>
+    apiPost("/api/timer/pause", { session_id: sessionId }),
   rotate: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/rotate", { session_id: sessionId }),
   showPV: (sessionId: string, pv: string): Promise<SessionResponse> =>

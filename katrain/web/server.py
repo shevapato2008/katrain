@@ -18,15 +18,20 @@ from katrain.web.models import *
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize User Persistence
-    from katrain.web.core.auth import SQLiteUserRepository, get_password_hash
-    repo = SQLiteUserRepository(settings.DATABASE_PATH)
+    from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
+    from katrain.web.core.db import SessionLocal
+    
+    repo = SQLAlchemyUserRepository(SessionLocal)
     repo.init_db()
 
     # Create default admin user if no users exist
     # Create default admin user if no users exist
     if not repo.list_users():
         logging.getLogger("katrain_web").info("No users found. Creating default admin user (admin/admin)")
-        repo.create_user("admin", get_password_hash("admin"))
+        try:
+            repo.create_user("admin", get_password_hash("admin"))
+        except ValueError:
+            pass # Already exists race condition
 
     app.state.user_repo = repo
 
@@ -60,9 +65,11 @@ async def lifespan(app: FastAPI):
         engine_cfg = kt.config("engine")
         if engine_cfg.get("backend") == "http":
             import httpx
+            logging.getLogger("httpx").setLevel(logging.WARNING)
+            logging.getLogger("httpcore").setLevel(logging.WARNING)
             url = engine_cfg.get("http_url")
             health = engine_cfg.get("http_health_path", "/health")
-            full_url = f"{url.rstrip('/')}/{health.lstrip('/')}"
+            full_url = f"{url.rstrip(/)}/{health.lstrip(/)}"
             print(f"Testing KataGo Engine at {full_url}...")
             try:
                 async with httpx.AsyncClient(trust_env=False) as client:
@@ -262,6 +269,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             session.katrain.update_config(request.setting, request.value)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/config/bulk")
+    def update_config_bulk(request: ConfigBulkUpdateRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            for setting, value in request.updates.items():
+                session.katrain.update_config(setting, value)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -592,6 +609,38 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+def build_frontend():
+    ui_path = Path(__file__).resolve().parent / "ui"
+    if not (ui_path / "package.json").exists():
+        logging.getLogger("katrain_web").warning("Frontend source not found, skipping build.")
+        return
+
+    import shutil
+    import subprocess
+    import sys
+
+    if not shutil.which("npm"):
+        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
+        return
+
+    print("Building frontend...", flush=True)
+    try:
+        # Check dependencies
+        if not (ui_path / "node_modules").exists():
+            print("Installing frontend dependencies...", flush=True)
+            subprocess.run(["npm", "install"], cwd=ui_path, check=True, capture_output=False)
+        
+        # Build
+        subprocess.run(["npm", "run", "build"], cwd=ui_path, check=True, capture_output=False)
+        print("Frontend build successful.", flush=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Frontend build failed with exit code {e.returncode}.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error during frontend build: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_web():
     default_host = settings.KATRAIN_HOST
     default_port = settings.KATRAIN_PORT
@@ -610,8 +659,16 @@ def run_web():
     parser.add_argument("--reload", action="store_true")
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
-    parser.add_argument("--ui", default=None, help="Interface mode to use. 'web' (default) starts the FastAPI server, while 'desktop' launches the Kivy GUI.")
+    parser.add_argument("--ui", default=None, help="Interface mode to use. web (default) starts the FastAPI server, while desktop launches the Kivy GUI.")
     args, _unknown = parser.parse_known_args()
+
+    # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)
+    # We only build if we are actually starting the web server, or if --ui=web is explicit
+    # However, create_app is used by uvicorn workers too, so we should be careful.
+    # But run_web is the entry point.
+    if not args.reload:  # Skip build in reload mode to avoid loops, or handle differently? 
+        # Actually, user wants it on startup.
+        build_frontend()
 
     import uvicorn
 

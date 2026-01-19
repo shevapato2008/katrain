@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Union
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 class MoveRequest(BaseModel):
@@ -49,6 +50,10 @@ class ConfigUpdateRequest(BaseModel):
     session_id: str
     setting: str
     value: Any
+
+class ConfigBulkUpdateRequest(BaseModel):
+    session_id: str
+    updates: Dict[str, Any]
 
 class UpdatePlayerRequest(BaseModel):
     session_id: str
@@ -131,7 +136,7 @@ class RankEstimationRequest(BaseModel):
 class User(BaseModel):
     id: Optional[int] = None
     username: str
-    created_at: Optional[str] = None
+    created_at: Optional[Union[str, datetime]] = None
 
 class UserInDB(User):
     hashed_password: str

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert, Button } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { Box, CssBaseline, ThemeProvider, createTheme, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, type GameState } from './api';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
@@ -15,6 +15,8 @@ import AISettingsDialog from './components/AISettingsDialog';
 import GameReportDialog from './components/GameReportDialog';
 import LoginDialog from './components/LoginDialog';
 import RegisterDialog from './components/RegisterDialog';
+import TimeSettingsDialog from './components/TimeSettingsDialog';
+import TeachingSettingsDialog from './components/TeachingSettingsDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const theme = createTheme({
@@ -108,36 +110,17 @@ function App() {
   const [isGameReportDialogOpen, setGameReportDialogOpen] = useState(false);
   const [isLoginDialogOpen, setLoginDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [isTimeSettingsDialogOpen, setTimeSettingsDialogOpen] = useState(false);
+  const [isTeachingSettingsDialogOpen, setTeachingSettingsDialogOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [gameReport, setGameReport] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Notifications Settings
-  const [showPassAlert, setShowPassAlert] = useState(() => localStorage.getItem('showPassAlert') !== 'false');
-  const [playPassSound, setPlayPassSound] = useState(() => localStorage.getItem('playPassSound') !== 'false');
-  const [showEndAlert, setShowEndAlert] = useState(() => localStorage.getItem('showEndAlert') !== 'false');
-  const [playEndSound, setPlayEndSound] = useState(() => localStorage.getItem('playEndSound') !== 'false');
-  
   const [notification, setNotification] = useState<{ open: boolean; message: string; severity: 'info' | 'success' }>({
     open: false,
     message: '',
     severity: 'info'
   });
-
-  const settings = useMemo(() => ({
-    showPassAlert,
-    playPassSound,
-    showEndAlert,
-    playEndSound
-  }), [showPassAlert, playPassSound, showEndAlert, playEndSound]);
-
-  const handleUpdateSettings = (key: string, value: boolean) => {
-    localStorage.setItem(key, String(value));
-    if (key === 'showPassAlert') setShowPassAlert(value);
-    if (key === 'playPassSound') setPlayPassSound(value);
-    if (key === 'showEndAlert') setShowEndAlert(value);
-    if (key === 'playEndSound') setPlayEndSound(value);
-  };
 
   // Detection Refs
   const prevGameId = useRef<string | null>(null);
@@ -267,47 +250,12 @@ function App() {
         return; 
     }
 
-    const isNewMove = gameState.history.length > prevHistoryLen.current;
-    const isDifferentNode = gameState.current_node_id !== prevNodeId.current;
-    const isAtTip = gameState.current_node_index === gameState.history.length - 1;
-
-    // 1. Pass Detection
-    if (isNewMove && isDifferentNode && isAtTip && gameState.is_pass) {
-        let passedPlayer = 'Unknown';
-        if (gameState.player_to_move === 'B') passedPlayer = 'White';
-        else if (gameState.player_to_move === 'W') passedPlayer = 'Black';
-
-        if (showPassAlert) {
-            const msg = passedPlayer === 'Unknown' 
-                ? t('Pass') 
-                : `${t(passedPlayer)} ${t('Passed')}`;
-            setNotification({ 
-                open: true, 
-                message: msg, 
-                severity: 'info' 
-            });
-        }
-        if (playPassSound) playSound('boing');
-    }
-
-    // 2. Game End Detection
-    if (gameState.end_result && !prevGameEnded.current) {
-         if (showEndAlert) {
-             setNotification({ 
-                 open: true, 
-                 message: `${t('Game Ended')}: ${gameState.end_result}`, 
-                 severity: 'success' 
-             });
-         }
-         if (playEndSound) playSound('countdownbeep');
-    }
-
     // Update refs
     prevNodeId.current = gameState.current_node_id;
     prevHistoryLen.current = gameState.history.length;
     prevGameEnded.current = !!gameState.end_result;
 
-  }, [gameState, showPassAlert, playPassSound, showEndAlert, playEndSound, t]);
+  }, [gameState, t]);
 
   const handleMove = async (x: number, y: number) => {
     if (!sessionId) return;
@@ -511,6 +459,16 @@ function App() {
     }
   };
 
+  const handlePauseTimer = async () => {
+    if (!sessionId) return;
+    try {
+      const data = await API.pauseTimer(sessionId);
+      setGameState(data.state);
+    } catch (error) {
+      console.error("Pause timer failed", error);
+    }
+  };
+
   useKeyboardShortcuts({
     onAction: handleAction,
     onNewGame: handleNewGame,
@@ -520,8 +478,8 @@ function App() {
     onOpenPopup: (popup) => {
       if (popup === 'analysis') { /* TODO: Extra analysis popup */ }
       if (popup === 'report') handleGameReport();
-      if (popup === 'timer') { /* TODO: Timer popup */ }
-      if (popup === 'teacher') { /* TODO: Teacher popup */ }
+      if (popup === 'timer') setTimeSettingsDialogOpen(true);
+      if (popup === 'teacher') setTeachingSettingsDialogOpen(true);
       if (popup === 'ai') setAISettingsDialogOpen(true);
       if (popup === 'config') { /* TODO: Config popup */ }
       if (popup === 'contribute') { /* TODO: Contribute popup */ }
@@ -574,8 +532,6 @@ function App() {
           {isSidebarOpen && (
             <Sidebar
               gameState={gameState}
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
               onNewGame={handleNewGame}
               onLoadSGF={handleLoadSGF}
               onSaveSGF={handleSaveSGF}
@@ -584,6 +540,8 @@ function App() {
               onGameReport={handleGameReport}
               onLanguageChange={handleLanguageChange}
               onSwapPlayers={handleSwapPlayers}
+              onTimeSettings={() => setTimeSettingsDialogOpen(true)}
+              onTeachingSettings={() => setTeachingSettingsDialogOpen(true)}
             />
           )}
 
@@ -614,12 +572,18 @@ function App() {
                     info={gameState.players_info.B} 
                     captures={gameState.prisoner_count.B} 
                     active={gameState.player_to_move === 'B'} 
+                    timer={gameState.timer}
+                    onPauseTimer={handlePauseTimer}
+                    onPlaySound={playSound}
                   />
                   <PlayerCard 
                     player="W" 
                     info={gameState.players_info.W} 
                     captures={gameState.prisoner_count.W} 
                     active={gameState.player_to_move === 'W'} 
+                    timer={gameState.timer}
+                    onPauseTimer={handlePauseTimer}
+                    onPlaySound={playSound}
                   />
                 </>
               )}
@@ -676,6 +640,18 @@ function App() {
             setNotification({ open: true, message: `User ${username} registered successfully!`, severity: 'success' });
             setLoginDialogOpen(true);
           }}
+        />
+        <TimeSettingsDialog 
+          open={isTimeSettingsDialogOpen} 
+          sessionId={sessionId}
+          gameState={gameState}
+          onClose={() => setTimeSettingsDialogOpen(false)} 
+        />
+        <TeachingSettingsDialog 
+          open={isTeachingSettingsDialogOpen} 
+          sessionId={sessionId}
+          gameState={gameState}
+          onClose={() => setTeachingSettingsDialogOpen(false)} 
         />
         <Snackbar 
           open={notification.open} 

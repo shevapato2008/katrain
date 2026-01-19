@@ -150,6 +150,32 @@ python3 -m katrain --ui web
   python3 -m katrain --ui desktop
   ```
 
+### Database Configuration
+
+By default, KaTrain Web uses a local SQLite database (`db.sqlite3`). For production or multi-user environments, it is recommended to use PostgreSQL.
+
+#### 1. Deploy PostgreSQL with Docker Compose
+We provide a `docker-compose.db.yml` file to easily deploy a PostgreSQL instance.
+
+```bash
+# Start the database
+docker compose -f docker-compose.db.yml up -d
+```
+*Note: This will store data in a `.postgres_data` folder in your current directory.*
+
+#### 2. Configure KaTrain
+Set the `KATRAIN_DATABASE_URL` environment variable before starting KaTrain.
+
+```bash
+# Example for local PostgreSQL (default credentials in docker-compose.db.yml)
+export KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@127.0.0.1:5432/katrain_db"
+
+# Start KaTrain
+python3 -m katrain --ui web
+```
+
+KaTrain will automatically detect the PostgreSQL URL and use it instead of SQLite. The logs will confirm which database is active.
+
 ### Docker
 
 KaTrain provides optimized Dockerfiles for both Desktop and Web usage.

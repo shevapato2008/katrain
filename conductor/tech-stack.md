@@ -10,6 +10,7 @@
 *   **Language:** Python 3.9+
 *   **Framework:** FastAPI
 *   **Server:** Uvicorn
+*   **Bulk Sync API:** Implementation of `/api/config/bulk` for efficient, atomic synchronization of complex settings objects.
 *   **Request Handling:** `httpx` (for asynchronous communication with KataGo engines)
 
 ## AI Engine Integration

@@ -18,6 +18,7 @@ class Settings(BaseModel):
     
     # Persistence
     DATABASE_PATH: str = "db.sqlite3"
+    DATABASE_URL: str = "sqlite:///./db.sqlite3"
     
     # Security
     SECRET_KEY: str = "katrain-secret-key-change-this-in-production"
@@ -35,6 +36,41 @@ class Settings(BaseModel):
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
+        
+        # New DATABASE_URL support
+        env_db_url = os.getenv("KATRAIN_DATABASE_URL")
+        if env_db_url:
+            data["DATABASE_URL"] = env_db_url
+        else:
+            # Try to load from config.json
+            import json
+            from pathlib import Path
+            try:
+                # Check standard locations: ~/.katrain/config.json or ./katrain/config.json
+                config_paths = [
+                    Path.home() / ".katrain" / "config.json",
+                    Path("katrain/config.json")
+                ]
+                json_db_url = None
+                for path in config_paths:
+                    if path.exists():
+                        with open(path, "r", encoding="utf-8") as f:
+                            config_data = json.load(f)
+                            # Check for "server": {"database_url": "..."}
+                            if "server" in config_data and "database_url" in config_data["server"]:
+                                json_db_url = config_data["server"]["database_url"]
+                                break
+                
+                if json_db_url:
+                    data["DATABASE_URL"] = json_db_url
+                else:
+                    # Fallback to sqlite using the DATABASE_PATH
+                    data.setdefault("DATABASE_URL", f"sqlite:///./{data.get('DATABASE_PATH', 'db.sqlite3')}")
+            except Exception as e:
+                print(f"Warning: Failed to read config.json: {e}")
+                # Fallback to sqlite using the DATABASE_PATH
+                data.setdefault("DATABASE_URL", f"sqlite:///./{data.get('DATABASE_PATH', 'db.sqlite3')}")
+
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
         super().__init__(**data)

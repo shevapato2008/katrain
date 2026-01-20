@@ -14,7 +14,9 @@ from katrain.web.interface import WebKaTrain
 class WebSession:
     session_id: str
     katrain: WebKaTrain
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None # Primary user (usually for AI play)
+    player_b_id: Optional[int] = None # For HvH
+    player_w_id: Optional[int] = None # For HvH
     lock: threading.Lock = field(default_factory=threading.Lock)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
@@ -53,6 +55,19 @@ class SessionManager:
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
         katrain.start()
         session.last_state = katrain.get_state()
+        return session
+
+    def create_multiplayer_session(self, player_b_id: int, player_w_id: int, b_name: str = None, w_name: str = None) -> WebSession:
+        session = self.create_session()
+        session.player_b_id = player_b_id
+        session.player_w_id = player_w_id
+        
+        # Set player names in KaTrain
+        if b_name:
+            session.katrain("update_player", bw='B', player_type='human', name=b_name)
+        if w_name:
+            session.katrain("update_player", bw='W', player_type='human', name=w_name)
+            
         return session
 
     def get_session(self, session_id: str) -> WebSession:
@@ -115,6 +130,58 @@ class SessionManager:
                 stale.append(ws)
         for ws in stale:
             session.sockets.discard(ws)
+
+
+@dataclass
+class Match:
+    match_id: str
+    player1_id: int
+    player2_id: int
+    game_type: str
+    player1_socket: WebSocket
+    player2_socket: WebSocket
+
+
+class Matchmaker:
+    def __init__(self):
+        self._queues: Dict[str, List[Dict]] = {"rated": [], "free": []}
+        self._lock = threading.Lock()
+
+    def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket) -> Optional[Match]:
+        with self._lock:
+            queue = self._queues.get(game_type)
+            if queue is None:
+                return None
+            
+            # Check if user already in queue
+            for entry in queue:
+                if entry["user_id"] == user_id:
+                    entry["websocket"] = websocket # Update socket
+                    return None
+            
+            # Check for existing match
+            if queue:
+                opponent = queue.pop(0)
+                match_id = uuid.uuid4().hex
+                return Match(
+                    match_id=match_id,
+                    player1_id=opponent["user_id"],
+                    player2_id=user_id,
+                    game_type=game_type,
+                    player1_socket=opponent["websocket"],
+                    player2_socket=websocket
+                )
+            else:
+                queue.append({"user_id": user_id, "websocket": websocket})
+                return None
+
+    def remove_from_queue(self, user_id: int):
+        with self._lock:
+            for queue in self._queues.values():
+                for i, entry in enumerate(queue):
+                    if entry["user_id"] == user_id:
+                        queue.pop(i)
+                        return
 
 
 class LobbyManager:

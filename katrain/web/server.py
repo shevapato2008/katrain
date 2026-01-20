@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 
 from katrain.web.api.v1.api import api_router
 from katrain.web.core.config import settings
-from katrain.web.session import SessionManager, LobbyManager
+from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
 
 @asynccontextmanager
@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI):
     app.state.user_repo = repo
     app.state.game_repo = game_repo
     app.state.lobby_manager = LobbyManager()
+    app.state.matchmaker = Matchmaker()
 
     # Initialize Engine Clients and Router
     from katrain.web.core.engine_client import KataGoClient
@@ -100,6 +101,7 @@ async def lifespan(app: FastAPI):
     manager.cleanup_expired()
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
+    from katrain.web.api.v1.endpoints.auth import get_current_user
     if session_timeout is None:
         session_timeout = settings.SESSION_TIMEOUT
     if max_sessions is None:
@@ -147,8 +149,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": session.last_state or session.katrain.get_state()}
 
     @app.post("/api/move")
-    def play_move(request: MoveRequest):
+    def play_move(request: MoveRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        
+        # Enforce Multiplayer Turns
+        if session.player_b_id is not None or session.player_w_id is not None:
+            state = session.katrain.get_state()
+            next_player = state["player_to_move"]
+            allowed_user_id = session.player_b_id if next_player == 'B' else session.player_w_id
+            if current_user.id != allowed_user_id:
+                raise HTTPException(status_code=403, detail="Not your turn")
+
         coords = None if request.pass_move else request.coords
         if coords is None and not request.pass_move:
             raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
@@ -647,11 +658,49 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
             while True:
                 message = await websocket.receive_json()
-                if message.get("type") == "ping":
+                msg_type = message.get("type")
+                if msg_type == "ping":
                     await websocket.send_json({"type": "pong"})
+                elif msg_type == "start_matchmaking":
+                    game_type = message.get("game_type", "free")
+                    match = app.state.matchmaker.add_to_queue(current_user.id, game_type, websocket)
+                    if match:
+                        # Fetch Usernames
+                        user_repo = app.state.user_repo
+                        all_users = user_repo.list_users() # Not efficient but works for now
+                        users_by_id = {u["id"]: u["username"] for u in all_users}
+                        
+                        # Create Multiplayer Session
+                        # Randomly assign B/W
+                        import random
+                        if random.random() < 0.5:
+                            pb, pw = match.player1_id, match.player2_id
+                        else:
+                            pb, pw = match.player2_id, match.player1_id
+                        
+                        game_session = app.state.session_manager.create_multiplayer_session(
+                            pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw)
+                        )
+                        
+                        # Found a match!
+                        match_payload = {
+                            "type": "match_found",
+                            "match_id": match.match_id,
+                            "session_id": game_session.session_id, # Link to actual game session
+                            "game_type": match.game_type,
+                            "players": {
+                                "player_b": pb,
+                                "player_w": pw
+                            }
+                        }
+                        await match.player1_socket.send_json(match_payload)
+                        await match.player2_socket.send_json(match_payload)
+                elif msg_type == "stop_matchmaking":
+                    app.state.matchmaker.remove_from_queue(current_user.id)
         except WebSocketDisconnect:
             pass
         finally:
+            app.state.matchmaker.remove_from_queue(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
 

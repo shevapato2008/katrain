@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, Card, CardContent, Avatar, Chip, Stack, CircularProgress, Alert, Divider } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { Box, Typography, Button, Grid, Card, CardContent, Avatar, Chip, Stack, CircularProgress, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -19,6 +19,10 @@ const HvHLobbyPage = () => {
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isMatching, setIsRatedMatching] = useState(false);
+    const [queueTime, setQueueTime] = useState(0);
+    const wsRef = useRef<WebSocket | null>(null);
+    const timerRef = useRef<any>(null);
 
     const fetchOnlineUsers = async () => {
         if (!token) return;
@@ -40,10 +44,64 @@ const HvHLobbyPage = () => {
     };
 
     useEffect(() => {
+        if (!token) return;
+        
         fetchOnlineUsers();
-        const interval = setInterval(fetchOnlineUsers, 10000); // Refresh every 10s
-        return () => clearInterval(interval);
+        
+        // Connect to Lobby WebSocket
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/lobby?token=${token}`;
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'match_found') {
+                setIsRatedMatching(false);
+                // Redirect to room
+                console.log("Match Found!", data);
+                navigate(`/galaxy/play/human/room/${data.session_id}`);
+            } else if (data.type === 'lobby_update') {
+                fetchOnlineUsers();
+            }
+        };
+
+        return () => {
+            ws.close();
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
     }, [token]);
+
+    const startMatchmaking = (gameType: string) => {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+        
+        if (gameType === 'rated' && user?.rank === '20k') {
+            alert("You must complete your AI Rating series (3 games) before playing Rated HvH matches.");
+            navigate('/galaxy/play/ai?mode=rated');
+            return;
+        }
+
+        wsRef.current.send(JSON.stringify({ type: 'start_matchmaking', game_type: gameType }));
+        setIsRatedMatching(true);
+        setQueueTime(0);
+        timerRef.current = setInterval(() => {
+            setQueueTime(prev => prev + 1);
+        }, 1000);
+    };
+
+    const stopMatchmaking = () => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: 'stop_matchmaking' }));
+        }
+        setIsRatedMatching(false);
+        if (timerRef.current) clearInterval(timerRef.current);
+    };
+
+    const formatQueueTime = (s: number) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m}:${sec.toString().padStart(2, '0')}`;
+    };
 
     return (
         <Box sx={{ p: 4, height: '100%', overflow: 'auto' }}>
@@ -53,14 +111,26 @@ const HvHLobbyPage = () => {
                     <Typography variant="body1" color="text.secondary">Play against other humans or watch live games.</Typography>
                 </Box>
                 <Stack direction="row" spacing={2}>
-                    <Button variant="contained" color="primary" size="large" startIcon={<SportsEsportsIcon />}>
+                    <Button variant="contained" color="primary" size="large" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
                         Quick Match (Rated)
                     </Button>
-                    <Button variant="outlined" color="primary" size="large">
+                    <Button variant="outlined" color="primary" size="large" onClick={() => startMatchmaking('free')}>
                         Custom Game
                     </Button>
                 </Stack>
             </Stack>
+
+            <Dialog open={isMatching} onClose={stopMatchmaking} maxWidth="xs" fullWidth>
+                <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>Finding Opponent...</DialogTitle>
+                <DialogContent sx={{ textAlign: 'center', pb: 4 }}>
+                    <CircularProgress size={60} sx={{ my: 3 }} />
+                    <Typography variant="h6">{formatQueueTime(queueTime)}</Typography>
+                    <Typography variant="body2" color="text.secondary">Looking for a suitable match for you.</Typography>
+                </DialogContent>
+                <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+                    <Button onClick={stopMatchmaking} color="error" variant="outlined">Cancel</Button>
+                </DialogActions>
+            </Dialog>
 
             <Grid container spacing={4}>
                 {/* Online Players Section */}

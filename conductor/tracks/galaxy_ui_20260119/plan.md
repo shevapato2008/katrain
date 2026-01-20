@@ -74,7 +74,7 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
     - [ ] Implement `FriendsPanel` in the right sidebar (fetching from `relationships` table).
     - [ ] Add "Follow/Unfollow" buttons to User Profiles and Player Cards.
     - [ ] Backend: Create endpoints for following/unfollowing and fetching followers/following lists.
-- [ ] Task: Multiplayer Lobby (HvH) [checkpoint: p5_lobby]
+- [~] Task: Multiplayer Lobby (HvH) [checkpoint: p5_lobby]
     - [ ] Implement `HvHLobbyPage` showing:
         - [ ] Online players list (prioritize following).
         - [ ] Active games list with "Watch" button (for Spectator Mode).

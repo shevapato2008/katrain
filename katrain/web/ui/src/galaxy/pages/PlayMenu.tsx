@@ -28,7 +28,7 @@ const PlayMenu = () => {
             desc: "Challenge a friend or find an opponent online.",
             icon: <PersonIcon sx={{ fontSize: 60, color: 'text.secondary' }} />,
             path: '/galaxy/play/human',
-            disabled: true
+            disabled: false
         }
     ];
 

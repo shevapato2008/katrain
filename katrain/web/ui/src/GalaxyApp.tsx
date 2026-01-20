@@ -5,6 +5,7 @@ import ResearchPage from './galaxy/pages/ResearchPage';
 import PlayMenu from './galaxy/pages/PlayMenu';
 import AiSetupPage from './galaxy/pages/AiSetupPage';
 import GamePage from './galaxy/pages/GamePage';
+import HvHLobbyPage from './galaxy/pages/HvHLobbyPage';
 import { AuthProvider } from './galaxy/context/AuthContext';
 import { Box, Typography } from '@mui/material';
 
@@ -22,7 +23,7 @@ const GalaxyApp = () => {
           <Route path="play" element={<PlayMenu />} />
           <Route path="play/ai" element={<AiSetupPage />} />
           <Route path="play/game/:sessionId" element={<GamePage />} />
-          <Route path="play/human" element={<PlaceholderPage title="Human vs Human" />} />
+          <Route path="play/human" element={<HvHLobbyPage />} />
           <Route path="research" element={<ResearchPage />} />
           <Route path="*" element={<Navigate to="/galaxy" replace />} />
         </Route>

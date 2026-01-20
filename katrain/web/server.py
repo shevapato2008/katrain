@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 
 from katrain.web.api.v1.api import api_router
 from katrain.web.core.config import settings
-from katrain.web.session import SessionManager
+from katrain.web.session import SessionManager, LobbyManager
 from katrain.web.models import *
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
 
     app.state.user_repo = repo
     app.state.game_repo = game_repo
+    app.state.lobby_manager = LobbyManager()
 
     # Initialize Engine Clients and Router
     from katrain.web.core.engine_client import KataGoClient
@@ -623,6 +624,36 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             pass
         finally:
             session.sockets.discard(websocket)
+
+    @app.websocket("/ws/lobby")
+    async def lobby_websocket_endpoint(websocket: WebSocket):
+        from katrain.web.api.v1.endpoints.auth import get_user_from_token
+        token = websocket.query_params.get("token")
+        if not token:
+            await websocket.close(code=1008)
+            return
+        
+        try:
+            current_user = await get_user_from_token(token=token, repo=app.state.user_repo)
+        except Exception:
+            await websocket.close(code=1008)
+            return
+
+        await websocket.accept()
+        lobby_manager = app.state.lobby_manager
+        lobby_manager.add_user(current_user.id, websocket)
+        try:
+            # Broadcast update immediately
+            await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
+            while True:
+                message = await websocket.receive_json()
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+        except WebSocketDisconnect:
+            pass
+        finally:
+            lobby_manager.remove_user(current_user.id, websocket)
+            await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)

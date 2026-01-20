@@ -56,3 +56,19 @@ async def get_following(
     repo = request.app.state.user_repo
     following = repo.get_following(current_user.id)
     return [User(**u) for u in following]
+
+@router.get("/online", response_model=List[User])
+async def get_online_users(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    lobby_manager = request.app.state.lobby_manager
+    repo = request.app.state.user_repo
+    online_ids = lobby_manager.get_online_user_ids()
+    
+    # Fetch user details for these IDs
+    # For now, we can just list all users and filter, or add a method to repo
+    # To keep it simple, we filter list_users
+    all_users = repo.list_users()
+    online_users = [User(**u) for u in all_users if u["id"] in online_ids]
+    return online_users

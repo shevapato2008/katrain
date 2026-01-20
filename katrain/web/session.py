@@ -3,7 +3,7 @@ import time
 import uuid
 import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, List
 
 from starlette.websockets import WebSocket
 
@@ -14,6 +14,7 @@ from katrain.web.interface import WebKaTrain
 class WebSession:
     session_id: str
     katrain: WebKaTrain
+    user_id: Optional[int] = None
     lock: threading.Lock = field(default_factory=threading.Lock)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
@@ -114,3 +115,36 @@ class SessionManager:
                 stale.append(ws)
         for ws in stale:
             session.sockets.discard(ws)
+
+
+class LobbyManager:
+    def __init__(self):
+        self._online_users: Dict[int, Set[WebSocket]] = {}
+        self._lock = threading.Lock()
+
+    def add_user(self, user_id: int, websocket: WebSocket):
+        with self._lock:
+            if user_id not in self._online_users:
+                self._online_users[user_id] = set()
+            self._online_users[user_id].add(websocket)
+
+    def remove_user(self, user_id: int, websocket: WebSocket):
+        with self._lock:
+            if user_id in self._online_users:
+                self._online_users[user_id].discard(websocket)
+                if not self._online_users[user_id]:
+                    del self._online_users[user_id]
+
+    def get_online_user_ids(self) -> List[int]:
+        with self._lock:
+            return list(self._online_users.keys())
+
+    async def broadcast(self, payload: Dict):
+        with self._lock:
+            all_sockets = [ws for sockets in self._online_users.values() for ws in sockets]
+        
+        for ws in all_sockets:
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                pass

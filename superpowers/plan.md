@@ -33,8 +33,8 @@
 |------|--------|------|------|
 | 首页Dashboard | P0 | ✅ 完成 | 模块卡片展示 |
 | 研究模式 | P0 | ✅ 完成 | 自由摆棋+AI分析+Cloud SGF (需登录) |
-| 人机对弈 | P0 | 🔄 进行中 | AI设置+对局 (后端完成，前端修复中) |
-| AI定级 | P0 | 🔄 进行中 | Ranking系统后端完成 |
+| 人机对弈 | P0 | ✅ 完成 | AI设置+对局 (后端完成，前端修复完成) |
+| AI定级 | P0 | ✅ 完成 | Ranking系统后端完成 |
 | 人人对弈 | P1 | ⬜ 待开发 | 匹配/房间/观战 |
 | 报告模式 | P2 | ⬜ 灰色占位 | 暂不实现 |
 | 直播模式 | P2 | ⬜ 灰色占位 | 暂不实现 |
@@ -255,11 +255,11 @@
 
 ---
 
-## Phase 4: 人机对弈 🔄 IN PROGRESS
+## Phase 4: 人机对弈 ✅ COMPLETE
 
 **目标**: 完整的人机对弈设置和游戏流程
-**状态**: 后端完成，前端有多个关键Bug需修复
-**Checkpoint**: p4_backend ✅, p4_setup 🔄, p4_game_ui 🔄
+**状态**: 已完成
+**Checkpoint**: p4_backend ✅, p4_setup ✅, p4_game_ui ✅
 
 ### 4.1 Backend Ranking System ✅
 
@@ -271,66 +271,41 @@
 - [x] 人机对弈入口
 - [x] 人人对弈入口 (跳转时检查定级)
 
-### 4.3 AISetupPage - Bug修复 🔄
+### 4.3 AISetupPage - Bug修复 ✅
 
 **已完成**:
 - [x] 获取AI常量 `/api/v1/ai-constants`
 - [x] AI策略/级别选择
 - [x] 贴目 (Komi) 选择
 - [x] 让子 (Handicap) 滑块UI
+- [x] **Bug #1: 缺少规则集选择** 🐛
+    - 添加规则集下拉框，支持 Japanese/Chinese/Korean/AGA/Tromp-Taylor/New Zealand/Ancient Chinese
+- [x] **Bug #2: 让子未生效** 🐛
+    - 修复Handicap让子初始化逻辑，后端在game初始化时正确放置让子石
 
-**Bug #1: 缺少规则集选择** 🐛
-- 当前: 只能选择贴目，无法选择规则类型
-- 期望: 添加规则集下拉框，支持 Japanese/Chinese/Korean/AGA/Tromp-Taylor/New Zealand/Ancient Chinese
-- 参考: KaTrain桌面版 `Set up New Game / Edit Game Info and Rules` 对话框
-- 优先级: **高**
-
-**Bug #2: 让子未生效** 🐛
-- 当前: 设置 Handicap=2，进入游戏棋盘空白，无让子
-- 期望: 棋盘上预置让子（如2子让子在D4、Q16等星位）
-- 需要检查: KaTrain桌面版让子初始化逻辑
-- 影响范围: 前端需传递handicap参数，后端需在game初始化时放置让子
-- 优先级: **高**
-
-### 4.4 GamePage - Bug修复 🔄
+### 4.4 GamePage - Bug修复 ✅
 
 **已完成**:
 - [x] 复用Board组件
 - [x] 复用PlayerCard组件
 - [x] 游戏控制栏
 - [x] ITEMS面板 (Territory/Advice/Graph/Policy)
+- [x] **Bug #3: 计时器显示错误** 🐛
+    - 正确显示 Main Time, Byo-yomi, 和 Periods
+- [x] **Bug #4: AI段位显示为内部数值** 🐛
+    - 实现 `rankToLabel()` 段位映射工具
 
-**Bug #3: 计时器显示错误** 🐛
-- 当前: 显示原始秒数如 `600:00`，格式混乱
-- 期望: 正确显示三个独立时间组件:
-  - **Main Time**: `10:00` (分:秒格式)
-  - **Byo-yomi**: `30s` (秒)
-  - **Periods**: `5` (剩余读秒次数)
-- PlayerCard需重新设计布局以容纳这三个字段
-- 优先级: **高**
-
-**Bug #4: AI段位显示为内部数值** 🐛
-- 当前: 显示 `(-19)`, `(-9)`, `(10)` 等内部数值
-- 期望: 显示人类可读的段位:
-  - `-19` → `20k` (20级)
-  - `-9` → `10k` (10级)
-  - `0` → `1d` (初段)
-  - `9` → `9d` (9段)
-- 需要: 创建段位映射工具函数 `rankToLabel(internalValue: number): string`
-- 中文显示: `20k (20级)`, `9d (9段)`
-- 优先级: **高**
-
-### 4.5 验收标准 (更新)
+### 4.5 验收标准 ✅
 
 **Setup页面**:
-- [ ] 可选择规则集 (Japanese/Chinese/Korean/AGA等)
-- [ ] Handicap设置后进入游戏能正确显示让子
+- [x] 可选择规则集 (Japanese/Chinese/Korean/AGA等)
+- [x] Handicap设置后进入游戏能正确显示让子
 
 **Game页面**:
-- [ ] PlayerCard正确显示: Main Time + Byo-yomi + Periods
-- [ ] AI段位显示为 `20k`/`10k`/`1d`/`9d` 而非内部数值
-- [ ] 人机对弈全流程正常
-- [ ] 对局可以正常结束
+- [x] PlayerCard正确显示: Main Time + Byo-yomi + Periods
+- [x] AI段位显示为 `20k`/`10k`/`1d`/`9d` 而非内部数值
+- [x] 人机对弈全流程正常
+- [x] 对局可以正常结束
 
 ### 4.6 影响范围
 
@@ -421,7 +396,7 @@
 | P1.5 | 数据库设计 | ✅ COMPLETE | 747d659 |
 | P2 | 首页上线 | ✅ COMPLETE | 4a8b6b2, 38e6428 |
 | P3 | 研究模式可用 | ✅ COMPLETE | 681814f, 64b83a4 |
-| P4 | 人机对弈完整 | 🔄 IN PROGRESS | - |
+| P4 | 人机对弈完整 | ✅ COMPLETE | b1aeae7 |
 | P5 | 人人对弈原型 | ⬜ NOT STARTED | - |
 | P6 | 产品打磨 | ⬜ NOT STARTED | - |
 

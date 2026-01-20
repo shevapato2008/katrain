@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
-import { Box, Typography, Paper, IconButton, Divider, Stack } from '@mui/material';
+import { Box, Typography, Paper, IconButton, Divider, Stack, Tooltip } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { internalToRank } from '../galaxy/utils/rankUtils';
@@ -25,6 +27,9 @@ interface PlayerCardProps {
   };
   onPauseTimer?: () => void;
   onPlaySound?: (sound: string) => void;
+  isFollowed?: boolean;
+  onToggleFollow?: () => void;
+  showFollowButton?: boolean;
 }
 
 const formatTime = (seconds: number) => {
@@ -34,7 +39,10 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active, timer, onPauseTimer, onPlaySound }) => {
+const PlayerCard: React.FC<PlayerCardProps> = ({ 
+  player, info, captures, active, timer, onPauseTimer, onPlaySound, 
+  isFollowed, onToggleFollow, showFollowButton 
+}) => {
   const { t } = useTranslation();
   const isBlack = player === 'B';
   const [clientElapsed, setClientElapsed] = React.useState(0);
@@ -121,6 +129,13 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active,
           <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 150 }}>
             {displayName}
           </Typography>
+          {showFollowButton && onToggleFollow && (
+              <Tooltip title={isFollowed ? t("Unfollow") : t("Follow")}>
+                  <IconButton size="small" onClick={onToggleFollow} sx={{ ml: 0.5, p: 0.2, color: isFollowed ? 'secondary.main' : 'primary.main' }}>
+                      {isFollowed ? <PersonRemoveIcon fontSize="inherit" /> : <PersonAddIcon fontSize="inherit" />}
+                  </IconButton>
+              </Tooltip>
+          )}
         </Box>
         <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
           {displayRank}

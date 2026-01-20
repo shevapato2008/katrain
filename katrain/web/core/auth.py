@@ -43,6 +43,22 @@ class UserRepository(ABC):
     def list_users(self) -> List[Dict[str, Any]]:
         pass
 
+    @abstractmethod
+    def follow_user(self, follower_id: int, following_id: int) -> bool:
+        pass
+
+    @abstractmethod
+    def unfollow_user(self, follower_id: int, following_id: int) -> bool:
+        pass
+
+    @abstractmethod
+    def get_followers(self, user_id: int) -> List[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def get_following(self, user_id: int) -> List[Dict[str, Any]]:
+        pass
+
 class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -62,9 +78,12 @@ class SQLAlchemyUserRepository(UserRepository):
             session.commit()
             session.refresh(db_user)
             return self._to_dict(db_user)
-        except Exception: # IntegrityError usually
+        except Exception as e: 
             session.rollback()
-            raise ValueError("User already exists")
+            from sqlalchemy.exc import IntegrityError
+            if isinstance(e, IntegrityError):
+                raise ValueError("User already exists")
+            raise e
         finally:
             session.close()
 
@@ -83,6 +102,66 @@ class SQLAlchemyUserRepository(UserRepository):
         try:
             users = session.query(models_db.User).all()
             return [self._to_dict(user) for user in users]
+        finally:
+            session.close()
+
+    def follow_user(self, follower_id: int, following_id: int) -> bool:
+        if follower_id == following_id:
+            return False
+        session = self.session_factory()
+        try:
+            # Check if already following
+            existing = session.query(models_db.Relationship).filter_by(
+                follower_id=follower_id, following_id=following_id
+            ).first()
+            if existing:
+                return True
+            
+            rel = models_db.Relationship(follower_id=follower_id, following_id=following_id)
+            session.add(rel)
+            session.commit()
+            return True
+        except Exception:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+    def unfollow_user(self, follower_id: int, following_id: int) -> bool:
+        session = self.session_factory()
+        try:
+            rel = session.query(models_db.Relationship).filter_by(
+                follower_id=follower_id, following_id=following_id
+            ).first()
+            if rel:
+                session.delete(rel)
+                session.commit()
+            return True
+        except Exception:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+    def get_followers(self, user_id: int) -> List[Dict[str, Any]]:
+        session = self.session_factory()
+        try:
+            # Users who follow this user
+            followers = session.query(models_db.User).join(
+                models_db.Relationship, models_db.User.id == models_db.Relationship.follower_id
+            ).filter(models_db.Relationship.following_id == user_id).all()
+            return [self._to_dict(user) for user in followers]
+        finally:
+            session.close()
+
+    def get_following(self, user_id: int) -> List[Dict[str, Any]]:
+        session = self.session_factory()
+        try:
+            # Users whom this user follows
+            following = session.query(models_db.User).join(
+                models_db.Relationship, models_db.User.id == models_db.Relationship.following_id
+            ).filter(models_db.Relationship.follower_id == user_id).all()
+            return [self._to_dict(user) for user in following]
         finally:
             session.close()
 

@@ -208,5 +208,35 @@ export const API = {
     });
     if (!response.ok) throw new Error("Failed to get user info");
     return response.json();
+  },
+  followUser: async (token: string, username: string): Promise<any> => {
+    const response = await fetch(`/api/v1/users/follow/${username}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to follow user");
+    return response.json();
+  },
+  unfollowUser: async (token: string, username: string): Promise<any> => {
+    const response = await fetch(`/api/v1/users/follow/${username}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to unfollow user");
+    return response.json();
+  },
+  getFollowing: async (token: string): Promise<any[]> => {
+    const response = await fetch("/api/v1/users/following", {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to get following list");
+    return response.json();
+  },
+  getFollowers: async (token: string): Promise<any[]> => {
+    const response = await fetch("/api/v1/users/followers", {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to get followers list");
+    return response.json();
   }
 };

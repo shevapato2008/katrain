@@ -68,14 +68,28 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 
 
 ## Phase 5: Play Module - Human vs Human & Social
-*Goal: Multiplayer prototype backed by DB.*
+*Goal: Functional multiplayer lobby and game rooms with social integration.*
 
-- [ ] Task: Lobby & Social [checkpoint: p5_lobby]
-    - [ ] Lobby UI showing Online Players.
-    - [ ] "Friends List" side panel (fetching from `relationships` table).
-- [ ] Task: Matchmaking & Room [checkpoint: p5_room]
-    - [ ] Mocked or Real matchmaking logic.
-    - [ ] Game Room with Spectator support.
+- [~] Task: Social Integration (Friends & Follows) [checkpoint: p5_social]
+    - [ ] Implement `FriendsPanel` in the right sidebar (fetching from `relationships` table).
+    - [ ] Add "Follow/Unfollow" buttons to User Profiles and Player Cards.
+    - [ ] Backend: Create endpoints for following/unfollowing and fetching followers/following lists.
+- [ ] Task: Multiplayer Lobby (HvH) [checkpoint: p5_lobby]
+    - [ ] Implement `HvHLobbyPage` showing:
+        - [ ] Online players list (prioritize following).
+        - [ ] Active games list with "Watch" button (for Spectator Mode).
+        - [ ] "Quick Match" entry for Free/Rated modes.
+    - [ ] Backend: WebSocket state for tracking online users and their statuses.
+- [ ] Task: Matchmaking & Room Management [checkpoint: p5_matchmaking]
+    - [ ] Implement matchmaking queue UI (Overlay with "Finding opponent..." animation and timer).
+    - [ ] Enforce "AI Rating" prerequisite check before allowing Rated HvH matches.
+    - [ ] Implement `GameRoomPage` for active HvH matches:
+        - [ ] Real-time timer synchronization via WebSocket.
+        - [ ] Turn-based move validation and resignation logic.
+- [ ] Task: Spectator Mode & WebSocket Broadcast [checkpoint: p5_spectator]
+    - [ ] Implement "Spectator View" for `GamePage` (Read-only board, live move updates).
+    - [ ] Display "Spectator Count" and live chat area in the game sidebar.
+    - [ ] Backend: WebSocket broadcasting logic for room-specific events (moves, chat, end-game).
 
 ## Phase 6: Polish
 *Goal: I18n and UX.*

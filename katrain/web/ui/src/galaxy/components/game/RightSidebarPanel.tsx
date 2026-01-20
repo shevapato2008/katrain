@@ -1,11 +1,13 @@
 import { Box, Typography, Divider, Tooltip, Stack, Switch, FormControlLabel } from '@mui/material';
+import { useState, useEffect } from 'react';
 import PlayerCard from '../../../components/PlayerCard';
 import ScoreGraph from '../../../components/ScoreGraph';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import MapIcon from '@mui/icons-material/Map';
-import { type GameState } from '../../../api';
+import { type GameState, API } from '../../../api';
+import { useAuth } from '../../context/AuthContext';
 
 interface RightSidebarPanelProps {
     gameState: GameState;
@@ -22,6 +24,46 @@ const RightSidebarPanel = ({
     onNavigate,
     isRated = false
 }: RightSidebarPanelProps) => {
+    const { user, token } = useAuth();
+    const [followingNames, setFollowingNames] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        const fetchFollowing = async () => {
+            if (token) {
+                try {
+                    const following = await API.getFollowing(token);
+                    setFollowingNames(new Set(following.map(f => f.username)));
+                } catch (err) {
+                    console.error("Failed to fetch following list", err);
+                }
+            }
+        };
+        fetchFollowing();
+    }, [token]);
+
+    const handleToggleFollow = async (username: string) => {
+        if (!token || !username) return;
+        try {
+            if (followingNames.has(username)) {
+                await API.unfollowUser(token, username);
+                setFollowingNames(prev => {
+                    const next = new Set(prev);
+                    next.delete(username);
+                    return next;
+                });
+            } else {
+                await API.followUser(token, username);
+                setFollowingNames(prev => {
+                    const next = new Set(prev);
+                    next.add(username);
+                    return next;
+                });
+            }
+        } catch (err) {
+            console.error("Follow toggle failed", err);
+        }
+    };
+
     const isGameOver = !!gameState.end_result;
     const canShowAnalysis = !isRated || isGameOver;
 
@@ -41,6 +83,9 @@ const RightSidebarPanel = ({
                         captures={gameState.prisoner_count.B}
                         active={gameState.player_to_move === 'B'}
                         timer={gameState.timer}
+                        showFollowButton={gameState.players_info.B.player_type === 'human' && gameState.players_info.B.name !== user?.username}
+                        isFollowed={followingNames.has(gameState.players_info.B.name)}
+                        onToggleFollow={() => handleToggleFollow(gameState.players_info.B.name)}
                     />
                     <PlayerCard
                         player="W"
@@ -48,6 +93,9 @@ const RightSidebarPanel = ({
                         captures={gameState.prisoner_count.W}
                         active={gameState.player_to_move === 'W'}
                         timer={gameState.timer}
+                        showFollowButton={gameState.players_info.W.player_type === 'human' && gameState.players_info.W.name !== user?.username}
+                        isFollowed={followingNames.has(gameState.players_info.W.name)}
+                        onToggleFollow={() => handleToggleFollow(gameState.players_info.W.name)}
                     />
                 </Stack>
             </Box>

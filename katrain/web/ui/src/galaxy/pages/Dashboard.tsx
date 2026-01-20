@@ -1,9 +1,11 @@
-import { Box, Card, Typography, CardActionArea } from '@mui/material';
+import { Box, Card, Typography, CardActionArea, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ScienceIcon from '@mui/icons-material/Science';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
+import FriendsPanel from '../components/FriendsPanel';
+import { useAuth } from '../context/AuthContext';
 
 const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
     const navigate = useNavigate();
@@ -29,6 +31,7 @@ const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
 }
 
 const Dashboard = () => {
+    const { user } = useAuth();
     const modules = [
         { 
             title: "Play", 
@@ -59,21 +62,29 @@ const Dashboard = () => {
     ];
 
     return (
-        <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%' }}>
-            <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Welcome to Galaxy Go
-                </Typography>
-                <Typography variant="h6" color="text.secondary">
-                    Your professional Go training and analysis platform.
-                </Typography>
-            </Box>
+        <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+            <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%', overflow: 'auto' }}>
+                <Box sx={{ mb: 6 }}>
+                    <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        Welcome to Galaxy Go
+                    </Typography>
+                    <Typography variant="h6" color="text.secondary">
+                        Your professional Go training and analysis platform.
+                    </Typography>
+                </Box>
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
-                {modules.map((m) => (
-                    <ModuleCard key={m.title} {...m} />
-                ))}
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
+                    {modules.map((m) => (
+                        <ModuleCard key={m.title} {...m} />
+                    ))}
+                </Box>
             </Box>
+            
+            {user && (
+                <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
+                    <FriendsPanel />
+                </Box>
+            )}
         </Box>
     );
 };

@@ -41,11 +41,12 @@ This track involves a complete redesign of the KaTrain Web UI (`katrain/web/ui`)
 #### C. Human vs Human (人人对弈) - *Mocked -> Real*
 *   **Lobby UI:**
     *   **Route:** `/galaxy/play/human`
-    *   **Features:** List of active games, Online players (Friends highlighted).
-    *   **Matchmaking:** Queue for Rated games.
+    *   **Features:** List of active games, Online players (Friends highlighted), Live game list for spectators.
+    *   **Matchmaking:** Queue for Rated/Free games. **Prerequisite:** Users must complete AI Rating series before Rated matchmaking.
 *   **Game Room:**
     *   **Route:** `/galaxy/play/human/room/:id`
-    *   **Features:** Board, Player Cards (with Rank/Credits), Chat.
+    *   **Features:** Board, Player Cards (with Rank/Credits), Chat, Spectator count.
+    *   **Spectator Mode:** Live WebSocket broadcasting of moves and analysis.
 
 ### 2.4 Research Module (研究)
 *   **Route:** `/galaxy/research`

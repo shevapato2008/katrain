@@ -1,92 +1,74 @@
 # Implementation Plan: Galaxy Go UI Redesign
 
-This plan covers the end-to-end implementation of the new Galaxy Go style UI for KaTrain Web. It prioritizes the infrastructure first, followed by the core functional modules (Play, Research), and utilizes the `ui-ux-pro-max` skill for design guidance.
+This plan covers the end-to-end implementation of the new Galaxy Go style UI for KaTrain Web.
 
 ## Phase 1: Infrastructure & Design System Setup
-*Goal: Establish the new layout structure, routing, and shared design tokens/components.*
+*Goal: Establish layout, routing, and design tokens.*
 
-- [ ] Task: Project Structure & Routing [checkpoint: p1_done]
-    - [ ] Create new directory structure for `katrain/web/ui/src/galaxy` (or refactor root if replacing).
-    - [ ] Install/Configure React Router (if not already optimized for new routes).
-    - [ ] Define routes: `/`, `/play`, `/research`.
-- [ ] Task: UI/UX Design System Definition (using `ui-ux-pro-max`) [checkpoint: p1_done]
-    - [ ] Run design system query: `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "Go Board Game Strategy Platform Clean Modern" --design-system -p "Galaxy Go Clone"`.
-    - [ ] Define global CSS variables (colors, fonts, spacing) based on Galaxy reference and tool output.
-    - [ ] Create shared functional components: `Button`, `Card`, `Modal`, `Tooltip` (matching Galaxy style).
-- [ ] Task: Global Layout Implementation [checkpoint: p1_done]
-    - [ ] Implement `Sidebar` component (Left nav, collapsible sections).
-    - [ ] Implement `MainLayout` shell (Sidebar + Content Area).
-    - [ ] Integrate i18n switching logic into the Sidebar.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) [checkpoint: p1_done]
+- [ ] Task: Project Structure & Routing [checkpoint: p1_structure]
+    - [ ] Create directory structure.
+    - [ ] Install React Router v6.
+    - [ ] Configure `AppRouter.tsx` for `/galaxy/*` and `/`.
+- [ ] Task: Theme Extraction [checkpoint: p1_theme]
+    - [ ] Extract MUI theme to `src/theme.ts`.
+- [ ] Task: Global Layout Implementation [checkpoint: p1_layout]
+    - [ ] Implement `GalaxySidebar` and `MainLayout`.
+
+## Phase 1.5: Data Layer (PostgreSQL)
+*Goal: Setup database for persistent user data.*
+
+- [ ] Task: Database Setup [checkpoint: p1_db_setup]
+    - [ ] Verify `docker-compose.db.yml` functionality.
+    - [ ] Create init scripts for tables: `users`, `games`, `relationships`.
+- [ ] Task: Backend API - User Data [checkpoint: p1_db_api]
+    - [ ] Implement/Update endpoints for User Profile (Credits, Rank).
+    - [ ] Implement endpoints for Cloud SGF (CRUD).
 
 ## Phase 2: Home Page & Authentication
-*Goal: Create the entry point and user management interface.*
+*Goal: Entry point, User Management, and Credits display.*
 
-- [ ] Task: Authentication UI [checkpoint: p2_done]
-    - [ ] Implement `LoginForm` and `RegisterForm` components in the sidebar/modal.
-    - [ ] Connect auth forms to existing `/api/auth` endpoints.
-    - [ ] Implement "User Profile" state in Sidebar (post-login view).
-- [ ] Task: Home Page Dashboard [checkpoint: p2_done]
-    - [ ] Create `Dashboard` component.
-    - [ ] Implement "Module Cards" (Play, Research, Report, Live) using provided assets.
-    - [ ] Add interaction: Play/Research buttons navigate; others disabled.
-    - [ ] Load and display introductory text from `docs/galaxy_module_intro/*.txt`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) [checkpoint: p2_done]
+- [ ] Task: Auth Infrastructure [checkpoint: p2_auth]
+    - [ ] `AuthContext` + `AuthGuard`.
+    - [ ] Connect to backend User Profile API (fetch Credits/Rank).
+- [ ] Task: Sidebar Integration [checkpoint: p2_sidebar]
+    - [ ] Display User Credits and Rank in Sidebar.
+- [ ] Task: Home Page [checkpoint: p2_dashboard]
+    - [ ] Dashboard with Module Cards.
 
-## Phase 3: Play Module - Human vs AI (Core Feature)
-*Goal: A fully functional AI game interface with a new setup flow.*
+## Phase 3: Research Module & Cloud Library
+*Goal: Analysis workbench with Cloud SGF support.*
 
-- [ ] Task: Play Module Auth Guard [checkpoint: p3_guard_done]
-    - [ ] Implement `AuthGuard` or similar logic to detect login status.
-    - [ ] Create `LoginReminder` component matching `@.gemini-clipboard/login_reminder.png`.
-    - [ ] Display reminder if user attempts to access Play without being logged in.
-- [ ] Task: AI Setup Page
-    - [ ] Create `AiSetupPage` component.
-    - [ ] Fetch AI constants from `/api/ai-constants`.
-    - [ ] Build configuration form (Strategy, Rank, Handicap, Time).
-    - [ ] Implement "Start Game" action connecting to `/api/new-game`.
-- [ ] Task: Game Board Refactoring (Visuals)
-    - [ ] Refactor existing `Board` component to support "Galaxy Theme" (styling/assets).
-    - [ ] Ensure responsiveness and high-resolution rendering.
-- [ ] Task: Game Controls Integration
-    - [ ] Implement "Galaxy Style" control panel (Pass, Resign, Undo).
-    - [ ] Connect controls to existing game session API.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [ ] Task: Research Page [checkpoint: p3_page]
+    - [ ] Protected by `AuthGuard`.
+    - [ ] Layout with Board + Analysis Panels.
+- [ ] Task: Cloud SGF Integration [checkpoint: p3_cloud_sgf]
+    - [ ] "My Games" side panel fetching from DB.
+    - [ ] "Save to Cloud" functionality.
+- [ ] Task: Conductor - User Manual Verification
 
-## Phase 4: Play Module - Human vs Human (Mocked)
-*Goal: A visual prototype of the multi-player lobby.*
+## Phase 4: Play Module - Rated vs Free
+*Goal: AI Game interface with specific Rating logic.*
 
-- [ ] Task: Mock Services
-    - [ ] Create `mock/lobbyService.ts` to simulate player lists and matching.
-- [ ] Task: Lobby UI
-    - [ ] Create `LobbyPage` component.
-    - [ ] Implement "Player List" table/grid.
-    - [ ] Implement "Quick Match" button with searching animation.
-- [ ] Task: Game Room Mock
-    - [ ] Create `MultiPlayerGamePage` (reusing Board component).
-    - [ ] Add "Opponent Info" panel (mocked avatar/rank).
-- [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [ ] Task: Play Menu [checkpoint: p4_menu]
+    - [ ] UI to select "Free" vs "Rated" game.
+- [ ] Task: AI Setup & Rating Logic [checkpoint: p4_setup]
+    - [ ] **Rated Mode:** Enforce "Human-like AI" model. Implement "3-game placement" logic if unranked.
+    - [ ] **Free Mode:** Allow full AI configuration.
+- [ ] Task: Game Loop [checkpoint: p4_game]
+    - [ ] Human vs AI implementation.
+    - [ ] Unlimited "Items" (Analysis tools) available in UI.
 
-## Phase 5: Research Module & Analysis Tools
-*Goal: A professional analysis workbench matching Galaxy's tabular style.*
+## Phase 5: Play Module - Human vs Human & Social
+*Goal: Multiplayer prototype backed by DB.*
 
-- [ ] Task: Research Layout
-    - [ ] Create `ResearchPage` layout (Board + Analysis Panels).
-- [ ] Task: Analysis Panel Redesign
-    - [ ] Implement "Move Suggestions" table (Winrate, Score, Visits) - matching Galaxy's tabular look.
-    - [ ] Redesign "Winrate Graph" to fit the new layout.
-- [ ] Task: SGF Editor Integration
-    - [ ] Style the SGF node tree/navigation.
-    - [ ] Ensure "Load SGF" and "Save SGF" flows work within the new UI.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md)
+- [ ] Task: Lobby & Social [checkpoint: p5_lobby]
+    - [ ] Lobby UI showing Online Players.
+    - [ ] "Friends List" side panel (fetching from `relationships` table).
+- [ ] Task: Matchmaking & Room [checkpoint: p5_room]
+    - [ ] Mocked or Real matchmaking logic.
+    - [ ] Game Room with Spectator support.
 
-## Phase 6: Localization & Polish
-*Goal: Ensure all content is translated and the UI is refined.*
+## Phase 6: Polish
+*Goal: I18n and UX.*
 
-- [ ] Task: Localization
-    - [ ] Use `katrain-i18n-expert` or equivalent logic to ensure all Go terminology is accurately translated in the UI.
-    - [ ] Verify flags and language switching.
-- [ ] Task: Final Polish
-    - [ ] Review all mocked states and transitions.
-    - [ ] Optimize responsiveness.
-- [ ] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md)
+- [ ] Task: Localization & Polish.

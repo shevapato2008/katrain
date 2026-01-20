@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
-import { Box, Typography, Paper, IconButton } from '@mui/material';
+import { Box, Typography, Paper, IconButton, Divider, Stack } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
+import { internalToRank } from '../galaxy/utils/rankUtils';
 
 interface PlayerCardProps {
   player: 'B' | 'W';
@@ -27,7 +28,6 @@ interface PlayerCardProps {
 }
 
 const formatTime = (seconds: number) => {
-  // KaTrain rounds up (+0.99 logic). Math.ceil is a close approximation.
   const totalSeconds = Math.ceil(Math.max(0, seconds));
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
@@ -53,58 +53,46 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active,
     return () => clearInterval(interval);
   }, [active, timer?.paused, info.main_time_used, timer?.current_node_time_used, info.periods_used]);
 
-  let timeDisplay = null;
-  if (timer && timer.settings) {
+  const displayRank = internalToRank(info.calculated_rank);
+  const displayName = info.name || (isBlack ? t('Black') : t('White'));
+
+  // Timer Breakdown
+  let mainTimeLeft = 0;
+  let byoyomiLeft = 0;
+  let periodsLeft = 0;
+  let showTimer = false;
+
+  if (timer && timer.settings && (timer.settings.main_time > 0 || timer.settings.byo_length > 0)) {
+    showTimer = true;
     const byoNum = timer.settings.byo_periods;
     const byoLen = timer.settings.byo_length;
-    const mainTimeTotal = timer.settings.main_time * 60;
+    const mainTimeTotal = timer.settings.main_time * 60; // Minutes to seconds
 
-    if (active) {
-      // Apply elapsed time to main time first, then to current node time (byoyomi)
-      const effectiveMainTimeUsed = info.main_time_used + (mainTimeTotal > info.main_time_used ? clientElapsed : 0);
-      const mainTimeLeft = mainTimeTotal - effectiveMainTimeUsed;
+    const currentMainUsed = info.main_time_used + (active && mainTimeTotal > info.main_time_used ? clientElapsed : 0);
+    mainTimeLeft = Math.max(0, mainTimeTotal - currentMainUsed);
 
-      if (mainTimeLeft > 0) {
-        timeDisplay = formatTime(mainTimeLeft);
-      } else {
-        let effectiveNodeTimeUsed = timer.current_node_time_used;
-        if (info.main_time_used >= mainTimeTotal) {
-            effectiveNodeTimeUsed += clientElapsed;
-        } else {
-            // Transition phase: some client elapsed consumed remaining main time, rest to node time
-            const overrun = effectiveMainTimeUsed - mainTimeTotal;
-            if (overrun > 0) {
-                effectiveNodeTimeUsed += overrun;
-            }
-        }
-
-        let periodsUsed = info.periods_used;
-        while (effectiveNodeTimeUsed > byoLen && periodsUsed < byoNum) {
-            effectiveNodeTimeUsed -= byoLen;
-            periodsUsed += 1;
-        }
-
-        const periodsLeft = Math.max(0, byoNum - periodsUsed);
-        const currentPeriodTimeLeft = periodsUsed === byoNum ? 0 : Math.max(0, byoLen - effectiveNodeTimeUsed);
-        timeDisplay = `${formatTime(currentPeriodTimeLeft)} (${periodsLeft}x)`;
-
-        // Sound Logic: last 5 seconds (5.2 in Kivy)
-        if (timer.settings.sound && onPlaySound && periodsUsed < byoNum) {
-            if (currentPeriodTimeLeft > 0 && currentPeriodTimeLeft <= 5.2 && soundTriggeredRef.current !== periodsUsed) {
-                onPlaySound('countdownbeep');
-                soundTriggeredRef.current = periodsUsed;
-            }
-        }
-      }
+    if (mainTimeLeft > 0) {
+        byoyomiLeft = byoLen;
+        periodsLeft = byoNum - info.periods_used;
     } else {
-      // Inactive player: show remaining main time or periods left
-      const mainTimeLeft = mainTimeTotal - info.main_time_used;
-      const periodsLeft = Math.max(0, byoNum - info.periods_used);
-      if (mainTimeLeft > 0) {
-        timeDisplay = formatTime(mainTimeLeft);
-      } else {
-        timeDisplay = `${formatTime(byoLen)} (${periodsLeft}x)`;
-      }
+        let effectiveNodeTimeUsed = timer.current_node_time_used + (active ? clientElapsed : 0);
+        let currentPeriodsUsed = info.periods_used;
+        
+        while (effectiveNodeTimeUsed > byoLen && currentPeriodsUsed < byoNum) {
+            effectiveNodeTimeUsed -= byoLen;
+            currentPeriodsUsed += 1;
+        }
+        
+        byoyomiLeft = Math.max(0, byoLen - effectiveNodeTimeUsed);
+        periodsLeft = Math.max(0, byoNum - currentPeriodsUsed);
+
+        // Sound Logic
+        if (active && timer.settings.sound && onPlaySound && currentPeriodsUsed < byoNum) {
+            if (byoyomiLeft > 0 && byoyomiLeft <= 5.2 && soundTriggeredRef.current !== currentPeriodsUsed) {
+                onPlaySound('countdownbeep');
+                soundTriggeredRef.current = currentPeriodsUsed;
+            }
+        }
     }
   }
 
@@ -116,102 +104,67 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, info, captures, active,
         flex: 1,
         bgcolor: '#2a2a2a',
         color: '#f5f3f0',
-        border: active ? '2px solid #4a6b5c' : '2px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 'var(--radius-md)',
-        transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+        border: active ? '2px solid #4a6b5c' : '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 2,
+        transition: 'all 250ms',
         boxShadow: active ? '0 0 12px rgba(74, 107, 92, 0.3)' : 'none',
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              bgcolor: isBlack ? '#0a0a0a' : '#f8f6f3',
-              border: isBlack ? '1px solid #444' : '1px solid #888',
-              mr: 1,
-            }}
-          />
-          <Typography
-            variant="body2"
-            fontWeight={600}
-            noWrap
-            sx={{
-              maxWidth: 80,
-              color: '#f5f3f0',
-              fontSize: '0.875rem',
-            }}
-          >
-            {info.name || (isBlack ? t('Black') : t('White'))}
+      {/* Player Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{
+              width: 16, height: 16, borderRadius: '50%',
+              bgcolor: isBlack ? '#000' : '#fff',
+              border: '1px solid #666'
+          }} />
+          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 150 }}>
+            {displayName}
           </Typography>
         </Box>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#b8b5b0',
-            fontSize: '0.75rem',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 500,
-          }}
-        >
-          {info.calculated_rank || '?'}
+        <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
+          {displayRank}
         </Typography>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: '#7a7772',
-              fontSize: '0.7rem',
-              fontFamily: 'var(--font-mono)',
-              display: 'block',
-            }}
-          >
-            {t("Captures")}: {captures}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: info.player_type === 'player:ai' ? 600 : 400,
-              color: info.player_type === 'player:ai' ? '#4a6b5c' : '#b8b5b0',
-              fontSize: '0.7rem',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            {info.player_type === 'player:human' ? t('player:human') : info.player_subtype.replace('ai:', '').toUpperCase()}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {timeDisplay && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: '#e89639',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-              }}
-            >
-              {timeDisplay}
-            </Typography>
-          )}
-          {active && timer && onPauseTimer && (
-            <IconButton 
-              size="small" 
-              onClick={onPauseTimer}
-              sx={{ 
-                p: 0.5, 
-                color: '#b8b5b0', 
-                '&:hover': { color: '#f5f3f0', bgcolor: 'rgba(255, 255, 255, 0.1)' } 
-              }}
-            >
-              {timer.paused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+
+      {/* Timer Display */}
+      {showTimer && (
+          <Box sx={{ mb: 1.5, p: 1, bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 1 }}>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+                  <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#7a7772', display: 'block' }}>MAIN</Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: mainTimeLeft > 0 ? '#e89639' : '#555' }}>
+                          {formatTime(mainTimeLeft)}
+                      </Typography>
+                  </Box>
+                  <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+                  <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#7a7772', display: 'block' }}>BYO</Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: mainTimeLeft === 0 ? '#e89639' : '#7a7772' }}>
+                          {Math.ceil(byoyomiLeft)}s
+                      </Typography>
+                  </Box>
+                  <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+                  <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#7a7772', display: 'block' }}>PRD</Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: mainTimeLeft === 0 ? '#e89639' : '#7a7772' }}>
+                          {periodsLeft}x
+                      </Typography>
+                  </Box>
+              </Stack>
+          </Box>
+      )}
+
+      {/* Footer Info */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="caption" sx={{ color: '#7a7772' }}>
+          {t("Captures")}: {captures}
+        </Typography>
+        {active && timer && onPauseTimer && (
+            <IconButton size="small" onClick={onPauseTimer} sx={{ p: 0, color: 'primary.main' }}>
+                {timer.paused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
             </IconButton>
-          )}
-        </Box>
+        )}
       </Box>
     </Paper>
   );

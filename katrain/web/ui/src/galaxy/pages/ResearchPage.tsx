@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { AuthGuard } from '../components/guards/AuthGuard';
 import Board from '../../components/Board'; // Legacy
@@ -8,7 +8,13 @@ import { useGameSession } from '../hooks/useGameSession';
 import CloudSGFPanel from '../components/research/CloudSGFPanel';
 
 const ResearchPage = () => {
-    const { gameState, onMove, onNavigate } = useGameSession();
+    const { gameState, onMove, onNavigate, sessionId, initNewSession } = useGameSession();
+
+    useEffect(() => {
+        if (!sessionId) {
+            initNewSession();
+        }
+    }, [sessionId, initNewSession]);
     const [tab, setTab] = useState(0);
     
     return (

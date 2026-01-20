@@ -15,6 +15,8 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     rank = Column(String, default="20k")
+    net_wins = Column(Integer, default=0)
+    elo_points = Column(Integer, default=0)
     credits = Column(Float, default=10000.00)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -59,6 +61,7 @@ class RatingHistory(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     old_rank = Column(String)
     new_rank = Column(String)
+    elo_change = Column(Integer, default=0)
     game_id = Column(Integer, ForeignKey("games.id"))
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
 

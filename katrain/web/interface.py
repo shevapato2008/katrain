@@ -340,19 +340,31 @@ class WebKaTrain(KaTrainBase):
             "engine": getattr(self, "last_engine", None)
         }
 
-    def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None):
+    def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None, rules=None):
         if self.engine:
             self.engine.on_new_game()
         
         self.active_game_timer = copy.deepcopy(self.config("timer"))
 
+        # Update global config for persistence of defaults
+        if size:
+            self.update_config("game/size", size)
+        if handicap is not None:
+            self.update_config("game/handicap", handicap)
+        if komi is not None:
+            self.update_config("game/komi", komi)
+        if rules:
+            self.update_config("game/rules", rules)
+
         game_properties = {}
         if size:
             game_properties["SZ"] = size
-        if handicap is not None:
+        if handicap is not None: # Note: 0 is falsy, check if not None
             game_properties["HA"] = handicap
         if komi is not None:
             game_properties["KM"] = komi
+        if rules:
+            game_properties["RU"] = rules
 
         self.game = WebGame(
             self,
@@ -364,11 +376,20 @@ class WebKaTrain(KaTrainBase):
             user_id=self.user_id,
         )
         
+        # Ensure handicap stones are placed if handicap is set
+        if handicap and handicap >= 2:
+            self.game.root.place_handicap_stones(handicap)
+
         # Reset timer state for new game
-        self.timer_paused = True
+        self.timer_paused = self.config("timer/paused")
         self.last_timer_update = time.time()
         self.main_time_used_by_player = {"B": 0, "W": 0}
+        
+        # Save names before reset if they were set (e.g. by API call just before this)
+        saved_names = {bw: p.name for bw, p in self.players_info.items()}
         self.reset_players() # Resets periods_used
+        for bw, name in saved_names.items():
+            if name: self.players_info[bw].name = name
         
         # Update player info based on game settings
         for bw, player_info in self.players_info.items():
@@ -382,15 +403,20 @@ class WebKaTrain(KaTrainBase):
         changed = False
         if size and list(self.game.board_size) != [size, size]:
             self.game.root.set_property("SZ", size)
+            self.update_config("game/size", size)
             changed = True
         if handicap is not None and self.game.root.handicap != handicap:
             self.game.root.set_property("HA", handicap)
+            self.game.root.place_handicap_stones(handicap)
+            self.update_config("game/handicap", handicap)
             changed = True
         if komi is not None and self.game.root.komi != komi:
             self.game.root.set_property("KM", komi)
+            self.update_config("game/komi", komi)
             changed = True
         if rules and self.game.root.ruleset != rules:
             self.game.root.set_property("RU", rules)
+            self.update_config("game/rules", rules)
             changed = True
         
         if changed:
@@ -557,7 +583,9 @@ class WebKaTrain(KaTrainBase):
         self.players_info["W"].player = "W"
         self.update_state()
 
-    def _do_update_player(self, bw, player_type=None, player_subtype=None):
+    def _do_update_player(self, bw, player_type=None, player_subtype=None, name=None):
+        if name is not None:
+            self.players_info[bw].name = name
         self.update_player(bw, player_type=player_type, player_subtype=player_subtype)
 
     def play_stone_sound(self):
@@ -570,6 +598,9 @@ class WebKaTrain(KaTrainBase):
 
     def _do_ai_move(self, node=None):
         with self.ai_lock:
+            # Only generate AI move if the next player is actually an AI
+            if not self.next_player_info.ai:
+                return
             if node is None or self.game.current_node == node:
                 mode = self.next_player_info.strategy
                 settings = self.config(f"ai/{mode}")
@@ -758,19 +789,31 @@ class WebKaTrain(KaTrainBase):
         # In web context, push error notification to client
 
     def update_config(self, setting, value):
-        if "/" in setting:
-            cat, key = setting.split("/")
-            if cat not in self._config:
-                self._config[cat] = {}
-            self._config[cat][key] = value
+        parts = setting.split("/")
+        if len(parts) > 1:
+            conf = self._config
+            for part in parts[:-1]:
+                if part not in conf or not isinstance(conf[part], dict):
+                    conf[part] = {}
+                conf = conf[part]
+            conf[parts[-1]] = value
+            cat = parts[0]
         else:
-            cat, key = None, setting
+            cat = None
             self._config[setting] = value
 
         # Handle language change
         if setting == "general/language":
             i18n.switch_lang(value)
             self.update_state()
+
+        if setting == "timer/paused":
+            self.timer_paused = value
+
+        if setting.startswith("timer/") and hasattr(self, "active_game_timer"):
+            key = setting.split("/")[1]
+            if key in self.active_game_timer:
+                self.active_game_timer[key] = value
 
         if setting.startswith("ai/"):
             self.update_calculated_ranks()

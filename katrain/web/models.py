@@ -60,6 +60,7 @@ class UpdatePlayerRequest(BaseModel):
     bw: str
     player_type: Optional[str] = None
     player_subtype: Optional[str] = None
+    name: Optional[str] = None
 
 class ToggleAnalysisRequest(BaseModel):
     session_id: str
@@ -137,6 +138,8 @@ class User(BaseModel):
     id: Optional[int] = None
     username: str
     rank: str = "20k"
+    net_wins: int = 0
+    elo_points: int = 0
     credits: float = 10000.0
     avatar_url: Optional[str] = None
     created_at: Optional[Union[str, datetime]] = None

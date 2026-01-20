@@ -11,10 +11,16 @@ class GameCreate(BaseModel):
     sgf_content: str
     result: str
     game_type: str = "free"
+    black_id: int | None = None
+    white_id: int | None = None
+
+class GameResultUpdate(BaseModel):
+    result: str
+    winner_id: int | None = None
 
 class GameResponse(BaseModel):
     id: int
-    black_player_id: int
+    black_player_id: int | None = None
     white_player_id: int | None = None
     result: str | None = None
     game_type: str
@@ -43,9 +49,29 @@ async def create_game(
         user_id=current_user.id,
         sgf_content=game_in.sgf_content,
         result=game_in.result,
-        game_type=game_in.game_type
+        game_type=game_in.game_type,
+        black_id=game_in.black_id,
+        white_id=game_in.white_id
     )
     return game
+
+@router.post("/{game_id}/result", response_model=GameResponse)
+async def record_game_result(
+    request: Request,
+    game_id: int,
+    result_in: GameResultUpdate,
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    repo = request.app.state.game_repo
+    try:
+        game = repo.update_game_result(
+            game_id=game_id,
+            result=result_in.result,
+            winner_id=result_in.winner_id
+        )
+        return game
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @router.get("/{game_id}", response_model=GameResponse)
 async def read_game(

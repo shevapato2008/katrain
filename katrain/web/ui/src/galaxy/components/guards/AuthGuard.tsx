@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Box, Button, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 
 // Simple Login Reminder Component

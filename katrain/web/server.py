@@ -197,12 +197,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         with session.lock:
             if request.players:
                 for bw, p in request.players.items():
-                    session.katrain("update_player", bw=bw, player_type=p.player_type, player_subtype=p.player_subtype)
+                    session.katrain("update_player", bw=bw, player_type=p.player_type, player_subtype=p.player_subtype, name=p.name)
+                    if p.name:
+                        session.katrain.game.root.set_property("P" + bw, p.name)
             
             if request.clear_cache:
                 session.katrain.engine.on_new_game()
 
-            session.katrain("new_game", size=request.size, handicap=request.handicap, komi=request.komi)
+            session.katrain("new_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -217,7 +219,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             players = settings.get("players")
             if players:
                 for bw, p in players.items():
-                    session.katrain("update_player", bw=bw, player_type=p["player_type"], player_subtype=p["player_subtype"])
+                    session.katrain("update_player", bw=bw, player_type=p["player_type"], player_subtype=p["player_subtype"], name=p.get("name"))
                     if p.get("name"):
                         session.katrain.game.root.set_property("P" + bw, p["name"])
 
@@ -291,7 +293,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def update_player(request: UpdatePlayerRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
-            session.katrain("update_player", bw=request.bw, player_type=request.player_type, player_subtype=request.player_subtype)
+            session.katrain("update_player", bw=request.bw, player_type=request.player_type, player_subtype=request.player_subtype, name=request.name)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -514,11 +516,39 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             else:
                 json_option_values[k] = v
 
+        # Default settings for each AI strategy
+        strategy_defaults = {
+            "ai:default": {},
+            "ai:antimirror": {},
+            "ai:handicap": {"automatic": True, "pda": 0},
+            "ai:jigo": {"target_score": 0.5},
+            "ai:scoreloss": {"strength": 0.2},
+            "ai:policy": {"opening_moves": 24},
+            "ai:simple": {
+                "max_points_lost": 1.75,
+                "settled_weight": 1.0,
+                "opponent_fac": 0.5,
+                "min_visits": 3,
+                "attach_penalty": 1,
+                "tenuki_penalty": 0.5
+            },
+            "ai:p:weighted": {"weaken_fac": 0.5, "pick_override": 1.0, "lower_bound": 0.001},
+            "ai:p:pick": {"pick_override": 0.95, "pick_n": 5, "pick_frac": 0.35},
+            "ai:p:local": {"pick_override": 0.95, "stddev": 1.5, "pick_n": 15, "pick_frac": 0.0, "endgame": 0.5},
+            "ai:p:tenuki": {"pick_override": 0.85, "stddev": 7.5, "pick_n": 5, "pick_frac": 0.4, "endgame": 0.45},
+            "ai:p:influence": {"pick_override": 0.95, "pick_n": 5, "pick_frac": 0.3, "threshold": 3.5, "line_weight": 10, "endgame": 0.4},
+            "ai:p:territory": {"pick_override": 0.95, "pick_n": 5, "pick_frac": 0.3, "threshold": 3.5, "line_weight": 2, "endgame": 0.4},
+            "ai:p:rank": {"kyu_rank": -2},
+            "ai:human": {"human_kyu_rank": 0, "modern_style": True},
+            "ai:pro": {"pro_year": 2010, "modern_style": True},
+        }
+
         return {
             "strategies": AI_STRATEGIES_RECOMMENDED_ORDER,
             "options": json_option_values,
             "key_properties": list(AI_KEY_PROPERTIES),
-            "default_strategy": AI_CONFIG_DEFAULT
+            "default_strategy": AI_CONFIG_DEFAULT,
+            "strategy_defaults": strategy_defaults
         }
 
     @app.post("/api/ai/estimate-rank")

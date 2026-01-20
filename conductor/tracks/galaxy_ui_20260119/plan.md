@@ -44,19 +44,28 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 - [x] Task: Cloud SGF Integration [checkpoint: p3_cloud_sgf] 681814f
     - [x] "My Games" side panel fetching from DB.
     - [x] "Save to Cloud" functionality.
-- [ ] Task: Conductor - User Manual Verification
+- [x] Task: Conductor - User Manual Verification [checkpoint: 64b83a4]
 
-## Phase 4: Play Module - Rated vs Free
-*Goal: AI Game interface with specific Rating logic.*
+## Phase 4: Play Module - Rated vs Free (REVISED v4)
+*Goal: Feature parity with KaTrain desktop and professional UI details.*
 
-- [ ] Task: Play Menu [checkpoint: p4_menu]
-    - [ ] UI to select "Free" vs "Rated" game.
-- [ ] Task: AI Setup & Rating Logic [checkpoint: p4_setup]
-    - [ ] **Rated Mode:** Enforce "Human-like AI" model. Implement "3-game placement" logic if unranked.
-    - [ ] **Free Mode:** Allow full AI configuration.
-- [ ] Task: Game Loop [checkpoint: p4_game]
-    - [ ] Human vs AI implementation.
-    - [ ] Unlimited "Items" (Analysis tools) available in UI.
+- [x] Task: Backend Ranking System [checkpoint: p4_backend]
+- [x] Task: AI Setup & Initialization Fixes [checkpoint: p4_setup]
+    - [x] Add Ruleset selection to `AiSetupPage`.
+    - [x] Fix Handicap initialization (Backend stone placement).
+    - [x] Implement Rank Labeling utility (mapping internal values to 20k-9d).
+- [x] Task: Galaxy Game UI & Timer Redesign [checkpoint: p4_game_ui]
+    - [x] Redesign `PlayerCard` to show Main Time, Byoyomi, and Periods.
+    - [x] Fix AI rank display using mapping utility.
+    - [x] Integrate `ScoreGraph` and Items in sidebar.
+- [x] Task: Bug Fixes & Polish [checkpoint: p4_bugfixes]
+    - [x] Fix slow "Start Game" by removing blocking AI move call (AI moves now handled via WebSocket).
+    - [x] Fix Komi slider to allow 0.25 increments (was 1.0).
+    - [x] Display Ruleset and Komi in game page sidebar (`RightSidebarPanel`).
+    - [x] Fix AI Strategy dropdown display (remove "ai:" prefix).
+    - [x] Load AI strategy-specific default settings when opponent changes.
+    - [x] Fix player name display in `PlayerCard` (add `name` field to `UpdatePlayerRequest`).
+
 
 ## Phase 5: Play Module - Human vs Human & Social
 *Goal: Multiplayer prototype backed by DB.*

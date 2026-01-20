@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, Button } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -8,7 +8,6 @@ import LiveTvIcon from '@mui/icons-material/LiveTv'; // Live
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
-import { useTranslation } from '../../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import LoginModal from '../auth/LoginModal';
 
@@ -88,10 +87,14 @@ const GalaxySidebar = () => {
 
         {user ? (
             <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>{user.rank}</Avatar>
-                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.75rem' }}>
+                    {user.rank === '20k' ? '?' : user.rank}
+                </Avatar>
+                <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
                     <Typography variant="subtitle2" noWrap>{user.username}</Typography>
-                    <Typography variant="caption" color="text.secondary">💎 {user.credits}</Typography>
+                    <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
+                        {user.rank === '20k' ? 'No Rank' : user.rank}
+                    </Typography>
                 </Box>
                 <LogoutIcon fontSize="small" sx={{ color: 'text.secondary', cursor: 'pointer' }} onClick={logout} />
             </Box>
@@ -102,7 +105,7 @@ const GalaxySidebar = () => {
                 startIcon={<LoginIcon />}
                 onClick={() => setLoginOpen(true)}
             >
-                Login
+                Sign In
             </Button>
         )}
       </Box>

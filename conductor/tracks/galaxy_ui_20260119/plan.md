@@ -38,12 +38,12 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 ## Phase 3: Research Module & Cloud Library
 *Goal: Analysis workbench with Cloud SGF support.*
 
-- [ ] Task: Research Page [checkpoint: p3_page]
-    - [ ] Protected by `AuthGuard`.
-    - [ ] Layout with Board + Analysis Panels.
-- [ ] Task: Cloud SGF Integration [checkpoint: p3_cloud_sgf]
-    - [ ] "My Games" side panel fetching from DB.
-    - [ ] "Save to Cloud" functionality.
+- [x] Task: Research Page [checkpoint: p3_page]
+    - [x] Protected by `AuthGuard`.
+    - [x] Layout with Board + Analysis Panels.
+- [x] Task: Cloud SGF Integration [checkpoint: p3_cloud_sgf] 681814f
+    - [x] "My Games" side panel fetching from DB.
+    - [x] "Save to Cloud" functionality.
 - [ ] Task: Conductor - User Manual Verification
 
 ## Phase 4: Play Module - Rated vs Free

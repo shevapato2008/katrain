@@ -70,7 +70,7 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 ## Phase 5: Play Module - Human vs Human & Social
 *Goal: Functional multiplayer lobby and game rooms with social integration.*
 
-- [~] Task: Social Integration (Friends & Follows) [checkpoint: p5_social]
+- [x] Task: Social Integration (Friends & Follows) [checkpoint: p5_social] bb487fe
     - [ ] Implement `FriendsPanel` in the right sidebar (fetching from `relationships` table).
     - [ ] Add "Follow/Unfollow" buttons to User Profiles and Player Cards.
     - [ ] Backend: Create endpoints for following/unfollowing and fetching followers/following lists.

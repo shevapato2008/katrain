@@ -101,6 +101,7 @@
         "eval_on_show_last": 3,
         "top_moves_show": "top_move_delta_score",
         "top_moves_show_secondary": "top_move_visits",
+        "max_top_moves_on_board": 3,
         "eval_show_ai": true,
         "lock_ai": false
     },

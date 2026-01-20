@@ -51,8 +51,19 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     loadImages();
   }, []);
 
+  // Add a ref for animation time
+  const animationFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
+
   useEffect(() => {
-    renderBoard();
+    const animate = () => {
+      renderBoard();
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
   }, [gameState, analysisToggles]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
@@ -149,33 +160,75 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     // Hints (Top Moves)
     if (analysisToggles.hints && gameState.analysis?.moves) {
       const moves = gameState.analysis.moves;
+      const maxMoves = gameState.trainer_settings?.max_top_moves_on_board || 3;
+      const time = (Date.now() - startTimeRef.current) / 1000; // time in seconds
       
-      moves.forEach((move: any, index: number) => {
+      moves.slice(0, maxMoves).forEach((move: any, index: number) => {
         if (!move.coords) return;
         const pos = gridToCanvas(layout, move.coords[0], move.coords[1], boardSize);
         const evalClass = getEvalClass(move.scoreLoss);
         const color = EVAL_COLORS[evalClass];
+        const radius = layout.gridSize * 0.42;
+
+        // Premium Radial Gradient for the stone
+        const grad = ctx.createRadialGradient(pos.x - radius * 0.3, pos.y - radius * 0.3, radius * 0.1, pos.x, pos.y, radius);
+        grad.addColorStop(0, color.replace("0.85", "0.95")); // Highlight spot
+        grad.addColorStop(1, color.replace("0.85", "1.0"));  // Base color
+        ctx.fillStyle = grad;
         
-        // Hint Circle
-        const radius = layout.gridSize * 0.35;
-        ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Best move highlight
-        if (index === 0 && imagesRef.current.topMove) {
-          const topSize = layout.gridSize * 0.45;
-          ctx.drawImage(imagesRef.current.topMove, pos.x - topSize, pos.y - topSize, topSize * 2, topSize * 2);
+        // Best move highlight - Dynamic Pulsing Ring
+        if (index === 0) {
+          const pulse = Math.sin(time * 3) * 0.5 + 0.5; // 0 to 1 pulse
+          
+          // Layer 1: Core White Ring
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 + pulse * 0.2})`;
+          ctx.lineWidth = Math.max(2.5, layout.gridSize * 0.08);
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius + 1, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          // Layer 2: Outer Glow
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 + pulse * 0.2})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius + 3 + pulse * 2, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Layer 3: Soft Wide Aura
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.05 + pulse * 0.05})`;
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius + 6 + pulse * 4, 0, Math.PI * 2);
+          ctx.stroke();
         }
 
-        // Text
-        ctx.fillStyle = evalClass >= 3 ? "black" : "white";
-        ctx.font = `bold ${Math.max(8, layout.gridSize * 0.25)}px sans-serif`;
+        // Text - Two lines
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        const text = move.scoreLoss > 0.5 ? `-${move.scoreLoss.toFixed(1)}` : `${(move.winrate * 100).toFixed(0)}%`;
-        ctx.fillText(text, pos.x, pos.y);
+
+        // Precise Contrast Logic
+        const isDarkBg = evalClass <= 2 || evalClass === 5;
+        const mainTextColor = isDarkBg ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
+        const secondaryTextColor = isDarkBg ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.85)";
+        
+        // Consistent font size for balance
+        const fontSize = Math.max(7, layout.gridSize * 0.28);
+
+        // Top line: Winrate (Monospace for precision)
+        ctx.font = `bold ${fontSize}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = mainTextColor;
+        const winrateText = (move.winrate * 100).toFixed(1);
+        ctx.fillText(winrateText, pos.x, pos.y - layout.gridSize * 0.12);
+
+        // Bottom line: Visits (Sans-serif for reference)
+        ctx.font = `600 ${fontSize}px 'Manrope', sans-serif`;
+        ctx.fillStyle = secondaryTextColor;
+        const visitsText = move.visits >= 1000 ? `${(move.visits / 1000).toFixed(1)}k` : move.visits.toString();
+        ctx.fillText(visitsText, pos.x, pos.y + layout.gridSize * 0.18);
       });
     }
 

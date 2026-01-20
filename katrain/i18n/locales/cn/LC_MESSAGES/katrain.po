@@ -597,6 +597,9 @@ msgstr "保存AI设置"
 msgid "sgf written"
 msgstr "包含分析结果的 SGF 已写入 {file_name}"
 
+msgid "max top moves on board"
+msgstr "棋盘上最多显示选点数"
+
 msgid "wait-before-extra-analysis"
 msgstr "等待初始分析完成再请求深度分析。"
 

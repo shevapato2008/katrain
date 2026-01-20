@@ -6,7 +6,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Active
 
-*(No active tracks)*
+- [ ] **Track: Limit top moves on Web UI board to 3 and align stats display (Loss/Visits) with Kivy GUI.**
+  *Link: [./tracks/web_ui_top_moves_parity_20260120/](./tracks/web_ui_top_moves_parity_20260120/)*
+
 
 ## Archived
 

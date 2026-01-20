@@ -596,6 +596,9 @@ msgstr "Save SGFs"
 msgid "contribute:savesgf:hint"
 msgstr "Save SGF files of games that are finished showing in ./dist_sgf"
 
+msgid "max top moves on board"
+msgstr "Max Top Moves on Board"
+
 msgid "contribute:username"
 msgstr "Username"
 

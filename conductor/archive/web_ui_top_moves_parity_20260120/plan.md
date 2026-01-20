@@ -22,9 +22,9 @@
 - [x] Task: Conductor - User Manual Verification 'Board Rendering Logic' (Protocol in workflow.md)
 
 ## Phase 3: Validation & Polish
-- [ ] Task: User Acceptance Testing
-    - [ ] Verify only 3 (or N) moves are shown.
-    - [ ] Verify stats are correct (Loss/Visits) and legible.
-    - [ ] Verify configuring the limit in settings updates the board immediately.
-    - [ ] Check against Kivy UI screenshot for visual parity.
-- [ ] Task: Conductor - User Manual Verification 'Validation & Polish' (Protocol in workflow.md)
+- [x] Task: User Acceptance Testing
+    - [x] Verify only 3 (or N) moves are shown.
+    - [x] Verify stats are correct (Loss/Visits) and legible.
+    - [x] Verify configuring the limit in settings updates the board immediately.
+    - [x] Check against Kivy UI screenshot for visual parity.
+- [x] Task: Conductor - User Manual Verification 'Validation & Polish' (Protocol in workflow.md)

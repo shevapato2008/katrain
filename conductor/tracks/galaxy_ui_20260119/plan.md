@@ -80,7 +80,7 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
         - [ ] Active games list with "Watch" button (for Spectator Mode).
         - [ ] "Quick Match" entry for Free/Rated modes.
     - [ ] Backend: WebSocket state for tracking online users and their statuses.
-- [~] Task: Matchmaking & Room Management [checkpoint: p5_matchmaking]
+- [x] Task: Matchmaking & Room Management [checkpoint: p5_matchmaking] cf71df5
     - [ ] Implement matchmaking queue UI (Overlay with "Finding opponent..." animation and timer).
     - [ ] Enforce "AI Rating" prerequisite check before allowing Rated HvH matches.
     - [ ] Implement `GameRoomPage` for active HvH matches:

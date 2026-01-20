@@ -5,35 +5,35 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 ## Phase 1: Infrastructure & Design System Setup
 *Goal: Establish layout, routing, and design tokens.*
 
-- [ ] Task: Project Structure & Routing [checkpoint: p1_structure]
-    - [ ] Create directory structure.
-    - [ ] Install React Router v6.
-    - [ ] Configure `AppRouter.tsx` for `/galaxy/*` and `/`.
-- [ ] Task: Theme Extraction [checkpoint: p1_theme]
-    - [ ] Extract MUI theme to `src/theme.ts`.
-- [ ] Task: Global Layout Implementation [checkpoint: p1_layout]
-    - [ ] Implement `GalaxySidebar` and `MainLayout`.
+- [x] Task: Project Structure & Routing [checkpoint: p1_structure]
+    - [x] Create directory structure.
+    - [x] Install React Router v6.
+    - [x] Configure `AppRouter.tsx` for `/galaxy/*` and `/`.
+- [x] Task: Theme Extraction [checkpoint: p1_theme]
+    - [x] Extract MUI theme to `src/theme.ts`.
+- [x] Task: Global Layout Implementation [checkpoint: p1_layout]
+    - [x] Implement `GalaxySidebar` and `MainLayout`.
 
 ## Phase 1.5: Data Layer (PostgreSQL)
 *Goal: Setup database for persistent user data.*
 
-- [ ] Task: Database Setup [checkpoint: p1_db_setup]
-    - [ ] Verify `docker-compose.db.yml` functionality.
-    - [ ] Create init scripts for tables: `users`, `games`, `relationships`.
-- [ ] Task: Backend API - User Data [checkpoint: p1_db_api]
-    - [ ] Implement/Update endpoints for User Profile (Credits, Rank).
-    - [ ] Implement endpoints for Cloud SGF (CRUD).
+- [x] Task: Database Setup [checkpoint: p1_db_setup]
+    - [x] Verify `docker-compose.db.yml` functionality.
+    - [x] Create init scripts for tables: `users`, `games`, `relationships`.
+- [x] Task: Backend API - User Data [checkpoint: p1_db_api] 747d659
+    - [x] Implement/Update endpoints for User Profile (Credits, Rank).
+    - [x] Implement endpoints for Cloud SGF (CRUD).
 
 ## Phase 2: Home Page & Authentication
 *Goal: Entry point, User Management, and Credits display.*
 
-- [ ] Task: Auth Infrastructure [checkpoint: p2_auth]
-    - [ ] `AuthContext` + `AuthGuard`.
-    - [ ] Connect to backend User Profile API (fetch Credits/Rank).
-- [ ] Task: Sidebar Integration [checkpoint: p2_sidebar]
-    - [ ] Display User Credits and Rank in Sidebar.
-- [ ] Task: Home Page [checkpoint: p2_dashboard]
-    - [ ] Dashboard with Module Cards.
+- [x] Task: Auth Infrastructure [checkpoint: p2_auth] 4a8b6b2
+    - [x] `AuthContext` + `AuthGuard`.
+    - [x] Connect to backend User Profile API (fetch Credits/Rank).
+- [x] Task: Sidebar Integration [checkpoint: p2_sidebar] 38e6428
+    - [x] Display User Credits and Rank in Sidebar (Mocked UI).
+- [x] Task: Home Page [checkpoint: p2_dashboard]
+    - [x] Dashboard with Module Cards.
 
 ## Phase 3: Research Module & Cloud Library
 *Goal: Analysis workbench with Cloud SGF support.*

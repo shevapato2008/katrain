@@ -13,6 +13,7 @@ services:
     volumes:
       # macOS Local Development: Store data in .postgres_data in the current directory
       - ./.postgres_data:/var/lib/postgresql/data
+      - ./katrain/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 # 如果使用方式 2，可以删除下面的 volumes 块
 # If using Option 2, you can remove the volumes block below

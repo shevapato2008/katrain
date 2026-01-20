@@ -36,14 +36,20 @@ const GameRoomPage = () => {
     const isPlayer = isBlack || isWhite;
     const myTurn = (gameState.player_to_move === 'B' && isBlack) || (gameState.player_to_move === 'W' && isWhite);
 
+    const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
+
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Main Area: Board + ControlBar */}
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
-                <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center' }}>
+                <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
                     <Typography variant="subtitle2" color={myTurn ? "primary.main" : "text.secondary"}>
                         {isPlayer ? (myTurn ? "Your Turn" : "Opponent's Turn") : "Spectating"}
                     </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <VisibilityIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                        <Typography variant="caption" color="text.secondary">{spectatorCount} Spectators</Typography>
+                    </Box>
                 </Box>
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
                     <Board 

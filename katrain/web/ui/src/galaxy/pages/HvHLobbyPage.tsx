@@ -13,10 +13,19 @@ interface OnlineUser {
     avatar_url?: string;
 }
 
+interface ActiveGame {
+    session_id: string;
+    player_b: string;
+    player_w: string;
+    spectator_count: number;
+    move_count: number;
+}
+
 const HvHLobbyPage = () => {
     const navigate = useNavigate();
     const { user, token } = useAuth();
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+    const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isMatching, setIsRatedMatching] = useState(false);
@@ -33,22 +42,40 @@ const HvHLobbyPage = () => {
             if (response.ok) {
                 const data = await response.json();
                 setOnlineUsers(data);
-            } else {
-                setError("Failed to fetch online users");
             }
         } catch (err) {
-            setError("Network error");
-        } finally {
-            setLoading(false);
+            console.error("Failed to fetch online users", err);
         }
+    };
+
+    const fetchActiveGames = async () => {
+        try {
+            const response = await fetch('/api/v1/games/active/multiplayer', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setActiveGames(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch active games", err);
+        }
+    };
+
+    const fetchData = async () => {
+        setLoading(true);
+        await Promise.all([fetchOnlineUsers(), fetchActiveGames()]);
+        setLoading(false);
     };
 
     useEffect(() => {
         if (!token) return;
         
-        fetchOnlineUsers();
-        
-        // Connect to Lobby WebSocket
+        fetchData();
+        const interval = setInterval(() => {
+            fetchOnlineUsers();
+            fetchActiveGames();
+        }, 10000);
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/lobby?token=${token}`;
         const ws = new WebSocket(wsUrl);
@@ -180,10 +207,42 @@ const HvHLobbyPage = () => {
                             </Stack>
                             <Divider sx={{ mb: 2 }} />
                             
-                            <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default', borderRadius: 2 }}>
-                                <Typography variant="body1" color="text.secondary">No active games at the moment.</Typography>
-                                <Typography variant="caption" color="text.secondary">Games will appear here once matchmaking is functional.</Typography>
-                            </Box>
+                            {activeGames.length === 0 ? (
+                                <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Typography variant="body1" color="text.secondary">No active games at the moment.</Typography>
+                                    <Typography variant="caption" color="text.secondary">Games will appear here once matchmaking is functional.</Typography>
+                                </Box>
+                            ) : (
+                                <Grid container spacing={2}>
+                                    {activeGames.map((game) => (
+                                        <Grid item xs={12} key={game.session_id}>
+                                            <Card variant="outlined" sx={{ bgcolor: 'background.default' }}>
+                                                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                        <Box>
+                                                            <Typography variant="subtitle2">
+                                                                {game.player_b} (B) vs {game.player_w} (W)
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                Moves: {game.move_count} | Spectators: {game.spectator_count}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Button 
+                                                            size="small" 
+                                                            variant="contained" 
+                                                            color="secondary"
+                                                            startIcon={<VisibilityIcon />}
+                                                            onClick={() => navigate(`/galaxy/play/human/room/${game.session_id}`)}
+                                                        >
+                                                            Watch
+                                                        </Button>
+                                                    </Stack>
+                                                </CardContent>
+                                            </Card>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            )}
                         </CardContent>
                     </Card>
                 </Grid>

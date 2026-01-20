@@ -86,7 +86,7 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
     - [ ] Implement `GameRoomPage` for active HvH matches:
         - [ ] Real-time timer synchronization via WebSocket.
         - [ ] Turn-based move validation and resignation logic.
-- [ ] Task: Spectator Mode & WebSocket Broadcast [checkpoint: p5_spectator]
+- [~] Task: Spectator Mode & WebSocket Broadcast [checkpoint: p5_spectator]
     - [ ] Implement "Spectator View" for `GamePage` (Read-only board, live move updates).
     - [ ] Display "Spectator Count" and live chat area in the game sidebar.
     - [ ] Backend: WebSocket broadcasting logic for room-specific events (moves, chat, end-game).

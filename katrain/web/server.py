@@ -626,7 +626,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         await websocket.accept()
         session.sockets.add(websocket)
         try:
-            await websocket.send_json({"type": "game_update", "state": session.last_state or session.katrain.get_state()})
+            state = session.last_state or session.katrain.get_state()
+            state["sockets_count"] = len(session.sockets)
+            await websocket.send_json({"type": "game_update", "state": state})
             while True:
                 message = await websocket.receive_json()
                 if message.get("type") == "ping":

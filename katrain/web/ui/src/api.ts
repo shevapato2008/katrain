@@ -39,6 +39,7 @@ export interface GameState {
     show_coordinates: boolean;
     zen_mode: boolean;
   };
+  sockets_count?: number;
   timer?: {
     paused: boolean;
     main_time_used: number;

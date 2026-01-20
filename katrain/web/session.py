@@ -78,6 +78,10 @@ class SessionManager:
             session.touch()
             return session
 
+    def list_active_multiplayer_sessions(self) -> List[WebSession]:
+        with self._lock:
+            return [s for s in self._sessions.values() if s.player_b_id is not None]
+
     def remove_session(self, session_id: str):
         with self._lock:
             session = self._sessions.pop(session_id, None)
@@ -101,6 +105,7 @@ class SessionManager:
         except KeyError:
             return
         session.last_state = state
+        state["sockets_count"] = len(session.sockets)
         self._schedule_broadcast(session, {"type": "game_update", "state": state})
 
     def _on_message(self, session_id: str, msg_type: str, data: Dict):

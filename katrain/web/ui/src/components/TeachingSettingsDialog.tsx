@@ -53,6 +53,7 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
         showAI: ts.eval_show_ai,
         lockAI: ts.lock_ai,
         topMovesShow: ts.top_moves_show,
+        maxTopMovesOnBoard: ts.max_top_moves_on_board || DEFAULT_TEACHING_SETTINGS.maxTopMovesOnBoard,
         visits: {
           low: ts.low_visits,
           fast: ts.fast_visits || DEFAULT_TEACHING_SETTINGS.visits.fast,
@@ -74,6 +75,7 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
         'trainer/eval_show_ai': teachingSettings.showAI,
         'trainer/lock_ai': teachingSettings.lockAI,
         'trainer/top_moves_show': teachingSettings.topMovesShow,
+        'trainer/max_top_moves_on_board': teachingSettings.maxTopMovesOnBoard,
         'trainer/low_visits': teachingSettings.visits.low,
         'engine/fast_visits': teachingSettings.visits.fast,
         'engine/max_visits': teachingSettings.visits.max,
@@ -225,6 +227,17 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
                   <MenuItem value="top_move_nothing">{t('top_move_nothing')}</MenuItem>
                 </Select>
               </FormControl>
+              <TextField
+                label={t('max top moves on board', 'Max Top Moves on Board')}
+                size="small"
+                type="number"
+                value={teachingSettings.maxTopMovesOnBoard}
+                onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    updateTeachingSettings({ maxTopMovesOnBoard: isNaN(val) ? 1 : val });
+                }}
+                fullWidth
+              />
             </Box>
 
             <Box sx={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: 2 }}>

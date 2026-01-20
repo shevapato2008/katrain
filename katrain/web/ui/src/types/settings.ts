@@ -17,6 +17,7 @@ export interface TeachingSettings {
   showAI: boolean;
   lockAI: boolean;
   topMovesShow: string; // e.g., 'top_move_delta_score'
+  maxTopMovesOnBoard: number;
   visits: {
     fast: number;
     low: number;
@@ -45,6 +46,7 @@ export const DEFAULT_TEACHING_SETTINGS: TeachingSettings = {
   showAI: true,
   lockAI: false,
   topMovesShow: 'top_move_delta_score',
+  maxTopMovesOnBoard: 3,
   visits: {
     fast: 25,
     low: 100,

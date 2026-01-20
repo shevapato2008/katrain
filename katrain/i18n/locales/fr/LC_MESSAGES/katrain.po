@@ -1157,3 +1157,7 @@ msgstr "AI"
 
 msgid "Human"
 msgstr "Human"
+
+#. TODO
+msgid "max top moves on board"
+msgstr "Max Top Moves on Board"

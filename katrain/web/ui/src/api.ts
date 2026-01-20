@@ -62,6 +62,7 @@ export interface GameState {
     eval_show_ai: boolean;
     lock_ai: boolean;
     top_moves_show: string;
+    max_top_moves_on_board: number;
     low_visits: number;
     fast_visits?: number;
     max_visits?: number;

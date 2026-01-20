@@ -1142,3 +1142,7 @@ msgstr "AI"
 
 msgid "Human"
 msgstr "人類"
+
+#. TODO
+msgid "max top moves on board"
+msgstr "棋盤上最多顯示選點數"

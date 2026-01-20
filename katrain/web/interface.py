@@ -240,20 +240,22 @@ class WebKaTrain(KaTrainBase):
             root = cn.analysis["root"]
             moves = []
             from katrain.core.sgf_parser import Move
-            for gtp, move_info in cn.analysis.get("moves", {}).items():
+            # Use candidate_moves which contains calculated pointsLost and accurate metrics
+            for move_info in cn.candidate_moves:
+                gtp = move_info["move"]
                 try:
                     m = Move.from_gtp(gtp)
                     moves.append({
                         **move_info,
                         "move": gtp,
                         "coords": list(m.coords) if m.coords else None,
-                        "scoreLoss": move_info.get("scoreLoss", 0),
+                        "scoreLoss": move_info.get("pointsLost", 0),
                         "winrate": move_info.get("winrate", 0),
                         "visits": move_info.get("visits", 0),
                     })
                 except Exception:
                     pass
-            # Sort moves by visits descending
+            # Sort moves by visits descending (standard KaTrain behavior)
             moves.sort(key=lambda x: x.get("visits", 0), reverse=True)
 
             from katrain.core.utils import var_to_grid
@@ -427,9 +429,12 @@ class WebKaTrain(KaTrainBase):
 
     def update_state(self, **_kwargs):
         """Called when the game state changes."""
-        self._do_update_state()
+        # 1. Broadcast current state (useful for showing hints/analysis before AI moves)
         if self.update_state_callback:
             self.update_state_callback(self.get_state())
+        
+        # 2. Handle logic that might change the state (like AI moving)
+        self._do_update_state()
 
     def _do_update_state(self):
         if not self.game or not self.game.current_node:
@@ -452,6 +457,9 @@ class WebKaTrain(KaTrainBase):
 
             if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
                 self._do_ai_move(cn)
+                # 3. CRITICAL: Broadcast again after AI has placed its stone
+                if self.update_state_callback:
+                    self.update_state_callback(self.get_state())
 
         if self.game.end_result and not getattr(self, "_game_end_reported", False):
             self._game_end_reported = True

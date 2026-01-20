@@ -136,6 +136,9 @@ class RankEstimationRequest(BaseModel):
 class User(BaseModel):
     id: Optional[int] = None
     username: str
+    rank: str = "20k"
+    credits: float = 10000.0
+    avatar_url: Optional[str] = None
     created_at: Optional[Union[str, datetime]] = None
 
 class UserInDB(User):

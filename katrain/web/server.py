@@ -19,10 +19,13 @@ from katrain.web.models import *
 async def lifespan(app: FastAPI):
     # Initialize User Persistence
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
+    from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.db import SessionLocal
     
     repo = SQLAlchemyUserRepository(SessionLocal)
     repo.init_db()
+    
+    game_repo = GameRepository(SessionLocal)
 
     # Create default admin user if no users exist
     # Create default admin user if no users exist
@@ -34,6 +37,7 @@ async def lifespan(app: FastAPI):
             pass # Already exists race condition
 
     app.state.user_repo = repo
+    app.state.game_repo = game_repo
 
     # Initialize Engine Clients and Router
     from katrain.web.core.engine_client import KataGoClient
@@ -589,6 +593,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             pass
         finally:
             session.sockets.discard(websocket)
+
+    # SPA Routing for Galaxy UI
+    @app.get("/galaxy", response_class=FileResponse)
+    @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
+    async def serve_galaxy_app(full_path: str = None):
+        return str(static_root / "index.html")
 
     # Catch-all for other static files (like vite.svg and JS/CSS in assets/)
     app.mount("/", StaticFiles(directory=static_root, html=True), name="root")

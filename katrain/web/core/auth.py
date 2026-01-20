@@ -56,6 +56,7 @@ class SQLAlchemyUserRepository(UserRepository):
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
         session = self.session_factory()
         try:
+            # Defaults are handled by SQLAlchemy model
             db_user = models_db.User(username=username, hashed_password=hashed_password)
             session.add(db_user)
             session.commit()
@@ -90,5 +91,8 @@ class SQLAlchemyUserRepository(UserRepository):
             "id": user_obj.id,
             "username": user_obj.username,
             "hashed_password": user_obj.hashed_password,
+            "rank": user_obj.rank,
+            "credits": user_obj.credits,
+            "avatar_url": user_obj.avatar_url,
             "created_at": user_obj.created_at
         }

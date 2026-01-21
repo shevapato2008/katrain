@@ -67,7 +67,7 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
     - [x] Fix player name display in `PlayerCard` (add `name` field to `UpdatePlayerRequest`).
 
 
-## Phase 5: Play Module - Human vs Human & Social
+## Phase 5: Play Module - Human vs Human & Social [checkpoint: caffd87]
 *Goal: Functional multiplayer lobby and game rooms with social integration.*
 
 - [x] Task: Social Integration (Friends & Follows) [checkpoint: p5_social] bb487fe

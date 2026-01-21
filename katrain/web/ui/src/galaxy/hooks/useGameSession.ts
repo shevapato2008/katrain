@@ -109,6 +109,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             else if (action === 'end') await API.redo(sessionId, 9999);
             else if (action === 'ai-move') await API.aiMove(sessionId);
             else if (action === 'resign') await API.resign(sessionId);
+            else if (action === 'timeout') await API.timeout(sessionId);
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') await API.findMistake(sessionId, 'undo');
             else if (action === 'mistake-next') await API.findMistake(sessionId, 'redo');

@@ -455,6 +455,46 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return {"session_id": session.session_id, "state": state}
 
+    @app.post("/api/timeout")
+    def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+        """End game due to timeout - current player loses on time"""
+        session = _get_session_or_404(manager, request.session_id)
+
+        # For multiplayer games, record the result
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+
+        with session.lock:
+            session.katrain("timeout")
+            state = session.katrain.get_state()
+            session.last_state = state
+
+        # Record game result for multiplayer
+        if is_multiplayer and current_user:
+            try:
+                # Determine winner (the one who didn't timeout)
+                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"  # T for Timeout
+
+                game_repo = app.state.game_repo
+                game_repo.create_game(
+                    user_id=current_user.id,
+                    sgf_content=session.katrain.get_sgf(),
+                    result=result,
+                    game_type="free",
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id
+                )
+
+                # Broadcast game end to all connected sockets
+                manager._schedule_broadcast(session, {
+                    "type": "game_end",
+                    "data": {"reason": "timeout", "winner_id": winner_id, "result": result}
+                })
+            except Exception as e:
+                logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+
+        return {"session_id": session.session_id, "state": state}
+
     @app.post("/api/multiplayer/leave")
     def leave_multiplayer_game(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         """Leave a multiplayer game (counts as forfeit)"""

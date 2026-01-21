@@ -1521,3 +1521,33 @@ msgstr "Ранг"
 
 msgid "Game Over"
 msgstr "Гра закінчена"
+
+msgid "timer:main"
+msgstr "ОСН"
+
+msgid "timer:byo"
+msgstr "БЙО"
+
+msgid "timer:periods"
+msgstr "ПЕР"
+
+msgid "Captures"
+msgstr "Захоплення"
+
+msgid "game:white_wins_resign"
+msgstr "Білі виграли здачею"
+
+msgid "game:black_wins_resign"
+msgstr "Чорні виграли здачею"
+
+msgid "game:white_wins_timeout"
+msgstr "Білі виграли по часу"
+
+msgid "game:black_wins_timeout"
+msgstr "Чорні виграли по часу"
+
+msgid "game:white_wins_points"
+msgstr "Білі виграли {n} очок"
+
+msgid "game:black_wins_points"
+msgstr "Чорні виграли {n} очок"

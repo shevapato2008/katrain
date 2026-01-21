@@ -1477,3 +1477,33 @@ msgstr "Rank"
 
 msgid "Game Over"
 msgstr "Game Over"
+
+msgid "timer:main"
+msgstr "MAIN"
+
+msgid "timer:byo"
+msgstr "BYO"
+
+msgid "timer:periods"
+msgstr "PRD"
+
+msgid "Captures"
+msgstr "Captures"
+
+msgid "game:white_wins_resign"
+msgstr "White wins by resignation"
+
+msgid "game:black_wins_resign"
+msgstr "Black wins by resignation"
+
+msgid "game:white_wins_timeout"
+msgstr "White wins by timeout"
+
+msgid "game:black_wins_timeout"
+msgstr "Black wins by timeout"
+
+msgid "game:white_wins_points"
+msgstr "White wins by {n} points"
+
+msgid "game:black_wins_points"
+msgstr "Black wins by {n} points"

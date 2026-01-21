@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
@@ -41,6 +41,25 @@ const GamePage = () => {
 
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
+    const audioCache = useRef<Record<string, HTMLAudioElement>>({});
+
+    // Sound playing callback
+    const handlePlaySound = useCallback((soundName: string) => {
+        if (!audioCache.current[soundName]) {
+            audioCache.current[soundName] = new Audio(`/assets/sounds/${soundName}.wav`);
+        }
+        const audio = audioCache.current[soundName];
+        audio.currentTime = 0;
+        audio.play().catch(err => console.warn('Sound playback failed:', err));
+    }, []);
+
+    // Timeout handler - auto-forfeit when time runs out
+    const handleTimeout = useCallback(async () => {
+        if (!gameState?.end_result) {
+            console.log('Timer expired - triggering timeout');
+            await handleAction('timeout');
+        }
+    }, [gameState?.end_result, handleAction]);
 
     useEffect(() => {
         if (sessionId && sessionId !== currentSessionId) {
@@ -146,10 +165,10 @@ const GamePage = () => {
                     </Button>
                 </Box>
 
-                <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
-                    <Board 
-                        gameState={gameState} 
-                        onMove={onMove} 
+                <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 0.5 }}>
+                    <Board
+                        gameState={gameState}
+                        onMove={onMove}
                         onNavigate={onNavigate}
                         analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                     />
@@ -157,13 +176,15 @@ const GamePage = () => {
             </Box>
 
             {/* Right Sidebar with Controls */}
-            <RightSidebarPanel 
+            <RightSidebarPanel
                 gameState={gameState}
                 analysisToggles={analysisToggles}
                 onToggleChange={handleToggleChange}
                 onNavigate={onNavigate}
                 onAction={handleActionWrapper}
                 isRated={isRated}
+                onTimeout={handleTimeout}
+                onPlaySound={handlePlaySound}
             />
         </Box>
     );

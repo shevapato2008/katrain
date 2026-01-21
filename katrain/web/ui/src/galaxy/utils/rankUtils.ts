@@ -74,3 +74,41 @@ export const rankToSlider = (rank: string): number => {
     }
     return 0;
 };
+
+/**
+ * Returns localized rank string based on language.
+ * Chinese/Japanese/Korean use their native characters for kyu/dan.
+ */
+export const localizedRank = (val: number | string | null | undefined, lang: string): string => {
+    const baseRank = internalToRank(val);
+
+    // "No Rank" should be translated via i18n, not here
+    if (baseRank === "No Rank") {
+        return baseRank; // Let the caller handle i18n translation
+    }
+
+    // Parse rank string (e.g., "20k", "1d")
+    const match = baseRank.match(/^(\d+)([kd])$/i);
+    if (!match) return baseRank;
+
+    const num = match[1];
+    const type = match[2].toLowerCase();
+
+    // Chinese (Simplified & Traditional)
+    if (lang === 'cn' || lang === 'tw') {
+        return type === 'k' ? `${num}级` : `${num}段`;
+    }
+
+    // Japanese
+    if (lang === 'jp') {
+        return type === 'k' ? `${num}級` : `${num}段`;
+    }
+
+    // Korean
+    if (lang === 'ko') {
+        return type === 'k' ? `${num}급` : `${num}단`;
+    }
+
+    // Default: keep original format
+    return baseRank;
+};

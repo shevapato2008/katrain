@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface BoardProps {
   gameState: GameState;
@@ -27,7 +28,21 @@ const EVAL_COLORS = [
 
 const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const [canvasSize, setCanvasSize] = useState(800);
+  const { t } = useTranslation();
+
+  // Translate game result
+  const translateResult = (result: string): string => {
+    if (result.includes('W+R')) return t('game:white_wins_resign', 'White wins by resignation');
+    if (result.includes('B+R')) return t('game:black_wins_resign', 'Black wins by resignation');
+    if (result.includes('W+T')) return t('game:white_wins_timeout', 'White wins by timeout');
+    if (result.includes('B+T')) return t('game:black_wins_timeout', 'Black wins by timeout');
+    if (result.match(/W\+[\d.]+/)) return result.replace(/W\+([\d.]+)/, (_, n) => t('game:white_wins_points', `White wins by ${n} points`).replace('{n}', n));
+    if (result.match(/B\+[\d.]+/)) return result.replace(/B\+([\d.]+)/, (_, n) => t('game:black_wins_points', `Black wins by ${n} points`).replace('{n}', n));
+    return result;
+  };
 
   useEffect(() => {
     const loadImages = async () => {
@@ -51,6 +66,26 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     loadImages();
   }, []);
 
+  // Track container size for responsive canvas
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        // Use the smaller dimension to keep the board square, minus padding
+        const size = Math.floor(Math.min(width, height) - 8);
+        // Clamp between 400 and 1200 for reasonable bounds
+        setCanvasSize(Math.max(400, Math.min(1200, size)));
+      }
+    };
+
+    updateCanvasSize();
+    const resizeObserver = new ResizeObserver(updateCanvasSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    return () => resizeObserver.disconnect();
+  }, []);
+
   // Add a ref for animation time
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
@@ -64,10 +99,10 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [gameState, analysisToggles]);
+  }, [gameState, analysisToggles, canvasSize]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
-    const gridMargins = { x: [2.0, 0.5], y: [2.0, 0.5] }; // Left, Right, Bottom, Top
+    const gridMargins = { x: [1.5, 1.5], y: [1.5, 1.5] }; // Symmetric: Left/Right, Bottom/Top
     const xGridSpaces = boardSize - 1 + gridMargins.x[0] + gridMargins.x[1];
     const yGridSpaces = boardSize - 1 + gridMargins.y[0] + gridMargins.y[1];
     const gridSize = Math.floor(Math.min(canvas.width / xGridSpaces, canvas.height / yGridSpaces));
@@ -312,18 +347,19 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
 
       // Text
       ctx.fillStyle = "white";
-      const fontSize = layout.gridSize * 1.5;
+      const fontSize = layout.gridSize * 1.2;
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      
-      const lines = gameState.end_result.split('\n');
+
+      const translatedResult = translateResult(gameState.end_result);
+      const lines = translatedResult.split('\n');
       if (lines.length > 1) {
         lines.forEach((line, i) => {
           ctx.fillText(line, centerX, centerY + (i - (lines.length - 1) / 2) * fontSize * 1.2);
         });
       } else {
-        ctx.fillText(gameState.end_result, centerX, centerY);
+        ctx.fillText(translatedResult, centerX, centerY);
       }
     }
   };
@@ -367,16 +403,32 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   const drawCoordinates = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
     const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
     ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    ctx.font = `600 ${Math.max(14, layout.gridSize * 0.55)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `600 ${Math.max(12, layout.gridSize * 0.45)}px 'IBM Plex Mono', monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+
+    // Letters - BOTTOM
     for (let i = 0; i < boardSize; i++) {
       const pos = gridToCanvas(layout, i, 0, boardSize);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 1.0);
+      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 0.5);
     }
+
+    // Letters - TOP
+    for (let i = 0; i < boardSize; i++) {
+      const pos = gridToCanvas(layout, i, boardSize - 1, boardSize);
+      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.gridSize * 0.5);
+    }
+
+    // Numbers - LEFT
     for (let j = 0; j < boardSize; j++) {
       const pos = gridToCanvas(layout, 0, j, boardSize);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 1.0, pos.y);
+      ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 0.5, pos.y);
+    }
+
+    // Numbers - RIGHT
+    for (let j = 0; j < boardSize; j++) {
+      const pos = gridToCanvas(layout, boardSize - 1, j, boardSize);
+      ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.5, pos.y);
     }
   };
 
@@ -418,23 +470,23 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
   return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '16px'
-    }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '4px'
+      }}
+    >
       <canvas
         ref={canvasRef}
-        width={800}
-        height={800}
+        width={canvasSize}
+        height={canvasSize}
         onClick={handleCanvasClick}
         style={{
-          maxWidth: '100%',
-          maxHeight: '100%',
-          objectFit: 'contain',
           borderRadius: '4px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',
           cursor: 'pointer'

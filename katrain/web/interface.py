@@ -789,6 +789,10 @@ class WebKaTrain(KaTrainBase):
     def _do_resign(self):
         self.game.current_node.end_state = f"{self.game.current_node.player}+R"
 
+    def _do_timeout(self):
+        """End game due to timeout - current player loses on time"""
+        self.game.current_node.end_state = f"{self.game.current_node.player}+T"
+
     def _do_engine_recovery_popup(self, error_message, code):
         # Sync global i18n before logging translated strings
         current_lang = self.config("general/language") or self.config("general/lang") or "en"

@@ -1479,3 +1479,33 @@ msgstr "Rang"
 
 msgid "Game Over"
 msgstr "Partie terminée"
+
+msgid "timer:main"
+msgstr "PRINC"
+
+msgid "timer:byo"
+msgstr "BYO"
+
+msgid "timer:periods"
+msgstr "PER"
+
+msgid "Captures"
+msgstr "Captures"
+
+msgid "game:white_wins_resign"
+msgstr "Blanc gagne par abandon"
+
+msgid "game:black_wins_resign"
+msgstr "Noir gagne par abandon"
+
+msgid "game:white_wins_timeout"
+msgstr "Blanc gagne au temps"
+
+msgid "game:black_wins_timeout"
+msgstr "Noir gagne au temps"
+
+msgid "game:white_wins_points"
+msgstr "Blanc gagne de {n} points"
+
+msgid "game:black_wins_points"
+msgstr "Noir gagne de {n} points"

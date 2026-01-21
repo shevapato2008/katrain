@@ -1471,3 +1471,33 @@ msgstr "段位"
 
 msgid "Game Over"
 msgstr "ゲーム終了"
+
+msgid "timer:main"
+msgstr "持時"
+
+msgid "timer:byo"
+msgstr "秒読"
+
+msgid "timer:periods"
+msgstr "回数"
+
+msgid "Captures"
+msgstr "アゲハマ"
+
+msgid "game:white_wins_resign"
+msgstr "白の中押し勝ち"
+
+msgid "game:black_wins_resign"
+msgstr "黒の中押し勝ち"
+
+msgid "game:white_wins_timeout"
+msgstr "白の時間切れ勝ち"
+
+msgid "game:black_wins_timeout"
+msgstr "黒の時間切れ勝ち"
+
+msgid "game:white_wins_points"
+msgstr "白{n}目勝ち"
+
+msgid "game:black_wins_points"
+msgstr "黒{n}目勝ち"

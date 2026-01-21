@@ -93,23 +93,24 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
     - [x] Display "Spectator Count" and live chat area in the game sidebar. 34361b4
     - [x] Backend: WebSocket broadcasting logic for room-specific events (moves, chat, end-game). 34361b4
 
-## Phase 6: Polish [checkpoint: p6_complete]
+## Phase 6: Polish [checkpoint: p6_complete] 62b9b6d
 *Goal: I18n and UX.*
 
-- [x] Task: Localization & Polish. [checkpoint: 62b9b6d]
+- [x] Task: Localization & Polish. 
     - [x] **[FIXED: KataGo Engine HTTP 500 Buffer Issue]** 2026-01-21
     - [x] **[FIX: User ID Mismatch]** Fix mismatch between authenticated User UUID and KataGo Engine User ID. 6d3b7e4
     - [x] **[FIX: Invite Button]** Enabled direct invitations in lobby. 62b9b6d
     - [x] **[FIX: Friends Panel]** Improved layout visibility on large screens. 62b9b6d
     - [x] **[FIX: Matchmaking Hang]** Optimized user fetching and added debug logging. 62b9b6d
-    - [x] **[TODO] UI Refinements (User Feedback):**
+    - [x] **[FIXED: User Model Mismatch]** Resolved HTTP 500 error by adding `net_wins` and `elo_points` to `UserRepository._to_dict`.
+    - [x] **UI Refinements (User Feedback):**
         - [x] Remove Chat functionality and UI (avoid conflicts).
         - [x] Add "Exit" button for Spectators in Game Room.
         - [x] Add "Exit" button for PvAI (require resignation first).
         - [x] Ensure "Resign" button is available in all modes.
         - [x] Fix Rank display in Lobby (show "No Rank" instead of "20k" for new users).
 
-## Phase 7: Internationalization (i18n) & Global Settings
+## Phase 7: Internationalization (i18n) & Global Settings [checkpoint: p7_complete]
 *Goal: Implement comprehensive multi-language support (11 languages) and persistent user preferences.*
 
 - [x] Task: Language Settings Integration
@@ -135,4 +136,9 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
         - [x] Use AI to generate translations for the 10 non-English languages using the Professional Glossary as a hard constraint.
         - [x] Populate all `.po` files with professional translations (prioritizing `cn`, `tw`, `jp`).
     - [x] Replace hardcoded strings in components with `i18n.t` from custom `i18n` class.
+
+---
+**Status: 100% Complete**
+*Final Track Review: All core modules (Home, Play, Research) implemented with Galaxy Go styling. Backend PostgreSQL layer integrated for persistence. Social features (Friends/Lobby) fully functional. Professional internationalization for 11 languages completed.*
+
 

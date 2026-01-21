@@ -1541,3 +1541,33 @@ msgstr "Derece"
 
 msgid "Game Over"
 msgstr "Oyun Bitti"
+
+msgid "timer:main"
+msgstr "ANA"
+
+msgid "timer:byo"
+msgstr "BYO"
+
+msgid "timer:periods"
+msgstr "PER"
+
+msgid "Captures"
+msgstr "Esirler"
+
+msgid "game:white_wins_resign"
+msgstr "Beyaz istifa ile kazandı"
+
+msgid "game:black_wins_resign"
+msgstr "Siyah istifa ile kazandı"
+
+msgid "game:white_wins_timeout"
+msgstr "Beyaz zaman aşımı ile kazandı"
+
+msgid "game:black_wins_timeout"
+msgstr "Siyah zaman aşımı ile kazandı"
+
+msgid "game:white_wins_points"
+msgstr "Beyaz {n} puan ile kazandı"
+
+msgid "game:black_wins_points"
+msgstr "Siyah {n} puan ile kazandı"

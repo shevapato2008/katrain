@@ -1,12 +1,12 @@
-import React, { useRef } from 'react';
-import { Box, Typography, Paper, IconButton, Divider, Stack, Tooltip } from '@mui/material';
+import React, { useRef, useEffect } from 'react';
+import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
-import { internalToRank } from '../galaxy/utils/rankUtils';
+import { localizedRank } from '../galaxy/utils/rankUtils';
 
 interface PlayerCardProps {
   player: 'B' | 'W';
@@ -27,6 +27,7 @@ interface PlayerCardProps {
   };
   onPauseTimer?: () => void;
   onPlaySound?: (sound: string) => void;
+  onTimeout?: () => void;
   isFollowed?: boolean;
   onToggleFollow?: () => void;
   showFollowButton?: boolean;
@@ -39,16 +40,17 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ 
-  player, info, captures, active, timer, onPauseTimer, onPlaySound, 
-  isFollowed, onToggleFollow, showFollowButton 
+const PlayerCard: React.FC<PlayerCardProps> = ({
+  player, info, captures, active, timer, onPauseTimer, onPlaySound, onTimeout,
+  isFollowed, onToggleFollow, showFollowButton
 }) => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const isBlack = player === 'B';
   const [clientElapsed, setClientElapsed] = React.useState(0);
-  const soundTriggeredRef = useRef<number | null>(null);
+  const lastCountdownSecondRef = useRef<number | null>(null);
   const lastActiveTimeRef = useRef<number>(Date.now());
   const lastMainTimeUsedRef = useRef<number>(info.main_time_used);
+  const timeoutTriggeredRef = useRef<boolean>(false);
 
   React.useEffect(() => {
     // Reset the timer start time when becoming active or when time tracking values change
@@ -72,7 +74,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
     // Only depend on truly changing values, not object references
   }, [active, timer?.paused, info.main_time_used]);
 
-  const displayRank = internalToRank(info.calculated_rank);
+  // Localized rank display
+  const rawRank = localizedRank(info.calculated_rank, lang);
+  const displayRank = rawRank === "No Rank" ? t("No Rank", "No Rank") : rawRank;
   const displayName = info.name || (isBlack ? t('Black') : t('White'));
 
   // Timer Breakdown
@@ -94,26 +98,62 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         byoyomiLeft = byoLen;
         periodsLeft = byoNum - info.periods_used;
     } else {
-        let effectiveNodeTimeUsed = timer.current_node_time_used + (active ? clientElapsed : 0);
+        // Main time available at start of this node
+        const mainTimeAvailableAtNodeStart = Math.max(0, mainTimeTotal - info.main_time_used);
+        // Total time spent on this node
+        const totalNodeTime = timer.current_node_time_used + (active ? clientElapsed : 0);
+        // Only time BEYOND main time goes into byoyomi
+        let effectiveNodeTimeUsed = Math.max(0, totalNodeTime - mainTimeAvailableAtNodeStart);
         let currentPeriodsUsed = info.periods_used;
-        
+
         while (effectiveNodeTimeUsed > byoLen && currentPeriodsUsed < byoNum) {
             effectiveNodeTimeUsed -= byoLen;
             currentPeriodsUsed += 1;
         }
-        
-        byoyomiLeft = Math.max(0, byoLen - effectiveNodeTimeUsed);
-        periodsLeft = Math.max(0, byoNum - currentPeriodsUsed);
 
-        // Sound Logic
-        if (active && timer.settings.sound && onPlaySound && currentPeriodsUsed < byoNum) {
-            if (byoyomiLeft > 0 && byoyomiLeft <= 5.2 && soundTriggeredRef.current !== currentPeriodsUsed) {
-                onPlaySound('countdownbeep');
-                soundTriggeredRef.current = currentPeriodsUsed;
+        // Check if all periods are exhausted
+        if (currentPeriodsUsed >= byoNum) {
+            // All periods exhausted - no time left
+            byoyomiLeft = 0;
+            periodsLeft = 0;
+        } else {
+            byoyomiLeft = Math.max(0, byoLen - effectiveNodeTimeUsed);
+            periodsLeft = byoNum - currentPeriodsUsed;
+
+            // Countdown beep in last 5 seconds of byoyomi
+            if (active && timer.settings.sound && onPlaySound) {
+                const secondsRemaining = Math.ceil(byoyomiLeft);
+
+                if (secondsRemaining <= 5 && secondsRemaining >= 1 && secondsRemaining !== lastCountdownSecondRef.current) {
+                    onPlaySound('countdownbeep');
+                    lastCountdownSecondRef.current = secondsRemaining;
+                }
+
+                // Reset when exiting countdown zone (entering new period or time > 6s)
+                if (byoyomiLeft > 6) {
+                    lastCountdownSecondRef.current = null;
+                }
             }
         }
     }
   }
+
+  // Timeout detection - trigger forfeit when time exhausted
+  const hasTimedOut = showTimer && mainTimeLeft <= 0 && periodsLeft <= 0 && byoyomiLeft <= 0;
+  useEffect(() => {
+    if (active && hasTimedOut && onTimeout && !timeoutTriggeredRef.current) {
+      timeoutTriggeredRef.current = true;
+      onTimeout();
+    }
+    // Reset the trigger when game state changes (not timed out anymore)
+    if (!hasTimedOut) {
+      timeoutTriggeredRef.current = false;
+    }
+  }, [active, hasTimedOut, onTimeout]);
+
+  // Timer state for styling
+  const isCritical = mainTimeLeft <= 0 && byoyomiLeft <= 5;
+  const isWarning = mainTimeLeft <= 0;
 
   return (
     <Paper
@@ -137,7 +177,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
               bgcolor: isBlack ? '#000' : '#fff',
               border: '1px solid #666'
           }} />
-          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 150 }}>
+          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 140 }}>
             {displayName}
           </Typography>
           {showFollowButton && onToggleFollow && (
@@ -153,31 +193,66 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         </Typography>
       </Box>
 
-      {/* Timer Display */}
+      {/* Timer Display - Compact Galaxy Design */}
       {showTimer && (
-          <Box sx={{ mb: 1.5, p: 1, bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 1 }}>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-                  <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#7a7772', display: 'block' }}>MAIN</Typography>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: mainTimeLeft > 0 ? '#e89639' : '#555' }}>
-                          {formatTime(mainTimeLeft)}
-                      </Typography>
-                  </Box>
-                  <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
-                  <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#7a7772', display: 'block' }}>BYO</Typography>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: mainTimeLeft === 0 ? '#e89639' : '#7a7772' }}>
-                          {Math.ceil(byoyomiLeft)}s
-                      </Typography>
-                  </Box>
-                  <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
-                  <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#7a7772', display: 'block' }}>PRD</Typography>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: mainTimeLeft === 0 ? '#e89639' : '#7a7772' }}>
-                          {periodsLeft}x
-                      </Typography>
-                  </Box>
-              </Stack>
+          <Box sx={{
+              mb: 1.5,
+              p: 1,
+              bgcolor: 'rgba(0,0,0,0.3)',
+              borderRadius: 2,
+              border: active ? '2px solid' : '1px solid transparent',
+              borderColor: isCritical ? '#e16b5c' : isWarning ? '#e89639' : '#4a6b5c',
+              transition: 'all 200ms',
+              animation: active && isCritical ? 'timerPulse 0.5s ease-in-out infinite' :
+                         active && isWarning ? 'timerPulse 1s ease-in-out infinite' : 'none',
+              '@keyframes timerPulse': {
+                  '0%, 100%': { opacity: 1 },
+                  '50%': { opacity: 0.7 },
+              },
+          }}>
+              {/* Main Time - Large and prominent */}
+              <Typography
+                  sx={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: '1.5rem',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      color: mainTimeLeft > 0 ? '#e89639' : '#4a4845',
+                      lineHeight: 1.2,
+                  }}
+              >
+                  {formatTime(mainTimeLeft)}
+              </Typography>
+
+              {/* Byoyomi with periods as superscript */}
+              <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'baseline',
+                  mt: 0.5,
+              }}>
+                  <Typography
+                      sx={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          color: isWarning ? '#e89639' : '#7a7772',
+                      }}
+                  >
+                      {Math.ceil(byoyomiLeft)}s
+                  </Typography>
+                  <Typography
+                      component="sup"
+                      sx={{
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          ml: 0.3,
+                          color: '#7a7772',
+                      }}
+                  >
+                      ×{periodsLeft}
+                  </Typography>
+              </Box>
           </Box>
       )}
 

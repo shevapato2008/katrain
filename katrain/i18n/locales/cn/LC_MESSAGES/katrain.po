@@ -1305,3 +1305,33 @@ msgstr "段位"
 
 msgid "Game Over"
 msgstr "对局结束"
+
+msgid "timer:main"
+msgstr "主时"
+
+msgid "timer:byo"
+msgstr "读秒"
+
+msgid "timer:periods"
+msgstr "次数"
+
+msgid "Captures"
+msgstr "提子"
+
+msgid "game:white_wins_resign"
+msgstr "白棋中盘胜"
+
+msgid "game:black_wins_resign"
+msgstr "黑棋中盘胜"
+
+msgid "game:white_wins_timeout"
+msgstr "白棋超时胜"
+
+msgid "game:black_wins_timeout"
+msgstr "黑棋超时胜"
+
+msgid "game:white_wins_points"
+msgstr "白棋胜{n}目"
+
+msgid "game:black_wins_points"
+msgstr "黑棋胜{n}目"

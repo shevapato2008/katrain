@@ -1507,3 +1507,33 @@ msgstr "Rang"
 
 msgid "Game Over"
 msgstr "Spiel beendet"
+
+msgid "timer:main"
+msgstr "HAUPT"
+
+msgid "timer:byo"
+msgstr "BYO"
+
+msgid "timer:periods"
+msgstr "PER"
+
+msgid "Captures"
+msgstr "Gefangene"
+
+msgid "game:white_wins_resign"
+msgstr "Weiß gewinnt durch Aufgabe"
+
+msgid "game:black_wins_resign"
+msgstr "Schwarz gewinnt durch Aufgabe"
+
+msgid "game:white_wins_timeout"
+msgstr "Weiß gewinnt durch Zeitüberschreitung"
+
+msgid "game:black_wins_timeout"
+msgstr "Schwarz gewinnt durch Zeitüberschreitung"
+
+msgid "game:white_wins_points"
+msgstr "Weiß gewinnt mit {n} Punkten"
+
+msgid "game:black_wins_points"
+msgstr "Schwarz gewinnt mit {n} Punkten"

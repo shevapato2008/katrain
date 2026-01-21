@@ -1398,3 +1398,33 @@ msgstr "급수"
 
 msgid "Game Over"
 msgstr "게임 종료"
+
+msgid "timer:main"
+msgstr "기본"
+
+msgid "timer:byo"
+msgstr "초읽기"
+
+msgid "timer:periods"
+msgstr "횟수"
+
+msgid "Captures"
+msgstr "따낸 돌"
+
+msgid "game:white_wins_resign"
+msgstr "백 불계승"
+
+msgid "game:black_wins_resign"
+msgstr "흑 불계승"
+
+msgid "game:white_wins_timeout"
+msgstr "백 시간승"
+
+msgid "game:black_wins_timeout"
+msgstr "흑 시간승"
+
+msgid "game:white_wins_points"
+msgstr "백 {n}집 승"
+
+msgid "game:black_wins_points"
+msgstr "흑 {n}집 승"

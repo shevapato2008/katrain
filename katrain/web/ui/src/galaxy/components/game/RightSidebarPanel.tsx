@@ -29,6 +29,9 @@ interface RightSidebarPanelProps {
     onNavigate: (nodeId: number) => void;
     onAction?: (action: string) => void;
     isRated?: boolean;
+    onTimeout?: () => void;
+    onPauseTimer?: () => void;
+    onPlaySound?: (sound: string) => void;
 }
 
 const RightSidebarPanel = ({
@@ -37,7 +40,10 @@ const RightSidebarPanel = ({
     onToggleChange,
     onNavigate,
     onAction = () => {},
-    isRated = false
+    isRated = false,
+    onTimeout,
+    onPauseTimer,
+    onPlaySound
 }: RightSidebarPanelProps) => {
     const { user, token } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
@@ -94,7 +100,7 @@ const RightSidebarPanel = ({
     };
 
     return (
-        <Box sx={{ width: 400, height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+        <Box sx={{ width: 460, height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
             <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                 {/* Players */}
                 <Box sx={{ p: 2 }}>
@@ -105,6 +111,9 @@ const RightSidebarPanel = ({
                             captures={gameState.prisoner_count.B}
                             active={gameState.player_to_move === 'B'}
                             timer={gameState.timer}
+                            onPauseTimer={onPauseTimer}
+                            onPlaySound={onPlaySound}
+                            onTimeout={gameState.player_to_move === 'B' ? onTimeout : undefined}
                             showFollowButton={gameState.players_info.B.player_type === 'human' && gameState.players_info.B.name !== user?.username}
                             isFollowed={followingNames.has(gameState.players_info.B.name)}
                             onToggleFollow={() => handleToggleFollow(gameState.players_info.B.name)}
@@ -115,6 +124,9 @@ const RightSidebarPanel = ({
                             captures={gameState.prisoner_count.W}
                             active={gameState.player_to_move === 'W'}
                             timer={gameState.timer}
+                            onPauseTimer={onPauseTimer}
+                            onPlaySound={onPlaySound}
+                            onTimeout={gameState.player_to_move === 'W' ? onTimeout : undefined}
                             showFollowButton={gameState.players_info.W.player_type === 'human' && gameState.players_info.W.name !== user?.username}
                             isFollowed={followingNames.has(gameState.players_info.W.name)}
                             onToggleFollow={() => handleToggleFollow(gameState.players_info.W.name)}

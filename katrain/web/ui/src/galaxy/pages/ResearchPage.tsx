@@ -6,7 +6,7 @@ import AnalysisPanel from '../../components/AnalysisPanel'; // Legacy
 import ScoreGraph from '../../components/ScoreGraph'; // Legacy
 import { useGameSession } from '../hooks/useGameSession';
 import CloudSGFPanel from '../components/research/CloudSGFPanel';
-import { i18n } from '../../../i18n';
+import { i18n } from '../../i18n';
 
 const ResearchPage = () => {
     const { gameState, onMove, onNavigate, sessionId, initNewSession } = useGameSession();

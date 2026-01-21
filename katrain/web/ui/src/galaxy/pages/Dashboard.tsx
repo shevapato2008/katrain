@@ -6,7 +6,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import FriendsPanel from '../components/FriendsPanel';
 import { useAuth } from '../context/AuthContext';
-import { i18n } from '../../../i18n';
+import { i18n } from '../../i18n';
 
 const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
     const navigate = useNavigate();

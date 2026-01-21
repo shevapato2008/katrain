@@ -5,7 +5,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
-import { i18n } from '../../../i18n';
+import { i18n } from '../../i18n';
 
 const GamePage = () => {
     const { sessionId } = useParams();

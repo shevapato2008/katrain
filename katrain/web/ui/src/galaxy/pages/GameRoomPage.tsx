@@ -8,7 +8,7 @@ import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useAuth } from '../context/AuthContext';
 import { API } from '../../api';
-import { i18n } from '../../../i18n';
+import { i18n } from '../../i18n';
 
 const GameRoomPage = () => {
     const { sessionId } = useParams();

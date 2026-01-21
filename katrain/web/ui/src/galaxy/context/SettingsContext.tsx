@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { API } from '../../api';
 import { i18n } from '../../i18n';
 
 interface SettingsContextType {

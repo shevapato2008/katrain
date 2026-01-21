@@ -6,7 +6,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../context/AuthContext';
 import FriendsPanel from '../components/FriendsPanel';
-import { i18n } from '../../../i18n';
+import { i18n } from '../../i18n';
 
 interface OnlineUser {
     id: number;

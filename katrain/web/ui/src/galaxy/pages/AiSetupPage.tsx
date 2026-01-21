@@ -4,7 +4,7 @@ import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Butt
 import { API } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../utils/rankUtils';
 import { useAuth } from '../context/AuthContext';
-import { i18n } from '../../../i18n';
+import { i18n } from '../../i18n';
 import { useDebounce } from '../../hooks/useDebounce';
 
 // Map Slider value to Rank label for UI

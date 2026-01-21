@@ -4,28 +4,29 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
+import { i18n } from '../../../i18n';
 
 const PlayMenu = () => {
     const navigate = useNavigate();
 
     const options = [
         {
-            title: "Play vs AI (Free)",
-            desc: "Practice with full analysis, undo, and custom settings.",
+            title: i18n.t('play:vs_ai_free', "Play vs AI (Free)"),
+            desc: i18n.t('play:vs_ai_free_desc', "Practice with full analysis, undo, and custom settings."),
             icon: <SmartToyIcon sx={{ fontSize: 60, color: 'primary.main' }} />,
             path: '/galaxy/play/ai?mode=free',
             disabled: false
         },
         {
-            title: "Rated Game vs AI",
-            desc: "Play a ranked game against a human-like AI. No analysis during game.",
+            title: i18n.t('play:rated_ai', "Rated Game vs AI"),
+            desc: i18n.t('play:rated_ai_desc', "Play a ranked game against a human-like AI. No analysis during game."),
             icon: <SportsEsportsIcon sx={{ fontSize: 60, color: 'secondary.main' }} />,
             path: '/galaxy/play/ai?mode=rated',
             disabled: false
         },
         {
-            title: "Human vs Human",
-            desc: "Challenge a friend or find an opponent online.",
+            title: i18n.t('play:hvh', "Human vs Human"),
+            desc: i18n.t('play:hvh_desc', "Challenge a friend or find an opponent online."),
             icon: <PersonIcon sx={{ fontSize: 60, color: 'text.secondary' }} />,
             path: '/galaxy/play/human',
             disabled: false
@@ -34,9 +35,9 @@ const PlayMenu = () => {
 
     return (
         <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-            <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>Play</Typography>
+            <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{i18n.t('btn:Play', 'Play')}</Typography>
             <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 6 }}>
-                Choose your game mode
+                {i18n.t('play:choose_mode', 'Choose your game mode')}
             </Typography>
 
             <Box sx={{ 

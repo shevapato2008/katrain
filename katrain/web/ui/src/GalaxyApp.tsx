@@ -8,13 +8,15 @@ import GamePage from './galaxy/pages/GamePage';
 import HvHLobbyPage from './galaxy/pages/HvHLobbyPage';
 import GameRoomPage from './galaxy/pages/GameRoomPage';
 import { AuthProvider } from './galaxy/context/AuthContext';
+import { SettingsProvider } from './galaxy/context/SettingsContext';
 
 const GalaxyApp = () => {
   console.log("GalaxyApp rendering");
   return (
     <AuthProvider>
-      <Routes>
-        <Route element={<MainLayout />}>
+      <SettingsProvider>
+        <Routes>
+          <Route element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="play" element={<PlayMenu />} />
           <Route path="play/ai" element={<AiSetupPage />} />
@@ -25,6 +27,7 @@ const GalaxyApp = () => {
           <Route path="*" element={<Navigate to="/galaxy" replace />} />
         </Route>
       </Routes>
+      </SettingsProvider>
     </AuthProvider>
   );
 };

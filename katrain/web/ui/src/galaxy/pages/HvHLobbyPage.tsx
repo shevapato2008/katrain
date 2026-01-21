@@ -6,6 +6,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../context/AuthContext';
 import FriendsPanel from '../components/FriendsPanel';
+import { i18n } from '../../../i18n';
 
 interface OnlineUser {
     id: number;
@@ -165,28 +166,28 @@ const HvHLobbyPage = () => {
         <Box sx={{ p: 4, height: '100%', overflow: 'auto' }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>Multiplayer Lobby</Typography>
-                    <Typography variant="body1" color="text.secondary">Play against other humans or watch live games.</Typography>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom>{i18n.t('lobby:title', 'Multiplayer Lobby')}</Typography>
+                    <Typography variant="body1" color="text.secondary">{i18n.t('lobby:subtitle', 'Play against other humans or watch live games.')}</Typography>
                 </Box>
                 <Stack direction="row" spacing={2}>
                     <Button variant="contained" color="primary" size="large" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
-                        Quick Match (Rated)
+                        {i18n.t('lobby:quick_match_rated', 'Quick Match (Rated)')}
                     </Button>
                     <Button variant="outlined" color="primary" size="large" onClick={() => startMatchmaking('free')}>
-                        Custom Game
+                        {i18n.t('lobby:custom_game', 'Custom Game')}
                     </Button>
                 </Stack>
             </Stack>
 
             <Dialog open={isMatching} onClose={stopMatchmaking} maxWidth="xs" fullWidth>
-                <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>Finding Opponent...</DialogTitle>
+                <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>{i18n.t('lobby:finding_opponent', 'Finding Opponent...')}</DialogTitle>
                 <DialogContent sx={{ textAlign: 'center', pb: 4 }}>
                     <CircularProgress size={60} sx={{ my: 3 }} />
                     <Typography variant="h6">{formatQueueTime(queueTime)}</Typography>
-                    <Typography variant="body2" color="text.secondary">Looking for a suitable match for you.</Typography>
+                    <Typography variant="body2" color="text.secondary">{i18n.t('lobby:matching_desc', 'Looking for a suitable match for you.')}</Typography>
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
-                    <Button onClick={stopMatchmaking} color="error" variant="outlined">Cancel</Button>
+                    <Button onClick={stopMatchmaking} color="error" variant="outlined">{i18n.t('cancel', 'Cancel')}</Button>
                 </DialogActions>
             </Dialog>
 
@@ -197,7 +198,7 @@ const HvHLobbyPage = () => {
                         <CardContent>
                             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                                 <PeopleIcon color="primary" />
-                                <Typography variant="h6">Online Players ({onlineUsers.length})</Typography>
+                                <Typography variant="h6">{i18n.t('lobby:online_players', 'Online Players')} ({onlineUsers.length})</Typography>
                             </Stack>
                             <Divider sx={{ mb: 2 }} />
                             
@@ -212,22 +213,22 @@ const HvHLobbyPage = () => {
                                             <Avatar sx={{ bgcolor: u.id === user?.id ? 'secondary.main' : 'primary.main' }}>{u.username[0].toUpperCase()}</Avatar>
                                             <Box sx={{ flexGrow: 1 }}>
                                                 <Typography variant="subtitle2">
-                                                    {u.username} {u.id === user?.id && <Typography component="span" variant="caption" color="secondary">(You)</Typography>}
+                                                    {u.username} {u.id === user?.id && <Typography component="span" variant="caption" color="secondary">({i18n.t('lobby:you', 'You')})</Typography>}
                                                 </Typography>
                                                 <Chip 
-                                                    label={(u.rank === '20k' && (!u.elo_points || u.elo_points === 0)) ? 'No Rank' : u.rank} 
+                                                    label={(u.rank === '20k' && (!u.elo_points || u.elo_points === 0)) ? i18n.t('lobby:no_rank', 'No Rank') : u.rank} 
                                                     size="small" 
                                                     variant="outlined" 
                                                     sx={{ height: 20 }} 
                                                 />
                                             </Box>
                                             {u.id !== user?.id && (
-                                                <Button size="small" variant="text" onClick={() => handleInvite(u.id)}>Invite</Button>
+                                                <Button size="small" variant="text" onClick={() => handleInvite(u.id)}>{i18n.t('lobby:invite', 'Invite')}</Button>
                                             )}
                                         </Box>
                                     ))}
                                     {onlineUsers.length === 0 && (
-                                        <Typography variant="body2" color="text.secondary" textAlign="center">No other players online.</Typography>
+                                        <Typography variant="body2" color="text.secondary" textAlign="center">{i18n.t('lobby:no_players', 'No other players online.')}</Typography>
                                     )}
                                 </Stack>
                             )}
@@ -241,14 +242,14 @@ const HvHLobbyPage = () => {
                         <CardContent>
                             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                                 <SportsEsportsIcon color="secondary" />
-                                <Typography variant="h6">Active Games</Typography>
+                                <Typography variant="h6">{i18n.t('lobby:active_games', 'Active Games')}</Typography>
                             </Stack>
                             <Divider sx={{ mb: 2 }} />
                             
                             {activeGames.length === 0 ? (
                                 <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default', borderRadius: 2 }}>
-                                    <Typography variant="body1" color="text.secondary">No active games at the moment.</Typography>
-                                    <Typography variant="caption" color="text.secondary">Games will appear here once matchmaking is functional.</Typography>
+                                    <Typography variant="body1" color="text.secondary">{i18n.t('lobby:no_active_games', 'No active games at the moment.')}</Typography>
+                                    <Typography variant="caption" color="text.secondary">{i18n.t('lobby:active_games_desc', 'Games will appear here once matchmaking is functional.')}</Typography>
                                 </Box>
                             ) : (
                                 <Stack spacing={2}>
@@ -261,7 +262,7 @@ const HvHLobbyPage = () => {
                                                             {game.player_b} (B) vs {game.player_w} (W)
                                                         </Typography>
                                                         <Typography variant="caption" color="text.secondary">
-                                                            Moves: {game.move_count} | Spectators: {game.spectator_count}
+                                                            {i18n.t('Moves', 'Moves')}: {game.move_count} | {i18n.t('Spectators', 'Spectators')}: {game.spectator_count}
                                                         </Typography>
                                                     </Box>
                                                     <Button 
@@ -271,7 +272,7 @@ const HvHLobbyPage = () => {
                                                         startIcon={<VisibilityIcon />}
                                                         onClick={() => navigate(`/galaxy/play/human/room/${game.session_id}`)}
                                                     >
-                                                        Watch
+                                                        {i18n.t('lobby:watch', 'Watch')}
                                                     </Button>
                                                 </Stack>
                                             </CardContent>
@@ -290,15 +291,15 @@ const HvHLobbyPage = () => {
             </Box>
 
             <Dialog open={!!invitation} onClose={() => setInvitation(null)}>
-                <DialogTitle>Game Invitation</DialogTitle>
+                <DialogTitle>{i18n.t('lobby:invitation_title', 'Game Invitation')}</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        {invitation?.from_name} invited you to a game.
+                        {i18n.t('lobby:invitation_text', '{{name}} invited you to a game.').replace('{{name}}', invitation?.from_name || '')}
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setInvitation(null)}>Decline</Button>
-                    <Button onClick={handleAcceptInvite} variant="contained">Accept</Button>
+                    <Button onClick={() => setInvitation(null)}>{i18n.t('lobby:decline', 'Decline')}</Button>
+                    <Button onClick={handleAcceptInvite} variant="contained">{i18n.t('lobby:accept', 'Accept')}</Button>
                 </DialogActions>
             </Dialog>
 

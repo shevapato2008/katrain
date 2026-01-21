@@ -8,6 +8,7 @@ import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useAuth } from '../context/AuthContext';
 import { API } from '../../api';
+import { i18n } from '../../../i18n';
 
 const GameRoomPage = () => {
     const { sessionId } = useParams();
@@ -82,13 +83,13 @@ const GameRoomPage = () => {
         const isWinner = winner_id === user?.id;
 
         if (reason === 'forfeit') {
-            return isWinner ? "Your opponent left the game. You win!" : "You forfeited the game.";
+            return isWinner ? i18n.t('game_end:forfeit_win', "Your opponent left the game. You win!") : i18n.t('game_end:forfeit_loss', "You forfeited the game.");
         } else if (reason === 'resign') {
-            return isWinner ? "Your opponent resigned. You win!" : "You resigned.";
+            return isWinner ? i18n.t('game_end:resign_win', "Your opponent resigned. You win!") : i18n.t('game_end:resign_loss', "You resigned.");
         } else if (reason === 'timeout') {
-            return isWinner ? "Your opponent ran out of time. You win!" : "You ran out of time.";
+            return isWinner ? i18n.t('game_end:timeout_win', "Your opponent ran out of time. You win!") : i18n.t('game_end:timeout_loss', "You ran out of time.");
         } else {
-            return result || "Game ended";
+            return i18n.t(result || "Game ended", result || "Game ended");
         }
     };
 
@@ -96,42 +97,42 @@ const GameRoomPage = () => {
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
-                <DialogTitle>Leave Game?</DialogTitle>
+                <DialogTitle>{i18n.t('leave_game_title', 'Leave Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Leaving the game will count as a forfeit. Your opponent will win this game. Are you sure you want to leave?
+                        {i18n.t('game_room:forfeit_warning', 'Leaving the game will count as a forfeit. Your opponent will win this game. Are you sure you want to leave?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowLeaveConfirm(false)}>Cancel</Button>
-                    <Button onClick={handleLeaveGame} color="error" variant="contained">Leave & Forfeit</Button>
+                    <Button onClick={() => setShowLeaveConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
+                    <Button onClick={handleLeaveGame} color="error" variant="contained">{i18n.t('game_room:leave_forfeit', 'Leave & Forfeit')}</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Resign Confirmation Dialog */}
             <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-                <DialogTitle>Resign Game?</DialogTitle>
+                <DialogTitle>{i18n.t('resign_game_title', 'Resign Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Are you sure you want to resign?
+                        {i18n.t('resign_confirm_text', 'Are you sure you want to resign?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowResignConfirm(false)}>Cancel</Button>
-                    <Button onClick={confirmResign} color="error" variant="contained">Resign</Button>
+                    <Button onClick={() => setShowResignConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmResign} color="error" variant="contained">{i18n.t('RESIGN', 'Resign')}</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Game End Dialog */}
             <Dialog open={showGameEndDialog} onClose={handleBackToLobby}>
-                <DialogTitle>Game Over</DialogTitle>
+                <DialogTitle>{i18n.t('Game Over', 'Game Over')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         {getGameEndMessage()}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleBackToLobby} variant="contained" color="primary">Back to Lobby</Button>
+                    <Button onClick={handleBackToLobby} variant="contained" color="primary">{i18n.t('game_room:back_to_lobby', 'Back to Lobby')}</Button>
                 </DialogActions>
             </Dialog>
 
@@ -139,12 +140,12 @@ const GameRoomPage = () => {
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
                 <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
                     <Typography variant="subtitle2" color={myTurn ? "primary.main" : "text.secondary"}>
-                        {isPlayer ? (myTurn ? "Your Turn" : "Opponent's Turn") : "Spectating"}
+                        {isPlayer ? (myTurn ? i18n.t('game_room:your_turn', "Your Turn") : i18n.t('game_room:opponents_turn', "Opponent's Turn")) : i18n.t('game_room:spectating', "Spectating")}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <VisibilityIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">{spectatorCount} Spectators</Typography>
+                            <Typography variant="caption" color="text.secondary">{spectatorCount} {i18n.t('Spectators', 'Spectators')}</Typography>
                         </Box>
                         {!isPlayer && (
                             <Button
@@ -155,7 +156,7 @@ const GameRoomPage = () => {
                                 onClick={() => navigate('/galaxy/play/human')}
                                 sx={{ textTransform: 'none', borderColor: 'rgba(255,255,255,0.3)', color: 'text.secondary' }}
                             >
-                                Exit
+                                {i18n.t('exit', 'Exit')}
                             </Button>
                         )}
                         {isPlayer && !gameEndData && (
@@ -167,7 +168,7 @@ const GameRoomPage = () => {
                                 onClick={() => setShowLeaveConfirm(true)}
                                 sx={{ textTransform: 'none' }}
                             >
-                                Leave
+                                {i18n.t('game_room:leave', 'Leave')}
                             </Button>
                         )}
                     </Box>

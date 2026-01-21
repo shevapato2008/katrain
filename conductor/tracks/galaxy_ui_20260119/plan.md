@@ -108,3 +108,31 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
         - [x] Add "Exit" button for PvAI (require resignation first).
         - [x] Ensure "Resign" button is available in all modes.
         - [x] Fix Rank display in Lobby (show "No Rank" instead of "20k" for new users).
+
+## Phase 7: Internationalization (i18n) & Global Settings
+*Goal: Implement comprehensive multi-language support (11 languages) and persistent user preferences.*
+
+- [x] Task: Language Settings Integration
+    - [x] Update `GalaxySidebar` to include a "Settings" menu with a language selection dropdown.
+    - [x] Support 11 languages: English (en), Chinese (cn), Traditional Chinese (tw), Japanese (jp), Korean (ko), German (de), Spanish (es), French (fr), Russian (ru), Turkish (tr), and Ukrainian (ua).
+    - [x] Implement language switching logic: sync with backend config (`general/language`) and update frontend `i18n` context.
+    - [x] Set default language to Chinese (`cn`) for new sessions.
+- [x] Task: Galaxy UI String Audit & Translation
+    - [x] **[CRITICAL] Define Professional Go Glossary**:
+        - [x] Create a mapping of key Go/AI terms (Winrate, Score Lead, Policy, Ownership, Handicap, Komi, Rated Game, etc.) across 11 languages to ensure professional terminology.
+        - [x] Reference established Go servers (Fox, Tygem, OGS) for Korean, Japanese, and English terms.
+    - [x] Identify and extract all hardcoded strings from Galaxy modules (`katrain/web/ui/src/galaxy/`):
+        - [x] Dashboard / Home Page.
+        - [x] Play Menu (Free/Rated).
+        - [x] AI Setup Page.
+        - [x] Game Page (PvAI).
+        - [x] Lobby Page (HvH).
+        - [x] Game Room Page.
+        - [x] Research Page.
+    - [x] Update `katrain/i18n/locales/en/LC_MESSAGES/katrain.po` with new keys following the `katrain-i18n-expert` standard.
+    - [x] Run `python i18n.py` to synchronize and compile translations for all 11 languages.
+    - [x] **AI-Assisted Professional Translation**:
+        - [x] Use AI to generate translations for the 10 non-English languages using the Professional Glossary as a hard constraint.
+        - [x] Populate all `.po` files with professional translations (prioritizing `cn`, `tw`, `jp`).
+    - [x] Replace hardcoded strings in components with `i18n.t` from custom `i18n` class.
+

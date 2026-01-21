@@ -6,6 +6,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import FriendsPanel from '../components/FriendsPanel';
 import { useAuth } from '../context/AuthContext';
+import { i18n } from '../../../i18n';
 
 const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
     const navigate = useNavigate();
@@ -34,27 +35,27 @@ const Dashboard = () => {
     const { user } = useAuth();
     const modules = [
         { 
-            title: "Play", 
-            desc: "Challenge AI opponents or play against friends. Features Rated games to establish your rank.", 
+            title: i18n.t('btn:Play', 'Play'), 
+            desc: i18n.t('dashboard:play_desc', "Challenge AI opponents or play against friends. Features Rated games to establish your rank."), 
             icon: <SportsEsportsIcon fontSize="large"/>, 
             path: "/galaxy/play" 
         },
         { 
-            title: "Research", 
-            desc: "Analyze games with AI, explore variations, and manage your SGF library.", 
+            title: i18n.t('Research', 'Research'), 
+            desc: i18n.t('dashboard:research_desc', "Analyze games with AI, explore variations, and manage your SGF library."), 
             icon: <ScienceIcon fontSize="large"/>, 
             path: "/galaxy/research" 
         },
         { 
-            title: "Report", 
-            desc: "Detailed game reports and style analysis. (Coming Soon)", 
+            title: i18n.t('analysis:report', 'Report'), 
+            desc: i18n.t('dashboard:report_desc', "Detailed game reports and style analysis. (Coming Soon)"), 
             icon: <AssessmentIcon fontSize="large"/>, 
             path: "/galaxy/report",
             disabled: true 
         },
         { 
-            title: "Live", 
-            desc: "Watch top games and live tournaments. (Coming Soon)", 
+            title: i18n.t('Live', 'Live'), 
+            desc: i18n.t('dashboard:live_desc', "Watch top games and live tournaments. (Coming Soon)"), 
             icon: <LiveTvIcon fontSize="large"/>, 
             path: "/galaxy/live",
             disabled: true 
@@ -66,10 +67,10 @@ const Dashboard = () => {
             <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%', overflow: 'auto' }}>
                 <Box sx={{ mb: 6 }}>
                     <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Welcome to Galaxy Go
+                        {i18n.t('dashboard:welcome', 'Welcome to Galaxy Go')}
                     </Typography>
                     <Typography variant="h6" color="text.secondary">
-                        Your professional Go training and analysis platform.
+                        {i18n.t('dashboard:tagline', 'Your professional Go training and analysis platform.')}
                     </Typography>
                 </Box>
 

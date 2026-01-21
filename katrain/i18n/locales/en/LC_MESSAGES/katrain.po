@@ -49,6 +49,234 @@ msgstr "Contribute"
 msgid "menu:manual"
 msgstr "Manual"
 
+msgid "Research"
+msgstr "Research"
+
+msgid "Live"
+msgstr "Live"
+
+msgid "Login"
+msgstr "Sign In"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "dashboard:play_desc"
+msgstr ""
+"Challenge AI opponents or play against friends. Features Rated games to "
+"establish your rank."
+
+msgid "dashboard:research_desc"
+msgstr ""
+"Analyze games with AI, explore variations, and manage your SGF library."
+
+msgid "dashboard:report_desc"
+msgstr "Detailed game reports and style analysis. (Coming Soon)"
+
+msgid "dashboard:live_desc"
+msgstr "Watch top games and live tournaments. (Coming Soon)"
+
+msgid "dashboard:welcome"
+msgstr "Welcome to Galaxy Go"
+
+msgid "dashboard:tagline"
+msgstr "Your professional Go training and analysis platform."
+
+msgid "play:vs_ai_free"
+msgstr "Play vs AI (Free)"
+
+msgid "play:vs_ai_free_desc"
+msgstr "Practice with full analysis, undo, and custom settings."
+
+msgid "play:rated_ai"
+msgstr "Rated Game vs AI"
+
+msgid "play:rated_ai_desc"
+msgstr "Play a ranked game against a human-like AI. No analysis during game."
+
+msgid "play:hvh"
+msgstr "Human vs Human"
+
+msgid "play:hvh_desc"
+msgstr "Challenge a friend or find an opponent online."
+
+msgid "play:choose_mode"
+msgstr "Choose your game mode"
+
+msgid "play:rated_ai_setup"
+msgstr "Rated Game Setup"
+
+msgid "play:free_play_setup"
+msgstr "Free Play Setup"
+
+msgid "Board & Rules"
+msgstr "Board & Rules"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Your Color"
+msgstr "Your Color"
+
+msgid "First"
+msgstr "First"
+
+msgid "Second"
+msgstr "Second"
+
+msgid "Stones"
+msgstr "Stones"
+
+msgid "Opponent & Time"
+msgstr "Opponent & Time"
+
+msgid "estimated strength"
+msgstr "Est. Strength"
+
+msgid "no ai settings"
+msgstr "No configurable settings for this strategy"
+
+msgid "Enable Timer"
+msgstr "Enable Timer"
+
+msgid "Minutes"
+msgstr "Minutes"
+
+msgid "Seconds"
+msgstr "Seconds"
+
+msgid "leave_game_title"
+msgstr "Leave Game?"
+
+msgid "leave_game_warning"
+msgstr ""
+"The game is still in progress. Leaving will resign the game. Are you sure?"
+
+msgid "resign_and_exit"
+msgstr "Resign & Exit"
+
+msgid "resign_game_title"
+msgstr "Resign Game?"
+
+msgid "resign_confirm_text"
+msgstr "Are you sure you want to resign?"
+
+msgid "play_vs_ai"
+msgstr "Play vs AI"
+
+msgid "exit"
+msgstr "Exit"
+
+msgid "lobby:title"
+msgstr "Multiplayer Lobby"
+
+msgid "lobby:subtitle"
+msgstr "Play against other humans or watch live games."
+
+msgid "lobby:quick_match_rated"
+msgstr "Quick Match (Rated)"
+
+msgid "lobby:custom_game"
+msgstr "Custom Game"
+
+msgid "lobby:finding_opponent"
+msgstr "Finding Opponent..."
+
+msgid "lobby:matching_desc"
+msgstr "Looking for a suitable match for you."
+
+msgid "lobby:online_players"
+msgstr "Online Players"
+
+msgid "lobby:you"
+msgstr "You"
+
+msgid "lobby:no_rank"
+msgstr "No Rank"
+
+msgid "lobby:invite"
+msgstr "Invite"
+
+msgid "lobby:no_players"
+msgstr "No other players online."
+
+msgid "lobby:active_games"
+msgstr "Active Games"
+
+msgid "lobby:no_active_games"
+msgstr "No active games at the moment."
+
+msgid "lobby:active_games_desc"
+msgstr "Games will appear here once matchmaking is functional."
+
+msgid "lobby:watch"
+msgstr "Watch"
+
+msgid "lobby:invitation_title"
+msgstr "Game Invitation"
+
+msgid "lobby:invitation_text"
+msgstr "{{name}} invited you to a game."
+
+msgid "lobby:decline"
+msgstr "Decline"
+
+msgid "lobby:accept"
+msgstr "Accept"
+
+msgid "game_end:forfeit_win"
+msgstr "Your opponent left the game. You win!"
+
+msgid "game_end:forfeit_loss"
+msgstr "You forfeited the game."
+
+msgid "game_end:resign_win"
+msgstr "Your opponent resigned. You win!"
+
+msgid "game_end:resign_loss"
+msgstr "You resigned."
+
+msgid "game_end:timeout_win"
+msgstr "Your opponent ran out of time. You win!"
+
+msgid "game_end:timeout_loss"
+msgstr "You ran out of time."
+
+msgid "game_room:forfeit_warning"
+msgstr ""
+"Leaving the game will count as a forfeit. Your opponent will win this game. "
+"Are you sure you want to leave?"
+
+msgid "game_room:leave_forfeit"
+msgstr "Leave & Forfeit"
+
+msgid "game_room:back_to_lobby"
+msgstr "Back to Lobby"
+
+msgid "game_room:your_turn"
+msgstr "Your Turn"
+
+msgid "game_room:opponents_turn"
+msgstr "Opponent's Turn"
+
+msgid "game_room:spectating"
+msgstr "Spectating"
+
+msgid "game_room:leave"
+msgstr "Leave"
+
+msgid "Loading Board..."
+msgstr "Loading Board..."
+
+msgid "Analysis"
+msgstr "Analysis"
+
+msgid "Library"
+msgstr "Library"
+
 #. player options in the setup and on the right
 msgid "player:type"
 msgstr "Player"
@@ -925,10 +1153,6 @@ msgstr ""
 "Picks moves according to a human-like KataGo model. Specifically, Imitate "
 "pro and strong insei moves based on historical game records from the "
 "specified year and surrounding years."
-
-#. in AI settings
-msgid "estimated strength"
-msgstr "Estimated Strength"
 
 #. button in general settings for downloading models
 msgid "download models button"

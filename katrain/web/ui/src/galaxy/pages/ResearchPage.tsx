@@ -6,6 +6,7 @@ import AnalysisPanel from '../../components/AnalysisPanel'; // Legacy
 import ScoreGraph from '../../components/ScoreGraph'; // Legacy
 import { useGameSession } from '../hooks/useGameSession';
 import CloudSGFPanel from '../components/research/CloudSGFPanel';
+import { i18n } from '../../../i18n';
 
 const ResearchPage = () => {
     const { gameState, onMove, onNavigate, sessionId, initNewSession } = useGameSession();
@@ -31,7 +32,7 @@ const ResearchPage = () => {
                                 analysisToggles={{}}
                             />
                         ) : (
-                            <Typography color="text.secondary">Loading Board...</Typography>
+                            <Typography color="text.secondary">{i18n.t('Loading Board...', 'Loading Board...')}</Typography>
                         )}
                     </Box>
                     {/* Graph Area */}
@@ -43,8 +44,8 @@ const ResearchPage = () => {
                 {/* Right Panel */}
                 <Box sx={{ width: 350, borderLeft: '1px solid #444', bgcolor: '#1e1e1e', display: 'flex', flexDirection: 'column' }}>
                     <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="fullWidth">
-                        <Tab label="Analysis" />
-                        <Tab label="Library" />
+                        <Tab label={i18n.t('Analysis', 'Analysis')} />
+                        <Tab label={i18n.t('Library', 'Library')} />
                     </Tabs>
                     
                     <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>

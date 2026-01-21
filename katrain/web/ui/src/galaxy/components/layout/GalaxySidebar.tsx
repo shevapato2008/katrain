@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, Button } from '@mui/material';
+import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, Button, Menu, MenuItem } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -8,14 +8,19 @@ import LiveTvIcon from '@mui/icons-material/LiveTv'; // Live
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
+import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
+import { i18n } from '../../../i18n';
 import LoginModal from '../auth/LoginModal';
 
 const GalaxySidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { language, setLanguage, languages } = useSettings();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -23,11 +28,24 @@ const GalaxySidebar = () => {
     navigate('/galaxy');
   };
 
+  const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
+    setSettingsAnchorEl(event.currentTarget);
+  };
+
+  const handleSettingsClose = () => {
+    setSettingsAnchorEl(null);
+  };
+
+  const handleLanguageSelect = (code: string) => {
+    setLanguage(code);
+    handleSettingsClose();
+  };
+
   const menuItems = [
-    { text: 'Play', icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
-    { text: 'Research', icon: <ScienceIcon />, path: '/galaxy/research', disabled: false }, // Will be protected later
-    { text: 'Report', icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
-    { text: 'Live', icon: <LiveTvIcon />, path: '/galaxy/live', disabled: true },
+    { text: i18n.t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
+    { text: i18n.t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false }, // Will be protected later
+    { text: i18n.t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
+    { text: i18n.t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: true },
   ];
 
   return (
@@ -86,10 +104,43 @@ const GalaxySidebar = () => {
 
       {/* Bottom Area: Settings & User */}
       <Box sx={{ p: 2 }}>
-        <ListItemButton sx={{ borderRadius: 2, mb: 1 }}>
+        <ListItemButton 
+          sx={{ borderRadius: 2, mb: 1 }}
+          onClick={handleSettingsClick}
+        >
             <ListItemIcon sx={{ minWidth: 40 }}><SettingsIcon /></ListItemIcon>
-            <ListItemText primary="Settings" />
+            <ListItemText primary={i18n.t('menu:settings', 'Settings')} />
         </ListItemButton>
+
+        <Menu
+          anchorEl={settingsAnchorEl}
+          open={Boolean(settingsAnchorEl)}
+          onClose={handleSettingsClose}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          sx={{ mb: 2 }}
+        >
+          <Box sx={{ px: 2, py: 1 }}>
+            <Typography variant="overline" color="text.secondary">{i18n.t('Language', 'Language')}</Typography>
+          </Box>
+          {languages.map((lang) => (
+            <MenuItem 
+              key={lang.code} 
+              onClick={() => handleLanguageSelect(lang.code)}
+              selected={language === lang.code}
+              sx={{ minWidth: 160, display: 'flex', gap: 1 }}
+            >
+              <LanguageIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+              <ListItemText primary={lang.name} />
+            </MenuItem>
+          ))}
+        </Menu>
 
         {user ? (
             <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -111,7 +162,7 @@ const GalaxySidebar = () => {
                 startIcon={<LoginIcon />}
                 onClick={() => setLoginOpen(true)}
             >
-                Sign In
+                {i18n.t('Login', 'Sign In')}
             </Button>
         )}
       </Box>

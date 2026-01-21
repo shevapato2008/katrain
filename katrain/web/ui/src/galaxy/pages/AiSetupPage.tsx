@@ -4,7 +4,7 @@ import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Butt
 import { API } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../utils/rankUtils';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from '../../hooks/useTranslation';
+import { i18n } from '../../../i18n';
 import { useDebounce } from '../../hooks/useDebounce';
 
 // Map Slider value to Rank label for UI
@@ -20,7 +20,6 @@ const AiSetupPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
 
@@ -212,7 +211,7 @@ const AiSetupPage = () => {
           const isTuple = Array.isArray(spec[0]);
           const values = isTuple ? spec.map((x: any) => x[0]) : spec;
           const labels = isTuple ? spec.map((x: any) => x[1]) : spec.map(String);
-          const translatedLabels = labels.map((l: string) => l.replace(/\[(.*?)\]/g, (_, k) => t(k)));
+          const translatedLabels = labels.map((l: string) => l.replace(/\[(.*?)\]/g, (_, k) => i18n.t(k)));
     
           let currentIndex = values.indexOf(value);
           if (currentIndex === -1) currentIndex = values.findIndex((v: number) => Math.abs(v - value) < 1e-9);
@@ -249,48 +248,48 @@ const AiSetupPage = () => {
     return (
         <Box sx={{ p: 4, maxWidth: 1000, mx: 'auto' }}>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-                {isRated ? 'Rated Game Setup' : 'Free Play Setup'}
+                {isRated ? i18n.t('play:rated_ai_setup', 'Rated Game Setup') : i18n.t('play:free_play_setup', 'Free Play Setup')}
             </Typography>
             
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
-                    <Typography variant="h6" gutterBottom>Board & Rules</Typography>
+                    <Typography variant="h6" gutterBottom>{i18n.t('Board & Rules', 'Board & Rules')}</Typography>
                     
                     <FormControl fullWidth margin="normal">
-                        <InputLabel>Board Size</InputLabel>
-                        <Select value={boardSize} label="Board Size" onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
-                            <MenuItem value={19}>19x19 (Standard)</MenuItem>
+                        <InputLabel>{i18n.t('board size', 'Board Size')}</InputLabel>
+                        <Select value={boardSize} label={i18n.t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
+                            <MenuItem value={19}>19x19 ({i18n.t('Standard', 'Standard')})</MenuItem>
                             <MenuItem value={13}>13x13</MenuItem>
                             <MenuItem value={9}>9x9</MenuItem>
                         </Select>
                     </FormControl>
 
                     <FormControl fullWidth margin="normal">
-                        <InputLabel>Ruleset</InputLabel>
-                        <Select value={rules} label="Ruleset" onChange={(e) => setRules(e.target.value)} disabled={isRated}>
-                            {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)}
+                        <InputLabel>{i18n.t('ruleset', 'Ruleset')}</InputLabel>
+                        <Select value={rules} label={i18n.t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)} disabled={isRated}>
+                            {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{i18n.t(r.id, r.name)}</MenuItem>)}
                         </Select>
                     </FormControl>
 
                     <FormControl fullWidth margin="normal">
-                        <InputLabel>Your Color</InputLabel>
-                        <Select value={color} label="Your Color" onChange={(e) => setColor(e.target.value)}>
-                            <MenuItem value="B">Black (First)</MenuItem>
-                            <MenuItem value="W">White (Second)</MenuItem>
+                        <InputLabel>{i18n.t('Your Color', 'Your Color')}</InputLabel>
+                        <Select value={color} label={i18n.t('Your Color', 'Your Color')} onChange={(e) => setColor(e.target.value)}>
+                            <MenuItem value="B">{i18n.t('Black', 'Black')} ({i18n.t('First', 'First')})</MenuItem>
+                            <MenuItem value="W">{i18n.t('White', 'White')} ({i18n.t('Second', 'Second')})</MenuItem>
                         </Select>
                     </FormControl>
 
                     {!isRated && (
                         <Box sx={{ mt: 2 }}>
-                            <Typography gutterBottom>Handicap (Stones): {handicap}</Typography>
+                            <Typography gutterBottom>{i18n.t('handicap', 'Handicap')} ({i18n.t('Stones', 'Stones')}): {handicap}</Typography>
                             <Slider 
                                 value={handicap} min={0} max={9} step={1} 
                                 onChange={(_, v) => setHandicap(v as number)} 
                                 valueLabelDisplay="auto"
                             />
-                            <Typography gutterBottom sx={{ mt: 2 }}>Komi: {komi}</Typography>
+                            <Typography gutterBottom sx={{ mt: 2 }}>{i18n.t('komi', 'Komi')}: {komi}</Typography>
                             <Slider
                                 value={komi} min={0.5} max={85.5} step={0.25}
                                 onChange={(_, v) => setKomi(v as number)}
@@ -301,14 +300,14 @@ const AiSetupPage = () => {
                 </Paper>
 
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
-                    <Typography variant="h6" gutterBottom>Opponent & Time</Typography>
+                    <Typography variant="h6" gutterBottom>{i18n.t('Opponent & Time', 'Opponent & Time')}</Typography>
 
                     <FormControl fullWidth margin="normal">
-                        <InputLabel>AI Strategy</InputLabel>
-                        <Select value={opponent} label="AI Strategy" onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
+                        <InputLabel>{i18n.t('aistrategy', 'AI Strategy')}</InputLabel>
+                        <Select value={opponent} label={i18n.t('aistrategy', 'AI Strategy')} onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
                             {aiConstants?.strategies?.map((s: string) => {
                                 // Format display name: remove 'ai:' prefix, handle 'ai:p:' prefix
-                                let displayName = t(s);
+                                let displayName = i18n.t(s);
                                 if (displayName.startsWith('ai:p:')) {
                                     displayName = displayName.substring(5);
                                 } else if (displayName.startsWith('ai:')) {
@@ -328,7 +327,7 @@ const AiSetupPage = () => {
                     {opponent === 'ai:human' || isRated ? (
                         <Box sx={{ mt: 2, px: 1 }}>
                             <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Difficulty:</span>
+                                <span>{i18n.t('Rank', 'Rank')}:</span>
                                 <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
                             </Typography>
                             <Slider 
@@ -344,16 +343,16 @@ const AiSetupPage = () => {
                         </Box>
                     ) : (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom color="primary">AI Settings</Typography>
+                            <Typography variant="subtitle2" gutterBottom color="primary">{i18n.t('menu:aisettings', 'AI Settings')}</Typography>
                             {aiLoading ? <CircularProgress size={24} /> : (
                                 <Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                        <Typography variant="caption">Est. Strength:</Typography>
+                                        <Typography variant="caption">{i18n.t('estimated strength', 'Est. Strength')}:</Typography>
                                         <Typography variant="caption" fontWeight="bold">{estimatedRank}</Typography>
                                     </Box>
                                     {Object.keys(strategySettings).length === 0 ? (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                            No configurable settings for this strategy
+                                            {i18n.t('no ai settings', 'No configurable settings for this strategy')}
                                         </Typography>
                                     ) : (
                                         Object.keys(strategySettings).map(k =>
@@ -369,28 +368,28 @@ const AiSetupPage = () => {
                     
                     <FormControlLabel
                         control={<Switch checked={timerEnabled} onChange={(e) => setTimerEnabled(e.target.checked)} disabled={isRated} />}
-                        label="Enable Timer"
+                        label={i18n.t('Enable Timer', 'Enable Timer')}
                         sx={{ mb: 1 }}
                     />
 
                     {timerEnabled && (
                         <Box sx={{ mt: 1 }}>
                             <Box sx={{ mb: 2 }}>
-                                <Typography variant="caption" color="text.secondary">Main Time (Minutes): {mainTime}</Typography>
+                                <Typography variant="caption" color="text.secondary">{i18n.t('main time', 'Main Time')} ({i18n.t('Minutes', 'Minutes')}): {mainTime}</Typography>
                                 <Slider 
                                     value={mainTime} min={0} max={60} step={1} 
                                     onChange={(_, v) => setMainTime(v as number)}
                                 />
                             </Box>
                             <Box sx={{ mb: 2 }}>
-                                <Typography variant="caption" color="text.secondary">Byo-yomi (Seconds): {byoLength}</Typography>
+                                <Typography variant="caption" color="text.secondary">{i18n.t('byoyomi length', 'Byo-yomi')} ({i18n.t('Seconds', 'Seconds')}): {byoLength}</Typography>
                                 <Slider 
                                     value={byoLength} min={5} max={60} step={5} 
                                     onChange={(_, v) => setByoLength(v as number)}
                                 />
                             </Box>
                             <Box>
-                                <Typography variant="caption" color="text.secondary">Periods: {byoPeriods}</Typography>
+                                <Typography variant="caption" color="text.secondary">{i18n.t('byoyomi periods', 'Periods')}: {byoPeriods}</Typography>
                                 <Slider 
                                     value={byoPeriods} min={1} max={10} step={1} 
                                     onChange={(_, v) => setByoPeriods(v as number)}
@@ -402,9 +401,9 @@ const AiSetupPage = () => {
             </Box>
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button onClick={() => navigate('/galaxy/play')}>Cancel</Button>
+                <Button onClick={() => navigate('/galaxy/play')}>{i18n.t('cancel', 'Cancel')}</Button>
                 <Button variant="contained" size="large" onClick={handleStartGame} disabled={loading}>
-                    Start Game
+                    {i18n.t('btn:Play', 'Start Game')}
                 </Button>
             </Box>
         </Box>

@@ -1146,3 +1146,301 @@ msgstr "人類"
 #. TODO
 msgid "max top moves on board"
 msgstr "棋盤上最多顯示選點數"
+
+#. TODO
+msgid "Research"
+msgstr "研究"
+
+#. TODO
+msgid "Logout"
+msgstr "登出"
+
+#. TODO
+msgid "Language"
+msgstr "語言"
+
+#. TODO
+msgid "Live"
+msgstr "直播"
+
+#. TODO
+msgid "Login"
+msgstr "登錄"
+
+#. TODO
+msgid "dashboard:live_desc"
+msgstr "Watch top games and live tournaments. (Coming Soon)"
+
+#. TODO
+msgid "game_room:back_to_lobby"
+msgstr "Back to Lobby"
+
+#. TODO
+msgid "lobby:accept"
+msgstr "Accept"
+
+#. TODO
+msgid "game_room:spectating"
+msgstr "Spectating"
+
+#. TODO
+msgid "lobby:no_players"
+msgstr "No other players online."
+
+#. TODO
+msgid "play:hvh"
+msgstr "Human vs Human"
+
+#. TODO
+msgid "Opponent & Time"
+msgstr "Opponent & Time"
+
+#. TODO
+msgid "lobby:you"
+msgstr "You"
+
+#. TODO
+msgid "game_room:opponents_turn"
+msgstr "Opponent's Turn"
+
+#. TODO
+msgid "lobby:active_games_desc"
+msgstr "Games will appear here once matchmaking is functional."
+
+#. TODO
+msgid "game_room:your_turn"
+msgstr "Your Turn"
+
+#. TODO
+msgid "play:rated_ai_setup"
+msgstr "Rated Game Setup"
+
+#. TODO
+msgid "Board & Rules"
+msgstr "Board & Rules"
+
+#. TODO
+msgid "play:rated_ai"
+msgstr "Rated Game vs AI"
+
+#. TODO
+msgid "Stones"
+msgstr "Stones"
+
+#. TODO
+msgid "lobby:matching_desc"
+msgstr "Looking for a suitable match for you."
+
+#. TODO
+msgid "leave_game_title"
+msgstr "Leave Game?"
+
+#. TODO
+msgid "Seconds"
+msgstr "Seconds"
+
+#. TODO
+msgid "game_end:timeout_win"
+msgstr "Your opponent ran out of time. You win!"
+
+#. TODO
+msgid "lobby:finding_opponent"
+msgstr "Finding Opponent..."
+
+#. TODO
+msgid "leave_game_warning"
+msgstr ""
+"The game is still in progress. Leaving will resign the game. Are you sure?"
+
+#. TODO
+msgid "dashboard:tagline"
+msgstr "Your professional Go training and analysis platform."
+
+#. TODO
+msgid "play:free_play_setup"
+msgstr "Free Play Setup"
+
+#. TODO
+msgid "lobby:custom_game"
+msgstr "Custom Game"
+
+#. TODO
+msgid "dashboard:welcome"
+msgstr "Welcome to Galaxy Go"
+
+#. TODO
+msgid "game_end:forfeit_loss"
+msgstr "You forfeited the game."
+
+#. TODO
+msgid "lobby:no_active_games"
+msgstr "No active games at the moment."
+
+#. TODO
+msgid "lobby:active_games"
+msgstr "Active Games"
+
+#. TODO
+msgid "game_end:resign_loss"
+msgstr "You resigned."
+
+#. TODO
+msgid "resign_and_exit"
+msgstr "Resign & Exit"
+
+#. TODO
+msgid "no ai settings"
+msgstr "No configurable settings for this strategy"
+
+#. TODO
+msgid "resign_game_title"
+msgstr "Resign Game?"
+
+#. TODO
+msgid "Minutes"
+msgstr "Minutes"
+
+#. TODO
+msgid "Your Color"
+msgstr "Your Color"
+
+#. TODO
+msgid "lobby:watch"
+msgstr "Watch"
+
+#. TODO
+msgid "Enable Timer"
+msgstr "Enable Timer"
+
+#. TODO
+msgid "Standard"
+msgstr "Standard"
+
+#. TODO
+msgid "lobby:subtitle"
+msgstr "Play against other humans or watch live games."
+
+#. TODO
+msgid "exit"
+msgstr "Exit"
+
+#. TODO
+msgid "Loading Board..."
+msgstr "Loading Board..."
+
+#. TODO
+msgid "play:rated_ai_desc"
+msgstr "Play a ranked game against a human-like AI. No analysis during game."
+
+#. TODO
+msgid "game_end:resign_win"
+msgstr "Your opponent resigned. You win!"
+
+#. TODO
+msgid "lobby:decline"
+msgstr "Decline"
+
+#. TODO
+msgid "lobby:title"
+msgstr "Multiplayer Lobby"
+
+#. TODO
+msgid "dashboard:research_desc"
+msgstr ""
+"Analyze games with AI, explore variations, and manage your SGF library."
+
+#. TODO
+msgid "lobby:quick_match_rated"
+msgstr "Quick Match (Rated)"
+
+#. TODO
+msgid "play:vs_ai_free"
+msgstr "Play vs AI (Free)"
+
+#. TODO
+msgid "lobby:invitation_title"
+msgstr "Game Invitation"
+
+#. TODO
+msgid "resign_confirm_text"
+msgstr "Are you sure you want to resign?"
+
+#. TODO
+msgid "dashboard:play_desc"
+msgstr ""
+"Challenge AI opponents or play against friends. Features Rated games to "
+"establish your rank."
+
+#. TODO
+msgid "game_end:timeout_loss"
+msgstr "You ran out of time."
+
+#. TODO
+msgid "game_room:forfeit_warning"
+msgstr ""
+"Leaving the game will count as a forfeit. Your opponent will win this game. "
+"Are you sure you want to leave?"
+
+#. TODO
+msgid "game_room:leave"
+msgstr "Leave"
+
+#. TODO
+msgid "Analysis"
+msgstr "Analysis"
+
+#. TODO
+msgid "play_vs_ai"
+msgstr "Play vs AI"
+
+#. TODO
+msgid "lobby:no_rank"
+msgstr "No Rank"
+
+#. TODO
+msgid "Second"
+msgstr "Second"
+
+#. TODO
+msgid "lobby:invitation_text"
+msgstr "{{name}} invited you to a game."
+
+#. TODO
+msgid "play:choose_mode"
+msgstr "Choose your game mode"
+
+#. TODO
+msgid "play:hvh_desc"
+msgstr "Challenge a friend or find an opponent online."
+
+#. TODO
+msgid "game_end:forfeit_win"
+msgstr "Your opponent left the game. You win!"
+
+#. TODO
+msgid "Library"
+msgstr "Library"
+
+#. TODO
+msgid "dashboard:report_desc"
+msgstr "Detailed game reports and style analysis. (Coming Soon)"
+
+#. TODO
+msgid "game_room:leave_forfeit"
+msgstr "Leave & Forfeit"
+
+#. TODO
+msgid "lobby:invite"
+msgstr "Invite"
+
+#. TODO
+msgid "lobby:online_players"
+msgstr "Online Players"
+
+#. TODO
+msgid "First"
+msgstr "First"
+
+#. TODO
+msgid "play:vs_ai_free_desc"
+msgstr "Practice with full analysis, undo, and custom settings."

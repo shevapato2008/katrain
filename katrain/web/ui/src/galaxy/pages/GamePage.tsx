@@ -5,6 +5,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
+import { i18n } from '../../../i18n';
 
 const GamePage = () => {
     const { sessionId } = useParams();
@@ -98,29 +99,29 @@ const GamePage = () => {
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
-                <DialogTitle>Leave Game?</DialogTitle>
+                <DialogTitle>{i18n.t('leave_game_title', 'Leave Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        The game is still in progress. Leaving will resign the game. Are you sure?
+                        {i18n.t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowLeaveConfirm(false)}>Cancel</Button>
-                    <Button onClick={handleConfirmLeave} color="error" variant="contained">Resign & Exit</Button>
+                    <Button onClick={() => setShowLeaveConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
+                    <Button onClick={handleConfirmLeave} color="error" variant="contained">{i18n.t('resign_and_exit', 'Resign & Exit')}</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Resign Confirmation Dialog */}
             <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-                <DialogTitle>Resign Game?</DialogTitle>
+                <DialogTitle>{i18n.t('resign_game_title', 'Resign Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Are you sure you want to resign?
+                        {i18n.t('resign_confirm_text', 'Are you sure you want to resign?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowResignConfirm(false)}>Cancel</Button>
-                    <Button onClick={confirmResign} color="error" variant="contained">Resign</Button>
+                    <Button onClick={() => setShowResignConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmResign} color="error" variant="contained">{i18n.t('RESIGN', 'Resign')}</Button>
                 </DialogActions>
             </Dialog>
 
@@ -129,7 +130,7 @@ const GamePage = () => {
                 {/* Header */}
                 <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
                     <Typography variant="subtitle2" color="primary.main">
-                        Play vs AI ({mode})
+                        {i18n.t('play_vs_ai', 'Play vs AI')} ({mode})
                     </Typography>
                     <Button
                         size="small"
@@ -139,7 +140,7 @@ const GamePage = () => {
                         onClick={handleLeaveRequest}
                         sx={{ textTransform: 'none' }}
                     >
-                        Exit
+                        {i18n.t('exit', 'Exit')}
                     </Button>
                 </Box>
 

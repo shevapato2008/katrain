@@ -652,6 +652,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     await websocket.send_json({"type": "pong"})
                 elif msg_type == "start_matchmaking":
                     game_type = message.get("game_type", "free")
+
+                    # Prerequisite Check for Rated Games
+                    if game_type == "rated":
+                        count = app.state.user_repo.count_completed_rated_games(current_user.id)
+                        if count < 3:
+                            await websocket.send_json({
+                                "type": "error",
+                                "code": "PREREQUISITE_FAILED",
+                                "message": f"You must complete 3 rated AI games before playing rated PvP. (Completed: {count}/3)"
+                            })
+                            continue
+
                     match = app.state.matchmaker.add_to_queue(current_user.id, game_type, websocket)
                     if match:
                         # Fetch Usernames
@@ -713,6 +725,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 message = await websocket.receive_json()
                 if message.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
+                elif message.get("type") == "chat":
+                    manager.broadcast_to_session(session_id, message)
         except WebSocketDisconnect:
             pass
         finally:

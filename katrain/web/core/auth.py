@@ -28,6 +28,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from katrain.web.core import models_db
 
 class UserRepository(ABC):
@@ -57,6 +58,10 @@ class UserRepository(ABC):
 
     @abstractmethod
     def get_following(self, user_id: int) -> List[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def count_completed_rated_games(self, user_id: int) -> int:
         pass
 
 class SQLAlchemyUserRepository(UserRepository):
@@ -162,6 +167,18 @@ class SQLAlchemyUserRepository(UserRepository):
                 models_db.Relationship, models_db.User.id == models_db.Relationship.following_id
             ).filter(models_db.Relationship.follower_id == user_id).all()
             return [self._to_dict(user) for user in following]
+        finally:
+            session.close()
+
+    def count_completed_rated_games(self, user_id: int) -> int:
+        session = self.session_factory()
+        try:
+            count = session.query(models_db.Game).filter(
+                or_(models_db.Game.black_player_id == user_id, models_db.Game.white_player_id == user_id),
+                models_db.Game.game_type == "rated",
+                models_db.Game.result.isnot(None)
+            ).count()
+            return count
         finally:
             session.close()
 

@@ -88,6 +88,13 @@ class SessionManager:
         if session:
             session.katrain.shutdown()
 
+    def broadcast_to_session(self, session_id: str, payload: Dict):
+        try:
+            session = self.get_session(session_id)
+            self._schedule_broadcast(session, payload)
+        except KeyError:
+            pass
+
     def cleanup_expired(self):
         with self._lock:
             self._cleanup_locked()

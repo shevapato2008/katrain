@@ -20,7 +20,9 @@ const GameRoomPage = () => {
         error, 
         onMove, 
         onNavigate,
-        handleAction 
+        handleAction,
+        chatMessages,
+        sendChat
     } = useGameSession();
 
     useEffect(() => {
@@ -78,6 +80,8 @@ const GameRoomPage = () => {
                 onToggleChange={() => {}} // Disabled for HvH
                 onNavigate={onNavigate}
                 isRated={true} // HvH usually rated
+                chatMessages={chatMessages}
+                onSendChat={sendChat}
             />
         </Box>
     );

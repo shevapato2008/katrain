@@ -5,6 +5,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../context/AuthContext';
+import FriendsPanel from '../components/FriendsPanel';
 
 interface OnlineUser {
     id: number;
@@ -253,6 +254,11 @@ const HvHLobbyPage = () => {
                             )}
                         </CardContent>
                     </Card>
+                </Box>
+
+                {/* Friends Panel */}
+                <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, display: { xs: 'none', lg: 'block' } }}>
+                    <FriendsPanel />
                 </Box>
             </Box>
         </Box>

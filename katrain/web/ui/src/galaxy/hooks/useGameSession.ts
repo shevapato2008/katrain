@@ -6,7 +6,9 @@ export const useGameSession = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [lastLog, setLastLog] = useState<string | null>(null);
+    const [chatMessages, setChatMessages] = useState<{sender: string, text: string, time: number}[]>([]);
 
+    const wsRef = useRef<WebSocket | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
 
@@ -28,14 +30,14 @@ export const useGameSession = () => {
 
     useEffect(() => {
         if (sessionId) {
-            let ws: WebSocket | null = null;
             const connect = async () => {
                 try {
                     const data = await API.getState(sessionId);
                     setGameState(data.state);
 
                     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    ws = new WebSocket(`${protocol}//${window.location.host}/ws/${sessionId}`);
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/${sessionId}`);
+                    wsRef.current = ws;
                     
                     ws.onmessage = (event) => {
                         const msg = JSON.parse(event.data);
@@ -45,6 +47,8 @@ export const useGameSession = () => {
                             playSound(msg.data.sound);
                         } else if (msg.type === 'log') {
                             setLastLog(msg.data.message);
+                        } else if (msg.type === 'chat') {
+                            setChatMessages(prev => [...prev, msg.data]);
                         }
                     };
                 } catch (err) {
@@ -53,7 +57,10 @@ export const useGameSession = () => {
                 }
             };
             connect();
-            return () => ws?.close();
+            return () => {
+                wsRef.current?.close();
+                wsRef.current = null;
+            };
         }
     }, [sessionId, playSound]);
 
@@ -94,5 +101,14 @@ export const useGameSession = () => {
         return data.session_id;
     }, []);
 
-    return { sessionId, setSessionId, gameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog };
+    const sendChat = useCallback((text: string, sender: string) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                type: 'chat',
+                data: { text, sender, time: Date.now() }
+            }));
+        }
+    }, []);
+
+    return { sessionId, setSessionId, gameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat };
 };

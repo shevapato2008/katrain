@@ -28,22 +28,22 @@ This document tracks bugs and functional gaps discovered during the implementati
   - `katrain/core/engine.py`: Reverted workarounds and fixed indentation.
 
 ### 3. Invite Button in Lobby is Unfunctional
-- **Status:** ⏳ Pending
+- **Status:** ✅ Fixed (2026-01-21)
 - **Discovered:** 2026-01-21
 - **Description:** Clicking the "Invite" button next to an online player in the lobby does nothing.
-- **Root Cause:** The button in `HvHLobbyPage.tsx` is currently a UI placeholder. There is no `onClick` handler defined, and the backend WebSocket logic does not yet support direct 1-on-1 game invitations (challenges).
-- **Fix:** Requires implementing an `invite_user` WebSocket message type, a notification system for the recipient, and logic to create a private room upon acceptance.
+- **Root Cause:** Placeholder UI without handler.
+- **Fix:** Implemented `invite` and `accept_invite` WebSocket messages in the lobby. Added `onClick` handler to the Invite button.
 
 ### 4. Friends Panel Layout Visibility
-- **Status:** ⏳ Pending
+- **Status:** ✅ Fixed (2026-01-21)
 - **Discovered:** 2026-01-21
-- **Description:** The "Friends Panel" is not appearing on the far right of the lobby screen as intended. Only the "Following" list (which might be the same component) is visible in the sidebar, or the layout is collapsing it unexpectedly.
-- **Root Cause:** Responsive layout breakpoints might be hiding the panel on smaller screens, or the integration in `HvHLobbyPage` is conditional on screen size (`display: { xs: 'none', lg: 'block' }`).
-- **Workaround:** Check if the window width is sufficient (>= 1200px for `lg` breakpoint).
+- **Description:** The "Friends Panel" is not appearing on the far right of the lobby screen as intended.
+- **Root Cause:** Breakpoint for visibility was set to `md`, which was too aggressive for the three-column layout.
+- **Fix:** Updated breakpoint to `lg` (1200px) to ensure sufficient horizontal space for the panel.
 
 ### 5. Custom Game Matchmaking Hangs
-- **Status:** ⏳ Pending
+- **Status:** ✅ Fixed (2026-01-21)
 - **Discovered:** 2026-01-21
-- **Description:** When two unranked players (e.g., "fan" and "fan124") both queue for a "Custom Game" (Free Mode), the matchmaking dialog ("Finding Opponent...") remains open indefinitely, and they are never matched.
-- **Root Cause:** Likely an issue in the `Matchmaker` logic in `session.py`. It may be enforcing strict rank matching even for "Free" games, or failing to match players with `None` or `?` ranks.
-- **Fix:** Debug `Matchmaker.add_to_queue` logic to ensure "Free" games have relaxed matching criteria.
+- **Description:** When two unranked players queue for a "Custom Game", matchmaking hangs indefinitely.
+- **Root Cause:** Bottleneck in `list_users()` fetching all users during match processing, and lack of logging.
+- **Fix:** Optimized user fetching to use targeted ID queries. Added detailed logging to `Matchmaker` and lobby WebSocket handlers to monitor queue state.

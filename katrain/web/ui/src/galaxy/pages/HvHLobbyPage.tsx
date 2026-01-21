@@ -284,7 +284,7 @@ const HvHLobbyPage = () => {
                 </Box>
 
                 {/* Friends Panel */}
-                <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
+                <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, display: { xs: 'none', lg: 'block' } }}>
                     <FriendsPanel />
                 </Box>
             </Box>

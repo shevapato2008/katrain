@@ -727,6 +727,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 
                 elif msg_type == "start_matchmaking":
                     game_type = message.get("game_type", "free")
+                    logging.getLogger("katrain_web").info(f"User {current_user.username} (ID: {current_user.id}) started matchmaking for {game_type}")
 
                     # Prerequisite Check for Rated Games
                     if game_type == "rated":
@@ -741,32 +742,37 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                     match = app.state.matchmaker.add_to_queue(current_user.id, game_type, websocket)
                     if match:
+                        logging.getLogger("katrain_web").info(f"Match found: {match.player1_id} vs {match.player2_id}")
                         # Fetch Usernames
                         user_repo = app.state.user_repo
-                        all_users = user_repo.list_users() # Not efficient but works for now
-                        users_by_id = {u["id"]: u["username"] for u in all_users}
+                        u1 = user_repo.get_user_by_id(match.player1_id)
+                        u2 = user_repo.get_user_by_id(match.player2_id)
                         
                         # Create Multiplayer Session
                         # Randomly assign B/W
                         import random
                         if random.random() < 0.5:
                             pb, pw = match.player1_id, match.player2_id
+                            pb_name, pw_name = u1.get("username") if u1 else "Black", u2.get("username") if u2 else "White"
                         else:
                             pb, pw = match.player2_id, match.player1_id
+                            pb_name, pw_name = u2.get("username") if u2 else "Black", u1.get("username") if u1 else "White"
                         
                         game_session = app.state.session_manager.create_multiplayer_session(
-                            pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw)
+                            pb, pw, b_name=pb_name, w_name=pw_name
                         )
                         
                         # Found a match!
                         match_payload = {
                             "type": "match_found",
                             "match_id": match.match_id,
-                            "session_id": game_session.session_id, # Link to actual game session
+                            "session_id": game_session.session_id,
                             "game_type": match.game_type,
                             "players": {
                                 "player_b": pb,
-                                "player_w": pw
+                                "player_w": pw,
+                                "player_b_name": pb_name,
+                                "player_w_name": pw_name
                             }
                         }
                         

@@ -162,14 +162,18 @@ class Matchmaker:
         self._lock = threading.Lock()
 
     def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket) -> Optional[Match]:
+        import logging
+        logger = logging.getLogger("katrain_web")
         with self._lock:
             queue = self._queues.get(game_type)
             if queue is None:
+                logger.warning(f"Invalid game_type requested: {game_type}")
                 return None
             
             # Check if user already in queue
             for entry in queue:
                 if entry["user_id"] == user_id:
+                    logger.info(f"User {user_id} already in {game_type} queue, updating socket.")
                     entry["websocket"] = websocket # Update socket
                     return None
             
@@ -177,6 +181,7 @@ class Matchmaker:
             if queue:
                 opponent = queue.pop(0)
                 match_id = uuid.uuid4().hex
+                logger.info(f"Match found in {game_type} queue! User {user_id} matched with User {opponent['user_id']}")
                 return Match(
                     match_id=match_id,
                     player1_id=opponent["user_id"],
@@ -186,6 +191,7 @@ class Matchmaker:
                     player2_socket=websocket
                 )
             else:
+                logger.info(f"Adding User {user_id} to {game_type} queue. Queue size now: {len(queue) + 1}")
                 queue.append({"user_id": user_id, "websocket": websocket})
                 return None
 

@@ -93,17 +93,16 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
     - [x] Display "Spectator Count" and live chat area in the game sidebar. 34361b4
     - [x] Backend: WebSocket broadcasting logic for room-specific events (moves, chat, end-game). 34361b4
 
-## Phase 6: Polish
+## Phase 6: Polish [checkpoint: p6_complete]
 *Goal: I18n and UX.*
 
-- [ ] Task: Localization & Polish.
+- [x] Task: Localization & Polish.
     - [x] **[FIXED: KataGo Engine HTTP 500 Buffer Issue]** 2026-01-21
     - [x] **[FIX: User ID Mismatch]** Fix mismatch between authenticated User UUID and KataGo Engine User ID.
-    - [ ] **[TODO] Fix Known Issues (See `known_issues.md`):**
-        - [ ] Fix Invite Button functionality.
-        - [ ] Fix Friends Panel layout visibility.
-        - [ ] Fix Custom Game matchmaking hang for unranked players.
-    - [ ] **[TODO] UI Refinements (User Feedback):**
+    - [x] **[FIX: Invite Button]** Enabled direct invitations in lobby.
+    - [x] **[FIX: Friends Panel]** Improved layout visibility on large screens.
+    - [x] **[FIX: Matchmaking Hang]** Optimized user fetching and added debug logging.
+    - [x] **[TODO] UI Refinements (User Feedback):**
         - [x] Remove Chat functionality and UI (avoid conflicts).
         - [x] Add "Exit" button for Spectators in Game Room.
         - [x] Add "Exit" button for PvAI (require resignation first).

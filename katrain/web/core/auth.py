@@ -41,6 +41,10 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
     def list_users(self) -> List[Dict[str, Any]]:
         pass
 
@@ -96,6 +100,16 @@ class SQLAlchemyUserRepository(UserRepository):
         session = self.session_factory()
         try:
             user = session.query(models_db.User).filter(models_db.User.username == username).first()
+            if user:
+                return self._to_dict(user)
+            return None
+        finally:
+            session.close()
+
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        session = self.session_factory()
+        try:
+            user = session.query(models_db.User).filter(models_db.User.id == user_id).first()
             if user:
                 return self._to_dict(user)
             return None

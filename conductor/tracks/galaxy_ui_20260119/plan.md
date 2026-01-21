@@ -96,12 +96,12 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 ## Phase 6: Polish [checkpoint: p6_complete]
 *Goal: I18n and UX.*
 
-- [x] Task: Localization & Polish.
+- [x] Task: Localization & Polish. [checkpoint: 62b9b6d]
     - [x] **[FIXED: KataGo Engine HTTP 500 Buffer Issue]** 2026-01-21
-    - [x] **[FIX: User ID Mismatch]** Fix mismatch between authenticated User UUID and KataGo Engine User ID.
-    - [x] **[FIX: Invite Button]** Enabled direct invitations in lobby.
-    - [x] **[FIX: Friends Panel]** Improved layout visibility on large screens.
-    - [x] **[FIX: Matchmaking Hang]** Optimized user fetching and added debug logging.
+    - [x] **[FIX: User ID Mismatch]** Fix mismatch between authenticated User UUID and KataGo Engine User ID. 6d3b7e4
+    - [x] **[FIX: Invite Button]** Enabled direct invitations in lobby. 62b9b6d
+    - [x] **[FIX: Friends Panel]** Improved layout visibility on large screens. 62b9b6d
+    - [x] **[FIX: Matchmaking Hang]** Optimized user fetching and added debug logging. 62b9b6d
     - [x] **[TODO] UI Refinements (User Feedback):**
         - [x] Remove Chat functionality and UI (avoid conflicts).
         - [x] Add "Exit" button for Spectators in Game Room.

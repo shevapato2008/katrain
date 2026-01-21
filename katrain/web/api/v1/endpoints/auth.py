@@ -42,6 +42,17 @@ async def get_user_from_token(token: str, repo: Any) -> User:
 async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)) -> User:
     return await get_user_from_token(token, request.app.state.user_repo)
 
+# Optional auth - returns None if not authenticated, doesn't require token
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
+
+async def get_current_user_optional(request: Request, token: str = Depends(oauth2_scheme_optional)) -> User | None:
+    if not token:
+        return None
+    try:
+        return await get_user_from_token(token, request.app.state.user_repo)
+    except HTTPException:
+        return None
+
 @router.post("/login", response_model=Token)
 async def login(request: Request, login_data: LoginRequest) -> Any:
     repo = request.app.state.user_repo

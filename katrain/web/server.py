@@ -101,7 +101,7 @@ async def lifespan(app: FastAPI):
     manager.cleanup_expired()
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
-    from katrain.web.api.v1.endpoints.auth import get_current_user
+    from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
     if session_timeout is None:
         session_timeout = settings.SESSION_TIMEOUT
     if max_sessions is None:
@@ -149,11 +149,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": session.last_state or session.katrain.get_state()}
 
     @app.post("/api/move")
-    def play_move(request: MoveRequest, current_user: User = Depends(get_current_user)):
+    def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
-        
-        # Enforce Multiplayer Turns
+
+        # Enforce Multiplayer Turns (only if this is a multiplayer session)
         if session.player_b_id is not None or session.player_w_id is not None:
+            # This is a multiplayer game - require authentication and turn check
+            if current_user is None:
+                raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
             state = session.katrain.get_state()
             next_player = state["player_to_move"]
             allowed_user_id = session.player_b_id if next_player == 'B' else session.player_w_id

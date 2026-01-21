@@ -994,14 +994,12 @@ msgstr "研究"
 msgid "Logout"
 msgstr "退出"
 
-#. TODO
 msgid "Language"
 msgstr "语言"
 
 msgid "Live"
 msgstr "直播"
 
-#. TODO
 msgid "Login"
 msgstr "登录"
 

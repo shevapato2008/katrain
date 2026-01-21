@@ -1119,7 +1119,6 @@ msgstr "Best"
 msgid "Game Ended"
 msgstr "Game Ended"
 
-#. TODO
 msgid "White"
 msgstr "Білі"
 
@@ -1139,7 +1138,6 @@ msgstr "Very Good"
 msgid "save marks"
 msgstr "Save in SGF (marks)"
 
-#. TODO
 msgid "Black"
 msgstr "Чорні"
 
@@ -1212,7 +1210,6 @@ msgstr "Human"
 msgid "max top moves on board"
 msgstr "Max Top Moves on Board"
 
-#. TODO
 msgid "Research"
 msgstr "Дослідження"
 
@@ -1220,135 +1217,102 @@ msgstr "Дослідження"
 msgid "Logout"
 msgstr "Logout"
 
-#. TODO
 msgid "Language"
 msgstr "Мова"
 
-#. TODO
 msgid "Live"
 msgstr "Наживо"
 
-#. TODO
 msgid "Login"
 msgstr "Увійти"
 
-#. TODO
 msgid "dashboard:live_desc"
 msgstr "Дивіться топові ігри та турніри в прямому ефірі. (Незабаром)"
 
-#. TODO
 msgid "game_room:back_to_lobby"
 msgstr "Повернутися до лобі"
 
-#. TODO
 msgid "lobby:accept"
 msgstr "Прийняти"
 
-#. TODO
 msgid "game_room:spectating"
 msgstr "Спостереження"
 
-#. TODO
 msgid "lobby:no_players"
 msgstr "Немає інших гравців онлайн."
 
-#. TODO
 msgid "play:hvh"
 msgstr "Людина проти людини"
 
-#. TODO
 msgid "Opponent & Time"
 msgstr "Суперник та час"
 
-#. TODO
 msgid "lobby:you"
 msgstr "Ви"
 
-#. TODO
 msgid "game_room:opponents_turn"
 msgstr "Хід суперника"
 
-#. TODO
 msgid "lobby:active_games_desc"
 msgstr "Ігри з'являться тут, коли запрацює пошук суперників."
 
-#. TODO
 msgid "game_room:your_turn"
 msgstr "Ваш хід"
 
-#. TODO
 msgid "play:rated_ai_setup"
 msgstr "Налаштування рейтингової гри"
 
-#. TODO
 msgid "Board & Rules"
 msgstr "Дошка та правила"
 
-#. TODO
 msgid "play:rated_ai"
 msgstr "Рейтингова гра проти ШІ"
 
-#. TODO
 msgid "Stones"
 msgstr "Камені"
 
-#. TODO
 msgid "lobby:matching_desc"
 msgstr "Шукаємо відповідного суперника для вас."
 
-#. TODO
 msgid "leave_game_title"
 msgstr "Покинути гру?"
 
-#. TODO
 msgid "Seconds"
 msgstr "Секунди"
 
-#. TODO
 msgid "game_end:timeout_win"
 msgstr "Ви виграли за часом!"
 
-#. TODO
 msgid "lobby:finding_opponent"
 msgstr "Пошук суперника..."
 
-#. TODO
 msgid "leave_game_warning"
 msgstr "Гра ще триває. Вихід означає здачу. Ви впевнені?"
 
-#. TODO
 msgid "dashboard:tagline"
 msgstr "Ваша професійна платформа для навчання та аналізу гри в Го."
 
-#. TODO
 msgid "play:free_play_setup"
 msgstr "Налаштування вільної гри"
 
-#. TODO
 msgid "lobby:custom_game"
 msgstr "Користувацька гра"
 
-#. TODO
 msgid "dashboard:welcome"
 msgstr "Ласкаво просимо до Galaxy Go"
 
-#. TODO
 msgid "game_end:forfeit_loss"
 msgstr "Ви відмовилися від гри."
 
-#. TODO
 msgid "lobby:no_active_games"
 msgstr "На даний момент немає активних ігор."
 
-#. TODO
 msgid "lobby:active_games"
 msgstr "Активні ігри"
 
-#. TODO
 msgid "game_end:resign_loss"
 msgstr "Ви здалися."
 
-#. TODO
 msgid "resign_and_exit"
 msgstr "Здатися і вийти"
 
@@ -1356,242 +1320,183 @@ msgstr "Здатися і вийти"
 msgid "no ai settings"
 msgstr "No configurable settings for this strategy"
 
-#. TODO
 msgid "resign_game_title"
 msgstr "Здатися?"
 
-#. TODO
 msgid "Minutes"
 msgstr "Хвилини"
 
-#. TODO
 msgid "Your Color"
 msgstr "Ваш колір"
 
-#. TODO
 msgid "lobby:watch"
 msgstr "Дивитись"
 
-#. TODO
 msgid "Enable Timer"
 msgstr "Увімкнути таймер"
 
-#. TODO
 msgid "Standard"
 msgstr "Стандартний"
 
-#. TODO
 msgid "lobby:subtitle"
 msgstr "Грайте проти інших людей або дивіться ігри наживо."
 
-#. TODO
 msgid "exit"
 msgstr "Вихід"
 
-#. TODO
 msgid "Loading Board..."
 msgstr "Завантаження дошки..."
 
-#. TODO
 msgid "play:rated_ai_desc"
 msgstr ""
 "Грайте рейтингову гру проти людиноподібного ШІ. Без аналізу під час гри."
 
-#. TODO
 msgid "game_end:resign_win"
 msgstr "Ви виграли! Суперник здався."
 
-#. TODO
 msgid "lobby:decline"
 msgstr "Відхилити"
 
-#. TODO
 msgid "lobby:title"
 msgstr "Багатокористувацьке лобі"
 
-#. TODO
 msgid "dashboard:research_desc"
 msgstr ""
 "Аналізуйте ігри з ШІ, досліджуйте варіанти та керуйте бібліотекою SGF."
 
-#. TODO
 msgid "lobby:quick_match_rated"
 msgstr "Швидкий матч (Рейтинговий)"
 
-#. TODO
 msgid "play:vs_ai_free"
 msgstr "Грати проти ШІ (Вільна)"
 
-#. TODO
 msgid "lobby:invitation_title"
 msgstr "Запрошення на гру"
 
-#. TODO
 msgid "resign_confirm_text"
 msgstr "Ви впевнені, що хочете здатися?"
 
-#. TODO
 msgid "dashboard:play_desc"
 msgstr ""
 "Грайте проти ШІ або друзів. Рейтингові ігри для визначення вашого рангу."
 
-#. TODO
 msgid "game_end:timeout_loss"
 msgstr "Ви програли за часом."
 
-#. TODO
 msgid "game_room:forfeit_warning"
 msgstr "Вихід призведе до програшу. Ви впевнені?"
 
-#. TODO
 msgid "game_room:leave"
 msgstr "Покинути гру"
 
-#. TODO
 msgid "Analysis"
 msgstr "Аналіз"
 
-#. TODO
 msgid "play_vs_ai"
 msgstr "Грати проти ШІ"
 
-#. TODO
 msgid "lobby:no_rank"
 msgstr "Без рангу"
 
-#. TODO
 msgid "Second"
 msgstr "Другий"
 
-#. TODO
 msgid "lobby:invitation_text"
 msgstr "{{name}} запросив вас на гру."
 
-#. TODO
 msgid "play:choose_mode"
 msgstr "Оберіть режим гри"
 
-#. TODO
 msgid "play:hvh_desc"
 msgstr "Киньте виклик другу або знайдіть суперника онлайн."
 
-#. TODO
 msgid "game_end:forfeit_win"
 msgstr "Ви виграли! Суперник відмовився."
 
-#. TODO
 msgid "Library"
 msgstr "Бібліотека"
 
-#. TODO
 msgid "dashboard:report_desc"
 msgstr "Детальні звіти про ігри та аналіз стилю. (Незабаром)"
 
-#. TODO
 msgid "game_room:leave_forfeit"
 msgstr "Покинути і здатися"
 
-#. TODO
 msgid "lobby:invite"
 msgstr "Запросити"
 
-#. TODO
 msgid "lobby:online_players"
 msgstr "Онлайн гравці"
 
-#. TODO
 msgid "First"
 msgstr "Перший"
 
-#. TODO
 msgid "play:vs_ai_free_desc"
 msgstr "Практикуйтесь з повним аналізом, скасуванням ходу та налаштуваннями."
 
-#. TODO
 msgid "no_friends_desc"
 msgstr "Ви ще нікого не відстежуєте."
 
-#. TODO
 msgid "Graph"
 msgstr "Графік"
 
-#. TODO
 msgid "rated_mode_desc"
 msgstr "Чисті перемоги відстежуються для оновлення рангу"
 
-#. TODO
 msgid "Move Numbers"
 msgstr "Номери ходів"
 
-#. TODO
 msgid "Score Lead"
 msgstr "Перевага в очках"
 
-#. TODO
 msgid "Friends & Following"
 msgstr "Друзі та підписки"
 
-#. TODO
 msgid "Coordinates"
 msgstr "Координати"
 
-#. TODO
 msgid "items_disabled_rated"
 msgstr "Предмети вимкнені під час рейтингової гри"
 
-#. TODO
 msgid "Komi"
 msgstr "Комі"
 
-#. TODO
 msgid "Policy"
 msgstr "Політика"
 
-#. TODO
 msgid "Items"
 msgstr "Предмети"
 
-#. TODO
 msgid "Territory"
 msgstr "Територія"
 
-#. TODO
 msgid "Rules"
 msgstr "Правила"
 
-#. TODO
 msgid "Win Rate"
 msgstr "Відсоток перемог"
 
-#. TODO
 msgid "rated_mode_active"
 msgstr "Рейтинговий режим: Триває"
 
-#. TODO
 msgid "Advice"
 msgstr "Порада"
 
-#. TODO
 msgid "PASS"
 msgstr "ПАС"
 
-#. TODO
 msgid "Settings"
 msgstr "Налаштування"
 
-#. TODO
 msgid "Rotate Board"
 msgstr "Повернути дошку"
 
-#. TODO
 msgid "AI Move"
 msgstr "Хід ШІ"
 
-#. TODO
 msgid "Next Mistake"
 msgstr "Наступна помилка"
 
-#. TODO
 msgid "RESIGN"
 msgstr "ЗДАТИСЯ"
 
@@ -1599,19 +1504,15 @@ msgstr "ЗДАТИСЯ"
 msgid "new_zealand"
 msgstr "New Zealand"
 
-#. TODO
 msgid "Undo (Smart)"
 msgstr "Скасувати (Розумний)"
 
-#. TODO
 msgid "Moves"
 msgstr "Ходи"
 
-#. TODO
 msgid "Spectators"
 msgstr "Глядачі"
 
-#. TODO
 msgid "Previous Mistake"
 msgstr "Попередня помилка"
 

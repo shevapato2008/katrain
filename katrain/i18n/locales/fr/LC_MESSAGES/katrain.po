@@ -1069,7 +1069,6 @@ msgstr "Best"
 msgid "Game Ended"
 msgstr "Game Ended"
 
-#. TODO
 msgid "White"
 msgstr "Blanc"
 
@@ -1089,7 +1088,6 @@ msgstr "Very Good"
 msgid "save marks"
 msgstr "Save in SGF (marks)"
 
-#. TODO
 msgid "Black"
 msgstr "Noir"
 
@@ -1162,7 +1160,6 @@ msgstr "Human"
 msgid "max top moves on board"
 msgstr "Max Top Moves on Board"
 
-#. TODO
 msgid "Research"
 msgstr "Recherche"
 
@@ -1170,137 +1167,104 @@ msgstr "Recherche"
 msgid "Logout"
 msgstr "Logout"
 
-#. TODO
 msgid "Language"
 msgstr "Langue"
 
-#. TODO
 msgid "Live"
 msgstr "En direct"
 
-#. TODO
 msgid "Login"
 msgstr "Connexion"
 
-#. TODO
 msgid "dashboard:live_desc"
 msgstr ""
 "Regardez les meilleures parties et tournois en direct. (Bientôt disponible)"
 
-#. TODO
 msgid "game_room:back_to_lobby"
 msgstr "Retour au salon"
 
-#. TODO
 msgid "lobby:accept"
 msgstr "Accepter"
 
-#. TODO
 msgid "game_room:spectating"
 msgstr "Observation"
 
-#. TODO
 msgid "lobby:no_players"
 msgstr "Aucun autre joueur en ligne."
 
-#. TODO
 msgid "play:hvh"
 msgstr "Humain contre Humain"
 
-#. TODO
 msgid "Opponent & Time"
 msgstr "Adversaire et temps"
 
-#. TODO
 msgid "lobby:you"
 msgstr "Vous"
 
-#. TODO
 msgid "game_room:opponents_turn"
 msgstr "Tour de l'adversaire"
 
-#. TODO
 msgid "lobby:active_games_desc"
 msgstr "Les parties apparaîtront ici une fois le matchmaking fonctionnel."
 
-#. TODO
 msgid "game_room:your_turn"
 msgstr "Votre tour"
 
-#. TODO
 msgid "play:rated_ai_setup"
 msgstr "Configuration de partie classée"
 
-#. TODO
 msgid "Board & Rules"
 msgstr "Plateau et règles"
 
-#. TODO
 msgid "play:rated_ai"
 msgstr "Partie classée vs IA"
 
-#. TODO
 msgid "Stones"
 msgstr "Pierres"
 
-#. TODO
 msgid "lobby:matching_desc"
 msgstr "Recherche d'un adversaire adapté pour vous."
 
-#. TODO
 msgid "leave_game_title"
 msgstr "Quitter la partie ?"
 
-#. TODO
 msgid "Seconds"
 msgstr "Secondes"
 
-#. TODO
 msgid "game_end:timeout_win"
 msgstr "Vous avez gagné au temps !"
 
-#. TODO
 msgid "lobby:finding_opponent"
 msgstr "Recherche d'un adversaire..."
 
-#. TODO
 msgid "leave_game_warning"
 msgstr ""
 "La partie est en cours. Quitter équivaudra à abandonner. Êtes-vous sûr ?"
 
-#. TODO
 msgid "dashboard:tagline"
 msgstr "Votre plateforme professionnelle d'entraînement et d'analyse de Go."
 
-#. TODO
 msgid "play:free_play_setup"
 msgstr "Configuration du jeu libre"
 
-#. TODO
 msgid "lobby:custom_game"
 msgstr "Partie personnalisée"
 
-#. TODO
 msgid "dashboard:welcome"
 msgstr "Bienvenue sur Galaxy Go"
 
-#. TODO
 msgid "game_end:forfeit_loss"
 msgstr "Vous avez abandonné la partie."
 
-#. TODO
 msgid "lobby:no_active_games"
 msgstr "Aucune partie active pour le moment."
 
-#. TODO
 msgid "lobby:active_games"
 msgstr "Parties actives"
 
-#. TODO
 msgid "game_end:resign_loss"
 msgstr "Vous avez abandonné."
 
-#. TODO
 msgid "resign_and_exit"
 msgstr "Abandonner et quitter"
 
@@ -1308,248 +1272,189 @@ msgstr "Abandonner et quitter"
 msgid "no ai settings"
 msgstr "No configurable settings for this strategy"
 
-#. TODO
 msgid "resign_game_title"
 msgstr "Abandonner ?"
 
-#. TODO
 msgid "Minutes"
 msgstr "Minutes"
 
-#. TODO
 msgid "Your Color"
 msgstr "Votre couleur"
 
-#. TODO
 msgid "lobby:watch"
 msgstr "Regarder"
 
-#. TODO
 msgid "Enable Timer"
 msgstr "Activer le chronomètre"
 
-#. TODO
 msgid "Standard"
 msgstr "Standard"
 
-#. TODO
 msgid "lobby:subtitle"
 msgstr "Jouez contre d'autres humains ou regardez des parties en direct."
 
-#. TODO
 msgid "exit"
 msgstr "Quitter"
 
-#. TODO
 msgid "Loading Board..."
 msgstr "Chargement du plateau..."
 
-#. TODO
 msgid "play:rated_ai_desc"
 msgstr ""
 "Jouez une partie classée contre une IA humanoïde. Pas d'analyse pendant la "
 "partie."
 
-#. TODO
 msgid "game_end:resign_win"
 msgstr "Vous avez gagné ! L'adversaire a abandonné."
 
-#. TODO
 msgid "lobby:decline"
 msgstr "Refuser"
 
-#. TODO
 msgid "lobby:title"
 msgstr "Salon multijoueur"
 
-#. TODO
 msgid "dashboard:research_desc"
 msgstr ""
 "Analysez des parties avec l'IA, explorez les variations et gérez votre "
 "bibliothèque SGF."
 
-#. TODO
 msgid "lobby:quick_match_rated"
 msgstr "Match rapide (Classé)"
 
-#. TODO
 msgid "play:vs_ai_free"
 msgstr "Jouer contre l'IA (Libre)"
 
-#. TODO
 msgid "lobby:invitation_title"
 msgstr "Invitation à une partie"
 
-#. TODO
 msgid "resign_confirm_text"
 msgstr "Êtes-vous sûr de vouloir abandonner ?"
 
-#. TODO
 msgid "dashboard:play_desc"
 msgstr ""
 "Affrontez des adversaires IA ou jouez contre des amis. Parties classées pour"
 " établir votre rang."
 
-#. TODO
 msgid "game_end:timeout_loss"
 msgstr "Vous avez perdu au temps."
 
-#. TODO
 msgid "game_room:forfeit_warning"
 msgstr "Quitter entraînera un forfait. Êtes-vous sûr ?"
 
-#. TODO
 msgid "game_room:leave"
 msgstr "Quitter la partie"
 
-#. TODO
 msgid "Analysis"
-msgstr "Analysis"
+msgstr "Analyse"
 
-#. TODO
 msgid "play_vs_ai"
 msgstr "Jouer contre l'IA"
 
-#. TODO
 msgid "lobby:no_rank"
 msgstr "Sans rang"
 
-#. TODO
 msgid "Second"
 msgstr "Second"
 
-#. TODO
 msgid "lobby:invitation_text"
 msgstr "{{name}} vous a invité à une partie."
 
-#. TODO
 msgid "play:choose_mode"
 msgstr "Choisissez votre mode de jeu"
 
-#. TODO
 msgid "play:hvh_desc"
 msgstr "Défiez un ami ou trouvez un adversaire en ligne."
 
-#. TODO
 msgid "game_end:forfeit_win"
 msgstr "Vous avez gagné ! L'adversaire a abandonné."
 
-#. TODO
 msgid "Library"
 msgstr "Bibliothèque"
 
-#. TODO
 msgid "dashboard:report_desc"
 msgstr ""
 "Rapports de parties détaillés et analyse de style. (Bientôt disponible)"
 
-#. TODO
 msgid "game_room:leave_forfeit"
 msgstr "Quitter et abandonner"
 
-#. TODO
 msgid "lobby:invite"
 msgstr "Inviter"
 
-#. TODO
 msgid "lobby:online_players"
 msgstr "Joueurs en ligne"
 
-#. TODO
 msgid "First"
 msgstr "Premier"
 
-#. TODO
 msgid "play:vs_ai_free_desc"
 msgstr ""
 "Entraînez-vous avec analyse complète, annulation et paramètres "
 "personnalisés."
 
-#. TODO
 msgid "no_friends_desc"
 msgstr "Vous ne suivez personne pour l'instant."
 
-#. TODO
 msgid "Graph"
 msgstr "Graphique"
 
-#. TODO
 msgid "rated_mode_desc"
 msgstr "Victoires nettes suivies pour mise à jour du rang"
 
-#. TODO
 msgid "Move Numbers"
 msgstr "Numéros de coups"
 
-#. TODO
 msgid "Score Lead"
 msgstr "Avance de points"
 
-#. TODO
 msgid "Friends & Following"
 msgstr "Amis et abonnements"
 
-#. TODO
 msgid "Coordinates"
 msgstr "Coordonnées"
 
-#. TODO
 msgid "items_disabled_rated"
 msgstr "Objets désactivés pendant une partie classée"
 
-#. TODO
 msgid "Komi"
 msgstr "Komi"
 
-#. TODO
 msgid "Policy"
 msgstr "Politique"
 
-#. TODO
 msgid "Items"
 msgstr "Objets"
 
-#. TODO
 msgid "Territory"
 msgstr "Territoire"
 
-#. TODO
 msgid "Rules"
 msgstr "Règles"
 
-#. TODO
 msgid "Win Rate"
 msgstr "Taux de victoire"
 
-#. TODO
 msgid "rated_mode_active"
 msgstr "Mode classé: En cours"
 
-#. TODO
 msgid "Advice"
 msgstr "Conseil"
 
-#. TODO
 msgid "PASS"
 msgstr "PASSER"
 
-#. TODO
 msgid "Settings"
 msgstr "Paramètres"
 
-#. TODO
 msgid "Rotate Board"
 msgstr "Tourner le plateau"
 
-#. TODO
 msgid "AI Move"
 msgstr "Coup de l'IA"
 
-#. TODO
 msgid "Next Mistake"
 msgstr "Erreur suivante"
 
-#. TODO
 msgid "RESIGN"
 msgstr "ABANDONNER"
 
@@ -1557,19 +1462,15 @@ msgstr "ABANDONNER"
 msgid "new_zealand"
 msgstr "New Zealand"
 
-#. TODO
 msgid "Undo (Smart)"
 msgstr "Annuler (Intelligent)"
 
-#. TODO
 msgid "Moves"
 msgstr "Coups"
 
-#. TODO
 msgid "Spectators"
 msgstr "Spectateurs"
 
-#. TODO
 msgid "Previous Mistake"
 msgstr "Erreur précédente"
 

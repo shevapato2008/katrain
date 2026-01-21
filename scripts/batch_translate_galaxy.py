@@ -1391,10 +1391,18 @@ def update_po_file(lang_code: str, translations: dict):
 
         if msgid in existing_entries:
             entry = existing_entries[msgid]
-            # Only update if different or empty
+            # Update if different or empty
             if entry.msgstr != msgstr:
                 entry.msgstr = msgstr
                 updated_count += 1
+            
+            # CRITICAL: Clear TODO comments so i18n.py doesn't overwrite these with English
+            if entry.comment and "TODO" in entry.comment:
+                # Remove "TODO - " or "TODO" from the start/middle
+                new_comment = entry.comment.replace("TODO - ", "").replace("TODO", "").strip()
+                if entry.comment != new_comment:
+                    entry.comment = new_comment
+                    updated_count += 1
         else:
             # Add new entry
             new_entry = polib.POEntry(msgid=msgid, msgstr=msgstr)

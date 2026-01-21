@@ -1072,7 +1072,6 @@ msgstr "Best"
 msgid "Game Ended"
 msgstr "Game Ended"
 
-#. TODO
 msgid "White"
 msgstr "白"
 
@@ -1092,7 +1091,6 @@ msgstr "Very Good"
 msgid "save marks"
 msgstr "Save in SGF (marks)"
 
-#. TODO
 msgid "Black"
 msgstr "黒"
 
@@ -1165,143 +1163,109 @@ msgstr "Human"
 msgid "max top moves on board"
 msgstr "Max Top Moves on Board"
 
-#. TODO
 msgid "Research"
-msgstr "Research"
+msgstr "研究"
 
 #. TODO
 msgid "Logout"
 msgstr "ログアウト"
 
-#. TODO
 msgid "Language"
 msgstr "言語"
 
-#. TODO
 msgid "Live"
 msgstr "ライブ"
 
-#. TODO
 msgid "Login"
 msgstr "ログイン"
 
-#. TODO
 msgid "dashboard:live_desc"
 msgstr "トップゲームやライブトーナメントを観戦。（近日公開）"
 
-#. TODO
 msgid "game_room:back_to_lobby"
 msgstr "ロビーに戻る"
 
-#. TODO
 msgid "lobby:accept"
 msgstr "承諾"
 
-#. TODO
 msgid "game_room:spectating"
 msgstr "観戦中"
 
-#. TODO
 msgid "lobby:no_players"
 msgstr "他にオンラインのプレイヤーはいません。"
 
-#. TODO
 msgid "play:hvh"
 msgstr "人間対人間"
 
-#. TODO
 msgid "Opponent & Time"
 msgstr "対戦相手と時間"
 
-#. TODO
 msgid "lobby:you"
 msgstr "あなた"
 
-#. TODO
 msgid "game_room:opponents_turn"
 msgstr "相手の番"
 
-#. TODO
 msgid "lobby:active_games_desc"
 msgstr "マッチメイキングが機能すると、ゲームがここに表示されます。"
 
-#. TODO
 msgid "game_room:your_turn"
 msgstr "あなたの番です"
 
-#. TODO
 msgid "play:rated_ai_setup"
 msgstr "レート戦設定"
 
-#. TODO
 msgid "Board & Rules"
 msgstr "盤面とルール"
 
-#. TODO
 msgid "play:rated_ai"
 msgstr "レート戦 vs AI"
 
-#. TODO
 msgid "Stones"
 msgstr "子"
 
-#. TODO
 msgid "lobby:matching_desc"
 msgstr "あなたに適した対戦相手を探しています。"
 
-#. TODO
 msgid "leave_game_title"
 msgstr "ゲームを離れますか？"
 
-#. TODO
 msgid "Seconds"
-msgstr "Seconds"
+msgstr "秒"
 
-#. TODO
 msgid "game_end:timeout_win"
 msgstr "時間切れであなたの勝ち！"
 
-#. TODO
 msgid "lobby:finding_opponent"
 msgstr "対戦相手を探しています..."
 
-#. TODO
 msgid "leave_game_warning"
 msgstr "ゲームはまだ進行中です。離れると投了となります。よろしいですか？"
 
-#. TODO
 msgid "dashboard:tagline"
 msgstr "プロフェッショナルな囲碁トレーニング＆分析プラットフォーム。"
 
-#. TODO
 msgid "play:free_play_setup"
 msgstr "フリープレイ設定"
 
-#. TODO
 msgid "lobby:custom_game"
 msgstr "カスタムゲーム"
 
-#. TODO
 msgid "dashboard:welcome"
 msgstr "Galaxy Goへようこそ"
 
-#. TODO
 msgid "game_end:forfeit_loss"
 msgstr "あなたが棄権しました。"
 
-#. TODO
 msgid "lobby:no_active_games"
 msgstr "現在、進行中のゲームはありません。"
 
-#. TODO
 msgid "lobby:active_games"
 msgstr "進行中のゲーム"
 
-#. TODO
 msgid "game_end:resign_loss"
 msgstr "あなたが投了しました。"
 
-#. TODO
 msgid "resign_and_exit"
 msgstr "投了して終了"
 
@@ -1309,239 +1273,180 @@ msgstr "投了して終了"
 msgid "no ai settings"
 msgstr "No configurable settings for this strategy"
 
-#. TODO
 msgid "resign_game_title"
 msgstr "投了しますか？"
 
-#. TODO
 msgid "Minutes"
 msgstr "分"
 
-#. TODO
 msgid "Your Color"
 msgstr "あなたの色"
 
-#. TODO
 msgid "lobby:watch"
 msgstr "観戦"
 
-#. TODO
 msgid "Enable Timer"
 msgstr "タイマーを有効にする"
 
-#. TODO
 msgid "Standard"
-msgstr "Standard"
+msgstr "標準"
 
-#. TODO
 msgid "lobby:subtitle"
 msgstr "他のプレイヤーと対戦したり、ライブゲームを観戦したりできます。"
 
-#. TODO
 msgid "exit"
 msgstr "終了"
 
-#. TODO
 msgid "Loading Board..."
 msgstr "盤面を読み込み中..."
 
-#. TODO
 msgid "play:rated_ai_desc"
 msgstr "人間らしいAIとランク戦をプレイ。ゲーム中の分析はありません。"
 
-#. TODO
 msgid "game_end:resign_win"
 msgstr "あなたの勝ち！相手が投了しました。"
 
-#. TODO
 msgid "lobby:decline"
 msgstr "辞退"
 
-#. TODO
 msgid "lobby:title"
 msgstr "マルチプレイヤーロビー"
 
-#. TODO
 msgid "dashboard:research_desc"
 msgstr "AIでゲームを分析し、変化を探索し、SGFライブラリを管理します。"
 
-#. TODO
 msgid "lobby:quick_match_rated"
 msgstr "クイックマッチ（レート戦）"
 
-#. TODO
 msgid "play:vs_ai_free"
 msgstr "AI対戦（フリー）"
 
-#. TODO
 msgid "lobby:invitation_title"
 msgstr "ゲームへの招待"
 
-#. TODO
 msgid "resign_confirm_text"
 msgstr "本当に投了しますか？"
 
-#. TODO
 msgid "dashboard:play_desc"
 msgstr "AIと対戦したり、友達と対戦したりできます。レート戦で段位を確立できます。"
 
-#. TODO
 msgid "game_end:timeout_loss"
 msgstr "時間切れで負け。"
 
-#. TODO
 msgid "game_room:forfeit_warning"
 msgstr "離れると没収試合になります。よろしいですか？"
 
-#. TODO
 msgid "game_room:leave"
 msgstr "ゲームを離れる"
 
-#. TODO
 msgid "Analysis"
-msgstr "Analysis"
+msgstr "分析"
 
-#. TODO
 msgid "play_vs_ai"
 msgstr "AI対戦"
 
-#. TODO
 msgid "lobby:no_rank"
 msgstr "ランクなし"
 
-#. TODO
 msgid "Second"
-msgstr "Second"
+msgstr "後手"
 
-#. TODO
 msgid "lobby:invitation_text"
 msgstr "{{name}}さんがゲームに招待しました。"
 
-#. TODO
 msgid "play:choose_mode"
 msgstr "ゲームモードを選択"
 
-#. TODO
 msgid "play:hvh_desc"
 msgstr "友達に挑戦するか、オンラインで対戦相手を見つけましょう。"
 
-#. TODO
 msgid "game_end:forfeit_win"
 msgstr "あなたの勝ち！相手が棄権しました。"
 
-#. TODO
 msgid "Library"
 msgstr "ライブラリ"
 
-#. TODO
 msgid "dashboard:report_desc"
 msgstr "詳細なゲームレポートとスタイル分析。（近日公開）"
 
-#. TODO
 msgid "game_room:leave_forfeit"
 msgstr "離れて没収試合"
 
-#. TODO
 msgid "lobby:invite"
 msgstr "招待"
 
-#. TODO
 msgid "lobby:online_players"
 msgstr "オンラインプレイヤー"
 
-#. TODO
 msgid "First"
-msgstr "First"
+msgstr "先手"
 
-#. TODO
 msgid "play:vs_ai_free_desc"
 msgstr "完全な分析、待った、カスタム設定で練習できます。"
 
-#. TODO
 msgid "no_friends_desc"
 msgstr "まだ誰もフォローしていません。"
 
-#. TODO
 msgid "Graph"
 msgstr "グラフ"
 
-#. TODO
 msgid "rated_mode_desc"
 msgstr "ランク更新のため勝敗を記録中"
 
-#. TODO
 msgid "Move Numbers"
-msgstr "Move Numbers"
+msgstr "手数"
 
-#. TODO
 msgid "Score Lead"
 msgstr "目数リード"
 
-#. TODO
 msgid "Friends & Following"
 msgstr "フレンドとフォロー"
 
-#. TODO
 msgid "Coordinates"
-msgstr "Coordinates"
+msgstr "座標"
 
-#. TODO
 msgid "items_disabled_rated"
 msgstr "レート戦中はアイテム無効"
 
-#. TODO
 msgid "Komi"
 msgstr "コミ"
 
-#. TODO
 msgid "Policy"
 msgstr "ポリシー"
 
-#. TODO
 msgid "Items"
 msgstr "アイテム"
 
-#. TODO
 msgid "Territory"
 msgstr "地"
 
-#. TODO
 msgid "Rules"
 msgstr "ルール"
 
-#. TODO
 msgid "Win Rate"
-msgstr "Win Rate"
+msgstr "勝率"
 
-#. TODO
 msgid "rated_mode_active"
 msgstr "レートモード：進行中"
 
-#. TODO
 msgid "Advice"
 msgstr "アドバイス"
 
-#. TODO
 msgid "PASS"
 msgstr "パス"
 
-#. TODO
 msgid "Settings"
-msgstr "Settings"
+msgstr "設定"
 
-#. TODO
 msgid "Rotate Board"
 msgstr "盤面を回転"
 
-#. TODO
 msgid "AI Move"
 msgstr "AIの手"
 
-#. TODO
 msgid "Next Mistake"
 msgstr "次の悪手"
 
-#. TODO
 msgid "RESIGN"
 msgstr "投了"
 
@@ -1549,19 +1454,15 @@ msgstr "投了"
 msgid "new_zealand"
 msgstr "New Zealand"
 
-#. TODO
 msgid "Undo (Smart)"
 msgstr "待った（スマート）"
 
-#. TODO
 msgid "Moves"
-msgstr "Moves"
+msgstr "手数"
 
-#. TODO
 msgid "Spectators"
 msgstr "観戦者"
 
-#. TODO
 msgid "Previous Mistake"
 msgstr "前の悪手"
 

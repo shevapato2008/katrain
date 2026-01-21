@@ -75,11 +75,11 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
     - [ ] Add "Follow/Unfollow" buttons to User Profiles and Player Cards.
     - [ ] Backend: Create endpoints for following/unfollowing and fetching followers/following lists.
 - [x] Task: Multiplayer Lobby (HvH) [checkpoint: p5_lobby] 587cb91
-    - [ ] Implement `HvHLobbyPage` showing:
-        - [ ] Online players list (prioritize following).
-        - [ ] Active games list with "Watch" button (for Spectator Mode).
-        - [ ] "Quick Match" entry for Free/Rated modes.
-    - [ ] Backend: WebSocket state for tracking online users and their statuses.
+    - [x] Implement `HvHLobbyPage` showing:
+        - [x] Online players list (prioritize following). **[FIXED: Route ordering issue]**
+        - [x] Active games list with "Watch" button (for Spectator Mode).
+        - [x] "Quick Match" entry for Free/Rated modes.
+    - [x] Backend: WebSocket state for tracking online users and their statuses.
 - [x] Task: Matchmaking & Room Management [checkpoint: p5_matchmaking] cf71df5
     - [ ] Implement matchmaking queue UI (Overlay with "Finding opponent..." animation and timer).
     - [ ] Enforce "AI Rating" prerequisite check before allowing Rated HvH matches.

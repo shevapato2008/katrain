@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Typography, Button } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Board from '../../components/Board';
 import ControlBar from '../../components/ControlBar';
 import { useGameSession } from '../hooks/useGameSession';
@@ -54,7 +55,7 @@ const GameRoomPage = () => {
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
                     <Board 
                         gameState={gameState} 
-                        onMove={isPlayer ? onMove : undefined} 
+                        onMove={(x, y) => isPlayer ? onMove(x, y) : {}} 
                         onNavigate={onNavigate}
                         analysisToggles={{ coords: true, numbers: false }} // Fixed for HvH
                     />

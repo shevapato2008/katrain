@@ -67,8 +67,6 @@ async def get_online_users(
     online_ids = lobby_manager.get_online_user_ids()
     
     # Fetch user details for these IDs
-    # For now, we can just list all users and filter, or add a method to repo
-    # To keep it simple, we filter list_users
     all_users = repo.list_users()
     online_users = [User(**u) for u in all_users if u["id"] in online_ids]
     return online_users

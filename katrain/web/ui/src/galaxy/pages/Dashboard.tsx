@@ -1,4 +1,4 @@
-import { Box, Card, Typography, CardActionArea, Divider } from '@mui/material';
+import { Box, Card, Typography, CardActionArea } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ScienceIcon from '@mui/icons-material/Science';

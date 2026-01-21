@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Button, Grid, Card, CardContent, Avatar, Chip, Stack, CircularProgress, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Typography, Button, Avatar, Chip, Stack, CircularProgress, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -31,7 +31,7 @@ const HvHLobbyPage = () => {
     const [isMatching, setIsRatedMatching] = useState(false);
     const [queueTime, setQueueTime] = useState(0);
     const wsRef = useRef<WebSocket | null>(null);
-    const timerRef = useRef<any>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const fetchOnlineUsers = async () => {
         if (!token) return;
@@ -42,9 +42,11 @@ const HvHLobbyPage = () => {
             if (response.ok) {
                 const data = await response.json();
                 setOnlineUsers(data);
+            } else {
+                setError("Failed to fetch online users");
             }
         } catch (err) {
-            console.error("Failed to fetch online users", err);
+            setError("Network error");
         }
     };
 
@@ -72,14 +74,19 @@ const HvHLobbyPage = () => {
         if (!token) return;
         
         fetchData();
-        const interval = setInterval(() => {
+        const refreshInterval = setInterval(() => {
             fetchOnlineUsers();
             fetchActiveGames();
         }, 10000);
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/lobby?token=${token}`;
+        console.log("Connecting to Lobby WebSocket:", wsUrl);
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
+
+        ws.onopen = () => {
+            console.log("Lobby WebSocket connected");
+        };
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
@@ -95,6 +102,7 @@ const HvHLobbyPage = () => {
 
         return () => {
             ws.close();
+            clearInterval(refreshInterval);
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, [token]);
@@ -159,9 +167,9 @@ const HvHLobbyPage = () => {
                 </DialogActions>
             </Dialog>
 
-            <Grid container spacing={4}>
+            <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
                 {/* Online Players Section */}
-                <Grid item xs={12} md={4}>
+                <Box sx={{ width: { xs: '100%', md: '30%' }, minWidth: 250 }}>
                     <Card sx={{ bgcolor: 'background.paper', height: '100%' }}>
                         <CardContent>
                             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
@@ -177,10 +185,12 @@ const HvHLobbyPage = () => {
                             ) : (
                                 <Stack spacing={2}>
                                     {onlineUsers.map((u) => (
-                                        <Box key={u.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.default', display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ bgcolor: 'primary.main' }}>{u.username[0].toUpperCase()}</Avatar>
+                                        <Box key={u.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.default', display: 'flex', alignItems: 'center', gap: 2, border: u.id === user?.id ? '1px solid rgba(74, 107, 92, 0.5)' : 'none' }}>
+                                            <Avatar sx={{ bgcolor: u.id === user?.id ? 'secondary.main' : 'primary.main' }}>{u.username[0].toUpperCase()}</Avatar>
                                             <Box sx={{ flexGrow: 1 }}>
-                                                <Typography variant="subtitle2">{u.username}</Typography>
+                                                <Typography variant="subtitle2">
+                                                    {u.username} {u.id === user?.id && <Typography component="span" variant="caption" color="secondary">(You)</Typography>}
+                                                </Typography>
                                                 <Chip label={u.rank} size="small" variant="outlined" sx={{ height: 20 }} />
                                             </Box>
                                             {u.id !== user?.id && (
@@ -195,10 +205,10 @@ const HvHLobbyPage = () => {
                             )}
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* Active Games Section */}
-                <Grid item xs={12} md={8}>
+                <Box sx={{ flexGrow: 1 }}>
                     <Card sx={{ bgcolor: 'background.paper', height: '100%' }}>
                         <CardContent>
                             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
@@ -213,40 +223,38 @@ const HvHLobbyPage = () => {
                                     <Typography variant="caption" color="text.secondary">Games will appear here once matchmaking is functional.</Typography>
                                 </Box>
                             ) : (
-                                <Grid container spacing={2}>
+                                <Stack spacing={2}>
                                     {activeGames.map((game) => (
-                                        <Grid item xs={12} key={game.session_id}>
-                                            <Card variant="outlined" sx={{ bgcolor: 'background.default' }}>
-                                                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                        <Box>
-                                                            <Typography variant="subtitle2">
-                                                                {game.player_b} (B) vs {game.player_w} (W)
-                                                            </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                Moves: {game.move_count} | Spectators: {game.spectator_count}
-                                                            </Typography>
-                                                        </Box>
-                                                        <Button 
-                                                            size="small" 
-                                                            variant="contained" 
-                                                            color="secondary"
-                                                            startIcon={<VisibilityIcon />}
-                                                            onClick={() => navigate(`/galaxy/play/human/room/${game.session_id}`)}
-                                                        >
-                                                            Watch
-                                                        </Button>
-                                                    </Stack>
-                                                </CardContent>
-                                            </Card>
-                                        </Grid>
+                                        <Card key={game.session_id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
+                                            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                    <Box>
+                                                        <Typography variant="subtitle2">
+                                                            {game.player_b} (B) vs {game.player_w} (W)
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Moves: {game.move_count} | Spectators: {game.spectator_count}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Button 
+                                                        size="small" 
+                                                        variant="contained" 
+                                                        color="secondary"
+                                                        startIcon={<VisibilityIcon />}
+                                                        onClick={() => navigate(`/galaxy/play/human/room/${game.session_id}`)}
+                                                    >
+                                                        Watch
+                                                    </Button>
+                                                </Stack>
+                                            </CardContent>
+                                        </Card>
                                     ))}
-                                </Grid>
+                                </Stack>
                             )}
                         </CardContent>
                     </Card>
-                </Grid>
-            </Grid>
+                </Box>
+            </Box>
         </Box>
     );
 };

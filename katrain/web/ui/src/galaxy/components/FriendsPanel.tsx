@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, List, ListItem, ListItemAvatar, ListItemText, Avatar, Divider, Chip, CircularProgress, Alert, IconButton } from '@mui/material';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { useAuth } from '../context/AuthContext';
 

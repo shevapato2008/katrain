@@ -8,11 +8,6 @@ import GamePage from './galaxy/pages/GamePage';
 import HvHLobbyPage from './galaxy/pages/HvHLobbyPage';
 import GameRoomPage from './galaxy/pages/GameRoomPage';
 import { AuthProvider } from './galaxy/context/AuthContext';
-import { Box, Typography } from '@mui/material';
-
-const PlaceholderPage = ({ title }: { title: string }) => (
-    <Box sx={{ p: 4 }}><Typography variant="h4">{title}</Typography></Box>
-);
 
 const GalaxyApp = () => {
   console.log("GalaxyApp rendering");

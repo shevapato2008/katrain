@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, List, Optional, Union, Dict
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -615,46 +615,30 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    @app.websocket("/ws/{session_id}")
-    async def websocket_endpoint(websocket: WebSocket, session_id: str):
-        try:
-            session = manager.get_session(session_id)
-        except KeyError:
-            await websocket.close(code=1008)
-            return
-
-        await websocket.accept()
-        session.sockets.add(websocket)
-        try:
-            state = session.last_state or session.katrain.get_state()
-            state["sockets_count"] = len(session.sockets)
-            await websocket.send_json({"type": "game_update", "state": state})
-            while True:
-                message = await websocket.receive_json()
-                if message.get("type") == "ping":
-                    await websocket.send_json({"type": "pong"})
-        except WebSocketDisconnect:
-            pass
-        finally:
-            session.sockets.discard(websocket)
-
+    # NOTE: /ws/lobby MUST be defined BEFORE /ws/{session_id} to avoid routing conflicts
     @app.websocket("/ws/lobby")
     async def lobby_websocket_endpoint(websocket: WebSocket):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
+        logger = logging.getLogger("katrain_web")
         token = websocket.query_params.get("token")
         if not token:
-            await websocket.close(code=1008)
+            logger.warning("Lobby WebSocket: No token provided, closing connection")
+            await websocket.accept()
+            await websocket.close(code=1008, reason="No token provided")
             return
-        
+
         try:
             current_user = await get_user_from_token(token=token, repo=app.state.user_repo)
-        except Exception:
-            await websocket.close(code=1008)
+        except Exception as e:
+            logger.warning(f"Lobby WebSocket: Token validation failed: {e}")
+            await websocket.accept()
+            await websocket.close(code=1008, reason="Invalid token")
             return
 
         await websocket.accept()
         lobby_manager = app.state.lobby_manager
         lobby_manager.add_user(current_user.id, websocket)
+        logger.info(f"User {current_user.username} (ID: {current_user.id}) joined the lobby. Online users: {lobby_manager.get_online_user_ids()}")
         try:
             # Broadcast update immediately
             await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
@@ -700,11 +684,36 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 elif msg_type == "stop_matchmaking":
                     app.state.matchmaker.remove_from_queue(current_user.id)
         except WebSocketDisconnect:
+            logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")
             pass
         finally:
             app.state.matchmaker.remove_from_queue(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
+
+    @app.websocket("/ws/{session_id}")
+    async def websocket_endpoint(websocket: WebSocket, session_id: str):
+        try:
+            session = manager.get_session(session_id)
+        except KeyError:
+            await websocket.accept()
+            await websocket.close(code=1008, reason="Session not found")
+            return
+
+        await websocket.accept()
+        session.sockets.add(websocket)
+        try:
+            state = session.last_state or session.katrain.get_state()
+            state["sockets_count"] = len(session.sockets)
+            await websocket.send_json({"type": "game_update", "state": state})
+            while True:
+                message = await websocket.receive_json()
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+        except WebSocketDisconnect:
+            pass
+        finally:
+            session.sockets.discard(websocket)
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)

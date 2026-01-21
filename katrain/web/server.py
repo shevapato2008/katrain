@@ -132,9 +132,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return await health_v1()
 
     @app.post("/api/session")
-    def create_session():
+    def create_session(current_user: User = Depends(get_current_user_optional)):
         try:
-            session = manager.create_session()
+            katago_uuid = current_user.uuid if current_user else None
+            session = manager.create_session(katago_uuid=katago_uuid)
         except Exception as exc:
             logging.getLogger("katrain_web").error(f"API: create_session failed: {exc}")
             raise HTTPException(status_code=503, detail=str(exc)) from exc

@@ -16,3 +16,13 @@ This document tracks bugs and functional gaps discovered during the implementati
   2. Added `await websocket.accept()` before `await websocket.close()` in error paths.
 - **Files Changed:**
   - `katrain/web/server.py`: Reordered WebSocket routes and fixed close handling
+
+### 2. KataGo Engine Response Buffer Limit (HTTP 500)
+- **Status:** ✅ Fixed (2026-01-21)
+- **Discovered:** 2026-01-21
+- **Description:** When playing with full analysis (ownership/heatmaps) via the HTTP backend, the engine would crash with an `HTTP 500` error or "Read timed out".
+- **Root Cause:** The `realtime_api` server (KataGo wrapper) used Python's default `asyncio` buffer limit of 64KB. Analysis responses containing detailed ownership data for multiple candidate moves exceeded this limit, causing the server to fail while reading the KataGo output.
+- **Fix:** Patched `KataGo/python/realtime_api/katago_wrapper.py` to increase the `stdout` buffer limit to 200KB. Reverted temporary client-side restrictions in KaTrain to restore full feature parity.
+- **Files Changed:**
+  - `../KataGo/python/realtime_api/katago_wrapper.py`: Increased buffer limit.
+  - `katrain/core/engine.py`: Reverted workarounds and fixed indentation.

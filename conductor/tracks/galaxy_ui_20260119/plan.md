@@ -71,27 +71,30 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 *Goal: Functional multiplayer lobby and game rooms with social integration.*
 
 - [x] Task: Social Integration (Friends & Follows) [checkpoint: p5_social] bb487fe
-    - [ ] Implement `FriendsPanel` in the right sidebar (fetching from `relationships` table).
-    - [ ] Add "Follow/Unfollow" buttons to User Profiles and Player Cards.
-    - [ ] Backend: Create endpoints for following/unfollowing and fetching followers/following lists.
+    - [x] Implement `FriendsPanel` in the right sidebar (fetching from `relationships` table). 34361b4
+    - [x] Add "Follow/Unfollow" buttons to User Profiles and Player Cards. 34361b4
+    - [x] Backend: Create endpoints for following/unfollowing and fetching followers/following lists.
+    - [x] **[FIXED: Optional Auth for Profile Retrieval]** 31cb74b
 - [x] Task: Multiplayer Lobby (HvH) [checkpoint: p5_lobby] 587cb91
     - [x] Implement `HvHLobbyPage` showing:
         - [x] Online players list (prioritize following). **[FIXED: Route ordering issue]**
         - [x] Active games list with "Watch" button (for Spectator Mode).
         - [x] "Quick Match" entry for Free/Rated modes.
+        - [x] Integrate FriendsPanel. 34361b4
     - [x] Backend: WebSocket state for tracking online users and their statuses.
 - [x] Task: Matchmaking & Room Management [checkpoint: p5_matchmaking] cf71df5
-    - [ ] Implement matchmaking queue UI (Overlay with "Finding opponent..." animation and timer).
-    - [ ] Enforce "AI Rating" prerequisite check before allowing Rated HvH matches.
-    - [ ] Implement `GameRoomPage` for active HvH matches:
-        - [ ] Real-time timer synchronization via WebSocket.
-        - [ ] Turn-based move validation and resignation logic.
+    - [x] Implement matchmaking queue UI (Overlay with "Finding opponent..." animation and timer).
+    - [x] Enforce "AI Rating" prerequisite check before allowing Rated HvH matches. 34361b4
+    - [x] Implement `GameRoomPage` for active HvH matches:
+        - [x] Real-time timer synchronization via WebSocket.
+        - [x] Turn-based move validation and resignation logic.
 - [x] Task: Spectator Mode & WebSocket Broadcast [checkpoint: p5_spectator] 39d317e
-    - [ ] Implement "Spectator View" for `GamePage` (Read-only board, live move updates).
-    - [ ] Display "Spectator Count" and live chat area in the game sidebar.
-    - [ ] Backend: WebSocket broadcasting logic for room-specific events (moves, chat, end-game).
+    - [x] Implement "Spectator View" for `GamePage` (Read-only board, live move updates).
+    - [x] Display "Spectator Count" and live chat area in the game sidebar. 34361b4
+    - [x] Backend: WebSocket broadcasting logic for room-specific events (moves, chat, end-game). 34361b4
 
 ## Phase 6: Polish
 *Goal: I18n and UX.*
 
 - [ ] Task: Localization & Polish.
+    - [x] **[FIXED: KataGo Engine HTTP 500 Buffer Issue]** 2026-01-21

@@ -32,7 +32,7 @@ export const languages = [
 ];
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState(i18n.lang || 'cn');
+  const [language, setLanguageState] = useState('cn');
   const [, setTick] = useState(0); // For forcing re-render on translation change
 
   const updateLanguage = useCallback(async (lang: string) => {
@@ -47,7 +47,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     // Initial load
     const initLang = async () => {
-        const currentLang = i18n.lang || 'cn';
+        const currentLang = 'cn';
         await i18n.loadTranslations(currentLang);
         setLanguageState(currentLang);
     };

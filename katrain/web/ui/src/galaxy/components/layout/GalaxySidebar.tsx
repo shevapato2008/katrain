@@ -109,7 +109,7 @@ const GalaxySidebar = () => {
           onClick={handleSettingsClick}
         >
             <ListItemIcon sx={{ minWidth: 40 }}><SettingsIcon /></ListItemIcon>
-            <ListItemText primary={i18n.t('menu:settings', 'Settings')} />
+            <ListItemText primary={i18n.t('Settings', 'Settings')} />
         </ListItemButton>
 
         <Menu

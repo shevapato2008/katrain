@@ -83,7 +83,7 @@ const Dashboard = () => {
             
             {user && (
                 <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
-                    <FriendsPanel />
+                    <FriendsPanel noBorder />
                 </Box>
             )}
         </Box>

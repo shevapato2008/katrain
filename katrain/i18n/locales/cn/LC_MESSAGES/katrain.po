@@ -1296,3 +1296,51 @@ msgstr "First"
 #. TODO
 msgid "play:vs_ai_free_desc"
 msgstr "Practice with full analysis, undo, and custom settings."
+
+msgid "Friends & Following"
+msgstr "好友与关注"
+
+msgid "no_friends_desc"
+msgstr "您还没有关注任何人。"
+
+msgid "Rules"
+msgstr "规则"
+
+msgid "Komi"
+msgstr "贴目"
+
+msgid "Items"
+msgstr "道具"
+
+msgid "Territory"
+msgstr "形势"
+
+msgid "Advice"
+msgstr "点目"
+
+msgid "Graph"
+msgstr "曲线"
+
+msgid "Policy"
+msgstr "选点"
+
+msgid "Win Rate"
+msgstr "胜率"
+
+msgid "Score Lead"
+msgstr "目数"
+
+msgid "Coordinates"
+msgstr "坐标"
+
+msgid "Move Numbers"
+msgstr "手数"
+
+msgid "rated_mode_active"
+msgstr "升降级模式：正在进行"
+
+msgid "rated_mode_desc"
+msgstr "正在记录净胜局以更新等级"
+
+msgid "items_disabled_rated"
+msgstr "升降级对局中禁用道具"

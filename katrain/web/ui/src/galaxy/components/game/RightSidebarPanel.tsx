@@ -124,10 +124,10 @@ const RightSidebarPanel = ({
                 <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.15)' }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" color="text.secondary">
-                            {gameState.ruleset.charAt(0).toUpperCase() + gameState.ruleset.slice(1)} Rules
+                            {i18n.t(gameState.ruleset, gameState.ruleset.charAt(0).toUpperCase() + gameState.ruleset.slice(1))} {i18n.t('Rules', 'Rules')}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            Komi: {gameState.komi}
+                            {i18n.t('Komi', 'Komi')}: {gameState.komi}
                         </Typography>
                     </Stack>
                 </Box>
@@ -136,32 +136,32 @@ const RightSidebarPanel = ({
 
                 {/* Analysis Items (道具) */}
                 <Box sx={{ p: 2 }}>
-                    <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 'bold' }}>Items</Typography>
+                    <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 'bold' }}>{i18n.t('Items', 'Items')}</Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mt: 1 }}>
                         <ItemToggle
                             icon={<MapIcon />}
-                            label="Territory"
+                            label={i18n.t('Territory', 'Territory')}
                             active={analysisToggles.ownership}
                             onClick={() => onToggleChange('ownership')}
                             disabled={!canShowAnalysis}
                         />
                         <ItemToggle
                             icon={<TipsAndUpdatesIcon />}
-                            label="Advice"
+                            label={i18n.t('Advice', 'Advice')}
                             active={analysisToggles.hints}
                             onClick={() => onToggleChange('hints')}
                             disabled={!canShowAnalysis}
                         />
                         <ItemToggle
                             icon={<TimelineIcon />}
-                            label="Graph"
+                            label={i18n.t('Graph', 'Graph')}
                             active={analysisToggles.score}
                             onClick={() => onToggleChange('score')}
                             disabled={!canShowAnalysis}
                         />
                         <ItemToggle
                             icon={<VisibilityIcon />}
-                            label="Policy"
+                            label={i18n.t('Policy', 'Policy')}
                             active={analysisToggles.policy}
                             onClick={() => onToggleChange('policy')}
                             disabled={!canShowAnalysis}
@@ -169,7 +169,7 @@ const RightSidebarPanel = ({
                     </Box>
                     {isRated && !isGameOver && (
                         <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
-                            Items disabled during Rated Game
+                            {i18n.t('items_disabled_rated', 'Items disabled during Rated Game')}
                         </Typography>
                     )}
                 </Box>
@@ -180,11 +180,11 @@ const RightSidebarPanel = ({
                 <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)', flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                         <Box>
-                            <Typography variant="caption" color="text.secondary">Win Rate</Typography>
+                            <Typography variant="caption" color="text.secondary">{i18n.t('Win Rate', 'Win Rate')}</Typography>
                             <Typography variant="h6" color="primary.main">{canShowAnalysis ? `${winrate}%` : '??%'}</Typography>
                         </Box>
                         <Box sx={{ textAlign: 'right' }}>
-                            <Typography variant="caption" color="text.secondary">Score Lead</Typography>
+                            <Typography variant="caption" color="text.secondary">{i18n.t('Score Lead', 'Score Lead')}</Typography>
                             <Typography variant="h6" color="secondary.main">{canShowAnalysis ? score : '??'}</Typography>
                         </Box>
                     </Stack>
@@ -207,11 +207,11 @@ const RightSidebarPanel = ({
                 <Box sx={{ p: 2 }}>
                     <FormControlLabel
                         control={<Switch size="small" checked={analysisToggles.coords} onChange={() => onToggleChange('coords')} />}
-                        label={<Typography variant="body2">Coordinates</Typography>}
+                        label={<Typography variant="body2">{i18n.t('Coordinates', 'Coordinates')}</Typography>}
                     />
                     <FormControlLabel
                         control={<Switch size="small" checked={analysisToggles.numbers} onChange={() => onToggleChange('numbers')} />}
-                        label={<Typography variant="body2">Move Numbers</Typography>}
+                        label={<Typography variant="body2">{i18n.t('Move Numbers', 'Move Numbers')}</Typography>}
                     />
                 </Box>
 
@@ -219,10 +219,10 @@ const RightSidebarPanel = ({
                 {isRated && (
                     <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.dark' }}>
                         <Typography variant="subtitle2" sx={{ color: '#fff' }}>
-                            Rated Mode: Progressing
+                            {i18n.t('rated_mode_active', 'Rated Mode: Progressing')}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                            Net wins tracked for rank update
+                            {i18n.t('rated_mode_desc', 'Net wins tracked for rank update')}
                         </Typography>
                     </Box>
                 )}

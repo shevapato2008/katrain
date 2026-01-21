@@ -1393,3 +1393,51 @@ msgstr "AI"
 
 msgid "Human"
 msgstr "Human"
+
+msgid "Friends & Following"
+msgstr "Friends & Following"
+
+msgid "no_friends_desc"
+msgstr "You are not following anyone yet."
+
+msgid "Rules"
+msgstr "Rules"
+
+msgid "Komi"
+msgstr "Komi"
+
+msgid "Items"
+msgstr "Items"
+
+msgid "Territory"
+msgstr "Territory"
+
+msgid "Advice"
+msgstr "Advice"
+
+msgid "Graph"
+msgstr "Graph"
+
+msgid "Policy"
+msgstr "Policy"
+
+msgid "Win Rate"
+msgstr "Win Rate"
+
+msgid "Score Lead"
+msgstr "Score Lead"
+
+msgid "Coordinates"
+msgstr "Coordinates"
+
+msgid "Move Numbers"
+msgstr "Move Numbers"
+
+msgid "rated_mode_active"
+msgstr "Rated Mode: Progressing"
+
+msgid "rated_mode_desc"
+msgstr "Net wins tracked for rank update"
+
+msgid "items_disabled_rated"
+msgstr "Items disabled during Rated Game"

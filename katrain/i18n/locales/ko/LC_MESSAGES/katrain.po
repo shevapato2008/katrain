@@ -1389,3 +1389,67 @@ msgstr "First"
 #. TODO
 msgid "play:vs_ai_free_desc"
 msgstr "Practice with full analysis, undo, and custom settings."
+
+#. TODO
+msgid "no_friends_desc"
+msgstr "You are not following anyone yet."
+
+#. TODO
+msgid "Graph"
+msgstr "Graph"
+
+#. TODO
+msgid "rated_mode_desc"
+msgstr "Net wins tracked for rank update"
+
+#. TODO
+msgid "Move Numbers"
+msgstr "Move Numbers"
+
+#. TODO
+msgid "Score Lead"
+msgstr "Score Lead"
+
+#. TODO
+msgid "Friends & Following"
+msgstr "Friends & Following"
+
+#. TODO
+msgid "Coordinates"
+msgstr "Coordinates"
+
+#. TODO
+msgid "items_disabled_rated"
+msgstr "Items disabled during Rated Game"
+
+#. TODO
+msgid "Komi"
+msgstr "Komi"
+
+#. TODO
+msgid "Policy"
+msgstr "Policy"
+
+#. TODO
+msgid "Items"
+msgstr "Items"
+
+#. TODO
+msgid "Territory"
+msgstr "Territory"
+
+#. TODO
+msgid "Rules"
+msgstr "Rules"
+
+#. TODO
+msgid "Win Rate"
+msgstr "Win Rate"
+
+#. TODO
+msgid "rated_mode_active"
+msgstr "Rated Mode: Progressing"
+
+#. TODO
+msgid "Advice"
+msgstr "Advice"

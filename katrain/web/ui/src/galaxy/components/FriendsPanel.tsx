@@ -10,7 +10,7 @@ interface Friend {
     avatar_url?: string;
 }
 
-const FriendsPanel = () => {
+const FriendsPanel = ({ noBorder }: { noBorder?: boolean }) => {
     const { user, token } = useAuth();
     const [following, setFollowing] = useState<Friend[]>([]);
     const [loading, setLoading] = useState(false);
@@ -57,19 +57,26 @@ const FriendsPanel = () => {
     if (!user) return null;
 
     return (
-        <Box sx={{ width: 300, height: '100%', bgcolor: 'background.paper', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ 
+            width: 300, 
+            height: '100%', 
+            bgcolor: 'background.paper', 
+            borderLeft: noBorder ? 'none' : '1px solid rgba(255,255,255,0.05)', 
+            display: 'flex', 
+            flexDirection: 'column' 
+        }}>
             <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)' }}>
-                <Typography variant="h6" fontWeight="bold">Friends & Following</Typography>
+                <Typography variant="h6" fontWeight="bold">{i18n.t('Friends & Following', 'Friends & Following')}</Typography>
             </Box>
             <Divider />
             
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress size={24} /></Box>
             ) : error ? (
-                <Alert severity="error" sx={{ m: 1 }}>{error}</Alert>
+                <Alert severity="error" sx={{ m: 1 }}>{i18n.t(error, error)}</Alert>
             ) : following.length === 0 ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">You are not following anyone yet.</Typography>
+                    <Typography variant="body2" color="text.secondary">{i18n.t('no_friends_desc', 'You are not following anyone yet.')}</Typography>
                 </Box>
             ) : (
                 <List sx={{ flexGrow: 1, overflow: 'auto' }}>

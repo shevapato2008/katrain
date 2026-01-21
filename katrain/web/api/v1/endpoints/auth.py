@@ -85,3 +85,70 @@ async def register(request: Request, register_data: LoginRequest) -> Any:
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
     return current_user
+
+@router.post("/logout")
+async def logout(request: Request, current_user: User = Depends(get_current_user)) -> Any:
+    """Logout and cleanup user's active sessions"""
+    from katrain.web.session import SessionManager, LobbyManager
+
+    # Clean up from lobby if present
+    lobby_manager: LobbyManager = request.app.state.lobby_manager
+    with lobby_manager._lock:
+        if current_user.id in lobby_manager._online_users:
+            # Close all lobby websockets for this user
+            sockets = list(lobby_manager._online_users.pop(current_user.id, []))
+            for ws in sockets:
+                try:
+                    # Send a logout notification before closing
+                    import asyncio
+                    asyncio.create_task(ws.close(code=1000, reason="User logged out"))
+                except:
+                    pass
+
+    # Clean up from matchmaker queue if present
+    matchmaker = request.app.state.matchmaker
+    matchmaker.remove_from_queue(current_user.id)
+
+    # Find and cleanup any multiplayer sessions where user is a player
+    session_manager: SessionManager = request.app.state.session_manager
+    sessions_to_cleanup = []
+    with session_manager._lock:
+        for session_id, session in session_manager._sessions.items():
+            if session.player_b_id == current_user.id or session.player_w_id == current_user.id:
+                sessions_to_cleanup.append(session_id)
+
+    # Handle forfeit for each active game
+    for session_id in sessions_to_cleanup:
+        try:
+            session = session_manager.get_session(session_id)
+            # Determine winner (the other player)
+            winner_id = session.player_w_id if session.player_b_id == current_user.id else session.player_b_id
+
+            # Broadcast game end
+            session_manager.broadcast_to_session(session_id, {
+                "type": "game_end",
+                "data": {
+                    "reason": "forfeit",
+                    "winner_id": winner_id,
+                    "leaver_id": current_user.id,
+                    "result": f"{'W' if session.player_b_id == current_user.id else 'B'}+Forfeit"
+                }
+            })
+
+            # Record game result
+            game_repo = request.app.state.game_repo
+            if game_repo and winner_id:
+                game_repo.record_game(
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id,
+                    result=f"{'W' if session.player_b_id == current_user.id else 'B'}+Forfeit",
+                    winner_id=winner_id
+                )
+
+            # Remove session
+            session_manager.remove_session(session_id)
+        except Exception as e:
+            import logging
+            logging.getLogger("katrain_web").error(f"Error cleaning up session {session_id}: {e}")
+
+    return {"status": "ok", "message": "Logged out successfully"}

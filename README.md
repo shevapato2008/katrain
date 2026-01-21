@@ -176,6 +176,65 @@ python3 -m katrain --ui web
 
 KaTrain will automatically detect the PostgreSQL URL and use it instead of SQLite. The logs will confirm which database is active.
 
+#### 3. Querying Database Users
+
+To manually check user information in the PostgreSQL database:
+
+1.  **Using Python (SQLAlchemy):**
+    ```bash
+    source /opt/miniconda3/etc/profile.d/conda.sh && conda activate py311_katago
+    python -c "
+    from sqlalchemy import create_engine, text
+
+    db_url = 'postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db'
+    engine = create_engine(db_url)
+
+    with engine.connect() as conn:
+        result = conn.execute(text('SELECT id, uuid, username, rank, elo_points, credits, created_at FROM users ORDER BY id'))
+        rows = result.fetchall()
+        print(f'Total users: {len(rows)}')
+        print('-' * 100)
+        print(f'{\"ID\":<5} {\"UUID\":<35} {\"Username\":<20} {\"Rank\":<8} {\"ELO\":<8} {\"Credits\":<8} {\"Created\"}')
+        print('-' * 100)
+        for row in rows:
+            print(f'{row[0]:<5} {(row[1] or \"N/A\")[:32]:<35} {row[2]:<20} {row[3] or \"N/A\":<8} {row[4] or 0:<8} {row[5] or 0:<8} {str(row[6])[:19]}')
+    "
+    ```
+
+2.  **Using psql:**
+    ```bash
+    psql -d katrain_db -U katrain_user -c "SELECT id, username, rank, created_at FROM users;"
+    ```
+
+3.  **Table Schema (`users`):**
+    *   `id`: Primary key
+    *   `uuid`: Unique identifier
+    *   `username`: Login name
+    *   `hashed_password`: Bcrypt hash
+    *   `rank`: Go rank (default "20k")
+    *   `elo_points`: Rating points
+    *   `credits`: Account credits
+    *   `avatar_url`: Profile picture
+    *   `created_at` / `updated_at`: Timestamps
+
+#### 4. Connecting to PostgreSQL
+
+You can connect to the database using command-line tools or GUI clients like DBeaver.
+
+**Command Line (psql):**
+To enter the PostgreSQL interactive terminal:
+```bash
+docker exec -it katrain-postgres psql -U katrain_user -d katrain_db
+```
+
+**DBeaver Connection Settings:**
+1.  **Database Type:** PostgreSQL
+2.  **Host:** `localhost`
+3.  **Port:** `5432`
+4.  **Database:** `katrain_db`
+5.  **Username:** `katrain_user`
+6.  **Password:** `katrain_secure_password_CHANGE_ME` (or your custom password from `docker-compose.db.yml`)
+
 ### Docker
 
 KaTrain provides optimized Dockerfiles for both Desktop and Web usage.

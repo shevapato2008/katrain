@@ -47,19 +47,30 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   const isBlack = player === 'B';
   const [clientElapsed, setClientElapsed] = React.useState(0);
   const soundTriggeredRef = useRef<number | null>(null);
+  const lastActiveTimeRef = useRef<number>(Date.now());
+  const lastMainTimeUsedRef = useRef<number>(info.main_time_used);
 
   React.useEffect(() => {
-    setClientElapsed(0);
-    if (!active || !timer || timer.paused) return;
+    // Reset the timer start time when becoming active or when time tracking values change
+    if (active && !timer?.paused) {
+      lastActiveTimeRef.current = Date.now();
+      lastMainTimeUsedRef.current = info.main_time_used;
+      setClientElapsed(0);
+    }
 
-    const start = Date.now();
+    if (!active || !timer || timer.paused) {
+      setClientElapsed(0);
+      return;
+    }
+
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - start) / 1000;
+      const elapsed = (Date.now() - lastActiveTimeRef.current) / 1000;
       setClientElapsed(elapsed);
     }, 100);
 
     return () => clearInterval(interval);
-  }, [active, timer?.paused, info.main_time_used, timer?.current_node_time_used, info.periods_used]);
+    // Only depend on truly changing values, not object references
+  }, [active, timer?.paused, info.main_time_used]);
 
   const displayRank = internalToRank(info.calculated_rank);
   const displayName = info.name || (isBlack ? t('Black') : t('White'));

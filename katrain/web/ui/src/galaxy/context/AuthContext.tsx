@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { API } from '../../api';
 
 // Define User type matching backend response
 interface User {
@@ -13,7 +14,7 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     login: (username: string, password: string) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
     token: string | null;
 }
 
@@ -73,11 +74,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const logout = () => {
+    const logout = useCallback(async () => {
+        // Call backend to cleanup sessions before clearing local state
+        if (token) {
+            try {
+                await API.logout(token);
+            } catch (e) {
+                console.warn("Logout request failed, proceeding with local cleanup");
+            }
+        }
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
-    };
+    }, [token]);
 
     return (
         <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, token }}>

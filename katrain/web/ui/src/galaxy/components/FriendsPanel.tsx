@@ -59,7 +59,7 @@ const FriendsPanel = () => {
     return (
         <Box sx={{ width: 300, height: '100%', bgcolor: 'background.paper', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)' }}>
-                <Typography variant="h6" fontWeight="bold">Following</Typography>
+                <Typography variant="h6" fontWeight="bold">Friends & Following</Typography>
             </Box>
             <Divider />
             

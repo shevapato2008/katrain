@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { Box, CircularProgress, Alert } from '@mui/material';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
-import ControlBar from '../../components/ControlBar';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 
 const GamePage = () => {
     const { sessionId } = useParams();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
 
@@ -35,6 +36,9 @@ const GamePage = () => {
         winrate: true
     });
 
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [showResignConfirm, setShowResignConfirm] = useState(false);
+
     useEffect(() => {
         if (sessionId && sessionId !== currentSessionId) {
             setSessionId(sessionId);
@@ -57,8 +61,34 @@ const GamePage = () => {
 
     const handleToggleChange = (setting: string) => {
         setAnalysisToggles(prev => ({ ...prev, [setting]: !prev[setting] }));
-        // Map UI toggles to KaTrain config settings if needed
-        // For now, we just pass them to the Board component props
+    };
+
+    const handleActionWrapper = (action: string) => {
+        if (action === 'resign') {
+            if (!gameState?.end_result) {
+                setShowResignConfirm(true);
+            }
+        } else {
+            handleAction(action);
+        }
+    };
+
+    const confirmResign = async () => {
+        setShowResignConfirm(false);
+        await handleAction('resign');
+    };
+
+    const handleLeaveRequest = () => {
+        if (!gameState?.end_result) {
+            setShowLeaveConfirm(true);
+        } else {
+            navigate('/galaxy/play/ai');
+        }
+    };
+
+    const handleConfirmLeave = async () => {
+        await handleAction('resign');
+        navigate('/galaxy/play/ai');
     };
 
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
@@ -66,8 +96,53 @@ const GamePage = () => {
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-            {/* Main Area: Board + ControlBar */}
+            {/* Leave Confirmation Dialog */}
+            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
+                <DialogTitle>Leave Game?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        The game is still in progress. Leaving will resign the game. Are you sure?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowLeaveConfirm(false)}>Cancel</Button>
+                    <Button onClick={handleConfirmLeave} color="error" variant="contained">Resign & Exit</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Resign Confirmation Dialog */}
+            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+                <DialogTitle>Resign Game?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to resign?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowResignConfirm(false)}>Cancel</Button>
+                    <Button onClick={confirmResign} color="error" variant="contained">Resign</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Main Area: Board only */}
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
+                {/* Header */}
+                <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
+                    <Typography variant="subtitle2" color="primary.main">
+                        Play vs AI ({mode})
+                    </Typography>
+                    <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        startIcon={<ExitToAppIcon />}
+                        onClick={handleLeaveRequest}
+                        sx={{ textTransform: 'none' }}
+                    >
+                        Exit
+                    </Button>
+                </Box>
+
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
                     <Board 
                         gameState={gameState} 
@@ -76,22 +151,15 @@ const GamePage = () => {
                         analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                     />
                 </Box>
-                
-                {/* Control Bar below board */}
-                <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <ControlBar 
-                        onAction={handleAction} 
-                        nextPlayer={gameState.player_to_move} 
-                    />
-                </Box>
             </Box>
 
-            {/* Right Sidebar */}
+            {/* Right Sidebar with Controls */}
             <RightSidebarPanel 
                 gameState={gameState}
                 analysisToggles={analysisToggles}
                 onToggleChange={handleToggleChange}
                 onNavigate={onNavigate}
+                onAction={handleActionWrapper}
                 isRated={isRated}
             />
         </Box>

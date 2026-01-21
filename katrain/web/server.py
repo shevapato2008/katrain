@@ -416,13 +416,86 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/resign")
-    def resign(request: ToggleAnalysisRequest):
+    def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+
+        # For multiplayer games, record the result
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+
         with session.lock:
             session.katrain("resign")
             state = session.katrain.get_state()
             session.last_state = state
+
+        # Record game result for multiplayer
+        if is_multiplayer and current_user:
+            try:
+                # Determine winner (the one who didn't resign)
+                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"  # R for Resign
+
+                game_repo = app.state.game_repo
+                game_repo.create_game(
+                    user_id=current_user.id,
+                    sgf_content=session.katrain.get_sgf(),
+                    result=result,
+                    game_type="free",  # TODO: track rated games
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id
+                )
+
+                # Broadcast game end to all connected sockets
+                manager._schedule_broadcast(session, {
+                    "type": "game_end",
+                    "data": {"reason": "resign", "winner_id": winner_id, "result": result}
+                })
+            except Exception as e:
+                logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+
         return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/multiplayer/leave")
+    def leave_multiplayer_game(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        """Leave a multiplayer game (counts as forfeit)"""
+        session = _get_session_or_404(manager, request.session_id)
+
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if not is_multiplayer:
+            raise HTTPException(status_code=400, detail="Not a multiplayer game")
+
+        # Check if user is a player
+        is_player = current_user.id in (session.player_b_id, session.player_w_id)
+        if not is_player:
+            # Spectator leaving - just return
+            return {"status": "left", "redirect": "/galaxy/play/human"}
+
+        # Player leaving = forfeit
+        winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+        result = f"{'W' if winner_id == session.player_w_id else 'B'}+F"  # F for Forfeit
+
+        try:
+            game_repo = app.state.game_repo
+            game_repo.create_game(
+                user_id=current_user.id,
+                sgf_content=session.katrain.get_sgf(),
+                result=result,
+                game_type="free",
+                black_id=session.player_b_id,
+                white_id=session.player_w_id
+            )
+        except Exception as e:
+            logging.getLogger("katrain_web").error(f"Failed to record game forfeit: {e}")
+
+        # Broadcast game end to all connected sockets
+        manager._schedule_broadcast(session, {
+            "type": "game_end",
+            "data": {"reason": "forfeit", "winner_id": winner_id, "result": result, "leaver_id": current_user.id}
+        })
+
+        # Clean up the session
+        manager.remove_session(request.session_id)
+
+        return {"status": "forfeited", "redirect": "/galaxy/play/human"}
 
     @app.post("/api/timer/pause")
     def pause_timer(request: ToggleAnalysisRequest):
@@ -650,6 +723,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 msg_type = message.get("type")
                 if msg_type == "ping":
                     await websocket.send_json({"type": "pong"})
+                
                 elif msg_type == "start_matchmaking":
                     game_type = message.get("game_type", "free")
 
@@ -694,10 +768,82 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 "player_w": pw
                             }
                         }
-                        await match.player1_socket.send_json(match_payload)
-                        await match.player2_socket.send_json(match_payload)
+                        
+                        # Send reliably
+                        try:
+                            await match.player1_socket.send_json(match_payload)
+                        except Exception as e:
+                            logger.error(f"Failed to send match to Player 1: {e}")
+                            
+                        try:
+                            await match.player2_socket.send_json(match_payload)
+                        except Exception as e:
+                            logger.error(f"Failed to send match to Player 2: {e}")
+
                 elif msg_type == "stop_matchmaking":
                     app.state.matchmaker.remove_from_queue(current_user.id)
+
+                elif msg_type == "invite":
+                    target_id = message.get("target_id")
+                    if target_id and target_id != current_user.id:
+                        # Find target sockets
+                        # Note: accessing _online_users directly as get_online_user_ids only returns keys
+                        # We need to expose sockets or lock properly. LobbyManager._online_users is internal but we are in the same module logic context mostly.
+                        # Ideally LobbyManager should expose a method 'send_to_user'
+                        with lobby_manager._lock:
+                            target_sockets = list(lobby_manager._online_users.get(target_id, []))
+                        
+                        if target_sockets:
+                            invite_payload = {
+                                "type": "invitation",
+                                "from_id": current_user.id,
+                                "from_name": current_user.username,
+                                "mode": message.get("mode", "free")
+                            }
+                            for ws in target_sockets:
+                                try: await ws.send_json(invite_payload)
+                                except: pass
+                            
+                            # Confirm to sender
+                            await websocket.send_json({"type": "info", "message": "Invitation sent."})
+                        else:
+                            await websocket.send_json({"type": "error", "message": "User is offline or not in lobby."})
+
+                elif msg_type == "accept_invite":
+                    target_id = message.get("target_id") # The inviter
+                    if target_id:
+                         # Fetch Usernames
+                        user_repo = app.state.user_repo
+                        all_users = user_repo.list_users()
+                        users_by_id = {u["id"]: u["username"] for u in all_users}
+
+                        # Create Session (Inviter = Black, Acceptor = White by default, or random)
+                        pb, pw = target_id, current_user.id
+                        
+                        game_session = app.state.session_manager.create_multiplayer_session(
+                            pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw)
+                        )
+                        
+                        match_payload = {
+                            "type": "match_found",
+                            "session_id": game_session.session_id,
+                            "game_type": "free", # Direct invites are free for now
+                             "players": {
+                                "player_b": pb,
+                                "player_w": pw
+                            }
+                        }
+                        
+                        # Send to self (Acceptor)
+                        await websocket.send_json(match_payload)
+                        
+                        # Send to Inviter
+                        with lobby_manager._lock:
+                            target_sockets = list(lobby_manager._online_users.get(target_id, []))
+                        for ws in target_sockets:
+                            try: await ws.send_json(match_payload)
+                            except: pass
+
         except WebSocketDisconnect:
             logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")
             pass
@@ -720,7 +866,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             state = session.last_state or session.katrain.get_state()
             state["sockets_count"] = len(session.sockets)
+            # Send initial state to this client
             await websocket.send_json({"type": "game_update", "state": state})
+            # Broadcast updated spectator count to all other clients (lightweight update)
+            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
             while True:
                 message = await websocket.receive_json()
                 if message.get("type") == "ping":
@@ -731,6 +880,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             pass
         finally:
             session.sockets.discard(websocket)
+            # Broadcast updated spectator count when someone leaves
+            if session.sockets:  # Only if there are still connected clients
+                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)

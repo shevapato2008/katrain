@@ -1,12 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState } from '../../api';
 
-export const useGameSession = () => {
+interface GameEndData {
+    reason: 'resign' | 'forfeit' | 'timeout' | 'normal';
+    winner_id?: number;
+    result?: string;
+    leaver_id?: number;
+}
+
+interface UseGameSessionOptions {
+    token?: string;  // Auth token for multiplayer games
+    onGameEnd?: (data: GameEndData) => void;  // Callback when game ends
+}
+
+export const useGameSession = (options: UseGameSessionOptions = {}) => {
+    const { token, onGameEnd } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [lastLog, setLastLog] = useState<string | null>(null);
     const [chatMessages, setChatMessages] = useState<{sender: string, text: string, time: number}[]>([]);
+    const [gameEndData, setGameEndData] = useState<GameEndData | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
@@ -43,12 +57,20 @@ export const useGameSession = () => {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'game_update') {
                             setGameState(msg.state);
+                        } else if (msg.type === 'spectator_count') {
+                            // Lightweight update for spectator count only (doesn't reset timers)
+                            setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
                         } else if (msg.type === 'sound') {
                             playSound(msg.data.sound);
                         } else if (msg.type === 'log') {
                             setLastLog(msg.data.message);
                         } else if (msg.type === 'chat') {
                             setChatMessages(prev => [...prev, msg.data]);
+                        } else if (msg.type === 'game_end') {
+                            setGameEndData(msg.data);
+                            if (onGameEnd) {
+                                onGameEnd(msg.data);
+                            }
                         }
                     };
                 } catch (err) {
@@ -66,8 +88,8 @@ export const useGameSession = () => {
 
     const onMove = useCallback(async (x: number, y: number) => {
         if (!sessionId) return;
-        await API.playMove(sessionId, { x, y });
-    }, [sessionId]);
+        await API.playMove(sessionId, { x, y }, token);
+    }, [sessionId, token]);
 
     const onNavigate = useCallback(async (nodeId: number) => {
         if (!sessionId) return;
@@ -77,7 +99,7 @@ export const useGameSession = () => {
     const handleAction = useCallback(async (action: string) => {
         if (!sessionId) return;
         try {
-            if (action === 'pass') await API.playMove(sessionId, null);
+            if (action === 'pass') await API.playMove(sessionId, null, token);
             else if (action === 'undo') await API.undo(sessionId, 'smart');
             else if (action === 'back') await API.undo(sessionId, 1);
             else if (action === 'back-10') await API.undo(sessionId, 10);
@@ -93,7 +115,7 @@ export const useGameSession = () => {
         } catch (e) {
             console.error(e);
         }
-    }, [sessionId]);
+    }, [sessionId, token]);
 
     const initNewSession = useCallback(async () => {
         const data = await API.createSession();
@@ -110,5 +132,5 @@ export const useGameSession = () => {
         }
     }, []);
 
-    return { sessionId, setSessionId, gameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat };
+    return { sessionId, setSessionId, gameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData };
 };

@@ -136,6 +136,7 @@ class RankEstimationRequest(BaseModel):
 
 class User(BaseModel):
     id: Optional[int] = None
+    uuid: Optional[str] = None  # Unique UUID assigned at registration, used for KataGo requests
     username: str
     rank: str = "20k"
     net_wins: int = 0

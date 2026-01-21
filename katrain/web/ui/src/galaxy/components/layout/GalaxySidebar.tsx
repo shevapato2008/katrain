@@ -17,6 +17,12 @@ const GalaxySidebar = () => {
   const { user, logout } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
 
+  const handleLogout = async () => {
+    await logout();
+    // Navigate to home after logout
+    navigate('/galaxy');
+  };
+
   const menuItems = [
     { text: 'Play', icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
     { text: 'Research', icon: <ScienceIcon />, path: '/galaxy/research', disabled: false }, // Will be protected later
@@ -96,7 +102,7 @@ const GalaxySidebar = () => {
                         {user.rank === '20k' ? 'No Rank' : user.rank}
                     </Typography>
                 </Box>
-                <LogoutIcon fontSize="small" sx={{ color: 'text.secondary', cursor: 'pointer' }} onClick={logout} />
+                <LogoutIcon fontSize="small" sx={{ color: 'text.secondary', cursor: 'pointer' }} onClick={handleLogout} />
             </Box>
         ) : (
             <Button 

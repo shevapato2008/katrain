@@ -69,15 +69,23 @@ const ControlBar: React.FC<ControlBarProps> = ({ onAction, nextPlayer, disabled 
             onClick={() => onAction('resign')}
             size="small"
             sx={{
+              ...iconButtonStyles,
               color: '#e16b5c',
-              '&:hover': {
-                bgcolor: 'rgba(225, 107, 92, 0.1)',
-                color: '#f07565',
-              },
+              '&:hover': { bgcolor: 'rgba(225, 107, 92, 0.1)', color: '#f07565' }
             }}
             disabled={disabled}
           >
-            <FlagIcon fontSize="small" />
+            <FlagIcon fontSize="small" sx={{ mr: 0.5 }} />
+            <Typography
+              variant="button"
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              {i18n.t("RESIGN")}
+            </Typography>
           </IconButton>
         </Tooltip>
       </Box>

@@ -75,10 +75,14 @@ export interface SessionResponse {
   state: GameState;
 }
 
-async function apiPost(path: string, payload: any) {
+async function apiPost(path: string, payload: any, token?: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
   const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload || {}),
   });
   if (!response.ok) {
@@ -96,12 +100,12 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get state");
     return { session_id: sessionId, state: (await response.json()).state };
   },
-  playMove: (sessionId: string, coords: { x: number; y: number } | null): Promise<SessionResponse> =>
+  playMove: (sessionId: string, coords: { x: number; y: number } | null, token?: string): Promise<SessionResponse> =>
     apiPost("/api/move", {
       session_id: sessionId,
       coords: coords ? [coords.x, coords.y] : null,
       pass_move: coords === null,
-    }),
+    }, token),
   undo: (sessionId: string, nTimes: number | string = 1): Promise<SessionResponse> =>
     apiPost("/api/undo", { session_id: sessionId, n_times: nTimes }),
   redo: (sessionId: string, nTimes: number = 1): Promise<SessionResponse> =>
@@ -239,5 +243,18 @@ export const API = {
     });
     if (!response.ok) throw new Error("Failed to get followers list");
     return response.json();
-  }
+  },
+  leaveMultiplayerGame: (sessionId: string, token: string): Promise<any> =>
+    apiPost("/api/multiplayer/leave", { session_id: sessionId }, token),
+  logout: async (token: string): Promise<any> => {
+    const response = await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      // Don't throw on logout failure - still proceed with local cleanup
+      console.warn("Server logout failed, proceeding with local cleanup");
+    }
+    return response.ok ? response.json() : { status: "local_only" };
+  },
 };

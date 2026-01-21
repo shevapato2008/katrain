@@ -98,3 +98,13 @@ This plan covers the end-to-end implementation of the new Galaxy Go style UI for
 
 - [ ] Task: Localization & Polish.
     - [x] **[FIXED: KataGo Engine HTTP 500 Buffer Issue]** 2026-01-21
+    - [ ] **[TODO] Fix Known Issues (See `known_issues.md`):**
+        - [ ] Fix Invite Button functionality.
+        - [ ] Fix Friends Panel layout visibility.
+        - [ ] Fix Custom Game matchmaking hang for unranked players.
+    - [ ] **[TODO] UI Refinements (User Feedback):**
+        - [x] Remove Chat functionality and UI (avoid conflicts).
+        - [x] Add "Exit" button for Spectators in Game Room.
+        - [x] Add "Exit" button for PvAI (require resignation first).
+        - [x] Ensure "Resign" button is available in all modes.
+        - [x] Fix Rank display in Lobby (show "No Rank" instead of "20k" for new users).

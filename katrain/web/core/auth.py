@@ -185,6 +185,7 @@ class SQLAlchemyUserRepository(UserRepository):
     def _to_dict(self, user_obj: models_db.User) -> Dict[str, Any]:
         return {
             "id": user_obj.id,
+            "uuid": user_obj.uuid,
             "username": user_obj.username,
             "hashed_password": user_obj.hashed_password,
             "rank": user_obj.rank,

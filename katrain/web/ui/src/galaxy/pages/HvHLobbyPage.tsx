@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Button, Avatar, Chip, Stack, CircularProgress, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent } from '@mui/material';
+import { Box, Typography, Button, Avatar, Chip, Stack, CircularProgress, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, Snackbar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -11,6 +11,7 @@ interface OnlineUser {
     id: number;
     username: string;
     rank: string;
+    elo_points?: number;
     avatar_url?: string;
 }
 
@@ -31,6 +32,8 @@ const HvHLobbyPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [isMatching, setIsRatedMatching] = useState(false);
     const [queueTime, setQueueTime] = useState(0);
+    const [invitation, setInvitation] = useState<{from_id: number, from_name: string, mode: string} | null>(null);
+    const [snackbar, setSnackbar] = useState<{message: string, severity: 'info' | 'error' | 'success'} | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -98,6 +101,12 @@ const HvHLobbyPage = () => {
                 navigate(`/galaxy/play/human/room/${data.session_id}`);
             } else if (data.type === 'lobby_update') {
                 fetchOnlineUsers();
+            } else if (data.type === 'invitation') {
+                setInvitation({ from_id: data.from_id, from_name: data.from_name, mode: data.mode });
+            } else if (data.type === 'info') {
+                setSnackbar({ message: data.message, severity: 'info' });
+            } else if (data.type === 'error') {
+                setSnackbar({ message: data.message, severity: 'error' });
             }
         };
 
@@ -131,6 +140,19 @@ const HvHLobbyPage = () => {
         }
         setIsRatedMatching(false);
         if (timerRef.current) clearInterval(timerRef.current);
+    };
+
+    const handleInvite = (targetId: number) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: 'invite', target_id: targetId }));
+        }
+    };
+
+    const handleAcceptInvite = () => {
+        if (wsRef.current?.readyState === WebSocket.OPEN && invitation) {
+            wsRef.current.send(JSON.stringify({ type: 'accept_invite', target_id: invitation.from_id }));
+            setInvitation(null);
+        }
     };
 
     const formatQueueTime = (s: number) => {
@@ -192,10 +214,15 @@ const HvHLobbyPage = () => {
                                                 <Typography variant="subtitle2">
                                                     {u.username} {u.id === user?.id && <Typography component="span" variant="caption" color="secondary">(You)</Typography>}
                                                 </Typography>
-                                                <Chip label={u.rank} size="small" variant="outlined" sx={{ height: 20 }} />
+                                                <Chip 
+                                                    label={(u.rank === '20k' && (!u.elo_points || u.elo_points === 0)) ? 'No Rank' : u.rank} 
+                                                    size="small" 
+                                                    variant="outlined" 
+                                                    sx={{ height: 20 }} 
+                                                />
                                             </Box>
                                             {u.id !== user?.id && (
-                                                <Button size="small" variant="text">Invite</Button>
+                                                <Button size="small" variant="text" onClick={() => handleInvite(u.id)}>Invite</Button>
                                             )}
                                         </Box>
                                     ))}
@@ -257,10 +284,34 @@ const HvHLobbyPage = () => {
                 </Box>
 
                 {/* Friends Panel */}
-                <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, display: { xs: 'none', lg: 'block' } }}>
+                <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
                     <FriendsPanel />
                 </Box>
             </Box>
+
+            <Dialog open={!!invitation} onClose={() => setInvitation(null)}>
+                <DialogTitle>Game Invitation</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        {invitation?.from_name} invited you to a game.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setInvitation(null)}>Decline</Button>
+                    <Button onClick={handleAcceptInvite} variant="contained">Accept</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar 
+                open={!!snackbar} 
+                autoHideDuration={6000} 
+                onClose={() => setSnackbar(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar?.severity || 'info'} onClose={() => setSnackbar(null)}>
+                    {snackbar?.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

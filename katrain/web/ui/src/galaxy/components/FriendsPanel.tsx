@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, List, ListItem, ListItemAvatar, ListItemText, Avatar, Divider, Chip, CircularProgress, Alert, IconButton } from '@mui/material';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { useAuth } from '../context/AuthContext';
+import { i18n } from '../../i18n';
 
 interface Friend {
     id: number;

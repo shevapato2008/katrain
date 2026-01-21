@@ -1137,7 +1137,7 @@ msgstr "Game Ended"
 
 #. TODO
 msgid "White"
-msgstr "White"
+msgstr "Beyaz"
 
 #. TODO
 msgid "NOTIFICATIONS"
@@ -1157,7 +1157,7 @@ msgstr "Save in SGF (marks)"
 
 #. TODO
 msgid "Black"
-msgstr "Black"
+msgstr "Siyah"
 
 #. TODO
 msgid "low_visits"
@@ -1230,7 +1230,7 @@ msgstr "Max Top Moves on Board"
 
 #. TODO
 msgid "Research"
-msgstr "Research"
+msgstr "Araştırma"
 
 #. TODO
 msgid "Logout"
@@ -1238,136 +1238,136 @@ msgstr "Logout"
 
 #. TODO
 msgid "Language"
-msgstr "Language"
+msgstr "Dil"
 
 #. TODO
 msgid "Live"
-msgstr "Live"
+msgstr "Canlı"
 
 #. TODO
 msgid "Login"
-msgstr "Sign In"
+msgstr "Giriş Yap"
 
 #. TODO
 msgid "dashboard:live_desc"
-msgstr "Watch top games and live tournaments. (Coming Soon)"
+msgstr "En iyi oyunları ve canlı turnuvaları izleyin. (Yakında)"
 
 #. TODO
 msgid "game_room:back_to_lobby"
-msgstr "Back to Lobby"
+msgstr "Lobiye Dön"
 
 #. TODO
 msgid "lobby:accept"
-msgstr "Accept"
+msgstr "Kabul Et"
 
 #. TODO
 msgid "game_room:spectating"
-msgstr "Spectating"
+msgstr "İzleniyor"
 
 #. TODO
 msgid "lobby:no_players"
-msgstr "No other players online."
+msgstr "Başka çevrimiçi oyuncu yok."
 
 #. TODO
 msgid "play:hvh"
-msgstr "Human vs Human"
+msgstr "İnsan vs İnsan"
 
 #. TODO
 msgid "Opponent & Time"
-msgstr "Opponent & Time"
+msgstr "Rakip ve Süre"
 
 #. TODO
 msgid "lobby:you"
-msgstr "You"
+msgstr "Siz"
 
 #. TODO
 msgid "game_room:opponents_turn"
-msgstr "Opponent's Turn"
+msgstr "Rakibin Sırası"
 
 #. TODO
 msgid "lobby:active_games_desc"
-msgstr "Games will appear here once matchmaking is functional."
+msgstr "Eşleştirme çalıştığında oyunlar burada görünecektir."
 
 #. TODO
 msgid "game_room:your_turn"
-msgstr "Your Turn"
+msgstr "Sizin Sıranız"
 
 #. TODO
 msgid "play:rated_ai_setup"
-msgstr "Rated Game Setup"
+msgstr "Dereceli Oyun Ayarları"
 
 #. TODO
 msgid "Board & Rules"
-msgstr "Board & Rules"
+msgstr "Tahta ve Kurallar"
 
 #. TODO
 msgid "play:rated_ai"
-msgstr "Rated Game vs AI"
+msgstr "Dereceli Oyun vs Yapay Zeka"
 
 #. TODO
 msgid "Stones"
-msgstr "Stones"
+msgstr "Taşlar"
 
 #. TODO
 msgid "lobby:matching_desc"
-msgstr "Looking for a suitable match for you."
+msgstr "Sizin için uygun bir eşleşme aranıyor."
 
 #. TODO
 msgid "leave_game_title"
-msgstr "Leave Game?"
+msgstr "Oyundan Çık?"
 
 #. TODO
 msgid "Seconds"
-msgstr "Seconds"
+msgstr "Saniye"
 
 #. TODO
 msgid "game_end:timeout_win"
-msgstr "Your opponent ran out of time. You win!"
+msgstr "Süre aşımı ile kazandınız!"
 
 #. TODO
 msgid "lobby:finding_opponent"
-msgstr "Finding Opponent..."
+msgstr "Rakip Aranıyor..."
 
 #. TODO
 msgid "leave_game_warning"
 msgstr ""
-"The game is still in progress. Leaving will resign the game. Are you sure?"
+"Oyun hala devam ediyor. Ayrılmak terk etmek anlamına gelir. Emin misiniz?"
 
 #. TODO
 msgid "dashboard:tagline"
-msgstr "Your professional Go training and analysis platform."
+msgstr "Profesyonel Go eğitim ve analiz platformunuz."
 
 #. TODO
 msgid "play:free_play_setup"
-msgstr "Free Play Setup"
+msgstr "Serbest Oyun Ayarları"
 
 #. TODO
 msgid "lobby:custom_game"
-msgstr "Custom Game"
+msgstr "Özel Oyun"
 
 #. TODO
 msgid "dashboard:welcome"
-msgstr "Welcome to Galaxy Go"
+msgstr "Galaxy Go'ya Hoş Geldiniz"
 
 #. TODO
 msgid "game_end:forfeit_loss"
-msgstr "You forfeited the game."
+msgstr "Oyunu kaybettiniz."
 
 #. TODO
 msgid "lobby:no_active_games"
-msgstr "No active games at the moment."
+msgstr "Şu anda aktif oyun yok."
 
 #. TODO
 msgid "lobby:active_games"
-msgstr "Active Games"
+msgstr "Aktif Oyunlar"
 
 #. TODO
 msgid "game_end:resign_loss"
-msgstr "You resigned."
+msgstr "Terk ettiniz."
 
 #. TODO
 msgid "resign_and_exit"
-msgstr "Resign & Exit"
+msgstr "Terk Et ve Çık"
 
 #. TODO
 msgid "no ai settings"
@@ -1375,188 +1375,189 @@ msgstr "No configurable settings for this strategy"
 
 #. TODO
 msgid "resign_game_title"
-msgstr "Resign Game?"
+msgstr "Oyunu Terk Et?"
 
 #. TODO
 msgid "Minutes"
-msgstr "Minutes"
+msgstr "Dakika"
 
 #. TODO
 msgid "Your Color"
-msgstr "Your Color"
+msgstr "Sizin Renginiz"
 
 #. TODO
 msgid "lobby:watch"
-msgstr "Watch"
+msgstr "İzle"
 
 #. TODO
 msgid "Enable Timer"
-msgstr "Enable Timer"
+msgstr "Zamanlayıcıyı Etkinleştir"
 
 #. TODO
 msgid "Standard"
-msgstr "Standard"
+msgstr "Standart"
 
 #. TODO
 msgid "lobby:subtitle"
-msgstr "Play against other humans or watch live games."
+msgstr "Diğer insanlara karşı oynayın veya canlı oyunları izleyin."
 
 #. TODO
 msgid "exit"
-msgstr "Exit"
+msgstr "Çıkış"
 
 #. TODO
 msgid "Loading Board..."
-msgstr "Loading Board..."
+msgstr "Tahta Yükleniyor..."
 
 #. TODO
 msgid "play:rated_ai_desc"
-msgstr "Play a ranked game against a human-like AI. No analysis during game."
+msgstr ""
+"İnsan benzeri bir yapay zekaya karşı dereceli oyun oynayın. Oyun sırasında "
+"analiz yok."
 
 #. TODO
 msgid "game_end:resign_win"
-msgstr "Your opponent resigned. You win!"
+msgstr "Kazandınız! Rakip terk etti."
 
 #. TODO
 msgid "lobby:decline"
-msgstr "Decline"
+msgstr "Reddet"
 
 #. TODO
 msgid "lobby:title"
-msgstr "Multiplayer Lobby"
+msgstr "Çok Oyunculu Lobi"
 
 #. TODO
 msgid "dashboard:research_desc"
 msgstr ""
-"Analyze games with AI, explore variations, and manage your SGF library."
+"Yapay zeka ile oyunları analiz edin, varyasyonları keşfedin ve SGF "
+"kütüphanenizi yönetin."
 
 #. TODO
 msgid "lobby:quick_match_rated"
-msgstr "Quick Match (Rated)"
+msgstr "Hızlı Eşleşme (Dereceli)"
 
 #. TODO
 msgid "play:vs_ai_free"
-msgstr "Play vs AI (Free)"
+msgstr "Yapay Zekaya Karşı Oyna (Serbest)"
 
 #. TODO
 msgid "lobby:invitation_title"
-msgstr "Game Invitation"
+msgstr "Oyun Daveti"
 
 #. TODO
 msgid "resign_confirm_text"
-msgstr "Are you sure you want to resign?"
+msgstr "Terk etmek istediğinizden emin misiniz?"
 
 #. TODO
 msgid "dashboard:play_desc"
 msgstr ""
-"Challenge AI opponents or play against friends. Features Rated games to "
-"establish your rank."
+"Yapay zeka rakiplerine meydan okuyun veya arkadaşlarınızla oynayın. "
+"Derecenizi belirlemek için dereceli oyunlar."
 
 #. TODO
 msgid "game_end:timeout_loss"
-msgstr "You ran out of time."
+msgstr "Süre aşımı ile kaybettiniz."
 
 #. TODO
 msgid "game_room:forfeit_warning"
-msgstr ""
-"Leaving the game will count as a forfeit. Your opponent will win this game. "
-"Are you sure you want to leave?"
+msgstr "Ayrılmak oyunu kaybetmenize neden olacak. Emin misiniz?"
 
 #. TODO
 msgid "game_room:leave"
-msgstr "Leave"
+msgstr "Oyundan Ayrıl"
 
 #. TODO
 msgid "Analysis"
-msgstr "Analysis"
+msgstr "Analiz"
 
 #. TODO
 msgid "play_vs_ai"
-msgstr "Play vs AI"
+msgstr "Yapay Zekaya Karşı Oyna"
 
 #. TODO
 msgid "lobby:no_rank"
-msgstr "No Rank"
+msgstr "Derece Yok"
 
 #. TODO
 msgid "Second"
-msgstr "Second"
+msgstr "İkinci"
 
 #. TODO
 msgid "lobby:invitation_text"
-msgstr "{{name}} invited you to a game."
+msgstr "{{name}} sizi bir oyuna davet etti."
 
 #. TODO
 msgid "play:choose_mode"
-msgstr "Choose your game mode"
+msgstr "Oyun modunuzu seçin"
 
 #. TODO
 msgid "play:hvh_desc"
-msgstr "Challenge a friend or find an opponent online."
+msgstr "Bir arkadaşınıza meydan okuyun veya çevrimiçi rakip bulun."
 
 #. TODO
 msgid "game_end:forfeit_win"
-msgstr "Your opponent left the game. You win!"
+msgstr "Kazandınız! Rakip pes etti."
 
 #. TODO
 msgid "Library"
-msgstr "Library"
+msgstr "Kütüphane"
 
 #. TODO
 msgid "dashboard:report_desc"
-msgstr "Detailed game reports and style analysis. (Coming Soon)"
+msgstr "Ayrıntılı oyun raporları ve stil analizi. (Yakında)"
 
 #. TODO
 msgid "game_room:leave_forfeit"
-msgstr "Leave & Forfeit"
+msgstr "Ayrıl ve Pes Et"
 
 #. TODO
 msgid "lobby:invite"
-msgstr "Invite"
+msgstr "Davet Et"
 
 #. TODO
 msgid "lobby:online_players"
-msgstr "Online Players"
+msgstr "Çevrimiçi Oyuncular"
 
 #. TODO
 msgid "First"
-msgstr "First"
+msgstr "İlk"
 
 #. TODO
 msgid "play:vs_ai_free_desc"
-msgstr "Practice with full analysis, undo, and custom settings."
+msgstr "Tam analiz, geri alma ve özel ayarlarla pratik yapın."
 
 #. TODO
 msgid "no_friends_desc"
-msgstr "You are not following anyone yet."
+msgstr "Henüz kimseyi takip etmiyorsunuz."
 
 #. TODO
 msgid "Graph"
-msgstr "Graph"
+msgstr "Grafik"
 
 #. TODO
 msgid "rated_mode_desc"
-msgstr "Net wins tracked for rank update"
+msgstr "Derece güncellemesi için net galibiyetler takip ediliyor"
 
 #. TODO
 msgid "Move Numbers"
-msgstr "Move Numbers"
+msgstr "Hamle Numaraları"
 
 #. TODO
 msgid "Score Lead"
-msgstr "Score Lead"
+msgstr "Puan Farkı"
 
 #. TODO
 msgid "Friends & Following"
-msgstr "Friends & Following"
+msgstr "Arkadaşlar ve Takip"
 
 #. TODO
 msgid "Coordinates"
-msgstr "Coordinates"
+msgstr "Koordinatlar"
 
 #. TODO
 msgid "items_disabled_rated"
-msgstr "Items disabled during Rated Game"
+msgstr "Dereceli oyunda öğeler devre dışı"
 
 #. TODO
 msgid "Komi"
@@ -1564,28 +1565,78 @@ msgstr "Komi"
 
 #. TODO
 msgid "Policy"
-msgstr "Policy"
+msgstr "Politika"
 
 #. TODO
 msgid "Items"
-msgstr "Items"
+msgstr "Öğeler"
 
 #. TODO
 msgid "Territory"
-msgstr "Territory"
+msgstr "Bölge"
 
 #. TODO
 msgid "Rules"
-msgstr "Rules"
+msgstr "Kurallar"
 
 #. TODO
 msgid "Win Rate"
-msgstr "Win Rate"
+msgstr "Kazanma Oranı"
 
 #. TODO
 msgid "rated_mode_active"
-msgstr "Rated Mode: Progressing"
+msgstr "Dereceli Mod: Devam Ediyor"
 
 #. TODO
 msgid "Advice"
-msgstr "Advice"
+msgstr "Tavsiye"
+
+#. TODO
+msgid "PASS"
+msgstr "PAS"
+
+#. TODO
+msgid "Settings"
+msgstr "Ayarlar"
+
+#. TODO
+msgid "Rotate Board"
+msgstr "Tahtayı Döndür"
+
+#. TODO
+msgid "AI Move"
+msgstr "Yapay Zeka Hamlesi"
+
+#. TODO
+msgid "Next Mistake"
+msgstr "Sonraki Hata"
+
+#. TODO
+msgid "RESIGN"
+msgstr "ADAN"
+
+#. TODO
+msgid "new_zealand"
+msgstr "New Zealand"
+
+#. TODO
+msgid "Undo (Smart)"
+msgstr "Geri Al (Akıllı)"
+
+#. TODO
+msgid "Moves"
+msgstr "Hamleler"
+
+#. TODO
+msgid "Spectators"
+msgstr "İzleyiciler"
+
+#. TODO
+msgid "Previous Mistake"
+msgstr "Önceki Hata"
+
+msgid "Rank"
+msgstr "Derece"
+
+msgid "Game Over"
+msgstr "Oyun Bitti"

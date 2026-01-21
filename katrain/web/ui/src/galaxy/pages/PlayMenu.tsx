@@ -4,10 +4,12 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
+import { useSettings } from '../context/SettingsContext';
 import { i18n } from '../../i18n';
 
 const PlayMenu = () => {
     const navigate = useNavigate();
+    useSettings(); // Subscribe to translation changes for re-render
 
     const options = [
         {

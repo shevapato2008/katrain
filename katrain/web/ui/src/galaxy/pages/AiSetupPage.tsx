@@ -4,6 +4,7 @@ import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Butt
 import { API } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../utils/rankUtils';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { i18n } from '../../i18n';
 import { useDebounce } from '../../hooks/useDebounce';
 
@@ -20,6 +21,7 @@ const AiSetupPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    useSettings(); // Subscribe to translation changes for re-render
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
 

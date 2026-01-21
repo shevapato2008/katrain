@@ -1149,7 +1149,7 @@ msgstr "棋盤上最多顯示選點數"
 
 #. TODO
 msgid "Research"
-msgstr "研究"
+msgstr "Research"
 
 #. TODO
 msgid "Logout"
@@ -1161,19 +1161,19 @@ msgstr "語言"
 
 #. TODO
 msgid "Live"
-msgstr "直播"
+msgstr "Live"
 
 #. TODO
 msgid "Login"
-msgstr "登錄"
+msgstr "登入"
 
 #. TODO
 msgid "dashboard:live_desc"
-msgstr "Watch top games and live tournaments. (Coming Soon)"
+msgstr "觀看頂級對局和現場錦標賽。(即將推出)"
 
 #. TODO
 msgid "game_room:back_to_lobby"
-msgstr "Back to Lobby"
+msgstr "返回大廳"
 
 #. TODO
 msgid "lobby:accept"
@@ -1181,19 +1181,19 @@ msgstr "Accept"
 
 #. TODO
 msgid "game_room:spectating"
-msgstr "Spectating"
+msgstr "觀戰中"
 
 #. TODO
 msgid "lobby:no_players"
-msgstr "No other players online."
+msgstr "沒有其他在線玩家。"
 
 #. TODO
 msgid "play:hvh"
-msgstr "Human vs Human"
+msgstr "人人對弈"
 
 #. TODO
 msgid "Opponent & Time"
-msgstr "Opponent & Time"
+msgstr "對手與時間"
 
 #. TODO
 msgid "lobby:you"
@@ -1201,39 +1201,39 @@ msgstr "You"
 
 #. TODO
 msgid "game_room:opponents_turn"
-msgstr "Opponent's Turn"
+msgstr "對手回合"
 
 #. TODO
 msgid "lobby:active_games_desc"
-msgstr "Games will appear here once matchmaking is functional."
+msgstr "匹配功能啟用後，對局將顯示在這裡。"
 
 #. TODO
 msgid "game_room:your_turn"
-msgstr "Your Turn"
+msgstr "輪到你了"
 
 #. TODO
 msgid "play:rated_ai_setup"
-msgstr "Rated Game Setup"
+msgstr "升降級對局設定"
 
 #. TODO
 msgid "Board & Rules"
-msgstr "Board & Rules"
+msgstr "棋盤與規則"
 
 #. TODO
 msgid "play:rated_ai"
-msgstr "Rated Game vs AI"
+msgstr "升降級對局"
 
 #. TODO
 msgid "Stones"
-msgstr "Stones"
+msgstr "讓子"
 
 #. TODO
 msgid "lobby:matching_desc"
-msgstr "Looking for a suitable match for you."
+msgstr "正在為您尋找合適的對手。"
 
 #. TODO
 msgid "leave_game_title"
-msgstr "Leave Game?"
+msgstr "離開對局？"
 
 #. TODO
 msgid "Seconds"
@@ -1241,52 +1241,51 @@ msgstr "Seconds"
 
 #. TODO
 msgid "game_end:timeout_win"
-msgstr "Your opponent ran out of time. You win!"
+msgstr "你因超時獲勝！"
 
 #. TODO
 msgid "lobby:finding_opponent"
-msgstr "Finding Opponent..."
+msgstr "正在尋找對手..."
 
 #. TODO
 msgid "leave_game_warning"
-msgstr ""
-"The game is still in progress. Leaving will resign the game. Are you sure?"
+msgstr "對局仍在進行中。離開將自動認輸。確定嗎？"
 
 #. TODO
 msgid "dashboard:tagline"
-msgstr "Your professional Go training and analysis platform."
+msgstr "您的專業圍棋訓練與分析平台。"
 
 #. TODO
 msgid "play:free_play_setup"
-msgstr "Free Play Setup"
+msgstr "自由對弈設定"
 
 #. TODO
 msgid "lobby:custom_game"
-msgstr "Custom Game"
+msgstr "自定義對局"
 
 #. TODO
 msgid "dashboard:welcome"
-msgstr "Welcome to Galaxy Go"
+msgstr "歡迎來到 Galaxy Go"
 
 #. TODO
 msgid "game_end:forfeit_loss"
-msgstr "You forfeited the game."
+msgstr "你棄權了。"
 
 #. TODO
 msgid "lobby:no_active_games"
-msgstr "No active games at the moment."
+msgstr "當前沒有進行中的對局。"
 
 #. TODO
 msgid "lobby:active_games"
-msgstr "Active Games"
+msgstr "進行中的對局"
 
 #. TODO
 msgid "game_end:resign_loss"
-msgstr "You resigned."
+msgstr "你認輸了。"
 
 #. TODO
 msgid "resign_and_exit"
-msgstr "Resign & Exit"
+msgstr "認輸並退出"
 
 #. TODO
 msgid "no ai settings"
@@ -1294,31 +1293,31 @@ msgstr "No configurable settings for this strategy"
 
 #. TODO
 msgid "resign_game_title"
-msgstr "Resign Game?"
+msgstr "認輸？"
 
 #. TODO
 msgid "Minutes"
-msgstr "Minutes"
+msgstr "分鐘"
 
 #. TODO
 msgid "Your Color"
-msgstr "Your Color"
+msgstr "執子顏色"
 
 #. TODO
 msgid "lobby:watch"
-msgstr "Watch"
+msgstr "觀戰"
 
 #. TODO
 msgid "Enable Timer"
-msgstr "Enable Timer"
+msgstr "啟用計時器"
 
 #. TODO
 msgid "Standard"
-msgstr "Standard"
+msgstr "標準"
 
 #. TODO
 msgid "lobby:subtitle"
-msgstr "Play against other humans or watch live games."
+msgstr "與其他玩家對弈或觀看直播對局。"
 
 #. TODO
 msgid "exit"
@@ -1326,28 +1325,27 @@ msgstr "Exit"
 
 #. TODO
 msgid "Loading Board..."
-msgstr "Loading Board..."
+msgstr "正在載入棋盤..."
 
 #. TODO
 msgid "play:rated_ai_desc"
-msgstr "Play a ranked game against a human-like AI. No analysis during game."
+msgstr "與擬人AI進行排位賽。對局中無分析功能。"
 
 #. TODO
 msgid "game_end:resign_win"
-msgstr "Your opponent resigned. You win!"
+msgstr "你贏了！對手認輸。"
 
 #. TODO
 msgid "lobby:decline"
-msgstr "Decline"
+msgstr "拒絕"
 
 #. TODO
 msgid "lobby:title"
-msgstr "Multiplayer Lobby"
+msgstr "多人遊戲大廳"
 
 #. TODO
 msgid "dashboard:research_desc"
-msgstr ""
-"Analyze games with AI, explore variations, and manage your SGF library."
+msgstr "使用AI分析棋譜，探索變化，管理您的SGF棋譜庫。"
 
 #. TODO
 msgid "lobby:quick_match_rated"
@@ -1355,35 +1353,31 @@ msgstr "Quick Match (Rated)"
 
 #. TODO
 msgid "play:vs_ai_free"
-msgstr "Play vs AI (Free)"
+msgstr "自由對弈"
 
 #. TODO
 msgid "lobby:invitation_title"
-msgstr "Game Invitation"
+msgstr "對局邀請"
 
 #. TODO
 msgid "resign_confirm_text"
-msgstr "Are you sure you want to resign?"
+msgstr "確定要認輸嗎？"
 
 #. TODO
 msgid "dashboard:play_desc"
-msgstr ""
-"Challenge AI opponents or play against friends. Features Rated games to "
-"establish your rank."
+msgstr "挑戰AI對手或與朋友對弈。支持升降級對局以確定您的等級。"
 
 #. TODO
 msgid "game_end:timeout_loss"
-msgstr "You ran out of time."
+msgstr "你因超時落敗。"
 
 #. TODO
 msgid "game_room:forfeit_warning"
-msgstr ""
-"Leaving the game will count as a forfeit. Your opponent will win this game. "
-"Are you sure you want to leave?"
+msgstr "離開將導致棄權。確定嗎？"
 
 #. TODO
 msgid "game_room:leave"
-msgstr "Leave"
+msgstr "離開對局"
 
 #. TODO
 msgid "Analysis"
@@ -1391,51 +1385,51 @@ msgstr "Analysis"
 
 #. TODO
 msgid "play_vs_ai"
-msgstr "Play vs AI"
+msgstr "AI對弈"
 
 #. TODO
 msgid "lobby:no_rank"
-msgstr "No Rank"
+msgstr "無段位"
 
 #. TODO
 msgid "Second"
-msgstr "Second"
+msgstr "後手"
 
 #. TODO
 msgid "lobby:invitation_text"
-msgstr "{{name}} invited you to a game."
+msgstr "{{name}} 邀請你進行對局。"
 
 #. TODO
 msgid "play:choose_mode"
-msgstr "Choose your game mode"
+msgstr "選擇遊戲模式"
 
 #. TODO
 msgid "play:hvh_desc"
-msgstr "Challenge a friend or find an opponent online."
+msgstr "挑戰好友或在線匹配對手。"
 
 #. TODO
 msgid "game_end:forfeit_win"
-msgstr "Your opponent left the game. You win!"
+msgstr "你贏了！對手棄權。"
 
 #. TODO
 msgid "Library"
-msgstr "Library"
+msgstr "棋譜庫"
 
 #. TODO
 msgid "dashboard:report_desc"
-msgstr "Detailed game reports and style analysis. (Coming Soon)"
+msgstr "詳細的對局報告和風格分析。(即將推出)"
 
 #. TODO
 msgid "game_room:leave_forfeit"
-msgstr "Leave & Forfeit"
+msgstr "離開並棄權"
 
 #. TODO
 msgid "lobby:invite"
-msgstr "Invite"
+msgstr "邀請"
 
 #. TODO
 msgid "lobby:online_players"
-msgstr "Online Players"
+msgstr "在線玩家"
 
 #. TODO
 msgid "First"
@@ -1443,43 +1437,43 @@ msgstr "First"
 
 #. TODO
 msgid "play:vs_ai_free_desc"
-msgstr "Practice with full analysis, undo, and custom settings."
+msgstr "練習模式，支持完整分析、悔棋和自定義設定。"
 
 #. TODO
 msgid "no_friends_desc"
-msgstr "You are not following anyone yet."
+msgstr "你還沒有關注任何人。"
 
 #. TODO
 msgid "Graph"
-msgstr "Graph"
+msgstr "圖表"
 
 #. TODO
 msgid "rated_mode_desc"
-msgstr "Net wins tracked for rank update"
+msgstr "淨勝局數將用於段位更新"
 
 #. TODO
 msgid "Move Numbers"
-msgstr "Move Numbers"
+msgstr "手數"
 
 #. TODO
 msgid "Score Lead"
-msgstr "Score Lead"
+msgstr "領先目數"
 
 #. TODO
 msgid "Friends & Following"
-msgstr "Friends & Following"
+msgstr "好友與關注"
 
 #. TODO
 msgid "Coordinates"
-msgstr "Coordinates"
+msgstr "座標"
 
 #. TODO
 msgid "items_disabled_rated"
-msgstr "Items disabled during Rated Game"
+msgstr "升降級對局中道具已禁用"
 
 #. TODO
 msgid "Komi"
-msgstr "Komi"
+msgstr "貼目"
 
 #. TODO
 msgid "Policy"
@@ -1491,20 +1485,70 @@ msgstr "Items"
 
 #. TODO
 msgid "Territory"
-msgstr "Territory"
+msgstr "領地"
 
 #. TODO
 msgid "Rules"
-msgstr "Rules"
+msgstr "規則"
 
 #. TODO
 msgid "Win Rate"
-msgstr "Win Rate"
+msgstr "勝率"
 
 #. TODO
 msgid "rated_mode_active"
-msgstr "Rated Mode: Progressing"
+msgstr "升降級模式：進行中"
 
 #. TODO
 msgid "Advice"
-msgstr "Advice"
+msgstr "建議"
+
+#. TODO
+msgid "PASS"
+msgstr "棄權"
+
+#. TODO
+msgid "Settings"
+msgstr "設定"
+
+#. TODO
+msgid "Rotate Board"
+msgstr "旋轉棋盤"
+
+#. TODO
+msgid "AI Move"
+msgstr "AI Move"
+
+#. TODO
+msgid "Next Mistake"
+msgstr "下一個錯誤"
+
+#. TODO
+msgid "RESIGN"
+msgstr "認輸"
+
+#. TODO
+msgid "new_zealand"
+msgstr "New Zealand"
+
+#. TODO
+msgid "Undo (Smart)"
+msgstr "Undo (Smart)"
+
+#. TODO
+msgid "Moves"
+msgstr "手數"
+
+#. TODO
+msgid "Spectators"
+msgstr "觀眾"
+
+#. TODO
+msgid "Previous Mistake"
+msgstr "上一個錯誤"
+
+msgid "Rank"
+msgstr "段位"
+
+msgid "Game Over"
+msgstr "對局結束"

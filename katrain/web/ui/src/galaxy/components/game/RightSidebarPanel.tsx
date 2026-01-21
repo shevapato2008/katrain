@@ -19,6 +19,7 @@ import FlagIcon from '@mui/icons-material/Flag';
 import UndoIcon from '@mui/icons-material/Undo';
 import { type GameState, API } from '../../../api';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../../i18n';
 
 interface RightSidebarPanelProps {
@@ -39,6 +40,7 @@ const RightSidebarPanel = ({
     isRated = false
 }: RightSidebarPanelProps) => {
     const { user, token } = useAuth();
+    useSettings(); // Subscribe to translation changes for re-render
     const [followingNames, setFollowingNames] = useState<Set<string>>(new Set());
 
     useEffect(() => {

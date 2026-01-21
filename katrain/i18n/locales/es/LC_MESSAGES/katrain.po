@@ -752,18 +752,18 @@ msgstr "Cache analysis in SGF"
 msgid "menu:save-as"
 msgstr "Save Game As..."
 
-#. TODO
 # sgf load button
+#. TODO
 msgid "Load File"
 msgstr "Load File"
 
-#. TODO
 # sgf save popup
+#. TODO
 msgid "save sgf title"
 msgstr "Save SGF File"
 
-#. TODO
 # sgf save as button
+#. TODO
 msgid "Save File"
 msgstr "Save File"
 
@@ -1030,18 +1030,327 @@ msgstr "Ko allowed?"
 msgid "analysis:tsumegoframe"
 msgstr "Tsumego Frame"
 
-
 msgid "ai:human"
 msgstr "Human-like"
-
 
 msgid "ai:pro"
 msgstr "Historical Pro"
 
-
 msgid "AI"
 msgstr "AI"
 
-
 msgid "Human"
 msgstr "Human"
+
+msgid "dashboard:welcome"
+msgstr "Bienvenido a Galaxy Go"
+
+msgid "dashboard:tagline"
+msgstr "Tu plataforma profesional de entrenamiento y análisis de Go."
+
+msgid "dashboard:play_desc"
+msgstr ""
+"Desafía a oponentes de IA o juega contra amigos. Partidas clasificatorias "
+"para establecer tu rango."
+
+msgid "dashboard:research_desc"
+msgstr ""
+"Analiza partidas con IA, explora variaciones y gestiona tu biblioteca SGF."
+
+msgid "dashboard:report_desc"
+msgstr "Informes detallados de partidas y análisis de estilo. (Próximamente)"
+
+msgid "dashboard:live_desc"
+msgstr "Ver partidas de alto nivel y torneos en vivo. (Próximamente)"
+
+msgid "Settings"
+msgstr "Configuración"
+
+msgid "Research"
+msgstr "Investigación"
+
+msgid "Live"
+msgstr "En vivo"
+
+msgid "Login"
+msgstr "Iniciar sesión"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "play:choose_mode"
+msgstr "Elige tu modo de juego"
+
+msgid "play:vs_ai_free"
+msgstr "Jugar vs IA (Libre)"
+
+msgid "play:vs_ai_free_desc"
+msgstr ""
+"Practica con análisis completo, deshacer y configuración personalizada."
+
+msgid "play:rated_ai"
+msgstr "Partida clasificatoria vs IA"
+
+msgid "play:rated_ai_desc"
+msgstr ""
+"Juega una partida clasificatoria contra una IA similar a humanos. Sin "
+"análisis durante la partida."
+
+msgid "play:hvh"
+msgstr "Humano vs Humano"
+
+msgid "play:hvh_desc"
+msgstr "Desafía a un amigo o encuentra un oponente en línea."
+
+msgid "play:free_play_setup"
+msgstr "Configuración de juego libre"
+
+msgid "play:rated_ai_setup"
+msgstr "Configuración de partida clasificatoria"
+
+msgid "Board & Rules"
+msgstr "Tablero y reglas"
+
+msgid "Opponent & Time"
+msgstr "Oponente y tiempo"
+
+msgid "Your Color"
+msgstr "Tu color"
+
+msgid "Black"
+msgstr "Negro"
+
+msgid "White"
+msgstr "Blanco"
+
+msgid "First"
+msgstr "Primero"
+
+msgid "Second"
+msgstr "Segundo"
+
+msgid "Enable Timer"
+msgstr "Habilitar temporizador"
+
+msgid "Rank"
+msgstr "Rango"
+
+msgid "Standard"
+msgstr "Estándar"
+
+msgid "Stones"
+msgstr "Piedras"
+
+msgid "Minutes"
+msgstr "Minutos"
+
+msgid "Seconds"
+msgstr "Segundos"
+
+msgid "cancel"
+msgstr "Cancelar"
+
+msgid "Items"
+msgstr "Objetos"
+
+msgid "Territory"
+msgstr "Territorio"
+
+msgid "Advice"
+msgstr "Consejo"
+
+msgid "Graph"
+msgstr "Gráfico"
+
+msgid "Policy"
+msgstr "Política"
+
+msgid "Win Rate"
+msgstr "Tasa de victoria"
+
+msgid "Score Lead"
+msgstr "Ventaja de puntos"
+
+msgid "Coordinates"
+msgstr "Coordenadas"
+
+msgid "Move Numbers"
+msgstr "Números de movimiento"
+
+msgid "PASS"
+msgstr "PASAR"
+
+msgid "RESIGN"
+msgstr "RENDIRSE"
+
+msgid "Undo (Smart)"
+msgstr "Deshacer (Inteligente)"
+
+msgid "Previous Mistake"
+msgstr "Error anterior"
+
+msgid "Next Mistake"
+msgstr "Siguiente error"
+
+msgid "Rotate Board"
+msgstr "Rotar tablero"
+
+msgid "AI Move"
+msgstr "Movimiento de IA"
+
+msgid "exit"
+msgstr "Salir"
+
+msgid "Rules"
+msgstr "Reglas"
+
+msgid "Komi"
+msgstr "Komi"
+
+msgid "items_disabled_rated"
+msgstr "Objetos deshabilitados durante partida clasificatoria"
+
+msgid "rated_mode_active"
+msgstr "Modo clasificatorio: En progreso"
+
+msgid "rated_mode_desc"
+msgstr "Victorias netas registradas para actualizar rango"
+
+msgid "leave_game_title"
+msgstr "¿Abandonar partida?"
+
+msgid "leave_game_warning"
+msgstr "La partida está en curso. Salir significará rendirse. ¿Estás seguro?"
+
+msgid "resign_and_exit"
+msgstr "Rendirse y salir"
+
+msgid "resign_game_title"
+msgstr "¿Rendirse?"
+
+msgid "resign_confirm_text"
+msgstr "¿Estás seguro de que quieres rendirte?"
+
+msgid "play_vs_ai"
+msgstr "Jugar vs IA"
+
+msgid "lobby:title"
+msgstr "Sala multijugador"
+
+msgid "lobby:subtitle"
+msgstr "Juega contra otros humanos o mira partidas en vivo."
+
+msgid "lobby:quick_match_rated"
+msgstr "Partida rápida (Clasificatoria)"
+
+msgid "lobby:custom_game"
+msgstr "Partida personalizada"
+
+msgid "lobby:online_players"
+msgstr "Jugadores en línea"
+
+msgid "lobby:active_games"
+msgstr "Partidas activas"
+
+msgid "lobby:no_active_games"
+msgstr "No hay partidas activas en este momento."
+
+msgid "lobby:active_games_desc"
+msgstr ""
+"Las partidas aparecerán aquí cuando el emparejamiento esté funcionando."
+
+msgid "lobby:finding_opponent"
+msgstr "Buscando oponente..."
+
+msgid "lobby:matching_desc"
+msgstr "Buscando un oponente adecuado para ti."
+
+msgid "lobby:invite"
+msgstr "Invitar"
+
+msgid "lobby:watch"
+msgstr "Ver"
+
+msgid "lobby:you"
+msgstr "Tú"
+
+msgid "lobby:no_players"
+msgstr "No hay otros jugadores en línea."
+
+msgid "lobby:no_rank"
+msgstr "Sin rango"
+
+msgid "lobby:invitation_title"
+msgstr "Invitación de partida"
+
+msgid "lobby:invitation_text"
+msgstr "{{name}} te ha invitado a una partida."
+
+msgid "lobby:accept"
+msgstr "Aceptar"
+
+msgid "lobby:decline"
+msgstr "Rechazar"
+
+msgid "Spectators"
+msgstr "Espectadores"
+
+msgid "Moves"
+msgstr "Movimientos"
+
+msgid "Friends & Following"
+msgstr "Amigos y seguidos"
+
+msgid "no_friends_desc"
+msgstr "Aún no sigues a nadie."
+
+msgid "Game Over"
+msgstr "Partida terminada"
+
+msgid "game_room:your_turn"
+msgstr "Tu turno"
+
+msgid "game_room:opponents_turn"
+msgstr "Turno del oponente"
+
+msgid "game_room:spectating"
+msgstr "Observando"
+
+msgid "game_room:leave"
+msgstr "Salir de la partida"
+
+msgid "game_room:leave_forfeit"
+msgstr "Salir y abandonar"
+
+msgid "game_room:forfeit_warning"
+msgstr "Salir significará abandonar la partida. ¿Estás seguro?"
+
+msgid "game_room:back_to_lobby"
+msgstr "Volver al lobby"
+
+msgid "game_end:resign_win"
+msgstr "¡Ganaste! El oponente se rindió."
+
+msgid "game_end:resign_loss"
+msgstr "Te rendiste."
+
+msgid "game_end:timeout_win"
+msgstr "¡Ganaste por tiempo!"
+
+msgid "game_end:timeout_loss"
+msgstr "Perdiste por tiempo."
+
+msgid "game_end:forfeit_win"
+msgstr "¡Ganaste! El oponente abandonó."
+
+msgid "game_end:forfeit_loss"
+msgstr "Abandonaste la partida."
+
+msgid "Loading Board..."
+msgstr "Cargando tablero..."
+
+msgid "Analysis"
+msgstr "Análisis"
+
+msgid "Library"
+msgstr "Biblioteca"

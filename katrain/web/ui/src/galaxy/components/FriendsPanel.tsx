@@ -58,13 +58,15 @@ const FriendsPanel = ({ noBorder }: { noBorder?: boolean }) => {
     if (!user) return null;
 
     return (
-        <Box sx={{ 
-            width: 300, 
-            height: '100%', 
-            bgcolor: 'background.paper', 
-            borderLeft: noBorder ? 'none' : '1px solid rgba(255,255,255,0.05)', 
-            display: 'flex', 
-            flexDirection: 'column' 
+        <Box sx={{
+            width: 300,
+            height: '100%',
+            bgcolor: 'background.paper',
+            border: 'none',
+            borderLeft: noBorder ? 'none' : '1px solid rgba(255,255,255,0.05)',
+            boxShadow: 'none',
+            display: 'flex',
+            flexDirection: 'column'
         }}>
             <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)' }}>
                 <Typography variant="h6" fontWeight="bold">{i18n.t('Friends & Following', 'Friends & Following')}</Typography>

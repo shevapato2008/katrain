@@ -6,6 +6,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import FriendsPanel from '../components/FriendsPanel';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { i18n } from '../../i18n';
 
 const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
@@ -33,6 +34,7 @@ const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
 
 const Dashboard = () => {
     const { user } = useAuth();
+    useSettings(); // Subscribe to translation changes for re-render
     const modules = [
         { 
             title: i18n.t('btn:Play', 'Play'), 

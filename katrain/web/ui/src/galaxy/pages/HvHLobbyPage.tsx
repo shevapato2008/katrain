@@ -5,6 +5,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import FriendsPanel from '../components/FriendsPanel';
 import { i18n } from '../../i18n';
 
@@ -27,6 +28,7 @@ interface ActiveGame {
 const HvHLobbyPage = () => {
     const navigate = useNavigate();
     const { user, token } = useAuth();
+    useSettings(); // Subscribe to translation changes for re-render
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
     const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
     const [loading, setLoading] = useState(true);

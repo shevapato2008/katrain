@@ -107,7 +107,7 @@ msgid "play:choose_mode"
 msgstr "Choose your game mode"
 
 msgid "play:rated_ai_setup"
-msgstr "Rated Game Setup"
+msgstr "Rated AI Game Setup"
 
 msgid "play:free_play_setup"
 msgstr "Free Play Setup"
@@ -228,27 +228,25 @@ msgid "lobby:accept"
 msgstr "Accept"
 
 msgid "game_end:forfeit_win"
-msgstr "Your opponent left the game. You win!"
+msgstr "You won! Opponent forfeited."
 
 msgid "game_end:forfeit_loss"
 msgstr "You forfeited the game."
 
 msgid "game_end:resign_win"
-msgstr "Your opponent resigned. You win!"
+msgstr "You won! Opponent resigned."
 
 msgid "game_end:resign_loss"
 msgstr "You resigned."
 
 msgid "game_end:timeout_win"
-msgstr "Your opponent ran out of time. You win!"
+msgstr "You won on time!"
 
 msgid "game_end:timeout_loss"
-msgstr "You ran out of time."
+msgstr "You lost on time."
 
 msgid "game_room:forfeit_warning"
-msgstr ""
-"Leaving the game will count as a forfeit. Your opponent will win this game. "
-"Are you sure you want to leave?"
+msgstr "Leaving will forfeit the game. Are you sure?"
 
 msgid "game_room:leave_forfeit"
 msgstr "Leave & Forfeit"
@@ -266,7 +264,7 @@ msgid "game_room:spectating"
 msgstr "Spectating"
 
 msgid "game_room:leave"
-msgstr "Leave"
+msgstr "Leave Game"
 
 msgid "Loading Board..."
 msgstr "Loading Board..."
@@ -687,19 +685,6 @@ msgstr "Komi"
 
 msgid "ruleset"
 msgstr "Rules"
-
-#. ruleset names
-msgid "japanese"
-msgstr "Japanese"
-
-msgid "chinese"
-msgstr "Chinese"
-
-msgid "korean"
-msgstr "Korean"
-
-msgid "aga"
-msgstr "AGA"
 
 msgid "tromp-taylor"
 msgstr "Tromp-Taylor"
@@ -1385,9 +1370,6 @@ msgstr "Hide engine analysis while playing"
 msgid "save marks"
 msgstr "Save in SGF (marks)"
 
-msgid "cancel"
-msgstr "Cancel"
-
 msgid "AI"
 msgstr "AI"
 
@@ -1441,3 +1423,57 @@ msgstr "Net wins tracked for rank update"
 
 msgid "items_disabled_rated"
 msgstr "Items disabled during Rated Game"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "cancel"
+msgstr "Cancel"
+
+msgid "PASS"
+msgstr "PASS"
+
+msgid "RESIGN"
+msgstr "RESIGN"
+
+msgid "Undo (Smart)"
+msgstr "Undo (Smart)"
+
+msgid "Previous Mistake"
+msgstr "Previous Mistake"
+
+msgid "Rotate Board"
+msgstr "Rotate Board"
+
+msgid "AI Move"
+msgstr "AI Move"
+
+msgid "Next Mistake"
+msgstr "Next Mistake"
+
+msgid "Spectators"
+msgstr "Spectators"
+
+msgid "Moves"
+msgstr "Moves"
+
+msgid "japanese"
+msgstr "Japanese"
+
+msgid "chinese"
+msgstr "Chinese"
+
+msgid "korean"
+msgstr "Korean"
+
+msgid "aga"
+msgstr "AGA"
+
+msgid "new_zealand"
+msgstr "New Zealand"
+
+msgid "Rank"
+msgstr "Rank"
+
+msgid "Game Over"
+msgstr "Game Over"

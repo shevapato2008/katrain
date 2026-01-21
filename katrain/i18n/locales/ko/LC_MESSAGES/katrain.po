@@ -1001,7 +1001,7 @@ msgstr "Game Ended"
 
 #. TODO
 msgid "White"
-msgstr "White"
+msgstr "백"
 
 #. TODO
 msgid "NOTIFICATIONS"
@@ -1021,7 +1021,7 @@ msgstr "Save in SGF (marks)"
 
 #. TODO
 msgid "Black"
-msgstr "Black"
+msgstr "흑"
 
 #. TODO
 msgid "low_visits"
@@ -1094,7 +1094,7 @@ msgstr "Max Top Moves on Board"
 
 #. TODO
 msgid "Research"
-msgstr "Research"
+msgstr "연구"
 
 #. TODO
 msgid "Logout"
@@ -1102,136 +1102,135 @@ msgstr "Logout"
 
 #. TODO
 msgid "Language"
-msgstr "Language"
+msgstr "언어"
 
 #. TODO
 msgid "Live"
-msgstr "Live"
+msgstr "라이브"
 
 #. TODO
 msgid "Login"
-msgstr "Sign In"
+msgstr "로그인"
 
 #. TODO
 msgid "dashboard:live_desc"
-msgstr "Watch top games and live tournaments. (Coming Soon)"
+msgstr "최고 수준의 대국과 실시간 대회 관전. (곧 출시)"
 
 #. TODO
 msgid "game_room:back_to_lobby"
-msgstr "Back to Lobby"
+msgstr "로비로 돌아가기"
 
 #. TODO
 msgid "lobby:accept"
-msgstr "Accept"
+msgstr "수락"
 
 #. TODO
 msgid "game_room:spectating"
-msgstr "Spectating"
+msgstr "관전 중"
 
 #. TODO
 msgid "lobby:no_players"
-msgstr "No other players online."
+msgstr "다른 온라인 플레이어가 없습니다."
 
 #. TODO
 msgid "play:hvh"
-msgstr "Human vs Human"
+msgstr "인간 대 인간"
 
 #. TODO
 msgid "Opponent & Time"
-msgstr "Opponent & Time"
+msgstr "상대 및 시간"
 
 #. TODO
 msgid "lobby:you"
-msgstr "You"
+msgstr "당신"
 
 #. TODO
 msgid "game_room:opponents_turn"
-msgstr "Opponent's Turn"
+msgstr "상대방의 차례"
 
 #. TODO
 msgid "lobby:active_games_desc"
-msgstr "Games will appear here once matchmaking is functional."
+msgstr "매칭 기능이 활성화되면 대국이 여기에 표시됩니다."
 
 #. TODO
 msgid "game_room:your_turn"
-msgstr "Your Turn"
+msgstr "당신의 차례입니다"
 
 #. TODO
 msgid "play:rated_ai_setup"
-msgstr "Rated Game Setup"
+msgstr "레이팅 대국 설정"
 
 #. TODO
 msgid "Board & Rules"
-msgstr "Board & Rules"
+msgstr "바둑판 및 규칙"
 
 #. TODO
 msgid "play:rated_ai"
-msgstr "Rated Game vs AI"
+msgstr "레이팅 대국 vs AI"
 
 #. TODO
 msgid "Stones"
-msgstr "Stones"
+msgstr "돌"
 
 #. TODO
 msgid "lobby:matching_desc"
-msgstr "Looking for a suitable match for you."
+msgstr "적합한 상대를 찾고 있습니다."
 
 #. TODO
 msgid "leave_game_title"
-msgstr "Leave Game?"
+msgstr "대국을 떠나시겠습니까?"
 
 #. TODO
 msgid "Seconds"
-msgstr "Seconds"
+msgstr "초"
 
 #. TODO
 msgid "game_end:timeout_win"
-msgstr "Your opponent ran out of time. You win!"
+msgstr "시간 초과로 승리했습니다!"
 
 #. TODO
 msgid "lobby:finding_opponent"
-msgstr "Finding Opponent..."
+msgstr "상대를 찾는 중..."
 
 #. TODO
 msgid "leave_game_warning"
-msgstr ""
-"The game is still in progress. Leaving will resign the game. Are you sure?"
+msgstr "대국이 진행 중입니다. 나가면 기권 처리됩니다. 확실합니까?"
 
 #. TODO
 msgid "dashboard:tagline"
-msgstr "Your professional Go training and analysis platform."
+msgstr "전문적인 바둑 훈련 및 분석 플랫폼."
 
 #. TODO
 msgid "play:free_play_setup"
-msgstr "Free Play Setup"
+msgstr "자유 대국 설정"
 
 #. TODO
 msgid "lobby:custom_game"
-msgstr "Custom Game"
+msgstr "사용자 정의 대국"
 
 #. TODO
 msgid "dashboard:welcome"
-msgstr "Welcome to Galaxy Go"
+msgstr "Galaxy Go에 오신 것을 환영합니다"
 
 #. TODO
 msgid "game_end:forfeit_loss"
-msgstr "You forfeited the game."
+msgstr "기권했습니다."
 
 #. TODO
 msgid "lobby:no_active_games"
-msgstr "No active games at the moment."
+msgstr "현재 진행 중인 대국이 없습니다."
 
 #. TODO
 msgid "lobby:active_games"
-msgstr "Active Games"
+msgstr "진행 중인 대국"
 
 #. TODO
 msgid "game_end:resign_loss"
-msgstr "You resigned."
+msgstr "기권했습니다."
 
 #. TODO
 msgid "resign_and_exit"
-msgstr "Resign & Exit"
+msgstr "기권 후 나가기"
 
 #. TODO
 msgid "no ai settings"
@@ -1239,217 +1238,262 @@ msgstr "No configurable settings for this strategy"
 
 #. TODO
 msgid "resign_game_title"
-msgstr "Resign Game?"
+msgstr "기권하시겠습니까?"
 
 #. TODO
 msgid "Minutes"
-msgstr "Minutes"
+msgstr "분"
 
 #. TODO
 msgid "Your Color"
-msgstr "Your Color"
+msgstr "당신의 색"
 
 #. TODO
 msgid "lobby:watch"
-msgstr "Watch"
+msgstr "관전"
 
 #. TODO
 msgid "Enable Timer"
-msgstr "Enable Timer"
+msgstr "타이머 활성화"
 
 #. TODO
 msgid "Standard"
-msgstr "Standard"
+msgstr "표준"
 
 #. TODO
 msgid "lobby:subtitle"
-msgstr "Play against other humans or watch live games."
+msgstr "다른 플레이어와 대국하거나 실시간 경기를 관전하세요."
 
 #. TODO
 msgid "exit"
-msgstr "Exit"
+msgstr "나가기"
 
 #. TODO
 msgid "Loading Board..."
-msgstr "Loading Board..."
+msgstr "바둑판 로딩 중..."
 
 #. TODO
 msgid "play:rated_ai_desc"
-msgstr "Play a ranked game against a human-like AI. No analysis during game."
+msgstr "인간형 AI와 랭크 대국. 대국 중 분석 없음."
 
 #. TODO
 msgid "game_end:resign_win"
-msgstr "Your opponent resigned. You win!"
+msgstr "승리했습니다! 상대가 기권했습니다."
 
 #. TODO
 msgid "lobby:decline"
-msgstr "Decline"
+msgstr "거절"
 
 #. TODO
 msgid "lobby:title"
-msgstr "Multiplayer Lobby"
+msgstr "멀티플레이어 로비"
 
 #. TODO
 msgid "dashboard:research_desc"
-msgstr ""
-"Analyze games with AI, explore variations, and manage your SGF library."
+msgstr "AI로 기보를 분석하고, 변화를 탐색하고, SGF 라이브러리를 관리하세요."
 
 #. TODO
 msgid "lobby:quick_match_rated"
-msgstr "Quick Match (Rated)"
+msgstr "빠른 매칭 (레이팅)"
 
 #. TODO
 msgid "play:vs_ai_free"
-msgstr "Play vs AI (Free)"
+msgstr "AI 대국 (자유)"
 
 #. TODO
 msgid "lobby:invitation_title"
-msgstr "Game Invitation"
+msgstr "대국 초대"
 
 #. TODO
 msgid "resign_confirm_text"
-msgstr "Are you sure you want to resign?"
+msgstr "정말 기권하시겠습니까?"
 
 #. TODO
 msgid "dashboard:play_desc"
-msgstr ""
-"Challenge AI opponents or play against friends. Features Rated games to "
-"establish your rank."
+msgstr "AI 상대와 대결하거나 친구와 대국하세요. 레이팅 게임으로 등급을 확립하세요."
 
 #. TODO
 msgid "game_end:timeout_loss"
-msgstr "You ran out of time."
+msgstr "시간 초과로 패배했습니다."
 
 #. TODO
 msgid "game_room:forfeit_warning"
-msgstr ""
-"Leaving the game will count as a forfeit. Your opponent will win this game. "
-"Are you sure you want to leave?"
+msgstr "나가면 기권 처리됩니다. 확실합니까?"
 
 #. TODO
 msgid "game_room:leave"
-msgstr "Leave"
+msgstr "대국 나가기"
 
 #. TODO
 msgid "Analysis"
-msgstr "Analysis"
+msgstr "분석"
 
 #. TODO
 msgid "play_vs_ai"
-msgstr "Play vs AI"
+msgstr "AI 대국"
 
 #. TODO
 msgid "lobby:no_rank"
-msgstr "No Rank"
+msgstr "등급 없음"
 
 #. TODO
 msgid "Second"
-msgstr "Second"
+msgstr "후수"
 
 #. TODO
 msgid "lobby:invitation_text"
-msgstr "{{name}} invited you to a game."
+msgstr "{{name}}님이 대국에 초대했습니다."
 
 #. TODO
 msgid "play:choose_mode"
-msgstr "Choose your game mode"
+msgstr "게임 모드 선택"
 
 #. TODO
 msgid "play:hvh_desc"
-msgstr "Challenge a friend or find an opponent online."
+msgstr "친구에게 도전하거나 온라인에서 상대를 찾으세요."
 
 #. TODO
 msgid "game_end:forfeit_win"
-msgstr "Your opponent left the game. You win!"
+msgstr "승리했습니다! 상대가 기권했습니다."
 
 #. TODO
 msgid "Library"
-msgstr "Library"
+msgstr "라이브러리"
 
 #. TODO
 msgid "dashboard:report_desc"
-msgstr "Detailed game reports and style analysis. (Coming Soon)"
+msgstr "상세한 게임 리포트와 스타일 분석. (곧 출시)"
 
 #. TODO
 msgid "game_room:leave_forfeit"
-msgstr "Leave & Forfeit"
+msgstr "나가고 기권하기"
 
 #. TODO
 msgid "lobby:invite"
-msgstr "Invite"
+msgstr "초대"
 
 #. TODO
 msgid "lobby:online_players"
-msgstr "Online Players"
+msgstr "온라인 플레이어"
 
 #. TODO
 msgid "First"
-msgstr "First"
+msgstr "선수"
 
 #. TODO
 msgid "play:vs_ai_free_desc"
-msgstr "Practice with full analysis, undo, and custom settings."
+msgstr "완전한 분석, 되돌리기, 사용자 설정으로 연습하세요."
 
 #. TODO
 msgid "no_friends_desc"
-msgstr "You are not following anyone yet."
+msgstr "아직 아무도 팔로우하지 않았습니다."
 
 #. TODO
 msgid "Graph"
-msgstr "Graph"
+msgstr "그래프"
 
 #. TODO
 msgid "rated_mode_desc"
-msgstr "Net wins tracked for rank update"
+msgstr "등급 업데이트를 위한 순승 추적 중"
 
 #. TODO
 msgid "Move Numbers"
-msgstr "Move Numbers"
+msgstr "수순"
 
 #. TODO
 msgid "Score Lead"
-msgstr "Score Lead"
+msgstr "점수 우위"
 
 #. TODO
 msgid "Friends & Following"
-msgstr "Friends & Following"
+msgstr "친구 및 팔로잉"
 
 #. TODO
 msgid "Coordinates"
-msgstr "Coordinates"
+msgstr "좌표"
 
 #. TODO
 msgid "items_disabled_rated"
-msgstr "Items disabled during Rated Game"
+msgstr "레이팅 대국 중 아이템 비활성화"
 
 #. TODO
 msgid "Komi"
-msgstr "Komi"
+msgstr "덤"
 
 #. TODO
 msgid "Policy"
-msgstr "Policy"
+msgstr "정책"
 
 #. TODO
 msgid "Items"
-msgstr "Items"
+msgstr "아이템"
 
 #. TODO
 msgid "Territory"
-msgstr "Territory"
+msgstr "집"
 
 #. TODO
 msgid "Rules"
-msgstr "Rules"
+msgstr "규칙"
 
 #. TODO
 msgid "Win Rate"
-msgstr "Win Rate"
+msgstr "승률"
 
 #. TODO
 msgid "rated_mode_active"
-msgstr "Rated Mode: Progressing"
+msgstr "레이팅 모드: 진행 중"
 
 #. TODO
 msgid "Advice"
-msgstr "Advice"
+msgstr "조언"
+
+#. TODO
+msgid "PASS"
+msgstr "패스"
+
+#. TODO
+msgid "Settings"
+msgstr "설정"
+
+#. TODO
+msgid "Rotate Board"
+msgstr "바둑판 회전"
+
+#. TODO
+msgid "AI Move"
+msgstr "AI 착수"
+
+#. TODO
+msgid "Next Mistake"
+msgstr "다음 실수"
+
+#. TODO
+msgid "RESIGN"
+msgstr "기권"
+
+#. TODO
+msgid "new_zealand"
+msgstr "New Zealand"
+
+#. TODO
+msgid "Undo (Smart)"
+msgstr "무르기 (스마트)"
+
+#. TODO
+msgid "Moves"
+msgstr "수"
+
+#. TODO
+msgid "Spectators"
+msgstr "관전자"
+
+#. TODO
+msgid "Previous Mistake"
+msgstr "이전 실수"
+
+msgid "Rank"
+msgstr "급수"
+
+msgid "Game Over"
+msgstr "게임 종료"

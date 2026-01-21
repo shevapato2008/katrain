@@ -5,12 +5,14 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
+import { useSettings } from '../context/SettingsContext';
 import { i18n } from '../../i18n';
 
 const GamePage = () => {
     const { sessionId } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    useSettings(); // Subscribe to translation changes for re-render
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
 

@@ -3,7 +3,7 @@ import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgr
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-import { i18n } from '../../i18n';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface CategoryInfo {
   category: string;
@@ -21,6 +21,7 @@ const TsumegoCategoriesPage = () => {
   const navigate = useNavigate();
   const { level } = useParams<{ level: string }>();
   useSettings();
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,17 +60,17 @@ const TsumegoCategoriesPage = () => {
             onClick={() => navigate('/galaxy/tsumego')}
             sx={{ cursor: 'pointer' }}
           >
-            {i18n.t('Tsumego', '死活题')}
+            {t('Tsumego')}
           </Link>
           <Typography color="text.primary">{level?.toUpperCase()}</Typography>
         </Breadcrumbs>
       </Box>
 
       <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-        {level?.toUpperCase()} - {i18n.t('tsumego:selectCategory', '选择题型')}
+        {level?.toUpperCase()} - {t('tsumego:selectCategory')}
       </Typography>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
-        {i18n.t('tsumego:categoryDesc', '选择你想要练习的题型')}
+        {t('tsumego:categoryDesc')}
       </Typography>
 
       <Grid container spacing={3}>
@@ -91,10 +92,10 @@ const TsumegoCategoriesPage = () => {
                     {CATEGORY_ICONS[cat.category] || '题'}
                   </Typography>
                   <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    {cat.name}
+                    {t(`tsumego:${cat.category}`)}
                   </Typography>
                   <Typography variant="h6" color="text.secondary">
-                    {cat.count} {i18n.t('tsumego:problems', '题')}
+                    {cat.count} {t('tsumego:problems')}
                   </Typography>
                 </CardContent>
               </CardActionArea>

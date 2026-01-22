@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-import { i18n } from '../../i18n';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface LevelInfo {
   level: string;
@@ -12,7 +12,8 @@ interface LevelInfo {
 
 const TsumegoLevelsPage = () => {
   const navigate = useNavigate();
-  useSettings(); // Subscribe to translation changes
+  useSettings(); // Subscribe to settings changes
+  const { t } = useTranslation();
   const [levels, setLevels] = useState<LevelInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,10 +41,10 @@ const TsumegoLevelsPage = () => {
   return (
     <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
       <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-        {i18n.t('Tsumego', '死活题')}
+        {t('Tsumego')}
       </Typography>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
-        {i18n.t('tsumego:selectLevel', '选择难度级别')}
+        {t('tsumego:selectLevel')}
       </Typography>
 
       <Grid container spacing={3}>
@@ -65,7 +66,7 @@ const TsumegoLevelsPage = () => {
                     {level.level.toUpperCase()}
                   </Typography>
                   <Typography variant="h6" color="text.secondary">
-                    {level.total} {i18n.t('tsumego:problems', '题')}
+                    {level.total} {t('tsumego:problems')}
                   </Typography>
                   <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
                     {Object.entries(level.categories).map(([cat, count]) => (
@@ -75,7 +76,7 @@ const TsumegoLevelsPage = () => {
                         bgcolor: 'action.hover',
                         borderRadius: 1
                       }}>
-                        {cat === 'life-death' ? '死活' : cat === 'tesuji' ? '手筋' : '官子'}: {count}
+                        {t(`tsumego:${cat}`)}: {count}
                       </Typography>
                     ))}
                   </Box>

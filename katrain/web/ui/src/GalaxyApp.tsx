@@ -10,6 +10,7 @@ import GameRoomPage from './galaxy/pages/GameRoomPage';
 import TsumegoLevelsPage from './galaxy/pages/TsumegoLevelsPage';
 import TsumegoCategoriesPage from './galaxy/pages/TsumegoCategoriesPage';
 import TsumegoListPage from './galaxy/pages/TsumegoListPage';
+import TsumegoProblemPage from './galaxy/pages/TsumegoProblemPage';
 import { AuthProvider } from './galaxy/context/AuthContext';
 import { SettingsProvider } from './galaxy/context/SettingsContext';
 
@@ -30,6 +31,7 @@ const GalaxyApp = () => {
           <Route path="tsumego" element={<TsumegoLevelsPage />} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoListPage />} />
+          <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
           <Route path="*" element={<Navigate to="/galaxy" replace />} />
         </Route>
       </Routes>

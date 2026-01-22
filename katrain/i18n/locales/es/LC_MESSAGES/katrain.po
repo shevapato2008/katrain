@@ -1384,3 +1384,72 @@ msgstr "Blanco gana por {n} puntos"
 
 msgid "game:black_wins_points"
 msgstr "Negro gana por {n} puntos"
+
+msgid "Tsumego"
+msgstr "Tsumego"
+
+msgid "tsumego:selectLevel"
+msgstr "Seleccionar nivel de dificultad"
+
+msgid "tsumego:practiceProblems"
+msgstr "Practica problemas de vida y muerte para mejorar tu lectura"
+
+msgid "tsumego:selectCategory"
+msgstr "Seleccionar categoría"
+
+msgid "tsumego:categoryDesc"
+msgstr "Elige el tipo de problemas que quieres practicar"
+
+msgid "tsumego:problems"
+msgstr "problemas"
+
+msgid "tsumego:solveProblems"
+msgstr "Haz clic en un problema para empezar a practicar"
+
+msgid "tsumego:life-death"
+msgstr "Vida y Muerte"
+
+msgid "tsumego:tesuji"
+msgstr "Tesuji"
+
+msgid "tsumego:endgame"
+msgstr "Final"
+
+msgid "tsumego:problem_n"
+msgstr "Problema {n}"
+
+msgid "tsumego:solved"
+msgstr "¡Resuelto!"
+
+msgid "tsumego:incorrect"
+msgstr "Incorrecto"
+
+msgid "tsumego:blackToPlay"
+msgstr "Negro juega"
+
+msgid "tsumego:whiteToPlay"
+msgstr "Blanco juega"
+
+msgid "tsumego:attempts"
+msgstr "Intentos"
+
+msgid "tsumego:showHint"
+msgstr "Mostrar pista"
+
+msgid "tsumego:hideHint"
+msgstr "Ocultar pista"
+
+msgid "tsumego:undo"
+msgstr "Deshacer"
+
+msgid "tsumego:reset"
+msgstr "Reiniciar"
+
+msgid "tsumego:previousProblem"
+msgstr "Anterior"
+
+msgid "tsumego:nextProblem"
+msgstr "Siguiente"
+
+msgid "tsumego:errorLoading"
+msgstr "Error al cargar"

@@ -1470,46 +1470,72 @@ msgstr "Белые выиграли {n} очков"
 msgid "game:black_wins_points"
 msgstr "Чёрные выиграли {n} очков"
 
-#. TODO
 msgid "tsumego:problem_n"
-msgstr "Problem {n}"
+msgstr "Задача {n}"
 
-#. TODO
 msgid "tsumego:solveProblems"
-msgstr "Click a problem to start practicing"
+msgstr "Нажмите на задачу, чтобы начать практику"
 
-#. TODO
 msgid "tsumego:problems"
-msgstr "problems"
+msgstr "задач"
 
-#. TODO
 msgid "tsumego:selectCategory"
-msgstr "Select Category"
+msgstr "Выберите категорию"
 
-#. TODO - tsumego module
+#. tsumego module
 msgid "Tsumego"
-msgstr "Tsumego"
+msgstr "Цумего"
 
-#. TODO
 msgid "tsumego:categoryDesc"
-msgstr "Choose the type of problems you want to practice"
+msgstr "Выберите тип задач для практики"
 
-#. TODO
 msgid "tsumego:endgame"
-msgstr "Endgame"
+msgstr "Эндшпиль"
 
-#. TODO
 msgid "tsumego:selectLevel"
-msgstr "Select Difficulty Level"
+msgstr "Выберите уровень сложности"
 
-#. TODO
 msgid "tsumego:practiceProblems"
-msgstr "Practice tsumego problems to improve your reading skills"
+msgstr "Решайте задачи на жизнь и смерть, чтобы улучшить чтение"
 
-#. TODO
 msgid "tsumego:tesuji"
-msgstr "Tesuji"
+msgstr "Тэсудзи"
 
-#. TODO
 msgid "tsumego:life-death"
-msgstr "Life & Death"
+msgstr "Жизнь и смерть"
+
+msgid "tsumego:solved"
+msgstr "Решено!"
+
+msgid "tsumego:incorrect"
+msgstr "Неверно"
+
+msgid "tsumego:blackToPlay"
+msgstr "Ход чёрных"
+
+msgid "tsumego:whiteToPlay"
+msgstr "Ход белых"
+
+msgid "tsumego:attempts"
+msgstr "Попытки"
+
+msgid "tsumego:showHint"
+msgstr "Показать подсказку"
+
+msgid "tsumego:hideHint"
+msgstr "Скрыть подсказку"
+
+msgid "tsumego:undo"
+msgstr "Отменить"
+
+msgid "tsumego:reset"
+msgstr "Сбросить"
+
+msgid "tsumego:previousProblem"
+msgstr "Предыдущая"
+
+msgid "tsumego:nextProblem"
+msgstr "Следующая"
+
+msgid "tsumego:errorLoading"
+msgstr "Ошибка загрузки"

@@ -1572,46 +1572,72 @@ msgstr "Beyaz {n} puan ile kazandı"
 msgid "game:black_wins_points"
 msgstr "Siyah {n} puan ile kazandı"
 
-#. TODO
 msgid "tsumego:problem_n"
 msgstr "Problem {n}"
 
-#. TODO
 msgid "tsumego:solveProblems"
-msgstr "Click a problem to start practicing"
+msgstr "Pratik yapmak için bir probleme tıklayın"
 
-#. TODO
 msgid "tsumego:problems"
-msgstr "problems"
+msgstr "problem"
 
-#. TODO
 msgid "tsumego:selectCategory"
-msgstr "Select Category"
+msgstr "Kategori seçin"
 
-#. TODO - tsumego module
+#. tsumego module
 msgid "Tsumego"
 msgstr "Tsumego"
 
-#. TODO
 msgid "tsumego:categoryDesc"
-msgstr "Choose the type of problems you want to practice"
+msgstr "Pratik yapmak istediğiniz problem türünü seçin"
 
-#. TODO
 msgid "tsumego:endgame"
-msgstr "Endgame"
+msgstr "Son oyun"
 
-#. TODO
 msgid "tsumego:selectLevel"
-msgstr "Select Difficulty Level"
+msgstr "Zorluk seviyesi seçin"
 
-#. TODO
 msgid "tsumego:practiceProblems"
-msgstr "Practice tsumego problems to improve your reading skills"
+msgstr "Okuma becerilerinizi geliştirmek için yaşam ve ölüm problemleri çözün"
 
-#. TODO
 msgid "tsumego:tesuji"
 msgstr "Tesuji"
 
-#. TODO
 msgid "tsumego:life-death"
-msgstr "Life & Death"
+msgstr "Yaşam ve Ölüm"
+
+msgid "tsumego:solved"
+msgstr "Çözüldü!"
+
+msgid "tsumego:incorrect"
+msgstr "Yanlış"
+
+msgid "tsumego:blackToPlay"
+msgstr "Siyah oynuyor"
+
+msgid "tsumego:whiteToPlay"
+msgstr "Beyaz oynuyor"
+
+msgid "tsumego:attempts"
+msgstr "Denemeler"
+
+msgid "tsumego:showHint"
+msgstr "İpucu Göster"
+
+msgid "tsumego:hideHint"
+msgstr "İpucu Gizle"
+
+msgid "tsumego:undo"
+msgstr "Geri Al"
+
+msgid "tsumego:reset"
+msgstr "Sıfırla"
+
+msgid "tsumego:previousProblem"
+msgstr "Önceki"
+
+msgid "tsumego:nextProblem"
+msgstr "Sonraki"
+
+msgid "tsumego:errorLoading"
+msgstr "Yükleme Hatası"

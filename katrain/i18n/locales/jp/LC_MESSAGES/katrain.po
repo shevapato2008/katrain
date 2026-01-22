@@ -1502,46 +1502,72 @@ msgstr "白{n}目勝ち"
 msgid "game:black_wins_points"
 msgstr "黒{n}目勝ち"
 
-#. TODO
 msgid "tsumego:problem_n"
-msgstr "Problem {n}"
+msgstr "問題{n}"
 
-#. TODO
 msgid "tsumego:solveProblems"
-msgstr "Click a problem to start practicing"
+msgstr "問題をクリックして練習を開始"
 
-#. TODO
 msgid "tsumego:problems"
-msgstr "problems"
+msgstr "問"
 
-#. TODO
 msgid "tsumego:selectCategory"
-msgstr "Select Category"
+msgstr "カテゴリを選択"
 
-#. TODO - tsumego module
+#. tsumego module
 msgid "Tsumego"
-msgstr "Tsumego"
+msgstr "詰碁"
 
-#. TODO
 msgid "tsumego:categoryDesc"
-msgstr "Choose the type of problems you want to practice"
+msgstr "練習したい問題の種類を選択"
 
-#. TODO
 msgid "tsumego:endgame"
-msgstr "Endgame"
+msgstr "ヨセ"
 
-#. TODO
 msgid "tsumego:selectLevel"
-msgstr "Select Difficulty Level"
+msgstr "難易度を選択"
 
-#. TODO
 msgid "tsumego:practiceProblems"
-msgstr "Practice tsumego problems to improve your reading skills"
+msgstr "詰碁を練習して読みを鍛えましょう"
 
-#. TODO
 msgid "tsumego:tesuji"
-msgstr "Tesuji"
+msgstr "手筋"
 
-#. TODO
 msgid "tsumego:life-death"
-msgstr "Life & Death"
+msgstr "死活"
+
+msgid "tsumego:solved"
+msgstr "正解！"
+
+msgid "tsumego:incorrect"
+msgstr "不正解"
+
+msgid "tsumego:blackToPlay"
+msgstr "黒番"
+
+msgid "tsumego:whiteToPlay"
+msgstr "白番"
+
+msgid "tsumego:attempts"
+msgstr "試行回数"
+
+msgid "tsumego:showHint"
+msgstr "ヒントを表示"
+
+msgid "tsumego:hideHint"
+msgstr "ヒントを隠す"
+
+msgid "tsumego:undo"
+msgstr "戻る"
+
+msgid "tsumego:reset"
+msgstr "リセット"
+
+msgid "tsumego:previousProblem"
+msgstr "前の問題"
+
+msgid "tsumego:nextProblem"
+msgstr "次の問題"
+
+msgid "tsumego:errorLoading"
+msgstr "問題の読み込みエラー"

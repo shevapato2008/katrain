@@ -1344,7 +1344,7 @@ msgid "tsumego:selectLevel"
 msgstr "选择难度级别"
 
 msgid "tsumego:practiceProblems"
-msgstr "练习死活题，提高计算力"
+msgstr "练习死活题以提高计算能力"
 
 msgid "tsumego:selectCategory"
 msgstr "选择题型"
@@ -1359,13 +1359,49 @@ msgid "tsumego:solveProblems"
 msgstr "点击题目开始练习"
 
 msgid "tsumego:life-death"
-msgstr "死活题"
+msgstr "死活"
 
 msgid "tsumego:tesuji"
-msgstr "手筋题"
+msgstr "手筋"
 
 msgid "tsumego:endgame"
-msgstr "官子题"
+msgstr "官子"
 
 msgid "tsumego:problem_n"
 msgstr "第{n}题"
+
+msgid "tsumego:solved"
+msgstr "正确！"
+
+msgid "tsumego:incorrect"
+msgstr "错误"
+
+msgid "tsumego:blackToPlay"
+msgstr "黑先"
+
+msgid "tsumego:whiteToPlay"
+msgstr "白先"
+
+msgid "tsumego:attempts"
+msgstr "尝试次数"
+
+msgid "tsumego:showHint"
+msgstr "显示提示"
+
+msgid "tsumego:hideHint"
+msgstr "隐藏提示"
+
+msgid "tsumego:undo"
+msgstr "撤销"
+
+msgid "tsumego:reset"
+msgstr "重置"
+
+msgid "tsumego:previousProblem"
+msgstr "上一题"
+
+msgid "tsumego:nextProblem"
+msgstr "下一题"
+
+msgid "tsumego:errorLoading"
+msgstr "加载题目失败"

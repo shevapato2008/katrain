@@ -1,6 +1,6 @@
 import { Box, Typography, Card, CardActionArea } from '@mui/material';
 import MiniBoard from './MiniBoard';
-import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface ProblemProgress {
   completed: boolean;
@@ -17,6 +17,7 @@ interface ProblemCardProps {
 }
 
 const ProblemCard = ({ index, initialBlack, initialWhite, progress, onClick }: ProblemCardProps) => {
+  const { t } = useTranslation();
   const isCompleted = progress?.completed;
   const isAttempted = progress && progress.attempts > 0;
 
@@ -50,7 +51,7 @@ const ProblemCard = ({ index, initialBlack, initialWhite, progress, onClick }: P
         </Box>
 
         <Typography variant="body2" align="center" sx={{ fontWeight: 500 }}>
-          {i18n.t('tsumego:problem_n', 'Problem {n}').replace('{n}', String(index + 1))}
+          {t('tsumego:problem_n').replace('{n}', String(index + 1))}
         </Typography>
 
         {/* Progress stats */}

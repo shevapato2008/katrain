@@ -4,8 +4,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import ProblemCard from '../components/tsumego/ProblemCard';
-import { i18n } from '../../i18n';
 
 interface ProblemSummary {
   id: string;
@@ -22,20 +22,17 @@ interface ProgressData {
   lastDuration?: number;
 }
 
-const getCategoryName = (cat: string): string => {
-  const names: Record<string, string> = {
-    'life-death': i18n.t('tsumego:life-death', 'Life & Death'),
-    'tesuji': i18n.t('tsumego:tesuji', 'Tesuji'),
-    'endgame': i18n.t('tsumego:endgame', 'Endgame')
-  };
-  return names[cat] || cat;
-};
-
 const TsumegoListPage = () => {
   const navigate = useNavigate();
   const { level, category } = useParams<{ level: string; category: string }>();
   const { user, token } = useAuth();
   useSettings();
+  const { t } = useTranslation();
+
+  // Get translated category name
+  const getCategoryName = (cat: string): string => {
+    return t(`tsumego:${cat}`) || cat;
+  };
 
   const [problems, setProblems] = useState<ProblemSummary[]>([]);
   const [progress, setProgress] = useState<Record<string, ProgressData>>({});
@@ -103,7 +100,7 @@ const TsumegoListPage = () => {
             onClick={() => navigate('/galaxy/tsumego')}
             sx={{ cursor: 'pointer' }}
           >
-            {i18n.t('Tsumego', '死活题')}
+            {t('Tsumego')}
           </Link>
           <Link
             component="button"
@@ -123,7 +120,7 @@ const TsumegoListPage = () => {
             {level?.toUpperCase()} - {getCategoryName(category || '')}
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            {i18n.t('tsumego:solveProblems', '点击题目开始练习')}
+            {t('tsumego:solveProblems')}
           </Typography>
         </Box>
         <Chip

@@ -1516,7 +1516,7 @@ msgid "tsumego:selectLevel"
 msgstr "Select Difficulty Level"
 
 msgid "tsumego:practiceProblems"
-msgstr "Practice tsumego problems to improve your reading skills"
+msgstr "Practice life and death problems to improve your reading"
 
 msgid "tsumego:selectCategory"
 msgstr "Select Category"
@@ -1541,3 +1541,39 @@ msgstr "Endgame"
 
 msgid "tsumego:problem_n"
 msgstr "Problem {n}"
+
+msgid "tsumego:solved"
+msgstr "Solved!"
+
+msgid "tsumego:incorrect"
+msgstr "Incorrect"
+
+msgid "tsumego:blackToPlay"
+msgstr "Black to play"
+
+msgid "tsumego:whiteToPlay"
+msgstr "White to play"
+
+msgid "tsumego:attempts"
+msgstr "Attempts"
+
+msgid "tsumego:showHint"
+msgstr "Show Hint"
+
+msgid "tsumego:hideHint"
+msgstr "Hide Hint"
+
+msgid "tsumego:undo"
+msgstr "Undo"
+
+msgid "tsumego:reset"
+msgstr "Reset"
+
+msgid "tsumego:previousProblem"
+msgstr "Previous"
+
+msgid "tsumego:nextProblem"
+msgstr "Next"
+
+msgid "tsumego:errorLoading"
+msgstr "Error Loading Problem"

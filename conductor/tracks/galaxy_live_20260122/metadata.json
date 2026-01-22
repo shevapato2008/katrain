@@ -1,0 +1,8 @@
+{
+  "track_id": "galaxy_live_20260122",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-22T09:00:00Z",
+  "updated_at": "2026-01-22T09:00:00Z",
+  "description": "Implement a Galaxy-style 'Live Game' module with real-time moves, local AI analysis, and commentary."
+}

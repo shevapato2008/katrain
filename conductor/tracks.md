@@ -6,7 +6,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Active
 
-*No active tracks.*
+- [ ] **Track: Implement a Galaxy-style 'Live Game' module with real-time moves, local AI analysis, and commentary.**
+  *Link: [./galaxy_live_20260122/](./galaxy_live_20260122/)*
 
 ## Archived
 

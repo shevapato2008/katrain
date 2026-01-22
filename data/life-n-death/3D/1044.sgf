@@ -2,9 +2,9 @@
 GN[Q-1044]
 AN[admin]
 SO[https://www.101weiqi.com/3D/1044/]
-GC[死活题 | 3D | 正确率: 14.8% (1329/8978) | 金秀壮九段创作]
+GC[死活题 | 3D | 正确率: 14.8% (1331/8982) | 金秀壮九段创作]
 C[黑先 死活题]
-AB[nc][se][na][pd][re][od][nd][nb][qd]
-AW[sd][rb][oa][oc][pc][ob]
+AB[nd][od][qd][na][nb][nc][pd][re][se]
+AW[sd][ob][rb][oa][pc][oc]
 PL[B]
-(;B[rc](;W[qc](;B[qa](;W[qb](;B[sb](;W[pa](;B[ra](;W[sa](;B[ra]))))))(;W[sc](;B[rd](;W[qb](;B[sb](;W[pa](;B[ra](;W[sa](;B[ra])))))))))(;B[sb](;W[qa](;B[pb](;W[sa]))))(;B[pb](;W[qa](;B[sb](;W[sa])))))(;W[qb](;B[sb](;W[ra](;B[pa])))(;B[pa](;W[sb](;B[qc](;W[pb]))))))(;B[qc](;W[qb](;B[pa](;W[pb](;B[rc](;W[sb]))(;B[sb](;W[rc](;B[rd](;W[sc](;B[ra](;W[sa]))))))))(;B[sb](;W[rc](;B[rd](;W[sc](;B[pa](;W[qa]))))))(;B[rc](;W[sb]))))(;B[qa](;W[qb](;B[qc](;W[ra](;B[pa](;W[pb](;B[rc](;W[sb]))))))))(;B[rd](;W[rc](;B[sc](;W[sb](;B[qb](;W[qc](;B[ra](;W[pa]))))))(;B[qc](;W[qb](;B[pa](;W[pb](;B[sb](;W[sc](;B[ra](;W[sa]))))(;B[ra](;W[sc](;B[sb](;W[sa]))))))))(;B[sb](;W[sc](;B[qc](;W[qb](;B[pa](;W[sa](;B[pb](;W[qa]))))))))))(;B[qb](;W[qc](;B[rc](;W[qa](;B[sb](;W[pb](;B[ra])))(;B[pb](;W[pa](;B[sb](;W[sa]C[打劫])))))))))
+(;B[rc](;W[qc](;B[qa](;W[qb](;B[sb](;W[pa](;B[ra](;W[sa](;B[ra]C[✓ 正确]))))))(;W[sc](;B[rd](;W[qb](;B[sb](;W[pa](;B[ra](;W[sa](;B[ra]C[⚡ 变化])))))))))(;B[sb](;W[qa](;B[pb](;W[sa]C[✗ 失败]))))(;B[pb](;W[qa](;B[sb](;W[sa]C[✗ 失败])))))(;W[qb](;B[sb](;W[ra](;B[pa]C[⚡ 变化])))(;B[pa](;W[sb](;B[qc](;W[pb]C[✗ 失败]))))))(;B[qc](;W[qb](;B[pa](;W[pb](;B[rc](;W[sb]C[✗ 失败]))(;B[sb](;W[rc](;B[rd](;W[sc](;B[ra](;W[sa]C[✗ 失败]))))))))(;B[sb](;W[rc](;B[rd](;W[sc](;B[pa](;W[qa]C[✗ 失败]))))))(;B[rc](;W[sb]C[✗ 失败]))))(;B[rd](;W[rc](;B[sc](;W[sb](;B[qb](;W[qc](;B[ra](;W[pa]C[✗ 失败]))))))(;B[qc](;W[qb](;B[pa](;W[pb](;B[sb](;W[sc](;B[ra](;W[sa]C[✗ 失败]))))(;B[ra](;W[sc](;B[sb](;W[sa]C[✗ 失败]))))))))(;B[sb](;W[sc](;B[qc](;W[qb](;B[pa](;W[sa](;B[pb](;W[qa]C[✗ 失败]))))))))))(;B[qb](;W[qc](;B[rc](;W[qa](;B[sb](;W[pb](;B[ra]C[✗ 失败])))(;B[pb](;W[pa](;B[sb](;W[sa]C[✗ 失败 | 打劫]))))))))(;B[qa](;W[qb](;B[qc](;W[ra](;B[pa](;W[pb](;B[rc](;W[sb]C[✗ 失败])))))))))

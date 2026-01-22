@@ -2,9 +2,9 @@
 GN[Q-1925]
 AN[admin]
 SO[https://www.101weiqi.com/3D/1925/]
-GC[死活题 | 3D | 正确率: 23.0% (942/4098)]
+GC[死活题 | 3D | 正确率: 23.0% (944/4104)]
 C[黑先 死活题]
-AB[rb][qh][rc][pb][pd][oc][qc][pc]
-AW[nc][rd][sc][pf][od][pe][nd][nb][qd][ob]
+AB[qc][pb][rc][rb][qh][pc][pd][oc]
+AW[nd][od][qd][sc][ob][nb][nc][pf][rd][pe]
 PL[B]
-(;B[se](;W[rf](;B[qa](;W[sb](;B[sd])))(;B[pa](;W[qa])))(;W[re](;B[sb](;W[qa](;B[rf](;W[qe](;B[sd](;W[rg](;B[qg](;W[qf](;B[sf]))))))(;W[rg](;B[sd](;W[qe](;B[qg])))))(;B[pa](;W[ra](;B[rf])))))(;B[rf](;W[sb])))(;W[sf](;B[sb](;W[qa](;B[pa](;W[ra](;B[rf](;W[re](;B[sg])))))))))(;B[sb](;W[qa]C[点，你不行了](;B[se](;W[rf]C[失败，重来吧]))(;B[rf](;W[qe](;B[sd](;W[se](;B[re](;W[rg]))))))))(;B[rf](;W[qe](;B[sb](;W[qa](;B[sd](;W[se](;B[re](;W[rg]))))))))(;B[qa](;W[sb](;B[sa])(;B[se](;W[re]))))(;B[qe](;W[re](;B[rf](;W[qf](;B[se](;W[sb])))))))
+(;B[se](;W[rf](;B[qa](;W[sb](;B[sd]C[✓ 正确])))(;B[pa](;W[qa]C[✗ 失败])))(;W[re](;B[sb](;W[qa](;B[rf](;W[qe](;B[sd](;W[rg](;B[qg](;W[qf](;B[sf]C[✓ 正确]))))))(;W[rg](;B[sd](;W[qe](;B[qg]C[⚡ 变化])))))(;B[pa](;W[ra](;B[rf]C[✓ 正确])))))(;B[rf](;W[sb]C[✗ 失败])))(;W[sf](;B[sb](;W[qa](;B[pa](;W[ra](;B[rf](;W[re](;B[sg]C[⚡ 变化])))))))))(;B[sb](;W[qa]C[点，你不行了](;B[se](;W[rf]C[✗ 失败 | 失败，重来吧]))(;B[rf](;W[qe](;B[sd](;W[se](;B[re](;W[rg]C[✗ 失败]))))))))(;B[rf](;W[qe](;B[sb](;W[qa](;B[sd](;W[se](;B[re](;W[rg]C[✗ 失败]))))))))(;B[qa](;W[sb](;B[sa]C[✗ 失败])(;B[se](;W[re]C[✗ 失败]))))(;B[qe](;W[re](;B[rf](;W[qf](;B[se](;W[sb]C[✗ 失败])))))))

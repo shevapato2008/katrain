@@ -4,7 +4,7 @@ AN[kenny]
 SO[https://www.101weiqi.com/3D/231434/]
 GC[AI猜子题 | 3D | 正确率: 12.1% (507/4186)]
 C[白先 AI猜子题]
-AB[pp][ce][pd][cq][dq][fr]
-AW[ep][dc][cp][dp][ch]
+AB[cq][fr][ce][pd][dq][pp]
+AW[ep][ch][cp][dc][dp]
 PL[W]
-(;W[df]C[正解，白1飞封是惩罚左上黑棋脱先的最佳一手]))
+(;W[df]C[✓ 正确 | 正解，白1飞封是惩罚左上黑棋脱先的最佳一手]))

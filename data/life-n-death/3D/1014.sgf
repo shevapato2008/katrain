@@ -2,9 +2,9 @@
 GN[Q-1014]
 AN[admin]
 SO[https://www.101weiqi.com/3D/1014/]
-GC[死活题 | 3D | 正确率: 31.9% (1343/4209)]
+GC[死活题 | 3D | 正确率: 31.9% (1347/4216)]
 C[黑先 死活题]
-AB[pa][rd][pb][pd][od][nd][oc]
-AW[nc][qf][oa][md][me][mb][oe][re][ne][qc][ob]
+AB[nd][od][pb][pd][rd][oc][pa]
+AW[md][qc][qf][ob][nc][mb][oa][re][ne][me][oe]
 PL[B]
-(;B[qd](;W[rc](;B[sb](;W[sc](;B[sd](;W[rb](;B[pc](;W[qe](;B[ra])(;B[qa](;W[pe](;B[ra](;W[sa]))))(;B[qb](;W[sa](;B[ra](;W[qa]C[此题有毒]))))))(;B[ra])(;B[qb](;W[sa](;B[pc])(;B[ra](;W[qa](;B[pc]))))))))(;W[pc](;B[ra](;W[sc](;B[sd](;W[pe](;B[rb](;W[qe](;B[qb])))))))))(;B[sc](;W[sb](;B[sd](;W[qb](;B[ra](;W[rb])))))))(;W[qb](;B[pc](;W[rc](;B[sb]))))))
+(;B[qd](;W[rc](;B[sb](;W[sc](;B[sd](;W[rb](;B[pc](;W[qe](;B[ra]C[✓ 正确])(;B[qa](;W[pe](;B[ra](;W[sa]C[✓ 正确]))))(;B[qb](;W[sa](;B[ra](;W[qa]C[✓ 正确 | 此题有毒]))))))(;B[ra]C[✓ 正确])(;B[qb](;W[sa](;B[pc]C[✓ 正确])(;B[ra](;W[qa](;B[pc]C[✓ 正确]))))))))(;W[pc](;B[ra](;W[sc](;B[sd](;W[pe](;B[rb](;W[qe](;B[qb]C[⚡ 变化])))))))))(;B[sc](;W[sb](;B[sd](;W[qb](;B[ra](;W[rb]C[✗ 失败])))))))(;W[qb](;B[pc](;W[rc](;B[sb]C[⚡ 变化]))))))

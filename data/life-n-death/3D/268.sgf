@@ -2,10 +2,10 @@
 GN[Q-268]
 AN[admin]
 SO[https://www.101weiqi.com/3D/268/]
-GC[官子题 | 3D+ | 正确率: 21.0% (836/3990) | 6-3-29
+GC[官子题 | 3D+ | 正确率: 21.0% (838/3994) | 6-3-29
 黑先]
 C[黑先 官子题]
-AB[nc][sd][rd][rf][pe][od][ne][nb][qe]
-AW[rc][pd][sc][oc][qc][qd][ob]
+AB[sd][od][nb][qe][nc][rf][ne][rd][pe]
+AW[qd][qc][rc][sc][ob][pd][oc]
 PL[B]
-(;B[pa]C[黑点，很难想到](;W[pb](;B[oa](;W[qa](;B[na](;W[rb])))))(;W[oa]C[白挡损目](;B[qb](;W[rb](;B[na](;W[pc](;B[ra]))))(;W[pb](;B[rb](;W[sb](;B[ra]))))(;W[ra](;B[rb]C[黑5需先冲](;W[sb](;B[na](;W[pc]))))))))(;B[oa](;W[pa](;B[pb](;W[na](;B[qa](;W[oa](;B[qb](;W[rb]))))))(;B[na](;W[pb]))))(;B[pb](;W[oa](;B[ra](;W[qa](;B[qb](;W[rb]))))))(;B[qa](;W[pb](;B[oa](;W[pa])))))
+(;B[pa]C[黑点，很难想到](;W[pb](;B[oa](;W[qa](;B[na](;W[rb]C[⚡ 变化])))))(;W[oa]C[白挡损目](;B[qb](;W[rb](;B[na](;W[pc](;B[ra]C[⚡ 变化]))))(;W[pb](;B[rb](;W[sb](;B[ra]C[⚡ 变化]))))(;W[ra](;B[rb]C[黑5需先冲](;W[sb](;B[na](;W[pc]C[⚡ 变化]))))))))(;B[oa](;W[pa](;B[pb](;W[na](;B[qa](;W[oa](;B[qb](;W[rb]C[✗ 失败]))))))(;B[na](;W[pb]C[✗ 失败]))))(;B[pb](;W[oa](;B[ra](;W[qa](;B[qb](;W[rb]C[✗ 失败]))))))(;B[qa](;W[pb](;B[oa](;W[pa]C[✗ 失败])))))

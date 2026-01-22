@@ -2,9 +2,9 @@
 GN[Q-183028]
 AN[微信ID]
 SO[https://www.101weiqi.com/3D/211873/]
-GC[手筋题 | 3D | 正确率: 26.5% (1115/4201)]
+GC[手筋题 | 3D | 正确率: 26.5% (1116/4205)]
 C[黑先 手筋题]
-AB[qh][oe][pf][pg][od][pc]
-AW[mj][qf][of][qj][oj][pe][qc][qd][qe]
+AB[od][pg][qh][pc][pf][oe]
+AW[of][qc][qd][qf][mj][qe][qj][pe][oj]
 PL[B]
-(;B[mg](;W[nf](;B[mf](;W[ne](;B[md])(;B[ld](;W[me](;B[le](;W[nc]))))))(;B[me](;W[ng](;B[nh](;W[oh])))))(;W[ng](;B[nf](;W[og](;B[nh])))))(;B[ng](;W[nf](;B[mf](;W[ne]))))(;B[nf](;W[og](;B[nh](;W[oh])))))
+(;B[mg](;W[nf](;B[mf](;W[ne](;B[md]C[✓ 正确])(;B[ld](;W[me](;B[le](;W[nc]C[✗ 失败]))))))(;B[me](;W[ng](;B[nh](;W[oh]C[✗ 失败])))))(;W[ng](;B[nf](;W[og](;B[nh]C[⚡ 变化])))))(;B[ng](;W[nf](;B[mf](;W[ne]C[✗ 失败]))))(;B[nf](;W[og](;B[nh](;W[oh]C[✗ 失败])))))

@@ -2,9 +2,9 @@
 GN[Q-2176]
 AN[admin]
 SO[https://www.101weiqi.com/3D/2176/]
-GC[死活题 | 3D | 正确率: 42.1% (1888/4481) | 关山利一九段创作]
+GC[死活题 | 3D | 正确率: 42.2% (1892/4488) | 关山利一九段创作]
 C[黑先 死活题]
-AB[nc][sd][lb][rd][mc][la][pd][lc][od][ma][qd]
-AW[qb][mb][rc][sc][oc][nb][pc]
+AB[qd][lb][od][sd][la][lc][mc][nc][ma][pd][rd]
+AW[rc][sc][qb][nb][mb][pc][oc]
 PL[B]
-(;B[pa]C[致命的一击](;W[oa](;B[na](;W[ra](;B[sb]))(;W[ob](;B[qc])))(;B[qc](;W[sb])))(;W[ra]C[黑1是绝对的要点。](;B[sb]C[点，必然。](;W[ob](;B[qc]C[重要的次序。](;W[rb](;B[pb]C[七也可以金鸡独立啊、、])(;B[na])(;B[oa]C[杀棋成功，恭喜答对！])))(;B[na](;W[oa](;B[qc])))(;B[oa](;W[na](;B[qc]))))))(;W[qa](;B[ob]))(;W[ob](;B[na](;W[oa](;B[qc])))))(;B[oa](;W[ra]C[我先做眼你怎么办？](;B[sb](;W[pa]C[哈哈，我已经活了，再想想！]))(;B[pa](;W[sb](;B[qc](;W[qa]C[失败，重来吧]))))))(;B[ra]C[问题手](;W[rb]C[我粘上，想不到吧？](;B[oa](;W[sa]C[我打吃。](;B[sb](;W[qa]C[哈哈，成胀死牛啦！重来吧！]))))(;B[ob]C[或者A位](;W[sa]C[失败，重来吧](;B[sb](;W[qa]C[白棋有“胀牯牛”的手段活棋。]))))(;B[sa](;W[ob]))))(;B[qc]C[可以考虑的一步](;W[rb](;B[sa](;W[oa]))(;B[pa](;W[qa](;B[sa](;W[oa](;B[na](;W[pb]))))))(;B[oa](;W[pa](;B[ra](;W[sa](;B[sb]C[成劫]))))))))
+(;B[pa]C[致命的一击](;W[oa](;B[na](;W[ra](;B[sb]C[✓ 正确]))(;W[ob](;B[qc]C[⚡ 变化])))(;B[qc](;W[sb]C[✗ 失败])))(;W[ra]C[黑1是绝对的要点。](;B[sb]C[点，必然。](;W[ob](;B[qc]C[重要的次序。](;W[rb](;B[pb]C[✓ 正确 | 七也可以金鸡独立啊、、])(;B[na]C[✓ 正确])(;B[oa]C[✓ 正确 | 杀棋成功，恭喜答对！])))(;B[na](;W[oa](;B[qc]C[✓ 正确])))(;B[oa](;W[na](;B[qc]C[✓ 正确]))))))(;W[qa](;B[ob]C[⚡ 变化]))(;W[ob](;B[na](;W[oa](;B[qc]C[⚡ 变化])))))(;B[oa](;W[ra]C[我先做眼你怎么办？](;B[sb](;W[pa]C[✗ 失败 | 哈哈，我已经活了，再想想！]))(;B[pa](;W[sb](;B[qc](;W[qa]C[✗ 失败 | 失败，重来吧]))))))(;B[ra]C[问题手](;W[rb]C[我粘上，想不到吧？](;B[oa](;W[sa]C[我打吃。](;B[sb](;W[qa]C[✗ 失败 | 哈哈，成胀死牛啦！重来吧！]))))(;B[ob]C[或者A位](;W[sa]C[失败，重来吧](;B[sb](;W[qa]C[✗ 失败 | 白棋有“胀牯牛”的手段活棋。]))))(;B[sa](;W[ob]C[✗ 失败]))))(;B[qc]C[可以考虑的一步](;W[rb](;B[sa](;W[oa]C[✗ 失败]))(;B[pa](;W[qa](;B[sa](;W[oa](;B[na](;W[pb]C[✗ 失败]))))))(;B[oa](;W[pa](;B[ra](;W[sa](;B[sb]C[✗ 失败 | 成劫]))))))))

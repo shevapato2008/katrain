@@ -2,9 +2,9 @@
 GN[Q-25473]
 AN[saranggeyo]
 SO[https://www.101weiqi.com/3D/25473/]
-GC[死活题 | 3D | 正确率: 43.0% (2310/5372)]
+GC[死活题 | 3D | 正确率: 43.0% (2311/5374)]
 C[黑先 死活题]
-AB[qf][qh][mc][pd][od][oc][qe]
-AW[pc][rd][qc]
+AB[od][qf][qe][mc][qh][pd][oc]
+AW[pc][qc][rd]
 PL[B]
-(;B[rb](;W[sb](;B[ra](;W[ob](;B[nb](;W[qb](;B[rc](;W[qd](;B[oa](;W[pa](;B[pb])))(;B[na](;W[re](;B[rf](;W[pa](;B[oa](;W[sc](;B[pb])))))))(;B[re](;W[oa](;B[sd](;W[sc](;B[sa](;W[sc](;B[qa](;W[se](;B[na](;W[pb](;B[sf](;W[sd]))))))))))(;B[qa](;W[sc](;B[na](;W[pb]))))))))(;B[re](;W[rc](;B[oa](;W[pa](;B[pb]))))(;W[oa](;B[qa](;W[rc](;B[na](;W[pb](;B[sd])))))))(;B[oa](;W[pa](;B[pb])))))(;B[rc](;W[qd](;B[nb](;W[qb](;B[oa](;W[pa](;B[pb])))(;B[na](;W[re](;B[rf](;W[pa](;B[oa](;W[sc](;B[pb])))))))))))))(;B[rc](;W[ra](;B[qa](;W[qb](;B[sa])))))(;B[oa](;W[ra](;B[qa](;W[qb](;B[sa])))))(;B[ob](;W[rc](;B[ra](;W[qb])))))(;W[qb](;B[rc](;W[ra](;B[sb](;W[qd](;B[ob](;W[re](;B[rf](;W[se](;B[sc]))))))))(;W[sb](;B[ra](;W[sc](;B[re]))))))(;W[rc](;B[oa](;W[pb](;B[re](;W[ra](;B[sb](;W[pa](;B[sd](;W[sc](;B[qb]))))))))))(;W[ob](;B[nb](;W[qb](;B[oa](;W[pa])))))))
+(;B[rb](;W[sb](;B[ra](;W[ob](;B[nb](;W[qb](;B[rc](;W[qd](;B[oa](;W[pa](;B[pb]C[✓ 正确])))(;B[na](;W[re](;B[rf](;W[pa](;B[oa](;W[sc](;B[pb]C[✓ 正确])))))))(;B[re](;W[oa](;B[sd](;W[sc](;B[sa](;W[sc](;B[qa](;W[se](;B[na](;W[pb](;B[sf](;W[sd]C[✗ 失败]))))))))))(;B[qa](;W[sc](;B[na](;W[pb]C[✗ 失败]))))))))(;B[re](;W[rc](;B[oa](;W[pa](;B[pb]C[✓ 正确]))))(;W[oa](;B[qa](;W[rc](;B[na](;W[pb](;B[sd]C[⚡ 变化])))))))(;B[oa](;W[pa](;B[pb]C[✓ 正确])))))(;B[rc](;W[qd](;B[nb](;W[qb](;B[oa](;W[pa](;B[pb]C[✓ 正确])))(;B[na](;W[re](;B[rf](;W[pa](;B[oa](;W[sc](;B[pb]C[✓ 正确])))))))))))))(;B[rc](;W[ra](;B[qa](;W[qb](;B[sa]C[✓ 正确])))))(;B[oa](;W[ra](;B[qa](;W[qb](;B[sa]C[✓ 正确])))))(;B[ob](;W[rc](;B[ra](;W[qb]C[✗ 失败])))))(;W[qb](;B[rc](;W[ra](;B[sb](;W[qd](;B[ob](;W[re](;B[rf](;W[se](;B[sc]C[⚡ 变化]))))))))(;W[sb](;B[ra](;W[sc](;B[re]C[⚡ 变化]))))))(;W[rc](;B[oa](;W[pb](;B[re](;W[ra](;B[sb](;W[pa](;B[sd](;W[sc](;B[qb]C[⚡ 变化]))))))))))(;W[ob](;B[nb](;W[qb](;B[oa](;W[pa]C[⚡ 变化])))))))

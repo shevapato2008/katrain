@@ -2,10 +2,10 @@
 GN[Q-332]
 AN[admin]
 SO[https://www.101weiqi.com/3D/332/]
-GC[对杀题 | 3D | 正确率: 17.7% (907/5132) | 6-1-12
+GC[对杀题 | 3D | 正确率: 17.6% (907/5139) | 6-1-12
 黑先]
 C[黑先 对杀题]
-AB[mb][rd][pd][re][sb][od][pb][nb][oc][qe]
-AW[kb][lb][qb][oe][mc][ld][rc][ne][pe][nd][sc][qc][qd]
+AB[od][pb][nb][qe][mb][sb][pd][rd][re][oc]
+AW[nd][lb][qc][qd][rc][sc][qb][pe][mc][ne][oe][ld][kb]
 PL[B]
-(;B[oa](;W[qa](;B[pa](;W[nc](;B[pc](;W[ma](;B[sd])(;B[ra])(;B[rb]))))(;W[pc](;B[nc](;W[ma](;B[rb])(;B[ra])(;B[sd])))))(;B[pc](;W[pa](;B[nc](;W[ma](;B[sd])(;B[rb])(;B[ra]))))(;W[nc](;B[pa](;W[ma](;B[sd])(;B[rb])(;B[ra])))))(;B[sd](;W[nc](;B[ra](;W[pc](;B[ob](;W[ma]))))))(;B[nc](;W[ma](;B[sd](;W[la](;B[rb])(;B[pa])(;B[pc])))))))(;B[qa](;W[ra](;B[pa](;W[oa](;B[pc](;W[nc](;B[ob](;W[ma]))))(;B[sd](;W[nc](;B[na](;W[la](;B[ob](;W[ma]))))(;B[ob](;W[ma](;B[na](;W[la]))))))(;B[rb](;W[sa](;B[rb](;W[sb](;B[sd](;W[nc](;B[ob](;W[ma]))))))))))))(;B[pa](;W[oa](;B[ra](;W[qa](;B[sd](;W[nc](;B[ob](;W[ma](;B[na](;W[la]C[双活])))))))))))
+(;B[oa](;W[qa](;B[pa](;W[nc](;B[pc](;W[ma](;B[sd]C[✓ 正确])(;B[ra]C[✓ 正确])(;B[rb]C[✓ 正确]))))(;W[pc](;B[nc](;W[ma](;B[rb]C[✓ 正确])(;B[ra]C[✓ 正确])(;B[sd]C[✓ 正确])))))(;B[pc](;W[pa](;B[nc](;W[ma](;B[sd]C[✓ 正确])(;B[rb]C[✓ 正确])(;B[ra]C[✓ 正确]))))(;W[nc](;B[pa](;W[ma](;B[sd]C[✓ 正确])(;B[rb]C[✓ 正确])(;B[ra]C[✓ 正确])))))(;B[sd](;W[nc](;B[ra](;W[pc](;B[ob](;W[ma]C[✗ 失败]))))))(;B[nc](;W[ma](;B[sd](;W[la](;B[rb]C[✗ 失败])(;B[pa]C[✗ 失败])(;B[pc]C[✗ 失败])))))))(;B[qa](;W[ra](;B[pa](;W[oa](;B[pc](;W[nc](;B[ob](;W[ma]C[✗ 失败]))))(;B[sd](;W[nc](;B[na](;W[la](;B[ob](;W[ma]C[✗ 失败]))))(;B[ob](;W[ma](;B[na](;W[la]C[✗ 失败]))))))(;B[rb](;W[sa](;B[rb](;W[sb](;B[sd](;W[nc](;B[ob](;W[ma]C[✗ 失败]))))))))))))(;B[pa](;W[oa](;B[ra](;W[qa](;B[sd](;W[nc](;B[ob](;W[ma](;B[na](;W[la]C[✗ 失败 | 双活])))))))))))

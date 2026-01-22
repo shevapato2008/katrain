@@ -2,11 +2,11 @@
 GN[Q-4242]
 AN[357754926]
 SO[https://www.101weiqi.com/3D/4242/]
-GC[死活题 | 3D+ | 正确率: 26.4% (1347/5111)]
+GC[死活题 | 3D+ | 正确率: 26.4% (1349/5114)]
 C[白先 死活题]
-AB[qd][rb][qe][qc]
-AW[qf][qi][qg][pd][of][pb][pc]
+AB[qd][qc][qe][rb]
+AW[of][qf][pb][pc][pd][qi][qg]
 PL[W]
-(;W[sf]C[正解](;B[se]C[变化图](;W[rd](;B[re](;W[ra](;B[qa](;W[qb](;B[sa](;W[sc]C[弯三净死。](;B[rc](;W[sd]))))))))(;B[rf]C[变化图](;W[rg](;B[sg](;W[ra](;B[qa](;W[qb](;B[sa](;W[sc]C[大同小异。])))))))))(;W[ra](;B[rd](;W[sc](;B[rf](;W[rg](;B[sg](;W[sb](;B[qa](;W[qb](;B[sa](;W[pa]C[呵呵]))))))))))(;B[rf](;W[rg](;B[rd](;W[sc](;B[sg](;W[sb](;B[qa](;W[qb](;B[sa](;W[pa])))))))))))(;W[re]C[失败图](;B[rd](;W[sd](;B[sc](;W[qb](;B[se]C[劫争。
+(;W[sf]C[正解](;B[se]C[变化图](;W[rd](;B[re](;W[ra](;B[qa](;W[qb](;B[sa](;W[sc]C[弯三净死。](;B[rc](;W[sd]C[⚡ 变化]))))))))(;B[rf]C[变化图](;W[rg](;B[sg](;W[ra](;B[qa](;W[qb](;B[sa](;W[sc]C[✓ 正确 | 大同小异。])))))))))(;W[ra](;B[rd](;W[sc](;B[rf](;W[rg](;B[sg](;W[sb](;B[qa](;W[qb](;B[sa](;W[pa]C[✓ 正确 | 呵呵]))))))))))(;B[rf](;W[rg](;B[rd](;W[sc](;B[sg](;W[sb](;B[qa](;W[qb](;B[sa](;W[pa]C[✓ 正确])))))))))))(;W[re]C[失败图](;B[rd](;W[sd](;B[sc](;W[qb](;B[se]C[✗ 失败 | 劫争。
 
-黑棋劫胜后立到A位就可以净活。])))))))(;B[sc](;W[ra](;B[qa](;W[qb](;B[se](;W[rd])))(;W[sd](;B[rd](;W[qb](;B[se]))))(;W[se](;B[sd]))))(;W[qb](;B[se](;W[rd](;B[re](;W[ra]))))(;B[ra](;W[sd]C[黑棋做不出第二只眼。]))(;B[rd](;W[se]))))(;B[re](;W[ra](;B[qa](;W[qb](;B[sa](;W[sc])))))))(;W[re](;B[rd](;W[sd](;B[sc]))(;W[sf](;B[sc](;W[qb](;B[ra](;W[sd])))))))(;W[rf](;B[sc]))(;W[qb](;B[ra](;W[re](;B[rd](;W[sd](;B[rf](;W[sf](;B[se]C[成劫]))))))(;W[sf](;B[sd]))))(;W[ra](;B[rf](;W[rg](;B[sf](;W[sd](;B[sc](;W[rd](;B[qa](;W[qb](;B[sa](;W[rc])(;W[pa])))))))(;W[rd](;B[sd](;W[sc](;B[re]))(;W[re](;B[rc](;W[sb](;B[qa](;W[qb](;B[sa]))))))))))(;W[qb](;B[sb](;W[rd](;B[sd](;W[se](;B[rc])))))))))
+黑棋劫胜后立到A位就可以净活。])))))))(;B[sc](;W[ra](;B[qa](;W[qb](;B[se](;W[rd]C[✓ 正确])))(;W[sd](;B[rd](;W[qb](;B[se]C[✗ 失败]))))(;W[se](;B[sd]C[✗ 失败]))))(;W[qb](;B[se](;W[rd](;B[re](;W[ra]C[✓ 正确]))))(;B[ra](;W[sd]C[⚡ 变化 | 黑棋做不出第二只眼。]))(;B[rd](;W[se]C[⚡ 变化]))))(;B[re](;W[ra](;B[qa](;W[qb](;B[sa](;W[sc]C[⚡ 变化])))))))(;W[re](;B[rd](;W[sd](;B[sc]C[✗ 失败]))(;W[sf](;B[sc](;W[qb](;B[ra](;W[sd]C[✗ 失败])))))))(;W[rf](;B[sc]C[✗ 失败]))(;W[qb](;B[ra](;W[re](;B[rd](;W[sd](;B[rf](;W[sf](;B[se]C[✗ 失败 | 成劫]))))))(;W[sf](;B[sd]C[✗ 失败]))))(;W[ra](;B[rf](;W[rg](;B[sf](;W[sd](;B[sc](;W[rd](;B[qa](;W[qb](;B[sa](;W[rc]C[✗ 失败])(;W[pa]C[✗ 失败])))))))(;W[rd](;B[sd](;W[sc](;B[re]C[✗ 失败]))(;W[re](;B[rc](;W[sb](;B[qa](;W[qb](;B[sa]C[✗ 失败]))))))))))(;W[qb](;B[sb](;W[rd](;B[sd](;W[se](;B[rc]C[✗ 失败])))))))))

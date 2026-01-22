@@ -2,9 +2,9 @@
 GN[Q-36928]
 AN[爱乐奕]
 SO[https://www.101weiqi.com/3D/36928/]
-GC[死活题 | 3D+ | 正确率: 53.6% (2274/4240) | 塚本惠一 作]
+GC[死活题 | 3D+ | 正确率: 53.6% (2275/4241) | 塚本惠一 作]
 C[黑先 死活题]
-AB[qd][rd][qc][pa]
-AW[nc][qa][pd][pf][rf][pc][qe][ob]
+AB[qd][pa][qc][rd]
+AW[ob][nc][qe][pc][qa][pd][pf][rf]
 PL[B]
-(;B[ra](;W[sb](;B[pb](;W[sd](;B[se](;W[rb](;B[qb](;W[rc](;B[re](;W[sf](;B[sc])))(;B[sc]))))))(;W[rb](;B[qb](;W[sa](;B[sc](;W[qa](;B[rc]))))(;W[sd](;B[rc]))))))))
+(;B[ra](;W[sb](;B[pb](;W[sd](;B[se](;W[rb](;B[qb](;W[rc](;B[re](;W[sf](;B[sc]C[✓ 正确])))(;B[sc]C[✓ 正确]))))))(;W[rb](;B[qb](;W[sa](;B[sc](;W[qa](;B[rc]C[⚡ 变化]))))(;W[sd](;B[rc]C[⚡ 变化]))))))))

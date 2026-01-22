@@ -2,9 +2,9 @@
 GN[Q-15067]
 AN[admin]
 SO[https://www.101weiqi.com/3D/15067/]
-GC[死活题 | 3D+ | 正确率: 62.5% (2439/3905) | 加田克司九段创作]
+GC[死活题 | 3D+ | 正确率: 62.4% (2444/3914) | 加田克司九段创作]
 C[黑先 死活题]
-AB[nf][md][me][rd][mb][rc][rf][sc][sb][pf][of][od][pb][mc][ma][ra][qe]
-AW[nc][rb][qb][oe][pd][qa][ne][pe][nd][nb][qc]
+AB[of][od][md][rc][sc][pb][ra][qe][nf][mc][mb][ma][sb][rf][pf][rd][me]
+AW[nd][qc][qb][nb][nc][pe][rb][qa][ne][pd][oe]
 PL[B]
-(;B[pc]C[正解](;W[oa](;B[qd](;W[pa](;B[na](;W[sa]C[恭喜答对]))))(;B[na](;W[ob](;B[qd]))(;W[oc](;B[qd](;W[sa])))))(;W[qd](;B[na](;W[oa](;B[oc](;W[sa](;B[ob])))))))(;B[na]C[失败1](;W[oa](;B[pc](;W[oc](;B[qd](;W[sa])))))(;W[ob]C[失败，重来吧]))(;B[ob](;W[na](;B[pc](;W[qd](;B[oc]C[失败，重来吧])))))(;B[pa](;W[na])))
+(;B[pc]C[正解](;W[oa](;B[qd](;W[pa](;B[na](;W[sa]C[✓ 正确 | 恭喜答对]))))(;B[na](;W[ob](;B[qd]C[✓ 正确]))(;W[oc](;B[qd](;W[sa]C[✓ 正确])))))(;W[qd](;B[na](;W[oa](;B[oc](;W[sa](;B[ob]C[⚡ 变化])))))))(;B[na]C[失败1](;W[oa](;B[pc](;W[oc](;B[qd](;W[sa]C[⚡ 变化])))))(;W[ob]C[✗ 失败 | 失败，重来吧]))(;B[ob](;W[na](;B[pc](;W[qd](;B[oc]C[✗ 失败 | 失败，重来吧])))))(;B[pa](;W[na]C[✗ 失败])))

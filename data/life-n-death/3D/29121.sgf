@@ -2,10 +2,10 @@
 GN[Q-29121]
 AN[爱乐奕]
 SO[https://www.101weiqi.com/3D/29121/]
-GC[对杀题 | 3D+ | 正确率: 21.9% (1335/6100) | 第108题  黑先
+GC[对杀题 | 3D+ | 正确率: 21.9% (1335/6102) | 第108题  黑先
 审题：图形很简单。关键是不能放白棋先手宽成四气。]
 C[黑先 对杀题]
-AB[md][oe][pd][rf][re][od][lc]
-AW[qg][rd][rh][pe][og][qe]
+AB[md][od][lc][rf][pd][re][oe]
+AW[qe][rd][rh][pe][og][qg]
 PL[B]
-(;B[qd](;W[rc](;B[rb]C[妙手](;W[qc](;B[qb](;W[pc](;B[pb](;W[oc](;B[nc](;W[ob](;B[sb]C[妙](;W[rg](;B[sd](;W[sc](;B[oa]C[黑杀白])(;B[nb])))(;B[sc])))(;B[nb](;W[sb](;B[oa](;W[pa](;B[qa](;W[ra]))))(;B[pa](;W[oa](;B[ra](;W[sc](;B[na](;W[rg](;B[sd](;W[se](;B[sf])))))))))))(;B[sc](;W[sb](;B[sa](;W[sd])))))))))))(;W[qb](;B[qc](;W[sb](;B[ra](;W[qa](;B[sd](;W[sa](;B[rb](;W[ra](;B[se]C[黑杀白])))))))))))(;B[qc]C[恶手](;W[rb](;B[qb](;W[ra](;B[qa](;W[rg]C[白杀黑])))))))))
+(;B[qd](;W[rc](;B[rb]C[妙手](;W[qc](;B[qb](;W[pc](;B[pb](;W[oc](;B[nc](;W[ob](;B[sb]C[妙](;W[rg](;B[sd](;W[sc](;B[oa]C[✓ 正确 | 黑杀白])(;B[nb]C[✓ 正确])))(;B[sc]C[✓ 正确])))(;B[nb](;W[sb](;B[oa](;W[pa](;B[qa](;W[ra]C[✗ 失败]))))(;B[pa](;W[oa](;B[ra](;W[sc](;B[na](;W[rg](;B[sd](;W[se](;B[sf]C[✗ 失败])))))))))))(;B[sc](;W[sb](;B[sa](;W[sd]C[✗ 失败])))))))))))(;W[qb](;B[qc](;W[sb](;B[ra](;W[qa](;B[sd](;W[sa](;B[rb](;W[ra](;B[se]C[⚡ 变化 | 黑杀白])))))))))))(;B[qc]C[恶手](;W[rb](;B[qb](;W[ra](;B[qa](;W[rg]C[✗ 失败 | 白杀黑])))))))))

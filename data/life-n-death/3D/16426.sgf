@@ -2,9 +2,9 @@
 GN[Q-16426]
 AN[admin]
 SO[https://www.101weiqi.com/3D/16426/]
-GC[死活题 | 3D | 正确率: 33.8% (1603/4736) | 出题者：本间明男五段（昭和57年7月）]
+GC[死活题 | 3D | 正确率: 33.9% (1605/4738) | 出题者：本间明男五段（昭和57年7月）]
 C[黑先 死活题]
-AB[nf][kb][kc][pa][rb][me][rd][rc][of][le][ld][pe][lc][qa][qe]
-AW[lb][oa][md][mb][oe][pb][pd][mc][ne][pc]
+AB[of][le][rc][kc][pa][qe][lc][nf][rb][qa][rd][me][pe][ld][kb]
+AW[md][lb][pb][mb][mc][oa][pc][pd][ne][oe]
 PL[B]
-(;B[nd](;W[od](;B[nb](;W[na](;B[nc](;W[ob](;B[la]))(;W[la](;B[ka]))))(;W[nc](;B[ob]))(;W[ob](;B[nc](;W[na](;B[la]))(;W[la](;B[ka])))))(;B[ob](;W[na](;B[nb](;W[ma]))))))(;B[nb](;W[na](;B[nd](;W[nc](;B[od](;W[la]))))(;B[ob](;W[ma](;B[oc](;W[nc]))(;B[nc](;W[oc]))))))(;B[la](;W[nb](;B[od](;W[nd](;B[oc](;W[ma]C[白淨活]))))(;B[oc](;W[od](;B[nc](;W[ma]C[白淨活]))))))(;B[ob](;W[na](;B[od](;W[nd](;B[oc](;W[la]C[白淨活]))))(;B[nb](;W[ma]C[白淨活]))))(;B[nc](;W[nb]C[白淨活]))(;B[oc](;W[ob](;B[la](;W[ma]C[白淨活]))))(;B[od](;W[nd](;B[ob](;W[na])))))
+(;B[nd](;W[od](;B[nb](;W[na](;B[nc](;W[ob](;B[la]C[✓ 正确]))(;W[la](;B[ka]C[⚡ 变化]))))(;W[nc](;B[ob]C[⚡ 变化]))(;W[ob](;B[nc](;W[na](;B[la]C[⚡ 变化]))(;W[la](;B[ka]C[⚡ 变化])))))(;B[ob](;W[na](;B[nb](;W[ma]C[✗ 失败]))))))(;B[nb](;W[na](;B[nd](;W[nc](;B[od](;W[la]C[✗ 失败]))))(;B[ob](;W[ma](;B[oc](;W[nc]C[✗ 失败]))(;B[nc](;W[oc]C[✗ 失败]))))))(;B[la](;W[nb](;B[od](;W[nd](;B[oc](;W[ma]C[✗ 失败 | 白淨活]))))(;B[oc](;W[od](;B[nc](;W[ma]C[✗ 失败 | 白淨活]))))))(;B[ob](;W[na](;B[od](;W[nd](;B[oc](;W[la]C[✗ 失败 | 白淨活]))))(;B[nb](;W[ma]C[✗ 失败 | 白淨活]))))(;B[nc](;W[nb]C[✗ 失败 | 白淨活]))(;B[oc](;W[ob](;B[la](;W[ma]C[✗ 失败 | 白淨活]))))(;B[od](;W[nd](;B[ob](;W[na]C[✗ 失败])))))

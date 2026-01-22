@@ -2,9 +2,9 @@
 GN[Q-47281]
 AN[银冈棋院]
 SO[https://www.101weiqi.com/3D/47281/]
-GC[手筋题 | 3D | 正确率: 35.9% (1521/4231)]
+GC[手筋题 | 3D | 正确率: 36.0% (1525/4236)]
 C[白先 手筋题]
-AB[nc][kc][md][me][rd][lf][rc][oe][of][pf][od][pe][pg][mc][ic][qc][pc][mg]
-AW[nf][lh][qb][ke][ng][pb][pd][re][ne][mf][nd][og][oc][nb][le][qd][qe][ob]
+AB[of][od][qc][md][ic][rc][lf][kc][nc][pe][mc][pg][mg][pc][pf][rd][me][oe]
+AW[qd][nd][le][pb][qb][ob][nb][qe][ng][nf][mf][ke][lh][pd][ne][re][oc][og]
 PL[W]
-(;W[qg](;B[ph](;W[oh](;B[oi](;W[nh](;B[qf](;W[rf](;B[qh](;W[rg](;B[rh](;W[rb])))))))))))(;W[ph](;B[rf]))(;W[rg](;B[nh])))
+(;W[qg](;B[ph](;W[oh](;B[oi](;W[nh](;B[qf](;W[rf](;B[qh](;W[rg](;B[rh](;W[rb]C[✓ 正确])))))))))))(;W[ph](;B[rf]C[✗ 失败]))(;W[rg](;B[nh]C[✗ 失败])))

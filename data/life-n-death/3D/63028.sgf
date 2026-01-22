@@ -2,9 +2,9 @@
 GN[Q-63028]
 AN[爱乐奕]
 SO[https://www.101weiqi.com/3D/63028/]
-GC[死活题 | 3D+ | 正确率: 32.1% (1495/4652) | 赵惠连九段创作]
+GC[死活题 | 3D+ | 正确率: 32.2% (1497/4655) | 赵惠连九段创作]
 C[黑先 死活题]
-AB[qf][sf][pa][oa][rb][oe][of][pf][rf][pd][pc][qe]
-AW[nf][qg][qb][na][rc][rd][pg][od][ne][og][rg][oc][nb][qd]
+AB[of][qf][pa][qe][rb][oa][pc][rf][pd][pf][oe][sf]
+AW[qd][od][rc][na][qb][nb][nf][pg][rg][ne][rd][oc][og][qg]
 PL[B]
-(;B[pb](;W[ra](;B[sb](;W[qc](;B[sd](;W[sc](;B[qa](;W[sa](;B[sb](;W[rb](;B[re](;W[se]))))(;B[rb](;W[sb](;B[re]C[变化]))(;W[se](;B[sb](;W[ra](;B[re](;W[sa](;B[rb](;W[sb](;B[sd])))))))))))(;B[re](;W[sa](;B[rb](;W[ob]))))(;B[se](;W[sa](;B[rb](;W[ob])))))(;W[qa](;B[sc](;W[ob](;B[pe](;W[sg](;B[se]C[变化])))))))(;B[qa](;W[ob](;B[pe](;W[sg]C[失败]))(;B[sa](;W[sc])))))(;W[sc](;B[qc](;W[sa](;B[rb](;W[sb](;B[qa]C[正解]))))))))(;W[sb](;B[ra]C[变化]))))
+(;B[pb](;W[ra](;B[sb](;W[qc](;B[sd](;W[sc](;B[qa](;W[sa](;B[sb](;W[rb](;B[re](;W[se]C[✓ 正确]))))(;B[rb](;W[sb](;B[re]C[✓ 正确 | 变化]))(;W[se](;B[sb](;W[ra](;B[re](;W[sa](;B[rb](;W[sb](;B[sd]C[⚡ 变化])))))))))))(;B[re](;W[sa](;B[rb](;W[ob]C[✗ 失败]))))(;B[se](;W[sa](;B[rb](;W[ob]C[✗ 失败])))))(;W[qa](;B[sc](;W[ob](;B[pe](;W[sg](;B[se]C[⚡ 变化 | 变化])))))))(;B[qa](;W[ob](;B[pe](;W[sg]C[✗ 失败 | 失败]))(;B[sa](;W[sc]C[✗ 失败])))))(;W[sc](;B[qc](;W[sa](;B[rb](;W[sb](;B[qa]C[⚡ 变化 | 正解]))))))))(;W[sb](;B[ra]C[⚡ 变化 | 变化]))))

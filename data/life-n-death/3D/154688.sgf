@@ -2,9 +2,9 @@
 GN[Q-137398]
 AN[方块A]
 SO[https://www.101weiqi.com/3D/154688/]
-GC[死活题 | 3D | 正确率: 32.9% (1967/5972) | 张栩九段创作]
+GC[死活题 | 3D | 正确率: 33.0% (1971/5977) | 张栩九段创作]
 C[黑先 死活题]
-AB[jc][jb][lb][kd][ja][me][qb][rd][oe][pd][le][pe][ne][jd][qc][ob]
-AW[nc][kb][kc][rb][oa][mc][pb][sc][ld][od][la][ra][pc]
+AB[le][qc][lb][jb][qb][oe][ob][jc][kd][jd][pd][ne][rd][me][ja][pe]
+AW[od][pb][sc][ra][nc][mc][rb][la][oa][pc][kc][ld][kb]
 PL[B]
-(;B[qa](;W[mb](;B[na])(;B[ka](;W[lc](;B[na](;W[oc](;B[pa](;W[nb](;B[oa]C[恭喜答对])))))))(;B[pa](;W[na]))))(;B[na](;W[qa](;B[pa](;W[oc]))))(;B[ka](;W[qa](;B[na](;W[oc])))))
+(;B[qa](;W[mb](;B[na]C[✓ 正确])(;B[ka](;W[lc](;B[na](;W[oc](;B[pa](;W[nb](;B[oa]C[✓ 正确 | 恭喜答对])))))))(;B[pa](;W[na]C[✗ 失败]))))(;B[na](;W[qa](;B[pa](;W[oc]C[✗ 失败]))))(;B[ka](;W[qa](;B[na](;W[oc]C[✗ 失败])))))

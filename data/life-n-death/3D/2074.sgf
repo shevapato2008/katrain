@@ -2,13 +2,13 @@
 GN[Q-2074]
 AN[admin]
 SO[https://www.101weiqi.com/3D/2074/]
-GC[死活题 | 3D | 正确率: 32.7% (1300/3979)]
+GC[死活题 | 3D | 正确率: 32.7% (1301/3980)]
 C[黑先 死活题]
-AB[qf][qi][rc][pd][rf][qj]
-AW[qb][ph][oe][mc][pb][of][pg][rg][ri][oc]
+AB[qf][rc][qj][rf][pd][qi]
+AW[of][pb][qb][mc][pg][rg][ri][oc][oe][ph]
 PL[B]
-(;B[sf](;W[qh](;B[rb](;W[ra](;B[pe](;W[sb](;B[re](;W[sc](;B[rd]C[图五：白4扳角，黑5、7好手，成活。])(;B[sd](;W[qc](;B[qd](;W[rd](;B[rc]))))))(;W[sd](;B[rd])))(;B[qc](;W[re](;B[rd](;W[qe](;B[sc](;W[se](;B[pc](;W[pf](;B[od](;W[nc](;B[nd](;W[le](;B[sa](;W[sg]C[图七：白6扳时，黑7应错！白8点严厉，至白20成净杀，黑棋失败。
+(;B[sf](;W[qh](;B[rb](;W[ra](;B[pe](;W[sb](;B[re](;W[sc](;B[rd]C[✓ 正确 | 图五：白4扳角，黑5、7好手，成活。])(;B[sd](;W[qc](;B[qd](;W[rd](;B[rc]C[✓ 正确]))))))(;W[sd](;B[rd]C[✓ 正确])))(;B[qc](;W[re](;B[rd](;W[qe](;B[sc](;W[se](;B[pc](;W[pf](;B[od](;W[nc](;B[nd](;W[le](;B[sa](;W[sg]C[✗ 失败 | 图七：白6扳时，黑7应错！白8点严厉，至白20成净杀，黑棋失败。
 
 
 结论：黑先活。图六是正解。图四、图五是变化。
-思考与收获：整个题图如果从右上向右下移过一路，结果将会如何？如果下移两路呢？])))))))))))))))(;W[qc](;B[qd](;W[re](;B[sb](;W[sd](;B[rd](;W[se](;B[pf])))))))))(;B[sd]C[错误](;W[sb](;B[re](;W[qd](;B[qc](;W[pe](;B[pc](;W[qe](;B[od](;W[nc](;B[nd](;W[le]))))))))))))(;B[sb](;W[sd](;B[pe](;W[rd](;B[qc](;W[pc](;B[qd](;W[re](;B[pf](;W[se])))))))))))(;W[pe](;B[ra](;W[rd](;B[qd](;W[qe](;B[re](;W[sd](;B[qc])))))))))(;B[sd](;W[rb](;B[re](;W[qd](;B[qc](;W[pe])))))))(;W[rb](;B[rh](;W[qg](;B[sg](;W[qh](;B[sh]))))(;W[qh](;B[sh]C[图一：黑1立是好手！白2如在角上挡，黑3挖即可通连。])))))(;B[rb](;W[sf](;B[se](;W[pe](;B[sg](;W[rh](;B[ra](;W[qe](;B[re](;W[rd](;B[qd](;W[qc]))))))))))))(;B[rh](;W[sg](;B[sf](;W[qg](;B[rb](;W[ra](;B[pe](;W[qc](;B[qd](;W[re](;B[sb](;W[sd](;B[rd](;W[pf])))))))))))))))
+思考与收获：整个题图如果从右上向右下移过一路，结果将会如何？如果下移两路呢？])))))))))))))))(;W[qc](;B[qd](;W[re](;B[sb](;W[sd](;B[rd](;W[se](;B[pf]C[✓ 正确])))))))))(;B[sd]C[错误](;W[sb](;B[re](;W[qd](;B[qc](;W[pe](;B[pc](;W[qe](;B[od](;W[nc](;B[nd](;W[le]C[✗ 失败]))))))))))))(;B[sb](;W[sd](;B[pe](;W[rd](;B[qc](;W[pc](;B[qd](;W[re](;B[pf](;W[se]C[✗ 失败])))))))))))(;W[pe](;B[ra](;W[rd](;B[qd](;W[qe](;B[re](;W[sd](;B[qc]C[⚡ 变化])))))))))(;B[sd](;W[rb](;B[re](;W[qd](;B[qc](;W[pe]C[✗ 失败])))))))(;W[rb](;B[rh](;W[qg](;B[sg](;W[qh](;B[sh]C[⚡ 变化]))))(;W[qh](;B[sh]C[⚡ 变化 | 图一：黑1立是好手！白2如在角上挡，黑3挖即可通连。])))))(;B[rb](;W[sf](;B[se](;W[pe](;B[sg](;W[rh](;B[ra](;W[qe](;B[re](;W[rd](;B[qd](;W[qc]C[✗ 失败]))))))))))))(;B[rh](;W[sg](;B[sf](;W[qg](;B[rb](;W[ra](;B[pe](;W[qc](;B[qd](;W[re](;B[sb](;W[sd](;B[rd](;W[pf]C[✗ 失败])))))))))))))))

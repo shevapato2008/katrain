@@ -171,3 +171,6 @@ dmypy.json
 
 # Database
 .postgres_data/
+
+# Local data
+**/data/

@@ -1,0 +1,8 @@
+{
+  "track_id": "tsumego_training_20260122",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-22T10:00:00Z",
+  "updated_at": "2026-01-22T10:00:00Z",
+  "description": "Implement a Life and Death (Tsumego) training module for the Galaxy Web UI, featuring level selection, interactive board validation against SGFs, and progress tracking."
+}

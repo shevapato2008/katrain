@@ -48,7 +48,7 @@ const TsumegoLevelsPage = () => {
 
       <Grid container spacing={3}>
         {levels.map((level) => (
-          <Grid item xs={6} sm={4} md={3} key={level.level}>
+          <Grid size={{ xs: 6, sm: 4, md: 3 }} key={level.level}>
             <Card
               sx={{
                 borderRadius: 3,

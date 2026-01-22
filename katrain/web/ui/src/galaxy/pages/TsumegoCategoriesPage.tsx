@@ -74,7 +74,7 @@ const TsumegoCategoriesPage = () => {
 
       <Grid container spacing={3}>
         {categories.map((cat) => (
-          <Grid item xs={12} sm={6} md={4} key={cat.category}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={cat.category}>
             <Card
               sx={{
                 borderRadius: 3,

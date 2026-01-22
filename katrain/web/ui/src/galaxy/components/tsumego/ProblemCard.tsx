@@ -9,7 +9,6 @@ interface ProblemProgress {
 }
 
 interface ProblemCardProps {
-  id: string;
   index: number;
   initialBlack: string[];
   initialWhite: string[];
@@ -17,7 +16,7 @@ interface ProblemCardProps {
   onClick: () => void;
 }
 
-const ProblemCard = ({ id, index, initialBlack, initialWhite, progress, onClick }: ProblemCardProps) => {
+const ProblemCard = ({ index, initialBlack, initialWhite, progress, onClick }: ProblemCardProps) => {
   const isCompleted = progress?.completed;
   const isAttempted = progress && progress.attempts > 0;
 

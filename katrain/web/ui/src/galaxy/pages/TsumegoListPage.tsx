@@ -135,9 +135,8 @@ const TsumegoListPage = () => {
 
       <Grid container spacing={2}>
         {problems.map((problem, index) => (
-          <Grid item xs={6} sm={4} md={3} lg={2} key={problem.id}>
+          <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={problem.id}>
             <ProblemCard
-              id={problem.id}
               index={index}
               initialBlack={problem.initialBlack}
               initialWhite={problem.initialWhite}

@@ -279,11 +279,15 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
             }
           }
         }
-      }, 300);
-    }
 
-    // Switch player
-    setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
+        // Switch player back to user's color after AI responds
+        // In tsumego, user always plays the same color (e.g., Black for 黑先)
+        setNextPlayer(aiResponse.player === 'B' ? 'W' : 'B');
+      }, 300);
+    } else {
+      // Only switch player if no AI response (terminal node or free play)
+      setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
+    }
 
     return { type: 'correct' };
   }, [stones, nextPlayer, currentNode, isSolved, isFailed]);

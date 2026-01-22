@@ -184,62 +184,47 @@ const TsumegoProblemPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: 'auto', height: '100%' }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <IconButton onClick={handleBack} sx={{ mr: 1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Breadcrumbs>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate('/galaxy/tsumego')}
-            sx={{ cursor: 'pointer' }}
-          >
-            {t('Tsumego')}
-          </Link>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${problem.level}`)}
-            sx={{ cursor: 'pointer' }}
-          >
-            {problem.level.toUpperCase()}
-          </Link>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`)}
-            sx={{ cursor: 'pointer' }}
-          >
-            {t(`tsumego:${problem.category}`)}
-          </Link>
-          <Typography color="text.primary">
-            {t('tsumego:problem_n').replace('{n}', String(currentIndex + 1))}
-          </Typography>
-        </Breadcrumbs>
-      </Box>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Main Area: Header + Board */}
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
+        {/* Header */}
+        <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', px: 2 }}>
+          <IconButton onClick={handleBack} size="small" sx={{ mr: 1 }}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Breadcrumbs sx={{ '& .MuiBreadcrumbs-separator': { mx: 0.5 } }}>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => navigate('/galaxy/tsumego')}
+              sx={{ cursor: 'pointer' }}
+            >
+              {t('Tsumego')}
+            </Link>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => navigate(`/galaxy/tsumego/${problem.level}`)}
+              sx={{ cursor: 'pointer' }}
+            >
+              {problem.level.toUpperCase()}
+            </Link>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`)}
+              sx={{ cursor: 'pointer' }}
+            >
+              {t(`tsumego:${problem.category}`)}
+            </Link>
+            <Typography variant="body2" color="text.primary">
+              {t('tsumego:problem_n').replace('{n}', String(currentIndex + 1))}
+            </Typography>
+          </Breadcrumbs>
+        </Box>
 
-      {/* Main Content */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: 3,
-          height: isMobile ? 'auto' : 'calc(100vh - 180px)',
-          minHeight: 500
-        }}
-      >
-        {/* Board */}
-        <Box
-          sx={{
-            flex: isMobile ? 'none' : 1,
-            height: isMobile ? '60vw' : '100%',
-            maxHeight: isMobile ? 500 : 'none',
-            minHeight: 300
-          }}
-        >
+        {/* Board Area */}
+        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 0.5 }}>
           <TsumegoBoard
             boardSize={boardSize}
             stones={stones}
@@ -250,13 +235,18 @@ const TsumegoProblemPage: React.FC = () => {
             onPlaceStone={handlePlaceStone}
           />
         </Box>
+      </Box>
 
-        {/* Controls */}
+      {/* Right Sidebar with Controls */}
+      {!isMobile && (
         <Box
           sx={{
-            width: isMobile ? '100%' : 280,
-            flexShrink: 0,
-            height: isMobile ? 'auto' : '100%'
+            width: 320,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            bgcolor: 'background.paper',
+            borderLeft: '1px solid rgba(255,255,255,0.05)'
           }}
         >
           <TsumegoProblemControls
@@ -279,7 +269,7 @@ const TsumegoProblemPage: React.FC = () => {
             hasNext={currentIndex < problemList.length - 1}
           />
         </Box>
-      </Box>
+      )}
 
       {/* Feedback Snackbar */}
       <Snackbar

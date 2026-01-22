@@ -45,7 +45,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
-  const [canvasSize, setCanvasSize] = useState(600);
+  const [canvasSize, setCanvasSize] = useState(800);
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
   // Load images on mount
@@ -79,8 +79,10 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     const updateCanvasSize = () => {
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
+        // Use the smaller dimension to keep the board square, minus padding
         const size = Math.floor(Math.min(width, height) - 8);
-        setCanvasSize(Math.max(300, Math.min(800, size)));
+        // Clamp between 400 and 1200 for reasonable bounds (matching main Board component)
+        setCanvasSize(Math.max(400, Math.min(1200, size)));
       }
     };
 

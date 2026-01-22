@@ -18,7 +18,6 @@ import {
   IconButton,
   Chip,
   Divider,
-  Paper,
   Tooltip
 } from '@mui/material';
 import UndoIcon from '@mui/icons-material/Undo';
@@ -80,15 +79,14 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
   };
 
   return (
-    <Paper
+    <Box
       sx={{
         p: 2,
-        bgcolor: 'rgba(255,255,255,0.05)',
-        borderRadius: 2,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2
+        gap: 2,
+        overflow: 'auto'
       }}
     >
       {/* Problem Info */}
@@ -246,7 +244,7 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
           {t('tsumego:nextProblem')}
         </Button>
       </Box>
-    </Paper>
+    </Box>
   );
 };
 

@@ -7,6 +7,9 @@ import AiSetupPage from './galaxy/pages/AiSetupPage';
 import GamePage from './galaxy/pages/GamePage';
 import HvHLobbyPage from './galaxy/pages/HvHLobbyPage';
 import GameRoomPage from './galaxy/pages/GameRoomPage';
+import TsumegoLevelsPage from './galaxy/pages/TsumegoLevelsPage';
+import TsumegoCategoriesPage from './galaxy/pages/TsumegoCategoriesPage';
+import TsumegoListPage from './galaxy/pages/TsumegoListPage';
 import { AuthProvider } from './galaxy/context/AuthContext';
 import { SettingsProvider } from './galaxy/context/SettingsContext';
 
@@ -24,6 +27,9 @@ const GalaxyApp = () => {
           <Route path="play/human" element={<HvHLobbyPage />} />
           <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
           <Route path="research" element={<ResearchPage />} />
+          <Route path="tsumego" element={<TsumegoLevelsPage />} />
+          <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
+          <Route path="tsumego/:level/:category" element={<TsumegoListPage />} />
           <Route path="*" element={<Navigate to="/galaxy" replace />} />
         </Route>
       </Routes>

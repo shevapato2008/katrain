@@ -12,9 +12,9 @@ interface CategoryInfo {
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
-  'life-death': '生死',
-  'tesuji': '妙手',
-  'endgame': '收官'
+  'life-death': '⚔',
+  'tesuji': '✨',
+  'endgame': '🎯'
 };
 
 const TsumegoCategoriesPage = () => {

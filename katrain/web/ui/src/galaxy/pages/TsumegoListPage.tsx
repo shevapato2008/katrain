@@ -22,10 +22,13 @@ interface ProgressData {
   lastDuration?: number;
 }
 
-const CATEGORY_NAMES: Record<string, string> = {
-  'life-death': '死活题',
-  'tesuji': '手筋题',
-  'endgame': '官子题'
+const getCategoryName = (cat: string): string => {
+  const names: Record<string, string> = {
+    'life-death': i18n.t('tsumego:life-death', 'Life & Death'),
+    'tesuji': i18n.t('tsumego:tesuji', 'Tesuji'),
+    'endgame': i18n.t('tsumego:endgame', 'Endgame')
+  };
+  return names[cat] || cat;
 };
 
 const TsumegoListPage = () => {
@@ -110,14 +113,14 @@ const TsumegoListPage = () => {
           >
             {level?.toUpperCase()}
           </Link>
-          <Typography color="text.primary">{CATEGORY_NAMES[category || ''] || category}</Typography>
+          <Typography color="text.primary">{getCategoryName(category || '')}</Typography>
         </Breadcrumbs>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-            {level?.toUpperCase()} - {CATEGORY_NAMES[category || ''] || category}
+            {level?.toUpperCase()} - {getCategoryName(category || '')}
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
             {i18n.t('tsumego:solveProblems', '点击题目开始练习')}

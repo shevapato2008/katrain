@@ -1335,3 +1335,37 @@ msgstr "白棋胜{n}目"
 
 msgid "game:black_wins_points"
 msgstr "黑棋胜{n}目"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "死活题"
+
+msgid "tsumego:selectLevel"
+msgstr "选择难度级别"
+
+msgid "tsumego:practiceProblems"
+msgstr "练习死活题，提高计算力"
+
+msgid "tsumego:selectCategory"
+msgstr "选择题型"
+
+msgid "tsumego:categoryDesc"
+msgstr "选择你想要练习的题型"
+
+msgid "tsumego:problems"
+msgstr "题"
+
+msgid "tsumego:solveProblems"
+msgstr "点击题目开始练习"
+
+msgid "tsumego:life-death"
+msgstr "死活题"
+
+msgid "tsumego:tesuji"
+msgstr "手筋题"
+
+msgid "tsumego:endgame"
+msgstr "官子题"
+
+msgid "tsumego:problem_n"
+msgstr "第{n}题"

@@ -1,5 +1,6 @@
 import { Box, Typography, Card, CardActionArea } from '@mui/material';
 import MiniBoard from './MiniBoard';
+import { i18n } from '../../../i18n';
 
 interface ProblemProgress {
   completed: boolean;
@@ -50,7 +51,7 @@ const ProblemCard = ({ id, index, initialBlack, initialWhite, progress, onClick 
         </Box>
 
         <Typography variant="body2" align="center" sx={{ fontWeight: 500 }}>
-          第{index + 1}题
+          {i18n.t('tsumego:problem_n', 'Problem {n}').replace('{n}', String(index + 1))}
         </Typography>
 
         {/* Progress stats */}
@@ -58,8 +59,8 @@ const ProblemCard = ({ id, index, initialBlack, initialWhite, progress, onClick 
           {isCompleted && progress?.lastDuration && (
             <Typography variant="caption" sx={{ color: '#e89639' }}>
               {progress.lastDuration < 60
-                ? `${progress.lastDuration}秒`
-                : `${Math.floor(progress.lastDuration / 60)}分${progress.lastDuration % 60}秒`}
+                ? `${progress.lastDuration}s`
+                : `${Math.floor(progress.lastDuration / 60)}m${progress.lastDuration % 60}s`}
             </Typography>
           )}
           {progress && progress.attempts > 0 && (

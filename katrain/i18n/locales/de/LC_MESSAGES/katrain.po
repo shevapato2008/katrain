@@ -1537,3 +1537,47 @@ msgstr "Weiß gewinnt mit {n} Punkten"
 
 msgid "game:black_wins_points"
 msgstr "Schwarz gewinnt mit {n} Punkten"
+
+#. TODO
+msgid "tsumego:problem_n"
+msgstr "Problem {n}"
+
+#. TODO
+msgid "tsumego:solveProblems"
+msgstr "Click a problem to start practicing"
+
+#. TODO
+msgid "tsumego:problems"
+msgstr "problems"
+
+#. TODO
+msgid "tsumego:selectCategory"
+msgstr "Select Category"
+
+#. TODO - tsumego module
+msgid "Tsumego"
+msgstr "Tsumego"
+
+#. TODO
+msgid "tsumego:categoryDesc"
+msgstr "Choose the type of problems you want to practice"
+
+#. TODO
+msgid "tsumego:endgame"
+msgstr "Endgame"
+
+#. TODO
+msgid "tsumego:selectLevel"
+msgstr "Select Difficulty Level"
+
+#. TODO
+msgid "tsumego:practiceProblems"
+msgstr "Practice tsumego problems to improve your reading skills"
+
+#. TODO
+msgid "tsumego:tesuji"
+msgstr "Tesuji"
+
+#. TODO
+msgid "tsumego:life-death"
+msgstr "Life & Death"

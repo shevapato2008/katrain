@@ -1507,3 +1507,37 @@ msgstr "White wins by {n} points"
 
 msgid "game:black_wins_points"
 msgstr "Black wins by {n} points"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "Tsumego"
+
+msgid "tsumego:selectLevel"
+msgstr "Select Difficulty Level"
+
+msgid "tsumego:practiceProblems"
+msgstr "Practice tsumego problems to improve your reading skills"
+
+msgid "tsumego:selectCategory"
+msgstr "Select Category"
+
+msgid "tsumego:categoryDesc"
+msgstr "Choose the type of problems you want to practice"
+
+msgid "tsumego:problems"
+msgstr "problems"
+
+msgid "tsumego:solveProblems"
+msgstr "Click a problem to start practicing"
+
+msgid "tsumego:life-death"
+msgstr "Life & Death"
+
+msgid "tsumego:tesuji"
+msgstr "Tesuji"
+
+msgid "tsumego:endgame"
+msgstr "Endgame"
+
+msgid "tsumego:problem_n"
+msgstr "Problem {n}"

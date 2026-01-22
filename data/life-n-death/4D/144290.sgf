@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-128324]
+AN[方块A]
+SO[https://www.101weiqi.com/4D/144290/]
+GC[死活题 | 4D | 正确率: 35.2% (752/2136) | （上级） 九段・安倍吉輝 作]
+C[黑先 死活题]
+AB[qd][qb][qc][re]
+AW[qf][sf][pa][pd][rf][pb][pe][pc]
+PL[B]
+(;B[se](;W[qa](;B[ra](;W[rb](;B[sb](;W[sa])))))(;W[rb](;B[ra](;W[qa](;B[sb](;W[sa])))))(;W[sc](;B[sb](;W[rb](;B[ra])))))(;B[sb](;W[ra](;B[qa](;W[rb](;B[rc](;W[sd](;B[se](;W[qe]))))))))(;B[qa](;W[rb](;B[rc](;W[sb](;B[qe](;W[sd](;B[se](;W[ra]))))(;B[se](;W[sc](;B[qe](;W[ra]))))))(;B[sb](;W[ra](;B[rc](;W[sd](;B[se](;W[qe]))))))))(;B[sc](;W[se]))(;B[rb](;W[qa](;B[ra](;W[se](;B[sd](;W[sb](;B[sc](;W[rd]))))))))(;B[rc](;W[sb](;B[qe](;W[qa](;B[ra](;W[sd](;B[se](;W[rb])))))))))

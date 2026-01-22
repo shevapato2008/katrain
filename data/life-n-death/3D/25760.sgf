@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25760]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/3D/25760/]
+GC[手筋题 | 3D | 正确率: 25.1% (1603/6392) | 棋形比较松散，但黑棋却有紧逼白气的手段。黑先如何下呢？]
+C[黑先 手筋题]
+AB[kd][md][me][qb][mb][rc][mc][sb][re][pf][og][ke][ra][qd][qe]
+AW[nc][jc][id][kc][rd][lf][oe][ng][jg][ne][pe][mf][if][qc][ob]
+PL[B]
+(;B[oc](;W[pc](;B[od](;W[nd](;B[nb](;W[pd](;B[oa](;W[pa](;B[pb](;W[na](;B[oc](;W[od](;B[ma]C[正解])(;B[qa])))(;B[qa](;W[oc](;B[oa])))(;B[ma](;W[oc](;B[oa])))))))))(;B[oa](;W[nb]))(;B[pd](;W[nb]))(;B[pb](;W[nb])))(;W[pd](;B[pb](;W[nd](;B[oa](;W[na](;B[nb](;W[pa](;B[oc](;W[od](;B[ma])))))))))))))(;B[oa](;W[nb](;B[na](;W[pa])))))

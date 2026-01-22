@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15243]
+AN[admin]
+SO[https://www.101weiqi.com/4D/15243/]
+GC[死活题 | 4D+ | 正确率: 35.4% (859/2429)]
+C[黑先 死活题]
+AB[qf][qg][rh][qh][rc][sh]
+AW[nc][pi][qi][rb][ph][ri][pd][pf][pg][pe][nb][qc]
+PL[B]
+(;B[rd]C[变化2](;W[sc](;B[qb](;W[pb](;B[qe](;W[rf](;B[sf](;W[se](;B[rg](;W[sg]C[恭喜答对])))))(;W[qd](;B[sd]C[黑淨活](;W[rf](;B[sb](;W[re](;B[ra])))))))(;B[sf](;W[re](;B[qd](;W[qe])))))(;W[re](;B[sb](;W[sa](;B[sd](;W[qe](;B[sb])))))(;B[ra](;W[sb](;B[sd](;W[qe](;B[sa](;W[sb](;B[pc](;W[pb]))))))))(;B[sd](;W[sb](;B[ra](;W[qe](;B[sa](;W[sb](;B[pc](;W[pb])))))))))(;W[sb](;B[rf]C[黑淨活])))(;B[qe](;W[qd](;B[se](;W[rf]C[失败，重来吧]))))(;B[qd](;W[qb]C[黑淨死]))(;B[rf](;W[qe](;B[re](;W[sg]))))(;B[sb](;W[sa](;B[qb](;W[pb](;B[qe](;W[sd])))))))(;W[rf](;B[sf](;W[se](;B[rg]))))))

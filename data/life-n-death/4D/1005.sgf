@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1005]
+AN[admin]
+SO[https://www.101weiqi.com/4D/1005/]
+GC[死活题 | 4D+ | 正确率: 27.8% (765/2756)]
+C[黑先 死活题]
+AB[qf][jb][kc][rb][md][me][rd][mc][of][pf][lc][ne][rc][qe]
+AW[qb][oe][pe][od][nd][nb][qc][qd]
+PL[B]
+(;B[na]C[变化1](;W[mb](;B[qa](;W[pa](;B[nc](;W[oc](;B[ob](;W[pb](;B[ma](;W[lb](;B[la](;W[oa](;B[ka])))))(;B[la]))(;W[ma](;B[pb](;W[ra](;B[pc])))(;B[pc]))))))(;W[ob](;B[nc](;W[oc](;B[oa]))(;W[pa](;B[oc])))))(;B[nc](;W[oc](;B[qa](;W[oa])))))(;W[ma](;B[mb](;W[oa](;B[qa](;W[pa](;B[pc])))(;B[oc](;W[nc](;B[pc])))(;B[pc])))(;B[pc](;W[pb](;B[oc](;W[nc](;B[mb](;W[qa](;B[oa]))))))))(;W[oa](;B[nc](;W[oc](;B[ma](;W[qa](;B[pb](;W[ob](;B[pc])))))))(;B[ma]))(;W[ob](;B[mb](;W[nc](;B[pc])))))(;B[qa]C[失败](;W[pa](;B[na](;W[ob](;B[pc](;W[mb]))))))(;B[pc]C[附图
+
+黑棋点是普通的感觉，那么究竟如何呢？](;W[oc]C[白棋紧夹，重要](;B[pb](;W[pa]C[进行至此，都是必然的应对](;B[mb]C[黑棋挡下](;W[na]C[白棋立下即可](;B[ob](;W[nc]C[双活。]))))(;B[na]C[黑棋现在托，已经晚了](;W[mb](;B[ma](;W[lb](;B[la](;W[ka](;B[kb](;W[oa]C[白棋做活。]))))))))))))(;B[pb](;W[pa](;B[pc](;W[ob](;B[na](;W[mb](;B[ma](;W[lb](;B[la](;W[ka]))))))))(;B[oa](;W[qa](;B[ob](;W[pc]))))))(;B[nc](;W[oc](;B[mb](;W[na]))(;B[qa](;W[pa](;B[ob](;W[oa]))))(;B[pb](;W[pa](;B[pc](;W[ob](;B[na](;W[mb]))))))))(;B[mb](;W[na](;B[qa](;W[pa](;B[pb](;W[pc](;B[oc](;W[ob](;B[nc](;W[ra])))))))))))

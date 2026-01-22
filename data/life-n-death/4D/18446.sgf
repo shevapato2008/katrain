@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18446]
+AN[admin]
+SO[https://www.101weiqi.com/4D/18446/]
+GC[死活题 | 4D | 正确率: 45.5% (1334/2935)]
+C[白先 死活题]
+AB[sd][qg][rh][rc][pd][rf][pe][qc]
+AW[qi][rb][qb][ph][oe][of][sb][pg][od][ri][pc][si][ob]
+PL[W]
+(;W[qe]C[白1之碰为急所 正解](;B[re](;W[qd]C[黑若2应则白3断](;B[qf](;W[sh](;B[sg](;W[sf]C[对黑4，白5冲再7扑即可。](;B[se](;W[qh](;B[rd](;W[rg]C[黑8提时，白9、11止成为劫争。])))))))(;W[sf](;B[sg](;W[sh](;B[se](;W[qh](;B[rd](;W[rg]))))(;B[rd](;W[rg])))))(;W[pf]C[失败](;B[sg]C[黑活])))(;B[sg](;W[qf]))))(;B[qf]C[参考](;W[re](;B[se](;W[sg]C[黑死])(;W[pf](;B[qd](;W[sg]))))))))

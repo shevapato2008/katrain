@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-49908]
+AN[方块A]
+SO[https://www.101weiqi.com/4D/49908/]
+GC[死活题 | 4D+ | 正确率: 32.5% (679/2088) | 灵感来自高川格的那步著名鬼手。白六子身陷绝境，该如何脱困？]
+C[白先 死活题]
+AB[qi][ra][rb][ph][pf][pg][sc][qe][rj][qc][qd][si][qj]
+AW[qf][qg][qh][sg][ri][rf][pd][pb][pe][qb][pc]
+PL[W]
+(;W[re](;B[rd](;W[sb]C[白3只此一手](;B[rh](;W[sd](;B[se](;W[sf](;B[sh](;W[sd]C[最终成劫是正解])))))))(;W[se](;B[rh](;W[sd](;B[rc](;W[qa](;B[rg])))))))(;B[rh](;W[sd](;B[rc](;W[sf]C[白5粘，冷静的一手](;B[sh](;W[qa](;B[rd](;W[sa](;B[se]C[成劫]))(;W[sb](;B[se]))))(;W[sb](;B[rd](;W[qa])))(;W[sa](;B[rd](;W[qa]))))(;B[rd](;W[qa](;B[sh](;W[sb])))))(;W[sb](;B[sf](;W[rg](;B[rd]))))(;W[qa](;B[sf](;W[rg](;B[rd](;W[sa](;B[se](;W[sd](;B[se])))))))))))(;B[se]C[黑2抵抗不足](;W[rd](;B[rc](;W[rh](;B[sd]C[白棋先手双活]))))))(;W[se](;B[rh]))(;W[sb](;B[re](;W[sd](;B[rc](;W[se](;B[rh]))))(;W[se](;B[rh])))(;B[rh](;W[re](;B[rc](;W[sd](;B[sf]))))(;W[sd](;B[rc](;W[re](;B[sf])))))))

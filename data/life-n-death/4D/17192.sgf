@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-17192]
+AN[admin]
+SO[https://www.101weiqi.com/4D/17192/]
+GC[死活题 | 4D+ | 正确率: 39.6% (847/2138) | 出题者：关和也三段（昭和58年9月）]
+C[黑先 死活题]
+AB[qf][nf][mb][of][pf][rf][od][oc][ob]
+AW[rc][pb][pe][pc][qe]
+PL[B]
+(;B[ra](;W[pa](;B[pd](;W[qd](;B[re](;W[rd](;B[rb](;W[sb](;B[qb]))(;W[qb](;B[sb](;W[sc](;B[oa]C[正解])))))))))(;B[re](;W[rd](;B[pd](;W[rb](;B[qd](;W[qc](;B[qa](;W[sd])))))))))(;W[qb](;B[qd])))(;B[qb](;W[ra](;B[pd](;W[qc](;B[sb](;W[rb](;B[sc](;W[rd]C[失败1]))))))))(;B[pd](;W[ra](;B[sb](;W[qd](;B[re](;W[rd](;B[qb](;W[rb](;B[pa](;W[qc]C[失败2]))))))))))(;B[pa](;W[ra](;B[qb](;W[qc](;B[sd](;W[rb]))))(;B[sd](;W[sb](;B[qb](;W[qa](;B[qc](;W[pd])))))))))

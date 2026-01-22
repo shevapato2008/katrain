@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-72330]
+AN[kenny]
+SO[https://www.101weiqi.com/3D/72330/]
+GC[手筋题 | 3D | 正确率: 35.6% (1072/3010) | 本题是我今天实战下出的棋形。实战中白棋在空里补了一手而跟黑棋争单劫，如果白棋粘劫，空里有棋吗？]
+C[黑先 手筋题]
+AB[ql][qh][qb][of][od][qk][pa][ld][pb][nd][ni][pi][ng][oe][pj][oc][rl][qd][sm][rn][pc][oh]
+AW[qi][sl][sk][ph][pd][pe][ra][rh][ri][pf][pg][og][rj][sj][qa][qc][qj][nc][rb][rc][rk]
+PL[B]
+(;B[qg](;W[qf](;B[rg](;W[rf](;B[rd](;W[sd](;B[se](;W[sb])))(;W[re](;B[sc])))))(;B[rd](;W[re](;B[rg](;W[sg]))))))(;B[rf](;W[qe](;B[re](;W[rd](;B[qg](;W[rg](;B[qf](;W[qd])))))))))

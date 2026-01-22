@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16878]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16878/]
+GC[死活题 | 4D+ | 正确率: 44.8% (928/2073)]
+C[黑先 死活题]
+AB[se][md][mb][qb][mc][re][pe][od][nd][qe]
+AW[nc][oa][rc][pd][oc][ra][pc]
+PL[B]
+(;B[sb]C[正解](;W[sc](;B[ob](;W[pb](;B[rb]))(;W[nb](;B[qc](;W[qd](;B[rb](;W[rd](;B[pb](;W[pa](;B[sd](;W[na](;B[ma])))))))(;B[rd](;W[rb](;B[pb])))(;B[pb](;W[rd](;B[rb](;W[pa](;B[sd]))))))))(;W[rb](;B[pb](;W[nb](;B[qc])))))))(;B[ob]C[失败1](;W[pb](;B[sb](;W[rb](;B[sc](;W[nb]))))))(;B[rb]C[失败2](;W[qc](;B[sc](;W[sb])))))

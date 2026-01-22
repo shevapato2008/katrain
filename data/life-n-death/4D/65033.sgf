@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-65033]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/4D/65033/]
+GC[死活题 | 4D | 正确率: 52.5% (1275/2428) | 郑铭瑝九段创作]
+C[黑先 死活题]
+AB[nc][pi][qb][ph][pb][pf][pg][ne][pj][rk][qk][pc][ob]
+AW[qi][rb][qh][rh][rc][qa][rj][qc][si]
+PL[B]
+(;B[rf](;W[qf](;B[qe](;W[re](;B[qg](;W[sg](;B[rg](;W[sf](;B[rd](;W[sd](;B[se]C[正解])))))))(;B[se](;W[rg](;B[sg](;W[sf]))))))(;B[rg](;W[qg](;B[qe](;W[re](;B[rd](;W[qd](;B[se](;W[pe](;B[pd]C[失败])))))))))(;B[re](;W[rg](;B[sg](;W[qe])))))(;W[rg](;B[sg](;W[qe](;B[qf](;W[re](;B[qd](;W[pd](;B[pe](;W[se](;B[sf](;W[ra](;B[sb]C[变化])))))))))))))(;B[rg](;W[rf](;B[qg](;W[re](;B[sg](;W[qd]C[失败])))))))

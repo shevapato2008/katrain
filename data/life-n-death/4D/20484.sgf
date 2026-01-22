@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-20484]
+AN[dida]
+SO[https://www.101weiqi.com/4D/20484/]
+GC[死活题 | 4D+ | 正确率: 31.8% (801/2516) | 第31题  白先
+审题：如何杀死黑角？白不逃死子黑棋要活；白逃死子黑威胁要吃“接不归”。有没有两全其美的办法呢？]
+C[白先 死活题]
+AB[kd][rb][rc][pd][pb][od][oc]
+AW[qh][qb][rd][ld][pf][ne][nd][nb][qe][ob]
+PL[W]
+(;W[qa]C[好手](;B[qd](;W[oa]C[妙](;B[nc](;W[mb](;B[re](;W[rf](;B[sd](;W[qc](;B[mc](;W[lc](;B[md](;W[me](;B[le](;W[kc](;B[of](;W[ng](;B[oe](;W[og]C[黑死])))))))))))(;W[ra](;B[mc](;W[lc](;B[md](;W[me](;B[le](;W[kc](;B[of](;W[ng](;B[oe](;W[og])))))))))))(;W[sb](;B[mc](;W[lc](;B[md](;W[me](;B[le](;W[kc](;B[of](;W[ng](;B[oe](;W[og])))))))))))))))))(;W[re]C[不好](;B[nc](;W[mb](;B[mc](;W[lc](;B[oa](;W[qc](;B[sb](;W[pa](;B[ra](;W[na](;B[pc]C[黑活])))))))))))))(;B[qc](;W[oa]C[好手](;B[nc](;W[mb](;B[of](;W[nf](;B[og](;W[oe](;B[pe](;W[pg]C[黑死]))))))))))(;B[of](;W[ng]C[关键](;B[nc](;W[mb](;B[qc](;W[oa]C[正解]))))))(;B[oa](;W[qd](;B[qc](;W[sc])))))(;W[pa]C[不好](;B[qc](;W[qa](;B[oa](;W[na](;B[nc](;W[mb](;B[mc](;W[lc](;B[ra]C[打劫]))))))))(;W[pc])))(;W[qc]C[不好](;B[qd](;W[pa](;B[pc](;W[ra](;B[nc](;W[mc](;B[sc]C[鬼手](;W[re](;B[sa]C[打劫]))(;W[oe](;B[qa](;W[qb](;B[sa]C[打劫])))))))))))))

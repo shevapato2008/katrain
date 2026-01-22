@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-19018]
+AN[admin]
+SO[https://www.101weiqi.com/3D/19018/]
+GC[死活题 | 3D | 正确率: 43.9% (1319/3006)]
+C[白先 死活题]
+AB[ka][lb][md][me][mc][pb][pd][nb][pc]
+AW[qf][nf][kb][jc][qb][oe][le][ld][lc][pe][ib][qc][qd][mf]
+PL[W]
+(;W[ma]C[正解](;B[la](;W[pa](;B[oa](;W[nd]C[白1点，黑若2粘，则白3扳一手再5尖。
+
+此一手顺很重要。](;B[od](;W[nc]C[黑若6则白7挤，收下黑棋。黑6若7则白A挖。])))))(;W[nd](;B[pa](;W[na](;B[od](;W[nc](;B[oc](;W[ne](;B[oa](;W[mb](;B[mc])))))))))))(;B[od]C[参考](;W[la](;B[ne](;W[nc](;B[pa](;W[mb](;B[nd](;W[na](;B[oa](;W[ob]C[白10止因气紧，是不入子之形。]))))))(;B[oc](;W[oa](;B[pa](;W[na](;B[mb](;W[ja]))))))))(;B[pa](;W[ne](;B[nd](;W[oc])))))))(;W[pa](;B[oa](;W[ma](;B[od]))(;W[nd](;B[nc](;W[ma](;B[od])))))))

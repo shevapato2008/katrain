@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1856]
+AN[admin]
+SO[https://www.101weiqi.com/3D/1856/]
+GC[死活题 | 3D+ | 正确率: 20.5% (817/3990)]
+C[黑先 死活题]
+AB[rd][ph][qh][pd][pf][pg][pe][rg][qb][qc]
+AW[qf][qi][nc][qg][rh][ng][rf][pb][ne][rj][oi][oc][qe]
+PL[B]
+(;B[sb](;W[ra](;B[qa](;W[rb](;B[se](;W[re](;B[sd](;W[sg](;B[rc]))))(;W[rc](;B[qd](;W[sg](;B[re])))))(;B[re](;W[se](;B[sd](;W[rc]C[失败，重来吧])))))(;W[sd](;B[sc](;W[rb](;B[re](;W[se](;B[sf](;W[sg](;B[se])))))))))))(;B[re](;W[se](;B[sd](;W[qa](;B[ra](;W[sb]C[失败，重来吧]))))))(;B[rb](;W[sc](;B[sb](;W[sd]C[失败，重来吧]))))(;B[se](;W[rb](;B[ra](;W[sc](;B[sb]C[失败，重来吧])))(;B[pc](;W[ob](;B[sb](;W[qa](;B[ra])))))))(;B[sg](;W[se]))(;B[sc](;W[rb](;B[ra](;W[sb](;B[se](;W[re](;B[sg](;W[sh])))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-37652]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/3D/37652/]
+GC[死活题 | 3D+ | 正确率: 66.0% (2952/4476) | 张栩九段创作]
+C[黑先 死活题]
+AB[nc][sd][se][mb][mc][pd][re][od][ma][qd]
+AW[oa][qb][rd][rc][oc][nb][pc]
+PL[B]
+(;B[rb]C[黑1卡是正解的第一步。](;W[sb](;B[ra](;W[qa](;B[na]C[[变化图\]黑棋也可以打吃， [变化图\]](;W[pb]C[白棋不能在A位粘，否则被净杀。](;B[qc](;W[sc](;B[ob]C[与正解图一样。])))(;B[ob])(;B[sc](;W[qc](;B[ob])))))(;B[qc](;W[pb](;B[na](;W[sc](;B[sa](;W[rc](;B[ob]C[这样也可以])))(;B[ob]C[这样是黑宽一气劫，请注意与前面[失败图\]的差别。])))(;B[sc](;W[na]))))(;B[ob](;W[pb](;B[na](;W[qc](;B[ob])))))(;B[pb](;W[qc])))(;W[qc]C[[变化图\]白棋不能粘， [变化图\]](;B[ob](;W[pb](;B[qa]C[白棋被杀。](;W[na](;B[sc])))))))))(;B[na]C[[失败图1\]平凡的打吃 [失败图1\]](;W[ob](;B[qc](;W[rb](;B[pa](;W[pb](;B[sb](;W[sc](;B[ra]C[跃然这样也是劫，但成为白先手劫，不是正解。])))))))))(;B[ra]C[[失败图2\] [失败图2\]](;W[qa](;B[ob](;W[pb](;B[na](;W[sc](;B[ob]C[这样也是本劫，不完全成功。])))))))(;B[ob](;W[pb](;B[rb](;W[sb](;B[ra](;W[na])))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16867]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16867/]
+GC[死活题 | 4D | 正确率: 41.6% (1196/2873)]
+C[黑先 死活题]
+AB[jc][jb][kd][rb][ja][me][qb][rd][rc][pd][oe][le][pe][ld][jd][mb][ra][qd]
+AW[nc][kb][ka][kc][md][qa][mc][pb][lc][od][qc][pc]
+PL[B]
+(;B[oa]C[正解](;W[pa](;B[nb](;W[oc](;B[la](;W[ob](;B[na]))(;W[lb](;B[ma]))))))(;W[nb](;B[ob]))(;W[ob](;B[nb](;W[ma](;B[pa])))))(;B[nb](;W[oa](;B[ob](;W[oc](;B[na](;W[lb](;B[ma]C[白失败图]))(;W[ma](;B[la](;W[lb](;B[pa](;W[ma]))))))))))(;B[ob]C[失败2](;W[oa](;B[na](;W[nb](;B[ma](;W[oc](;B[pa])))(;B[pa](;W[ma](;B[la](;W[lb](;B[ma](;W[oa](;B[ma](;W[oc](;B[na](;W[qa]))))))))))))(;B[nb](;W[oc](;B[na](;W[ma](;B[pa](;W[lb]))))))))(;B[pa](;W[ob](;B[nb](;W[oa](;B[na](;W[qa])))))))

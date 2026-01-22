@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-17000]
+AN[admin]
+SO[https://www.101weiqi.com/3D/17000/]
+GC[死活题 | 3D | 正确率: 48.8% (1569/3216)]
+C[黑先 死活题]
+AB[nf][lb][rd][qb][mc][rf][re][pg][pe][ne][nd][lc][nb][qc][qe]
+AW[nc][sd][rb][rc][pd][oe][od][oc][qd][pc][ob]
+PL[B]
+(;B[qa](;W[na](;B[mb](;W[pa](;B[sb](;W[sc](;B[se](;W[sa](;B[of])))(;B[ra](;W[sa]))))))(;B[sb](;W[pa](;B[mb](;W[sc](;B[se](;W[sa](;B[of]C[白淨死]))))))(;W[mb](;B[pa]C[白淨死])))))(;B[oa](;W[qa])))

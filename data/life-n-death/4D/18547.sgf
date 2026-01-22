@@ -1,0 +1,14 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18547]
+AN[admin]
+SO[https://www.101weiqi.com/4D/18547/]
+GC[手筋题 | 4D | 正确率: 39.0% (938/2406) | 没有捕捉黑四子的好手段吗？因右边白棋仅四气，悠闲不得。]
+C[白先 手筋题]
+AB[nf][kc][lb][mh][qh][ke][oe][le][od][ma][nb][nk][qk][oc][mg][mf]
+AW[qf][lh][md][me][mb][lf][mc][pd][pb][pf][of][ne][li][lk][pc][lg]
+PL[W]
+(;W[oi]C[正解](;B[nh](;W[oh](;B[mj]C[白1为有意思之手段，黑2、4为最大程度的抵抗。](;W[nj](;B[mi](;W[mk]C[白5、7切断，手法巧妙。](;B[og](;W[pg](;B[oj](;W[ni](;B[ph]C[黑8后，10、12止大致是劫。因有A逃之本身劫材，可说是白棋有利之劫吧。
+
+起手白1下在11位的话，被黑8扳就捉不到了。]))))(;W[lj](;B[pg](;W[qi](;B[pi](;W[pj](;B[ph](;W[rh](;B[qj](;W[ri](;B[pk](;W[ok](;B[oj]))))))(;W[qj](;B[rh])))))(;B[qg](;W[ri](;B[rf](;W[re](;B[rg](;W[sf](;B[sg](;W[se]))))))))))))))))(;B[og](;W[ni](;B[pg](;W[mi](;B[ng](;W[qi](;B[qg](;W[ri])))(;W[qg](;B[ph](;W[qi](;B[rh](;W[ri])))))))(;W[qi](;B[qg](;W[ri])(;W[mi]))))))))(;B[ni]C[参考](;W[nj](;B[oh]C[黑1、3进行，会怎么样？](;W[nh](;B[ng](;W[ph]C[白4扑为要紧之着，和黑5交换后有6之挖。](;B[oj](;W[mi]C[对黑7，白棋不理而于8挖是关键。之后不论怎样变化，总是黑棋接不归。
+
+黑1若3则白4挖，结果相同。]))))))(;B[mj](;W[oj](;B[oh](;W[ph](;B[pi](;W[nh](;B[ng](;W[og](;B[pj](;W[mi])))(;W[mi](;B[pj](;W[og]))(;B[pg](;W[og]))))))))))))(;B[oh](;W[nh](;B[ni](;W[nj](;B[ng](;W[ph](;B[oj](;W[mi](;B[mj](;W[og])))))))))))(;W[ni](;B[og](;W[ph](;B[oh](;W[pi](;B[oi](;W[oj](;B[mi](;W[mj](;B[nj]))))))(;W[nh](;B[ng](;W[pi](;B[oi](;W[oj](;B[mi](;W[nj](;B[mj](;W[mk](;B[pj](;W[ok](;B[pg]))))))))))))))(;W[nh](;B[ng](;W[ph](;B[oh](;W[pi](;B[oi](;W[oj](;B[mi](;W[nj](;B[mj](;W[mk](;B[pj](;W[ok](;B[pg])))))))))))))))))

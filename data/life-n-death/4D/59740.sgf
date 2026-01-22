@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-59740]
+AN[kenny]
+SO[https://www.101weiqi.com/4D/59740/]
+GC[死活题 | 4D+ | 正确率: 32.2% (680/2112)]
+C[白先 死活题]
+AB[sd][rd][qb][qd][pc]
+AW[se][oa][re][pe][od][oc][qe][ob]
+PL[W]
+(;W[rb](;B[ra](;W[sb](;B[pb](;W[rc](;B[pa](;W[sa](;B[pd]))))(;W[pa](;B[rc](;W[qa](;B[sc]))(;W[pd](;B[qa])))))(;B[rc](;W[pb](;B[pd](;W[qa](;B[pa]C[ko, nice! :)正解]))))))(;W[rc](;B[sb]))(;W[pb](;B[sb]))(;W[pd](;B[sb]))(;W[sc](;B[rc])))(;B[rc](;W[qa](;B[ra](;W[sa](;B[sb](;W[sc]C[正解]))))))(;B[sb](;W[ra]C[正解]))(;B[qa](;W[rc]C[正解])))(;W[rc](;B[rb]))(;W[ra](;B[qa](;W[rb](;B[rc]))))(;W[qa](;B[ra](;W[pb](;B[sb]))(;W[sb](;B[pb](;W[rb](;B[rc]))))))(;W[pb](;B[sb]))(;W[pd](;B[sb]))(;W[sb](;B[rb](;W[pb](;B[sc](;W[qc](;B[sa](;W[pd](;B[qa]))))(;W[qa](;B[sa]))))(;W[pd](;B[sc](;W[qa](;B[sa]))(;W[qc](;B[sa](;W[pb](;B[qa])))))))))

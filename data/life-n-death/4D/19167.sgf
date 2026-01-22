@@ -1,0 +1,16 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-19167]
+AN[admin]
+SO[https://www.101weiqi.com/4D/19167/]
+GC[死活题 | 4D | 正确率: 43.0% (828/1924)]
+C[白先 死活题]
+AB[qf][kc][lb][qg][pd][rf][od][pe][rk][qc][qd][qj]
+AW[nc][rb][ph][ke][mc][pb][oe][re][ne][pf][ma][pg][pc][qe]
+PL[W]
+(;W[qh]C[解答](;B[rh](;W[sg](;B[rg](;W[ri]C[首先白1、3妨碍黑棋联络。尤其重要的是白3点。
+
+白3如5扳，黑3做眼，到此为止。又，白3即使A打，黑仍4粘，白棋反而帮黑棋做眼了。
+
+白若3则9止是单行道。](;B[rd](;W[sh](;B[se](;W[qi](;B[qb](;W[qa](;B[oc](;W[oa]C[黑虽10再12，白11、13后黑无法在角上做眼。白13如A，则角上有接不归之手筋。又，白13于B应之下法更便宜。
+
+原本评注：“3妙、13妙”。])(;W[na])(;W[ob]C[参考](;B[sc](;W[rc](;B[ra](;W[sa](;B[sd]C[角上白棋接不归]))))))(;W[nb](;B[ob](;W[oa](;B[sc](;W[rc](;B[ra](;W[sa](;B[sd]C[失败图])))))))))))))))))(;B[rd](;W[rg](;B[se](;W[ri](;B[qb](;W[qa](;B[oc](;W[na]))))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16456]
+AN[admin]
+SO[https://www.101weiqi.com/3D/16456/]
+GC[死活题 | 3D+ | 正确率: 45.1% (1369/3034) | 权五敏四段创作]
+C[黑先 死活题]
+AB[mc][re][pe][nb][oc][pc][qe]
+AW[sd][rb][oa][rc][pb]
+PL[B]
+(;B[ob]C[变化](;W[qc](;B[na](;W[qa](;B[pa]))(;W[pa](;B[ra])))(;B[qa](;W[pa](;B[na](;W[qb]))(;B[ra](;W[sa](;B[sb](;W[sc]))))))(;B[ra](;W[qa](;B[na](;W[sa])))))(;W[pa](;B[ra](;W[sa](;B[sb](;W[qa](;B[qc])))))))(;B[qc](;W[qb](;B[ob](;W[sa](;B[rd](;W[sc]C[失败]))))(;B[rd](;W[sc](;B[ob](;W[sa]))))(;B[ra](;W[ob](;B[qa](;W[rd]C[雙活]))))))(;B[na]C[失败](;W[sa](;B[ob](;W[qb](;B[rd](;W[sc]))))))(;B[qa](;W[ra]C[白淨活]))(;B[ra](;W[qa](;B[qc](;W[qb](;B[ob](;W[sa]C[白淨活]))))))(;B[rd](;W[ra]C[白淨活]))(;B[sb](;W[ob])))

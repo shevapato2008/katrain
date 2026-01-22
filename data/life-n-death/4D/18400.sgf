@@ -1,0 +1,16 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18400]
+AN[admin]
+SO[https://www.101weiqi.com/4D/18400/]
+GC[死活题 | 4D | 正确率: 28.0% (887/3169)]
+C[白先 死活题]
+AB[sf][qg][pd][pb][re][rg][pc][qe]
+AW[qf][qi][mb][ph][ri][rf][pf][pg][od][pe][oc][si][ob]
+PL[W]
+(;W[qd]C[正解](;B[rd](;W[rb](;B[qb](;W[ra](;B[qc](;W[rc]C[若懂得白1之后，以后就比较简单。
+
+黑棋于2位应，只此一手。黑2若6或7应，则白2、黑粘之后，有A扑的棋可吃到黑棋。
+
+这手棋（白1断）意外地受到忽略。
+
+白3点急所，对黑4，白5立有渡。白7之后，黑B则白C紧气，黑棋无眼。])(;W[qa](;B[pa](;W[rc](;B[sc](;W[oa](;B[qd]))))))))(;W[rc](;B[ra])))(;B[qc](;W[ra](;B[pa](;W[rc](;B[sc](;W[sb](;B[se](;W[oa](;B[qb](;W[sg](;B[sh](;W[rh](;B[qd](;W[sg]C[连环劫])(;W[sd]C[连环劫])))))(;W[sh](;B[sg](;W[rh](;B[qd](;W[qh])))(;W[qh](;B[qd](;W[rh])))))(;W[rh](;B[qd](;W[sg](;B[sh](;W[sd])))))(;W[qh](;B[qd]))))(;W[sg](;B[qb](;W[oa](;B[sh](;W[rh](;B[qd](;W[sg]))))))(;B[sh](;W[oa](;B[qb](;W[rh](;B[qd](;W[sd])))))))(;W[sh])(;W[rh](;B[qb](;W[oa](;B[qd](;W[sg](;B[sh](;W[sd])))))(;W[sg](;B[sh](;W[oa](;B[qd](;W[sg])(;W[sd])))))))(;W[qh](;B[qb](;W[oa](;B[qd])))))))))(;B[qa](;W[qb](;B[pa](;W[rc]))))))(;B[rc](;W[qb]))))(;B[rc]C[参考](;W[rd](;B[se](;W[sg](;B[sh](;W[sd](;B[sg](;W[qh]C[白棋快一气])(;W[rh]))))))))(;B[rb](;W[rd](;B[se](;W[sg](;B[sh](;W[sd]C[和Q15801相比,T9一子正好起到了紧气作用，黑棋就不能再靠紧气来活棋了])))))))(;W[ra]C[失败](;B[rb](;W[pa](;B[qc](;W[rd](;B[qa]C[白1点也是一种手筋，是有力的手段，但黑2再4凹之应手为好棋。])))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-127869]
+AN[方块A]
+SO[https://www.101weiqi.com/3D/143834/]
+GC[死活题 | 3D | 正确率: 25.5% (780/3054) | （中级） 塚本惠一 作]
+C[黑先 死活题]
+AB[pa][sa][rd][pb][pd][ra][qd][pc]
+AW[qf][rb][oa][oe][rf][rc][pe][od][oc][ob]
+PL[B]
+(;B[qb](;W[sd](;B[qc](;W[sc](;B[se])))(;B[se](;W[sb](;B[qc](;W[qa](;B[ra](;W[re](;B[sc])))))(;B[re](;W[qa](;B[ra](;W[sf]))))))))(;B[sb](;W[qb](;B[qc](;W[sd](;B[se](;W[re]))))))(;B[sd](;W[qb](;B[qc](;W[sb])))))

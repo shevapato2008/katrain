@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-847]
+AN[admin]
+SO[https://www.101weiqi.com/3D/847/]
+GC[死活题 | 3D+ | 正确率: 22.9% (714/3119)]
+C[黑先 死活题]
+AB[jb][lb][lf][rd][ld][le][ng][lc][pg][og][pf][pe][re][rc][ra][qb][mf]
+AW[nc][nf][md][me][oe][of][mc][pb][od][qc][qd]
+PL[B]
+(;B[pd](;W[na](;B[pa](;W[pc](;B[ob](;W[oa](;B[nb](;W[qa]))))))(;B[pc](;W[pa]C[白棋净活]))(;B[ob](;W[pa](;B[pc](;W[oc])))))(;W[oa](;B[pc](;W[oc](;B[ma](;W[na](;B[qa](;W[pa](;B[nb])))))(;B[qa](;W[mb](;B[ma](;W[na](;B[ob]C[白棋净死]))))))))(;W[pc](;B[nb](;W[mb](;B[ma])))))(;B[ob](;W[pa](;B[pc](;W[oc](;B[pd])(;B[na](;W[ma](;B[mb](;W[nb](;B[la](;W[pd])))))))(;W[pd](;B[oa](;W[oc](;B[qa](;W[pc]))))))(;B[pd](;W[pc](;B[na](;W[ma](;B[mb](;W[nb]))))))(;B[ma](;W[na](;B[nb](;W[mb](;B[oa](;W[oc]))))))(;B[na](;W[ma](;B[mb](;W[nb](;B[la](;W[oc]))))))(;B[nb](;W[mb](;B[ma](;W[na]))))))(;B[na](;W[ma](;B[ob](;W[pa](;B[mb](;W[nb](;B[la](;W[oc]))))))(;B[pd](;W[pc](;B[mb](;W[nb]))))))(;B[mb](;W[nb])))

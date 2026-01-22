@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2716]
+AN[admin]
+SO[https://www.101weiqi.com/4D/2716/]
+GC[死活题 | 4D | 正确率: 44.1% (1120/2541) | 关山利一九段创作]
+C[黑先 死活题]
+AB[nc][qf][sf][kc][kd][mb][ke][ng][rf][of][lc][mf][nb][oc][pc][ob]
+AW[pa][md][ld][pb][re][pd][od][mc][nd][qc][qd]
+PL[B]
+(;B[ra]C[变化](;W[rb](;B[oa](;W[qb](;B[se](;W[sc](;B[sd](;W[rd](;B[sb](;W[sa]))))(;B[rd](;W[sa](;B[sd](;W[rc](;B[sb](;W[qa])))))))(;W[sd](;B[rd](;W[rc](;B[qe](;W[sb](;B[rd]))))))(;W[rd](;B[sd](;W[sc](;B[sb](;W[sa]))))))(;B[rd](;W[sc](;B[se](;W[sa](;B[sb](;W[qa]C[失败，重来吧](;B[qe](;W[rc])))))))))))(;W[qb](;B[se](;W[sd](;B[rd](;W[rc](;B[qe](;W[sb](;B[rd])))))))))(;B[rb]C[失败](;W[qb](;B[se](;W[sd](;B[ra](;W[sb](;B[rc](;W[rd]))(;B[sa](;W[rc](;B[sc](;W[qa](;B[rd](;W[sb]))))))))))(;B[ra](;W[se](;B[qe](;W[rd](;B[sc](;W[sb]))))(;B[sc](;W[qe](;B[rc](;W[sb]))))))))(;B[se](;W[rb](;B[sc](;W[sb])))))

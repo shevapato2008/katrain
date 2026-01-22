@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15418]
+AN[admin]
+SO[https://www.101weiqi.com/4D/15418/]
+GC[死活题 | 4D+ | 正确率: 50.1% (1061/2116) | 加田克司九段创作]
+C[黑先 死活题]
+AB[jb][kc][kd][rb][me][rc][pd][oe][ld][ne][ib][qd][pc]
+AW[kb][lb][ja][qb][mc][pb][lc][nd][oc][qc]
+PL[B]
+(;B[nb]C[变化](;W[ob](;B[ma](;W[qa](;B[oa](;W[ka](;B[nc](;W[mb](;B[na](;W[pa](;B[od](;W[la](;B[na])))(;B[md](;W[la](;B[na]))))(;W[la](;B[od](;W[pa](;B[na])))(;B[md](;W[pa](;B[na]))))(;W[md](;B[od]))(;W[od](;B[md]))))))(;W[mb](;B[ka](;W[la](;B[na](;W[od](;B[md])))))))))(;B[na](;W[qa](;B[oa](;W[ma](;B[ka](;W[nc]C[失败，重来吧]))))))(;B[qa](;W[na](;B[ma](;W[pa]C[失败，重来吧]))))(;B[oa](;W[ma](;B[na](;W[ka])))))))

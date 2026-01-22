@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-38176]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/4D/38176/]
+GC[死活题 | 4D+ | 正确率: 37.7% (820/2176) | 福井正明九段创作]
+C[白先 死活题]
+AB[ra][rb][oe][pd][pf][rf][re][qc][qd]
+AW[nf][sf][qg][qb][sg][qa][pg][od][ne][nd][og][rg][pc][qe][ob]
+PL[W]
+(;W[sc](;B[rc](;W[qf](;B[sd](;W[sb])))(;W[sd](;B[qf]))(;W[sb](;B[qf](;W[se](;B[sd]))))(;W[se](;B[sb])))(;B[sd](;W[sb](;B[rc](;W[qf])))))(;W[sb]C[失败图](;B[sc](;W[sd](;B[rd]))))(;W[qf]C[失败图](;B[rd]))(;W[sd](;B[se](;W[sb](;B[rd])))))

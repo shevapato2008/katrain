@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1689]
+AN[admin]
+SO[https://www.101weiqi.com/4D/1689/]
+GC[死活题 | 4D | 正确率: 29.4% (986/3351)]
+C[黑先 死活题]
+AB[qg][rc][pf][pg][og][rg][qc]
+AW[nc][qf][oe][pb][pd][of][rf][qd]
+PL[B]
+(;B[pc]C[正确](;W[ob](;B[sd](;W[re](;B[rd](;W[qe](;B[sf](;W[se](;B[od](;W[pe](;B[ne])(;B[nd])))))))(;B[sf](;W[se](;B[rd](;W[qe](;B[od](;W[pe](;B[nd])(;B[ne]))))))))(;W[sf](;B[pe])(;B[qe](;W[pe](;B[re](;W[rd]))))))(;B[sf]C[不好](;W[se](;B[pe](;W[od](;B[re](;W[sg](;B[sd](;W[qe](;B[sf]C[打劫失败])))))))(;B[re](;W[sg](;B[qe](;W[rd]C[黑死]))))))(;B[rd](;W[qe])))(;W[oc](;B[qb](;W[ob](;B[rd](;W[re](;B[sd]C[黑活](;W[sb](;B[sf])))(;B[sb](;W[ra](;B[sd](;W[qa](;B[sf]))(;W[se](;B[qa])))))))(;B[sd])))(;B[sf](;W[se](;B[sd](;W[sg](;B[rd](;W[qe](;B[qb](;W[ob](;B[sb])))))))))(;B[sd](;W[re](;B[rd](;W[sf](;B[qb](;W[ob](;B[sb])))))))(;B[rd]C[黑3应该也可以啊](;W[qe](;B[qb](;W[ob](;B[se](;W[sf](;B[sb]C[最后也活了])))))))))(;B[sd](;W[re](;B[pc](;W[oc](;B[qb](;W[ob](;B[rd](;W[se](;B[sb])))))(;B[rd](;W[sf](;B[qb]))))(;W[ob](;B[sf](;W[se](;B[rd](;W[qe](;B[od](;W[pe](;B[ne])))))))))(;B[rd](;W[qe](;B[pc](;W[ob](;B[sf](;W[se](;B[od])))))(;B[sf](;W[se](;B[qb])(;B[pc])))(;B[qb](;W[sb](;B[pc](;W[ob](;B[sf])))))))(;B[sf](;W[se](;B[rd](;W[qe](;B[pc])(;B[qb](;W[sb](;B[pc])))))(;B[pc](;W[ob](;B[rd](;W[qe](;B[od]))))))))(;W[sf](;B[pc](;W[ob](;B[pe](;W[qe](;B[od])))))))(;B[rd]C[错误](;W[qe](;B[pc](;W[ob](;B[qb](;W[sb]C[黑死]))))))(;B[qe](;W[rd](;B[re](;W[sd])))))

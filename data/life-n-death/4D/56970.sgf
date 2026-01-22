@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-56970]
+AN[kenny]
+SO[https://www.101weiqi.com/4D/56970/]
+GC[官子题 | 4D | 正确率: 34.5% (720/2084) | 这是星位小飞守角以后白棋点三三走出来的变化。虽然是实战常型，不过还是容易走错]
+C[黑先 官子题]
+AB[nc][sf][pd][pf][lc][re][rf][oc][qd]
+AW[sd][se][rb][rd][qc][pc][ob]
+PL[B]
+(;B[pb](;W[pa](;B[nb](;W[qb](;B[na](;W[oa])(;W[jh](;B[sb](;W[rc](;B[oa](;W[ra](;B[pb])))))))))(;B[sb](;W[rc](;B[nb](;W[qb](;B[na](;W[oa])))))))(;W[nb](;B[rc](;W[qb](;B[sb](;W[mb](;B[lb](;W[ma]C[白这个好]))))))))(;B[nb](;W[pb](;B[ki](;W[na](;B[ma](;W[oa](;B[mb]C[与正解图相比，黑棋白亏两目])))))))(;B[oa](;W[nb](;B[mb](;W[na]C[没有手段]))))(;B[sb](;W[rc](;B[nb](;W[pb]))(;B[pb](;W[nb](;B[mb](;W[pa])))))))

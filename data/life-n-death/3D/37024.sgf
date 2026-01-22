@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-37024]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/3D/37024/]
+GC[死活题 | 3D | 正确率: 34.4% (1290/3745) | 山部俊郎九段创作]
+C[白先 死活题]
+AB[nc][qf][qg][rd][na][pb][re][od][nd][nb][qc][pc][qe]
+AW[md][me][qb][mb][mc][rc][oe][pd][ne][pe][ma][qd]
+PL[W]
+(;W[ra]C[魔术*虎](;B[sb](;W[pa](;B[rb](;W[ob]C[打劫 正解]))(;B[ob](;W[sc]C[魔术*双活]))))(;B[sc](;W[sb]C[打劫]))(;B[pa](;W[sb](;B[qa](;W[ob]C[仍打劫]))(;B[ob](;W[qa]C[双方均活])))))(;W[rb](;B[pa](;W[ob](;B[sc](;W[sb](;B[qa](;W[sd](;B[ra]C[失败]))))))))(;W[ob](;B[pa](;W[rb](;B[sc]C[仍然失败]))(;W[ra](;B[sb]C[还是失败]))))(;W[pa](;B[rb]C[依然失败](;W[ra](;B[sc])))))

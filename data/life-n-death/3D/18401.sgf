@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18401]
+AN[admin]
+SO[https://www.101weiqi.com/3D/18401/]
+GC[死活题 | 3D+ | 正确率: 32.3% (1003/3108)]
+C[白先 死活题]
+AB[qf][rc][pb][pc][qe]
+AW[rh][qh][mb][pd][pf][pg][od][rj][oc][ob]
+PL[W]
+(;W[ra]C[白1点在“2之一”的急所，由此攻击为好手顺。 正解](;B[rb](;W[qd](;B[rd](;W[pa](;B[se](;W[rf])(;W[sg](;B[sf](;W[rf]))))))(;B[sa](;W[qc](;B[qb](;W[sb](;B[rd](;W[se])))))(;W[sb](;B[qc])))(;B[qc](;W[qa](;B[pa](;W[rd](;B[sc](;W[sa]C[盤角曲四]))))))(;B[qa](;W[qc](;B[rd](;W[se](;B[qb](;W[sa])))))))(;W[pa](;B[sa](;W[sb](;B[qb](;W[qd](;B[qa](;W[sa](;B[rd](;W[se]))))))))(;B[qb](;W[qd](;B[sa](;W[sb](;B[qa](;W[sa](;B[rd](;W[se]C[黑6、8尽了全力，但黑10时，白11止可吃到全部黑子。])))))(;W[rd]C[冲](;B[sc](;W[sb](;B[qa]C[胀牯牛])))))(;B[qa]C[断](;W[rd]C[次A、B见合，黑不行。]))))))(;B[qa]C[参考1](;W[qb]C[黑不行]))(;B[pa]C[参考2](;W[qd]C[黑不行])))(;W[qd]C[失败](;B[ra]C[白如1冲就弄错了手顺，被黑2占据“2之一”的急所。](;W[sb](;B[rd]C[白3如于4冲，则黑3止活角。](;W[qc](;B[qb](;W[pa](;B[rg]C[白棋于3、5攻击，但黑6再8活掉一半。](;W[rb](;B[sc](;W[qa](;B[se]C[这样的结果白棋不能满意]))(;W[se](;B[sf]C[活了])))))))))))))

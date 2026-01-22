@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2385]
+AN[admin]
+SO[https://www.101weiqi.com/4D/2385/]
+GC[死活题 | 4D | 正确率: 42.4% (891/2103) | 关山利一九段创作]
+C[黑先 死活题]
+AB[qf][nf][lb][me][qb][rd][rc][of][pf][le][ld][lc][la][pc][qe]
+AW[pa][md][mb][oe][pb][mc][pe][ne][oc][qd]
+PL[B]
+(;B[ob]C[正解图](;W[nb](;B[nd](;W[od](;B[na]C[恭喜答对]))(;W[oa](;B[ma](;W[na](;B[od])))))(;B[od](;W[nd]C[成劫])))(;W[oa]C[参考图](;B[ma](;W[na](;B[od]C[正解图中对黑1的断，白2若从下应是不能疏忽大意的一手。黑3是冷静的好着。至黑4止。另黑3如走5位，则白走F2位，黑于F4位断，则白走G1位，都是白活。在这细小的地方也要小心注意。])))(;B[nb](;W[nc](;B[od](;W[pd]))))(;B[nd](;W[ma](;B[nb](;W[nc]))))))(;B[nd](;W[na](;B[od](;W[nc](;B[pd](;W[ob]C[失败，重来吧]))))))(;B[nb]C[失败1](;W[na](;B[ma](;W[ob]C[失败，重来吧](;B[oa])))))(;B[ma](;W[na](;B[nb](;W[ob]))(;B[ob](;W[nb](;B[od](;W[nd]))))))(;B[na](;W[nb](;B[nd](;W[ma])))(;W[ma](;B[nb](;W[nc])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[4]
+GN[Q-111658]
+AN[方块A]
+SO[https://www.101weiqi.com/3D/122128/]
+GC[死活题 | 3D | 正确率: 31.7% (1082/3414) | 张栩九段创作]
+C[黑先 死活题]
+AB[cd][dc][ba]
+AW[cb][cc][ca][db][da]
+PL[B]
+(;B[bc](;W[dd](;B[bd](;W[bb](;B[ac](;W[aa](;B[dc])))(;B[ab](;W[aa](;B[dc](;W[ac]))))))(;B[bb](;W[bd](;B[ac](;W[ab]))(;B[ab](;W[ad]))))))(;B[bb](;W[bc](;B[ac](;W[dd]))(;B[bd](;W[ac]))))(;B[bd](;W[bc](;B[ac](;W[dd])))))

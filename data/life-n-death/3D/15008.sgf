@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15008]
+AN[admin]
+SO[https://www.101weiqi.com/3D/15008/]
+GC[死活题 | 3D+ | 正确率: 39.5% (1466/3712) | 权五敏四段创作]
+C[黑先 死活题]
+AB[lb][rb][lf][rc][ng][pf][le][ld][og][lc][la][qc][qd][qe][mf]
+AW[md][me][mb][qb][mc][oe][pb][ma][oc]
+PL[B]
+(;B[qa]C[变化](;W[pa](;B[pc](;W[ob](;B[na](;W[ne](;B[od](;W[nd](;B[nb]))))(;W[nb](;B[nd](;W[ne](;B[od]C[恭喜答对]))))(;W[od](;B[ne](;W[nd](;B[nb]))))))(;W[nb](;B[oa](;W[ob](;B[nd]))))(;W[oa](;B[nb])))(;B[nd](;W[ne](;B[pc](;W[oa](;B[od](;W[nb]C[白淨活]))))(;B[od](;W[oa](;B[nb](;W[pd](;B[pc](;W[nc]))))))))(;B[nb](;W[ob](;B[na](;W[ne](;B[pd](;W[od]C[雙活]))))))(;B[ne](;W[nb]C[白淨活])))(;W[nb](;B[oa](;W[pa](;B[pc](;W[ra](;B[nd]))(;W[ob](;B[nd])))(;B[nd](;W[ne](;B[pc])(;B[od])))))))(;B[ne](;W[nd](;B[nb](;W[qa](;B[oa](;W[ob]C[失败，重来吧]))))))(;B[oa](;W[nd](;B[qa](;W[pa](;B[nb](;W[ob](;B[na](;W[pd]C[白淨活]))))))(;B[nb](;W[ob](;B[na](;W[pd]))))))(;B[od](;W[pd](;B[pc](;W[nd](;B[qa](;W[ob]C[白淨活]))))))(;B[pc](;W[oa](;B[nb](;W[qa])))))

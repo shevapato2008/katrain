@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2979]
+AN[admin]
+SO[https://www.101weiqi.com/3D/2979/]
+GC[死活题 | 3D | 正确率: 38.3% (1344/3509) | 前田陈尔九段创作]
+C[黑先 死活题]
+AB[sd][se][qg][oe][mc][re][od][oc][nb][qe]
+AW[rb][rd][pd][sc][qd]
+PL[B]
+(;B[ra](;W[qb](;B[pc](;W[qc](;B[sb](;W[sa]))))(;B[sb](;W[rc](;B[pc](;W[qa]))(;B[qa](;W[pa](;B[pb](;W[sa]))))))(;B[rc](;W[sb])))(;W[pb](;B[pc](;W[qc](;B[sb](;W[sa])(;W[rc](;B[pe])))(;B[qa](;W[pa](;B[sb](;W[rc]))))))(;B[rc](;W[sb](;B[qb](;W[qc](;B[pa](;W[oa](;B[ob](;W[qa]))))))))))(;B[qb](;W[pb]C[失败，重来吧](;B[ra](;W[qc](;B[sb](;W[rc]))))))(;B[sb](;W[sa](;B[qb](;W[pb]))))(;B[qa](;W[qb]))(;B[pb](;W[qb]))(;B[qc](;W[pc](;B[pb](;W[qb])))))

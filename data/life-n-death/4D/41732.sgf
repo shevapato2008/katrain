@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-41732]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/4D/41732/]
+GC[死活题 | 4D | 正确率: 39.6% (858/2168) | 第8题（黑先）
+不要以为仅仅要求成劫就不难了，要注意有与“聚五杀”相关连的手段在里面。]
+C[黑先 死活题]
+AB[qf][qi][rh][rc][pd][sb][pf][pe][rg][oc][qc][qd][pc][si]
+AW[qh][qb][of][od][oi][qe][ri][og][rj][qg][rd][oe][sc][qj][nc][se][rb][na][rf][re][nb]
+PL[B]
+(;B[sf]C[扑是唯一的手段。 [正解图\]](;W[pb](;B[sh])(;B[sd](;W[re](;B[sh](;W[rf])))))(;W[sg](;B[sd]C[这样成劫才正确。](;W[sh](;B[ra](;W[sc])))(;W[pb]C[假如白棋再爬，黑就不怕了。 变化](;B[sf](;W[re](;B[rf]C[黑棋可以粘上。]))))))(;W[sa](;B[sd](;W[re](;B[pb](;W[pa](;B[qa](;W[ra](;B[sb])))))(;B[rf](;W[sh](;B[pb](;W[pa](;B[qa](;W[ra](;B[sb])))))))))))(;B[sd]C[[失败图\]提劫？想得过于简单。 [失败图\]](;W[pb](;B[sf](;W[re](;B[sh](;W[rf]C[黑在A位做不成眼。]))))))(;B[sh](;W[sf](;B[sd](;W[pb](;B[sg](;W[re]))))(;B[ra](;W[qa](;B[sd](;W[pa](;B[sg](;W[re]))))))))(;B[ra](;W[pb](;B[sd](;W[ob](;B[sf](;W[re](;B[sh](;W[rf]))))))(;B[sf](;W[ob](;B[sd](;W[re])))))))

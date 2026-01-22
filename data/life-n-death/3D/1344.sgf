@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1344]
+AN[admin]
+SO[https://www.101weiqi.com/3D/1344/]
+GC[死活题 | 3D | 正确率: 21.6% (1316/6087)]
+C[黑先 死活题]
+AB[ra][mb][rc][pd][sc][mc][od][nd][qc][qd][qe]
+AW[nc][qf][md][qb][rd][ld][pf][lc][ne][re][nb][oc][pc][mf]
+PL[B]
+(;B[pb](;W[pa](;B[oa](;W[ob](;B[qa](;W[na](;B[rb](;W[lb](;B[pb])))))(;B[rb](;W[na](;B[qa](;W[lb](;B[pb])))))))(;B[qa](;W[oa]))(;B[rb](;W[oa]))(;B[na](;W[ob](;B[ma](;W[lb])))))(;W[ob](;B[pa](;W[lb](;B[ma]C[白失败]))))(;W[oa](;B[pa])))(;B[qa](;W[pa](;B[na](;W[lb](;B[rb](;W[pb]C[失败]))))(;B[pb](;W[oa])))))

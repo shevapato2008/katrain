@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2365]
+AN[admin]
+SO[https://www.101weiqi.com/3D/2365/]
+GC[死活题 | 3D | 正确率: 37.4% (1130/3025)]
+C[黑先 死活题]
+AB[se][oa][oe][pd][re][oc][qe][ob]
+AW[rd][qb][pb][sc][qd]
+PL[B]
+(;B[pc](;W[qc](;B[rb](;W[ra](;B[sb](;W[pa](;B[sd]C[恭喜答对])))))(;B[pa](;W[rb]))))(;B[qc](;W[pc](;B[rb](;W[ra](;B[qa](;W[rc](;B[sa](;W[sb]C[失败，重来吧]))))))))(;B[rb](;W[ra](;B[sb](;W[rc]C[失败，重来吧]))))(;B[ra](;W[rb](;B[sd](;W[rc](;B[pc](;W[sa](;B[sb](;W[qa]))))))))(;B[pa](;W[rb]))(;B[sd](;W[rb](;B[qc](;W[rc](;B[pc](;W[sa]))))(;B[ra](;W[qa](;B[qc](;W[rc](;B[pc](;W[sa])))))))))

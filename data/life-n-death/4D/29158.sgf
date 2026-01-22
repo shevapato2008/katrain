@@ -1,0 +1,15 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-29158]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/4D/29158/]
+GC[手筋题 | 4D | 正确率: 31.6% (808/2554) | 第149题  白先
+审题：白棋唯一的出路是和中央的黑棋进行对杀。要注意“次序”。]
+C[白先 手筋题]
+AB[pi][rb][rd][qb][mc][ng][of][lc][od][pd][nd][ni][nh]
+AW[qf][nc][mh][md][me][qh][pb][mi][nj][nb][pc][qe][mg][mf]
+PL[W]
+(;W[qd]C[图10 正解](;B[qc](;W[oe](;B[pe](;W[pf](;B[ne](;W[oi]C[好手](;B[oh](;W[nf](;B[og](;W[oc](;B[oe](;W[oj](;B[ph]C[图4
+
+　　白7先挖是好手！黑8打后，白9再卡即成为正确的次序。以下变化至黑14势所必然。](;W[qj]C[正确](;B[qi](;W[ri]C[图10
+
+　　白15虚罩才是正解之手！黑16如冲，白17硬挡是好棋。以下黑如在a位打，白b位反打即形成“一气吃”。](;B[rh](;W[pj]C[白胜])(;W[pg](;B[qg](;W[pj])))))))(;W[pj]C[不好](;B[qi](;W[qj](;B[ri](;W[rh](;B[rk](;W[rj](;B[sj]C[白死]))))))))(;W[qi]C[不好](;B[pj](;W[pk](;B[qj](;W[qk](;B[rj](;W[rk](;B[rh](;W[qg](;B[ri](;W[rg](;B[re]C[白死]))))))(;W[ri](;B[rk](;W[rl](;B[rm](;W[qm](;B[sl](;W[ql](;B[rn](;W[sm](;B[sk](;W[qo](;B[ro](;W[qp](;B[rp](;W[qq](;B[rq](;W[rr](;B[sr](;W[qr](;B[rg](;W[qg](;B[re](;W[rf](;B[oa]C[白死]))))))))))))))))))))))))))))))))))(;W[oj](;B[ph](;W[oc](;B[oe](;W[qj](;B[qi](;W[ri])))))))))(;W[oj](;B[nf](;W[ph](;B[pa](;W[oc](;B[na](;W[oa]))))))))(;B[ph](;W[og]C[白活]))(;B[oj](;W[og](;B[oh](;W[nf](;B[pg](;W[oc]C[白活]))))(;B[pg](;W[nf](;B[oh](;W[oc]C[白活])))))))(;W[nf]C[不好](;B[og](;W[oc](;B[oe](;W[oi](;B[oj](;W[ok](;B[oh](;W[pk](;B[qi]C[白死])))))))))))))(;B[ne](;W[nf](;B[pe](;W[og](;B[pg](;W[pf](;B[oh](;W[oc]C[白活])))))))))(;W[oi]C[不好](;B[oe](;W[oh](;B[og](;W[pg](;B[oc](;W[ob](;B[mb]C[白死])))))))))))

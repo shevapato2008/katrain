@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18465]
+AN[admin]
+SO[https://www.101weiqi.com/4D/18465/]
+GC[死活题 | 4D | 正确率: 28.7% (821/2859) | 弄大而弃掉]
+C[白先 死活题]
+AB[qf][qg][qh][ph][qj][pj][rj][qd][qe]
+AW[qi][ok][rd][rc][oe][rm][pg][og][pk][nj][ni][qk][rk][nh][pc][ob]
+PL[W]
+(;W[ri](;B[si](;W[re](;B[rf](;W[sf](;B[sg](;W[pi](;B[oi](;W[rh](;B[oj](;W[oh](;B[sj](;W[sk]))))(;B[sh](;W[oh](;B[rg](;W[oj])))))))))))(;W[sf](;B[sg](;W[pi](;B[oi](;W[rh](;B[oj](;W[oh](;B[sj](;W[sk])))))))(;W[rh](;B[pi](;W[re](;B[rf])))))(;B[se](;W[re](;B[rf](;W[sg])))))(;W[sh](;B[sj](;W[sg](;B[re](;W[se](;B[qc](;W[qb](;B[sf](;W[rf](;B[rh]))))))))))))(;W[re]C[失败](;B[ri]C[第一着白若下在1处，则黑可2应，边上总能做出一眼。](;W[sh](;B[sg](;W[rg](;B[rf](;W[sf](;B[se]C[白棋如于3位大飞，则黑4跨碰至8扑止，成为接不归。
+
+请确定一下。])))))))))

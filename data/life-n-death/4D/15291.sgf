@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15291]
+AN[admin]
+SO[https://www.101weiqi.com/4D/15291/]
+GC[死活题 | 4D | 正确率: 47.0% (906/1927) | 吴清源九段创作]
+C[黑先 死活题]
+AB[nc][lb][md][qb][rc][pd][sc][lc][od][nd][qc][qd]
+AW[qf][kb][kc][kd][rb][sa][mb][kf][qa][pb][mc][of][re][oc][nb][ra][pc][mf]
+PL[B]
+(;B[na]C[变化1](;W[ob](;B[ld](;W[la](;B[ma](;W[ka](;B[sb](;W[oa](;B[ma]C[恭喜答对]))))(;W[oa](;B[ma]C[变化图]))))))(;W[ld](;B[ob](;W[oa](;B[sb](;W[la](;B[pa])))))(;B[pa](;W[ob])))(;W[ma](;B[oa](;W[ld](;B[sb](;W[ob](;B[pa](;W[qa](;B[ra]))))))(;W[pa](;B[la])))))(;B[sb](;W[ob](;B[pa](;W[ra]C[失败，重来吧]))))(;B[ma](;W[ld](;B[sb](;W[ob](;B[pa](;W[ra]))))(;B[oa](;W[ob](;B[pa](;W[la](;B[sb](;W[ra]))))(;B[sb](;W[la](;B[pa](;W[ra]))))))))(;B[oa](;W[ob](;B[ld](;W[la](;B[pa](;W[ma]))))(;B[pa](;W[ld])))))

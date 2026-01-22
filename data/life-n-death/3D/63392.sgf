@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-63392]
+AN[kenny]
+SO[https://www.101weiqi.com/3D/63392/]
+GC[死活题 | 3D | 正确率: 26.9% (1092/4061)]
+C[黑先 死活题]
+AB[ra][qb][mb][pd][od][nb][qc][qd]
+AW[qf][lb][rb][rd][mc][oe][rc][lc][ne][nd][qe]
+PL[B]
+(;B[oc](;W[pb](;B[ma](;W[oa](;B[ob](;W[qa](;B[pa])(;B[pc](;W[pa](;B[na](;W[pa])))))(;W[pa](;B[qa])))(;B[qa](;W[ob](;B[nc](;W[pa]))))))))(;B[ob]C[原正解似有误](;W[nc](;B[pa]C[此为原书正解]))(;W[ma](;B[nc](;W[na]))(;B[na](;W[pa](;B[pb](;W[qa](;B[oa](;W[qa]))))))))(;B[pb](;W[oc](;B[nc](;W[ma]))))(;B[ma](;W[oc](;B[nc](;W[ob]))(;B[ob](;W[nc]))))(;B[nc](;W[ma](;B[ob](;W[na])))))

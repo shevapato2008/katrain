@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-46556]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/4D/46556/]
+GC[对杀题 | 4D | 正确率: 41.3% (909/2202)]
+C[白先 对杀题]
+AB[nc][jc][kc][md][qb][ic][ld][ib][nb][oc][pc]
+AW[kb][jb][lb][rd][mc][pd][pb][lc][pe][od][nd][qc]
+PL[W]
+(;W[oa](;B[ob](;W[qa])))(;W[rb](;B[ma](;W[ob](;B[la](;W[mb](;B[na]))))))(;W[qa](;B[ma](;W[mb](;B[ja])))))

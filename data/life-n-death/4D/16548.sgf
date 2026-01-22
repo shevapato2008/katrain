@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16548]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16548/]
+GC[死活题 | 4D | 正确率: 43.1% (1186/2749) | 宫泽吾朗九段创作]
+C[黑先 死活题]
+AB[nc][pd][pf][rf][pc][qe][ob]
+AW[ra][rd][pb][qc][qd]
+PL[B]
+(;B[sb](;W[pa](;B[sd](;W[se](;B[rb](;W[qb](;B[rc])))(;B[sc](;W[re]))))(;B[rb](;W[qb](;B[sd](;W[rc]))))))(;B[sc](;W[pa](;B[sd](;W[sb](;B[rb](;W[rc](;B[sa](;W[qb](;B[qa](;W[se](;B[re](;W[sb](;B[sc](;W[sd]))))))))))))))(;B[pa](;W[sb])))

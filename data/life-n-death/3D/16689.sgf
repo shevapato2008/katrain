@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16689]
+AN[admin]
+SO[https://www.101weiqi.com/3D/16689/]
+GC[死活题 | 3D+ | 正确率: 62.9% (1981/3149) | 加田克司九段创作]
+C[黑先 死活题]
+AB[qf][nf][kb][kc][rb][rd][rc][ld][re][pg][ne][og][od][la][ma]
+AW[nc][qb][mb][oe][mc][na][pe][nd][qd][pc][qe]
+PL[B]
+(;B[ob]C[正解](;W[pa](;B[qc](;W[oc](;B[pb](;W[ra](;B[qa])))))(;B[oc](;W[qc])))(;W[nb](;B[qa](;W[pa](;B[qc](;W[pb](;B[oc]))))))(;W[oc](;B[nb]))(;W[oa](;B[qa](;W[pa](;B[oc])))))(;B[oa]C[失败1](;W[pa](;B[nb](;W[ob]))(;B[ob](;W[nb]))))(;B[qa](;W[ob](;B[pa](;W[oa])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1824]
+AN[admin]
+SO[https://www.101weiqi.com/4D/1824/]
+GC[死活题 | 4D | 正确率: 20.7% (775/3745)]
+C[黑先 死活题]
+AB[lb][rb][qg][rd][lf][rc][rf][re][pg][ng][og][le][ld][lc][qb][mb][mg]
+AW[pa][md][na][oe][pb][oc][nb][qd]
+PL[B]
+(;B[od](;W[pd](;B[mc](;W[me](;B[nf](;W[ne](;B[nc](;W[nd](;B[qc](;W[pc](;B[pe]))))))(;W[nd](;B[qc]))(;W[qc](;B[nd])))(;B[qc](;W[nf](;B[of](;W[nd](;B[mf](;W[pe](;B[nc](;W[pc](;B[ne])))))))))))(;B[qc](;W[mc])))(;W[nd](;B[qc](;W[qe](;B[pf](;W[pd](;B[mc]))(;W[mc](;B[pd](;W[pe](;B[pc]))))))(;W[mc](;B[pd])))(;B[pe](;W[pd](;B[qc](;W[mc]))))(;B[mc](;W[qc]))))(;B[pd](;W[od](;B[pe](;W[mc]))))(;B[nd](;W[od](;B[pd](;W[qe](;B[of](;W[pc]C[看相似黑棋很妙，但是白棋只要沉着冷静的应对，黑棋就无法成功])))(;W[me](;B[of](;W[nc]C[黑棋无法杀白]))))(;B[pe](;W[me]C[看相似黑棋3很锐利！但白棋两边都可以做出一只眼，黑棋不行]))))(;B[me](;W[nd](;B[pd](;W[pe](;B[qe](;W[mc](;B[qc](;W[pc]C[白棋活了]))))))))(;B[qe](;W[pd](;B[nd](;W[ne](;B[me](;W[nc](;B[mc](;W[qc]))))))))(;B[qc](;W[mc](;B[nd](;W[ne]))))(;B[mc](;W[qc]))(;B[pc](;W[mc]))(;B[nc](;W[qc]))(;B[ne](;W[nd](;B[pe](;W[pd](;B[of](;W[od]C[黑棋不行]))))))(;B[pe](;W[pd](;B[ne](;W[nd](;B[of](;W[od]C[到6，黑棋缩小眼位是不行的白棋活棋])))))))

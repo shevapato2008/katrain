@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2174]
+AN[admin]
+SO[https://www.101weiqi.com/4D/2174/]
+GC[死活题 | 4D | 正确率: 41.9% (996/2375) | 森山直棋六段创作]
+C[黑先 死活题]
+AB[pi][rl][rb][pb][pf][pg][pe][pj][rj][qc][qd][qj]
+AW[qf][qi][rd][ri][rc][rg][qe]
+PL[B]
+(;B[si]C[变化](;W[sh]C[黑扳正招](;B[qh](;W[se](;B[rf](;W[sc](;B[qg](;W[re](;B[rh](;W[sf](;B[sg]C[恭喜答对])))))(;B[rh](;W[sf](;B[sg]))(;W[qg](;B[sg](;W[re]C[白淨活]))))))(;B[rh](;W[sc](;B[rf](;W[qg](;B[sg](;W[re]))))))(;B[sc](;W[rf])))(;W[sf](;B[re](;W[se](;B[sc](;W[rf](;B[rh])))))))(;B[sf](;W[se](;B[rf](;W[sc]C[换种方法试试])))))(;W[se](;B[rf](;W[sc](;B[qg](;W[re](;B[sg](;W[sf](;B[sh]))))))(;W[sh](;B[qh](;W[sc](;B[qg](;W[re](;B[rh](;W[sf](;B[sg])))))))))))(;B[sc](;W[se]C[我做眼你能奈我何？](;B[sb](;W[sf]C[哈哈，我已经活了。再想想！]))(;B[si](;W[sh](;B[qh](;W[rf](;B[rh](;W[sg]C[失败，重来吧])))))))))

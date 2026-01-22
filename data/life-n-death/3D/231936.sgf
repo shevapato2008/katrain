@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-201794]
+AN[方块A]
+SO[https://www.101weiqi.com/3D/231936/]
+GC[死活题 | 3D+ | 正确率: 46.0% (1671/3631) | 大桥成哉七段创作]
+C[黑先 死活题]
+AB[nc][mc][pd][rf][re][od][ne][lc][qe]
+AW[qd][pc][rc][ob]
+PL[B]
+(;B[qb](;W[qc](;B[rb](;W[ra](;B[nb](;W[sb](;B[qa])))(;B[sc](;W[sb](;B[sa])(;B[sd](;W[pb](;B[sa])))))(;B[qa](;W[sb](;B[sa])))(;B[sb](;W[sc](;B[nb](;W[oa])))))(;W[sb](;B[ra](;W[nb](;B[mb](;W[na](;B[pb](;W[oc](;B[pa](;W[sc](;B[sd](;W[sa](;B[rd]))))))))))))))))

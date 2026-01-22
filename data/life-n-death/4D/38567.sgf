@@ -1,0 +1,20 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-38567]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/4D/38567/]
+GC[死活题 | 4D | 正确率: 50.9% (1127/2214) | 杨以伦七段创作。
+化险为夷
+　　乍一看白棋极其危险，除明显的有一只后手眼外，其余的必须在边上动脑筋。起手为关键，你的第一感在何处？]
+C[白先 死活题]
+AB[nf][kb][kc][kd][rb][sa][oa][rd][lf][rc][pd][oe][ke][nd][nb][qd][mf]
+AW[nc][lb][me][mc][la][lc][od][oc][qc][pc]
+PL[W]
+(;W[na](;B[pa](;W[mb](;B[ma](;W[ob]C[正解图（白先活）
+
+　　白1挤入黑口送吃是做活之关键。黑2退，如走4位提或者A位尖，白均可走在3位，如图至白5黑二子被吃，白顺利活出。](;B[na](;W[qa](;B[ne](;W[qb])(;W[pb](;B[na]C[这白不是死了吗。。。]))))))))(;W[ob]C[3擋這邊也行](;B[ma](;W[mb](;B[na](;W[qa](;B[ne](;W[qb](;B[md](;W[pb](;B[na](;W[oa])))))))))))(;W[qa](;B[qb](;W[ob])(;W[mb])(;W[pb]))))(;B[ob](;W[pb](;B[ne](;W[pa](;B[ma](;W[mb]C[变化图
+
+　　倘若黑2粘，或者在7位长，白均以3断黑归路，以下至白7成“胀拍牛”活出。])))(;W[mb](;B[ma](;W[pa])))))(;W[mb](;B[qa](;W[pa](;B[pb](;W[qb](;B[ma]))))))(;W[qa](;B[md](;W[qb](;B[ma](;W[mb]))))))(;B[ma](;W[ob](;B[pa](;W[mb](;B[na](;W[qa](;B[ne](;W[qb])))))(;W[qa])))(;W[pa](;B[pb](;W[ob](;B[qa](;W[qb])(;W[mb])))(;W[qb](;B[qa](;W[ob])))))(;W[mb](;B[na](;W[ob](;B[pa](;W[qa](;B[ne](;W[qb]C[白9、黑8相對點](;B[md](;W[pb](;B[na](;W[oa])))))))))))(;W[qb](;B[ob](;W[qa](;B[md](;W[mb])))))))(;W[ob](;B[na](;W[qb](;B[qa](;W[pa]C[失败图一
+
+　　白1卡，或者于5位靠，均会被黑2团住要点，白棋只得走3、5劫活，白3若单走5位，则黑3位冲眼，成净死。])))))(;W[qa](;B[qb](;W[na](;B[pb](;W[ob](;B[ma](;W[mb](;B[na](;W[pa](;B[na]C[失败图二
+
+　　白1跳与黑2交换之后，再白3扑已经错过机会而失败。黑4冲入后即使白棋能提起黑四子，也仅仅是只后手眼，而整块净死。])))))))(;B[ma](;W[ob](;B[pb](;W[mb](;B[na](;W[pa](;B[na](;W[oa](;B[ne]))))))))))))(;W[pa](;B[na](;W[qb](;B[qa])))))

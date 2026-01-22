@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18637]
+AN[admin]
+SO[https://www.101weiqi.com/4D/18637/]
+GC[官子题 | 4D | 正确率: 19.4% (398/2047)]
+C[白先 官子题]
+AB[pd][pb][re][pe][pc][qe]
+AW[qf][rh][mb][oe][rf][pf][od][oc][ob]
+PL[W]
+(;W[qb]C[白1是此形急所 正解](;B[rb]C[黑2夹碰，手筋。](;W[ra](;B[qc](;W[pa](;B[sb]C[避免劫争](;W[qa]C[防接不归](;B[rd]C[黑8止，黑棋可活，但白棋先手削减黑地，亦可满意。])))))))(;B[pa](;W[rc](;B[ra](;W[rd](;B[sd](;W[rb](;B[qa])))(;B[se](;W[rb](;B[qa])))))(;B[qc](;W[rd]))(;B[rd](;W[qc]))(;B[sb](;W[rd](;B[rb](;W[se](;B[qc]))))))))(;W[se](;B[sd](;W[sf](;B[rb]))))(;W[pa](;B[qa](;W[oa](;B[rb]))))(;W[rd](;B[rc](;W[se](;B[qd](;W[sd](;B[rb])))))))

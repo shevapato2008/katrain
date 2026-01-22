@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-6060]
+AN[admin]
+SO[https://www.101weiqi.com/4D/6060/]
+GC[死活题 | 4D+ | 正确率: 21.3% (816/3838)]
+C[黑先 死活题]
+AB[qf][pb][pd][rf][nb][pc][qe]
+AW[se][pa][qb][re][qc][qd]
+PL[B]
+(;B[sc](;W[sb](;B[rb](;W[rc](;B[sa](;W[sd](;B[oa])(;B[sf](;W[ra]))(;B[qa](;W[sb])))(;W[qa](;B[oa](;W[sd]))))(;B[ra](;W[qa]))))(;B[rc](;W[rb]))))(;B[qa](;W[sc](;B[ra](;W[rb](;B[oa](;W[rd]))))(;B[rb](;W[ra]))(;B[rd](;W[ra]))))(;B[sb](;W[sc](;B[rc](;W[rb](;B[sd](;W[rd]))))(;B[rb](;W[rc]))))(;B[rb](;W[rc](;B[sc](;W[ra](;B[sb](;W[sd])))))))

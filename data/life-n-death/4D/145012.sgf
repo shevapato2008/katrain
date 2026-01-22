@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-128864]
+AN[方块A]
+SO[https://www.101weiqi.com/4D/145012/]
+GC[死活题 | 4D+ | 正确率: 37.1% (766/2066)]
+C[黑先 死活题]
+AB[qi][sd][qh][ph][rd][rf][pf][pg][pe][qc][qd]
+AW[pi][se][rb][qb][ri][oe][of][re][rc][od][og][rg][rj][oi][oc][qj][oh]
+PL[B]
+(;B[qe](;W[qg](;B[rh](;W[sh](;B[sg](;W[sf](;B[qf])(;B[sg](;W[sf])))))))(;W[sg](;B[qg](;W[sf](;B[rh](;W[qf](;B[sh])))))))(;B[rh](;W[sf](;B[sh](;W[qf]C[花6净死]))))(;B[qg](;W[sf](;B[qe](;W[qf])))))

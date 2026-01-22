@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-30980]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/4D/30980/]
+GC[死活题 | 4D | 正确率: 31.5% (839/2666) | 吴清源九段创作。
+实战常出现的形，但是很多人走错]
+C[黑先 死活题]
+AB[qf][qg][qb][rf][qc][qd]
+AW[sf][rh][qh][ph][pd][pb][pe][rg][og][nb][pc]
+PL[B]
+(;B[sd]C[正解图](;W[qa](;B[ra](;W[sb](;B[re](;W[sg](;B[se](;W[rc](;B[rb](;W[sc](;B[qe]C[双活])))))))(;B[rb](;W[se](;B[re](;W[sg]))))(;B[qe](;W[se](;B[re](;W[sg](;B[rc](;W[sc])))))))))(;W[rb](;B[ra](;W[sb](;B[qe](;W[se](;B[re](;W[rc](;B[sg](;W[sf](;B[sc])))))))))))(;B[se]C[失败图1](;W[qe](;B[re](;W[rb](;B[ra](;W[rc](;B[rd](;W[sc](;B[sb](;W[sa]C[打劫]))))))))))(;B[re]C[失败图2](;W[rb](;B[ra](;W[rc](;B[sb](;W[sc](;B[se](;W[qe](;B[rd]C[打劫]))))))))))

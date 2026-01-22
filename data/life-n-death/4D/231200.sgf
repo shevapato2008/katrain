@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-201060]
+AN[方块A]
+SO[https://www.101weiqi.com/4D/231200/]
+GC[死活题 | 4D | 正确率: 23.6% (525/2224) | 大桥成哉七段创作]
+C[黑先 死活题]
+AB[qf][nf][lb][md][mb][rd][ld][of][pf][rc][ne][rf][qd]
+AW[nc][rb][qb][pd][pe][nd][nb]
+PL[B]
+(;B[pc](;W[pb](;B[oa](;W[na](;B[sb](;W[qc](;B[od](;W[oc](;B[oe])))))))(;B[sb](;W[qc](;B[oa](;W[oe](;B[na](;W[oc]))))))))(;B[sb](;W[pc](;B[ob](;W[oa](;B[pa](;W[na](;B[pb](;W[oe]))))))))(;B[oa](;W[na](;B[pc](;W[qc](;B[sb](;W[oc])))))))

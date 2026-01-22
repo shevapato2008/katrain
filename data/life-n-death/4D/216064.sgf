@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-186771]
+AN[方块A]
+SO[https://www.101weiqi.com/4D/216064/]
+GC[死活题 | 4D | 正确率: 45.2% (984/2177) | 山田晋次七段创作]
+C[黑先 死活题]
+AB[nc][kc][lb][rb][md][na][rc][pb][ld][lc][ma][qc]
+AW[ka][me][mb][pd][od][ra][kb][jc][jb][nd][jd][sd][rd][le][sb][sc][ne][qd][ke]
+PL[B]
+(;B[pc](;W[ob](;B[oc](;W[nb](;B[la](;W[pa](;B[qa](;W[qb](;B[mc])(;B[oa](;W[mc])))))(;W[qa](;B[pa]C[双活]))))))(;W[oc](;B[ob](;W[pa](;B[qa](;W[qb](;B[oa]))))))(;W[la](;B[ob](;W[pa](;B[qa](;W[qb](;B[oa]))))))(;W[qa](;B[pa](;W[ob](;B[oc](;W[nb](;B[la])))))))(;B[qa](;W[ob](;B[oc](;W[pc](;B[nb](;W[qb](;B[oa](;W[pa]))))))))(;B[ob](;W[pa](;B[qa](;W[qb]))))(;B[oc](;W[pa](;B[qa](;W[pc](;B[oa](;W[qb](;B[nb](;W[pa])))))))))

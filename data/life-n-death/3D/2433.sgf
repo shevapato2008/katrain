@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2433]
+AN[admin]
+SO[https://www.101weiqi.com/3D/2433/]
+GC[死活题 | 3D | 正确率: 48.3% (1718/3556) | 关山利一九段创作]
+C[黑先 死活题]
+AB[nc][nf][lb][rd][ph][qh][rh][pg][nd][nb][qd]
+AW[qg][qb][rc][pd][oc][qc]
+PL[B]
+(;B[pc](;W[pb](;B[od](;W[qe](;B[re](;W[rf](;B[pe](;W[qf](;B[pc]C[恭喜答对。])))))(;B[pe](;W[re](;B[pc])))))(;B[ob](;W[qe]))(;B[pe](;W[ob]))))(;B[qf](;W[ob]C[失败，重来吧]))(;B[ob](;W[qe]C[失败，重来吧]))(;B[od](;W[pc]C[失败，重来吧])))

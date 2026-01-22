@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16641]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16641/]
+GC[死活题 | 4D | 正确率: 42.1% (1178/2795)]
+C[黑先 死活题]
+AB[jc][kc][rb][rd][hb][ld][ic][sb][ne][nd][oc][qc][pc][hc]
+AW[nc][kb][lb][rc][pb][sc][mc][ob]
+PL[B]
+(;B[qa](;W[qb](;B[na](;W[ma](;B[nb](;W[mb](;B[ka]))))(;W[nb](;B[ma](;W[jb](;B[ja])))))(;B[nb](;W[na])))(;W[ma](;B[nb](;W[ka](;B[oa])))))(;B[qb](;W[na]))(;B[pa](;W[qb](;B[qa](;W[ra](;B[sd](;W[oa]))))))(;B[na](;W[ma])))

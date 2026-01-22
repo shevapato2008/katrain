@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text, Enum, CheckConstraint
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text, Enum, CheckConstraint, Boolean, Index, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from katrain.web.core.db import Base
@@ -28,6 +28,7 @@ class User(Base):
     games_white = relationship("Game", foreign_keys="[Game.white_player_id]", back_populates="white_player")
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
+    tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
 
 class Game(Base):
     __tablename__ = "games"
@@ -69,3 +70,42 @@ class RatingHistory(Base):
 
     game = relationship("Game", back_populates="rating_history")
     user = relationship("User")
+
+
+# ============ Tsumego Models ============
+
+class TsumegoProblem(Base):
+    """Individual tsumego problem."""
+    __tablename__ = "tsumego_problems"
+
+    id = Column(String(32), primary_key=True)  # Problem number, e.g. "1014"
+    level = Column(String(8), nullable=False, index=True)  # "3d", "4d"
+    category = Column(String(32), nullable=False, index=True)  # "life-death", "tesuji"
+    hint = Column(String(16), nullable=False)  # "黑先", "白先"
+    board_size = Column(Integer, default=19)
+    initial_black = Column(JSON)  # ["pa", "rd", ...]
+    initial_white = Column(JSON)  # ["nc", "qf", ...]
+    sgf_content = Column(Text)  # Full SGF for solving
+    source = Column(String(256))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("ix_tsumego_level_category", "level", "category"),
+    )
+
+
+class UserTsumegoProgress(Base):
+    """User's progress on a specific problem."""
+    __tablename__ = "user_tsumego_progress"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    problem_id = Column(String(32), ForeignKey("tsumego_problems.id"), primary_key=True)
+    completed = Column(Boolean, default=False)
+    attempts = Column(Integer, default=0)
+    first_completed_at = Column(DateTime(timezone=True))
+    last_attempt_at = Column(DateTime(timezone=True))
+    last_duration = Column(Integer)  # Seconds to complete last time
+
+    user = relationship("User", back_populates="tsumego_progress")
+    problem = relationship("TsumegoProblem")

@@ -276,5 +276,12 @@ TOP_MOVE_OPTIONS = [
 REPORT_DT = 1
 PONDERING_REPORT_DT = 0.25
 
+# AI Resignation defaults
+AI_RESIGNATION_ENABLED_DEFAULT = True
+AI_RESIGNATION_WINRATE_THRESHOLD = 0.15  # 15% winrate threshold
+AI_RESIGNATION_CONSECUTIVE_TURNS = 3  # Require 3 consecutive low-winrate moves
+AI_RESIGNATION_MIN_MOVE_NUMBER = 80  # Total moves (both players) before allowing resignation (for 19x19)
+AI_RESIGNATION_MIN_ABSOLUTE_MOVES = 15  # Minimum moves before resignation regardless of board size
+
 SGF_INTERNAL_COMMENTS_MARKER = "\u3164\u200b"
 SGF_SEPARATOR_MARKER = "\u3164\u3164"

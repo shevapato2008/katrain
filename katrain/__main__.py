@@ -466,7 +466,10 @@ class KaTrainGui(Screen, KaTrainBase):
             mode = self.next_player_info.strategy
             settings = self.config(f"ai/{mode}")
             if settings is not None:
-                generate_ai_move(self.game, mode, settings)
+                result = generate_ai_move(self.game, mode, settings)
+                if result is None:
+                    # AI resigned, update state to reflect end of game
+                    self.update_state()
             else:
                 self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 

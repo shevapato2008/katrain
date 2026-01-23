@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-102198]
+AN[username]
+SO[https://www.101weiqi.com/9K/108480/]
+GC[吃子题 | 9K | 正确率: 40.5% (11841/29250) | 黑要吃掉两颗白棋，不然上面四颗黑子就死了。]
+C[黑先 吃子题]
+AB[md][na][nb][nc][pe][kd][jd][pd][oc][ld]
+AW[jg][nd][od][of][pb][rc][lc][mb][mc][mg][pc][kc][kb]
+PL[B]
+(;B[oe](;W[ne](;B[nf](;W[me](;B[mf](;W[le](;B[lf](;W[ke](;B[jf]C[✓ 正确])(;B[kf](;W[je](;B[jf](;W[ie]C[✗ 失败]))))))(;B[kf](;W[lf](;B[lg](;W[ng]C[✗ 失败])))))))))))

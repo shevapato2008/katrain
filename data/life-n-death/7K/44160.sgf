@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-44160]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/7K/44160/]
+GC[死活题 | 7K | 正确率: 48.1% (10284/21377)]
+C[黑先 死活题]
+AB[qc][pb][rc][nb][pc][sb][oc]
+AW[sd][qd][od][sc][qb][nc][mb][mc][rb][pd][rd]
+PL[B]
+(;B[ra](;W[sa]C[✓ 正确]))(;B[qa](;W[sa]C[✗ 失败]))(;B[pa](;W[sa]C[✗ 失败])))

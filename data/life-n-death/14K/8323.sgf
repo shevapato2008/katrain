@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-8323]
+AN[admin]
+SO[https://www.101weiqi.com/14K/8323/]
+GC[手筋题 | 14K+ | 正确率: 85.1% (22777/26768)]
+C[黑先 手筋题]
+AB[rj][qc][od][rc][sg][pg][qh][pc][pf][rh][oe][qg]
+AW[qd][pb][qf][qb][ob][rb][sb][rf][pd][rg][re][oc][pe][sf]
+PL[B]
+(;B[rd](;W[qe](;B[se]C[✓ 正确])(;B[sh]C[✓ 正确]))(;W[sd](;B[qe]C[✓ 正确]))(;W[sc](;B[qe](;W[sd](;B[se]C[⚡ 变化])))))(;B[sd](;W[sc]C[✗ 失败])))

@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22465]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/7K/22465/]
+GC[对杀题 | 7K+ | 正确率: 40.7% (9894/24320)]
+C[黑先 对杀题]
+AB[qe][nc][pc][rf][pd][ne][rd][re]
+AW[qd][qc][qf][qb][qh][rg][pf][pe]
+PL[B]
+(;B[rb](;W[rc](;B[sc]C[RIGHT
+恭喜答对](;W[ra](;B[sb](;W[sd](;B[se](;W[sg](;B[qa](;W[pa](;B[pb]C[✓ 正确])))(;B[pb](;W[sf](;B[qa]C[✓ 正确])))))))))))(;B[rc](;W[rb](;B[sb](;W[sc](;B[sd](;W[sa](;B[ra](;W[qa](;B[pb](;W[sa]C[✗ 失败 | 虽然这劫很勉强，终归有棋，远不如正解]))))))))))(;B[sb](;W[rc](;B[sc](;W[sd](;B[se](;W[sg]C[✗ 失败])))))))

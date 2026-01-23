@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-43409]
+AN[欧阳丹奇]
+SO[https://www.101weiqi.com/11K/43409/]
+GC[吃子题 | 11K | 正确率: 70.4% (18840/26752) | 吃子，常见的三招：一、找对方气少的。二、找对方有断点的地方。三、把对方往朋友的地方追。]
+C[黑先 吃子题]
+AB[oe][pc][pd][pb]
+AW[qd][qc][od][qb][pf][pe]
+PL[B]
+(;B[nd](;W[oc](;B[ob](;W[nc](;B[mc](;W[nb](;B[na](;W[mb](;B[lb](;W[md](;B[ma]C[✓ 正确])))(;B[ma](;W[lb]C[✗ 失败]))))(;B[mb](;W[na](;B[ma](;W[oa](;B[pa]C[✓ 正确])))))))(;B[nb](;W[mc]C[✗ 失败]))))(;B[nc](;W[ob]C[✗ 失败])))(;W[of](;B[ne]C[⚡ 变化])))(;B[ne](;W[ob](;B[oc](;W[nc](;B[nd](;W[pa](;B[od](;W[nb]C[✗ 失败])))))))(;W[nc]C[✗ 失败])))

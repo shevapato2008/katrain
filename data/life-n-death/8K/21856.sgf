@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-21856]
+AN[guandaxin1]
+SO[https://www.101weiqi.com/8K/21856/]
+GC[对杀题 | 8K | 正确率: 58.0% (14011/24169) | 选自兰之篇P37]
+C[黑先 对杀题]
+AB[od][qf][qb][rb][sb][pc][pf][oc][oe]
+AW[qc][rc][sc][pb][ob][nb][pd][rd][pe]
+PL[B]
+(;B[re](;W[qa](;B[sd](;W[se](;B[qd]C[✓ 正确])))(;B[qd](;W[qe](;B[sd](;W[se](;B[qd]C[✓ 正确])))(;B[qd]C[✓ 正确])))))(;B[qe](;W[qa](;B[qd](;W[ra]C[✗ 失败]))))(;B[qd](;W[re](;B[qe](;W[rf](;B[rg](;W[qa]C[✗ 失败])))))))

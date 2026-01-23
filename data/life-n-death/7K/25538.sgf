@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25538]
+AN[saranggeyo]
+SO[https://www.101weiqi.com/7K/25538/]
+GC[死活题 | 7K+ | 正确率: 47.2% (10510/22263)]
+C[黑先 死活题]
+AB[of][od][qc][rc][sh][qh][pc][rh][oc][oe][og][ph][oh]
+AW[qd][pg][sg][rg][pd][pf][rd][pe][qg]
+PL[B]
+(;B[sd](;W[se](;B[rf]C[✓ 正确])(;B[re](;W[rf](;B[sf]C[✗ 失败]))))(;W[re](;B[se](;W[sf](;B[qf]C[⚡ 变化])))))(;B[re](;W[rf]C[白2后，打劫或双活](;B[se](;W[sd](;B[qe]C[✗ 失败])))(;B[sd](;W[se](;B[sf]C[✗ 失败])))))(;B[rf](;W[re](;B[qf](;W[sd](;B[sf]C[✗ 失败])))(;B[sd](;W[qf]C[✗ 失败]))))(;B[se](;W[sd](;B[re](;W[rf](;B[qe]C[✗ 失败 | 双活]))))))

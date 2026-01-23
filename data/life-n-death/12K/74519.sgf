@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74519]
+AN[wangheep]
+SO[https://www.101weiqi.com/12K/74519/]
+GC[对杀题 | 12K+ | 正确率: 64.5% (16885/26188)]
+C[黑先 对杀题]
+AB[qd][qe][pc][pf][oc]
+AW[nd][qc][od][nc][pd]
+PL[B]
+(;B[qb](;W[rc](;B[rb]C[✓ 正确])(;B[rd](;W[rb]C[✗ 失败]))))(;B[rc](;W[qb](;B[rb](;W[pb]C[✗ 失败])))))

@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22496]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/8K/22496/]
+GC[手筋题 | 8K+ | 正确率: 53.2% (12856/24180)]
+C[黑先 手筋题]
+AB[qd][nd][rc][ra][nf][rb][pc][pd][pe]
+AW[le][qc][lb][qf][pb][qb][qe][mc][rf][rd][oc][se]
+PL[B]
+(;B[nb](;W[ob](;B[nc](;W[sc](;B[od](;W[sb](;B[oa]C[✓ 正确 | RIGHT
+恭喜答对])(;B[qa]C[✓ 正确])(;B[pa]C[✓ 正确])))(;B[qa](;W[sb](;B[oa]C[✓ 正确])(;B[od]C[✓ 正确])(;B[pa](;W[oa]C[✗ 失败])))(;W[pa](;B[od]C[⚡ 变化])))(;B[oa](;W[sb](;B[pa]C[✓ 正确])(;B[qa]C[✓ 正确])(;B[od]C[✓ 正确]))(;W[pa](;B[na]C[⚡ 变化])))(;B[pa]C[✓ 正确]))))(;W[nc](;B[ob]C[✓ 正确])))(;B[ob](;W[nb](;B[pa](;W[oa](;B[qa](;W[ob]C[✗ 失败]))))(;B[oa](;W[na]C[✗ 失败]))))(;B[nc](;W[nb]C[✗ 失败])))

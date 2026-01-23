@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2402]
+AN[admin]
+SO[https://www.101weiqi.com/4D/2402/]
+GC[死活题 | 4D+ | 正确率: 34.2% (1054/3085) | 关山利一九段创作]
+C[黑先 死活题]
+AB[qd][of][md][qf][nb][nc][lc][nf][rg][rd][me][mf]
+AW[nd][pe][rb][pc][ne][pd][oc][oe]
+PL[B]
+(;B[sb]C[变化](;W[pa](;B[ob](;W[pb](;B[ra](;W[qc](;B[rc](;W[qa](;B[qb]C[✓ 正确 | 恭喜答对]))))(;W[sc]C[参考图](;B[qb](;W[sa](;B[qc](;W[qa](;B[rc]C[⚡ 变化 | 白6如走A3位挡断，也是白失败。以下至黑11止，白提的二子都是假眼。白6如走10位，则黑走9位，也很简单，不行的。])))))))(;B[qc](;W[qb](;B[ra](;W[sc](;B[rc](;W[sa]C[✗ 失败]))))))))(;B[ra](;W[qb](;B[ob](;W[sc](;B[rc](;W[sa]C[✗ 失败]))))))(;B[qc](;W[qb](;B[ob](;W[pb](;B[ra](;W[sc](;B[rc](;W[sa]C[✗ 失败])))))))))(;W[sc](;B[rc](;W[sa](;B[qa]C[⚡ 变化]))))(;W[rc](;B[qc](;W[qb](;B[ob]C[⚡ 变化])))))(;B[pa](;W[qa](;B[qb](;W[qc](;B[ra](;W[pb](;B[oa]C[✗ 失败 | 失败，再想想])))))))(;B[qa](;W[ra](;B[pa](;W[ob](;B[oa](;W[rc]C[✗ 失败 | 失败，重来吧]))))))(;B[qc](;W[qb](;B[ob](;W[pb](;B[sb](;W[sc](;B[rc](;W[sa]C[✗ 失败]))))))(;B[pa](;W[ob](;B[oa](;W[qa]C[✗ 失败])))))))

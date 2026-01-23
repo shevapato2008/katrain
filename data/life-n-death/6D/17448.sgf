@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-17448]
+AN[admin]
+SO[https://www.101weiqi.com/6D/17448/]
+GC[手筋题 | 6D | 正确率: 12.0% (214/1777)]
+C[白先 手筋题]
+AB[md][qc][nf][mc][ne][pe][dd]
+AW[nd][le][ic][me][kc][oc]
+PL[W]
+(;W[mb](;B[nb](;W[nc](;B[lb](;W[ma](;B[na](;W[ob](;B[la](;W[mb](;B[lc](;W[kb]C[✓ 正确])))))(;W[lc](;B[la](;W[mb](;B[pb](;W[ld]C[✗ 失败]))))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-21857]
+AN[guandaxin1]
+SO[https://www.101weiqi.com/6K/21857/]
+GC[手筋题 | 6K+ | 正确率: 40.3% (8638/21442) | 选自兰之篇P37]
+C[黑先 手筋题]
+AB[od][rc][nb][qe][ra][nc][rb][pd][rd][pe]
+AW[qd][qc][md][qf][qb][na][ob][mb][mc][pc][rf][re][og]
+PL[B]
+(;B[oc](;W[oa](;B[pb](;W[pa](;B[qa]C[✓ 正确]))))(;W[qa](;B[pa]C[⚡ 变化]))(;W[pa](;B[qa]C[⚡ 变化]))(;W[pb](;B[oa](;W[pa](;B[qa]C[⚡ 变化])))))(;B[oa](;W[pa](;B[oc](;W[qa]C[✗ 失败]))(;B[qa](;W[oc]C[✗ 失败]))))(;B[qa](;W[oa]C[✗ 失败])(;W[oc]C[✗ 失败]))(;B[pa](;W[oa]C[✗ 失败])))

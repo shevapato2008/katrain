@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-63656]
+AN[kenny]
+SO[https://www.101weiqi.com/5D/63656/]
+GC[手筋题 | 5D | 正确率: 15.8% (329/2081)]
+C[黑先 手筋题]
+AB[of][nd][md][lb][pb][qb][lc][mc][pg][rg][pf][oe][qg]
+AW[qc][od][qf][nb][nc][mb][rb][rf][pd][pe]
+PL[B]
+(;B[ra](;W[rc](;B[oc](;W[ob](;B[oa](;W[pc](;B[ma]C[✓ 正确])))(;B[ma](;W[oa]C[✗ 失败]))))))(;B[oc](;W[ob](;B[ra](;W[pc](;B[rc](;W[sb](;B[sc](;W[rd](;B[sa](;W[pa]C[✗ 失败])))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-55362]
+AN[foxyz]
+SO[https://www.101weiqi.com/6K/55362/]
+GC[死活题 | 6K+ | 正确率: 38.5% (7222/18769)]
+C[黑先 死活题]
+AB[od][qc][qf][sc][ob][pa][ra][pe][sg][qa][rg][rd][oc][oe][qg]
+AW[qd][pb][qb][qe][rb][pc][rf][pd][re][sf]
+PL[B]
+(;B[sd](;W[sb](;B[rc]C[✓ 正确 | 16 黑1是不难发现的一手，白2黑3形成刀把五。]))(;W[rc](;B[sb](;W[se](;B[qc]C[⚡ 变化])))))(;B[sb](;W[sd](;B[se]C[✗ 失败 | 打劫])))(;B[rc](;W[sd](;B[se]C[✗ 失败]))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15439]
+AN[admin]
+SO[https://www.101weiqi.com/5D/15439/]
+GC[死活题 | 5D | 正确率: 25.5% (546/2139) | 权五敏四段创作]
+C[黑先 死活题]
+AB[qd][qc][md][nd][od][ic][gc][na][ga][hb][ra][rb][kd][pd][kc][ld]
+AW[qb][ob][nc][lc][mc][ma][pc][qa][oc][ha]
+PL[B]
+(;B[pb]C[正解](;W[pa](;B[mb](;W[lb](;B[la](;W[kb](;B[oa](;W[nb](;B[pb](;W[ka](;B[ma](;W[pa](;B[ma](;W[qb](;B[qa](;W[na](;B[pb]C[✓ 正确])))(;B[na](;W[qa](;B[oa](;W[pb]C[✗ 失败 | 这样就成双活了，失败！])))))))))(;W[ma]C[✓ 正确])))(;W[pb](;B[jb](;W[ka](;B[ja](;W[ma]C[✓ 正确])))))))(;W[ka](;B[kb](;W[ma]C[✓ 正确]))(;B[oa](;W[nb](;B[pb](;W[ma]C[✗ 失败])))))))))(;W[oa](;B[lb](;W[kb](;B[ka](;W[jb](;B[pa](;W[ja](;B[mb]C[⚡ 变化])))))))))(;B[pa]C[失败1](;W[kb](;B[la](;W[lb](;B[mb](;W[pb](;B[jb](;W[ka](;B[oa]C[失败，重来吧](;W[ma]C[✗ 失败]))))))))))(;B[lb](;W[kb](;B[ka](;W[nb](;B[jb](;W[mb]C[✗ 失败 | 失败，重来吧]))))(;B[pa](;W[la](;B[pb](;W[oa]C[✗ 失败]))))))(;B[mb](;W[lb](;B[la](;W[ka](;B[oa](;W[nb](;B[pb](;W[ma](;B[pa](;W[kb]C[✗ 失败]))))))(;B[kb](;W[nb](;B[ja](;W[oa]C[✗ 失败])))))))))

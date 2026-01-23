@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-519]
+AN[admin]
+SO[https://www.101weiqi.com/7K/519/]
+GC[死活题 | 7K+ | 正确率: 46.1% (11238/24358) | 白先]
+C[白先 死活题]
+AB[sd][od][oe][ob][qe][rf][rd][oc][pe]
+AW[qd][rc][pb][pc][pd]
+PL[W]
+(;W[rb](;B[sc](;W[sb]C[✓ 正确])))(;W[sb](;B[qb](;W[qa](;B[ra](;W[pa](;B[rb]C[✗ 失败]))))(;W[ra](;B[pa](;W[qc](;B[qa]C[✗ 失败]))))))(;W[ra](;B[sb](;W[sc](;B[rb](;W[qc](;B[pa]C[✗ 失败]))))))(;W[qb](;B[sb](;W[rb](;B[sc]C[✗ 失败]))(;W[sc](;B[rb]C[✗ 失败]))))(;W[sc](;B[rb](;W[sb](;B[qb]C[✗ 失败])))))

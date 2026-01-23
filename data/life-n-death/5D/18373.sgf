@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18373]
+AN[admin]
+SO[https://www.101weiqi.com/5D/18373/]
+GC[死活题 | 5D | 正确率: 27.2% (673/2471) | 本题的后半部分即“秦王带剑”图]
+C[白先 死活题]
+AB[qd][od][pg][rg][pd][qg]
+AW[nd][of][rj][nc][lc][qh][pc][ne][rh][og][ph]
+PL[W]
+(;W[qc]C[白从1位行动，只此一手。 正解](;B[oc](;W[ob](;B[rc](;W[rb](;B[qb](;W[pb](;B[sb](;W[qa](;B[re]C[至此为“秦王带剑”势之构图](;W[sd](;B[sc](;W[sg](;B[sf](;W[pe]C[白13扳一手后再15动手，此一手顺紧要。](;B[qe](;W[qf]C[✓ 正确 | 黑16若A，则白16掐进去。])))))(;W[pe]C[失败2](;B[sg](;W[se](;B[pf](;W[qe](;B[qf](;W[oe](;B[sf]C[✗ 失败 | 解答图之白13之扳若立刻于本图1位动手，则黑2立作出眼位。
+
+黑8止，四子纵然被吃仍可提回。])))))))))(;B[pf]C[参考](;W[sc](;B[oe](;W[qe](;B[sg](;W[rd](;B[pe](;W[se](;B[sf](;W[rf]C[✓ 正确 | 黑A不入气，净死。]))))))))(;B[sg](;W[oe](;B[pe](;W[qf]C[⚡ 变化])))))))))(;W[ra](;B[re](;W[sd](;B[pf](;W[sc](;B[sg](;W[oe](;B[pe](;W[qf](;B[rf](;W[se](;B[rd]C[✗ 失败])))))))))))))))))))(;B[rc](;W[rb](;B[re](;W[sb](;B[sc](;W[pf](;B[qf](;W[sf]C[✓ 正确])))(;W[sf]C[✓ 正确])))(;W[sc](;B[sd](;W[rd]C[✗ 失败])))(;W[sd](;B[sc](;W[sg](;B[sf](;W[pe](;B[pf]C[✗ 失败])))))))(;B[sb](;W[rd](;B[sd](;W[re](;B[qb](;W[ra](;B[pb](;W[oc](;B[qa](;W[ob]C[✓ 正确]))))(;B[oc](;W[pb](;B[ob](;W[qa]C[⚡ 变化])))))))))(;W[qb](;B[re](;W[sd](;B[sc](;W[sg](;B[sf](;W[pe](;B[pf]C[✗ 失败]))))))))))))(;W[pb](;B[rb](;W[sg](;B[re](;W[sf](;B[qb](;W[se](;B[sd](;W[sc](;B[rd]C[✗ 失败]))))))))(;W[rf](;B[sg](;W[qe](;B[re](;W[rd](;B[qf](;W[se](;B[pe](;W[pf](;B[re]C[✗ 失败]))(;W[re](;B[pf](;W[ra](;B[rc](;W[qb](;B[sb](;W[qc](;B[sd]C[✗ 失败]))))))))))))))(;W[rd](;B[re](;W[qe](;B[qf](;W[se](;B[pe](;W[re](;B[pf](;W[ra](;B[rc](;W[qb](;B[sb](;W[qc](;B[sd]C[✗ 失败]))))))))))))))))))(;W[qb](;B[qc](;W[pb](;B[rb](;W[ra](;B[pf](;W[sb](;B[rd](;W[rf](;B[sg](;W[re](;B[sc]C[✗ 失败])))))))))))))

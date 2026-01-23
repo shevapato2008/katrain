@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-227630]
+AN[晨曦的大海]
+SO[https://www.101weiqi.com/6D/259490/]
+GC[布局题 | 6D | 正确率: 5.2% (83/1595)]
+C[白先 布局题]
+AB[op][qc][cd][np][bq][jq][co][pp][nq]
+AW[qn][ep][cl][qp][qq][pq][dq][oq]
+PL[W]
+(;W[cn](;B[bn](;W[dn](;B[bm](;W[cp](;B[cm](;W[bo](;B[dm](;W[do]C[✓ 正确])))(;W[do](;B[dm](;W[bo]C[✓ 正确])))(;W[dm](;B[do](;W[bp](;B[dl]C[✗ 失败 | 白7挡中计，被黑8一冲白形崩]))(;W[eo](;B[bp]C[✗ 失败])))))(;B[do](;W[bp](;B[cm](;W[bo](;B[dl](;W[en]C[⚡ 变化]))))))(;B[bp](;W[do](;B[bo]C[⚡ 变化 | 黑太委屈])))))(;B[do](;W[eo](;B[bm](;W[ck](;B[cq]C[✓ 正确])))))))(;B[bo](;W[do](;B[cr](;W[hq]C[⚡ 变化]))))(;B[do](;W[bo](;B[cq](;W[hq]C[⚡ 变化 | 黑不活，不好])))))(;W[dn](;B[cn](;W[dm](;B[cr]C[✗ 失败 | 白1飞是普通的感觉，可是这个结果让黑棋活得太舒服了，白棋不能满意])))))

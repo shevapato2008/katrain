@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74495]
+AN[wangheep]
+SO[https://www.101weiqi.com/14K/74495/]
+GC[手筋题 | 14K+ | 正确率: 79.7% (24557/30819)]
+C[黑先 手筋题]
+AB[nd][od][ka][kc][qe][lc][pc][re][pe][se][kb]
+AW[md][jb][qf][jc][kd][jd][rf][ne][pf][ja][oe][ld][sf]
+PL[B]
+(;B[mc]C[✓ 正确])(;B[mb](;W[mc](;B[nb](;W[nc](;B[oc]C[✗ 失败 | 官子亏])))(;B[nc](;W[la]C[✗ 失败]))))(;B[nb](;W[mc](;B[mb](;W[nc](;B[oc]C[✗ 失败 | 官子亏])))))(;B[nc](;W[mc](;B[mb](;W[la]C[✗ 失败])))))

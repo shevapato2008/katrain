@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-521]
+AN[admin]
+SO[https://www.101weiqi.com/7K/521/]
+GC[死活题 | 7K | 正确率: 46.4% (10884/23473) | 白先]
+C[白先 死活题]
+AB[qc][pb][qf][pc][rf][pd][pe]
+AW[qd][rc][qb][qe][qa]
+PL[W]
+(;W[sb](;B[sd](;W[ra](;B[rd](;W[sc]C[✓ 正确]))(;B[sc](;W[se]C[⚡ 变化])))(;W[se](;B[rd](;W[ra](;B[re](;W[sc]C[✓ 正确])))(;W[sc](;B[re](;W[ra]C[✓ 正确]))))(;B[re](;W[ra](;B[rd](;W[sc]C[✓ 正确])))))(;W[re](;B[se](;W[ra](;B[sc]C[✗ 失败])))))(;B[ra](;W[sd](;B[re](;W[rd]C[✓ 正确])))(;W[re](;B[se](;W[rd](;B[sd]C[✗ 失败])))))(;B[rd](;W[ra]C[⚡ 变化 | 變化圖，實戰中黑棋正確的走法])))(;W[sd](;B[se](;W[sb](;B[rd](;W[ra](;B[sc]C[✗ 失败])))))))

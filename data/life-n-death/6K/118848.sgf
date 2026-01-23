@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-110106]
+AN[东侯传人]
+SO[https://www.101weiqi.com/6K/118848/]
+GC[死活题 | 6K+ | 正确率: 55.9% (11505/20565)]
+C[白先 死活题]
+AB[of][od][qd][rc][sc][nf][ne][pd][pf][re][pe][se]
+AW[nd][qf][qb][ng][nc][lc][mg][pg][qe][qh][oc][pc][rf][me][mf][og][sf]
+PL[W]
+(;W[rd]C[正解](;B[qc](;W[sd](;B[rb](;W[ra](;B[pb](;W[pa]C[✓ 正确]))))))(;B[sd](;W[qc](;B[rb](;W[ra]C[⚡ 变化])))))(;W[rb]C[失败](;B[qc]C[✗ 失败])))

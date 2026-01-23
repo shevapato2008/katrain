@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-81120]
+AN[lst931207]
+SO[https://www.101weiqi.com/7K/81120/]
+GC[手筋题 | 7K | 正确率: 46.7% (10439/22353)]
+C[黑先 手筋题]
+AB[od][qc][nb][qe][pd][oc]
+AW[qd][pb][ob][nc][lc][mc][pc][ne][pf][rd]
+PL[B]
+(;B[qb](;W[mb](;B[re]C[✓ 正确])(;B[pa](;W[na](;B[re]C[✓ 正确])))))(;B[re](;W[rc]C[✗ 失败]))(;B[rc](;W[re]C[✗ 失败]))(;B[rb](;W[pe]C[✗ 失败])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25253]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/6D/25253/]
+GC[死活题 | 6D | 正确率: 23.5% (263/1120)]
+C[黑先 死活题]
+AB[qd][qc][nc][mb][rb][pd][oc]
+AW[md][lb][nd][od][of][rc][pb][qf][qe][mc][rd][kc]
+PL[B]
+(;B[re](;W[rf](;B[ob](;W[qb](;B[pc](;W[ra](;B[sb](;W[qa](;B[pa](;W[oa](;B[na]C[正解，打劫](;W[se](;B[pa](;W[sc](;B[sa](;W[qb]C[⚡ 变化]))))))))(;B[na](;W[se](;B[pa]C[✓ 正确]))))))(;W[sb](;B[ra](;W[ma](;B[na]C[⚡ 变化]))(;W[la](;B[ma]C[⚡ 变化])))))(;B[pa](;W[sb](;B[ra](;W[pe](;B[pc](;W[na](;B[ma](;W[la]C[✗ 失败]))))))))))))(;B[sc](;W[se](;B[ob](;W[qb](;B[pc](;W[ra]C[✗ 失败]))(;B[qa](;W[pa](;B[sa]C[✗ 失败])))))(;B[qb](;W[oa]C[✗ 失败]))))(;B[qb](;W[oa]C[✗ 失败])))

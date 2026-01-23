@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-55968]
+AN[foxyz]
+SO[https://www.101weiqi.com/7K/55968/]
+GC[对杀题 | 7K+ | 正确率: 41.5% (8939/21516)]
+C[黑先 对杀题]
+AB[qd][sd][sc][ob][mc][pd][rd][oc][pa]
+AW[od][pb][rc][qe][pe][rb][pc][rg][re][oe]
+PL[B]
+(;B[ra](;W[sb](;B[qb]C[✓ 正确 | 50 黑1靠是手筋。])(;B[qc](;W[qb]C[✗ 失败]))))(;B[qb](;W[qc](;B[ra](;W[qa]C[✗ 失败]))(;B[sb](;W[qa]C[✗ 失败]))))(;B[sb](;W[ra](;B[qc](;W[qb]C[✗ 失败])))))

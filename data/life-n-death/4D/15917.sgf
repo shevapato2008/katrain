@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15917]
+AN[admin]
+SO[https://www.101weiqi.com/4D/15917/]
+GC[死活题 | 4D+ | 正确率: 38.4% (1151/2994)]
+C[白先 死活题]
+AB[le][od][lf][id][pb][hc][hb][mb][je][pc][ne][kb]
+AW[md][jb][nb][nc][jc][kd][ld]
+PL[W]
+(;W[lb](;B[la](;W[lc](;B[ja](;W[ia](;B[ib](;W[ka]C[✓ 正确 | 成劫])))(;W[kc](;B[ia](;W[ka]C[✓ 正确]))))(;B[na](;W[oa](;B[ob](;W[ma]C[✓ 正确 | 成劫])))(;W[mc](;B[oa](;W[ma]C[✓ 正确]))))))(;B[lc](;W[la](;B[ma](;W[na](;B[ka](;W[ja]C[⚡ 变化])))))))(;W[la](;B[lb](;W[lc](;B[ma](;W[na](;B[ja](;W[ia](;B[ib](;W[ka](;B[ja](;W[ka](;B[eg](;W[nd](;B[jd]C[⚡ 变化 | 白若14，黑则13，白不活。])))))))))))))))

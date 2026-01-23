@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16534]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16534/]
+GC[死活题 | 4D | 正确率: 32.5% (941/2895) | 出题者：石榑郁郎六段（昭和43年8月）]
+C[黑先 死活题]
+AB[md][od][ic][ia][qc][rc][na][mc][jd][kd][ma][pc][rb][ib][pe][ld]
+AW[pb][qb][nb][nc][lc][mb][kc][oc][ka]
+PL[B]
+(;B[oa](;W[qa](;B[kb](;W[jb](;B[lb](;W[la](;B[ja]C[✓ 正确])(;B[jc]C[✓ 正确])))(;B[jc](;W[lb](;B[ob](;W[la](;B[ra](;W[pa](;B[na](;W[ja](;B[ob](;W[ma](;B[oa](;W[pb]C[✗ 失败]))))))))))(;B[ja](;W[ob]C[✗ 失败]))))(;B[ja](;W[lb](;B[ob](;W[la](;B[ra](;W[pa](;B[na](;W[jc](;B[ob](;W[ma](;B[oa](;W[pb]C[✗ 失败]))))))))))(;B[jc](;W[ob]C[✗ 失败]))))(;B[ob](;W[la](;B[ra](;W[pa](;B[na](;W[lb](;B[ob](;W[ma](;B[oa](;W[pb]C[✗ 失败]))))))))))))(;B[ob](;W[la](;B[ra](;W[pa](;B[na](;W[kb](;B[ob](;W[ma](;B[oa](;W[pb]C[✗ 失败]))))))))))(;B[nd](;W[ob](;B[kb](;W[jb](;B[jc](;W[lb](;B[ja](;W[kb]C[✗ 失败])))))))))(;W[pa](;B[kb](;W[jb](;B[jc](;W[lb](;B[ja]C[⚡ 变化]))))))(;W[ob](;B[kb](;W[jb](;B[jc](;W[lb](;B[qa]C[⚡ 变化]))))))(;W[la](;B[kb]C[⚡ 变化]))))

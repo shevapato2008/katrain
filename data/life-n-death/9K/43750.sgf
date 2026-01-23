@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-43750]
+AN[cxg893]
+SO[https://www.101weiqi.com/9K/43750/]
+GC[死活题 | 9K | 正确率: 51.9% (15198/29275)]
+C[黑先 死活题]
+AB[pb][ra][rc][rb]
+AW[ob][qe][nc][pc][rg][pd][re]
+PL[B]
+(;B[pa](;W[qc](;B[qb]C[✓ 正确])))(;B[qb](;W[pa]C[✗ 失败]))(;B[rd](;W[pa]C[✗ 失败])))

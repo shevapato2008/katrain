@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-139599]
+AN[小羊衬淡花]
+SO[https://www.101weiqi.com/5D/157265/]
+GC[布局题 | 5D | 正确率: 7.0% (167/2377) | 白先，实战常见型，右上黑棋早早的发起了挑衅，白棋此时如何沉着的应对？]
+C[白先 布局题]
+AB[md][po][qf][rc][pe][nf][pc][fd][pd][rg][rd][re][pq][ld][fc][qg]
+AW[qd][qc][pb][qb][qe][nc][df][rb][fq][qa][dp][rf][pf][me][ec][dd]
+PL[W]
+(;W[nd](;B[ne](;W[oe](;B[pg](;W[of](;B[og](;W[od]C[✓ 正确]))))(;B[of](;W[pg](;B[ph](;W[og]C[⚡ 变化]))))))(;B[mb](;W[nb](;B[ne](;W[oe](;B[of](;W[pg](;B[od]C[征子黑不利](;W[ph](;B[lf]C[征子黑不利](;W[qi](;B[sf](;W[pl]C[⚡ 变化 | 黑6的缘故把唯一的外势给卖掉了]))))(;B[qi](;W[le]C[⚡ 变化 | 黑棋被动]))))))(;B[pg](;W[of](;B[og](;W[od]C[⚡ 变化 | 正解])))))(;W[mc](;B[lc](;W[lb](;B[kb](;W[ma](;B[jc]C[✗ 失败 | 黑厚 错解]))))(;W[oe](;B[pg](;W[of](;B[og](;W[od]C[✗ 失败 | 5和6交换略亏 错解])))))))(;W[lb](;B[kb](;W[oe](;B[pg](;W[of](;B[og](;W[od]C[✗ 失败 | 5和6交换过早味道走尽 错解])))))))(;W[pg](;B[ph](;W[oe](;B[og]C[✗ 失败 | 错解]))(;W[og](;B[ni](;W[ng](;B[mf]C[✗ 失败 | 帮黑棋走棋 错解])))))))(;B[kb](;W[pg](;B[ph](;W[og](;B[mh](;W[oh]C[⚡ 变化])))))))(;W[ne](;B[of](;W[nb](;B[jd]C[✗ 失败 | 虽然出头，但定型并不满意 错解]))(;W[mc](;B[lc](;W[nb](;B[kb]C[✗ 失败 | 帮黑棋走棋，错解]))))))))(;W[oe](;B[of](;W[oc](;B[pg](;W[ne](;B[mb]C[✗ 失败 | 错解]))))(;W[ne](;B[pg](;W[oc](;B[mb](;W[nb](;B[kb]C[✗ 失败]))))))))(;W[ne](;B[nd](;W[od](;B[oe](;W[oc](;B[of]C[✗ 失败 | 错解]))(;W[of](;B[oc](;W[ob](;B[od]C[✗ 失败 | 错解]))))))))(;W[lb](;B[nd]C[✗ 失败 | 错解]))(;W[mb](;B[nd]C[✗ 失败 | 错解])))

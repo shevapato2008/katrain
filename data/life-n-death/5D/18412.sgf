@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18412]
+AN[admin]
+SO[https://www.101weiqi.com/5D/18412/]
+GC[死活题 | 5D | 正确率: 26.9% (579/2152)]
+C[白先 死活题]
+AB[nd][qc][lb][qf][kc][mf][nh][qe][mg][rb][mc][rf][ri][pi][me][qi]
+AW[od][ob][nb][nf][pg][rg][pd][pf][rh][ne][oc][pe][qg]
+PL[W]
+(;W[sf]C[正解](;B[rd](;W[sc](;B[se]C[白棋从1扳开始，对之黑2是形。此时白3点，黑4当然。](;W[qb]C[作了这些准备工作后，5之嵌入为妙手。](;B[pb](;W[qd]C[黑若6则白7先手利后，9至14止成劫。](;B[sg](;W[rc](;B[qa](;W[pc](;B[qb](;W[sh](;B[sb]C[✓ 正确 | 黑14如于1粘，则白14拐变成角上之劫，黑棋不利。]))))(;W[sh](;B[sb](;W[sf]C[✓ 正确])))))(;W[pc](;B[qa](;W[rc](;B[qb](;W[sh](;B[sb](;W[sf]C[✓ 正确])))))))))(;W[pc](;B[qa](;W[qd](;B[sg](;W[rc](;B[qb](;W[sh]C[✓ 正确]))))))))(;B[rc]C[参考](;W[qa]C[⚡ 变化 | 如此，则双方相安无事。])))(;W[qd](;B[sg](;W[qb](;B[pb](;W[rc](;B[qa](;W[pc](;B[qb](;W[sh](;B[sb](;W[sf]C[✓ 正确])))))(;W[sh](;B[sb](;W[sf]C[✓ 正确])))))(;W[pc](;B[qa](;W[rc](;B[qb](;W[sh](;B[sb](;W[sf]C[✓ 正确])))))))))(;W[sh](;B[sb]C[✗ 失败]))))(;W[sg](;B[sb]C[✗ 失败])))))(;B[qd](;W[se](;B[sc](;W[qa](;B[ra](;W[rd]C[⚡ 变化]))))))(;B[re](;W[qa](;B[ra](;W[rd](;B[qd](;W[se]C[⚡ 变化]))))))))

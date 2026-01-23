@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-450]
+AN[admin]
+SO[https://www.101weiqi.com/6K/450/]
+GC[死活题 | 6K | 正确率: 43.0% (8448/19655)]
+C[白先 死活题]
+AB[qc][pb][qe][pe][rb][qa][pd][re][pa]
+AW[of][od][qf][ob][oa][pc][rf][pf][oc][oe][se][sf]
+PL[W]
+(;W[rc](;B[rd](;W[sc]C[✓ 正确]))(;B[sc](;W[rd](;B[qd](;W[ra]C[✓ 正确])(;W[sd]C[✓ 正确])(;W[qb]C[✓ 正确])))))(;W[rd](;B[rc]C[✗ 失败]))(;W[sc](;B[rc](;W[rd](;B[sb]C[✗ 失败]))(;W[sb](;B[rd](;W[ra]C[✗ 失败]))))))

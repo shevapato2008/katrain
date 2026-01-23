@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-43136]
+AN[qzwq01]
+SO[https://www.101weiqi.com/10K/43136/]
+GC[对杀题 | 10K+ | 正确率: 45.9% (14350/31254)]
+C[黑先 对杀题]
+AB[qb][ob][qe][rb][pc][pd][re]
+AW[qd][qc][rc][qf][oe][sb][rf][pe]
+PL[B]
+(;B[sd](;W[sc](;B[ra](;W[sf](;B[sa]C[✓ 正确 | RIGHT])))(;B[qa](;W[sf](;B[sa](;W[ra]C[✗ 失败]))))(;B[sa](;W[ra](;B[qa]C[✗ 失败])))))(;B[rd](;W[sc](;B[ra](;W[se]C[✗ 失败])))))

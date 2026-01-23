@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-136]
+AN[admin]
+SO[https://www.101weiqi.com/11K/136/]
+GC[吃子题 | 11K | 正确率: 70.5% (17465/24770) | 4-11
+黑先]
+C[黑先 吃子题]
+AB[qd][qe][nc][pd][oc]
+AW[le][od][qc][pb][rc][lc][pc]
+PL[B]
+(;B[ne](;W[nd](;B[md](;W[oe](;B[of]C[✓ 正确]))))(;W[oe](;B[of]C[✓ 正确])))(;B[oe](;W[nd](;B[md](;W[ne](;B[me](;W[nf]C[✗ 失败]))))))(;B[nd](;W[oe]C[✗ 失败])))

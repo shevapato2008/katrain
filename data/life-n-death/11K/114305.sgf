@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-107082]
+AN[cxg893]
+SO[https://www.101weiqi.com/11K/114305/]
+GC[死活题 | 11K | 正确率: 61.1% (14615/23938) | 黑先，先缩小眼位，再占要点杀棋。]
+C[黑先 死活题]
+AB[nd][qc][rc][sc][ng][nc][nf][pg][sg][pc][rg][oc][og][qg]
+AW[of][od][qd][sd][qf][rf][pd][pf][rd][sf]
+PL[B]
+(;B[oe](;W[pe](;B[re]C[✓ 正确]))(;W[re](;B[pe]C[⚡ 变化])))(;B[re](;W[oe](;B[qe]C[✓ 正确]))(;W[qe](;B[oe]C[✓ 正确]))))

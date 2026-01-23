@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-29175]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/6D/29175/]
+GC[对杀题 | 6D+ | 正确率: 14.3% (170/1191) | 第169题  白先
+审题：白棋可以利用的只有对方一处断点。如果直接和黑角对杀，效果不会太理想。]
+C[白先 对杀题]
+AB[qc][od][nc][lc][mc][pc][rd][kc][ib]
+AW[qf][ob][nb][qe][mb][kd][pd][me][oc]
+PL[W]
+(;W[qd]C[正确](;B[pb](;W[nd](;B[oe](;W[nf](;B[of](;W[og](;B[ne](;W[md](;B[ng](;W[mf](;B[pg](;W[oh](;B[pf](;W[qi](;B[qg](;W[rg](;B[rh](;W[rf](;B[qh](;W[ri]C[✓ 正确 | 白胜]))))))(;B[rh](;W[rg](;B[qg](;W[rf]C[✓ 正确 | 白胜]))))))))))))))))))(;B[rb](;W[nd](;B[oe](;W[nf](;B[ne](;W[md](;B[of](;W[og](;B[ng](;W[mf](;B[pg](;W[oh](;B[pf](;W[qi](;B[qg](;W[rg](;B[rf](;W[re](;B[rh](;W[sf](;B[qh](;W[ri](;B[si](;W[sj](;B[sh](;W[rj](;B[sd](;W[ph](;B[se](;W[sb](;B[rc](;W[pb]C[✓ 正确])))(;W[pb]C[✓ 正确])))))(;W[rk](;B[sd](;W[ph](;B[se](;W[pb]C[✓ 正确])(;W[sb](;B[rc](;W[pb]C[✓ 正确]))))))))))))))))))))))))))))))))(;B[oe](;W[rc](;B[rb](;W[sc](;B[sb](;W[qb](;B[sd](;W[rc](;B[sc](;W[pb](;B[rc](;W[re]C[⚡ 变化 | 白胜]))))))))(;B[qb](;W[re]C[⚡ 变化 | 白胜])))))(;W[qb]C[⚡ 变化])))(;W[nd](;B[oe](;W[qd](;B[rb](;W[nf](;B[ne](;W[md](;B[of](;W[og](;B[ng](;W[mf](;B[pg](;W[oh](;B[pf](;W[qi](;B[qg](;W[rg](;B[rf](;W[re](;B[rh](;W[sf](;B[qh](;W[ri](;B[si](;W[sj](;B[sh](;W[rj](;B[sd](;W[ph](;B[se](;W[sb](;B[rc](;W[pb]C[✓ 正确])))))))(;W[rk](;B[sd](;W[ph](;B[se](;W[pb]C[✓ 正确])(;W[sb](;B[rc](;W[pb]C[✓ 正确]))))))))))))))))))))))))))))))(;B[pb](;W[nf](;B[of](;W[og](;B[ne](;W[md](;B[ng](;W[mf](;B[pg](;W[oh](;B[pf](;W[qi](;B[qg](;W[rg](;B[rh](;W[rf](;B[qh](;W[ri]C[⚡ 变化])))))))))))))))))))(;W[nf](;B[ne](;W[md](;B[of](;W[og](;B[ng](;W[mf](;B[pg](;W[oh](;B[pf](;W[qi](;B[qg](;W[rg](;B[qd]C[✗ 失败 | 白死]))))))))))))))))(;W[rb](;B[pb]C[不好](;W[rc](;B[qd](;W[pe](;B[ne](;W[pa](;B[qa](;W[oa](;B[qb](;W[re](;B[sd](;W[ra]C[⚡ 变化 | 白胜]))))))))))))(;B[qb]C[不好](;W[re]C[巧手](;B[ne](;W[sd](;B[sc](;W[se](;B[ra](;W[sb](;B[rc](;W[pa](;B[pb](;W[oa]C[⚡ 变化 | 白胜]))))))))))))(;B[rc]C[正应](;W[re](;B[se]C[妙](;W[pa](;B[ra](;W[qa](;B[sb](;W[qb](;B[pb](;W[oa](;B[lb]C[✗ 失败 | 打劫])))))))))))))

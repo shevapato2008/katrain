@@ -1,0 +1,14 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25960]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/6K/25960/]
+GC[死活题 | 6K | 正确率: 52.6% (11233/21343) | 当白三角子立下时，黑没有A位挡（如果挡就还原成第10型），而小飞求活，可以净活吗？]
+C[白先 死活题]
+AB[qd][qc][ra][re][se]
+AW[qf][pb][qe][pc][rf][pd]
+PL[W]
+(;W[sb]C[正解1](;B[sc](;W[rc](;B[rd](;W[sd]C[✓ 正确 | 白的先手劫。])))(;W[rb](;B[qb](;W[rc](;B[rd](;W[sd]C[✓ 正确]))))))(;B[rc]C[变化图](;W[sc]C[⚡ 变化 | 黑棋净死。])))(;W[sc]C[正解2](;B[sb](;W[rb](;B[qb](;W[sa]C[✓ 正确 | 还原成第10型（10_1.sgf）的正解3。
+
+这是白的先手劫。])))(;W[rc](;B[rb]C[✗ 失败]))))(;W[rb]C[正解3](;B[qb](;W[rc](;B[rd](;W[sc](;B[sb](;W[sa]C[✓ 正确 | 还原成第10型（10_1.sgf）的正解2。
+
+也是白的先手劫。])))(;W[sb](;B[sc](;W[sd]C[✓ 正确])))))))(;W[rc](;B[rd](;W[rb](;B[qb](;W[sc]C[✓ 正确])(;W[sb](;B[sc](;W[sd]C[✓ 正确])))))(;W[sb](;B[sc](;W[sd]C[✓ 正确])))(;W[sc](;B[sb](;W[rb](;B[qb](;W[sa]C[✓ 正确])))))))(;W[qb](;B[rb](;W[rc](;B[rd](;W[sc](;B[sb]C[✗ 失败])))))))

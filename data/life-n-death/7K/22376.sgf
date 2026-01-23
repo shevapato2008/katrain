@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22376]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/7K/22376/]
+GC[死活题 | 7K | 正确率: 48.0% (10744/22375)]
+C[黑先 死活题]
+AB[qd][qc][lb][pa][qe][pe][lc][mb][rb][oa][ne][me][oe][ld]
+AW[nd][od][md][na][qb][ob][nb][mc][pc][pd]
+PL[B]
+(;B[ra]C[✓ 正确 | RIGHT
+恭喜答对])(;B[qa](;W[ra](;B[sa](;W[pb]C[✗ 失败 | 失败]))(;B[pb](;W[qb]C[✗ 失败])))))

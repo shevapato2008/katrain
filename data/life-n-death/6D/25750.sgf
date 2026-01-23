@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25750]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/6D/25750/]
+GC[手筋题 | 6D | 正确率: 20.0% (213/1067) | 白棋要取得联络必须仔细计算才行。白先如何下呢？]
+C[白先 手筋题]
+AB[qd][qb][kc][ng][ke][qe][nc][mc][pg][kf][lh][me][mf][oh]
+AW[jb][od][kg][ob][jc][nf][je][kd][jd][ne][oc][pe][jf]
+PL[W]
+(;W[la](;B[lb](;W[kb](;B[mb](;W[ma](;B[na](;W[ka](;B[nb](;W[md](;B[ld](;W[nd](;B[le](;W[mg](;B[lg](;W[oa]C[✓ 正确])))(;W[oa](;B[lc](;W[mg]C[✓ 正确]))))(;B[lc](;W[oa](;B[le](;W[mg]C[⚡ 变化])))))))))(;W[md](;B[ld](;W[ka](;B[nb](;W[nd](;B[le](;W[oa](;B[lc](;W[mg]C[✓ 正确])))(;W[mg](;B[lg](;W[oa]C[✓ 正确])))))))))))(;W[md](;B[ld](;W[ma](;B[na](;W[ka](;B[nb](;W[nd](;B[le](;W[oa](;B[lc](;W[mg]C[✓ 正确])))(;W[mg](;B[lg](;W[oa]C[✓ 正确]))))(;B[lc](;W[oa](;B[le](;W[mg]C[⚡ 变化 | 正解。]))))))))))))(;B[nb](;W[md](;B[ld](;W[na](;B[ma](;W[lc](;B[oa](;W[le](;B[nd](;W[ld](;B[lf](;W[pa]C[⚡ 变化]))))))))))))(;B[ma](;W[lc](;B[nb](;W[md](;B[nd](;W[ld](;B[oa](;W[pa](;B[pb](;W[mb]C[⚡ 变化]))(;B[ka](;W[na]C[⚡ 变化]))))(;B[ka](;W[oa](;B[na]C[⚡ 变化])))))))))(;B[na](;W[nb](;B[mb](;W[md](;B[ld](;W[nd](;B[ma](;W[ka](;B[le](;W[oa]C[⚡ 变化])))))))))))(;W[nb](;B[ka](;W[kb](;B[mb](;W[md](;B[ld](;W[nd](;B[lc](;W[ja](;B[ma](;W[na](;B[ka]C[✗ 失败]))))))))))))))(;W[na](;B[lb]C[✗ 失败]))(;W[lb](;B[mb](;W[md](;B[ld](;W[lc](;B[nd](;W[ma](;B[na](;W[la](;B[nb](;W[oa](;B[md](;W[mg](;B[lg](;W[lf](;B[mh](;W[le](;B[mg]C[✗ 失败])))))))))))))))))))

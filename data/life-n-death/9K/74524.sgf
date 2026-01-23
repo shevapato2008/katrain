@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74524]
+AN[wangheep]
+SO[https://www.101weiqi.com/9K/74524/]
+GC[对杀题 | 9K | 正确率: 45.5% (13169/28963)]
+C[黑先 对杀题]
+AB[qd][qc][qe][rb][pe][qg]
+AW[nd][pb][rc][qb][pc][pd][rd][kc]
+PL[B]
+(;B[sb](;W[ra](;B[re]C[✓ 正确])(;B[sd](;W[re](;B[rf](;W[se](;B[sf]C[⚡ 变化])))))))(;B[sc](;W[ra](;B[sb](;W[sd]C[✗ 失败]))))(;B[ra](;W[re](;B[rf](;W[sb](;B[se](;W[qa]C[✗ 失败 | 黑慢一气]))))))(;B[re](;W[sb](;B[ra](;W[qa]C[✗ 失败])))))

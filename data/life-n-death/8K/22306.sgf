@@ -1,0 +1,13 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22306]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/8K/22306/]
+GC[死活题 | 8K | 正确率: 54.0% (12776/23638)]
+C[黑先 死活题]
+AB[nd][od][qc][rc][lc][mc][rb][pc][kc][kb]
+AW[lb][pb][qb][nc][mb][oa][oc]
+PL[B]
+(;B[nb](;W[ob](;B[la](;W[na](;B[qa]C[✓ 正确 | RIGHT
+恭喜答对])(;B[ka]C[✓ 正确 | RIGHT
+恭喜答对
+如果外围黑棋被断开，白棋有可能做劫顽抗，所以第5手扳左边更好。])))(;B[ka](;W[na](;B[la](;W[ma](;B[qa]C[✓ 正确])))))(;B[qa](;W[la](;B[na]C[✓ 正确]))(;W[na](;B[la]C[✓ 正确])))))(;B[la](;W[nb]C[✗ 失败 | 失败]))(;B[na](;W[nb](;B[qa](;W[ma](;B[ra](;W[pa]C[✗ 失败]))))))(;B[qa](;W[nb]C[✗ 失败]))(;B[ma](;W[na]C[✗ 失败])))

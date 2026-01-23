@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-13042]
+AN[admin]
+SO[https://www.101weiqi.com/13K/13042/]
+GC[死活题 | 13K+ | 正确率: 84.3% (22124/26240)]
+C[黑先 死活题]
+AB[mh][mb][lc][rg][rf][ph][pb][qb][ob][nh][rd][re][ld][le][qc][lf][mg][oh][nb][qg]
+AW[qd][md][qf][mf][ng][nc][qe][mc][nf][pg][pc][pd][pf][me][oc][og]
+PL[B]
+(;B[oe](;W[ne](;B[od]C[✓ 正确])(;B[of](;W[od]C[✗ 失败])))(;W[od](;B[ne]C[✓ 正确])(;B[pe](;W[ne]C[✗ 失败])))))

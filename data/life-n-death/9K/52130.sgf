@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-52130]
+AN[lidaobing]
+SO[https://www.101weiqi.com/9K/52130/]
+GC[吃子题 | 9K | 正确率: 41.4% (12776/30857)]
+C[黑先 吃子题]
+AB[qd][qc][of][kc][qe][lc][mc][ne][pf][rd][me]
+AW[lb][rc][qb][oe][ng][nc][mb][nf][rb][lg][pc][pe][ph]
+PL[B]
+(;B[oc](;W[ob](;B[od]C[✓ 正确]))(;W[od](;B[ob](;W[pd](;B[pb](;W[nd](;B[nb]C[⚡ 变化]))))(;W[nb](;B[nd]C[⚡ 变化]))(;W[nd](;B[nb](;W[pd](;B[pb]C[⚡ 变化])))))))(;B[od](;W[pd](;B[oc](;W[pb]C[✗ 失败]))))(;B[nd](;W[oc]C[✗ 失败])))

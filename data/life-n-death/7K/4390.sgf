@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-4390]
+AN[admin]
+SO[https://www.101weiqi.com/7K/4390/]
+GC[手筋题 | 7K | 正确率: 50.3% (11146/22169)]
+C[黑先 手筋题]
+AB[nd][qc][qf][qe][pg][pc][rf][pd][og]
+AW[qd][od][qj][rg][ne][pf][rd][pe][qg][ph]
+PL[B]
+(;B[oe](;W[of](;B[nf](;W[oe](;B[me](;W[oc](;B[ob](;W[nc](;B[mc](;W[nb](;B[mb](;W[md](;B[na]C[✓ 正确])))(;B[na](;W[mb](;B[lb](;W[md]C[✗ 失败]))))))(;B[nb](;W[mc]C[✗ 失败]))))(;B[nc](;W[ob](;B[nb](;W[ng]C[✗ 失败]))))))(;B[oc](;W[me]C[✗ 失败]))))(;B[oc](;W[ng]C[✗ 失败]))))(;B[nf](;W[oe]C[✗ 失败]))(;B[me](;W[nf]C[✗ 失败]))(;B[of](;W[oe]C[✗ 失败]))(;B[oc](;W[nf]C[✗ 失败])))

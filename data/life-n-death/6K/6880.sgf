@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-6880]
+AN[admin]
+SO[https://www.101weiqi.com/6K/6880/]
+GC[手筋题 | 6K | 正确率: 45.1% (9354/20718)]
+C[黑先 手筋题]
+AB[qd][nd][qf][pg][pc][rd][re][oc][qg][ph]
+AW[md][od][mf][nb][qe][nc][qh][rg][rf][pf][qi][pe]
+PL[B]
+(;B[of](;W[ne](;B[oe]C[✓ 正确]))(;W[oe](;B[ne]C[⚡ 变化])))(;B[ne](;W[nf](;B[of](;W[me]C[✗ 失败]))))(;B[oe](;W[of]C[✗ 失败]))(;B[pd](;W[of]C[✗ 失败])(;W[ne]C[✗ 失败]))(;B[nf](;W[ne]C[✗ 失败])))

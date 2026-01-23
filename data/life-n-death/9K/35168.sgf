@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-35168]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/9K/35168/]
+GC[死活题 | 9K | 正确率: 48.2% (13357/27735) | 黑先
+
+如何杀白？]
+C[黑先 死活题]
+AB[qd][od][le][rc][kc][ob][ke][ra][la][rb][kd][oa][pd][ne][me][ka][kb]
+AW[nd][qc][lb][md][qb][nb][mb][lc][ma][pc][oc][pa][ld]
+PL[B]
+(;B[nc]C[正解](;W[mc](;B[qa](;W[pb](;B[nc]C[⚡ 变化]))(;W[na](;B[nc]C[⚡ 变化])))))(;B[qa](;W[na](;B[nc](;W[pb]C[✗ 失败])))))

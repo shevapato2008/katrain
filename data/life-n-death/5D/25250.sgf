@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25250]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/5D/25250/]
+GC[死活题 | 5D | 正确率: 30.9% (627/2027)]
+C[黑先 死活题]
+AB[qb][nc][mb][rb][pc][pd][oc]
+AW[md][lb][nd][od][qc][rc][jc][qe][lc][ra][sb][pe]
+PL[B]
+(;B[qa](;W[ma](;B[qd](;W[rd](;B[oa](;W[pb](;B[sa]C[✓ 正确]))(;W[re](;B[sa]C[⚡ 变化])))(;B[re](;W[rf](;B[oa](;W[pb](;B[sa]C[✓ 正确])))))))(;B[oa](;W[qd](;B[sa]C[✓ 正确 | 正解，打劫])))(;B[sa](;W[oa]C[✗ 失败]))(;B[na](;W[ob](;B[pb](;W[oa]C[✗ 失败]))(;B[oa](;W[pb](;B[sa](;W[qd]C[✗ 失败]))))(;B[sa](;W[qd](;B[sc](;W[nb]C[✗ 失败])))))))(;W[pb](;B[sa]C[⚡ 变化])))(;B[ob](;W[qa]C[✗ 失败])))

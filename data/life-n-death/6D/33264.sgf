@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-33264]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/6D/33264/]
+GC[死活题 | 6D | 正确率: 24.2% (255/1054) | 前田陈尔九段创作]
+C[黑先 死活题]
+AB[nd][qc][rc][qf][jc][nc][qe][mc][kd][jd][rf][ne][rd][me][ld]
+AW[qd][of][le][lf][id][ic][jb][lc][nf][ie][re][pc][pd][kc][mf][ib][pe][jf]
+PL[B]
+(;B[pb](;W[ob](;B[oa](;W[qb](;B[ma](;W[lb](;B[pa](;W[nb](;B[mb]C[✓ 正确]))(;W[oc](;B[na]C[⚡ 变化]))))(;W[pa](;B[kb](;W[lb](;B[ka]C[✓ 正确 | 正解]))))))(;W[na](;B[mb](;W[kb](;B[oc](;W[pa](;B[qb](;W[ma](;B[la](;W[lb](;B[nb](;W[ka](;B[qa]C[⚡ 变化])))))))))))))))(;B[ma](;W[lb](;B[pb](;W[ob](;B[oa](;W[nb](;B[mb]C[⚡ 变化 | 变化图1]))))))(;W[ob](;B[kb](;W[lb](;B[ka]C[⚡ 变化 | 变化图2]))))(;W[na](;B[pb](;W[ob](;B[nb](;W[pa](;B[oa]C[✗ 失败 | 变化图3])))))(;B[ob](;W[pb](;B[pa](;W[qb](;B[lb](;W[kb](;B[nb](;W[ka]C[✗ 失败]))))))))))(;B[kb](;W[lb](;B[ka](;W[ja](;B[ma](;W[na](;B[oa](;W[pb]C[✗ 失败]))(;B[pb](;W[ob](;B[nb](;W[pa]C[✗ 失败])))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-45668]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/7K/45668/]
+GC[手筋题 | 7K | 正确率: 50.5% (10774/21336)]
+C[黑先 手筋题]
+AB[rc][pc][pd][ne][re][oe]
+AW[od][ke][nc][mg][pf][kc][pe][og][qg]
+PL[B]
+(;B[mc](;W[mb](;B[nb](;W[md](;B[nd](;W[lc](;B[oc]C[⚡ 变化]))))))(;W[oc](;B[mb]C[⚡ 变化]))(;W[md](;B[nd]C[⚡ 变化])))(;B[nb](;W[mc]C[✗ 失败]))(;B[nd](;W[oc](;B[mc](;W[mb]C[✗ 失败]))))(;B[oc](;W[nd]C[✗ 失败])))

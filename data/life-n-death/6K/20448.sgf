@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-20448]
+AN[Xian guang]
+SO[https://www.101weiqi.com/6K/20448/]
+GC[手筋题 | 6K+ | 正确率: 50.8% (10889/21433)]
+C[黑先 手筋题]
+AB[pc][qe][pd][mc]
+AW[qd][qc][qf][pf][qi]
+PL[B]
+(;B[re](;W[pe](;B[qb]C[✓ 正确])(;B[rc](;W[qb](;B[rd](;W[rb](;B[pb](;W[sb](;B[qa](;W[rf](;B[ra](;W[se](;B[pa](;W[sd]C[✗ 失败]))))))))))))))(;B[pe](;W[re](;B[rf](;W[rd](;B[rg](;W[qh]C[✗ 失败])))))))

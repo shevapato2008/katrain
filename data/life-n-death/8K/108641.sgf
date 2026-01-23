@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-102329]
+AN[cxg893]
+SO[https://www.101weiqi.com/8K/108641/]
+GC[手筋题 | 8K | 正确率: 43.9% (10886/24792) | 黑先，叫吃白▲后，再进攻旁边白子]
+C[黑先 手筋题]
+AB[qd][qf][sc][lc][pe][pc][rf][ne][pd][rd][me][oe][ld]
+AW[md][le][nd][lf][of][pb][qc][rc][sd][nf][sg][oc][rg][pf][re][mf][qg][se]
+PL[B]
+(;B[qb](;W[rb](;B[ob](;W[qa](;B[mc]C[✓ 正确])(;B[nc]C[✓ 正确])(;B[nb](;W[sf](;B[nc](;W[qe]C[✗ 失败]))))))))(;B[ob](;W[od]C[✗ 失败])))

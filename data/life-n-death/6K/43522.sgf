@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-43522]
+AN[as12as120]
+SO[https://www.101weiqi.com/6K/43522/]
+GC[手筋题 | 6K+ | 正确率: 40.0% (7679/19181)]
+C[黑先 手筋题]
+AB[oi][qd][of][rc][qe][pi][qi][og]
+AW[qc][qb][rb][pg][pd][oc][pe][qg]
+PL[B]
+(;B[rg](;W[rf](;B[qf](;W[pf](;B[re](;W[rh](;B[sf]C[✓ 正确])))(;B[rh](;W[rd]C[✗ 失败])))))(;W[rh](;B[pf](;W[qf](;B[rf]C[⚡ 变化]))))(;W[qf](;B[rf](;W[re](;B[rd](;W[se](;B[sf](;W[rh](;B[sd]C[⚡ 变化])))))))))(;B[qf](;W[pf](;B[rg](;W[rh]C[✗ 失败])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2067]
+AN[admin]
+SO[https://www.101weiqi.com/6D/2067/]
+GC[死活题 | 6D | 正确率: 8.5% (113/1324)]
+C[黑先 死活题]
+AB[qd][qc][md][nd][qb][lc][nf][pg][pd][pf][rd][me][mf][pe][og]
+AW[ph][pb][jc][ne][re][oe][ld][lf][qe][nc][mg][lg][pc][oh][jb][od][mc][kd][qh][qg]
+PL[B]
+(;B[lb](;W[mb](;B[qa](;W[sd](;B[sc](;W[rb](;B[ma](;W[na](;B[la](;W[ob](;B[pa](;W[oa](;B[of](;W[kc](;B[oc]C[✓ 正确])))))(;B[of](;W[oc](;B[pa]C[✓ 正确]))(;W[kb](;B[oc](;W[od](;B[oe]C[✓ 正确])))))))))(;B[se](;W[rf](;B[ma](;W[na](;B[la](;W[ob](;B[of]C[✓ 正确])(;B[pa]C[✓ 正确])))))))))))(;B[ma](;W[na](;B[la](;W[ob](;B[qa]C[✓ 正确])(;B[of](;W[oc](;B[pa]C[✓ 正确])(;B[qa]C[✓ 正确])))(;B[sb](;W[ra](;B[qa]C[✓ 正确])))))(;B[qa](;W[sd](;B[sc](;W[rb](;B[la](;W[ob](;B[pa]C[✓ 正确])(;B[of]C[✓ 正确])))))))(;B[sb](;W[ra](;B[qa](;W[sd](;B[la]C[✓ 正确])(;B[sc](;W[rb](;B[la]C[✓ 正确])(;B[se](;W[rf](;B[la]C[✓ 正确])))))))))))(;B[sb](;W[ra](;B[qa](;W[sd](;B[ma](;W[na](;B[la]C[✓ 正确])(;B[sc](;W[rb](;B[la]C[✓ 正确])))))(;B[sc](;W[rb](;B[ma](;W[na](;B[la]C[✓ 正确])))))))))(;B[ob](;W[oc](;B[pa](;W[la](;B[of](;W[kb]C[✗ 失败]))))))))(;B[qa](;W[sd](;B[sc](;W[rb](;B[lb](;W[mb](;B[ma](;W[na](;B[la](;W[ob](;B[pa](;W[oa](;B[of]C[✓ 正确])(;B[se]C[✓ 正确])))(;B[of](;W[pa](;B[oc]C[✓ 正确])))(;B[se](;W[rf](;B[pa]C[✓ 正确])(;B[of]C[✓ 正确])))))))(;B[se](;W[rf](;B[ma](;W[na](;B[la](;W[ob](;B[of]C[✓ 正确])(;B[pa]C[✓ 正确])))))))))(;B[se](;W[rf](;B[lb](;W[mb](;B[ma](;W[na](;B[la](;W[ob](;B[of]C[✓ 正确])(;B[pa]C[✓ 正确])))))))))))(;B[lb](;W[mb](;B[sc](;W[rb](;B[ma](;W[na](;B[la](;W[ob](;B[of]C[✓ 正确])))))))))))(;B[sb](;W[ra](;B[qa](;W[sd](;B[lb](;W[mb](;B[ma](;W[na](;B[la](;W[ob](;B[pa]C[✓ 正确])(;B[of]C[✓ 正确])))(;B[sc](;W[rb](;B[la]C[✓ 正确])))))(;B[sc](;W[rb](;B[ma](;W[na](;B[la]C[✓ 正确])))))))(;B[sc](;W[rb](;B[lb](;W[mb](;B[ma](;W[na](;B[la]C[✓ 正确])(;B[se](;W[rf](;B[la]C[✓ 正确])))))(;B[se](;W[rf](;B[ma](;W[na](;B[la]C[✓ 正确])))))))(;B[se](;W[rf](;B[lb](;W[mb](;B[ma](;W[na](;B[la]C[✓ 正确]))))))))))))))

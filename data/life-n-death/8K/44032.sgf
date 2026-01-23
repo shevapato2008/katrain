@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-44032]
+AN[cxg893]
+SO[https://www.101weiqi.com/8K/44032/]
+GC[对杀题 | 8K+ | 正确率: 49.6% (12126/24455) | 黑下在哪里才能在对杀中取胜]
+C[黑先 对杀题]
+AB[qc][od][pb][rc][nb][nc][qe][oe]
+AW[nd][md][lb][qb][ob][lc][pc][oc]
+PL[B]
+(;B[oa](;W[pa](;B[na](;W[ma](;B[pd](;W[pb](;B[rb]C[⚡ 变化]))))(;W[rb](;B[pd](;W[pb](;B[sb](;W[ra](;B[sc](;W[ma](;B[sa]C[⚡ 变化])))))))))))(;B[pd](;W[pa](;B[na](;W[oa]C[✗ 失败])))))

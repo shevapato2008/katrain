@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16840]
+AN[admin]
+SO[https://www.101weiqi.com/5D/16840/]
+GC[死活题 | 5D | 正确率: 39.0% (798/2045)]
+C[黑先 死活题]
+AB[md][pb][qb][nb][qe][mb][pe][ne][re][oe][se]
+AW[qd][od][ob][rb][pc][rd][oc]
+PL[B]
+(;B[ra](;W[pa](;B[rc](;W[sb](;B[qa](;W[oa](;B[sd](;W[qc](;B[sc](;W[sa](;B[qb]C[✓ 正确])))))))))(;B[qa](;W[oa](;B[rc](;W[sb](;B[sd](;W[qc](;B[sc](;W[sa](;B[qb]C[✓ 正确])))))))))))(;B[sd]C[失败1](;W[qc](;B[sb](;W[sc](;B[rc]C[✗ 失败])))))(;B[oa]C[失败2](;W[pa](;B[qa](;W[ra](;B[na](;W[qc]C[✗ 失败]))))(;B[ra](;W[na](;B[rc](;W[sb](;B[qa](;W[qc](;B[oa]C[✗ 失败]))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-17122]
+AN[admin]
+SO[https://www.101weiqi.com/6D/17122/]
+GC[死活题 | 6D | 正确率: 17.6% (219/1244)]
+C[黑先 死活题]
+AB[qc][nb][nc][rg][pc][re][qg]
+AW[md][lb][pb][ob][mb][mc][pg][qh][rf][ne][pf][rh][pe][sf]
+PL[B]
+(;B[rd](;W[qb](;B[rb](;W[ra](;B[sc](;W[se](;B[oc](;W[na](;B[oa](;W[pa](;B[sa](;W[sb]C[✓ 正确]))))))))(;B[oc](;W[sc](;B[sb](;W[na]C[✗ 失败]))))))))(;B[qb](;W[rd](;B[sd](;W[oc](;B[qe](;W[se](;B[qd](;W[sc](;B[sb](;W[rb](;B[rc](;W[sa](;B[qa]C[⚡ 变化]))))))))))(;W[na](;B[qe](;W[ra]C[✗ 失败]))))(;B[pa](;W[sb](;B[rb](;W[oa](;B[na](;W[qa]C[✗ 失败 | 失败2])))))))))

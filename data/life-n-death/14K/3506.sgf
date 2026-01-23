@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-3506]
+AN[admin]
+SO[https://www.101weiqi.com/14K/3506/]
+GC[吃子题 | 14K+ | 正确率: 90.1% (21936/24338)]
+C[黑先 吃子题]
+AB[nd][rc][nb][nc][pe][qe][rd][oe]
+AW[qd][od][md][pb][mb][mc][ma][re][rf][pd][ne][me]
+PL[B]
+(;B[pc](;W[qc](;B[qb](;W[oc](;B[ob]C[✓ 正确])))(;B[oc](;W[qb]C[✗ 失败])))(;W[oc](;B[ob](;W[qc](;B[qb]C[✓ 正确])))(;B[qc](;W[ob]C[✗ 失败])))))

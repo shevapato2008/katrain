@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-31745]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/5D/31745/]
+GC[死活题 | 5D | 正确率: 40.1% (813/2026) | 加田克司九段创作]
+C[黑先 死活题]
+AB[sd][of][nd][pb][nb][qe][mc][rf][ne][pf][rd]
+AW[qd][od][rc][ob][pc][oc][pe]
+PL[B]
+(;B[qb](;W[rb](;B[ra](;W[pa](;B[qa](;W[oa](;B[sb](;W[qc](;B[sc](;W[sa](;B[oe]C[✓ 正确])(;B[ra](;W[oe]C[✗ 失败]))))))))(;B[sb](;W[qc](;B[sc](;W[oe]C[✗ 失败])))))(;W[qa](;B[oa](;W[sa](;B[pa]C[⚡ 变化])))))(;B[oa](;W[pa](;B[qa](;W[ra](;B[pa](;W[oe]C[✗ 失败]))))))(;B[oe](;W[qc]C[✗ 失败]))(;B[qc](;W[pa]C[✗ 失败])))(;W[qc](;B[rb](;W[sb](;B[ra](;W[sc](;B[oa](;W[pa](;B[qa](;W[sa](;B[oe]C[⚡ 变化])))))))))))(;B[rb](;W[qb](;B[sc](;W[oe](;B[qc]C[✗ 失败]))))))

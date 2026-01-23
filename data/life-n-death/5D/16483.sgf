@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16483]
+AN[admin]
+SO[https://www.101weiqi.com/5D/16483/]
+GC[死活题 | 5D | 正确率: 28.0% (638/2277) | 权五敏四段创作]
+C[黑先 死活题]
+AB[qd][ka][rc][kc][ra][rb][kd][pd][ne][me][oe][ld][kb]
+AW[nd][qc][od][lb][qb][ob][nb][lc]
+PL[B]
+(;B[md](;W[pc](;B[pa](;W[mc](;B[ma](;W[la](;B[oc]C[✓ 正确]))))))(;W[la](;B[qa](;W[pa](;B[oc](;W[mc](;B[pb]C[⚡ 变化]))))(;W[mc](;B[oc](;W[ma](;B[oa]C[⚡ 变化]))))))(;W[mc](;B[ma](;W[la](;B[oc](;W[nc](;B[pc]C[⚡ 变化]))))(;W[pc](;B[pa](;W[qa](;B[nc](;W[oc](;B[mb](;W[na](;B[la]C[⚡ 变化])))))))))))(;B[pc](;W[ma]C[✗ 失败]))(;B[qa](;W[pc](;B[pa](;W[mc]C[✗ 失败]))(;B[oc](;W[pb](;B[mc](;W[mb]C[✗ 失败]))))))(;B[mc](;W[md](;B[mb](;W[nc](;B[oa](;W[pc](;B[qa](;W[ma](;B[pb](;W[pa]C[✗ 失败]))))))))))(;B[pa](;W[mc](;B[oc](;W[pc](;B[pb](;W[oa]C[✗ 失败]))))))(;B[la](;W[pc]C[✗ 失败])))

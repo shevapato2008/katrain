@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-193496]
+AN[方块A]
+SO[https://www.101weiqi.com/5D/222947/]
+GC[死活题 | 5D | 正确率: 34.4% (826/2400) | Texにしゃん-20100510]
+C[黑先 死活题]
+AB[of][nd][od][qd][sd][qf][rc][qe][pf][oc]
+AW[rg][pd][ri][me][rb][mf][md][qc][ng][nc][mg][pc][pe][lb][nb][mc][pg][og][qg]
+PL[B]
+(;B[ob](;W[oa](;B[pa](;W[oe](;B[qb](;W[ne](;B[ra](;W[sb](;B[sc](;W[pb](;B[sa](;W[rb](;B[sb](;W[qa]C[✓ 正确]))))))(;B[na](;W[sf](;B[pb](;W[rd](;B[re](;W[se]C[✗ 失败]))))(;B[se](;W[re]C[✗ 失败]))))))(;B[sb](;W[ra]C[✗ 失败]))))(;B[ne](;W[nf](;B[na](;W[qb]C[✗ 失败])))))))))

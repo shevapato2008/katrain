@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25766]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/6K/25766/]
+GC[手筋题 | 6K | 正确率: 55.8% (10527/18869) | 角上黑二子有盘渡的手段吗？]
+C[黑先 手筋题]
+AB[rc][la][lc][mb][rb][kb]
+AW[qc][qe][nc][mc][ma][pc][rd]
+PL[B]
+(;B[oa]C[正解](;W[pa](;B[pb](;W[ob](;B[qa](;W[qb](;B[pa]C[⚡ 变化])))))))(;B[ob](;W[pb](;B[pa](;W[qa]C[✗ 失败])))(;W[pa]C[✗ 失败]))(;B[qa](;W[nb](;B[na](;W[oa](;B[ob](;W[ma]C[✗ 失败]))))))(;B[pb](;W[qb](;B[qa](;W[ob](;B[oa](;W[pa]C[✗ 失败]))))))(;B[qb](;W[pb](;B[pa](;W[oa]C[✗ 失败]))))(;B[na](;W[ob]C[✗ 失败]))(;B[nb](;W[ob]C[✗ 失败]))(;B[pa](;W[oa](;B[ob](;W[qa]C[✗ 失败])))))

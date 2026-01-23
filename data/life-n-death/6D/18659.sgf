@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18659]
+AN[admin]
+SO[https://www.101weiqi.com/6D/18659/]
+GC[官子题 | 6D | 正确率: 12.7% (137/1077)]
+C[白先 官子题]
+AB[qd][pb][qb][pc][pf][rd][pe][qg]
+AW[od][qi][ob][qe][rb][pd][oc]
+PL[W]
+(;W[re]C[白1是针对黑形气紧的手筋 正解](;B[sd]C[最佳应手](;W[se](;B[qc](;W[pa]C[原本评注：“黑2、4是，白5好”。](;B[rf](;W[qa](;B[sf]C[✓ 正确])))(;B[qa]C[参考1](;W[ra](;B[sb](;W[oa]C[黑棋A位不入子，对杀白胜。](;B[sc]C[黑10接最强，想腾出手来在右边收气。](;W[rc](;B[sa](;W[rb]C[⚡ 变化 | 白棋快一气杀黑]))))))(;B[oa](;W[rc](;B[sc](;W[na]C[⚡ 变化]))))))(;B[ra]C[参考2](;W[sc]C[⚡ 变化 | 整块黑棋陷入劫争]))))(;B[rc]C[参考](;W[ra](;B[qa](;W[sb](;B[qf](;W[oa](;B[rf](;W[pa]C[⚡ 变化 | 还原成第127题，黑棋接不归。])))))))(;W[sa]C[⚡ 变化 | 打劫]))))(;B[rc]C[损](;W[sb](;B[sd]C[阻渡](;W[ra](;B[qa](;W[se](;B[rf](;W[oa](;B[sf](;W[pa]C[⚡ 变化 | 接不归]))))))))(;B[sc]C[参考](;W[se](;B[ra](;W[rh]C[⚡ 变化 | 白棋残子复活，成功自不待言。])))))(;W[se](;B[sb](;W[rh]C[⚡ 变化]))(;B[sd](;W[sa]C[⚡ 变化])(;W[ra](;B[qa](;W[sb](;B[rf](;W[oa]C[⚡ 变化]))))))))))

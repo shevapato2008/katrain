@@ -1633,3 +1633,54 @@ msgstr "Оберіть розділ"
 
 msgid "tsumego:problemRange"
 msgstr "Задачі {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Увійти до Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "Створити акаунт"
+
+msgid "auth:username"
+msgstr "Ім'я користувача"
+
+msgid "auth:password"
+msgstr "Пароль"
+
+msgid "auth:confirm_password"
+msgstr "Підтвердіть пароль"
+
+msgid "auth:login_btn"
+msgstr "Увійти"
+
+msgid "auth:register_btn"
+msgstr "Зареєструватися"
+
+msgid "auth:cancel_btn"
+msgstr "Скасувати"
+
+msgid "auth:logging_in"
+msgstr "Вхід..."
+
+msgid "auth:registering"
+msgstr "Реєстрація..."
+
+msgid "auth:switch_to_register"
+msgstr "Немає акаунту? Зареєструватися"
+
+msgid "auth:switch_to_login"
+msgstr "Вже є акаунт? Увійти"
+
+msgid "auth:err_fill_all"
+msgstr "Будь ласка, заповніть усі поля"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Паролі не збігаються"
+
+msgid "auth:success_register"
+msgstr "Реєстрація успішна! Вхід..."
+
+msgid "auth:err_failed"
+msgstr "Операція не вдалася"
+
+msgid "auth:login_title_katrain"
+msgstr "Увійти до KaTrain"

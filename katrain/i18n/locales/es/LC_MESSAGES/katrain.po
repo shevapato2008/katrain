@@ -1465,3 +1465,54 @@ msgstr "Unidad"
 
 msgid "tsumego:problemRange"
 msgstr "Problemas {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Iniciar sesión en Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "Crear cuenta"
+
+msgid "auth:username"
+msgstr "Nombre de usuario"
+
+msgid "auth:password"
+msgstr "Contraseña"
+
+msgid "auth:confirm_password"
+msgstr "Confirmar contraseña"
+
+msgid "auth:login_btn"
+msgstr "Iniciar sesión"
+
+msgid "auth:register_btn"
+msgstr "Registrarse"
+
+msgid "auth:cancel_btn"
+msgstr "Cancelar"
+
+msgid "auth:logging_in"
+msgstr "Iniciando sesión..."
+
+msgid "auth:registering"
+msgstr "Registrando..."
+
+msgid "auth:switch_to_register"
+msgstr "¿No tienes una cuenta? Regístrate"
+
+msgid "auth:switch_to_login"
+msgstr "¿Ya tienes una cuenta? Inicia sesión"
+
+msgid "auth:err_fill_all"
+msgstr "Por favor, completa todos los campos"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Las contraseñas no coinciden"
+
+msgid "auth:success_register"
+msgstr "¡Registro exitoso! Iniciando sesión..."
+
+msgid "auth:err_failed"
+msgstr "Operación fallida"
+
+msgid "auth:login_title_katrain"
+msgstr "Iniciar sesión en KaTrain"

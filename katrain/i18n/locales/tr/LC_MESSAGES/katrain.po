@@ -1653,3 +1653,54 @@ msgstr "Ünite seçin"
 
 msgid "tsumego:problemRange"
 msgstr "Problem {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Galaxy Go'ya Giriş Yap"
+
+msgid "auth:register_title"
+msgstr "Hesap Oluştur"
+
+msgid "auth:username"
+msgstr "Kullanıcı Adı"
+
+msgid "auth:password"
+msgstr "Şifre"
+
+msgid "auth:confirm_password"
+msgstr "Şifreyi Onayla"
+
+msgid "auth:login_btn"
+msgstr "Giriş Yap"
+
+msgid "auth:register_btn"
+msgstr "Kayıt Ol"
+
+msgid "auth:cancel_btn"
+msgstr "İptal"
+
+msgid "auth:logging_in"
+msgstr "Giriş yapılıyor..."
+
+msgid "auth:registering"
+msgstr "Kayıt olunuyor..."
+
+msgid "auth:switch_to_register"
+msgstr "Hesabınız yok mu? Kayıt Ol"
+
+msgid "auth:switch_to_login"
+msgstr "Zaten bir hesabınız mı var? Giriş Yap"
+
+msgid "auth:err_fill_all"
+msgstr "Lütfen tüm alanları doldurun"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Şifreler eşleşmiyor"
+
+msgid "auth:success_register"
+msgstr "Kayıt başarılı! Giriş yapılıyor..."
+
+msgid "auth:err_failed"
+msgstr "İşlem başarısız oldu"
+
+msgid "auth:login_title_katrain"
+msgstr "KaTrain'e Giriş Yap"

@@ -1583,3 +1583,54 @@ msgstr "ユニットを選択"
 
 msgid "tsumego:problemRange"
 msgstr "問題 {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Galaxy Goにログイン"
+
+msgid "auth:register_title"
+msgstr "アカウント作成"
+
+msgid "auth:username"
+msgstr "ユーザー名"
+
+msgid "auth:password"
+msgstr "パスワード"
+
+msgid "auth:confirm_password"
+msgstr "パスワード再入力"
+
+msgid "auth:login_btn"
+msgstr "ログイン"
+
+msgid "auth:register_btn"
+msgstr "登録"
+
+msgid "auth:cancel_btn"
+msgstr "キャンセル"
+
+msgid "auth:logging_in"
+msgstr "ログイン中..."
+
+msgid "auth:registering"
+msgstr "登録中..."
+
+msgid "auth:switch_to_register"
+msgstr "アカウントをお持ちでないですか？登録"
+
+msgid "auth:switch_to_login"
+msgstr "すでにアカウントをお持ちですか？ログイン"
+
+msgid "auth:err_fill_all"
+msgstr "すべての項目を入力してください"
+
+msgid "auth:err_pass_mismatch"
+msgstr "パスワードが一致しません"
+
+msgid "auth:success_register"
+msgstr "登録に成功しました！ログインしています..."
+
+msgid "auth:err_failed"
+msgstr "操作に失敗しました"
+
+msgid "auth:login_title_katrain"
+msgstr "KaTrainにログイン"

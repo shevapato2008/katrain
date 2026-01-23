@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Alert, Box, Link } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import { API } from '../../../api';
+import { i18n } from '../../../i18n';
 
 interface LoginModalProps {
     open: boolean;
@@ -9,6 +11,7 @@ interface LoginModalProps {
 }
 
 const LoginModal = ({ open, onClose }: LoginModalProps) => {
+    useSettings(); // Subscribe to translation changes
     const { login } = useAuth();
     const [isRegister, setIsRegister] = useState(false);
     const [username, setUsername] = useState('');
@@ -22,12 +25,12 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
         setError('');
         setSuccessMsg('');
         if (!username || !password) {
-            setError('Please fill in all fields');
+            setError(i18n.t('auth:err_fill_all', 'Please fill in all fields'));
             return;
         }
 
         if (isRegister && password !== confirmPassword) {
-            setError('Passwords do not match');
+            setError(i18n.t('auth:err_pass_mismatch', 'Passwords do not match'));
             return;
         }
 
@@ -36,7 +39,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
             if (isRegister) {
                 // Register then login
                 await API.register(username, password);
-                setSuccessMsg('Registration successful! Logging in...');
+                setSuccessMsg(i18n.t('auth:success_register', 'Registration successful! Logging in...'));
                 await login(username, password);
             } else {
                 await login(username, password);
@@ -51,7 +54,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 setSuccessMsg('');
             }, 500);
         } catch (err: any) {
-            const msg = err.message || 'Operation failed';
+            const msg = err.message || i18n.t('auth:err_failed', 'Operation failed');
             setError(msg);
         } finally {
             setLoading(false);
@@ -69,7 +72,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     return (
         <Dialog open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: 3, p: 1, minWidth: 350 } }}>
             <DialogTitle>
-                {isRegister ? 'Create Account' : 'Login to Galaxy Go'}
+                {isRegister ? i18n.t('auth:register_title', 'Create Account') : i18n.t('auth:login_title', 'Login to Galaxy Go')}
             </DialogTitle>
             <DialogContent>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -78,7 +81,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 <TextField
                     autoFocus
                     margin="dense"
-                    label="Username"
+                    label={i18n.t('auth:username', 'Username')}
                     fullWidth
                     variant="outlined"
                     value={username}
@@ -87,7 +90,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 />
                 <TextField
                     margin="dense"
-                    label="Password"
+                    label={i18n.t('auth:password', 'Password')}
                     type="password"
                     fullWidth
                     variant="outlined"
@@ -100,7 +103,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 {isRegister && (
                     <TextField
                         margin="dense"
-                        label="Confirm Password"
+                        label={i18n.t('auth:confirm_password', 'Confirm Password')}
                         type="password"
                         fullWidth
                         variant="outlined"
@@ -113,14 +116,14 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
                 <Box sx={{ mt: 2, textAlign: 'center' }}>
                     <Link component="button" variant="body2" onClick={toggleMode} disabled={loading} sx={{ textDecoration: 'none' }}>
-                        {isRegister ? "Already have an account? Login" : "Don't have an account? Register"}
+                        {isRegister ? i18n.t('auth:switch_to_login', 'Already have an account? Login') : i18n.t('auth:switch_to_register', "Don't have an account? Register")}
                     </Link>
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={onClose} disabled={loading}>Cancel</Button>
+                <Button onClick={onClose} disabled={loading}>{i18n.t('auth:cancel_btn', 'Cancel')}</Button>
                 <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-                    {isRegister ? 'Register' : 'Login'}
+                    {isRegister ? i18n.t('auth:register_btn', 'Register') : i18n.t('auth:login_btn', 'Login')}
                 </Button>
             </DialogActions>
         </Dialog>

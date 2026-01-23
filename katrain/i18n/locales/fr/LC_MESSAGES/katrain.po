@@ -1591,3 +1591,54 @@ msgstr "Sélectionner l'unité"
 
 msgid "tsumego:problemRange"
 msgstr "Problèmes {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Connexion à Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "Créer un compte"
+
+msgid "auth:username"
+msgstr "Nom d'utilisateur"
+
+msgid "auth:password"
+msgstr "Mot de passe"
+
+msgid "auth:confirm_password"
+msgstr "Confirmer le mot de passe"
+
+msgid "auth:login_btn"
+msgstr "Connexion"
+
+msgid "auth:register_btn"
+msgstr "S'inscrire"
+
+msgid "auth:cancel_btn"
+msgstr "Annuler"
+
+msgid "auth:logging_in"
+msgstr "Connexion en cours..."
+
+msgid "auth:registering"
+msgstr "Inscription en cours..."
+
+msgid "auth:switch_to_register"
+msgstr "Pas de compte ? S'inscrire"
+
+msgid "auth:switch_to_login"
+msgstr "Déjà un compte ? Connexion"
+
+msgid "auth:err_fill_all"
+msgstr "Veuillez remplir tous les champs"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Les mots de passe ne correspondent pas"
+
+msgid "auth:success_register"
+msgstr "Inscription réussie ! Connexion..."
+
+msgid "auth:err_failed"
+msgstr "L'opération a échoué"
+
+msgid "auth:login_title_katrain"
+msgstr "Connexion à KaTrain"

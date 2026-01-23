@@ -1565,3 +1565,54 @@ msgstr "選擇單元"
 
 msgid "tsumego:problemRange"
 msgstr "第 {start}-{end} 題"
+
+msgid "auth:login_title"
+msgstr "登入 Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "建立帳號"
+
+msgid "auth:username"
+msgstr "用戶名"
+
+msgid "auth:password"
+msgstr "密碼"
+
+msgid "auth:confirm_password"
+msgstr "確認密碼"
+
+msgid "auth:login_btn"
+msgstr "登入"
+
+msgid "auth:register_btn"
+msgstr "註冊"
+
+msgid "auth:cancel_btn"
+msgstr "取消"
+
+msgid "auth:logging_in"
+msgstr "正在登入..."
+
+msgid "auth:registering"
+msgstr "正在註冊..."
+
+msgid "auth:switch_to_register"
+msgstr "沒有帳號？註冊"
+
+msgid "auth:switch_to_login"
+msgstr "已有帳號？登入"
+
+msgid "auth:err_fill_all"
+msgstr "請填寫所有欄位"
+
+msgid "auth:err_pass_mismatch"
+msgstr "密碼不匹配"
+
+msgid "auth:success_register"
+msgstr "註冊成功！正在登入..."
+
+msgid "auth:err_failed"
+msgstr "操作失敗"
+
+msgid "auth:login_title_katrain"
+msgstr "登入 KaTrain"

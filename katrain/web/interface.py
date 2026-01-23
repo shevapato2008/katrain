@@ -614,7 +614,10 @@ class WebKaTrain(KaTrainBase):
                 settings = self.config(f"ai/{mode}")
                 if settings is not None:
                     from katrain.core.ai import generate_ai_move
-                    generate_ai_move(self.game, mode, settings)
+                    result = generate_ai_move(self.game, mode, settings)
+                    if result is None:
+                        # AI resigned, state will be updated by the caller
+                        return
                     self.play_stone_sound()
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)

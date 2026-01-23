@@ -106,6 +106,12 @@
         "lock_ai": false
     },
     "ai": {
+        "resignation": {
+            "enabled": true,
+            "winrate_threshold": 0.15,
+            "consecutive_turns": 3,
+            "min_move_number": 80
+        },
         "ai:default": {},
         "ai:antimirror": {},
         "ai:handicap": {

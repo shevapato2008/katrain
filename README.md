@@ -28,6 +28,7 @@ KaTrain is a tool for analyzing games and playing go with AI feedback from KataG
   - [ Play against AI](#-play-against-ai)
     - [Instant feedback](#instant-feedback)
     - [AIs](#ais)
+    - [AI Auto-Resignation](#ai-auto-resignation)
   - [ Analysis](#-analysis)
   - [ Keyboard and mouse shortcuts](#-keyboard-and-mouse-shortcuts)
   - [ Contributing to distributed training](#-contributing-to-distributed-training)
@@ -330,6 +331,51 @@ This estimate should be reasonably accurate as long as you have not changed the 
     
 The Engine based AIs (KataGo, ScoreLoss, KataJigo) are affected by both the model and choice of visits and maximum time,
  while the policy net based AIs are affected by the choice of model file, but work identically with 1 visit.
+
+### AI Auto-Resignation
+
+When playing against AI, the AI will automatically resign if it determines the game is lost. This prevents unnecessarily prolonged games where the AI has no realistic chance of winning.
+
+**Resignation Conditions:**
+
+The AI will resign when ALL of the following conditions are met:
+1. **Minimum moves reached** - A minimum number of moves must be played (scaled by board size)
+2. **Low winrate** - AI's estimated winrate drops below the threshold (default: 15%)
+3. **Consecutive turns** - The low winrate persists for multiple consecutive AI turns (default: 3)
+
+**Board Size Scaling:**
+
+The minimum move requirement is automatically scaled based on board size to ensure appropriate game progression before resignation is considered:
+
+| Board Size | Intersections | Minimum Moves |
+|------------|---------------|---------------|
+| 19×19      | 361           | 80            |
+| 13×13      | 169           | 37            |
+| 9×9        | 81            | 18            |
+
+*Formula: `min_moves = 80 × (board_intersections / 361)`, with a floor of 15 moves*
+
+**Configuration:**
+
+You can customize the resignation behavior in your config file (`~/.katrain/config.json`):
+
+```json
+"ai": {
+    "resignation": {
+        "enabled": true,
+        "winrate_threshold": 0.15,
+        "consecutive_turns": 3,
+        "min_move_number": 80
+    }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `enabled` | `true` | Enable/disable AI auto-resignation |
+| `winrate_threshold` | `0.15` | Resign when winrate drops below this (15%) |
+| `consecutive_turns` | `3` | Require low winrate for this many consecutive AI turns |
+| `min_move_number` | `80` | Base minimum moves for 19×19 (auto-scaled for smaller boards) |
 
 Further technical details and discussion on some of these AIs can be found on [this](http://lifein19x19.com/viewtopic.php?f=10&t=17488&sid=b11e42c005bb6f4f48c83771e6a27eff) thread at the life in 19x19 forums.
 

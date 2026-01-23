@@ -12,7 +12,10 @@ from katrain.core.constants import (
     AI_SIMPLE_OWNERSHIP, AI_STRENGTH,
     AI_TENUKI, AI_TENUKI_ELO_GRID, AI_TERRITORY, AI_TERRITORY_ELO_GRID,
     AI_WEIGHTED, AI_WEIGHTED_ELO, CALIBRATED_RANK_ELO, OUTPUT_DEBUG,
-    OUTPUT_ERROR, OUTPUT_INFO, PRIORITY_EXTRA_AI_QUERY, ADDITIONAL_MOVE_ORDER, AI_HUMAN, AI_PRO
+    OUTPUT_ERROR, OUTPUT_INFO, PRIORITY_EXTRA_AI_QUERY, ADDITIONAL_MOVE_ORDER, AI_HUMAN, AI_PRO,
+    AI_RESIGNATION_ENABLED_DEFAULT, AI_RESIGNATION_WINRATE_THRESHOLD,
+    AI_RESIGNATION_CONSECUTIVE_TURNS, AI_RESIGNATION_MIN_MOVE_NUMBER,
+    AI_RESIGNATION_MIN_ABSOLUTE_MOVES,
 )
 from katrain.core.game import Game, GameNode, Move
 from katrain.core.utils import var_to_grid, weighted_selection_without_replacement, evaluation_class
@@ -77,6 +80,82 @@ def ai_rank_estimation(strategy, settings) -> int:
         return 1 - kyu
     else:
         return AI_STRENGTH[strategy]
+
+
+def should_ai_resign(game: Game, resignation_settings: Dict) -> bool:
+    """
+    Check if AI should resign based on resignation settings.
+
+    Args:
+        game: The current game
+        resignation_settings: Dict with keys:
+            - enabled: bool (default True)
+            - winrate_threshold: float (default 0.15, i.e., 15%)
+            - consecutive_turns: int (default 3)
+            - min_move_number: int (default 80, total moves by both players for 19x19)
+
+    Returns:
+        True if AI should resign, False otherwise
+    """
+    if not resignation_settings.get("enabled", AI_RESIGNATION_ENABLED_DEFAULT):
+        return False
+
+    cn = game.current_node
+    ai_player = cn.next_player
+
+    # Check minimum move number (scaled by board size)
+    # The configured min_move_number is for 19x19 (361 intersections)
+    # Scale proportionally for smaller boards
+    board_x, board_y = game.board_size
+    board_intersections = board_x * board_y
+    standard_intersections = 361  # 19x19
+
+    configured_min_moves = resignation_settings.get("min_move_number", AI_RESIGNATION_MIN_MOVE_NUMBER)
+    min_moves = int(configured_min_moves * board_intersections / standard_intersections)
+    # Ensure at least some minimum moves to avoid premature resignation
+    min_moves = max(min_moves, AI_RESIGNATION_MIN_ABSOLUTE_MOVES)
+
+    if cn.depth < min_moves:
+        return False
+
+    # Check consecutive low winrate
+    threshold = resignation_settings.get("winrate_threshold", AI_RESIGNATION_WINRATE_THRESHOLD)
+    consecutive_required = resignation_settings.get("consecutive_turns", AI_RESIGNATION_CONSECUTIVE_TURNS)
+
+    node = cn
+    consecutive_count = 0
+
+    # Walk back through the AI's moves to check winrate
+    while node and consecutive_count < consecutive_required:
+        if not node.analysis_exists:
+            return False
+
+        # Winrate is from Black's perspective (probability Black wins)
+        # So for White AI, we need 1 - winrate
+        winrate = node.winrate
+        if winrate is None:
+            return False
+
+        ai_winrate = winrate if ai_player == "B" else (1.0 - winrate)
+
+        if ai_winrate > threshold:
+            return False
+
+        consecutive_count += 1
+
+        # Move to the previous position where it was AI's turn
+        # Skip opponent's move to get to AI's previous move
+        if node.parent:
+            node = node.parent
+            if node.parent:
+                node = node.parent
+            else:
+                break
+        else:
+            break
+
+    return consecutive_count >= consecutive_required
+
 
 def game_report(game, thresholds, depth_filter=None):
     cn = game.current_node
@@ -1447,23 +1526,37 @@ class HumanStyleStrategy(AIStrategy):
         self.game.katrain.log(f"[HumanStyleStrategy] Final decision: {move.gtp()}", OUTPUT_DEBUG)
         return move, ai_thoughts
 
-def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Tuple[Move, GameNode]:
-    """Generate a move using the selected AI strategy"""
-    game.katrain.log(f"Generate AI move called with mode: {ai_mode}", OUTPUT_DEBUG)
-    
-    # Create the appropriate strategy based on mode
+def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tuple[Move, GameNode]]:
+    """
+    Generate a move using the selected AI strategy.
 
+    Returns:
+        Tuple of (Move, GameNode) if a move was played, or None if AI resigned.
+    """
+    game.katrain.log(f"Generate AI move called with mode: {ai_mode}", OUTPUT_DEBUG)
+
+    # Check resignation conditions before generating a move
+    resignation_settings = game.katrain.config("ai/resignation") or {}
+    if should_ai_resign(game, resignation_settings):
+        ai_player = game.current_node.next_player
+        opponent = "W" if ai_player == "B" else "B"
+        # end_state format: "{winner}+R" (e.g., "W+R" means White wins by resignation)
+        game.current_node.end_state = f"{opponent}+R"
+        game.katrain.log(f"AI ({ai_player}) resigns due to low winrate", OUTPUT_INFO)
+        return None
+
+    # Create the appropriate strategy based on mode
     strategy = STRATEGY_REGISTRY[ai_mode](game, ai_settings)
-    
+
     # Generate the move
     game.katrain.log(f"Generating move using {strategy.__class__.__name__}", OUTPUT_DEBUG)
     move, ai_thoughts = strategy.generate_move()
-    
+
     # Play the move and return
     game.katrain.log(f"Playing move {move.gtp()} and creating game node", OUTPUT_DEBUG)
     played_node = game.play(move)
     game.katrain.log(f"AI thoughts: {ai_thoughts}", OUTPUT_DEBUG)
     played_node.ai_thoughts = ai_thoughts
-    
+
     game.katrain.log(f"Move generation complete: {move.gtp()}", OUTPUT_DEBUG)
     return move, played_node

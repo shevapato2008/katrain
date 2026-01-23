@@ -1485,10 +1485,735 @@ git commit -m "feat: add tsumego routes to GalaxyApp"
 
 ## Phase 3: Polish & Enhancements
 
-### Task 3.1: Offline Support with IndexedDB
-### Task 3.2: Accessibility - Keyboard Navigation
-### Task 3.3: Animations & Sound Effects
-### Task 3.4: Mobile Responsive Tweaks
+### Task 3.1: Sound Effects
+
+**Goal:** Add satisfying audio feedback for stone placement, captures, correct/incorrect moves, and problem solved.
+
+**Files:**
+- Create: `katrain/web/ui/src/hooks/useSound.ts`
+- Modify: `katrain/web/ui/src/galaxy/hooks/useTsumegoProblem.ts`
+- Modify: `katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx`
+
+**Step 1: Create useSound hook**
+
+```typescript
+// katrain/web/ui/src/hooks/useSound.ts
+import { useCallback, useRef, useEffect } from 'react';
+
+type SoundName = 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved';
+
+const SOUND_FILES: Record<SoundName, string> = {
+  stone: '/sounds/stone1.wav',
+  capture: '/sounds/capturing.wav',
+  correct: '/sounds/stone2.wav',
+  incorrect: '/sounds/boing.wav',
+  solved: '/sounds/countdown_5.wav', // Use as success jingle
+};
+
+// Preload all sounds
+const audioCache: Record<string, HTMLAudioElement> = {};
+
+export function useSound() {
+  const enabledRef = useRef(true);
+
+  // Preload sounds on mount
+  useEffect(() => {
+    Object.entries(SOUND_FILES).forEach(([name, src]) => {
+      if (!audioCache[name]) {
+        const audio = new Audio(src);
+        audio.preload = 'auto';
+        audioCache[name] = audio;
+      }
+    });
+  }, []);
+
+  const play = useCallback((name: SoundName) => {
+    if (!enabledRef.current) return;
+
+    const audio = audioCache[name];
+    if (audio) {
+      // Clone to allow overlapping sounds
+      const clone = audio.cloneNode() as HTMLAudioElement;
+      clone.volume = 0.5;
+      clone.play().catch(() => {}); // Ignore autoplay restrictions
+    }
+  }, []);
+
+  const setEnabled = useCallback((enabled: boolean) => {
+    enabledRef.current = enabled;
+  }, []);
+
+  return { play, setEnabled };
+}
+```
+
+**Step 2: Integrate sounds into useTsumegoProblem**
+
+In `useTsumegoProblem.ts`, add sound parameter to return:
+
+```typescript
+export interface MoveResult {
+  type: 'correct' | 'incorrect' | 'solved' | 'continue';
+  message?: string;
+  sound?: 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved';
+  captured?: number; // Number of captured stones
+}
+```
+
+Update `placeStone` to include sound info:
+
+```typescript
+// After capture logic
+const capturedCount = stonesBeforeCapture.length - stonesAfterCapture.length;
+
+return {
+  type: 'correct',
+  sound: capturedCount > 0 ? 'capture' : 'stone',
+  captured: capturedCount
+};
+
+// For incorrect:
+return { type: 'incorrect', message: '...', sound: 'incorrect' };
+
+// For solved:
+return { type: 'solved', message: '...', sound: 'solved' };
+```
+
+**Step 3: Play sounds in TsumegoProblemPage**
+
+```typescript
+import { useSound } from '../../hooks/useSound';
+
+const { play: playSound } = useSound();
+
+const handlePlaceStone = (x: number, y: number) => {
+  const result = placeStone(x, y);
+  if (result?.sound) {
+    playSound(result.sound);
+  }
+  // ... rest of feedback logic
+};
+```
+
+**Step 4: Verify sounds work**
+
+Run dev server, solve a problem:
+- Stone placement → stone sound
+- Capture → capture sound
+- Wrong move → boing sound
+- Solved → success jingle
+
+**Step 5: Commit**
+
+```bash
+git add katrain/web/ui/src/hooks/useSound.ts
+git add katrain/web/ui/src/galaxy/hooks/useTsumegoProblem.ts
+git add katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx
+git commit -m "feat(tsumego): add sound effects for stone placement and feedback"
+```
+
+---
+
+### Task 3.2: Animations
+
+**Goal:** Add visual animations for stone placement, wrong move feedback, and success celebration.
+
+**Files:**
+- Modify: `katrain/web/ui/src/galaxy/components/tsumego/TsumegoBoard.tsx`
+- Create: `katrain/web/ui/src/galaxy/components/tsumego/SuccessOverlay.tsx`
+- Modify: `katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx`
+
+**Animation Specifications (from design doc):**
+| Element | Animation | Duration |
+|---------|-----------|----------|
+| Stone placement | Scale 0.8 → 1.0 | 150ms |
+| Wrong move | Red flash + shake | 300ms |
+| AI response | Delay before placing | 300ms (already implemented) |
+| Success | Confetti/sparkle | 1000ms |
+
+**Step 1: Add animation state to TsumegoBoard**
+
+```typescript
+interface TsumegoBoardProps {
+  // ... existing props
+  animatingStone?: [number, number] | null; // Coords of stone being animated
+  wrongMove?: [number, number] | null; // Coords of wrong move (for shake)
+}
+```
+
+**Step 2: Implement stone placement animation**
+
+In `renderBoard`, add animation logic for new stones:
+
+```typescript
+// Track animation frame
+const [animationProgress, setAnimationProgress] = useState(0);
+const animationRef = useRef<number | null>(null);
+
+useEffect(() => {
+  if (animatingStone) {
+    let start: number | null = null;
+    const duration = 150;
+
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      setAnimationProgress(progress);
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }
+}, [animatingStone]);
+
+// In draw stone loop:
+const isAnimating = animatingStone &&
+  stone.coords[0] === animatingStone[0] &&
+  stone.coords[1] === animatingStone[1];
+
+const scale = isAnimating
+  ? 0.8 + 0.2 * easeOutCubic(animationProgress)
+  : 1;
+
+const actualSize = stoneSize * scale;
+ctx.drawImage(img, pos.x - actualSize, pos.y - actualSize, actualSize * 2, actualSize * 2);
+```
+
+**Step 3: Implement wrong move shake**
+
+```typescript
+// For wrong move - shake the stone
+const isWrongMove = wrongMove &&
+  stone.coords[0] === wrongMove[0] &&
+  stone.coords[1] === wrongMove[1];
+
+if (isWrongMove) {
+  // Red tint
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#e16b5c';
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, stoneSize, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+```
+
+Add CSS shake animation to canvas wrapper:
+
+```typescript
+<Box
+  sx={{
+    animation: wrongMove ? 'shake 0.3s ease-in-out' : 'none',
+    '@keyframes shake': {
+      '0%, 100%': { transform: 'translateX(0)' },
+      '25%': { transform: 'translateX(-5px)' },
+      '75%': { transform: 'translateX(5px)' },
+    }
+  }}
+>
+```
+
+**Step 4: Create SuccessOverlay component**
+
+```typescript
+// SuccessOverlay.tsx
+import { Box, Typography } from '@mui/material';
+import { keyframes } from '@mui/system';
+
+const confetti = keyframes`
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+`;
+
+const SuccessOverlay: React.FC<{ show: boolean; onComplete?: () => void }> = ({ show, onComplete }) => {
+  if (!show) return null;
+
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        bgcolor: 'rgba(0,0,0,0.5)',
+        zIndex: 100,
+      }}
+    >
+      {/* Confetti particles */}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <Box
+          key={i}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: `${5 + Math.random() * 90}%`,
+            width: 10,
+            height: 10,
+            bgcolor: ['#e89639', '#4caf50', '#2196f3', '#f44336'][i % 4],
+            borderRadius: '50%',
+            animation: `${confetti} ${1 + Math.random()}s ease-out forwards`,
+            animationDelay: `${Math.random() * 0.3}s`,
+          }}
+        />
+      ))}
+
+      {/* Success text */}
+      <Typography
+        variant="h3"
+        sx={{
+          color: '#4caf50',
+          fontWeight: 'bold',
+          textShadow: '0 4px 8px rgba(0,0,0,0.5)',
+          animation: 'pulse 0.5s ease-out',
+          '@keyframes pulse': {
+            '0%': { transform: 'scale(0.5)', opacity: 0 },
+            '50%': { transform: 'scale(1.1)' },
+            '100%': { transform: 'scale(1)', opacity: 1 },
+          }
+        }}
+      >
+        🎉 恭喜答对！
+      </Typography>
+    </Box>
+  );
+};
+
+export default SuccessOverlay;
+```
+
+**Step 5: Integrate overlay in TsumegoProblemPage**
+
+```typescript
+import SuccessOverlay from '../components/tsumego/SuccessOverlay';
+
+// In render:
+<Box sx={{ position: 'relative' }}>
+  <TsumegoBoard ... />
+  <SuccessOverlay show={isSolved} />
+</Box>
+```
+
+**Step 6: Commit**
+
+```bash
+git add katrain/web/ui/src/galaxy/components/tsumego/TsumegoBoard.tsx
+git add katrain/web/ui/src/galaxy/components/tsumego/SuccessOverlay.tsx
+git add katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx
+git commit -m "feat(tsumego): add stone placement and success animations"
+```
+
+---
+
+### Task 3.3: Keyboard Navigation
+
+**Goal:** Enable keyboard shortcuts for faster problem solving.
+
+**Files:**
+- Modify: `katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx`
+- Modify: `katrain/web/ui/src/galaxy/components/tsumego/TsumegoBoard.tsx`
+
+**Keyboard Shortcuts:**
+| Key | Action |
+|-----|--------|
+| `U` or `Ctrl+Z` | Undo last move |
+| `R` | Reset problem |
+| `H` | Toggle hint |
+| `←` or `[` | Previous problem |
+| `→` or `]` | Next problem |
+| `Enter` | When solved, go to next problem |
+
+**Step 1: Add keyboard handler to TsumegoProblemPage**
+
+```typescript
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Ignore if typing in input
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    switch (e.key.toLowerCase()) {
+      case 'u':
+      case 'z':
+        if (e.key === 'z' && !e.ctrlKey && !e.metaKey) break;
+        e.preventDefault();
+        undo();
+        break;
+      case 'r':
+        e.preventDefault();
+        reset();
+        break;
+      case 'h':
+        e.preventDefault();
+        toggleHint();
+        break;
+      case 'arrowleft':
+      case '[':
+        e.preventDefault();
+        if (hasPrevious) handlePrevious();
+        break;
+      case 'arrowright':
+      case ']':
+        e.preventDefault();
+        if (hasNext) handleNext();
+        break;
+      case 'enter':
+        if (isSolved && hasNext) {
+          e.preventDefault();
+          handleNext();
+        }
+        break;
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [undo, reset, toggleHint, handlePrevious, handleNext, hasPrevious, hasNext, isSolved]);
+```
+
+**Step 2: Add focus indicator to board**
+
+Make the board focusable and show focus ring:
+
+```typescript
+// In TsumegoBoard.tsx
+<canvas
+  ref={canvasRef}
+  tabIndex={0}  // Make focusable
+  onKeyDown={handleKeyDown}
+  style={{
+    outline: 'none',
+    // Focus ring handled by parent
+  }}
+/>
+
+// Parent Box
+<Box
+  sx={{
+    '&:focus-within canvas': {
+      boxShadow: '0 0 0 3px rgba(232, 150, 57, 0.5)',
+    }
+  }}
+>
+```
+
+**Step 3: Add keyboard shortcut hints to controls**
+
+In TsumegoProblemControls, add tooltips with shortcuts:
+
+```typescript
+<Tooltip title={`${t('tsumego:undo')} (U)`}>
+  <IconButton onClick={onUndo} ...>
+    <UndoIcon />
+  </IconButton>
+</Tooltip>
+
+<Tooltip title={`${t('tsumego:reset')} (R)`}>
+  <IconButton onClick={onReset} ...>
+    <RefreshIcon />
+  </IconButton>
+</Tooltip>
+```
+
+**Step 4: Add help text showing shortcuts**
+
+```typescript
+// At bottom of controls panel
+<Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>
+  {t('tsumego:keyboardShortcuts')}: U=悔棋 R=重做 H=提示 ←→=切换题目
+</Typography>
+```
+
+**Step 5: Commit**
+
+```bash
+git add katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx
+git add katrain/web/ui/src/galaxy/components/tsumego/TsumegoBoard.tsx
+git add katrain/web/ui/src/galaxy/components/tsumego/TsumegoProblemControls.tsx
+git commit -m "feat(tsumego): add keyboard navigation shortcuts"
+```
+
+---
+
+### Task 3.4: Mobile Responsive Layout
+
+**Goal:** Provide a fully functional mobile experience with touch-friendly controls.
+
+**Files:**
+- Modify: `katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx`
+- Create: `katrain/web/ui/src/galaxy/components/tsumego/MobileControls.tsx`
+
+**Mobile Layout (from design doc):**
+```
+┌─────────────────────┐
+│ 3D • #12 of 354     │  ← Compact header
+│ ● 黑先              │
+├─────────────────────┤
+│                     │
+│      [Board]        │  ← Full width board
+│                     │
+├─────────────────────┤
+│ [◀] [悔棋] [重做] [▶] │  ← Bottom toolbar
+└─────────────────────┘
+```
+
+**Step 1: Create MobileControls component**
+
+```typescript
+// MobileControls.tsx
+import { Box, IconButton, Chip, Typography } from '@mui/material';
+import UndoIcon from '@mui/icons-material/Undo';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
+interface MobileControlsProps {
+  level: string;
+  problemNumber: number;
+  totalProblems: number;
+  hint: string;
+  nextPlayer: 'B' | 'W';
+  isSolved: boolean;
+  isFailed: boolean;
+  showHint: boolean;
+  canUndo: boolean;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onUndo: () => void;
+  onReset: () => void;
+  onToggleHint: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+}
+
+const MobileControls: React.FC<MobileControlsProps> = ({
+  level,
+  problemNumber,
+  totalProblems,
+  hint,
+  nextPlayer,
+  isSolved,
+  isFailed,
+  showHint,
+  canUndo,
+  hasPrevious,
+  hasNext,
+  onUndo,
+  onReset,
+  onToggleHint,
+  onPrevious,
+  onNext
+}) => {
+  return (
+    <Box sx={{ width: '100%' }}>
+      {/* Header */}
+      <Box sx={{
+        p: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        bgcolor: 'rgba(0,0,0,0.3)'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Chip label={level.toUpperCase()} size="small" color="primary" />
+          <Typography variant="body2">
+            #{problemNumber} / {totalProblems}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          {isSolved ? (
+            <CheckCircleIcon sx={{ color: '#4caf50' }} />
+          ) : (
+            <>
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
+                  border: '1px solid',
+                  borderColor: nextPlayer === 'B' ? '#333' : '#ccc'
+                }}
+              />
+              <Typography variant="body2">{hint}</Typography>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      {/* Bottom Toolbar */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        p: 1,
+        bgcolor: 'background.paper',
+        borderTop: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <IconButton onClick={onPrevious} disabled={!hasPrevious} size="large">
+          <NavigateBeforeIcon />
+        </IconButton>
+        <IconButton onClick={onUndo} disabled={!canUndo} size="large">
+          <UndoIcon />
+        </IconButton>
+        <IconButton onClick={onReset} size="large">
+          <RefreshIcon />
+        </IconButton>
+        <IconButton
+          onClick={onToggleHint}
+          size="large"
+          sx={{ color: showHint ? '#e89639' : 'inherit' }}
+        >
+          <LightbulbIcon />
+        </IconButton>
+        <IconButton
+          onClick={onNext}
+          disabled={!hasNext}
+          size="large"
+          sx={{ color: isSolved ? '#4caf50' : 'inherit' }}
+        >
+          <NavigateNextIcon />
+        </IconButton>
+      </Box>
+    </Box>
+  );
+};
+
+export default MobileControls;
+```
+
+**Step 2: Update TsumegoProblemPage for mobile**
+
+```typescript
+// Import MobileControls
+import MobileControls from '../components/tsumego/MobileControls';
+
+// In render, use different layout for mobile:
+return (
+  <Box sx={{
+    display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
+    height: '100vh',
+    overflow: 'hidden'
+  }}>
+    {isMobile ? (
+      <>
+        {/* Mobile: Header at top */}
+        <MobileControls
+          level={problem.level}
+          problemNumber={currentIndex + 1}
+          totalProblems={problemList.length}
+          hint={problem.hint}
+          nextPlayer={nextPlayer}
+          isSolved={isSolved}
+          isFailed={isFailed}
+          showHint={showHint}
+          canUndo={moveHistory.length > 0 && !isSolved}
+          hasPrevious={currentIndex > 0}
+          hasNext={currentIndex < problemList.length - 1}
+          onUndo={undo}
+          onReset={reset}
+          onToggleHint={toggleHint}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+        />
+
+        {/* Board takes remaining space */}
+        <Box sx={{ flexGrow: 1, display: 'flex', position: 'relative' }}>
+          <TsumegoBoard ... />
+          <SuccessOverlay show={isSolved} />
+        </Box>
+      </>
+    ) : (
+      // Desktop layout (existing)
+      <>
+        <Box sx={{ flexGrow: 1, ... }}>
+          {/* Header + Board */}
+        </Box>
+        <Box sx={{ width: 320, ... }}>
+          <TsumegoProblemControls ... />
+        </Box>
+      </>
+    )}
+  </Box>
+);
+```
+
+**Step 3: Improve touch targets on board**
+
+In TsumegoBoard, increase touch target size:
+
+```typescript
+// Increase minimum grid size for touch
+const minGridSize = isMobile ? 36 : 24; // Larger on mobile
+const gridSize = Math.max(minGridSize, calculatedGridSize);
+```
+
+**Step 4: Add touch feedback**
+
+```typescript
+// Show touch position preview before placing
+const [touchPreview, setTouchPreview] = useState<[number, number] | null>(null);
+
+const handleTouchStart = (e: React.TouchEvent) => {
+  // Calculate grid position from touch
+  // Show preview stone at position
+};
+
+const handleTouchEnd = (e: React.TouchEvent) => {
+  if (touchPreview) {
+    onPlaceStone(touchPreview[0], touchPreview[1]);
+    setTouchPreview(null);
+  }
+};
+```
+
+**Step 5: Verify on mobile viewport**
+
+Open Chrome DevTools, toggle device toolbar (Ctrl+Shift+M), test:
+- iPhone SE (375px)
+- iPhone 12 Pro (390px)
+- iPad Mini (768px)
+
+**Step 6: Commit**
+
+```bash
+git add katrain/web/ui/src/galaxy/components/tsumego/MobileControls.tsx
+git add katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx
+git add katrain/web/ui/src/galaxy/components/tsumego/TsumegoBoard.tsx
+git commit -m "feat(tsumego): add mobile responsive layout and touch controls"
+```
+
+---
+
+### Task 3.5: Offline Support with IndexedDB (Optional)
+
+**Note:** This task is more complex and can be deferred. It requires:
+- Service worker for caching
+- IndexedDB for problem data
+- Sync logic for progress when back online
+
+**Scope if implemented:**
+- Cache problem metadata (index.json) for browsing offline
+- Cache SGF content for solving offline
+- Store progress in IndexedDB, sync when online
+- Show "offline" indicator in UI
+
+**Files to create:**
+- `katrain/web/ui/src/utils/offlineDb.ts` - IndexedDB wrapper
+- `katrain/web/ui/src/hooks/useOffline.ts` - Offline detection hook
+- `katrain/web/ui/public/sw.js` - Service worker
+
+**This task is marked as optional and can be implemented in a future phase.**
 
 ---
 
@@ -1606,3 +2331,41 @@ New i18n keys added to `.po` files:
 | `katrain/web/ui/src/GalaxyApp.tsx` | Added unit route |
 | `katrain/web/ui/src/galaxy/pages/TsumegoListPage.tsx` | Accept unit parameter, show 20 problems |
 | `katrain/i18n/locales/*/LC_MESSAGES/katrain.po` | Added new translation keys |
+
+### 2026-01-23: Try Mode Feature & UI Cleanup
+
+**New Feature: 试下 (Try Mode)**
+
+Added "试下" (Try Mode) feature similar to Golaxy (星阵围棋), allowing users to freely explore variations without judgment.
+
+**How it works:**
+- Click the hand icon (TouchAppIcon) to enter Try Mode
+- In Try Mode, users can place stones freely without correct/incorrect feedback
+- Status indicator shows blue "试下" text
+- Exit Try Mode to restore the previous board state
+
+**UI:**
+```
+Desktop: Try mode button in right sidebar action buttons
+Mobile: Try mode button in bottom toolbar (between Reset and Hint)
+```
+
+**Keyboard shortcuts help text removed:**
+- The cluttered shortcut text at bottom right has been removed for cleaner UI
+- Tooltips still show shortcuts on hover
+
+**Translation Keys Added:**
+
+| Key | English | Chinese |
+|-----|---------|---------|
+| `tsumego:tryMode` | Try Mode | 试下 |
+| `tsumego:tryModeDesc` | Free exploration without judgment | 自由探索，不判断对错 |
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `katrain/web/ui/src/galaxy/hooks/useTsumegoProblem.ts` | Added `isTryMode`, `enterTryMode()`, `exitTryMode()` |
+| `katrain/web/ui/src/galaxy/components/tsumego/TsumegoProblemControls.tsx` | Added try mode button, removed keyboard shortcuts text |
+| `katrain/web/ui/src/galaxy/components/tsumego/MobileControls.tsx` | Added try mode button and status indicator |
+| `katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx` | Integrated try mode props |
+| `katrain/i18n/locales/*/LC_MESSAGES/katrain.po` | Added try mode translation keys |

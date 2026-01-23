@@ -1571,3 +1571,15 @@ msgstr "次の問題"
 
 msgid "tsumego:errorLoading"
 msgstr "問題の読み込みエラー"
+
+msgid "tsumego:unitDesc"
+msgstr "全{total}問、{units}ユニットに分類"
+
+msgid "tsumego:unit"
+msgstr "ユニット"
+
+msgid "tsumego:selectUnit"
+msgstr "ユニットを選択"
+
+msgid "tsumego:problemRange"
+msgstr "問題 {start}-{end}"

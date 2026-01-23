@@ -1641,3 +1641,15 @@ msgstr "Sonraki"
 
 msgid "tsumego:errorLoading"
 msgstr "Yükleme Hatası"
+
+msgid "tsumego:unitDesc"
+msgstr "Toplam {total} problem, {units} ünite"
+
+msgid "tsumego:unit"
+msgstr "Ünite"
+
+msgid "tsumego:selectUnit"
+msgstr "Ünite seçin"
+
+msgid "tsumego:problemRange"
+msgstr "Problem {start}-{end}"

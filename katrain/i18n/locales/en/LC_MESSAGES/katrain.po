@@ -1577,3 +1577,15 @@ msgstr "Next"
 
 msgid "tsumego:errorLoading"
 msgstr "Error Loading Problem"
+
+msgid "tsumego:selectUnit"
+msgstr "Select Unit"
+
+msgid "tsumego:unitDesc"
+msgstr "Total {total} problems in {units} units"
+
+msgid "tsumego:unit"
+msgstr "Unit"
+
+msgid "tsumego:problemRange"
+msgstr "Problems {start}-{end}"

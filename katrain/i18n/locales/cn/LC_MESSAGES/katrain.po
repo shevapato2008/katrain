@@ -1405,3 +1405,15 @@ msgstr "下一题"
 
 msgid "tsumego:errorLoading"
 msgstr "加载题目失败"
+
+msgid "tsumego:selectUnit"
+msgstr "选择单元"
+
+msgid "tsumego:unitDesc"
+msgstr "共 {total} 题，分为 {units} 个单元"
+
+msgid "tsumego:unit"
+msgstr "单元"
+
+msgid "tsumego:problemRange"
+msgstr "第 {start}-{end} 题"

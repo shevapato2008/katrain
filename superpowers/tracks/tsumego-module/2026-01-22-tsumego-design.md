@@ -1513,3 +1513,96 @@ git commit -m "feat: add tsumego routes to GalaxyApp"
 
 **Documentation:**
 - [ ] `data/life-n-death/README.md`
+
+---
+
+## Update Log
+
+### 2026-01-23: UI Improvements Implementation
+
+**Implemented Features:**
+
+#### 1. Level Sorting by Difficulty
+- Added `level_sort_key()` function in `katrain/web/api/v1/endpoints/tsumego.py`
+- Levels now display in order: 15K → 14K → ... → 1K → 1D → 2D → ... → 7D (weakest to strongest)
+
+```python
+def level_sort_key(level: str) -> tuple:
+    """Sort levels: 15K, 14K, ..., 1K, 1D, 2D, ..., 7D (weakest to strongest)."""
+    level = level.upper()
+    if level.endswith('K'):
+        return (0, -int(level[:-1]))  # Kyu: higher number = weaker = first
+    elif level.endswith('D'):
+        return (1, int(level[:-1]))   # Dan: lower number = weaker = first
+    return (2, 0)
+```
+
+#### 2. Category Page Redesign
+- Redesigned `TsumegoCategoriesPage.tsx` with vertical card layout
+- Cards are now left-aligned, stacked vertically with 16px gap
+- Each card has: icon (48px) | category name | problem count
+- Fixed max-width: 480px per card
+- Horizontal content layout prevents text wrapping
+
+**Before:**
+```
+┌─────┐  ┌─────┐  ┌─────┐
+│死活 │  │手筋 │  │官子 │
+└─────┘  └─────┘  └─────┘
+  (centered grid, text wraps)
+```
+
+**After:**
+```
+┌────────────────────────────────────────────────┐
+│  ⚔️    死活                          85 题    │
+└────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│  ✨    手筋                          14 题    │
+└────────────────────────────────────────────────┘
+  (left-aligned, vertical stack, no text wrap)
+```
+
+#### 3. Unit Grouping Concept
+- Added new navigation layer: Problems are grouped into "units" of 20 problems each
+- **New file:** `katrain/web/ui/src/galaxy/pages/TsumegoUnitsPage.tsx`
+
+**Updated Navigation Flow:**
+```
+/galaxy/tsumego              → Level selection
+/galaxy/tsumego/:level       → Category selection
+/galaxy/tsumego/:level/:cat  → Units selection (NEW)
+/galaxy/tsumego/:level/:cat/:unit → Problem grid (20 problems)
+```
+
+**Unit Card Design:**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  单元 1      第 1-20 题                    ●●●○○     3/20   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Progress Dots Logic:**
+- 5 dots representing completion percentage
+- `●○○○○` = 0-20%, `●●○○○` = 20-40%, etc.
+- Completed dots: green (#4caf50), Empty dots: gray (rgba(255,255,255,0.2))
+
+#### 4. Translation Keys Added
+New i18n keys added to `.po` files:
+
+| Key | English | Chinese |
+|-----|---------|---------|
+| `tsumego:selectUnit` | Select Unit | 选择单元 |
+| `tsumego:unitDesc` | Total {total} problems in {units} units | 共 {total} 题，分为 {units} 个单元 |
+| `tsumego:unit` | Unit | 单元 |
+| `tsumego:problemRange` | Problems {start}-{end} | 第 {start}-{end} 题 |
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `katrain/web/api/v1/endpoints/tsumego.py` | Added `level_sort_key()` function |
+| `katrain/web/ui/src/galaxy/pages/TsumegoCategoriesPage.tsx` | Redesigned vertical layout |
+| `katrain/web/ui/src/galaxy/pages/TsumegoUnitsPage.tsx` | **Created** - new units page |
+| `katrain/web/ui/src/GalaxyApp.tsx` | Added unit route |
+| `katrain/web/ui/src/galaxy/pages/TsumegoListPage.tsx` | Accept unit parameter, show 20 problems |
+| `katrain/i18n/locales/*/LC_MESSAGES/katrain.po` | Added new translation keys |

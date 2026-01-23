@@ -1539,3 +1539,15 @@ msgstr "Следующая"
 
 msgid "tsumego:errorLoading"
 msgstr "Ошибка загрузки"
+
+msgid "tsumego:unitDesc"
+msgstr "Всего {total} задач в {units} разделах"
+
+msgid "tsumego:unit"
+msgstr "Раздел"
+
+msgid "tsumego:selectUnit"
+msgstr "Выберите раздел"
+
+msgid "tsumego:problemRange"
+msgstr "Задачи {start}-{end}"

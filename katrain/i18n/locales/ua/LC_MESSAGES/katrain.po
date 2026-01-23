@@ -1621,3 +1621,15 @@ msgstr "Наступна"
 
 msgid "tsumego:errorLoading"
 msgstr "Помилка завантаження"
+
+msgid "tsumego:unitDesc"
+msgstr "Всього {total} задач у {units} розділах"
+
+msgid "tsumego:unit"
+msgstr "Розділ"
+
+msgid "tsumego:selectUnit"
+msgstr "Оберіть розділ"
+
+msgid "tsumego:problemRange"
+msgstr "Задачі {start}-{end}"

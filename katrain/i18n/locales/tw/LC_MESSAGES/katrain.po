@@ -1553,3 +1553,15 @@ msgstr "下一題"
 
 msgid "tsumego:errorLoading"
 msgstr "載入題目失敗"
+
+msgid "tsumego:unitDesc"
+msgstr "共 {total} 題，分為 {units} 個單元"
+
+msgid "tsumego:unit"
+msgstr "單元"
+
+msgid "tsumego:selectUnit"
+msgstr "選擇單元"
+
+msgid "tsumego:problemRange"
+msgstr "第 {start}-{end} 題"

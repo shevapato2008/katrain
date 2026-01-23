@@ -1498,3 +1498,15 @@ msgstr "다음"
 
 msgid "tsumego:errorLoading"
 msgstr "문제 로딩 오류"
+
+msgid "tsumego:unitDesc"
+msgstr "총 {total}문제, {units}개 단원"
+
+msgid "tsumego:unit"
+msgstr "단원"
+
+msgid "tsumego:selectUnit"
+msgstr "단원 선택"
+
+msgid "tsumego:problemRange"
+msgstr "문제 {start}-{end}"

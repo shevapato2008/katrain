@@ -1579,3 +1579,15 @@ msgstr "Suivant"
 
 msgid "tsumego:errorLoading"
 msgstr "Erreur de chargement"
+
+msgid "tsumego:unitDesc"
+msgstr "Total de {total} problèmes en {units} unités"
+
+msgid "tsumego:unit"
+msgstr "Unité"
+
+msgid "tsumego:selectUnit"
+msgstr "Sélectionner l'unité"
+
+msgid "tsumego:problemRange"
+msgstr "Problèmes {start}-{end}"

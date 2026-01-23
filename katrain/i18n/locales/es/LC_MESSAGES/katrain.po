@@ -1453,3 +1453,15 @@ msgstr "Siguiente"
 
 msgid "tsumego:errorLoading"
 msgstr "Error al cargar"
+
+msgid "tsumego:selectUnit"
+msgstr "Seleccionar unidad"
+
+msgid "tsumego:unitDesc"
+msgstr "Total de {total} problemas en {units} unidades"
+
+msgid "tsumego:unit"
+msgstr "Unidad"
+
+msgid "tsumego:problemRange"
+msgstr "Problemas {start}-{end}"

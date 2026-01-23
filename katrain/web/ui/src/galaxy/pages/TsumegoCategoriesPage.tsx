@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgress, IconButton, Breadcrumbs, Link } from '@mui/material';
+import { Box, Typography, Card, CardActionArea, CircularProgress, IconButton, Breadcrumbs, Link } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
@@ -12,7 +12,7 @@ interface CategoryInfo {
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
-  'life-death': '⚔',
+  'life-death': '⚔️',
   'tesuji': '✨',
   'endgame': '🎯'
 };
@@ -47,7 +47,7 @@ const TsumegoCategoriesPage = () => {
   }
 
   return (
-    <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ p: 4, pl: 6 }}>
       {/* Breadcrumbs */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <IconButton onClick={() => navigate('/galaxy/tsumego')} sx={{ mr: 1 }}>
@@ -73,36 +73,75 @@ const TsumegoCategoriesPage = () => {
         {t('tsumego:categoryDesc')}
       </Typography>
 
-      <Grid container spacing={3}>
+      {/* Vertical card list */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {categories.map((cat) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={cat.category}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 8
-                }
-              }}
-            >
-              <CardActionArea onClick={() => navigate(`/galaxy/tsumego/${level}/${cat.category}`)}>
-                <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="h2" sx={{ mb: 2, opacity: 0.3 }}>
-                    {CATEGORY_ICONS[cat.category] || '题'}
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    {t(`tsumego:${cat.category}`)}
-                  </Typography>
-                  <Typography variant="h6" color="text.secondary">
-                    {cat.count} {t('tsumego:problems')}
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </Grid>
+          <Card
+            key={cat.category}
+            sx={{
+              maxWidth: 480,
+              borderRadius: 3,
+              bgcolor: 'rgba(255,255,255,0.05)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateX(4px)',
+                boxShadow: 4
+              }
+            }}
+          >
+            <CardActionArea onClick={() => navigate(`/galaxy/tsumego/${level}/${cat.category}`)}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  px: 3,
+                  py: 2,
+                  height: 72
+                }}
+              >
+                {/* Icon */}
+                <Typography
+                  sx={{
+                    fontSize: 32,
+                    width: 48,
+                    textAlign: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  {CATEGORY_ICONS[cat.category] || '📋'}
+                </Typography>
+
+                {/* Category name */}
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 'bold',
+                    flexGrow: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {t(`tsumego:${cat.category}`)}
+                </Typography>
+
+                {/* Problem count */}
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {cat.count} {t('tsumego:problems')}
+                </Typography>
+              </Box>
+            </CardActionArea>
+          </Card>
         ))}
-      </Grid>
+      </Box>
     </Box>
   );
 };

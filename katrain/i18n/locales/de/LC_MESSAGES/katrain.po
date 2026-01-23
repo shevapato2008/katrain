@@ -1607,3 +1607,15 @@ msgstr "Nächste"
 
 msgid "tsumego:errorLoading"
 msgstr "Fehler beim Laden"
+
+msgid "tsumego:unitDesc"
+msgstr "Insgesamt {total} Aufgaben in {units} Einheiten"
+
+msgid "tsumego:unit"
+msgstr "Einheit"
+
+msgid "tsumego:selectUnit"
+msgstr "Einheit wählen"
+
+msgid "tsumego:problemRange"
+msgstr "Aufgaben {start}-{end}"

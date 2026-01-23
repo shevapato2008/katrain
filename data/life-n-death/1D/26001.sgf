@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-26001]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/1D/26001/]
+GC[死活题 | 1D | 正确率: 31.4% (1934/6163)]
+C[黑先 死活题]
+AB[qd][pb][pc][pd][rd]
+AW[sd][od][ob][qe][pe][mb][rg][re][oc][oe]
+PL[B]
+(;B[sb]C[正解](;W[pa]C[变化图3](;B[qb](;W[rc](;B[sc](;W[rb](;B[se](;W[qa](;B[ra]C[✓ 正确 | 还原成正解图的劫。]))(;W[ra](;B[qa]C[⚡ 变化]))))))(;W[ra](;B[qa](;W[rc](;B[sc](;W[rb](;B[se]C[⚡ 变化])))))))(;B[qa](;W[rc](;B[sc](;W[rb](;B[se](;W[qb]C[✗ 失败]))))))(;B[ra](;W[qb](;B[qa](;W[rb](;B[oa](;W[rc]C[✗ 失败])))))))(;W[rc](;B[sc](;W[rb](;B[se](;W[pa](;B[qb](;W[qa](;B[ra]C[✓ 正确 | 白的先手劫。])))(;B[ra](;W[qb]C[✗ 失败]))(;B[qa](;W[qb](;B[oa](;W[ra]C[✗ 失败]))))))))(;B[rb]C[失败图](;W[pa](;B[qa](;W[sc](;B[oa](;W[qc]C[✗ 失败 | 黑棋净死。])))))))(;W[rb]C[还原成前型的变化图3。 变化图1](;B[rc](;W[qb](;B[qa](;W[ra](;B[pa]C[⚡ 变化 | 双活。]))))))(;W[qb]C[变化图2](;B[qa](;W[ra](;B[pa](;W[rb](;B[rc]C[⚡ 变化 | 和变化图1结果相同，双活。]))(;W[rc](;B[rb]C[⚡ 变化]))))))(;W[ra](;B[qb](;W[rc](;B[sc](;W[rb](;B[se](;W[sf](;B[sd]C[⚡ 变化])))))))))(;B[sc]C[失败图1](;W[qb](;B[pa](;W[sb](;B[rc](;W[rb]C[✗ 失败 | 有眼杀瞎，类似前型黑2的失败图。]))))(;B[rb](;W[pa](;B[ra](;W[qa]C[✗ 失败]))))(;B[qa](;W[ra](;B[pa](;W[sb]C[✗ 失败]))))))(;B[rc]C[失败图2](;W[qb](;B[pa](;W[sb](;B[sc](;W[rb]C[✗ 失败 | 还原成失败图1，有眼杀瞎。]))))(;B[ra](;W[sb](;B[sc](;W[qa](;B[pa](;W[rb]C[✗ 失败]))))))(;B[qa](;W[ra](;B[pa](;W[sb](;B[sc](;W[rb]C[✗ 失败]))))))))(;B[rb](;W[sb]C[✗ 失败]))(;B[ra](;W[rc]C[✗ 失败])))

@@ -2,9 +2,9 @@
 GN[Q-16440]
 AN[admin]
 SO[https://www.101weiqi.com/4D/16440/]
-GC[死活题 | 4D | 正确率: 31.2% (991/3172) | 出题者：稻垣弘一三段（昭和34年4月）]
+GC[死活题 | 4D | 正确率: 31.3% (993/3176) | 出题者：稻垣弘一三段（昭和34年4月）]
 C[黑先 死活题]
-AB[nc][qf][qh][qb][of][od][rg][nd][nb][qc][qe]
-AW[rd][pb][rf][re][oc][qd][pc]
+AB[nd][od][of][qc][qf][qb][nb][nc][qe][qh][rg]
+AW[qd][pb][pc][rf][rd][re][oc]
 PL[B]
-(;B[pa](;W[rb](;B[ob](;W[rc](;B[ra])(;B[pd](;W[ra]C[白淨活])))(;W[ra](;B[rc](;W[sc](;B[pd])))))(;B[pd](;W[rc](;B[ob](;W[ra]C[白淨活]))(;B[ra](;W[qa](;B[qb](;W[oa](;B[ob](;W[qa]C[白先劫]))))))))(;B[ra](;W[oa](;B[ob](;W[qa]))(;B[rc](;W[sb](;B[sc](;W[qa](;B[sa](;W[pd](;B[pa])))))))))(;B[oa](;W[ra]))))(;B[rb](;W[pd]C[白淨活]))(;B[ob](;W[pa](;B[pd](;W[rb](;B[qa](;W[rc](;B[oa](;W[ra]C[白淨活]))))(;B[oa](;W[ra](;B[qa](;W[rc]C[白淨活]))))))))(;B[pd](;W[rb](;B[pa](;W[rc](;B[ob](;W[ra]C[白淨活]))(;B[ra](;W[qa](;B[qb](;W[oa](;B[ob](;W[qa]C[白先劫]))))))))(;B[ra](;W[pa](;B[rc](;W[sb](;B[sc](;W[qa](;B[sa](;W[rb]))))))))))(;B[ra](;W[pa](;B[pd](;W[rb](;B[rc](;W[sb](;B[sc](;W[qa](;B[sa](;W[rb]))))))))(;B[rc](;W[sb](;B[pd](;W[rb](;B[sc](;W[qa](;B[sa](;W[rb]))))))))))(;B[qa](;W[rc](;B[pa](;W[rb])))))
+(;B[pa](;W[rb](;B[ob](;W[rc](;B[ra]C[✓ 正确])(;B[pd](;W[ra]C[✗ 失败 | 白淨活])))(;W[ra](;B[rc](;W[sc](;B[pd]C[⚡ 变化])))))(;B[pd](;W[rc](;B[ob](;W[ra]C[✗ 失败 | 白淨活]))(;B[ra](;W[qa](;B[qb](;W[oa](;B[ob](;W[qa]C[✗ 失败 | 白先劫]))))))))(;B[ra](;W[oa](;B[ob](;W[qa]C[✗ 失败]))(;B[rc](;W[sb](;B[sc](;W[qa](;B[sa](;W[pd](;B[pa]C[✗ 失败])))))))))(;B[oa](;W[ra]C[✗ 失败]))))(;B[rb](;W[pd]C[✗ 失败 | 白淨活]))(;B[ob](;W[pa](;B[pd](;W[rb](;B[qa](;W[rc](;B[oa](;W[ra]C[✗ 失败 | 白淨活]))))(;B[oa](;W[ra](;B[qa](;W[rc]C[✗ 失败 | 白淨活]))))))))(;B[pd](;W[rb](;B[pa](;W[rc](;B[ob](;W[ra]C[✗ 失败 | 白淨活]))(;B[ra](;W[qa](;B[qb](;W[oa](;B[ob](;W[qa]C[✗ 失败 | 白先劫]))))))))(;B[ra](;W[pa](;B[rc](;W[sb](;B[sc](;W[qa](;B[sa](;W[rb]C[✗ 失败]))))))))))(;B[ra](;W[pa](;B[pd](;W[rb](;B[rc](;W[sb](;B[sc](;W[qa](;B[sa](;W[rb]C[✗ 失败]))))))))(;B[rc](;W[sb](;B[pd](;W[rb](;B[sc](;W[qa](;B[sa](;W[rb]C[✗ 失败]))))))))))(;B[qa](;W[rc](;B[pa](;W[rb]C[✗ 失败])))))

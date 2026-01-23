@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-65967]
+AN[空穴来风]
+SO[https://www.101weiqi.com/2D/65967/]
+GC[死活题 | 2D | 正确率: 40.5% (2789/6886)]
+C[黑先 死活题]
+AB[qd][od][nd][rb][pc][pd][rd]
+AW[le][pb][qf][qb][nc][me][nf][mc][lc][pf][re]
+PL[B]
+(;B[ob](;W[sb](;B[qc](;W[sd](;B[sc](;W[rc]C[✓ 正确]))))(;B[sc](;W[ra](;B[sa]C[✓ 正确])))(;B[rc](;W[oc]C[✗ 失败])))(;W[oc](;B[qc](;W[sb](;B[pa](;W[nb](;B[qa](;W[sd](;B[sc](;W[rc](;B[sa](;W[ra](;B[sc]C[⚡ 变化]))))))))))(;W[nb](;B[qa](;W[oa](;B[sc]C[⚡ 变化])))))(;B[qa](;W[nb](;B[qc](;W[oa](;B[sc]C[⚡ 变化])))))))(;B[ra](;W[ob]C[✗ 失败])))

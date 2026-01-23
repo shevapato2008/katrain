@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-46976]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/1D/46976/]
+GC[手筋题 | 1D | 正确率: 29.3% (2184/7447)]
+C[黑先 手筋题]
+AB[nd][qc][rc][nf][qh][pc][ne][pf][oc][og][ph][oh]
+AW[qd][od][of][qm][pg][qj][pd][ri][rd][rh][oe][qg]
+PL[B]
+(;B[re](;W[se](;B[rg](;W[sg](;B[rf](;W[sf]C[✓ 正确])))(;W[qf](;B[qe](;W[pe](;B[rf]C[⚡ 变化 | 白崩溃]))))))(;W[rf](;B[qf](;W[rg](;B[sd]C[✓ 正确]))(;W[se](;B[rg](;W[sg]C[⚡ 变化])))))(;W[rg](;B[sd](;W[qf](;B[qe]C[⚡ 变化])))))(;B[rg](;W[qf](;B[rf](;W[qe](;B[se](;W[sd](;B[sg](;W[sc](;B[rb](;W[sb](;B[ra](;W[sh](;B[sa]C[✗ 失败])))))))(;B[sc](;W[sg]C[✗ 失败 | 有眼杀无眼]))))))(;B[qe](;W[pe]C[✗ 失败]))))(;B[qe](;W[rf](;B[re](;W[se]C[✗ 失败]))))(;B[qf](;W[rg](;B[re](;W[sd](;B[sc](;W[rf](;B[se](;W[sf]C[✗ 失败]))))(;B[rf](;W[sc](;B[rb](;W[sb](;B[ra](;W[sf](;B[se](;W[sg](;B[sa]C[✗ 失败]))))))))))))))

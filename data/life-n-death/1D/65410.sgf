@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-65410]
+AN[kenny]
+SO[https://www.101weiqi.com/1D/65410/]
+GC[死活题 | 1D | 正确率: 31.5% (2048/6504) | 大桥拓文六段创作]
+C[黑先 死活题]
+AB[of][od][qf][ob][mb][rb][rf][pf][re][oc][oe]
+AW[sd][qc][pb][qe][pc][pd][rd][pe]
+PL[B]
+(;B[ra](;W[qa](;B[rc](;W[oa](;B[qb]C[✓ 正确])(;B[se]C[✓ 正确])(;B[sb]C[✓ 正确])(;B[sc]C[✓ 正确])(;B[na](;W[qb]C[✗ 失败])))(;W[sc](;B[qb](;W[pa](;B[oa]C[✓ 正确])))))(;B[qb](;W[pa](;B[rc]C[✓ 正确])))))(;B[qa](;W[pa](;B[rc](;W[ra](;B[sa](;W[qb]C[✗ 失败]))))))(;B[rc](;W[ra](;B[qa](;W[pa](;B[sa](;W[qb]C[✗ 失败]))))))(;B[pa](;W[qa](;B[ra](;W[oa](;B[rc](;W[qb](;B[na]C[✗ 失败])))))(;B[qb](;W[oa](;B[ra](;W[rc]C[✗ 失败])))))))

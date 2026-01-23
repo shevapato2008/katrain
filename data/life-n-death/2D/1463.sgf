@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1463]
+AN[admin]
+SO[https://www.101weiqi.com/2D/1463/]
+GC[死活题 | 2D | 正确率: 28.6% (2365/8262)]
+C[黑先 死活题]
+AB[qf][ob][nc][pc][rf][pd][pf][rh][se]
+AW[qc][pb][qb][qe][sb][re]
+PL[B]
+(;B[rd](;W[rc]C[1夹正确](;B[ra]C[恭喜答对](;W[sd](;B[qd]C[✓ 正确 | 恭喜答对])(;B[sc](;W[qd]C[✗ 失败])))))(;W[ra](;B[rc](;W[sd](;B[qd]C[✓ 正确 | 恭喜答对])(;B[pa](;W[qd](;B[sc](;W[rb]C[✗ 失败])))))))(;W[qd](;B[sd](;W[ra](;B[rc]C[✓ 正确])))))(;B[sd](;W[ra](;B[rc](;W[pa](;B[rb](;W[rd]C[✗ 失败 | 失败.]))))))(;B[rc](;W[rd](;B[sd](;W[sc](;B[qd](;W[sf](;B[se](;W[rb]C[✗ 失败]))))))))(;B[ra](;W[sd](;B[rd](;W[qd]C[✗ 失败])))))

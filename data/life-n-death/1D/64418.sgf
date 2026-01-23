@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-64418]
+AN[kenny]
+SO[https://www.101weiqi.com/1D/64418/]
+GC[死活题 | 1D | 正确率: 32.3% (1943/6022)]
+C[黑先 死活题]
+AB[mb][rg][ph][rc][nh][rh][kc][oc][qc][lf][nc][mg][lg][pc][lb][sc][ke][kd][pg]
+AW[le][nd][od][of][sd][qf][lc][nf][rf][pd][pf][mf][ld][sf]
+PL[B]
+(;B[rd](;W[re](;B[qd](;W[qe](;B[oe](;W[ne](;B[md]C[✓ 正确]))))))(;W[qd](;B[re](;W[qe](;B[oe](;W[md](;B[ne]C[⚡ 变化])))))))(;B[qd](;W[qe](;B[oe](;W[rd]C[✗ 失败])))))

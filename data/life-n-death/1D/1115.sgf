@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1115]
+AN[admin]
+SO[https://www.101weiqi.com/1D/1115/]
+GC[死活题 | 1D | 正确率: 33.1% (2117/6390)]
+C[黑先 死活题]
+AB[of][qc][rc][sc][qe][pe][pg][re][oe][og][qg]
+AW[nd][od][qb][ob][ng][nh][nf][rb][sh][qh][pc][pd][ne][rh][pf][se][ph][oh]
+PL[B]
+(;B[rg](;W[qd](;B[sf](;W[rd](;B[qf](;W[sg](;B[sd]C[⚡ 变化])))(;B[sd](;W[qf]C[✗ 失败])))))(;W[sg](;B[sd](;W[sf](;B[qd]C[⚡ 变化]))(;W[qd](;B[sf]C[⚡ 变化])))))(;B[sf](;W[rf](;B[sd](;W[rg](;B[qf](;W[qd]C[✗ 失败]))(;B[qd](;W[qf]C[✗ 失败]))))))(;B[rf](;W[qd](;B[sd](;W[rd]C[✗ 失败]))(;B[rd](;W[sf]C[✗ 失败]))))(;B[sd](;W[qd](;B[sf](;W[rg](;B[rf](;W[rd]C[✗ 失败]))))(;B[rg](;W[sf]C[✗ 失败]))))(;B[qd](;W[sd](;B[sf](;W[rf](;B[rg](;W[sg](;B[qf](;W[sf]C[✗ 失败]))))(;B[rd](;W[se]C[✗ 失败])))))))

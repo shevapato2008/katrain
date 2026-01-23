@@ -2,9 +2,9 @@
 GN[Q-18348]
 AN[admin]
 SO[https://www.101weiqi.com/4D/18348/]
-GC[死活题 | 4D+ | 正确率: 25.9% (972/3749)]
+GC[死活题 | 4D+ | 正确率: 25.9% (972/3752)]
 C[白先 死活题]
-AB[qf][qb][qc][qd][qe]
-AW[qg][oe][pb][pf][pg][rg][oc]
+AB[qd][qc][qf][qb][qe]
+AW[pb][pg][rg][pf][oc][oe][qg]
 PL[W]
-(;W[se]C[正解](;B[sd](;W[sf](;B[ob](;W[nb](;B[oa](;W[pc](;B[pa](;W[mc](;B[re](;W[sb](;B[rc](;W[sc])))))(;W[nc](;B[re](;W[sb](;B[rc](;W[sc])))(;W[rc](;B[rb](;W[qa](;B[sc]))))))(;W[mb](;B[re](;W[sb](;B[rc](;W[sc])))))(;W[nd](;B[re](;W[sb](;B[rc](;W[sc])))))(;W[lc](;B[re](;W[sb](;B[rc](;W[sc])))))(;W[lb](;B[re](;W[sb](;B[rc](;W[sc])))))(;W[rd](;B[nc](;W[nd](;B[mc](;W[mb](;B[md](;W[lc](;B[ld](;W[kc](;B[od](;W[pd](;B[pe](;W[od](;B[of](;W[ne](;B[nf](;W[me](;B[le]))))))))))))))))))))(;W[pa](;B[qa](;W[na](;B[rd](;W[sb](;B[rb](;W[sc](;B[sa]))))))))(;W[na](;B[qa](;W[rd](;B[pa](;W[nc](;B[rc](;W[sc](;B[sb])))))))))))(;B[re](;W[sb](;B[rc](;W[sc])(;W[qa](;B[ra](;W[sc])))))(;W[qa](;B[ra](;W[sb](;B[rc](;W[sc])))))(;W[rc](;B[ob](;W[nb](;B[oa](;W[pc](;B[pa](;W[mc](;B[rb](;W[qa](;B[sc]))))))(;W[na](;B[qa](;W[rb](;B[ra](;W[sb](;B[pa])))))))))))(;B[sb]C[参考](;W[ra](;B[qa](;W[rd]C[正解图之黑4若于本图1打，则白2点再4打为要领。]))))))(;B[ob](;W[nb](;B[oa](;W[pc](;B[pa](;W[mc](;B[sd](;W[sf](;B[re](;W[sb](;B[rc](;W[sc]C[變化])))))))))))))(;W[sd](;B[se](;W[re](;B[rf](;W[sf](;B[rd](;W[sb](;B[se])))))))))
+(;W[se]C[正解](;B[sd](;W[sf](;B[ob](;W[nb](;B[oa](;W[pc](;B[pa](;W[mc](;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])))))(;W[nc](;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])))(;W[rc](;B[rb](;W[qa](;B[sc]C[✗ 失败]))))))(;W[mb](;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])))))(;W[nd](;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])))))(;W[lc](;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])))))(;W[lb](;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])))))(;W[rd](;B[nc](;W[nd](;B[mc](;W[mb](;B[md](;W[lc](;B[ld](;W[kc](;B[od](;W[pd](;B[pe](;W[od](;B[of](;W[ne](;B[nf](;W[me](;B[le]C[✗ 失败]))))))))))))))))))))(;W[pa](;B[qa](;W[na](;B[rd](;W[sb](;B[rb](;W[sc](;B[sa]C[✗ 失败]))))))))(;W[na](;B[qa](;W[rd](;B[pa](;W[nc](;B[rc](;W[sc](;B[sb]C[✗ 失败])))))))))))(;B[re](;W[sb](;B[rc](;W[sc]C[✓ 正确])(;W[qa](;B[ra](;W[sc]C[✓ 正确])))))(;W[qa](;B[ra](;W[sb](;B[rc](;W[sc]C[✓ 正确])))))(;W[rc](;B[ob](;W[nb](;B[oa](;W[pc](;B[pa](;W[mc](;B[rb](;W[qa](;B[sc]C[✗ 失败]))))))(;W[na](;B[qa](;W[rb](;B[ra](;W[sb](;B[pa]C[✗ 失败])))))))))))(;B[sb]C[参考](;W[ra](;B[qa](;W[rd]C[⚡ 变化 | 正解图之黑4若于本图1打，则白2点再4打为要领。]))))))(;B[ob](;W[nb](;B[oa](;W[pc](;B[pa](;W[mc](;B[sd](;W[sf](;B[re](;W[sb](;B[rc](;W[sc]C[⚡ 变化 | 變化])))))))))))))(;W[sd](;B[se](;W[re](;B[rf](;W[sf](;B[rd](;W[sb](;B[se]C[✓ 正确])))))))))

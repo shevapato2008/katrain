@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22]
+AN[admin]
+SO[https://www.101weiqi.com/4K/22/]
+GC[对杀题 | 4K | 正确率: 31.1% (5374/17256)]
+C[黑先 对杀题]
+AB[qd][md][nd][rc][nb][nc][pe][rb][rd][oe][og][qg]
+AW[le][od][qc][qb][ob][jc][lc][pd][ne][me][oc][ld]
+PL[B]
+(;B[pa](;W[oa](;B[pb](;W[qa](;B[na](;W[pc](;B[ra]C[✓ 正确 | 正解])(;B[pb]C[✓ 正确])(;B[pa]C[✓ 正确])))(;B[ra](;W[pc](;B[pa]C[✓ 正确])(;B[pb]C[✓ 正确])(;B[na]C[✓ 正确]))))(;W[mb](;B[na]C[✓ 正确])))(;B[qa](;W[mb]C[✗ 失败]))(;B[na](;W[pb]C[✗ 失败])))(;W[na](;B[oa]C[⚡ 变化])))(;B[na]C[失败](;W[pa](;B[pb](;W[mb]C[✗ 失败]))))(;B[pb](;W[pa](;B[ra](;W[pc](;B[qa](;W[mb](;B[na](;W[ma]C[✗ 失败]))))))(;B[na](;W[mb](;B[ra](;W[ma]C[✗ 失败]))(;B[oa](;W[pc](;B[ra](;W[ma](;B[qa](;W[mc]C[✗ 失败]))))))))))(;B[oa](;W[pa](;B[na](;W[mb](;B[pb](;W[pc](;B[ra](;W[ma](;B[qa](;W[mc]C[✗ 失败])))))))))))

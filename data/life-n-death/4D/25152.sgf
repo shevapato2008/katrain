@@ -2,9 +2,9 @@
 GN[Q-25152]
 AN[苍鹰翔宇]
 SO[https://www.101weiqi.com/4D/25152/]
-GC[死活题 | 4D+ | 正确率: 30.7% (1089/3553)]
+GC[死活题 | 4D+ | 正确率: 30.6% (1089/3556)]
 C[白先 死活题]
-AB[pa][rd][oc][nb][qc][qd][pc]
-AW[qf][mb][rc][mc][sc][od][pe][nd][rg][ra]
+AB[qd][qc][nb][pc][rd][oc][pa]
+AW[nd][od][rc][sc][qf][ra][mb][mc][rg][pe]
 PL[W]
-(;W[sb](;B[qa](;W[pb](;B[ob](;W[na](;B[sd](;W[qb](;B[rb](;W[qb]))))(;B[qb](;W[sd])))(;W[qb](;B[rb](;W[qb](;B[pb](;W[rb](;B[na]))(;W[na](;B[rb]))(;W[sd](;B[re](;W[se](;B[sf](;W[rf](;B[rb](;W[sg](;B[sa](;W[sf](;B[na](;W[ra])))))))))))))))(;W[sd](;B[re](;W[se](;B[sf](;W[rf](;B[na](;W[qb](;B[rb](;W[qb](;B[pb](;W[sg](;B[rb])))))))))))))(;B[qb](;W[sd])))(;W[sd](;B[re](;W[se](;B[sf](;W[rf](;B[rb](;W[qb](;B[pb]))))))))(;W[na](;B[rb](;W[qb](;B[pb])))))(;B[sd](;W[qb](;B[qa](;W[pb]C[黑淨死](;B[oa]C[正解，黑成“梅花六”死棋](;W[re](;B[ob](;W[qe](;B[rb](;W[qb](;B[pb](;W[rb](;B[sa](;W[rb]))))))))))))))(;B[pb](;W[qa](;B[qb](;W[sd])))))(;W[qb](;B[sb](;W[pb](;B[ob]))))(;W[sd](;B[se](;W[re](;B[rb](;W[sf](;B[sb](;W[se](;B[qa]))))))))(;W[re](;B[sd]))(;W[rb](;B[sd]))(;W[nc](;B[sb]))(;W[na](;B[sb])))
+(;W[sb](;B[qa](;W[pb](;B[ob](;W[na](;B[sd](;W[qb](;B[rb](;W[qb]C[✓ 正确]))))(;B[qb](;W[sd]C[⚡ 变化])))(;W[qb](;B[rb](;W[qb](;B[pb](;W[rb](;B[na]C[✗ 失败]))(;W[na](;B[rb]C[✗ 失败]))(;W[sd](;B[re](;W[se](;B[sf](;W[rf](;B[rb](;W[sg](;B[sa](;W[sf](;B[na](;W[ra]C[✗ 失败])))))))))))))))(;W[sd](;B[re](;W[se](;B[sf](;W[rf](;B[na](;W[qb](;B[rb](;W[qb](;B[pb](;W[sg](;B[rb]C[✗ 失败])))))))))))))(;B[qb](;W[sd]C[⚡ 变化])))(;W[sd](;B[re](;W[se](;B[sf](;W[rf](;B[rb](;W[qb](;B[pb]C[✗ 失败]))))))))(;W[na](;B[rb](;W[qb](;B[pb]C[✗ 失败])))))(;B[sd](;W[qb](;B[qa](;W[pb]C[黑淨死](;B[oa]C[正解，黑成“梅花六”死棋](;W[re](;B[ob](;W[qe](;B[rb](;W[qb](;B[pb](;W[rb](;B[sa](;W[rb]C[⚡ 变化]))))))))))))))(;B[pb](;W[qa](;B[qb](;W[sd]C[⚡ 变化])))))(;W[qb](;B[sb](;W[pb](;B[ob]C[✗ 失败]))))(;W[sd](;B[se](;W[re](;B[rb](;W[sf](;B[sb](;W[se](;B[qa]C[✗ 失败]))))))))(;W[re](;B[sd]C[✗ 失败]))(;W[rb](;B[sd]C[✗ 失败]))(;W[nc](;B[sb]C[✗ 失败]))(;W[na](;B[sb]C[✗ 失败])))

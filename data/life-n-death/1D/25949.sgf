@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25949]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/1D/25949/]
+GC[死活题 | 1D+ | 正确率: 36.3% (2545/7011)]
+C[白先 死活题]
+AB[qb][qc][rd][re]
+AW[qd][qf][qe][mc][pc][rf][oc]
+PL[W]
+(;W[sc]C[这个手法和第20型的参考图2类似，但结果不同。 正解](;B[sb](;W[rb](;B[rc](;W[sa](;B[pb](;W[ob](;B[ra](;W[qa](;B[pa](;W[oa](;B[ra]C[✓ 正确 | 这是黑的缓一气劫。
+
+以后白棋在A位提劫后再在B位收气才是紧气劫。]))(;W[se]C[✓ 正确]))))))(;B[ra](;W[qa](;B[pb](;W[se](;B[sd](;W[ob]C[⚡ 变化 | 紧气劫，黑失误]))))))))(;B[ra](;W[sa](;B[rc](;W[qa](;B[pb](;W[se](;B[sd](;W[ob]C[⚡ 变化]))))))))))(;B[rc]C[变化图](;W[sb](;B[pb](;W[ob](;B[pa](;W[se](;B[sd](;W[ra](;B[sf](;W[rh](;B[rb](;W[oa]C[黑13收紧黑的外气，使得黑棋无法在A位吃胀牯牛。](;B[sa](;W[sb]C[⚡ 变化 | 盘角曲四，死形。])))))))))(;W[ra]C[⚡ 变化])))))))(;W[rb](;B[ra](;W[sb](;B[sc](;W[se](;B[pb](;W[ob](;B[pa]C[✗ 失败]))))))(;W[sc](;B[rc](;W[sb](;B[pb]C[✗ 失败]))))))(;W[se](;B[sc](;W[ra](;B[rb](;W[sf](;B[qa]C[✗ 失败])(;B[sa](;W[sb](;B[qa]C[✗ 失败]))))))))(;W[pb](;B[rb](;W[sc](;B[sb](;W[se](;B[rc]C[✗ 失败]))))))(;W[sb](;B[sc](;W[rb](;B[ra]C[✗ 失败])))))

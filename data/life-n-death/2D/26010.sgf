@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-26010]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/2D/26010/]
+GC[死活题 | 2D | 正确率: 37.8% (1983/5243) | 和第18型类似，可以看成是第16型的一个变化图。]
+C[白先 死活题]
+AB[qd][qb][pc][pd][rd]
+AW[od][ob][qe][pe][rg][re][oc][oe]
+PL[W]
+(;W[rc]C[正解](;B[sd](;W[rb](;B[ra](;W[sc](;B[sb](;W[sa]C[✓ 正确 | 这个劫争的手法已经出现过多次了。]))(;B[qc]C[黑不行](;W[sb]C[⚡ 变化 | 方四的死形。])))(;W[pa](;B[pb](;W[oa](;B[sb](;W[qa](;B[sc](;W[sa]C[✓ 正确])))))(;W[sc](;B[sb](;W[sa]C[✓ 正确]))))(;B[sb](;W[qa](;B[sc](;W[sa]C[✓ 正确])))))(;W[sb]C[变化图](;B[sc]C[黑不行](;W[pb]C[⚡ 变化 | 黑棋因为有断头而净死。]))(;B[pb](;W[pa](;B[sc]C[✗ 失败 | 双活])))))(;B[sb](;W[ra](;B[pb](;W[sc](;B[qa](;W[se]C[⚡ 变化]))))))))(;B[sc]C[黑不行1](;W[sb](;B[sd](;W[rb]C[⚡ 变化 | 之后A、B见合，黑棋净死。
+
+类似的杀法参看第17型的正解2中黑4的变化图、第12型的正解2和第14型的失败图1。]))))(;B[sb]C[黑不行2](;W[ra]C[妙手。](;B[qa](;W[rb]C[⚡ 变化 | 黑棋净死。])(;W[sd](;B[sc](;W[rb](;B[se](;W[pb]C[⚡ 变化])))))))(;W[sd](;B[sc](;W[pb](;B[se](;W[ra]C[⚡ 变化]))))))))

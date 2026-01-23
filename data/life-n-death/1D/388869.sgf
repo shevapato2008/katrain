@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-347566]
+AN[kenny]
+SO[https://www.101weiqi.com/1D/388869/]
+GC[死活题 | 1D | 正确率: 34.3% (2586/7529) | 感谢追兔子的鱼提供的素材]
+C[黑先 死活题]
+AB[qd][qi][qb][ob][nh][qe][pc][rg][pd][pf][re][oc][pe][qg][ph][oh]
+AW[md][qc][pb][qf][rc][ng][pa][mb][mg][pg][rb][rf][rd][oe][og][se][sf]
+PL[B]
+(;B[ra](;W[qa](;B[sb](;W[sa]C[✓ 正确])(;W[sc](;B[sg]C[⚡ 变化]))(;W[sd](;B[oa]C[⚡ 变化])))(;B[sg](;W[sd](;B[sb](;W[sa]C[✗ 失败]))))))(;B[sd](;W[sc](;B[sg](;W[sd]C[✗ 失败]))))(;B[sg](;W[sd](;B[ra](;W[qa](;B[sb](;W[sa]C[✗ 失败 | 缓一气劫])))))))

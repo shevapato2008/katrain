@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-37184]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/1D/37184/]
+GC[死活题 | 1D | 正确率: 35.0% (2141/6117)]
+C[黑先 死活题]
+AB[nd][od][pb][pd][rd][oc][pa]
+AW[md][qc][of][qf][ob][nb][nc][lc][oa][re][me]
+PL[B]
+(;B[qd](;W[rc](;B[sb](;W[pc](;B[ra]C[✓ 正确]))(;W[sc](;B[sd](;W[rb](;B[pc](;W[sa](;B[qa]C[⚡ 变化]))(;W[qa](;B[sa]C[⚡ 变化]))))))(;W[sd](;B[sc]C[⚡ 变化 | 变化图])))(;B[sc](;W[sb](;B[sd](;W[qb]C[✗ 失败 | 失败图]))))))(;B[rc](;W[qd]C[✗ 失败])))

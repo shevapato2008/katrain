@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-120662]
+AN[kenny]
+SO[https://www.101weiqi.com/2D/134465/]
+GC[死活题 | 2D | 正确率: 33.6% (1877/5594)]
+C[黑先 死活题]
+AB[od][pb][qf][nc][pe][pc][rf][pf][pa][sf]
+AW[qc][qb][qe][rb][re][se]
+PL[B]
+(;B[ra](;W[qa](;B[qd](;W[rd](;B[sb](;W[pd](;B[sc](;W[rc](;B[sa]C[⚡ 变化 | 黑棋动手时可以于1,1粘上形成保留劫])))))))))(;B[qd](;W[rd](;B[sb](;W[sc](;B[ra](;W[pd]C[✗ 失败 | 连环劫，失败]))))(;B[ra](;W[sb](;B[qa](;W[sc]C[✗ 失败]))))))(;B[sb](;W[sc](;B[qd](;W[rd](;B[ra](;W[pd]C[✗ 失败 | 连环劫，失败])))))))

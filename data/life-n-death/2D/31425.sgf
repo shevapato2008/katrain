@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-31425]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/2D/31425/]
+GC[死活题 | 2D | 正确率: 34.7% (1687/4861) | 吴清源九段创作]
+C[黑先 死活题]
+AB[nd][qc][qe][pe][nc][mb][lc][rd][oe]
+AW[od][rc][qb][ob][nb][ra][pd]
+PL[B]
+(;B[sb](;W[sc](;B[sd](;W[rb](;B[pb](;W[pc](;B[pa](;W[qd](;B[oc]C[✓ 正确]))))(;W[qd](;B[oc]C[⚡ 变化])))))(;B[pb](;W[pc](;B[pa](;W[qd](;B[oc](;W[qc](;B[re](;W[qa]C[✗ 失败])))))))))(;W[qd](;B[rb](;W[pc](;B[sd]C[⚡ 变化 | 变化图]))))(;W[rb](;B[pc](;W[oc](;B[qd](;W[pb](;B[sc](;W[na](;B[pa]C[⚡ 变化]))))))))(;W[pc](;B[rb](;W[qd](;B[sd]C[⚡ 变化])))))(;B[pc](;W[sb]C[白棋棄2子](;B[pb](;W[pa](;B[oa](;W[na](;B[ma](;W[oa](;B[oc](;W[qa]C[✗ 失败]))))))))))(;B[sc](;W[sb]C[✗ 失败])))

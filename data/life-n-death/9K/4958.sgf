@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-4958]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/9K/4958/]
+GC[死活题 | 9K | 正确率: 45.1% (18077/40060)]
+C[黑先 死活题]
+AB[qc][pb][rc][sc][pc]
+AW[sd][od][qd][ob][oa][pd][rd][oc]
+PL[B]
+(;B[ra](;W[rb](;B[sb](;W[qa](;B[qb]C[✓ 正确])(;B[pa](;W[sa]C[✗ 失败]))))(;B[pa](;W[sb]C[✗ 失败]))(;B[qb](;W[sb]C[✗ 失败]))(;B[qa](;W[sb]C[✗ 失败])))(;W[pa](;B[qa]C[✓ 正确])(;B[sb](;W[qa](;B[qb]C[✓ 正确]))))(;W[sb](;B[rb]C[✓ 正确 | RIGHT])(;B[pa](;W[rb]C[✗ 失败]))(;B[qa](;W[rb]C[✗ 失败]))(;B[qb](;W[pa]C[✗ 失败]))))(;B[rb](;W[qa](;B[pa](;W[ra](;B[sa](;W[sb]C[✗ 失败]))(;B[qb](;W[sb]C[✗ 失败]))))(;B[ra](;W[pa]C[✗ 失败]))(;B[sa](;W[pa]C[✗ 失败]))))(;B[pa](;W[rb](;B[qb](;W[sb]C[✗ 失败]))(;B[sb](;W[ra]C[✗ 失败]))(;B[ra](;W[sb]C[✗ 失败 | 失败，重来吧]))))(;B[qa](;W[rb]C[✗ 失败]))(;B[sa](;W[rb]C[✗ 失败]))(;B[sb](;W[ra]C[✗ 失败]))(;B[qb](;W[pa](;B[ra](;W[sb]C[✗ 失败]))(;B[sb](;W[ra]C[✗ 失败])))))

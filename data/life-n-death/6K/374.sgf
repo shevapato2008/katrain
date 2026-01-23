@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-374]
+AN[admin]
+SO[https://www.101weiqi.com/6K/374/]
+GC[死活题 | 6K+ | 正确率: 31.4% (8857/28230) | 黑先]
+C[黑先 死活题]
+AB[qc][ob][nb][mb][rb][ma][pc]
+AW[qd][lb][rc][la][lc][mc][nc][sb][pd][rd][oc]
+PL[B]
+(;B[qb](;W[ra](;B[pa]C[✓ 正确])(;B[qa](;W[pa](;B[sa]C[✗ 失败 | 成劫，失败。]))))(;W[pa](;B[oa](;W[ra](;B[pb]C[✓ 正确])))))(;B[ra](;W[pb](;B[qb](;W[pa]C[✗ 失败 | 金鸡独立，黑失败]))))(;B[qa](;W[ra](;B[qb](;W[oa](;B[sa]C[✗ 失败])))(;B[sa]C[✗ 失败])))(;B[pb](;W[ra](;B[qa]C[✗ 失败])))(;B[pa](;W[qb](;B[pb](;W[ra]C[✗ 失败]))))(;B[oa](;W[qb]C[✗ 失败])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-56737]
+AN[foxyz]
+SO[https://www.101weiqi.com/1K/56737/]
+GC[死活题 | 1K | 正确率: 32.5% (3690/11363)]
+C[黑先 死活题]
+AB[qd][pb][qb][ra][pd][rd][re][se]
+AW[od][ob][pa][qe][pe][oa][qa][rf][sb][oc][oe][sf]
+PL[B]
+(;B[rb](;W[rc](;B[sc](;W[sd](;B[pc]C[✓ 正确])))(;B[pc]C[✓ 正确]))(;W[sc](;B[pc](;W[rc]C[✓ 正确 | 37 黑1如下3位，则白1 黑4 白2 黑死。]))))(;B[pc](;W[rb](;B[rc](;W[sc]C[✗ 失败]))))(;B[sc](;W[rb](;B[rc](;W[pc](;B[sa](;W[rb]C[✗ 失败]))))))(;B[rc](;W[sc](;B[pc](;W[rb]C[✗ 失败])))))

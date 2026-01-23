@@ -722,9 +722,11 @@ dependencies = [
     { name = "ffpyplayer" },
     { name = "kivy" },
     { name = "kivymd" },
+    { name = "passlib" },
     { name = "pygame", marker = "sys_platform == 'darwin'" },
     { name = "requests" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'" },
+    { name = "sqlalchemy" },
     { name = "urllib3" },
 ]
 
@@ -765,6 +767,7 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'web'", specifier = ">=0.27.0" },
     { name = "kivy", specifier = ">=2.3.1" },
     { name = "kivymd", specifier = "==0.104.1" },
+    { name = "passlib", specifier = ">=1.7.4" },
     { name = "passlib", extras = ["bcrypt"], marker = "extra == 'web'", specifier = ">=1.7.4" },
     { name = "psycopg2-binary", marker = "extra == 'web'", specifier = ">=2.9.0" },
     { name = "pydantic", marker = "extra == 'web'", specifier = ">=2.6.1" },
@@ -772,6 +775,7 @@ requires-dist = [
     { name = "python-jose", extras = ["cryptography"], marker = "extra == 'web'", specifier = ">=3.3.0" },
     { name = "requests", specifier = ">=2.32.0" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'", specifier = ">=0.8.1,<0.9" },
+    { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "sqlalchemy", marker = "extra == 'web'", specifier = ">=2.0.0" },
     { name = "urllib3", specifier = ">=2.2.2" },
     { name = "uvicorn", marker = "extra == 'web'", specifier = ">=0.27.1" },

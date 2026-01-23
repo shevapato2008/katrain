@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-14749]
+AN[admin]
+SO[https://www.101weiqi.com/2D/14749/]
+GC[手筋题 | 2D+ | 正确率: 15.4% (823/5338) | 3-1-20
+黑先]
+C[黑先 手筋题]
+AB[ic][mh][mb][rf][qi][qf][je][ne][jh][oe][ld][md][qd][ng][qe][jd][jb][od][kg][mc][jf]
+AW[nd][rc][kc][ke][nb][nc][kf][me][kd][pc][rd][re][mf][kb]
+PL[B]
+(;B[ma](;W[ka](;B[pb](;W[qb](;B[oa](;W[oc](;B[qc]C[✓ 正确]))(;W[qc](;B[oc]C[✓ 正确]))))))(;W[pb](;B[ka]C[✓ 正确])))(;B[pb](;W[ma](;B[la](;W[na](;B[lb](;W[ka]C[✗ 失败]))(;B[oc](;W[lb](;B[ob](;W[ka](;B[oa](;W[la](;B[lc](;W[lg]C[✗ 失败]))))))))))(;B[oc]C[✗ 失败])))(;B[oc](;W[ob](;B[qb](;W[pb](;B[qc](;W[le](;B[pd](;W[lb](;B[pa](;W[ma]C[✗ 失败]))))))))))(;B[na](;W[pb](;B[ma](;W[la]C[✗ 失败]))))(;B[qb](;W[pb](;B[qc](;W[ma](;B[la](;W[na]C[✗ 失败])))))))

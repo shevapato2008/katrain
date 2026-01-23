@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-147293]
+AN[方块A]
+SO[https://www.101weiqi.com/2D/165378/]
+GC[死活题 | 2D+ | 正确率: 41.4% (2079/5027) | 井场悠史创作]
+C[黑先 死活题]
+AB[nd][qc][od][le][lb][id][ic][qb][kd][jd][pc][me][ib]
+AW[jb][ka][pb][ob][nb][nc][lc][kc][ld]
+PL[B]
+(;B[mb](;W[ma](;B[la](;W[oa](;B[na]C[✓ 正确])))(;B[mc](;W[md](;B[pa](;W[oa](;B[oc](;W[qa]C[✗ 失败])))))))(;W[mc](;B[pa](;W[oa](;B[ma]C[⚡ 变化]))))))

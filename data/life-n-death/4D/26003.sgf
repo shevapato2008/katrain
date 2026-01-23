@@ -2,11 +2,11 @@
 GN[Q-26003]
 AN[sunshiny84]
 SO[https://www.101weiqi.com/4D/26003/]
-GC[死活题 | 4D+ | 正确率: 38.5% (1611/4187)]
+GC[死活题 | 4D+ | 正确率: 38.5% (1614/4193)]
 C[白先 死活题]
-AB[se][oa][rd][pb][pd][qd][pc]
-AW[mb][oe][re][pe][od][rg][oc][qe][ob]
+AB[qd][pb][oa][pc][pd][rd][se]
+AW[od][ob][qe][pe][mb][rg][re][oc][oe]
 PL[W]
-(;W[rb]C[正解](;B[ra]C[因为对称，黑2和黑A等价。](;W[rc](;B[sd](;W[sc]C[变化图](;B[pa]C[还是万年劫。])(;B[qa]C[万年劫]))(;W[qa](;B[qb](;W[sa](;B[sc](;W[na](;B[pa](;W[sf](;B[ra]))))(;W[sf](;B[pa](;W[na](;B[ra]))))))))(;W[pa](;B[sc])))(;B[qb]C[失败图](;W[sc](;B[sd](;W[pa](;B[sb]C[白的先手劫。
+(;W[rb]C[正解](;B[ra]C[因为对称，黑2和黑A等价。](;W[rc](;B[sd](;W[sc]C[变化图](;B[pa]C[✓ 正确 | 还是万年劫。])(;B[qa]C[✓ 正确 | 万年劫]))(;W[qa](;B[qb](;W[sa](;B[sc](;W[na](;B[pa](;W[sf](;B[ra]C[✓ 正确]))))(;W[sf](;B[pa](;W[na](;B[ra]C[✓ 正确]))))))))(;W[pa](;B[sc]C[✗ 失败])))(;B[qb]C[失败图](;W[sc](;B[sd](;W[pa](;B[sb]C[⚡ 变化 | 白的先手劫。
 
-紧劫当然不如万年劫对黑棋有利。]))))(;W[pa]C[扳早了，应该先进行白A黑B的交换。 白不行](;B[sc](;W[sb](;B[sd]C[双活。])))))(;B[pa](;W[sd](;B[sc](;W[sb](;B[qb](;W[sd]))))))(;B[qa](;W[sd](;B[sc](;W[sb](;B[qb](;W[sd]))))))))(;B[qb](;W[rc](;B[ra](;W[sc](;B[sd](;W[pa](;B[sb](;W[sa]))))))))))
+紧劫当然不如万年劫对黑棋有利。]))))(;W[pa]C[扳早了，应该先进行白A黑B的交换。 白不行](;B[sc](;W[sb](;B[sd]C[⚡ 变化 | 双活。])))))(;B[pa](;W[sd](;B[sc](;W[sb](;B[qb](;W[sd]C[⚡ 变化]))))))(;B[qa](;W[sd](;B[sc](;W[sb](;B[qb](;W[sd]C[⚡ 变化]))))))))(;B[qb](;W[rc](;B[ra](;W[sc](;B[sd](;W[pa](;B[sb](;W[sa]C[⚡ 变化]))))))))))

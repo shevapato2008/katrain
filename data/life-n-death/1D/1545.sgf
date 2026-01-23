@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1545]
+AN[admin]
+SO[https://www.101weiqi.com/1D/1545/]
+GC[对杀题 | 1D | 正确率: 38.7% (2719/7028)]
+C[黑先 对杀题]
+AB[oi][qd][pb][qf][qb][ob][nc][qe][pg][qh][pc][rf][rd][og][se]
+AW[sd][qc][qi][rc][nf][rb][sb][rg][pd][pf][ne][rh][oc][pe][qg]
+PL[B]
+(;B[sg](;W[sh](;B[ra](;W[sf](;B[sc]C[✓ 正确 | 连环劫,恭喜答对])))(;B[sc](;W[sf](;B[ra](;W[sd](;B[sg]C[✓ 正确])))))))(;B[ra](;W[sg](;B[sc]C[✗ 失败 | 劫,黑失败,])))(;B[sc](;W[sg](;B[ra](;W[sd]C[✗ 失败])))))

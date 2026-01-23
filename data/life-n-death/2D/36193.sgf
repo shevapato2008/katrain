@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-36193]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/2D/36193/]
+GC[死活题 | 2D | 正确率: 29.7% (1463/4920) | 郭求真六段创作]
+C[黑先 死活题]
+AB[of][qd][nd][qf][pb][nb][nc][lc][nf][rf][pf][rd][me][mf][ld][kb]
+AW[md][qc][rc][ob][mb][mc][pe][pc][ne][pd][oe]
+PL[B]
+(;B[pa](;W[na](;B[oa](;W[qb](;B[ma]C[✓ 正确])(;B[oc]C[✓ 正确]))(;W[la](;B[lb]C[⚡ 变化])))(;B[lb](;W[oc](;B[ma](;W[oa]C[✗ 失败])))))(;W[oc](;B[oa](;W[ma](;B[na]C[⚡ 变化])))))(;B[oc](;W[pa](;B[oa](;W[qb](;B[qa](;W[ra](;B[sb](;W[pa](;B[sc](;W[ob](;B[ma](;W[na](;B[lb](;W[rb](;B[oa]C[✗ 失败 | 失败图])))))))))))))))(;B[oa](;W[pa](;B[oc](;W[qb](;B[qa](;W[ra]C[✗ 失败]))))(;B[qa](;W[qb](;B[oc](;W[ra](;B[sb](;W[pa]C[✗ 失败])))))))))

@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22117]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/4K/22117/]
+GC[死活题 | 4K | 正确率: 28.2% (5013/17800)]
+C[黑先 死活题]
+AB[qd][qc][md][qf][qb][nb][nc][mc][pc][pf][oc][pa]
+AW[lc][mb][qa][rf][pd][me][of][rc][ra][rb][rd][re][ld][nd][le][ng][lg][lb][pg][qg]
+PL[B]
+(;B[na](;W[ob](;B[oe](;W[ne](;B[od]C[✓ 正确 | RIGHT
+恭喜答对])))(;B[od](;W[oe]C[✗ 失败])))(;W[qe](;B[ob](;W[od]C[⚡ 变化]))))(;B[ob](;W[na](;B[oe]C[✓ 正确])(;B[od](;W[oe]C[✗ 失败]))))(;B[oe](;W[oa](;B[ne](;W[od](;B[ob]C[✗ 失败 | 上面没有俩个个眼 成劫])))(;B[ob]C[✗ 失败]))))

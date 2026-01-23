@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-65413]
+AN[kenny]
+SO[https://www.101weiqi.com/2D/65413/]
+GC[死活题 | 2D | 正确率: 41.7% (2417/5798)]
+C[黑先 死活题]
+AB[li][ig][kg][ih][kf][mh][lg][ii][jj][kk][lk][jf][mi]
+AW[mk][hj][ik][kh][hg][nh][je][jh][mf][nk][lf][jk][ng][nj][gi][kl][ll][if][ke][hh][hf][ni]
+PL[B]
+(;B[lj](;W[ji](;B[ki](;W[ij]C[✓ 正确]))(;B[ij](;W[ki]C[✗ 失败])))(;W[ki](;B[ji](;W[lh](;B[mg]C[⚡ 变化])))))(;B[mj](;W[kj](;B[lj](;W[ki](;B[ji](;W[mg]C[✗ 失败]))(;B[jg](;W[ji]C[✗ 失败]))(;B[mg](;W[jg]C[✗ 失败]))(;B[lh](;W[ji](;B[jg](;W[ki]C[✗ 失败])))))))))

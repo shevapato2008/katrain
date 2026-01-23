@@ -2,9 +2,9 @@
 GN[Q-316]
 AN[admin]
 SO[https://www.101weiqi.com/4D/316/]
-GC[手筋题 | 4D+ | 正确率: 15.3% (780/5087)]
+GC[手筋题 | 4D+ | 正确率: 15.3% (780/5088)]
 C[黑先 手筋题]
-AB[nc][od][ld][mc]
-AW[md][lc][nd][oc][qd][pc]
+AB[ld][od][nc][mc]
+AW[qd][nd][md][lc][pc][oc]
 PL[B]
-(;B[lb](;W[kc](;B[kd](;W[mb](;B[nb](;W[mf](;B[ic](;W[kb](;B[ma](;W[jd](;B[je](;W[ib](;B[id]))))(;W[ib](;B[jd])))))(;B[jc](;W[kb](;B[ma](;W[jb](;B[ic](;W[ib](;B[hc](;W[hb](;B[gc](;W[gb](;B[ob](;W[pb](;B[oa](;W[fc])))))))))))))))(;W[oe](;B[ic](;W[jd](;B[je]))(;W[kb](;B[ma](;W[ib](;B[jd](;W[jb](;B[hb]))))))))))(;W[jc](;B[ne]))))))
+(;B[lb](;W[kc](;B[kd](;W[mb](;B[nb](;W[mf](;B[ic](;W[kb](;B[ma](;W[jd](;B[je](;W[ib](;B[id]C[⚡ 变化]))))(;W[ib](;B[jd]C[⚡ 变化])))))(;B[jc](;W[kb](;B[ma](;W[jb](;B[ic](;W[ib](;B[hc](;W[hb](;B[gc](;W[gb](;B[ob](;W[pb](;B[oa](;W[fc]C[✗ 失败])))))))))))))))(;W[oe](;B[ic](;W[jd](;B[je]C[⚡ 变化]))(;W[kb](;B[ma](;W[ib](;B[jd](;W[jb](;B[hb]C[⚡ 变化]))))))))))(;W[jc](;B[ne]C[⚡ 变化]))))))

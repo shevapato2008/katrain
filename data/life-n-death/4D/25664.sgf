@@ -2,9 +2,9 @@
 GN[Q-25664]
 AN[苍鹰翔宇]
 SO[https://www.101weiqi.com/4D/25664/]
-GC[手筋题 | 4D | 正确率: 18.9% (627/3318)]
+GC[手筋题 | 4D | 正确率: 18.9% (627/3320)]
 C[黑先 手筋题]
-AB[qi][qh][lf][mb][qe][mc][mi][pb][lc][ld][mg][qg][kf][qa][la][le][qc][qd][mj][rb][mh][mf]
-AW[jh][lb][lh][ok][me][oi][jb][kb][oa][md][pf][pg][ni][lk][pi][je][oe][oc][mk][kc][jf][kj][ke][kg][pc][ob]
+AB[mh][mb][lc][qa][qi][mi][pb][kf][rb][mf][ld][qd][qc][le][lf][qe][mg][mj][la][mc][qh][qg]
+AW[mk][lh][lk][kj][me][ob][je][pf][jh][kc][ok][oe][oc][oi][md][oa][pc][jb][lb][kg][ke][jf][pg][pi][ni][kb]
 PL[B]
-(;B[od](;W[pd](;B[og]C[也是手筋，但。。。](;W[ng]C[妙手！](;B[oh](;W[ph](;B[pe](;W[nh](;B[nd])(;B[nf](;W[of](;B[nd]))))))(;W[nd](;B[of])))(;B[pe](;W[nd](;B[oh](;W[of](;B[ph](;W[nf](;B[nh](;W[nc]C[白活了])))))))))(;W[nd](;B[of]))(;W[of](;B[nd](;W[ph](;B[pe]))))(;W[nf](;B[oh](;W[ph](;B[pe])))))(;B[oh](;W[nd](;B[of])(;B[ph](;W[nf](;B[og](;W[of])))))(;W[nh](;B[nf](;W[ph](;B[pe]C[正解。AB见合])))(;B[pe](;W[ne](;B[og]))))(;W[ph](;B[pe]C[正解])))(;B[pe](;W[ne](;B[oh](;W[ph](;B[of]))))(;W[nd](;B[og](;W[of](;B[ph](;W[nf](;B[oh](;W[nc]))))))(;B[oh](;W[nf](;B[og](;W[of](;B[ph](;W[nc])))))))))(;W[nd](;B[pd](;W[nc](;B[nf](;W[ne](;B[ph])))))))(;B[nf](;W[of]))(;B[og](;W[ph](;B[od](;W[nd]))(;B[nd](;W[pe])))))
+(;B[od](;W[pd](;B[og]C[也是手筋，但。。。](;W[ng]C[妙手！](;B[oh](;W[ph](;B[pe](;W[nh](;B[nd]C[✓ 正确])(;B[nf](;W[of](;B[nd]C[✓ 正确]))))))(;W[nd](;B[of]C[⚡ 变化])))(;B[pe](;W[nd](;B[oh](;W[of](;B[ph](;W[nf](;B[nh](;W[nc]C[✗ 失败 | 白活了])))))))))(;W[nd](;B[of]C[⚡ 变化]))(;W[of](;B[nd](;W[ph](;B[pe]C[⚡ 变化]))))(;W[nf](;B[oh](;W[ph](;B[pe]C[⚡ 变化])))))(;B[oh](;W[nd](;B[of]C[✓ 正确])(;B[ph](;W[nf](;B[og](;W[of]C[✗ 失败])))))(;W[nh](;B[nf](;W[ph](;B[pe]C[⚡ 变化 | 正解。AB见合])))(;B[pe](;W[ne](;B[og]C[⚡ 变化]))))(;W[ph](;B[pe]C[⚡ 变化 | 正解])))(;B[pe](;W[ne](;B[oh](;W[ph](;B[of]C[⚡ 变化]))))(;W[nd](;B[og](;W[of](;B[ph](;W[nf](;B[oh](;W[nc]C[✗ 失败]))))))(;B[oh](;W[nf](;B[og](;W[of](;B[ph](;W[nc]C[✗ 失败])))))))))(;W[nd](;B[pd](;W[nc](;B[nf](;W[ne](;B[ph]C[⚡ 变化])))))))(;B[nf](;W[of]C[✗ 失败]))(;B[og](;W[ph](;B[od](;W[nd]C[✗ 失败]))(;B[nd](;W[pe]C[✗ 失败])))))

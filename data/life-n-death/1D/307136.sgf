@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-272312]
+AN[kenny]
+SO[https://www.101weiqi.com/1D/307136/]
+GC[手筋题 | 1D | 正确率: 33.6% (2101/6260)]
+C[黑先 手筋题]
+AB[qd][qc][pb][qb][ob][nc][pc][pe]
+AW[od][nb][qe][mb][oa][rf][pd][rd][oc][qg][se]
+PL[B]
+(;B[mc](;W[lc](;B[oe](;W[nd](;B[md](;W[ne](;B[ld]C[✓ 正确])(;B[lb](;W[kb](;B[ld]C[✓ 正确])))(;B[nf](;W[me](;B[ld](;W[le](;B[kd](;W[kc]C[✗ 失败])))))))))))(;W[md](;B[nd](;W[oe](;B[ne](;W[of](;B[lb]C[⚡ 变化]))))))))

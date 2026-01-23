@@ -2,9 +2,9 @@
 GN[Q-107637]
 AN[方块A]
 SO[https://www.101weiqi.com/4D/115040/]
-GC[死活题 | 4D | 正确率: 38.1% (1305/3426) | 赵治勋九段创作]
+GC[死活题 | 4D | 正确率: 38.1% (1306/3428) | 赵治勋九段创作]
 C[黑先 死活题]
-AB[qf][pa][na][pb][pd][re][pe][oc][nb][pc][qe]
-AW[nc][se][qg][mb][rd][mc][oe][of][pf][od][rf][ma][rg][qc][qd]
+AB[pb][qf][na][nb][qe][pe][pc][pd][re][oc][pa]
+AW[of][od][qc][qd][nc][mb][mc][ma][rg][rf][pf][rd][oe][qg][se]
 PL[B]
-(;B[rb](;W[qb](;B[sc](;W[ra](;B[sd](;W[sb](;B[sa])))(;B[qa](;W[ob]))))(;B[qa](;W[ra](;B[sc](;W[ob](;B[sa](;W[oa])))))))))
+(;B[rb](;W[qb](;B[sc](;W[ra](;B[sd](;W[sb](;B[sa]C[✓ 正确])))(;B[qa](;W[ob]C[✗ 失败]))))(;B[qa](;W[ra](;B[sc](;W[ob](;B[sa](;W[oa]C[✗ 失败])))))))))

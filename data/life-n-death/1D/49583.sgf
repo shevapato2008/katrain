@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-49583]
+AN[欧阳丹奇]
+SO[https://www.101weiqi.com/1D/49583/]
+GC[手筋题 | 1D | 正确率: 38.6% (2455/6363)]
+C[黑先 手筋题]
+AB[qf][qe][nc][mc][qh][pc][rf][pd][oc]
+AW[oi][qd][qc][od][nd][kc][ke][rb][rd][re][qi][pi][pe]
+PL[B]
+(;B[oe](;W[pf](;B[og](;W[pg](;B[ph](;W[of](;B[nf](;W[ne](;B[qg]C[✓ 正确]))))))(;W[of](;B[nf](;W[ne](;B[pg](;W[oe](;B[mf]C[✓ 正确])(;B[me]C[✓ 正确])))))))))(;B[of](;W[oe](;B[md](;W[me]C[✗ 失败]))(;B[me](;W[pf](;B[og](;W[pg](;B[ph](;W[qg]C[✗ 失败]))))(;B[pg](;W[nf](;B[og](;W[ne]C[✗ 失败]))))))))(;B[nf](;W[of](;B[og](;W[md](;B[ld](;W[me](;B[oe](;W[ne](;B[pf](;W[oe](;B[le](;W[mf](;B[lg](;W[ng](;B[nh](;W[lf]C[✗ 失败])))))))))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-55460]
+AN[foxyz]
+SO[https://www.101weiqi.com/2D/55460/]
+GC[死活题 | 2D+ | 正确率: 41.0% (4609/11235)]
+C[黑先 死活题]
+AB[qd][od][pb][qb][pg][rb][qh][sh][pf][rh][re][oc][oe][ph]
+AW[qc][qf][rc][qe][sg][pc][rg][pd][pe][qg]
+PL[B]
+(;B[sd](;W[se](;B[rd](;W[rf](;B[sf]C[✓ 正确])))(;B[sc](;W[rf](;B[sf]C[✓ 正确])))(;B[sf](;W[rf](;B[sc](;W[se]C[✗ 失败 | 黑后手劫])))))(;W[sc](;B[rd]C[⚡ 变化 | 37 黑1，3，然后白A则黑B成刀把五，白B则黑C成眼杀。]))(;W[rd](;B[sc](;W[se](;B[sf]C[⚡ 变化])))))(;B[rd](;W[sd]C[✗ 失败]))(;B[sc](;W[sd](;B[rd](;W[sb]C[✗ 失败])))))

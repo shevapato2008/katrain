@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1]
+AN[admin]
+SO[https://www.101weiqi.com/12K/1/]
+GC[对杀题 | 12K | 正确率: 65.7% (25871/39354)]
+C[黑先 对杀题]
+AB[qd][rc][nc][lc][ra][rb][pd][oc]
+AW[qc][qf][sc][qb][ob][pc][qa][rd][re]
+PL[B]
+(;B[pa](;W[pb](;B[nb]C[正解](;W[oa](;B[na](;W[sb](;B[pa]C[✓ 正确]))))(;W[sb](;B[oa]C[⚡ 变化])))(;B[na](;W[sb]C[✗ 失败]))(;B[oa](;W[na]C[✗ 失败])))(;W[sb]C[从官子角度来说，白2不应该，也不会在3位做无谓抵抗。](;B[pb]C[⚡ 变化]))(;W[oa](;B[pb]C[⚡ 变化])))(;B[pb](;W[pa](;B[oa](;W[na]C[✗ 失败]))(;B[na](;W[nb]C[✗ 失败]))))(;B[sb](;W[sa]C[✗ 失败]))(;B[na](;W[sb]C[✗ 失败]))(;B[oa](;W[sb](;B[pb](;W[sa]C[✗ 失败]))))(;B[nb](;W[sb]C[✗ 失败]))(;B[sd](;W[sb]C[✗ 失败])))

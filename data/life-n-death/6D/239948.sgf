@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-209673]
+AN[李范辛贺01]
+SO[https://www.101weiqi.com/6D/239948/]
+GC[布局题 | 6D | 正确率: 8.2% (171/2092) | 大飞守角白碰星位的变化]
+C[白先 布局题]
+AB[le][od][qd][rc][kf][nc][np][je][pc][ne][pq][rd][me]
+AW[qc][qo][lf][ke][qe][pe][nf][dp][pd][mf][oe][dd]
+PL[W]
+(;W[qb](;B[pb](;W[kg](;B[jf](;W[re](;B[rb]C[✓ 正确]))))(;W[re](;B[rb](;W[kg](;B[jf](;W[pk]C[⚡ 变化]))))))(;B[rb](;W[kd](;B[jd](;W[pb](;B[oc](;W[mc](;B[mb](;W[ld](;B[nd](;W[lb](;B[kc](;W[lc](;B[ob](;W[jc](;B[ic](;W[jb](;B[jf](;W[ib](;B[hc](;W[hb]C[✓ 正确 | 黑8正应，如此进行是白棋不错的结果]))))))))))))))(;B[nd](;W[ob](;B[nb](;W[mb](;B[oa](;W[ld](;B[qa](;W[jf](;B[kg](;W[jc](;B[ic](;W[ib](;B[hc](;W[hb](;B[gc](;W[jg](;B[kh](;W[he](;B[id](;W[jh]C[⚡ 变化 | 黑崩溃])))))))))))))))))))))))(;W[lc](;B[kc](;W[ld](;B[lb](;W[kb](;B[jc](;W[mb](;B[mc](;W[la](;B[md](;W[lb](;B[pb](;W[jb](;B[hc](;W[ic](;B[id](;W[ib]C[✓ 正确])))))))))))))))))))(;W[pb](;B[oc](;W[kd](;B[jd](;W[mc](;B[mb](;W[ld](;B[nd](;W[lb](;B[kc](;W[lc](;B[ob](;W[jc](;B[ic](;W[jb](;B[jf](;W[ib](;B[hc](;W[hb]C[✓ 正确 | 白不错]))))))))))))))))))))(;B[kd](;W[pb](;B[oc](;W[rb](;B[re](;W[rf](;B[rg](;W[qg](;B[sf](;W[qf](;B[rh](;W[qh](;B[ri](;W[se](;B[sd](;W[sg](;B[qi](;W[sb](;B[ph](;W[pl](;B[of](;W[sc]C[⚡ 变化])))))))))))))))))))))))(;W[kd](;B[jd](;W[qb](;B[rb](;W[pb](;B[oc](;W[mc](;B[ob](;W[nd]C[⚡ 变化]))))))(;B[pb](;W[re](;B[rb]C[✗ 失败])))))))

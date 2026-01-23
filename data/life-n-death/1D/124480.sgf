@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-113558]
+AN[古wcwc]
+SO[https://www.101weiqi.com/1D/124480/]
+GC[死活题 | 1D | 正确率: 29.5% (1889/6396)]
+C[黑先 死活题]
+AB[qd][od][pb][qe][oa][rf][pd][oc][qg]
+AW[qc][sc][qb][rd][re]
+PL[B]
+(;B[rb](;W[ra](;B[qa](;W[pa]C[✓ 正确])(;W[sb](;B[sa](;W[rc](;B[ra](;W[pa](;B[ra]C[⚡ 变化])))))))))(;B[ra](;W[qa](;B[rb](;W[se]C[✗ 失败]))))(;B[qa](;W[rb](;B[ra](;W[se](;B[sb]C[✗ 失败 | 白棋有利的缓一气劫]))))))

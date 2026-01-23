@@ -1,0 +1,14 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-29118]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/7D/29118/]
+GC[对杀题 | 7D | 正确率: 20.9% (241/1153) | 第105题  白先
+审题：这是很清楚的对杀题。白棋至少也得“宽”成七气才行。
+提示：“笨着”有时候反而最妙！]
+C[白先 对杀题]
+AB[qd][of][kg][ng][jc][qe][nh][mf][lg][qj][lc][rg][rf][rh][qi][ld][ph][oh]
+AW[md][ji][li][ig][qf][oe][ke][jf][mj][oj][nf][qh][ne][pi][oc][pe][og][qg]
+PL[W]
+(;W[le]C[图1 整理图](;B[me](;W[mc](;B[pg](;W[pf](;B[lb]C[图1
+
+　　这是整理图。白1、3是必走之着。此时，黑6立冷静，是最顽强的抵抗之手。](;W[pc]C[正解](;B[qc](;W[qb](;B[rb](;W[pa](;B[nb](;W[mb](;B[ob](;W[pb](;B[pd](;W[od](;B[na](;W[ma](;B[nc](;W[ra](;B[sc](;W[sa](;B[sb](;W[sd](;B[qa](;W[ra]C[⚡ 变化 | 白杀黑]))))))(;B[sb]C[✓ 正确 | 白杀黑])))))(;B[nc](;W[na]C[⚡ 变化 | 双活，黑死]))))))(;B[ma](;W[nc](;B[ob](;W[na](;B[oa](;W[pb]C[⚡ 变化 | 白活])))))))))))))(;W[qb]C[不好](;B[pc](;W[pb](;B[od](;W[nd](;B[pd](;W[nb](;B[mb](;W[og](;B[oa](;W[na](;B[rc](;W[rb](;B[sb]C[✗ 失败 | 对杀白棋不行]))))))))))))))(;W[qc]C[不好](;B[pd](;W[pc](;B[od](;W[nd](;B[mb](;W[nc](;B[rc](;W[rb](;B[rd](;W[nb](;B[sb](;W[ra](;B[na](;W[oa](;B[pb]C[✗ 失败 | 黑杀白])))))))))))))))))(;B[pb](;W[lb](;B[kb](;W[la]C[绝妙](;B[jd](;W[nb]C[⚡ 变化 | 白活]))(;B[nb](;W[kc](;B[kd](;W[jd](;B[kc](;W[ic](;B[ib](;W[jb](;B[ja](;W[ka]C[⚡ 变化 | 白活]))))))))))))))(;B[mb](;W[nb](;B[lb](;W[pb](;B[qb](;W[oa](;B[pc](;W[od]C[⚡ 变化 | 白活]))))))))(;B[nb](;W[mb](;B[od](;W[nd](;B[ob](;W[pc](;B[pd](;W[pb](;B[lb](;W[nc](;B[rb]C[⚡ 变化])))))))(;B[pd](;W[ob](;B[qb](;W[kb]C[⚡ 变化])))))(;W[pd](;B[pc](;W[nd](;B[ob](;W[qc](;B[pb](;W[rc](;B[rd](;W[sd](;B[re](;W[qb](;B[ra](;W[qa](;B[se]C[⚡ 变化])))))))))))))))))))))))

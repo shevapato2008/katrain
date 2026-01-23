@@ -2,9 +2,9 @@
 GN[Q-16608]
 AN[admin]
 SO[https://www.101weiqi.com/4D/16608/]
-GC[死活题 | 4D | 正确率: 16.6% (1018/6121)]
+GC[死活题 | 4D | 正确率: 16.6% (1019/6128)]
 C[黑先 死活题]
-AB[rg][pf][pg][og][nd][sf][nf][sd][qg][ng][sc][ne][qc][nc][se][sg][rc][na][nb]
-AW[sa][me][mb][ph][qh][of][od][pe][md][rh][mc][ma][nh][sh][mg][rd][oe][oc][qd][qf][rf][re][pc][oh][mf]
+AB[sd][na][nf][sg][rg][se][rc][ne][pf][sf][nd][qc][ng][nc][sc][nb][pg][og][qg]
+AW[mb][rf][me][ph][of][qf][nh][ma][rd][re][mf][oc][oe][rh][qd][md][mg][sh][pc][pe][oh][od][mc][qh][sa]
 PL[B]
-(;B[pb](;W[ob](;B[oa](;W[qa](;B[rb](;W[ra](;B[sb](;W[pa](;B[qb](;W[pa](;B[qa])))))(;B[qb])(;B[pa]))))(;W[qb](;B[pa](;W[rb](;B[qa]C[雙活]))))(;W[rb](;B[qa](;W[qb](;B[pa]C[雙活])))))(;B[pa](;W[ra](;B[rb](;W[oa]C[黑淨死]))))(;B[qa](;W[oa]C[黑淨死]))(;B[qb](;W[ra](;B[oa](;W[qa]C[黑淨死(盤角曲四)]))))(;B[ra](;W[qb](;B[pa](;W[oa]C[黑淨死]))))(;B[rb](;W[pa]C[黑淨死]))))(;B[ob](;W[pb]C[黑淨死]))(;B[pa](;W[ob](;B[pb](;W[ra](;B[rb](;W[oa]C[黑淨死]))))(;B[ra](;W[qb](;B[pb](;W[oa]C[黑淨死]))))))(;B[ra](;W[qb](;B[pb](;W[ob](;B[pa](;W[oa]C[黑淨死]))))))(;B[qa](;W[pb]C[黑淨死]))(;B[qb](;W[ra](;B[ob](;W[pb](;B[pa](;W[qa]C[白先劫]))))(;B[pb](;W[ob](;B[oa](;W[qa]C[黑淨死(盤角曲四)])))))))
+(;B[pb](;W[ob](;B[oa](;W[qa](;B[rb](;W[ra](;B[sb](;W[pa](;B[qb](;W[pa](;B[qa]C[⚡ 变化])))))(;B[qb]C[✗ 失败])(;B[pa]C[✗ 失败]))))(;W[qb](;B[pa](;W[rb](;B[qa]C[⚡ 变化 | 雙活]))))(;W[rb](;B[qa](;W[qb](;B[pa]C[⚡ 变化 | 雙活])))))(;B[pa](;W[ra](;B[rb](;W[oa]C[✗ 失败 | 黑淨死]))))(;B[qa](;W[oa]C[✗ 失败 | 黑淨死]))(;B[qb](;W[ra](;B[oa](;W[qa]C[✗ 失败 | 黑淨死(盤角曲四)]))))(;B[ra](;W[qb](;B[pa](;W[oa]C[✗ 失败 | 黑淨死]))))(;B[rb](;W[pa]C[✗ 失败 | 黑淨死]))))(;B[ob](;W[pb]C[✗ 失败 | 黑淨死]))(;B[pa](;W[ob](;B[pb](;W[ra](;B[rb](;W[oa]C[✗ 失败 | 黑淨死]))))(;B[ra](;W[qb](;B[pb](;W[oa]C[✗ 失败 | 黑淨死]))))))(;B[ra](;W[qb](;B[pb](;W[ob](;B[pa](;W[oa]C[✗ 失败 | 黑淨死]))))))(;B[qa](;W[pb]C[✗ 失败 | 黑淨死]))(;B[qb](;W[ra](;B[ob](;W[pb](;B[pa](;W[qa]C[✗ 失败 | 白先劫]))))(;B[pb](;W[ob](;B[oa](;W[qa]C[✗ 失败 | 黑淨死(盤角曲四)])))))))

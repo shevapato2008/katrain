@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-93761]
+AN[kenny]
+SO[https://www.101weiqi.com/1D/93761/]
+GC[死活题 | 1D | 正确率: 32.8% (2969/9047)]
+C[黑先 死活题]
+AB[qf][qb][pg][rb][pc][pd][pf][ri][re][qi][pe][ph]
+AW[qd][qe][sh][rf][rd][rh][qg]
+PL[B]
+(;B[se](;W[qh](;B[sg](;W[sd](;B[si]C[✓ 正确]))(;W[rg](;B[si]C[⚡ 变化])))(;B[sf](;W[sg]C[✗ 失败]))(;B[si](;W[sg](;B[sd](;W[sc]C[✗ 失败])))))(;W[sf](;B[rg](;W[sd](;B[qh]C[⚡ 变化]))))(;W[sd](;B[qh](;W[rg](;B[sf]C[⚡ 变化])))))(;B[rg](;W[sg](;B[qh](;W[se](;B[rg]C[✗ 失败]))))))

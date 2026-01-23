@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1473]
+AN[admin]
+SO[https://www.101weiqi.com/1D/1473/]
+GC[死活题 | 1D+ | 正确率: 54.5% (7889/14476)]
+C[黑先 死活题]
+AB[od][ob][qe][mb][rg][re][oc][pe]
+AW[qd][pb][pc][rd][se]
+PL[B]
+(;B[rb](;W[qb](;B[rc](;W[ra](;B[pa](;W[sb](;B[sc](;W[sd](;B[sa]C[✓ 正确 | 恭喜答对])))))(;B[sc](;W[sd](;B[pa](;W[sb](;B[sa]C[✓ 正确])))))(;B[sb](;W[pa](;B[sd]C[✓ 正确])))(;B[sd](;W[sb]C[✗ 失败]))))(;B[pa](;W[ra](;B[rc](;W[sb](;B[sc](;W[sd](;B[sa]C[✓ 正确]))))))))(;W[rc](;B[qb](;W[pa](;B[sb](;W[ra](;B[pd]C[白2错,净死.](;W[qc](;B[sf]C[不能省，撲、擋皆可](;W[sd](;B[qa]C[⚡ 变化]))))))))))(;W[ra](;B[qb](;W[qa](;B[sb](;W[pd](;B[sd](;W[sc](;B[rc]C[⚡ 变化]))))))))(;W[sb](;B[pa](;W[qa](;B[ra](;W[oa](;B[rc]C[⚡ 变化]))))(;W[qb](;B[ra](;W[qa](;B[rc]C[⚡ 变化])))))))(;B[pa](;W[qb](;B[rb](;W[ra](;B[rc](;W[sb](;B[sc]C[✓ 正确]))))(;W[qa](;B[rc](;W[ra](;B[sb]C[⚡ 变化]))))))(;W[ra](;B[qb](;W[qa](;B[rb](;W[oa](;B[sb](;W[pd](;B[sd](;W[sc](;B[rc]C[⚡ 变化]))))(;W[sd](;B[pd](;W[qc](;B[rc]C[⚡ 变化]))))))))(;W[rb](;B[qc]C[⚡ 变化]))))(;W[qa](;B[rb](;W[ra](;B[sb](;W[rc](;B[qb]C[⚡ 变化]))))(;W[qb](;B[rc]C[⚡ 变化])))))(;B[qb](;W[rb](;B[pa](;W[qc](;B[ra](;W[qa]C[✓ 正确]))))))(;B[ra](;W[qb](;B[rb](;W[rc](;B[pd](;W[qa]C[✗ 失败]))(;B[pa](;W[qa](;B[pd](;W[oa]C[✗ 失败])))))))))

@@ -1,0 +1,15 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-39618]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/1K/39618/]
+GC[死活题 | 1K+ | 正确率: 26.2% (2901/11064) | 9页
+
+原书题目无序号，故标明PDF书的页码以便于查阅。书中绝大多数为黑先，少数白先的采用黑白互换方式进行了转换，因此全部黑先，答案按顺时针录入。
+
+
+                                叶公好棋]
+C[黑先 死活题]
+AB[qd][lb][od][md][lc][mc][ne][pd][me][oe]
+AW[of][nd][qf][qb][nb][nc][mb][kc][oc]
+PL[B]
+(;B[rc](;W[rb](;B[sb](;W[pc](;B[ma](;W[na](;B[ra]C[✓ 正确])(;B[pa]C[✓ 正确])(;B[ob]C[✓ 正确])))(;B[ra](;W[ma](;B[oa]C[✓ 正确]))(;W[qa](;B[ma](;W[oa](;B[pb]C[⚡ 变化])))))(;B[pa](;W[oa](;B[pb](;W[ma](;B[qc](;W[ob]C[✗ 失败])))))))(;W[qc](;B[re](;W[oa](;B[pb](;W[pc](;B[ma](;W[pa](;B[ra]C[⚡ 变化]))))))))(;W[oa](;B[pb](;W[pc](;B[ma]C[⚡ 变化])))))(;B[ma]C[✓ 正确]))(;W[pc](;B[rb](;W[pa](;B[ma](;W[na](;B[ob]C[⚡ 变化])))))))(;B[pb](;W[pc](;B[rb](;W[pa](;B[ma](;W[ob](;B[na](;W[rc]C[✗ 失败 | 白淨活]))(;B[rc](;W[na]C[✗ 失败]))))(;B[qc](;W[ob]C[✗ 失败]))(;B[ob](;W[oa](;B[ma](;W[rc]C[✗ 失败 | 白淨活]))))))))(;B[rb](;W[pb]C[✗ 失败])))

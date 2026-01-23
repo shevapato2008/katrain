@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-43388]
+AN[xsjtwo]
+SO[https://www.101weiqi.com/3D/43388/]
+GC[官子题 | 3D | 正确率: 18.4% (702/3822) | 黑棋有多种方法收住四子，请走出最佳方案。]
+C[黑先 官子题]
+AB[qd][nd][md][le][rc][pb][kc][rb][kd][pc][pd][rd][me][oc][kb]
+AW[ic][qc][lb][id][qb][ob][nb][nc][lc][mc][ke][je][qa][ib][pa][ld]
+PL[B]
+(;B[ma](;W[ka](;B[ja](;W[la](;B[na](;W[jb](;B[ra](;W[ia](;B[oa]C[✓ 正确])))))(;B[ra](;W[na](;B[oa](;W[pa](;B[qa](;W[jb]C[✗ 失败]))))))))(;B[ra](;W[la](;B[oa]C[✓ 正确 | 与答案7效果相同，将来K19是黑的权利])))(;B[na](;W[ja](;B[oa](;W[la](;B[ra]C[✗ 失败])))))))(;B[oa](;W[ma]C[✗ 失败]))(;B[ra](;W[ma]C[✗ 失败])))

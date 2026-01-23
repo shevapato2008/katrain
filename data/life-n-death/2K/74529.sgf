@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74529]
+AN[wangheep]
+SO[https://www.101weiqi.com/2K/74529/]
+GC[官子题 | 2K | 正确率: 27.4% (4238/15454)]
+C[黑先 官子题]
+AB[qc][rc][ob][nc][mb][mc][pc]
+AW[nd][od][qd][sc][nb][pd][rd][oc]
+PL[B]
+(;B[qb]C[✓ 正确])(;B[rb](;W[sb](;B[ra]C[✗ 失败])))(;B[na](;W[rb](;B[qb](;W[qa](;B[pb]C[✗ 失败])))))(;B[sb](;W[pb](;B[na](;W[rb](;B[sd](;W[qb]C[✗ 失败]))))))(;B[pb]C[✗ 失败]))

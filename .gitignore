@@ -159,11 +159,8 @@ dmypy.json
 .pyre/
 
 # AI Tools
-.claude/
-.codex/
 .shared/
 .gemini-clipboard/
-.gemini/
 .playwright-mcp/
 
 # MacOS

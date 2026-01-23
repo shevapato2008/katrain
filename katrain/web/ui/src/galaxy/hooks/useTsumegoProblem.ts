@@ -30,6 +30,111 @@ export interface Stone {
   coords: [number, number];
 }
 
+// ============ Capture Logic Utilities ============
+
+/**
+ * Get all stones in a connected group (same color, orthogonally connected)
+ */
+function getGroup(stones: Stone[], startCoord: [number, number], player: 'B' | 'W'): [number, number][] {
+  const group: [number, number][] = [];
+  const visited = new Set<string>();
+  const queue: [number, number][] = [startCoord];
+
+  const stoneMap = new Map<string, 'B' | 'W'>();
+  for (const s of stones) {
+    stoneMap.set(`${s.coords[0]},${s.coords[1]}`, s.player);
+  }
+
+  while (queue.length > 0) {
+    const [x, y] = queue.shift()!;
+    const key = `${x},${y}`;
+
+    if (visited.has(key)) continue;
+    if (stoneMap.get(key) !== player) continue;
+
+    visited.add(key);
+    group.push([x, y]);
+
+    // Check orthogonal neighbors
+    const neighbors: [number, number][] = [[x-1, y], [x+1, y], [x, y-1], [x, y+1]];
+    for (const neighbor of neighbors) {
+      const nKey = `${neighbor[0]},${neighbor[1]}`;
+      if (!visited.has(nKey) && stoneMap.get(nKey) === player) {
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return group;
+}
+
+/**
+ * Count liberties (empty adjacent points) of a group
+ */
+function countLiberties(stones: Stone[], group: [number, number][], boardSize: number): number {
+  const liberties = new Set<string>();
+
+  const stoneMap = new Set<string>();
+  for (const s of stones) {
+    stoneMap.add(`${s.coords[0]},${s.coords[1]}`);
+  }
+
+  for (const [x, y] of group) {
+    const neighbors: [number, number][] = [[x-1, y], [x+1, y], [x, y-1], [x, y+1]];
+    for (const [nx, ny] of neighbors) {
+      // Check bounds
+      if (nx < 0 || nx >= boardSize || ny < 0 || ny >= boardSize) continue;
+
+      const key = `${nx},${ny}`;
+      if (!stoneMap.has(key)) {
+        liberties.add(key);
+      }
+    }
+  }
+
+  return liberties.size;
+}
+
+/**
+ * Find and remove captured stones after a move
+ * Returns the new stones array with captured stones removed
+ */
+function removeCaptures(stones: Stone[], lastMovePlayer: 'B' | 'W', boardSize: number): Stone[] {
+  const opponent = lastMovePlayer === 'B' ? 'W' : 'B';
+  const captured = new Set<string>();
+  const checked = new Set<string>();
+
+  // Check all opponent stones for captures
+  for (const stone of stones) {
+    if (stone.player !== opponent) continue;
+
+    const key = `${stone.coords[0]},${stone.coords[1]}`;
+    if (checked.has(key)) continue;
+
+    const group = getGroup(stones, stone.coords, opponent);
+    for (const [gx, gy] of group) {
+      checked.add(`${gx},${gy}`);
+    }
+
+    const liberties = countLiberties(stones, group, boardSize);
+    if (liberties === 0) {
+      // This group is captured
+      for (const [gx, gy] of group) {
+        captured.add(`${gx},${gy}`);
+      }
+    }
+  }
+
+  if (captured.size === 0) {
+    return stones;
+  }
+
+  // Remove captured stones
+  return stones.filter(s => !captured.has(`${s.coords[0]},${s.coords[1]}`));
+}
+
+// ============ End Capture Logic ============
+
 export interface MoveResult {
   type: 'correct' | 'incorrect' | 'solved' | 'continue';
   message?: string;
@@ -209,7 +314,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
     // If no SGF or no current node, just place the stone (free play mode)
     if (!currentNode) {
-      setStones(prev => [...prev, newStone]);
+      setStones(prev => {
+        const newStones = [...prev, newStone];
+        return removeCaptures(newStones, newStone.player, boardSize);
+      });
       setLastMove([x, y]);
       setMoveHistory(prev => [...prev, newStone]);
       setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
@@ -223,7 +331,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       // Move not in tree - wrong move
       setIsFailed(true);
       setAttempts(prev => prev + 1);
-      setStones(prev => [...prev, newStone]);
+      setStones(prev => {
+        const newStones = [...prev, newStone];
+        return removeCaptures(newStones, newStone.player, boardSize);
+      });
       setLastMove([x, y]);
       return { type: 'incorrect', message: 'This move is not correct. Try again!' };
     }
@@ -235,13 +346,19 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       // Explicitly marked as wrong
       setIsFailed(true);
       setAttempts(prev => prev + 1);
-      setStones(prev => [...prev, newStone]);
+      setStones(prev => {
+        const newStones = [...prev, newStone];
+        return removeCaptures(newStones, newStone.player, boardSize);
+      });
       setLastMove([x, y]);
       return { type: 'incorrect', message: matchingChild.comment || 'Wrong path!' };
     }
 
-    // Correct move - update state
-    setStones(prev => [...prev, newStone]);
+    // Correct move - update state with capture logic
+    setStones(prev => {
+      const newStones = [...prev, newStone];
+      return removeCaptures(newStones, newStone.player, boardSize);
+    });
     setLastMove([x, y]);
     setMoveHistory(prev => [...prev, newStone]);
     setCurrentNode(matchingChild);
@@ -258,7 +375,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       // Play AI's response after a short delay
       setTimeout(() => {
         const aiStone: Stone = { player: aiResponse.player, coords: aiResponse.coords };
-        setStones(prev => [...prev, aiStone]);
+        setStones(prev => {
+          const newStones = [...prev, aiStone];
+          return removeCaptures(newStones, aiStone.player, boardSize);
+        });
         setLastMove(aiResponse.coords);
         setMoveHistory(prev => [...prev, aiStone]);
 
@@ -290,7 +410,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     }
 
     return { type: 'correct' };
-  }, [stones, nextPlayer, currentNode, isSolved, isFailed]);
+  }, [stones, nextPlayer, currentNode, isSolved, isFailed, boardSize]);
 
   // Undo last move
   const undo = useCallback(() => {

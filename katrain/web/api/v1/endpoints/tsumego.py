@@ -76,12 +76,24 @@ def load_index() -> dict:
         return json.load(f)
 
 
+def level_sort_key(level: str) -> tuple:
+    """Sort levels: 15K, 14K, ..., 1K, 1D, 2D, ..., 7D (weakest to strongest)."""
+    level = level.upper()
+    if level.endswith('K'):
+        # Kyu levels: higher number = weaker = comes first
+        return (0, -int(level[:-1]))
+    elif level.endswith('D'):
+        # Dan levels: lower number = weaker = comes first
+        return (1, int(level[:-1]))
+    return (2, 0)
+
+
 @router.get("/levels", response_model=List[LevelInfo])
 def get_levels():
     """Get all available difficulty levels with category counts."""
     index = load_index()
     result = []
-    for level, data in sorted(index["levels"].items()):
+    for level, data in sorted(index["levels"].items(), key=lambda x: level_sort_key(x[0])):
         categories = {cat: len(ids) for cat, ids in data["categories"].items()}
         result.append(LevelInfo(
             level=level,
@@ -95,6 +107,7 @@ def get_levels():
 def get_categories(level: str):
     """Get categories for a specific difficulty level."""
     index = load_index()
+    level = level.lower()  # Normalize to lowercase
     if level not in index["levels"]:
         raise HTTPException(status_code=404, detail=f"Level {level} not found")
 
@@ -119,10 +132,11 @@ def get_problems(
     level: str,
     category: str,
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100)
+    limit: int = Query(20, ge=1, le=1000)
 ):
     """Get problems for a level/category with pagination."""
     index = load_index()
+    level = level.lower()  # Normalize to lowercase
 
     if level not in index["levels"]:
         raise HTTPException(status_code=404, detail=f"Level {level} not found")

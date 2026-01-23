@@ -22,9 +22,11 @@ interface ProgressData {
   lastDuration?: number;
 }
 
+const UNIT_SIZE = 20;
+
 const TsumegoListPage = () => {
   const navigate = useNavigate();
-  const { level, category } = useParams<{ level: string; category: string }>();
+  const { level, category, unit } = useParams<{ level: string; category: string; unit: string }>();
   const { user, token } = useAuth();
   useSettings();
   const { t } = useTranslation();
@@ -34,16 +36,35 @@ const TsumegoListPage = () => {
     return t(`tsumego:${cat}`) || cat;
   };
 
+  // Helper function for string interpolation
+  const interpolate = (template: string, values: Record<string, string | number>): string => {
+    return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? key));
+  };
+
   const [problems, setProblems] = useState<ProblemSummary[]>([]);
   const [progress, setProgress] = useState<Record<string, ProgressData>>({});
   const [loading, setLoading] = useState(true);
 
+  // Parse unit number
+  const unitNumber = parseInt(unit || '1', 10);
+  const offset = (unitNumber - 1) * UNIT_SIZE;
+
   useEffect(() => {
-    // Load problems
-    fetch(`/api/v1/tsumego/levels/${level}/categories/${category}?limit=100`)
-      .then(res => res.json())
+    // Load problems for this unit
+    fetch(`/api/v1/tsumego/levels/${level}/categories/${category}?offset=${offset}&limit=${UNIT_SIZE}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
-        setProblems(data);
+        if (Array.isArray(data)) {
+          setProblems(data);
+        } else {
+          console.error('Unexpected data format:', data);
+          setProblems([]);
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -74,9 +95,11 @@ const TsumegoListPage = () => {
         })
         .catch(console.error);
     }
-  }, [level, category, user, token]);
+  }, [level, category, unit, offset, user, token]);
 
   const completedCount = problems.filter(p => progress[p.id]?.completed).length;
+  const startProblem = offset + 1;
+  const endProblem = offset + problems.length;
 
   if (loading) {
     return (
@@ -90,7 +113,7 @@ const TsumegoListPage = () => {
     <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
       {/* Breadcrumbs */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate(`/galaxy/tsumego/${level}`)} sx={{ mr: 1 }}>
+        <IconButton onClick={() => navigate(`/galaxy/tsumego/${level}/${category}`)} sx={{ mr: 1 }}>
           <ArrowBackIcon />
         </IconButton>
         <Breadcrumbs>
@@ -110,17 +133,25 @@ const TsumegoListPage = () => {
           >
             {level?.toUpperCase()}
           </Link>
-          <Typography color="text.primary">{getCategoryName(category || '')}</Typography>
+          <Link
+            component="button"
+            variant="body1"
+            onClick={() => navigate(`/galaxy/tsumego/${level}/${category}`)}
+            sx={{ cursor: 'pointer' }}
+          >
+            {getCategoryName(category || '')}
+          </Link>
+          <Typography color="text.primary">{t('tsumego:unit')} {unitNumber}</Typography>
         </Breadcrumbs>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-            {level?.toUpperCase()} - {getCategoryName(category || '')}
+            {t('tsumego:unit')} {unitNumber}
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            {t('tsumego:solveProblems')}
+            {interpolate(t('tsumego:problemRange'), { start: startProblem, end: endProblem })}
           </Typography>
         </Box>
         <Chip
@@ -134,7 +165,7 @@ const TsumegoListPage = () => {
         {problems.map((problem, index) => (
           <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={problem.id}>
             <ProblemCard
-              index={index}
+              index={offset + index}
               initialBlack={problem.initialBlack}
               initialWhite={problem.initialWhite}
               progress={progress[problem.id]}

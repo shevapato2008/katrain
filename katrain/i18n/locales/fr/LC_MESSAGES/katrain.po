@@ -1642,3 +1642,17 @@ msgstr "L'opération a échoué"
 
 msgid "auth:login_title_katrain"
 msgstr "Connexion à KaTrain"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Exploration libre sans jugement"
+
+msgid "tsumego:tryMode"
+msgstr "Mode essai"

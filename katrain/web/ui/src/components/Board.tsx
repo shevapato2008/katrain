@@ -72,18 +72,39 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         // Use the smaller dimension to keep the board square, minus padding
-        const size = Math.floor(Math.min(width, height) - 8);
+        // Also cap at window height to handle cross-monitor DPI differences
+        const maxSize = Math.min(width, height, window.innerHeight - 100);
+        const size = Math.floor(maxSize - 8);
         // Clamp between 400 and 1200 for reasonable bounds
         setCanvasSize(Math.max(400, Math.min(1200, size)));
       }
     };
 
     updateCanvasSize();
+
+    // ResizeObserver for container size changes
     const resizeObserver = new ResizeObserver(updateCanvasSize);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
-    return () => resizeObserver.disconnect();
+
+    // Window resize event for cross-monitor moves and DPI changes
+    window.addEventListener('resize', updateCanvasSize);
+
+    // Handle visibility changes (e.g., tab switching, monitor changes)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Delay to let layout settle after monitor change
+        setTimeout(updateCanvasSize, 100);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateCanvasSize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Add a ref for animation time

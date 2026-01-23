@@ -28,6 +28,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import TimerIcon from '@mui/icons-material/Timer';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface TsumegoProblemControlsProps {
@@ -37,6 +38,7 @@ interface TsumegoProblemControlsProps {
   showHint: boolean;
   isSolved: boolean;
   isFailed: boolean;
+  isTryMode: boolean;
   elapsedTime: number;
   attempts: number;
   nextPlayer: 'B' | 'W';
@@ -44,6 +46,8 @@ interface TsumegoProblemControlsProps {
   onUndo: () => void;
   onReset: () => void;
   onToggleHint: () => void;
+  onEnterTryMode: () => void;
+  onExitTryMode: () => void;
   onPrevious?: () => void;
   onNext?: () => void;
   hasPrevious?: boolean;
@@ -57,6 +61,7 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
   showHint,
   isSolved,
   isFailed,
+  isTryMode,
   elapsedTime,
   attempts,
   nextPlayer,
@@ -64,6 +69,8 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
   onUndo,
   onReset,
   onToggleHint,
+  onEnterTryMode,
+  onExitTryMode,
   onPrevious,
   onNext,
   hasPrevious = false,
@@ -141,6 +148,25 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
             </Typography>
           </Box>
         )}
+
+        {/* Show next player info below failed indicator */}
+        {isFailed && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
+                border: '1px solid',
+                borderColor: nextPlayer === 'B' ? '#333' : '#ccc'
+              }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {nextPlayer === 'B' ? t('tsumego:blackToPlay') : t('tsumego:whiteToPlay')}
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Timer and Attempts */}
@@ -192,7 +218,22 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
 
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <Tooltip title={t('tsumego:undo')}>
+        <Tooltip title={t('tsumego:tryModeDesc')}>
+          <span>
+            <IconButton
+              onClick={isTryMode ? onExitTryMode : onEnterTryMode}
+              disabled={isSolved}
+              sx={{
+                bgcolor: isTryMode ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255,255,255,0.1)',
+                color: isTryMode ? '#2196f3' : 'inherit',
+                '&:hover': { bgcolor: isTryMode ? 'rgba(33, 150, 243, 0.3)' : 'rgba(255,255,255,0.2)' }
+              }}
+            >
+              <TouchAppIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title={`${t('tsumego:undo')} (U)`}>
           <span>
             <IconButton
               onClick={onUndo}
@@ -206,7 +247,7 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title={t('tsumego:reset')}>
+        <Tooltip title={`${t('tsumego:reset')} (R)`}>
           <IconButton
             onClick={onReset}
             sx={{
@@ -244,6 +285,7 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
           {t('tsumego:nextProblem')}
         </Button>
       </Box>
+
     </Box>
   );
 };

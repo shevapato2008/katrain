@@ -1561,3 +1561,17 @@ msgstr "작업 실패"
 
 msgid "auth:login_title_katrain"
 msgstr "KaTrain 로그인"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "판정 없이 자유 탐색"
+
+msgid "tsumego:tryMode"
+msgstr "시험 모드"

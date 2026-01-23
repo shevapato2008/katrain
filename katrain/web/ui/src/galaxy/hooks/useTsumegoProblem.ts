@@ -138,6 +138,8 @@ function removeCaptures(stones: Stone[], lastMovePlayer: 'B' | 'W', boardSize: n
 export interface MoveResult {
   type: 'correct' | 'incorrect' | 'solved' | 'continue';
   message?: string;
+  sound?: 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved';
+  captured?: number;
 }
 
 export interface TsumegoProblemState {
@@ -158,6 +160,9 @@ export interface TsumegoProblemState {
   isSolved: boolean;
   isFailed: boolean;
 
+  // Try mode (free exploration)
+  isTryMode: boolean;
+
   // Timing
   startTime: number | null;
   elapsedTime: number;
@@ -174,6 +179,10 @@ export interface UseTsumegoProblemReturn extends TsumegoProblemState {
   undo: () => void;
   reset: () => void;
   toggleHint: () => void;
+
+  // Try mode (free exploration)
+  enterTryMode: () => void;
+  exitTryMode: () => void;
 
   // Progress
   saveProgress: () => void;
@@ -209,6 +218,17 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Hint
   const [showHint, setShowHint] = useState(false);
   const [hintCoords, setHintCoords] = useState<[number, number] | null>(null);
+
+  // Try mode (free exploration without judgment)
+  const [isTryMode, setIsTryMode] = useState(false);
+  const tryModeSnapshotRef = useRef<{
+    stones: Stone[];
+    lastMove: [number, number] | null;
+    currentNode: SGFNode | null;
+    nextPlayer: 'B' | 'W';
+    moveHistory: Stone[];
+    isFailed: boolean;
+  } | null>(null);
 
   // Timer effect
   useEffect(() => {
@@ -304,7 +324,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Place a stone and validate against SGF tree
   const placeStone = useCallback((x: number, y: number): MoveResult | null => {
-    if (isSolved || isFailed) return null;
+    // In normal mode, don't allow moves after solved/failed
+    if (!isTryMode && (isSolved || isFailed)) return null;
 
     // Check if position is already occupied
     const isOccupied = stones.some(s => s.coords[0] === x && s.coords[1] === y);
@@ -312,16 +333,42 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
     const newStone: Stone = { player: nextPlayer, coords: [x, y] };
 
-    // If no SGF or no current node, just place the stone (free play mode)
-    if (!currentNode) {
+    // In try mode, just place stones freely without judgment
+    if (isTryMode) {
+      let capturedCount = 0;
       setStones(prev => {
         const newStones = [...prev, newStone];
-        return removeCaptures(newStones, newStone.player, boardSize);
+        const afterCaptures = removeCaptures(newStones, newStone.player, boardSize);
+        capturedCount = newStones.length - afterCaptures.length;
+        return afterCaptures;
       });
       setLastMove([x, y]);
       setMoveHistory(prev => [...prev, newStone]);
       setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
-      return { type: 'continue' };
+      return {
+        type: 'continue',
+        sound: capturedCount > 0 ? 'capture' : 'stone',
+        captured: capturedCount
+      };
+    }
+
+    // If no SGF or no current node, just place the stone (free play mode)
+    if (!currentNode) {
+      let capturedCount = 0;
+      setStones(prev => {
+        const newStones = [...prev, newStone];
+        const afterCaptures = removeCaptures(newStones, newStone.player, boardSize);
+        capturedCount = newStones.length - afterCaptures.length;
+        return afterCaptures;
+      });
+      setLastMove([x, y]);
+      setMoveHistory(prev => [...prev, newStone]);
+      setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
+      return {
+        type: 'continue',
+        sound: capturedCount > 0 ? 'capture' : 'stone',
+        captured: capturedCount
+      };
     }
 
     // Find matching move in SGF tree
@@ -336,7 +383,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         return removeCaptures(newStones, newStone.player, boardSize);
       });
       setLastMove([x, y]);
-      return { type: 'incorrect', message: 'This move is not correct. Try again!' };
+      return { type: 'incorrect', sound: 'incorrect' };
     }
 
     // Check if this is a correct or wrong path
@@ -351,13 +398,16 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         return removeCaptures(newStones, newStone.player, boardSize);
       });
       setLastMove([x, y]);
-      return { type: 'incorrect', message: matchingChild.comment || 'Wrong path!' };
+      return { type: 'incorrect', message: matchingChild.comment, sound: 'incorrect' };
     }
 
     // Correct move - update state with capture logic
+    let capturedCount = 0;
     setStones(prev => {
       const newStones = [...prev, newStone];
-      return removeCaptures(newStones, newStone.player, boardSize);
+      const afterCaptures = removeCaptures(newStones, newStone.player, boardSize);
+      capturedCount = newStones.length - afterCaptures.length;
+      return afterCaptures;
     });
     setLastMove([x, y]);
     setMoveHistory(prev => [...prev, newStone]);
@@ -366,7 +416,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     // Check if solved
     if (isSolutionComplete(matchingChild)) {
       setIsSolved(true);
-      return { type: 'solved', message: 'Congratulations! Problem solved!' };
+      return { type: 'solved', sound: 'solved' };
     }
 
     // Get AI response
@@ -409,12 +459,42 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
     }
 
-    return { type: 'correct' };
-  }, [stones, nextPlayer, currentNode, isSolved, isFailed, boardSize]);
+    return {
+      type: 'correct',
+      sound: capturedCount > 0 ? 'capture' : 'stone',
+      captured: capturedCount
+    };
+  }, [stones, nextPlayer, currentNode, isSolved, isFailed, boardSize, isTryMode]);
 
   // Undo last move
   const undo = useCallback(() => {
     if (moveHistory.length === 0 || isSolved) return;
+
+    // Try mode undo - simply remove the last move
+    if (isTryMode) {
+      const snapshot = tryModeSnapshotRef.current;
+      const snapshotMoveCount = snapshot?.moveHistory.length || 0;
+
+      // Don't undo beyond the snapshot state
+      if (moveHistory.length <= snapshotMoveCount) return;
+
+      // Remove the last move
+      const newHistory = moveHistory.slice(0, -1);
+
+      // Recalculate stones from snapshot + remaining moves
+      let newStones = snapshot ? [...snapshot.stones] : [];
+      for (const move of newHistory.slice(snapshotMoveCount)) {
+        newStones = [...newStones, move];
+        newStones = removeCaptures(newStones, move.player, boardSize);
+      }
+
+      setStones(newStones);
+      setMoveHistory(newHistory);
+      setLastMove(newHistory.length > 0 ? newHistory[newHistory.length - 1].coords : (snapshot?.lastMove || null));
+      setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
+
+      return;
+    }
 
     // If failed, just reset to last good state
     if (isFailed) {
@@ -466,7 +546,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         setHintCoords(correctMove.coords);
       }
     }
-  }, [moveHistory, stones, currentNode, nextPlayer, isSolved, isFailed]);
+  }, [moveHistory, stones, currentNode, nextPlayer, isSolved, isFailed, isTryMode, boardSize]);
 
   // Reset problem
   const reset = useCallback(() => {
@@ -480,6 +560,42 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   const toggleHint = useCallback(() => {
     setShowHint(prev => !prev);
   }, []);
+
+  // Enter try mode - save current state and allow free exploration
+  const enterTryMode = useCallback(() => {
+    if (isTryMode || isSolved) return;
+
+    // Save current state
+    tryModeSnapshotRef.current = {
+      stones: [...stones],
+      lastMove,
+      currentNode,
+      nextPlayer,
+      moveHistory: [...moveHistory],
+      isFailed
+    };
+
+    setIsTryMode(true);
+    setIsFailed(false); // Clear failed state in try mode
+  }, [isTryMode, isSolved, stones, lastMove, currentNode, nextPlayer, moveHistory, isFailed]);
+
+  // Exit try mode - restore saved state
+  const exitTryMode = useCallback(() => {
+    if (!isTryMode) return;
+
+    const snapshot = tryModeSnapshotRef.current;
+    if (snapshot) {
+      setStones(snapshot.stones);
+      setLastMove(snapshot.lastMove);
+      setCurrentNode(snapshot.currentNode);
+      setNextPlayer(snapshot.nextPlayer);
+      setMoveHistory(snapshot.moveHistory);
+      setIsFailed(snapshot.isFailed);
+    }
+
+    setIsTryMode(false);
+    tryModeSnapshotRef.current = null;
+  }, [isTryMode]);
 
   // Save progress to localStorage and optionally to server
   const saveProgress = useCallback(() => {
@@ -521,6 +637,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     moveHistory,
     isSolved,
     isFailed,
+    isTryMode,
     startTime,
     elapsedTime,
     attempts,
@@ -532,6 +649,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     undo,
     reset,
     toggleHint,
+    enterTryMode,
+    exitTryMode,
     saveProgress
   };
 }

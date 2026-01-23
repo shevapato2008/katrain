@@ -21,10 +21,13 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
 import { useTsumegoProblem } from '../hooks/useTsumegoProblem';
 import type { MoveResult } from '../hooks/useTsumegoProblem';
 import TsumegoBoard from '../components/tsumego/TsumegoBoard';
 import TsumegoProblemControls from '../components/tsumego/TsumegoProblemControls';
+import SuccessOverlay from '../components/tsumego/SuccessOverlay';
+import { MobileHeader, MobileToolbar } from '../components/tsumego/MobileControls';
 
 interface ProblemListItem {
   id: string;
@@ -37,6 +40,7 @@ const TsumegoProblemPage: React.FC = () => {
   const navigate = useNavigate();
   useSettings();
   const { t } = useTranslation();
+  const { play: playSound } = useSound();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -55,6 +59,9 @@ const TsumegoProblemPage: React.FC = () => {
     severity: 'info'
   });
 
+  // Animation state for wrong move shake
+  const [isShaking, setIsShaking] = useState(false);
+
   // Use the tsumego problem hook
   const {
     problem,
@@ -67,6 +74,7 @@ const TsumegoProblemPage: React.FC = () => {
     moveHistory,
     isSolved,
     isFailed,
+    isTryMode,
     elapsedTime,
     attempts,
     showHint,
@@ -74,7 +82,9 @@ const TsumegoProblemPage: React.FC = () => {
     placeStone,
     undo,
     reset,
-    toggleHint
+    toggleHint,
+    enterTryMode,
+    exitTryMode
   } = useTsumegoProblem(problemId || '');
 
   // Load problem list for navigation
@@ -108,6 +118,15 @@ const TsumegoProblemPage: React.FC = () => {
   const handlePlaceStone = (x: number, y: number) => {
     const result = placeStone(x, y);
     if (result) {
+      // Play sound effect (except 'solved' which is handled by the isSolved effect)
+      if (result.sound && result.type !== 'solved') {
+        playSound(result.sound);
+      }
+      // Trigger shake animation for wrong moves
+      if (result.type === 'incorrect') {
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 300);
+      }
       showFeedback(result);
     }
   };
@@ -116,11 +135,7 @@ const TsumegoProblemPage: React.FC = () => {
   const showFeedback = (result: MoveResult) => {
     switch (result.type) {
       case 'solved':
-        setSnackbar({
-          open: true,
-          message: result.message || t('tsumego:solved'),
-          severity: 'success'
-        });
+        // Don't show snackbar - the center overlay is already visible
         break;
       case 'incorrect':
         setSnackbar({
@@ -158,6 +173,71 @@ const TsumegoProblemPage: React.FC = () => {
     }
   };
 
+  // Play victory sound when problem is solved
+  useEffect(() => {
+    if (isSolved) {
+      playSound('solved');
+    }
+  }, [isSolved, playSound]);
+
+  // Keyboard shortcuts
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < problemList.length - 1;
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input field
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      switch (key) {
+        case 'u':
+          e.preventDefault();
+          undo();
+          break;
+        case 'z':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            undo();
+          }
+          break;
+        case 'r':
+          e.preventDefault();
+          reset();
+          break;
+        case 'h':
+          e.preventDefault();
+          toggleHint();
+          break;
+        case 'arrowleft':
+        case '[':
+          e.preventDefault();
+          if (hasPrevious) handlePrevious();
+          break;
+        case 'arrowright':
+        case ']':
+          e.preventDefault();
+          if (hasNext) handleNext();
+          break;
+        case 'enter':
+          if (isSolved && hasNext) {
+            e.preventDefault();
+            handleNext();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, reset, toggleHint, hasPrevious, hasNext, handlePrevious, handleNext, isSolved]);
+
   // Loading state
   if (loading) {
     return (
@@ -183,6 +263,100 @@ const TsumegoProblemPage: React.FC = () => {
     return null;
   }
 
+  // Shared board area with animations
+  const boardArea = (
+    <Box
+      sx={{
+        flexGrow: 1,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        p: 0.5,
+        position: 'relative',
+        animation: isShaking ? 'shake 0.3s ease-in-out' : 'none',
+        '@keyframes shake': {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '20%': { transform: 'translateX(-8px)' },
+          '40%': { transform: 'translateX(8px)' },
+          '60%': { transform: 'translateX(-6px)' },
+          '80%': { transform: 'translateX(6px)' },
+        }
+      }}
+    >
+      <TsumegoBoard
+        boardSize={boardSize}
+        stones={stones}
+        lastMove={lastMove}
+        hintCoords={hintCoords}
+        showHint={showHint}
+        disabled={isSolved}
+        moveHistory={moveHistory}
+        showMoveNumbers={isTryMode}
+        onPlaceStone={handlePlaceStone}
+      />
+      <SuccessOverlay
+        show={isSolved}
+        message={t('tsumego:solved')}
+      />
+    </Box>
+  );
+
+  // Mobile layout: Header + Board + Toolbar
+  if (isMobile) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', bgcolor: '#0f0f0f' }}>
+        {/* Mobile Header */}
+        <MobileHeader
+          level={problem.level}
+          problemNumber={currentIndex + 1}
+          totalProblems={problemList.length || 1}
+          hint={problem.hint}
+          nextPlayer={nextPlayer}
+          isSolved={isSolved}
+          isFailed={isFailed}
+          isTryMode={isTryMode}
+          onBack={handleBack}
+        />
+
+        {/* Board Area */}
+        {boardArea}
+
+        {/* Mobile Toolbar */}
+        <MobileToolbar
+          showHint={showHint}
+          canUndo={moveHistory.length > 0 && !isSolved}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+          isSolved={isSolved}
+          isTryMode={isTryMode}
+          onUndo={undo}
+          onReset={reset}
+          onToggleHint={toggleHint}
+          onToggleTryMode={isTryMode ? exitTryMode : enterTryMode}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+        />
+
+        {/* Feedback Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            severity={snackbar.severity}
+            variant="filled"
+            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    );
+  }
+
+  // Desktop layout: Header + Board | Sidebar
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {/* Main Area: Header + Board */}
@@ -224,52 +398,43 @@ const TsumegoProblemPage: React.FC = () => {
         </Box>
 
         {/* Board Area */}
-        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 0.5 }}>
-          <TsumegoBoard
-            boardSize={boardSize}
-            stones={stones}
-            lastMove={lastMove}
-            hintCoords={hintCoords}
-            showHint={showHint}
-            disabled={isSolved}
-            onPlaceStone={handlePlaceStone}
-          />
-        </Box>
+        {boardArea}
       </Box>
 
       {/* Right Sidebar with Controls */}
-      {!isMobile && (
-        <Box
-          sx={{
-            width: 320,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            bgcolor: 'background.paper',
-            borderLeft: '1px solid rgba(255,255,255,0.05)'
-          }}
-        >
-          <TsumegoProblemControls
-            level={problem.level}
-            category={problem.category}
-            hint={problem.hint}
-            showHint={showHint}
-            isSolved={isSolved}
-            isFailed={isFailed}
-            elapsedTime={elapsedTime}
-            attempts={attempts}
-            nextPlayer={nextPlayer}
-            canUndo={moveHistory.length > 0 && !isSolved}
-            onUndo={undo}
-            onReset={reset}
-            onToggleHint={toggleHint}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            hasPrevious={currentIndex > 0}
-            hasNext={currentIndex < problemList.length - 1}
-          />
-        </Box>
-      )}
+      <Box
+        sx={{
+          width: 320,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'background.paper',
+          borderLeft: '1px solid rgba(255,255,255,0.05)'
+        }}
+      >
+        <TsumegoProblemControls
+          level={problem.level}
+          category={problem.category}
+          hint={problem.hint}
+          showHint={showHint}
+          isSolved={isSolved}
+          isFailed={isFailed}
+          isTryMode={isTryMode}
+          elapsedTime={elapsedTime}
+          attempts={attempts}
+          nextPlayer={nextPlayer}
+          canUndo={moveHistory.length > 0 && !isSolved}
+          onUndo={undo}
+          onReset={reset}
+          onToggleHint={toggleHint}
+          onEnterTryMode={enterTryMode}
+          onExitTryMode={exitTryMode}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+        />
+      </Box>
 
       {/* Feedback Snackbar */}
       <Snackbar

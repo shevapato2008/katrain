@@ -1684,3 +1684,17 @@ msgstr "Операція не вдалася"
 
 msgid "auth:login_title_katrain"
 msgstr "Увійти до KaTrain"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Вільне дослідження без оцінки"
+
+msgid "tsumego:tryMode"
+msgstr "Режим проби"

@@ -1616,3 +1616,17 @@ msgstr "操作失敗"
 
 msgid "auth:login_title_katrain"
 msgstr "登入 KaTrain"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "自由探索，不判斷對錯"
+
+msgid "tsumego:tryMode"
+msgstr "試下"

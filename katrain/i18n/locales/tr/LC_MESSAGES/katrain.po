@@ -1704,3 +1704,17 @@ msgstr "İşlem başarısız oldu"
 
 msgid "auth:login_title_katrain"
 msgstr "KaTrain'e Giriş Yap"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Değerlendirme olmadan serbest keşif"
+
+msgid "tsumego:tryMode"
+msgstr "Deneme Modu"

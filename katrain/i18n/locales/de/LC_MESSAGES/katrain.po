@@ -1670,3 +1670,17 @@ msgstr "Vorgang fehlgeschlagen"
 
 msgid "auth:login_title_katrain"
 msgstr "Bei KaTrain anmelden"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Freies Erkunden ohne Bewertung"
+
+msgid "tsumego:tryMode"
+msgstr "Probier-Modus"

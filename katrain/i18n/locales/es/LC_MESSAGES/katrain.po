@@ -1516,3 +1516,9 @@ msgstr "Operación fallida"
 
 msgid "auth:login_title_katrain"
 msgstr "Iniciar sesión en KaTrain"
+
+msgid "tsumego:tryMode"
+msgstr "Modo de prueba"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Exploración libre sin juicio"

@@ -24,6 +24,10 @@ interface TsumegoBoardProps {
   hintCoords?: [number, number] | null;
   showHint?: boolean;
   disabled?: boolean;
+  /** Moves made during solving (for displaying move numbers) */
+  moveHistory?: Stone[];
+  /** Show move numbers on stones */
+  showMoveNumbers?: boolean;
   onPlaceStone: (x: number, y: number) => void;
 }
 
@@ -40,6 +44,8 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   hintCoords,
   showHint = false,
   disabled = false,
+  moveHistory = [],
+  showMoveNumbers = false,
   onPlaceStone
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -80,18 +86,39 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         // Use the smaller dimension to keep the board square, minus padding
-        const size = Math.floor(Math.min(width, height) - 8);
+        // Also cap at window height to handle cross-monitor DPI differences
+        const maxSize = Math.min(width, height, window.innerHeight - 100);
+        const size = Math.floor(maxSize - 8);
         // Clamp between 400 and 1200 for reasonable bounds (matching main Board component)
         setCanvasSize(Math.max(400, Math.min(1200, size)));
       }
     };
 
     updateCanvasSize();
+
+    // ResizeObserver for container size changes
     const resizeObserver = new ResizeObserver(updateCanvasSize);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
-    return () => resizeObserver.disconnect();
+
+    // Window resize event for cross-monitor moves and DPI changes
+    window.addEventListener('resize', updateCanvasSize);
+
+    // Handle visibility changes (e.g., tab switching, monitor changes)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Delay to let layout settle after monitor change
+        setTimeout(updateCanvasSize, 100);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateCanvasSize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Board layout calculations
@@ -224,8 +251,36 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
       }
     });
 
-    // Draw last move indicator
-    if (lastMove) {
+    // Draw move numbers if enabled and we have move history
+    if (showMoveNumbers && moveHistory.length > 0) {
+      ctx.font = `bold ${Math.max(12, layout.gridSize * 0.45)}px 'IBM Plex Mono', monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      moveHistory.forEach((move, index) => {
+        // Only draw number if stone still exists on the board (not captured)
+        const stoneExists = stones.some(s =>
+          s.coords[0] === move.coords[0] &&
+          s.coords[1] === move.coords[1] &&
+          s.player === move.player
+        );
+        if (!stoneExists) return;
+
+        // Only draw if this is the latest move at this position
+        // (handles case where a captured position is replayed)
+        const hasLaterMoveAtSamePosition = moveHistory.slice(index + 1).some(laterMove =>
+          laterMove.coords[0] === move.coords[0] &&
+          laterMove.coords[1] === move.coords[1]
+        );
+        if (hasLaterMoveAtSamePosition) return;
+
+        const pos = gridToCanvas(layout, move.coords[0], move.coords[1]);
+        // Contrast color for visibility
+        ctx.fillStyle = move.player === 'B' ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
+        ctx.fillText((index + 1).toString(), pos.x, pos.y);
+      });
+    } else if (lastMove) {
+      // Draw last move indicator only when not showing move numbers
       const lastStone = stones.find(s => s.coords[0] === lastMove[0] && s.coords[1] === lastMove[1]);
       if (lastStone) {
         const pos = gridToCanvas(layout, lastMove[0], lastMove[1]);
@@ -244,7 +299,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
       ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas]);
+  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers]);
 
   // Re-render on state changes
   useEffect(() => {

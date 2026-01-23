@@ -1590,6 +1590,18 @@ msgstr "Unit"
 msgid "tsumego:problemRange"
 msgstr "Problems {start}-{end}"
 
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryMode"
+msgstr "Try Mode"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Free exploration without judgment"
+
 msgid "auth:login_title"
 msgstr "Login to Galaxy Go"
 

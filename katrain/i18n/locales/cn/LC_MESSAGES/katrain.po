@@ -1418,6 +1418,18 @@ msgstr "单元"
 msgid "tsumego:problemRange"
 msgstr "第 {start}-{end} 题"
 
+msgid "tsumego:shortcuts"
+msgstr "快捷键"
+
+msgid "tsumego:navigate"
+msgstr "切换题目"
+
+msgid "tsumego:tryMode"
+msgstr "试下"
+
+msgid "tsumego:tryModeDesc"
+msgstr "自由探索，不判断对错"
+
 msgid "auth:login_title"
 msgstr "登录 Galaxy Go"
 

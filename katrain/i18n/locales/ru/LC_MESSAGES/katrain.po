@@ -1602,3 +1602,17 @@ msgstr "Операция не удалась"
 
 msgid "auth:login_title_katrain"
 msgstr "Войти в KaTrain"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Свободное исследование без оценки"
+
+msgid "tsumego:tryMode"
+msgstr "Режим пробы"

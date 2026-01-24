@@ -163,6 +163,9 @@ dmypy.json
 .gemini-clipboard/
 .playwright-mcp/
 
+# Git worktrees
+.worktrees/
+
 # MacOS
 .DS_Store
 

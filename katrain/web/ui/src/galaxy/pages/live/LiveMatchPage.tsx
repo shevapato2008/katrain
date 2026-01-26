@@ -12,7 +12,8 @@ import MatchInfo from '../../components/live/MatchInfo';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
-import CommentSection from '../../components/live/CommentSection';
+// CommentSection import removed - Phase 7 deferred (was obscuring TrendChart)
+// import CommentSection from '../../components/live/CommentSection';
 
 export default function LiveMatchPage() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -219,10 +220,12 @@ export default function LiveMatchPage() {
           />
         </Box>
 
-        {/* Comment section - always show, read-only for finished matches */}
+        {/* Comment section - hidden for now (Phase 7, deferred)
+            Issue: CommentSection was obscuring the TrendChart
         <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
           <CommentSection matchId={match.id} isLive={match.status === 'live'} />
         </Box>
+        */}
 
         {/* Playback controls */}
         <PlaybackBar

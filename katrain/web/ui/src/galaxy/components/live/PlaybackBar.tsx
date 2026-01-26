@@ -122,7 +122,7 @@ export default function PlaybackBar({
         />
       </Box>
 
-      {/* Controls */}
+      {/* Controls with move counter inline */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
         <Tooltip title="第一手">
           <IconButton onClick={handleFirst} size="small" disabled={currentMove === 0}>
@@ -189,11 +189,9 @@ export default function PlaybackBar({
             </ToggleButton>
           </Tooltip>
         )}
-      </Box>
 
-      {/* Move counter */}
-      <Box sx={{ textAlign: 'center', mt: 1 }}>
-        <Typography variant="body2" color="text.secondary">
+        {/* Move counter - inline with controls */}
+        <Typography variant="body2" color="text.secondary" sx={{ ml: 2, minWidth: 80 }}>
           {currentMove} / {totalMoves} 手
         </Typography>
       </Box>

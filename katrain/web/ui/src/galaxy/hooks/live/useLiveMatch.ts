@@ -67,6 +67,13 @@ export function useLiveMatch(matchId: string | undefined, options: UseLiveMatchO
     }
   }, [matchId]);
 
+  // Reset state when matchId changes
+  useEffect(() => {
+    // Reset currentMove to null so it auto-sets to new match's move_count
+    setCurrentMoveInternal(null);
+    setAnalysis({});
+  }, [matchId]);
+
   // Initial fetch with preload
   useEffect(() => {
     if (matchId) {

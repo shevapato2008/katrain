@@ -680,9 +680,9 @@ if (pvMoves && pvMoves.length > 0) {
 | 按钮   | 功能                         | 状态      |
 | ------ | ---------------------------- | --------- |
 | AI选点 | 切换棋盘上 AI 推荐标记的显隐 | ✅ 已实现 |
-| 试下   | 进入试下模式                 | 📋 待开发 |
-| 领地   | 显示领地估算                 | 📋 待开发 |
-| 手数   | 显示/隐藏手数标记            | 📋 待开发 |
+| 试下   | 进入试下模式                 | ✅ 已实现 |
+| 领地   | 显示领地估算                 | ✅ 已实现 |
+| 手数   | 显示/隐藏手数标记            | ✅ 已实现 |
 
 ### 修改文件 (AI 选点功能)
 
@@ -714,3 +714,81 @@ function drawAiMoveMarker(ctx, layout, x, y, boardSize, rank) {
   ctx.fillText(String(rank), cx, cy); // 显示序号
 }
 ```
+
+---
+
+## 2026-01-26: 评论区暂时隐藏
+
+### 问题
+
+评论区 (`CommentSection`) 组件占用过多空间，遮挡了胜率走势图 (`TrendChart`) 等重要分析模块。
+
+### 解决方案
+
+暂时隐藏评论区，将其作为 Phase 7 待完善功能。评论系统需要重新设计布局后再启用。
+
+### 修改文件
+
+| 文件                                                     | 改动类型                        |
+| -------------------------------------------------------- | ------------------------------- |
+| `katrain/web/ui/src/galaxy/pages/live/LiveMatchPage.tsx` | 注释掉 CommentSection 组件调用  |
+
+### 后续计划
+
+Phase 7 重新设计评论区布局时考虑：
+
+1. 可折叠的评论面板
+2. 悬浮式评论窗口
+3. 或将评论放在单独的 Tab 页面
+
+---
+
+## 2026-01-26: 一级页面 Bug 修复
+
+### 问题 1: 切换比赛时手数显示错误
+
+**现象**: 从第一场比赛 (290手) 切换到第二场比赛 (254手) 时，显示 "290 / 254 手"。
+
+**根本原因**: `useLiveMatch` hook 在 `matchId` 变化时没有重置 `currentMove` 状态。旧的 `currentMove` 值 (290) 保留下来，而新比赛只有 254 手。
+
+**修复**: 在 `useLiveMatch.ts` 中添加 effect，当 `matchId` 变化时重置 `currentMove` 为 `null`：
+
+```typescript
+// Reset state when matchId changes
+useEffect(() => {
+  setCurrentMoveInternal(null);
+  setAnalysis({});
+}, [matchId]);
+```
+
+### 问题 2: 播放控制栏布局优化
+
+**现象**: 手数信息 ("290 / 254 手") 单独占一行，浪费垂直空间。
+
+**修复**: 将手数显示移到播放控制按钮的同一行：
+
+```typescript
+// PlaybackBar.tsx - 手数信息现在与控制按钮在同一行
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+  {/* 控制按钮 */}
+  ...
+  {/* 手数 - 与控制按钮同行 */}
+  <Typography variant="body2" color="text.secondary" sx={{ ml: 2, minWidth: 80 }}>
+    {currentMove} / {totalMoves} 手
+  </Typography>
+</Box>
+```
+
+### 修改文件
+
+| 文件 | 改动类型 |
+| --- | --- |
+| `katrain/web/ui/src/galaxy/hooks/live/useLiveMatch.ts` | 切换比赛时重置 currentMove |
+| `katrain/web/ui/src/galaxy/components/live/PlaybackBar.tsx` | 手数显示移到控制按钮同行 |
+
+### 验证
+
+使用 Playwright MCP 验证：
+1. ✅ 第一场比赛显示 "290 / 290 手"
+2. ✅ 切换到第二场比赛后显示 "254 / 254 手"
+3. ✅ 播放控制栏布局紧凑，节省垂直空间

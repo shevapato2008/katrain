@@ -25,11 +25,11 @@ const ResearchPage = () => {
                 <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
                     <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: '#262626' }}>
                         {gameState ? (
-                            <Board 
-                                gameState={gameState} 
-                                onMove={(x, y) => onMove(x, y)} 
+                            <Board
+                                gameState={gameState}
+                                onMove={(x, y) => onMove(x, y)}
                                 onNavigate={onNavigate}
-                                analysisToggles={{}}
+                                analysisToggles={{ coords: true }}
                             />
                         ) : (
                             <Typography color="text.secondary">{i18n.t('Loading Board...', 'Loading Board...')}</Typography>

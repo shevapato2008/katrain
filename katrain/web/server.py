@@ -92,9 +92,24 @@ async def lifespan(app: FastAPI):
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
-    
+
+    # Initialize Live Broadcasting Service
+    from katrain.web.live import create_live_service
+    live_service = create_live_service()
+    app.state.live_service = live_service
+    try:
+        await live_service.start()
+        logging.getLogger("katrain_web").info("Live broadcasting service started")
+    except Exception as e:
+        logging.getLogger("katrain_web").warning(f"Failed to start live service: {e}")
+
     yield
-    
+
+    # Shutdown live service
+    live_service = getattr(app.state, "live_service", None)
+    if live_service:
+        await live_service.stop()
+
     task = getattr(app.state, "cleanup_task", None)
     if task:
         task.cancel()

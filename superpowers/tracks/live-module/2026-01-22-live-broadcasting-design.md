@@ -60,6 +60,12 @@
 
 ### 2.2 中国围棋协会
 
+> **⚠️ 已禁用 (Phase 1 - 2026-01-25)**
+>
+> WeiqiOrg API 返回的 `gameKifuSgf` 字段数据已加密/编码，无法直接解析为标准 SGF 格式。
+> Base64 解码后为二进制数据，需要逆向工程获取解密密钥。
+> **计划在 Phase 2 实现解密功能后重新启用此数据源。**
+
 **基础 URL**: `https://wqapi.cwql.org.cn`
 
 | 端点 | 方法 | 说明 |
@@ -445,6 +451,266 @@ interface LiveState {
 *   **建议**: 仅作为“个人学习/研究”工具使用尚可，如果发布为商业软件或大规模推广，建议默认关闭评论抓取，或仅抓取不含版权的纯技术统计数据。
 
 #### 5. 数据源缺失：赛事预告
-*   **问题**: 规划中提到的“赛事预告”目前没有现成的 API (`Likely scraping weiqi.org`)。
+*   **问题**: 规划中提到的"赛事预告"目前没有现成的 API (`Likely scraping weiqi.org`)。
 *   **风险**: 网页结构化数据抓取（HTML Scraping）极不稳定。一旦官网改版，解析代码就会失效。且 `weiqi.org` 的更新频率和准确性不可控。
 *   **建议**: 这一块建议作为 `Nice-to-have`，或者考虑硬编码一些已知的世界大赛日程（如果不需频繁更新），不要在这个功能上投入过多精力去写复杂的爬虫。
+
+---
+
+## 实现更新日志
+
+## 2026-01-26: Phase 5 Bug 修复与增强
+
+### 问题诊断
+
+在测试 Phase 5 (KataGo 本地分析集成) 时发现 `live_analysis` 表有大量 `status = 'failed'` 的记录，错误信息均为 "Match data not found"。
+
+**根本原因分析**:
+
+```text
+时间线：
+T1: _poll_live_matches() 调用 /situation API
+    → 获取 moves 数据，保存到 live_matches.moves = ["Q16", "D4", ...]
+
+T2: cron job 创建分析任务
+    → live_analysis 表插入 pending 记录
+
+T3: _refresh_match_list() 定时执行，调用 /all 和 /history API
+    → 这些 API 不返回 moves 数据
+    → _persist_matches() → get_or_create_match()
+    → 🐛 BUG: db_match.moves = match.moves (用 [] 覆盖了原有数据)
+
+T4: Analyzer._analysis_loop() 处理分析任务
+    → 读取 live_matches.moves = []
+    → 无法重建棋盘位置 → 标记为 failed: "Match data not found"
+```
+
+### 修复内容
+
+#### 1. 防止空 moves 覆盖已有数据 (`analysis_repo.py`)
+
+```python
+# 修复前：无条件覆盖
+db_match.moves = match.moves
+
+# 修复后：只有新数据有 moves 时才更新
+if match.moves:
+    db_match.moves = match.moves
+```
+
+#### 2. 主动获取 moves 数据 (`poller.py`)
+
+修改 `_persist_matches()` 逻辑：
+
+```python
+for match in matches:
+    needs_moves = not match.moves or len(match.moves) == 0
+
+    if needs_moves:
+        # 检查 DB 中是否已有 moves
+        db_match = repo.get_match(match.id)
+        if db_match and db_match.moves and len(db_match.moves) > 0:
+            needs_moves = False
+
+    if needs_moves and match.source.value == "xingzhen":
+        # 调用 /situation/{id} 获取 moves
+        situation = await self.xingzhen.get_situation(match.source_id)
+        if situation and situation.get("moves"):
+            match.moves = self.xingzhen._parse_moves_string(situation["moves"])
+```
+
+#### 3. 服务重启时重置 stale running 任务 (`analyzer.py`)
+
+```python
+async def start(self) -> None:
+    # Reset any stale "running" tasks to "pending" (from previous crash/restart)
+    self._reset_stale_running_tasks()
+    ...
+
+def _reset_stale_running_tasks(self) -> None:
+    """Reset any tasks stuck in 'running' state back to 'pending'."""
+    updated = db.query(LiveAnalysisDB).filter(
+        LiveAnalysisDB.status == "running"
+    ).update({
+        LiveAnalysisDB.status: "pending"
+    })
+    if updated > 0:
+        logger.info(f"Reset {updated} stale 'running' tasks to 'pending'")
+```
+
+#### 4. 新增 KataGo 统计字段 (`models_db.py`)
+
+为 `live_matches` 表添加本地 KataGo 分析结果字段：
+
+```python
+class LiveMatchDB(Base):
+    ...
+    current_winrate = Column(Float, default=0.5)  # From XingZhen API
+    current_score = Column(Float, default=0.0)    # From XingZhen API
+    katago_winrate = Column(Float, nullable=True)  # From local KataGo (latest move)
+    katago_score = Column(Float, nullable=True)    # From local KataGo (latest move)
+```
+
+**数据更新时机**: 当分析最新一手完成时，自动更新 `katago_winrate` 和 `katago_score`。
+
+#### 5. 新增恢复 API 端点 (`live.py`)
+
+| 端点                     | 方法   | 说明                              |
+| ------------------------ | ------ | --------------------------------- |
+| `/matches/{id}/recover`  | POST   | 手动恢复单个比赛的 moves 数据     |
+| `/admin/stats`           | GET    | 获取分析队列统计                  |
+| `/admin/recover-all`     | POST   | 批量恢复所有缺失 moves 的比赛     |
+
+### 轮询策略澄清
+
+| 比赛状态                 | 轮询 API            | 频率          | 目的                 |
+| ------------------------ | ------------------- | ------------- | -------------------- |
+| `live` (直播中)          | `/situation/{id}`   | 每 **3 秒**   | 检测新着法           |
+| `finished` (已完赛)      | 不轮询              | -             | moves 已保存到 DB    |
+| 比赛列表                 | `/all` + `/history` | 每 **60 秒**  | 更新比赛列表元数据   |
+
+### 数据库迁移
+
+```sql
+ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS katago_winrate FLOAT;
+ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS katago_score FLOAT;
+```
+
+### 受影响文件
+
+| 文件                                    | 改动类型                                      |
+| --------------------------------------- | --------------------------------------------- |
+| `katrain/web/core/models_db.py`         | 新增 `katago_winrate`, `katago_score` 字段    |
+| `katrain/web/live/models.py`            | LiveMatch 模型添加对应字段                    |
+| `katrain/web/live/analysis_repo.py`     | 防止空覆盖 + 新增 `update_katago_stats()`     |
+| `katrain/web/live/poller.py`            | `_persist_matches()` 主动获取 moves           |
+| `katrain/web/live/analyzer.py`          | 启动时重置 running 任务 + 更新 KataGo 统计    |
+| `katrain/web/live/service.py`           | 简化 cron job 逻辑                            |
+| `katrain/web/api/v1/endpoints/live.py`  | 新增恢复 API 端点                             |
+
+---
+
+## 2026-01-26: Phase 6 PV 推演显示
+
+### 实现内容
+
+实现了悬停 AI 推荐着法时在棋盘上显示预测变化图 (Principal Variation) 的功能。
+
+### 功能特性
+
+1. **半透明棋子**: PV 棋子以 60% 透明度显示，与实际棋子区分
+2. **序号标签**: 每个 PV 棋子上显示序号 (1, 2, 3...)，表示预测顺序
+3. **颜色交替**: 黑白棋子根据预测顺序正确交替
+4. **悬停触发**: 鼠标悬停在 AI 推荐列表项时显示，移开时消失
+5. **多变化切换**: 悬停不同推荐着法显示不同的 PV 变化
+
+### 修改文件
+
+| 文件                                                      | 改动类型           |
+| --------------------------------------------------------- | ------------------ |
+| `katrain/web/ui/src/galaxy/components/live/LiveBoard.tsx` | 新增 PV 渲染功能   |
+| `katrain/web/ui/src/galaxy/pages/live/LiveMatchPage.tsx`  | 连接 PV 状态到棋盘 |
+
+### 核心代码
+
+```typescript
+// LiveBoard.tsx - 新增 drawPvStone 函数
+function drawPvStone(ctx, layout, x, y, boardSize, color, moveNumber, blackImg, whiteImg) {
+  const { x: cx, y: cy } = gridToCanvas(layout, x, y, boardSize);
+  const radius = layout.gridSize * 0.42;
+
+  ctx.save();
+  ctx.globalAlpha = 0.6; // 半透明
+  // 绘制棋子图片或圆形
+  ctx.globalAlpha = 1.0;
+  // 绘制序号
+  ctx.fillText(String(moveNumber), cx, cy);
+  ctx.restore();
+}
+
+// 渲染 PV 棋子 (在 useEffect 中)
+if (pvMoves && pvMoves.length > 0) {
+  let pvPlayer = lastPlayer === 'B' ? 'W' : 'B';
+  for (let i = 0; i < pvMoves.length; i++) {
+    const coords = parseMove(pvMoves[i]);
+    if (coords && !board[y][x]) {
+      drawPvStone(ctx, layout, x, y, boardSize, pvPlayer, i + 1, blackImg, whiteImg);
+    }
+    pvPlayer = pvPlayer === 'B' ? 'W' : 'B';
+  }
+}
+```
+
+### 测试验证
+
+使用 Playwright MCP 进行前端测试：
+
+1. ✅ 棋盘初始状态无 PV 显示
+2. ✅ 悬停 Q8 推荐时显示对应 PV (多个半透明棋子带序号)
+3. ✅ 悬停 P7 推荐时显示不同的 PV 变化
+4. ✅ PV 棋子仅显示在空位，不覆盖实际棋子
+
+---
+
+## 2026-01-26: 棋盘 AI 选点标记与功能按钮
+
+### 功能需求
+
+参考星阵围棋的 UI 设计，在棋盘上直接显示 AI 推荐的选点位置（彩色圆圈），并提供功能按钮控制显示/隐藏。
+
+### 具体实现
+
+#### 1. 棋盘 AI 选点标记
+
+在棋盘空位上显示 AI Top N 推荐着法的位置标记：
+
+- **显示样式**: 绿色圆圈，透明度根据排名递减
+- **排名显示**: 圆圈内显示序号 (1, 2, 3...)
+- **颜色渐变**:
+  - Rank 1: 85% 不透明度 (最亮)
+  - Rank 2: 65% 不透明度
+  - Rank 3: 50% 不透明度
+  - Rank 4+: 40% 不透明度
+- **与 PV 互斥**: 悬停 PV 时隐藏 AI 选点标记
+
+#### 2. 功能按钮
+
+在棋盘下方添加功能按钮行：
+
+| 按钮   | 功能                         | 状态      |
+| ------ | ---------------------------- | --------- |
+| AI选点 | 切换棋盘上 AI 推荐标记的显隐 | ✅ 已实现 |
+| 试下   | 进入试下模式                 | 📋 待开发 |
+| 领地   | 显示领地估算                 | 📋 待开发 |
+| 手数   | 显示/隐藏手数标记            | 📋 待开发 |
+
+### 修改文件 (AI 选点功能)
+
+| 文件                                                      | 改动类型                 |
+| --------------------------------------------------------- | ------------------------ |
+| `katrain/web/ui/src/galaxy/components/live/LiveBoard.tsx` | 新增 AI 选点标记绘制功能 |
+| `katrain/web/ui/src/galaxy/pages/live/LiveMatchPage.tsx`  | 新增功能按钮 + 状态控制  |
+
+### 核心代码 (AI 选点)
+
+```typescript
+// LiveBoard.tsx - AI 选点标记颜色
+const AI_MARKER_COLORS = [
+  'rgba(76, 175, 80, 0.85)',   // rank 1 - bright green
+  'rgba(76, 175, 80, 0.65)',   // rank 2
+  'rgba(76, 175, 80, 0.50)',   // rank 3
+  'rgba(76, 175, 80, 0.40)',   // rank 4+
+];
+
+// 绘制 AI 选点标记
+function drawAiMoveMarker(ctx, layout, x, y, boardSize, rank) {
+  const { x: cx, y: cy } = gridToCanvas(layout, x, y, boardSize);
+  const radius = layout.gridSize * 0.35;
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = AI_MARKER_COLORS[Math.min(rank - 1, 3)];
+  ctx.fill();
+  ctx.fillText(String(rank), cx, cy); // 显示序号
+}
+```

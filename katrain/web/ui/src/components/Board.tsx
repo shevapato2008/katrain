@@ -278,12 +278,16 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       // Move numbers for all stones
       if (analysisToggles.numbers) {
         ctx.fillStyle = player === "B" ? "white" : "black";
-        ctx.font = `bold ${Math.max(8, layout.gridSize * 0.25)}px sans-serif`;
+        // Larger font size for better readability
+        ctx.font = `bold ${Math.max(11, layout.gridSize * 0.38)}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         // Use the actual move number from backend if available, fallback to index+1
         const numToDisplay = moveNumber !== null && moveNumber !== undefined ? moveNumber : index + 1;
-        ctx.fillText(numToDisplay.toString(), pos.x, pos.y);
+        // Check if this is the last move to offset text
+        const isLastMove = gameState.last_move && gameState.last_move[0] === coords[0] && gameState.last_move[1] === coords[1];
+        const yOffset = isLastMove ? -layout.gridSize * 0.08 : 0;
+        ctx.fillText(numToDisplay.toString(), pos.x, pos.y + yOffset);
       }
 
       // Eval dots

@@ -55,12 +55,11 @@ const Dashboard = () => {
             path: "/galaxy/report",
             disabled: true 
         },
-        { 
-            title: i18n.t('Live', 'Live'), 
-            desc: i18n.t('dashboard:live_desc', "Watch top games and live tournaments. (Coming Soon)"), 
-            icon: <LiveTvIcon fontSize="large"/>, 
-            path: "/galaxy/live",
-            disabled: true 
+        {
+            title: i18n.t('Live', 'Live'),
+            desc: i18n.t('dashboard:live_desc', "Watch top games and live tournaments with AI analysis."),
+            icon: <LiveTvIcon fontSize="large"/>,
+            path: "/galaxy/live"
         }
     ];
 

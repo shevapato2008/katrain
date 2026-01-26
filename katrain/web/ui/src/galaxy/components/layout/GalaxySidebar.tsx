@@ -45,7 +45,7 @@ const GalaxySidebar = () => {
     { text: i18n.t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
     { text: i18n.t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false }, // Will be protected later
     { text: i18n.t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
-    { text: i18n.t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: true },
+    { text: i18n.t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
   ];
 
   return (

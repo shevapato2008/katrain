@@ -1,17 +1,18 @@
-"""Upcoming Events Scraper for official Go association websites.
+"""Upcoming Events Scraper for Go tournament schedules.
 
 Sources:
-- 韩国棋院 (baduk.or.kr) - 대국일정
 - 日本棋院 (nihonkiin.or.jp) - 対局予定
-- 中国围棋协会 (weiqi.org.cn) - 赛事日历
+- 野狐围棋 (foxwq.com) - 直播预告 (includes Chinese, Korean, and international tournaments)
 
 These are scraped via HTML parsing since no official APIs exist.
+Note: Some official association sites (baduk.or.kr, weiqi.org.cn) use JavaScript rendering
+which requires a headless browser. FoxWQ provides static HTML with comprehensive coverage.
 """
 
 import asyncio
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 import httpx
@@ -39,9 +40,8 @@ class UpcomingScraper:
 
         # Fetch from all sources concurrently
         tasks = [
-            self._fetch_korean(),
             self._fetch_japanese(),
-            self._fetch_chinese(),
+            self._fetch_foxwq(),  # Covers Chinese, Korean, and international tournaments
         ]
 
         fetched = await asyncio.gather(*tasks, return_exceptions=True)
@@ -78,12 +78,14 @@ class UpcomingScraper:
             logger.error(f"Failed to fetch {url}: {e}")
             return None
 
-    async def _fetch_korean(self) -> list[UpcomingMatch]:
-        """Fetch upcoming events from Korean Baduk Association (baduk.or.kr).
+    async def _fetch_foxwq(self) -> list[UpcomingMatch]:
+        """Fetch upcoming events from FoxWQ (野狐围棋).
 
-        URL: https://www.baduk.or.kr/record/schedule.asp
+        URL: https://www.foxwq.com
+        This source covers Chinese, Korean, and international tournaments.
+        The 直播预告 section lists upcoming matches with dates and times.
         """
-        url = "https://www.baduk.or.kr/record/schedule.asp"
+        url = "https://www.foxwq.com"
         matches = []
 
         try:
@@ -93,42 +95,46 @@ class UpcomingScraper:
 
             soup = BeautifulSoup(html, "lxml")
 
-            # Find schedule table rows
-            # The page typically has a table with columns: 일자(Date), 대회명(Tournament), 대국자(Players)
-            rows = soup.select("table tr")
+            # Find the 直播预告 section
+            # Look for text that contains schedule entries with the pattern:
+            # "月日 时:分 赛事名 选手VS选手"
 
-            for row in rows:
-                cells = row.find_all("td")
-                if len(cells) < 3:
-                    continue
+            # Get all text content
+            text = soup.get_text()
 
+            # Pattern: "1月27日 10:30 赛事名 选手VS选手"
+            # or "1月27日10:30 赛事名 选手VS选手"
+            # Player names are typically 2-4 Chinese characters, no digits
+            pattern = re.compile(
+                r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2}):(\d{2})\s+"  # Date and time
+                r"([^\n]+?)\s+"  # Tournament name
+                r"([\u4e00-\u9fff]{2,5})\s*(?:VS|vs|对)\s*([\u4e00-\u9fff]{2,5})",  # Players (2-5 Chinese chars)
+                re.UNICODE,
+            )
+
+            for match in pattern.finditer(text):
                 try:
-                    # Parse date (format varies: YYYY.MM.DD or MM/DD)
-                    date_text = cells[0].get_text(strip=True)
-                    tournament = cells[1].get_text(strip=True)
-                    players_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
+                    month = int(match.group(1))
+                    day = int(match.group(2))
+                    hour = int(match.group(3))
+                    minute = int(match.group(4))
+                    tournament = match.group(5).strip()
+                    player_black = match.group(6).strip()
+                    player_white = match.group(7).strip()
 
-                    if not date_text or not tournament:
-                        continue
+                    # Determine year
+                    year = datetime.now().year
+                    if month < datetime.now().month - 6:
+                        year += 1
 
-                    # Skip header rows
-                    if "일자" in date_text or "대회" in tournament:
-                        continue
-
-                    # Parse date
-                    scheduled_time = self._parse_korean_date(date_text)
-                    if not scheduled_time:
-                        continue
+                    scheduled_time = datetime(year, month, day, hour, minute)
 
                     # Only include future events
                     if scheduled_time < datetime.now():
                         continue
 
-                    # Parse players if available
-                    player_black, player_white = self._parse_players(players_text)
-
-                    match = UpcomingMatch(
-                        id=f"korea_{tournament}_{scheduled_time.strftime('%Y%m%d')}",
+                    upcoming = UpcomingMatch(
+                        id=f"foxwq_{tournament}_{scheduled_time.strftime('%Y%m%d%H%M')}",
                         tournament=tournament,
                         round_name=None,
                         scheduled_time=scheduled_time,
@@ -136,16 +142,65 @@ class UpcomingScraper:
                         player_white=player_white,
                         source_url=url,
                     )
-                    matches.append(match)
+                    matches.append(upcoming)
 
-                except Exception as e:
-                    logger.debug(f"Failed to parse Korean row: {e}")
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Failed to parse FoxWQ entry: {e}")
                     continue
 
-            logger.info(f"Fetched {len(matches)} upcoming events from Korean Baduk Association")
+            # Also look for entries without player names (tournament-only)
+            pattern_no_players = re.compile(
+                r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2}):(\d{2})\s+"  # Date and time
+                r"([^\n]+?)(?:\n|$)",  # Tournament name
+                re.UNICODE,
+            )
+
+            for match in pattern_no_players.finditer(text):
+                try:
+                    month = int(match.group(1))
+                    day = int(match.group(2))
+                    hour = int(match.group(3))
+                    minute = int(match.group(4))
+                    tournament = match.group(5).strip()
+
+                    # Skip if tournament name looks like it has VS (already captured above)
+                    if "VS" in tournament or "vs" in tournament or "对" in tournament:
+                        continue
+
+                    year = datetime.now().year
+                    if month < datetime.now().month - 6:
+                        year += 1
+
+                    scheduled_time = datetime(year, month, day, hour, minute)
+
+                    # Only include future events
+                    if scheduled_time < datetime.now():
+                        continue
+
+                    # Check for duplicates
+                    match_id = f"foxwq_{tournament}_{scheduled_time.strftime('%Y%m%d%H%M')}"
+                    if any(m.id == match_id for m in matches):
+                        continue
+
+                    upcoming = UpcomingMatch(
+                        id=match_id,
+                        tournament=tournament,
+                        round_name=None,
+                        scheduled_time=scheduled_time,
+                        player_black=None,
+                        player_white=None,
+                        source_url=url,
+                    )
+                    matches.append(upcoming)
+
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Failed to parse FoxWQ entry: {e}")
+                    continue
+
+            logger.info(f"Fetched {len(matches)} upcoming events from FoxWQ")
 
         except Exception as e:
-            logger.error(f"Failed to scrape Korean Baduk Association: {e}")
+            logger.error(f"Failed to scrape FoxWQ: {e}")
 
         return matches
 
@@ -226,124 +281,6 @@ class UpcomingScraper:
             logger.error(f"Failed to scrape Japan Go Association: {e}")
 
         return matches
-
-    async def _fetch_chinese(self) -> list[UpcomingMatch]:
-        """Fetch upcoming events from Chinese Go Association (weiqi.org.cn).
-
-        Note: The Chinese Go Association website structure may vary.
-        We try to find the event calendar or schedule page.
-        """
-        # Try multiple potential URLs
-        urls = [
-            "https://www.weiqi.org.cn/",
-            "https://www.cwql.org.cn/",  # Chinese Go A-League
-        ]
-
-        matches = []
-
-        for url in urls:
-            try:
-                html = await self._fetch_html(url)
-                if not html:
-                    continue
-
-                soup = BeautifulSoup(html, "lxml")
-
-                # Look for schedule/calendar links or sections
-                # Chinese sites often have 赛程, 日程, 比赛安排 etc.
-                schedule_keywords = ["赛程", "日程", "比赛", "对阵", "安排"]
-
-                # Find links that might lead to schedules
-                for link in soup.find_all("a", href=True):
-                    link_text = link.get_text(strip=True)
-                    if any(k in link_text for k in schedule_keywords):
-                        logger.debug(f"Found potential schedule link: {link_text} -> {link['href']}")
-
-                # Look for tournament announcements in the main content
-                # These often contain dates and tournament names
-                for article in soup.select("article, .news-item, .list-item, li"):
-                    text = article.get_text(strip=True)
-
-                    # Look for date patterns
-                    date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", text)
-                    if not date_match:
-                        date_match = re.search(r"(\d{1,2})月(\d{1,2})日", text)
-
-                    if date_match:
-                        try:
-                            if len(date_match.groups()) == 3:
-                                year, month, day = map(int, date_match.groups())
-                            else:
-                                month, day = map(int, date_match.groups())
-                                year = datetime.now().year
-                                if month < datetime.now().month - 6:
-                                    year += 1
-
-                            scheduled_time = datetime(year, month, day, 10, 0)
-
-                            # Only future events
-                            if scheduled_time < datetime.now():
-                                continue
-
-                            # Extract tournament name (look for common patterns)
-                            tournament_match = re.search(
-                                r"([\u4e00-\u9fff]+(?:杯|赛|战|联赛|锦标赛|公开赛|名人战|棋圣战))",
-                                text,
-                            )
-                            if tournament_match:
-                                tournament = tournament_match.group(1)
-
-                                match = UpcomingMatch(
-                                    id=f"china_{tournament}_{scheduled_time.strftime('%Y%m%d')}",
-                                    tournament=tournament,
-                                    round_name=None,
-                                    scheduled_time=scheduled_time,
-                                    player_black=None,
-                                    player_white=None,
-                                    source_url=url,
-                                )
-                                matches.append(match)
-
-                        except (ValueError, TypeError):
-                            continue
-
-            except Exception as e:
-                logger.error(f"Failed to scrape {url}: {e}")
-
-        logger.info(f"Fetched {len(matches)} upcoming events from Chinese sources")
-        return matches
-
-    def _parse_korean_date(self, date_text: str) -> Optional[datetime]:
-        """Parse Korean date format."""
-        try:
-            # Try YYYY.MM.DD format
-            match = re.search(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", date_text)
-            if match:
-                year, month, day = map(int, match.groups())
-                return datetime(year, month, day, 10, 0)
-
-            # Try MM/DD format
-            match = re.search(r"(\d{1,2})/(\d{1,2})", date_text)
-            if match:
-                month, day = map(int, match.groups())
-                year = datetime.now().year
-                if month < datetime.now().month - 6:
-                    year += 1
-                return datetime(year, month, day, 10, 0)
-
-            # Try MM.DD format
-            match = re.search(r"(\d{1,2})\.(\d{1,2})", date_text)
-            if match:
-                month, day = map(int, match.groups())
-                year = datetime.now().year
-                if month < datetime.now().month - 6:
-                    year += 1
-                return datetime(year, month, day, 10, 0)
-
-        except (ValueError, TypeError):
-            pass
-
-        return None
 
     def _parse_players(self, text: str) -> tuple[Optional[str], Optional[str]]:
         """Parse player names from text like 'Player A vs Player B'."""

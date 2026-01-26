@@ -82,7 +82,7 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
           暂无即将进行的赛事
         </Typography>
         <Typography variant="caption" color="text.disabled">
-          数据来源：韩国棋院、日本棋院、中国围棋协会
+          数据来源：日本棋院、野狐围棋
         </Typography>
       </Box>
     );

@@ -792,3 +792,77 @@ useEffect(() => {
 1. ✅ 第一场比赛显示 "290 / 290 手"
 2. ✅ 切换到第二场比赛后显示 "254 / 254 手"
 3. ✅ 播放控制栏布局紧凑，节省垂直空间
+
+---
+
+## 2026-01-27: Phase 8 赛事预告
+
+### 实现内容
+
+实现了从官方围棋协会网站爬取即将进行的赛事信息的功能。
+
+### 数据源
+
+| 来源 | URL | 内容 |
+| --- | --- | --- |
+| 韩国棋院 | baduk.or.kr/record/schedule.asp | 대국일정 (对局日程) |
+| 日本棋院 | nihonkiin.or.jp/match/2week.html | 対局予定 (对局预定) |
+| 中国围棋协会 | weiqi.org.cn / cwql.org.cn | 赛事日历 |
+
+### 架构设计
+
+```
+UpcomingScraper (upcoming.py)
+    ├── _fetch_korean()    → 韩国棋院 HTML 解析
+    ├── _fetch_japanese()  → 日本棋院 HTML 解析
+    └── _fetch_chinese()   → 中国围棋协会 HTML 解析
+
+LivePoller
+    └── _upcoming_poll_loop()  → 每 2 小时执行一次
+        └── _refresh_upcoming()
+            └── scraper.fetch_all()
+                └── cache.set_upcoming()
+```
+
+### 轮询策略
+
+| 任务 | 频率 | 说明 |
+| --- | --- | --- |
+| 赛事预告 | 每 2 小时 | 官方赛程变化不频繁 |
+| 比赛列表 | 每 60 秒 | 检测新比赛 |
+| 直播着法 | 每 3 秒 | 检测新着法 |
+
+### 新增文件
+
+| 文件 | 说明 |
+| --- | --- |
+| `katrain/web/live/clients/upcoming.py` | 赛事预告爬虫 |
+| `katrain/web/ui/src/galaxy/components/live/UpcomingList.tsx` | 前端组件 |
+
+### 修改文件
+
+| 文件 | 改动 |
+| --- | --- |
+| `requirements-web.txt` | 新增 beautifulsoup4, lxml |
+| `katrain/web/live/poller.py` | 新增 _upcoming_poll_loop |
+| `katrain/web/ui/src/galaxy/pages/live/LivePage.tsx` | 使用 UpcomingList |
+
+### 前端显示
+
+- 按日期排序显示即将进行的赛事
+- 显示"今天"、"明天"、"N天后"等友好标签
+- 提供官方网站链接方便用户查看详情
+- 自动每 30 分钟刷新
+
+### 注意事项
+
+由于是 HTML 爬虫而非官方 API，存在以下风险：
+
+1. **网站改版**: 官网 HTML 结构变化会导致解析失败
+2. **反爬限制**: 请求频率过高可能被封禁
+3. **数据准确性**: 页面信息可能不完整或延迟
+
+建议：
+- 保持较低的爬取频率 (2小时)
+- 做好错误处理和日志记录
+- 定期检查爬虫是否正常工作

@@ -11,6 +11,7 @@ from typing import Callable, Optional, TYPE_CHECKING
 from katrain.web.core.db import SessionLocal
 from katrain.web.live.cache import LiveCache
 from katrain.web.live.clients import XingZhenClient, WeiqiOrgClient
+from katrain.web.live.clients.upcoming import UpcomingScraper
 from katrain.web.live.models import LiveConfig, LiveMatch, MatchStatus
 from katrain.web.live.analysis_repo import LiveAnalysisRepo, PRIORITY_LIVE_NEW, PRIORITY_LIVE_BACKFILL
 
@@ -48,6 +49,9 @@ class LivePoller:
         self.weiqi_org = weiqi_org_client or WeiqiOrgClient(
             base_url=self.config.weiqi_org_api_base
         )
+
+        # Upcoming events scraper
+        self.upcoming_scraper = UpcomingScraper()
 
         # Polling state
         self._running = False
@@ -91,12 +95,14 @@ class LivePoller:
 
         # Initial fetch
         await self._refresh_match_list()
+        await self._refresh_upcoming()
 
         # Start background tasks
         self._tasks = [
             asyncio.create_task(self._list_poll_loop()),
             asyncio.create_task(self._live_poll_loop()),
             asyncio.create_task(self._cleanup_loop()),
+            asyncio.create_task(self._upcoming_poll_loop()),
         ]
 
     async def stop(self) -> None:
@@ -147,6 +153,34 @@ class LivePoller:
                 break
             except Exception as e:
                 logger.error(f"Error in cleanup loop: {e}")
+
+    async def _upcoming_poll_loop(self) -> None:
+        """Background loop to refresh upcoming events periodically.
+
+        Runs every 2 hours since tournament schedules don't change frequently.
+        """
+        while self._running:
+            try:
+                await asyncio.sleep(7200)  # Every 2 hours
+                await self._refresh_upcoming()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in upcoming poll loop: {e}")
+                await asyncio.sleep(300)  # 5 min pause before retry
+
+    async def _refresh_upcoming(self) -> None:
+        """Refresh upcoming events from official Go association websites."""
+        logger.info("Refreshing upcoming events from official sources...")
+        try:
+            upcoming = await self.upcoming_scraper.fetch_all()
+            if upcoming:
+                await self.cache.set_upcoming(upcoming)
+                logger.info(f"Updated cache with {len(upcoming)} upcoming events")
+            else:
+                logger.info("No upcoming events found from official sources")
+        except Exception as e:
+            logger.error(f"Failed to refresh upcoming events: {e}")
 
     async def _refresh_match_list(self) -> None:
         """Refresh the full match list from all sources."""

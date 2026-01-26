@@ -9,6 +9,10 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 
+# HTML Parsing for scraping upcoming events
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+
 # Testing and Development
 pytest==8.0.1
 pytest-asyncio

@@ -6,6 +6,7 @@ import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import MatchList from '../../components/live/MatchList';
 import LiveBoard from '../../components/live/LiveBoard';
 import PlaybackBar from '../../components/live/PlaybackBar';
+import UpcomingList from '../../components/live/UpcomingList';
 import type { MatchSummary } from '../../types/live';
 import { i18n } from '../../../i18n';
 
@@ -151,11 +152,7 @@ export default function LivePage() {
               </Box>
             </>
           ) : (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography color="text.secondary">
-                赛事预告功能开发中...
-              </Typography>
-            </Box>
+            <UpcomingList limit={20} />
           )}
         </Box>
 

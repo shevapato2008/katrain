@@ -143,15 +143,20 @@ class LiveService:
 
                     # Get all matches from DB that have moves
                     from katrain.web.core.models_db import LiveMatchDB
-                    from sqlalchemy import func
+                    from sqlalchemy import func, text
                     from katrain.web.core.db import engine
 
-                    array_len = func.jsonb_array_length if engine.dialect.name == "postgresql" else func.json_array_length
-
-                    matches_with_moves = db.query(LiveMatchDB).filter(
-                        LiveMatchDB.moves.isnot(None),
-                        array_len(LiveMatchDB.moves) > 0
-                    ).all()
+                    if engine.dialect.name == "postgresql":
+                        # Cast to jsonb to handle both json and jsonb column types
+                        matches_with_moves = db.query(LiveMatchDB).filter(
+                            LiveMatchDB.moves.isnot(None),
+                            text("jsonb_array_length(live_matches.moves::jsonb) > 0")
+                        ).all()
+                    else:
+                        matches_with_moves = db.query(LiveMatchDB).filter(
+                            LiveMatchDB.moves.isnot(None),
+                            func.json_array_length(LiveMatchDB.moves) > 0
+                        ).all()
 
                     for db_match in matches_with_moves:
                         # Find unanalyzed moves

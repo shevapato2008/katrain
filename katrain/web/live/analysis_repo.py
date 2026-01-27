@@ -410,7 +410,7 @@ class LiveAnalysisRepo:
         return self.db.query(LiveMatchDB).filter(
             or_(
                 LiveMatchDB.moves.is_(None),
-                func.jsonb_array_length(LiveMatchDB.moves) == 0
+                func.json_array_length(LiveMatchDB.moves) == 0
             )
         ).all()
 

@@ -147,7 +147,7 @@ class LiveService:
 
                     matches_with_moves = db.query(LiveMatchDB).filter(
                         LiveMatchDB.moves.isnot(None),
-                        func.jsonb_array_length(LiveMatchDB.moves) > 0
+                        func.json_array_length(LiveMatchDB.moves) > 0
                     ).all()
 
                     for db_match in matches_with_moves:

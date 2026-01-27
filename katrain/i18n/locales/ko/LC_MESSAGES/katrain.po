@@ -1109,6 +1109,9 @@ msgstr "로그인"
 msgid "dashboard:live_desc"
 msgstr "최고 수준의 대국과 실시간 대회 관전. (곧 출시)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "사활 문제를 풀어 수읽기 능력을 키우세요."
+
 msgid "game_room:back_to_lobby"
 msgstr "로비로 돌아가기"
 

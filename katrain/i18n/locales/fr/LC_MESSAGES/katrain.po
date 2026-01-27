@@ -1180,6 +1180,10 @@ msgid "dashboard:live_desc"
 msgstr ""
 "Regardez les meilleures parties et tournois en direct. (Bientôt disponible)"
 
+msgid "dashboard:tsumego_desc"
+msgstr ""
+"Pratiquez les problèmes de vie et de mort pour améliorer votre lecture."
+
 msgid "game_room:back_to_lobby"
 msgstr "Retour au salon"
 

@@ -16,7 +16,8 @@ from katrain.web.models import User
 
 router = APIRouter()
 
-DATA_DIR = Path("data/life-n-death")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+DATA_DIR = PROJECT_ROOT / "data" / "life-n-death"
 INDEX_FILE = DATA_DIR / "index.json"
 
 

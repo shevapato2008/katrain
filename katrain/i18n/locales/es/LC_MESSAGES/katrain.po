@@ -1063,6 +1063,9 @@ msgstr "Informes detallados de partidas y análisis de estilo. (Próximamente)"
 msgid "dashboard:live_desc"
 msgstr "Ver partidas de alto nivel y torneos en vivo. (Próximamente)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "Practica problemas de vida y muerte para mejorar tu lectura."
+
 msgid "Settings"
 msgstr "Configuración"
 

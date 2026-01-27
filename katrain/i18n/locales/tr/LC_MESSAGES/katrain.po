@@ -1245,6 +1245,9 @@ msgstr "Giriş Yap"
 msgid "dashboard:live_desc"
 msgstr "En iyi oyunları ve canlı turnuvaları izleyin. (Yakında)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "Okuma becerilerinizi geliştirmek için tsumego problemleri çözün."
+
 msgid "game_room:back_to_lobby"
 msgstr "Lobiye Dön"
 

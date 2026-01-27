@@ -79,6 +79,9 @@ msgstr "Detailed game reports and style analysis. (Coming Soon)"
 msgid "dashboard:live_desc"
 msgstr "Watch top games and live tournaments. (Coming Soon)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "Practice life and death problems to sharpen your reading skills."
+
 msgid "dashboard:welcome"
 msgstr "Welcome to Galaxy Go"
 

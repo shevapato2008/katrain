@@ -1182,6 +1182,9 @@ msgstr "ログイン"
 msgid "dashboard:live_desc"
 msgstr "トップゲームやライブトーナメントを観戦。（近日公開）"
 
+msgid "dashboard:tsumego_desc"
+msgstr "詰碁を解いて、読みの力を鍛えましょう。"
+
 msgid "game_room:back_to_lobby"
 msgstr "ロビーに戻る"
 

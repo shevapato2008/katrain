@@ -1210,6 +1210,9 @@ msgstr "Anmelden"
 msgid "dashboard:live_desc"
 msgstr "Top-Spiele und Live-Turniere ansehen. (Demnächst)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "Üben Sie Tsumego-Probleme, um Ihre Lesefähigkeit zu verbessern."
+
 msgid "game_room:back_to_lobby"
 msgstr "Zurück zur Lobby"
 

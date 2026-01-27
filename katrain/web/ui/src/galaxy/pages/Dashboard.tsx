@@ -4,8 +4,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ScienceIcon from '@mui/icons-material/Science';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
-import FriendsPanel from '../components/FriendsPanel';
-import { useAuth } from '../context/AuthContext';
+import ExtensionIcon from '@mui/icons-material/Extension';
 import { useSettings } from '../context/SettingsContext';
 import { i18n } from '../../i18n';
 
@@ -33,7 +32,6 @@ const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
 }
 
 const Dashboard = () => {
-    const { user } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const modules = [
         { 
@@ -60,33 +58,31 @@ const Dashboard = () => {
             desc: i18n.t('dashboard:live_desc', "Watch top games and live tournaments with AI analysis."),
             icon: <LiveTvIcon fontSize="large"/>,
             path: "/galaxy/live"
+        },
+        {
+            title: i18n.t('Tsumego', 'Tsumego'),
+            desc: i18n.t('dashboard:tsumego_desc', "Practice life and death problems to sharpen your reading skills."),
+            icon: <ExtensionIcon fontSize="large"/>,
+            path: "/galaxy/tsumego"
         }
     ];
 
     return (
-        <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-            <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%', overflow: 'auto' }}>
-                <Box sx={{ mb: 6 }}>
-                    <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        {i18n.t('dashboard:welcome', 'Welcome to Galaxy Go')}
-                    </Typography>
-                    <Typography variant="h6" color="text.secondary">
-                        {i18n.t('dashboard:tagline', 'Your professional Go training and analysis platform.')}
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
-                    {modules.map((m) => (
-                        <ModuleCard key={m.title} {...m} />
-                    ))}
-                </Box>
+        <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%', overflow: 'auto' }}>
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {i18n.t('dashboard:welcome', 'Welcome to Galaxy Go')}
+                </Typography>
+                <Typography variant="h6" color="text.secondary">
+                    {i18n.t('dashboard:tagline', 'Your professional Go training and analysis platform.')}
+                </Typography>
             </Box>
-            
-            {user && (
-                <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
-                    <FriendsPanel noBorder />
-                </Box>
-            )}
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
+                {modules.map((m) => (
+                    <ModuleCard key={m.title} {...m} />
+                ))}
+            </Box>
         </Box>
     );
 };

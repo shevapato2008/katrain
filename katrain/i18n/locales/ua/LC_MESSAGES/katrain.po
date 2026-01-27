@@ -1229,6 +1229,9 @@ msgstr "Увійти"
 msgid "dashboard:live_desc"
 msgstr "Дивіться топові ігри та турніри в прямому ефірі. (Незабаром)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "Розв'язуйте задачі на життя і смерть для розвитку читання."
+
 msgid "game_room:back_to_lobby"
 msgstr "Повернутися до лобі"
 

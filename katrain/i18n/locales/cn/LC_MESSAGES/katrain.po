@@ -1006,6 +1006,9 @@ msgstr "登录"
 msgid "dashboard:live_desc"
 msgstr "观看顶级对局和现场锦标赛。(即将推出)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "练习死活题，提升你的计算能力。"
+
 msgid "game_room:back_to_lobby"
 msgstr "返回大厅"
 

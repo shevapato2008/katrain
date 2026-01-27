@@ -1164,6 +1164,9 @@ msgstr "登入"
 msgid "dashboard:live_desc"
 msgstr "觀看頂級對局和現場錦標賽。(即將推出)"
 
+msgid "dashboard:tsumego_desc"
+msgstr "練習死活題，提升你的計算能力。"
+
 msgid "game_room:back_to_lobby"
 msgstr "返回大廳"
 

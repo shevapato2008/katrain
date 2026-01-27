@@ -4,6 +4,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { MoveAnalysis, TopMove } from '../../types/live';
 import { LiveAPI } from '../../api/live';
 import { useState, useMemo } from 'react';
+import { i18n } from '../../../i18n';
 
 interface AiAnalysisProps {
   matchId: string;
@@ -134,15 +135,15 @@ export default function AiAnalysis({
     return (
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="subtitle2">AI 推荐着法</Typography>
-          <Tooltip title="请求分析">
+          <Typography variant="subtitle2">{i18n.t('live:ai_recommendations', 'AI Recommendations')}</Typography>
+          <Tooltip title={i18n.t('live:request_analysis', 'Request analysis')}>
             <IconButton size="small" onClick={handleRequestAnalysis} disabled={requesting}>
               <RefreshIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-          {requesting ? '正在请求分析...' : '暂无分析数据'}
+          {requesting ? i18n.t('live:requesting_analysis', 'Requesting analysis...') : i18n.t('live:no_analysis', 'No analysis data')}
         </Typography>
         {requestError && (
           <Typography variant="caption" color="error" sx={{ display: 'block', textAlign: 'center' }}>
@@ -157,7 +158,7 @@ export default function AiAnalysis({
             onClick={handleRequestAnalysis}
             sx={{ mt: 1 }}
           >
-            请求分析
+            {i18n.t('live:request_analysis', 'Request analysis')}
           </Button>
         )}
       </Box>
@@ -168,9 +169,9 @@ export default function AiAnalysis({
     <Box sx={{ p: 2 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-        <Typography variant="subtitle2">AI 推荐着法</Typography>
+        <Typography variant="subtitle2">{i18n.t('live:ai_recommendations', 'AI Recommendations')}</Typography>
         <Typography variant="caption" color="text.secondary">
-          第 {currentMove} 手后
+          {i18n.t('live:after_move', 'After move')} {currentMove}
         </Typography>
       </Box>
 
@@ -187,10 +188,10 @@ export default function AiAnalysis({
           borderRadius: 1,
         }}
       >
-        <Typography variant="caption" color="text.secondary">推荐选点</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>推荐度</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>领先(目)</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>胜率(%)</Typography>
+        <Typography variant="caption" color="text.secondary">{i18n.t('live:suggested_move', 'Move')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{i18n.t('live:recommendation', 'Score')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{i18n.t('live:lead_pts', 'Lead')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{i18n.t('live:winrate', 'Winrate')}</Typography>
       </Box>
 
       {/* Move rows */}
@@ -260,7 +261,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
           {move.move}
         </Typography>
         {isActualMove && (
-          <Tooltip title="棋手实际落子">
+          <Tooltip title={i18n.t('live:actual_move', 'Actual move played')}>
             <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
           </Tooltip>
         )}

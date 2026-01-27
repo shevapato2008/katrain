@@ -1571,3 +1571,246 @@ msgstr "Beyaz {n} puan ile kazandı"
 
 msgid "game:black_wins_points"
 msgstr "Siyah {n} puan ile kazandı"
+
+msgid "tsumego:problem_n"
+msgstr "Problem {n}"
+
+msgid "tsumego:solveProblems"
+msgstr "Pratik yapmak için bir probleme tıklayın"
+
+msgid "tsumego:problems"
+msgstr "problem"
+
+msgid "tsumego:selectCategory"
+msgstr "Kategori seçin"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "Tsumego"
+
+msgid "tsumego:categoryDesc"
+msgstr "Pratik yapmak istediğiniz problem türünü seçin"
+
+msgid "tsumego:endgame"
+msgstr "Son oyun"
+
+msgid "tsumego:selectLevel"
+msgstr "Zorluk seviyesi seçin"
+
+msgid "tsumego:practiceProblems"
+msgstr "Okuma becerilerinizi geliştirmek için yaşam ve ölüm problemleri çözün"
+
+msgid "tsumego:tesuji"
+msgstr "Tesuji"
+
+msgid "tsumego:life-death"
+msgstr "Yaşam ve Ölüm"
+
+msgid "tsumego:solved"
+msgstr "Çözüldü!"
+
+msgid "tsumego:incorrect"
+msgstr "Yanlış"
+
+msgid "tsumego:blackToPlay"
+msgstr "Siyah oynuyor"
+
+msgid "tsumego:whiteToPlay"
+msgstr "Beyaz oynuyor"
+
+msgid "tsumego:attempts"
+msgstr "Denemeler"
+
+msgid "tsumego:showHint"
+msgstr "İpucu Göster"
+
+msgid "tsumego:hideHint"
+msgstr "İpucu Gizle"
+
+msgid "tsumego:undo"
+msgstr "Geri Al"
+
+msgid "tsumego:reset"
+msgstr "Sıfırla"
+
+msgid "tsumego:previousProblem"
+msgstr "Önceki"
+
+msgid "tsumego:nextProblem"
+msgstr "Sonraki"
+
+msgid "tsumego:errorLoading"
+msgstr "Yükleme Hatası"
+
+msgid "tsumego:unitDesc"
+msgstr "Toplam {total} problem, {units} ünite"
+
+msgid "tsumego:unit"
+msgstr "Ünite"
+
+msgid "tsumego:selectUnit"
+msgstr "Ünite seçin"
+
+msgid "tsumego:problemRange"
+msgstr "Problem {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Galaxy Go'ya Giriş Yap"
+
+msgid "auth:register_title"
+msgstr "Hesap Oluştur"
+
+msgid "auth:username"
+msgstr "Kullanıcı Adı"
+
+msgid "auth:password"
+msgstr "Şifre"
+
+msgid "auth:confirm_password"
+msgstr "Şifreyi Onayla"
+
+msgid "auth:login_btn"
+msgstr "Giriş Yap"
+
+msgid "auth:register_btn"
+msgstr "Kayıt Ol"
+
+msgid "auth:cancel_btn"
+msgstr "İptal"
+
+msgid "auth:logging_in"
+msgstr "Giriş yapılıyor..."
+
+msgid "auth:registering"
+msgstr "Kayıt olunuyor..."
+
+msgid "auth:switch_to_register"
+msgstr "Hesabınız yok mu? Kayıt Ol"
+
+msgid "auth:switch_to_login"
+msgstr "Zaten bir hesabınız mı var? Giriş Yap"
+
+msgid "auth:err_fill_all"
+msgstr "Lütfen tüm alanları doldurun"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Şifreler eşleşmiyor"
+
+msgid "auth:success_register"
+msgstr "Kayıt başarılı! Giriş yapılıyor..."
+
+msgid "auth:err_failed"
+msgstr "İşlem başarısız oldu"
+
+msgid "auth:login_title_katrain"
+msgstr "KaTrain'e Giriş Yap"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Değerlendirme olmadan serbest keşif"
+
+msgid "tsumego:tryMode"
+msgstr "Deneme Modu"
+
+msgid "live:top_matches"
+msgstr "ÜST MAÇLAR"
+
+msgid "live:upcoming"
+msgstr "YAKLAŞAN"
+
+msgid "live:now_live"
+msgstr "Şu an canlı"
+
+msgid "live:history"
+msgstr "Geçmiş"
+
+msgid "live:enter_live"
+msgstr "Canlıya gir"
+
+msgid "live:view_game"
+msgstr "Oyunu görüntüle"
+
+msgid "live:today"
+msgstr "Bugün"
+
+msgid "live:tomorrow"
+msgstr "Yarın"
+
+msgid "live:in_days"
+msgstr "{0} gün içinde"
+
+msgid "live:moves"
+msgstr "hamle"
+
+msgid "live:first_move"
+msgstr "İlk hamle"
+
+msgid "live:previous"
+msgstr "Önceki"
+
+msgid "live:next"
+msgstr "Sonraki"
+
+msgid "live:latest"
+msgstr "En son"
+
+msgid "live:auto_follow_on"
+msgstr "Otomatik takip açık"
+
+msgid "live:auto_follow_off"
+msgstr "Takip için tıklayın"
+
+msgid "live:no_matches"
+msgstr "Maç yok"
+
+msgid "live:select_match"
+msgstr "Bir maç seçin"
+
+msgid "live:status_live"
+msgstr "Canlı"
+
+msgid "live:status_finished"
+msgstr "Bitti"
+
+msgid "live:pts"
+msgstr "puan"
+
+msgid "live:no_upcoming"
+msgstr "Yaklaşan etkinlik yok"
+
+msgid "live:official_info"
+msgstr "Resmi bilgi"
+
+msgid "live:data_source"
+msgstr "Kaynak: Nihon Ki-in, FoxWq"
+
+msgid "live:move_count"
+msgstr "Hamle {0}/{1}"
+
+msgid "live:black"
+msgstr "S"
+
+msgid "live:white"
+msgstr "B"
+
+msgid "live:rules_japanese"
+msgstr "Japon kuralları"
+
+msgid "live:rules_korean"
+msgstr "Kore kuralları"
+
+msgid "live:rules_chinese"
+msgstr "Çin kuralları"
+
+msgid "live:komi"
+msgstr "Komi: {0} puan"
+
+msgid "live:vs"
+msgstr "vs"

@@ -1509,3 +1509,246 @@ msgstr "Blanc gagne de {n} points"
 
 msgid "game:black_wins_points"
 msgstr "Noir gagne de {n} points"
+
+msgid "tsumego:problem_n"
+msgstr "Problème {n}"
+
+msgid "tsumego:solveProblems"
+msgstr "Cliquez sur un problème pour commencer à pratiquer"
+
+msgid "tsumego:problems"
+msgstr "problèmes"
+
+msgid "tsumego:selectCategory"
+msgstr "Sélectionner la catégorie"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "Tsumego"
+
+msgid "tsumego:categoryDesc"
+msgstr "Choisissez le type de problèmes que vous voulez pratiquer"
+
+msgid "tsumego:endgame"
+msgstr "Fin de partie"
+
+msgid "tsumego:selectLevel"
+msgstr "Sélectionner le niveau de difficulté"
+
+msgid "tsumego:practiceProblems"
+msgstr "Pratiquez les problèmes de vie et mort pour améliorer votre lecture"
+
+msgid "tsumego:tesuji"
+msgstr "Tesuji"
+
+msgid "tsumego:life-death"
+msgstr "Vie et Mort"
+
+msgid "tsumego:solved"
+msgstr "Résolu !"
+
+msgid "tsumego:incorrect"
+msgstr "Incorrect"
+
+msgid "tsumego:blackToPlay"
+msgstr "Noir joue"
+
+msgid "tsumego:whiteToPlay"
+msgstr "Blanc joue"
+
+msgid "tsumego:attempts"
+msgstr "Tentatives"
+
+msgid "tsumego:showHint"
+msgstr "Afficher l'indice"
+
+msgid "tsumego:hideHint"
+msgstr "Masquer l'indice"
+
+msgid "tsumego:undo"
+msgstr "Annuler"
+
+msgid "tsumego:reset"
+msgstr "Réinitialiser"
+
+msgid "tsumego:previousProblem"
+msgstr "Précédent"
+
+msgid "tsumego:nextProblem"
+msgstr "Suivant"
+
+msgid "tsumego:errorLoading"
+msgstr "Erreur de chargement"
+
+msgid "tsumego:unitDesc"
+msgstr "Total de {total} problèmes en {units} unités"
+
+msgid "tsumego:unit"
+msgstr "Unité"
+
+msgid "tsumego:selectUnit"
+msgstr "Sélectionner l'unité"
+
+msgid "tsumego:problemRange"
+msgstr "Problèmes {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Connexion à Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "Créer un compte"
+
+msgid "auth:username"
+msgstr "Nom d'utilisateur"
+
+msgid "auth:password"
+msgstr "Mot de passe"
+
+msgid "auth:confirm_password"
+msgstr "Confirmer le mot de passe"
+
+msgid "auth:login_btn"
+msgstr "Connexion"
+
+msgid "auth:register_btn"
+msgstr "S'inscrire"
+
+msgid "auth:cancel_btn"
+msgstr "Annuler"
+
+msgid "auth:logging_in"
+msgstr "Connexion en cours..."
+
+msgid "auth:registering"
+msgstr "Inscription en cours..."
+
+msgid "auth:switch_to_register"
+msgstr "Pas de compte ? S'inscrire"
+
+msgid "auth:switch_to_login"
+msgstr "Déjà un compte ? Connexion"
+
+msgid "auth:err_fill_all"
+msgstr "Veuillez remplir tous les champs"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Les mots de passe ne correspondent pas"
+
+msgid "auth:success_register"
+msgstr "Inscription réussie ! Connexion..."
+
+msgid "auth:err_failed"
+msgstr "L'opération a échoué"
+
+msgid "auth:login_title_katrain"
+msgstr "Connexion à KaTrain"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Exploration libre sans jugement"
+
+msgid "tsumego:tryMode"
+msgstr "Mode essai"
+
+msgid "live:top_matches"
+msgstr "TOP MATCHS"
+
+msgid "live:upcoming"
+msgstr "À VENIR"
+
+msgid "live:now_live"
+msgstr "En direct"
+
+msgid "live:history"
+msgstr "Historique"
+
+msgid "live:enter_live"
+msgstr "Entrer en direct"
+
+msgid "live:view_game"
+msgstr "Voir la partie"
+
+msgid "live:today"
+msgstr "Aujourd'hui"
+
+msgid "live:tomorrow"
+msgstr "Demain"
+
+msgid "live:in_days"
+msgstr "Dans {0} jours"
+
+msgid "live:moves"
+msgstr "coups"
+
+msgid "live:first_move"
+msgstr "Premier coup"
+
+msgid "live:previous"
+msgstr "Précédent"
+
+msgid "live:next"
+msgstr "Suivant"
+
+msgid "live:latest"
+msgstr "Dernier"
+
+msgid "live:auto_follow_on"
+msgstr "Suivi auto activé"
+
+msgid "live:auto_follow_off"
+msgstr "Cliquer pour suivre"
+
+msgid "live:no_matches"
+msgstr "Pas de parties"
+
+msgid "live:select_match"
+msgstr "Sélectionner une partie"
+
+msgid "live:status_live"
+msgstr "En direct"
+
+msgid "live:status_finished"
+msgstr "Terminé"
+
+msgid "live:pts"
+msgstr "pts"
+
+msgid "live:no_upcoming"
+msgstr "Pas d'événements à venir"
+
+msgid "live:official_info"
+msgstr "Info officielle"
+
+msgid "live:data_source"
+msgstr "Source: Nihon Ki-in, FoxWq"
+
+msgid "live:move_count"
+msgstr "Coup {0}/{1}"
+
+msgid "live:black"
+msgstr "N"
+
+msgid "live:white"
+msgstr "B"
+
+msgid "live:rules_japanese"
+msgstr "Règles japonaises"
+
+msgid "live:rules_korean"
+msgstr "Règles coréennes"
+
+msgid "live:rules_chinese"
+msgstr "Règles chinoises"
+
+msgid "live:komi"
+msgstr "Komi: {0} pts"
+
+msgid "live:vs"
+msgstr "vs"

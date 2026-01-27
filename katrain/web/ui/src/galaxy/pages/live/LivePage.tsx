@@ -8,10 +8,11 @@ import LiveBoard from '../../components/live/LiveBoard';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import UpcomingList from '../../components/live/UpcomingList';
 import type { MatchSummary } from '../../types/live';
-import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 export default function LivePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [rightTab, setRightTab] = useState(0);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
 
@@ -63,7 +64,7 @@ export default function LivePage() {
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h4" fontWeight="bold">
-            {i18n.t('Live', '直播')}
+            {t('Live')}
           </Typography>
         </Box>
 
@@ -94,7 +95,7 @@ export default function LivePage() {
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
               <Typography color="text.secondary">
-                {matches.length === 0 ? '暂无比赛' : '请选择一场比赛'}
+                {matches.length === 0 ? t('live:no_matches') : t('live:select_match')}
               </Typography>
             </Box>
           )}
@@ -116,8 +117,8 @@ export default function LivePage() {
         {/* Tabs */}
         <Box sx={{ px: 2, pt: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={rightTab} onChange={(_, v) => setRightTab(v)}>
-            <Tab label="顶尖大赛" />
-            <Tab label="赛事预告" />
+            <Tab label={t('live:top_matches')} />
+            <Tab label={t('live:upcoming')} />
           </Tabs>
         </Box>
 
@@ -128,7 +129,7 @@ export default function LivePage() {
               {liveCount > 0 && (
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    正在直播 ({liveCount})
+                    {t('live:now_live')} ({liveCount})
                   </Typography>
                   <MatchList
                     matches={liveMatches}
@@ -140,7 +141,7 @@ export default function LivePage() {
               )}
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  历史直播
+                  {t('live:history')}
                 </Typography>
                 <MatchList
                   matches={finishedMatches.slice(0, 10)}
@@ -166,7 +167,7 @@ export default function LivePage() {
             disabled={!selectedMatchId || matchLoading}
             sx={{ py: 1.5 }}
           >
-            {selectedMatch?.status === 'live' ? '进入直播' : '查看棋谱'}
+            {selectedMatch?.status === 'live' ? t('live:enter_live') : t('live:view_game')}
           </Button>
         </Box>
       </Box>

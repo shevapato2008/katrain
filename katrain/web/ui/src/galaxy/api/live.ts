@@ -11,6 +11,7 @@ import type {
   CommentListResponse,
   CommentPollResponse,
 } from '../types/live';
+import { i18n } from '../../i18n';
 
 const API_BASE = '/api/v1/live';
 
@@ -69,25 +70,33 @@ async function apiDeleteAuth<T>(path: string, token: string): Promise<T> {
 export const LiveAPI = {
   /**
    * Get list of matches (live + finished)
+   * Automatically includes current UI language for server-side translation
    */
   getMatches: (options?: {
     status?: 'live' | 'finished';
     source?: 'xingzhen' | 'weiqi_org';
     limit?: number;
+    lang?: string;
   }): Promise<MatchListResponse> => {
     const params = new URLSearchParams();
     if (options?.status) params.set('status', options.status);
     if (options?.source) params.set('source', options.source);
     if (options?.limit) params.set('limit', options.limit.toString());
+    // Add language for server-side translation of player/tournament names
+    const lang = options?.lang || i18n.lang;
+    if (lang) params.set('lang', lang);
     const query = params.toString();
     return apiGet(`/matches${query ? `?${query}` : ''}`);
   },
 
   /**
    * Get featured match (most important live or latest finished)
+   * Automatically includes current UI language for server-side translation
    */
-  getFeaturedMatch: (): Promise<{ match: MatchSummary | null }> => {
-    return apiGet('/matches/featured');
+  getFeaturedMatch: (lang?: string): Promise<{ match: MatchSummary | null }> => {
+    const effectiveLang = lang || i18n.lang;
+    const params = effectiveLang ? `?lang=${effectiveLang}` : '';
+    return apiGet(`/matches/featured${params}`);
   },
 
   /**
@@ -124,9 +133,15 @@ export const LiveAPI = {
 
   /**
    * Get upcoming matches
+   * Automatically includes current UI language for server-side translation
    */
-  getUpcoming: (limit = 20): Promise<{ matches: UpcomingMatch[] }> => {
-    return apiGet(`/upcoming?limit=${limit}`);
+  getUpcoming: (limit = 20, lang?: string): Promise<{ matches: UpcomingMatch[] }> => {
+    const params = new URLSearchParams();
+    params.set('limit', limit.toString());
+    // Add language for server-side translation of player/tournament names
+    const effectiveLang = lang || i18n.lang;
+    if (effectiveLang) params.set('lang', effectiveLang);
+    return apiGet(`/upcoming?${params.toString()}`);
   },
 
   /**
@@ -134,6 +149,19 @@ export const LiveAPI = {
    */
   getStats: (): Promise<LiveStats> => {
     return apiGet('/stats');
+  },
+
+  /**
+   * Get live-specific translations for player names, tournament names, etc.
+   */
+  getTranslations: (lang: string): Promise<{
+    lang: string;
+    players: Record<string, string>;
+    tournaments: Record<string, string>;
+    rounds: Record<string, string>;
+    rules: Record<string, string>;
+  }> => {
+    return apiGet(`/translations?lang=${lang}`);
   },
 
   /**

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from katrain.web.live.models import MatchStatus
+from katrain.web.live.translator import get_translator
 from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
 from katrain.web.models import User
 
@@ -96,6 +97,23 @@ class CreateCommentRequest(BaseModel):
     content: str
 
 
+class LiveTranslationsResponse(BaseModel):
+    """Response for live translations."""
+    lang: str
+    players: dict[str, str]
+    tournaments: dict[str, str]
+    rounds: dict[str, str]
+    rules: dict[str, str]
+
+
+class PlayerTranslationResponse(BaseModel):
+    """Response for a single player translation."""
+    original: str
+    translated: str
+    lang: str
+    info: Optional[dict] = None
+
+
 def get_live_service(request: Request):
     """Dependency to get the live service from app state."""
     live_service = getattr(request.app.state, "live_service", None)
@@ -109,14 +127,17 @@ async def get_matches(
     request: Request,
     status: Optional[str] = Query(None, description="Filter by status: live, finished"),
     source: Optional[str] = Query(None, description="Filter by source: xingzhen, weiqi_org"),
+    lang: Optional[str] = Query(None, description="Target language for translations: en, jp, ko, cn, tw"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of matches to return"),
     live_service=Depends(get_live_service),
 ):
     """Get list of matches (live and recent finished).
 
     Returns matches sorted with live matches first, then finished by date.
+    Optionally translates player and tournament names to the specified language.
     """
     cache = live_service.cache
+    translator = get_translator() if lang else None
 
     if status == "live":
         matches = await cache.get_live_matches()
@@ -132,14 +153,27 @@ async def get_matches(
     # Convert to response format
     summaries = []
     for m in matches[:limit]:
+        # Apply translations if language specified
+        player_black = m.player_black
+        player_white = m.player_white
+        tournament = m.tournament
+        round_name = m.round_name
+
+        if translator and lang:
+            player_black = translator.translate_player(m.player_black, lang)
+            player_white = translator.translate_player(m.player_white, lang)
+            tournament = translator.translate_tournament(m.tournament, lang)
+            if m.round_name:
+                round_name = translator.translate_round(m.round_name, lang)
+
         summaries.append(MatchSummary(
             id=m.id,
             source=m.source.value,
-            tournament=m.tournament,
-            round_name=m.round_name,
+            tournament=tournament,
+            round_name=round_name,
             date=m.date.isoformat(),
-            player_black=m.player_black,
-            player_white=m.player_white,
+            player_black=player_black,
+            player_white=player_white,
             black_rank=m.black_rank,
             white_rank=m.white_rank,
             status=m.status.value,
@@ -164,24 +198,42 @@ async def get_matches(
 @router.get("/matches/featured")
 async def get_featured_match(
     request: Request,
+    lang: Optional[str] = Query(None, description="Target language for translations: en, jp, ko, cn, tw"),
     live_service=Depends(get_live_service),
 ):
-    """Get the current featured match (most important live match or latest finished)."""
+    """Get the current featured match (most important live match or latest finished).
+
+    Optionally translates player and tournament names to the specified language.
+    """
     cache = live_service.cache
+    translator = get_translator() if lang else None
     match = await cache.get_featured_match()
 
     if not match:
         return {"match": None}
 
+    # Apply translations if language specified
+    player_black = match.player_black
+    player_white = match.player_white
+    tournament = match.tournament
+    round_name = match.round_name
+
+    if translator and lang:
+        player_black = translator.translate_player(match.player_black, lang)
+        player_white = translator.translate_player(match.player_white, lang)
+        tournament = translator.translate_tournament(match.tournament, lang)
+        if match.round_name:
+            round_name = translator.translate_round(match.round_name, lang)
+
     return {
         "match": MatchSummary(
             id=match.id,
             source=match.source.value,
-            tournament=match.tournament,
-            round_name=match.round_name,
+            tournament=tournament,
+            round_name=round_name,
             date=match.date.isoformat(),
-            player_black=match.player_black,
-            player_white=match.player_white,
+            player_black=player_black,
+            player_white=player_white,
             black_rank=match.black_rank,
             white_rank=match.white_rank,
             status=match.status.value,
@@ -335,27 +387,46 @@ async def request_match_analysis(
 @router.get("/upcoming", response_model=UpcomingListResponse)
 async def get_upcoming_matches(
     request: Request,
+    lang: Optional[str] = Query(None, description="Target language for translations: en, jp, ko, cn, tw"),
     limit: int = Query(20, ge=1, le=100),
     live_service=Depends(get_live_service),
 ):
-    """Get list of upcoming matches."""
+    """Get list of upcoming matches.
+
+    Optionally translates player and tournament names to the specified language.
+    """
     cache = live_service.cache
+    translator = get_translator() if lang else None
     upcoming = await cache.get_upcoming()
 
-    return UpcomingListResponse(
-        matches=[
-            UpcomingMatchResponse(
-                id=m.id,
-                tournament=m.tournament,
-                round_name=m.round_name,
-                scheduled_time=m.scheduled_time.isoformat(),
-                player_black=m.player_black,
-                player_white=m.player_white,
-                source_url=m.source_url,
-            )
-            for m in upcoming[:limit]
-        ]
-    )
+    matches = []
+    for m in upcoming[:limit]:
+        # Apply translations if language specified
+        tournament = m.tournament
+        round_name = m.round_name
+        player_black = m.player_black
+        player_white = m.player_white
+
+        if translator and lang:
+            tournament = translator.translate_tournament(m.tournament, lang)
+            if m.round_name:
+                round_name = translator.translate_round(m.round_name, lang)
+            if m.player_black:
+                player_black = translator.translate_player(m.player_black, lang)
+            if m.player_white:
+                player_white = translator.translate_player(m.player_white, lang)
+
+        matches.append(UpcomingMatchResponse(
+            id=m.id,
+            tournament=tournament,
+            round_name=round_name,
+            scheduled_time=m.scheduled_time.isoformat(),
+            player_black=player_black,
+            player_white=player_white,
+            source_url=m.source_url,
+        ))
+
+    return UpcomingListResponse(matches=matches)
 
 
 @router.get("/stats", response_model=CacheStatsResponse)
@@ -522,6 +593,90 @@ async def recover_all_matches(
     }
 
 
+# ==================== Translation Endpoints ====================
+
+
+@router.get("/translations", response_model=LiveTranslationsResponse)
+async def get_live_translations(
+    lang: str = Query("en", description="Target language code (en, cn, tw, jp, ko)"),
+):
+    """Get all live-specific translations for frontend caching.
+
+    Returns player names, tournament names, round names, and rules
+    translated to the specified language.
+    """
+    translator = get_translator()
+    translations = translator.get_all_translations(lang)
+
+    return LiveTranslationsResponse(
+        lang=lang,
+        players=translations["players"],
+        tournaments=translations["tournaments"],
+        rounds=translations["rounds"],
+        rules=translations["rules"],
+    )
+
+
+@router.get("/translate/player", response_model=PlayerTranslationResponse)
+async def translate_player_name(
+    name: str = Query(..., description="Player name to translate"),
+    lang: str = Query("en", description="Target language code"),
+):
+    """Translate a single player name.
+
+    Useful for debugging and testing translations.
+    Returns the translated name and full player info if available.
+    """
+    translator = get_translator()
+    translated = translator.translate_player(name, lang)
+    info = translator.get_player_info(name)
+
+    return PlayerTranslationResponse(
+        original=name,
+        translated=translated,
+        lang=lang,
+        info=info,
+    )
+
+
+@router.get("/translate/tournament")
+async def translate_tournament_name(
+    name: str = Query(..., description="Tournament name to translate"),
+    lang: str = Query("en", description="Target language code"),
+):
+    """Translate a tournament name.
+
+    Useful for debugging and testing translations.
+    """
+    translator = get_translator()
+    translated = translator.translate_tournament(name, lang)
+
+    return {
+        "original": name,
+        "translated": translated,
+        "lang": lang,
+    }
+
+
+@router.get("/translate/round")
+async def translate_round_name(
+    name: str = Query(..., description="Round name to translate"),
+    lang: str = Query("en", description="Target language code"),
+):
+    """Translate a round name (Final, Semi-final, etc.).
+
+    Useful for debugging and testing translations.
+    """
+    translator = get_translator()
+    translated = translator.translate_round(name, lang)
+
+    return {
+        "original": name,
+        "translated": translated,
+        "lang": lang,
+    }
+
+
 # ==================== Comment Endpoints ====================
 
 
@@ -675,3 +830,96 @@ async def poll_comments(
             ))
 
     return {"comments": comment_responses, "count": len(comment_responses)}
+
+
+# ============== Translation Learning API ==============
+
+
+class TranslationRequest(BaseModel):
+    """Request body for learning a translation."""
+    name: str
+    name_type: str  # "player" or "tournament"
+    translations: dict  # {"en": "...", "jp": "...", etc.}
+    country: Optional[str] = None  # For players: CN, JP, KR, TW
+    source: str = "manual"
+
+
+class MissingTranslationsResponse(BaseModel):
+    """Response for missing translations query."""
+    missing_players: list[str]
+    missing_tournaments: list[str]
+
+
+@router.post("/translations/learn")
+async def learn_translation(
+    request: TranslationRequest,
+    user: User = Depends(get_current_user),
+):
+    """Store a new translation in the database.
+
+    Requires authentication. Used to manually add or correct translations.
+    """
+    translator = get_translator()
+
+    if request.name_type == "player":
+        success = translator.store_player(
+            name=request.name,
+            translations=request.translations,
+            country=request.country,
+            source=request.source,
+        )
+    elif request.name_type == "tournament":
+        success = translator.store_tournament(
+            name=request.name,
+            translations=request.translations,
+            source=request.source,
+        )
+    else:
+        raise HTTPException(status_code=400, detail="name_type must be 'player' or 'tournament'")
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to store translation")
+
+    return {"status": "ok", "name": request.name, "type": request.name_type}
+
+
+@router.get("/translations/missing", response_model=MissingTranslationsResponse)
+async def get_missing_translations(
+    lang: str = Query("en", description="Target language to check"),
+    live_service=Depends(get_live_service),
+):
+    """Get list of names that don't have translations yet.
+
+    Useful for bulk translation work - returns all player and tournament
+    names from current/recent matches that lack translations.
+    """
+    translator = get_translator()
+
+    # Get all unique names from current matches
+    all_players = set()
+    all_tournaments = set()
+
+    # From live/finished matches
+    matches = await live_service.cache.get_all_matches()
+    for match in matches:
+        all_players.add(match.player_black)
+        all_players.add(match.player_white)
+        all_tournaments.add(match.tournament)
+
+    # From upcoming matches
+    upcoming = await live_service.cache.get_upcoming()
+    for match in upcoming:
+        all_tournaments.add(match.tournament)
+        if match.player_black:
+            all_players.add(match.player_black)
+        if match.player_white:
+            all_players.add(match.player_white)
+
+    # Find missing translations
+    missing_players = translator.get_missing_translations(list(all_players), "player", lang)
+    missing_tournaments = translator.get_missing_translations(list(all_tournaments), "tournament", lang)
+
+    return MissingTranslationsResponse(
+        missing_players=sorted(missing_players),
+        missing_tournaments=sorted(missing_tournaments),
+    )

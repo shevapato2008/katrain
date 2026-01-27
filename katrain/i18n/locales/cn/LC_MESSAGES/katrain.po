@@ -1335,3 +1335,244 @@ msgstr "白棋胜{n}目"
 
 msgid "game:black_wins_points"
 msgstr "黑棋胜{n}目"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "死活题"
+
+msgid "tsumego:selectLevel"
+msgstr "选择难度级别"
+
+msgid "tsumego:practiceProblems"
+msgstr "练习死活题以提高计算能力"
+
+msgid "tsumego:selectCategory"
+msgstr "选择题型"
+
+msgid "tsumego:categoryDesc"
+msgstr "选择你想要练习的题型"
+
+msgid "tsumego:problems"
+msgstr "题"
+
+msgid "tsumego:solveProblems"
+msgstr "点击题目开始练习"
+
+msgid "tsumego:life-death"
+msgstr "死活"
+
+msgid "tsumego:tesuji"
+msgstr "手筋"
+
+msgid "tsumego:endgame"
+msgstr "官子"
+
+msgid "tsumego:problem_n"
+msgstr "第{n}题"
+
+msgid "tsumego:solved"
+msgstr "正确！"
+
+msgid "tsumego:incorrect"
+msgstr "错误"
+
+msgid "tsumego:blackToPlay"
+msgstr "黑先"
+
+msgid "tsumego:whiteToPlay"
+msgstr "白先"
+
+msgid "tsumego:attempts"
+msgstr "尝试次数"
+
+msgid "tsumego:showHint"
+msgstr "显示提示"
+
+msgid "tsumego:hideHint"
+msgstr "隐藏提示"
+
+msgid "tsumego:undo"
+msgstr "撤销"
+
+msgid "tsumego:reset"
+msgstr "重置"
+
+msgid "tsumego:previousProblem"
+msgstr "上一题"
+
+msgid "tsumego:nextProblem"
+msgstr "下一题"
+
+msgid "tsumego:errorLoading"
+msgstr "加载题目失败"
+
+msgid "tsumego:selectUnit"
+msgstr "选择单元"
+
+msgid "tsumego:unitDesc"
+msgstr "共 {total} 题，分为 {units} 个单元"
+
+msgid "tsumego:unit"
+msgstr "单元"
+
+msgid "tsumego:problemRange"
+msgstr "第 {start}-{end} 题"
+
+msgid "tsumego:shortcuts"
+msgstr "快捷键"
+
+msgid "tsumego:navigate"
+msgstr "切换题目"
+
+msgid "tsumego:tryMode"
+msgstr "试下"
+
+msgid "tsumego:tryModeDesc"
+msgstr "自由探索，不判断对错"
+
+msgid "auth:login_title"
+msgstr "登录 Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "创建账号"
+
+msgid "auth:username"
+msgstr "用户名"
+
+msgid "auth:password"
+msgstr "密码"
+
+msgid "auth:confirm_password"
+msgstr "确认密码"
+
+msgid "auth:login_btn"
+msgstr "登录"
+
+msgid "auth:register_btn"
+msgstr "注册"
+
+msgid "auth:cancel_btn"
+msgstr "取消"
+
+msgid "auth:logging_in"
+msgstr "正在登录..."
+
+msgid "auth:registering"
+msgstr "正在注册..."
+
+msgid "auth:switch_to_register"
+msgstr "没有账号？注册"
+
+msgid "auth:switch_to_login"
+msgstr "已有账号？登录"
+
+msgid "auth:err_fill_all"
+msgstr "请填写所有字段"
+
+msgid "auth:err_pass_mismatch"
+msgstr "密码不匹配"
+
+msgid "auth:success_register"
+msgstr "注册成功！正在登录..."
+
+msgid "auth:err_failed"
+msgstr "操作失败"
+
+msgid "auth:login_title_katrain"
+msgstr "登录 KaTrain"
+
+msgid "live:top_matches"
+msgstr "顶尖大赛"
+
+msgid "live:upcoming"
+msgstr "赛事预告"
+
+msgid "live:now_live"
+msgstr "正在直播"
+
+msgid "live:history"
+msgstr "历史直播"
+
+msgid "live:enter_live"
+msgstr "进入直播"
+
+msgid "live:view_game"
+msgstr "查看棋谱"
+
+msgid "live:today"
+msgstr "今天"
+
+msgid "live:tomorrow"
+msgstr "明天"
+
+msgid "live:in_days"
+msgstr "{0}天后"
+
+msgid "live:moves"
+msgstr "手"
+
+msgid "live:first_move"
+msgstr "第一手"
+
+msgid "live:previous"
+msgstr "后退"
+
+msgid "live:next"
+msgstr "前进"
+
+msgid "live:latest"
+msgstr "最新"
+
+msgid "live:auto_follow_on"
+msgstr "已开启自动追踪"
+
+msgid "live:auto_follow_off"
+msgstr "点击追踪最新"
+
+msgid "live:no_matches"
+msgstr "暂无比赛"
+
+msgid "live:select_match"
+msgstr "请选择一场比赛"
+
+msgid "live:status_live"
+msgstr "直播中"
+
+msgid "live:status_finished"
+msgstr "已结束"
+
+msgid "live:pts"
+msgstr "目"
+
+msgid "live:no_upcoming"
+msgstr "暂无即将进行的赛事"
+
+msgid "live:official_info"
+msgstr "官方信息"
+
+msgid "live:data_source"
+msgstr "数据来源：日本棋院、野狐围棋"
+
+msgid "live:move_count"
+msgstr "第 {0}/{1} 手"
+
+msgid "live:black"
+msgstr "黑"
+
+msgid "live:white"
+msgstr "白"
+
+msgid "live:rules_japanese"
+msgstr "日本规则"
+
+msgid "live:rules_korean"
+msgstr "韩国规则"
+
+msgid "live:rules_chinese"
+msgstr "中国规则"
+
+msgid "live:komi"
+msgstr "贴目: {0}目"
+
+msgid "live:vs"
+msgstr "vs"

@@ -1551,3 +1551,246 @@ msgstr "Білі виграли {n} очок"
 
 msgid "game:black_wins_points"
 msgstr "Чорні виграли {n} очок"
+
+msgid "tsumego:problem_n"
+msgstr "Задача {n}"
+
+msgid "tsumego:solveProblems"
+msgstr "Натисніть на задачу, щоб почати практику"
+
+msgid "tsumego:problems"
+msgstr "задач"
+
+msgid "tsumego:selectCategory"
+msgstr "Оберіть категорію"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "Цумего"
+
+msgid "tsumego:categoryDesc"
+msgstr "Оберіть тип задач для практики"
+
+msgid "tsumego:endgame"
+msgstr "Ендшпіль"
+
+msgid "tsumego:selectLevel"
+msgstr "Оберіть рівень складності"
+
+msgid "tsumego:practiceProblems"
+msgstr "Вирішуйте задачі на життя і смерть для покращення читання"
+
+msgid "tsumego:tesuji"
+msgstr "Тесуджі"
+
+msgid "tsumego:life-death"
+msgstr "Життя і смерть"
+
+msgid "tsumego:solved"
+msgstr "Вирішено!"
+
+msgid "tsumego:incorrect"
+msgstr "Невірно"
+
+msgid "tsumego:blackToPlay"
+msgstr "Хід чорних"
+
+msgid "tsumego:whiteToPlay"
+msgstr "Хід білих"
+
+msgid "tsumego:attempts"
+msgstr "Спроби"
+
+msgid "tsumego:showHint"
+msgstr "Показати підказку"
+
+msgid "tsumego:hideHint"
+msgstr "Приховати підказку"
+
+msgid "tsumego:undo"
+msgstr "Скасувати"
+
+msgid "tsumego:reset"
+msgstr "Скинути"
+
+msgid "tsumego:previousProblem"
+msgstr "Попередня"
+
+msgid "tsumego:nextProblem"
+msgstr "Наступна"
+
+msgid "tsumego:errorLoading"
+msgstr "Помилка завантаження"
+
+msgid "tsumego:unitDesc"
+msgstr "Всього {total} задач у {units} розділах"
+
+msgid "tsumego:unit"
+msgstr "Розділ"
+
+msgid "tsumego:selectUnit"
+msgstr "Оберіть розділ"
+
+msgid "tsumego:problemRange"
+msgstr "Задачі {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Увійти до Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "Створити акаунт"
+
+msgid "auth:username"
+msgstr "Ім'я користувача"
+
+msgid "auth:password"
+msgstr "Пароль"
+
+msgid "auth:confirm_password"
+msgstr "Підтвердіть пароль"
+
+msgid "auth:login_btn"
+msgstr "Увійти"
+
+msgid "auth:register_btn"
+msgstr "Зареєструватися"
+
+msgid "auth:cancel_btn"
+msgstr "Скасувати"
+
+msgid "auth:logging_in"
+msgstr "Вхід..."
+
+msgid "auth:registering"
+msgstr "Реєстрація..."
+
+msgid "auth:switch_to_register"
+msgstr "Немає акаунту? Зареєструватися"
+
+msgid "auth:switch_to_login"
+msgstr "Вже є акаунт? Увійти"
+
+msgid "auth:err_fill_all"
+msgstr "Будь ласка, заповніть усі поля"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Паролі не збігаються"
+
+msgid "auth:success_register"
+msgstr "Реєстрація успішна! Вхід..."
+
+msgid "auth:err_failed"
+msgstr "Операція не вдалася"
+
+msgid "auth:login_title_katrain"
+msgstr "Увійти до KaTrain"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Вільне дослідження без оцінки"
+
+msgid "tsumego:tryMode"
+msgstr "Режим проби"
+
+msgid "live:top_matches"
+msgstr "ТОП МАТЧІ"
+
+msgid "live:upcoming"
+msgstr "НЕЗАБАРОМ"
+
+msgid "live:now_live"
+msgstr "Зараз наживо"
+
+msgid "live:history"
+msgstr "Історія"
+
+msgid "live:enter_live"
+msgstr "Увійти в ефір"
+
+msgid "live:view_game"
+msgstr "Переглянути гру"
+
+msgid "live:today"
+msgstr "Сьогодні"
+
+msgid "live:tomorrow"
+msgstr "Завтра"
+
+msgid "live:in_days"
+msgstr "Через {0} днів"
+
+msgid "live:moves"
+msgstr "ходів"
+
+msgid "live:first_move"
+msgstr "Перший хід"
+
+msgid "live:previous"
+msgstr "Назад"
+
+msgid "live:next"
+msgstr "Вперед"
+
+msgid "live:latest"
+msgstr "Останній"
+
+msgid "live:auto_follow_on"
+msgstr "Автослідкування увімк"
+
+msgid "live:auto_follow_off"
+msgstr "Натисніть для слідкування"
+
+msgid "live:no_matches"
+msgstr "Немає матчів"
+
+msgid "live:select_match"
+msgstr "Виберіть матч"
+
+msgid "live:status_live"
+msgstr "Наживо"
+
+msgid "live:status_finished"
+msgstr "Завершено"
+
+msgid "live:pts"
+msgstr "очк"
+
+msgid "live:no_upcoming"
+msgstr "Немає майбутніх подій"
+
+msgid "live:official_info"
+msgstr "Офіційна інформація"
+
+msgid "live:data_source"
+msgstr "Джерело: Nihon Ki-in, FoxWq"
+
+msgid "live:move_count"
+msgstr "Хід {0}/{1}"
+
+msgid "live:black"
+msgstr "Ч"
+
+msgid "live:white"
+msgstr "Б"
+
+msgid "live:rules_japanese"
+msgstr "Японські правила"
+
+msgid "live:rules_korean"
+msgstr "Корейські правила"
+
+msgid "live:rules_chinese"
+msgstr "Китайські правила"
+
+msgid "live:komi"
+msgstr "Комі: {0} очк"
+
+msgid "live:vs"
+msgstr "vs"

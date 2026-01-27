@@ -12,6 +12,7 @@ import MatchInfo from '../../components/live/MatchInfo';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
+import { i18n } from '../../../i18n';
 // CommentSection import removed - Phase 7 deferred (was obscuring TrendChart)
 // import CommentSection from '../../components/live/CommentSection';
 
@@ -75,10 +76,10 @@ export default function LiveMatchPage() {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error?.message || '无法加载比赛数据'}
+          {error?.message || i18n.t('live:load_error', 'Failed to load match data')}
         </Alert>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/galaxy/live')}>
-          返回直播列表
+          {i18n.t('live:back_to_list', 'Back to live list')}
         </Button>
       </Box>
     );
@@ -102,7 +103,7 @@ export default function LiveMatchPage() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" sx={{ flex: 1 }} noWrap>
-            {match.player_black} vs {match.player_white}
+            {i18n.translatePlayer(match.player_black)} vs {i18n.translatePlayer(match.player_white)}
           </Typography>
         </Box>
 
@@ -141,7 +142,7 @@ export default function LiveMatchPage() {
         {/* Feature buttons row */}
         <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
           <ToggleButtonGroup size="small" sx={{ width: '100%', display: 'flex' }}>
-            <Tooltip title="试下">
+            <Tooltip title={i18n.t('live:try_move', 'Try Move')}>
               <ToggleButton
                 value="tryMove"
                 selected={tryMoveMode}
@@ -152,10 +153,10 @@ export default function LiveMatchPage() {
                 sx={{ flex: 1, py: 0.5 }}
               >
                 <TouchAppIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>试下</Typography>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{i18n.t('live:try', 'Try')}</Typography>
               </ToggleButton>
             </Tooltip>
-            <Tooltip title={ownership ? '领地' : '领地 (需要分析数据)'}>
+            <Tooltip title={ownership ? i18n.t('live:territory', 'Territory') : i18n.t('live:territory_needs_analysis', 'Territory (needs analysis)')}>
               <ToggleButton
                 value="territory"
                 selected={showTerritory}
@@ -164,10 +165,10 @@ export default function LiveMatchPage() {
                 disabled={!ownership}
               >
                 <MapIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>领地</Typography>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{i18n.t('live:territory', 'Territory')}</Typography>
               </ToggleButton>
             </Tooltip>
-            <Tooltip title="手数">
+            <Tooltip title={i18n.t('live:move_numbers', 'Move Numbers')}>
               <ToggleButton
                 value="numbers"
                 selected={showMoveNumbers}
@@ -175,10 +176,10 @@ export default function LiveMatchPage() {
                 sx={{ flex: 1, py: 0.5 }}
               >
                 <FormatListNumberedIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>手数</Typography>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{i18n.t('live:numbers', '#')}</Typography>
               </ToggleButton>
             </Tooltip>
-            <Tooltip title={showAiMarkers ? '隐藏AI选点' : '显示AI选点'}>
+            <Tooltip title={showAiMarkers ? i18n.t('live:hide_ai', 'Hide AI') : i18n.t('live:show_ai', 'Show AI')}>
               <ToggleButton
                 value="aiMarkers"
                 selected={showAiMarkers}
@@ -193,9 +194,9 @@ export default function LiveMatchPage() {
           {tryMoveMode && tryMoves.length > 0 && (
             <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="caption" color="text.secondary">
-                试下: {tryMoves.join(' → ')}
+                {i18n.t('live:try', 'Try')}: {tryMoves.join(' → ')}
               </Typography>
-              <Button size="small" onClick={() => setTryMoves([])}>清除</Button>
+              <Button size="small" onClick={() => setTryMoves([])}>{i18n.t('live:clear', 'Clear')}</Button>
             </Box>
           )}
         </Box>

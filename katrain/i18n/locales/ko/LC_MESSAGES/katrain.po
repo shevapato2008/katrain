@@ -1428,3 +1428,246 @@ msgstr "백 {n}집 승"
 
 msgid "game:black_wins_points"
 msgstr "흑 {n}집 승"
+
+msgid "tsumego:problem_n"
+msgstr "문제 {n}"
+
+msgid "tsumego:solveProblems"
+msgstr "문제를 클릭하여 연습 시작"
+
+msgid "tsumego:problems"
+msgstr "문제"
+
+msgid "tsumego:selectCategory"
+msgstr "유형 선택"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "사활"
+
+msgid "tsumego:categoryDesc"
+msgstr "연습하고 싶은 문제 유형을 선택하세요"
+
+msgid "tsumego:endgame"
+msgstr "끝내기"
+
+msgid "tsumego:selectLevel"
+msgstr "난이도 선택"
+
+msgid "tsumego:practiceProblems"
+msgstr "사활 문제를 풀어 수읽기를 향상시키세요"
+
+msgid "tsumego:tesuji"
+msgstr "수근"
+
+msgid "tsumego:life-death"
+msgstr "사활"
+
+msgid "tsumego:solved"
+msgstr "정답!"
+
+msgid "tsumego:incorrect"
+msgstr "오답"
+
+msgid "tsumego:blackToPlay"
+msgstr "흑 선"
+
+msgid "tsumego:whiteToPlay"
+msgstr "백 선"
+
+msgid "tsumego:attempts"
+msgstr "시도 횟수"
+
+msgid "tsumego:showHint"
+msgstr "힌트 보기"
+
+msgid "tsumego:hideHint"
+msgstr "힌트 숨기기"
+
+msgid "tsumego:undo"
+msgstr "되돌리기"
+
+msgid "tsumego:reset"
+msgstr "초기화"
+
+msgid "tsumego:previousProblem"
+msgstr "이전"
+
+msgid "tsumego:nextProblem"
+msgstr "다음"
+
+msgid "tsumego:errorLoading"
+msgstr "문제 로딩 오류"
+
+msgid "tsumego:unitDesc"
+msgstr "총 {total}문제, {units}개 단원"
+
+msgid "tsumego:unit"
+msgstr "단원"
+
+msgid "tsumego:selectUnit"
+msgstr "단원 선택"
+
+msgid "tsumego:problemRange"
+msgstr "문제 {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Galaxy Go 로그인"
+
+msgid "auth:register_title"
+msgstr "계정 생성"
+
+msgid "auth:username"
+msgstr "사용자 이름"
+
+msgid "auth:password"
+msgstr "비밀번호"
+
+msgid "auth:confirm_password"
+msgstr "비밀번호 확인"
+
+msgid "auth:login_btn"
+msgstr "로그인"
+
+msgid "auth:register_btn"
+msgstr "가입"
+
+msgid "auth:cancel_btn"
+msgstr "취소"
+
+msgid "auth:logging_in"
+msgstr "로그인 중..."
+
+msgid "auth:registering"
+msgstr "가입 중..."
+
+msgid "auth:switch_to_register"
+msgstr "계정이 없으신가요? 가입"
+
+msgid "auth:switch_to_login"
+msgstr "이미 계정이 있으신가요? 로그인"
+
+msgid "auth:err_fill_all"
+msgstr "모든 필드를 채워주세요"
+
+msgid "auth:err_pass_mismatch"
+msgstr "비밀번호가 일치하지 않습니다"
+
+msgid "auth:success_register"
+msgstr "가입 성공! 로그인 중..."
+
+msgid "auth:err_failed"
+msgstr "작업 실패"
+
+msgid "auth:login_title_katrain"
+msgstr "KaTrain 로그인"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "판정 없이 자유 탐색"
+
+msgid "tsumego:tryMode"
+msgstr "시험 모드"
+
+msgid "live:top_matches"
+msgstr "탑 매치"
+
+msgid "live:upcoming"
+msgstr "예정된 대회"
+
+msgid "live:now_live"
+msgstr "실시간 중계"
+
+msgid "live:history"
+msgstr "기록"
+
+msgid "live:enter_live"
+msgstr "실시간 입장"
+
+msgid "live:view_game"
+msgstr "기보 보기"
+
+msgid "live:today"
+msgstr "오늘"
+
+msgid "live:tomorrow"
+msgstr "내일"
+
+msgid "live:in_days"
+msgstr "{0}일 후"
+
+msgid "live:moves"
+msgstr "수"
+
+msgid "live:first_move"
+msgstr "첫 수"
+
+msgid "live:previous"
+msgstr "이전"
+
+msgid "live:next"
+msgstr "다음"
+
+msgid "live:latest"
+msgstr "최신"
+
+msgid "live:auto_follow_on"
+msgstr "자동 따라가기 켜짐"
+
+msgid "live:auto_follow_off"
+msgstr "클릭하여 최신 따라가기"
+
+msgid "live:no_matches"
+msgstr "대국 없음"
+
+msgid "live:select_match"
+msgstr "대국 선택"
+
+msgid "live:status_live"
+msgstr "실시간"
+
+msgid "live:status_finished"
+msgstr "종료됨"
+
+msgid "live:pts"
+msgstr "점"
+
+msgid "live:no_upcoming"
+msgstr "예정된 이벤트 없음"
+
+msgid "live:official_info"
+msgstr "공식 정보"
+
+msgid "live:data_source"
+msgstr "출처: 일본기원, 야호바둑"
+
+msgid "live:move_count"
+msgstr "{0}/{1} 수"
+
+msgid "live:black"
+msgstr "흑"
+
+msgid "live:white"
+msgstr "백"
+
+msgid "live:rules_japanese"
+msgstr "일본 규칙"
+
+msgid "live:rules_korean"
+msgstr "한국 규칙"
+
+msgid "live:rules_chinese"
+msgstr "중국 규칙"
+
+msgid "live:komi"
+msgstr "덤: {0}점"
+
+msgid "live:vs"
+msgstr "vs"

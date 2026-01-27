@@ -1501,3 +1501,246 @@ msgstr "白{n}目勝ち"
 
 msgid "game:black_wins_points"
 msgstr "黒{n}目勝ち"
+
+msgid "tsumego:problem_n"
+msgstr "問題{n}"
+
+msgid "tsumego:solveProblems"
+msgstr "問題をクリックして練習を開始"
+
+msgid "tsumego:problems"
+msgstr "問"
+
+msgid "tsumego:selectCategory"
+msgstr "カテゴリを選択"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "詰碁"
+
+msgid "tsumego:categoryDesc"
+msgstr "練習したい問題の種類を選択"
+
+msgid "tsumego:endgame"
+msgstr "ヨセ"
+
+msgid "tsumego:selectLevel"
+msgstr "難易度を選択"
+
+msgid "tsumego:practiceProblems"
+msgstr "詰碁を練習して読みを鍛えましょう"
+
+msgid "tsumego:tesuji"
+msgstr "手筋"
+
+msgid "tsumego:life-death"
+msgstr "死活"
+
+msgid "tsumego:solved"
+msgstr "正解！"
+
+msgid "tsumego:incorrect"
+msgstr "不正解"
+
+msgid "tsumego:blackToPlay"
+msgstr "黒番"
+
+msgid "tsumego:whiteToPlay"
+msgstr "白番"
+
+msgid "tsumego:attempts"
+msgstr "試行回数"
+
+msgid "tsumego:showHint"
+msgstr "ヒントを表示"
+
+msgid "tsumego:hideHint"
+msgstr "ヒントを隠す"
+
+msgid "tsumego:undo"
+msgstr "戻る"
+
+msgid "tsumego:reset"
+msgstr "リセット"
+
+msgid "tsumego:previousProblem"
+msgstr "前の問題"
+
+msgid "tsumego:nextProblem"
+msgstr "次の問題"
+
+msgid "tsumego:errorLoading"
+msgstr "問題の読み込みエラー"
+
+msgid "tsumego:unitDesc"
+msgstr "全{total}問、{units}ユニットに分類"
+
+msgid "tsumego:unit"
+msgstr "ユニット"
+
+msgid "tsumego:selectUnit"
+msgstr "ユニットを選択"
+
+msgid "tsumego:problemRange"
+msgstr "問題 {start}-{end}"
+
+msgid "auth:login_title"
+msgstr "Galaxy Goにログイン"
+
+msgid "auth:register_title"
+msgstr "アカウント作成"
+
+msgid "auth:username"
+msgstr "ユーザー名"
+
+msgid "auth:password"
+msgstr "パスワード"
+
+msgid "auth:confirm_password"
+msgstr "パスワード再入力"
+
+msgid "auth:login_btn"
+msgstr "ログイン"
+
+msgid "auth:register_btn"
+msgstr "登録"
+
+msgid "auth:cancel_btn"
+msgstr "キャンセル"
+
+msgid "auth:logging_in"
+msgstr "ログイン中..."
+
+msgid "auth:registering"
+msgstr "登録中..."
+
+msgid "auth:switch_to_register"
+msgstr "アカウントをお持ちでないですか？登録"
+
+msgid "auth:switch_to_login"
+msgstr "すでにアカウントをお持ちですか？ログイン"
+
+msgid "auth:err_fill_all"
+msgstr "すべての項目を入力してください"
+
+msgid "auth:err_pass_mismatch"
+msgstr "パスワードが一致しません"
+
+msgid "auth:success_register"
+msgstr "登録に成功しました！ログインしています..."
+
+msgid "auth:err_failed"
+msgstr "操作に失敗しました"
+
+msgid "auth:login_title_katrain"
+msgstr "KaTrainにログイン"
+
+#. TODO
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+#. TODO
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryModeDesc"
+msgstr "判定なしの自由探索"
+
+msgid "tsumego:tryMode"
+msgstr "試しモード"
+
+msgid "live:top_matches"
+msgstr "トップマッチ"
+
+msgid "live:upcoming"
+msgstr "今後の予定"
+
+msgid "live:now_live"
+msgstr "ライブ中"
+
+msgid "live:history"
+msgstr "履歴"
+
+msgid "live:enter_live"
+msgstr "ライブを見る"
+
+msgid "live:view_game"
+msgstr "棋譜を見る"
+
+msgid "live:today"
+msgstr "今日"
+
+msgid "live:tomorrow"
+msgstr "明日"
+
+msgid "live:in_days"
+msgstr "{0}日後"
+
+msgid "live:moves"
+msgstr "手"
+
+msgid "live:first_move"
+msgstr "初手"
+
+msgid "live:previous"
+msgstr "前へ"
+
+msgid "live:next"
+msgstr "次へ"
+
+msgid "live:latest"
+msgstr "最新"
+
+msgid "live:auto_follow_on"
+msgstr "自動追従オン"
+
+msgid "live:auto_follow_off"
+msgstr "クリックで最新を追従"
+
+msgid "live:no_matches"
+msgstr "対局なし"
+
+msgid "live:select_match"
+msgstr "対局を選択"
+
+msgid "live:status_live"
+msgstr "ライブ"
+
+msgid "live:status_finished"
+msgstr "終了"
+
+msgid "live:pts"
+msgstr "目"
+
+msgid "live:no_upcoming"
+msgstr "予定されたイベントはありません"
+
+msgid "live:official_info"
+msgstr "公式情報"
+
+msgid "live:data_source"
+msgstr "出典：日本棋院、野狐囲碁"
+
+msgid "live:move_count"
+msgstr "{0}/{1} 手"
+
+msgid "live:black"
+msgstr "黒"
+
+msgid "live:white"
+msgstr "白"
+
+msgid "live:rules_japanese"
+msgstr "日本ルール"
+
+msgid "live:rules_korean"
+msgstr "韓国ルール"
+
+msgid "live:rules_chinese"
+msgstr "中国ルール"
+
+msgid "live:komi"
+msgstr "コミ: {0}目"
+
+msgid "live:vs"
+msgstr "対"

@@ -7,6 +7,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface PlaybackBarProps {
   currentMove: number;
@@ -21,6 +22,7 @@ export default function PlaybackBar({
   onMoveChange,
   isLive = false,
 }: PlaybackBarProps) {
+  const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [followLatest, setFollowLatest] = useState(isLive); // Auto-follow latest in live mode
   const [playSpeed] = useState(1000); // ms per move
@@ -124,13 +126,13 @@ export default function PlaybackBar({
 
       {/* Controls with move counter inline */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-        <Tooltip title="第一手">
+        <Tooltip title={t('live:first_move')}>
           <IconButton onClick={handleFirst} size="small" disabled={currentMove === 0}>
             <KeyboardDoubleArrowLeftIcon />
           </IconButton>
         </Tooltip>
 
-        <Tooltip title="后退">
+        <Tooltip title={t('live:previous')}>
           <IconButton onClick={handlePrev} size="small" disabled={currentMove === 0}>
             <ChevronLeftIcon />
           </IconButton>
@@ -150,13 +152,13 @@ export default function PlaybackBar({
           {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
         </IconButton>
 
-        <Tooltip title="前进">
+        <Tooltip title={t('live:next')}>
           <IconButton onClick={handleNext} size="small" disabled={currentMove >= totalMoves}>
             <ChevronRightIcon />
           </IconButton>
         </Tooltip>
 
-        <Tooltip title="最新">
+        <Tooltip title={t('live:latest')}>
           <IconButton onClick={handleLast} size="small" disabled={currentMove >= totalMoves}>
             <KeyboardDoubleArrowRightIcon />
           </IconButton>
@@ -164,7 +166,7 @@ export default function PlaybackBar({
 
         {/* Follow latest toggle (only shown in live mode) */}
         {isLive && (
-          <Tooltip title={followLatest ? '已开启自动追踪' : '点击追踪最新'}>
+          <Tooltip title={followLatest ? t('live:auto_follow_on') : t('live:auto_follow_off')}>
             <ToggleButton
               value="follow"
               selected={followLatest}
@@ -192,7 +194,7 @@ export default function PlaybackBar({
 
         {/* Move counter - inline with controls */}
         <Typography variant="body2" color="text.secondary" sx={{ ml: 2, minWidth: 80 }}>
-          {currentMove} / {totalMoves} 手
+          {currentMove} / {totalMoves} {t('live:moves')}
         </Typography>
       </Box>
     </Box>

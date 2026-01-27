@@ -145,6 +145,13 @@ python3 -m katrain --ui web
   ```
   You can also set `KATRAIN_HOST` and `KATRAIN_PORT` environment variables.
 
+- **Live Broadcasting Translation** (Optional): To enable automatic translation of player/tournament names in the Live module, set the Anthropic API key:
+  ```bash
+  export ANTHROPIC_API_KEY="sk-ant-..."
+  python3 -m katrain --ui web
+  ```
+  Without this key, the Live module will still work but names will not be auto-translated via LLM.
+
 - **Desktop Mode**: To run the original Kivy-based desktop version instead of the web GUI, use:
   ```bash
   python3 -m katrain --ui desktop
@@ -254,8 +261,12 @@ docker run -d \
   --name katrain-web \
   --network host \
   -e KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@127.0.0.1:5432/katrain_db" \
+  -e ANTHROPIC_API_KEY="sk-ant-..." \
   -v ~/.katrain:/root/.katrain \
   katrain-web
+
+# Note: ANTHROPIC_API_KEY is optional. It enables automatic translation of
+# player/tournament names in the Live broadcasting module via Claude LLM.
 ```
 
 #### Desktop Application

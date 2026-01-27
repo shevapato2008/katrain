@@ -1507,3 +1507,244 @@ msgstr "White wins by {n} points"
 
 msgid "game:black_wins_points"
 msgstr "Black wins by {n} points"
+
+#. tsumego module
+msgid "Tsumego"
+msgstr "Tsumego"
+
+msgid "tsumego:selectLevel"
+msgstr "Select Difficulty Level"
+
+msgid "tsumego:practiceProblems"
+msgstr "Practice life and death problems to improve your reading"
+
+msgid "tsumego:selectCategory"
+msgstr "Select Category"
+
+msgid "tsumego:categoryDesc"
+msgstr "Choose the type of problems you want to practice"
+
+msgid "tsumego:problems"
+msgstr "problems"
+
+msgid "tsumego:solveProblems"
+msgstr "Click a problem to start practicing"
+
+msgid "tsumego:life-death"
+msgstr "Life & Death"
+
+msgid "tsumego:tesuji"
+msgstr "Tesuji"
+
+msgid "tsumego:endgame"
+msgstr "Endgame"
+
+msgid "tsumego:problem_n"
+msgstr "Problem {n}"
+
+msgid "tsumego:solved"
+msgstr "Solved!"
+
+msgid "tsumego:incorrect"
+msgstr "Incorrect"
+
+msgid "tsumego:blackToPlay"
+msgstr "Black to play"
+
+msgid "tsumego:whiteToPlay"
+msgstr "White to play"
+
+msgid "tsumego:attempts"
+msgstr "Attempts"
+
+msgid "tsumego:showHint"
+msgstr "Show Hint"
+
+msgid "tsumego:hideHint"
+msgstr "Hide Hint"
+
+msgid "tsumego:undo"
+msgstr "Undo"
+
+msgid "tsumego:reset"
+msgstr "Reset"
+
+msgid "tsumego:previousProblem"
+msgstr "Previous"
+
+msgid "tsumego:nextProblem"
+msgstr "Next"
+
+msgid "tsumego:errorLoading"
+msgstr "Error Loading Problem"
+
+msgid "tsumego:selectUnit"
+msgstr "Select Unit"
+
+msgid "tsumego:unitDesc"
+msgstr "Total {total} problems in {units} units"
+
+msgid "tsumego:unit"
+msgstr "Unit"
+
+msgid "tsumego:problemRange"
+msgstr "Problems {start}-{end}"
+
+msgid "tsumego:shortcuts"
+msgstr "Shortcuts"
+
+msgid "tsumego:navigate"
+msgstr "Navigate"
+
+msgid "tsumego:tryMode"
+msgstr "Try Mode"
+
+msgid "tsumego:tryModeDesc"
+msgstr "Free exploration without judgment"
+
+msgid "auth:login_title"
+msgstr "Login to Galaxy Go"
+
+msgid "auth:register_title"
+msgstr "Create Account"
+
+msgid "auth:username"
+msgstr "Username"
+
+msgid "auth:password"
+msgstr "Password"
+
+msgid "auth:confirm_password"
+msgstr "Confirm Password"
+
+msgid "auth:login_btn"
+msgstr "Login"
+
+msgid "auth:register_btn"
+msgstr "Register"
+
+msgid "auth:cancel_btn"
+msgstr "Cancel"
+
+msgid "auth:logging_in"
+msgstr "Logging in..."
+
+msgid "auth:registering"
+msgstr "Registering..."
+
+msgid "auth:switch_to_register"
+msgstr "Don't have an account? Register"
+
+msgid "auth:switch_to_login"
+msgstr "Already have an account? Login"
+
+msgid "auth:err_fill_all"
+msgstr "Please fill in all fields"
+
+msgid "auth:err_pass_mismatch"
+msgstr "Passwords do not match"
+
+msgid "auth:success_register"
+msgstr "Registration successful! Logging in..."
+
+msgid "auth:err_failed"
+msgstr "Operation failed"
+
+msgid "auth:login_title_katrain"
+msgstr "Login to KaTrain"
+
+msgid "live:top_matches"
+msgstr "TOP MATCHES"
+
+msgid "live:upcoming"
+msgstr "UPCOMING"
+
+msgid "live:now_live"
+msgstr "Now Live"
+
+msgid "live:history"
+msgstr "History"
+
+msgid "live:enter_live"
+msgstr "Enter Live"
+
+msgid "live:view_game"
+msgstr "View Game"
+
+msgid "live:today"
+msgstr "Today"
+
+msgid "live:tomorrow"
+msgstr "Tomorrow"
+
+msgid "live:in_days"
+msgstr "In {0} days"
+
+msgid "live:moves"
+msgstr "moves"
+
+msgid "live:first_move"
+msgstr "First move"
+
+msgid "live:previous"
+msgstr "Previous"
+
+msgid "live:next"
+msgstr "Next"
+
+msgid "live:latest"
+msgstr "Latest"
+
+msgid "live:auto_follow_on"
+msgstr "Auto-follow enabled"
+
+msgid "live:auto_follow_off"
+msgstr "Click to follow latest"
+
+msgid "live:no_matches"
+msgstr "No matches"
+
+msgid "live:select_match"
+msgstr "Select a match"
+
+msgid "live:status_live"
+msgstr "Live"
+
+msgid "live:status_finished"
+msgstr "Finished"
+
+msgid "live:pts"
+msgstr "pts"
+
+msgid "live:no_upcoming"
+msgstr "No upcoming events"
+
+msgid "live:official_info"
+msgstr "Official info"
+
+msgid "live:data_source"
+msgstr "Source: Nihon Ki-in, FoxWq"
+
+msgid "live:move_count"
+msgstr "Move {0}/{1}"
+
+msgid "live:black"
+msgstr "B"
+
+msgid "live:white"
+msgstr "W"
+
+msgid "live:rules_japanese"
+msgstr "Japanese rules"
+
+msgid "live:rules_korean"
+msgstr "Korean rules"
+
+msgid "live:rules_chinese"
+msgstr "Chinese rules"
+
+msgid "live:komi"
+msgstr "Komi: {0} pts"
+
+msgid "live:vs"
+msgstr "vs"

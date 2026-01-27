@@ -1,6 +1,7 @@
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { useState, useMemo } from 'react';
 import type { MoveAnalysis } from '../../types/live';
+import { i18n } from '../../../i18n';
 
 interface TrendChartProps {
   analysis: Record<number, MoveAnalysis>;
@@ -164,9 +165,9 @@ export default function TrendChart({
           bgcolor: 'background.paper',
         }}
       >
-        <Tab label="走势图" sx={{ minHeight: 36, py: 0 }} />
-        <Tab label={`妙手 (${brilliantMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
-        <Tab label={`问题手 (${mistakeMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={i18n.t('live:trend_chart', 'Trend')} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={`${i18n.t('live:brilliant', 'Brilliant')} (${brilliantMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={`${i18n.t('live:mistakes', 'Mistakes')} (${mistakeMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
       </Tabs>
 
       {/* Scrollable content area */}
@@ -174,14 +175,14 @@ export default function TrendChart({
         {tab === 0 && (
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              胜率走势
+              {i18n.t('live:winrate_trend', 'Winrate Trend')}
             </Typography>
             <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 1 }}>
               {renderChart(chartData.winrates, 0, 100, '#4caf50', ['0%', '50%', '100%'])}
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5, pl: '35px', pr: '10px' }}>
               <Typography variant="caption" color="text.secondary">0</Typography>
-              <Typography variant="caption" color="text.secondary">{totalMoves}手</Typography>
+              <Typography variant="caption" color="text.secondary">{totalMoves} {i18n.t('live:moves', 'moves')}</Typography>
             </Box>
           </Box>
         )}
@@ -190,7 +191,7 @@ export default function TrendChart({
           <Box>
             {brilliantMoves.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                暂无妙手
+                {i18n.t('live:no_brilliant', 'No brilliant moves')}
               </Typography>
             ) : (
               brilliantMoves.map(({ move, analysis: a }) => (
@@ -210,14 +211,14 @@ export default function TrendChart({
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" fontWeight="bold">
-                      第 {move} 手 {a.move}
+                      {i18n.t('live:move_number', 'Move')} {move} {a.move}
                     </Typography>
                     <Typography variant="caption" color="success.main">
-                      +{a.delta_score.toFixed(1)} 目
+                      +{a.delta_score.toFixed(1)} {i18n.t('live:points', 'pts')}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {a.player === 'B' ? '黑' : '白'}方妙手
+                    {a.player === 'B' ? i18n.t('live:black', 'B') : i18n.t('live:white', 'W')} {i18n.t('live:brilliant_move', 'brilliant move')}
                   </Typography>
                 </Box>
               ))
@@ -229,7 +230,7 @@ export default function TrendChart({
           <Box>
             {mistakeMoves.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                暂无问题手
+                {i18n.t('live:no_mistakes', 'No mistakes')}
               </Typography>
             ) : (
               mistakeMoves.map(({ move, analysis: a }) => (
@@ -249,14 +250,14 @@ export default function TrendChart({
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" fontWeight="bold">
-                      第 {move} 手 {a.move}
+                      {i18n.t('live:move_number', 'Move')} {move} {a.move}
                     </Typography>
                     <Typography variant="caption" color={a.is_mistake ? 'error.main' : 'warning.main'}>
-                      {a.delta_score.toFixed(1)} 目
+                      {a.delta_score.toFixed(1)} {i18n.t('live:points', 'pts')}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {a.player === 'B' ? '黑' : '白'}方{a.is_mistake ? '问题手' : '疑问手'}
+                    {a.player === 'B' ? i18n.t('live:black', 'B') : i18n.t('live:white', 'W')} {a.is_mistake ? i18n.t('live:mistake', 'mistake') : i18n.t('live:questionable', 'questionable')}
                   </Typography>
                 </Box>
               ))

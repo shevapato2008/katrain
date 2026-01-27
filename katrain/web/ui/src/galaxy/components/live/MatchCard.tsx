@@ -2,6 +2,8 @@ import { Box, Card, CardActionArea, Typography, Chip, LinearProgress } from '@mu
 import { useNavigate } from 'react-router-dom';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import type { MatchSummary } from '../../types/live';
+import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface MatchCardProps {
   match: MatchSummary;
@@ -12,6 +14,7 @@ interface MatchCardProps {
 
 export default function MatchCard({ match, compact = false, selected = false, onSelect }: MatchCardProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isLive = match.status === 'live';
 
   // Format winrate as percentage
@@ -20,7 +23,8 @@ export default function MatchCard({ match, compact = false, selected = false, on
 
   // Format date
   const matchDate = new Date(match.date);
-  const dateStr = matchDate.toLocaleDateString('zh-CN', {
+  const locale = i18n.lang === 'en' ? 'en-US' : 'zh-CN';
+  const dateStr = matchDate.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
   });
@@ -47,19 +51,19 @@ export default function MatchCard({ match, compact = false, selected = false, on
               <FiberManualRecordIcon sx={{ fontSize: 10, color: 'error.main', animation: 'pulse 1.5s infinite' }} />
             )}
             <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
-              {match.tournament}
+              {i18n.translateTournament(match.tournament)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {match.move_count}手
+              {match.move_count} {t('live:moves')}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
-              {match.player_black}
+              {i18n.translatePlayer(match.player_black)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">vs</Typography>
+            <Typography variant="body2" color="text.secondary">{t('live:vs')}</Typography>
             <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
-              {match.player_white}
+              {i18n.translatePlayer(match.player_white)}
             </Typography>
           </Box>
           <Box sx={{ mt: 1 }}>
@@ -92,13 +96,13 @@ export default function MatchCard({ match, compact = false, selected = false, on
           {isLive ? (
             <Chip
               icon={<FiberManualRecordIcon sx={{ fontSize: 10 }} />}
-              label="直播中"
+              label={t('live:status_live')}
               size="small"
               color="error"
               sx={{ '& .MuiChip-icon': { animation: 'pulse 1.5s infinite' } }}
             />
           ) : (
-            <Chip label="已结束" size="small" variant="outlined" />
+            <Chip label={t('live:status_finished')} size="small" variant="outlined" />
           )}
           <Typography variant="caption" color="text.secondary">
             {dateStr}
@@ -111,13 +115,13 @@ export default function MatchCard({ match, compact = false, selected = false, on
         </Box>
 
         <Typography variant="subtitle2" color="text.secondary" gutterBottom noWrap>
-          {match.tournament} {match.round_name && `· ${match.round_name}`}
+          {i18n.translateTournament(match.tournament)} {match.round_name && `· ${i18n.translateRound(match.round_name)}`}
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 1.5 }}>
           <Box sx={{ flex: 1, textAlign: 'center' }}>
             <Typography variant="h6" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
-              {match.player_black}
+              {i18n.translatePlayer(match.player_black)}
             </Typography>
             {match.black_rank && (
               <Typography variant="caption" color="text.secondary">
@@ -132,7 +136,7 @@ export default function MatchCard({ match, compact = false, selected = false, on
           </Box>
           <Box sx={{ flex: 1, textAlign: 'center' }}>
             <Typography variant="h6" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
-              {match.player_white}
+              {i18n.translatePlayer(match.player_white)}
             </Typography>
             {match.white_rank && (
               <Typography variant="caption" color="text.secondary">
@@ -145,13 +149,13 @@ export default function MatchCard({ match, compact = false, selected = false, on
         <Box sx={{ mt: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography variant="caption" fontWeight={blackAdvantage ? 'bold' : 'normal'} sx={{ color: '#000' }}>
-              黑 {winratePercent}%
+              {t('live:black')} {winratePercent}%
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {match.move_count}手
+              {match.move_count} {t('live:moves')}
             </Typography>
             <Typography variant="caption" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
-              白 {100 - winratePercent}%
+              {t('live:white')} {100 - winratePercent}%
             </Typography>
           </Box>
           <LinearProgress

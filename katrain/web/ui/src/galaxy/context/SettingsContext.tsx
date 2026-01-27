@@ -31,25 +31,51 @@ export const languages = [
   { code: 'ua', name: 'Українська' },
 ];
 
+// Map browser language codes to our supported language codes
+const detectBrowserLanguage = (): string => {
+  const browserLang = navigator.language || (navigator as { userLanguage?: string }).userLanguage || 'en';
+  const langCode = browserLang.toLowerCase();
+
+  // Map common browser language codes to our codes
+  if (langCode.startsWith('zh-tw') || langCode.startsWith('zh-hant')) return 'tw';
+  if (langCode.startsWith('zh')) return 'cn';
+  if (langCode.startsWith('ja')) return 'jp';
+  if (langCode.startsWith('ko')) return 'ko';
+  if (langCode.startsWith('de')) return 'de';
+  if (langCode.startsWith('es')) return 'es';
+  if (langCode.startsWith('fr')) return 'fr';
+  if (langCode.startsWith('ru')) return 'ru';
+  if (langCode.startsWith('tr')) return 'tr';
+  if (langCode.startsWith('uk')) return 'ua';
+  if (langCode.startsWith('en')) return 'en';
+
+  return 'en'; // Default to English
+};
+
+const LANGUAGE_STORAGE_KEY = 'katrain_language';
+
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState('cn');
+  const [language, setLanguageState] = useState('en');
   const [, setTick] = useState(0); // For forcing re-render on translation change
 
   const updateLanguage = useCallback(async (lang: string) => {
     try {
       await i18n.loadTranslations(lang);
       setLanguageState(lang);
+      // Save preference to localStorage
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
     } catch (error) {
       console.error('Failed to change language:', error);
     }
   }, []);
 
   useEffect(() => {
-    // Initial load
+    // Initial load - check localStorage first, then detect browser language
     const initLang = async () => {
-        const currentLang = 'cn';
-        await i18n.loadTranslations(currentLang);
-        setLanguageState(currentLang);
+      const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      const currentLang = savedLang || detectBrowserLanguage();
+      await i18n.loadTranslations(currentLang);
+      setLanguageState(currentLang);
     };
     initLang();
 

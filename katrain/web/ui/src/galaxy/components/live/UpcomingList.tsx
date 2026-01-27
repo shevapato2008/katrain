@@ -4,12 +4,15 @@ import { LiveAPI } from '../../api/live';
 import type { UpcomingMatch } from '../../types/live';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface UpcomingListProps {
   limit?: number;
 }
 
 export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
+  const { t, lang } = useTranslation();
   const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +21,7 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
     const fetchUpcoming = async () => {
       try {
         setLoading(true);
-        const response = await LiveAPI.getUpcoming(limit);
+        const response = await LiveAPI.getUpcoming(limit, lang);
         setUpcoming(response.matches);
         setError(null);
       } catch (err) {
@@ -33,25 +36,27 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
     // Refresh every 30 minutes
     const interval = setInterval(fetchUpcoming, 30 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [limit]);
+  }, [limit, lang]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    const dateFormatted = date.toLocaleDateString('zh-CN', {
+    const locale = lang === 'en' ? 'en-US' : 'zh-CN';
+    const dateFormatted = date.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
       weekday: 'short',
     });
 
     if (diffDays === 0) {
-      return { date: dateFormatted, label: '今天', color: 'success.main' };
+      return { date: dateFormatted, label: t('live:today'), color: 'success.main' };
     } else if (diffDays === 1) {
-      return { date: dateFormatted, label: '明天', color: 'warning.main' };
+      return { date: dateFormatted, label: t('live:tomorrow'), color: 'warning.main' };
     } else if (diffDays <= 7) {
-      return { date: dateFormatted, label: `${diffDays}天后`, color: 'info.main' };
+      const label = t('live:in_days').replace('{0}', String(diffDays));
+      return { date: dateFormatted, label, color: 'info.main' };
     }
     return { date: dateFormatted, label: null, color: 'text.secondary' };
   };
@@ -79,10 +84,10 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <CalendarTodayIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
         <Typography color="text.secondary">
-          暂无即将进行的赛事
+          {t('live:no_upcoming')}
         </Typography>
         <Typography variant="caption" color="text.disabled">
-          数据来源：日本棋院、野狐围棋
+          {t('live:data_source')}
         </Typography>
       </Box>
     );
@@ -108,18 +113,18 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
                     variant="body2"
                     fontWeight="medium"
                     noWrap
-                    title={event.tournament}
+                    title={i18n.translateTournament(event.tournament)}
                   >
-                    {event.tournament}
+                    {i18n.translateTournament(event.tournament)}
                   </Typography>
                   {event.round_name && (
                     <Typography variant="caption" color="text.secondary" noWrap>
-                      {event.round_name}
+                      {i18n.translateRound(event.round_name)}
                     </Typography>
                   )}
                   {event.player_black && event.player_white && (
                     <Typography variant="caption" color="text.secondary" display="block">
-                      {event.player_black} vs {event.player_white}
+                      {i18n.translatePlayer(event.player_black)} vs {i18n.translatePlayer(event.player_white)}
                     </Typography>
                   )}
                 </Box>
@@ -149,7 +154,7 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
                   }}
                 >
                   <OpenInNewIcon sx={{ fontSize: 12 }} />
-                  官方信息
+                  {t('live:official_info')}
                 </Link>
               )}
             </CardContent>

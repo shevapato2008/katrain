@@ -1,6 +1,8 @@
 import { Box, Typography, Chip, LinearProgress } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import type { MatchDetail, MoveAnalysis } from '../../types/live';
+import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface MatchInfoProps {
   match: MatchDetail;
@@ -9,6 +11,7 @@ interface MatchInfoProps {
 }
 
 export default function MatchInfo({ match, currentMove, analysis }: MatchInfoProps) {
+  const { t } = useTranslation();
   const isLive = match.status === 'live';
   const displayMove = currentMove ?? match.move_count;
 
@@ -20,7 +23,8 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
 
   // Format date
   const matchDate = new Date(match.date);
-  const dateStr = matchDate.toLocaleDateString('zh-CN', {
+  const locale = i18n.lang === 'en' ? 'en-US' : 'zh-CN';
+  const dateStr = matchDate.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -33,13 +37,13 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
         {isLive ? (
           <Chip
             icon={<FiberManualRecordIcon sx={{ fontSize: 10 }} />}
-            label="直播中"
+            label={t('live:status_live')}
             size="small"
             color="error"
             sx={{ '& .MuiChip-icon': { animation: 'pulse 1.5s infinite' } }}
           />
         ) : (
-          <Chip label="已结束" size="small" variant="outlined" />
+          <Chip label={t('live:status_finished')} size="small" variant="outlined" />
         )}
         <Typography variant="caption" color="text.secondary">
           {dateStr}
@@ -48,8 +52,8 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
 
       {/* Tournament name */}
       <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-        {match.tournament}
-        {match.round_name && ` · ${match.round_name}`}
+        {i18n.translateTournament(match.tournament)}
+        {match.round_name && ` · ${i18n.translateRound(match.round_name)}`}
       </Typography>
 
       {/* Players */}
@@ -66,7 +70,7 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
               }}
             />
             <Typography variant="body1" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
-              {match.player_black}
+              {i18n.translatePlayer(match.player_black)}
             </Typography>
             {match.black_rank && (
               <Typography variant="caption" color="text.secondary">
@@ -84,7 +88,7 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
               </Typography>
             )}
             <Typography variant="body1" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
-              {match.player_white}
+              {i18n.translatePlayer(match.player_white)}
             </Typography>
             <Box
               sx={{
@@ -113,7 +117,7 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
               color={scoreLead > 0 ? 'text.primary' : 'text.secondary'}
               fontWeight="bold"
             >
-              {scoreLead > 0 ? '+' : ''}{scoreLead.toFixed(1)}目
+              {scoreLead > 0 ? '+' : ''}{scoreLead.toFixed(1)} {t('live:pts')}
             </Typography>
           )}
           <Typography variant="caption" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
@@ -138,7 +142,7 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
       {/* Move count and result */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          第 {displayMove}/{match.move_count} 手
+          {t('live:move_count').replace('{0}', String(displayMove)).replace('{1}', String(match.move_count))}
         </Typography>
         {match.result && (
           <Typography variant="caption" color="text.secondary">
@@ -150,10 +154,10 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
       {/* Rules and komi */}
       <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          {match.rules === 'japanese' ? '日本规则' : match.rules === 'korean' ? '韩国规则' : '中国规则'}
+          {match.rules === 'japanese' ? t('live:rules_japanese') : match.rules === 'korean' ? t('live:rules_korean') : t('live:rules_chinese')}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          贴目: {match.komi}目
+          {t('live:komi').replace('{0}', String(match.komi))}
         </Typography>
       </Box>
     </Box>

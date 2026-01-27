@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LiveAPI } from '../../api/live';
 import type { MatchSummary, MatchListResponse } from '../../types/live';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface UseLiveMatchesOptions {
   status?: 'live' | 'finished';
@@ -20,6 +21,7 @@ interface UseLiveMatchesResult {
 
 export function useLiveMatches(options: UseLiveMatchesOptions = {}): UseLiveMatchesResult {
   const { status, source, limit = 50, pollInterval = 30000 } = options;
+  const { lang } = useTranslation();
 
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [liveCount, setLiveCount] = useState(0);
@@ -29,7 +31,7 @@ export function useLiveMatches(options: UseLiveMatchesOptions = {}): UseLiveMatc
 
   const fetchMatches = useCallback(async () => {
     try {
-      const data: MatchListResponse = await LiveAPI.getMatches({ status, source, limit });
+      const data: MatchListResponse = await LiveAPI.getMatches({ status, source, limit, lang });
       setMatches(data.matches);
       setLiveCount(data.live_count);
       setTotal(data.total);
@@ -39,7 +41,7 @@ export function useLiveMatches(options: UseLiveMatchesOptions = {}): UseLiveMatc
     } finally {
       setLoading(false);
     }
-  }, [status, source, limit]);
+  }, [status, source, limit, lang]);
 
   // Initial fetch
   useEffect(() => {
@@ -65,13 +67,14 @@ export function useLiveMatches(options: UseLiveMatchesOptions = {}): UseLiveMatc
 }
 
 export function useFeaturedMatch() {
+  const { lang } = useTranslation();
   const [match, setMatch] = useState<MatchSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchFeatured = useCallback(async () => {
     try {
-      const data = await LiveAPI.getFeaturedMatch();
+      const data = await LiveAPI.getFeaturedMatch(lang);
       setMatch(data.match);
       setError(null);
     } catch (err) {
@@ -79,7 +82,7 @@ export function useFeaturedMatch() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     fetchFeatured();

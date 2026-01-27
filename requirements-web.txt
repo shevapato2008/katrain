@@ -13,6 +13,9 @@ bcrypt==4.0.1
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
 
+# LLM for automatic translation of player/tournament names (optional)
+anthropic>=0.40.0
+
 # Testing and Development
 pytest==8.0.1
 pytest-asyncio

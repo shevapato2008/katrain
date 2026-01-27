@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useComments } from '../../hooks/live/useComments';
 import { useAuth } from '../../context/AuthContext';
 import type { Comment } from '../../types/live';
+import { i18n } from '../../../i18n';
 
 interface CommentSectionProps {
   matchId: string;
@@ -87,10 +88,10 @@ export default function CommentSection({ matchId, isLive }: CommentSectionProps)
         }}
       >
         <Typography variant="subtitle2" color="text.secondary">
-          评论区
+          {i18n.t('live:comments', 'Comments')}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {comments.length} 条评论
+          {comments.length} {i18n.t('live:comments_count', 'comments')}
         </Typography>
       </Box>
 
@@ -113,7 +114,7 @@ export default function CommentSection({ matchId, isLive }: CommentSectionProps)
             color="text.secondary"
             sx={{ textAlign: 'center', py: 2 }}
           >
-            {isLive ? '暂无评论，快来发表你的看法吧！' : '暂无评论'}
+            {isLive ? i18n.t('live:no_comments_live', 'No comments yet, be the first!') : i18n.t('live:no_comments', 'No comments')}
           </Typography>
         ) : (
           comments.map((comment) => (
@@ -143,7 +144,7 @@ export default function CommentSection({ matchId, isLive }: CommentSectionProps)
             <TextField
               size="small"
               fullWidth
-              placeholder="发表评论..."
+              placeholder={i18n.t('live:comment_placeholder', 'Add a comment...')}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
@@ -167,8 +168,8 @@ export default function CommentSection({ matchId, isLive }: CommentSectionProps)
             sx={{ width: '100%', textAlign: 'center', py: 0.5 }}
           >
             {!isLive
-              ? '比赛已结束，评论区为只读模式'
-              : '请登录后发表评论'}
+              ? i18n.t('live:comments_readonly', 'Match ended, comments are read-only')
+              : i18n.t('live:login_to_comment', 'Login to comment')}
           </Typography>
         )}
       </Box>

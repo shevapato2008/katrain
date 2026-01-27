@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-124916]
+AN[kenny]
+SO[https://www.101weiqi.com/4D/140032/]
+GC[死活题 | 4D | 正确率: 28.7% (823/2865)]
+C[黑先 死活题]
+AB[od][na][nb][qe][pe][rb][re][oc][oe][se]
+AW[qd][sd][pb][ra][oa][sb][pd][rd][sa]
+PL[B]
+(;B[qb](;W[pc](;B[rc](;W[qc](;B[pa](;W[qa](;B[ob]C[✓ 正确])))(;B[ob](;W[pa]C[✗ 失败])))(;W[pa](;B[qc]C[⚡ 变化])))(;B[ob](;W[pa](;B[qa](;W[rc](;B[sc](;W[sb](;B[sa](;W[ra]C[✗ 失败]))))))(;B[rc](;W[qc]C[✗ 失败]))))(;B[qa](;W[rc](;B[sc](;W[sb](;B[sa](;W[ra]C[✗ 失败]))(;B[ob](;W[pa](;B[sa](;W[ra]C[✗ 失败])))))))))(;W[qa](;B[rc](;W[qc](;B[ob]C[⚡ 变化])))))(;B[qa](;W[qb](;B[sc](;W[rc](;B[ob](;W[sb]C[✗ 失败]))(;B[pc](;W[sb](;B[ra](;W[pa]C[✗ 失败]))))(;B[sa](;W[sb]C[✗ 失败]))))))(;B[rc](;W[qb]C[✗ 失败]))(;B[pc](;W[qb]C[✗ 失败])))

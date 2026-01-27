@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-129496]
+AN[方块A]
+SO[https://www.101weiqi.com/1K/145989/]
+GC[死活题 | 1K | 正确率: 22.7% (3793/16681) | （初级） 高木秀和 作]
+C[黑先 死活题]
+AB[na][mh][lc][mb][mi][ph][pb][qb][ld][oi][le][qd][qc][lf][qe][lg][pe][lb][qh][ni][qg]
+AW[md][ob][nh][nb][mg][pg][mc][pc][ne][pf][pd][mf][oe][oh]
+PL[B]
+(;B[me](;W[og](;B[nf](;W[ng](;B[oa]C[✓ 正确])(;B[qf](;W[of](;B[oa]C[✓ 正确]))))))))

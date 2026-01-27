@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15778]
+AN[admin]
+SO[https://www.101weiqi.com/2D/15778/]
+GC[死活题 | 2D | 正确率: 37.2% (1801/4838)]
+C[黑先 死活题]
+AB[qd][nd][qe][nc][nf][lc][mb][rf][pf][qg]
+AW[rc][ob][nb][pc][pd]
+PL[B]
+(;B[qc](;W[qb](;B[ra](;W[rb](;B[na](;W[oa](;B[oc](;W[pb](;B[qa](;W[rd](;B[sd](;W[sc](;B[sa]C[✓ 正确]))))))))))(;W[qa](;B[na](;W[oa](;B[rb](;W[sb](;B[pb](;W[pa](;B[oc]C[⚡ 变化]))))))(;W[rb](;B[oa]C[⚡ 变化])))))(;B[rb](;W[ra]C[✗ 失败])))))

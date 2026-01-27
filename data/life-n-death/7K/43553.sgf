@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-43553]
+AN[cxg893]
+SO[https://www.101weiqi.com/7K/43553/]
+GC[手筋题 | 7K | 正确率: 48.2% (10833/22476) | 连接黑棋的弱点]
+C[黑先 手筋题]
+AB[md][rc][sc][qe][mb][mc][pg][ma][nc][sb][rg][ne][pc][rd][oc][pe][qg][se]
+AW[na][mh][lc][lh][pd][ph][pb][qb][ob][nh][kf][rb][rh][ld][qd][qc][nd][lf][oh][od][lb][nb][kd][qh]
+PL[B]
+(;B[mf](;W[oe](;B[of]C[✓ 正确])))(;B[me](;W[oe](;B[of](;W[nf](;B[mf](;W[ng](;B[ra](;W[le]C[✗ 失败]))))))))(;B[oe](;W[me]C[✗ 失败])))

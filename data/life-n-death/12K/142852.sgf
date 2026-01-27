@@ -1,0 +1,13 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-127001]
+AN[Dachen]
+SO[https://www.101weiqi.com/12K/142852/]
+GC[手筋题 | 12K+ | 正确率: 53.8% (14331/26632) | 棋筋与废子
+棋筋是对杀中的关键棋子。棋筋决定着对杀的胜败。我们在对杀中，需要保护自已的棋筋，吃掉对方的棋筋。
+
+观察： 图中A B C都只有一只气了。]
+C[黑先 手筋题]
+AB[qd][qc][od][nd][md][qb][ob][rb][pc][qa]
+AW[rc][nb][qe][ra][lc][nc][mc][oa][rf][pd][rd][oc]
+PL[B]
+(;B[pe]C[✓ 正确])(;B[pb](;W[pe]C[✗ 失败]))(;B[sa](;W[pe]C[✗ 失败])))

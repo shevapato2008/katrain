@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-55940]
+AN[foxyz]
+SO[https://www.101weiqi.com/8K/55940/]
+GC[对杀题 | 8K | 正确率: 38.6% (8906/23055)]
+C[黑先 对杀题]
+AB[qd][qc][qb][rb][rg][pd][pf][rh][pe][sa][qg]
+AW[qf][rc][qe][pg][qh][sb][ri][rd][qi][se][ph]
+PL[B]
+(;B[sf](;W[re](;B[sc]C[14 黑1尖是要点，以后对杀黑胜。](;W[sh](;B[sb]C[✓ 正确])))))(;B[rf](;W[re](;B[sc](;W[sh]C[✗ 失败])))))

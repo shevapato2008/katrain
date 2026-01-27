@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2720]
+AN[admin]
+SO[https://www.101weiqi.com/1D/2720/]
+GC[死活题 | 1D | 正确率: 40.1% (2420/6041) | 关山利一九段创作]
+C[黑先 死活题]
+AB[nd][qd][od][lf][id][ic][ke][kf][mb][mc][je][pd][ne][rd][me][ie][ib]
+AW[lc][rf][of][qf][ob][jc][mf][ld][md][qc][le][nc][mg][jd][lg][pc][jb][kd][og][kb]
+PL[B]
+(;B[qb]C[正解](;W[pb](;B[nb](;W[oc](;B[rc](;W[rb](;B[ra](;W[qa](;B[sb]C[✓ 正确 | 恭喜答对]))(;W[sb](;B[qa]C[⚡ 变化])))))))(;B[rc](;W[nb](;B[qa](;W[sb](;B[rb](;W[sa]C[✗ 失败])))))))(;W[oc](;B[rc]C[黑3渡过，白无论怎样走，黑都可做活 黑活](;W[rb](;B[ra](;W[sb](;B[oa](;W[na](;B[pa](;W[lb](;B[sc]C[⚡ 变化]))))))))))(;W[rc](;B[oc]C[⚡ 变化]))(;W[nb](;B[pb](;W[oc](;B[rc](;W[ma](;B[oa](;W[lb](;B[ra]C[⚡ 变化])))))))))(;B[rc](;W[qb]C[✗ 失败 | 失败，重来吧]))(;B[oc](;W[nb](;B[qb](;W[pb](;B[rc](;W[rb](;B[ra](;W[qa](;B[sb](;W[qb]C[✗ 失败]))))))))))(;B[nb](;W[oc](;B[rc](;W[qb]C[✗ 失败]))(;B[qb](;W[rc]C[✗ 失败])))))

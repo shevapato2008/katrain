@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-45602]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/3D/45602/]
+GC[对杀题 | 3D | 正确率: 27.4% (1865/6806)]
+C[黑先 对杀题]
+AB[of][qc][od][rc][qe][pd][oe][qg]
+AW[qd][nc][re][pc][rd][kc][oc][pe]
+PL[B]
+(;B[rf](;W[qf](;B[sf](;W[sc](;B[sb](;W[se](;B[sd]C[✓ 正确])(;B[pf](;W[qb](;B[sd]C[✓ 正确]))))(;W[rb](;B[sd](;W[qb](;B[sc]C[⚡ 变化])))))(;B[rb](;W[sb](;B[qa](;W[pb](;B[sa](;W[ra]C[✗ 失败]))))(;B[ra](;W[qa](;B[pb](;W[sd](;B[ob](;W[nb](;B[na](;W[ma](;B[pa](;W[oa]C[✗ 失败])))))))))))))(;W[rg](;B[pf](;W[rb](;B[qb](;W[sc](;B[ra](;W[sb](;B[sd](;W[se](;B[qe]C[⚡ 变化]))))))))))(;W[rb](;B[sd]C[⚡ 变化])))(;B[pf](;W[rb]C[✗ 失败])))))

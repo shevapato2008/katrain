@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-554]
+AN[admin]
+SO[https://www.101weiqi.com/7K/554/]
+GC[死活题 | 7K+ | 正确率: 48.6% (12171/25032)]
+C[白先 死活题]
+AB[qd][qc][sc][ra][qe][rb]
+AW[qf][pb][qb][pc][rf][pd][pf][pe]
+PL[W]
+(;W[se]C[正解](;B[sd](;W[rd]C[✓ 正确]))(;B[rd](;W[sd]C[⚡ 变化]))(;B[re]C[变化图](;W[sd]C[⚡ 变化 | 简单地夺去黑的眼位。])(;W[rd](;B[rc]C[✗ 失败]))))(;W[sd](;B[se](;W[rd](;B[re](;W[sf](;B[rc]C[✗ 失败]))))(;W[re](;B[rd]C[✗ 失败]))))(;W[rd]C[失败图](;B[re](;W[se](;B[rc]C[✗ 失败 | 接不归，黑棋净活。]))))(;W[re](;B[rd]C[✗ 失败])))

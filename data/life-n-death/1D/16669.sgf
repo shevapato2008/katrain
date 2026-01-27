@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16669]
+AN[admin]
+SO[https://www.101weiqi.com/1D/16669/]
+GC[死活题 | 1D+ | 正确率: 61.6% (3634/5900) | 加田克司九段创作]
+C[黑先 死活题]
+AB[pb][pa][qe][pg][pc][rf][sf][ri][pf][pd][qi][pe][ph]
+AW[qd][rc][qf][ra][rg][re][qg][se]
+PL[B]
+(;B[rb](;W[qc](;B[sc](;W[sb](;B[sa]C[✓ 正确]))(;W[qb](;B[sb]C[⚡ 变化])))(;B[qb](;W[sc]C[✗ 失败])))(;W[sc](;B[rd](;W[sd](;B[qc](;W[sb](;B[qb]C[⚡ 变化]))))(;W[qb](;B[sb](;W[sa](;B[qc](;W[sg](;B[rb]C[⚡ 变化]))))))))(;W[qb](;B[sb](;W[sc](;B[qc](;W[sa](;B[rd](;W[sg](;B[rb]C[⚡ 变化]))))))(;W[qc](;B[sc]C[⚡ 变化]))))(;W[rd](;B[sc](;W[qb](;B[sb](;W[qc](;B[qa](;W[sg](;B[sa]C[⚡ 变化]))))))))(;W[sb](;B[qb](;W[qc](;B[sd]C[⚡ 变化]))))))

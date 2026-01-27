@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-44654]
+AN[ling197000]
+SO[https://www.101weiqi.com/2D/44654/]
+GC[死活题 | 2D | 正确率: 46.9% (2406/5133) | 围棋实用初级死活
+
+徐莹。张文东合著]
+C[黑先 死活题]
+AB[nd][rc][qe][mb][mc][pd][rd][pe]
+AW[qd][qc][nb][rb][pc][oc]
+PL[B]
+(;B[sb](;W[qa](;B[pb](;W[sa](;B[ra]C[✓ 正确])(;B[ob](;W[sc](;B[se](;W[nc](;B[na](;W[oa](;B[pa](;W[qb]C[✗ 失败]))))))))))(;B[ra](;W[sa]C[✗ 失败 | 白的先手劫])))(;W[ra](;B[pa](;W[pb](;B[oa](;W[na](;B[qa]C[⚡ 变化]))))))))

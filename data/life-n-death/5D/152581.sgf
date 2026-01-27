@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-135318]
+AN[kenny]
+SO[https://www.101weiqi.com/5D/152581/]
+GC[死活题 | 5D | 正确率: 47.6% (1145/2407) | 东野弘昭九段创作]
+C[黑先 死活题]
+AB[md][od][rc][sc][pb][ob][mg][nf][sh][rb][oc][ri][qi][si][og][ph][oh]
+AW[of][sd][qc][sg][pg][qh][pc][pd][rh][rd][oe][qg]
+PL[B]
+(;B[qf](;W[rf](;B[pf](;W[qe](;B[rg](;W[se](;B[sf]C[✓ 正确])(;B[pe](;W[qg](;B[pg](;W[rh]C[✗ 失败]))(;B[ne](;W[rh]C[✗ 失败])))))))))(;W[pf](;B[rf](;W[rg](;B[qe](;W[qd](;B[re]C[⚡ 变化]))))(;W[sf](;B[rg](;W[se](;B[qe](;W[qd](;B[re]C[⚡ 变化])))))))))(;B[rf](;W[qf](;B[qe](;W[re](;B[pe](;W[sf]C[✗ 失败]))(;B[sf](;W[pe]C[✗ 失败]))))))(;B[qe](;W[rf](;B[re](;W[qd]C[✗ 失败]))(;B[qd](;W[re]C[✗ 失败])))))

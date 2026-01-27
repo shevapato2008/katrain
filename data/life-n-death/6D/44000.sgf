@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-44000]
+AN[九点圆]
+SO[https://www.101weiqi.com/6D/44000/]
+GC[死活题 | 6D+ | 正确率: 11.1% (133/1193) | 原型为http://www.101weiqi.com/q/41978/。难度：Normal]
+C[白先 死活题]
+AB[sc][nc][mb][mc][qe][rb][rf][pd][oc][qg]
+AW[ob][nb][pc][qa][sb][pe]
+PL[W]
+(;W[qd](;B[od](;W[rd](;B[rc](;W[qc](;B[qb](;W[pb](;B[pa](;W[sa](;B[ra](;W[oa](;B[re](;W[sd]C[✓ 正确]))(;B[sd](;W[re](;B[se](;W[qf](;B[of](;W[rg](;B[sf](;W[pg](;B[qh](;W[pf](;B[oi](;W[ng]C[⚡ 变化])))))))))))))(;W[sd](;B[oa](;W[na](;B[re]C[✗ 失败]))))))(;W[oa](;B[sa](;W[sd](;B[re]C[✗ 失败])))))))))(;B[qc](;W[rc](;B[qb](;W[pb](;B[sa](;W[sd]C[⚡ 变化])))))))(;W[rc](;B[qb](;W[pb](;B[rd]C[✗ 失败]))(;W[re](;B[qf](;W[pb](;B[sa](;W[sd](;B[qc](;W[sb](;B[rd]C[✗ 失败])))))))))))))

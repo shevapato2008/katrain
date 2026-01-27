@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-36632]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/6D/36632/]
+GC[官子题 | 6D | 正确率: 14.3% (195/1359)]
+C[白先 官子题]
+AB[nd][md][jc][nc][je][jd][kc][oc][ld]
+AW[le][od][ke][lc][kd][pc][pd][ne][me]
+PL[W]
+(;W[lb]C[正解](;B[mb](;W[ob](;B[nb](;W[pa](;B[kb](;W[la](;B[ma]C[✓ 正确]))))(;W[na](;B[pb](;W[pa](;B[oa]C[⚡ 变化]))))(;W[oa](;B[pb](;W[qb](;B[ma]C[✗ 失败])(;B[la]C[✗ 失败 | 黑8较1图便宜了1目棋，更好]))))))))(;W[mb]C[参考](;B[pb](;W[na](;B[ob](;W[qb](;B[lb](;W[oa](;B[mc](;W[pa]C[✗ 失败]))))))))))

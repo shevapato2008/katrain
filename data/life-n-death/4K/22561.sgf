@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22561]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/4K/22561/]
+GC[手筋题 | 4K | 正确率: 23.7% (4755/20045)]
+C[黑先 手筋题]
+AB[le][qc][oe][kc][ob][ke][kd][oa][pc][pd][ne][rd][me][oc][pa][kb]
+AW[md][nd][od][qd][pb][rc][ld][qb][sc][qe][lc][nc][mb][ma][ra][pe][sa][qg]
+PL[B]
+(;B[qa](;W[re](;B[rb]C[✓ 正确]))(;W[sb](;B[sd]C[⚡ 变化]))(;W[rb](;B[sd]C[⚡ 变化])))(;B[rb](;W[sb](;B[qa](;W[re](;B[rb](;W[qb]C[✗ 失败 | 失败，重来吧]))))))(;B[sd](;W[nb]C[✗ 失败])))

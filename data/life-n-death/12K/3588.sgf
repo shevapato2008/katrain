@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-3588]
+AN[admin]
+SO[https://www.101weiqi.com/12K/3588/]
+GC[死活题 | 12K | 正确率: 74.3% (21870/29433)]
+C[黑先 死活题]
+AB[qd][qc][qf][qb][qe][rb][qa][rf][sb]
+AW[rc][pb][pa][pg][rg][pc][pd][pf][rd][re][pe][qg][sf]
+PL[B]
+(;B[se](;W[sg](;B[sc]C[✓ 正确])(;B[sd](;W[sc](;B[se](;W[sd](;B[se]C[✓ 正确]))))))(;W[sd](;B[sc](;W[se](;B[sg]C[⚡ 变化])))(;B[sg](;W[sa]C[✗ 失败 | 【失败】失败 注：黑3扑贪，白4扑变打劫，失败]))))(;B[sc](;W[se]C[✗ 失败 | 黑淨死]))(;B[sd](;W[se](;B[sc](;W[sg]C[✗ 失败 | 黑淨死])))))

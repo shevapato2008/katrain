@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-40452]
+AN[tongruoyu]
+SO[https://www.101weiqi.com/1D/40452/]
+GC[死活题 | 1D+ | 正确率: 34.0% (2316/6815)]
+C[黑先 死活题]
+AB[ic][qc][rc][kc][lc][mc][rb][pd][me][oe]
+AW[qb][nc][mb][pc][qa][oc]
+PL[B]
+(;B[oa](;W[na](;B[ob](;W[lb](;B[la](;W[kb](;B[jb](;W[ka](;B[nb](;W[pb](;B[ma](;W[na](;B[ma]C[✓ 正确])))))))))(;B[nb](;W[la]C[✗ 失败])))))(;W[ob](;B[na](;W[pa](;B[ra]C[⚡ 变化]))(;W[lb](;B[kb]C[⚡ 变化])))))(;B[lb](;W[ma]C[✗ 失败]))(;B[na](;W[oa](;B[ob](;W[pb]C[✗ 失败]))))(;B[ob](;W[oa](;B[na](;W[pb]C[✗ 失败])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-21864]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/14K/21864/]
+GC[死活题 | 14K+ | 正确率: 91.8% (41047/44706) | 选自《围棋进阶读本——梅之篇》]
+C[黑先 死活题]
+AB[pb][na][ob][nb][ra][rb][pa]
+AW[rc][nc][mb][mc][ma][pc][sb][rd][oc][pe]
+PL[B]
+(;B[qb]C[✓ 正确 | RIGHT])(;B[qc](;W[qb]C[✗ 失败])))

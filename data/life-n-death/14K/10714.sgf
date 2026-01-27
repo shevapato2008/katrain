@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-10714]
+AN[admin]
+SO[https://www.101weiqi.com/14K/10714/]
+GC[对杀题 | 14K | 正确率: 86.0% (21468/24963)]
+C[黑先 对杀题]
+AB[qc][qb][ob][qe][pc][pd][re][pa][se]
+AW[qd][sd][rc][ra][rb][qa][rg][pf][rd][pe][qg]
+PL[B]
+(;B[sb](;W[rf](;B[sc](;W[sa](;B[sc]C[⚡ 变化])))))(;B[sc](;W[sb]C[✗ 失败]))(;B[sa](;W[sb]C[✗ 失败])))

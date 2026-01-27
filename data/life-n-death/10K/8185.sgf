@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-8185]
+AN[admin]
+SO[https://www.101weiqi.com/10K/8185/]
+GC[吃子题 | 10K | 正确率: 60.6% (17773/29349)]
+C[黑先 吃子题]
+AB[of][qc][rc][qb][qe][pg][qh][pc][rg][pd][re][oe]
+AW[qd][od][md][pb][qf][ob][rb][qa][rf][pf][rd][rh][oc][pe][qg]
+PL[B]
+(;B[sf]C[✓ 正确])(;B[sd](;W[sf](;B[ri](;W[ph]C[✗ 失败]))(;B[se](;W[sg]C[✗ 失败]))))(;B[se](;W[sc]C[✗ 失败])))

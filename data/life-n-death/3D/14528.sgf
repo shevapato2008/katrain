@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-14528]
+AN[admin]
+SO[https://www.101weiqi.com/3D/14528/]
+GC[手筋题 | 3D | 正确率: 29.4% (1824/6208) | W first]
+C[白先 手筋题]
+AB[od][qc][id][qb][ke][ob][nc][lc][mc][kd][nf][pd][ne][ib][fc]
+AW[md][lb][qd][rc][qf][oe][nb][cf][mb][pe][oa][re][kc][ld][dd][kb]
+PL[W]
+(;W[nd](;B[oc](;W[qa](;B[rb](;W[sb](;B[le](;W[ra]C[✓ 正确])(;W[pb](;B[me](;W[ra](;B[pc](;W[pa]C[✓ 正确])))))))))(;W[pb](;B[pc](;W[qa](;B[pa]C[✗ 失败]))))))(;W[qa](;B[rb](;W[nd](;B[oc](;W[sb](;B[le](;W[ra]C[✓ 正确])(;W[pb](;B[me](;W[ra](;B[pc](;W[pa]C[✓ 正确])))))))))(;W[sb](;B[nd](;W[ra]C[✓ 正确]))(;B[ra](;W[nd](;B[oc](;W[pb]C[⚡ 变化]))))))(;B[pb](;W[nd](;B[oc](;W[rb]C[⚡ 变化])))))(;W[pb](;B[pc](;W[oc](;B[nd]C[✗ 失败])))))

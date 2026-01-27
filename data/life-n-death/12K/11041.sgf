@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-11041]
+AN[admin]
+SO[https://www.101weiqi.com/12K/11041/]
+GC[对杀题 | 12K+ | 正确率: 61.8% (16188/26204)]
+C[黑先 对杀题]
+AB[sd][qc][qd][od][nd][of][qb][ob][nb][ra][qa][rf][rg][pf][rd][oe]
+AW[pb][sc][rc][qe][pe][rb][sb][pc][pd][re][pa][se]
+PL[B]
+(;B[sa](;W[rc](;B[qf]C[✓ 正确 | 对杀，黑多一气。])(;B[sf]C[✓ 正确 | 对杀，黑多一气。])(;B[oa]C[✓ 正确 | 对杀，黑多一气。])(;B[oc]C[✓ 正确 | 对杀，黑多一气。])))(;B[qf](;W[sa]C[✗ 失败]))(;B[sf](;W[sa]C[✗ 失败]))(;B[oc](;W[sa]C[✗ 失败]))(;B[oa](;W[sa]C[✗ 失败])))

@@ -1,0 +1,13 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22473]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/7K/22473/]
+GC[对杀题 | 7K+ | 正确率: 47.2% (10180/21570)]
+C[黑先 对杀题]
+AB[qd][pb][rc][na][nb][nc][pd][pf][rd][oc]
+AW[nd][qc][od][md][qb][mb][mc][rb][pc]
+PL[B]
+(;B[pa](;W[sb](;B[qa](;W[ob](;B[sc](;W[ma](;B[oa]C[✓ 正确])))(;B[oa](;W[ma](;B[sc]C[✓ 正确 | RIGHT
+恭喜答对])(;B[ra]C[✓ 正确 | RIGHT
+恭喜答对])))(;B[ra](;W[ma](;B[oa]C[✓ 正确])))))(;B[sc](;W[ma](;B[ra](;W[ob](;B[oa]C[✓ 正确])))(;B[qa]C[✓ 正确 | RIGHT
+恭喜答对])(;B[sa](;W[ob](;B[oa](;W[ra]C[✗ 失败]))))))(;B[ra]C[✓ 正确])(;B[sa](;W[ma](;B[sc](;W[ob](;B[oa](;W[ra]C[✗ 失败]))))))))(;B[qa](;W[ra]C[✗ 失败]))(;B[oa](;W[pa](;B[qa](;W[ra]C[✗ 失败]))))(;B[sb](;W[pa]C[✗ 失败]))(;B[ra](;W[pa](;B[oa](;W[ob]C[✗ 失败])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-37113]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/1D/37113/]
+GC[死活题 | 1D+ | 正确率: 52.8% (4101/7774) | 出题者：三王裕孝九段（昭和58年5月）]
+C[黑先 死活题]
+AB[of][od][qc][lf][jb][rc][ke][nf][kd][pd][mf][oe][kb]
+AW[nd][le][lb][qb][lc][ne][me][oc][ld]
+PL[B]
+(;B[ob](;W[pb](;B[nc](;W[nb](;B[pc](;W[mc](;B[na](;W[oc]C[✓ 正确]))(;B[oa]C[✓ 正确])(;B[ma](;W[oc]C[✓ 正确]))(;B[la](;W[oc]C[✓ 正确]))(;B[oc](;W[ma](;B[oa](;W[na]C[✗ 失败]))))))))))(;B[pb](;W[ob](;B[pc](;W[oa]C[✗ 失败]))))(;B[nb](;W[ob](;B[nc](;W[mb]C[✗ 失败])))))

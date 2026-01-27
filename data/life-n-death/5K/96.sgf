@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-96]
+AN[admin]
+SO[https://www.101weiqi.com/5K/96/]
+GC[对杀题 | 5K | 正确率: 42.0% (8890/21168)]
+C[黑先 对杀题]
+AB[qd][qb][nb][nc][rb][pc][pd][pf][ne][pe]
+AW[qc][rc][pb][qf][ob][qe][pg][qa][rd][qg]
+PL[B]
+(;B[sb](;W[ra](;B[re](;W[rf](;B[pa](;W[oa](;B[na](;W[se](;B[oc]C[✓ 正确])))(;B[oc](;W[se](;B[na]C[✓ 正确])))))(;B[oc]C[✓ 正确])(;B[se](;W[sf](;B[oc]C[✓ 正确])(;B[pa]C[✓ 正确])(;B[oa]C[✓ 正确])))(;B[oa](;W[pa](;B[na]C[✓ 正确]))(;W[se](;B[oc](;W[pa](;B[sa]C[⚡ 变化])))))))))(;B[sa](;W[sc](;B[re](;W[pa](;B[oc](;W[rf](;B[na](;W[se](;B[oa](;W[sb](;B[ra](;W[pb]C[✗ 失败]))))))))))))(;B[ra](;W[sb](;B[pa](;W[oa](;B[na](;W[qa]C[✗ 失败]))(;B[oc](;W[qa]C[✗ 失败]))))))(;B[pa](;W[sb](;B[ra](;W[oa]C[✗ 失败])))))

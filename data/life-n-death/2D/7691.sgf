@@ -1,0 +1,14 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-7691]
+AN[admin]
+SO[https://www.101weiqi.com/2D/7691/]
+GC[死活题 | 2D+ | 正确率: 40.8% (2309/5654)]
+C[白先 死活题]
+AB[qc][qb][rb][rf][re]
+AW[pb][qe][pc][rg][pd][pf][pa][qg]
+PL[W]
+(;W[rd]C[解答](;B[qd](;W[sd](;B[qa](;W[sb](;B[sa](;W[ra]C[✓ 正确])))(;W[ra](;B[sc]C[✗ 失败]))(;W[sf](;B[sc](;W[qf](;B[sa]C[✗ 失败]))))(;W[sa](;B[rc]C[✗ 失败])))(;B[sc](;W[sb]C[白1、3为导致黑棋气紧之手筋，黑若4应则白5为好棋。
+
+原本评注：“3、5妙”。
+
+3立之手筋亦见于上卷278、中卷174题。](;B[sa](;W[qa]C[黑6时白7冲，黑棋全灭。次黑A、白B止，黑棋上下均不入子。](;B[ra](;W[sf]C[⚡ 变化])(;W[qf]C[⚡ 变化]))))))(;B[rc]C[CHOICE](;W[ra](;B[qa](;W[sc](;B[sa](;W[sf]C[⚡ 变化])(;W[qf]C[⚡ 变化])))(;W[qf]C[⚡ 变化])(;W[sf](;B[sa](;W[sc]C[⚡ 变化 | RIGHT])))))(;W[qf](;B[qa](;W[ra]C[⚡ 变化])))(;W[sf](;B[qa](;W[ra]C[⚡ 变化]))(;B[sc](;W[ra]C[⚡ 变化])))))(;W[sc](;B[rc](;W[sd](;B[sb]C[✗ 失败]))))(;W[sb](;B[sd](;W[ra](;B[sf]C[✗ 失败]))))))(;W[qa](;B[ra](;W[rd](;B[qd](;W[sc](;B[rc](;W[sd](;B[se]C[✗ 失败]))))(;W[sd](;B[sc](;W[sb](;B[se]C[✗ 失败]))))))))(;W[ra](;B[rd]C[✗ 失败]))(;W[sc](;B[rd]C[✗ 失败]))(;W[sb](;B[rd]C[✗ 失败]))(;W[qd](;B[rd](;W[sb](;B[qa](;W[sc](;B[rc](;W[sf](;B[sa](;W[ra](;B[sd]C[✗ 失败])))))))))))

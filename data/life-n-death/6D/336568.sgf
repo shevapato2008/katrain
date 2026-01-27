@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-300070]
+AN[kenny]
+SO[https://www.101weiqi.com/6D/336568/]
+GC[布局题 | 6D | 正确率: 6.6% (72/1089) | 请走出白棋的最佳应对]
+C[白先 布局题]
+AB[fq][fr][qb][ce][pq][rd][gp][re][qd][cb][cq][nc][np][pc][dq][od][df][bc][hp]
+AW[ep][pj][qc][qo][hq][ch][cp][ef][fp][qe][eh][dc][dp][pd][gq][pe][qg][ed]
+PL[W]
+(;W[ip](;B[io](;W[jq](;B[jo](;W[gn](;B[hn](;W[fo](;B[ho](;W[lq]C[✓ 正确])))(;W[lq]C[✓ 正确])))))(;W[jp](;B[jo](;W[kp](;B[iq](;W[ir](;B[hr](;W[jq](;B[gr](;W[iq](;B[gn]C[✗ 失败 | 白3长是第一感，但是黑4,6是相关联的好手段，白棋形凝重，稍有不满]))))))))(;W[gn](;B[hn](;W[fo](;B[ho](;W[kp](;B[iq](;W[ir](;B[hr](;W[jq](;B[gr]C[✗ 失败 | 白棋稍差])))))))))))))))

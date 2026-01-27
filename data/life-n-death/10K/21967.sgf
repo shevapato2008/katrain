@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-21967]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/10K/21967/]
+GC[死活题 | 10K | 正确率: 67.3% (20515/30504) | 选自《围棋进阶读本——梅之篇》]
+C[黑先 死活题]
+AB[qd][rc][qb][ob][ra][pc][pd][rd]
+AW[sd][od][sc][na][nb][qe][rb][sb][ne][re][oc][pe]
+PL[B]
+(;B[oa]C[RIGHT](;W[pa](;B[pb]C[⚡ 变化])))(;B[pa](;W[oa]C[✗ 失败])))

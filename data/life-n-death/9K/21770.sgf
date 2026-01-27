@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-21770]
+AN[guandaxin1]
+SO[https://www.101weiqi.com/9K/21770/]
+GC[对杀题 | 9K | 正确率: 56.1% (15719/28025) | 选自兰之篇P23]
+C[黑先 对杀题]
+AB[qd][od][nd][md][qf][rc][sc][ob][nb][mc][qh][pd]
+AW[jb][qc][lb][nc][mb][lc][rb][pc][sb][rd][oc]
+PL[B]
+(;B[qb](;W[sd](;B[rc](;W[sc](;B[pb](;W[rc](;B[re]C[✓ 正确])(;B[ra](;W[re](;B[rf](;W[na](;B[oa](;W[ma](;B[qa](;W[sa]C[✗ 失败]))))(;B[qe](;W[oa]C[✗ 失败]))))(;B[na](;W[rf](;B[rg](;W[pa](;B[sf](;W[qa]C[✗ 失败]))(;B[qa](;W[sf](;B[qe](;W[ma](;B[sg]C[✗ 失败])))))))))))))))(;B[pb](;W[rc](;B[re](;W[na](;B[se](;W[oa](;B[ra](;W[pa](;B[sa](;W[qa]C[✗ 失败]))))))))))))(;B[pb](;W[qb]C[✗ 失败])))

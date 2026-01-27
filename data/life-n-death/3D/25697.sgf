@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25697]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/3D/25697/]
+GC[手筋题 | 3D+ | 正确率: 17.4% (1042/5990) | 一看就知道黑形有缺陷。白先如何下呢？]
+C[白先 手筋题]
+AB[lf][ob][jc][nc][nf][kd][pc][ne][pe]
+AW[qd][qc][md][qf][qb][qe][mb][mc][pd]
+PL[W]
+(;W[oa](;B[pa](;W[pb](;B[nb](;W[qa](;B[na](;W[nd](;B[od](;W[ma](;B[pa](;W[oc]C[✓ 正确])))(;W[oc]C[✓ 正确])))))(;W[nd](;B[od](;W[qa](;B[na](;W[ma](;B[pa](;W[oc]C[✓ 正确])))))(;W[oc]C[✗ 失败]))))(;B[na](;W[oc]C[⚡ 变化 | 正解。])))(;W[nd](;B[od](;W[pb](;B[na](;W[oc]C[✗ 失败]))))))(;B[na](;W[nb]C[⚡ 变化 | 正解])(;W[od](;B[nd](;W[nb]C[⚡ 变化])))))(;W[nd](;B[od](;W[oa](;B[pa](;W[pb](;B[na](;W[nb](;B[oc]C[✗ 失败]))(;W[oc]C[✗ 失败]))))))))

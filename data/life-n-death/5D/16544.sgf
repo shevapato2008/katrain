@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16544]
+AN[admin]
+SO[https://www.101weiqi.com/5D/16544/]
+GC[死活题 | 5D | 正确率: 31.9% (719/2252) | 宫泽吾朗九段创作]
+C[黑先 死活题]
+AB[md][qd][od][nd][ka][qc][jc][lc][rb][re][ld][kb]
+AW[lb][qb][nb][la][ra][mc][ma][pc]
+PL[B]
+(;B[nc](;W[rc](;B[sb](;W[oc](;B[oa](;W[ob](;B[pa](;W[sc](;B[na]C[✓ 正确]))))(;W[pa](;B[ob](;W[sc](;B[pd]C[⚡ 变化])))))(;B[pa](;W[oa](;B[pb](;W[ob]C[✗ 失败]))))))))(;B[oa](;W[ob](;B[pa](;W[qa]C[✗ 失败]))))(;B[pb](;W[pa]C[✗ 失败]))(;B[ob](;W[rc](;B[sb](;W[oc](;B[oa](;W[pb](;B[nc](;W[sc](;B[pd](;W[sa](;B[rb](;W[sb]C[✗ 失败]))))))))))))(;B[pa](;W[pb](;B[oa](;W[ob]C[✗ 失败])))))

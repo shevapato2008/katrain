@@ -44,12 +44,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onClose, onLoginSuccess
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>{t("Login to KaTrain")}</DialogTitle>
+        <DialogTitle>{t("auth:login_title_katrain", "Login to KaTrain")}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {error && <Alert severity="error">{error}</Alert>}
             <TextField
-              label={t("Username")}
+              label={t("auth:username", "Username")}
               fullWidth
               autoFocus
               value={username}
@@ -58,7 +58,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onClose, onLoginSuccess
               required
             />
             <TextField
-              label={t("Password")}
+              label={t("auth:password", "Password")}
               type="password"
               fullWidth
               value={password}
@@ -69,7 +69,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onClose, onLoginSuccess
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={onClose} disabled={loading}>{t("Cancel")}</Button>
+          <Button onClick={onClose} disabled={loading}>{t("auth:cancel_btn", "Cancel")}</Button>
           <Button
             type="submit"
             variant="contained"
@@ -77,7 +77,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onClose, onLoginSuccess
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            {loading ? t("Logging in...") : t("Login")}
+            {loading ? t("auth:logging_in", "Logging in...") : t("auth:login_btn", "Login")}
           </Button>
         </DialogActions>
       </form>

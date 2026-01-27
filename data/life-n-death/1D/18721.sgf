@@ -1,0 +1,20 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18721]
+AN[admin]
+SO[https://www.101weiqi.com/1D/18721/]
+GC[死活题 | 1D | 正确率: 36.3% (2095/5765) | 如果用日本话来说是“夏虫扑火”吧？
+
+此一问题在此之前有着漂亮做活的答案，但是最佳发现了奇妙的应手。]
+C[白先 死活题]
+AB[mh][rg][ni][pb][ob][ra][rd][kc][re][oe][ld][le][lf][qe][lg][pc][lb][mc][qh][pi][og]
+AW[sd][qc][qd][od][nd][rc][pg][pd][pf][oc][pe]
+PL[W]
+(;W[nb]C[解答](;B[pa]C[参考](;W[nc](;B[na]C[✓ 正确 | 解答图之黑2在本图1位愚形立为妙手，继以3扳，成为劫渡。
+
+虽然黑棋被吃损失也很大，不过以诘棋的角度来看，这才是正解吧！])))(;B[nc](;W[qb](;B[na](;W[rf](;B[qf](;W[qg](;B[sf](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))(;W[pa](;B[mb](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))))(;W[sc](;B[qa](;W[qg](;B[sf](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))(;W[pa](;B[mb](;W[qg](;B[sf](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))(;W[sc](;B[qa](;W[qg](;B[sf](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))))))(;W[pa](;B[mb](;W[rf](;B[qf](;W[sc](;B[qa](;W[qg](;B[sf](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))(;W[qg](;B[sf](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确])))))(;B[se](;W[rb](;B[sa](;W[ng](;B[nf](;W[mf]C[⚡ 变化]))))(;B[of](;W[sa](;B[sb](;W[qa]C[⚡ 变化])))))))))))(;W[sc](;B[qa](;W[rf](;B[qg](;W[qf](;B[oh]C[✗ 失败])))))))))(;B[mb](;W[pa](;B[na](;W[rf](;B[qf](;W[qg](;B[sf](;W[sc](;B[se](;W[rb](;B[sa](;W[ng](;B[nf](;W[mf](;B[me](;W[ne]C[⚡ 变化 | 好歹先揭示长久以来被众人接受的解答。
+
+白1扳出，再3、5先手下掉。之后，白7挖至11粘再下13，角上先手做出一眼（14不下则白14成为压溃而做活）。
+
+之后，白15夹碰，在中央做出另一眼（白17为好棋）。
+
+这虽是集合手筋精华的正解图，不过不能指望黑棋服服帖帖地跟着应。])))))))))))))))))(;W[rf](;B[qf](;W[qg](;B[sf](;W[qb](;B[na](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))(;W[pa](;B[mb](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确])))))(;B[se](;W[sa](;B[sb](;W[qa](;B[of](;W[rb]C[⚡ 变化])))))))))))))(;W[sc](;B[na](;W[qg](;B[sf](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))))))(;W[rf](;B[qf](;W[qg](;B[sf](;W[nb](;B[pa](;W[nc](;B[na](;W[ma](;B[mb]C[✓ 正确])))))(;B[nc](;W[qb](;B[na](;W[pa](;B[mb](;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))(;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))(;W[sc](;B[qa](;W[se](;B[sh](;W[rf](;B[re]C[✓ 正确]))))))))(;W[sc](;B[nb](;W[se](;B[sh](;W[rf](;B[re](;W[sg]C[✓ 正确]))))))(;B[se](;W[nb](;B[nc](;W[qb](;B[na](;W[pa](;B[mb](;W[rb](;B[sa](;W[ng](;B[nf](;W[mf](;B[mg](;W[ne]C[⚡ 变化])))))))(;W[sa](;B[sb](;W[rb](;B[sa](;W[ng](;B[nf](;W[mf]C[⚡ 变化]))))))))))))(;B[pa](;W[nc](;B[na](;W[ma](;B[mb](;W[oa]C[⚡ 变化]))))))))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-9118]
+AN[admin]
+SO[https://www.101weiqi.com/13K/9118/]
+GC[手筋题 | 13K+ | 正确率: 64.3% (14773/22960) | 黑先最佳着手]
+C[黑先 手筋题]
+AB[rc][qb][ob][pc][pd]
+AW[qc][od][pb][qe][rd][oc][pe]
+PL[B]
+(;B[pa]C[✓ 正确])(;B[qd](;W[qc]C[✗ 失败])))

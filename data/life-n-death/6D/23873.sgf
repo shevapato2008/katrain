@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-23873]
+AN[SAI]
+SO[https://www.101weiqi.com/6D/23873/]
+GC[死活题 | 6D | 正确率: 20.2% (242/1199) | 第四型]
+C[白先 死活题]
+AB[qc][qf][qe][rg][rf]
+AW[ob][pg][oc][pd][pf][rh][qi][pe][qg]
+PL[W]
+(;W[ra](;B[rb](;W[rd](;B[qd](;W[pa](;B[qb](;W[qa](;B[sg](;W[sc](;B[sb](;W[se]C[✓ 正确 | 白1大飞先压缩黑地，然后于3位点，黑8想扩大眼位，至白9、11做成聚杀。]))))))(;B[sg](;W[qb](;B[rc](;W[se]C[✓ 正确])))(;W[se](;B[qb](;W[qa](;B[sc](;W[sb](;B[sa]C[✗ 失败]))))))(;W[sc](;B[se](;W[sb](;B[rc]C[✗ 失败]))(;W[rc](;B[qb]C[✗ 失败]))))))(;W[qa](;B[pa](;W[pb](;B[qb](;W[oa](;B[sg](;W[se](;B[sc](;W[re](;B[sd](;W[sb](;B[sa]C[✗ 失败]))))))(;W[sc](;B[se](;W[sb](;B[sd]C[✗ 失败])))))))))))))(;B[qb](;W[qa](;B[pa](;W[rb](;B[pb](;W[qd]C[✓ 正确 | 黑2、4顽强抵抗，白5曲是好手，黑6必粘，白7一冲，黑无法做活。])))(;W[pb](;B[rb](;W[rd](;B[qd](;W[oa](;B[sg](;W[se](;B[sc](;W[re](;B[sd](;W[sb](;B[sa]C[✗ 失败]))))))(;W[sc](;B[se](;W[sb](;B[sd]C[✗ 失败])))))))))))(;B[rb](;W[rd](;B[qd](;W[pa](;B[sg](;W[sc](;B[sb](;W[se]C[⚡ 变化])))))))))))(;W[rb](;B[qb](;W[qa](;B[ra](;W[pa](;B[sb]C[✗ 失败]))(;W[sa](;B[pa]C[✗ 失败]))(;W[rd](;B[rc](;W[sa](;B[pa](;W[qd](;B[ra]C[✗ 失败]))))))))))(;W[rd](;B[qd](;W[ra](;B[qb](;W[qa](;B[pa](;W[pb](;B[rb](;W[oa](;B[sg](;W[se](;B[sc](;W[sb]C[✗ 失败])(;W[re](;B[sd](;W[sb](;B[sa]C[✗ 失败]))))))(;W[sc](;B[se](;W[sb](;B[sd]C[✗ 失败]))))))))))))(;W[pa](;B[qb](;W[qa](;B[ra](;W[rb](;B[sb](;W[rc](;B[re]C[✗ 失败]))))))))(;W[qb](;B[rb](;W[ra](;B[pb](;W[pa](;B[qa]C[✗ 失败])))))))))

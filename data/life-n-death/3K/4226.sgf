@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-4226]
+AN[admin]
+SO[https://www.101weiqi.com/3K/4226/]
+GC[死活题 | 3K | 正确率: 53.5% (12335/23038)]
+C[白先 死活题]
+AB[rc][qb][rb][rd][re][se]
+AW[qd][qc][qf][pb][qe][rf][oc][pa][sf]
+PL[W]
+(;W[sb]C[正解](;B[qa](;W[sc](;B[sa](;W[ra]C[✓ 正确])))(;W[ra]C[失败图](;B[sa]C[✗ 失败 | 这是黑棋的先手劫，而且是缓一气劫。白棋大失败。])))(;B[sc]C[变化图](;W[ra]C[⚡ 变化 | 由于A位不入气，黑棋无条件死。])))(;W[qa](;B[ra]C[✗ 失败]))(;W[sc](;B[sb]C[✗ 失败]))(;W[ra](;B[qa](;W[sb](;B[sa]C[✗ 失败])))))

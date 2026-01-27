@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-9914]
+AN[admin]
+SO[https://www.101weiqi.com/12K/9914/]
+GC[对杀题 | 12K | 正确率: 70.3% (19689/28024)]
+C[黑先 对杀题]
+AB[sd][qd][od][pb][qe][pc][qa][sb][rd][oc][pa]
+AW[qc][qf][sc][qb][rb][rf][pd][pf][re][pe]
+PL[B]
+(;B[rc](;W[se](;B[ra]C[⚡ 变化])))(;B[sa](;W[ra](;B[sb](;W[sa]C[✗ 失败]))))(;B[ra](;W[sa]C[✗ 失败 | 打劫])))

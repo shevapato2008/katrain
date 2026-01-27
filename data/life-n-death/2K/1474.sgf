@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1474]
+AN[admin]
+SO[https://www.101weiqi.com/2K/1474/]
+GC[死活题 | 2K | 正确率: 33.7% (5104/15130)]
+C[黑先 死活题]
+AB[qf][ob][qe][nc][sg][pc][rg][pd][qg]
+AW[qd][qc][pb][qb][rf][re]
+PL[B]
+(;B[rd]C[只此一手的杀着](;W[rc](;B[sb]C[妙手](;W[sd](;B[sf]C[好手段](;W[pa](;B[ra](;W[rb](;B[se]C[✓ 正确 | 恭喜答对]))))(;W[rb](;B[se](;W[pa](;B[ra]C[✓ 正确 | 杀棋成功，恭喜答对！]))))(;W[sc](;B[se]C[⚡ 变化]))(;W[se](;B[sc]C[⚡ 变化]))))(;W[pa](;B[ra](;W[sd](;B[sf](;W[se](;B[sc]C[✓ 正确]))(;W[rb](;B[se]C[✓ 正确])))))))(;B[se](;W[sd](;B[sf](;W[sb]C[✗ 失败]))))(;B[sf](;W[sb]C[✗ 失败])))(;W[sd](;B[sf](;W[rc](;B[sb]C[白淨死](;W[pa](;B[ra](;W[rb](;B[se]C[✓ 正确]))))(;W[rb](;B[se](;W[pa](;B[ra]C[⚡ 变化]))))))(;W[sb](;B[rc]C[⚡ 变化 | 白淨死])))(;B[sb](;W[rb](;B[se](;W[rc](;B[sf]C[✓ 正确])))(;B[pa](;W[rc]C[✗ 失败 | 白淨活]))(;B[sf](;W[sc](;B[pa](;W[sa]C[✗ 失败]))))))(;B[se](;W[rc](;B[sf](;W[sb]C[✗ 失败]))))))(;B[sc](;W[rd]C[双活](;B[rb](;W[rc](;B[sb](;W[ra](;B[pa](;W[sf](;B[sd]C[⚡ 变化]))))))))(;W[sd](;B[sf](;W[sb]C[✗ 失败]))(;B[rc](;W[rb]C[✗ 失败]))))(;B[pa](;W[sd](;B[sf](;W[sb]C[✗ 失败]))))(;B[se](;W[rd](;B[sf](;W[sb]C[✗ 失败]))))(;B[sf](;W[rd]C[✗ 失败 | 失败，重来吧]))(;B[sb](;W[sc](;B[rd](;W[rb](;B[se](;W[sa]C[✗ 失败]))))(;B[rc](;W[sd](;B[rb](;W[ra]C[✗ 失败])))))))

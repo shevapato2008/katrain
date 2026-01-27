@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-63147]
+AN[kenny]
+SO[https://www.101weiqi.com/1D/63147/]
+GC[死活题 | 1D | 正确率: 32.3% (1862/5760)]
+C[黑先 死活题]
+AB[qc][qf][ra][rb][pd][re][pe]
+AW[of][od][pb][qb][sg][rg][pf][rd][oc][oe][qg]
+PL[B]
+(;B[se](;W[rc](;B[qd](;W[pc](;B[qe]C[✓ 正确])))))(;B[sc](;W[se](;B[sd](;W[rf](;B[qe](;W[pc]C[✗ 失败]))))))(;B[sd](;W[se](;B[sf](;W[sc]C[✗ 失败]))(;B[sc](;W[rf](;B[qe](;W[pc](;B[sf]C[✗ 失败])))))))(;B[qd](;W[se](;B[rc](;W[sd]C[✗ 失败])))))

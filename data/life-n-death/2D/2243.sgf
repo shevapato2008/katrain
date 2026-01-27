@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-2243]
+AN[admin]
+SO[https://www.101weiqi.com/2D/2243/]
+GC[手筋题 | 2D | 正确率: 26.5% (1504/5679)]
+C[黑先 手筋题]
+AB[sd][mh][nf][rf][of][rc][qb][rb][kc][re][mf][oe][qd][mg][pe][od][ke][pg][kb]
+AW[le][lb][li][lf][kg][qf][pb][mj][qe][mc][pc][rg][pd][me][qi][oj][qg]
+PL[B]
+(;B[md](;W[ld]C[打，你怎么办](;B[nb](;W[nc]C[点，厉害](;B[lc](;W[nd](;B[oc]C[✓ 正确 | 恭喜答对]))(;W[oc](;B[nd](;W[mb](;B[ob](;W[na](;B[la]C[⚡ 变化])))))))(;B[oc](;W[ob](;B[lc](;W[mb](;B[nd](;W[na]C[✗ 失败]))))))(;B[mb](;W[oc]C[✗ 失败]))))(;B[lc](;W[nd](;B[oc](;W[nb]C[✗ 失败]))(;B[nb](;W[oc]C[✗ 失败])))))(;W[nd](;B[oc](;W[ob](;B[nc](;W[nb](;B[ld]C[⚡ 变化])))))))(;B[nc](;W[nb]C[挡，你吃不住我的](;B[md](;W[ld]C[✗ 失败 | 失败，重来吧]))))(;B[nb](;W[nc](;B[oc](;W[ob](;B[md](;W[nd](;B[lc](;W[mb]C[✗ 失败]))))))(;B[md](;W[nd]C[✗ 失败])))))

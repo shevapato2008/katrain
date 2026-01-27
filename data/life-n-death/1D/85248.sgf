@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-85248]
+AN[rex]
+SO[https://www.101weiqi.com/1D/85248/]
+GC[死活题 | 1D | 正确率: 30.0% (3587/11940)]
+C[黑先 死活题]
+AB[nd][od][qc][qd][nb][nc][pd][rd]
+AW[rc][sc][qb][pc][oc][pa]
+PL[B]
+(;B[oa](;W[ra](;B[pb](;W[sb](;B[qa]C[✓ 正确])))(;B[sb](;W[pb]C[✗ 失败])))(;W[pb](;B[ra]C[⚡ 变化])))(;B[ob](;W[ra](;B[pb](;W[sb]C[✗ 失败]))(;B[sb](;W[pb]C[✗ 失败]))))(;B[ra](;W[rb](;B[ob](;W[sa](;B[sb](;W[qa]C[✗ 失败]))))(;B[oa](;W[sa](;B[sb](;W[qa]C[✗ 失败])))))))

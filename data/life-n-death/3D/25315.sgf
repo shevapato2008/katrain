@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25315]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/3D/25315/]
+GC[对杀题 | 3D | 正确率: 25.9% (1482/5719) | White to play and win the capturing race.]
+C[白先 对杀题]
+AB[nd][of][od][md][qc][qf][ob][qe][mc][rb][pc]
+AW[qd][rc][nb][nc][lc][mb][pd][rd][kc][oc]
+PL[W]
+(;W[pa](;B[qb](;W[sb]C[✓ 正确 | 正解])))(;W[sb](;B[pb]C[成劫](;W[ra](;B[qa]C[✗ 失败]))(;W[qa](;B[ra](;W[oa](;B[qb](;W[sc](;B[pa](;W[sa](;B[na](;W[ma]C[✗ 失败])))))))))))(;W[qa](;B[qb](;W[oa](;B[sb](;W[ra](;B[re](;W[pb](;B[sd]C[✗ 失败]))))))))(;W[ra](;B[qb](;W[pa](;B[sb]C[✗ 失败]))(;W[sb](;B[pa]C[✗ 失败]))))(;W[oa](;B[qb](;W[sb](;B[pa]C[✗ 失败]))))(;W[pb](;B[qb](;W[oa](;B[sb]C[✗ 失败])))))

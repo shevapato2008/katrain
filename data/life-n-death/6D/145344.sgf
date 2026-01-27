@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-129109]
+AN[我叫小Q]
+SO[https://www.101weiqi.com/6D/145344/]
+GC[布局题 | 6D | 正确率: 10.8% (167/1549) | 22 有段 定式（2）]
+C[白先 布局题]
+AB[id][po][dd][cq][qp][fb][gd][cd][ql][dp][dn][qq][ec][dj][ed]
+AW[dr][qc][db][eb][gc][qr][iq][np][fq][dc][pq][cc][rr][fc]
+PL[W]
+(;W[bd](;B[fd](;W[be](;B[gb]C[✓ 正确 | 白消减黑模样的意图实现了。但同时也应指出，左边白位偏低，而上边的黑棋非常厚实，走成这种局面黑也并无不满。])))(;B[be](;W[fd](;B[fe](;W[ge](;B[ff](;W[hd]C[⚡ 变化 | 黑损失惨重，优势尽失。])))))))(;W[fd](;B[fe](;W[gb](;B[ge]C[✗ 失败])))))

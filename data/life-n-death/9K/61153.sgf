@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-61153]
+AN[thelateautumn]
+SO[https://www.101weiqi.com/9K/61153/]
+GC[吃子题 | 9K | 正确率: 46.1% (12698/27571) | 宽征]
+C[黑先 吃子题]
+AB[qd][pb][rc][qb][ob][rb]
+AW[of][qc][qf][pc][rd][re][ld]
+PL[B]
+(;B[pd](;W[oc](;B[nd](;W[nc](;B[mc](;W[nb](;B[mb]C[✓ 正确])))))(;B[nc](;W[od](;B[oe](;W[nd](;B[md](;W[ne](;B[me](;W[nf](;B[lc]C[⚡ 变化])))))))(;B[nd](;W[oe]C[✗ 失败]))))(;B[od](;W[nc]C[✗ 失败]))))(;B[oc](;W[pd](;B[od](;W[pe]C[✗ 失败]))))(;B[od](;W[pd]C[✗ 失败]))(;B[pe](;W[od]C[✗ 失败])))

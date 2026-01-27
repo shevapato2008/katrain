@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-33058]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/2D/33058/]
+GC[死活题 | 2D+ | 正确率: 51.8% (5319/10273) | 桥本宇太郎九段创作]
+C[黑先 死活题]
+AB[nd][od][sd][rc][nb][qe][pe][nc][mc][rg][re][oe][se]
+AW[md][lb][qd][sc][ob][mb][lc][nf][rb][qh][sb][oc][pd][rh][me][rd][og][qg]
+PL[B]
+(;B[qb](;W[qc](;B[pb](;W[pa](;B[qa](;W[na](;B[oa]C[✓ 正确]))))))(;W[pb](;B[qc](;W[pc](;B[qa]C[⚡ 变化 | 变化图2]))))(;W[pc](;B[pa](;W[oa](;B[qc](;W[na](;B[ra](;W[sg](;B[sa]C[⚡ 变化 | 变化图1])))))))))(;B[pc](;W[qc](;B[pb](;W[qb](;B[oa](;W[sh]C[✗ 失败]))))))(;B[pb](;W[qb](;B[pc](;W[qc](;B[oa](;W[sh]C[✗ 失败])))))))

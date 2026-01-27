@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-81408]
+AN[lst931207]
+SO[https://www.101weiqi.com/9K/81408/]
+GC[手筋题 | 9K | 正确率: 39.6% (12276/30979)]
+C[黑先 手筋题]
+AB[qd][qc][nd][qb][ob][rb][pc][ne][pf][pe]
+AW[od][qf][rc][nc][qe][sb][pd][rd][oc][qg]
+PL[B]
+(;B[mc](;W[nb](;B[mb](;W[oa](;B[pb]C[✓ 正确])(;B[pa](;W[pb]C[✗ 失败]))))(;B[oa](;W[mb](;B[lc](;W[lb]C[✗ 失败 | 黑棋断点多，没有吃住白棋的把握。]))))(;B[na](;W[ma](;B[oa](;W[pa](;B[pb](;W[ra]C[✗ 失败]))))))))(;B[pa](;W[nb](;B[ra](;W[lc]C[✗ 失败 | 黑虽活，明显不能满意。]))))(;B[nb](;W[mc]C[✗ 失败 | 黑1明显是帮白棋。])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-578]
+AN[admin]
+SO[https://www.101weiqi.com/7K/578/]
+GC[死活题 | 7K | 正确率: 45.0% (11029/24497) | 黑先]
+C[黑先 死活题]
+AB[od][pb][qf][nb][ra][pe][qa][rf][oc][oe][sf]
+AW[rc][qe][rb][sb][pc][pd][re][se]
+PL[B]
+(;B[sd](;W[rd](;B[qc]C[✓ 正确]))(;W[qb](;B[rd]C[⚡ 变化]))(;W[qc](;B[rd]C[⚡ 变化])))(;B[qc](;W[qd](;B[qb](;W[sd]C[✗ 失败]))(;B[sd](;W[qb]C[✗ 失败]))))(;B[qd](;W[qc]C[✗ 失败]))(;B[qb](;W[qc]C[✗ 失败]))(;B[rd](;W[sd](;B[qc](;W[qd]C[✗ 失败])))))

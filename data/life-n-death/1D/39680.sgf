@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-39680]
+AN[ling197000]
+SO[https://www.101weiqi.com/1D/39680/]
+GC[死活题 | 1D | 正确率: 34.0% (1958/5755)]
+C[黑先 死活题]
+AB[qc][pb][nc][mb][mc][ma][oa][pc][pd][rd][oc]
+AW[qd][od][nd][md][lb][rc][pa][nb][qe][lc][la][rb][rf][pe][ld]
+PL[B]
+(;B[qb](;W[qa](;B[sb](;W[sd](;B[ra](;W[re](;B[qa]C[✓ 正确]))))(;W[sc](;B[ra](;W[sa](;B[qa]C[⚡ 变化])))))(;B[sc](;W[sa]C[✗ 失败]))(;B[ra](;W[qa](;B[pa](;W[sd]C[✗ 失败]))(;B[sb](;W[sa]C[✗ 失败])))))(;W[ra](;B[qa]C[⚡ 变化])))(;B[ra](;W[qb]C[✗ 失败]))(;B[qa](;W[qb]C[✗ 失败]))(;B[sb](;W[qb]C[✗ 失败])))

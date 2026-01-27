@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1705]
+AN[admin]
+SO[https://www.101weiqi.com/1D/1705/]
+GC[手筋题 | 1D | 正确率: 30.6% (1806/5899)]
+C[黑先 手筋题]
+AB[nd][lb][qe][mb][mc][ne][pd][pf][pe]
+AW[md][of][qc][qf][ob][ng][nc][lc][pg][qh][rf]
+PL[B]
+(;B[ke](;W[ld](;B[jc](;W[kd](;B[je]C[✓ 正确])(;B[jd](;W[le](;B[lf](;W[kf](;B[je](;W[mf]C[✗ 失败]))))))))(;B[kc](;W[kd](;B[jd](;W[jc](;B[le](;W[kb](;B[me](;W[kc]C[✗ 失败]))))(;B[kb](;W[je](;B[id](;W[le]C[✗ 失败])))))))))(;W[kd](;B[me](;W[ld](;B[jd](;W[jc](;B[le](;W[kc](;B[ic](;W[id](;B[je](;W[ib](;B[hc](;W[jb](;B[hb]C[⚡ 变化]))))))))))))))(;W[le](;B[lf](;W[kd](;B[me](;W[ld](;B[jd]C[⚡ 变化])))))))(;B[ld](;W[me]C[✗ 失败]))(;B[kc](;W[ld]C[✗ 失败])))

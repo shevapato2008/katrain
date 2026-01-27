@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-46467]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/5D/46467/]
+GC[对杀题 | 5D | 正确率: 17.7% (467/2642)]
+C[白先 对杀题]
+AB[oi][md][rc][qf][ph][jc][pg][sb][pc][pd][pf][rd][re][qi][oc][pe][sf]
+AW[pj][lc][qa][rf][rg][ri][pb][qb][ra][rb][ld][oj][qd][qc][le][qe][qh][pi][pa][qg]
+PL[W]
+(;W[ma](;B[mb](;W[lb](;B[na](;W[nb](;B[la](;W[ob](;B[mc](;W[sd]C[✓ 正确])))))))))(;W[ob](;B[nb](;W[mb](;B[na](;W[nc](;B[mc](;W[nd](;B[lb](;W[me](;B[ma]C[✗ 失败 | bai shi bai]))))))))))(;W[nb](;B[ob](;W[oa](;B[mb](;W[lb](;B[nc](;W[ma](;B[na]C[✗ 失败])))))))))

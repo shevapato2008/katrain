@@ -9,6 +9,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
+import ExtensionIcon from '@mui/icons-material/Extension';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../../i18n';
@@ -43,7 +44,8 @@ const GalaxySidebar = () => {
 
   const menuItems = [
     { text: i18n.t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
-    { text: i18n.t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false }, // Will be protected later
+    { text: i18n.t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false },
+    { text: i18n.t('Tsumego', '死活题'), icon: <ExtensionIcon />, path: '/galaxy/tsumego', disabled: false },
     { text: i18n.t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
     { text: i18n.t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
   ];

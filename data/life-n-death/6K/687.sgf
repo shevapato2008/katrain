@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-687]
+AN[admin]
+SO[https://www.101weiqi.com/6K/687/]
+GC[死活题 | 6K | 正确率: 58.5% (10970/18754)]
+C[白先 死活题]
+AB[qd][rc][qb][qe][rb]
+AW[qc][pb][pc][pd][pf][pe][qg]
+PL[W]
+(;W[re]C[正解](;B[rd](;W[rf](;B[qa](;W[sd](;B[sc](;W[sa]C[⚡ 变化]))))))(;B[rf]C[变化图](;W[rd](;B[qf](;W[sf]C[✓ 正确])(;W[rg]C[✓ 正确])))(;W[rg](;B[rd]C[✗ 失败]))(;W[qf](;B[rd]C[✗ 失败]))))(;W[rf]C[失败图](;B[re](;W[se](;B[sd](;W[sf](;B[sb]C[✗ 失败]))))))(;W[se](;B[rf]C[✗ 失败])))

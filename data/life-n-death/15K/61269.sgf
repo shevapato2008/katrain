@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-61269]
+AN[山嵐霧水]
+SO[https://www.101weiqi.com/15K/61269/]
+GC[死活题 | 15K | 正确率: 94.8% (23897/25209)]
+C[黑先 死活题]
+AB[gl][mk][hj][hk][kh][ij][jl][jj][fl][fk][hl][gj][ki][il][kl][nk][ll]
+AW[jg][jm][nl][ol][fj][ml][kk][lh][ek][lk][kj][mi][ik][hm][gm][ok][oj][km][hi][li][jk][lg][fm][em][gi][lm][ji][kg][mj][el][ej][ii][im]
+PL[B]
+(;B[lj]C[✓ 正确])(;B[nj](;W[ni]C[✗ 失败 | 错了！])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-47223]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/6D/47223/]
+GC[官子题 | 6D | 正确率: 16.0% (195/1215)]
+C[黑先 官子题]
+AB[qo][qf][qp][ob][nc][pc][pd][pq][ro][pe][og][qg][nq]
+AW[pj][qd][qc][qn][po][pb][qb][qe][pm][rn][qi]
+PL[B]
+(;B[se](;W[re](;B[sf](;W[sd](;B[sg](;W[sb](;B[rj]C[✓ 正确])))))))(;B[sf](;W[re](;B[se](;W[sd](;B[sg](;W[sb](;B[rj]C[⚡ 变化]))))))(;W[sd](;B[sb](;W[rb]C[✗ 失败]))))(;B[re](;W[rd](;B[rg](;W[sb](;B[sj]C[✗ 失败 | hei bu shi fen]))))))

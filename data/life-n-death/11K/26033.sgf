@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-26033]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/11K/26033/]
+GC[死活题 | 11K | 正确率: 77.8% (19844/25516)]
+C[白先 死活题]
+AB[qh][rf][ri][rd][re][rh][qg]
+AW[rj][qd][qc][qf][rc][qe][pg][qj][qi][ph]
+PL[W]
+(;W[sg]C[正解](;B[sd](;W[sf]C[✓ 正确 | 之后即使黑棋A位立下也无法弄成双活。])(;W[si]C[✓ 正确])(;W[sh](;B[si](;W[sj](;B[rg](;W[sf]C[✓ 正确])))(;W[sf]C[✓ 正确]))(;B[sf](;W[si](;B[rg](;W[sj]C[✓ 正确])))(;W[sj](;B[rg](;W[si]C[✓ 正确])))))))(;W[sd]C[失败图](;B[sg]C[✗ 失败]))(;W[si](;B[sg]C[✗ 失败])))

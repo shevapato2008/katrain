@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[4]
+GN[Q-88257]
+AN[kenny]
+SO[https://www.101weiqi.com/5D/88257/]
+GC[死活题 | 5D | 正确率: 25.3% (615/2428) | 张栩九段创作]
+C[黑先 死活题]
+AB[bd][ab][ac]
+AW[dc][cd][dd][cb]
+PL[B]
+(;B[ba](;W[bc](;B[bb](;W[ad](;B[db](;W[da](;B[bd](;W[cc](;B[ca](;W[ad](;B[db]C[✓ 正确]))))))(;W[ca](;B[bd]C[⚡ 变化])))(;B[ca](;W[bd]C[✗ 失败])))))(;W[bb](;B[bc](;W[ca](;B[cc]C[⚡ 变化]))))(;W[ca](;B[bb](;W[bc](;B[cc]C[⚡ 变化])))))(;B[bc](;W[ba](;B[cc](;W[db](;B[bb](;W[ca]C[✗ 失败]))))))(;B[db](;W[da](;B[bc](;W[cc](;B[ba](;W[bb]C[✗ 失败]))))))(;B[bb](;W[ba](;B[ca](;W[da](;B[aa](;W[ca]C[✗ 失败])))))))

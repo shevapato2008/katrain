@@ -1,0 +1,6 @@
+(;GM[1]FF[4]CA[UTF-8]AP[GeminiCLI]SZ[19]
+C[Black to play. 死活题]
+AB[ma][mb][mc][md][nd]
+AW[na][nb][nc]
+PL[B]
+(;B[rb](;W[sc](;B[qa](;W[pb](;B[pa](;W[sb](;B[sa])(;B[ra]))))(;W[qb](;B[sb]))(;W[pa](;B[pb]))))(;W[sb](;B[sc](;W[ra](;B[qb])))))(;B[sc](;W[rb](;B[sb](;W[pb]))))(;B[sb](;W[sc](;B[qa](;W[pb])))))

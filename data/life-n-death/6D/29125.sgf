@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-29125]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/6D/29125/]
+GC[死活题 | 6D | 正确率: 17.1% (345/2021) | 第112题  黑先
+审题：白棋已经点入了。现在是考虑黑棋会不会应。
+提示：对杀时黑棋要利用“角的特殊性”宽气。]
+C[黑先 死活题]
+AB[qd][md][lb][sc][qb][lc][rb][pc][pd]
+AW[le][qc][of][rc][ob][qe][me][kd][rf][rd][kc][oe][kb]
+PL[B]
+(;B[nc]C[正着](;W[pb](;B[sd](;W[re](;B[nb](;W[qa](;B[pa](;W[oa](;B[sa](;W[se](;B[oc]C[✓ 正确 | 黑活])(;B[na]C[✓ 正确])))))(;B[sa]C[不好](;W[pa]C[鬼手](;B[oc](;W[se](;B[oa](;W[na](;B[ma]C[✗ 失败 | 打劫])))(;B[na](;W[sb](;B[sc](;W[sd](;B[oa](;W[sb](;B[ra](;W[pb](;B[sc]C[✗ 失败])))))))))))))))))(;B[nb](;W[qa](;B[sd](;W[re](;B[pa](;W[oa](;B[sa]C[✓ 正确])))(;B[sa](;W[pa](;B[oc](;W[se](;B[na](;W[sb](;B[sc](;W[sd](;B[oa](;W[sb](;B[ra](;W[pb](;B[sc]C[✗ 失败])))))))))))))))(;B[pa](;W[oa](;B[sd](;W[re](;B[sa]C[✓ 正确])))))))))(;B[sd](;W[re](;B[nc](;W[pb](;B[nb](;W[qa](;B[pa](;W[oa](;B[sa]C[✓ 正确])))(;B[sa](;W[pa](;B[oc](;W[se](;B[na](;W[sb](;B[sc](;W[sd](;B[oa](;W[sb](;B[ra](;W[pb](;B[sc]C[✗ 失败])))))))))))))))(;B[sa](;W[nb](;B[mb](;W[oc](;B[od](;W[ld]C[✗ 失败]))))))))))(;B[oc]C[不好](;W[nb](;B[mb](;W[nc](;B[nd](;W[pb](;B[od](;W[qa]C[不好](;B[pa](;W[oa](;B[ra]C[⚡ 变化 | 打劫]))))(;W[pa](;B[sd](;W[re](;B[na](;W[qa]C[✗ 失败 | 黑死]))))))))))))(;B[pb]C[恶手](;W[mb](;B[ma](;W[mc](;B[nb](;W[nc](;B[oa]C[✗ 失败 | 打劫])))))(;B[mc](;W[nc](;B[ma](;W[oc]C[✗ 失败 | 黑死]))))))(;B[nb]C[不好](;W[nc](;B[nd](;W[mb](;B[la](;W[od](;B[oc](;W[na](;B[pb](;W[ld](;B[mc](;W[ne]C[✗ 失败 | 打劫])))))))(;W[pb](;B[od](;W[na](;B[ma](;W[pa](;B[qa](;W[oc](;B[mc](;W[sa]C[✗ 失败 | 打劫])))))(;W[qa](;B[pa]C[✗ 失败 | 打劫])))))))(;B[na](;W[oc](;B[od](;W[mc]C[✗ 失败 | 黑死])))))))))

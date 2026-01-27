@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-15342]
+AN[admin]
+SO[https://www.101weiqi.com/4D/15342/]
+GC[死活题 | 4D | 正确率: 38.9% (1155/2966)]
+C[黑先 死活题]
+AB[qd][qc][md][id][ic][rc][ka][qb][lb][la][nf][kd][jd][pd][ib][oe][ld][kb]
+AW[jb][nd][jc][ra][lc][mc][mb][pc][ja][kc][oc]
+PL[B]
+(;B[oa]C[变化](;W[pb](;B[pa](;W[qa](;B[od](;W[nc](;B[na]C[恭喜答对](;W[ma](;B[rb]C[✓ 正确])(;B[sa]C[✓ 正确]))))(;W[ob](;B[nc](;W[na](;B[pa]C[✓ 正确])))))(;B[nc](;W[od](;B[nb](;W[na](;B[ma](;W[na](;B[ma](;W[la](;B[kb](;W[na]C[✗ 失败 | 失败，重来吧]))))))))))(;B[na](;W[nb]C[✗ 失败 | 白淨活]))(;B[nb](;W[ob]C[✗ 失败 | 白淨活])))))(;W[na](;B[nc](;W[ob](;B[od](;W[pb](;B[pa](;W[qa](;B[pa]C[⚡ 变化]))))))(;W[od](;B[ob]C[⚡ 变化])))))(;B[na](;W[pb](;B[pa](;W[oa](;B[ob](;W[qa]C[✗ 失败 | 白淨活]))))))(;B[pa](;W[oa](;B[ob](;W[pb](;B[na](;W[qa]C[✗ 失败 | 白淨活]))))))(;B[pb](;W[ob]C[✗ 失败 | 白淨活]))(;B[od](;W[pb]C[✗ 失败 | 白淨活]))(;B[nc](;W[pb]C[✗ 失败])))

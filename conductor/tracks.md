@@ -6,8 +6,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Active
 
-- [ ] **Track: Implement a Galaxy-style 'Live Game' module with real-time moves, local AI analysis, and commentary.**
-  *Link: [./galaxy_live_20260122/](./galaxy_live_20260122/)*
+- [ ] **Track: Implement a Life and Death (Tsumego) training module for the Galaxy Web UI, featuring level selection, interactive board validation against SGFs, and progress tracking.**
+  *Link: [./tracks/tsumego_training_20260122/](./tracks/tsumego_training_20260122/)*
 
 ## Archived
 

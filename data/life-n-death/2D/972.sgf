@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-972]
+AN[admin]
+SO[https://www.101weiqi.com/2D/972/]
+GC[死活题 | 2D+ | 正确率: 24.2% (1204/4973)]
+C[黑先 死活题]
+AB[lb][lf][rc][qb][ke][kf][jc][lc][nf][jd][pd][mf][ib][oe][kb]
+AW[le][nd][ob][me][mb][mc][kd][ne][kc][ld]
+PL[B]
+(;B[oc]C[正解](;W[nc](;B[pa](;W[pb](;B[oa](;W[pc](;B[od](;W[na](;B[qa](;W[qc](;B[qd]C[⚡ 变化])))))))(;B[na](;W[ma](;B[oa](;W[nb](;B[qa](;W[pc]C[✗ 失败]))))))(;B[pc](;W[na]C[✗ 失败]))(;B[qa](;W[oa](;B[ma](;W[pc](;B[od](;W[qc](;B[qd](;W[rb]C[✗ 失败]))))))))))(;B[na](;W[ma](;B[oa](;W[pb](;B[pa](;W[nb](;B[qa](;W[pc](;B[od](;W[qc]C[✗ 失败 | 杀不了]))))))))))(;B[ma]C[恶手](;W[na](;B[pa]C[尖也不行](;W[pc](;B[od](;W[pb](;B[la]C[你只能粘](;W[qc](;B[qd](;W[rb](;B[ra]C[✗ 失败 | 成劫])))))))))(;B[la]C[粘不行](;W[pc](;B[od](;W[pb](;B[pa]C[想杀只能扳](;W[qc](;B[qd](;W[rb](;B[ra]C[✗ 失败 | 成劫]))))))))))))(;W[pb](;B[nc]C[⚡ 变化])))(;B[ma](;W[na](;B[oc](;W[nc](;B[la](;W[pb](;B[pa](;W[pc](;B[od](;W[qc](;B[qd](;W[rb](;B[ra](;W[qa]C[✗ 失败 | 成劫])))))))))))))))

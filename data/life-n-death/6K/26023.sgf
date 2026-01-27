@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-26023]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/6K/26023/]
+GC[死活题 | 6K+ | 正确率: 45.1% (8779/19482)]
+C[白先 死活题]
+AB[rc][sc][rg][rf][rd][re][rh]
+AW[qd][qc][qf][qb][qe][rb][qj][qh][ql][rk][qi][qg]
+PL[W]
+(;W[se]C[只此一手 正解](;B[ri]C[变化图1](;W[si](;B[sh](;W[sf](;B[rj](;W[sj](;B[sk](;W[sj]C[✓ 正确]))))))(;B[sf](;W[sh](;B[sj](;W[rj](;B[sg](;W[si]C[⚡ 变化])))))))(;W[sf]C[白3并](;B[si](;W[sg]C[✗ 失败 | 双活]))))(;B[sf](;W[sh](;B[ri](;W[si](;B[sj](;W[rj](;B[sg](;W[si]C[✓ 正确]))))))))(;B[si]C[变化图2](;W[ri]C[⚡ 变化 | 之后A、B见合，黑棋净死。]))(;B[sh](;W[sf]C[⚡ 变化])))(;W[sh]C[失败图](;B[ri](;W[si](;B[sj](;W[rj](;B[sg]C[✗ 失败 | A、B两点白棋无法兼得，黑棋活定。]))))))(;W[si](;B[sh]C[✗ 失败]))(;W[ri](;B[sh]C[✗ 失败])))

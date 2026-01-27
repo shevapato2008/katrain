@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-113565]
+AN[Shen]
+SO[https://www.101weiqi.com/1D/124487/]
+GC[手筋题 | 1D | 正确率: 38.0% (2483/6540)]
+C[黑先 手筋题]
+AB[md][qc][ic][lf][qb][ke][mc][je][jd][pd][oc][ib][pe][ld]
+AW[qd][nd][le][id][rc][kc][jc][qe][rb][kd][ie][pf][me][mf][qg]
+PL[B]
+(;B[ne](;W[nf](;B[jf](;W[nc](;B[nb]C[✓ 正确])))(;B[kg](;W[nc](;B[nb]C[✓ 正确])))(;B[if](;W[nc](;B[nb]C[✓ 正确])))(;B[lg](;W[nc](;B[nb]C[✓ 正确])))(;B[kf]C[✓ 正确])(;B[jg](;W[nc](;B[nb]C[✓ 正确])))))(;B[nc](;W[jf](;B[kf](;W[kg]C[✗ 失败]))))(;B[mg](;W[kf](;B[jf](;W[lg](;B[jg](;W[nc](;B[mb](;W[nb]C[✗ 失败]))))))))(;B[nf](;W[mg](;B[jg](;W[nc](;B[mb](;W[nb]C[✗ 失败]))))))(;B[lc](;W[jf](;B[kf](;W[kg]C[✗ 失败]))))(;B[kg](;W[nc](;B[mb](;W[nb](;B[la](;W[mg]C[✗ 失败])))))))

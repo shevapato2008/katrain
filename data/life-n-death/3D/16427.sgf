@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16427]
+AN[admin]
+SO[https://www.101weiqi.com/3D/16427/]
+GC[死活题 | 3D | 正确率: 34.4% (1786/5186) | 前田陈尔九段创作]
+C[黑先 死活题]
+AB[of][od][rc][sc][ob][nb][rf][ne][pf][rd][pe][qg]
+AW[sd][qd][qb][qe][pd][re][se]
+PL[B]
+(;B[rb](;W[sb](;B[qa](;W[qc](;B[ra](;W[pa](;B[pb](;W[sa](;B[rc]C[✓ 正确])(;B[qa](;W[rc]C[✗ 失败]))))))(;B[sa](;W[pa](;B[pb](;W[ra]C[✗ 失败]))))))(;B[sa](;W[pb](;B[sf](;W[qa](;B[qf](;W[qc]C[✗ 失败 | 失败1]))))(;B[qa](;W[pa]C[✗ 失败])))(;W[qc](;B[qa](;W[pa](;B[pb]C[✗ 失败])))))(;B[qc](;W[pc](;B[sa](;W[pb]C[✗ 失败 | 白先劫]))))(;B[ra](;W[qa]C[✗ 失败])))(;W[ra](;B[qc](;W[pc](;B[sb]C[⚡ 变化])))(;B[pc](;W[qc](;B[sb](;W[pb](;B[pa]C[⚡ 变化])))))(;B[sb](;W[pb](;B[pa]C[⚡ 变化])(;B[pc](;W[qc](;B[pa]C[⚡ 变化]))))))(;W[pb](;B[pa](;W[qa](;B[pc](;W[qc](;B[sb]C[⚡ 变化]))))))(;W[qc](;B[sb]C[⚡ 变化 | 把答案补充一下，最后一步做成刀把五很重要，不走这里的话白棋下一步扑进来就活了])))(;B[qa](;W[pb](;B[pa](;W[ra]C[白淨活](;B[rb](;W[oa]C[✗ 失败 | 失败2]))))))(;B[pc](;W[qc](;B[rb](;W[sb]C[✗ 失败 | 白淨活]))))(;B[qc](;W[pc](;B[rb](;W[sb](;B[sa](;W[pb]C[白先劫](;B[qa](;W[pa]C[✗ 失败]))))))))(;B[pb](;W[rb](;B[qa](;W[ra]C[✗ 失败])))))

@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22706]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/11K/22706/]
+GC[手筋题 | 11K | 正确率: 71.1% (17510/24631)]
+C[黑先 手筋题]
+AB[of][qc][nd][pb][qf][qb][rb][sb][rf][ne][pf][mf][sf]
+AW[sd][qd][rc][ob][qe][nc][mc][kd][pc][re][oc][oe]
+PL[B]
+(;B[pd](;W[od](;B[pe]C[✓ 正确 | RIGHT
+恭喜答对]))(;W[pe](;B[od]C[✓ 正确])))(;B[pe](;W[pd]C[✗ 失败]))(;B[od](;W[pd]C[✗ 失败])))

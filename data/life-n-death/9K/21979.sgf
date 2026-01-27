@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-21979]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/9K/21979/]
+GC[死活题 | 9K+ | 正确率: 46.3% (13014/28132) | 选自《围棋进阶读本——梅之篇》]
+C[黑先 死活题]
+AB[qd][pb][rc][nb][rb][pc][sb][rd][oc]
+AW[sd][od][sc][qb][qe][ra][nc][mc][mb][ma][pd][ne][re][se]
+PL[B]
+(;B[pa](;W[na](;B[qa]C[✓ 正确 | RIGHT])(;B[ob](;W[qa]C[✗ 失败])))(;W[qa](;B[na]C[⚡ 变化])))(;B[qa](;W[pa](;B[qc](;W[qa](;B[oa](;W[na](;B[sa](;W[qa]C[✗ 失败]))))))))(;B[qc](;W[pa](;B[qa]C[✗ 失败 | 打劫，失败])(;B[na](;W[ob](;B[qa]C[✗ 失败 | 打劫，失败])))(;B[oa](;W[qa](;B[sa](;W[qa](;B[na](;W[pa]C[✗ 失败]))))))))(;B[na](;W[ob](;B[oa](;W[pa](;B[qa]C[✗ 失败 | 打劫，失败])))(;B[qc](;W[pa](;B[qa]C[✗ 失败 | 打劫，失败])))(;B[pa](;W[oa]C[✗ 失败]))))(;B[oa](;W[qa](;B[qc](;W[na]C[✗ 失败]))(;B[pa](;W[na]C[✗ 失败])))))

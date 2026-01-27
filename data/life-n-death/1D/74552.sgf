@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74552]
+AN[wangheep]
+SO[https://www.101weiqi.com/1D/74552/]
+GC[手筋题 | 1D | 正确率: 32.3% (2106/6513) | 白A夹]
+C[黑先 手筋题]
+AB[pj][qd][rc][nc][pd]
+AW[re][rd][rb]
+PL[B]
+(;B[qc]C[✓ 正确])(;B[sc](;W[qh](;B[jj](;W[nb](;B[mb](;W[oc](;B[ob](;W[pb](;B[na](;W[qc](;B[pc](;W[qb]C[⚡ 变化]))))))))(;B[ob](;W[pb](;B[pc](;W[oa](;B[oc](;W[qb](;B[qc](;W[mb]C[⚡ 变化])))))))))))(;W[mc]C[会被利用](;B[nd](;W[pb](;B[qb](;W[qa](;B[qc](;W[nb]C[✗ 失败])))))))(;W[nb]C[✗ 失败 | 可以间接出动S18一子，会被利用])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-24910]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/3D/24910/]
+GC[死活题 | 3D | 正确率: 24.9% (1654/6635)]
+C[黑先 死活题]
+AB[qd][pb][pc][pd][rd]
+AW[od][ob][qe][mb][rg][sb][re][oc][pe]
+PL[B]
+(;B[sd](;W[qb](;B[ra](;W[qa](;B[rb](;W[rc](;B[sc](;W[sa](;B[qc](;W[pa](;B[rb]C[✓ 正确])))(;B[rb](;W[ra](;B[qc](;W[pa]C[✗ 失败]))(;B[pa](;W[oa]C[✗ 失败]))))(;B[pa](;W[oa]C[✗ 失败]))))(;B[qc](;W[sa](;B[sc](;W[pa](;B[rb]C[✓ 正确])))(;B[rb](;W[ra](;B[sc](;W[pa]C[✗ 失败]))(;B[pa](;W[oa]C[✗ 失败]))))(;B[pa](;W[oa]C[✗ 失败])))))(;W[pa](;B[qc](;W[oa](;B[sc]C[⚡ 变化]))))))(;W[pa](;B[qa](;W[rb](;B[oa]C[⚡ 变化]))))(;W[rb](;B[qa]C[⚡ 变化 | 雙活])))(;B[pa](;W[ra](;B[rc](;W[rb]C[✗ 失败 | 黑淨死]))))(;B[qa](;W[ra]C[✗ 失败 | 黑淨死]))(;B[rb](;W[ra](;B[pa](;W[rc]C[✗ 失败 | 黑淨死]))(;B[sc](;W[rc](;B[qc](;W[pa](;B[rb](;W[qa]C[✗ 失败 | 黑淨死]))))))(;B[rc](;W[pa]C[✗ 失败 | 黑淨死])))))(;W[rb](;B[qb](;W[rc](;B[ra](;W[pa](;B[sc]C[⚡ 变化]))))))(;W[ra](;B[qb](;W[rb](;B[rc]C[⚡ 变化]))(;W[rc](;B[rb](;W[pa](;B[qa](;W[sc](;B[oa]C[⚡ 变化]))))))))(;W[pa](;B[qb](;W[ra](;B[qa](;W[rc](;B[rb](;W[sc](;B[oa]C[⚡ 变化])))))))))(;B[rb](;W[sd](;B[rc](;W[sc]C[✗ 失败 | 黑淨死]))))(;B[rc](;W[qb](;B[pa](;W[sd](;B[sc](;W[rb]C[✗ 失败 | 黑淨死]))))(;B[qa](;W[ra](;B[pa](;W[rb]C[✗ 失败 | 黑淨死]))))(;B[ra](;W[sd](;B[sc](;W[qa](;B[pa](;W[rb]C[✗ 失败]))))))))(;B[sc](;W[rc](;B[sd](;W[ra]C[✗ 失败 | 黑淨死])))))

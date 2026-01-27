@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-63383]
+AN[kenny]
+SO[https://www.101weiqi.com/2D/63383/]
+GC[死活题 | 2D | 正确率: 33.8% (1647/4877)]
+C[黑先 死活题]
+AB[ob][qe][oa][pc][pd][re][oc][pe][se]
+AW[sd][qc][qd][pb][qb][rd]
+PL[B]
+(;B[pa](;W[rb](;B[sb](;W[qa](;B[sc](;W[sa](;B[ra]C[✓ 正确]))))(;W[sc](;B[ra](;W[sa](;B[qa]C[⚡ 变化])))))(;B[ra](;W[qa](;B[sb]C[✗ 失败 | 缓一气劫])))))(;B[rb](;W[ra](;B[sb](;W[pa](;B[sa]C[✗ 失败 | 万年劫])))))(;B[ra](;W[rb](;B[sb](;W[qa](;B[pa]C[✗ 失败 | 缓一气劫]))(;W[pa]C[✗ 失败]))(;B[pa](;W[qa](;B[sb](;W[sa]C[✗ 失败]))))))(;B[sb](;W[pa](;B[rb](;W[ra](;B[sa]C[✗ 失败 | 万年劫])))(;B[ra](;W[rb](;B[sc]C[✗ 失败]))))))

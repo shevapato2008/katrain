@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-37444]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/2K/37444/]
+GC[死活题 | 2K | 正确率: 33.6% (4178/12442)]
+C[黑先 死活题]
+AB[qd][od][ob][mb][rf][pd][re][oc]
+AW[qc][rc][pb][pc][rd][se]
+PL[B]
+(;B[ra](;W[rb](;B[qa](;W[pa](;B[sd](;W[sc](;B[sa]C[✓ 正确])(;B[sb](;W[qb]C[✗ 失败])))(;W[sa](;B[sc](;W[sb](;B[sd]C[✓ 正确])))(;B[sb](;W[sc](;B[oa](;W[sa]C[✗ 失败]))))(;B[sf](;W[sc](;B[sb](;W[se](;B[oa](;W[sa]C[✗ 失败]))))))))(;B[sb](;W[sd]C[✗ 失败]))(;B[sa](;W[sd]C[✗ 失败]))))(;B[pa](;W[qa]C[✗ 失败])))(;W[qa](;B[rb](;W[sb](;B[sd]C[⚡ 变化]))))(;W[sd](;B[pa]C[⚡ 变化])))(;B[pa](;W[qa](;B[rb](;W[sb](;B[ra](;W[oa](;B[sd]C[✓ 正确])))))(;B[ra](;W[rb]C[✗ 失败])))(;W[ra](;B[sb](;W[qa](;B[rb]C[⚡ 变化])))))(;B[sb](;W[rb](;B[qa](;W[pa](;B[ra](;W[sd]C[✗ 失败]))))))(;B[qa](;W[pa](;B[rb](;W[sb](;B[sd](;W[ra]C[✗ 失败]))))))(;B[rb](;W[ra](;B[sb](;W[pa](;B[sd](;W[qb]C[✗ 失败]))(;B[sa](;W[sc](;B[qa](;W[qb]C[✗ 失败]))))(;B[qb](;W[sd]C[✗ 失败]))))(;B[qa](;W[pa](;B[sa](;W[qb](;B[sd](;W[sb](;B[sc](;W[sb](;B[sc](;W[sd]C[✗ 失败]))))))(;B[sf]C[✗ 失败])(;B[oa](;W[ra]C[✗ 失败 | 缓一气劫]))))))))(;B[sd](;W[ra](;B[sb](;W[rb]C[✗ 失败])))))

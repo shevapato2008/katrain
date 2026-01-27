@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-44034]
+AN[cxg893]
+SO[https://www.101weiqi.com/9K/44034/]
+GC[对杀题 | 9K | 正确率: 50.6% (15180/30006)]
+C[黑先 对杀题]
+AB[qd][md][nd][pb][qf][qb][mb][mc][pe][pc][qa][rd][oe]
+AW[qc][od][lb][rc][nb][ra][nc][lc][rb][ma][sb][pd][oc]
+PL[B]
+(;B[oa](;W[na](;B[sd]C[✓ 正确])))(;B[ob](;W[na](;B[sd](;W[oa]C[✗ 失败]))))(;B[sd](;W[ob]C[✗ 失败])))

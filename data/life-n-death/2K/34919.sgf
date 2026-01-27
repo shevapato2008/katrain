@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-34919]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/2K/34919/]
+GC[死活题 | 2K+ | 正确率: 60.3% (7583/12579) | 前田陈尔九段创作]
+C[黑先 死活题]
+AB[oi][of][ol][qf][qm][oj][sg][pl][rf][rl][pf][qi][ok][og][sf][oh]
+AW[pj][qk][qg][pg][rg][rk][sk][pi][ri][pk][ph]
+PL[B]
+(;B[si](;W[sj](;B[rh](;W[sh]C[✓ 正确])(;W[qh](;B[rj](;W[qj](;B[ri](;W[sh](;B[ri]C[⚡ 变化])))))))(;B[sh](;W[qj]C[✗ 失败]))))(;B[rh](;W[si]C[✗ 失败])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-40086]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/3D/40086/]
+GC[死活题 | 3D | 正确率: 36.8% (1478/4015) | 29ҳ]
+C[黑先 死活题]
+AB[nd][qc][qb][nb][nc][pd][oe]
+AW[qd][md][lb][od][rc][qe][ra][nf][rb][mc][la][pf][me][og]
+PL[B]
+(;B[pa](;W[qa](;B[pc](;W[oa](;B[ob]C[✓ 正确])))))(;B[oc](;W[pb]C[✗ 失败]))(;B[pb](;W[oc](;B[qa](;W[pe](;B[ob](;W[ne]C[✗ 失败]))))))(;B[ob](;W[qa](;B[pa](;W[pc]C[✗ 失败]))))(;B[qa](;W[pe](;B[oc](;W[pb]C[✗ 失败])))))

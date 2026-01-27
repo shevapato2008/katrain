@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-206621]
+AN[奇略361GO]
+SO[https://www.101weiqi.com/1D/236864/]
+GC[死活题 | 1D+ | 正确率: 56.3% (3983/7074) | 奇略361GO官方首发，陈禧职业四段创作，陈锋职业五段监制，胡啸城配文。欲查看本题提示及文字，请关注微信公众号：奇略研究所]
+C[黑先 死活题]
+AB[md][qc][sd][qb][nc][mb][pe][qe][ma][ne][re][oe][se]
+AW[qd][rc][sc][rb][qa][pd][rd]
+PL[B]
+(;B[pa](;W[pc](;B[ra](;W[oa](;B[ob](;W[pb](;B[na](;W[sa](;B[sb]C[✓ 正确])))))))(;B[pb](;W[ob](;B[ra](;W[oa]C[✗ 失败])))))(;W[oa](;B[pc](;W[oc](;B[ra]C[⚡ 变化])))(;B[ra](;W[pc](;B[ob](;W[pb](;B[na](;W[sa](;B[sb]C[✗ 失败]))))))))(;W[pb](;B[ra](;W[pc](;B[oa](;W[qa](;B[qb]C[⚡ 变化])))))))(;B[pb](;W[ob]C[✗ 失败])))

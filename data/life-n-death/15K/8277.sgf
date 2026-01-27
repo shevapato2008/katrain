@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-8277]
+AN[admin]
+SO[https://www.101weiqi.com/15K/8277/]
+GC[吃子题 | 15K | 正确率: 95.7% (24435/25524) | 黑先最佳着手]
+C[黑先 吃子题]
+AB[oi][qf][pg][rg][rf][rh][qi][og][oh]
+AW[pk][qk][qe][qh][rk][pf][ri][re][pi][pe][qg][ph]
+PL[B]
+(;B[pj]C[✓ 正确])(;B[qj](;W[pj]C[✗ 失败]))(;B[rj](;W[qj]C[✗ 失败])))

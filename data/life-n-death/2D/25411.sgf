@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25411]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/2D/25411/]
+GC[手筋题 | 2D+ | 正确率: 24.9% (1352/5419) | Black to play and live by oiotoshi.]
+C[黑先 手筋题]
+AB[qd][lb][od][rc][qb][nc][lc][mc][pd]
+AW[nd][jc][nb][mb][la][kd][pc][ne][oc][kb]
+PL[B]
+(;B[ob](;W[pb](;B[ma](;W[oa](;B[ka](;W[ja](;B[qa](;W[pa](;B[la](;W[ld](;B[na](;W[md](;B[ob](;W[nb](;B[qc]C[✓ 正确])))))))))(;B[la](;W[ld](;B[na](;W[md](;B[ob](;W[nb]C[✗ 失败]))))))))(;B[qa](;W[pa](;B[ka](;W[ja](;B[la](;W[ld](;B[na](;W[md](;B[ob](;W[nb](;B[qc]C[✓ 正确]))))))))(;W[ld](;B[ja]C[⚡ 变化]))))(;W[na](;B[pa]C[⚡ 变化]))))(;W[na](;B[pa](;W[oa](;B[qa]C[⚡ 变化 | 正解])))))(;B[pa](;W[oa](;B[ma](;W[qa](;B[ka](;W[ja](;B[ra](;W[ld](;B[pa]C[✗ 失败])))))))))))(;B[ma](;W[ob](;B[ka](;W[ja](;B[pb](;W[la]C[✗ 失败]))(;B[la](;W[ld](;B[oa](;W[md]C[✗ 失败])))))))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74752]
+AN[wangheep]
+SO[https://www.101weiqi.com/6K/74752/]
+GC[死活题 | 6K | 正确率: 36.4% (7398/20339)]
+C[黑先 死活题]
+AB[nd][md][le][ka][rc][oe][ob][qe][lc][rb][rd][kc][oc][pe][kb]
+AW[qd][qc][od][lb][qb][na][nb][nc][la][mc][oa][pd]
+PL[B]
+(;B[ma](;W[pb](;B[mb](;W[pc](;B[qa]C[✓ 正确]))))(;W[mb](;B[pa]C[⚡ 变化])))(;B[mb](;W[pb](;B[ma](;W[pc](;B[qa]C[✓ 正确]))))(;W[ma](;B[pa]C[⚡ 变化])))(;B[pa](;W[pb](;B[mb](;W[qa](;B[ma](;W[pc]C[✗ 失败]))))))(;B[qa](;W[pa](;B[mb](;W[ma]C[✗ 失败])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-131935]
+AN[方块A]
+SO[https://www.101weiqi.com/6D/149056/]
+GC[死活题 | 6D | 正确率: 23.2% (278/1198) | 大桥拓文六段创作]
+C[黑先 死活题]
+AB[of][qc][pb][rc][nc][pc][qa][pd][oc][pe]
+AW[le][lb][qd][qi][ng][nb][pa][mc][pg][rb][rf][pf][rd][mf][ld][og]
+PL[B]
+(;B[sd](;W[qe](;B[ob](;W[qb](;B[na](;W[ma](;B[oa](;W[ra](;B[sb](;W[pa](;B[mb]C[✓ 正确])(;B[md](;W[nd](;B[mb]C[✓ 正确])(;B[qa]C[✓ 正确])))))(;B[sc](;W[pa](;B[mb]C[✓ 正确])(;B[md](;W[nd](;B[mb]C[✓ 正确])(;B[qa]C[✓ 正确])))))(;B[md](;W[nd](;B[sb](;W[pa](;B[mb]C[✓ 正确])))(;B[sc](;W[pa](;B[mb]C[✓ 正确])))))))(;B[ra](;W[sa](;B[sc](;W[oa](;B[qa](;W[na](;B[sb](;W[ra](;B[qa](;W[ra](;B[rb](;W[qb]C[✗ 失败]))))))))))(;B[qa](;W[sc]C[✗ 失败])))))(;W[mb](;B[ra](;W[sa](;B[sc]C[⚡ 变化])))))(;B[oa](;W[ra]C[✗ 失败])))))(;W[se](;B[sc](;W[oa](;B[ra](;W[sb](;B[qf]C[⚡ 变化])))))))(;B[qf](;W[re]C[✗ 失败])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-65217]
+AN[kenny]
+SO[https://www.101weiqi.com/4D/65217/]
+GC[死活题 | 4D | 正确率: 27.8% (925/3323)]
+C[黑先 死活题]
+AB[od][ob][qe][mb][rg][re][oc][pe]
+AW[qc][pb][pc][sb][rd]
+PL[B]
+(;B[rb](;W[ra](;B[qa](;W[pa](;B[sa](;W[sd](;B[rc](;W[qd](;B[sc](;W[qb]C[✓ 正确])))(;W[ra]C[⚡ 变化]))(;B[sc](;W[rc](;B[qb](;W[sb]C[✗ 失败])))))(;W[qb](;B[sc](;W[sd](;B[rc](;W[ra]C[✓ 正确])))))(;W[rc](;B[sd](;W[ra]C[⚡ 变化]))))(;B[sc](;W[qb](;B[sa](;W[rc](;B[qa](;W[sd]C[✗ 失败]))))))))(;B[sc](;W[sd](;B[sa](;W[rc](;B[qa](;W[pa](;B[qb]C[✗ 失败])))))))))(;B[ra](;W[rb](;B[pa](;W[qa](;B[qb](;W[sa]C[✗ 失败]))))))(;B[sd](;W[ra]C[✗ 失败]))(;B[pa](;W[ra]C[✗ 失败])))

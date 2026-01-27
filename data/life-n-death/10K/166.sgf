@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-166]
+AN[admin]
+SO[https://www.101weiqi.com/10K/166/]
+GC[吃子题 | 10K+ | 正确率: 54.0% (16674/30895) | 摘自http://www.goproblems.com]
+C[黑先 吃子题]
+AB[md][od][qe][pd][pf][re][oc][qg]
+AW[qd][lf][rc][qb][oe][ob][ke][pc][rd][kc][pe]
+PL[B]
+(;B[nf](;W[ne](;B[me](;W[nd](;B[nc]C[✓ 正确])))))(;B[ne](;W[of](;B[ng](;W[pg](;B[og](;W[qf](;B[nf](;W[pf](;B[ph](;W[rf]C[✗ 失败]))))))(;B[ph](;W[qf](;B[rf](;W[rg]C[✗ 失败]))))))(;B[og](;W[nf](;B[mf](;W[ng](;B[nh](;W[mg]C[✗ 失败]))))))))(;B[of](;W[ne]C[✗ 失败]))(;B[ng](;W[ne](;B[me](;W[nd](;B[nc](;W[mc]C[✗ 失败]))))))(;B[mf](;W[ne](;B[me](;W[nd](;B[nc](;W[mc](;B[nb](;W[mb]C[✗ 失败])))))))))

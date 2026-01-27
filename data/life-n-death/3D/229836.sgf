@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-199703]
+AN[kenny]
+SO[https://www.101weiqi.com/3D/229836/]
+GC[布局题 | 3D | 正确率: 14.8% (694/4702)]
+C[黑先 布局题]
+AB[op][of][qp][fq][pd][pf]
+AW[qd][qf][nc][pg][dp][dd]
+PL[B]
+(;B[qg](;W[qe](;B[ph](;W[pc](;B[og]C[✓ 正确 | 正解，征子有利时断是不错的下法，至黑5与右下的单关守角形成配合])))))(;B[qc](;W[qe](;B[pc](;W[md]C[✗ 失败 | 黑不满]))(;B[nd](;W[pe](;B[od](;W[rc](;B[pb](;W[qb](;B[pc](;W[rb]C[✗ 失败 | 黑方向恶]))))))))))(;B[pc](;W[qe](;B[qc](;W[md]C[✗ 失败 | 黑不满]))))(;B[qe](;W[re](;B[pe](;W[rg](;B[qc](;W[rd](;B[og](;W[ph]C[✗ 失败])))))))))

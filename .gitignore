@@ -159,15 +159,19 @@ dmypy.json
 .pyre/
 
 # AI Tools
-.claude/
-.codex/
 .shared/
 .gemini-clipboard/
-.gemini/
 .playwright-mcp/
+
+# Git worktrees
+.worktrees/
 
 # MacOS
 .DS_Store
 
 # Database
 .postgres_data/
+
+# Local data (except tsumego problems)
+/data/*
+!/data/life-n-death/

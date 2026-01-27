@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-42787]
+AN[qzwq01]
+SO[https://www.101weiqi.com/8K/42787/]
+GC[对杀题 | 8K | 正确率: 55.0% (13427/24419)]
+C[黑先 对杀题]
+AB[qc][qe][nc][ra][rb][pc][pd][re]
+AW[qd][rc][qb][qa][sb][rg][pf][rd][pe][qg]
+PL[B]
+(;B[sd](;W[sa](;B[rb](;W[ra](;B[se](;W[sc](;B[pb](;W[sf](;B[pa](;W[rf](;B[rb]C[✓ 正确 | RIGHT])))))))(;B[pb](;W[rf](;B[se](;W[sf]C[✗ 失败]))))))))(;B[se](;W[sa](;B[rb](;W[ra](;B[sd](;W[qf](;B[sc]C[✓ 正确])))))(;B[sd](;W[rb](;B[pb](;W[rf](;B[pa](;W[sf]C[✗ 失败])))))))))

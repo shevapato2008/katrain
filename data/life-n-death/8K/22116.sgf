@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22116]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/8K/22116/]
+GC[死活题 | 8K | 正确率: 47.9% (11991/25038)]
+C[黑先 死活题]
+AB[nd][qc][qb][rb][pc][sb][rd][re][oc][oe][se]
+AW[md][of][pb][sc][qf][ob][nb][ra][nc][nf][qa][rf][pf][me][sf]
+PL[B]
+(;B[qe](;W[pe](;B[pd]C[✓ 正确 | RIGHT
+恭喜答对])))(;B[pe](;W[qe](;B[qd](;W[od]C[✗ 失败 | 失败]))))(;B[pd](;W[qe](;B[ne](;W[pe]C[✗ 失败])))))

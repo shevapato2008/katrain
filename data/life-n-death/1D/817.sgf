@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-817]
+AN[admin]
+SO[https://www.101weiqi.com/1D/817/]
+GC[死活题 | 1D+ | 正确率: 22.8% (2057/9009)]
+C[黑先 死活题]
+AB[qd][qf][jc][pe][lc][ne][rd][me][oe][ld]
+AW[nd][qc][od][rc][pd]
+PL[B]
+(;B[ob](;W[nb](;B[mb](;W[na](;B[nc](;W[oc](;B[pb](;W[mc](;B[pc](;W[lb](;B[md](;W[nc](;B[rb](;W[kb](;B[jb]C[✓ 正确])))(;B[qb](;W[rb](;B[ra](;W[qa](;B[pa](;W[ma](;B[sc](;W[kb]C[✗ 失败]))))(;B[sb](;W[sa]C[✗ 失败]))))))))(;B[rb](;W[ma](;B[md](;W[jb](;B[ib](;W[kb](;B[ic](;W[nc]C[✗ 失败]))(;B[nc](;W[hb]C[✗ 失败]))))))))))))(;B[md](;W[pc](;B[ma](;W[mc]C[✗ 失败]))))))))(;B[nc](;W[oc]C[白4内打，只是黑棋的一厢情愿](;B[pb](;W[mc](;B[pc]C[⚡ 变化]))))(;W[mc](;B[mb](;W[oc](;B[na](;W[pb]C[✗ 失败]))(;B[pb](;W[pc](;B[na](;W[lb](;B[nc]C[✗ 失败])))))))(;B[oc](;W[mb]C[✗ 失败]))(;B[pb](;W[pc](;B[mb](;W[oc](;B[na](;W[lb]C[✗ 失败]))))))))(;B[pb](;W[nc](;B[pc](;W[qb](;B[sb](;W[sc](;B[qa](;W[ra](;B[sd](;W[pa](;B[oa]C[✗ 失败])))))))))(;B[rb](;W[sb](;B[qb](;W[pc]C[✗ 失败]))))))))(;B[nb](;W[ob](;B[nc](;W[oc]C[✗ 失败]))(;B[pb](;W[oa]C[✗ 失败])))))

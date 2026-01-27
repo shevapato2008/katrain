@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22066]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/8K/22066/]
+GC[死活题 | 8K+ | 正确率: 47.2% (11184/23705) | 前田陈尔九段创作]
+C[黑先 死活题]
+AB[qd][rc][qb][pc][pd]
+AW[sd][od][oe][ob][qe][nc][rf][rd][pe]
+PL[B]
+(;B[sb](;W[pb](;B[ra]C[✓ 正确 | RIGHT]))(;W[ra](;B[pb]C[⚡ 变化])))(;B[pb](;W[sb](;B[sc](;W[rb]C[✗ 失败 | 失败，重来吧]))(;B[rb](;W[sc]C[✗ 失败]))))(;B[ra](;W[sb](;B[sc](;W[pb]C[✗ 失败]))(;B[pb](;W[rb]C[✗ 失败]))))(;B[sc](;W[pb]C[✗ 失败])))

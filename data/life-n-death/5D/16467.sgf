@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16467]
+AN[admin]
+SO[https://www.101weiqi.com/5D/16467/]
+GC[死活题 | 5D | 正确率: 23.1% (549/2381) | 权五敏四段创作]
+C[黑先 死活题]
+AB[qd][od][md][jb][sc][jc][lc][rb][sb][pd][ja][rd][kc][ld]
+AW[qc][lb][rc][qb][nb][mc][oc][ka]
+PL[B]
+(;B[nd](;W[pc](;B[nc](;W[ma](;B[qa](;W[pa](;B[ob](;W[ra](;B[kb](;W[oa](;B[mb]C[✓ 正确 | 连环劫净杀白棋])(;B[la]C[✓ 正确])))))))(;B[oa](;W[pa](;B[ob](;W[kb](;B[mb]C[✗ 失败 | 黑先劫]))))))(;W[mb](;B[pa]C[⚡ 变化]))))(;W[ma](;B[nc](;W[pc](;B[qa](;W[pa](;B[ob](;W[ra](;B[kb](;W[oa](;B[la]C[✓ 正确 | 搖櫓劫，白淨死])(;B[mb]C[搖櫓劫，白淨死](;W[pg](;B[qg](;W[mc](;B[la]C[⚡ 变化])))))))))))(;B[pa](;W[qa](;B[ob](;W[oa]C[✗ 失败]))(;B[oa](;W[kb]C[✗ 失败]))))(;B[oa](;W[pa](;B[ob](;W[kb](;B[mb]C[✗ 失败]))))))(;W[oa](;B[pc](;W[pb](;B[kb](;W[qa](;B[ob]C[⚡ 变化 | 连环劫净杀白棋])))))))(;B[oa](;W[ob](;B[kb](;W[nc](;B[la]C[✗ 失败 | 黑先劫])))(;B[nc](;W[kb](;B[mb]C[✗ 失败 | 黑先劫])))))(;B[pc](;W[nc](;B[kb](;W[pb](;B[oa](;W[na](;B[la]C[✗ 失败 | 黑先劫])))))(;B[oa](;W[kb]C[✗ 失败 | 白淨活])))))(;W[nc](;B[ma](;W[la](;B[kb](;W[mb](;B[pb](;W[pc](;B[qa]C[⚡ 变化])))))))))(;B[ma](;W[mb](;B[kb](;W[la](;B[pb](;W[pc](;B[qa](;W[oa]C[✗ 失败 | 白淨活]))))))(;B[qa](;W[pb](;B[oa](;W[na](;B[pa](;W[ra]C[✗ 失败 | 白淨活]))))))))(;B[oa](;W[pc](;B[qa](;W[pa](;B[pb](;W[ra]C[✗ 失败 | 白淨活]))(;B[ra](;W[ob](;B[pb]C[✗ 失败 | 黑先劫])))))(;B[kb](;W[pa](;B[ob](;W[la]C[✗ 失败 | 白淨活]))(;B[ma](;W[ob]C[✗ 失败 | 白淨活]))))))(;B[qa](;W[pb](;B[ma](;W[mb](;B[oa](;W[na](;B[pa](;W[ra]C[✗ 失败 | 白淨活]))))))(;B[oa](;W[na](;B[pa](;W[ra]C[✗ 失败 | 白淨活]))))(;B[nd](;W[nc](;B[ma](;W[mb](;B[oa](;W[na](;B[pa](;W[ra]C[✗ 失败 | 白淨活]))))))(;B[oa](;W[na](;B[pa](;W[ra]C[✗ 失败 | 白淨活]))))))))(;B[kb](;W[ma]C[✗ 失败])))

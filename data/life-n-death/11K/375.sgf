@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-375]
+AN[admin]
+SO[https://www.101weiqi.com/11K/375/]
+GC[死活题 | 11K+ | 正确率: 69.7% (16971/24346) | 黑先]
+C[黑先 死活题]
+AB[qc][rc][pb][qa][rd]
+AW[qd][ob][qe][rb][pc][re][oc][se]
+PL[B]
+(;B[sb](;W[ra](;B[sd]C[✓ 正确]))(;W[sd](;B[ra](;W[sc](;B[qb]C[⚡ 变化])))(;B[sc](;W[ra]C[✗ 失败]))))(;B[qb](;W[sb]C[✗ 失败]))(;B[ra](;W[sb]C[✗ 失败])))

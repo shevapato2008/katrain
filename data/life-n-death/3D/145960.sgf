@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-129467]
+AN[pr土豆]
+SO[https://www.101weiqi.com/3D/145960/]
+GC[死活题 | 3D | 正确率: 41.0% (1849/4510)]
+C[黑先 死活题]
+AB[od][pb][rc][ob][sg][pg][qa][pd][pf][rd][rh][ri][qg]
+AW[qd][qc][qf][qb][rb][rg][rf][re][pa]
+PL[B]
+(;B[sd](;W[sf](;B[ra](;W[sa](;B[qa](;W[sc](;B[sb]C[✓ 正确])))))(;B[pe](;W[qe](;B[ra](;W[sa](;B[qa](;W[sc](;B[sb](;W[se](;B[ra](;W[sa]C[✗ 失败]))))))))))(;B[sb](;W[ra]C[✗ 失败]))(;B[oa](;W[ra](;B[sb]C[✗ 失败]))))(;W[se](;B[sc](;W[ra](;B[sb](;W[sa](;B[sc]C[⚡ 变化]))))(;W[sb](;B[ra]C[⚡ 变化]))))(;W[ra](;B[sf]C[⚡ 变化])))(;B[sc](;W[sb](;B[ra](;W[sd]C[✗ 失败]))))(;B[se](;W[sc]C[✗ 失败])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1831]
+AN[admin]
+SO[https://www.101weiqi.com/3D/1831/]
+GC[死活题 | 3D+ | 正确率: 33.5% (1574/4704)]
+C[黑先 死活题]
+AB[nd][md][pb][ng][nb][pg][qh][rg][pf][me][oc]
+AW[qc][od][qf][nc][ne][re][pe]
+PL[B]
+(;B[rb](;W[qb](;B[qa](;W[pc](;B[ob](;W[rc](;B[qd]C[✓ 正确])))(;B[mc](;W[rc]C[白棋要不行了](;B[qd]C[恭喜答对](;W[ra](;B[sa](;W[sc](;B[pa](;W[rf](;B[sf](;W[se](;B[rd]C[⚡ 变化])))))))))))))))(;B[qb](;W[pc](;B[mc](;W[rb]C[你吃不了我的](;B[ra](;W[sb]C[✗ 失败 | 白已活，重来吧]))))))(;B[pc]C[不好](;W[qb](;B[rb](;W[ra](;B[qd](;W[rc]C[✗ 失败 | 白活]))))(;B[qd](;W[pd](;B[rb](;W[pa](;B[mc](;W[rc]C[✗ 失败 | 白活])))))))))

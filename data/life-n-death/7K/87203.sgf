@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-87203]
+AN[stevenyzc]
+SO[https://www.101weiqi.com/7K/87203/]
+GC[死活题 | 7K+ | 正确率: 37.0% (7898/21329)]
+C[黑先 死活题]
+AB[le][od][nd][qc][rc][qe][mb][mc][pd]
+AW[qb][nb][nc][rb][pc][sb][oc]
+PL[B]
+(;B[oa](;W[pa](;B[na](;W[ra](;B[pb]C[✓ 正确]))))(;W[na](;B[pb](;W[qa](;B[ma]C[✓ 正确]))))(;W[pb](;B[na](;W[pa](;B[ra]C[⚡ 变化])))))(;B[na](;W[oa](;B[pb](;W[ma]C[✗ 失败]))))(;B[pa](;W[oa]C[✗ 失败])))

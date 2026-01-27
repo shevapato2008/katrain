@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-56107]
+AN[foxyz]
+SO[https://www.101weiqi.com/8K/56107/]
+GC[手筋题 | 8K | 正确率: 42.3% (10585/25019)]
+C[黑先 手筋题]
+AB[qd][qb][nc][pe][rb][pc][sb][rd][oc][oe]
+AW[md][qc][sd][pb][rc][sc][ob][nb][mc][rh][re][qg][se][ph]
+PL[B]
+(;B[rf](;W[qe](;B[qf](;W[pd](;B[qd]C[✓ 正确 | 21 黑1靠，以下至5，白已无抵抗的可能。])(;B[sf](;W[od]C[✗ 失败])))))))

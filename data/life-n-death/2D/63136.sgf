@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-63136]
+AN[kenny]
+SO[https://www.101weiqi.com/2D/63136/]
+GC[死活题 | 2D | 正确率: 27.1% (1656/6119)]
+C[黑先 死活题]
+AB[qd][qc][rc][qf][qe][sh][pd][rh][qg]
+AW[of][od][qi][qb][rb][pg][qh][pc][rg][ri][rd][oc][ph]
+PL[B]
+(;B[sg](;W[sc](;B[re](;W[sd](;B[se](;W[sb](;B[rf]C[✓ 正确])))(;B[sb](;W[sa](;B[se](;W[sb](;B[rf]C[✓ 正确])))))))(;B[se](;W[sd](;B[rf]C[✓ 正确])(;B[sb](;W[sa](;B[re](;W[sb](;B[rf]C[✓ 正确])))))(;B[re](;W[sb](;B[rf]C[✓ 正确])))))))(;B[rf](;W[sc](;B[re](;W[sd](;B[se](;W[sg]C[✗ 失败]))))(;B[se](;W[sg]C[✗ 失败]))))(;B[sf](;W[si](;B[sg](;W[sc]C[✗ 失败]))(;B[sd](;W[sg](;B[re](;W[rf]C[✗ 失败]))))))(;B[sd](;W[sg]C[✗ 失败])))

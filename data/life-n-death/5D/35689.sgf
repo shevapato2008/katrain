@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-35689]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/5D/35689/]
+GC[死活题 | 5D+ | 正确率: 31.6% (1336/4225) | 郭求真六段创作]
+C[黑先 死活题]
+AB[nd][qd][od][md][lb][rc][nb][mc][oa][pd][rd][oc]
+AW[sd][qc][of][le][ka][qf][sc][me][lc][rb][ma][pc][ne][re][pa][ld][kb]
+PL[B]
+(;B[ra](;W[qb](;B[sb](;W[se](;B[na]C[✓ 正确])(;B[pb](;W[ob](;B[na](;W[sa]C[✓ 正确])))(;W[sa]C[⚡ 变化]))(;B[ob](;W[sa]C[✗ 失败 | 缓一气劫])))))(;W[qa](;B[pb]C[⚡ 变化 | 变化图1]))(;W[pb](;B[ob](;W[qb](;B[sb]C[⚡ 变化]))))(;W[sb](;B[qb](;W[pb](;B[ob]C[⚡ 变化 | 变化图2])))))(;B[pb](;W[qb](;B[qa](;W[na]C[✗ 失败]))))(;B[sb](;W[sa](;B[pb](;W[qb](;B[qa](;W[na]C[✗ 失败])))))))

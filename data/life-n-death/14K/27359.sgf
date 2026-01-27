@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-27359]
+AN[arhat.cn]
+SO[https://www.101weiqi.com/14K/27359/]
+GC[对杀题 | 14K | 正确率: 89.1% (21594/24236) | 手筋习题 57]
+C[黑先 对杀题]
+AB[qd][sc][pa][ob][qe][oa][sb][pc][rd][oc][pe]
+AW[nd][qc][od][rc][na][nb][ra][nc][rb][pd]
+PL[B]
+(;B[qb]C[✓ 正确 | v])(;B[sd](;W[qa](;B[sa](;W[pb]C[✗ 失败])))))

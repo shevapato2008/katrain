@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-74627]
+AN[wangheep]
+SO[https://www.101weiqi.com/8K/74627/]
+GC[死活题 | 8K | 正确率: 42.9% (10013/23325)]
+C[黑先 死活题]
+AB[sd][qd][sc][ob][oa][sb][pd][rd][oc][sa]
+AW[nd][qc][od][rc][nb][qe][nc][pc][re][pe][se]
+PL[B]
+(;B[qa](;W[qb](;B[pb]C[✓ 正确])))(;B[qb](;W[rb](;B[ra](;W[qa]C[✗ 失败])))))

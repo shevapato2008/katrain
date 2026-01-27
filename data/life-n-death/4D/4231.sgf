@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-4231]
+AN[357754926]
+SO[https://www.101weiqi.com/4D/4231/]
+GC[死活题 | 4D+ | 正确率: 15.9% (875/5493)]
+C[白先 死活题]
+AB[qd][qc][pb][qb][oa][rd][se]
+AW[ob][nb][qe][rg][pc][pd][re][pe]
+PL[W]
+(;W[sb]C[参考图1](;B[pa](;W[sf](;B[sd](;W[rb](;B[ra](;W[sa]C[✓ 正确])))(;W[ra](;B[rb](;W[sc]C[✗ 失败]))))(;B[sc](;W[sd]C[⚡ 变化])))(;W[sc](;B[sd](;W[ra](;B[rb]C[✗ 失败 | 这是双活，不是盘角曲四。
+
+详细分析请参看04_1.sgf中正解2的变化。]))))(;W[ra](;B[rb](;W[sc](;B[sd]C[✗ 失败 | 双活]))))(;W[rb](;B[ra](;W[sa](;B[sc](;W[qa](;B[rc]C[✗ 失败])))))))(;B[rb](;W[sc](;B[sa](;W[pa](;B[qa](;W[sf](;B[sd](;W[ra]C[✓ 正确])))(;W[ra](;B[sd](;W[sf]C[✓ 正确])))))(;W[sf](;B[sd](;W[pa](;B[qa](;W[ra]C[✓ 正确])))))(;W[ra](;B[sd](;W[pa](;B[qa](;W[sf]C[✓ 正确]))))))(;B[sd](;W[pa](;B[qa](;W[sa]C[⚡ 变化]))))))(;B[sg](;W[sh](;B[sf](;W[rf](;B[sd](;W[rb](;B[rh](;W[ri](;B[si](;W[qh](;B[rj](;W[sh]C[⚡ 变化])))))))))))))(;W[sc]C[参考图3](;B[sd](;W[rb](;B[rc]C[失着 黑不行](;W[sb](;B[pa](;W[ra](;B[qa](;W[na](;B[sa](;W[sb](;B[rb](;W[ra]C[⚡ 变化 | 成劫而无法净活，黑失败。]))))))))))(;B[ra](;W[pa](;B[sb](;W[sa](;B[rc](;W[qa](;B[ra](;W[qa](;B[pa](;W[sf](;B[ra]C[✗ 失败 | 当白棋找到劫材后在A位提时，黑棋在B位提，以后双劫循环，黑棋净活。]))))))))))))))(;W[rb]C[参考图2](;B[ra](;W[sb](;B[pa](;W[sa](;B[sc](;W[qa](;B[rc]C[✗ 失败 | 胀牯牛]))))(;W[sf](;B[sc]C[✗ 失败]))))))(;W[ra](;B[rb]C[✗ 失败]))(;W[pa](;B[sb](;W[ra](;B[rb]C[✗ 失败])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16577]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16577/]
+GC[死活题 | 4D | 正确率: 42.5% (1275/3001) | 吴清源九段创作]
+C[黑先 死活题]
+AB[md][od][qf][qb][ng][nb][nc][ph][mb][ma][re][rg][rd][me][mf][oe][qg][sf]
+AW[of][qd][sd][pb][rc][na][ob][qe][nf][oa][pd][pf][oc][pe]
+PL[B]
+(;B[qa](;W[ra](;B[qc](;W[rb](;B[sb]C[✓ 正确]))))(;W[rb](;B[pa](;W[pc](;B[sc](;W[sb](;B[ra]C[✓ 正确])))))(;B[qc](;W[pc](;B[sb](;W[sc](;B[ra](;W[sa]C[✗ 失败])))))))(;W[qc](;B[pa](;W[pc](;B[sc](;W[sb](;B[ra]C[⚡ 变化])))))))(;B[rb](;W[qc](;B[sb](;W[sc](;B[qa](;W[ra]C[✗ 失败]))))(;B[ra](;W[sb](;B[pa]C[✗ 失败 | 打劫])))))(;B[qc](;W[rb](;B[qa](;W[pc](;B[sb](;W[sc](;B[ra]C[✗ 失败]))))))))

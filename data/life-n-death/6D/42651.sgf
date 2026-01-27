@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-42651]
+AN[九点圆]
+SO[https://www.101weiqi.com/6D/42651/]
+GC[对杀题 | 6D | 正确率: 15.7% (173/1105) | 难度：Hard]
+C[黑先 对杀题]
+AB[jg][md][le][jb][id][if][me][kd][jh][kc][ie][ec]
+AW[nd][ic][hd][ke][kf][hb][lc][mc][gd][fd][oc][oe][ld]
+PL[B]
+(;B[mg](;W[kg](;B[mh](;W[jd](;B[jc](;W[je](;B[lb](;W[mb](;B[ib](;W[hc](;B[ha](;W[ga](;B[ia](;W[la](;B[gb](;W[fb](;B[fa](;W[eb](;B[ga]C[✓ 正确]))))))))(;W[ia](;B[ga](;W[fa](;B[ja](;W[gb](;B[kh]C[⚡ 变化]))))))(;W[la](;B[fa]C[⚡ 变化]))))(;W[gc](;B[ka](;W[ia](;B[ma](;W[nb](;B[kh](;W[ha](;B[ja]C[✓ 正确])))(;B[ja](;W[ha](;B[kh]C[✓ 正确]))(;W[hc](;B[ha](;W[na](;B[ga](;W[fb](;B[la]C[✓ 正确])))))))))))))))(;B[ib](;W[hc](;B[lb](;W[mb](;B[ha](;W[ga](;B[ia](;W[la](;B[gb](;W[fb](;B[fa](;W[eb](;B[ga]C[✓ 正确])))))))))))(;B[ha](;W[ga](;B[lb](;W[mb](;B[ia](;W[la](;B[gb](;W[fb](;B[fa](;W[eb](;B[ga]C[✓ 正确]))))))))))(;W[ia](;B[lb](;W[ka](;B[mb](;W[nc](;B[kb](;W[nb](;B[ga](;W[fa](;B[ja](;W[gb](;B[kh]C[✓ 正确])))))))(;B[ja](;W[ga](;B[oa]C[✓ 正确]))))))))(;W[ka](;B[lb](;W[mb](;B[fa]C[✓ 正确]))))))(;W[gc](;B[lb](;W[mb](;B[ka](;W[ia](;B[ma]C[⚡ 变化])))))))))))(;B[lh](;W[mf](;B[lf](;W[lg](;B[nf](;W[ne](;B[mf](;W[mh](;B[nh](;W[kh](;B[li](;W[ki]C[✗ 失败])))))))))))))(;W[mf](;B[lf](;W[lg](;B[nf](;W[ne](;B[mf](;W[kg](;B[mh]C[⚡ 变化]))))))))))

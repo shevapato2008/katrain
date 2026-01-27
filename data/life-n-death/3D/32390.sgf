@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-32390]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/3D/32390/]
+GC[死活题 | 3D | 正确率: 48.8% (1880/3855) | 桥本宇太郎九段创作]
+C[黑先 死活题]
+AB[le][lf][ld][ng][qe][lc][mc][sg][pg][mg][rg][lg][pd][pf][pe][og][qg]
+AW[jg][nf][lh][rf][ri][ph][qf][rc][kh][jc][je][re][mf][qd][nd][md][pc][jb][od][pi][ni]
+PL[B]
+(;B[qb](;W[ob](;B[qc](;W[rd](;B[rb](;W[sb](;B[sc](;W[ra]C[✓ 正确]))(;B[pb](;W[oc](;B[sc](;W[ra]C[✗ 失败]))))))(;B[pb](;W[oc](;B[rb](;W[sb](;B[sc](;W[ra]C[✗ 失败])))))))))(;W[qc](;B[ob](;W[pb](;B[oc]C[⚡ 变化])))))(;B[ob](;W[oc](;B[qb](;W[pb](;B[qc](;W[rd]C[✗ 失败])))))))

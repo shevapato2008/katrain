@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[13]
+GN[Q-104620]
+AN[我叫小Q]
+SO[https://www.101weiqi.com/3D/111362/]
+GC[死活题 | 3D | 正确率: 40.5% (1666/4114)]
+C[黑先 死活题]
+AB[jg][kg][ke][lc][kd][lg]
+AW[lj][jb][le][if][ig][ih][jc][kh][jd][je][lh][ja][jh]
+PL[B]
+(;B[lf](;W[me](;B[md](;W[jf](;B[lb]C[✓ 正确])(;B[la](;W[lb](;B[kb](;W[mb](;B[kc](;W[ka](;B[mc](;W[kf]C[✗ 失败])))))))))(;W[mg](;B[ld](;W[jf](;B[lb]C[✓ 正确])(;B[la](;W[lb](;B[kb](;W[mb](;B[kc](;W[ka]C[✗ 失败]))))))))))(;B[ld](;W[jf](;B[la](;W[lb](;B[kb](;W[mb]C[✗ 失败])))))))(;W[jf](;B[me](;W[mg](;B[la]C[⚡ 变化])))))(;B[me](;W[lf](;B[kf](;W[lb](;B[mc](;W[ld](;B[kc](;W[mg]C[✗ 失败])))))))))

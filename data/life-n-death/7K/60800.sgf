@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-60800]
+AN[dou200]
+SO[https://www.101weiqi.com/7K/60800/]
+GC[手筋题 | 7K+ | 正确率: 46.0% (10584/22990)]
+C[黑先 手筋题]
+AB[qd][qc][nd][ob][nb][qe][mb][mc][pc][lh][ne][oe][qg]
+AW[of][od][md][lf][jc][nc][lc][pd][pf][oc][pe]
+PL[B]
+(;B[mf](;W[me](;B[nf]C[✓ 正确]))(;W[mg](;B[ld]C[⚡ 变化])))(;B[me](;W[ld](;B[mg](;W[mf]C[✗ 失败]))(;B[ng](;W[nf]C[✗ 失败]))(;B[mf](;W[mg]C[✗ 失败]))))(;B[nf](;W[ng]C[✗ 失败]))(;B[mg](;W[mf]C[✗ 失败]))(;B[ng](;W[nf](;B[me](;W[ld]C[✗ 失败])))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-358797]
+AN[方块A]
+SO[https://www.101weiqi.com/1D/401120/]
+GC[死活题 | 1D | 正确率: 27.3% (2162/7916) | 张栩九段创作]
+C[黑先 死活题]
+AB[rc][qb][jc][ra][rb][ma][ne][ja][rd][re][oe][ld][md][qe][jd][pc][pe][jb][lb][la][kd]
+AW[qd][qc][od][ka][pb][mb][mc][lc][qa][kc][oc][pa][kb]
+PL[B]
+(;B[ob](;W[pd](;B[nc](;W[na](;B[nb]C[✓ 正确])(;B[nd](;W[nb](;B[pc](;W[la]C[✗ 失败]))))))(;B[oa](;W[nb](;B[pc](;W[pb](;B[pa](;W[na]C[✗ 失败]))))))))(;B[pd](;W[ob]C[✗ 失败]))(;B[nc](;W[nb](;B[nd](;W[pd]C[✗ 失败])))))

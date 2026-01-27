@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-116434]
+AN[drfhgtht]
+SO[https://www.101weiqi.com/2D/127425/]
+GC[死活题 | 2D | 正确率: 31.2% (1923/6156) | 高木祥一九段创作]
+C[黑先 死活题]
+AB[qd][qc][le][kc][qe][pe][mb][lc][ra][rb][ne][me][oc][oe][kb]
+AW[md][nd][od][lb][qb][ob][mc][pc][qa][pd]
+PL[B]
+(;B[nb](;W[na](;B[oa](;W[pa](;B[ma](;W[nc](;B[oa]C[✓ 正确])))))(;B[ma](;W[oa](;B[pb](;W[nc](;B[pa](;W[la]C[✗ 失败])))))))(;W[nc](;B[oa]C[⚡ 变化]))(;W[la](;B[oa](;W[nc](;B[na]C[⚡ 变化])))))(;B[oa](;W[nb](;B[pb](;W[ma]C[✗ 失败])))))

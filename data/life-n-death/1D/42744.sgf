@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-42744]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/1D/42744/]
+GC[死活题 | 1D | 正确率: 31.6% (2052/6494)]
+C[黑先 死活题]
+AB[qb][qc][qe][re]
+AW[pb][qf][nb][pc][rf][pd][pf][rh][pe]
+PL[B]
+(;B[qd](;W[rb](;B[ra](;W[rc](;B[sb](;W[sc](;B[se]C[✓ 正确])(;B[sd](;W[sa]C[✗ 失败]))(;B[qa](;W[se](;B[sd](;W[sa]C[✗ 失败]))))))(;B[sc](;W[sd](;B[rd](;W[sb]C[✗ 失败]))(;B[sb](;W[sa](;B[sb](;W[se]C[✗ 失败]))))))))))(;B[sb]C[参考](;W[ra](;B[qa](;W[se](;B[sd](;W[qd](;B[rd](;W[rc]C[✗ 失败 | 如果有白△之紧贴，则黑1以下5时，白棋有6、8之手段，黑死。
+
+故，黑1要6挡，白A夹碰弄成万年劫之外没有办法(;johny注：参见本章第1型）。]))))))))(;B[rb](;W[rd]C[✗ 失败]))(;B[se](;W[qd](;B[rd](;W[rb]C[✗ 失败])))))

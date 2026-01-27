@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-26400]
+AN[楼宝宝]
+SO[https://www.101weiqi.com/8K/26400/]
+GC[死活题 | 8K+ | 正确率: 50.9% (12241/24062)]
+C[黑先 死活题]
+AB[qc][pb][rc][qb][ob][oa][sa]
+AW[sd][qd][od][na][nb][nc][qa][rd]
+PL[B]
+(;B[sc](;W[rb](;B[ra](;W[sb](;B[ra]C[✓ 正确]))))(;W[ra](;B[rb](;W[sb](;B[pa]C[✓ 正确])))))(;B[ra](;W[sc]C[✗ 失败]))(;B[sb](;W[ra]C[✗ 失败])))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-46941]
+AN[银冈棋院]
+SO[https://www.101weiqi.com/3D/46941/]
+GC[手筋题 | 3D | 正确率: 49.2% (2558/5197)]
+C[黑先 手筋题]
+AB[pj][sd][qo][nf][pm][pd][se][qn][rc][qf][on][rd][ro][oe][qc][ng][pc][pe][oh][qj][pi][ni][pk]
+AW[rj][rf][me][qi][ph][of][rm][ob][ra][ne][pf][re][sf][qd][qm][qk][nc][qe][ql][rn][qh]
+PL[B]
+(;B[rh](;W[qg](;B[ri](;W[sh](;B[rk](;W[rg](;B[sj](;W[og]C[✓ 正确]))))(;B[sj](;W[rg](;B[rk](;W[og]C[✓ 正确])))(;W[rk](;B[og](;W[rg](;B[pg]C[⚡ 变化])))))(;B[og](;W[si]C[✗ 失败])))(;W[si](;B[rk](;W[sk]C[⚡ 变化 | 成劫])(;W[rg](;B[sj](;W[og]C[⚡ 变化 | 白比正解图目数损])))))))(;W[rg](;B[pg](;W[qg](;B[og]C[⚡ 变化]))))(;W[pg](;B[ri](;W[si](;B[rg](;W[qg](;B[og]C[⚡ 变化]))))))(;W[ri](;B[qg]C[⚡ 变化]))))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16437]
+AN[admin]
+SO[https://www.101weiqi.com/4D/16437/]
+GC[死活题 | 4D+ | 正确率: 28.4% (855/3011) | 出题者：宫泽吾朗五段（昭和51年6月）]
+C[黑先 死活题]
+AB[nd][qd][qf][nb][nc][lc][rf][pf][pe][kb]
+AW[rc][qe][mb][pc][pd][re]
+PL[B]
+(;B[ra](;W[ob](;B[qb](;W[qc](;B[pb](;W[na](;B[oc](;W[oa](;B[la]C[✓ 正确])(;B[pa](;W[ma](;B[rb]C[✓ 正确])))(;B[rb]C[✓ 正确])(;B[ma](;W[la](;B[pa](;W[ma](;B[rb]C[✓ 正确])))(;B[rb]C[✓ 正确]))))(;W[pa](;B[qa]C[⚡ 变化])))(;B[pa](;W[rb](;B[oc](;W[se](;B[rd](;W[sd](;B[sb](;W[sc]C[✗ 失败])))))))))(;W[rb](;B[oc](;W[se](;B[rd]C[⚡ 变化]))))))(;W[pb](;B[qc](;W[rd](;B[rb]C[⚡ 变化]))))))(;W[pa](;B[rd](;W[qc](;B[se](;W[ob](;B[sc](;W[sb](;B[na](;W[oc](;B[qb](;W[rb](;B[oa]C[✓ 正确])))))(;B[oc]C[✓ 正确 | 白淨死])(;B[qb](;W[rb](;B[qa](;W[oc]C[✗ 失败 | 雙活]))))(;B[rb](;W[qb]C[✗ 失败 | 白淨活]))))(;B[oc](;W[na](;B[sc](;W[sb](;B[qb]C[✓ 正确])))(;B[qb](;W[rb](;B[sc]C[✓ 正确])))))(;B[na](;W[sc](;B[rb](;W[qb](;B[oc]C[✓ 正确])))(;B[oc](;W[rb](;B[sa](;W[pb](;B[qa]C[✓ 正确])))))))))))(;B[qb](;W[pb](;B[rd](;W[qc](;B[se](;W[rb](;B[sc]C[✓ 正确 | 白淨死])))))(;B[qc](;W[rd](;B[rb](;W[sb]C[✗ 失败 | 白淨活]))))))(;B[ob](;W[rd](;B[pb](;W[qb](;B[qa](;W[rb](;B[oa](;W[sb]C[✗ 失败])))))))))(;W[qb](;B[pa](;W[qa](;B[rd]C[⚡ 变化])))))(;B[rd](;W[qc](;B[se](;W[ob](;B[sc](;W[sb](;B[ra](;W[qb](;B[oc](;W[na](;B[pa](;W[oa](;B[qa](;W[sd]C[✗ 失败])))))))(;W[pa](;B[oc](;W[qa](;B[na]C[⚡ 变化])))))(;B[rb](;W[ra](;B[sa]C[✗ 失败 | 黑先劫])))))(;B[ra](;W[sc](;B[oa](;W[pa](;B[na](;W[rb](;B[sa](;W[oc](;B[qa](;W[qb]C[✗ 失败]))))))))))(;B[rb](;W[sb](;B[qb](;W[ra](;B[sc](;W[sd]C[✗ 失败]))))))))))(;B[pa](;W[ra](;B[qb](;W[rb]C[✗ 失败 | 白淨活]))(;B[sb](;W[qc]C[✗ 失败 | 白淨活]))(;B[rd](;W[qc](;B[se](;W[sb](;B[qb](;W[pb]C[✗ 失败 | 白淨活]))))))))(;B[qa](;W[ra](;B[qb](;W[rb]C[✗ 失败 | 白淨活]))(;B[rb](;W[qb](;B[sa](;W[pa](;B[rd](;W[sc](;B[se](;W[sb]C[✗ 失败 | 白淨活]))))))))(;B[sb](;W[qc]C[✗ 失败 | 白淨活]))(;B[rd](;W[qb](;B[sb](;W[sc](;B[se](;W[pa]C[✗ 失败 | 白淨活]))))))))(;B[pb](;W[qb]C[✗ 失败 | 白淨活]))(;B[qb](;W[pb](;B[rd](;W[qc](;B[se](;W[rb]C[✗ 失败 | 白淨活]))))(;B[qc](;W[rd](;B[rb](;W[sb]C[✗ 失败 | 白淨活]))))(;B[ra](;W[qc](;B[pa](;W[oa](;B[ob](;W[rb](;B[na](;W[sb]C[✗ 失败])))))))))))

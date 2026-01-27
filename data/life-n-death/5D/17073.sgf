@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-17073]
+AN[admin]
+SO[https://www.101weiqi.com/5D/17073/]
+GC[死活题 | 5D | 正确率: 35.1% (722/2059)]
+C[黑先 死活题]
+AB[of][jb][lf][rc][qb][lc][nf][pg][qa][rf][rg][pc][rd][me][sb][pa][ld][kb]
+AW[qd][qc][md][lb][pb][ob][qe][mc][rb][ne][oe]
+PL[B]
+(;B[oc](;W[nb](;B[nc](;W[nd](;B[ra]C[✓ 正确])(;B[oa](;W[na](;B[ra](;W[ka](;B[ja](;W[ma]C[✗ 失败])))))))))))

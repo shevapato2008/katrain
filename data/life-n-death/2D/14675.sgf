@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-14675]
+AN[admin]
+SO[https://www.101weiqi.com/2D/14675/]
+GC[手筋题 | 2D | 正确率: 16.1% (985/6100)]
+C[黑先 手筋题]
+AB[le][qc][lb][lf][rc][qe][lc][mg][rb][lg][ld][qg]
+AW[qb][mf][nh][pc][oc][oe][og][ph]
+PL[B]
+(;B[od](;W[pd](;B[of](;W[nf](;B[nd](;W[pe](;B[pf]C[✓ 正确])))(;B[pf](;W[nd](;B[me](;W[ne](;B[ng](;W[nb](;B[pb](;W[ob](;B[qa](;W[mc]C[✗ 失败]))))))))(;B[ng](;W[nb](;B[pb](;W[ob](;B[qa](;W[mc](;B[md](;W[mb](;B[ne](;W[pe]C[✗ 失败])))))))))))))(;W[pf](;B[pe](;W[nd](;B[nf]C[⚡ 变化]))))))(;W[nd](;B[pd](;W[pe](;B[qd](;W[nc](;B[ne](;W[me](;B[nf]C[⚡ 变化])))))))))(;B[of](;W[pf](;B[od](;W[nd](;B[pd](;W[pe](;B[qd](;W[nc](;B[ne](;W[me]C[✗ 失败 | 黑失敗]))(;B[nf](;W[ne](;B[ng](;W[pg]C[✗ 失败 | 黑失敗]))))))))(;B[nf](;W[pe](;B[pg](;W[ng](;B[me](;W[qf](;B[rf](;W[re](;B[qd](;W[rg](;B[qh](;W[sf](;B[pb](;W[qi]C[✗ 失败 | 黑失敗]))(;B[qi](;W[ne](;B[pb](;W[mf]C[✗ 失败 | 黑失敗]))(;B[mf](;W[pb]C[✗ 失败 | 黑淨死]))))))))))))))))))))(;B[pd](;W[od](;B[of](;W[pf](;B[nf](;W[pe](;B[pg](;W[qf]C[✗ 失败])))))))))

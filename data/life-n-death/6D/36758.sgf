@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-36758]
+AN[爱乐奕]
+SO[https://www.101weiqi.com/6D/36758/]
+GC[官子题 | 6D | 正确率: 9.9% (137/1377)]
+C[白先 官子题]
+AB[nd][qc][md][jb][jc][rb][kd][pc][sb][pd][ne][ib][oe][ld]
+AW[qd][of][od][le][id][rc][qf][sc][kc][ke][hc][hb][nf][jd][rd][me][pe]
+PL[W]
+(;W[nb]C[正解](;B[mb](;W[pb](;B[oc](;W[qb](;B[ob](;W[qa]C[✓ 正确]))))(;B[ob](;W[qb](;B[oc](;W[ra]C[⚡ 变化]))))))(;B[nc](;W[lb](;B[kb](;W[lc](;B[ob](;W[mb](;B[la](;W[ma](;B[ja]C[⚡ 变化])))))))))(;B[oc](;W[lb](;B[mb](;W[kb](;B[lc](;W[ma](;B[mc](;W[la](;B[oa](;W[ob](;B[pa](;W[pb](;B[qb](;W[ic](;B[nc](;W[ia](;B[na](;W[ja]C[⚡ 变化])))))))))))))))))))(;W[pb](;B[ob](;W[qb](;B[oc](;W[qa]C[✓ 正确]))))(;B[qb](;W[nb](;B[ob](;W[lb](;B[kb](;W[lc]C[⚡ 变化]))))(;B[mb](;W[lb](;B[mc](;W[ma](;B[oc](;W[kb]C[⚡ 变化])))))))))(;W[oc](;B[ob](;W[nc](;B[lc](;W[nb](;B[pb](;W[qa](;B[qb](;W[lb](;B[kb](;W[mb](;B[oa]C[✗ 失败])))))))))))))

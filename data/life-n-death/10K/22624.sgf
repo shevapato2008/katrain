@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22624]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/10K/22624/]
+GC[对杀题 | 10K+ | 正确率: 51.2% (17799/34777)]
+C[黑先 对杀题]
+AB[qd][qc][nd][sd][ob][mc][rb][pd][rd][oc]
+AW[od][pb][rc][qb][ra][pe][qe][pc][re][oe]
+PL[B]
+(;B[sb]C[✓ 正确 | RIGHT
+恭喜答对])(;B[sc](;W[sb]C[✗ 失败 | 成劫，失败])))

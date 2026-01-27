@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-49504]
+AN[qzwq01]
+SO[https://www.101weiqi.com/6K/49504/]
+GC[对杀题 | 6K | 正确率: 49.6% (9995/20154)]
+C[黑先 对杀题]
+AB[qd][qc][nd][md][pb][qb][na][ob][nb][oe][kc][rb][jd][re][pe][ld][kb]
+AW[rc][qf][qe][ra][nc][mc][mb][ma][sb][rf][pd][pc][rd][oc]
+PL[B]
+(;B[pa](;W[se](;B[od](;W[sc](;B[lc](;W[sa](;B[lb]C[⚡ 变化]))))(;W[sa](;B[lc](;W[sc](;B[lb](;W[qa](;B[la]C[⚡ 变化]))))))))(;W[sa](;B[la](;W[sc](;B[lb](;W[se](;B[od](;W[qa](;B[lc]C[⚡ 变化])))))))))(;B[sc](;W[sd](;B[pa]C[✓ 正确])))(;B[se](;W[sc](;B[pa]C[✓ 正确]))(;W[sf](;B[pa]C[✓ 正确])))(;B[qa](;W[pa]C[✗ 失败])))

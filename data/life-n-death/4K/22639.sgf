@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22639]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/4K/22639/]
+GC[对杀题 | 4K+ | 正确率: 62.7% (13851/22102)]
+C[黑先 对杀题]
+AB[qd][qc][sd][nc][mb][mc][rb][pd][rd][oc]
+AW[od][pb][qb][ob][pa][qe][pe][ra][pc][re][oe][sa][se]
+PL[B]
+(;B[sc](;W[sb](;B[qa](;W[sb](;B[sa](;W[ra]C[✓ 正确])))(;W[ra](;B[sb]C[⚡ 变化]))))(;W[qa](;B[nb]C[⚡ 变化])))(;B[sb](;W[rc]C[✗ 失败 | 失败，重来吧])))

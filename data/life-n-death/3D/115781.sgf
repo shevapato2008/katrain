@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-108302]
+AN[方块A]
+SO[https://www.101weiqi.com/3D/115781/]
+GC[死活题 | 3D | 正确率: 45.3% (2385/5262) | 三村智保九段创作]
+C[黑先 死活题]
+AB[qc][pb][rc][nb][nc]
+AW[nd][od][md][na][mb][mc][ma][pd][rd][re]
+PL[B]
+(;B[qa](;W[sb](;B[rb](;W[sc](;B[oa](;W[pc](;B[ob](;W[ra](;B[sa]C[✓ 正确])))))))(;B[sc](;W[rb](;B[oa](;W[ob]C[✗ 失败])))))(;W[rb](;B[sb](;W[ra](;B[oa]C[⚡ 变化]))))(;W[ob](;B[rb]C[⚡ 变化])))(;B[oa](;W[rb](;B[ra](;W[sc](;B[sb]C[✗ 失败])))))(;B[sb](;W[ra](;B[qa](;W[oa](;B[rb](;W[pa](;B[pc](;W[qb]C[✗ 失败])))))))))

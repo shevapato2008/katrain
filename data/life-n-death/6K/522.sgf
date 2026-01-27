@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-522]
+AN[admin]
+SO[https://www.101weiqi.com/6K/522/]
+GC[死活题 | 6K+ | 正确率: 40.2% (8571/21328) | 黑先]
+C[黑先 死活题]
+AB[qd][qc][qf][ra][rb][rf]
+AW[pb][qb][rg][pc][pd][pf][pe][qg][sf]
+PL[B]
+(;B[sd](;W[qe](;B[re](;W[sg](;B[rc](;W[se](;B[sb](;W[rd](;B[re](;W[rf](;B[rd]C[✓ 正确])))))(;B[rd](;W[sb]C[✗ 失败])))(;W[sb](;B[se]C[✓ 正确])))(;B[sb]C[✓ 正确])(;B[rd](;W[sb](;B[sc]C[✓ 正确])))(;B[sc](;W[rd](;B[rc](;W[se]C[✗ 失败]))))(;B[se](;W[sc]C[✗ 失败]))))(;B[rd](;W[sb](;B[sc]C[✓ 正确]))))(;W[rd](;B[re](;W[qe](;B[rc](;W[sg](;B[se]C[⚡ 变化])))))))(;B[sc](;W[rd](;B[re](;W[se](;B[qe](;W[sd]C[✗ 失败]))))))(;B[rd](;W[sc](;B[sb](;W[sd]C[✗ 失败]))))(;B[re](;W[sd](;B[se](;W[qe]C[✗ 失败])))))

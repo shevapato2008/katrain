@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-14670]
+AN[admin]
+SO[https://www.101weiqi.com/2D/14670/]
+GC[手筋题 | 2D | 正确率: 25.4% (2167/8541) | 3-3-1-5
+黑先]
+C[黑先 手筋题]
+AB[nd][od][qd][of][pb][ng][pd][pf][oc][pa]
+AW[md][qc][qf][qb][ob][nb][nc][qe][mf][pg][ne][qi]
+PL[B]
+(;B[rb](;W[rc](;B[rd](;W[sd](;B[sb](;W[ra](;B[se]C[✓ 正确])(;B[pc](;W[re](;B[qa]C[✓ 正确])))(;B[qa]C[✓ 正确])))(;B[re](;W[ra](;B[sb](;W[pc]C[✗ 失败]))))(;B[se](;W[sb](;B[ra](;W[re]C[✗ 失败]))(;B[sc](;W[ra](;B[qa](;W[sd]C[✗ 失败])))))))(;W[sb](;B[ra](;W[pc](;B[qa](;W[sc](;B[sd]C[⚡ 变化])))))))))(;B[rd](;W[pc]C[✗ 失败]))(;B[rc](;W[rb](;B[rd](;W[pc]C[✗ 失败])))))

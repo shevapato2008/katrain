@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-487]
+AN[admin]
+SO[https://www.101weiqi.com/10K/487/]
+GC[死活题 | 10K+ | 正确率: 65.7% (19952/30379)]
+C[黑先 死活题]
+AB[qd][lb][rc][nc][lc][mc][sb][pd][rd][oc]
+AW[qc][pb][ob][nb][mb][rb][pc]
+PL[B]
+(;B[qa](;W[ra](;B[ma](;W[na](;B[pa]C[✓ 正确]))(;W[pa](;B[na]C[⚡ 变化])))(;B[pa](;W[oa](;B[ma]C[✓ 正确]))))(;W[pa](;B[ma](;W[na](;B[ra]C[✓ 正确])))(;B[na](;W[ma](;B[ra]C[✓ 正确])))(;B[ra]C[✓ 正确 | RIGHT
+恭喜答对])))(;B[ra](;W[qa]C[✗ 失败 | 成劫，失败]))(;B[ma](;W[qa](;B[ra](;W[sa]C[✗ 失败])))))

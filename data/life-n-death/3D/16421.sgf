@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16421]
+AN[admin]
+SO[https://www.101weiqi.com/3D/16421/]
+GC[死活题 | 3D | 正确率: 28.0% (2019/7214) | 出题者：児玉国男五段（昭和36年6月）]
+C[黑先 死活题]
+AB[md][od][qc][mc][pc][ne][pd][me][oe]
+AW[le][lb][of][lf][qd][rc][nd][qe][pe][nf][rb][kc][mf][ld]
+PL[B]
+(;B[pa](;W[na](;B[nb](;W[qb](;B[nc]C[✓ 正确])(;B[ma](;W[mb](;B[nc]C[✓ 正确])))(;B[pb](;W[nc]C[✗ 失败])))))(;W[nb](;B[mb](;W[ma](;B[ob](;W[nc](;B[na](;W[qb](;B[pb]C[✓ 正确 | 黑淨活])(;B[oc]C[✓ 正确]))(;W[oa](;B[oc](;W[qb](;B[na](;W[pb](;B[nc]C[⚡ 变化])))))))))(;B[na](;W[oa](;B[ob]C[✓ 正确]))(;W[nc](;B[ob](;W[qb](;B[pb]C[⚡ 变化]))))))(;W[ob](;B[ma]C[⚡ 变化 | 黑淨活])))(;B[ob](;W[nc](;B[mb](;W[ma](;B[na](;W[qb](;B[oc]C[✓ 正确])(;B[pb](;W[oa](;B[oc]C[✓ 正确])))))))))))(;B[mb](;W[pa](;B[oa](;W[ma](;B[nb](;W[nc]C[✗ 失败])(;W[ob]C[✗ 失败 | 黑淨死]))))(;B[ob](;W[nc]C[✗ 失败 | 黑淨死]))))(;B[na](;W[pa](;B[pb](;W[nc]C[✗ 失败 | 黑淨死]))))(;B[ob](;W[nc](;B[pa](;W[na]C[✗ 失败 | 黑淨死]))(;B[mb](;W[qb]C[✗ 失败]))(;B[qb](;W[nb]C[✗ 失败 | 黑淨死]))))(;B[qb](;W[nb](;B[ob](;W[nc](;B[mb](;W[ma]C[✗ 失败 | 黑淨死]))))(;B[nc](;W[ob]C[✗ 失败 | 黑淨死]))(;B[mb](;W[ma](;B[nc](;W[ob]C[✗ 失败 | 黑淨死]))(;B[ob](;W[nc]C[✗ 失败 | 黑淨死]))))))(;B[nc](;W[ob]C[✗ 失败 | 黑淨死]))(;B[oa](;W[nc](;B[nb](;W[qb]C[✗ 失败]))(;B[qb](;W[pa](;B[qa](;W[nb](;B[mb](;W[ma]C[✗ 失败]))))))))(;B[nb](;W[pa](;B[oa](;W[nc]C[✗ 失败])))))

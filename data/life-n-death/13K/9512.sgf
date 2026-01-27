@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-9512]
+AN[admin]
+SO[https://www.101weiqi.com/13K/9512/]
+GC[对杀题 | 13K+ | 正确率: 82.9% (20531/24765) | 黑先胜]
+C[黑先 对杀题]
+AB[sj][qd][rj][qe][pg][sh][qh][rg][pf][ri][qi][si]
+AW[qf][rc][qk][ph][qj][rf][sk][rk][pi][qg][sf]
+PL[B]
+(;B[re](;W[sg](;B[se]C[✓ 正确]))(;W[se](;B[sd](;W[rd](;B[sg]C[⚡ 变化])))))(;B[se](;W[re](;B[rd](;W[sd](;B[qc](;W[rb](;B[sc](;W[sb](;B[qb](;W[ra]C[✗ 失败])))))))))))

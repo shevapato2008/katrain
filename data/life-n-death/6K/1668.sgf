@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1668]
+AN[admin]
+SO[https://www.101weiqi.com/6K/1668/]
+GC[吃子题 | 6K | 正确率: 49.9% (9703/19444)]
+C[黑先 吃子题]
+AB[qd][od][lf][qe][pc][ki][ld]
+AW[le][qc][rc][pd][rd][pe][oh]
+PL[B]
+(;B[pf](;W[oe](;B[ne](;W[of](;B[og](;W[nf](;B[ng](;W[mf](;B[me](;W[mg](;B[mh](;W[lg](;B[kg](;W[lh](;B[li](;W[kf](;B[kh](;W[lf](;B[jf](;W[ke](;B[je](;W[kd](;B[kc]C[✓ 正确])))(;B[kd](;W[je](;B[ie]C[⚡ 变化]))))))))))(;W[kf](;B[lh](;W[lf](;B[jf](;W[ke](;B[kd](;W[je](;B[ie](;W[jd](;B[jc](;W[id](;B[hd](;W[ic](;B[ib](;W[hc](;B[gc](;W[hb](;B[ha](;W[gb](;B[fb](;W[ga](;B[fa]C[⚡ 变化])))))))))))))))))(;B[je]C[✓ 正确])))))))))))(;B[mg](;W[me](;B[ke](;W[nd](;B[md](;W[oc]C[✗ 失败]))))))))(;B[mf](;W[ng]C[✗ 失败]))))(;B[nf](;W[og]C[✗ 失败])))))))

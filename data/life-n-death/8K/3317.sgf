@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-3317]
+AN[admin]
+SO[https://www.101weiqi.com/8K/3317/]
+GC[死活题 | 8K | 正确率: 67.4% (16059/23841)]
+C[黑先 死活题]
+AB[pb][qf][qe][pc][rf][pd]
+AW[qd][qc][sd][rc][re]
+PL[B]
+(;B[rb](;W[qb](;B[qa](;W[ra](;B[sa](;W[sb](;B[sc]C[✓ 正确])))))))(;B[sf](;W[se](;B[ra](;W[rb](;B[sb](;W[qa](;B[qb](;W[sa]C[✓ 正确]))))))(;B[sb](;W[rb](;B[ra](;W[qa](;B[qb](;W[sa]C[✓ 正确]))))))(;B[rb](;W[qb](;B[qa](;W[ra](;B[sa](;W[sb](;B[sc]C[✓ 正确])))))))))(;B[sb](;W[rb](;B[ra](;W[qa](;B[qb](;W[sa]C[✓ 正确]))))(;B[sf](;W[se](;B[ra](;W[qa](;B[qb](;W[sa]C[✓ 正确])))))))(;W[ra](;B[sf](;W[se](;B[sc]C[⚡ 变化]))))(;W[qa](;B[sf](;W[se](;B[sc]C[⚡ 变化])))))(;B[ra](;W[rb](;B[sf](;W[se](;B[sb](;W[qa](;B[qb](;W[sa]C[✓ 正确]))))))(;B[sb](;W[qa](;B[qb](;W[sa]C[✓ 正确 | 由于这是白先提劫，使黑少了个劫财])))))))

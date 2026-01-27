@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[9]
+GN[Q-76854]
+AN[弈学园围棋]
+SO[https://www.101weiqi.com/15K/76854/]
+GC[吃子题 | 15K | 正确率: 94.8% (51818/54634) | 小朋友，请在1步之内吃掉白棋~]
+C[黑先 吃子题]
+AB[hi][id][gf][he][ge][hh][gg]
+AW[if][ih][hd][gd][hg][fd][hf][ie]
+PL[B]
+(;B[ic](;W[hc](;B[ig]C[✓ 正确])(;B[ib](;W[hb](;B[ig]C[✓ 正确])))))(;B[ig]C[✓ 正确]))

@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-275]
+AN[admin]
+SO[https://www.101weiqi.com/3D/275/]
+GC[官子题 | 3D+ | 正确率: 24.2% (1148/4746)]
+C[黑先 官子题]
+AB[nd][qe][pe][nc][mb][lc][rd][re][oe]
+AW[qd][rc][ob][nb][pd][oc]
+PL[B]
+(;B[rb](;W[sc](;B[qb](;W[qc](;B[sb](;W[ra](;B[od](;W[qa](;B[sd](;W[pc](;B[na](;W[pa]C[✓ 正确])))))(;W[pc](;B[na](;W[pa](;B[ma](;W[oa](;B[qa]C[⚡ 变化]))))))))(;W[qa](;B[od](;W[ra](;B[sd](;W[pc](;B[na](;W[pa]C[✓ 正确]))))))(;B[sd](;W[ra](;B[od](;W[pc](;B[na](;W[pa]C[✓ 正确]))))))))(;B[pb](;W[ra](;B[qa](;W[sb](;B[na](;W[oa](;B[od](;W[pc](;B[sa](;W[ma]C[✗ 失败]))))))(;B[sa](;W[na](;B[sd](;W[pc](;B[od](;W[pa](;B[oa](;W[ra]C[✗ 失败]))))))))(;B[od](;W[pc](;B[sa](;W[pa](;B[oa](;W[na]C[✗ 失败]))))))))))))(;B[qc](;W[qb](;B[sd](;W[pc]C[✗ 失败]))))))(;B[sc](;W[rb](;B[sb](;W[qb]C[✗ 失败])))))

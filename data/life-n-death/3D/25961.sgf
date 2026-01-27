@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25961]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/3D/25961/]
+GC[死活题 | 3D | 正确率: 23.3% (1544/6620)]
+C[白先 死活题]
+AB[qd][qc][se][re]
+AW[qf][qe][nc][pc][rf][pd]
+PL[W]
+(;W[sc]C[正解](;B[sb]C[骗招](;W[qb]C[冷静](;B[rb](;W[rc](;B[rd](;W[ra](;B[sd](;W[pb]C[✓ 正确])(;W[ob]C[✓ 正确])(;W[pa]C[✓ 正确])(;W[qa]C[✓ 正确])))(;W[qa]C[✓ 正确])))))(;W[rb]C[上当](;B[qb](;W[sa](;B[rc](;W[sf](;B[qa](;W[rd](;B[ra](;W[sd](;B[sb]C[✗ 失败 | 黑净活])))))))))))(;B[qb]C[变化图](;W[sb]C[冷静。](;B[rd](;W[rb](;B[pb](;W[ob](;B[pa](;W[ra]C[✓ 正确])))))(;W[ob]C[✓ 正确])(;W[pa]C[✓ 正确])(;W[pb]C[✓ 正确 | 以下A、B见合，黑棋净死。])))(;W[rd]C[失败图](;B[sb](;W[rb](;B[ra]C[✗ 失败 | 成为劫争。])))))(;B[rc](;W[sb](;B[rb](;W[sf](;B[rd]C[变化图](;W[pb]C[⚡ 变化 | 黑棋净死。]))(;B[pb](;W[ob](;B[rd](;W[pa](;B[qa](;W[oa](;B[sa](;W[qb]C[⚡ 变化 | 黑淨死(連環劫) 但黑有無限劫材])))))))))))(;W[pa](;B[sb](;W[ra]C[⚡ 变化]))(;B[ra](;W[sb]C[⚡ 变化]))(;B[qb](;W[sb](;B[pb](;W[ob](;B[qa](;W[rd](;B[sd](;W[sf](;B[oa](;W[na](;B[rd](;W[ra]C[⚡ 变化])))))))))))))(;W[pb]C[黑淨死](;B[sb](;W[ra]C[⚡ 变化])))(;W[rb](;B[qb](;W[sb](;B[ra](;W[sf]C[⚡ 变化])))))))(;W[rb](;B[qb](;W[sc](;B[rc](;W[sb]C[⚡ 变化]))(;B[sb](;W[sa](;B[rc]C[✗ 失败]))(;W[rc](;B[ra]C[✗ 失败]))))(;W[pb](;B[ra](;W[rc](;B[rd](;W[sb](;B[sc]C[✗ 失败]))))))(;W[rc](;B[rd](;W[ra](;B[qa](;W[sc](;B[sb](;W[pb](;B[sd]C[✗ 失败]))))))))))(;W[pb]C[失败图](;B[qb]C[还原成第10型，结果是劫。](;W[qa](;B[ra](;W[sb](;B[sc](;W[rc](;B[rd]C[✗ 失败]))))))(;W[rb](;B[ra](;W[rc](;B[rd](;W[sc](;B[sb]C[✗ 失败]))))))(;W[sc](;B[sb](;W[rb](;B[ra]C[✗ 失败])))))))

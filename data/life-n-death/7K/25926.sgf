@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-25926]
+AN[sunshiny84]
+SO[https://www.101weiqi.com/7K/25926/]
+GC[死活题 | 7K | 正确率: 60.3% (14420/23906)]
+C[白先 死活题]
+AB[sd][qc][qb][qa][rd]
+AW[qd][od][pb][qe][pc][re][pa]
+PL[W]
+(;W[rb](;B[rc](;W[sb]C[✓ 正确])(;W[sa](;B[sb](;W[sc]C[✗ 失败]))))(;B[sb]C[变化图](;W[rc]C[⚡ 变化]))(;B[ra](;W[rc]C[⚡ 变化])))(;W[sb]C[失败图1](;B[rb](;W[se](;B[sa](;W[ra]C[✗ 失败 | 成为劫争。])))(;W[sa](;B[sc](;W[se](;B[ra]C[✗ 失败]))))(;W[sc](;B[sa](;W[ra]C[✗ 失败])))))(;W[se]C[失败图2](;B[sb]C[✗ 失败 | 黑棋净活。])))

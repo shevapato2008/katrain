@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-1057]
+AN[admin]
+SO[https://www.101weiqi.com/2D/1057/]
+GC[死活题 | 2D | 正确率: 33.7% (1805/5352)]
+C[黑先 死活题]
+AB[nd][od][md][lb][sd][sc][qe][lc][mb][pd][re][pa][se]
+AW[rc][nb][nc][mc][rb][sb][pc][rd][oc]
+PL[B]
+(;B[pb](;W[na](;B[qc](;W[qb](;B[qd]C[✓ 正确]))))(;W[oa](;B[ob]C[✓ 正确])(;B[qb](;W[qc](;B[ra]C[✗ 失败])))))(;B[na](;W[pb](;B[qa](;W[oa](;B[ob](;W[ra](;B[oa](;W[qb](;B[ma](;W[qd]C[✗ 失败]))))))))(;B[ra](;W[oa](;B[ob](;W[qb](;B[oa](;W[qa](;B[ma](;W[qd]C[✗ 失败]))))))))))(;B[qc](;W[qb](;B[pb](;W[oa]C[✗ 失败])))))

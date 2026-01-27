@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-48996]
+AN[方块A]
+SO[https://www.101weiqi.com/5D/48996/]
+GC[死活题 | 5D | 正确率: 24.4% (570/2332) | 简单的死活题，千万不能大意，抓住棋型的特点，就能接近真相。]
+C[白先 死活题]
+AB[od][ob][oa][rg][rf][pf][oc][pe][se]
+AW[qc][qe][pc][qa][re]
+PL[W]
+(;W[sb](;B[rd](;W[rc](;B[ra](;W[pb](;B[pa](;W[rb](;B[qb](;W[sd]C[✓ 正确 | 利用连环劫净活])))(;W[sd](;B[sc](;W[rb](;B[qb](;W[sd]C[✓ 正确])))(;W[qd](;B[sd](;W[sf](;B[sd](;W[rb](;B[qb]C[✗ 失败 | 打劫])))))))))(;B[rb](;W[sd]C[⚡ 变化])))(;W[sd](;B[sc](;W[pb](;B[pa](;W[sd]C[✓ 正确])(;W[rb](;B[qb](;W[sd]C[✓ 正确])))))))))(;W[sd](;B[rc](;W[qd](;B[rb](;W[qb](;B[sc](;W[ra](;B[sa]C[✗ 失败])))))))))(;B[ra](;W[rb](;B[pb](;W[sd](;B[qb](;W[rc]C[⚡ 变化]))))))(;B[sd](;W[rd](;B[ra](;W[rb](;B[pb](;W[qb]C[⚡ 变化])))))))(;W[sd](;B[rb](;W[qb](;B[rc](;W[sb](;B[ra](;W[pd](;B[pa]C[✗ 失败 | 净死]))(;W[sf](;B[qd](;W[pd](;B[pb](;W[rd](;B[pa]C[✗ 失败]))))))))))))(;W[rb](;B[rd](;W[pb](;B[sb](;W[sc](;B[rc](;W[sa](;B[sd](;W[pa](;B[sb]C[✗ 失败 | 成劫])))))))(;B[rc](;W[pa](;B[sb](;W[qd](;B[sd](;W[sa](;B[ra]C[✗ 失败]))))))))))(;W[rd](;B[rb]C[✗ 失败])))

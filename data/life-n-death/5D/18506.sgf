@@ -1,0 +1,12 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-18506]
+AN[admin]
+SO[https://www.101weiqi.com/5D/18506/]
+GC[死活题 | 5D | 正确率: 31.2% (989/3171) | 海的对岸有白三角子，怎么做才能抵达此一离岛呢？]
+C[白先 死活题]
+AB[nl][qc][qm][rm][om][qk][qe][nh][pm][nf][rg][pf][rd][pi][pe][ni][nk][ph]
+AW[pj][qf][rb][pl][ql][qj][rl][qh][qi]
+PL[W]
+(;W[rh]C[正解2](;B[rk](;W[sk](;B[sh](;W[rf](;B[qg](;W[sg]C[白5夹、7扑是关键](;B[sf](;W[si](;B[pk](;W[sg](;B[rj](;W[pg](;B[qg](;W[re](;B[se](;W[sd](;B[se](;W[sc]C[⚡ 变化 | 恢复成正解1])))))))))(;W[ok](;B[rj](;W[sg](;B[ol](;W[pg](;B[qg](;W[re](;B[se](;W[sd](;B[se](;W[sc]C[⚡ 变化])))))))))))))))(;W[si](;B[pk](;W[ok](;B[rj](;W[ri](;B[oj](;W[sj](;B[ol]C[✗ 失败]))))))(;W[sg](;B[rj](;W[pg](;B[qg]C[✗ 失败]))))))))(;W[si]C[失败](;B[pk](;W[ok](;B[rj](;W[sg](;B[oj](;W[rf](;B[qg](;W[pg](;B[qg](;W[se](;B[re]C[✗ 失败 | 如果不做（正解图2主分支中）5夹、7扑的交换而直接在5位挡的话，至黑16止没有眼位。
+
+这是有点令人啼笑皆非的问题。]))))))))))))))))(;W[rf]C[正解1](;B[qg](;W[rh]C[白棋从1位动手、3位挡下。](;B[rk](;W[sk]C[黑4时5扳，乍看好像单在此处即可做活。](;B[sh]C[但黑有6扳，仅仅在此处是做不活的。](;W[sg]C[不过，此时7位之扑绝妙。](;B[sf](;W[si]C[叫8提然后9位挡，此一交换很有作用。](;B[pk](;W[ok](;B[rj](;W[sg]C[✓ 正确])))(;W[sg](;B[rj](;W[pg](;B[qg](;W[re](;B[se](;W[sd](;B[se](;W[sc]C[以下至19活了](;B[ok](;W[ri]C[⚡ 变化])))))))))))))))(;W[si](;B[pk](;W[ok](;B[rj](;W[sg](;B[oj](;W[pg](;B[qg]C[✗ 失败])))))))))))))(;B[rk](;W[sk](;B[qg](;W[rh](;B[sh](;W[sg](;B[sf](;W[si](;B[pk](;W[sg]C[⚡ 变化])))))))))))(;W[rk](;B[sj](;W[si](;B[ri](;W[rh](;B[sh](;W[rj](;B[si](;W[sk](;B[sg](;W[qg](;B[rf]C[✗ 失败])))))))))))))

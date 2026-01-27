@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-16097]
+AN[admin]
+SO[https://www.101weiqi.com/6D/16097/]
+GC[死活题 | 6D | 正确率: 20.9% (397/1899)]
+C[黑先 死活题]
+AB[hc][nf][sb][rc][qb][he][jc][ne][ld][gb][qd][md][hd][qe][mg][pc][kg][kd][jf][kb]
+AW[le][od][lb][id][gc][pb][ob][ke][lc][rb][jd][qa][me]
+PL[B]
+(;B[ra](;W[kc](;B[jb](;W[nd](;B[oc](;W[nc](;B[na](;W[ma](;B[mb](;W[la](;B[nb](;W[mc](;B[oa](;W[pa](;B[nb]C[✓ 正确])))))))))))))))(;B[kc](;W[qc](;B[rd](;W[pd]C[✗ 失败])))))

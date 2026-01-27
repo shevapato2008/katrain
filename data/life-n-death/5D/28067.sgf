@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-28067]
+AN[ling197000]
+SO[https://www.101weiqi.com/5D/28067/]
+GC[死活题 | 5D | 正确率: 36.6% (745/2038) | 毋自任而为气所使，毋以己之长而形人之短，毋因己之拙而忌人之能。]
+C[黑先 死活题]
+AB[of][od][pb][sc][oe][ph][ra][qe][qj][qh][rk][rd][re][oc][rh][pa][og][sf]
+AW[sd][qd][qc][qf][pe][rb][sh][rg][pd][ri][pf][si][qg]
+PL[B]
+(;B[sb](;W[rc](;B[se](;W[rf](;B[sg](;W[sd](;B[re]C[✓ 正确 | 飞扬棋友jianglin_qin录入])))(;B[qa](;W[sg](;B[sa](;W[sd](;B[se](;W[re](;B[rd]C[✗ 失败]))))))))(;W[sg](;B[rf](;W[sd](;B[re]C[⚡ 变化])))))(;B[rf](;W[sa](;B[sb](;W[sg]C[✗ 失败]))))(;B[sg](;W[sa]C[✗ 失败]))))(;B[rc](;W[qb](;B[sb](;W[qa](;B[sg](;W[rf](;B[se](;W[sa]C[✗ 失败 | 白棋有利的缓一气劫]))))))))(;B[sg](;W[sb](;B[qi](;W[rf]C[✗ 失败]))))(;B[se](;W[sb]C[✗ 失败])))

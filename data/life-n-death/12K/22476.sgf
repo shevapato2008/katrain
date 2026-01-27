@@ -1,0 +1,11 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-22476]
+AN[苍鹰翔宇]
+SO[https://www.101weiqi.com/12K/22476/]
+GC[吃子题 | 12K | 正确率: 77.5% (20764/26809)]
+C[黑先 吃子题]
+AB[qd][rc][pb][qb][oe][rd][pe]
+AW[md][qc][lb][qe][lc][pc][pd][re][oc][qg]
+PL[B]
+(;B[nc](;W[ob](;B[nb]C[✓ 正确 | RIGHT
+恭喜答对])))(;B[od](;W[nc]C[✗ 失败]))(;B[nd](;W[nc]C[✗ 失败]))(;B[ob](;W[nc]C[✗ 失败]))(;B[nb](;W[nc]C[✗ 失败])))

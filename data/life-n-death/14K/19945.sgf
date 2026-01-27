@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-19945]
+AN[Xian guang]
+SO[https://www.101weiqi.com/14K/19945/]
+GC[手筋题 | 14K+ | 正确率: 89.2% (22127/24799)]
+C[黑先 手筋题]
+AB[qd][qe][pg][qh][pd][pf]
+AW[of][qc][od][qf][oe][nc][pc][pe]
+PL[B]
+(;B[rf]C[✓ 正确])(;B[re](;W[rf]C[✗ 失败]))(;B[rd](;W[rf]C[✗ 失败])))

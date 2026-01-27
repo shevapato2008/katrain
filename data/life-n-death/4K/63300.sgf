@@ -1,0 +1,10 @@
+(;GM[1]FF[4]CA[UTF-8]AP[101weiqi-scraper]SZ[19]
+GN[Q-63300]
+AN[kenny]
+SO[https://www.101weiqi.com/4K/63300/]
+GC[死活题 | 4K+ | 正确率: 55.6% (10024/18025)]
+C[黑先 死活题]
+AB[qd][nd][rc][nb][nc][pd][re][se]
+AW[sd][qc][ob][rb][oa][pc][oc]
+PL[B]
+(;B[sb](;W[qa](;B[pb](;W[sa]C[✓ 正确]))))(;B[qa](;W[sb](;B[qb](;W[ra]C[✗ 失败]))(;B[ra](;W[qb]C[✗ 失败 | 最多双活]))))(;B[ra](;W[qa](;B[sb](;W[sa]C[✗ 失败])))))

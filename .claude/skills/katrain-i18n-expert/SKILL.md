@@ -109,10 +109,40 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useTranslation } from '../../hooks/useTranslation';
 ```
 
+### CRITICAL: Always Use useTranslation() Hook — Never Use i18n.t() Alone
+
+**Every React component that calls `i18n.t()` MUST also call `useTranslation()`.** Without the hook, the component will not re-render when the user switches languages from the sidebar, because there is no React state change to trigger a re-render.
+
+```tsx
+// WRONG — translations will not update on language switch
+import { i18n } from '../../../i18n';
+
+export default function MyComponent() {
+  return <Typography>{i18n.t('live:try', 'Try')}</Typography>;
+}
+
+// CORRECT — component re-renders when language changes
+import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
+
+export default function MyComponent() {
+  useTranslation(); // subscribes to language changes, triggers re-render
+  return <Typography>{i18n.t('live:try', 'Try')}</Typography>;
+}
+```
+
+**Why this matters:** `i18n.t()` reads from the global `i18n` singleton which does update internally, but React has no way to know the data changed unless a state update triggers a re-render. The `useTranslation()` hook subscribes to `i18n.notify()` via `useState`, which is what triggers the re-render.
+
+**Checklist when adding translations to a component:**
+1. Does the component import `useTranslation`? If not, add the import.
+2. Does the component function body call `useTranslation()`? If not, add the call.
+3. Verify by switching languages in the sidebar — text should update immediately without a page refresh.
+
 ### i18n Class (Low-level)
 - Source: `katrain/web/ui/src/i18n.ts`
 - Loads translations from API: `/api/translations?lang=xx`
 - Used internally by `useTranslation` hook
+- **Do not use `i18n.t()` in React components without also calling `useTranslation()`**
 
 ### Settings Context
 - Location: `katrain/web/ui/src/galaxy/context/SettingsContext.tsx`

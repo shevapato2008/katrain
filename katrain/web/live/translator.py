@@ -12,6 +12,7 @@ Translation priority:
 import json
 import logging
 import re
+import time
 from datetime import datetime
 from difflib import SequenceMatcher
 from functools import lru_cache
@@ -148,6 +149,13 @@ class LiveTranslator:
     DEFAULT_LANG = "en"
     SUPPORTED_LANGS = {"en", "cn", "tw", "jp", "ko"}
 
+    # Circuit breaker: disable LLM after this many consecutive failures
+    _LLM_FAILURE_THRESHOLD = 3
+    # Re-enable LLM after this many seconds
+    _LLM_COOLDOWN_SECONDS = 300  # 5 minutes
+    # Max size for negative cache (names that failed LLM translation)
+    _NEGATIVE_CACHE_MAX = 500
+
     def __init__(self, enable_llm: bool = True):
         """Initialize the translator.
 
@@ -158,6 +166,11 @@ class LiveTranslator:
         self._db_session: Optional[Session] = None
         self._player_index: dict[str, str] = {}  # alias -> canonical name (built from DB)
         self._index_built = False
+        # Circuit breaker state
+        self._llm_consecutive_failures = 0
+        self._llm_disabled_until: float = 0
+        # Negative cache: names that failed LLM translation {(name, lang): timestamp}
+        self._llm_negative_cache: dict[tuple[str, str], float] = {}
 
     def _build_player_index(self) -> None:
         """Build player alias index from database for fast lookup."""
@@ -858,7 +871,10 @@ class LiveTranslator:
         Returns:
             Translated name or None if failed
         """
-        if not self._enable_llm:
+        if not self._is_llm_available():
+            return None
+
+        if self._is_in_negative_cache(name, lang):
             return None
 
         try:
@@ -866,9 +882,11 @@ class LiveTranslator:
             result = self._call_llm(prompt)
             if result:
                 return result.strip()
+            self._add_to_negative_cache(name, lang)
             return None
         except Exception as e:
             logger.debug(f"LLM translation failed for player {name}: {e}")
+            self._add_to_negative_cache(name, lang)
             return None
 
     def _translate_tournament_with_llm(self, name: str, lang: str) -> Optional[str]:
@@ -881,7 +899,10 @@ class LiveTranslator:
         Returns:
             Translated name or None if failed
         """
-        if not self._enable_llm:
+        if not self._is_llm_available():
+            return None
+
+        if self._is_in_negative_cache(name, lang):
             return None
 
         try:
@@ -891,9 +912,11 @@ class LiveTranslator:
             result = self._call_llm(prompt)
             if result:
                 return result.strip()
+            self._add_to_negative_cache(name, lang)
             return None
         except Exception as e:
             logger.debug(f"LLM translation failed for tournament {name}: {e}")
+            self._add_to_negative_cache(name, lang)
             return None
 
     def _lang_name(self, lang: str) -> str:
@@ -906,11 +929,47 @@ class LiveTranslator:
             "ko": "Korean",
         }.get(lang, "English")
 
+    def _is_llm_available(self) -> bool:
+        """Check if LLM is available (circuit breaker not tripped)."""
+        if not self._enable_llm:
+            return False
+        if self._llm_disabled_until > 0:
+            now = time.monotonic()
+            if now < self._llm_disabled_until:
+                return False
+            # Cooldown expired, reset circuit breaker
+            logger.info("LLM circuit breaker cooldown expired, re-enabling LLM translations")
+            self._llm_consecutive_failures = 0
+            self._llm_disabled_until = 0
+        return True
+
+    def _is_in_negative_cache(self, name: str, lang: str) -> bool:
+        """Check if a name+lang pair is in the negative cache (recently failed)."""
+        key = (name.lower(), lang)
+        cached_at = self._llm_negative_cache.get(key)
+        if cached_at is None:
+            return False
+        # Negative cache entries expire with the same cooldown as the circuit breaker
+        if time.monotonic() - cached_at > self._LLM_COOLDOWN_SECONDS:
+            del self._llm_negative_cache[key]
+            return False
+        return True
+
+    def _add_to_negative_cache(self, name: str, lang: str) -> None:
+        """Add a name+lang pair to the negative cache."""
+        # Evict oldest entries if cache is full
+        if len(self._llm_negative_cache) >= self._NEGATIVE_CACHE_MAX:
+            oldest_key = min(self._llm_negative_cache, key=self._llm_negative_cache.get)
+            del self._llm_negative_cache[oldest_key]
+        self._llm_negative_cache[(name.lower(), lang)] = time.monotonic()
+
     def _call_llm(self, prompt: str) -> Optional[str]:
         """Call LLM API to generate translation.
 
         Currently uses Anthropic Claude API if configured.
         Falls back to None if no API key available.
+        Implements a circuit breaker: after consecutive failures, LLM calls
+        are disabled for a cooldown period to avoid flooding a broken API.
 
         Args:
             prompt: The prompt to send to LLM
@@ -918,6 +977,9 @@ class LiveTranslator:
         Returns:
             LLM response text or None if failed
         """
+        if not self._is_llm_available():
+            return None
+
         try:
             import anthropic
             import os
@@ -941,13 +1003,25 @@ class LiveTranslator:
             )
 
             if response.content:
+                # Success: reset circuit breaker
+                self._llm_consecutive_failures = 0
                 return response.content[0].text
             return None
         except ImportError:
             logger.debug("anthropic package not installed, skipping LLM translation")
+            # Permanent failure — disable LLM entirely
+            self._enable_llm = False
             return None
         except Exception as e:
-            logger.debug(f"LLM API call failed: {e}")
+            self._llm_consecutive_failures += 1
+            if self._llm_consecutive_failures >= self._LLM_FAILURE_THRESHOLD:
+                self._llm_disabled_until = time.monotonic() + self._LLM_COOLDOWN_SECONDS
+                logger.warning(
+                    f"LLM disabled for {self._LLM_COOLDOWN_SECONDS}s after "
+                    f"{self._llm_consecutive_failures} consecutive failures (last error: {e})"
+                )
+            else:
+                logger.debug(f"LLM API call failed ({self._llm_consecutive_failures}/{self._LLM_FAILURE_THRESHOLD}): {e}")
             return None
 
     def _get_llm_config(self, key: str) -> Optional[str]:

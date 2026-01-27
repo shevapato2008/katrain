@@ -2,6 +2,7 @@ import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { useState, useMemo } from 'react';
 import type { MoveAnalysis } from '../../types/live';
 import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface TrendChartProps {
   analysis: Record<number, MoveAnalysis>;
@@ -16,6 +17,7 @@ export default function TrendChart({
   currentMove,
   onMoveClick,
 }: TrendChartProps) {
+  useTranslation(); // subscribe to language changes
   const [tab, setTab] = useState(0);
 
   // Extract data for chart

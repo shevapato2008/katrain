@@ -5,6 +5,7 @@ import type { MoveAnalysis, TopMove } from '../../types/live';
 import { LiveAPI } from '../../api/live';
 import { useState, useMemo } from 'react';
 import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AiAnalysisProps {
   matchId: string;
@@ -37,6 +38,7 @@ export default function AiAnalysis({
   onMoveHover,
   topN = 3,
 }: AiAnalysisProps) {
+  useTranslation(); // subscribe to language changes
   const [requesting, setRequesting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
 

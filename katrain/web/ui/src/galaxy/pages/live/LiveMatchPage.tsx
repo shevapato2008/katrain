@@ -13,10 +13,12 @@ import PlaybackBar from '../../components/live/PlaybackBar';
 import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 // CommentSection import removed - Phase 7 deferred (was obscuring TrendChart)
 // import CommentSection from '../../components/live/CommentSection';
 
 export default function LiveMatchPage() {
+  useTranslation(); // subscribe to language changes
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   // PV moves for preview variation display

@@ -1662,10 +1662,10 @@ msgid "tsumego:tryMode"
 msgstr "Mode essai"
 
 msgid "live:top_matches"
-msgstr "TOP MATCHS"
+msgstr "Parties vedettes"
 
 msgid "live:upcoming"
-msgstr "À VENIR"
+msgstr "À venir"
 
 msgid "live:now_live"
 msgstr "En direct"
@@ -1674,7 +1674,7 @@ msgid "live:history"
 msgstr "Historique"
 
 msgid "live:enter_live"
-msgstr "Entrer en direct"
+msgstr "Voir en direct"
 
 msgid "live:view_game"
 msgstr "Voir la partie"
@@ -1686,13 +1686,13 @@ msgid "live:tomorrow"
 msgstr "Demain"
 
 msgid "live:in_days"
-msgstr "Dans {0} jours"
+msgstr "jours"
 
 msgid "live:moves"
 msgstr "coups"
 
 msgid "live:first_move"
-msgstr "Premier coup"
+msgstr "Premier"
 
 msgid "live:previous"
 msgstr "Précédent"
@@ -1704,37 +1704,37 @@ msgid "live:latest"
 msgstr "Dernier"
 
 msgid "live:auto_follow_on"
-msgstr "Suivi auto activé"
+msgstr "Suivi automatique : ACTIVÉ"
 
 msgid "live:auto_follow_off"
-msgstr "Cliquer pour suivre"
+msgstr "Suivi automatique : DÉSACTIVÉ"
 
 msgid "live:no_matches"
-msgstr "Pas de parties"
+msgstr "Aucune partie disponible"
 
 msgid "live:select_match"
-msgstr "Sélectionner une partie"
+msgstr "Sélectionnez une partie à regarder"
 
 msgid "live:status_live"
-msgstr "En direct"
+msgstr "EN DIRECT"
 
 msgid "live:status_finished"
-msgstr "Terminé"
+msgstr "Terminée"
 
 msgid "live:pts"
 msgstr "pts"
 
 msgid "live:no_upcoming"
-msgstr "Pas d'événements à venir"
+msgstr "Aucun événement à venir"
 
 msgid "live:official_info"
 msgstr "Info officielle"
 
 msgid "live:data_source"
-msgstr "Source: Nihon Ki-in, FoxWq"
+msgstr "Source de données"
 
 msgid "live:move_count"
-msgstr "Coup {0}/{1}"
+msgstr "Coup"
 
 msgid "live:black"
 msgstr "N"
@@ -1752,7 +1752,124 @@ msgid "live:rules_chinese"
 msgstr "Règles chinoises"
 
 msgid "live:komi"
-msgstr "Komi: {0} pts"
+msgstr "Komi"
 
 msgid "live:vs"
-msgstr "vs"
+msgstr "contre"
+
+msgid "live:try"
+msgstr "Essayer"
+
+msgid "live:try_move"
+msgstr "Essayer un coup"
+
+msgid "live:territory"
+msgstr "Territoire"
+
+msgid "live:territory_needs_analysis"
+msgstr "Territoire (analyse requise)"
+
+msgid "live:move_numbers"
+msgstr "Numéros de coup"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "Masquer l'IA"
+
+msgid "live:show_ai"
+msgstr "Afficher l'IA"
+
+msgid "live:clear"
+msgstr "Effacer"
+
+msgid "live:ai_recommendations"
+msgstr "Recommandations IA"
+
+msgid "live:request_analysis"
+msgstr "Demander une analyse"
+
+msgid "live:requesting_analysis"
+msgstr "Analyse en cours..."
+
+msgid "live:no_analysis"
+msgstr "Aucune donnée d'analyse"
+
+msgid "live:after_move"
+msgstr "Après le coup"
+
+msgid "live:suggested_move"
+msgstr "Coup"
+
+msgid "live:recommendation"
+msgstr "Score"
+
+msgid "live:lead_pts"
+msgstr "Avance"
+
+msgid "live:winrate"
+msgstr "Taux de victoire"
+
+msgid "live:actual_move"
+msgstr "Coup réel joué"
+
+msgid "live:trend_chart"
+msgstr "Tendance"
+
+msgid "live:brilliant"
+msgstr "Brillant"
+
+msgid "live:mistakes"
+msgstr "Erreurs"
+
+msgid "live:winrate_trend"
+msgstr "Tendance du taux de victoire"
+
+msgid "live:no_brilliant"
+msgstr "Aucun coup brillant"
+
+msgid "live:move_number"
+msgstr "Coup"
+
+msgid "live:points"
+msgstr "pts"
+
+msgid "live:brilliant_move"
+msgstr "coup brillant"
+
+msgid "live:no_mistakes"
+msgstr "Aucune erreur"
+
+msgid "live:mistake"
+msgstr "erreur"
+
+msgid "live:questionable"
+msgstr "douteux"
+
+msgid "live:load_error"
+msgstr "Échec du chargement des données"
+
+msgid "live:back_to_list"
+msgstr "Retour à la liste"
+
+msgid "live:comments"
+msgstr "Commentaires"
+
+msgid "live:comments_count"
+msgstr "commentaires"
+
+msgid "live:no_comments_live"
+msgstr "Pas encore de commentaires, soyez le premier !"
+
+msgid "live:no_comments"
+msgstr "Aucun commentaire"
+
+msgid "live:comment_placeholder"
+msgstr "Ajouter un commentaire..."
+
+msgid "live:comments_readonly"
+msgstr "Partie terminée, commentaires en lecture seule"
+
+msgid "live:login_to_comment"
+msgstr "Connectez-vous pour commenter"

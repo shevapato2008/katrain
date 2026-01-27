@@ -1689,19 +1689,19 @@ msgid "tsumego:tryMode"
 msgstr "Probier-Modus"
 
 msgid "live:top_matches"
-msgstr "TOP SPIELE"
+msgstr "Top-Partien"
 
 msgid "live:upcoming"
-msgstr "BEVORSTEHEND"
+msgstr "Bevorstehende"
 
 msgid "live:now_live"
-msgstr "Jetzt Live"
+msgstr "Jetzt live"
 
 msgid "live:history"
 msgstr "Verlauf"
 
 msgid "live:enter_live"
-msgstr "Live teilnehmen"
+msgstr "Live ansehen"
 
 msgid "live:view_game"
 msgstr "Partie ansehen"
@@ -1713,7 +1713,7 @@ msgid "live:tomorrow"
 msgstr "Morgen"
 
 msgid "live:in_days"
-msgstr "In {0} Tagen"
+msgstr "Tage entfernt"
 
 msgid "live:moves"
 msgstr "Züge"
@@ -1728,22 +1728,22 @@ msgid "live:next"
 msgstr "Weiter"
 
 msgid "live:latest"
-msgstr "Aktuellste"
+msgstr "Neuester"
 
 msgid "live:auto_follow_on"
-msgstr "Auto-Follow aktiviert"
+msgstr "Automatisch folgen: AN"
 
 msgid "live:auto_follow_off"
-msgstr "Klicken um zu folgen"
+msgstr "Automatisch folgen: AUS"
 
 msgid "live:no_matches"
-msgstr "Keine Partien"
+msgstr "Keine Partien verfügbar"
 
 msgid "live:select_match"
-msgstr "Partie auswählen"
+msgstr "Wählen Sie eine Partie zum Ansehen"
 
 msgid "live:status_live"
-msgstr "Live"
+msgstr "LIVE"
 
 msgid "live:status_finished"
 msgstr "Beendet"
@@ -1752,16 +1752,16 @@ msgid "live:pts"
 msgstr "Pkt"
 
 msgid "live:no_upcoming"
-msgstr "Keine bevorstehenden Events"
+msgstr "Keine bevorstehenden Veranstaltungen"
 
 msgid "live:official_info"
 msgstr "Offizielle Info"
 
 msgid "live:data_source"
-msgstr "Quelle: Nihon Ki-in, FoxWq"
+msgstr "Datenquelle"
 
 msgid "live:move_count"
-msgstr "Zug {0}/{1}"
+msgstr "Zug"
 
 msgid "live:black"
 msgstr "S"
@@ -1779,7 +1779,124 @@ msgid "live:rules_chinese"
 msgstr "Chinesische Regeln"
 
 msgid "live:komi"
-msgstr "Komi: {0} Pkt"
+msgstr "Komi"
 
 msgid "live:vs"
-msgstr "vs"
+msgstr "gegen"
+
+msgid "live:try"
+msgstr "Ausprobieren"
+
+msgid "live:try_move"
+msgstr "Zug ausprobieren"
+
+msgid "live:territory"
+msgstr "Gebiet"
+
+msgid "live:territory_needs_analysis"
+msgstr "Gebiet (Analyse erforderlich)"
+
+msgid "live:move_numbers"
+msgstr "Zugnummern"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "KI ausblenden"
+
+msgid "live:show_ai"
+msgstr "KI anzeigen"
+
+msgid "live:clear"
+msgstr "Löschen"
+
+msgid "live:ai_recommendations"
+msgstr "KI-Empfehlungen"
+
+msgid "live:request_analysis"
+msgstr "Analyse anfordern"
+
+msgid "live:requesting_analysis"
+msgstr "Analyse wird angefordert..."
+
+msgid "live:no_analysis"
+msgstr "Keine Analysedaten"
+
+msgid "live:after_move"
+msgstr "Nach Zug"
+
+msgid "live:suggested_move"
+msgstr "Zug"
+
+msgid "live:recommendation"
+msgstr "Bewertung"
+
+msgid "live:lead_pts"
+msgstr "Führung"
+
+msgid "live:winrate"
+msgstr "Gewinnrate"
+
+msgid "live:actual_move"
+msgstr "Tatsächlich gespielter Zug"
+
+msgid "live:trend_chart"
+msgstr "Trend"
+
+msgid "live:brilliant"
+msgstr "Brillant"
+
+msgid "live:mistakes"
+msgstr "Fehler"
+
+msgid "live:winrate_trend"
+msgstr "Gewinnrate-Trend"
+
+msgid "live:no_brilliant"
+msgstr "Keine brillanten Züge"
+
+msgid "live:move_number"
+msgstr "Zug"
+
+msgid "live:points"
+msgstr "Pkt"
+
+msgid "live:brilliant_move"
+msgstr "brillanter Zug"
+
+msgid "live:no_mistakes"
+msgstr "Keine Fehler"
+
+msgid "live:mistake"
+msgstr "Fehler"
+
+msgid "live:questionable"
+msgstr "fragwürdig"
+
+msgid "live:load_error"
+msgstr "Laden der Partiedaten fehlgeschlagen"
+
+msgid "live:back_to_list"
+msgstr "Zurück zur Liste"
+
+msgid "live:comments"
+msgstr "Kommentare"
+
+msgid "live:comments_count"
+msgstr "Kommentare"
+
+msgid "live:no_comments_live"
+msgstr "Noch keine Kommentare, sei der Erste!"
+
+msgid "live:no_comments"
+msgstr "Keine Kommentare"
+
+msgid "live:comment_placeholder"
+msgstr "Kommentar hinzufügen..."
+
+msgid "live:comments_readonly"
+msgstr "Partie beendet, Kommentare sind schreibgeschützt"
+
+msgid "live:login_to_comment"
+msgstr "Zum Kommentieren anmelden"

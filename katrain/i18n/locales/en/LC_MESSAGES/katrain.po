@@ -1657,13 +1657,13 @@ msgid "auth:login_title_katrain"
 msgstr "Login to KaTrain"
 
 msgid "live:top_matches"
-msgstr "TOP MATCHES"
+msgstr "Top Matches"
 
 msgid "live:upcoming"
-msgstr "UPCOMING"
+msgstr "Upcoming"
 
 msgid "live:now_live"
-msgstr "Now Live"
+msgstr "Live Now"
 
 msgid "live:history"
 msgstr "History"
@@ -1681,13 +1681,13 @@ msgid "live:tomorrow"
 msgstr "Tomorrow"
 
 msgid "live:in_days"
-msgstr "In {0} days"
+msgstr "days away"
 
 msgid "live:moves"
 msgstr "moves"
 
 msgid "live:first_move"
-msgstr "First move"
+msgstr "First"
 
 msgid "live:previous"
 msgstr "Previous"
@@ -1699,19 +1699,19 @@ msgid "live:latest"
 msgstr "Latest"
 
 msgid "live:auto_follow_on"
-msgstr "Auto-follow enabled"
+msgstr "Auto-follow: ON"
 
 msgid "live:auto_follow_off"
-msgstr "Click to follow latest"
+msgstr "Auto-follow: OFF"
 
 msgid "live:no_matches"
-msgstr "No matches"
+msgstr "No matches available"
 
 msgid "live:select_match"
-msgstr "Select a match"
+msgstr "Select a match to watch"
 
 msgid "live:status_live"
-msgstr "Live"
+msgstr "LIVE"
 
 msgid "live:status_finished"
 msgstr "Finished"
@@ -1723,13 +1723,13 @@ msgid "live:no_upcoming"
 msgstr "No upcoming events"
 
 msgid "live:official_info"
-msgstr "Official info"
+msgstr "Official Info"
 
 msgid "live:data_source"
-msgstr "Source: Nihon Ki-in, FoxWq"
+msgstr "Data Source"
 
 msgid "live:move_count"
-msgstr "Move {0}/{1}"
+msgstr "Move"
 
 msgid "live:black"
 msgstr "B"
@@ -1738,16 +1738,133 @@ msgid "live:white"
 msgstr "W"
 
 msgid "live:rules_japanese"
-msgstr "Japanese rules"
+msgstr "Japanese Rules"
 
 msgid "live:rules_korean"
-msgstr "Korean rules"
+msgstr "Korean Rules"
 
 msgid "live:rules_chinese"
-msgstr "Chinese rules"
+msgstr "Chinese Rules"
 
 msgid "live:komi"
-msgstr "Komi: {0} pts"
+msgstr "Komi"
 
 msgid "live:vs"
 msgstr "vs"
+
+msgid "live:try"
+msgstr "Try"
+
+msgid "live:try_move"
+msgstr "Try Move"
+
+msgid "live:territory"
+msgstr "Territory"
+
+msgid "live:territory_needs_analysis"
+msgstr "Territory (needs analysis)"
+
+msgid "live:move_numbers"
+msgstr "Move Numbers"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "Hide AI"
+
+msgid "live:show_ai"
+msgstr "Show AI"
+
+msgid "live:clear"
+msgstr "Clear"
+
+msgid "live:ai_recommendations"
+msgstr "AI Recommendations"
+
+msgid "live:request_analysis"
+msgstr "Request analysis"
+
+msgid "live:requesting_analysis"
+msgstr "Requesting analysis..."
+
+msgid "live:no_analysis"
+msgstr "No analysis data"
+
+msgid "live:after_move"
+msgstr "After move"
+
+msgid "live:suggested_move"
+msgstr "Move"
+
+msgid "live:recommendation"
+msgstr "Score"
+
+msgid "live:lead_pts"
+msgstr "Lead"
+
+msgid "live:winrate"
+msgstr "Winrate"
+
+msgid "live:actual_move"
+msgstr "Actual move played"
+
+msgid "live:trend_chart"
+msgstr "Trend"
+
+msgid "live:brilliant"
+msgstr "Brilliant"
+
+msgid "live:mistakes"
+msgstr "Mistakes"
+
+msgid "live:winrate_trend"
+msgstr "Winrate Trend"
+
+msgid "live:no_brilliant"
+msgstr "No brilliant moves"
+
+msgid "live:move_number"
+msgstr "Move"
+
+msgid "live:points"
+msgstr "pts"
+
+msgid "live:brilliant_move"
+msgstr "brilliant move"
+
+msgid "live:no_mistakes"
+msgstr "No mistakes"
+
+msgid "live:mistake"
+msgstr "mistake"
+
+msgid "live:questionable"
+msgstr "questionable"
+
+msgid "live:load_error"
+msgstr "Failed to load match data"
+
+msgid "live:back_to_list"
+msgstr "Back to live list"
+
+msgid "live:comments"
+msgstr "Comments"
+
+msgid "live:comments_count"
+msgstr "comments"
+
+msgid "live:no_comments_live"
+msgstr "No comments yet, be the first!"
+
+msgid "live:no_comments"
+msgstr "No comments"
+
+msgid "live:comment_placeholder"
+msgstr "Add a comment..."
+
+msgid "live:comments_readonly"
+msgstr "Match ended, comments are read-only"
+
+msgid "live:login_to_comment"
+msgstr "Login to comment"

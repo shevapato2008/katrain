@@ -1723,22 +1723,22 @@ msgid "tsumego:tryMode"
 msgstr "Deneme Modu"
 
 msgid "live:top_matches"
-msgstr "ÜST MAÇLAR"
+msgstr "Öne Çıkan Maçlar"
 
 msgid "live:upcoming"
-msgstr "YAKLAŞAN"
+msgstr "Yaklaşan"
 
 msgid "live:now_live"
-msgstr "Şu an canlı"
+msgstr "Canlı Yayın"
 
 msgid "live:history"
 msgstr "Geçmiş"
 
 msgid "live:enter_live"
-msgstr "Canlıya gir"
+msgstr "Canlı İzle"
 
 msgid "live:view_game"
-msgstr "Oyunu görüntüle"
+msgstr "Oyunu Görüntüle"
 
 msgid "live:today"
 msgstr "Bugün"
@@ -1747,13 +1747,13 @@ msgid "live:tomorrow"
 msgstr "Yarın"
 
 msgid "live:in_days"
-msgstr "{0} gün içinde"
+msgstr "gün sonra"
 
 msgid "live:moves"
 msgstr "hamle"
 
 msgid "live:first_move"
-msgstr "İlk hamle"
+msgstr "İlk"
 
 msgid "live:previous"
 msgstr "Önceki"
@@ -1762,22 +1762,22 @@ msgid "live:next"
 msgstr "Sonraki"
 
 msgid "live:latest"
-msgstr "En son"
+msgstr "Son"
 
 msgid "live:auto_follow_on"
-msgstr "Otomatik takip açık"
+msgstr "Otomatik takip: AÇIK"
 
 msgid "live:auto_follow_off"
-msgstr "Takip için tıklayın"
+msgstr "Otomatik takip: KAPALI"
 
 msgid "live:no_matches"
-msgstr "Maç yok"
+msgstr "Maç bulunamadı"
 
 msgid "live:select_match"
-msgstr "Bir maç seçin"
+msgstr "İzlemek için bir maç seçin"
 
 msgid "live:status_live"
-msgstr "Canlı"
+msgstr "CANLI"
 
 msgid "live:status_finished"
 msgstr "Bitti"
@@ -1789,13 +1789,13 @@ msgid "live:no_upcoming"
 msgstr "Yaklaşan etkinlik yok"
 
 msgid "live:official_info"
-msgstr "Resmi bilgi"
+msgstr "Resmi Bilgi"
 
 msgid "live:data_source"
-msgstr "Kaynak: Nihon Ki-in, FoxWq"
+msgstr "Veri Kaynağı"
 
 msgid "live:move_count"
-msgstr "Hamle {0}/{1}"
+msgstr "Hamle"
 
 msgid "live:black"
 msgstr "S"
@@ -1804,16 +1804,133 @@ msgid "live:white"
 msgstr "B"
 
 msgid "live:rules_japanese"
-msgstr "Japon kuralları"
+msgstr "Japon Kuralları"
 
 msgid "live:rules_korean"
-msgstr "Kore kuralları"
+msgstr "Kore Kuralları"
 
 msgid "live:rules_chinese"
-msgstr "Çin kuralları"
+msgstr "Çin Kuralları"
 
 msgid "live:komi"
-msgstr "Komi: {0} puan"
+msgstr "Komi"
 
 msgid "live:vs"
-msgstr "vs"
+msgstr "karşı"
+
+msgid "live:try"
+msgstr "Dene"
+
+msgid "live:try_move"
+msgstr "Hamle dene"
+
+msgid "live:territory"
+msgstr "Bölge"
+
+msgid "live:territory_needs_analysis"
+msgstr "Bölge (analiz gerekli)"
+
+msgid "live:move_numbers"
+msgstr "Hamle numaraları"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "AI gizle"
+
+msgid "live:show_ai"
+msgstr "AI göster"
+
+msgid "live:clear"
+msgstr "Temizle"
+
+msgid "live:ai_recommendations"
+msgstr "AI Önerileri"
+
+msgid "live:request_analysis"
+msgstr "Analiz iste"
+
+msgid "live:requesting_analysis"
+msgstr "Analiz isteniyor..."
+
+msgid "live:no_analysis"
+msgstr "Analiz verisi yok"
+
+msgid "live:after_move"
+msgstr "Hamle sonrası"
+
+msgid "live:suggested_move"
+msgstr "Hamle"
+
+msgid "live:recommendation"
+msgstr "Puan"
+
+msgid "live:lead_pts"
+msgstr "Önde"
+
+msgid "live:winrate"
+msgstr "Kazanma oranı"
+
+msgid "live:actual_move"
+msgstr "Oynanan hamle"
+
+msgid "live:trend_chart"
+msgstr "Trend"
+
+msgid "live:brilliant"
+msgstr "Parlak"
+
+msgid "live:mistakes"
+msgstr "Hatalar"
+
+msgid "live:winrate_trend"
+msgstr "Kazanma oranı trendi"
+
+msgid "live:no_brilliant"
+msgstr "Parlak hamle yok"
+
+msgid "live:move_number"
+msgstr "Hamle"
+
+msgid "live:points"
+msgstr "puan"
+
+msgid "live:brilliant_move"
+msgstr "parlak hamle"
+
+msgid "live:no_mistakes"
+msgstr "Hata yok"
+
+msgid "live:mistake"
+msgstr "hata"
+
+msgid "live:questionable"
+msgstr "şüpheli"
+
+msgid "live:load_error"
+msgstr "Maç verileri yüklenemedi"
+
+msgid "live:back_to_list"
+msgstr "Listeye dön"
+
+msgid "live:comments"
+msgstr "Yorumlar"
+
+msgid "live:comments_count"
+msgstr "yorum"
+
+msgid "live:no_comments_live"
+msgstr "Henüz yorum yok, ilk yorumu siz yapın!"
+
+msgid "live:no_comments"
+msgstr "Yorum yok"
+
+msgid "live:comment_placeholder"
+msgstr "Yorum ekle..."
+
+msgid "live:comments_readonly"
+msgstr "Maç sona erdi, yorumlar salt okunur"
+
+msgid "live:login_to_comment"
+msgstr "Yorum yapmak için giriş yapın"

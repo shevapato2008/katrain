@@ -610,10 +610,10 @@ async def get_live_translations(
 
     return LiveTranslationsResponse(
         lang=lang,
-        players=translations["players"],
-        tournaments=translations["tournaments"],
-        rounds=translations["rounds"],
-        rules=translations["rules"],
+        players={k: v for k, v in translations["players"].items() if v is not None},
+        tournaments={k: v for k, v in translations["tournaments"].items() if v is not None},
+        rounds={k: v for k, v in translations["rounds"].items() if v is not None},
+        rules={k: v for k, v in translations["rules"].items() if v is not None},
     )
 
 

@@ -1527,10 +1527,10 @@ msgid "tsumego:tryModeDesc"
 msgstr "Exploración libre sin juicio"
 
 msgid "live:top_matches"
-msgstr "PARTIDAS TOP"
+msgstr "Partidas destacadas"
 
 msgid "live:upcoming"
-msgstr "PRÓXIMOS"
+msgstr "Próximos"
 
 msgid "live:now_live"
 msgstr "En vivo ahora"
@@ -1539,7 +1539,7 @@ msgid "live:history"
 msgstr "Historial"
 
 msgid "live:enter_live"
-msgstr "Entrar en vivo"
+msgstr "Ver en vivo"
 
 msgid "live:view_game"
 msgstr "Ver partida"
@@ -1551,13 +1551,13 @@ msgid "live:tomorrow"
 msgstr "Mañana"
 
 msgid "live:in_days"
-msgstr "En {0} días"
+msgstr "días"
 
 msgid "live:moves"
-msgstr "movs"
+msgstr "jugadas"
 
 msgid "live:first_move"
-msgstr "Primer mov"
+msgstr "Primero"
 
 msgid "live:previous"
 msgstr "Anterior"
@@ -1569,37 +1569,37 @@ msgid "live:latest"
 msgstr "Último"
 
 msgid "live:auto_follow_on"
-msgstr "Seguimiento auto activado"
+msgstr "Seguimiento automático: ACTIVADO"
 
 msgid "live:auto_follow_off"
-msgstr "Clic para seguir"
+msgstr "Seguimiento automático: DESACTIVADO"
 
 msgid "live:no_matches"
-msgstr "Sin partidas"
+msgstr "No hay partidas disponibles"
 
 msgid "live:select_match"
-msgstr "Seleccionar partida"
+msgstr "Seleccione una partida para ver"
 
 msgid "live:status_live"
-msgstr "En vivo"
+msgstr "EN VIVO"
 
 msgid "live:status_finished"
-msgstr "Terminado"
+msgstr "Finalizada"
 
 msgid "live:pts"
 msgstr "pts"
 
 msgid "live:no_upcoming"
-msgstr "Sin próximos eventos"
+msgstr "No hay eventos próximos"
 
 msgid "live:official_info"
 msgstr "Info oficial"
 
 msgid "live:data_source"
-msgstr "Fuente: Nihon Ki-in, FoxWq"
+msgstr "Fuente de datos"
 
 msgid "live:move_count"
-msgstr "Mov {0}/{1}"
+msgstr "Jugada"
 
 msgid "live:black"
 msgstr "N"
@@ -1617,7 +1617,124 @@ msgid "live:rules_chinese"
 msgstr "Reglas chinas"
 
 msgid "live:komi"
-msgstr "Komi: {0} pts"
+msgstr "Komi"
 
 msgid "live:vs"
 msgstr "vs"
+
+msgid "live:try"
+msgstr "Probar"
+
+msgid "live:try_move"
+msgstr "Probar jugada"
+
+msgid "live:territory"
+msgstr "Territorio"
+
+msgid "live:territory_needs_analysis"
+msgstr "Territorio (requiere análisis)"
+
+msgid "live:move_numbers"
+msgstr "Números de jugada"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "Ocultar IA"
+
+msgid "live:show_ai"
+msgstr "Mostrar IA"
+
+msgid "live:clear"
+msgstr "Limpiar"
+
+msgid "live:ai_recommendations"
+msgstr "Recomendaciones IA"
+
+msgid "live:request_analysis"
+msgstr "Solicitar análisis"
+
+msgid "live:requesting_analysis"
+msgstr "Solicitando análisis..."
+
+msgid "live:no_analysis"
+msgstr "Sin datos de análisis"
+
+msgid "live:after_move"
+msgstr "Después de jugada"
+
+msgid "live:suggested_move"
+msgstr "Jugada"
+
+msgid "live:recommendation"
+msgstr "Puntuación"
+
+msgid "live:lead_pts"
+msgstr "Ventaja"
+
+msgid "live:winrate"
+msgstr "Tasa de victoria"
+
+msgid "live:actual_move"
+msgstr "Jugada real"
+
+msgid "live:trend_chart"
+msgstr "Tendencia"
+
+msgid "live:brilliant"
+msgstr "Brillante"
+
+msgid "live:mistakes"
+msgstr "Errores"
+
+msgid "live:winrate_trend"
+msgstr "Tendencia de victoria"
+
+msgid "live:no_brilliant"
+msgstr "Sin jugadas brillantes"
+
+msgid "live:move_number"
+msgstr "Jugada"
+
+msgid "live:points"
+msgstr "pts"
+
+msgid "live:brilliant_move"
+msgstr "jugada brillante"
+
+msgid "live:no_mistakes"
+msgstr "Sin errores"
+
+msgid "live:mistake"
+msgstr "error"
+
+msgid "live:questionable"
+msgstr "dudosa"
+
+msgid "live:load_error"
+msgstr "Error al cargar datos de la partida"
+
+msgid "live:back_to_list"
+msgstr "Volver a la lista"
+
+msgid "live:comments"
+msgstr "Comentarios"
+
+msgid "live:comments_count"
+msgstr "comentarios"
+
+msgid "live:no_comments_live"
+msgstr "Sin comentarios aún, ¡sé el primero!"
+
+msgid "live:no_comments"
+msgstr "Sin comentarios"
+
+msgid "live:comment_placeholder"
+msgstr "Añadir un comentario..."
+
+msgid "live:comments_readonly"
+msgstr "Partida finalizada, comentarios de solo lectura"
+
+msgid "live:login_to_comment"
+msgstr "Inicia sesión para comentar"

@@ -1635,7 +1635,7 @@ msgid "tsumego:tryMode"
 msgstr "試下"
 
 msgid "live:top_matches"
-msgstr "頂尖大賽"
+msgstr "精選對局"
 
 msgid "live:upcoming"
 msgstr "賽事預告"
@@ -1644,7 +1644,7 @@ msgid "live:now_live"
 msgstr "正在直播"
 
 msgid "live:history"
-msgstr "歷史直播"
+msgstr "歷史對局"
 
 msgid "live:enter_live"
 msgstr "進入直播"
@@ -1659,7 +1659,7 @@ msgid "live:tomorrow"
 msgstr "明天"
 
 msgid "live:in_days"
-msgstr "{0}天後"
+msgstr "天後"
 
 msgid "live:moves"
 msgstr "手"
@@ -1668,25 +1668,25 @@ msgid "live:first_move"
 msgstr "第一手"
 
 msgid "live:previous"
-msgstr "後退"
+msgstr "上一手"
 
 msgid "live:next"
-msgstr "前進"
+msgstr "下一手"
 
 msgid "live:latest"
 msgstr "最新"
 
 msgid "live:auto_follow_on"
-msgstr "已開啟自動追蹤"
+msgstr "自動跟進：開"
 
 msgid "live:auto_follow_off"
-msgstr "點擊追蹤最新"
+msgstr "自動跟進：關"
 
 msgid "live:no_matches"
-msgstr "暫無比賽"
+msgstr "暫無對局"
 
 msgid "live:select_match"
-msgstr "請選擇一場比賽"
+msgstr "選擇一場對局觀看"
 
 msgid "live:status_live"
 msgstr "直播中"
@@ -1698,16 +1698,16 @@ msgid "live:pts"
 msgstr "目"
 
 msgid "live:no_upcoming"
-msgstr "暫無即將進行的賽事"
+msgstr "暫無賽事預告"
 
 msgid "live:official_info"
 msgstr "官方資訊"
 
 msgid "live:data_source"
-msgstr "資料來源：日本棋院、野狐圍棋"
+msgstr "資料來源"
 
 msgid "live:move_count"
-msgstr "第 {0}/{1} 手"
+msgstr "手數"
 
 msgid "live:black"
 msgstr "黑"
@@ -1725,7 +1725,124 @@ msgid "live:rules_chinese"
 msgstr "中國規則"
 
 msgid "live:komi"
-msgstr "貼目: {0}目"
+msgstr "貼目"
 
 msgid "live:vs"
-msgstr "vs"
+msgstr "對"
+
+msgid "live:try"
+msgstr "試下"
+
+msgid "live:try_move"
+msgstr "試下落子"
+
+msgid "live:territory"
+msgstr "領地"
+
+msgid "live:territory_needs_analysis"
+msgstr "領地（需要分析）"
+
+msgid "live:move_numbers"
+msgstr "手數"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "隱藏AI"
+
+msgid "live:show_ai"
+msgstr "顯示AI"
+
+msgid "live:clear"
+msgstr "清除"
+
+msgid "live:ai_recommendations"
+msgstr "AI推薦"
+
+msgid "live:request_analysis"
+msgstr "請求分析"
+
+msgid "live:requesting_analysis"
+msgstr "正在請求分析..."
+
+msgid "live:no_analysis"
+msgstr "暫無分析資料"
+
+msgid "live:after_move"
+msgstr "走至第"
+
+msgid "live:suggested_move"
+msgstr "著點"
+
+msgid "live:recommendation"
+msgstr "評分"
+
+msgid "live:lead_pts"
+msgstr "領先"
+
+msgid "live:winrate"
+msgstr "勝率"
+
+msgid "live:actual_move"
+msgstr "實際落子"
+
+msgid "live:trend_chart"
+msgstr "走勢"
+
+msgid "live:brilliant"
+msgstr "妙手"
+
+msgid "live:mistakes"
+msgstr "失誤"
+
+msgid "live:winrate_trend"
+msgstr "勝率走勢"
+
+msgid "live:no_brilliant"
+msgstr "暫無妙手"
+
+msgid "live:move_number"
+msgstr "第"
+
+msgid "live:points"
+msgstr "目"
+
+msgid "live:brilliant_move"
+msgstr "妙手"
+
+msgid "live:no_mistakes"
+msgstr "暫無失誤"
+
+msgid "live:mistake"
+msgstr "失誤"
+
+msgid "live:questionable"
+msgstr "疑問手"
+
+msgid "live:load_error"
+msgstr "載入對局資料失敗"
+
+msgid "live:back_to_list"
+msgstr "返回直播列表"
+
+msgid "live:comments"
+msgstr "評論"
+
+msgid "live:comments_count"
+msgstr "則評論"
+
+msgid "live:no_comments_live"
+msgstr "暫無評論，快來搶沙發！"
+
+msgid "live:no_comments"
+msgstr "暫無評論"
+
+msgid "live:comment_placeholder"
+msgstr "寫評論..."
+
+msgid "live:comments_readonly"
+msgstr "對局已結束，評論已關閉"
+
+msgid "live:login_to_comment"
+msgstr "登入後評論"

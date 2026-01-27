@@ -1703,10 +1703,10 @@ msgid "tsumego:tryMode"
 msgstr "Режим проби"
 
 msgid "live:top_matches"
-msgstr "ТОП МАТЧІ"
+msgstr "Кращі партії"
 
 msgid "live:upcoming"
-msgstr "НЕЗАБАРОМ"
+msgstr "Майбутні"
 
 msgid "live:now_live"
 msgstr "Зараз наживо"
@@ -1715,10 +1715,10 @@ msgid "live:history"
 msgstr "Історія"
 
 msgid "live:enter_live"
-msgstr "Увійти в ефір"
+msgstr "Дивитися"
 
 msgid "live:view_game"
-msgstr "Переглянути гру"
+msgstr "Переглянути партію"
 
 msgid "live:today"
 msgstr "Сьогодні"
@@ -1727,37 +1727,37 @@ msgid "live:tomorrow"
 msgstr "Завтра"
 
 msgid "live:in_days"
-msgstr "Через {0} днів"
+msgstr "днів"
 
 msgid "live:moves"
 msgstr "ходів"
 
 msgid "live:first_move"
-msgstr "Перший хід"
+msgstr "Перший"
 
 msgid "live:previous"
-msgstr "Назад"
+msgstr "Попередній"
 
 msgid "live:next"
-msgstr "Вперед"
+msgstr "Наступний"
 
 msgid "live:latest"
 msgstr "Останній"
 
 msgid "live:auto_follow_on"
-msgstr "Автослідкування увімк"
+msgstr "Автослідування: УВІМК"
 
 msgid "live:auto_follow_off"
-msgstr "Натисніть для слідкування"
+msgstr "Автослідування: ВИМК"
 
 msgid "live:no_matches"
-msgstr "Немає матчів"
+msgstr "Немає доступних партій"
 
 msgid "live:select_match"
-msgstr "Виберіть матч"
+msgstr "Оберіть партію для перегляду"
 
 msgid "live:status_live"
-msgstr "Наживо"
+msgstr "НАЖИВО"
 
 msgid "live:status_finished"
 msgstr "Завершено"
@@ -1772,10 +1772,10 @@ msgid "live:official_info"
 msgstr "Офіційна інформація"
 
 msgid "live:data_source"
-msgstr "Джерело: Nihon Ki-in, FoxWq"
+msgstr "Джерело даних"
 
 msgid "live:move_count"
-msgstr "Хід {0}/{1}"
+msgstr "Хід"
 
 msgid "live:black"
 msgstr "Ч"
@@ -1793,7 +1793,124 @@ msgid "live:rules_chinese"
 msgstr "Китайські правила"
 
 msgid "live:komi"
-msgstr "Комі: {0} очк"
+msgstr "Комі"
 
 msgid "live:vs"
-msgstr "vs"
+msgstr "проти"
+
+msgid "live:try"
+msgstr "Спробувати"
+
+msgid "live:try_move"
+msgstr "Спробувати хід"
+
+msgid "live:territory"
+msgstr "Територія"
+
+msgid "live:territory_needs_analysis"
+msgstr "Територія (потрібен аналіз)"
+
+msgid "live:move_numbers"
+msgstr "Номери ходів"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "Приховати ШІ"
+
+msgid "live:show_ai"
+msgstr "Показати ШІ"
+
+msgid "live:clear"
+msgstr "Очистити"
+
+msgid "live:ai_recommendations"
+msgstr "Рекомендації ШІ"
+
+msgid "live:request_analysis"
+msgstr "Запитати аналіз"
+
+msgid "live:requesting_analysis"
+msgstr "Запит аналізу..."
+
+msgid "live:no_analysis"
+msgstr "Немає даних аналізу"
+
+msgid "live:after_move"
+msgstr "Після ходу"
+
+msgid "live:suggested_move"
+msgstr "Хід"
+
+msgid "live:recommendation"
+msgstr "Оцінка"
+
+msgid "live:lead_pts"
+msgstr "Перевага"
+
+msgid "live:winrate"
+msgstr "Відсоток перемог"
+
+msgid "live:actual_move"
+msgstr "Фактичний хід"
+
+msgid "live:trend_chart"
+msgstr "Тренд"
+
+msgid "live:brilliant"
+msgstr "Блискучий"
+
+msgid "live:mistakes"
+msgstr "Помилки"
+
+msgid "live:winrate_trend"
+msgstr "Тренд перемог"
+
+msgid "live:no_brilliant"
+msgstr "Немає блискучих ходів"
+
+msgid "live:move_number"
+msgstr "Хід"
+
+msgid "live:points"
+msgstr "очк"
+
+msgid "live:brilliant_move"
+msgstr "блискучий хід"
+
+msgid "live:no_mistakes"
+msgstr "Немає помилок"
+
+msgid "live:mistake"
+msgstr "помилка"
+
+msgid "live:questionable"
+msgstr "сумнівний"
+
+msgid "live:load_error"
+msgstr "Не вдалося завантажити дані партії"
+
+msgid "live:back_to_list"
+msgstr "Назад до списку"
+
+msgid "live:comments"
+msgstr "Коментарі"
+
+msgid "live:comments_count"
+msgstr "коментарів"
+
+msgid "live:no_comments_live"
+msgstr "Ще немає коментарів, будьте першим!"
+
+msgid "live:no_comments"
+msgstr "Немає коментарів"
+
+msgid "live:comment_placeholder"
+msgstr "Додати коментар..."
+
+msgid "live:comments_readonly"
+msgstr "Партію завершено, коментарі лише для читання"
+
+msgid "live:login_to_comment"
+msgstr "Увійдіть, щоб коментувати"

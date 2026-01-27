@@ -1580,19 +1580,19 @@ msgid "tsumego:tryMode"
 msgstr "시험 모드"
 
 msgid "live:top_matches"
-msgstr "탑 매치"
+msgstr "주요 대국"
 
 msgid "live:upcoming"
-msgstr "예정된 대회"
+msgstr "예정된 대국"
 
 msgid "live:now_live"
-msgstr "실시간 중계"
+msgstr "라이브 중"
 
 msgid "live:history"
-msgstr "기록"
+msgstr "기보 기록"
 
 msgid "live:enter_live"
-msgstr "실시간 입장"
+msgstr "라이브 보기"
 
 msgid "live:view_game"
 msgstr "기보 보기"
@@ -1604,7 +1604,7 @@ msgid "live:tomorrow"
 msgstr "내일"
 
 msgid "live:in_days"
-msgstr "{0}일 후"
+msgstr "일 후"
 
 msgid "live:moves"
 msgstr "수"
@@ -1622,37 +1622,37 @@ msgid "live:latest"
 msgstr "최신"
 
 msgid "live:auto_follow_on"
-msgstr "자동 따라가기 켜짐"
+msgstr "자동 따라가기: 켜짐"
 
 msgid "live:auto_follow_off"
-msgstr "클릭하여 최신 따라가기"
+msgstr "자동 따라가기: 꺼짐"
 
 msgid "live:no_matches"
-msgstr "대국 없음"
+msgstr "대국이 없습니다"
 
 msgid "live:select_match"
-msgstr "대국 선택"
+msgstr "관전할 대국을 선택하세요"
 
 msgid "live:status_live"
-msgstr "실시간"
+msgstr "라이브"
 
 msgid "live:status_finished"
-msgstr "종료됨"
+msgstr "종료"
 
 msgid "live:pts"
-msgstr "점"
+msgstr "집"
 
 msgid "live:no_upcoming"
-msgstr "예정된 이벤트 없음"
+msgstr "예정된 대국이 없습니다"
 
 msgid "live:official_info"
 msgstr "공식 정보"
 
 msgid "live:data_source"
-msgstr "출처: 일본기원, 야호바둑"
+msgstr "데이터 출처"
 
 msgid "live:move_count"
-msgstr "{0}/{1} 수"
+msgstr "수순"
 
 msgid "live:black"
 msgstr "흑"
@@ -1670,7 +1670,124 @@ msgid "live:rules_chinese"
 msgstr "중국 규칙"
 
 msgid "live:komi"
-msgstr "덤: {0}점"
+msgstr "덤"
 
 msgid "live:vs"
-msgstr "vs"
+msgstr "대"
+
+msgid "live:try"
+msgstr "시도"
+
+msgid "live:try_move"
+msgstr "수 시도"
+
+msgid "live:territory"
+msgstr "집"
+
+msgid "live:territory_needs_analysis"
+msgstr "집 (분석 필요)"
+
+msgid "live:move_numbers"
+msgstr "수순 번호"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "AI 숨기기"
+
+msgid "live:show_ai"
+msgstr "AI 표시"
+
+msgid "live:clear"
+msgstr "초기화"
+
+msgid "live:ai_recommendations"
+msgstr "AI 추천"
+
+msgid "live:request_analysis"
+msgstr "분석 요청"
+
+msgid "live:requesting_analysis"
+msgstr "분석 요청 중..."
+
+msgid "live:no_analysis"
+msgstr "분석 데이터 없음"
+
+msgid "live:after_move"
+msgstr "착수"
+
+msgid "live:suggested_move"
+msgstr "착점"
+
+msgid "live:recommendation"
+msgstr "평가"
+
+msgid "live:lead_pts"
+msgstr "리드"
+
+msgid "live:winrate"
+msgstr "승률"
+
+msgid "live:actual_move"
+msgstr "실제 착수"
+
+msgid "live:trend_chart"
+msgstr "추세"
+
+msgid "live:brilliant"
+msgstr "묘수"
+
+msgid "live:mistakes"
+msgstr "실수"
+
+msgid "live:winrate_trend"
+msgstr "승률 추세"
+
+msgid "live:no_brilliant"
+msgstr "묘수 없음"
+
+msgid "live:move_number"
+msgstr "제"
+
+msgid "live:points"
+msgstr "집"
+
+msgid "live:brilliant_move"
+msgstr "묘수"
+
+msgid "live:no_mistakes"
+msgstr "실수 없음"
+
+msgid "live:mistake"
+msgstr "실수"
+
+msgid "live:questionable"
+msgstr "의문수"
+
+msgid "live:load_error"
+msgstr "대국 데이터 로드 실패"
+
+msgid "live:back_to_list"
+msgstr "라이브 목록으로"
+
+msgid "live:comments"
+msgstr "댓글"
+
+msgid "live:comments_count"
+msgstr "개의 댓글"
+
+msgid "live:no_comments_live"
+msgstr "아직 댓글이 없습니다. 첫 댓글을 남겨보세요!"
+
+msgid "live:no_comments"
+msgstr "댓글 없음"
+
+msgid "live:comment_placeholder"
+msgstr "댓글 작성..."
+
+msgid "live:comments_readonly"
+msgstr "대국이 끝났습니다, 댓글은 읽기 전용입니다"
+
+msgid "live:login_to_comment"
+msgstr "로그인 후 댓글"

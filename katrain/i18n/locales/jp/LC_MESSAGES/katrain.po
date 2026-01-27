@@ -1653,19 +1653,19 @@ msgid "tsumego:tryMode"
 msgstr "試しモード"
 
 msgid "live:top_matches"
-msgstr "トップマッチ"
+msgstr "注目の対局"
 
 msgid "live:upcoming"
-msgstr "今後の予定"
+msgstr "予定の対局"
 
 msgid "live:now_live"
 msgstr "ライブ中"
 
 msgid "live:history"
-msgstr "履歴"
+msgstr "棋譜アーカイブ"
 
 msgid "live:enter_live"
-msgstr "ライブを見る"
+msgstr "ライブに入る"
 
 msgid "live:view_game"
 msgstr "棋譜を見る"
@@ -1677,7 +1677,7 @@ msgid "live:tomorrow"
 msgstr "明日"
 
 msgid "live:in_days"
-msgstr "{0}日後"
+msgstr "日後"
 
 msgid "live:moves"
 msgstr "手"
@@ -1686,25 +1686,25 @@ msgid "live:first_move"
 msgstr "初手"
 
 msgid "live:previous"
-msgstr "前へ"
+msgstr "前の手"
 
 msgid "live:next"
-msgstr "次へ"
+msgstr "次の手"
 
 msgid "live:latest"
-msgstr "最新"
+msgstr "最新手"
 
 msgid "live:auto_follow_on"
-msgstr "自動追従オン"
+msgstr "自動追従：ON"
 
 msgid "live:auto_follow_off"
-msgstr "クリックで最新を追従"
+msgstr "自動追従：OFF"
 
 msgid "live:no_matches"
-msgstr "対局なし"
+msgstr "対局がありません"
 
 msgid "live:select_match"
-msgstr "対局を選択"
+msgstr "観戦する対局を選択"
 
 msgid "live:status_live"
 msgstr "ライブ"
@@ -1716,16 +1716,16 @@ msgid "live:pts"
 msgstr "目"
 
 msgid "live:no_upcoming"
-msgstr "予定されたイベントはありません"
+msgstr "予定の対局はありません"
 
 msgid "live:official_info"
 msgstr "公式情報"
 
 msgid "live:data_source"
-msgstr "出典：日本棋院、野狐囲碁"
+msgstr "データソース"
 
 msgid "live:move_count"
-msgstr "{0}/{1} 手"
+msgstr "手数"
 
 msgid "live:black"
 msgstr "黒"
@@ -1743,7 +1743,124 @@ msgid "live:rules_chinese"
 msgstr "中国ルール"
 
 msgid "live:komi"
-msgstr "コミ: {0}目"
+msgstr "コミ"
 
 msgid "live:vs"
 msgstr "対"
+
+msgid "live:try"
+msgstr "試し打ち"
+
+msgid "live:try_move"
+msgstr "試し着手"
+
+msgid "live:territory"
+msgstr "地"
+
+msgid "live:territory_needs_analysis"
+msgstr "地（分析が必要）"
+
+msgid "live:move_numbers"
+msgstr "手数表示"
+
+msgid "live:numbers"
+msgstr "#"
+
+msgid "live:hide_ai"
+msgstr "AI非表示"
+
+msgid "live:show_ai"
+msgstr "AI表示"
+
+msgid "live:clear"
+msgstr "クリア"
+
+msgid "live:ai_recommendations"
+msgstr "AIの推奨手"
+
+msgid "live:request_analysis"
+msgstr "分析をリクエスト"
+
+msgid "live:requesting_analysis"
+msgstr "分析をリクエスト中..."
+
+msgid "live:no_analysis"
+msgstr "分析データなし"
+
+msgid "live:after_move"
+msgstr "着手"
+
+msgid "live:suggested_move"
+msgstr "着点"
+
+msgid "live:recommendation"
+msgstr "評価"
+
+msgid "live:lead_pts"
+msgstr "リード"
+
+msgid "live:winrate"
+msgstr "勝率"
+
+msgid "live:actual_move"
+msgstr "実際の着手"
+
+msgid "live:trend_chart"
+msgstr "トレンド"
+
+msgid "live:brilliant"
+msgstr "妙手"
+
+msgid "live:mistakes"
+msgstr "ミス"
+
+msgid "live:winrate_trend"
+msgstr "勝率トレンド"
+
+msgid "live:no_brilliant"
+msgstr "妙手なし"
+
+msgid "live:move_number"
+msgstr "第"
+
+msgid "live:points"
+msgstr "目"
+
+msgid "live:brilliant_move"
+msgstr "妙手"
+
+msgid "live:no_mistakes"
+msgstr "ミスなし"
+
+msgid "live:mistake"
+msgstr "ミス"
+
+msgid "live:questionable"
+msgstr "疑問手"
+
+msgid "live:load_error"
+msgstr "対局データの読み込みに失敗"
+
+msgid "live:back_to_list"
+msgstr "ライブ一覧に戻る"
+
+msgid "live:comments"
+msgstr "コメント"
+
+msgid "live:comments_count"
+msgstr "件のコメント"
+
+msgid "live:no_comments_live"
+msgstr "まだコメントはありません。最初のコメントを！"
+
+msgid "live:no_comments"
+msgstr "コメントなし"
+
+msgid "live:comment_placeholder"
+msgstr "コメントを書く..."
+
+msgid "live:comments_readonly"
+msgstr "対局終了、コメントは読み取り専用です"
+
+msgid "live:login_to_comment"
+msgstr "ログインしてコメント"

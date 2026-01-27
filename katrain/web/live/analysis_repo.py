@@ -406,11 +406,14 @@ class LiveAnalysisRepo:
             List of matches with empty or null moves
         """
         from sqlalchemy import func
+        from katrain.web.core.db import engine
+
+        array_len = func.jsonb_array_length if engine.dialect.name == "postgresql" else func.json_array_length
 
         return self.db.query(LiveMatchDB).filter(
             or_(
                 LiveMatchDB.moves.is_(None),
-                func.json_array_length(LiveMatchDB.moves) == 0
+                array_len(LiveMatchDB.moves) == 0
             )
         ).all()
 

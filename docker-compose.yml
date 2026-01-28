@@ -1,0 +1,112 @@
+# KaTrain Full Stack Deployment
+# 5 services: postgres, katrain-web, katrain-cron, katago-web, katago-cron
+#
+# Usage:
+#   docker-compose up -d
+#
+# Environment variables (create .env file):
+#   POSTGRES_PASSWORD=your_secure_password
+#   DASHSCOPE_API_KEY=your_dashscope_api_key
+#   KATAGO_MODEL_PATH=/path/to/kata1-b18c384nbt-s9131461376-d4087399203.bin.gz
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: katrain-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: katrain_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}
+      POSTGRES_DB: katrain_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./katrain/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U katrain_user -d katrain_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  katrain-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: katrain-web
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@postgres:5432/katrain_db
+      - KATAGO_URL=http://katago-web:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      katago-web:
+        condition: service_started
+
+  katrain-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: katrain-cron
+    restart: unless-stopped
+    environment:
+      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@postgres:5432/katrain_db
+      - KATAGO_URL=http://katago-cron:8002
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - CRON_LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      katago-cron:
+        condition: service_started
+
+  # KataGo for user gameplay (port 8000, GPU 0)
+  # Few concurrent games, deep search per position
+  katago-web:
+    image: kinfkong/katago-server:latest
+    container_name: katago-web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./katago-configs/analysis_config_web.cfg:/app/config.cfg:ro
+      - ${KATAGO_MODEL_PATH:-./katago-models}:/app/models:ro
+    environment:
+      - KATAGO_MODEL=/app/models/kata1-b18c384nbt-s9131461376-d4087399203.bin.gz
+      - KATAGO_CONFIG=/app/config.cfg
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+
+  # KataGo for batch analysis (port 8002, GPU 1)
+  # Many concurrent positions, GPU continuously saturated
+  katago-cron:
+    image: kinfkong/katago-server:latest
+    container_name: katago-cron
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./katago-configs/analysis_config_cron.cfg:/app/config.cfg:ro
+      - ${KATAGO_MODEL_PATH:-./katago-models}:/app/models:ro
+    environment:
+      - KATAGO_MODEL=/app/models/kata1-b18c384nbt-s9131461376-d4087399203.bin.gz
+      - KATAGO_CONFIG=/app/config.cfg
+      - KATAGO_PORT=8002
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+
+volumes:
+  pgdata:

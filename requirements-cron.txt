@@ -1,0 +1,4 @@
+sqlalchemy>=2.0
+psycopg2-binary
+httpx
+apscheduler>=3.10

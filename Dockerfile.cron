@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements-cron.txt .
+RUN pip install --no-cache-dir -r requirements-cron.txt
+
+COPY katrain/cron/ katrain/cron/
+# Ensure katrain is a package (needs __init__.py at katrain level)
+RUN touch katrain/__init__.py
+
+CMD ["python", "-m", "katrain.cron"]

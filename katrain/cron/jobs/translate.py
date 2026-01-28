@@ -71,10 +71,7 @@ class TranslateJob(BaseJob):
                 result = await self._translator.translate_player(name)
             except Exception:
                 self.logger.exception("Failed to translate player %s", name)
-                self._consecutive_failures += 1
-                if self._consecutive_failures >= 3:
-                    raise  # Trigger circuit breaker
-                continue
+                raise  # Propagate to outer handler for circuit breaker counting
 
             if existing:
                 # Only fill in missing languages
@@ -116,10 +113,7 @@ class TranslateJob(BaseJob):
                 result = await self._translator.translate_tournament(name)
             except Exception:
                 self.logger.exception("Failed to translate tournament %s", name)
-                self._consecutive_failures += 1
-                if self._consecutive_failures >= 3:
-                    raise
-                continue
+                raise  # Propagate to outer handler for circuit breaker counting
 
             if existing:
                 for lang in LANGUAGES:

@@ -162,15 +162,11 @@ class AnalyzeJob(BaseJob):
             )
 
             # Compute delta classification
-            record = db.query(LiveMatchDB).filter(False).first()  # just to trigger model load
             from katrain.cron.models import LiveAnalysisDB
             analysis = db.query(LiveAnalysisDB).get(record_id)
             if analysis:
                 repo.compute_and_store_delta(analysis)
-
-                # Update match katago stats if this is the latest move
-                match_id = result.get("_match_id", analysis.match_id)
-                repo.update_katago_stats(match_id, parsed["winrate"], parsed["score_lead"])
+                repo.update_katago_stats(analysis.match_id, parsed["winrate"], parsed["score_lead"])
 
             logger.debug("Analysis success id=%d wr=%.3f sc=%.1f", record_id, parsed["winrate"], parsed["score_lead"])
         except Exception:

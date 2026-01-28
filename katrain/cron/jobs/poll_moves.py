@@ -47,6 +47,7 @@ class PollMovesJob(BaseJob):
         new_moves = _parse_moves(moves_data)
 
         old_count = len(match.moves) if match.moves else 0
+        old_status = match.status
         new_count = len(new_moves)
 
         # Update match record
@@ -75,8 +76,8 @@ class PollMovesJob(BaseJob):
                 match.match_id, old_count, new_count, len(new_move_nums),
             )
 
-        # On first poll or when match finishes, backfill any missing analysis
-        if new_status == "finished" and match.status != new_status:
+        # When match transitions to finished, backfill any missing analysis
+        if new_status == "finished" and old_status != "finished":
             all_nums = list(range(0, new_count + 1))
             created = repo.create_pending(match.match_id, all_nums, PRIORITY_LIVE_BACKFILL, new_moves)
             if created:

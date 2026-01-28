@@ -13,6 +13,9 @@ logger = logging.getLogger("katrain_cron.translator")
 
 LANGUAGES = ["en", "cn", "tw", "jp", "ko"]
 
+# User-Agent for web searches (Wikipedia blocks default httpx User-Agent)
+USER_AGENT = "KaTrain/1.0 (https://github.com/sanderland/katrain; katrain-cron)"
+
 
 class Translator:
     """Translates player names (search+LLM) and tournament names (direct LLM)."""
@@ -57,7 +60,8 @@ class Translator:
         ]
 
         results = []
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        headers = {"User-Agent": USER_AGENT}
+        async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
             for q in queries:
                 try:
                     # Use Wikipedia API for search

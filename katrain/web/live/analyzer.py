@@ -6,7 +6,7 @@ storing results in PostgreSQL for persistence and caching.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Callable
 
 import httpx
@@ -265,7 +265,7 @@ class LiveAnalyzer:
                                 source_id=db_match.source_id,
                                 tournament=db_match.tournament,
                                 round_name=db_match.round_name,
-                                date=db_match.match_date or datetime.now(),
+                                date=db_match.match_date or datetime.now(timezone.utc),
                                 player_black=db_match.player_black,
                                 player_white=db_match.player_white,
                                 black_rank=db_match.black_rank,
@@ -445,6 +445,7 @@ class LiveAnalyzer:
         ownership_flat = result.get("ownership")
         if ownership_flat:
             # Convert flat array to 2D grid (row major, from top-left)
+            # Note: Y-axis inversion for Go convention is handled in frontend
             ownership_grid = []
             for y in range(board_size):
                 row = []

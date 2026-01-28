@@ -279,3 +279,20 @@ class UserTsumegoProgress(Base):
 
     user = relationship("User", back_populates="tsumego_progress")
     problem = relationship("TsumegoProblem")
+
+
+class UpcomingMatchDB(Base):
+    """Upcoming/scheduled matches from various sources (populated by katrain-cron)."""
+    __tablename__ = "live_upcoming"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(String(128), unique=True, nullable=False, index=True)
+    tournament = Column(String(256), nullable=False)
+    round_name = Column(String(128), nullable=True)
+    scheduled_time = Column(DateTime(timezone=True), nullable=False, index=True)
+    player_black = Column(String(128), nullable=True)
+    player_white = Column(String(128), nullable=True)
+    source = Column(String(32), nullable=False)  # foxwq, nihonkiin, etc.
+    source_url = Column(String(512), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

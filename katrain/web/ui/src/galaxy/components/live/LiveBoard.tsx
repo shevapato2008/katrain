@@ -424,7 +424,11 @@ export default function LiveBoard({
     if (showTerritory && ownership && ownership.length === boardSize) {
       for (let y = 0; y < boardSize; y++) {
         for (let x = 0; x < boardSize; x++) {
-          const val = ownership[y][x];
+          // ownership is stored with y=0 as top row (screen convention)
+          // but gridToCanvas expects y in Go convention (y=0 is bottom)
+          // so we invert the y index when reading ownership data
+          const ownershipY = boardSize - 1 - y;
+          const val = ownership[ownershipY]?.[x] ?? 0;
           if (Math.abs(val) > 0.05) {
             const pos = gridToCanvas(layout, x, y, boardSize);
             const alpha = Math.abs(val) * 0.4;

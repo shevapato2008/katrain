@@ -121,187 +121,175 @@ Notes:
 
 ## <a name="web-gui"></a> Web GUI
 
-To run the **web GUI** for KaTrain, you can use the following command:
+KaTrain provides a modern web interface built with React and TypeScript, served by a FastAPI backend.
 
 ```bash
+# Quick start
 python3 -m katrain --ui web
+
+# Custom host/port
+python3 -m katrain --ui web --host 127.0.0.1 --port 8001
 ```
 
-### Why run it this way?
-- **Security**: If you do not want public exposure, bind to `127.0.0.1` (localhost) and use a reverse proxy.
-- **Reverse Proxy**: It is strongly recommended to use a reverse proxy like **Nginx** or **Apache** to handle public traffic (on port 80/443) and forward it to KaTrain. This provides better performance, SSL support, and centralized logging.
+Access at `http://127.0.0.1:8001` (or `http://<your-ip>:8001` from network).
 
-### Details:
-- **Defaults**: `python3 -m katrain --ui web` binds to `0.0.0.0:8001`.
-- **URL**: Access locally at `http://127.0.0.1:8001` or from the network at `http://<your-ip>:8001`.
-- **Dependencies**: The web GUI requires `fastapi`, `uvicorn`, and `pydantic`. Install them via:
-  ```bash
-  pip install fastapi uvicorn pydantic
-  # Or use the provided requirements file
-  pip install -r requirements.txt
-  ```
-- **Custom host/port**: You can override the defaults:
-  ```bash
-  python3 -m katrain --ui web --host 127.0.0.1 --port 8001
-  ```
-  You can also set `KATRAIN_HOST` and `KATRAIN_PORT` environment variables.
+**Dependencies:**
+```bash
+pip install -r requirements-web.txt
+```
 
-- **Live Broadcasting Translation** (Optional): To enable automatic translation of player/tournament names in the Live module, configure an LLM backend. The default backend is Alibaba Qwen:
-  ```bash
-  # Default: Qwen (recommended for China-based servers)
-  export DASHSCOPE_API_KEY="sk-..."
-  python3 -m katrain --ui web
+**Desktop Mode:** To run the original Kivy-based GUI instead:
+```bash
+python3 -m katrain --ui desktop
+```
 
-  # Alternative: Anthropic Claude
-  export LLM_BACKEND=anthropic
-  export ANTHROPIC_API_KEY="sk-ant-..."
-  python3 -m katrain --ui web
-  ```
-  You can also customize the model via `LLM_MODEL` (default: `qwen-mt-turbo` for Qwen, `claude-haiku-4-5-20251001` for Anthropic) and the API endpoint via `LLM_BASE_URL`.
-  Without an API key, the Live module will still work but names will not be auto-translated via LLM.
+---
 
-- **Desktop Mode**: To run the original Kivy-based desktop version instead of the web GUI, use:
-  ```bash
-  python3 -m katrain --ui desktop
-  ```
+## <a name="deployment"></a> Deployment
 
-### Database Configuration
+KaTrain consists of two services for production deployment:
 
-By default, KaTrain Web uses a local SQLite database (`db.sqlite3`). For production or multi-user environments, it is recommended to use PostgreSQL.
+| Service | Command | Description |
+|---------|---------|-------------|
+| **katrain-web** | `python -m katrain --ui web` | Web UI and API server (port 8001) |
+| **katrain-cron** | `python -m katrain.cron` | Background jobs: match fetching, move polling, translation, analysis |
 
-#### 1. Deploy PostgreSQL with Docker Compose
-We provide a `docker-compose.db.yml` file to easily deploy a PostgreSQL instance.
+### Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   katrain-web   │     │  katrain-cron   │     │    KataGo       │
+│   (port 8001)   │     │  (no port)      │     │  (port 8000/    │
+│                 │     │                 │     │   8002)         │
+└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+         │                       │                       │
+         └───────────┬───────────┴───────────────────────┘
+                     │
+              ┌──────┴──────┐
+              │  PostgreSQL │
+              │ (port 5432) │
+              └─────────────┘
+```
+
+### Prerequisites
+
+Before starting KaTrain services, ensure these are running:
+
+1. **PostgreSQL** (port 5432) - Shared database
+2. **KataGo web instance** (port 8000) - For user gameplay (katrain-web)
+3. **KataGo cron instance** (port 8002) - For batch analysis (katrain-cron)
+
+### Option 1: Docker Compose (Recommended)
 
 ```bash
-# Start the database
+# 1. Create .env file
+cp .env.example .env
+# Edit .env: set POSTGRES_PASSWORD and DASHSCOPE_API_KEY
+
+# 2. Start services
+docker-compose up -d
+
+# 3. View logs
+docker-compose logs -f
+```
+
+### Option 2: Run Locally
+
+**katrain-web:**
+```bash
+export KATRAIN_DATABASE_URL="postgresql://katrain_user:password@localhost:5432/katrain_db"
+export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
+
+python -m katrain --ui web
+```
+
+**katrain-cron:**
+```bash
+export KATRAIN_DATABASE_URL="postgresql://katrain_user:password@localhost:5432/katrain_db"
+export KATAGO_URL="http://127.0.0.1:8002"
+export DASHSCOPE_API_KEY=sk-your-key  # Optional, for translation (no quotes to avoid smart quote issues)
+
+python -m katrain.cron
+```
+
+> **Note:** When setting `DASHSCOPE_API_KEY`, avoid copying from web pages which may introduce smart quotes (`"` instead of `"`). Type the key directly or use no quotes.
+
+### Option 3: Docker (Manual Build)
+
+**katrain-web:**
+```bash
+docker build -f Dockerfile.web -t katrain-web .
+docker run -d --name katrain-web -p 8001:8001 \
+  -e KATRAIN_DATABASE_URL="postgresql://katrain_user:password@host.docker.internal:5432/katrain_db" \
+  -e LOCAL_KATAGO_URL="http://host.docker.internal:8000" \
+  --add-host=host.docker.internal:host-gateway \
+  katrain-web
+```
+
+**katrain-cron:**
+```bash
+docker build -f Dockerfile.cron -t katrain-cron .
+docker run -d --name katrain-cron \
+  -e KATRAIN_DATABASE_URL="postgresql://katrain_user:password@host.docker.internal:5432/katrain_db" \
+  -e KATAGO_URL="http://host.docker.internal:8002" \
+  -e DASHSCOPE_API_KEY="sk-..." \
+  --add-host=host.docker.internal:host-gateway \
+  katrain-cron
+```
+
+**katrain-desktop** (requires X11):
+```bash
+docker build -f Dockerfile.desktop -t katrain-desktop .
+xhost +local:docker
+docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain-desktop
+```
+
+### Environment Variables
+
+**katrain-web:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `KATRAIN_DATABASE_URL` | `sqlite:///./db.sqlite3` | Database connection URL |
+| `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | KataGo server for gameplay |
+| `KATRAIN_HOST` | `0.0.0.0` | Bind host |
+| `KATRAIN_PORT` | `8001` | Bind port |
+
+**katrain-cron:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `KATRAIN_DATABASE_URL` | `sqlite:///./db.sqlite3` | Database connection URL |
+| `KATAGO_URL` | `http://127.0.0.1:8002` | KataGo server for batch analysis |
+| `DASHSCOPE_API_KEY` | - | LLM API key for translation (optional) |
+| `CRON_LOG_LEVEL` | `INFO` | Log level |
+| `CRON_FETCH_LIST_INTERVAL` | `60` | Fetch match list interval (seconds) |
+| `CRON_POLL_MOVES_INTERVAL` | `3` | Poll moves interval (seconds) |
+| `CRON_TRANSLATE_INTERVAL` | `120` | Translation job interval (seconds) |
+| `CRON_ANALYSIS_WINDOW_SIZE` | `16` | KataGo concurrent analysis requests |
+| `CRON_FETCH_LIST_ENABLED` | `true` | Enable fetch job |
+| `CRON_POLL_MOVES_ENABLED` | `true` | Enable poll job |
+| `CRON_TRANSLATE_ENABLED` | `true` | Enable translate job |
+| `CRON_ANALYZE_ENABLED` | `true` | Enable analyze job |
+
+### Database Setup
+
+**Deploy PostgreSQL:**
+```bash
 docker compose -f docker-compose.db.yml up -d
 ```
-*Note: This will store data in a `.postgres_data` folder in your current directory.*
 
-#### 2. Configure KaTrain
-Set the `KATRAIN_DATABASE_URL` environment variable before starting KaTrain.
-
-```bash
-# Example for local PostgreSQL (default credentials in docker-compose.db.yml)
-export KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@127.0.0.1:5432/katrain_db"
-
-# Start KaTrain
-python3 -m katrain --ui web
-```
-
-KaTrain will automatically detect the PostgreSQL URL and use it instead of SQLite. The logs will confirm which database is active.
-
-#### 3. Querying Database Users
-
-To manually check user information in the PostgreSQL database:
-
-1.  **Using Python (SQLAlchemy):**
-    ```bash
-    source /opt/miniconda3/etc/profile.d/conda.sh && conda activate py311_katago
-    python -c "
-    from sqlalchemy import create_engine, text
-
-    db_url = 'postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db'
-    engine = create_engine(db_url)
-
-    with engine.connect() as conn:
-        result = conn.execute(text('SELECT id, uuid, username, rank, elo_points, credits, created_at FROM users ORDER BY id'))
-        rows = result.fetchall()
-        print(f'Total users: {len(rows)}')
-        print('-' * 100)
-        print(f'{\"ID\":<5} {\"UUID\":<35} {\"Username\":<20} {\"Rank\":<8} {\"ELO\":<8} {\"Credits\":<8} {\"Created\"}')
-        print('-' * 100)
-        for row in rows:
-            print(f'{row[0]:<5} {(row[1] or \"N/A\")[:32]:<35} {row[2]:<20} {row[3] or \"N/A\":<8} {row[4] or 0:<8} {row[5] or 0:<8} {str(row[6])[:19]}')
-    "
-    ```
-
-2.  **Using psql:**
-    ```bash
-    psql -d katrain_db -U katrain_user -c "SELECT id, username, rank, created_at FROM users;"
-    ```
-
-3.  **Table Schema (`users`):**
-    *   `id`: Primary key
-    *   `uuid`: Unique identifier
-    *   `username`: Login name
-    *   `hashed_password`: Bcrypt hash
-    *   `rank`: Go rank (default "20k")
-    *   `elo_points`: Rating points
-    *   `credits`: Account credits
-    *   `avatar_url`: Profile picture
-    *   `created_at` / `updated_at`: Timestamps
-
-#### 4. Connecting to PostgreSQL
-
-You can connect to the database using command-line tools or GUI clients like DBeaver.
-
-**Command Line (psql):**
-To enter the PostgreSQL interactive terminal:
+**Connect via psql:**
 ```bash
 docker exec -it katrain-postgres psql -U katrain_user -d katrain_db
 ```
 
-**DBeaver Connection Settings:**
-1.  **Database Type:** PostgreSQL
-2.  **Host:** `localhost`
-3.  **Port:** `5432`
-4.  **Database:** `katrain_db`
-5.  **Username:** `katrain_user`
-6.  **Password:** `katrain_secure_password_CHANGE_ME` (or your custom password from `docker-compose.db.yml`)
+**Connect via DBeaver:**
+- Host: `localhost`, Port: `5432`
+- Database: `katrain_db`, User: `katrain_user`
+- Password: (from `docker-compose.db.yml`)
 
-### Docker
-
-KaTrain provides optimized Dockerfiles for both Desktop and Web usage.
-
-#### Web Service
-For running the Web UI/API service:
-
-```bash
-# Build the web image
-# 1. Create .dockerignore to avoid permission errors if .postgres_data exists
-echo ".postgres_data" > .dockerignore
-
-docker build -f Dockerfile.web -t katrain-web .
-
-# Run the container (maps port 8001)
-docker run -d \
-  --name katrain-web \
-  --network host \
-  -e KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@127.0.0.1:5432/katrain_db" \
-  -e DASHSCOPE_API_KEY="sk-..." \
-  -v ~/.katrain:/root/.katrain \
-  katrain-web
-
-# Note: DASHSCOPE_API_KEY is optional. It enables automatic translation of
-# player/tournament names in the Live broadcasting module via Qwen LLM.
-# To use Anthropic Claude instead, replace with:
-#   -e LLM_BACKEND=anthropic \
-#   -e ANTHROPIC_API_KEY="sk-ant-..." \
-```
-
-#### Desktop Application
-For running the Desktop GUI (requires X11 forwarding):
-
-```bash
-# Build the desktop image
-docker build -f Dockerfile.desktop -t katrain-desktop .
-
-# Run the desktop app (example for Linux)
-xhost +local:docker
-docker run -it --rm \
-    -e DISPLAY=$DISPLAY \
-    -v /tmp/.X11-unix:/tmp/.X11-unix \
-    katrain-desktop
-```
-
-#### Unified Image (Legacy)
-The root `Dockerfile` is kept for backward compatibility and builds an image capable of both, defaulting to Web.
-```bash
-docker build -t katrain .
-```
-
-The web interface is built using **React** and **TypeScript** (located in `katrain/web/ui`), and the backend is a **FastAPI** server that communicates with the KaTrain engine.
+---
 
 ## <a name="ai"></a> Play against AI
 

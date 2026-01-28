@@ -24,12 +24,16 @@ class CronScheduler:
         from katrain.cron.jobs.poll_moves import PollMovesJob
         from katrain.cron.jobs.translate import TranslateJob
         from katrain.cron.jobs.analyze import AnalyzeJob
+        from katrain.cron.jobs.fetch_upcoming import FetchUpcomingJob
+        from katrain.cron.jobs.cleanup import CleanupJob
 
         # Interval jobs
         interval_jobs = [
             (FetchListJob, config.FETCH_LIST_INTERVAL, config.FETCH_LIST_ENABLED),
             (PollMovesJob, config.POLL_MOVES_INTERVAL, config.POLL_MOVES_ENABLED),
             (TranslateJob, config.TRANSLATE_INTERVAL, config.TRANSLATE_ENABLED),
+            (FetchUpcomingJob, config.FETCH_UPCOMING_INTERVAL, config.FETCH_UPCOMING_ENABLED),
+            (CleanupJob, config.CLEANUP_INTERVAL, config.CLEANUP_ENABLED),
         ]
 
         for job_cls, interval, enabled in interval_jobs:

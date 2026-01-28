@@ -24,7 +24,7 @@ services:
       - "8001:8001"
     environment:
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
-      - KATAGO_URL=http://host.docker.internal:8000
+      - LOCAL_KATAGO_URL=http://host.docker.internal:8000
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

@@ -5,7 +5,7 @@ Periodically fetches match data from external APIs and updates the cache.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable, Optional, TYPE_CHECKING
 
 from katrain.web.core.db import SessionLocal
@@ -340,7 +340,7 @@ class LivePoller:
                     elif isinstance(moves_data, list):
                         match.moves = [str(m) for m in moves_data]
 
-                match.last_updated = datetime.now()
+                match.last_updated = datetime.now(timezone.utc)
                 await self.cache.update_match(match)
 
                 # Persist to database and trigger analysis
@@ -450,7 +450,7 @@ class LivePoller:
                 match = self.weiqi_org.parse_match({}, detail)
                 await self.cache.update_match(match)
 
-        match.last_updated = datetime.now()
+        match.last_updated = datetime.now(timezone.utc)
         await self.cache.update_match(match)
         return match
 

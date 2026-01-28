@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from katrain.web.live.models import LiveMatch, MatchStatus, MoveAnalysis, UpcomingMatch
@@ -115,7 +115,7 @@ class LiveCache:
                     self._finished_matches[match.id] = match
                     self._live_matches.pop(match.id, None)
 
-            self._last_list_update = datetime.now()
+            self._last_list_update = datetime.now(timezone.utc)
 
     async def mark_match_finished(self, match_id: str, result: Optional[str] = None) -> None:
         """Mark a live match as finished and move it to finished cache."""
@@ -125,7 +125,7 @@ class LiveCache:
                 match.status = MatchStatus.FINISHED
                 if result:
                     match.result = result
-                match.last_updated = datetime.now()
+                match.last_updated = datetime.now(timezone.utc)
                 self._finished_matches[match.id] = match
 
                 # Clear featured if it was this match
@@ -136,7 +136,7 @@ class LiveCache:
         """Get upcoming matches."""
         async with self._lock:
             # Filter out past matches
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             return [m for m in self._upcoming if m.scheduled_time > now]
 
     async def set_upcoming(self, matches: list[UpcomingMatch]) -> None:
@@ -151,7 +151,7 @@ class LiveCache:
             Number of matches removed
         """
         removed = 0
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         cutoff = now - self.finished_retention
 
         async with self._lock:

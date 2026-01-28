@@ -34,20 +34,27 @@ class Translator:
         Returns: {lang: translation, ..., "source": "search+llm"|"llm"}
         """
         async with self._semaphore:
+            result = {}
+
             # Step A: Search multiple Wikipedia languages and get interwiki links
             search_context, langlinks = await self._search_player_multilang(name)
 
             if search_context or langlinks:
                 # Step B: LLM-assisted extraction from search results + langlinks
-                result = await self._llm_extract_player(name, search_context, langlinks)
-                if result:
-                    result["source"] = "search+llm"
-                    result["llm_model"] = config.LLM_MODEL
-                    return result
+                result = await self._llm_extract_player(name, search_context, langlinks) or {}
+                result["source"] = "search+llm"
 
-            # Step C: Fallback — direct LLM translation
-            result = await self._llm_translate_player(name, country)
-            result["source"] = "llm"
+            # Step C: Fill in any missing languages with direct LLM translation
+            missing_langs = [lang for lang in LANGUAGES if not result.get(lang)]
+            if missing_langs:
+                fallback = await self._llm_translate_player(name, country)
+                for lang in missing_langs:
+                    if fallback.get(lang):
+                        result[lang] = fallback[lang]
+                # Update source if we used fallback for all languages
+                if not result.get("source"):
+                    result["source"] = "llm"
+
             result["llm_model"] = config.LLM_MODEL
             return result
 

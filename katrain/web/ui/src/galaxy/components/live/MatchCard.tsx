@@ -61,7 +61,7 @@ export default function MatchCard({ match, compact = false, selected = false, on
             <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
               {i18n.translatePlayer(match.player_black)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">{t('live:vs')}</Typography>
+            <Typography variant="body2" color="text.secondary">vs</Typography>
             <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
               {i18n.translatePlayer(match.player_white)}
             </Typography>

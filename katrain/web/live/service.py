@@ -6,7 +6,7 @@ Maintains in-memory caches for fast API responses.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from katrain.web.core.db import SessionLocal
@@ -182,7 +182,7 @@ def _db_match_to_model(row) -> Optional[LiveMatch]:
             source_id=row.source_id or "",
             tournament=row.tournament or "",
             round_name=row.round_name,
-            date=row.match_date or datetime.now(),
+            date=row.match_date or datetime.now(timezone.utc),
             player_black=row.player_black or "",
             player_white=row.player_white or "",
             black_rank=row.black_rank,
@@ -196,7 +196,7 @@ def _db_match_to_model(row) -> Optional[LiveMatch]:
             katago_score=row.katago_score,
             sgf=row.sgf_content,
             moves=list(row.moves) if row.moves else [],
-            last_updated=row.updated_at or row.created_at or datetime.now(),
+            last_updated=row.updated_at or row.created_at or datetime.now(timezone.utc),
             board_size=row.board_size or 19,
             komi=row.komi if row.komi is not None else 7.5,
             rules=row.rules or "chinese",

@@ -351,14 +351,27 @@ async def get_upcoming_matches(
 ):
     """Get list of upcoming matches.
 
+    Reads from database (populated by katrain-cron).
     Optionally translates player and tournament names to the specified language.
     """
-    cache = live_service.cache
+    from datetime import datetime
+    from katrain.web.core.db import SessionLocal
+    from katrain.web.core.models_db import UpcomingMatchDB
+
     translator = get_translator() if lang else None
-    upcoming = await cache.get_upcoming()
+
+    # Read from database
+    with SessionLocal() as db:
+        upcoming_rows = (
+            db.query(UpcomingMatchDB)
+            .filter(UpcomingMatchDB.scheduled_time > datetime.utcnow())
+            .order_by(UpcomingMatchDB.scheduled_time.asc())
+            .limit(limit)
+            .all()
+        )
 
     matches = []
-    for m in upcoming[:limit]:
+    for m in upcoming_rows:
         # Apply translations if language specified
         tournament = m.tournament
         round_name = m.round_name
@@ -375,7 +388,7 @@ async def get_upcoming_matches(
                 player_white = translator.translate_player(m.player_white, lang)
 
         matches.append(UpcomingMatchResponse(
-            id=m.id,
+            id=m.event_id,
             tournament=tournament,
             round_name=round_name,
             scheduled_time=m.scheduled_time.isoformat(),

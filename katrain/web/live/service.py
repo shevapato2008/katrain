@@ -1,90 +1,62 @@
 """Live broadcasting service - main entry point.
 
-Integrates cache, poller, and analyzer with database persistence.
+Reads match data and analysis results from the database (populated by katrain-cron).
+Maintains in-memory caches for fast API responses.
 """
 
 import asyncio
 import logging
+from datetime import datetime
 from typing import Optional
 
 from katrain.web.core.db import SessionLocal
 from katrain.web.live.cache import LiveCache
-from katrain.web.live.models import LiveConfig, LiveMatch, MoveAnalysis, MatchStatus
-from katrain.web.live.poller import LivePoller
-from katrain.web.live.analyzer import LiveAnalyzer
-from katrain.web.live.analysis_repo import LiveAnalysisRepo, PRIORITY_FINISHED
+from katrain.web.live.models import LiveConfig, LiveMatch, MoveAnalysis, MatchStatus, MatchSource
 
 logger = logging.getLogger("katrain_web.live")
+
+# DB refresh intervals (seconds)
+_MATCH_REFRESH_INTERVAL = 5
+_CLEANUP_INTERVAL = 3600  # 1 hour
 
 
 class LiveService:
     """Main service class for live broadcasting functionality.
 
-    This class manages the lifecycle of:
-    - LiveCache: In-memory storage for match data
-    - LivePoller: Background polling from external APIs
-    - LiveAnalyzer: KataGo analysis integration with DB persistence
+    In the cron-based architecture, this service is read-only:
+    - katrain-cron handles polling, analysis, and translation
+    - This service reads from the shared PostgreSQL database
+    - In-memory caches provide fast API responses
     """
 
-    def __init__(
-        self,
-        config: Optional[LiveConfig] = None,
-        katago_url: Optional[str] = None,
-    ):
+    def __init__(self, config: Optional[LiveConfig] = None):
         self.config = config or LiveConfig()
-        self.katago_url = katago_url
 
-        # Initialize components
+        # In-memory match cache
         self.cache = LiveCache(
             max_live_matches=100,
             max_finished_matches=200,
             finished_retention_hours=168,  # 7 days
         )
 
-        self.poller = LivePoller(
-            cache=self.cache,
-            config=self.config,
-        )
-
-        # Initialize analyzer if local KataGo is enabled
-        if self.config.use_local_katago:
-            self.analyzer = LiveAnalyzer(
-                config=self.config,
-                katago_url=self.katago_url,
-            )
-            # Connect poller to analyzer
-            self.poller.set_analyzer(self.analyzer)
-            self.poller.set_on_new_move(self._on_new_move)
-        else:
-            self.analyzer = None
-
         self._started = False
-        self._analysis_cron_task: Optional[asyncio.Task] = None
-
-    def _on_new_move(self, match: LiveMatch, move_number: int) -> None:
-        """Callback when poller detects a new move."""
-        if self.analyzer:
-            # The poller already creates pending analysis records
-            # Just update the analyzer's match cache
-            self.analyzer.update_match_cache(match)
+        self._refresh_task: Optional[asyncio.Task] = None
+        self._cleanup_task: Optional[asyncio.Task] = None
 
     async def start(self) -> None:
-        """Start the live service (polling, analysis, etc.)."""
+        """Start the live service (DB refresh loops)."""
         if self._started:
             logger.warning("Live service already started")
             return
 
         logger.info("Starting live broadcasting service")
 
-        # Start poller
-        await self.poller.start()
+        # Initial load from DB
+        await self._load_matches_from_db()
 
-        # Start analyzer if enabled
-        if self.analyzer:
-            await self.analyzer.start()
-
-            # Start analysis cron job for finished matches
-            self._analysis_cron_task = asyncio.create_task(self._analysis_cron_loop())
+        # Start background refresh loops
+        self._refresh_task = asyncio.create_task(self._db_refresh_loop())
+        self._cleanup_task = asyncio.create_task(self._cache_cleanup_loop())
 
         self._started = True
         logger.info("Live broadcasting service started")
@@ -96,175 +68,66 @@ class LiveService:
 
         logger.info("Stopping live broadcasting service")
 
-        # Stop cron task
-        if self._analysis_cron_task:
-            self._analysis_cron_task.cancel()
-            try:
-                await self._analysis_cron_task
-            except asyncio.CancelledError:
-                pass
-
-        # Stop analyzer
-        if self.analyzer:
-            await self.analyzer.stop()
-
-        # Stop poller
-        await self.poller.stop()
+        for task in (self._refresh_task, self._cleanup_task):
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
         self._started = False
         logger.info("Live broadcasting service stopped")
 
-    async def _analysis_cron_loop(self) -> None:
-        """Background cron job to schedule analysis for all matches.
+    # ── DB refresh ────────────────────────────────────────────
 
-        Runs periodically to find matches that need analysis and create
-        pending analysis records for them.
-
-        Note: Moves are now fetched in _persist_matches() when matches are first
-        discovered. This cron job just schedules analysis for matches with moves.
-        """
-        # Run immediately on startup, then every 5 minutes
-        first_run = True
-
+    async def _db_refresh_loop(self) -> None:
+        """Periodically load matches from DB into cache."""
         while True:
             try:
-                if not first_run:
-                    await asyncio.sleep(300)  # Every 5 minutes after first run
-                first_run = False
-
-                # Phase 1: Recover any matches that still don't have moves (fallback)
-                await self._recover_matches_without_moves()
-
-                # Phase 2: Schedule analysis for matches with moves
-                scheduled_count = 0
-
-                with SessionLocal() as db:
-                    repo = LiveAnalysisRepo(db)
-
-                    # Get all matches from DB that have moves
-                    from katrain.web.core.models_db import LiveMatchDB
-                    from sqlalchemy import func, text
-                    from katrain.web.core.db import engine
-
-                    if engine.dialect.name == "postgresql":
-                        # Cast to jsonb to handle both json and jsonb column types
-                        matches_with_moves = db.query(LiveMatchDB).filter(
-                            LiveMatchDB.moves.isnot(None),
-                            text("jsonb_array_length(live_matches.moves::jsonb) > 0")
-                        ).all()
-                    else:
-                        matches_with_moves = db.query(LiveMatchDB).filter(
-                            LiveMatchDB.moves.isnot(None),
-                            func.json_array_length(LiveMatchDB.moves) > 0
-                        ).all()
-
-                    for db_match in matches_with_moves:
-                        # Find unanalyzed moves
-                        unanalyzed = repo.get_unanalyzed_moves(db_match.match_id, db_match.move_count)
-
-                        if unanalyzed:
-                            # Schedule analysis at low priority for finished matches
-                            priority = PRIORITY_FINISHED if db_match.status == "finished" else PRIORITY_FINISHED * 2
-                            repo.create_pending_analysis(
-                                match_id=db_match.match_id,
-                                move_numbers=unanalyzed,
-                                priority=priority,
-                                moves=db_match.moves,
-                            )
-                            scheduled_count += len(unanalyzed)
-
-                if scheduled_count > 0:
-                    logger.info(f"Cron job scheduled {scheduled_count} moves for analysis")
-
+                await asyncio.sleep(_MATCH_REFRESH_INTERVAL)
+                await self._load_matches_from_db()
             except asyncio.CancelledError:
                 break
-            except Exception as e:
-                logger.error(f"Error in analysis cron loop: {e}")
-                await asyncio.sleep(60)
+            except Exception:
+                logger.exception("Error in DB refresh loop")
+                await asyncio.sleep(30)
 
-    async def _recover_matches_without_moves(self) -> None:
-        """Check database for matches without moves and try to fetch them.
+    async def _load_matches_from_db(self) -> None:
+        """Load all live + recent finished matches from DB into LiveCache."""
+        from katrain.web.core.models_db import LiveMatchDB
 
-        This recovers from the bug where moves were overwritten with empty lists.
-        """
         try:
             with SessionLocal() as db:
-                repo = LiveAnalysisRepo(db)
-                matches_without_moves = repo.get_matches_without_moves()
+                db_matches = db.query(LiveMatchDB).all()
 
-                if not matches_without_moves:
-                    return
+                matches = []
+                for row in db_matches:
+                    match = _db_match_to_model(row)
+                    if match:
+                        matches.append(match)
 
-                logger.info(f"Found {len(matches_without_moves)} matches without moves in DB")
+            await self.cache.update_matches(matches)
+        except Exception:
+            logger.exception("Failed to load matches from DB")
 
-                recovered_count = 0
-                for db_match in matches_without_moves:
-                    # Try to fetch from API
-                    try:
-                        detailed = await self.poller.fetch_match_detail(db_match.match_id)
-                        if detailed and detailed.moves:
-                            # Update database with moves
-                            db_match.moves = detailed.moves
-                            db.commit()
+    async def _cache_cleanup_loop(self) -> None:
+        """Periodically clean up expired cache entries."""
+        while True:
+            try:
+                await asyncio.sleep(_CLEANUP_INTERVAL)
+                await self.cache.cleanup()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                logger.exception("Error in cache cleanup loop")
 
-                            # Reset failed analyses for this match
-                            reset_count = repo.reset_failed_for_match(db_match.match_id)
-
-                            logger.info(
-                                f"Recovered moves for {db_match.match_id}: "
-                                f"{len(detailed.moves)} moves, reset {reset_count} failed analyses"
-                            )
-                            recovered_count += 1
-                    except Exception as e:
-                        logger.warning(f"Failed to recover moves for {db_match.match_id}: {e}")
-
-                if recovered_count > 0:
-                    logger.info(f"Recovered moves for {recovered_count} matches")
-
-        except Exception as e:
-            logger.error(f"Error in recover_matches_without_moves: {e}")
-
-    async def request_analysis(self, match_id: str, move_range: Optional[tuple] = None) -> int:
-        """Request analysis for a match.
-
-        Args:
-            match_id: The match to analyze
-            move_range: Optional (start, end) tuple, defaults to full game
-
-        Returns:
-            Number of analysis tasks created
-        """
-        if not self.analyzer:
-            logger.warning("Analyzer not enabled")
-            return 0
-
-        match = await self.cache.get_match(match_id)
-        if not match:
-            logger.warning(f"Match not found: {match_id}")
-            return 0
-
-        if move_range:
-            start, end = move_range
-        else:
-            start, end = 0, match.move_count
-
-        # Update cache and create pending analysis records
-        self.analyzer.update_match_cache(match)
-        return await self.analyzer.request_analysis(match_id, (start, end))
+    # ── Read-only query methods ───────────────────────────────
 
     async def get_match_analysis(self, match_id: str) -> dict[int, MoveAnalysis]:
-        """Get all completed analysis for a match.
+        """Get all completed analysis for a match from the database."""
+        from katrain.web.live.analysis_repo import LiveAnalysisRepo
 
-        Args:
-            match_id: The match ID
-
-        Returns:
-            Dict mapping move_number to MoveAnalysis
-        """
-        if self.analyzer:
-            return await self.analyzer.get_match_analysis(match_id)
-
-        # Fallback to DB directly if no analyzer
         with SessionLocal() as db:
             repo = LiveAnalysisRepo(db)
             return repo.get_successful_analysis(match_id)
@@ -272,86 +135,18 @@ class LiveService:
     async def preload_analysis(self, match_id: str) -> dict[int, MoveAnalysis]:
         """Preload analysis for a match when user enters the page.
 
-        This also boosts priority for any pending analysis.
-
-        Args:
-            match_id: The match ID
-
-        Returns:
-            Dict mapping move_number to MoveAnalysis
+        Read-only: returns completed analysis from DB.
+        Priority boosting is handled by katrain-cron.
         """
-        # Get completed analysis
-        analysis = await self.get_match_analysis(match_id)
-
-        # If user is viewing, boost priority of pending analysis
-        match = await self.cache.get_match(match_id)
-        if match and self.analyzer:
-            # Boost priority for moves around current position
-            move_numbers = list(range(max(0, match.move_count - 10), match.move_count + 1))
-            await self.analyzer.boost_user_view_priority(match_id, move_numbers)
-
-        return analysis
-
-    @property
-    def is_running(self) -> bool:
-        """Check if the service is running."""
-        return self._started
-
-    async def recover_match_moves(self, match_id: str) -> dict:
-        """Manually recover moves for a specific match.
-
-        This fetches the match detail from the API and updates the database,
-        then resets any failed analyses.
-
-        Args:
-            match_id: The match ID to recover
-
-        Returns:
-            Dict with recovery results
-        """
-        result = {
-            "match_id": match_id,
-            "moves_fetched": 0,
-            "failed_analyses_reset": 0,
-            "error": None,
-        }
-
-        try:
-            # Fetch from API
-            detailed = await self.poller.fetch_match_detail(match_id)
-            if not detailed or not detailed.moves:
-                result["error"] = "Could not fetch moves from API"
-                return result
-
-            result["moves_fetched"] = len(detailed.moves)
-
-            # Update database
-            with SessionLocal() as db:
-                repo = LiveAnalysisRepo(db)
-                repo.get_or_create_match(detailed)
-
-                # Reset failed analyses
-                reset_count = repo.reset_failed_for_match(match_id)
-                result["failed_analyses_reset"] = reset_count
-
-            logger.info(f"Recovered match {match_id}: {result}")
-
-        except Exception as e:
-            result["error"] = str(e)
-            logger.error(f"Error recovering match {match_id}: {e}")
-
-        return result
+        return await self.get_match_analysis(match_id)
 
     async def get_analysis_stats(self) -> dict:
-        """Get statistics about the analysis system.
+        """Get statistics about the analysis system."""
+        from katrain.web.live.analysis_repo import LiveAnalysisRepo
 
-        Returns:
-            Dict with queue size, status counts, etc.
-        """
         stats = {
             "queue_size": 0,
             "by_status": {},
-            "matches_without_moves": 0,
         }
 
         try:
@@ -359,20 +154,53 @@ class LiveService:
                 repo = LiveAnalysisRepo(db)
                 stats["queue_size"] = repo.get_queue_size()
                 stats["by_status"] = repo.get_analysis_stats()
-                stats["matches_without_moves"] = len(repo.get_matches_without_moves())
-        except Exception as e:
-            logger.error(f"Error getting analysis stats: {e}")
+        except Exception:
+            logger.exception("Error getting analysis stats")
 
         return stats
 
+    @property
+    def is_running(self) -> bool:
+        """Check if the service is running."""
+        return self._started
+
 
 def create_live_service(config: Optional[LiveConfig] = None) -> LiveService:
-    """Factory function to create a LiveService instance.
-
-    Args:
-        config: Optional configuration. If not provided, defaults are used.
-
-    Returns:
-        LiveService instance (not started)
-    """
+    """Factory function to create a LiveService instance."""
     return LiveService(config=config)
+
+
+def _db_match_to_model(row) -> Optional[LiveMatch]:
+    """Convert a LiveMatchDB row to a LiveMatch pydantic model."""
+    try:
+        source = MatchSource(row.source) if row.source in MatchSource.__members__.values() else MatchSource.XINGZHEN
+        status = MatchStatus.LIVE if row.status == "live" else MatchStatus.FINISHED
+
+        return LiveMatch(
+            id=row.match_id,
+            source=source,
+            source_id=row.source_id or "",
+            tournament=row.tournament or "",
+            round_name=row.round_name,
+            date=row.match_date or datetime.now(),
+            player_black=row.player_black or "",
+            player_white=row.player_white or "",
+            black_rank=row.black_rank,
+            white_rank=row.white_rank,
+            status=status,
+            result=row.result,
+            move_count=row.move_count or 0,
+            current_winrate=row.current_winrate or 0.5,
+            current_score=row.current_score or 0.0,
+            katago_winrate=row.katago_winrate,
+            katago_score=row.katago_score,
+            sgf=row.sgf_content,
+            moves=list(row.moves) if row.moves else [],
+            last_updated=row.updated_at or row.created_at or datetime.now(),
+            board_size=row.board_size or 19,
+            komi=row.komi if row.komi is not None else 7.5,
+            rules=row.rules or "chinese",
+        )
+    except Exception:
+        logger.exception("Failed to convert DB match %s", getattr(row, "match_id", "?"))
+        return None

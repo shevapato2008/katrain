@@ -253,17 +253,10 @@ async def get_featured_match(
 async def get_match(
     match_id: str,
     request: Request,
-    fetch_detail: bool = Query(False, description="Fetch latest data from source"),
     live_service=Depends(get_live_service),
 ):
-    """Get detailed information for a specific match.
-
-    Set fetch_detail=true to fetch the latest data from the source API.
-    """
-    if fetch_detail:
-        match = await live_service.poller.fetch_match_detail(match_id)
-    else:
-        match = await live_service.cache.get_match(match_id)
+    """Get detailed information for a specific match."""
+    match = await live_service.cache.get_match(match_id)
 
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
@@ -349,41 +342,6 @@ async def preload_match_analysis(
     }
 
 
-@router.post("/matches/{match_id}/analyze")
-async def request_match_analysis(
-    match_id: str,
-    request: Request,
-    start_move: int = Query(0, ge=0, description="First move to analyze"),
-    end_move: Optional[int] = Query(None, ge=0, description="Last move to analyze"),
-    live_service=Depends(get_live_service),
-):
-    """Request KataGo analysis for a match.
-
-    Queues analysis for the specified move range (or full game if not specified).
-    Analysis runs in the background and results are available via GET /analysis.
-    """
-    match = await live_service.cache.get_match(match_id)
-    if not match:
-        raise HTTPException(status_code=404, detail="Match not found")
-
-    if not live_service.analyzer:
-        raise HTTPException(status_code=503, detail="Analysis service not enabled")
-
-    # Default end_move to current move count
-    if end_move is None:
-        end_move = match.move_count
-
-    await live_service.request_analysis(match_id, (start_move, end_move))
-
-    return {
-        "status": "queued",
-        "match_id": match_id,
-        "start_move": start_move,
-        "end_move": end_move,
-        "queue_size": await live_service.analyzer.get_queue_size(),
-    }
-
-
 @router.get("/upcoming", response_model=UpcomingListResponse)
 async def get_upcoming_matches(
     request: Request,
@@ -439,20 +397,6 @@ async def get_live_stats(
     return CacheStatsResponse(**stats)
 
 
-@router.post("/refresh")
-async def refresh_matches(
-    request: Request,
-    live_service=Depends(get_live_service),
-):
-    """Force refresh match data from all sources.
-
-    This is an admin endpoint that should be rate-limited in production.
-    """
-    await live_service.poller.force_refresh()
-    stats = await live_service.cache.get_stats()
-    return {"status": "ok", "stats": stats}
-
-
 @router.get("/analysis/stats")
 async def get_analysis_stats(
     request: Request,
@@ -462,134 +406,12 @@ async def get_analysis_stats(
 
     Returns counts by status: pending, running, success, failed.
     """
-    from katrain.web.core.db import SessionLocal
-    from katrain.web.live.analysis_repo import LiveAnalysisRepo
-
-    with SessionLocal() as db:
-        repo = LiveAnalysisRepo(db)
-        stats = repo.get_analysis_stats()
+    stats = await live_service.get_analysis_stats()
 
     return {
-        "stats": stats,
-        "total": sum(stats.values()),
-    }
-
-
-@router.post("/cleanup")
-async def cleanup_stale_data(
-    request: Request,
-    delete_invalid: bool = Query(False, description="Delete invalid matches (empty ID or missing players)"),
-    live_service=Depends(get_live_service),
-):
-    """Clean up stale data from the database.
-
-    This is an admin endpoint that:
-    - Removes failed analyses for matches without moves data
-    - Optionally deletes invalid matches (e.g., 'xingzhen_' with empty source_id)
-    """
-    from katrain.web.core.db import SessionLocal
-    from katrain.web.live.analysis_repo import LiveAnalysisRepo
-    from katrain.web.core.models_db import LiveMatchDB
-
-    results = {}
-
-    with SessionLocal() as db:
-        repo = LiveAnalysisRepo(db)
-
-        # Clean up failed analyses
-        failed_deleted = repo.cleanup_failed_analyses()
-        results["failed_analyses_deleted"] = failed_deleted
-
-        if delete_invalid:
-            # Find and delete invalid matches (empty source_id)
-            invalid_matches = db.query(LiveMatchDB).filter(
-                LiveMatchDB.source_id == ""
-            ).all()
-
-            deleted_matches = 0
-            for match in invalid_matches:
-                if repo.delete_invalid_match(match.match_id):
-                    deleted_matches += 1
-
-            results["invalid_matches_deleted"] = deleted_matches
-
-    return {"status": "ok", "results": results}
-
-
-@router.post("/matches/{match_id}/recover")
-async def recover_match_moves(
-    match_id: str,
-    request: Request,
-    live_service=Depends(get_live_service),
-):
-    """Recover moves data for a match and reset failed analyses.
-
-    This is an admin endpoint that:
-    1. Fetches the latest match detail from the source API
-    2. Updates the database with the moves data
-    3. Resets any failed analyses to pending so they can be retried
-
-    Use this to fix matches that have empty moves[] in the database.
-    """
-    result = await live_service.recover_match_moves(match_id)
-
-    if result.get("error"):
-        raise HTTPException(status_code=400, detail=result["error"])
-
-    return {"status": "ok", **result}
-
-
-@router.get("/admin/stats")
-async def get_admin_stats(
-    request: Request,
-    live_service=Depends(get_live_service),
-):
-    """Get comprehensive statistics for admin monitoring.
-
-    Returns:
-    - Analysis queue size and status counts
-    - Number of matches without moves data
-    - Cache statistics
-    """
-    analysis_stats = await live_service.get_analysis_stats()
-    cache_stats = await live_service.cache.get_stats()
-
-    return {
-        "analysis": analysis_stats,
-        "cache": cache_stats,
-    }
-
-
-@router.post("/admin/recover-all")
-async def recover_all_matches(
-    request: Request,
-    live_service=Depends(get_live_service),
-):
-    """Recover moves for all matches that have empty moves in the database.
-
-    This is an admin endpoint that triggers the recovery process for all
-    matches without moves data. It runs asynchronously - use GET /admin/stats
-    to monitor progress.
-    """
-    from katrain.web.core.db import SessionLocal
-    from katrain.web.live.analysis_repo import LiveAnalysisRepo
-
-    with SessionLocal() as db:
-        repo = LiveAnalysisRepo(db)
-        matches_without_moves = repo.get_matches_without_moves()
-        count = len(matches_without_moves)
-
-    if count == 0:
-        return {"status": "ok", "message": "No matches need recovery"}
-
-    # Trigger recovery in background (don't await)
-    import asyncio
-    asyncio.create_task(live_service._recover_matches_without_moves())
-
-    return {
-        "status": "started",
-        "matches_to_recover": count,
-        "message": f"Recovery started for {count} matches. Use GET /admin/stats to monitor progress.",
+        "stats": stats.get("by_status", {}),
+        "total": sum(stats.get("by_status", {}).values()),
+        "queue_size": stats.get("queue_size", 0),
     }
 
 

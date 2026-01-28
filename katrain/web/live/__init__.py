@@ -1,14 +1,16 @@
 """KaTrain Live Broadcasting Module
 
-This module provides live game broadcasting functionality, integrating
-with external data sources (XingZhen, weiqi.org.cn) and local KataGo analysis.
+This module provides live game broadcasting functionality.
+
+In the cron-based architecture:
+- katrain-cron handles polling, analysis, and translations
+- This module reads from the shared PostgreSQL database
+- LiveService maintains in-memory caches for fast API responses
 """
 
 from katrain.web.live.models import LiveMatch, MoveAnalysis, UpcomingMatch, LiveConfig
 from katrain.web.live.service import LiveService, create_live_service
 from katrain.web.live.cache import LiveCache
-from katrain.web.live.poller import LivePoller
-from katrain.web.live.analyzer import LiveAnalyzer
 from katrain.web.live.analysis_repo import (
     LiveAnalysisRepo,
     PRIORITY_LIVE_NEW,
@@ -25,8 +27,6 @@ __all__ = [
     "LiveService",
     "create_live_service",
     "LiveCache",
-    "LivePoller",
-    "LiveAnalyzer",
     "LiveAnalysisRepo",
     "PRIORITY_LIVE_NEW",
     "PRIORITY_USER_VIEW",

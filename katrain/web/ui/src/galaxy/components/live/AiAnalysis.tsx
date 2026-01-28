@@ -1,13 +1,10 @@
-import { Box, Typography, IconButton, Button, Tooltip } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { Box, Typography, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { MoveAnalysis, TopMove } from '../../types/live';
-import { LiveAPI } from '../../api/live';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { i18n } from '../../../i18n';
 
 interface AiAnalysisProps {
-  matchId: string;
   currentMove: number;
   analysis: Record<number, MoveAnalysis>;
   onMoveHover?: (pv: string[] | null) => void;
@@ -31,28 +28,12 @@ function StoneIndicator({ color, size = 16 }: { color: 'B' | 'W'; size?: number 
 }
 
 export default function AiAnalysis({
-  matchId,
   currentMove,
   analysis,
   onMoveHover,
   topN = 3,
 }: AiAnalysisProps) {
-  const [requesting, setRequesting] = useState(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
-
   const currentAnalysis = analysis[currentMove];
-
-  const handleRequestAnalysis = async () => {
-    setRequesting(true);
-    setRequestError(null);
-    try {
-      await LiveAPI.requestAnalysis(matchId, Math.max(0, currentMove - 5), currentMove);
-    } catch (err) {
-      setRequestError(err instanceof Error ? err.message : 'Request failed');
-    } finally {
-      setRequesting(false);
-    }
-  };
 
   // Determine who plays next (not who just moved)
   // At move 0 (empty board), Black plays next
@@ -134,33 +115,15 @@ export default function AiAnalysis({
   if (!currentAnalysis) {
     return (
       <Box sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="subtitle2">{i18n.t('live:ai_recommendations', 'AI Recommendations')}</Typography>
-          <Tooltip title={i18n.t('live:request_analysis', 'Request analysis')}>
-            <IconButton size="small" onClick={handleRequestAnalysis} disabled={requesting}>
-              <RefreshIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-          {requesting ? i18n.t('live:requesting_analysis', 'Requesting analysis...') : i18n.t('live:no_analysis', 'No analysis data')}
+        <Typography variant="subtitle2" sx={{ mb: 2 }}>
+          {i18n.t('live:ai_recommendations', 'AI Recommendations')}
         </Typography>
-        {requestError && (
-          <Typography variant="caption" color="error" sx={{ display: 'block', textAlign: 'center' }}>
-            {requestError}
-          </Typography>
-        )}
-        {!requesting && (
-          <Button
-            size="small"
-            variant="outlined"
-            fullWidth
-            onClick={handleRequestAnalysis}
-            sx={{ mt: 1 }}
-          >
-            {i18n.t('live:request_analysis', 'Request analysis')}
-          </Button>
-        )}
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+          {i18n.t('live:analysis_pending', 'Analysis pending...')}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
+          {i18n.t('live:analysis_auto_processed', 'Analysis is automatically processed in the background')}
+        </Typography>
       </Box>
     );
   }

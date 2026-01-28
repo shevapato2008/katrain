@@ -171,22 +171,6 @@ export const LiveAPI = {
     return apiPost('/refresh');
   },
 
-  /**
-   * Request KataGo analysis for a match
-   */
-  requestAnalysis: (matchId: string, startMove = 0, endMove?: number): Promise<{
-    status: string;
-    match_id: string;
-    start_move: number;
-    end_move: number;
-    queue_size: number;
-  }> => {
-    const params = new URLSearchParams();
-    params.set('start_move', startMove.toString());
-    if (endMove !== undefined) params.set('end_move', endMove.toString());
-    return apiPost(`/matches/${matchId}/analyze?${params.toString()}`);
-  },
-
   // ==================== Comment API ====================
 
   /**

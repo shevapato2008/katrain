@@ -4,71 +4,23 @@ Provides translation of player names, tournament names, and round names
 for the live broadcasting feature.
 
 Translation priority:
-1. Static JSON files (players.json, tournaments.json)
-2. Database cache (PlayerTranslationDB, TournamentTranslationDB)
-3. LLM fallback (generate translation and store in DB)
+1. Database lookup (exact match or alias)
+2. Fuzzy match in database
+3. Compound name parsing
+
+LLM translation is handled by katrain-cron. This module is read-only
+for translations (except manual corrections via store_player/store_tournament).
 """
 
-import json
 import logging
 import re
-import time
-from datetime import datetime
 from difflib import SequenceMatcher
 from functools import lru_cache
-from pathlib import Path
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger("katrain_web.live.translator")
-
-
-# LLM translation prompts by name type
-PLAYER_TRANSLATION_PROMPT = """Translate this Go player name to {lang}:
-Name: {name}
-
-Follow these conventions:
-- Chinese names to English: Use pinyin without tones (e.g., 柯洁 → Ke Jie)
-- Chinese names to Japanese: Use katakana with middle dot (e.g., 柯洁 → カ・ケツ)
-- Chinese names to Korean: Use hangul reading (e.g., 柯洁 → 커제)
-- Japanese names to English: Use romaji, surname first (e.g., 井山裕太 → Iyama Yuta)
-- Japanese names to Chinese: Keep kanji if same
-- Korean names to English: Use revised romanization (e.g., 신진서 → Shin Jinseo)
-
-Return ONLY the translated name, nothing else."""
-
-TOURNAMENT_TRANSLATION_PROMPT = """Translate this Go tournament name to {lang}:
-Name: {name}
-
-{lang_guidelines}
-
-Return ONLY the translated name, nothing else."""
-
-TOURNAMENT_LANG_GUIDELINES = {
-    "English": """Guidelines for English:
-- Use official English names when known (棋聖戦 → Kisei, 天元战 → Tengen)
-- For editions: 第52期 → 52nd, 27届 → 27th
-- Translate 战/杯/赛 as Tournament/Cup/Match""",
-    "Simplified Chinese": """Guidelines for Simplified Chinese:
-- Keep in simplified Chinese characters
-- Preserve original Chinese tournament names
-- For Korean/Japanese tournaments, translate to Chinese: 기성전 → 棋圣战, 棋聖戦 → 棋圣战
-- Keep edition format: 第N期, 第N届""",
-    "Traditional Chinese": """Guidelines for Traditional Chinese:
-- Convert to traditional Chinese characters: 战→戰, 预选→預選, 围棋→圍棋
-- For Korean/Japanese tournaments, translate to traditional Chinese
-- Keep edition format: 第N期, 第N屆""",
-    "Japanese": """Guidelines for Japanese:
-- Use Japanese kanji where different from simplified Chinese: 战→戦, 围→囲, 预→予
-- Use katakana for foreign proper nouns
-- Keep edition format: 第N期, 第N回
-- For known tournaments use Japanese names: 天元戦, 名人戦, 棋聖戦""",
-    "Korean": """Guidelines for Korean:
-- Use Korean reading in hangul: 天元战 → 천원전, 名人战 → 명인전
-- For editions: 第N期 → 제N기, N届 → 제N회
-- Translate fully to Korean""",
-}
 
 
 # Simplified Chinese to Japanese kanji conversion table
@@ -138,41 +90,22 @@ def convert_simplified_to_japanese(text: str) -> str:
 class LiveTranslator:
     """Translates player names, tournament names, and round names.
 
-    Uses database as the primary translation source with LLM fallback
-    for unknown names.
+    Uses database as the primary translation source.
+    LLM translation is handled by katrain-cron.
 
     Translation priority:
-    1. Database lookup
-    2. LLM fallback (if enabled, stores result in DB)
+    1. Database lookup (exact match or alias)
+    2. Fuzzy match in database
+    3. Compound name parsing
     """
 
     DEFAULT_LANG = "en"
     SUPPORTED_LANGS = {"en", "cn", "tw", "jp", "ko"}
 
-    # Circuit breaker: disable LLM after this many consecutive failures
-    _LLM_FAILURE_THRESHOLD = 3
-    # Re-enable LLM after this many seconds
-    _LLM_COOLDOWN_SECONDS = 300  # 5 minutes
-    # Max size for negative cache (names that failed LLM translation)
-    _NEGATIVE_CACHE_MAX = 500
-
-    def __init__(self, enable_llm: bool = True):
-        """Initialize the translator.
-
-        Args:
-            enable_llm: Whether to use LLM for unknown translations
-        """
-        self._enable_llm = enable_llm
+    def __init__(self):
         self._db_session: Optional[Session] = None
         self._player_index: dict[str, str] = {}  # alias -> canonical name (built from DB)
         self._index_built = False
-        # Circuit breaker state
-        self._llm_consecutive_failures = 0
-        self._llm_disabled_until: float = 0
-        # Negative cache: names that failed LLM translation {(name, lang): timestamp}
-        self._llm_negative_cache: dict[tuple[str, str], float] = {}
-        # Log LLM configuration at startup
-        self._log_llm_config()
 
     def _build_player_index(self) -> None:
         """Build player alias index from database for fast lookup."""
@@ -221,7 +154,6 @@ class LiveTranslator:
         Translation priority:
         1. Database lookup (exact match or alias)
         2. Fuzzy match in database
-        3. LLM generation (if enabled, stores result in DB)
 
         Args:
             name: Player name to translate
@@ -256,14 +188,6 @@ class LiveTranslator:
             db_result = self._lookup_db_player(canonical, lang)
             if db_result:
                 return db_result
-
-        # 4. Try LLM translation (if enabled)
-        if self._enable_llm:
-            llm_result = self._translate_player_with_llm(name, lang)
-            if llm_result and llm_result != name:
-                # Store in database for future use
-                self._store_player_translation(name, lang, llm_result, source="llm")
-                return llm_result
 
         # No match - return original
         return name
@@ -300,7 +224,6 @@ class LiveTranslator:
         1. Database lookup (exact match)
         2. Compound name parsing (e.g., "第52期日本天元战预选A组")
         3. Space-separated compound name (e.g., "棋聖 ＦＴ")
-        4. LLM fallback (if enabled, stores result in DB)
 
         Args:
             name: Tournament name to translate
@@ -319,10 +242,10 @@ class LiveTranslator:
         result = self._lookup_db_tournament(name, lang)
 
         # 2. Try compound parsing for complex tournament names
+        # Note: Results are NOT stored to DB (katrain-cron handles persistence)
         if not result:
             parsed = self._parse_compound_tournament(name, lang)
             if parsed and parsed != name:
-                self._store_tournament_translation(name, lang, parsed, source="compound")
                 result = parsed
 
         # 3. Try space-separated compound name (e.g., "棋聖 ＦＴ")
@@ -341,16 +264,9 @@ class LiveTranslator:
                         translated_parts.append(part)
                 if any_translated:
                     result = " ".join(translated_parts)
-                    self._store_tournament_translation(name, lang, result, source="compound")
+                    # Note: Not stored to DB (katrain-cron handles persistence)
 
-        # 4. Try LLM translation (if enabled)
-        if not result and self._enable_llm:
-            llm_result = self._translate_tournament_with_llm(name, lang)
-            if llm_result and llm_result != name:
-                self._store_tournament_translation(name, lang, llm_result, source="llm")
-                result = llm_result
-
-        # 5. For Japanese, apply automatic character conversion
+        # 4. For Japanese, apply automatic character conversion
         if lang == "jp":
             text = result if result else name
             converted = convert_simplified_to_japanese(text)
@@ -863,282 +779,6 @@ class LiveTranslator:
                 session.rollback()
             return False
 
-    # ========== LLM Translation Methods ==========
-
-    def _translate_player_with_llm(self, name: str, lang: str) -> Optional[str]:
-        """Translate a player name using LLM.
-
-        Args:
-            name: Player name to translate
-            lang: Target language code
-
-        Returns:
-            Translated name or None if failed
-        """
-        if not self._is_llm_available():
-            return None
-
-        if self._is_in_negative_cache(name, lang):
-            return None
-
-        try:
-            prompt = PLAYER_TRANSLATION_PROMPT.format(name=name, lang=self._lang_name(lang))
-            result = self._call_llm(prompt)
-            if result:
-                return result.strip()
-            self._add_to_negative_cache(name, lang)
-            return None
-        except Exception as e:
-            logger.warning(f"LLM translation failed for player {name}: {e}")
-            self._add_to_negative_cache(name, lang)
-            return None
-
-    def _translate_tournament_with_llm(self, name: str, lang: str) -> Optional[str]:
-        """Translate a tournament name using LLM.
-
-        Args:
-            name: Tournament name to translate
-            lang: Target language code
-
-        Returns:
-            Translated name or None if failed
-        """
-        if not self._is_llm_available():
-            return None
-
-        if self._is_in_negative_cache(name, lang):
-            return None
-
-        try:
-            lang_name = self._lang_name(lang)
-            lang_guidelines = TOURNAMENT_LANG_GUIDELINES.get(lang_name, "")
-            prompt = TOURNAMENT_TRANSLATION_PROMPT.format(name=name, lang=lang_name, lang_guidelines=lang_guidelines)
-            result = self._call_llm(prompt)
-            if result:
-                return result.strip()
-            self._add_to_negative_cache(name, lang)
-            return None
-        except Exception as e:
-            logger.warning(f"LLM translation failed for tournament {name}: {e}")
-            self._add_to_negative_cache(name, lang)
-            return None
-
-    def _lang_name(self, lang: str) -> str:
-        """Convert language code to full name for LLM prompts."""
-        return {
-            "en": "English",
-            "cn": "Simplified Chinese",
-            "tw": "Traditional Chinese",
-            "jp": "Japanese",
-            "ko": "Korean",
-        }.get(lang, "English")
-
-    def _is_llm_available(self) -> bool:
-        """Check if LLM is available (circuit breaker not tripped)."""
-        if not self._enable_llm:
-            return False
-        if self._llm_disabled_until > 0:
-            now = time.monotonic()
-            if now < self._llm_disabled_until:
-                return False
-            # Cooldown expired, reset circuit breaker
-            logger.info("LLM circuit breaker cooldown expired, re-enabling LLM translations")
-            self._llm_consecutive_failures = 0
-            self._llm_disabled_until = 0
-        return True
-
-    def _is_in_negative_cache(self, name: str, lang: str) -> bool:
-        """Check if a name+lang pair is in the negative cache (recently failed)."""
-        key = (name.lower(), lang)
-        cached_at = self._llm_negative_cache.get(key)
-        if cached_at is None:
-            return False
-        # Negative cache entries expire with the same cooldown as the circuit breaker
-        if time.monotonic() - cached_at > self._LLM_COOLDOWN_SECONDS:
-            del self._llm_negative_cache[key]
-            return False
-        return True
-
-    def _add_to_negative_cache(self, name: str, lang: str) -> None:
-        """Add a name+lang pair to the negative cache."""
-        # Evict oldest entries if cache is full
-        if len(self._llm_negative_cache) >= self._NEGATIVE_CACHE_MAX:
-            oldest_key = min(self._llm_negative_cache, key=self._llm_negative_cache.get)
-            del self._llm_negative_cache[oldest_key]
-        self._llm_negative_cache[(name.lower(), lang)] = time.monotonic()
-
-    def _log_llm_config(self) -> None:
-        """Log LLM configuration at startup for diagnostics."""
-        import os
-
-        if not self._enable_llm:
-            logger.info("LLM translation: disabled")
-            return
-
-        backend = os.environ.get("LLM_BACKEND", "qwen").lower()
-        if backend == "anthropic":
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            model = os.environ.get("LLM_MODEL", "claude-haiku-4-5-20251001")
-            key_status = "set" if api_key else "NOT SET"
-            logger.info(f"LLM translation: backend=anthropic, model={model}, ANTHROPIC_API_KEY={key_status}")
-        else:
-            api_key = os.environ.get("DASHSCOPE_API_KEY")
-            model = os.environ.get("LLM_MODEL", "qwen-mt-turbo")
-            base_url = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-            key_status = "set" if api_key else "NOT SET"
-            logger.info(f"LLM translation: backend=qwen, model={model}, DASHSCOPE_API_KEY={key_status}, base_url={base_url}")
-
-        if not api_key:
-            logger.warning("LLM translation: API key not set, LLM fallback will be skipped")
-
-    def _get_llm_backend(self) -> str:
-        """Determine which LLM backend to use.
-
-        Priority: DB config > environment variable > default ('qwen').
-        Supported values: 'qwen', 'anthropic'.
-        """
-        import os
-
-        backend = self._get_llm_config("backend") or os.environ.get("LLM_BACKEND", "qwen")
-        return backend.lower()
-
-    def _call_llm(self, prompt: str) -> Optional[str]:
-        """Call LLM API to generate translation.
-
-        Supports multiple backends (configurable via LLM_BACKEND env var or DB config):
-        - 'qwen': Alibaba Qwen via OpenAI-compatible API (default)
-        - 'anthropic': Anthropic Claude API
-
-        Implements a circuit breaker: after consecutive failures, LLM calls
-        are disabled for a cooldown period to avoid flooding a broken API.
-
-        Args:
-            prompt: The prompt to send to LLM
-
-        Returns:
-            LLM response text or None if failed
-        """
-        if not self._is_llm_available():
-            return None
-
-        backend = self._get_llm_backend()
-        try:
-            if backend == "anthropic":
-                return self._call_anthropic(prompt)
-            else:
-                return self._call_qwen(prompt)
-        except ImportError as e:
-            logger.warning(f"LLM disabled: {backend} package not installed ({e})")
-            self._enable_llm = False
-            return None
-        except Exception as e:
-            self._llm_consecutive_failures += 1
-            if self._llm_consecutive_failures >= self._LLM_FAILURE_THRESHOLD:
-                self._llm_disabled_until = time.monotonic() + self._LLM_COOLDOWN_SECONDS
-                logger.warning(
-                    f"LLM disabled for {self._LLM_COOLDOWN_SECONDS}s after "
-                    f"{self._llm_consecutive_failures} consecutive failures (last error: {e})"
-                )
-            else:
-                logger.debug(f"LLM API call failed ({self._llm_consecutive_failures}/{self._LLM_FAILURE_THRESHOLD}): {e}")
-            return None
-
-    def _call_qwen(self, prompt: str) -> Optional[str]:
-        """Call Alibaba Qwen API via OpenAI-compatible interface.
-
-        Args:
-            prompt: The prompt to send
-
-        Returns:
-            Response text or None
-        """
-        from openai import OpenAI
-        import os
-
-        api_key = self._get_llm_config("api_key") or os.environ.get("DASHSCOPE_API_KEY")
-        if not api_key:
-            logger.warning("LLM skipped: DASHSCOPE_API_KEY not set")
-            return None
-
-        base_url = self._get_llm_config("base_url") or os.environ.get(
-            "LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
-        model_name = self._get_llm_config("model_name") or os.environ.get("LLM_MODEL", "qwen-mt-turbo")
-
-        logger.info(f"LLM request [qwen/{model_name}]: {prompt[:120]}...")
-        client = OpenAI(api_key=api_key, base_url=base_url)
-        response = client.chat.completions.create(
-            model=model_name,
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        if response.choices:
-            self._llm_consecutive_failures = 0
-            result = response.choices[0].message.content
-            logger.info(f"LLM response [qwen/{model_name}]: {result}")
-            return result
-        logger.warning(f"LLM response [qwen/{model_name}]: empty response")
-        return None
-
-    def _call_anthropic(self, prompt: str) -> Optional[str]:
-        """Call Anthropic Claude API.
-
-        Args:
-            prompt: The prompt to send
-
-        Returns:
-            Response text or None
-        """
-        import anthropic
-        import os
-
-        api_key = self._get_llm_config("api_key") or os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            logger.warning("LLM skipped: ANTHROPIC_API_KEY not set")
-            return None
-
-        model_name = self._get_llm_config("model_name") or os.environ.get(
-            "LLM_MODEL", "claude-haiku-4-5-20251001"
-        )
-
-        logger.info(f"LLM request [anthropic/{model_name}]: {prompt[:120]}...")
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model=model_name,
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        if response.content:
-            self._llm_consecutive_failures = 0
-            result = response.content[0].text
-            logger.info(f"LLM response [anthropic/{model_name}]: {result}")
-            return result
-        logger.warning(f"LLM response [anthropic/{model_name}]: empty response")
-        return None
-
-    def _get_llm_config(self, key: str) -> Optional[str]:
-        """Get LLM configuration from database.
-
-        Args:
-            key: Config key (e.g., 'model_name')
-
-        Returns:
-            Config value or None if not found
-        """
-        try:
-            session = self._get_db_session()
-            if not session:
-                return None
-
-            from katrain.web.core.models_db import SystemConfigDB
-            config = session.query(SystemConfigDB).filter_by(key=f"llm_{key}").first()
-            return config.value if config else None
-        except Exception as e:
-            logger.debug(f"Failed to get LLM config: {e}")
-            return None
-
     # ========== Public Methods for Manual Translation ==========
 
     def store_player(
@@ -1286,6 +926,9 @@ class LiveTranslator:
 
 # Global singleton
 _translator: Optional[LiveTranslator] = None
+
+
+LANGUAGES = list(LiveTranslator.SUPPORTED_LANGS)
 
 
 def get_translator() -> LiveTranslator:

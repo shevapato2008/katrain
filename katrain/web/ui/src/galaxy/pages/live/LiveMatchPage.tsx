@@ -204,7 +204,6 @@ export default function LiveMatchPage() {
         {/* AI Analysis panel */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <AiAnalysis
-            matchId={match.id}
             currentMove={currentMove}
             analysis={analysis}
             onMoveHover={handlePvHover}

@@ -200,6 +200,7 @@ class AnalysisRepo:
     ) -> int:
         """Create pending analysis tasks. Skips if already exists (upsert priority)."""
         created = 0
+        dirty = False
         for mn in move_numbers:
             existing = (
                 self.db.query(LiveAnalysisDB)
@@ -214,6 +215,7 @@ class AnalysisRepo:
             if existing:
                 if priority > existing.priority and existing.status == "pending":
                     existing.priority = priority
+                    dirty = True
                 continue
 
             actual_move = None
@@ -233,7 +235,8 @@ class AnalysisRepo:
                 )
             )
             created += 1
+            dirty = True
 
-        if created:
+        if dirty:
             self.db.commit()
         return created

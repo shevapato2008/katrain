@@ -103,9 +103,9 @@ class AnalyzeJob(BaseJob):
         try:
             match = db.query(LiveMatchDB).filter(LiveMatchDB.match_id == record.match_id).first()
             if not match or not match.moves:
-                return {"error": f"No moves for match {record.match_id}", "record_id": record.id}
+                raise ValueError(f"No moves for match {record.match_id}")
 
-            moves = match.moves
+            moves = list(match.moves)
             rules = match.rules or "chinese"
             komi = match.komi or 7.5
             board_size = match.board_size or 19
@@ -140,11 +140,6 @@ class AnalyzeJob(BaseJob):
     # ── Result handling ──────────────────────────────────────
 
     def _handle_result(self, record_id: int, result: dict) -> None:
-        if "error" in result and "_record_id" not in result:
-            # KataGo returned an error
-            self._handle_failure(record_id, result.get("error", "Unknown error"))
-            return
-
         parsed = KataGoClient.parse_result(result)
         if parsed is None:
             self._handle_failure(record_id, result.get("error", "Parse failed"))
@@ -202,9 +197,14 @@ class AnalyzeJob(BaseJob):
 
         if highest - lowest_pri >= self.preempt_threshold:
             # Cancel the low-priority in-flight task
-            in_flight[lowest_key].cancel()
-            del in_flight[lowest_key]
+            task = in_flight.pop(lowest_key)
             del priorities[lowest_key]
+            task.cancel()
+            # Await the cancelled task to avoid "Task was destroyed" warnings
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
             # Reset back to pending
             db = SessionLocal()
             try:

@@ -68,8 +68,9 @@ class PollMovesJob(BaseJob):
 
         # Create analysis tasks for new moves
         if new_count > old_count:
-            # New moves get highest priority
-            new_move_nums = list(range(old_count + 1, new_count + 1))
+            # Include move 0 (root position) on first detection so move 1 gets delta
+            start = 0 if old_count == 0 else old_count + 1
+            new_move_nums = list(range(start, new_count + 1))
             repo.create_pending(match.match_id, new_move_nums, PRIORITY_LIVE_NEW, new_moves)
             self.logger.info(
                 "New moves for %s: %d -> %d (created %d tasks)",

@@ -171,6 +171,8 @@ class LiveTranslator:
         self._llm_disabled_until: float = 0
         # Negative cache: names that failed LLM translation {(name, lang): timestamp}
         self._llm_negative_cache: dict[tuple[str, str], float] = {}
+        # Log LLM configuration at startup
+        self._log_llm_config()
 
     def _build_player_index(self) -> None:
         """Build player alias index from database for fast lookup."""
@@ -800,12 +802,13 @@ class LiveTranslator:
                 setattr(record, lang, translation)
                 session.add(record)
 
+            action = "updated" if record.id else "inserted"
             session.commit()
             self.clear_cache()  # Invalidate cache after storing
-            logger.info(f"Stored player translation: {name} -> {translation} ({lang})")
+            logger.info(f"DB write: {action} player translation [{source}]: {name} -> {translation} ({lang})")
             return True
         except Exception as e:
-            logger.error(f"Failed to store player translation: {e}")
+            logger.error(f"DB write failed: player translation {name} ({lang}): {e}")
             if session:
                 session.rollback()
             return False
@@ -849,12 +852,13 @@ class LiveTranslator:
                 setattr(record, lang, translation)
                 session.add(record)
 
+            action = "updated" if record.id else "inserted"
             session.commit()
             self.clear_cache()  # Invalidate cache after storing
-            logger.info(f"Stored tournament translation: {name} -> {translation} ({lang})")
+            logger.info(f"DB write: {action} tournament translation [{source}]: {name} -> {translation} ({lang})")
             return True
         except Exception as e:
-            logger.error(f"Failed to store tournament translation: {e}")
+            logger.error(f"DB write failed: tournament translation {name} ({lang}): {e}")
             if session:
                 session.rollback()
             return False
@@ -885,7 +889,7 @@ class LiveTranslator:
             self._add_to_negative_cache(name, lang)
             return None
         except Exception as e:
-            logger.debug(f"LLM translation failed for player {name}: {e}")
+            logger.warning(f"LLM translation failed for player {name}: {e}")
             self._add_to_negative_cache(name, lang)
             return None
 
@@ -915,7 +919,7 @@ class LiveTranslator:
             self._add_to_negative_cache(name, lang)
             return None
         except Exception as e:
-            logger.debug(f"LLM translation failed for tournament {name}: {e}")
+            logger.warning(f"LLM translation failed for tournament {name}: {e}")
             self._add_to_negative_cache(name, lang)
             return None
 
@@ -963,11 +967,48 @@ class LiveTranslator:
             del self._llm_negative_cache[oldest_key]
         self._llm_negative_cache[(name.lower(), lang)] = time.monotonic()
 
+    def _log_llm_config(self) -> None:
+        """Log LLM configuration at startup for diagnostics."""
+        import os
+
+        if not self._enable_llm:
+            logger.info("LLM translation: disabled")
+            return
+
+        backend = os.environ.get("LLM_BACKEND", "qwen").lower()
+        if backend == "anthropic":
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            model = os.environ.get("LLM_MODEL", "claude-haiku-4-5-20251001")
+            key_status = "set" if api_key else "NOT SET"
+            logger.info(f"LLM translation: backend=anthropic, model={model}, ANTHROPIC_API_KEY={key_status}")
+        else:
+            api_key = os.environ.get("DASHSCOPE_API_KEY")
+            model = os.environ.get("LLM_MODEL", "qwen-mt-turbo")
+            base_url = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+            key_status = "set" if api_key else "NOT SET"
+            logger.info(f"LLM translation: backend=qwen, model={model}, DASHSCOPE_API_KEY={key_status}, base_url={base_url}")
+
+        if not api_key:
+            logger.warning("LLM translation: API key not set, LLM fallback will be skipped")
+
+    def _get_llm_backend(self) -> str:
+        """Determine which LLM backend to use.
+
+        Priority: DB config > environment variable > default ('qwen').
+        Supported values: 'qwen', 'anthropic'.
+        """
+        import os
+
+        backend = self._get_llm_config("backend") or os.environ.get("LLM_BACKEND", "qwen")
+        return backend.lower()
+
     def _call_llm(self, prompt: str) -> Optional[str]:
         """Call LLM API to generate translation.
 
-        Currently uses Anthropic Claude API if configured.
-        Falls back to None if no API key available.
+        Supports multiple backends (configurable via LLM_BACKEND env var or DB config):
+        - 'qwen': Alibaba Qwen via OpenAI-compatible API (default)
+        - 'anthropic': Anthropic Claude API
+
         Implements a circuit breaker: after consecutive failures, LLM calls
         are disabled for a cooldown period to avoid flooding a broken API.
 
@@ -980,36 +1021,14 @@ class LiveTranslator:
         if not self._is_llm_available():
             return None
 
+        backend = self._get_llm_backend()
         try:
-            import anthropic
-            import os
-
-            # API key from environment variable (security best practice)
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            if not api_key:
-                logger.debug("ANTHROPIC_API_KEY not set, skipping LLM translation")
-                return None
-
-            # Model name from database config or environment variable
-            model_name = self._get_llm_config("model_name") or os.environ.get(
-                "ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"
-            )
-
-            client = anthropic.Anthropic(api_key=api_key)
-            response = client.messages.create(
-                model=model_name,
-                max_tokens=100,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            if response.content:
-                # Success: reset circuit breaker
-                self._llm_consecutive_failures = 0
-                return response.content[0].text
-            return None
-        except ImportError:
-            logger.debug("anthropic package not installed, skipping LLM translation")
-            # Permanent failure — disable LLM entirely
+            if backend == "anthropic":
+                return self._call_anthropic(prompt)
+            else:
+                return self._call_qwen(prompt)
+        except ImportError as e:
+            logger.warning(f"LLM disabled: {backend} package not installed ({e})")
             self._enable_llm = False
             return None
         except Exception as e:
@@ -1023,6 +1042,81 @@ class LiveTranslator:
             else:
                 logger.debug(f"LLM API call failed ({self._llm_consecutive_failures}/{self._LLM_FAILURE_THRESHOLD}): {e}")
             return None
+
+    def _call_qwen(self, prompt: str) -> Optional[str]:
+        """Call Alibaba Qwen API via OpenAI-compatible interface.
+
+        Args:
+            prompt: The prompt to send
+
+        Returns:
+            Response text or None
+        """
+        from openai import OpenAI
+        import os
+
+        api_key = self._get_llm_config("api_key") or os.environ.get("DASHSCOPE_API_KEY")
+        if not api_key:
+            logger.warning("LLM skipped: DASHSCOPE_API_KEY not set")
+            return None
+
+        base_url = self._get_llm_config("base_url") or os.environ.get(
+            "LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+        model_name = self._get_llm_config("model_name") or os.environ.get("LLM_MODEL", "qwen-mt-turbo")
+
+        logger.info(f"LLM request [qwen/{model_name}]: {prompt[:120]}...")
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        response = client.chat.completions.create(
+            model=model_name,
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        if response.choices:
+            self._llm_consecutive_failures = 0
+            result = response.choices[0].message.content
+            logger.info(f"LLM response [qwen/{model_name}]: {result}")
+            return result
+        logger.warning(f"LLM response [qwen/{model_name}]: empty response")
+        return None
+
+    def _call_anthropic(self, prompt: str) -> Optional[str]:
+        """Call Anthropic Claude API.
+
+        Args:
+            prompt: The prompt to send
+
+        Returns:
+            Response text or None
+        """
+        import anthropic
+        import os
+
+        api_key = self._get_llm_config("api_key") or os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            logger.warning("LLM skipped: ANTHROPIC_API_KEY not set")
+            return None
+
+        model_name = self._get_llm_config("model_name") or os.environ.get(
+            "LLM_MODEL", "claude-haiku-4-5-20251001"
+        )
+
+        logger.info(f"LLM request [anthropic/{model_name}]: {prompt[:120]}...")
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model=model_name,
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        if response.content:
+            self._llm_consecutive_failures = 0
+            result = response.content[0].text
+            logger.info(f"LLM response [anthropic/{model_name}]: {result}")
+            return result
+        logger.warning(f"LLM response [anthropic/{model_name}]: empty response")
+        return None
 
     def _get_llm_config(self, key: str) -> Optional[str]:
         """Get LLM configuration from database.

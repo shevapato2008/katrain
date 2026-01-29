@@ -185,6 +185,9 @@ Before starting KaTrain services, ensure these are running:
 # 1. Create .env file
 cp .env.example .env
 # Edit .env: set POSTGRES_PASSWORD and DASHSCOPE_API_KEY
+# Alternatively
+export POSTGRES_PASSWORD="katrain_secure_password_CHANGE_ME"
+export DASHSCOPE_API_KEY=sk-your-key
 
 # 2. Start services
 docker-compose up -d

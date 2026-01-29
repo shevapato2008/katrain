@@ -40,70 +40,140 @@ export default function TrendChart({
     return { moves, winrates, scores };
   }, [analysis, totalMoves]);
 
-  // SVG chart with Y-axis labels (XingZhen style)
-  const renderChart = (data: number[], min: number, max: number, color: string, yLabels: string[]) => {
-    if (data.length === 0) return null;
+  // Calculate score range for Y-axis
+  const scoreRange = useMemo(() => {
+    const scores = chartData.scores.filter(s => s !== 0);
+    if (scores.length === 0) return { min: -30, max: 30 };
+    const maxAbs = Math.max(Math.abs(Math.min(...scores)), Math.abs(Math.max(...scores)));
+    const range = Math.ceil(maxAbs / 10) * 10 || 30;
+    return { min: -range, max: range };
+  }, [chartData.scores]);
+
+  // Dual-axis chart with winrate and score lead
+  const renderDualChart = () => {
+    if (chartData.winrates.length === 0) return null;
 
     const width = 340;
-    const height = 120;
-    const leftPadding = 35; // Space for Y-axis labels
-    const rightPadding = 10;
-    const topPadding = 10;
-    const bottomPadding = 10;
+    const height = 140;
+    const leftPadding = 45; // Space for left Y-axis (winrate)
+    const rightPadding = 45; // Space for right Y-axis (score)
+    const topPadding = 15;
+    const bottomPadding = 15;
     const chartWidth = width - leftPadding - rightPadding;
     const chartHeight = height - topPadding - bottomPadding;
 
-    const range = max - min;
-    const xStep = chartWidth / Math.max(1, data.length - 1);
+    const xStep = chartWidth / Math.max(1, chartData.winrates.length - 1);
 
-    const points = data.map((value, i) => {
+    // Winrate points (0-100 -> chart coordinates)
+    const winratePoints = chartData.winrates.map((value, i) => {
       const x = leftPadding + i * xStep;
-      const y = topPadding + chartHeight - ((value - min) / range) * chartHeight;
+      const y = topPadding + chartHeight - (value / 100) * chartHeight;
+      return `${x},${y}`;
+    }).join(' ');
+
+    // Score points (scoreRange.min to scoreRange.max -> chart coordinates)
+    const scorePoints = chartData.scores.map((value, i) => {
+      const x = leftPadding + i * xStep;
+      const normalized = (value - scoreRange.min) / (scoreRange.max - scoreRange.min);
+      const y = topPadding + chartHeight - normalized * chartHeight;
       return `${x},${y}`;
     }).join(' ');
 
     // Current move indicator
     const currentX = leftPadding + currentMove * xStep;
 
-    // Y-axis positions (0%, 50%, 100% for 3 labels)
-    const yAxisPositions = yLabels.map((_, i) => {
-      return topPadding + chartHeight - (i / (yLabels.length - 1)) * chartHeight;
-    });
+    // Y-axis labels
+    const winrateLabels = ['0%', '50%', '100%'];
+    const scoreLabels = [`${scoreRange.min}`, '0', `+${scoreRange.max}`];
 
     return (
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-        {/* Y-axis labels and grid lines */}
-        {yLabels.map((label, i) => (
-          <g key={i}>
-            {/* Grid line */}
-            <line
-              x1={leftPadding}
-              y1={yAxisPositions[i]}
-              x2={width - rightPadding}
-              y2={yAxisPositions[i]}
-              stroke="rgba(255,255,255,0.15)"
-              strokeDasharray={i === 1 ? "4" : "0"} // Dashed line for middle (50%)
-            />
-            {/* Label */}
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+        {/* Left Y-axis label (title) */}
+        <text
+          x={8}
+          y={height / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="rgba(76, 175, 80, 0.8)"
+          fontSize="9"
+          transform={`rotate(-90, 8, ${height / 2})`}
+        >
+          {i18n.t('live:black_winrate', 'Black Winrate')}
+        </text>
+
+        {/* Right Y-axis label (title) */}
+        <text
+          x={width - 8}
+          y={height / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="rgba(255, 152, 0, 0.8)"
+          fontSize="9"
+          transform={`rotate(90, ${width - 8}, ${height / 2})`}
+        >
+          {i18n.t('live:black_lead', 'Black Lead')}
+        </text>
+
+        {/* Grid lines and left Y-axis labels (winrate) */}
+        {winrateLabels.map((label, i) => {
+          const y = topPadding + chartHeight - (i / 2) * chartHeight;
+          return (
+            <g key={`wr-${i}`}>
+              <line
+                x1={leftPadding}
+                y1={y}
+                x2={width - rightPadding}
+                y2={y}
+                stroke="rgba(255,255,255,0.1)"
+                strokeDasharray={i === 1 ? "4" : "0"}
+              />
+              <text
+                x={leftPadding - 5}
+                y={y}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fill="rgba(76, 175, 80, 0.7)"
+                fontSize="10"
+              >
+                {label}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Right Y-axis labels (score) */}
+        {scoreLabels.map((label, i) => {
+          const y = topPadding + chartHeight - (i / 2) * chartHeight;
+          return (
             <text
-              x={leftPadding - 5}
-              y={yAxisPositions[i]}
-              textAnchor="end"
+              key={`sc-${i}`}
+              x={width - rightPadding + 5}
+              y={y}
+              textAnchor="start"
               dominantBaseline="middle"
-              fill="rgba(255,255,255,0.6)"
+              fill="rgba(255, 152, 0, 0.7)"
               fontSize="10"
             >
               {label}
             </text>
-          </g>
-        ))}
+          );
+        })}
 
-        {/* Chart line */}
+        {/* Score line (orange) */}
         <polyline
           fill="none"
-          stroke={color}
+          stroke="#ff9800"
+          strokeWidth="1.5"
+          strokeOpacity="0.8"
+          points={scorePoints}
+        />
+
+        {/* Winrate line (green) */}
+        <polyline
+          fill="none"
+          stroke="#4caf50"
           strokeWidth="2"
-          points={points}
+          points={winratePoints}
         />
 
         {/* Current move indicator */}
@@ -128,7 +198,7 @@ export default function TrendChart({
             if (!onMoveClick) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            const svgX = (x / rect.width) * width; // Convert to SVG coordinates
+            const svgX = (x / rect.width) * width;
             const ratio = (svgX - leftPadding) / chartWidth;
             const move = Math.round(ratio * totalMoves);
             onMoveClick(Math.max(0, Math.min(totalMoves, move)));
@@ -174,13 +244,10 @@ export default function TrendChart({
       <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
         {tab === 0 && (
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              {i18n.t('live:winrate_trend', 'Winrate Trend')}
-            </Typography>
             <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 1 }}>
-              {renderChart(chartData.winrates, 0, 100, '#4caf50', ['0%', '50%', '100%'])}
+              {renderDualChart()}
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5, pl: '35px', pr: '10px' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5, pl: '45px', pr: '45px' }}>
               <Typography variant="caption" color="text.secondary">0</Typography>
               <Typography variant="caption" color="text.secondary">{totalMoves} {i18n.t('live:moves', 'moves')}</Typography>
             </Box>

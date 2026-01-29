@@ -278,16 +278,20 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
         <Box
           sx={{
             minWidth: 38,
+            height: 22,
             px: 0.5,
-            py: 0.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
             color: nextPlayer === 'B' ? '#fff' : '#000',
             borderRadius: 1,
-            textAlign: 'center',
-            border: nextPlayer === 'W' ? '1px solid #666' : 'none',
+            border: '1px solid',
+            borderColor: nextPlayer === 'B' ? '#1a1a1a' : '#666',
+            boxSizing: 'border-box',
           }}
         >
-          <Typography variant="caption" fontWeight="bold">
+          <Typography variant="caption" fontWeight="bold" sx={{ lineHeight: 1 }}>
             {(winrate * 100).toFixed(1)}
           </Typography>
         </Box>
@@ -295,16 +299,20 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
         <Box
           sx={{
             minWidth: 38,
+            height: 22,
             px: 0.5,
-            py: 0.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             bgcolor: nextPlayer === 'W' ? '#1a1a1a' : '#f5f5f5',
             color: nextPlayer === 'W' ? '#fff' : '#000',
             borderRadius: 1,
-            textAlign: 'center',
-            border: nextPlayer === 'B' ? '1px solid #666' : 'none',
+            border: '1px solid',
+            borderColor: nextPlayer === 'W' ? '#1a1a1a' : '#666',
+            boxSizing: 'border-box',
           }}
         >
-          <Typography variant="caption" fontWeight="bold">
+          <Typography variant="caption" fontWeight="bold" sx={{ lineHeight: 1 }}>
             {(opponentWinrate * 100).toFixed(1)}
           </Typography>
         </Box>

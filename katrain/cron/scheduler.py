@@ -36,11 +36,22 @@ class CronScheduler:
             (CleanupJob, config.CLEANUP_INTERVAL, config.CLEANUP_ENABLED),
         ]
 
+        # Start scheduler first (jobs will be added and run immediately)
+        self._scheduler.start()
+        logger.info("Scheduler started")
+
+        # Register and immediately run each job once, then schedule for intervals
         for job_cls, interval, enabled in interval_jobs:
             if not enabled:
                 logger.info("Job %s is disabled, skipping", job_cls.name)
                 continue
             job = job_cls()
+
+            # Run immediately on startup (non-blocking)
+            logger.info("Running %s immediately on startup", job.name)
+            asyncio.create_task(self._run_job_once(job))
+
+            # Schedule for regular intervals
             self._scheduler.add_job(
                 job.run,
                 "interval",
@@ -52,9 +63,6 @@ class CronScheduler:
             )
             logger.info("Registered job %s (interval=%ds)", job.name, interval)
 
-        self._scheduler.start()
-        logger.info("Scheduler started")
-
         # AnalyzeJob runs as a persistent async loop, not via APScheduler interval
         if config.ANALYZE_ENABLED:
             analyze_job = AnalyzeJob()
@@ -65,6 +73,13 @@ class CronScheduler:
 
         # Block until shutdown signal
         await self._shutdown_event.wait()
+
+    async def _run_job_once(self, job):
+        """Run a job once, logging any errors without crashing."""
+        try:
+            await job.run()
+        except Exception:
+            logger.exception("Job %s failed on startup", job.name)
 
     async def _run_analyze_loop(self, job):
         """Run AnalyzeJob.run() continuously, restarting on unexpected errors."""

@@ -600,8 +600,14 @@ class LiveTranslator:
     # ========== Database Methods ==========
 
     def _get_db_session(self) -> Optional[Session]:
-        """Get a database session for translation lookups."""
+        """Get a database session for translation lookups.
+
+        Note: We expire all cached objects to ensure we see new translations
+        added by katrain-cron process.
+        """
         if self._db_session is not None:
+            # Expire cached objects to see new translations from cron
+            self._db_session.expire_all()
             return self._db_session
         try:
             from katrain.web.core.db import SessionLocal

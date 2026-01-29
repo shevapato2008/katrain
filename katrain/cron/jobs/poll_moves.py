@@ -2,9 +2,11 @@
 
 import logging
 
+from sqlalchemy import func, text
+
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.clients.xingzhen import XingZhenClient, _parse_moves
-from katrain.cron.db import SessionLocal
+from katrain.cron.db import SessionLocal, engine
 from katrain.cron.models import LiveMatchDB, PRIORITY_LIVE_NEW, PRIORITY_LIVE_BACKFILL
 from katrain.cron.analysis_repo import AnalysisRepo
 
@@ -23,11 +25,18 @@ class PollMovesJob(BaseJob):
 
             # Also backfill finished matches that have no moves (discovered as already finished)
             from sqlalchemy import or_
+
+            # Build empty array check that works for both PostgreSQL (jsonb) and SQLite (json)
+            if engine.dialect.name == "postgresql":
+                empty_array_check = text("jsonb_array_length(live_matches.moves::jsonb) = 0")
+            else:
+                empty_array_check = func.json_array_length(LiveMatchDB.moves) == 0
+
             empty_finished = (
                 db.query(LiveMatchDB)
                 .filter(
                     LiveMatchDB.status == "finished",
-                    or_(LiveMatchDB.moves == None, LiveMatchDB.moves == []),
+                    or_(LiveMatchDB.moves.is_(None), empty_array_check),
                 )
                 .limit(5)  # Limit to avoid too many API calls per cycle
                 .all()

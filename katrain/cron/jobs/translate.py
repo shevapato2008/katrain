@@ -4,7 +4,7 @@ import logging
 
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.db import SessionLocal
-from katrain.cron.models import PlayerTranslationDB, TournamentTranslationDB, LiveMatchDB
+from katrain.cron.models import PlayerTranslationDB, TournamentTranslationDB, LiveMatchDB, UpcomingMatchDB
 from katrain.cron.translator import Translator, LANGUAGES
 
 logger = logging.getLogger("katrain_cron.translate")
@@ -43,13 +43,23 @@ class TranslateJob(BaseJob):
             db.close()
 
     async def _translate_players(self, db) -> None:
-        """Find untranslated player names from live matches and translate them."""
+        """Find untranslated player names from live and upcoming matches and translate them."""
         # Collect unique player names from all matches
-        matches = db.query(LiveMatchDB.player_black, LiveMatchDB.player_white).all()
         all_names = set()
-        for black, white in matches:
+
+        # From live matches
+        live_matches = db.query(LiveMatchDB.player_black, LiveMatchDB.player_white).all()
+        for black, white in live_matches:
             all_names.add(black)
             all_names.add(white)
+
+        # From upcoming matches
+        upcoming = db.query(UpcomingMatchDB.player_black, UpcomingMatchDB.player_white).all()
+        for black, white in upcoming:
+            if black:
+                all_names.add(black)
+            if white:
+                all_names.add(white)
 
         if not all_names:
             return
@@ -94,9 +104,14 @@ class TranslateJob(BaseJob):
             db.commit()
 
     async def _translate_tournaments(self, db) -> None:
-        """Find untranslated tournament names and translate them."""
-        tournaments = db.query(LiveMatchDB.tournament).distinct().all()
-        names = {t[0] for t in tournaments if t[0]}
+        """Find untranslated tournament names from live and upcoming matches and translate them."""
+        # From live matches
+        live_tournaments = db.query(LiveMatchDB.tournament).distinct().all()
+        names = {t[0] for t in live_tournaments if t[0]}
+
+        # From upcoming matches
+        upcoming_tournaments = db.query(UpcomingMatchDB.tournament).distinct().all()
+        names.update(t[0] for t in upcoming_tournaments if t[0])
 
         for name in names:
             existing = db.query(TournamentTranslationDB).filter(TournamentTranslationDB.original == name).first()

@@ -119,11 +119,16 @@ class FetchUpcomingJob(BaseJob):
             soup = BeautifulSoup(html, "lxml")
             text = soup.get_text()
 
-            # Pattern: "1月27日 10:30 赛事名 选手VS选手"
+            # Pattern: "1月27日 10:30 赛事名 [选手VS选手]"
+            # Note: The page text has no newlines, so we use lookahead to stop at the next date entry.
+            # Players are optional and may contain numbers (e.g., "王硕94").
             pattern = re.compile(
                 r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2}):(\d{2})\s+"
-                r"([^\n]+?)\s+"
-                r"([\u4e00-\u9fff]{2,5})\s*(?:VS|vs|对)\s*([\u4e00-\u9fff]{2,5})",
+                r"(.+?)"  # Tournament name (non-greedy)
+                r"(?:"
+                r"\s+([\u4e00-\u9fff\w]{2,10})\s*(?:VS|vs|对)\s*([\u4e00-\u9fff\w]{2,10})"  # Optional players
+                r")?"
+                r"(?=\d{1,2}月\d{1,2}日|Previous|Next|$)",  # Stop at next date, navigation, or end
                 re.UNICODE,
             )
 
@@ -132,8 +137,8 @@ class FetchUpcomingJob(BaseJob):
                     month, day = int(match.group(1)), int(match.group(2))
                     hour, minute = int(match.group(3)), int(match.group(4))
                     tournament = match.group(5).strip()
-                    player_black = match.group(6).strip()
-                    player_white = match.group(7).strip()
+                    player_black = match.group(6).strip() if match.group(6) else None
+                    player_white = match.group(7).strip() if match.group(7) else None
 
                     year = datetime.now().year
                     if month < datetime.now().month - 6:
@@ -151,46 +156,6 @@ class FetchUpcomingJob(BaseJob):
                         "scheduled_time": scheduled_time,
                         "player_black": player_black,
                         "player_white": player_white,
-                        "source": "foxwq",
-                        "source_url": url,
-                    })
-                except (ValueError, TypeError):
-                    continue
-
-            # Also look for tournament-only entries (no players)
-            pattern_no_players = re.compile(
-                r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2}):(\d{2})\s+([^\n]+?)(?:\n|$)",
-                re.UNICODE,
-            )
-
-            for match in pattern_no_players.finditer(text):
-                try:
-                    month, day = int(match.group(1)), int(match.group(2))
-                    hour, minute = int(match.group(3)), int(match.group(4))
-                    tournament = match.group(5).strip()
-
-                    if "VS" in tournament or "vs" in tournament or "对" in tournament:
-                        continue
-
-                    year = datetime.now().year
-                    if month < datetime.now().month - 6:
-                        year += 1
-
-                    scheduled_time = datetime(year, month, day, hour, minute)
-                    if scheduled_time < datetime.now():
-                        continue
-
-                    event_id = f"foxwq_{tournament}_{scheduled_time.strftime('%Y%m%d%H%M')}"
-                    if any(e["event_id"] == event_id for e in events):
-                        continue
-
-                    events.append({
-                        "event_id": event_id,
-                        "tournament": tournament,
-                        "round_name": None,
-                        "scheduled_time": scheduled_time,
-                        "player_black": None,
-                        "player_white": None,
                         "source": "foxwq",
                         "source_url": url,
                     })

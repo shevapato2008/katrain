@@ -2,6 +2,8 @@
 
 import logging
 
+from sqlalchemy.exc import IntegrityError
+
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.db import SessionLocal
 from katrain.cron.models import PlayerTranslationDB, TournamentTranslationDB, LiveMatchDB, UpcomingMatchDB
@@ -66,6 +68,8 @@ class TranslateJob(BaseJob):
 
         # Find names missing translations (skip source=manual)
         for name in all_names:
+            # Expire cache to ensure we see the latest DB state
+            db.expire_all()
             existing = db.query(PlayerTranslationDB).filter(PlayerTranslationDB.canonical_name == name).first()
 
             if existing and existing.source == "manual":
@@ -83,25 +87,29 @@ class TranslateJob(BaseJob):
                 self.logger.exception("Failed to translate player %s", name)
                 raise  # Propagate to outer handler for circuit breaker counting
 
-            if existing:
-                # Only fill in missing languages
-                for lang in LANGUAGES:
-                    if getattr(existing, lang) is None and result.get(lang):
-                        setattr(existing, lang, result[lang])
-                existing.source = result.get("source", existing.source)
-                existing.llm_model = result.get("llm_model")
-            else:
-                db.add(PlayerTranslationDB(
-                    canonical_name=name,
-                    en=result.get("en"),
-                    cn=result.get("cn"),
-                    tw=result.get("tw"),
-                    jp=result.get("jp"),
-                    ko=result.get("ko"),
-                    source=result.get("source", "llm"),
-                    llm_model=result.get("llm_model"),
-                ))
-            db.commit()
+            try:
+                if existing:
+                    # Only fill in missing languages
+                    for lang in LANGUAGES:
+                        if getattr(existing, lang) is None and result.get(lang):
+                            setattr(existing, lang, result[lang])
+                    existing.source = result.get("source", existing.source)
+                    existing.llm_model = result.get("llm_model")
+                else:
+                    db.add(PlayerTranslationDB(
+                        canonical_name=name,
+                        en=result.get("en"),
+                        cn=result.get("cn"),
+                        tw=result.get("tw"),
+                        jp=result.get("jp"),
+                        ko=result.get("ko"),
+                        source=result.get("source", "llm"),
+                        llm_model=result.get("llm_model"),
+                    ))
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                self.logger.warning("Player %s already exists, skipping", name)
 
     async def _translate_tournaments(self, db) -> None:
         """Find untranslated tournament names from live and upcoming matches and translate them."""
@@ -114,6 +122,8 @@ class TranslateJob(BaseJob):
         names.update(t[0] for t in upcoming_tournaments if t[0])
 
         for name in names:
+            # Expire cache to ensure we see the latest DB state
+            db.expire_all()
             existing = db.query(TournamentTranslationDB).filter(TournamentTranslationDB.original == name).first()
 
             if existing and existing.source == "manual":
@@ -130,21 +140,25 @@ class TranslateJob(BaseJob):
                 self.logger.exception("Failed to translate tournament %s", name)
                 raise  # Propagate to outer handler for circuit breaker counting
 
-            if existing:
-                for lang in LANGUAGES:
-                    if getattr(existing, lang) is None and result.get(lang):
-                        setattr(existing, lang, result[lang])
-                existing.source = result.get("source", existing.source)
-                existing.llm_model = result.get("llm_model")
-            else:
-                db.add(TournamentTranslationDB(
-                    original=name,
-                    en=result.get("en"),
-                    cn=result.get("cn"),
-                    tw=result.get("tw"),
-                    jp=result.get("jp"),
-                    ko=result.get("ko"),
-                    source=result.get("source", "llm"),
-                    llm_model=result.get("llm_model"),
-                ))
-            db.commit()
+            try:
+                if existing:
+                    for lang in LANGUAGES:
+                        if getattr(existing, lang) is None and result.get(lang):
+                            setattr(existing, lang, result[lang])
+                    existing.source = result.get("source", existing.source)
+                    existing.llm_model = result.get("llm_model")
+                else:
+                    db.add(TournamentTranslationDB(
+                        original=name,
+                        en=result.get("en"),
+                        cn=result.get("cn"),
+                        tw=result.get("tw"),
+                        jp=result.get("jp"),
+                        ko=result.get("ko"),
+                        source=result.get("source", "llm"),
+                        llm_model=result.get("llm_model"),
+                    ))
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                self.logger.warning("Tournament %s already exists, skipping", name)

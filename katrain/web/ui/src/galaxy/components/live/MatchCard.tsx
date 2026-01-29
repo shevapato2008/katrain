@@ -57,12 +57,12 @@ export default function MatchCard({ match, compact = false, selected = false, on
               {match.move_count} {t('live:moves')}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} sx={{ flex: 1, textAlign: 'left' }} noWrap>
               {i18n.translatePlayer(match.player_black)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">vs</Typography>
-            <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
+            <Typography variant="body2" color="text.secondary" sx={{ px: 1, flexShrink: 0 }}>vs</Typography>
+            <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} sx={{ flex: 1, textAlign: 'right' }} noWrap>
               {i18n.translatePlayer(match.player_white)}
             </Typography>
           </Box>

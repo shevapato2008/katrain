@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Box, Typography, CircularProgress, Alert, Button, IconButton, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -13,6 +13,7 @@ import PlaybackBar from '../../components/live/PlaybackBar';
 import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import { i18n } from '../../../i18n';
+import { useSound } from '../../../hooks/useSound';
 // CommentSection import removed - Phase 7 deferred (was obscuring TrendChart)
 // import CommentSection from '../../components/live/CommentSection';
 
@@ -37,6 +38,18 @@ export default function LiveMatchPage() {
     setCurrentMove,
     analysis,
   } = useLiveMatch(matchId);
+
+  // Sound effects
+  const { play: playSound } = useSound();
+  const prevMoveRef = useRef<number | null>(null);
+
+  // Play stone sound when move changes (navigation or new live moves)
+  useEffect(() => {
+    if (match && currentMove > 0 && prevMoveRef.current !== null && currentMove !== prevMoveRef.current) {
+      playSound('stone');
+    }
+    prevMoveRef.current = currentMove;
+  }, [currentMove, match, playSound]);
 
   // Handle PV hover from AI analysis panel - displays variation on board
   const handlePvHover = useCallback((pv: string[] | null) => {

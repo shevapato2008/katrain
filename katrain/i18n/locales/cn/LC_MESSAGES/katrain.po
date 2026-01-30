@@ -680,10 +680,10 @@ msgstr ""
 "fac），避免脱先（5路以上，偏向值tenuki_penalty），避免碰（偏向值attachment_penalty）的手法。偏向值可以设为复数捣乱局面，宽根噪声（通用设置）可以棋力代价更加符合风格。"
 
 msgid "ai:jigo"
-msgstr "和棋模式 (KataJigo)"
+msgstr "和棋"
 
 msgid "ai:antimirror"
-msgstr "反镜像 (KataAntiMirror)"
+msgstr "反模仿"
 
 msgid "aihelp:antimirror"
 msgstr "Anti Mirror-go Mode of KataGo."
@@ -698,7 +698,7 @@ msgid "aihelp:scoreloss"
 msgstr "以较低的概率走出损失目数较多的着法。计算量设置越高，招法越多样/越弱。"
 
 msgid "ai:policy"
-msgstr "策略网络"
+msgstr "策略"
 
 msgid "aihelp:policy"
 msgstr ""
@@ -1696,3 +1696,60 @@ msgstr "对局已结束，评论已关闭"
 
 msgid "live:login_to_comment"
 msgstr "登录后评论"
+
+msgid "live:black_winrate"
+msgstr "黑棋胜率"
+
+msgid "live:black_lead"
+msgstr "黑棋领先"
+
+msgid "continue_game"
+msgstr "继续对局"
+
+msgid "live:show_advice"
+msgstr "显示建议"
+
+msgid "live:hide_advice"
+msgstr "隐藏建议"
+
+msgid "No Rank"
+msgstr "无级别"
+
+msgid "ai:human_like"
+msgstr "拟人"
+
+msgid "live:points_unit"
+msgstr "目"
+
+msgid "Undo"
+msgstr "悔棋"
+
+msgid "ai:historical_pro"
+msgstr "历史棋风"
+
+msgid "ai:score_loss"
+msgstr "目数损失"
+
+msgid "ai:simple_ownership"
+msgstr "简单地域"
+
+msgid "ai:calibrated_rank"
+msgstr "校准级别"
+
+msgid "ai:weighted"
+msgstr "加权"
+
+msgid "ai:policy_pick"
+msgstr "策略选择"
+
+msgid "ai:local"
+msgstr "局部"
+
+msgid "ai:tenuki"
+msgstr "脱先"
+
+msgid "ai:influence"
+msgstr "外势"
+
+msgid "ai:territory"
+msgstr "实地"

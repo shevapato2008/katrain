@@ -460,7 +460,7 @@ msgstr ""
 "motor. No hay opciones disponibles acá."
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "Jigo"
 
 msgid "aihelp:jigo"
 msgstr ""
@@ -476,7 +476,7 @@ msgstr ""
 "visitas."
 
 msgid "ai:policy"
-msgstr "Jugadas intuitivas"
+msgstr "Política"
 
 msgid "aihelp:policy"
 msgstr ""
@@ -1004,9 +1004,8 @@ msgstr "AI Best Move Match %"
 msgid "Entire Game"
 msgstr "Entire Game"
 
-#. TODO
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "Anti-espejo"
 
 #. TODO - on move tree editing, deletes all other branches splitting off from
 #. the
@@ -1554,7 +1553,7 @@ msgid "live:in_days"
 msgstr "días"
 
 msgid "live:moves"
-msgstr "jugadas"
+msgstr "movs"
 
 msgid "live:first_move"
 msgstr "Primero"
@@ -1584,7 +1583,7 @@ msgid "live:status_live"
 msgstr "EN VIVO"
 
 msgid "live:status_finished"
-msgstr "Finalizada"
+msgstr "Finalizado"
 
 msgid "live:pts"
 msgstr "pts"
@@ -1623,19 +1622,19 @@ msgid "live:vs"
 msgstr "vs"
 
 msgid "live:try"
-msgstr "Probar"
+msgstr "PROBAR"
 
 msgid "live:try_move"
 msgstr "Probar jugada"
 
 msgid "live:territory"
-msgstr "Territorio"
+msgstr "TERRITORIO"
 
 msgid "live:territory_needs_analysis"
 msgstr "Territorio (requiere análisis)"
 
 msgid "live:move_numbers"
-msgstr "Números de jugada"
+msgstr "Números"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1738,3 +1737,60 @@ msgstr "Partida finalizada, comentarios de solo lectura"
 
 msgid "live:login_to_comment"
 msgstr "Inicia sesión para comentar"
+
+msgid "live:black_winrate"
+msgstr "Porcentaje Negro"
+
+msgid "live:black_lead"
+msgstr "Ventaja Negro"
+
+msgid "continue_game"
+msgstr "Continuar partida"
+
+msgid "live:show_advice"
+msgstr "Mostrar consejo"
+
+msgid "live:hide_advice"
+msgstr "Ocultar consejo"
+
+msgid "No Rank"
+msgstr "Sin rango"
+
+msgid "ai:human_like"
+msgstr "Humanoide"
+
+msgid "live:points_unit"
+msgstr "pts"
+
+msgid "Undo"
+msgstr "Deshacer"
+
+msgid "ai:historical_pro"
+msgstr "Pro Histórico"
+
+msgid "ai:score_loss"
+msgstr "Pérdida de Puntos"
+
+msgid "ai:simple_ownership"
+msgstr "Territorio Simple"
+
+msgid "ai:calibrated_rank"
+msgstr "Rango Calibrado"
+
+msgid "ai:weighted"
+msgstr "Ponderado"
+
+msgid "ai:policy_pick"
+msgstr "Selección de Política"
+
+msgid "ai:local"
+msgstr "Local"
+
+msgid "ai:tenuki"
+msgstr "Tenuki"
+
+msgid "ai:influence"
+msgstr "Influencia"
+
+msgid "ai:territory"
+msgstr "Territorio"

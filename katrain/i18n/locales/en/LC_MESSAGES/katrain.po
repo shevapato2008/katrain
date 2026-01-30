@@ -1028,10 +1028,10 @@ msgstr ""
 "style at the cost of strength. "
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "Jigo"
 
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "Anti-mirror"
 
 msgid "aihelp:antimirror"
 msgstr "Anti Mirror-go Mode of KataGo."
@@ -1753,19 +1753,19 @@ msgid "live:vs"
 msgstr "vs"
 
 msgid "live:try"
-msgstr "Try"
+msgstr "TRY"
 
 msgid "live:try_move"
 msgstr "Try Move"
 
 msgid "live:territory"
-msgstr "Territory"
+msgstr "TERRITORY"
 
 msgid "live:territory_needs_analysis"
 msgstr "Territory (needs analysis)"
 
 msgid "live:move_numbers"
-msgstr "Move Numbers"
+msgstr "Numbers"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1868,3 +1868,60 @@ msgstr "Match ended, comments are read-only"
 
 msgid "live:login_to_comment"
 msgstr "Login to comment"
+
+msgid "live:black_winrate"
+msgstr "Black Winrate"
+
+msgid "live:black_lead"
+msgstr "Black Lead"
+
+msgid "continue_game"
+msgstr "Continue Game"
+
+msgid "live:show_advice"
+msgstr "Show Advice"
+
+msgid "live:hide_advice"
+msgstr "Hide Advice"
+
+msgid "No Rank"
+msgstr "No Rank"
+
+msgid "ai:human_like"
+msgstr "Human-like"
+
+msgid "live:points_unit"
+msgstr "pts"
+
+msgid "Undo"
+msgstr "Undo"
+
+msgid "ai:historical_pro"
+msgstr "Historical Pro"
+
+msgid "ai:score_loss"
+msgstr "Score Loss"
+
+msgid "ai:simple_ownership"
+msgstr "Simple Ownership"
+
+msgid "ai:calibrated_rank"
+msgstr "Calibrated Rank"
+
+msgid "ai:weighted"
+msgstr "Weighted"
+
+msgid "ai:policy_pick"
+msgstr "Policy Pick"
+
+msgid "ai:local"
+msgstr "Local"
+
+msgid "ai:tenuki"
+msgstr "Tenuki"
+
+msgid "ai:influence"
+msgstr "Influence"
+
+msgid "ai:territory"
+msgstr "Territory"

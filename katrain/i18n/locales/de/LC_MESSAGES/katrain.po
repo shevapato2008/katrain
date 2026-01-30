@@ -460,7 +460,7 @@ msgstr ""
 "Konfigurationsfile bestimmt. Hier gibt es sonst keine Optionen."
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "Jigo"
 
 msgid "aihelp:jigo"
 msgstr ""
@@ -476,7 +476,7 @@ msgstr ""
 "führen. Spielt mit höherem Visit-Wert variabler/schlechter."
 
 msgid "ai:policy"
-msgstr "Policy"
+msgstr "Strategie"
 
 msgid "aihelp:policy"
 msgstr ""
@@ -995,9 +995,8 @@ msgstr "Bester KI Zug Übereinstimmung %"
 msgid "Entire Game"
 msgstr "Gesamtes Spiel"
 
-#. TODO
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "Anti-Spiegel"
 
 #. TODO - on move tree editing, deletes all other branches splitting off from
 #. the
@@ -1469,7 +1468,7 @@ msgid "rated_mode_active"
 msgstr "Ranglisten-Modus: Aktiv"
 
 msgid "Advice"
-msgstr "Ratschlag"
+msgstr "Rat"
 
 msgid "PASS"
 msgstr "PASSEN"
@@ -1785,19 +1784,19 @@ msgid "live:vs"
 msgstr "gegen"
 
 msgid "live:try"
-msgstr "Ausprobieren"
+msgstr "TEST"
 
 msgid "live:try_move"
 msgstr "Zug ausprobieren"
 
 msgid "live:territory"
-msgstr "Gebiet"
+msgstr "GEBIET"
 
 msgid "live:territory_needs_analysis"
 msgstr "Gebiet (Analyse erforderlich)"
 
 msgid "live:move_numbers"
-msgstr "Zugnummern"
+msgstr "Nummern"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1900,3 +1899,60 @@ msgstr "Partie beendet, Kommentare sind schreibgeschützt"
 
 msgid "live:login_to_comment"
 msgstr "Zum Kommentieren anmelden"
+
+msgid "live:black_winrate"
+msgstr "Schwarz Gewinnrate"
+
+msgid "live:black_lead"
+msgstr "Schwarz Vorsprung"
+
+msgid "continue_game"
+msgstr "Spiel fortsetzen"
+
+msgid "live:show_advice"
+msgstr "Rat anzeigen"
+
+msgid "live:hide_advice"
+msgstr "Rat ausblenden"
+
+msgid "No Rank"
+msgstr "Kein Rang"
+
+msgid "ai:human_like"
+msgstr "Menschenähnlich"
+
+msgid "live:points_unit"
+msgstr "Pkt"
+
+msgid "Undo"
+msgstr "Rückgängig"
+
+msgid "ai:historical_pro"
+msgstr "Historischer Pro"
+
+msgid "ai:score_loss"
+msgstr "Punktverlust"
+
+msgid "ai:simple_ownership"
+msgstr "Einfaches Gebiet"
+
+msgid "ai:calibrated_rank"
+msgstr "Kalibrierter Rang"
+
+msgid "ai:weighted"
+msgstr "Gewichtet"
+
+msgid "ai:policy_pick"
+msgstr "Strategie-Auswahl"
+
+msgid "ai:local"
+msgstr "Lokal"
+
+msgid "ai:tenuki"
+msgstr "Tenuki"
+
+msgid "ai:influence"
+msgstr "Einfluss"
+
+msgid "ai:territory"
+msgstr "Gebiet"

@@ -549,7 +549,7 @@ msgstr ""
 "indiqués dans les Paramètres généraux."
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "Jigo"
 
 msgid "aihelp:jigo"
 msgstr ""
@@ -569,7 +569,7 @@ msgstr ""
 "(cf. Paramètres généraux)"
 
 msgid "ai:policy"
-msgstr "Intuitif"
+msgstr "Politique"
 
 msgid "aihelp:policy"
 msgstr ""
@@ -972,7 +972,7 @@ msgid "Entire Game"
 msgstr "Partie entière"
 
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "Anti-miroir"
 
 msgid "Prune Branch"
 msgstr "Élaguer les autres branches"
@@ -1719,7 +1719,7 @@ msgid "live:status_live"
 msgstr "EN DIRECT"
 
 msgid "live:status_finished"
-msgstr "Terminée"
+msgstr "Terminé"
 
 msgid "live:pts"
 msgstr "pts"
@@ -1758,19 +1758,19 @@ msgid "live:vs"
 msgstr "contre"
 
 msgid "live:try"
-msgstr "Essayer"
+msgstr "ESSAI"
 
 msgid "live:try_move"
 msgstr "Essayer un coup"
 
 msgid "live:territory"
-msgstr "Territoire"
+msgstr "TERRITOIRE"
 
 msgid "live:territory_needs_analysis"
 msgstr "Territoire (analyse requise)"
 
 msgid "live:move_numbers"
-msgstr "Numéros de coup"
+msgstr "Numéros"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1873,3 +1873,60 @@ msgstr "Partie terminée, commentaires en lecture seule"
 
 msgid "live:login_to_comment"
 msgstr "Connectez-vous pour commenter"
+
+msgid "live:black_winrate"
+msgstr "Taux Noir"
+
+msgid "live:black_lead"
+msgstr "Avance Noir"
+
+msgid "continue_game"
+msgstr "Continuer la partie"
+
+msgid "live:show_advice"
+msgstr "Afficher conseil"
+
+msgid "live:hide_advice"
+msgstr "Masquer conseil"
+
+msgid "No Rank"
+msgstr "Sans rang"
+
+msgid "ai:human_like"
+msgstr "Humain"
+
+msgid "live:points_unit"
+msgstr "pts"
+
+msgid "Undo"
+msgstr "Annuler"
+
+msgid "ai:historical_pro"
+msgstr "Pro Historique"
+
+msgid "ai:score_loss"
+msgstr "Perte de Points"
+
+msgid "ai:simple_ownership"
+msgstr "Territoire Simple"
+
+msgid "ai:calibrated_rank"
+msgstr "Rang Calibré"
+
+msgid "ai:weighted"
+msgstr "Pondéré"
+
+msgid "ai:policy_pick"
+msgstr "Choix de Politique"
+
+msgid "ai:local"
+msgstr "Local"
+
+msgid "ai:tenuki"
+msgstr "Tenuki"
+
+msgid "ai:influence"
+msgstr "Influence"
+
+msgid "ai:territory"
+msgstr "Territoire"

@@ -1,7 +1,7 @@
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { useState, useMemo } from 'react';
 import type { MoveAnalysis } from '../../types/live';
-import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface TrendChartProps {
   analysis: Record<number, MoveAnalysis>;
@@ -16,6 +16,7 @@ export default function TrendChart({
   currentMove,
   onMoveClick,
 }: TrendChartProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState(0);
 
   // Extract data for chart
@@ -49,16 +50,27 @@ export default function TrendChart({
     return { min: -range, max: range };
   }, [chartData.scores]);
 
+  // Get current values for display above chart
+  const currentWinrate = useMemo(() => {
+    const moveAnalysis = analysis[currentMove];
+    return moveAnalysis ? moveAnalysis.winrate * 100 : 50;
+  }, [analysis, currentMove]);
+
+  const currentScoreLead = useMemo(() => {
+    const moveAnalysis = analysis[currentMove];
+    return moveAnalysis ? moveAnalysis.score_lead : 0;
+  }, [analysis, currentMove]);
+
   // Dual-axis chart with winrate and score lead
   const renderDualChart = () => {
     if (chartData.winrates.length === 0) return null;
 
-    const width = 340;
-    const height = 140;
-    const leftPadding = 45; // Space for left Y-axis (winrate)
-    const rightPadding = 45; // Space for right Y-axis (score)
-    const topPadding = 15;
-    const bottomPadding = 15;
+    const width = 420;
+    const height = 180;
+    const leftPadding = 42;
+    const rightPadding = 42;
+    const topPadding = 16;
+    const bottomPadding = 12;
     const chartWidth = width - leftPadding - rightPadding;
     const chartHeight = height - topPadding - bottomPadding;
 
@@ -88,32 +100,6 @@ export default function TrendChart({
 
     return (
       <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-        {/* Left Y-axis label (title) */}
-        <text
-          x={8}
-          y={height / 2}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="rgba(76, 175, 80, 0.8)"
-          fontSize="9"
-          transform={`rotate(-90, 8, ${height / 2})`}
-        >
-          {i18n.t('live:black_winrate', 'Black Winrate')}
-        </text>
-
-        {/* Right Y-axis label (title) */}
-        <text
-          x={width - 8}
-          y={height / 2}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="rgba(255, 152, 0, 0.8)"
-          fontSize="9"
-          transform={`rotate(90, ${width - 8}, ${height / 2})`}
-        >
-          {i18n.t('live:black_lead', 'Black Lead')}
-        </text>
-
         {/* Grid lines and left Y-axis labels (winrate) */}
         {winrateLabels.map((label, i) => {
           const y = topPadding + chartHeight - (i / 2) * chartHeight;
@@ -128,12 +114,12 @@ export default function TrendChart({
                 strokeDasharray={i === 1 ? "4" : "0"}
               />
               <text
-                x={leftPadding - 5}
+                x={leftPadding - 6}
                 y={y}
                 textAnchor="end"
                 dominantBaseline="middle"
-                fill="rgba(76, 175, 80, 0.7)"
-                fontSize="10"
+                fill="rgba(76, 175, 80, 0.8)"
+                fontSize="13"
               >
                 {label}
               </text>
@@ -147,12 +133,12 @@ export default function TrendChart({
           return (
             <text
               key={`sc-${i}`}
-              x={width - rightPadding + 5}
+              x={width - rightPadding + 6}
               y={y}
               textAnchor="start"
               dominantBaseline="middle"
-              fill="rgba(255, 152, 0, 0.7)"
-              fontSize="10"
+              fill="rgba(255, 152, 0, 0.8)"
+              fontSize="13"
             >
               {label}
             </text>
@@ -235,21 +221,26 @@ export default function TrendChart({
           bgcolor: 'background.paper',
         }}
       >
-        <Tab label={i18n.t('live:trend_chart', 'Trend')} sx={{ minHeight: 36, py: 0 }} />
-        <Tab label={`${i18n.t('live:brilliant', 'Brilliant')} (${brilliantMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
-        <Tab label={`${i18n.t('live:mistakes', 'Mistakes')} (${mistakeMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={t('live:trend_chart', 'Trend')} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={`${t('live:brilliant', 'Brilliant')} (${brilliantMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={`${t('live:mistakes', 'Mistakes')} (${mistakeMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
       </Tabs>
 
       {/* Scrollable content area */}
-      <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
+      <Box sx={{ px: 1.5, py: 1, flex: 1, overflow: 'auto' }}>
         {tab === 0 && (
           <Box>
-            <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 1 }}>
-              {renderDualChart()}
+            {/* Values display above chart */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, px: 0.5 }}>
+              <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                {t('live:black_winrate', 'Black Winrate')}: {currentWinrate.toFixed(1)}%
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 600 }}>
+                {t('live:black_lead', 'Black Lead')}: {currentScoreLead >= 0 ? '+' : ''}{currentScoreLead.toFixed(1)} {t('live:points_unit', 'pts')}
+              </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5, pl: '45px', pr: '45px' }}>
-              <Typography variant="caption" color="text.secondary">0</Typography>
-              <Typography variant="caption" color="text.secondary">{totalMoves} {i18n.t('live:moves', 'moves')}</Typography>
+            <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5 }}>
+              {renderDualChart()}
             </Box>
           </Box>
         )}
@@ -258,7 +249,7 @@ export default function TrendChart({
           <Box>
             {brilliantMoves.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                {i18n.t('live:no_brilliant', 'No brilliant moves')}
+                {t('live:no_brilliant', 'No brilliant moves')}
               </Typography>
             ) : (
               brilliantMoves.map(({ move, analysis: a }) => (
@@ -278,14 +269,14 @@ export default function TrendChart({
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" fontWeight="bold">
-                      {i18n.t('live:move_number', 'Move')} {move} {a.move}
+                      {t('live:move_number', 'Move')} {move} {a.move}
                     </Typography>
                     <Typography variant="caption" color="success.main">
-                      +{a.delta_score.toFixed(1)} {i18n.t('live:points', 'pts')}
+                      +{a.delta_score.toFixed(1)} {t('live:points', 'pts')}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {a.player === 'B' ? i18n.t('live:black', 'B') : i18n.t('live:white', 'W')} {i18n.t('live:brilliant_move', 'brilliant move')}
+                    {a.player === 'B' ? t('live:black', 'B') : t('live:white', 'W')} {t('live:brilliant_move', 'brilliant move')}
                   </Typography>
                 </Box>
               ))
@@ -297,7 +288,7 @@ export default function TrendChart({
           <Box>
             {mistakeMoves.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                {i18n.t('live:no_mistakes', 'No mistakes')}
+                {t('live:no_mistakes', 'No mistakes')}
               </Typography>
             ) : (
               mistakeMoves.map(({ move, analysis: a }) => (
@@ -317,14 +308,14 @@ export default function TrendChart({
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" fontWeight="bold">
-                      {i18n.t('live:move_number', 'Move')} {move} {a.move}
+                      {t('live:move_number', 'Move')} {move} {a.move}
                     </Typography>
                     <Typography variant="caption" color={a.is_mistake ? 'error.main' : 'warning.main'}>
-                      {a.delta_score.toFixed(1)} {i18n.t('live:points', 'pts')}
+                      {a.delta_score.toFixed(1)} {t('live:points', 'pts')}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {a.player === 'B' ? i18n.t('live:black', 'B') : i18n.t('live:white', 'W')} {a.is_mistake ? i18n.t('live:mistake', 'mistake') : i18n.t('live:questionable', 'questionable')}
+                    {a.player === 'B' ? t('live:black', 'B') : t('live:white', 'W')} {a.is_mistake ? t('live:mistake', 'mistake') : t('live:questionable', 'questionable')}
                   </Typography>
                 </Box>
               ))

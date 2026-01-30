@@ -791,13 +791,13 @@ msgstr ""
 " için kullanılabilir."
 
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "Anti-ayna"
 
 msgid "aihelp:antimirror"
 msgstr "KataGo'nun Simetri Karşıtı Go Modu"
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "Jigo"
 
 msgid "aihelp:jigo"
 msgstr ""
@@ -814,7 +814,7 @@ msgstr ""
 " yapacaktır."
 
 msgid "ai:policy"
-msgstr "İlke"
+msgstr "Politika"
 
 msgid "aihelp:policy"
 msgstr ""
@@ -1819,19 +1819,19 @@ msgid "live:vs"
 msgstr "karşı"
 
 msgid "live:try"
-msgstr "Dene"
+msgstr "DENE"
 
 msgid "live:try_move"
 msgstr "Hamle dene"
 
 msgid "live:territory"
-msgstr "Bölge"
+msgstr "BÖLGE"
 
 msgid "live:territory_needs_analysis"
 msgstr "Bölge (analiz gerekli)"
 
 msgid "live:move_numbers"
-msgstr "Hamle numaraları"
+msgstr "Sayılar"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1934,3 +1934,60 @@ msgstr "Maç sona erdi, yorumlar salt okunur"
 
 msgid "live:login_to_comment"
 msgstr "Yorum yapmak için giriş yapın"
+
+msgid "live:black_winrate"
+msgstr "Siyah Kazanma"
+
+msgid "live:black_lead"
+msgstr "Siyah Avantaj"
+
+msgid "continue_game"
+msgstr "Oyuna Devam Et"
+
+msgid "live:show_advice"
+msgstr "Tavsiye Göster"
+
+msgid "live:hide_advice"
+msgstr "Tavsiye Gizle"
+
+msgid "No Rank"
+msgstr "Rütbesiz"
+
+msgid "ai:human_like"
+msgstr "İnsan benzeri"
+
+msgid "live:points_unit"
+msgstr "puan"
+
+msgid "Undo"
+msgstr "Geri Al"
+
+msgid "ai:historical_pro"
+msgstr "Tarihi Pro"
+
+msgid "ai:score_loss"
+msgstr "Puan Kaybı"
+
+msgid "ai:simple_ownership"
+msgstr "Basit Bölge"
+
+msgid "ai:calibrated_rank"
+msgstr "Kalibre Derece"
+
+msgid "ai:weighted"
+msgstr "Ağırlıklı"
+
+msgid "ai:policy_pick"
+msgstr "Politika Seçimi"
+
+msgid "ai:local"
+msgstr "Yerel"
+
+msgid "ai:tenuki"
+msgstr "Tenuki"
+
+msgid "ai:influence"
+msgstr "Etki"
+
+msgid "ai:territory"
+msgstr "Bölge"

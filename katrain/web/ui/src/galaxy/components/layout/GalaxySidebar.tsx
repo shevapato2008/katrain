@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, Button, Menu, MenuItem } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ScienceIcon from '@mui/icons-material/Science';
 import AssessmentIcon from '@mui/icons-material/Assessment'; // Report
@@ -12,21 +12,23 @@ import LanguageIcon from '@mui/icons-material/Language';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
-import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';
 
 const GalaxySidebar = () => {
-  const navigate = useNavigate();
+  const { requestNavigation } = useGameNavigation();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { language, setLanguage, languages } = useSettings();
+  const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleLogout = async () => {
     await logout();
     // Navigate to home after logout
-    navigate('/galaxy');
+    requestNavigation('/galaxy');
   };
 
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -43,11 +45,11 @@ const GalaxySidebar = () => {
   };
 
   const menuItems = [
-    { text: i18n.t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
-    { text: i18n.t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false },
-    { text: i18n.t('Tsumego', '死活题'), icon: <ExtensionIcon />, path: '/galaxy/tsumego', disabled: false },
-    { text: i18n.t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
-    { text: i18n.t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
+    { text: t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
+    { text: t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false },
+    { text: t('Tsumego', '死活题'), icon: <ExtensionIcon />, path: '/galaxy/tsumego', disabled: false },
+    { text: t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
+    { text: t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
   ];
 
   return (
@@ -60,9 +62,9 @@ const GalaxySidebar = () => {
       flexDirection: 'column'
     }}>
       {/* Logo Area */}
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }} onClick={() => navigate('/galaxy')}>
+      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }} onClick={() => requestNavigation('/galaxy')}>
          {/* Use existing icon or placeholder */}
-         <Box sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: '50%' }} /> 
+         <Box sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: '50%' }} />
          <Typography variant="h6" fontWeight="bold">Galaxy Go</Typography>
       </Box>
 
@@ -73,9 +75,9 @@ const GalaxySidebar = () => {
         {menuItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           return (
-            <ListItemButton 
-              key={item.text} 
-              onClick={() => !item.disabled && navigate(item.path)}
+            <ListItemButton
+              key={item.text}
+              onClick={() => !item.disabled && requestNavigation(item.path)}
               disabled={item.disabled}
               selected={isActive}
               sx={{
@@ -111,7 +113,7 @@ const GalaxySidebar = () => {
           onClick={handleSettingsClick}
         >
             <ListItemIcon sx={{ minWidth: 40 }}><SettingsIcon /></ListItemIcon>
-            <ListItemText primary={i18n.t('Settings', 'Settings')} />
+            <ListItemText primary={t('Settings', 'Settings')} />
         </ListItemButton>
 
         <Menu
@@ -129,7 +131,7 @@ const GalaxySidebar = () => {
           sx={{ mb: 2 }}
         >
           <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline" color="text.secondary">{i18n.t('Language', 'Language')}</Typography>
+            <Typography variant="overline" color="text.secondary">{t('Language', 'Language')}</Typography>
           </Box>
           {languages.map((lang) => (
             <MenuItem 
@@ -152,7 +154,7 @@ const GalaxySidebar = () => {
                 <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
                     <Typography variant="subtitle2" noWrap>{user.username}</Typography>
                     <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
-                        {user.rank === '20k' ? 'No Rank' : user.rank}
+                        {user.rank === '20k' ? t('No Rank', 'No Rank') : user.rank}
                     </Typography>
                 </Box>
                 <LogoutIcon fontSize="small" sx={{ color: 'text.secondary', cursor: 'pointer' }} onClick={handleLogout} />
@@ -164,7 +166,7 @@ const GalaxySidebar = () => {
                 startIcon={<LoginIcon />}
                 onClick={() => setLoginOpen(true)}
             >
-                {i18n.t('Login', 'Sign In')}
+                {t('Login', 'Sign In')}
             </Button>
         )}
       </Box>

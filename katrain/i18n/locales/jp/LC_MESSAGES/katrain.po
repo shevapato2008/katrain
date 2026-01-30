@@ -506,7 +506,7 @@ msgstr ""
 "適切な値をKaTrainが自動的にみつけます."
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "持碁"
 
 msgid "aihelp:jigo"
 msgstr "指定された目差ちょうど（デフォルトは半目）だけ勝つことをめざします. それ以外は制限なし."
@@ -519,7 +519,7 @@ msgstr ""
 "損する目数に応じた確率でランダムに手を選択します（損が大きいほど低確率）. 探索手数の設定値を大きくするほど多彩で弱い打ち方をするでしょう."
 
 msgid "ai:policy"
-msgstr "第一感"
+msgstr "ポリシー"
 
 msgid "aihelp:policy"
 msgstr ""
@@ -971,7 +971,7 @@ msgid "Entire Game"
 msgstr "全局"
 
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "マネ碁対策"
 
 #. on move tree editing, deletes all other branches splitting off from
 #. the path UP TO this node
@@ -1433,7 +1433,7 @@ msgid "rated_mode_active"
 msgstr "レートモード：進行中"
 
 msgid "Advice"
-msgstr "アドバイス"
+msgstr "提案"
 
 msgid "PASS"
 msgstr "パス"
@@ -1749,7 +1749,7 @@ msgid "live:vs"
 msgstr "対"
 
 msgid "live:try"
-msgstr "試し打ち"
+msgstr "試着"
 
 msgid "live:try_move"
 msgstr "試し着手"
@@ -1761,7 +1761,7 @@ msgid "live:territory_needs_analysis"
 msgstr "地（分析が必要）"
 
 msgid "live:move_numbers"
-msgstr "手数表示"
+msgstr "手番"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1864,3 +1864,60 @@ msgstr "対局終了、コメントは読み取り専用です"
 
 msgid "live:login_to_comment"
 msgstr "ログインしてコメント"
+
+msgid "live:black_winrate"
+msgstr "黒勝率"
+
+msgid "live:black_lead"
+msgstr "黒リード"
+
+msgid "continue_game"
+msgstr "続ける"
+
+msgid "live:show_advice"
+msgstr "提案を表示"
+
+msgid "live:hide_advice"
+msgstr "提案を非表示"
+
+msgid "No Rank"
+msgstr "ランクなし"
+
+msgid "ai:human_like"
+msgstr "人間風"
+
+msgid "live:points_unit"
+msgstr "目"
+
+msgid "Undo"
+msgstr "待った"
+
+msgid "ai:historical_pro"
+msgstr "過去のプロ風"
+
+msgid "ai:score_loss"
+msgstr "目数損失"
+
+msgid "ai:simple_ownership"
+msgstr "シンプル地"
+
+msgid "ai:calibrated_rank"
+msgstr "校正済みランク"
+
+msgid "ai:weighted"
+msgstr "加重"
+
+msgid "ai:policy_pick"
+msgstr "ポリシー選択"
+
+msgid "ai:local"
+msgstr "ローカル"
+
+msgid "ai:tenuki"
+msgstr "手抜き"
+
+msgid "ai:influence"
+msgstr "厚み"
+
+msgid "ai:territory"
+msgstr "地"

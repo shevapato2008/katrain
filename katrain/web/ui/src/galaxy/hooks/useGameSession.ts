@@ -99,20 +99,26 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const handleAction = useCallback(async (action: string) => {
         if (!sessionId) return;
         try {
+            let result: any;
             if (action === 'pass') await API.playMove(sessionId, null, token);
-            else if (action === 'undo') await API.undo(sessionId, 'smart');
-            else if (action === 'back') await API.undo(sessionId, 1);
-            else if (action === 'back-10') await API.undo(sessionId, 10);
-            else if (action === 'start') await API.undo(sessionId, 9999);
-            else if (action === 'forward') await API.redo(sessionId, 1);
-            else if (action === 'forward-10') await API.redo(sessionId, 10);
-            else if (action === 'end') await API.redo(sessionId, 9999);
+            else if (action === 'undo') result = await API.undo(sessionId, 'smart');
+            else if (action === 'back') result = await API.undo(sessionId, 1);
+            else if (action === 'back-10') result = await API.undo(sessionId, 10);
+            else if (action === 'start') result = await API.undo(sessionId, 9999);
+            else if (action === 'forward') result = await API.redo(sessionId, 1);
+            else if (action === 'forward-10') result = await API.redo(sessionId, 10);
+            else if (action === 'end') result = await API.redo(sessionId, 9999);
             else if (action === 'ai-move') await API.aiMove(sessionId);
             else if (action === 'resign') await API.resign(sessionId);
             else if (action === 'timeout') await API.timeout(sessionId);
             else if (action === 'rotate') await API.rotate(sessionId);
-            else if (action === 'mistake-prev') await API.findMistake(sessionId, 'undo');
-            else if (action === 'mistake-next') await API.findMistake(sessionId, 'redo');
+            else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');
+            else if (action === 'mistake-next') result = await API.findMistake(sessionId, 'redo');
+            // For undo/redo/navigate actions, apply state from HTTP response immediately
+            // (WebSocket broadcast may also arrive, but this ensures instant UI update)
+            if (result?.state) {
+                setGameState(result.state);
+            }
         } catch (e) {
             console.error(e);
         }

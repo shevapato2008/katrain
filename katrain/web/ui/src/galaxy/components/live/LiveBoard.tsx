@@ -458,16 +458,14 @@ export default function LiveBoard({
           // Draw move number on stone if enabled
           if (showMoveNumbers && moveNumbers[y][x]) {
             const pos = gridToCanvas(layout, x, y, boardSize);
-            const isLastMove = lastMove && lastMove[0] === x && lastMove[1] === y;
             ctx.save();
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = stone === 'B' ? '#fff' : '#000';
             // Larger font size for better readability
             ctx.font = `bold ${Math.max(11, layout.gridSize * 0.38)}px sans-serif`;
-            // Offset text slightly upward on last move to avoid circle overlap
-            const yOffset = isLastMove ? -layout.gridSize * 0.08 : 0;
-            ctx.fillText(String(moveNumbers[y][x]), pos.x, pos.y + yOffset);
+            // Center the text on the stone consistently for all moves
+            ctx.fillText(String(moveNumbers[y][x]), pos.x, pos.y);
             ctx.restore();
           }
         }

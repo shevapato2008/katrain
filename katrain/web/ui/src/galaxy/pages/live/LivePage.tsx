@@ -105,7 +105,7 @@ export default function LivePage() {
       {/* Right sidebar - matches list */}
       <Box
         sx={{
-          width: 440,
+          width: 500,
           borderLeft: 1,
           borderColor: 'divider',
           display: { xs: 'none', md: 'flex' },

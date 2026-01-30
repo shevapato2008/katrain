@@ -107,10 +107,16 @@ export default function MatchCard({ match, compact = false, selected = false, on
           <Typography variant="caption" color="text.secondary">
             {dateStr}
           </Typography>
-          {match.result && (
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-              {match.result}
-            </Typography>
+          {/* For finished games, show move count + result prominently */}
+          {!isLive && match.result && (
+            <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {match.move_count} {t('live:moves')}
+              </Typography>
+              <Typography variant="body2" fontWeight="bold" color="primary.main">
+                {match.result}
+              </Typography>
+            </Box>
           )}
         </Box>
 
@@ -151,9 +157,12 @@ export default function MatchCard({ match, compact = false, selected = false, on
             <Typography variant="caption" fontWeight={blackAdvantage ? 'bold' : 'normal'} sx={{ color: '#000' }}>
               {t('live:black')} {winratePercent}%
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {match.move_count} {t('live:moves')}
-            </Typography>
+            {/* Only show move count here for live matches (finished matches show it in header) */}
+            {isLive && (
+              <Typography variant="caption" color="text.secondary">
+                {match.move_count} {t('live:moves')}
+              </Typography>
+            )}
             <Typography variant="caption" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
               {t('live:white')} {100 - winratePercent}%
             </Typography>

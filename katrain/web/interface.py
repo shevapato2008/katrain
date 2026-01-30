@@ -657,6 +657,7 @@ class WebKaTrain(KaTrainBase):
             if self.play_analyze_mode == MODE_PLAY and self.last_player_info.ai and self.next_player_info.human:
                 n_times = 2
         self.game.undo(n_times)
+        self.update_state()
 
     def _do_redo(self, n_times=1):
         self.game.redo(n_times)

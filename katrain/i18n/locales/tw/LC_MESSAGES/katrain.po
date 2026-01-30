@@ -604,7 +604,7 @@ msgstr ""
 "attachment_penalty)。權重可以是負數使對局複雜化，而寬根雜訊(在一般設定中)的使用，可以以棋力強度作為代價，加強風格。"
 
 msgid "ai:jigo"
-msgstr "和棋模式 (KataJigo)"
+msgstr "和棋"
 
 msgid "aihelp:jigo"
 msgstr "在沒有更多限制的情況下，嘗試按指定目數(預設0.5)赢棋。"
@@ -616,7 +616,7 @@ msgid "aihelp:scoreloss"
 msgstr "傾向選擇低機率損失較多目數的落點。在較高計算深度次數下，棋力可能更不穩定/更弱。"
 
 msgid "ai:policy"
-msgstr "直覺"
+msgstr "策略"
 
 msgid "aihelp:policy"
 msgstr "按最佳直覺行棋，沒有任何計算。棋力主要由引擎設定中的 '模型' 決定。布局落點設定影響布局中隨機落點的數量。"
@@ -953,7 +953,7 @@ msgid "Entire Game"
 msgstr "全局"
 
 msgid "ai:antimirror"
-msgstr "反鏡像 (KataAntiMirror)"
+msgstr "反模仿"
 
 #. on move tree editing, deletes all other branches splitting off from
 #. the path UP TO this node
@@ -1846,3 +1846,60 @@ msgstr "對局已結束，評論已關閉"
 
 msgid "live:login_to_comment"
 msgstr "登入後評論"
+
+msgid "live:black_winrate"
+msgstr "黑棋勝率"
+
+msgid "live:black_lead"
+msgstr "黑棋領先"
+
+msgid "continue_game"
+msgstr "繼續對局"
+
+msgid "live:show_advice"
+msgstr "顯示建議"
+
+msgid "live:hide_advice"
+msgstr "隱藏建議"
+
+msgid "No Rank"
+msgstr "無級別"
+
+msgid "ai:human_like"
+msgstr "擬人"
+
+msgid "live:points_unit"
+msgstr "目"
+
+msgid "Undo"
+msgstr "悔棋"
+
+msgid "ai:historical_pro"
+msgstr "歷史棋風"
+
+msgid "ai:score_loss"
+msgstr "目數損失"
+
+msgid "ai:simple_ownership"
+msgstr "簡單地域"
+
+msgid "ai:calibrated_rank"
+msgstr "校準級別"
+
+msgid "ai:weighted"
+msgstr "加權"
+
+msgid "ai:policy_pick"
+msgstr "策略選擇"
+
+msgid "ai:local"
+msgstr "局部"
+
+msgid "ai:tenuki"
+msgstr "脫先"
+
+msgid "ai:influence"
+msgstr "外勢"
+
+msgid "ai:territory"
+msgstr "實地"

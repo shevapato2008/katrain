@@ -101,9 +101,9 @@ export default function PlaybackBar({
   };
 
   return (
-    <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+    <Box sx={{ pt: 1, pb: 1.5, px: 2, borderTop: 1, borderColor: 'divider' }}>
       {/* Slider */}
-      <Box sx={{ px: 1, mb: 1 }}>
+      <Box sx={{ px: 1, mb: 0.5 }}>
         <Slider
           value={currentMove}
           min={0}

@@ -808,10 +808,10 @@ msgstr ""
 "ходів."
 
 msgid "ai:jigo"
-msgstr "KataJigo"
+msgstr "Дзіго"
 
 msgid "ai:antimirror"
-msgstr "KataAntiMirror"
+msgstr "Анти-дзеркало"
 
 msgid "aihelp:antimirror"
 msgstr "Режим проти дзеркальної гри в KataGo."
@@ -1799,19 +1799,19 @@ msgid "live:vs"
 msgstr "проти"
 
 msgid "live:try"
-msgstr "Спробувати"
+msgstr "СПРОБА"
 
 msgid "live:try_move"
 msgstr "Спробувати хід"
 
 msgid "live:territory"
-msgstr "Територія"
+msgstr "ТЕРИТОРІЯ"
 
 msgid "live:territory_needs_analysis"
 msgstr "Територія (потрібен аналіз)"
 
 msgid "live:move_numbers"
-msgstr "Номери ходів"
+msgstr "Номери"
 
 msgid "live:numbers"
 msgstr "#"
@@ -1914,3 +1914,60 @@ msgstr "Партію завершено, коментарі лише для чи
 
 msgid "live:login_to_comment"
 msgstr "Увійдіть, щоб коментувати"
+
+msgid "live:black_winrate"
+msgstr "Відсоток чорних"
+
+msgid "live:black_lead"
+msgstr "Перевага чорних"
+
+msgid "continue_game"
+msgstr "Продовжити гру"
+
+msgid "live:show_advice"
+msgstr "Показати пораду"
+
+msgid "live:hide_advice"
+msgstr "Сховати пораду"
+
+msgid "No Rank"
+msgstr "Без рангу"
+
+msgid "ai:human_like"
+msgstr "Людиноподібний"
+
+msgid "live:points_unit"
+msgstr "очк"
+
+msgid "Undo"
+msgstr "Скасувати"
+
+msgid "ai:historical_pro"
+msgstr "Історичний про"
+
+msgid "ai:score_loss"
+msgstr "Втрата очок"
+
+msgid "ai:simple_ownership"
+msgstr "Проста територія"
+
+msgid "ai:calibrated_rank"
+msgstr "Калібрований ранг"
+
+msgid "ai:weighted"
+msgstr "Зважений"
+
+msgid "ai:policy_pick"
+msgstr "Вибір політики"
+
+msgid "ai:local"
+msgstr "Локальний"
+
+msgid "ai:tenuki"
+msgstr "Тенукі"
+
+msgid "ai:influence"
+msgstr "Вплив"
+
+msgid "ai:territory"
+msgstr "Територія"

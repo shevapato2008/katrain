@@ -305,10 +305,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         ctx.textBaseline = "middle";
         // Use the actual move number from backend if available, fallback to index+1
         const numToDisplay = moveNumber !== null && moveNumber !== undefined ? moveNumber : index + 1;
-        // Check if this is the last move to offset text
-        const isLastMove = gameState.last_move && gameState.last_move[0] === coords[0] && gameState.last_move[1] === coords[1];
-        const yOffset = isLastMove ? -layout.gridSize * 0.08 : 0;
-        ctx.fillText(numToDisplay.toString(), pos.x, pos.y + yOffset);
+        // Center the text on the stone consistently for all moves
+        ctx.fillText(numToDisplay.toString(), pos.x, pos.y);
       }
 
       // Eval dots

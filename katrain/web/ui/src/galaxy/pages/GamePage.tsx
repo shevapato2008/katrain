@@ -6,24 +6,27 @@ import Board from '../../components/Board';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useSettings } from '../context/SettingsContext';
-import { i18n } from '../../i18n';
+import { useGameNavigation } from '../context/GameNavigationContext';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const GamePage = () => {
     const { sessionId } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     useSettings(); // Subscribe to translation changes for re-render
+    const { t } = useTranslation();
+    const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
 
-    const { 
-        sessionId: currentSessionId, 
-        setSessionId, 
-        gameState, 
-        error, 
-        onMove, 
+    const {
+        sessionId: currentSessionId,
+        setSessionId,
+        gameState,
+        error,
+        onMove,
         onNavigate,
-        handleAction 
+        handleAction
     } = useGameSession();
 
     // Analysis Toggles State
@@ -38,6 +41,11 @@ const GamePage = () => {
         score: true,
         winrate: true
     });
+
+    // Track move count for resetting hints after user move (Case 3)
+    const prevMoveCountRef = useRef<number>(0);
+    // Track if we're waiting for analysis to auto-show (Case 2)
+    const waitingForAnalysisRef = useRef<boolean>(false);
 
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
@@ -68,11 +76,11 @@ const GamePage = () => {
     }, [sessionId, currentSessionId, setSessionId]);
 
     // Sync with gameState.ui_state if available
+    // Note: 'hints' is excluded because it's managed locally (Cases 1-3)
     useEffect(() => {
         if (gameState?.ui_state) {
             setAnalysisToggles(prev => ({
                 ...prev,
-                hints: gameState.ui_state.show_hints,
                 policy: gameState.ui_state.show_policy,
                 ownership: gameState.ui_state.show_ownership,
                 coords: gameState.ui_state.show_coordinates,
@@ -81,8 +89,66 @@ const GamePage = () => {
         }
     }, [gameState]);
 
+    // Case 3: Reset hints to unselected after user makes a move
+    useEffect(() => {
+        if (!gameState) return;
+        const currentMoveCount = gameState.current_node_index;
+        if (prevMoveCountRef.current > 0 && currentMoveCount > prevMoveCountRef.current) {
+            // Move was made, reset hints
+            setAnalysisToggles(prev => ({ ...prev, hints: false }));
+            waitingForAnalysisRef.current = false;
+        }
+        prevMoveCountRef.current = currentMoveCount;
+    }, [gameState?.current_node_index]);
+
+    // Case 2: Auto-show hints when analysis arrives while waiting
+    // When analysis arrives, stop waiting and ensure hints stay ON (selected/highlighted)
+    // The board reads analysisToggles.hints to decide whether to show top3 markers
+    useEffect(() => {
+        if (waitingForAnalysisRef.current && gameState?.analysis?.moves?.length) {
+            // Analysis arrived - stop blinking, hints stays ON (already true)
+            // Board will auto-show top3 because hints is true and top_moves exist
+            waitingForAnalysisRef.current = false;
+            // Force re-render to ensure board picks up the hints=true + top_moves
+            setAnalysisToggles(prev => ({ ...prev, hints: true }));
+        }
+    }, [gameState?.analysis?.moves]);
+
+    // Register/unregister active game for sidebar navigation protection
+    useEffect(() => {
+        if (gameState && !gameState.end_result) {
+            registerActiveGame(async () => {
+                await handleAction('resign');
+            });
+        } else {
+            unregisterActiveGame();
+        }
+        return () => unregisterActiveGame();
+    }, [gameState?.end_result, registerActiveGame, unregisterActiveGame, handleAction]);
+
     const handleToggleChange = (setting: string) => {
-        setAnalysisToggles(prev => ({ ...prev, [setting]: !prev[setting] }));
+        if (setting === 'hints') {
+            const hasAnalysis = !!gameState?.analysis?.moves?.length;
+            const currentlyOn = analysisToggles.hints;
+
+            if (currentlyOn) {
+                // Case 1: Turning off - always allow
+                setAnalysisToggles(prev => ({ ...prev, hints: false }));
+                waitingForAnalysisRef.current = false;
+            } else {
+                // Turning on
+                if (hasAnalysis) {
+                    // Case 1: Analysis available, just show
+                    setAnalysisToggles(prev => ({ ...prev, hints: true }));
+                } else {
+                    // Case 2: No analysis yet, start waiting and blink
+                    setAnalysisToggles(prev => ({ ...prev, hints: true }));
+                    waitingForAnalysisRef.current = true;
+                }
+            }
+        } else {
+            setAnalysisToggles(prev => ({ ...prev, [setting]: !prev[setting] }));
+        }
     };
 
     const handleActionWrapper = (action: string) => {
@@ -120,29 +186,29 @@ const GamePage = () => {
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
-                <DialogTitle>{i18n.t('leave_game_title', 'Leave Game?')}</DialogTitle>
+                <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {i18n.t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
+                        {t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowLeaveConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
-                    <Button onClick={handleConfirmLeave} color="error" variant="contained">{i18n.t('resign_and_exit', 'Resign & Exit')}</Button>
+                    <Button onClick={() => setShowLeaveConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={handleConfirmLeave} color="error" variant="contained">{t('resign_and_exit', 'Resign & Exit')}</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Resign Confirmation Dialog */}
             <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-                <DialogTitle>{i18n.t('resign_game_title', 'Resign Game?')}</DialogTitle>
+                <DialogTitle>{t('resign_game_title', 'Resign Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {i18n.t('resign_confirm_text', 'Are you sure you want to resign?')}
+                        {t('resign_confirm_text', 'Are you sure you want to resign?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowResignConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
-                    <Button onClick={confirmResign} color="error" variant="contained">{i18n.t('RESIGN', 'Resign')}</Button>
+                    <Button onClick={() => setShowResignConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmResign} color="error" variant="contained">{t('RESIGN', 'Resign')}</Button>
                 </DialogActions>
             </Dialog>
 
@@ -151,7 +217,7 @@ const GamePage = () => {
                 {/* Header */}
                 <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
                     <Typography variant="subtitle2" color="primary.main">
-                        {i18n.t('play_vs_ai', 'Play vs AI')} ({mode})
+                        {t('play_vs_ai', 'Play vs AI')} ({mode})
                     </Typography>
                     <Button
                         size="small"
@@ -161,7 +227,7 @@ const GamePage = () => {
                         onClick={handleLeaveRequest}
                         sx={{ textTransform: 'none' }}
                     >
-                        {i18n.t('exit', 'Exit')}
+                        {t('exit', 'Exit')}
                     </Button>
                 </Box>
 
@@ -185,6 +251,7 @@ const GamePage = () => {
                 isRated={isRated}
                 onTimeout={handleTimeout}
                 onPlaySound={handlePlaySound}
+                isAnalysisPending={analysisToggles.hints && !gameState.analysis?.top_moves?.length}
             />
         </Box>
     );

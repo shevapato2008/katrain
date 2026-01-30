@@ -281,6 +281,33 @@ class UserTsumegoProgress(Base):
     problem = relationship("TsumegoProblem")
 
 
+class KifuAlbum(Base):
+    """Database model for tournament game records (大赛棋谱)."""
+    __tablename__ = "kifu_albums"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_black = Column(String(512), nullable=False, index=True)
+    player_white = Column(String(512), nullable=False, index=True)
+    black_rank = Column(String(64), nullable=True)
+    white_rank = Column(String(64), nullable=True)
+    event = Column(String(256), nullable=True, index=True)
+    result = Column(String(64), nullable=True)
+    date_played = Column(String(32), nullable=True)  # Raw SGF date string for display ("1926", "1928-09-04,05")
+    date_sort = Column(String(10), nullable=True, index=True)  # Normalized ISO prefix for sorting ("1926-00-00", "1928-09-04")
+    place = Column(String(256), nullable=True)
+    komi = Column(Float, nullable=True)
+    handicap = Column(Integer, default=0)
+    board_size = Column(Integer, default=19)
+    rules = Column(String(32), nullable=True)
+    round_name = Column(String(128), nullable=True)
+    source = Column(String(256), nullable=True)
+    move_count = Column(Integer, default=0)
+    sgf_content = Column(Text, nullable=False)
+    source_path = Column(String(512), unique=True, nullable=False, index=True)  # Prevents duplicate imports
+    search_text = Column(Text, nullable=True)  # Lowercased concatenated searchable fields
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class UpcomingMatchDB(Base):
     """Upcoming/scheduled matches from various sources (populated by katrain-cron)."""
     __tablename__ = "live_upcoming"

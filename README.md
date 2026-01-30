@@ -200,7 +200,7 @@ docker-compose logs -f
 
 **katrain-web:**
 ```bash
-export KATRAIN_DATABASE_URL="postgresql://katrain_user:password@localhost:5432/katrain_db"
+export KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db"
 export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
 
 python -m katrain --ui web
@@ -208,7 +208,7 @@ python -m katrain --ui web
 
 **katrain-cron:**
 ```bash
-export KATRAIN_DATABASE_URL="postgresql://katrain_user:password@localhost:5432/katrain_db"
+export KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db"
 export KATAGO_URL="http://127.0.0.1:8002"
 export DASHSCOPE_API_KEY=sk-your-key  # Optional, for translation (no quotes to avoid smart quote issues)
 

@@ -2290,6 +2290,32 @@ GALAXY_TRANSLATIONS = {
         "tr": "Tavsiye Gizle",
         "ua": "Сховати пораду",
     },
+    "live:analysis_pending": {
+        "en": "Analysis pending...",
+        "cn": "分析处理中...",
+        "tw": "分析處理中...",
+        "jp": "分析処理中...",
+        "ko": "분석 처리 중...",
+        "de": "Analyse ausstehend...",
+        "es": "Análisis pendiente...",
+        "fr": "Analyse en cours...",
+        "ru": "Анализ в обработке...",
+        "tr": "Analiz bekliyor...",
+        "ua": "Аналіз в обробці...",
+    },
+    "live:analysis_auto_processed": {
+        "en": "Analysis is automatically processed in the background",
+        "cn": "分析在后台自动处理",
+        "tw": "分析在後台自動處理",
+        "jp": "分析はバックグラウンドで自動処理されます",
+        "ko": "분석은 백그라운드에서 자동으로 처리됩니다",
+        "de": "Die Analyse wird automatisch im Hintergrund verarbeitet",
+        "es": "El análisis se procesa automáticamente en segundo plano",
+        "fr": "L'analyse est traitée automatiquement en arrière-plan",
+        "ru": "Анализ автоматически обрабатывается в фоновом режиме",
+        "tr": "Analiz arka planda otomatik olarak işlenir",
+        "ua": "Аналіз автоматично обробляється у фоновому режимі",
+    },
 
     # Player rank and type
     "No Rank": {

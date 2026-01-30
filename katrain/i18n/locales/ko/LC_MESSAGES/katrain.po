@@ -1848,3 +1848,9 @@ msgstr "세력"
 
 msgid "ai:territory"
 msgstr "집"
+
+msgid "live:analysis_pending"
+msgstr "분석 처리 중..."
+
+msgid "live:analysis_auto_processed"
+msgstr "분석은 백그라운드에서 자동으로 처리됩니다"

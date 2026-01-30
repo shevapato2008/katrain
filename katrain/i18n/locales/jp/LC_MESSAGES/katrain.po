@@ -1921,3 +1921,9 @@ msgstr "厚み"
 
 msgid "ai:territory"
 msgstr "地"
+
+msgid "live:analysis_pending"
+msgstr "分析処理中..."
+
+msgid "live:analysis_auto_processed"
+msgstr "分析はバックグラウンドで自動処理されます"

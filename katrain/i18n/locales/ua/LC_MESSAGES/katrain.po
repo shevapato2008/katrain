@@ -1971,3 +1971,9 @@ msgstr "Вплив"
 
 msgid "ai:territory"
 msgstr "Територія"
+
+msgid "live:analysis_pending"
+msgstr "Аналіз в обробці..."
+
+msgid "live:analysis_auto_processed"
+msgstr "Аналіз автоматично обробляється у фоновому режимі"

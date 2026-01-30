@@ -1794,3 +1794,9 @@ msgstr "Influencia"
 
 msgid "ai:territory"
 msgstr "Territorio"
+
+msgid "live:analysis_pending"
+msgstr "Análisis pendiente..."
+
+msgid "live:analysis_auto_processed"
+msgstr "El análisis se procesa automáticamente en segundo plano"

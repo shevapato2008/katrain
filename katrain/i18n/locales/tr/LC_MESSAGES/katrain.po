@@ -1991,3 +1991,9 @@ msgstr "Etki"
 
 msgid "ai:territory"
 msgstr "Bölge"
+
+msgid "live:analysis_pending"
+msgstr "Analiz bekliyor..."
+
+msgid "live:analysis_auto_processed"
+msgstr "Analiz arka planda otomatik olarak işlenir"

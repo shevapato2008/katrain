@@ -1903,3 +1903,9 @@ msgstr "外勢"
 
 msgid "ai:territory"
 msgstr "實地"
+
+msgid "live:analysis_pending"
+msgstr "分析處理中..."
+
+msgid "live:analysis_auto_processed"
+msgstr "分析在後台自動處理"

@@ -1,0 +1,706 @@
+import { Box, Typography, LinearProgress, Divider, IconButton, Stack, Slider, Tooltip, Tabs, Tab } from '@mui/material';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ResearchToolbar, { type PlaceMode, type EditMode } from './ResearchToolbar';
+
+// Shared column layout for AI recommendation tables — must match AiAnalysis in live module
+const AI_TABLE_COLUMNS = '1fr 1fr 1fr 1fr';
+
+interface AnalysisMove {
+  move: string;
+  coords: [number, number] | null;
+  winrate: number;
+  scoreLead?: number;
+  scoreLoss: number;
+  visits: number;
+  psv?: number;
+  pv?: string[];
+  pointsLost?: number;
+  prior?: number;
+}
+
+interface HistoryEntry {
+  node_id: number;
+  winrate: number | null;
+  score: number | null;
+}
+
+interface ResearchAnalysisPanelProps {
+  playerBlack: string;
+  playerWhite: string;
+  currentMove: number;
+  totalMoves: number;
+  onMoveChange: (move: number) => void;
+  winrate: number;
+  scoreLead: number;
+  showMoveNumbers: boolean;
+  onToggleMoveNumbers: () => void;
+  onPass: () => void;
+  editMode: EditMode;
+  onEditModeChange: (mode: EditMode) => void;
+  placeMode: PlaceMode;
+  onPlaceModeChange: (mode: PlaceMode) => void;
+  showHints: boolean;
+  onToggleHints: () => void;
+  showTerritory: boolean;
+  onToggleTerritory: () => void;
+  onClear: () => void;
+  onOpen?: () => void;
+  onSave?: () => void;
+  isAnalysisPending?: boolean;
+  // Real data props
+  analysisMoves?: AnalysisMove[];
+  history?: HistoryEntry[];
+  playerToMove?: string;
+}
+
+// Threshold for classifying moves (in winrate points lost, 0-1 scale)
+const GOOD_MOVE_THRESHOLD = 0.02;   // gains >= 2% winrate
+const BAD_MOVE_THRESHOLD = -0.04;   // loses >= 4% winrate
+
+export default function ResearchAnalysisPanel({
+  playerBlack,
+  playerWhite,
+  currentMove,
+  totalMoves,
+  onMoveChange,
+  winrate,
+  scoreLead,
+  showMoveNumbers,
+  onToggleMoveNumbers,
+  onPass,
+  editMode,
+  onEditModeChange,
+  placeMode,
+  onPlaceModeChange,
+  showHints,
+  onToggleHints,
+  showTerritory,
+  onToggleTerritory,
+  onClear,
+  onOpen,
+  onSave,
+  isAnalysisPending = false,
+  analysisMoves,
+  history,
+  playerToMove,
+}: ResearchAnalysisPanelProps) {
+  const [trendTab, setTrendTab] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioCache = useRef<Record<string, HTMLAudioElement>>({});
+
+  // Auto-play effect
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      if (currentMove < totalMoves) {
+        onMoveChange(currentMove + 1);
+      } else {
+        setIsPlaying(false);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPlaying, currentMove, totalMoves, onMoveChange]);
+
+  // Stop playing when reaching end
+  useEffect(() => {
+    if (currentMove >= totalMoves) setIsPlaying(false);
+  }, [currentMove, totalMoves]);
+
+  // Play stone sound on navigation
+  const prevMoveRef = useRef(currentMove);
+  useEffect(() => {
+    if (currentMove !== prevMoveRef.current) {
+      prevMoveRef.current = currentMove;
+      const soundName = 'stone1';
+      if (!audioCache.current[soundName]) {
+        audioCache.current[soundName] = new Audio(`/assets/sounds/${soundName}.wav`);
+      }
+      const audio = audioCache.current[soundName];
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+  }, [currentMove]);
+
+  const winratePercent = winrate * 100;
+  const blackAdvantage = winrate > 0.5;
+
+  const iconButtonStyle = {
+    color: 'text.secondary',
+    '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+  };
+
+  // Classify moves as 妙手 or 问题手 from history winrate changes
+  const { goodMoves, badMoves } = useMemo(() => {
+    const good: { moveIndex: number; delta: number; player: string }[] = [];
+    const bad: { moveIndex: number; delta: number; player: string }[] = [];
+    if (!history || history.length < 2) return { goodMoves: good, badMoves: bad };
+
+    for (let i = 1; i < history.length; i++) {
+      const prev = history[i - 1];
+      const curr = history[i];
+      if (prev.winrate === null || curr.winrate === null) continue;
+
+      // Player who made move i: odd = Black, even = White (move 1 = Black, move 2 = White)
+      const player = i % 2 === 1 ? 'B' : 'W';
+      // Delta from the moving player's perspective
+      // Black winrate going up = good for Black (who just moved on odd moves)
+      // Black winrate going down = good for White (who just moved on even moves)
+      const rawDelta = curr.winrate - prev.winrate;
+      const playerDelta = player === 'B' ? rawDelta : -rawDelta;
+
+      if (playerDelta >= GOOD_MOVE_THRESHOLD) {
+        good.push({ moveIndex: i, delta: playerDelta, player });
+      } else if (playerDelta <= BAD_MOVE_THRESHOLD) {
+        bad.push({ moveIndex: i, delta: playerDelta, player });
+      }
+    }
+    // Sort: good moves by largest delta desc, bad moves by worst delta asc
+    good.sort((a, b) => b.delta - a.delta);
+    bad.sort((a, b) => a.delta - b.delta);
+    return { goodMoves: good, badMoves: bad };
+  }, [history]);
+
+  // Determine next player for AI recommendations display
+  const nextPlayer: 'B' | 'W' = playerToMove === 'W' ? 'W' : 'B';
+
+  // Build display moves from analysis data
+  const displayMoves = useMemo(() => {
+    if (!analysisMoves || analysisMoves.length === 0) return [];
+    const moves = analysisMoves.slice(0, 5);
+    const totalPsv = moves.reduce((sum, m) => sum + (m.psv || 0), 0);
+    const totalVisits = moves.reduce((sum, m) => sum + m.visits, 0);
+    const usePsv = totalPsv > 0;
+    return moves.map(m => ({
+      ...m,
+      percentage: usePsv
+        ? ((m.psv || 0) / totalPsv) * 100
+        : (totalVisits > 0 ? (m.visits / totalVisits) * 100 : 0),
+    }));
+  }, [analysisMoves]);
+
+  const renderTrendChart = useCallback(() => {
+    const width = 420;
+    const height = 140;
+    const leftPad = 42;
+    const rightPad = 42;
+    const topPad = 12;
+    const bottomPad = 12;
+    const chartWidth = width - leftPad - rightPad;
+    const chartHeight = height - topPad - bottomPad;
+
+    // Build winrate data points from history
+    const dataPoints: { x: number; y: number }[] = [];
+    if (history && history.length > 1) {
+      const maxIdx = history.length - 1;
+      for (let i = 0; i < history.length; i++) {
+        if (history[i].winrate !== null) {
+          dataPoints.push({
+            x: leftPad + (i / maxIdx) * chartWidth,
+            y: topPad + chartHeight - (history[i].winrate as number) * chartHeight,
+          });
+        }
+      }
+    }
+
+    // Build path string
+    let pathD = '';
+    if (dataPoints.length >= 2) {
+      pathD = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
+      for (let i = 1; i < dataPoints.length; i++) {
+        pathD += ` L ${dataPoints[i].x} ${dataPoints[i].y}`;
+      }
+    }
+
+    // Fill area: black side (above 50%) and white side (below 50%)
+    const midY = topPad + chartHeight / 2;
+    let fillPathBlack = '';
+    let fillPathWhite = '';
+    if (dataPoints.length >= 2) {
+      // Black fill: area between line and 50% where winrate > 50%
+      fillPathBlack = `M ${dataPoints[0].x} ${midY}`;
+      for (const p of dataPoints) {
+        fillPathBlack += ` L ${p.x} ${Math.min(p.y, midY)}`;
+      }
+      fillPathBlack += ` L ${dataPoints[dataPoints.length - 1].x} ${midY} Z`;
+
+      // White fill: area between 50% and line where winrate < 50%
+      fillPathWhite = `M ${dataPoints[0].x} ${midY}`;
+      for (const p of dataPoints) {
+        fillPathWhite += ` L ${p.x} ${Math.max(p.y, midY)}`;
+      }
+      fillPathWhite += ` L ${dataPoints[dataPoints.length - 1].x} ${midY} Z`;
+    }
+
+    return (
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+        {/* Grid lines at 0%, 50%, 100% */}
+        {[0, 0.5, 1].map((ratio, i) => {
+          const y = topPad + chartHeight - ratio * chartHeight;
+          return (
+            <g key={i}>
+              <line
+                x1={leftPad} y1={y} x2={width - rightPad} y2={y}
+                stroke="rgba(255,255,255,0.1)"
+                strokeDasharray={ratio === 0.5 ? '4' : '0'}
+              />
+              <text x={leftPad - 6} y={y} textAnchor="end" dominantBaseline="middle" fill="rgba(76,175,80,0.8)" fontSize="11">
+                {`${(ratio * 100).toFixed(0)}%`}
+              </text>
+            </g>
+          );
+        })}
+        {/* 50% center line */}
+        <line
+          x1={leftPad} y1={midY}
+          x2={leftPad + chartWidth} y2={midY}
+          stroke="rgba(76,175,80,0.3)" strokeWidth="1.5"
+        />
+        {/* Fill areas */}
+        {fillPathBlack && (
+          <path d={fillPathBlack} fill="rgba(30,30,30,0.4)" />
+        )}
+        {fillPathWhite && (
+          <path d={fillPathWhite} fill="rgba(200,200,200,0.15)" />
+        )}
+        {/* Winrate line */}
+        {pathD && (
+          <path d={pathD} fill="none" stroke="#4caf50" strokeWidth="1.5" />
+        )}
+        {/* Current move indicator */}
+        {totalMoves > 0 && (
+          <line
+            x1={leftPad + (currentMove / totalMoves) * chartWidth}
+            y1={topPad}
+            x2={leftPad + (currentMove / totalMoves) * chartWidth}
+            y2={height - bottomPad}
+            stroke="rgba(255,255,255,0.5)"
+            strokeWidth="1"
+          />
+        )}
+        {/* "No data" placeholder when no analysis available */}
+        {dataPoints.length === 0 && (
+          <text x={width / 2} y={height / 2} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.2)" fontSize="14">
+            分析数据将在此显示
+          </text>
+        )}
+      </svg>
+    );
+  }, [history, currentMove, totalMoves]);
+
+  const handleChartClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!history || history.length < 2 || totalMoves === 0) return;
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const svgWidth = 420;
+    const leftPad = 42;
+    const rightPad = 42;
+    const chartWidth = svgWidth - leftPad - rightPad;
+    // Map click position to move index
+    const relX = ((e.clientX - rect.left) / rect.width) * svgWidth - leftPad;
+    const ratio = Math.max(0, Math.min(1, relX / chartWidth));
+    const moveIdx = Math.round(ratio * totalMoves);
+    onMoveChange(moveIdx);
+  }, [history, totalMoves, onMoveChange]);
+
+  return (
+    <Box sx={{
+      width: 500,
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      bgcolor: 'background.paper',
+      borderLeft: '1px solid rgba(255,255,255,0.05)',
+    }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {/* Player Info + Winrate Bar */}
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#000', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' }} />
+                <Typography variant="body1" fontWeight={blackAdvantage ? 700 : 400} sx={{ fontSize: '0.95rem' }}>
+                  {playerBlack || '黑方'}
+                </Typography>
+              </Box>
+            </Box>
+            <Typography variant="body2" color="text.secondary">vs</Typography>
+            <Box sx={{ flex: 1, textAlign: 'right' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                <Typography variant="body1" fontWeight={!blackAdvantage ? 700 : 400} sx={{ fontSize: '0.95rem' }}>
+                  {playerWhite || '白方'}
+                </Typography>
+                <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#fff', border: '1px solid', borderColor: 'grey.400', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Winrate bar */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="body2" fontWeight={blackAdvantage ? 700 : 400} sx={{ fontSize: '0.875rem' }}>
+              {winratePercent.toFixed(1)}%
+            </Typography>
+            <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ fontSize: '0.875rem' }}>
+              {scoreLead > 0 ? '+' : ''}{scoreLead.toFixed(1)} 目
+            </Typography>
+            <Typography variant="body2" fontWeight={!blackAdvantage ? 700 : 400} sx={{ fontSize: '0.875rem' }}>
+              {(100 - winratePercent).toFixed(1)}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={winratePercent}
+            sx={{
+              height: 8,
+              borderRadius: 4,
+              bgcolor: 'grey.200',
+              '& .MuiLinearProgress-bar': { bgcolor: '#000', borderRadius: 4 },
+            }}
+          />
+        </Box>
+
+        {/* Toolbar */}
+        <Box sx={{ p: 2 }}>
+          <ResearchToolbar
+            isAnalyzing={true}
+            showMoveNumbers={showMoveNumbers}
+            onToggleMoveNumbers={onToggleMoveNumbers}
+            onPass={onPass}
+            editMode={editMode}
+            onEditModeChange={onEditModeChange}
+            placeMode={placeMode}
+            onPlaceModeChange={onPlaceModeChange}
+            showHints={showHints}
+            onToggleHints={onToggleHints}
+            showTerritory={showTerritory}
+            onToggleTerritory={onToggleTerritory}
+            onClear={onClear}
+            onOpen={onOpen}
+            onSave={onSave}
+            isAnalysisPending={isAnalysisPending}
+          />
+        </Box>
+
+        <Divider />
+
+        {/* AI Recommendations */}
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              AI 推荐
+            </Typography>
+            {analysisMoves && analysisMoves.length > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                第 {currentMove} 手后
+              </Typography>
+            )}
+          </Box>
+          {/* Column headers */}
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: AI_TABLE_COLUMNS,
+            gap: 0.5,
+            px: 1,
+            py: 0.5,
+            bgcolor: 'rgba(255,255,255,0.05)',
+            borderRadius: 1,
+            mb: 0.5,
+          }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>着手</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>推荐度</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>目差</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>胜率</Typography>
+          </Box>
+          {/* Move rows */}
+          {displayMoves.length > 0 ? (
+            <Box sx={{ maxHeight: 160, overflowY: 'auto' }}>
+              {displayMoves.map((move, index) => {
+                // scoreLead is from Black's perspective; adjust for display player
+                const rawScore = move.scoreLead ?? 0;
+                const sLead = nextPlayer === 'B' ? rawScore : -rawScore;
+                const wr = nextPlayer === 'B' ? move.winrate : 1 - move.winrate;
+                const oppWr = 1 - wr;
+                return (
+                  <Box
+                    key={move.move}
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: AI_TABLE_COLUMNS,
+                      gap: 0.5,
+                      py: 0.5,
+                      px: 1,
+                      mb: 0.25,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s',
+                      bgcolor: index === 0 ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    {/* Move */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <Box sx={{
+                        width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
+                        bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
+                        border: nextPlayer === 'W' ? '1px solid #666' : 'none',
+                      }} />
+                      <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
+                        {move.move}
+                      </Typography>
+                      {index === 0 && (
+                        <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                      )}
+                    </Box>
+                    {/* Recommendation % */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Box sx={{
+                        minWidth: 48, height: 24, px: 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: index === 0 ? 'primary.main' : 'rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                      }}>
+                        <Typography variant="body2" fontWeight="bold"
+                          color={index === 0 ? 'primary.contrastText' : 'text.primary'}
+                          sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+                          {move.percentage.toFixed(0)}%
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {/* Score lead */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Box sx={{
+                        minWidth: 50, height: 24, px: 0.75,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
+                        color: nextPlayer === 'B' ? '#fff' : '#000',
+                        borderRadius: 1,
+                        border: nextPlayer === 'W' ? '1px solid #666' : 'none',
+                      }}>
+                        <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+                          {sLead >= 0 ? '+' : ''}{sLead.toFixed(1)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {/* Winrate */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                      <Box sx={{
+                        minWidth: 40, height: 24, px: 0.5,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
+                        color: nextPlayer === 'B' ? '#fff' : '#000',
+                        borderRadius: 1, border: '1px solid',
+                        borderColor: nextPlayer === 'B' ? '#1a1a1a' : '#666',
+                      }}>
+                        <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+                          {(wr * 100).toFixed(1)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{
+                        minWidth: 40, height: 24, px: 0.5,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: nextPlayer === 'W' ? '#1a1a1a' : '#f5f5f5',
+                        color: nextPlayer === 'W' ? '#fff' : '#000',
+                        borderRadius: 1, border: '1px solid',
+                        borderColor: nextPlayer === 'W' ? '#1a1a1a' : '#666',
+                      }}>
+                        <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+                          {(oppWr * 100).toFixed(1)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          ) : (
+            <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                {isAnalysisPending ? '正在分析...' : '等待分析数据'}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        <Divider />
+
+        {/* Trend Tabs */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <Tabs
+            value={trendTab}
+            onChange={(_, v) => setTrendTab(v)}
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              minHeight: 40,
+              flexShrink: 0,
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Tab label="走势图" sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
+            <Tab label={`妙手 (${goodMoves.length})`} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
+            <Tab label={`问题手 (${badMoves.length})`} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
+          </Tabs>
+
+          <Box sx={{ px: 1.5, py: 1, flex: 1, overflow: 'auto' }}>
+            {trendTab === 0 && (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, px: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600, fontSize: '0.875rem' }}>
+                    黑方胜率: {winratePercent.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 600, fontSize: '0.875rem' }}>
+                    黑方领先: {scoreLead >= 0 ? '+' : ''}{scoreLead.toFixed(1)} 目
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5, cursor: 'pointer' }}
+                  onClick={handleChartClick as any}
+                >
+                  {renderTrendChart()}
+                </Box>
+              </Box>
+            )}
+            {trendTab === 1 && (
+              <Box>
+                {goodMoves.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                    暂无妙手
+                  </Typography>
+                ) : (
+                  goodMoves.map((m) => (
+                    <Box
+                      key={m.moveIndex}
+                      onClick={() => onMoveChange(m.moveIndex)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 1.5,
+                        px: 1.5, py: 0.75, mb: 0.5, borderRadius: 1,
+                        cursor: 'pointer',
+                        bgcolor: m.moveIndex === currentMove ? 'rgba(76,175,80,0.15)' : 'transparent',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <Box sx={{
+                        width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                        bgcolor: m.player === 'B' ? '#1a1a1a' : '#f5f5f5',
+                        border: m.player === 'W' ? '1px solid #666' : 'none',
+                      }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 60 }}>
+                        第 {m.moveIndex} 手
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                        +{(m.delta * 100).toFixed(1)}%
+                      </Typography>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            )}
+            {trendTab === 2 && (
+              <Box>
+                {badMoves.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                    暂无问题手
+                  </Typography>
+                ) : (
+                  badMoves.map((m) => (
+                    <Box
+                      key={m.moveIndex}
+                      onClick={() => onMoveChange(m.moveIndex)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 1.5,
+                        px: 1.5, py: 0.75, mb: 0.5, borderRadius: 1,
+                        cursor: 'pointer',
+                        bgcolor: m.moveIndex === currentMove ? 'rgba(244,67,54,0.15)' : 'transparent',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <Box sx={{
+                        width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                        bgcolor: m.player === 'B' ? '#1a1a1a' : '#f5f5f5',
+                        border: m.player === 'W' ? '1px solid #666' : 'none',
+                      }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 60 }}>
+                        第 {m.moveIndex} 手
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 600 }}>
+                        {(m.delta * 100).toFixed(1)}%
+                      </Typography>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Navigation Bar - pinned to bottom */}
+      <Divider />
+      <Box sx={{ pt: 1, pb: 1.5, px: 2, bgcolor: '#1a1a1a' }}>
+        <Box sx={{ px: 1, mb: 0.5 }}>
+          <Slider
+            value={currentMove}
+            min={0}
+            max={Math.max(totalMoves, 1)}
+            onChange={(_, v) => onMoveChange(v as number)}
+            sx={{
+              '& .MuiSlider-thumb': { width: 16, height: 16 },
+              '& .MuiSlider-track': { height: 4 },
+              '& .MuiSlider-rail': { height: 4 },
+            }}
+          />
+        </Box>
+
+        <Stack direction="row" justifyContent="center" alignItems="center" spacing={0.5}>
+          <Tooltip title="最初">
+            <IconButton size="small" onClick={() => onMoveChange(0)} disabled={currentMove === 0} sx={iconButtonStyle}>
+              <KeyboardDoubleArrowLeftIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="后退">
+            <IconButton size="small" onClick={() => onMoveChange(Math.max(0, currentMove - 1))} disabled={currentMove === 0} sx={iconButtonStyle}>
+              <ChevronLeftIcon />
+            </IconButton>
+          </Tooltip>
+          <IconButton
+            size="medium"
+            color="primary"
+            onClick={() => {
+              if (currentMove >= totalMoves) {
+                onMoveChange(0);
+              }
+              setIsPlaying(!isPlaying);
+            }}
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' },
+              mx: 0.5,
+            }}
+          >
+            {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+          </IconButton>
+          <Tooltip title="前进">
+            <IconButton size="small" onClick={() => onMoveChange(Math.min(totalMoves, currentMove + 1))} disabled={currentMove >= totalMoves} sx={iconButtonStyle}>
+              <ChevronRightIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="最终">
+            <IconButton size="small" onClick={() => onMoveChange(totalMoves)} disabled={currentMove >= totalMoves} sx={iconButtonStyle}>
+              <KeyboardDoubleArrowRightIcon />
+            </IconButton>
+          </Tooltip>
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2, minWidth: 90, fontSize: '0.9rem' }}>
+            {currentMove} / {totalMoves} 手
+          </Typography>
+        </Stack>
+      </Box>
+    </Box>
+  );
+}

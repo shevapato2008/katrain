@@ -17,6 +17,7 @@ class WebSession:
     user_id: Optional[int] = None # Primary user (usually for AI play)
     player_b_id: Optional[int] = None # For HvH
     player_w_id: Optional[int] = None # For HvH
+    mode: str = "play"  # "play" or "research"
     lock: threading.Lock = field(default_factory=threading.Lock)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
@@ -57,6 +58,12 @@ class SessionManager:
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
         katrain.start()
         session.last_state = katrain.get_state()
+        return session
+
+    def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
+        session = self.create_session(katago_uuid=katago_uuid)
+        session.mode = "research"
+        session.user_id = user_id
         return session
 
     def create_multiplayer_session(self, player_b_id: int, player_w_id: int, b_name: str = None, w_name: str = None) -> WebSession:

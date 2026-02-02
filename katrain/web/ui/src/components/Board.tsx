@@ -110,6 +110,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   // Add a ref for animation time
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  // Hover position for ghost stone preview
+  const hoverPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const animate = () => {
@@ -359,6 +361,31 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       ctx.shadowBlur = 0;
     }
 
+    // Hover ghost stone preview
+    if (hoverPosRef.current && !gameState.end_result) {
+      const { x: hx, y: hy } = hoverPosRef.current;
+      if (hx >= 0 && hx < boardSize && hy >= 0 && hy < boardSize) {
+        // Check if position is empty
+        const occupied = gameState.stones.some(s => s[1] && s[1][0] === hx && s[1][1] === hy);
+        if (!occupied) {
+          const ghostColor = gameState.player_to_move === 'W' ? 'W' : 'B';
+          const pos = gridToCanvas(layout, hx, hy, boardSize);
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          const img = ghostColor === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
+          if (img) {
+            ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+          } else {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, stoneSize * 0.95, 0, Math.PI * 2);
+            ctx.fillStyle = ghostColor === 'B' ? '#000' : '#fff';
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+    }
+
     // Game End Result
     if (gameState.end_result) {
       const centerX = layout.offsetX + layout.boardWidth / 2;
@@ -456,6 +483,36 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
 
+  const canvasToGridPos = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    const boardSize = gameState.board_size[0];
+    const layout = boardLayout(canvas, boardSize);
+    const relX = (x - layout.offsetX) / layout.gridSize - layout.gridMargins.x[0];
+    const relY = (y - layout.offsetY) / layout.gridSize - layout.gridMargins.y[1];
+    const gridX = Math.round(relX);
+    const invertedY = Math.round(relY);
+    const gridY = boardSize - 1 - invertedY;
+    if (gridX >= 0 && gridX < boardSize && gridY >= 0 && gridY < boardSize) {
+      return { x: gridX, y: gridY };
+    }
+    return null;
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = canvasToGridPos(event);
+    hoverPosRef.current = pos;
+  };
+
+  const handleMouseLeave = () => {
+    hoverPosRef.current = null;
+  };
+
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -509,6 +566,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         width={canvasSize}
         height={canvasSize}
         onClick={handleCanvasClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           borderRadius: '4px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',

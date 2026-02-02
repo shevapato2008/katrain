@@ -443,6 +443,7 @@ class Game(BaseGame):
         game_properties: Optional[Dict] = None,
         sgf_filename=None,
         user_id: Optional[str] = None,
+        skip_initial_analysis=False,
     ):
         super().__init__(
             katrain=katrain, move_tree=move_tree, game_properties=game_properties, sgf_filename=sgf_filename
@@ -461,10 +462,11 @@ class Game(BaseGame):
         self.insert_after = None
         self.region_of_interest = None
 
-        threading.Thread(
-            target=lambda: self.analyze_all_nodes(analyze_fast=analyze_fast, even_if_present=False),
-            daemon=True,
-        ).start()  # return faster, but bypass Kivy Clock
+        if not skip_initial_analysis:
+            threading.Thread(
+                target=lambda: self.analyze_all_nodes(analyze_fast=analyze_fast, even_if_present=False),
+                daemon=True,
+            ).start()  # return faster, but bypass Kivy Clock
 
     def analyze_all_nodes(self, priority=PRIORITY_GAME_ANALYSIS, analyze_fast=False, even_if_present=True):
         for node in self.root.nodes_in_tree:

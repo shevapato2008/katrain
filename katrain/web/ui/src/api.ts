@@ -118,8 +118,8 @@ export const API = {
     apiPost("/api/ai-move", { session_id: sessionId }),
   navigate: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
     apiPost("/api/nav", { session_id: sessionId, node_id: nodeId }),
-  loadSGF: (sessionId: string, sgf: string): Promise<SessionResponse> =>
-    apiPost("/api/sgf/load", { session_id: sessionId, sgf }),
+  loadSGF: (sessionId: string, sgf: string, skipAnalysis: boolean = false): Promise<SessionResponse> =>
+    apiPost("/api/sgf/load", { session_id: sessionId, sgf, skip_analysis: skipAnalysis }),
   saveSGF: async (sessionId: string): Promise<{ sgf: string }> => {
     const params = new URLSearchParams({ session_id: sessionId });
     const response = await fetch(`/api/sgf/save?${params.toString()}`);
@@ -168,8 +168,15 @@ export const API = {
     apiPost("/api/ui/toggle", { session_id: sessionId, setting }),
   analyze: (sessionId: string, payload: any): Promise<any> =>
     apiPost("/api/v1/analysis/analyze", { session_id: sessionId, payload }),
-  analyzeGame: (sessionId: string, visits?: number, mistakes_only: boolean = false): Promise<SessionResponse> => 
+  analyzeGame: (sessionId: string, visits?: number, mistakes_only: boolean = false): Promise<SessionResponse> =>
     apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only }),
+  analysisScan: (sessionId: string, visits?: number): Promise<SessionResponse> =>
+    apiPost("/api/analysis/scan", { session_id: sessionId, visits }),
+  analysisProgress: async (sessionId: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
+    const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`);
+    if (!response.ok) throw new Error("Failed to fetch analysis progress");
+    return response.json();
+  },
   getGameReport: (sessionId: string, depth_filter?: number[]): Promise<any> => 
     apiPost("/api/analysis/report", { session_id: sessionId, depth_filter }),
   getAIConstants: async (): Promise<{ strategies: string[], options: Record<string, any>, key_properties: string[], default_strategy: string }> => {

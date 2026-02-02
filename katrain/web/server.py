@@ -20,12 +20,15 @@ async def lifespan(app: FastAPI):
     # Initialize User Persistence
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository
+    from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.db import SessionLocal
-    
+
     repo = SQLAlchemyUserRepository(SessionLocal)
     repo.init_db()
-    
+
     game_repo = GameRepository(SessionLocal)
+    user_game_repo = UserGameRepository(SessionLocal)
+    user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
 
     # Create default admin user if no users exist
     # Create default admin user if no users exist
@@ -38,6 +41,8 @@ async def lifespan(app: FastAPI):
 
     app.state.user_repo = repo
     app.state.game_repo = game_repo
+    app.state.user_game_repo = user_game_repo
+    app.state.user_game_analysis_repo = user_game_analysis_repo
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
 
@@ -147,14 +152,31 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return await health_v1()
 
     @app.post("/api/session")
-    def create_session(current_user: User = Depends(get_current_user_optional)):
+    def create_session(current_user: User = Depends(get_current_user_optional), mode: str = "play"):
         try:
             katago_uuid = current_user.uuid if current_user else None
-            session = manager.create_session(katago_uuid=katago_uuid)
+            if mode == "research" and current_user:
+                session = manager.create_research_session(user_id=current_user.id, katago_uuid=katago_uuid)
+            else:
+                session = manager.create_session(katago_uuid=katago_uuid)
+                if current_user:
+                    session.user_id = current_user.id
         except Exception as exc:
             logging.getLogger("katrain_web").error(f"API: create_session failed: {exc}")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
-        return {"session_id": session.session_id, "state": session.last_state}
+        return {"session_id": session.session_id, "state": session.last_state, "mode": session.mode}
+
+    @app.delete("/api/session/{session_id}")
+    def delete_session(session_id: str, current_user: User = Depends(get_current_user_optional)):
+        try:
+            session = manager.get_session(session_id)
+            # Only allow owner to delete research sessions
+            if session.mode == "research" and current_user and session.user_id != current_user.id:
+                raise HTTPException(status_code=403, detail="Not authorized")
+            manager.remove_session(session_id)
+        except KeyError:
+            pass  # Already gone, that's fine
+        return {"status": "deleted"}
 
     @app.get("/api/state")
     def get_state(session_id: str):
@@ -168,8 +190,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
 
+        # Skip turn validation for research sessions
         # Enforce Multiplayer Turns (only if this is a multiplayer session)
-        if session.player_b_id is not None or session.player_w_id is not None:
+        if session.mode != "research" and (session.player_b_id is not None or session.player_w_id is not None):
             # This is a multiplayer game - require authentication and turn check
             if current_user is None:
                 raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
@@ -217,7 +240,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def load_sgf(request: LoadSGFRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
-            session.katrain("load_sgf", request.sgf)
+            session.katrain("load_sgf", request.sgf, skip_initial_analysis=request.skip_analysis)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -730,6 +753,22 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/scan")
+    def analysis_scan(request: AnalysisScanRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("analysis_scan", visits=request.visits or 500)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.get("/api/analysis/progress")
+    def analysis_progress(session_id: str):
+        session = _get_session_or_404(manager, session_id)
+        with session.lock:
+            progress = session.katrain._do_analysis_progress()
+        return {"session_id": session.session_id, **progress}
 
     @app.post("/api/analysis/report")
     def get_game_report(request: GameReportRequest):

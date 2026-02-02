@@ -45,14 +45,13 @@
         "load_sgf_rewind": true
     },
     "timer": {
+        "main_time": 20,
         "byo_length": 30,
         "byo_periods": 5,
-        "minimal_use": 0,
-        "main_time": 0,
-        "sound": true
+        "minimal_use": 0
     },
     "game": {
-        "size": "19",
+        "size": 19,
         "komi": 6.5,
         "handicap": 0,
         "rules": "japanese",
@@ -71,12 +70,12 @@
             0
         ],
         "eval_thresholds": [
-            12,
-            6,
-            3,
-            1.5,
             0.5,
-            0
+            1.0,
+            2.0,
+            4.0,
+            8.0,
+            16.0
         ],
         "save_feedback": [
             true,
@@ -102,8 +101,8 @@
         "top_moves_show": "top_move_delta_score",
         "top_moves_show_secondary": "top_move_visits",
         "max_top_moves_on_board": 3,
-        "eval_show_ai": true,
-        "lock_ai": false
+        "eval_show_ai": false,
+        "lock_ai": true
     },
     "ai": {
         "resignation": {

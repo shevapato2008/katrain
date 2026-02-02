@@ -16,6 +16,8 @@ from katrain.core.constants import (
     OUTPUT_ERROR,
     OUTPUT_INFO,
     PLAYING_NORMAL,
+    PRIORITY_DEFAULT,
+    PRIORITY_GAME_ANALYSIS,
 )
 from katrain.core.engine import create_engine
 from katrain.core.game import Game
@@ -202,28 +204,39 @@ class WebKaTrain(KaTrainBase):
         cn = self.game.current_node
         last_move = cn.move.coords if cn.move else None
 
-        # Get history of nodes from root to current
-        history = []
-        nodes = []
+        # Get history: full main line from root, with current node's position marked
+        # 1. Walk from current node to root to get the path up
+        path_to_root = []
         node = cn
         while node:
-            nodes.append(node)
+            path_to_root.append(node)
             node = node.parent
-        nodes.reverse()
+        path_to_root.reverse()
 
+        # 2. Continue from current node down the main line (first child)
+        continuation = []
+        node = cn.children[0] if cn.children else None
+        while node:
+            continuation.append(node)
+            node = node.children[0] if node.children else None
+
+        # 3. Full main line = path_to_root + continuation
+        nodes = path_to_root + continuation
+        current_node_index = len(path_to_root) - 1
+
+        history = []
         for node in nodes:
             history.append({
                 "node_id": id(node),
                 "score": node.score if node.analysis_exists else None,
                 "winrate": node.winrate if node.analysis_exists else None,
             })
-        current_node_index = len(history) - 1
 
         # Format stones with evaluation and move numbers
         stones_with_eval = []
-        # To get evaluation and move number for each stone, we map coordinates to nodes in history.
+        # To get evaluation and move number for each stone, we map coordinates to nodes in path to current.
         coord_to_info = {}
-        for idx, h_node in enumerate(nodes):
+        for idx, h_node in enumerate(path_to_root):
             if h_node.move and h_node.move.coords:
                 coord_to_info[h_node.move.coords] = {"score_loss": h_node.points_lost, "move_number": idx}
 
@@ -342,7 +355,7 @@ class WebKaTrain(KaTrainBase):
             "engine": getattr(self, "last_engine", None)
         }
 
-    def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None, rules=None):
+    def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None, rules=None, skip_initial_analysis=False):
         if self.engine:
             self.engine.on_new_game()
         
@@ -376,6 +389,7 @@ class WebKaTrain(KaTrainBase):
             sgf_filename=sgf_filename,
             game_properties=game_properties,
             user_id=self.user_id,
+            skip_initial_analysis=skip_initial_analysis,
         )
         
         # Ensure handicap stones are placed if handicap is set
@@ -574,16 +588,65 @@ class WebKaTrain(KaTrainBase):
         node = self._find_node_by_id(node_id)
         if node:
             self.game.set_current_node(node)
+            # On-demand analysis: if this node has no analysis yet, trigger deep analysis
+            if not node.analysis_exists:
+                engine = self.game.engines[node.next_player]
+                node.analyze(engine, priority=PRIORITY_DEFAULT, visits=500)
         else:
             self.log(f"Node not found: {node_id}", OUTPUT_ERROR)
 
-    def _do_load_sgf(self, content):
+    def _do_load_sgf(self, content, skip_initial_analysis=False):
         from katrain.core.game import KaTrainSGF
         try:
             move_tree = KaTrainSGF.parse_sgf(content)
-            self._do_new_game(move_tree=move_tree)
+            self._do_new_game(move_tree=move_tree, skip_initial_analysis=skip_initial_analysis)
         except Exception as e:
             self.log(f"Failed to load SGF: {e}", OUTPUT_ERROR)
+
+    def _do_analysis_scan(self, visits=500, batch_size=10):
+        """Background scan: analyze all unanalyzed nodes in batches to avoid overwhelming the engine."""
+        import threading as _threading
+
+        # Collect main-line nodes that need analysis
+        nodes_to_analyze = []
+        node = self.game.root
+        while node:
+            if not node.analysis_exists:
+                nodes_to_analyze.append(node)
+            node = node.children[0] if node.children else None
+
+        if not nodes_to_analyze:
+            return
+
+        def _run_batched_scan():
+            for i in range(0, len(nodes_to_analyze), batch_size):
+                batch = nodes_to_analyze[i : i + batch_size]
+                for n in batch:
+                    engine = self.game.engines[n.next_player]
+                    n.analyze(engine, priority=PRIORITY_GAME_ANALYSIS, visits=visits)
+                # Wait for this batch to complete before sending next
+                for _ in range(600):  # up to 60s per batch
+                    if all(n.analysis_exists for n in batch):
+                        break
+                    import time
+                    time.sleep(0.1)
+
+        _threading.Thread(target=_run_batched_scan, daemon=True).start()
+
+    def _do_analysis_progress(self):
+        """Return analysis progress: how many nodes in the main line have been analyzed."""
+        if not self.game:
+            return {"analyzed": 0, "total": 0}
+        # Count nodes along the main line (root to deepest child following first child)
+        total = 0
+        analyzed = 0
+        node = self.game.root
+        while node:
+            total += 1
+            if node.analysis_exists:
+                analyzed += 1
+            node = node.children[0] if node.children else None
+        return {"analyzed": analyzed, "total": total}
 
     def _do_swap_players(self):
         self.players_info["B"], self.players_info["W"] = self.players_info["W"], self.players_info["B"]

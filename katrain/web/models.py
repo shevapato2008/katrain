@@ -45,6 +45,11 @@ class GameSettingsRequest(BaseModel):
 class LoadSGFRequest(BaseModel):
     session_id: str
     sgf: str
+    skip_analysis: bool = False
+
+class AnalysisScanRequest(BaseModel):
+    session_id: str
+    visits: Optional[int] = 50
 
 class ConfigUpdateRequest(BaseModel):
     session_id: str

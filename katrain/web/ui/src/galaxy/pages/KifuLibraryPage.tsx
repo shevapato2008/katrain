@@ -7,6 +7,12 @@ import {
   Pagination,
   CircularProgress,
   InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { KifuAPI } from '../api/kifuApi';
@@ -14,6 +20,23 @@ import type { KifuAlbumSummary } from '../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const PAGE_SIZE = 20;
+
+const headerCellSx = {
+  color: 'text.secondary',
+  fontWeight: 600,
+  fontSize: '0.7rem',
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase' as const,
+  bgcolor: 'rgba(255,255,255,0.02)',
+  borderBottom: '1px solid rgba(255,255,255,0.08)',
+  py: 1.5,
+  whiteSpace: 'nowrap' as const,
+};
+
+const bodyCellSx = {
+  borderBottom: '1px solid rgba(255,255,255,0.04)',
+  py: 1.5,
+};
 
 export default function KifuLibraryPage() {
   const navigate = useNavigate();
@@ -70,7 +93,7 @@ export default function KifuLibraryPage() {
   };
 
   const handleClick = (album: KifuAlbumSummary) => {
-    navigate(`/galaxy/research?kifu_id=${album.id}`);
+    navigate(`/galaxy/kifu/${album.id}`);
   };
 
   const handleRowKeyDown = (e: React.KeyboardEvent, album: KifuAlbumSummary) => {
@@ -112,7 +135,7 @@ export default function KifuLibraryPage() {
         )}
       </Box>
 
-      {/* List */}
+      {/* Table */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 3 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
@@ -123,91 +146,110 @@ export default function KifuLibraryPage() {
             <Typography color="text.secondary">{t('kifu:no_results', 'No records found')}</Typography>
           </Box>
         ) : (
-          items.map((album) => (
-            <Box
-              key={album.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => handleClick(album)}
-              onKeyDown={(e) => handleRowKeyDown(e, album)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                py: 1.5,
-                px: 2,
-                mb: 1,
-                borderRadius: 1,
-                cursor: 'pointer',
-                bgcolor: 'rgba(255,255,255,0.03)',
-                '&:hover, &:focus-visible': { bgcolor: 'rgba(255,255,255,0.08)', outline: 'none' },
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
-              {/* Left: event + players */}
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                {/* Event line */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  {album.event && (
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      {album.event}
-                    </Typography>
-                  )}
-                  {album.round_name && (
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      · {album.round_name}
-                    </Typography>
-                  )}
-                  <Typography variant="caption" color="text.secondary">
-                    · {album.move_count}{t('kifu:moves', '手')}
-                  </Typography>
-                  {album.board_size !== 19 && (
-                    <Typography variant="caption" color="text.secondary">
-                      · {album.board_size}×{album.board_size}
-                    </Typography>
-                  )}
-                </Box>
-                {/* Players line */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>
-                    {album.player_black}
-                  </Typography>
-                  {album.black_rank && (
-                    <Typography variant="caption" color="text.secondary">
-                      {album.black_rank}
-                    </Typography>
-                  )}
-                  <Typography
-                    variant="caption"
+          <TableContainer>
+            <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headerCellSx}>{t('kifu:col_event', 'Event')}</TableCell>
+                  <TableCell sx={{ ...headerCellSx, width: 160 }}>{t('kifu:col_black', 'Black')}</TableCell>
+                  <TableCell sx={{ ...headerCellSx, width: 160 }}>{t('kifu:col_white', 'White')}</TableCell>
+                  <TableCell sx={{ ...headerCellSx, width: 90 }} align="center">{t('kifu:col_result', 'Result')}</TableCell>
+                  <TableCell sx={{ ...headerCellSx, width: 70 }} align="center">{t('kifu:col_moves', 'Moves')}</TableCell>
+                  <TableCell sx={{ ...headerCellSx, width: 120 }} align="right">{t('kifu:col_date', 'Date')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {items.map((album) => (
+                  <TableRow
+                    key={album.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleClick(album)}
+                    onKeyDown={(e) => handleRowKeyDown(e, album)}
                     sx={{
-                      px: 0.8,
-                      py: 0.1,
-                      borderRadius: 0.5,
-                      bgcolor: album.result?.startsWith('B') ? 'rgba(0,0,0,0.6)' : album.result?.startsWith('W') ? 'rgba(255,255,255,0.15)' : 'rgba(128,128,128,0.3)',
-                      color: album.result?.startsWith('B') ? '#fff' : 'text.primary',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      transition: 'background-color 150ms ease',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
+                      '&:focus-visible': { bgcolor: 'rgba(255,255,255,0.06)', outline: 'none' },
                     }}
                   >
-                    {album.result || '?'}
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600} noWrap>
-                    {album.player_white}
-                  </Typography>
-                  {album.white_rank && (
-                    <Typography variant="caption" color="text.secondary">
-                      {album.white_rank}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
+                    {/* Event */}
+                    <TableCell sx={bodyCellSx}>
+                      <Typography variant="body2" fontWeight={500} noWrap>
+                        {album.event || '—'}
+                        {album.round_name && (
+                          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                            · {album.round_name}
+                          </Typography>
+                        )}
+                      </Typography>
+                    </TableCell>
 
-              {/* Right: date */}
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 2, whiteSpace: 'nowrap' }}>
-                {album.date_played || ''}
-              </Typography>
-            </Box>
-          ))
+                    {/* Black */}
+                    <TableCell sx={bodyCellSx}>
+                      <Typography variant="body2" fontWeight={600} noWrap>
+                        {album.player_black}
+                        {album.black_rank && (
+                          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                            {album.black_rank}
+                          </Typography>
+                        )}
+                      </Typography>
+                    </TableCell>
+
+                    {/* White */}
+                    <TableCell sx={bodyCellSx}>
+                      <Typography variant="body2" fontWeight={600} noWrap>
+                        {album.player_white}
+                        {album.white_rank && (
+                          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                            {album.white_rank}
+                          </Typography>
+                        )}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Result */}
+                    <TableCell sx={bodyCellSx} align="center">
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          px: 0.8,
+                          py: 0.2,
+                          borderRadius: 0.5,
+                          bgcolor: album.result?.startsWith('B') ? 'rgba(0,0,0,0.6)' : album.result?.startsWith('W') ? 'rgba(255,255,255,0.15)' : 'rgba(128,128,128,0.3)',
+                          color: album.result?.startsWith('B') ? '#fff' : 'text.primary',
+                          fontWeight: 600,
+                          border: '1px solid rgba(255,255,255,0.1)',
+                        }}
+                      >
+                        {album.result || '?'}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Moves */}
+                    <TableCell sx={bodyCellSx} align="center">
+                      <Typography variant="caption" color="text.secondary">
+                        {album.move_count}{t('kifu:moves_unit', '手')}
+                        {album.board_size !== 19 && (
+                          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                            {album.board_size}×{album.board_size}
+                          </Typography>
+                        )}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Date */}
+                    <TableCell sx={bodyCellSx} align="right">
+                      <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.02em' }}>
+                        {album.date_played || ''}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </Box>
 

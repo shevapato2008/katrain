@@ -308,6 +308,73 @@ class KifuAlbum(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class UserGame(Base):
+    """Personal game library: play records, imported SGFs, research positions."""
+    __tablename__ = "user_games"
+
+    id = Column(String(32), primary_key=True, default=lambda: uuid_module.uuid4().hex)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=True)
+    sgf_content = Column(Text, nullable=True)
+    player_black = Column(String(100), nullable=True)
+    player_white = Column(String(100), nullable=True)
+    result = Column(String(50), nullable=True)
+    board_size = Column(Integer, default=19)
+    rules = Column(String(20), default="chinese")
+    komi = Column(Float, default=7.5)
+    move_count = Column(Integer, default=0)
+    source = Column(String(50), nullable=False)  # play_ai / play_human / import / research
+    category = Column(String(50), default="game")  # game / position
+    game_type = Column(String(50), nullable=True)  # free / rated / null
+    sgf_hash = Column(String(64), nullable=True, index=True)
+    event = Column(String(255), nullable=True)
+    game_date = Column(String(32), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", backref="user_games")
+    analysis_records = relationship("UserGameAnalysis", back_populates="game", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("ix_user_games_user_category", "user_id", "category"),
+        Index("ix_user_games_user_source", "user_id", "source"),
+        Index("ix_user_games_created", "created_at"),
+    )
+
+
+class UserGameAnalysis(Base):
+    """Move-by-move analysis data for user games (research module)."""
+    __tablename__ = "user_game_analysis"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(String(32), ForeignKey("user_games.id"), nullable=False, index=True)
+    move_number = Column(Integer, nullable=False)
+    status = Column(String(16), default="pending")  # pending / running / success / failed
+    priority = Column(Integer, default=10)
+    winrate = Column(Float, nullable=True)
+    score_lead = Column(Float, nullable=True)
+    visits = Column(Integer, nullable=True)
+    top_moves = Column(JSON, nullable=True)
+    ownership = Column(JSON, nullable=True)
+    move = Column(String(8), nullable=True)  # actual move played (e.g. "Q16")
+    actual_player = Column(String(1), nullable=True)  # B / W
+    delta_score = Column(Float, nullable=True)
+    delta_winrate = Column(Float, nullable=True)
+    is_brilliant = Column(Boolean, default=False)
+    is_mistake = Column(Boolean, default=False)
+    is_questionable = Column(Boolean, default=False)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    game = relationship("UserGame", back_populates="analysis_records")
+
+    __table_args__ = (
+        UniqueConstraint('game_id', 'move_number', name='uq_user_game_analysis_move'),
+        Index("ix_user_game_analysis_status", "status", "priority"),
+    )
+
+
 class UpcomingMatchDB(Base):
     """Upcoming/scheduled matches from various sources (populated by katrain-cron)."""
     __tablename__ = "live_upcoming"

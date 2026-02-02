@@ -143,7 +143,7 @@ export default function AiAnalysis({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '80px 1fr 70px 100px',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
           gap: 0.5,
           mb: 0.25,
           px: 1,
@@ -152,7 +152,7 @@ export default function AiAnalysis({
           borderRadius: 1,
         }}
       >
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>{t('live:suggested_move', 'Move')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
@@ -204,7 +204,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '80px 1fr 70px 100px',
+        gridTemplateColumns: '1fr 1fr 1fr 1fr',
         gap: 0.5,
         py: 0.5,
         px: 1,

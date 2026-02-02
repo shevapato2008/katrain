@@ -32,6 +32,7 @@ export interface ResearchBoardState {
 export interface UseResearchBoardReturn extends ResearchBoardState {
   // Computed
   nextColor: 'B' | 'W' | null; // null when no placeMode and no editMode that places
+  handicapCount: number; // Number of leading setup stones (from handicap)
 
   // Board actions
   handleIntersectionClick: (x: number, y: number) => void;
@@ -59,6 +60,7 @@ export interface UseResearchBoardReturn extends ResearchBoardState {
   loadFromSGF: (sgfContent: string) => { success: boolean; error?: string };
   openLocalSGF: () => void;
   saveLocalSGF: () => void;
+  copyToClipboard: () => void;
 
   // Snapshot for L1↔L2 transitions
   getSnapshot: () => ResearchBoardState;
@@ -80,6 +82,8 @@ export function useResearchBoard(): UseResearchBoardReturn {
   const [playerWhite, setPlayerWhite] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Preserve original SGF to avoid round-trip corruption (e.g., tt pass notation)
+  const rawSgfRef = useRef<string | null>(null);
 
   const getMetadata = useCallback((): SGFMetadata => ({
     boardSize, komi, handicap, rules, playerBlack, playerWhite,
@@ -109,6 +113,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
       setMoves(newMoves);
       setStoneColors(newColors);
       setCurrentMove(newMoves.length);
+      rawSgfRef.current = null;
       return;
     }
 
@@ -131,6 +136,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
         newMoves[moveIndex] = moveStr;
         setMoves(newMoves);
         selectedStoneRef.current = null;
+        rawSgfRef.current = null;
         return;
       }
     }
@@ -159,6 +165,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setMoves(newMoves);
     setStoneColors(newColors);
     setCurrentMove(newMoves.length);
+    rawSgfRef.current = null;
   }, [moves, stoneColors, currentMove, editMode, placeMode]);
 
   const handlePass = useCallback(() => {
@@ -171,12 +178,14 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setMoves(newMoves);
     setStoneColors(newColors);
     setCurrentMove(newMoves.length);
+    rawSgfRef.current = null;
   }, [moves, stoneColors, currentMove]);
 
   const handleClear = useCallback(() => {
     setMoves([]);
     setStoneColors([]);
     setCurrentMove(0);
+    rawSgfRef.current = null;
   }, []);
 
   const handleMoveChange = useCallback((move: number) => {
@@ -186,6 +195,9 @@ export function useResearchBoard(): UseResearchBoardReturn {
   // ── SGF operations ──
 
   const serializeToSGF = useCallback((): SerializedSGF => {
+    // Re-serialize from moves[]. When handicap > 0, movesToSGF emits the first
+    // N black stones as AB[] setup (per SGF standard), keeping the backend's
+    // game tree consistent with convention (move 1 = White in handicap games).
     return movesToSGF(moves, getMetadata(), stoneColors);
   }, [moves, stoneColors, getMetadata]);
 
@@ -196,6 +208,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
       setMoves(parsedMoves);
       setStoneColors(parsedColors);
       setCurrentMove(parsedMoves.length);
+      rawSgfRef.current = sgfContent;  // Preserve original for backend
 
       if (metadata.boardSize) setBoardSize(metadata.boardSize);
       if (metadata.komi !== undefined) setKomi(metadata.komi);
@@ -252,6 +265,13 @@ export function useResearchBoard(): UseResearchBoardReturn {
     URL.revokeObjectURL(url);
   }, [serializeToSGF, playerBlack, playerWhite]);
 
+  const copyToClipboard = useCallback(() => {
+    const { sgf } = serializeToSGF();
+    navigator.clipboard.writeText(sgf).catch((err) => {
+      console.error('Failed to copy SGF to clipboard:', err);
+    });
+  }, [serializeToSGF]);
+
   // ── Snapshot ──
 
   const getSnapshot = useCallback((): ResearchBoardState => ({
@@ -284,6 +304,21 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setPlayerWhite(snapshot.playerWhite);
   }, []);
 
+  // Compute handicap setup count: number of leading consecutive B stones
+  // that correspond to the handicap metadata (these are AB[] setup, not game moves)
+  const handicapCount = useMemo((): number => {
+    if (handicap <= 0) return 0;
+    let count = 0;
+    for (let i = 0; i < Math.min(handicap, moves.length); i++) {
+      if (stoneColors[i] === 'B' && moves[i].toLowerCase() !== 'pass') {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }, [handicap, moves, stoneColors]);
+
   // Compute the next stone color for hover preview
   const nextColor = useMemo((): 'B' | 'W' | null => {
     if (!placeMode) return null; // No placeMode = no ghost stone
@@ -301,6 +336,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
     rules, komi, handicap, playerBlack, playerWhite,
     // Computed
     nextColor,
+    handicapCount,
     // Board actions
     handleIntersectionClick, handlePass, handleClear, handleMoveChange,
     // Edit mode
@@ -310,7 +346,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
     // Players
     setPlayerBlack, setPlayerWhite,
     // SGF
-    serializeToSGF, loadFromSGF, openLocalSGF, saveLocalSGF,
+    serializeToSGF, loadFromSGF, openLocalSGF, saveLocalSGF, copyToClipboard,
     // Snapshot
     getSnapshot, restoreSnapshot,
   };

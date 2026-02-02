@@ -34,6 +34,7 @@ interface LiveBoardProps {
   aiMarkers?: AiMoveMarker[] | null; // AI recommended moves to mark on board
   showAiMarkers?: boolean; // Whether to display AI markers (default true)
   showMoveNumbers?: boolean; // Whether to display move numbers on stones
+  handicapCount?: number; // Number of leading setup stones to skip when numbering
   showTerritory?: boolean; // Whether to display territory/ownership overlay
   ownership?: number[][] | null; // 2D grid of ownership values (-1 to 1, positive=Black)
   tryMoves?: string[]; // Try moves for experimentation mode
@@ -303,6 +304,7 @@ export default function LiveBoard({
   aiMarkers,
   showAiMarkers = true,
   showMoveNumbers = false,
+  handicapCount = 0,
   showTerritory = false,
   ownership,
   tryMoves,
@@ -380,7 +382,9 @@ export default function LiveBoard({
         if (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
           const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
           board[y][x] = player;
-          moveNumbers[y][x] = i + 1; // 1-indexed move number
+          // Handicap setup stones (indices 0..handicapCount-1) get no number.
+          // Game moves are numbered starting from 1.
+          moveNumbers[y][x] = i < handicapCount ? null : (i + 1 - handicapCount);
 
           // Remove captured opponent stones (also clear their move numbers)
           const capturedPositions = removeCaptures(board, x, y, boardSize);

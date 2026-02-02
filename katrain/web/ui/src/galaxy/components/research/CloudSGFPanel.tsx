@@ -1,109 +1,301 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, Button, List, ListItem, ListItemButton, ListItemText, Divider, IconButton } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+/**
+ * GameLibraryModal: A modal dialog for browsing and loading games from:
+ * - Personal game library (user_games API, requires auth)
+ * - Public tournament kifu albums (kifu API, no auth needed)
+ */
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, Box, Typography,
+  List, ListItem, ListItemButton, ListItemText,
+  TextField, IconButton, Pagination, Divider,
+  CircularProgress, Chip,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
 import FolderIcon from '@mui/icons-material/Folder';
+import PublicIcon from '@mui/icons-material/Public';
 import { useAuth } from '../../context/AuthContext';
+import { UserGamesAPI, type UserGameSummary } from '../../api/userGamesApi';
+import { KifuAPI } from '../../api/kifuApi';
 
-interface Game {
-    id: number;
-    result: string;
-    game_type: string;
-    started_at: string;
-    sgf_content: string;
+type Category = 'my_games' | 'my_positions' | 'public_kifu';
+
+interface GameLibraryModalProps {
+  open: boolean;
+  onClose: () => void;
+  onLoadGame: (sgf: string) => void;
 }
 
-interface CloudSGFPanelProps {
-    onLoadGame?: (sgf: string) => void;
-    onSave?: () => Promise<void>; // Optional external save trigger if needed
-}
+const CATEGORIES: { key: Category; label: string; icon: React.ReactNode }[] = [
+  { key: 'my_games', label: '我的棋谱', icon: <FolderIcon sx={{ fontSize: 18 }} /> },
+  { key: 'my_positions', label: '我的盘面', icon: <FolderIcon sx={{ fontSize: 18 }} /> },
+  { key: 'public_kifu', label: '大赛棋谱', icon: <PublicIcon sx={{ fontSize: 18 }} /> },
+];
 
-const CloudSGFPanel = ({ onLoadGame }: CloudSGFPanelProps) => {
-    const { token } = useAuth();
-    const [games, setGames] = useState<Game[]>([]);
-    const [loading, setLoading] = useState(false);
+const PAGE_SIZE = 15;
 
-    const fetchGames = async () => {
-        if (!token) return;
-        try {
-            const response = await fetch('/api/v1/games/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setGames(data);
-            }
-        } catch (error) {
-            console.error("Failed to fetch games", error);
+export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibraryModalProps) {
+  const { token } = useAuth();
+  const [category, setCategory] = useState<Category>('my_games');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  // Data
+  const [items, setItems] = useState<GameListItem[]>([]);
+  const [total, setTotal] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Fetch data when category, page, or search changes
+  useEffect(() => {
+    if (!open) return;
+    fetchData();
+  }, [open, category, page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (category === 'public_kifu') {
+        const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE });
+        setItems(resp.items.map((item: any) => ({
+          id: String(item.id),
+          title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
+          playerBlack: item.player_black || '',
+          playerWhite: item.player_white || '',
+          result: item.result || '',
+          moveCount: item.move_count || 0,
+          date: item.game_date || item.event_date || '',
+          source: 'public_kifu' as const,
+          sgfContent: item.sgf_content,
+        })));
+        setTotal(resp.total);
+      } else if (token) {
+        const catFilter = category === 'my_positions' ? 'position' : 'game';
+        const resp = await UserGamesAPI.list(token, {
+          page,
+          page_size: PAGE_SIZE,
+          category: catFilter,
+          q: searchQuery || undefined,
+        });
+        setItems(resp.items.map((item: UserGameSummary) => ({
+          id: item.id,
+          title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
+          playerBlack: item.player_black || '',
+          playerWhite: item.player_white || '',
+          result: item.result || '',
+          moveCount: item.move_count,
+          date: item.game_date || item.created_at || '',
+          source: category,
+        })));
+        setTotal(resp.total);
+      } else {
+        setItems([]);
+        setTotal(0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch games:', err);
+      setItems([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [category, page, searchQuery, token]);
+
+  const handleSearch = () => {
+    setPage(1);
+    fetchData();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
+  const handleSelectGame = async (item: GameListItem) => {
+    try {
+      let sgf: string | undefined;
+      if (item.source === 'public_kifu') {
+        // Public kifu: fetch full detail to get SGF
+        if (item.sgfContent) {
+          sgf = item.sgfContent;
+        } else {
+          const detail = await KifuAPI.getAlbum(Number(item.id));
+          sgf = detail.sgf_content;
         }
-    };
+      } else if (token) {
+        // Personal game: fetch detail to get SGF
+        const detail = await UserGamesAPI.get(token, item.id);
+        sgf = detail.sgf_content;
+      }
+      if (sgf) {
+        onLoadGame(sgf);
+        onClose();
+      }
+    } catch (err) {
+      console.error('Failed to load game:', err);
+    }
+  };
 
-    const handleSave = async () => {
-        if (!token) return;
-        setLoading(true);
-        // Mock save current game (in real app, get sgf from gameState)
-        const mockSGF = "(;GM[1]FF[4]CA[UTF-8]AP[KaTrain:1.17.1];B[dp];W[pd])";
-        try {
-            const response = await fetch('/api/v1/games/', {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    sgf_content: mockSGF,
-                    result: '?',
-                    game_type: 'free'
-                })
-            });
-            if (response.ok) {
-                fetchGames();
-            }
-        } catch (error) {
-            console.error("Failed to save game", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleCategoryChange = (cat: Category) => {
+    setCategory(cat);
+    setPage(1);
+    setSearchQuery('');
+  };
 
-    useEffect(() => {
-        fetchGames();
-    }, [token]);
-
-    return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6">Cloud Library</Typography>
-                <Button 
-                    startIcon={<CloudUploadIcon />} 
-                    variant="contained" 
-                    size="small" 
-                    onClick={handleSave}
-                    disabled={loading || !token}
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          height: '70vh',
+          maxHeight: 600,
+          bgcolor: 'background.paper',
+        },
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
+        <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>棋谱库</Typography>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+      <Divider />
+      <DialogContent sx={{ p: 0, display: 'flex', overflow: 'hidden' }}>
+        {/* Left sidebar: categories */}
+        <Box sx={{
+          width: 160,
+          flexShrink: 0,
+          borderRight: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <List dense sx={{ py: 0 }}>
+            {CATEGORIES.map((cat) => (
+              <ListItem key={cat.key} disablePadding>
+                <ListItemButton
+                  selected={category === cat.key}
+                  onClick={() => handleCategoryChange(cat.key)}
+                  disabled={cat.key !== 'public_kifu' && !token}
+                  sx={{
+                    py: 1.5,
+                    '&.Mui-selected': {
+                      bgcolor: 'rgba(74, 107, 92, 0.15)',
+                      borderRight: '2px solid',
+                      borderColor: 'primary.main',
+                    },
+                  }}
                 >
-                    Save to Cloud
-                </Button>
+                  <Box sx={{ mr: 1, display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
+                    {cat.icon}
+                  </Box>
+                  <ListItemText
+                    primary={cat.label}
+                    primaryTypographyProps={{ fontSize: '0.85rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+          {!token && (
+            <Box sx={{ p: 1.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                登录后可查看个人棋谱
+              </Typography>
             </Box>
-            <Divider />
-            <List sx={{ flexGrow: 1, overflow: 'auto' }}>
-                {games.map((game) => (
-                    <ListItem key={game.id} disablePadding>
-                        <ListItemButton onClick={() => onLoadGame && onLoadGame(game.sgf_content)}>
-                            <IconButton size="small" sx={{ mr: 1 }}><FolderIcon /></IconButton>
-                            <ListItemText 
-                                primary={`Game #${game.id} - ${game.result || 'Unknown'}`} 
-                                secondary={new Date(game.started_at).toLocaleString()} 
-                            />
-                        </ListItemButton>
-                    </ListItem>
-                ))}
-                {games.length === 0 && (
-                    <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-                        No games found.
-                    </Box>
-                )}
-            </List>
+          )}
         </Box>
-    );
-};
 
-export default CloudSGFPanel;
+        {/* Right: search + list */}
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Search bar */}
+          <Box sx={{ p: 1.5, display: 'flex', gap: 1 }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="搜索棋手、赛事..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              sx={{ '& .MuiInputBase-root': { fontSize: '0.875rem' } }}
+            />
+            <IconButton size="small" onClick={handleSearch}>
+              <SearchIcon />
+            </IconButton>
+          </Box>
+
+          <Divider />
+
+          {/* List */}
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={32} />
+              </Box>
+            ) : items.length === 0 ? (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  {!token && category !== 'public_kifu' ? '请先登录' : '暂无棋谱'}
+                </Typography>
+              </Box>
+            ) : (
+              <List dense sx={{ py: 0 }}>
+                {items.map((item) => (
+                  <ListItem key={item.id} disablePadding>
+                    <ListItemButton onClick={() => handleSelectGame(item)} sx={{ py: 1 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                              {item.title}
+                            </Typography>
+                            {item.result && (
+                              <Chip label={item.result} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                            )}
+                          </Box>
+                        }
+                        secondary={
+                          <Typography variant="caption" color="text.secondary">
+                            {item.moveCount > 0 ? `${item.moveCount}手` : ''}
+                            {item.date ? ` | ${item.date.slice(0, 10)}` : ''}
+                          </Typography>
+                        }
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(_, p) => setPage(p)}
+                size="small"
+              />
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface GameListItem {
+  id: string;
+  title: string;
+  playerBlack: string;
+  playerWhite: string;
+  result: string;
+  moveCount: number;
+  date: string;
+  source: Category | 'public_kifu';
+  sgfContent?: string;
+}

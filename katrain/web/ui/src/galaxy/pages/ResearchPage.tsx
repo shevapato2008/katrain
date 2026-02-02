@@ -11,13 +11,20 @@ import { useResearchBoard } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../hooks/useResearchSession';
 import { API } from '../../api';
 import { KifuAPI } from '../api/kifuApi';
+import { UserGamesAPI } from '../api/userGamesApi';
+import GameLibraryModal from '../components/research/CloudSGFPanel';
+import { useAuth } from '../context/AuthContext';
 import type { ResearchBoardState } from '../hooks/useResearchBoard';
 
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
+    const { token } = useAuth();
 
     // L1 ↔ L2 state
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // Game library modal
+    const [libraryOpen, setLibraryOpen] = useState(false);
 
     // Analysis progress tracking
     const [analysisProgress, setAnalysisProgress] = useState<{ analyzed: number; total: number } | null>(null);
@@ -26,8 +33,15 @@ const ResearchPage = () => {
     // Frozen snapshot for L2 → L1 restore
     const frozenSnapshot = useRef<ResearchBoardState | null>(null);
 
+    // Cloud game ID for analysis persistence (set after saving to cloud)
+    const savedGameIdRef = useRef<string | null>(null);
+
     // Session ID ref for polling (avoids stale closure issues)
     const activeSessionIdRef = useRef<string | null>(null);
+
+    // ETA tracking: record first meaningful progress to compute rate
+    const analysisStartRef = useRef<{ time: number; analyzed: number } | null>(null);
+    const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
 
     // Board state hook (L1)
     const board = useResearchBoard();
@@ -99,6 +113,23 @@ const ResearchPage = () => {
                 // Only update if this session is still active
                 if (activeSessionIdRef.current === sid) {
                     setAnalysisProgress({ analyzed: progress.analyzed, total: progress.total });
+
+                    // ETA calculation
+                    const now = Date.now();
+                    if (progress.analyzed > 0 && progress.total > 0) {
+                        if (!analysisStartRef.current || analysisStartRef.current.analyzed === 0) {
+                            // Record first meaningful progress point
+                            analysisStartRef.current = { time: now, analyzed: progress.analyzed };
+                        } else {
+                            const elapsed = (now - analysisStartRef.current.time) / 1000; // seconds
+                            const done = progress.analyzed - analysisStartRef.current.analyzed;
+                            if (done > 0 && elapsed > 2) {
+                                const rate = done / elapsed; // moves per second
+                                const remaining = progress.total - progress.analyzed;
+                                setEtaSeconds(Math.round(remaining / rate));
+                            }
+                        }
+                    }
                 }
             } catch {
                 // Ignore errors during polling
@@ -119,6 +150,39 @@ const ResearchPage = () => {
         }
     }, [analysisComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Auto-save analysis to cloud when complete (if logged in)
+    useEffect(() => {
+        if (!analysisComplete || !token || !activeSessionIdRef.current) return;
+        const sessionId = activeSessionIdRef.current;
+        (async () => {
+            try {
+                // Save the game first if not already saved
+                if (!savedGameIdRef.current) {
+                    const { sgf } = board.serializeToSGF();
+                    const created = await UserGamesAPI.create(token, {
+                        sgf_content: sgf,
+                        source: 'research',
+                        title: board.playerBlack && board.playerWhite
+                            ? `${board.playerBlack} vs ${board.playerWhite}`
+                            : undefined,
+                        player_black: board.playerBlack || undefined,
+                        player_white: board.playerWhite || undefined,
+                        board_size: board.boardSize,
+                        rules: board.rules,
+                        komi: board.komi,
+                        move_count: board.moves.length,
+                        category: 'game',
+                    });
+                    savedGameIdRef.current = created.id;
+                }
+                // Save analysis data from the session
+                await UserGamesAPI.saveAnalysisFromSession(token, savedGameIdRef.current, sessionId);
+            } catch (err) {
+                console.error('Failed to auto-save analysis:', err);
+            }
+        })();
+    }, [analysisComplete]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Derive winrate/scoreLead from gameState analysis root
     const analysisData = useMemo(() => {
         const gs = session.gameState;
@@ -128,6 +192,40 @@ const ResearchPage = () => {
             scoreLead: gs.analysis.score ?? 0,
         };
     }, [session.gameState]);
+
+    // Cloud save: save current board state to user_games
+    const handleSaveToCloud = useCallback(async () => {
+        if (!token) return;
+        const { sgf } = board.serializeToSGF();
+        try {
+            await UserGamesAPI.create(token, {
+                sgf_content: sgf,
+                source: 'research',
+                title: board.playerBlack && board.playerWhite
+                    ? `${board.playerBlack} vs ${board.playerWhite}`
+                    : undefined,
+                player_black: board.playerBlack || undefined,
+                player_white: board.playerWhite || undefined,
+                board_size: board.boardSize,
+                rules: board.rules,
+                komi: board.komi,
+                move_count: board.moves.length,
+                category: 'game',
+            });
+        } catch (err) {
+            console.error('Failed to save to cloud:', err);
+        }
+    }, [token, board]);
+
+    // Cloud load: open game library modal
+    const handleOpenFromCloud = useCallback(() => {
+        setLibraryOpen(true);
+    }, []);
+
+    // Load game from library modal
+    const handleLoadFromLibrary = useCallback((sgf: string) => {
+        board.loadFromSGF(sgf);
+    }, [board]);
 
     // Start analysis (L1 → L2)
     const handleStartAnalysis = useCallback(async () => {
@@ -148,6 +246,8 @@ const ResearchPage = () => {
             // 4. Switch to L2
             activeSessionIdRef.current = newSessionId;
             setAnalysisProgress(null);
+            setEtaSeconds(null);
+            analysisStartRef.current = null;
             setIsAnalyzing(true);
             // 5. Trigger full analysis scan (500 visits per node, engine queues internally)
             API.analysisScan(newSessionId, 500);
@@ -158,6 +258,7 @@ const ResearchPage = () => {
     const handleReturnToEdit = useCallback(async () => {
         // 1. Cleanup session
         activeSessionIdRef.current = null;
+        savedGameIdRef.current = null;
         await session.destroySession();
 
         // 2. Restore frozen snapshot
@@ -169,6 +270,8 @@ const ResearchPage = () => {
         // 3. Switch to L1
         setIsAnalyzing(false);
         setAnalysisProgress(null);
+        setEtaSeconds(null);
+        analysisStartRef.current = null;
         setAnalysisToggles(prev => ({ ...prev, hints: false, ownership: false, policy: false }));
     }, [session, board]);
 
@@ -242,6 +345,10 @@ const ResearchPage = () => {
                         onMoveChange={handleL2MoveChange}
                         winrate={analysisData.winrate}
                         scoreLead={analysisData.scoreLead}
+                        rules={board.rules}
+                        komi={board.komi}
+                        handicap={board.handicap}
+                        boardSize={board.boardSize}
                         showMoveNumbers={analysisToggles.numbers}
                         onToggleMoveNumbers={() => toggleAnalysis('numbers')}
                         onPass={session.onPass}
@@ -262,11 +369,15 @@ const ResearchPage = () => {
                         onClear={() => {}}
                         onOpen={board.openLocalSGF}
                         onSave={board.saveLocalSGF}
+                        onCopyToClipboard={board.copyToClipboard}
+                        onSaveToCloud={handleSaveToCloud}
+                        onOpenFromCloud={handleOpenFromCloud}
                         analysisMoves={gs.analysis?.moves}
                         history={gs.history}
                         playerToMove={gs.player_to_move}
                     />
                 </Box>
+                <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
             </>
         );
     }
@@ -308,9 +419,16 @@ const ResearchPage = () => {
                         />
                     </Box>
                     {analysisProgress && (
-                        <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, mb: 3, fontFamily: '"IBM Plex Mono", monospace' }}>
-                            {progressPercent}%
-                        </Typography>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                {progressPercent}%
+                            </Typography>
+                            {etaSeconds !== null && etaSeconds > 0 && (
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                    预计剩余 {etaSeconds >= 60 ? `${Math.floor(etaSeconds / 60)}分${(etaSeconds % 60).toString().padStart(2, '0')}秒` : `${etaSeconds}秒`}
+                                </Typography>
+                            )}
+                        </Box>
                     )}
 
                     <Button
@@ -342,6 +460,7 @@ const ResearchPage = () => {
                             boardSize={board.boardSize}
                             showCoordinates={true}
                             showMoveNumbers={board.showMoveNumbers}
+                            handicapCount={board.handicapCount}
                             onIntersectionClick={board.handleIntersectionClick}
                             nextColor={board.nextColor ?? undefined}
                         />
@@ -384,7 +503,7 @@ const ResearchPage = () => {
                                 textAlign: 'center',
                             }}
                         >
-                            {board.currentMove} / {board.moves.length} 手
+                            {Math.max(0, board.currentMove - board.handicapCount)} / {board.moves.length - board.handicapCount} 手
                         </Typography>
                         <Button
                             size="small"
@@ -429,9 +548,13 @@ const ResearchPage = () => {
                     onClear={board.handleClear}
                     onOpen={board.openLocalSGF}
                     onSave={board.saveLocalSGF}
+                    onCopyToClipboard={board.copyToClipboard}
+                    onSaveToCloud={handleSaveToCloud}
+                    onOpenFromCloud={handleOpenFromCloud}
                     onStartAnalysis={handleStartAnalysis}
                 />
             </Box>
+            <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
         </>
     );
 };

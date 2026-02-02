@@ -848,6 +848,54 @@ class WebKaTrain(KaTrainBase):
     def _do_game_analysis(self, **kwargs):
         self.game.analyze_extra("game", **kwargs)
 
+    def _do_extract_analysis(self):
+        """Extract per-node analysis data from the main line for persistence."""
+        if not self.game:
+            return []
+        results = []
+        node = self.game.root
+        move_number = 0
+        prev_winrate = None
+        prev_score = None
+        while node:
+            entry = {"move_number": move_number}
+            if node.analysis_exists:
+                entry["status"] = "complete"
+                entry["winrate"] = node.winrate
+                entry["score_lead"] = node.score
+                entry["visits"] = node.analysis["root"].get("visits", 0)
+                # Top candidate moves (up to 5)
+                candidates = node.candidate_moves[:5] if node.candidate_moves else []
+                entry["top_moves"] = [
+                    {"move": m.get("move"), "winrate": m.get("winrate"), "scoreLead": m.get("scoreLead"), "visits": m.get("visits")}
+                    for m in candidates
+                ]
+                # Ownership data
+                entry["ownership"] = node.analysis["root"].get("ownership")
+                # Move info
+                if node.move:
+                    entry["move"] = node.move.gtp()
+                    entry["actual_player"] = node.move.player
+                # Delta from previous node
+                if prev_winrate is not None and node.winrate is not None:
+                    entry["delta_winrate"] = node.winrate - prev_winrate
+                if prev_score is not None and node.score is not None:
+                    entry["delta_score"] = node.score - prev_score
+                # Points lost (from player's perspective)
+                pl = node.points_lost
+                if pl is not None:
+                    entry["is_mistake"] = pl > 1.0
+                    entry["is_questionable"] = 0.5 < pl <= 1.0
+                    entry["is_brilliant"] = pl < -0.5
+                prev_winrate = node.winrate
+                prev_score = node.score
+            else:
+                entry["status"] = "pending"
+            results.append(entry)
+            node = node.children[0] if node.children else None
+            move_number += 1
+        return results
+
     def _do_game_report(self, depth_filter=None):
         from katrain.core.ai import game_report
         thresholds = self.config("trainer/eval_thresholds")

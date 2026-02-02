@@ -19,9 +19,14 @@ def app():
     app = create_app(enable_engine=False)
     
     # Manually trigger the repo initialization for tests
-    from katrain.web.core.auth import SQLiteUserRepository
-    repo = SQLiteUserRepository("test_analysis.db")
-    repo.init_db()
+    from katrain.web.core.auth import SQLAlchemyUserRepository
+    from katrain.web.core import models_db
+    from sqlalchemy import create_engine as _create_engine
+    from sqlalchemy.orm import sessionmaker
+    test_engine = _create_engine("sqlite:///test_analysis.db", connect_args={"check_same_thread": False})
+    models_db.Base.metadata.create_all(bind=test_engine)
+    TestSessionLocal = sessionmaker(bind=test_engine)
+    repo = SQLAlchemyUserRepository(TestSessionLocal)
     app.state.user_repo = repo
 
     # Initialize Router

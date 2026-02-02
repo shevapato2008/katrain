@@ -469,21 +469,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Record game result for multiplayer
         if is_multiplayer and current_user:
             try:
-                # Determine winner (the one who didn't resign)
                 winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"  # R for Resign
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
 
-                game_repo = app.state.game_repo
-                game_repo.create_game(
-                    user_id=current_user.id,
+                app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type="free",  # TODO: track rated games
+                    game_type=getattr(session, 'game_type', 'free'),
                     black_id=session.player_b_id,
-                    white_id=session.player_w_id
+                    white_id=session.player_w_id,
                 )
 
-                # Broadcast game end to all connected sockets
                 manager._schedule_broadcast(session, {
                     "type": "game_end",
                     "data": {"reason": "resign", "winner_id": winner_id, "result": result}
@@ -509,21 +505,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Record game result for multiplayer
         if is_multiplayer and current_user:
             try:
-                # Determine winner (the one who didn't timeout)
                 winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"  # T for Timeout
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
 
-                game_repo = app.state.game_repo
-                game_repo.create_game(
-                    user_id=current_user.id,
+                app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type="free",
+                    game_type=getattr(session, 'game_type', 'free'),
                     black_id=session.player_b_id,
-                    white_id=session.player_w_id
+                    white_id=session.player_w_id,
                 )
 
-                # Broadcast game end to all connected sockets
                 manager._schedule_broadcast(session, {
                     "type": "game_end",
                     "data": {"reason": "timeout", "winner_id": winner_id, "result": result}
@@ -553,14 +545,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         result = f"{'W' if winner_id == session.player_w_id else 'B'}+F"  # F for Forfeit
 
         try:
-            game_repo = app.state.game_repo
-            game_repo.create_game(
-                user_id=current_user.id,
+            app.state.game_repo.record_multiplayer_game(
                 sgf_content=session.katrain.get_sgf(),
                 result=result,
-                game_type="free",
+                game_type=getattr(session, 'game_type', 'free'),
                 black_id=session.player_b_id,
-                white_id=session.player_w_id
+                white_id=session.player_w_id,
             )
         except Exception as e:
             logging.getLogger("katrain_web").error(f"Failed to record game forfeit: {e}")

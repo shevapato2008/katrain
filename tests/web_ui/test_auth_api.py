@@ -15,13 +15,20 @@ def app():
     app = create_app(enable_engine=False)
     
     # Manually trigger the repo initialization for tests
-    # as AsyncClient/ASGITransport doesn't trigger lifespan automatically
-    from katrain.web.core.auth import SQLiteUserRepository
-    repo = SQLiteUserRepository("test_auth_api.db")
-    repo.init_db()
+    from katrain.web.core.auth import SQLAlchemyUserRepository
+    from katrain.web.core import models_db
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    test_engine = create_engine("sqlite:///test_auth_api.db", connect_args={"check_same_thread": False})
+    models_db.Base.metadata.create_all(bind=test_engine)
+    TestSessionLocal = sessionmaker(bind=test_engine)
+    repo = SQLAlchemyUserRepository(TestSessionLocal)
     app.state.user_repo = repo
-    
-    return app
+
+    yield app
+
+    if os.path.exists("test_auth_api.db"):
+        os.remove("test_auth_api.db")
 
 @pytest.mark.asyncio
 async def test_login_success(app):

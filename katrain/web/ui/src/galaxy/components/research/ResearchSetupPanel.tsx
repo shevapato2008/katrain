@@ -26,6 +26,9 @@ interface ResearchSetupPanelProps {
   onClear: () => void;
   onOpen?: () => void;
   onSave?: () => void;
+  onCopyToClipboard?: () => void;
+  onSaveToCloud?: () => void;
+  onOpenFromCloud?: () => void;
   onStartAnalysis: () => void;
 }
 
@@ -52,6 +55,9 @@ export default function ResearchSetupPanel({
   onClear,
   onOpen,
   onSave,
+  onCopyToClipboard,
+  onSaveToCloud,
+  onOpenFromCloud,
   onStartAnalysis,
 }: ResearchSetupPanelProps) {
   const inputSx = {
@@ -190,6 +196,9 @@ export default function ResearchSetupPanel({
             onClear={onClear}
             onOpen={onOpen}
             onSave={onSave}
+            onCopyToClipboard={onCopyToClipboard}
+            onSaveToCloud={onSaveToCloud}
+            onOpenFromCloud={onOpenFromCloud}
           />
         </Box>
       </Box>

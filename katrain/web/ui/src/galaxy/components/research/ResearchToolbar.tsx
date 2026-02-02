@@ -12,6 +12,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const blink = keyframes`
   0%, 100% { opacity: 1; }
@@ -37,6 +38,9 @@ interface ResearchToolbarProps {
   onClear: () => void;
   onOpen?: () => void;
   onSave?: () => void;
+  onCopyToClipboard?: () => void;
+  onSaveToCloud?: () => void;
+  onOpenFromCloud?: () => void;
   isAnalysisPending?: boolean;
 }
 
@@ -125,6 +129,9 @@ export default function ResearchToolbar({
   onClear,
   onOpen,
   onSave,
+  onCopyToClipboard,
+  onSaveToCloud,
+  onOpenFromCloud,
   isAnalysisPending = false,
 }: ResearchToolbarProps) {
   const [openAnchor, setOpenAnchor] = useState<null | HTMLElement>(null);
@@ -254,7 +261,7 @@ export default function ResearchToolbar({
           <ListItemIcon><UploadFileIcon sx={{ fontSize: 18 }} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>打开本地 SGF</ListItemText>
         </MenuItem>
-        <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => setOpenAnchor(null)}>
+        <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onOpenFromCloud?.(); setOpenAnchor(null); }}>
           <ListItemIcon><CloudDownloadIcon sx={{ fontSize: 18 }} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>从棋谱库导入</ListItemText>
         </MenuItem>
@@ -272,7 +279,11 @@ export default function ResearchToolbar({
           <ListItemIcon><SaveIcon sx={{ fontSize: 18 }} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>保存 SGF</ListItemText>
         </MenuItem>
-        <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => setSaveAnchor(null)}>
+        <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onSaveToCloud?.(); setSaveAnchor(null); }}>
+          <ListItemIcon><CloudUploadIcon sx={{ fontSize: 18 }} /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>保存到棋谱库</ListItemText>
+        </MenuItem>
+        <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onCopyToClipboard?.(); setSaveAnchor(null); }}>
           <ListItemIcon><ContentCopyIcon sx={{ fontSize: 18 }} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>复制 SGF 到剪贴板</ListItemText>
         </MenuItem>

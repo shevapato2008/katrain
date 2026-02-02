@@ -1,4 +1,5 @@
 """API endpoints for personal game library (user_games) and analysis data."""
+import json
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -179,3 +180,61 @@ async def get_move_analysis(
     if not record:
         raise HTTPException(status_code=404, detail="Analysis not found for this move")
     return record
+
+
+# ── Save Analysis from Session ──
+
+class SaveAnalysisRequest(BaseModel):
+    session_id: str
+    game_id: str
+
+
+@router.post("/{game_id}/analysis/save")
+async def save_analysis_from_session(
+    request: Request,
+    game_id: str,
+    body: SaveAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Extract analysis from an active research session and persist to user_game_analysis."""
+    # Verify game ownership
+    game_repo = request.app.state.user_game_repo
+    game = game_repo.get(game_id, current_user.id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Get session and extract analysis
+    manager = request.app.state.session_manager
+    session = manager.get_session(body.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    with session.lock:
+        analysis_data = session.katrain._do_extract_analysis()
+
+    # Persist each node's analysis
+    analysis_repo = request.app.state.user_game_analysis_repo
+    saved_count = 0
+    for entry in analysis_data:
+        if entry.get("status") != "complete":
+            continue
+        analysis_repo.upsert(
+            game_id=game_id,
+            move_number=entry["move_number"],
+            status=entry.get("status"),
+            winrate=entry.get("winrate"),
+            score_lead=entry.get("score_lead"),
+            visits=entry.get("visits"),
+            top_moves=json.dumps(entry.get("top_moves")) if entry.get("top_moves") else None,
+            ownership=json.dumps(entry.get("ownership")) if entry.get("ownership") else None,
+            move=entry.get("move"),
+            actual_player=entry.get("actual_player"),
+            delta_score=entry.get("delta_score"),
+            delta_winrate=entry.get("delta_winrate"),
+            is_brilliant=entry.get("is_brilliant", False),
+            is_mistake=entry.get("is_mistake", False),
+            is_questionable=entry.get("is_questionable", False),
+        )
+        saved_count += 1
+
+    return {"game_id": game_id, "saved_moves": saved_count, "total_moves": len(analysis_data)}

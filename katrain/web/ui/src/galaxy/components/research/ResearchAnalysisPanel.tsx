@@ -31,6 +31,16 @@ interface HistoryEntry {
   score: number | null;
 }
 
+// Map rules identifier to Chinese display name
+function rulesDisplayName(rules: string): string {
+  switch (rules.toLowerCase()) {
+    case 'chinese': return '中国规则';
+    case 'japanese': return '日本规则';
+    case 'korean': return '韩国规则';
+    default: return rules;
+  }
+}
+
 interface ResearchAnalysisPanelProps {
   playerBlack: string;
   playerWhite: string;
@@ -39,6 +49,11 @@ interface ResearchAnalysisPanelProps {
   onMoveChange: (move: number) => void;
   winrate: number;
   scoreLead: number;
+  // Game metadata
+  rules?: string;
+  komi?: number;
+  handicap?: number;
+  boardSize?: number;
   showMoveNumbers: boolean;
   onToggleMoveNumbers: () => void;
   onPass: () => void;
@@ -53,6 +68,9 @@ interface ResearchAnalysisPanelProps {
   onClear: () => void;
   onOpen?: () => void;
   onSave?: () => void;
+  onCopyToClipboard?: () => void;
+  onSaveToCloud?: () => void;
+  onOpenFromCloud?: () => void;
   isAnalysisPending?: boolean;
   // Real data props
   analysisMoves?: AnalysisMove[];
@@ -60,9 +78,10 @@ interface ResearchAnalysisPanelProps {
   playerToMove?: string;
 }
 
-// Threshold for classifying moves (in winrate points lost, 0-1 scale)
-const GOOD_MOVE_THRESHOLD = 0.02;   // gains >= 2% winrate
-const BAD_MOVE_THRESHOLD = -0.04;   // loses >= 4% winrate
+// Threshold for classifying moves (in score points, matching live module)
+const BRILLIANT_THRESHOLD = 2.0;      // gains >= 2.0 points → 妙手
+const MISTAKE_THRESHOLD = -3.0;       // loses >= 3.0 points → 问题手
+const QUESTIONABLE_THRESHOLD = -1.5;  // loses >= 1.5 points → 疑问手
 
 export default function ResearchAnalysisPanel({
   playerBlack,
@@ -86,6 +105,13 @@ export default function ResearchAnalysisPanel({
   onClear,
   onOpen,
   onSave,
+  onCopyToClipboard,
+  onSaveToCloud,
+  onOpenFromCloud,
+  rules,
+  komi,
+  handicap,
+  boardSize,
   isAnalysisPending = false,
   analysisMoves,
   history,
@@ -136,28 +162,36 @@ export default function ResearchAnalysisPanel({
     '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
   };
 
-  // Classify moves as 妙手 or 问题手 from history winrate changes
+  // Classify moves as 妙手 or 问题手 from history score changes
+  // Uses score delta (in points) matching the live module's thresholds
   const { goodMoves, badMoves } = useMemo(() => {
     const good: { moveIndex: number; delta: number; player: string }[] = [];
     const bad: { moveIndex: number; delta: number; player: string }[] = [];
     if (!history || history.length < 2) return { goodMoves: good, badMoves: bad };
 
+    // In handicap games (handicap > 0), move 1 = White (odd=W, even=B)
+    // In normal games, move 1 = Black (odd=B, even=W)
+    const isHandicap = (handicap ?? 0) > 0;
+
     for (let i = 1; i < history.length; i++) {
       const prev = history[i - 1];
       const curr = history[i];
-      if (prev.winrate === null || curr.winrate === null) continue;
+      if (prev.score === null || curr.score === null) continue;
 
-      // Player who made move i: odd = Black, even = White (move 1 = Black, move 2 = White)
-      const player = i % 2 === 1 ? 'B' : 'W';
-      // Delta from the moving player's perspective
-      // Black winrate going up = good for Black (who just moved on odd moves)
-      // Black winrate going down = good for White (who just moved on even moves)
-      const rawDelta = curr.winrate - prev.winrate;
-      const playerDelta = player === 'B' ? rawDelta : -rawDelta;
+      // Determine player who made move i based on handicap parity
+      const player: string = isHandicap
+        ? (i % 2 === 1 ? 'W' : 'B')
+        : (i % 2 === 1 ? 'B' : 'W');
 
-      if (playerDelta >= GOOD_MOVE_THRESHOLD) {
+      // Score delta from the moving player's perspective
+      // score is Black's lead in points (positive = Black ahead)
+      const rawScoreDelta = curr.score - prev.score;
+      const playerDelta = player === 'B' ? rawScoreDelta : -rawScoreDelta;
+
+      if (playerDelta >= BRILLIANT_THRESHOLD) {
         good.push({ moveIndex: i, delta: playerDelta, player });
-      } else if (playerDelta <= BAD_MOVE_THRESHOLD) {
+      } else if (playerDelta <= QUESTIONABLE_THRESHOLD) {
+        // Both mistakes (<=−3.0) and questionable moves (−3.0 < delta <= −1.5)
         bad.push({ moveIndex: i, delta: playerDelta, player });
       }
     }
@@ -165,7 +199,7 @@ export default function ResearchAnalysisPanel({
     good.sort((a, b) => b.delta - a.delta);
     bad.sort((a, b) => a.delta - b.delta);
     return { goodMoves: good, badMoves: bad };
-  }, [history]);
+  }, [history, handicap]);
 
   // Determine next player for AI recommendations display
   const nextPlayer: 'B' | 'W' = playerToMove === 'W' ? 'W' : 'B';
@@ -341,6 +375,68 @@ export default function ResearchAnalysisPanel({
             </Box>
           </Box>
 
+          {/* Game metadata summary */}
+          {(handicap != null && handicap > 0 || rules || komi != null || boardSize != null) && (
+            <Box sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 0.75,
+              mb: 1.5,
+              pb: 1.25,
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              {boardSize != null && (
+                <Typography variant="caption" sx={{
+                  px: 1, py: 0.25,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                  borderRadius: 0.5,
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  letterSpacing: 0.3,
+                }}>
+                  {boardSize}×{boardSize}
+                </Typography>
+              )}
+              {rules && (
+                <Typography variant="caption" sx={{
+                  px: 1, py: 0.25,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                  borderRadius: 0.5,
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  letterSpacing: 0.3,
+                }}>
+                  {rulesDisplayName(rules)}
+                </Typography>
+              )}
+              {komi != null && (
+                <Typography variant="caption" sx={{
+                  px: 1, py: 0.25,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                  borderRadius: 0.5,
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  letterSpacing: 0.3,
+                }}>
+                  贴目 {komi}
+                </Typography>
+              )}
+              {handicap != null && handicap > 0 && (
+                <Typography variant="caption" sx={{
+                  px: 1, py: 0.25,
+                  bgcolor: 'rgba(76,175,80,0.12)',
+                  borderRadius: 0.5,
+                  color: '#81c784',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: 0.3,
+                }}>
+                  让{handicap}子
+                </Typography>
+              )}
+            </Box>
+          )}
+
           {/* Winrate bar */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography variant="body2" fontWeight={blackAdvantage ? 700 : 400} sx={{ fontSize: '0.875rem' }}>
@@ -383,6 +479,9 @@ export default function ResearchAnalysisPanel({
             onClear={onClear}
             onOpen={onOpen}
             onSave={onSave}
+            onCopyToClipboard={onCopyToClipboard}
+            onSaveToCloud={onSaveToCloud}
+            onOpenFromCloud={onOpenFromCloud}
             isAnalysisPending={isAnalysisPending}
           />
         </Box>
@@ -594,7 +693,7 @@ export default function ResearchAnalysisPanel({
                         第 {m.moveIndex} 手
                       </Typography>
                       <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
-                        +{(m.delta * 100).toFixed(1)}%
+                        +{m.delta.toFixed(1)} 目
                       </Typography>
                     </Box>
                   ))
@@ -628,8 +727,11 @@ export default function ResearchAnalysisPanel({
                       <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 60 }}>
                         第 {m.moveIndex} 手
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 600 }}>
-                        {(m.delta * 100).toFixed(1)}%
+                      <Typography variant="body2" sx={{
+                        color: m.delta <= MISTAKE_THRESHOLD ? '#f44336' : '#ff9800',
+                        fontWeight: 600,
+                      }}>
+                        {m.delta.toFixed(1)} 目
                       </Typography>
                     </Box>
                   ))

@@ -6,11 +6,6 @@ import enum
 import uuid as uuid_module
 
 
-class GameType(str, enum.Enum):
-    FREE = "free"
-    RATED = "rated"
-
-
 class MatchSourceEnum(str, enum.Enum):
     """Data source for live matches."""
     XINGZHEN = "xingzhen"
@@ -45,28 +40,9 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    games_black = relationship("Game", foreign_keys="[Game.black_player_id]", back_populates="black_player")
-    games_white = relationship("Game", foreign_keys="[Game.white_player_id]", back_populates="white_player")
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
-
-class Game(Base):
-    __tablename__ = "games"
-
-    id = Column(Integer, primary_key=True, index=True)
-    black_player_id = Column(Integer, ForeignKey("users.id"))
-    white_player_id = Column(Integer, ForeignKey("users.id"))
-    winner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    sgf_content = Column(Text, nullable=True)
-    result = Column(String, nullable=True)
-    game_type = Column(String, nullable=False, default="free") # 'free' or 'rated'
-    started_at = Column(DateTime(timezone=True), server_default=func.now())
-    ended_at = Column(DateTime(timezone=True), nullable=True)
-
-    black_player = relationship("User", foreign_keys=[black_player_id], back_populates="games_black")
-    white_player = relationship("User", foreign_keys=[white_player_id], back_populates="games_white")
-    rating_history = relationship("RatingHistory", back_populates="game")
 
 class Relationship(Base):
     __tablename__ = "relationships"
@@ -86,10 +62,10 @@ class RatingHistory(Base):
     old_rank = Column(String)
     new_rank = Column(String)
     elo_change = Column(Integer, default=0)
-    game_id = Column(Integer, ForeignKey("games.id"))
+    game_id = Column(String(32), ForeignKey("user_games.id"), nullable=True)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    game = relationship("Game", back_populates="rating_history")
+    game = relationship("UserGame")
     user = relationship("User")
 
 
@@ -320,7 +296,7 @@ class UserGame(Base):
     player_white = Column(String(100), nullable=True)
     result = Column(String(50), nullable=True)
     board_size = Column(Integer, default=19)
-    rules = Column(String(20), default="chinese")
+    rules = Column(String(64), default="chinese")
     komi = Column(Float, default=7.5)
     move_count = Column(Integer, default=0)
     source = Column(String(50), nullable=False)  # play_ai / play_human / import / research

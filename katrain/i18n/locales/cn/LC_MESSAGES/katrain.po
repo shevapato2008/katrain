@@ -1759,3 +1759,351 @@ msgstr "分析处理中..."
 
 msgid "live:analysis_auto_processed"
 msgstr "分析在后台自动处理"
+
+msgid "research:mode"
+msgstr "研究模式"
+
+msgid "research:return_to_edit"
+msgstr "返回编辑"
+
+msgid "research:analyzing_game"
+msgstr "正在分析棋局"
+
+msgid "research:progress"
+msgstr "已完成 {analyzed} / {total} 步"
+
+msgid "research:connecting"
+msgstr "正在连接研究会话..."
+
+msgid "research:eta"
+msgstr "预计剩余 {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} 手"
+
+msgid "research:move_numbers"
+msgstr "手数"
+
+msgid "research:pass"
+msgstr "停一手"
+
+msgid "research:move"
+msgstr "移动"
+
+msgid "research:delete"
+msgstr "删除"
+
+msgid "research:place_black"
+msgstr "摆黑"
+
+msgid "research:place_white"
+msgstr "摆白"
+
+msgid "research:alternate"
+msgstr "交替"
+
+msgid "research:clear"
+msgstr "清空"
+
+msgid "research:hints"
+msgstr "提示"
+
+msgid "research:territory"
+msgstr "领地"
+
+msgid "research:open"
+msgstr "打开"
+
+msgid "research:save"
+msgstr "保存"
+
+msgid "research:open_local_sgf"
+msgstr "打开本地 SGF"
+
+msgid "research:import_from_library"
+msgstr "从棋谱库导入"
+
+msgid "research:save_sgf"
+msgstr "保存 SGF"
+
+msgid "research:save_to_library"
+msgstr "保存到棋谱库"
+
+msgid "research:copy_sgf"
+msgstr "复制 SGF 到剪贴板"
+
+msgid "research:pass_confirm_title"
+msgstr "停一手"
+
+msgid "research:pass_confirm_msg"
+msgstr "确认在当前位置插入一个 Pass（停一手）？"
+
+msgid "research:cancel"
+msgstr "取消"
+
+msgid "research:confirm"
+msgstr "确认"
+
+msgid "research:rules_chinese"
+msgstr "中国规则"
+
+msgid "research:rules_japanese"
+msgstr "日本规则"
+
+msgid "research:rules_korean"
+msgstr "韩国规则"
+
+msgid "research:komi"
+msgstr "贴目 {komi}"
+
+msgid "research:handicap"
+msgstr "让{handicap}子"
+
+msgid "research:ai_recommendations"
+msgstr "AI 推荐"
+
+msgid "research:after_move"
+msgstr "第 {currentMove} 手后"
+
+msgid "research:col_move"
+msgstr "着手"
+
+msgid "research:col_recommendation"
+msgstr "推荐度"
+
+msgid "research:col_score_diff"
+msgstr "目差"
+
+msgid "research:col_winrate"
+msgstr "胜率"
+
+msgid "research:analyzing"
+msgstr "正在分析..."
+
+msgid "research:waiting_analysis"
+msgstr "等待分析数据"
+
+msgid "research:analysis_placeholder"
+msgstr "分析数据将在此显示"
+
+msgid "research:trend_chart"
+msgstr "走势图"
+
+msgid "research:brilliant_moves"
+msgstr "妙手 ({count})"
+
+msgid "research:mistakes"
+msgstr "问题手 ({count})"
+
+msgid "research:black_winrate"
+msgstr "黑方胜率: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "黑方领先: {score} 目"
+
+msgid "research:no_brilliant_moves"
+msgstr "暂无妙手"
+
+msgid "research:no_mistakes"
+msgstr "暂无问题手"
+
+msgid "research:move_n"
+msgstr "第 {n} 手"
+
+msgid "research:points"
+msgstr "{delta} 目"
+
+msgid "research:first"
+msgstr "最初"
+
+msgid "research:back"
+msgstr "后退"
+
+msgid "research:next"
+msgstr "前进"
+
+msgid "research:last"
+msgstr "最终"
+
+msgid "research:game_info"
+msgstr "对局信息"
+
+msgid "research:rules_settings"
+msgstr "规则设置"
+
+msgid "research:board_size"
+msgstr "棋盘大小"
+
+msgid "research:rules"
+msgstr "规则"
+
+msgid "research:komi_label"
+msgstr "贴目"
+
+msgid "research:handicap_label"
+msgstr "让子"
+
+msgid "research:none"
+msgstr "无"
+
+msgid "research:n_stones"
+msgstr "{n}子"
+
+msgid "research:edit_tools"
+msgstr "编辑工具"
+
+msgid "research:start_research"
+msgstr "开始研究"
+
+msgid "research:my_games"
+msgstr "我的棋谱"
+
+msgid "research:my_positions"
+msgstr "我的盘面"
+
+msgid "research:tournament_games"
+msgstr "大赛棋谱"
+
+msgid "research:game_library"
+msgstr "棋谱库"
+
+msgid "research:login_to_view"
+msgstr "登录后可查看个人棋谱"
+
+msgid "research:search_placeholder"
+msgstr "搜索棋手、赛事..."
+
+msgid "research:please_login"
+msgstr "请先登录"
+
+msgid "research:no_games"
+msgstr "暂无棋谱"
+
+msgid "research:n_moves"
+msgstr "{n}手"
+
+msgid "research:black"
+msgstr "黑方"
+
+msgid "research:white"
+msgstr "白方"
+
+msgid "kifu:library"
+msgstr "棋谱库"
+
+msgid "kifu:search_placeholder"
+msgstr "按棋手、赛事、日期搜索…"
+
+msgid "kifu:records"
+msgstr "条记录"
+
+msgid "kifu:no_results"
+msgstr "未找到棋谱"
+
+msgid "kifu:col_event"
+msgstr "赛事"
+
+msgid "kifu:col_black"
+msgstr "黑方"
+
+msgid "kifu:col_white"
+msgstr "白方"
+
+msgid "kifu:col_result"
+msgstr "结果"
+
+msgid "kifu:col_moves"
+msgstr "手数"
+
+msgid "kifu:col_date"
+msgstr "日期"
+
+msgid "kifu:moves_unit"
+msgstr "手"
+
+msgid "kifu:load_error"
+msgstr "加载棋谱失败"
+
+msgid "kifu:back_to_list"
+msgstr "返回棋谱库"
+
+msgid "kifu:date"
+msgstr "日期"
+
+msgid "kifu:komi"
+msgstr "贴目"
+
+msgid "kifu:handicap"
+msgstr "让子"
+
+msgid "kifu:board_size"
+msgstr "棋盘"
+
+msgid "kifu:moves"
+msgstr "手数"
+
+msgid "kifu:rules"
+msgstr "规则"
+
+msgid "kifu:place"
+msgstr "地点"
+
+msgid "kifu:source"
+msgstr "来源"
+
+msgid "kifu:open_in_research"
+msgstr "在研究中打开"
+
+msgid "kifu:select_to_preview"
+msgstr "选择一局棋谱预览"
+
+msgid "kifu:loading"
+msgstr "加载中..."
+
+msgid "research:time_min_sec"
+msgstr "{min}分{sec}秒"
+
+msgid "research:time_sec"
+msgstr "{sec}秒"
+
+msgid "tsumego:capturing"
+msgstr "吃子"
+
+msgid "tsumego:semeai"
+msgstr "对杀"
+
+msgid "tsumego:opening"
+msgstr "布局"
+
+msgid "tsumego:midgame"
+msgstr "中盘"
+
+msgid "research:suggestions"
+msgstr "建议"
+
+msgid "result:black_win"
+msgstr "黑胜"
+
+msgid "result:white_win"
+msgstr "白胜"
+
+msgid "result:resign"
+msgstr "中盘"
+
+msgid "result:time"
+msgstr "超时"
+
+msgid "result:forfeit"
+msgstr "弃权"
+
+msgid "result:points"
+msgstr "子"
+
+msgid "result:draw"
+msgstr "和棋"
+
+msgid "result:points_zi"
+msgstr "子"
+
+msgid "result:points_moku"
+msgstr "目"

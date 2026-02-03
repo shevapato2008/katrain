@@ -17,6 +17,7 @@ import PublicIcon from '@mui/icons-material/Public';
 import { useAuth } from '../../context/AuthContext';
 import { UserGamesAPI, type UserGameSummary } from '../../api/userGamesApi';
 import { KifuAPI } from '../../api/kifuApi';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 type Category = 'my_games' | 'my_positions' | 'public_kifu';
 
@@ -26,16 +27,17 @@ interface GameLibraryModalProps {
   onLoadGame: (sgf: string) => void;
 }
 
-const CATEGORIES: { key: Category; label: string; icon: React.ReactNode }[] = [
-  { key: 'my_games', label: '我的棋谱', icon: <FolderIcon sx={{ fontSize: 18 }} /> },
-  { key: 'my_positions', label: '我的盘面', icon: <FolderIcon sx={{ fontSize: 18 }} /> },
-  { key: 'public_kifu', label: '大赛棋谱', icon: <PublicIcon sx={{ fontSize: 18 }} /> },
+const CATEGORY_KEYS: { key: Category; labelKey: string; labelFallback: string; icon: React.ReactNode }[] = [
+  { key: 'my_games', labelKey: 'research:my_games', labelFallback: '我的棋谱', icon: <FolderIcon sx={{ fontSize: 18 }} /> },
+  { key: 'my_positions', labelKey: 'research:my_positions', labelFallback: '我的盘面', icon: <FolderIcon sx={{ fontSize: 18 }} /> },
+  { key: 'public_kifu', labelKey: 'research:tournament_games', labelFallback: '大赛棋谱', icon: <PublicIcon sx={{ fontSize: 18 }} /> },
 ];
 
 const PAGE_SIZE = 15;
 
 export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibraryModalProps) {
   const { token } = useAuth();
+  const { t } = useTranslation();
   const [category, setCategory] = useState<Category>('my_games');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -157,7 +159,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
       }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-        <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>棋谱库</Typography>
+        <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>{t('research:game_library', '棋谱库')}</Typography>
         <IconButton size="small" onClick={onClose}>
           <CloseIcon fontSize="small" />
         </IconButton>
@@ -174,7 +176,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           flexDirection: 'column',
         }}>
           <List dense sx={{ py: 0 }}>
-            {CATEGORIES.map((cat) => (
+            {CATEGORY_KEYS.map((cat) => (
               <ListItem key={cat.key} disablePadding>
                 <ListItemButton
                   selected={category === cat.key}
@@ -193,7 +195,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
                     {cat.icon}
                   </Box>
                   <ListItemText
-                    primary={cat.label}
+                    primary={t(cat.labelKey, cat.labelFallback)}
                     primaryTypographyProps={{ fontSize: '0.85rem' }}
                   />
                 </ListItemButton>
@@ -203,7 +205,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           {!token && (
             <Box sx={{ p: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
-                登录后可查看个人棋谱
+                {t('research:login_to_view', '登录后可查看个人棋谱')}
               </Typography>
             </Box>
           )}
@@ -216,7 +218,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
             <TextField
               size="small"
               fullWidth
-              placeholder="搜索棋手、赛事..."
+              placeholder={t('research:search_placeholder', '搜索棋手、赛事...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -238,7 +240,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
             ) : items.length === 0 ? (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
-                  {!token && category !== 'public_kifu' ? '请先登录' : '暂无棋谱'}
+                  {!token && category !== 'public_kifu' ? t('research:please_login', '请先登录') : t('research:no_games', '暂无棋谱')}
                 </Typography>
               </Box>
             ) : (
@@ -259,7 +261,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
                         }
                         secondary={
                           <Typography variant="caption" color="text.secondary">
-                            {item.moveCount > 0 ? `${item.moveCount}手` : ''}
+                            {item.moveCount > 0 ? t('research:n_moves', '{n}手').replace('{n}', String(item.moveCount)) : ''}
                             {item.date ? ` | ${item.date.slice(0, 10)}` : ''}
                           </Typography>
                         }

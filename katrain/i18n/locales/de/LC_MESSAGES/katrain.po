@@ -1962,3 +1962,351 @@ msgstr "Analyse ausstehend..."
 
 msgid "live:analysis_auto_processed"
 msgstr "Die Analyse wird automatisch im Hintergrund verarbeitet"
+
+msgid "research:mode"
+msgstr "Forschungsmodus"
+
+msgid "research:return_to_edit"
+msgstr "Zurück zur Bearbeitung"
+
+msgid "research:analyzing_game"
+msgstr "Partie wird analysiert"
+
+msgid "research:progress"
+msgstr "{analyzed} / {total} Züge abgeschlossen"
+
+msgid "research:connecting"
+msgstr "Verbindung zur Forschungssitzung..."
+
+msgid "research:eta"
+msgstr "Geschätzte Restzeit: {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} Züge"
+
+msgid "research:move_numbers"
+msgstr "Zugnummern"
+
+msgid "research:pass"
+msgstr "Passen"
+
+msgid "research:move"
+msgstr "Zug"
+
+msgid "research:delete"
+msgstr "Löschen"
+
+msgid "research:place_black"
+msgstr "Schwarz setzen"
+
+msgid "research:place_white"
+msgstr "Weiß setzen"
+
+msgid "research:alternate"
+msgstr "Abwechselnd"
+
+msgid "research:clear"
+msgstr "Leeren"
+
+msgid "research:hints"
+msgstr "Hinweise"
+
+msgid "research:territory"
+msgstr "Gebiet"
+
+msgid "research:open"
+msgstr "Öffnen"
+
+msgid "research:save"
+msgstr "Speichern"
+
+msgid "research:open_local_sgf"
+msgstr "Lokale SGF öffnen"
+
+msgid "research:import_from_library"
+msgstr "Aus Spielbibliothek importieren"
+
+msgid "research:save_sgf"
+msgstr "SGF speichern"
+
+msgid "research:save_to_library"
+msgstr "In Spielbibliothek speichern"
+
+msgid "research:copy_sgf"
+msgstr "SGF in Zwischenablage kopieren"
+
+msgid "research:pass_confirm_title"
+msgstr "Passen"
+
+msgid "research:pass_confirm_msg"
+msgstr "Passen an der aktuellen Position einfügen?"
+
+msgid "research:cancel"
+msgstr "Abbrechen"
+
+msgid "research:confirm"
+msgstr "Bestätigen"
+
+msgid "research:rules_chinese"
+msgstr "Chinesische Regeln"
+
+msgid "research:rules_japanese"
+msgstr "Japanische Regeln"
+
+msgid "research:rules_korean"
+msgstr "Koreanische Regeln"
+
+msgid "research:komi"
+msgstr "Komi {komi}"
+
+msgid "research:handicap"
+msgstr "{handicap}-Stein-Vorgabe"
+
+msgid "research:ai_recommendations"
+msgstr "KI-Empfehlungen"
+
+msgid "research:after_move"
+msgstr "Nach Zug {currentMove}"
+
+msgid "research:col_move"
+msgstr "Zug"
+
+msgid "research:col_recommendation"
+msgstr "Empf. %"
+
+msgid "research:col_score_diff"
+msgstr "Punktediff."
+
+msgid "research:col_winrate"
+msgstr "Gewinnrate"
+
+msgid "research:analyzing"
+msgstr "Analyse läuft..."
+
+msgid "research:waiting_analysis"
+msgstr "Warte auf Analysedaten"
+
+msgid "research:analysis_placeholder"
+msgstr "Analysedaten werden hier angezeigt"
+
+msgid "research:trend_chart"
+msgstr "Trenddiagramm"
+
+msgid "research:brilliant_moves"
+msgstr "Brillant ({count})"
+
+msgid "research:mistakes"
+msgstr "Fehler ({count})"
+
+msgid "research:black_winrate"
+msgstr "Schwarz Gewinnrate: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "Schwarz führt: {score} Pkt."
+
+msgid "research:no_brilliant_moves"
+msgstr "Keine brillanten Züge"
+
+msgid "research:no_mistakes"
+msgstr "Keine Fehler"
+
+msgid "research:move_n"
+msgstr "Zug {n}"
+
+msgid "research:points"
+msgstr "{delta} Pkt."
+
+msgid "research:first"
+msgstr "Anfang"
+
+msgid "research:back"
+msgstr "Zurück"
+
+msgid "research:next"
+msgstr "Weiter"
+
+msgid "research:last"
+msgstr "Ende"
+
+msgid "research:game_info"
+msgstr "Spielinformationen"
+
+msgid "research:rules_settings"
+msgstr "Regeleinstellungen"
+
+msgid "research:board_size"
+msgstr "Brettgröße"
+
+msgid "research:rules"
+msgstr "Regeln"
+
+msgid "research:komi_label"
+msgstr "Komi"
+
+msgid "research:handicap_label"
+msgstr "Vorgabe"
+
+msgid "research:none"
+msgstr "Keine"
+
+msgid "research:n_stones"
+msgstr "{n} Steine"
+
+msgid "research:edit_tools"
+msgstr "Bearbeitungstools"
+
+msgid "research:start_research"
+msgstr "Forschung starten"
+
+msgid "research:my_games"
+msgstr "Meine Spiele"
+
+msgid "research:my_positions"
+msgstr "Meine Stellungen"
+
+msgid "research:tournament_games"
+msgstr "Turnierspiele"
+
+msgid "research:game_library"
+msgstr "Spielbibliothek"
+
+msgid "research:login_to_view"
+msgstr "Anmelden, um Ihre Spiele zu sehen"
+
+msgid "research:search_placeholder"
+msgstr "Spieler, Turniere suchen..."
+
+msgid "research:please_login"
+msgstr "Bitte anmelden"
+
+msgid "research:no_games"
+msgstr "Keine Spiele"
+
+msgid "research:n_moves"
+msgstr "{n} Züge"
+
+msgid "research:black"
+msgstr "Schwarz"
+
+msgid "research:white"
+msgstr "Weiß"
+
+msgid "kifu:library"
+msgstr "Partiesammlung"
+
+msgid "kifu:search_placeholder"
+msgstr "Nach Spieler, Turnier, Datum suchen…"
+
+msgid "kifu:records"
+msgstr "Einträge"
+
+msgid "kifu:no_results"
+msgstr "Keine Einträge gefunden"
+
+msgid "kifu:col_event"
+msgstr "Turnier"
+
+msgid "kifu:col_black"
+msgstr "Schwarz"
+
+msgid "kifu:col_white"
+msgstr "Weiß"
+
+msgid "kifu:col_result"
+msgstr "Ergebnis"
+
+msgid "kifu:col_moves"
+msgstr "Züge"
+
+msgid "kifu:col_date"
+msgstr "Datum"
+
+msgid "kifu:moves_unit"
+msgstr " Züge"
+
+msgid "kifu:load_error"
+msgstr "Partie konnte nicht geladen werden"
+
+msgid "kifu:back_to_list"
+msgstr "Zurück zur Sammlung"
+
+msgid "kifu:date"
+msgstr "Datum"
+
+msgid "kifu:komi"
+msgstr "Komi"
+
+msgid "kifu:handicap"
+msgstr "Vorgabe"
+
+msgid "kifu:board_size"
+msgstr "Brett"
+
+msgid "kifu:moves"
+msgstr "Züge"
+
+msgid "kifu:rules"
+msgstr "Regeln"
+
+msgid "kifu:place"
+msgstr "Ort"
+
+msgid "kifu:source"
+msgstr "Quelle"
+
+msgid "kifu:open_in_research"
+msgstr "In Forschung öffnen"
+
+msgid "kifu:select_to_preview"
+msgstr "Partie zur Vorschau auswählen"
+
+msgid "kifu:loading"
+msgstr "Wird geladen..."
+
+msgid "research:time_min_sec"
+msgstr "{min}m{sec}s"
+
+msgid "research:time_sec"
+msgstr "{sec}s"
+
+msgid "tsumego:capturing"
+msgstr "Schlagen"
+
+msgid "tsumego:semeai"
+msgstr "Semeai"
+
+msgid "tsumego:opening"
+msgstr "Eröffnung"
+
+msgid "tsumego:midgame"
+msgstr "Mittelspiel"
+
+msgid "research:suggestions"
+msgstr "Ratschlag"
+
+msgid "result:black_win"
+msgstr "S+"
+
+msgid "result:white_win"
+msgstr "W+"
+
+msgid "result:resign"
+msgstr "Aufg."
+
+msgid "result:time"
+msgstr "Zeit"
+
+msgid "result:forfeit"
+msgstr "Verl."
+
+msgid "result:points"
+msgstr ""
+
+msgid "result:draw"
+msgstr "Remis"
+
+msgid "result:points_zi"
+msgstr ""
+
+msgid "result:points_moku"
+msgstr ""

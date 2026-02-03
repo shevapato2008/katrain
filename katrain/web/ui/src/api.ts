@@ -172,6 +172,10 @@ export const API = {
     apiPost("/api/analysis/game", { session_id: sessionId, visits, mistakes_only }),
   analysisScan: (sessionId: string, visits?: number): Promise<SessionResponse> =>
     apiPost("/api/analysis/scan", { session_id: sessionId, visits }),
+  quickAnalyze: (params: {
+    moves: string[][]; initial_stones?: string[][]; board_size?: number; komi?: number; rules?: string; max_visits?: number;
+  }): Promise<any> =>
+    apiPost("/api/v1/analysis/quick-analyze", params),
   analysisProgress: async (sessionId: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
     const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`);
     if (!response.ok) throw new Error("Failed to fetch analysis progress");

@@ -3,12 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, Button, LinearProgress } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import ScienceIcon from '@mui/icons-material/Science';
-import LiveBoard from '../components/live/LiveBoard';
+import LiveBoard, { type AiMoveMarker } from '../components/live/LiveBoard';
 import Board from '../../components/Board';
 import ResearchSetupPanel from '../components/research/ResearchSetupPanel';
 import ResearchAnalysisPanel from '../components/research/ResearchAnalysisPanel';
 import { useResearchBoard } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../hooks/useResearchSession';
+import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
 import { KifuAPI } from '../api/kifuApi';
 import { UserGamesAPI } from '../api/userGamesApi';
@@ -19,6 +20,7 @@ import type { ResearchBoardState } from '../hooks/useResearchBoard';
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
     const { token } = useAuth();
+    const { t } = useTranslation();
 
     // L1 ↔ L2 state
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -45,6 +47,96 @@ const ResearchPage = () => {
 
     // Board state hook (L1)
     const board = useResearchBoard();
+
+    // Stone placement sound for L1
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const prevMoveRef = useRef<number>(0);
+    useEffect(() => {
+        // Play sound when currentMove changes (stone placed or navigation)
+        if (board.currentMove !== prevMoveRef.current) {
+            prevMoveRef.current = board.currentMove;
+            if (!isAnalyzing) {
+                if (!audioRef.current) {
+                    audioRef.current = new Audio('/assets/sounds/stone1.wav');
+                }
+                const audio = audioRef.current;
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            }
+        }
+    }, [board.currentMove, isAnalyzing]);
+
+    // L1 quick analysis: hints + territory
+    const [l1ShowHints, setL1ShowHints] = useState(false);
+    const [l1ShowTerritory, setL1ShowTerritory] = useState(false);
+    const [l1AiMarkers, setL1AiMarkers] = useState<AiMoveMarker[] | null>(null);
+    const [l1Ownership, setL1Ownership] = useState<number[][] | null>(null);
+    const [l1AnalysisPending, setL1AnalysisPending] = useState(false);
+    const l1AnalysisKeyRef = useRef<string>('');
+
+    // Build a key representing the current board position for cache invalidation
+    const l1PositionKey = useMemo(() => {
+        return `${board.boardSize}-${board.komi}-${board.rules}-${board.currentMove}-${board.moves.slice(0, board.currentMove).join(',')}`;
+    }, [board.boardSize, board.komi, board.rules, board.currentMove, board.moves]);
+
+    // Fetch quick analysis when hints or territory is toggled on, or position changes while active
+    useEffect(() => {
+        if (isAnalyzing) return; // L2 handles its own analysis
+        if (!l1ShowHints && !l1ShowTerritory) {
+            // Clear stale data when both off
+            setL1AiMarkers(null);
+            setL1Ownership(null);
+            return;
+        }
+        const key = l1PositionKey;
+        l1AnalysisKeyRef.current = key;
+        setL1AnalysisPending(true);
+
+        // Convert board moves to KataGo format [["B","Q16"],["W","D4"],...]
+        const movesUpToCurrent = board.moves.slice(0, board.currentMove);
+        const colors = board.stoneColors.slice(0, board.currentMove);
+        const kataMoves = movesUpToCurrent.map((m, i) => [colors[i], m]);
+
+        API.quickAnalyze({
+            moves: kataMoves,
+            board_size: board.boardSize,
+            komi: board.komi,
+            rules: board.rules,
+            max_visits: 200,
+        }).then((result) => {
+            if (l1AnalysisKeyRef.current !== key) return; // stale
+            // Parse top moves for hints
+            const turnResult = result?.turnInfos?.[0] ?? result;
+            const moveInfos = turnResult?.moveInfos ?? [];
+            const markers: AiMoveMarker[] = moveInfos.slice(0, 5).map((mi: any, idx: number) => ({
+                move: mi.move,
+                rank: idx + 1,
+                visits: mi.visits,
+                winrate: mi.winrate,
+                score_lead: mi.scoreLead ?? 0,
+            }));
+            setL1AiMarkers(markers);
+
+            // Parse ownership grid
+            const rawOwnership = turnResult?.ownership;
+            if (rawOwnership && Array.isArray(rawOwnership)) {
+                // KataGo returns flat array of length boardSize*boardSize
+                const size = board.boardSize;
+                const grid: number[][] = [];
+                for (let y = 0; y < size; y++) {
+                    grid.push(rawOwnership.slice(y * size, (y + 1) * size));
+                }
+                setL1Ownership(grid);
+            }
+        }).catch((err) => {
+            console.error('Quick analysis failed:', err);
+        }).finally(() => {
+            if (l1AnalysisKeyRef.current === key) setL1AnalysisPending(false);
+        });
+    }, [l1ShowHints, l1ShowTerritory, l1PositionKey, isAnalyzing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleL1ToggleHints = useCallback(() => setL1ShowHints(prev => !prev), []);
+    const handleL1ToggleTerritory = useCallback(() => setL1ShowTerritory(prev => !prev), []);
 
     // Research session hook (L2)
     const session = useResearchSession();
@@ -311,7 +403,7 @@ const ResearchPage = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <ScienceIcon sx={{ fontSize: 18, color: 'primary.main' }} />
                                 <Typography variant="subtitle2" color="primary.main">
-                                    研究模式
+                                    {t('research:mode', '研究模式')}
                                 </Typography>
                             </Box>
                             <Button
@@ -322,7 +414,7 @@ const ResearchPage = () => {
                                 onClick={handleReturnToEdit}
                                 sx={{ textTransform: 'none' }}
                             >
-                                返回编辑
+                                {t('research:return_to_edit', '返回编辑')}
                             </Button>
                         </Box>
 
@@ -338,8 +430,8 @@ const ResearchPage = () => {
 
                     {/* Right Sidebar: Analysis Panel */}
                     <ResearchAnalysisPanel
-                        playerBlack={gs.players_info?.B?.name || board.playerBlack || '黑方'}
-                        playerWhite={gs.players_info?.W?.name || board.playerWhite || '白方'}
+                        playerBlack={gs.players_info?.B?.name || board.playerBlack || t('research:black', '黑方')}
+                        playerWhite={gs.players_info?.W?.name || board.playerWhite || t('research:white', '白方')}
                         currentMove={currentMove}
                         totalMoves={totalMoves}
                         onMoveChange={handleL2MoveChange}
@@ -375,6 +467,7 @@ const ResearchPage = () => {
                         analysisMoves={gs.analysis?.moves}
                         history={gs.history}
                         playerToMove={gs.player_to_move}
+                        children={gs.children}
                     />
                 </Box>
                 <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
@@ -393,12 +486,12 @@ const ResearchPage = () => {
                 <Box sx={{ textAlign: 'center', width: 400 }}>
                     <ScienceIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                     <Typography variant="h6" color="text.primary" sx={{ mb: 1 }}>
-                        正在分析棋局
+                        {t('research:analyzing_game', '正在分析棋局')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         {analysisProgress
-                            ? `已完成 ${analysisProgress.analyzed} / ${analysisProgress.total} 步`
-                            : '正在连接研究会话...'
+                            ? t('research:progress', '已完成 {analyzed} / {total} 步').replace('{analyzed}', String(analysisProgress.analyzed)).replace('{total}', String(analysisProgress.total))
+                            : t('research:connecting', '正在连接研究会话...')
                         }
                     </Typography>
 
@@ -425,7 +518,11 @@ const ResearchPage = () => {
                             </Typography>
                             {etaSeconds !== null && etaSeconds > 0 && (
                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: '"IBM Plex Mono", monospace' }}>
-                                    预计剩余 {etaSeconds >= 60 ? `${Math.floor(etaSeconds / 60)}分${(etaSeconds % 60).toString().padStart(2, '0')}秒` : `${etaSeconds}秒`}
+                                    {t('research:eta', '预计剩余 {time}').replace('{time}',
+                                        etaSeconds >= 60
+                                            ? t('research:time_min_sec', '{min}分{sec}秒').replace('{min}', String(Math.floor(etaSeconds / 60))).replace('{sec}', (etaSeconds % 60).toString().padStart(2, '0'))
+                                            : t('research:time_sec', '{sec}秒').replace('{sec}', String(etaSeconds))
+                                    )}
                                 </Typography>
                             )}
                         </Box>
@@ -438,7 +535,7 @@ const ResearchPage = () => {
                         onClick={handleReturnToEdit}
                         sx={{ mt: 1, textTransform: 'none' }}
                     >
-                        取消
+                        {t('research:cancel', '取消')}
                     </Button>
                 </Box>
             </Box>
@@ -463,6 +560,10 @@ const ResearchPage = () => {
                             handicapCount={board.handicapCount}
                             onIntersectionClick={board.handleIntersectionClick}
                             nextColor={board.nextColor ?? undefined}
+                            aiMarkers={l1ShowHints ? l1AiMarkers : null}
+                            showAiMarkers={l1ShowHints}
+                            showTerritory={l1ShowTerritory}
+                            ownership={l1Ownership}
                         />
                     </Box>
 
@@ -503,7 +604,7 @@ const ResearchPage = () => {
                                 textAlign: 'center',
                             }}
                         >
-                            {Math.max(0, board.currentMove - board.handicapCount)} / {board.moves.length - board.handicapCount} 手
+                            {t('research:move_counter', '{current} / {total} 手').replace('{current}', String(Math.max(0, board.currentMove - board.handicapCount))).replace('{total}', String(board.moves.length - board.handicapCount))}
                         </Typography>
                         <Button
                             size="small"
@@ -545,6 +646,11 @@ const ResearchPage = () => {
                     onEditModeChange={board.setEditMode}
                     placeMode={board.placeMode}
                     onPlaceModeChange={board.setPlaceMode}
+                    showHints={l1ShowHints}
+                    onToggleHints={handleL1ToggleHints}
+                    showTerritory={l1ShowTerritory}
+                    onToggleTerritory={handleL1ToggleTerritory}
+                    isAnalysisPending={l1AnalysisPending}
                     onClear={board.handleClear}
                     onOpen={board.openLocalSGF}
                     onSave={board.saveLocalSGF}

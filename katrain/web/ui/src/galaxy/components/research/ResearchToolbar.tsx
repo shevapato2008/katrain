@@ -1,5 +1,6 @@
 import { Box, Typography, Tooltip, keyframes, Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from '../../../hooks/useTranslation';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
@@ -134,6 +135,7 @@ export default function ResearchToolbar({
   onOpenFromCloud,
   isAnalysisPending = false,
 }: ResearchToolbarProps) {
+  const { t } = useTranslation();
   const [openAnchor, setOpenAnchor] = useState<null | HTMLElement>(null);
   const [saveAnchor, setSaveAnchor] = useState<null | HTMLElement>(null);
   const [passConfirmOpen, setPassConfirmOpen] = useState(false);
@@ -169,50 +171,50 @@ export default function ResearchToolbar({
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <ToolButton
           icon={<FormatListNumberedIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="手数"
+          label={t('research:move_numbers', '手数')}
           active={showMoveNumbers}
           onClick={onToggleMoveNumbers}
         />
         <ToolButton
           icon={<PanToolAltIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="停一手"
+          label={t('research:pass', '停一手')}
           active={false}
           onClick={() => setPassConfirmOpen(true)}
         />
         <ToolButton
           icon={<OpenWithIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="移动"
+          label={t('research:move', '移动')}
           active={editMode === 'move'}
           onClick={() => handleEditMode('move')}
         />
         <ToolButton
           icon={<DeleteForeverIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="删除"
+          label={t('research:delete', '删除')}
           active={editMode === 'delete'}
           onClick={() => handleEditMode('delete')}
           isDestructive
         />
         <ToolButton
           icon={<BlackStoneIcon size={18} />}
-          label="摆黑"
+          label={t('research:place_black', '摆黑')}
           active={placeMode === 'black'}
           onClick={() => handlePlaceMode('black')}
         />
         <ToolButton
           icon={<WhiteStoneIcon size={18} />}
-          label="摆白"
+          label={t('research:place_white', '摆白')}
           active={placeMode === 'white'}
           onClick={() => handlePlaceMode('white')}
         />
         <ToolButton
           icon={<AlternateIcon size={20} />}
-          label="交替"
+          label={t('research:alternate', '交替')}
           active={placeMode === 'alternate'}
           onClick={() => handlePlaceMode('alternate')}
         />
         <ToolButton
           icon={<LayersClearIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="清空"
+          label={t('research:clear', '清空')}
           active={false}
           onClick={onClear}
         />
@@ -222,7 +224,7 @@ export default function ResearchToolbar({
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <ToolButton
           icon={<TipsAndUpdatesIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="提示"
+          label={t('research:suggestions', '建议')}
           active={showHints}
           onClick={onToggleHints}
           disabled={!isAnalyzing}
@@ -230,20 +232,20 @@ export default function ResearchToolbar({
         />
         <ToolButton
           icon={<MapIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="领地"
+          label={t('research:territory', '领地')}
           active={showTerritory}
           onClick={onToggleTerritory}
           disabled={!isAnalyzing}
         />
         <ToolButton
           icon={<FolderOpenIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="打开"
+          label={t('research:open', '打开')}
           active={false}
           onClick={(e) => setOpenAnchor(e.currentTarget as HTMLElement)}
         />
         <ToolButton
           icon={<SaveIcon sx={{ fontSize: ICON_SIZE }} />}
-          label="保存"
+          label={t('research:save', '保存')}
           active={false}
           onClick={(e) => setSaveAnchor(e.currentTarget as HTMLElement)}
         />
@@ -259,11 +261,11 @@ export default function ResearchToolbar({
       >
         <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onOpen?.(); setOpenAnchor(null); }}>
           <ListItemIcon><UploadFileIcon sx={{ fontSize: 18 }} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>打开本地 SGF</ListItemText>
+          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>{t('research:open_local_sgf', '打开本地 SGF')}</ListItemText>
         </MenuItem>
         <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onOpenFromCloud?.(); setOpenAnchor(null); }}>
           <ListItemIcon><CloudDownloadIcon sx={{ fontSize: 18 }} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>从棋谱库导入</ListItemText>
+          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>{t('research:import_from_library', '从棋谱库导入')}</ListItemText>
         </MenuItem>
       </Menu>
 
@@ -277,27 +279,27 @@ export default function ResearchToolbar({
       >
         <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onSave?.(); setSaveAnchor(null); }}>
           <ListItemIcon><SaveIcon sx={{ fontSize: 18 }} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>保存 SGF</ListItemText>
+          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>{t('research:save_sgf', '保存 SGF')}</ListItemText>
         </MenuItem>
         <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onSaveToCloud?.(); setSaveAnchor(null); }}>
           <ListItemIcon><CloudUploadIcon sx={{ fontSize: 18 }} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>保存到棋谱库</ListItemText>
+          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>{t('research:save_to_library', '保存到棋谱库')}</ListItemText>
         </MenuItem>
         <MenuItem sx={{ fontSize: '0.875rem' }} onClick={() => { onCopyToClipboard?.(); setSaveAnchor(null); }}>
           <ListItemIcon><ContentCopyIcon sx={{ fontSize: 18 }} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>复制 SGF 到剪贴板</ListItemText>
+          <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>{t('research:copy_sgf', '复制 SGF 到剪贴板')}</ListItemText>
         </MenuItem>
       </Menu>
 
       {/* Pass confirmation dialog */}
       <Dialog open={passConfirmOpen} onClose={() => setPassConfirmOpen(false)}>
-        <DialogTitle>停一手</DialogTitle>
+        <DialogTitle>{t('research:pass_confirm_title', '停一手')}</DialogTitle>
         <DialogContent>
-          <DialogContentText>确认在当前位置插入一个 Pass（停一手）？</DialogContentText>
+          <DialogContentText>{t('research:pass_confirm_msg', '确认在当前位置插入一个 Pass（停一手）？')}</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPassConfirmOpen(false)} color="inherit" size="small">取消</Button>
-          <Button onClick={handlePassConfirm} variant="contained" size="small" autoFocus>确认</Button>
+          <Button onClick={() => setPassConfirmOpen(false)} color="inherit" size="small">{t('research:cancel', '取消')}</Button>
+          <Button onClick={handlePassConfirm} variant="contained" size="small" autoFocus>{t('research:confirm', '确认')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

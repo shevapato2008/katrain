@@ -8,7 +8,6 @@ import GamePage from './galaxy/pages/GamePage';
 import HvHLobbyPage from './galaxy/pages/HvHLobbyPage';
 import GameRoomPage from './galaxy/pages/GameRoomPage';
 import KifuLibraryPage from './galaxy/pages/KifuLibraryPage';
-import KifuDetailPage from './galaxy/pages/KifuDetailPage';
 import LivePage from './galaxy/pages/live/LivePage';
 import LiveMatchPage from './galaxy/pages/live/LiveMatchPage';
 import TsumegoLevelsPage from './galaxy/pages/TsumegoLevelsPage';
@@ -34,7 +33,6 @@ const GalaxyApp = () => {
           <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuLibraryPage />} />
-          <Route path="kifu/:albumId" element={<KifuDetailPage />} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="tsumego" element={<TsumegoLevelsPage />} />

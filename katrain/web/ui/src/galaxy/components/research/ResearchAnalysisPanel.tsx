@@ -8,6 +8,15 @@ import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrow
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ResearchToolbar, { type PlaceMode, type EditMode } from './ResearchToolbar';
+import { useTranslation } from '../../../hooks/useTranslation';
+
+// Convert Move.coords [x, y] to GTP notation (e.g., [3, 15] → "D16")
+// x = column index into GTP_LETTERS, y = 0-based row from bottom
+const GTP_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'; // skip I
+function coordsToGtp(coords: [number, number]): string {
+  const [x, y] = coords;
+  return `${GTP_LETTERS[x]}${y + 1}`;
+}
 
 // Shared column layout for AI recommendation tables — must match AiAnalysis in live module
 const AI_TABLE_COLUMNS = '1fr 1fr 1fr 1fr';
@@ -31,12 +40,12 @@ interface HistoryEntry {
   score: number | null;
 }
 
-// Map rules identifier to Chinese display name
-function rulesDisplayName(rules: string): string {
+// Map rules identifier to display name (needs t function passed in)
+function rulesDisplayName(rules: string, t: (key: string, fallback: string) => string): string {
   switch (rules.toLowerCase()) {
-    case 'chinese': return '中国规则';
-    case 'japanese': return '日本规则';
-    case 'korean': return '韩国规则';
+    case 'chinese': return t('research:rules_chinese', '中国规则');
+    case 'japanese': return t('research:rules_japanese', '日本规则');
+    case 'korean': return t('research:rules_korean', '韩国规则');
     default: return rules;
   }
 }
@@ -76,6 +85,8 @@ interface ResearchAnalysisPanelProps {
   analysisMoves?: AnalysisMove[];
   history?: HistoryEntry[];
   playerToMove?: string;
+  // Children of current node: [color, [row, col] | null][]
+  children?: [string, [number, number] | null][];
 }
 
 // Threshold for classifying moves (in score points, matching live module)
@@ -116,7 +127,9 @@ export default function ResearchAnalysisPanel({
   analysisMoves,
   history,
   playerToMove,
+  children,
 }: ResearchAnalysisPanelProps) {
+  const { t } = useTranslation();
   const [trendTab, setTrendTab] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioCache = useRef<Record<string, HTMLAudioElement>>({});
@@ -204,20 +217,73 @@ export default function ResearchAnalysisPanel({
   // Determine next player for AI recommendations display
   const nextPlayer: 'B' | 'W' = playerToMove === 'W' ? 'W' : 'B';
 
-  // Build display moves from analysis data
+  // Determine actual move played from children of current node
+  const actualMoveGtp = useMemo(() => {
+    if (!children || children.length === 0) return null;
+    const firstChild = children[0];
+    if (!firstChild[1]) return null; // pass move
+    return coordsToGtp(firstChild[1]);
+  }, [children]);
+
+  // Build display moves: top 3 + actual move (matching Live module logic)
   const displayMoves = useMemo(() => {
     if (!analysisMoves || analysisMoves.length === 0) return [];
-    const moves = analysisMoves.slice(0, 5);
-    const totalPsv = moves.reduce((sum, m) => sum + (m.psv || 0), 0);
-    const totalVisits = moves.reduce((sum, m) => sum + m.visits, 0);
+
+    const topN = 3;
+    const topMoves = analysisMoves.slice(0, topN);
+
+    // Check if actual move is in top N
+    const actualMoveInTop = actualMoveGtp ? topMoves.findIndex(m => m.move === actualMoveGtp) : -1;
+
+    let movesToShow: (AnalysisMove & { isActualMove?: boolean })[] = [];
+
+    if (actualMoveInTop >= 0 || !actualMoveGtp) {
+      // Actual move is in top N or no actual move - show top N only
+      movesToShow = topMoves.map(m => ({
+        ...m,
+        isActualMove: actualMoveGtp === m.move,
+      }));
+    } else {
+      // Actual move is NOT in top N - show top N + actual move
+      movesToShow = topMoves.map(m => ({
+        ...m,
+        isActualMove: false,
+      }));
+
+      // Find actual move in all analysis moves
+      const actualMoveData = analysisMoves.find(m => m.move === actualMoveGtp);
+      if (actualMoveData) {
+        movesToShow.push({
+          ...actualMoveData,
+          isActualMove: true,
+        });
+      } else {
+        // Actual move not in analysis - create placeholder
+        movesToShow.push({
+          move: actualMoveGtp,
+          coords: null,
+          winrate: 0,
+          scoreLead: 0,
+          scoreLoss: 0,
+          visits: 0,
+          psv: 0,
+          isActualMove: true,
+        });
+      }
+    }
+
+    // Calculate percentage based on psv (matching Live module)
+    const totalPsv = movesToShow.reduce((sum, m) => sum + (m.psv || 0), 0);
+    const totalVisits = movesToShow.reduce((sum, m) => sum + m.visits, 0);
     const usePsv = totalPsv > 0;
-    return moves.map(m => ({
+
+    return movesToShow.map(m => ({
       ...m,
       percentage: usePsv
         ? ((m.psv || 0) / totalPsv) * 100
         : (totalVisits > 0 ? (m.visits / totalVisits) * 100 : 0),
     }));
-  }, [analysisMoves]);
+  }, [analysisMoves, actualMoveGtp]);
 
   const renderTrendChart = useCallback(() => {
     const width = 420;
@@ -321,7 +387,7 @@ export default function ResearchAnalysisPanel({
         {/* "No data" placeholder when no analysis available */}
         {dataPoints.length === 0 && (
           <text x={width / 2} y={height / 2} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.2)" fontSize="14">
-            分析数据将在此显示
+            {t('research:analysis_placeholder', '分析数据将在此显示')}
           </text>
         )}
       </svg>
@@ -360,7 +426,7 @@ export default function ResearchAnalysisPanel({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#000', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' }} />
                 <Typography variant="body1" fontWeight={blackAdvantage ? 700 : 400} sx={{ fontSize: '0.95rem' }}>
-                  {playerBlack || '黑方'}
+                  {playerBlack || t('research:black', '黑方')}
                 </Typography>
               </Box>
             </Box>
@@ -368,7 +434,7 @@ export default function ResearchAnalysisPanel({
             <Box sx={{ flex: 1, textAlign: 'right' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
                 <Typography variant="body1" fontWeight={!blackAdvantage ? 700 : 400} sx={{ fontSize: '0.95rem' }}>
-                  {playerWhite || '白方'}
+                  {playerWhite || t('research:white', '白方')}
                 </Typography>
                 <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#fff', border: '1px solid', borderColor: 'grey.400', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
               </Box>
@@ -406,7 +472,7 @@ export default function ResearchAnalysisPanel({
                   fontSize: '0.75rem',
                   letterSpacing: 0.3,
                 }}>
-                  {rulesDisplayName(rules)}
+                  {rulesDisplayName(rules, t)}
                 </Typography>
               )}
               {komi != null && (
@@ -418,7 +484,7 @@ export default function ResearchAnalysisPanel({
                   fontSize: '0.75rem',
                   letterSpacing: 0.3,
                 }}>
-                  贴目 {komi}
+                  {t('research:komi', '贴目 {komi}').replace('{komi}', String(komi))}
                 </Typography>
               )}
               {handicap != null && handicap > 0 && (
@@ -431,7 +497,7 @@ export default function ResearchAnalysisPanel({
                   fontWeight: 600,
                   letterSpacing: 0.3,
                 }}>
-                  让{handicap}子
+                  {t('research:handicap', '让{handicap}子').replace('{handicap}', String(handicap))}
                 </Typography>
               )}
             </Box>
@@ -443,7 +509,7 @@ export default function ResearchAnalysisPanel({
               {winratePercent.toFixed(1)}%
             </Typography>
             <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ fontSize: '0.875rem' }}>
-              {scoreLead > 0 ? '+' : ''}{scoreLead.toFixed(1)} 目
+              {t('research:points', '{delta} 目').replace('{delta}', `${scoreLead > 0 ? '+' : ''}${scoreLead.toFixed(1)}`)}
             </Typography>
             <Typography variant="body2" fontWeight={!blackAdvantage ? 700 : 400} sx={{ fontSize: '0.875rem' }}>
               {(100 - winratePercent).toFixed(1)}%
@@ -492,11 +558,11 @@ export default function ResearchAnalysisPanel({
         <Box sx={{ px: 2, py: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              AI 推荐
+              {t('research:ai_recommendations', 'AI 推荐')}
             </Typography>
             {analysisMoves && analysisMoves.length > 0 && (
               <Typography variant="caption" color="text.secondary">
-                第 {currentMove} 手后
+                {t('research:after_move', '第 {currentMove} 手后').replace('{currentMove}', String(currentMove))}
               </Typography>
             )}
           </Box>
@@ -511,20 +577,21 @@ export default function ResearchAnalysisPanel({
             borderRadius: 1,
             mb: 0.5,
           }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>着手</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>推荐度</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>目差</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>胜率</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{t('research:col_move', '着手')}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>{t('research:col_recommendation', '推荐度')}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>{t('research:col_score_diff', '目差')}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.8rem' }}>{t('research:col_winrate', '胜率')}</Typography>
           </Box>
           {/* Move rows */}
           {displayMoves.length > 0 ? (
             <Box sx={{ maxHeight: 160, overflowY: 'auto' }}>
-              {displayMoves.map((move, index) => {
+              {displayMoves.map((move) => {
                 // scoreLead is from Black's perspective; adjust for display player
                 const rawScore = move.scoreLead ?? 0;
                 const sLead = nextPlayer === 'B' ? rawScore : -rawScore;
                 const wr = nextPlayer === 'B' ? move.winrate : 1 - move.winrate;
                 const oppWr = 1 - wr;
+                const isActual = move.isActualMove || false;
                 return (
                   <Box
                     key={move.move}
@@ -538,7 +605,9 @@ export default function ResearchAnalysisPanel({
                       borderRadius: 1,
                       cursor: 'pointer',
                       transition: 'background-color 0.15s',
-                      bgcolor: index === 0 ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                      bgcolor: isActual ? 'rgba(76, 175, 80, 0.15)' : 'transparent',
+                      border: isActual ? '1px solid' : '1px solid transparent',
+                      borderColor: isActual ? 'success.main' : 'transparent',
                       '&:hover': { bgcolor: 'action.hover' },
                     }}
                   >
@@ -552,7 +621,7 @@ export default function ResearchAnalysisPanel({
                       <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
                         {move.move}
                       </Typography>
-                      {index === 0 && (
+                      {isActual && (
                         <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
                       )}
                     </Box>
@@ -561,11 +630,11 @@ export default function ResearchAnalysisPanel({
                       <Box sx={{
                         minWidth: 48, height: 24, px: 1,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        bgcolor: index === 0 ? 'primary.main' : 'rgba(255,255,255,0.1)',
+                        bgcolor: isActual ? 'primary.main' : 'rgba(255,255,255,0.1)',
                         borderRadius: 1,
                       }}>
                         <Typography variant="body2" fontWeight="bold"
-                          color={index === 0 ? 'primary.contrastText' : 'text.primary'}
+                          color={isActual ? 'primary.contrastText' : 'text.primary'}
                           sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
                           {move.percentage.toFixed(0)}%
                         </Typography>
@@ -620,7 +689,7 @@ export default function ResearchAnalysisPanel({
           ) : (
             <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                {isAnalysisPending ? '正在分析...' : '等待分析数据'}
+                {isAnalysisPending ? t('research:analyzing', '正在分析...') : t('research:waiting_analysis', '等待分析数据')}
               </Typography>
             </Box>
           )}
@@ -641,9 +710,9 @@ export default function ResearchAnalysisPanel({
               bgcolor: 'background.paper',
             }}
           >
-            <Tab label="走势图" sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
-            <Tab label={`妙手 (${goodMoves.length})`} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
-            <Tab label={`问题手 (${badMoves.length})`} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
+            <Tab label={t('research:trend_chart', '走势图')} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
+            <Tab label={t('research:brilliant_moves', '妙手 ({count})').replace('{count}', String(goodMoves.length))} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
+            <Tab label={t('research:mistakes', '问题手 ({count})').replace('{count}', String(badMoves.length))} sx={{ minHeight: 40, py: 0, fontSize: '0.9rem' }} />
           </Tabs>
 
           <Box sx={{ px: 1.5, py: 1, flex: 1, overflow: 'auto' }}>
@@ -651,10 +720,10 @@ export default function ResearchAnalysisPanel({
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, px: 0.5 }}>
                   <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600, fontSize: '0.875rem' }}>
-                    黑方胜率: {winratePercent.toFixed(1)}%
+                    {t('research:black_winrate', '黑方胜率: {winrate}%').replace('{winrate}', winratePercent.toFixed(1))}
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 600, fontSize: '0.875rem' }}>
-                    黑方领先: {scoreLead >= 0 ? '+' : ''}{scoreLead.toFixed(1)} 目
+                    {t('research:black_lead', '黑方领先: {score} 目').replace('{score}', `${scoreLead >= 0 ? '+' : ''}${scoreLead.toFixed(1)}`)}
                   </Typography>
                 </Box>
                 <Box
@@ -669,7 +738,7 @@ export default function ResearchAnalysisPanel({
               <Box>
                 {goodMoves.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                    暂无妙手
+                    {t('research:no_brilliant_moves', '暂无妙手')}
                   </Typography>
                 ) : (
                   goodMoves.map((m) => (
@@ -690,10 +759,10 @@ export default function ResearchAnalysisPanel({
                         border: m.player === 'W' ? '1px solid #666' : 'none',
                       }} />
                       <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 60 }}>
-                        第 {m.moveIndex} 手
+                        {t('research:move_n', '第 {n} 手').replace('{n}', String(m.moveIndex))}
                       </Typography>
                       <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
-                        +{m.delta.toFixed(1)} 目
+                        {t('research:points', '{delta} 目').replace('{delta}', `+${m.delta.toFixed(1)}`)}
                       </Typography>
                     </Box>
                   ))
@@ -704,7 +773,7 @@ export default function ResearchAnalysisPanel({
               <Box>
                 {badMoves.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                    暂无问题手
+                    {t('research:no_mistakes', '暂无问题手')}
                   </Typography>
                 ) : (
                   badMoves.map((m) => (
@@ -725,13 +794,13 @@ export default function ResearchAnalysisPanel({
                         border: m.player === 'W' ? '1px solid #666' : 'none',
                       }} />
                       <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 60 }}>
-                        第 {m.moveIndex} 手
+                        {t('research:move_n', '第 {n} 手').replace('{n}', String(m.moveIndex))}
                       </Typography>
                       <Typography variant="body2" sx={{
                         color: m.delta <= MISTAKE_THRESHOLD ? '#f44336' : '#ff9800',
                         fontWeight: 600,
                       }}>
-                        {m.delta.toFixed(1)} 目
+                        {t('research:points', '{delta} 目').replace('{delta}', m.delta.toFixed(1))}
                       </Typography>
                     </Box>
                   ))
@@ -760,12 +829,12 @@ export default function ResearchAnalysisPanel({
         </Box>
 
         <Stack direction="row" justifyContent="center" alignItems="center" spacing={0.5}>
-          <Tooltip title="最初">
+          <Tooltip title={t('research:first', '最初')}>
             <IconButton size="small" onClick={() => onMoveChange(0)} disabled={currentMove === 0} sx={iconButtonStyle}>
               <KeyboardDoubleArrowLeftIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="后退">
+          <Tooltip title={t('research:back', '后退')}>
             <IconButton size="small" onClick={() => onMoveChange(Math.max(0, currentMove - 1))} disabled={currentMove === 0} sx={iconButtonStyle}>
               <ChevronLeftIcon />
             </IconButton>
@@ -788,18 +857,18 @@ export default function ResearchAnalysisPanel({
           >
             {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
           </IconButton>
-          <Tooltip title="前进">
+          <Tooltip title={t('research:next', '前进')}>
             <IconButton size="small" onClick={() => onMoveChange(Math.min(totalMoves, currentMove + 1))} disabled={currentMove >= totalMoves} sx={iconButtonStyle}>
               <ChevronRightIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="最终">
+          <Tooltip title={t('research:last', '最终')}>
             <IconButton size="small" onClick={() => onMoveChange(totalMoves)} disabled={currentMove >= totalMoves} sx={iconButtonStyle}>
               <KeyboardDoubleArrowRightIcon />
             </IconButton>
           </Tooltip>
           <Typography variant="body2" color="text.secondary" sx={{ ml: 2, minWidth: 90, fontSize: '0.9rem' }}>
-            {currentMove} / {totalMoves} 手
+            {t('research:move_counter', '{current} / {total} 手').replace('{current}', String(currentMove)).replace('{total}', String(totalMoves))}
           </Typography>
         </Stack>
       </Box>

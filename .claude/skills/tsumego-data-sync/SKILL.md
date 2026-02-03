@@ -9,6 +9,10 @@ description: Update tsumego problem database and index from SGF files. Use when 
 
 This skill documents the process for updating the tsumego (Go life-and-death problems) database and index in KaTrain.
 
+## IMPORTANT: Do NOT List Files
+
+The `data/life-n-death/` directory contains thousands of SGF files. **Never** use `ls`, `Glob`, `find`, or any other tool to list its contents — this will flood the context window and exhaust available tokens. The Python scripts handle file traversal internally and only output summary statistics.
+
 ## Data Structure
 
 ```

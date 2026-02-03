@@ -21,10 +21,18 @@ OUTPUT_FILE = DATA_DIR / "index.json"
 
 def parse_category(comment: str) -> str:
     """Extract problem type from SGF comment."""
-    if "手筋" in comment:
+    if "吃子" in comment:
+        return "capturing"
+    elif "对杀" in comment:
+        return "semeai"
+    elif "手筋" in comment:
         return "tesuji"
     elif "官子" in comment:
         return "endgame"
+    elif "布局" in comment:
+        return "opening"
+    elif "中盘" in comment:
+        return "midgame"
     else:
         return "life-death"
 

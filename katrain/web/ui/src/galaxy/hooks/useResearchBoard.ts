@@ -72,7 +72,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
   const [stoneColors, setStoneColors] = useState<('B' | 'W')[]>([]);
   const [currentMove, setCurrentMove] = useState(0);
   const [boardSize, setBoardSize] = useState(19);
-  const [placeMode, setPlaceMode] = useState<PlaceMode>(null);
+  const [placeMode, setPlaceMode] = useState<PlaceMode>('alternate');
   const [editMode, setEditMode] = useState<EditMode>(null);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
   const [rules, setRules] = useState('chinese');

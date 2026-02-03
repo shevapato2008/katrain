@@ -1936,3 +1936,351 @@ msgstr "Analyse en cours..."
 
 msgid "live:analysis_auto_processed"
 msgstr "L'analyse est traitée automatiquement en arrière-plan"
+
+msgid "research:mode"
+msgstr "Mode recherche"
+
+msgid "research:return_to_edit"
+msgstr "Retour à l'édition"
+
+msgid "research:analyzing_game"
+msgstr "Analyse de la partie"
+
+msgid "research:progress"
+msgstr "{analyzed} / {total} coups terminés"
+
+msgid "research:connecting"
+msgstr "Connexion à la session de recherche..."
+
+msgid "research:eta"
+msgstr "Temps restant estimé : {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} coups"
+
+msgid "research:move_numbers"
+msgstr "Numéros de coup"
+
+msgid "research:pass"
+msgstr "Passer"
+
+msgid "research:move"
+msgstr "Déplacer"
+
+msgid "research:delete"
+msgstr "Supprimer"
+
+msgid "research:place_black"
+msgstr "Placer noir"
+
+msgid "research:place_white"
+msgstr "Placer blanc"
+
+msgid "research:alternate"
+msgstr "Alterner"
+
+msgid "research:clear"
+msgstr "Effacer"
+
+msgid "research:hints"
+msgstr "Indices"
+
+msgid "research:territory"
+msgstr "Territoire"
+
+msgid "research:open"
+msgstr "Ouvrir"
+
+msgid "research:save"
+msgstr "Enregistrer"
+
+msgid "research:open_local_sgf"
+msgstr "Ouvrir SGF local"
+
+msgid "research:import_from_library"
+msgstr "Importer de la bibliothèque de parties"
+
+msgid "research:save_sgf"
+msgstr "Enregistrer SGF"
+
+msgid "research:save_to_library"
+msgstr "Enregistrer dans la bibliothèque de parties"
+
+msgid "research:copy_sgf"
+msgstr "Copier SGF dans le presse-papiers"
+
+msgid "research:pass_confirm_title"
+msgstr "Passer"
+
+msgid "research:pass_confirm_msg"
+msgstr "Insérer un passe à la position actuelle ?"
+
+msgid "research:cancel"
+msgstr "Annuler"
+
+msgid "research:confirm"
+msgstr "Confirmer"
+
+msgid "research:rules_chinese"
+msgstr "Règles chinoises"
+
+msgid "research:rules_japanese"
+msgstr "Règles japonaises"
+
+msgid "research:rules_korean"
+msgstr "Règles coréennes"
+
+msgid "research:komi"
+msgstr "Komi {komi}"
+
+msgid "research:handicap"
+msgstr "Handicap de {handicap} pierres"
+
+msgid "research:ai_recommendations"
+msgstr "Recommandations IA"
+
+msgid "research:after_move"
+msgstr "Après le coup {currentMove}"
+
+msgid "research:col_move"
+msgstr "Coup"
+
+msgid "research:col_recommendation"
+msgstr "Rec %"
+
+msgid "research:col_score_diff"
+msgstr "Diff. points"
+
+msgid "research:col_winrate"
+msgstr "Taux de victoire"
+
+msgid "research:analyzing"
+msgstr "Analyse en cours..."
+
+msgid "research:waiting_analysis"
+msgstr "En attente des données d'analyse"
+
+msgid "research:analysis_placeholder"
+msgstr "Les données d'analyse apparaîtront ici"
+
+msgid "research:trend_chart"
+msgstr "Graphique de tendance"
+
+msgid "research:brilliant_moves"
+msgstr "Brillants ({count})"
+
+msgid "research:mistakes"
+msgstr "Erreurs ({count})"
+
+msgid "research:black_winrate"
+msgstr "Taux de victoire des noirs : {winrate}%"
+
+msgid "research:black_lead"
+msgstr "Avance des noirs : {score} pts"
+
+msgid "research:no_brilliant_moves"
+msgstr "Aucun coup brillant"
+
+msgid "research:no_mistakes"
+msgstr "Aucune erreur"
+
+msgid "research:move_n"
+msgstr "Coup {n}"
+
+msgid "research:points"
+msgstr "{delta} pts"
+
+msgid "research:first"
+msgstr "Début"
+
+msgid "research:back"
+msgstr "Retour"
+
+msgid "research:next"
+msgstr "Suivant"
+
+msgid "research:last"
+msgstr "Fin"
+
+msgid "research:game_info"
+msgstr "Informations sur la partie"
+
+msgid "research:rules_settings"
+msgstr "Paramètres des règles"
+
+msgid "research:board_size"
+msgstr "Taille du plateau"
+
+msgid "research:rules"
+msgstr "Règles"
+
+msgid "research:komi_label"
+msgstr "Komi"
+
+msgid "research:handicap_label"
+msgstr "Handicap"
+
+msgid "research:none"
+msgstr "Aucun"
+
+msgid "research:n_stones"
+msgstr "{n} pierres"
+
+msgid "research:edit_tools"
+msgstr "Outils d'édition"
+
+msgid "research:start_research"
+msgstr "Démarrer la recherche"
+
+msgid "research:my_games"
+msgstr "Mes parties"
+
+msgid "research:my_positions"
+msgstr "Mes positions"
+
+msgid "research:tournament_games"
+msgstr "Parties de tournoi"
+
+msgid "research:game_library"
+msgstr "Bibliothèque de parties"
+
+msgid "research:login_to_view"
+msgstr "Connectez-vous pour voir vos parties"
+
+msgid "research:search_placeholder"
+msgstr "Rechercher joueurs, événements..."
+
+msgid "research:please_login"
+msgstr "Veuillez vous connecter"
+
+msgid "research:no_games"
+msgstr "Aucune partie"
+
+msgid "research:n_moves"
+msgstr "{n} coups"
+
+msgid "research:black"
+msgstr "Noir"
+
+msgid "research:white"
+msgstr "Blanc"
+
+msgid "kifu:library"
+msgstr "Bibliothèque de parties"
+
+msgid "kifu:search_placeholder"
+msgstr "Rechercher par joueur, tournoi, date…"
+
+msgid "kifu:records"
+msgstr "enregistrements"
+
+msgid "kifu:no_results"
+msgstr "Aucun enregistrement trouvé"
+
+msgid "kifu:col_event"
+msgstr "Tournoi"
+
+msgid "kifu:col_black"
+msgstr "Noir"
+
+msgid "kifu:col_white"
+msgstr "Blanc"
+
+msgid "kifu:col_result"
+msgstr "Résultat"
+
+msgid "kifu:col_moves"
+msgstr "Coups"
+
+msgid "kifu:col_date"
+msgstr "Date"
+
+msgid "kifu:moves_unit"
+msgstr " coups"
+
+msgid "kifu:load_error"
+msgstr "Échec du chargement de la partie"
+
+msgid "kifu:back_to_list"
+msgstr "Retour à la bibliothèque"
+
+msgid "kifu:date"
+msgstr "Date"
+
+msgid "kifu:komi"
+msgstr "Komi"
+
+msgid "kifu:handicap"
+msgstr "Handicap"
+
+msgid "kifu:board_size"
+msgstr "Plateau"
+
+msgid "kifu:moves"
+msgstr "Coups"
+
+msgid "kifu:rules"
+msgstr "Règles"
+
+msgid "kifu:place"
+msgstr "Lieu"
+
+msgid "kifu:source"
+msgstr "Source"
+
+msgid "kifu:open_in_research"
+msgstr "Ouvrir en recherche"
+
+msgid "kifu:select_to_preview"
+msgstr "Sélectionnez une partie à prévisualiser"
+
+msgid "kifu:loading"
+msgstr "Chargement..."
+
+msgid "research:time_min_sec"
+msgstr "{min}m{sec}s"
+
+msgid "research:time_sec"
+msgstr "{sec}s"
+
+msgid "tsumego:capturing"
+msgstr "Capture"
+
+msgid "tsumego:semeai"
+msgstr "Semeai"
+
+msgid "tsumego:opening"
+msgstr "Ouverture"
+
+msgid "tsumego:midgame"
+msgstr "Milieu de partie"
+
+msgid "research:suggestions"
+msgstr "Conseil"
+
+msgid "result:black_win"
+msgstr "N+"
+
+msgid "result:white_win"
+msgstr "B+"
+
+msgid "result:resign"
+msgstr "Aband."
+
+msgid "result:time"
+msgstr "Temps"
+
+msgid "result:forfeit"
+msgstr "Forf."
+
+msgid "result:points"
+msgstr ""
+
+msgid "result:draw"
+msgstr "Nulle"
+
+msgid "result:points_zi"
+msgstr ""
+
+msgid "result:points_moku"
+msgstr ""

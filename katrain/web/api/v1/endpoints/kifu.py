@@ -23,6 +23,7 @@ class KifuAlbumSummary(BaseModel):
     white_rank: Optional[str]
     event: Optional[str]
     result: Optional[str]
+    rules: Optional[str]
     date_played: Optional[str]
     komi: Optional[float]
     handicap: int
@@ -61,8 +62,8 @@ def list_kifu_albums(
         # search_text is stored lowercased; match with lower(q)
         query = query.filter(KifuAlbum.search_text.contains(q.lower()))
 
-    # Sort by normalized date descending, then by id for deterministic pagination
-    query = query.order_by(KifuAlbum.date_sort.desc(), KifuAlbum.id.desc())
+    # Sort by normalized date descending (nulls last), then by id for deterministic pagination
+    query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())
 
     total = query.count()
     records = query.offset((page - 1) * page_size).limit(page_size).all()

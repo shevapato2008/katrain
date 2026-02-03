@@ -1997,3 +1997,351 @@ msgstr "Analiz bekliyor..."
 
 msgid "live:analysis_auto_processed"
 msgstr "Analiz arka planda otomatik olarak işlenir"
+
+msgid "research:mode"
+msgstr "Araştırma Modu"
+
+msgid "research:return_to_edit"
+msgstr "Düzenlemeye Dön"
+
+msgid "research:analyzing_game"
+msgstr "Oyun Analiz Ediliyor"
+
+msgid "research:progress"
+msgstr "{analyzed} / {total} hamle tamamlandı"
+
+msgid "research:connecting"
+msgstr "Araştırma oturumuna bağlanılıyor..."
+
+msgid "research:eta"
+msgstr "Tahmini kalan süre: {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} hamle"
+
+msgid "research:move_numbers"
+msgstr "Hamle Numaraları"
+
+msgid "research:pass"
+msgstr "Pas"
+
+msgid "research:move"
+msgstr "Hamle"
+
+msgid "research:delete"
+msgstr "Sil"
+
+msgid "research:place_black"
+msgstr "Siyah Koy"
+
+msgid "research:place_white"
+msgstr "Beyaz Koy"
+
+msgid "research:alternate"
+msgstr "Sırayla"
+
+msgid "research:clear"
+msgstr "Temizle"
+
+msgid "research:hints"
+msgstr "İpuçları"
+
+msgid "research:territory"
+msgstr "Bölge"
+
+msgid "research:open"
+msgstr "Aç"
+
+msgid "research:save"
+msgstr "Kaydet"
+
+msgid "research:open_local_sgf"
+msgstr "Yerel SGF Aç"
+
+msgid "research:import_from_library"
+msgstr "Oyun Kütüphanesinden İçe Aktar"
+
+msgid "research:save_sgf"
+msgstr "SGF Kaydet"
+
+msgid "research:save_to_library"
+msgstr "Oyun Kütüphanesine Kaydet"
+
+msgid "research:copy_sgf"
+msgstr "SGF'yi Panoya Kopyala"
+
+msgid "research:pass_confirm_title"
+msgstr "Pas"
+
+msgid "research:pass_confirm_msg"
+msgstr "Mevcut konuma pas eklensin mi?"
+
+msgid "research:cancel"
+msgstr "İptal"
+
+msgid "research:confirm"
+msgstr "Onayla"
+
+msgid "research:rules_chinese"
+msgstr "Çin Kuralları"
+
+msgid "research:rules_japanese"
+msgstr "Japon Kuralları"
+
+msgid "research:rules_korean"
+msgstr "Kore Kuralları"
+
+msgid "research:komi"
+msgstr "Komi {komi}"
+
+msgid "research:handicap"
+msgstr "{handicap} taş avantaj"
+
+msgid "research:ai_recommendations"
+msgstr "Yapay Zeka Önerileri"
+
+msgid "research:after_move"
+msgstr "{currentMove}. hamleden sonra"
+
+msgid "research:col_move"
+msgstr "Hamle"
+
+msgid "research:col_recommendation"
+msgstr "Öneri %"
+
+msgid "research:col_score_diff"
+msgstr "Puan Farkı"
+
+msgid "research:col_winrate"
+msgstr "Kazanma Oranı"
+
+msgid "research:analyzing"
+msgstr "Analiz ediliyor..."
+
+msgid "research:waiting_analysis"
+msgstr "Analiz verileri bekleniyor"
+
+msgid "research:analysis_placeholder"
+msgstr "Analiz verileri burada görünecek"
+
+msgid "research:trend_chart"
+msgstr "Trend Grafiği"
+
+msgid "research:brilliant_moves"
+msgstr "Parlak ({count})"
+
+msgid "research:mistakes"
+msgstr "Hatalar ({count})"
+
+msgid "research:black_winrate"
+msgstr "Siyah Kazanma Oranı: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "Siyah Önde: {score} puan"
+
+msgid "research:no_brilliant_moves"
+msgstr "Parlak hamle yok"
+
+msgid "research:no_mistakes"
+msgstr "Hata yok"
+
+msgid "research:move_n"
+msgstr "{n}. hamle"
+
+msgid "research:points"
+msgstr "{delta} puan"
+
+msgid "research:first"
+msgstr "Başlangıç"
+
+msgid "research:back"
+msgstr "Geri"
+
+msgid "research:next"
+msgstr "İleri"
+
+msgid "research:last"
+msgstr "Son"
+
+msgid "research:game_info"
+msgstr "Oyun Bilgileri"
+
+msgid "research:rules_settings"
+msgstr "Kural Ayarları"
+
+msgid "research:board_size"
+msgstr "Tahta Boyutu"
+
+msgid "research:rules"
+msgstr "Kurallar"
+
+msgid "research:komi_label"
+msgstr "Komi"
+
+msgid "research:handicap_label"
+msgstr "Avantaj"
+
+msgid "research:none"
+msgstr "Yok"
+
+msgid "research:n_stones"
+msgstr "{n} taş"
+
+msgid "research:edit_tools"
+msgstr "Düzenleme Araçları"
+
+msgid "research:start_research"
+msgstr "Araştırmayı Başlat"
+
+msgid "research:my_games"
+msgstr "Oyunlarım"
+
+msgid "research:my_positions"
+msgstr "Konumlarım"
+
+msgid "research:tournament_games"
+msgstr "Turnuva Oyunları"
+
+msgid "research:game_library"
+msgstr "Oyun Kütüphanesi"
+
+msgid "research:login_to_view"
+msgstr "Oyunlarınızı görmek için giriş yapın"
+
+msgid "research:search_placeholder"
+msgstr "Oyuncu, etkinlik ara..."
+
+msgid "research:please_login"
+msgstr "Lütfen giriş yapın"
+
+msgid "research:no_games"
+msgstr "Oyun yok"
+
+msgid "research:n_moves"
+msgstr "{n} hamle"
+
+msgid "research:black"
+msgstr "Siyah"
+
+msgid "research:white"
+msgstr "Beyaz"
+
+msgid "kifu:library"
+msgstr "Oyun Kayıtları"
+
+msgid "kifu:search_placeholder"
+msgstr "Oyuncu, turnuva, tarih ile ara…"
+
+msgid "kifu:records"
+msgstr "kayıt"
+
+msgid "kifu:no_results"
+msgstr "Kayıt bulunamadı"
+
+msgid "kifu:col_event"
+msgstr "Turnuva"
+
+msgid "kifu:col_black"
+msgstr "Siyah"
+
+msgid "kifu:col_white"
+msgstr "Beyaz"
+
+msgid "kifu:col_result"
+msgstr "Sonuç"
+
+msgid "kifu:col_moves"
+msgstr "Hamle"
+
+msgid "kifu:col_date"
+msgstr "Tarih"
+
+msgid "kifu:moves_unit"
+msgstr " hamle"
+
+msgid "kifu:load_error"
+msgstr "Oyun kaydı yüklenemedi"
+
+msgid "kifu:back_to_list"
+msgstr "Kütüphaneye dön"
+
+msgid "kifu:date"
+msgstr "Tarih"
+
+msgid "kifu:komi"
+msgstr "Komi"
+
+msgid "kifu:handicap"
+msgstr "Avantaj"
+
+msgid "kifu:board_size"
+msgstr "Tahta"
+
+msgid "kifu:moves"
+msgstr "Hamle"
+
+msgid "kifu:rules"
+msgstr "Kurallar"
+
+msgid "kifu:place"
+msgstr "Yer"
+
+msgid "kifu:source"
+msgstr "Kaynak"
+
+msgid "kifu:open_in_research"
+msgstr "Araştırmada aç"
+
+msgid "kifu:select_to_preview"
+msgstr "Önizleme için bir oyun seçin"
+
+msgid "kifu:loading"
+msgstr "Yükleniyor..."
+
+msgid "research:time_min_sec"
+msgstr "{min}dk{sec}sn"
+
+msgid "research:time_sec"
+msgstr "{sec}sn"
+
+msgid "tsumego:capturing"
+msgstr "Yakalama"
+
+msgid "tsumego:semeai"
+msgstr "Semeai"
+
+msgid "tsumego:opening"
+msgstr "Açılış"
+
+msgid "tsumego:midgame"
+msgstr "Orta oyun"
+
+msgid "research:suggestions"
+msgstr "Tavsiye"
+
+msgid "result:black_win"
+msgstr "S+"
+
+msgid "result:white_win"
+msgstr "B+"
+
+msgid "result:resign"
+msgstr "Terk."
+
+msgid "result:time"
+msgstr "Süre"
+
+msgid "result:forfeit"
+msgstr "Hük."
+
+msgid "result:points"
+msgstr ""
+
+msgid "result:draw"
+msgstr "Berabere"
+
+msgid "result:points_zi"
+msgstr ""
+
+msgid "result:points_moku"
+msgstr ""

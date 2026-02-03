@@ -1931,3 +1931,351 @@ msgstr "Analysis pending..."
 
 msgid "live:analysis_auto_processed"
 msgstr "Analysis is automatically processed in the background"
+
+msgid "research:mode"
+msgstr "Research Mode"
+
+msgid "research:return_to_edit"
+msgstr "Return to Edit"
+
+msgid "research:analyzing_game"
+msgstr "Analyzing Game"
+
+msgid "research:progress"
+msgstr "Completed {analyzed} / {total} moves"
+
+msgid "research:connecting"
+msgstr "Connecting to research session..."
+
+msgid "research:eta"
+msgstr "Estimated time remaining: {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} moves"
+
+msgid "research:move_numbers"
+msgstr "Move Numbers"
+
+msgid "research:pass"
+msgstr "Pass"
+
+msgid "research:move"
+msgstr "Move"
+
+msgid "research:delete"
+msgstr "Delete"
+
+msgid "research:place_black"
+msgstr "Place Black"
+
+msgid "research:place_white"
+msgstr "Place White"
+
+msgid "research:alternate"
+msgstr "Alternate"
+
+msgid "research:clear"
+msgstr "Clear"
+
+msgid "research:hints"
+msgstr "Hints"
+
+msgid "research:territory"
+msgstr "Territory"
+
+msgid "research:open"
+msgstr "Open"
+
+msgid "research:save"
+msgstr "Save"
+
+msgid "research:open_local_sgf"
+msgstr "Open Local SGF"
+
+msgid "research:import_from_library"
+msgstr "Import from Game Library"
+
+msgid "research:save_sgf"
+msgstr "Save SGF"
+
+msgid "research:save_to_library"
+msgstr "Save to Game Library"
+
+msgid "research:copy_sgf"
+msgstr "Copy SGF to Clipboard"
+
+msgid "research:pass_confirm_title"
+msgstr "Pass"
+
+msgid "research:pass_confirm_msg"
+msgstr "Insert a Pass at the current position?"
+
+msgid "research:cancel"
+msgstr "Cancel"
+
+msgid "research:confirm"
+msgstr "Confirm"
+
+msgid "research:rules_chinese"
+msgstr "Chinese Rules"
+
+msgid "research:rules_japanese"
+msgstr "Japanese Rules"
+
+msgid "research:rules_korean"
+msgstr "Korean Rules"
+
+msgid "research:komi"
+msgstr "Komi {komi}"
+
+msgid "research:handicap"
+msgstr "{handicap}-stone handicap"
+
+msgid "research:ai_recommendations"
+msgstr "AI Recommendations"
+
+msgid "research:after_move"
+msgstr "After move {currentMove}"
+
+msgid "research:col_move"
+msgstr "Move"
+
+msgid "research:col_recommendation"
+msgstr "Rec %"
+
+msgid "research:col_score_diff"
+msgstr "Score Diff"
+
+msgid "research:col_winrate"
+msgstr "Winrate"
+
+msgid "research:analyzing"
+msgstr "Analyzing..."
+
+msgid "research:waiting_analysis"
+msgstr "Waiting for analysis data"
+
+msgid "research:analysis_placeholder"
+msgstr "Analysis data will appear here"
+
+msgid "research:trend_chart"
+msgstr "Trend Chart"
+
+msgid "research:brilliant_moves"
+msgstr "Brilliant ({count})"
+
+msgid "research:mistakes"
+msgstr "Mistakes ({count})"
+
+msgid "research:black_winrate"
+msgstr "Black Winrate: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "Black Lead: {score} pts"
+
+msgid "research:no_brilliant_moves"
+msgstr "No brilliant moves"
+
+msgid "research:no_mistakes"
+msgstr "No mistakes"
+
+msgid "research:move_n"
+msgstr "Move {n}"
+
+msgid "research:points"
+msgstr "{delta} pts"
+
+msgid "research:first"
+msgstr "First"
+
+msgid "research:back"
+msgstr "Back"
+
+msgid "research:next"
+msgstr "Next"
+
+msgid "research:last"
+msgstr "Last"
+
+msgid "research:game_info"
+msgstr "Game Information"
+
+msgid "research:rules_settings"
+msgstr "Rules Settings"
+
+msgid "research:board_size"
+msgstr "Board Size"
+
+msgid "research:rules"
+msgstr "Rules"
+
+msgid "research:komi_label"
+msgstr "Komi"
+
+msgid "research:handicap_label"
+msgstr "Handicap"
+
+msgid "research:none"
+msgstr "None"
+
+msgid "research:n_stones"
+msgstr "{n} stones"
+
+msgid "research:edit_tools"
+msgstr "Edit Tools"
+
+msgid "research:start_research"
+msgstr "Start Research"
+
+msgid "research:my_games"
+msgstr "My Games"
+
+msgid "research:my_positions"
+msgstr "My Positions"
+
+msgid "research:tournament_games"
+msgstr "Tournament Games"
+
+msgid "research:game_library"
+msgstr "Game Library"
+
+msgid "research:login_to_view"
+msgstr "Log in to view your games"
+
+msgid "research:search_placeholder"
+msgstr "Search players, events..."
+
+msgid "research:please_login"
+msgstr "Please log in"
+
+msgid "research:no_games"
+msgstr "No games"
+
+msgid "research:n_moves"
+msgstr "{n} moves"
+
+msgid "research:black"
+msgstr "Black"
+
+msgid "research:white"
+msgstr "White"
+
+msgid "kifu:library"
+msgstr "Game Records"
+
+msgid "kifu:search_placeholder"
+msgstr "Search by player, event, date..."
+
+msgid "kifu:records"
+msgstr "records"
+
+msgid "kifu:no_results"
+msgstr "No records found"
+
+msgid "kifu:col_event"
+msgstr "Event"
+
+msgid "kifu:col_black"
+msgstr "Black"
+
+msgid "kifu:col_white"
+msgstr "White"
+
+msgid "kifu:col_result"
+msgstr "Result"
+
+msgid "kifu:col_moves"
+msgstr "Moves"
+
+msgid "kifu:col_date"
+msgstr "Date"
+
+msgid "kifu:moves_unit"
+msgstr " moves"
+
+msgid "kifu:load_error"
+msgstr "Failed to load game record"
+
+msgid "kifu:back_to_list"
+msgstr "Back to library"
+
+msgid "kifu:date"
+msgstr "Date"
+
+msgid "kifu:komi"
+msgstr "Komi"
+
+msgid "kifu:handicap"
+msgstr "Handicap"
+
+msgid "kifu:board_size"
+msgstr "Board"
+
+msgid "kifu:moves"
+msgstr "Moves"
+
+msgid "kifu:rules"
+msgstr "Rules"
+
+msgid "kifu:place"
+msgstr "Place"
+
+msgid "kifu:source"
+msgstr "Source"
+
+msgid "kifu:open_in_research"
+msgstr "Open in Research"
+
+msgid "kifu:select_to_preview"
+msgstr "Select a game to preview"
+
+msgid "kifu:loading"
+msgstr "Loading..."
+
+msgid "research:time_min_sec"
+msgstr "{min}m{sec}s"
+
+msgid "research:time_sec"
+msgstr "{sec}s"
+
+msgid "tsumego:capturing"
+msgstr "Capturing"
+
+msgid "tsumego:semeai"
+msgstr "Semeai"
+
+msgid "tsumego:opening"
+msgstr "Opening"
+
+msgid "tsumego:midgame"
+msgstr "Midgame"
+
+msgid "research:suggestions"
+msgstr "Advice"
+
+msgid "result:black_win"
+msgstr "B+"
+
+msgid "result:white_win"
+msgstr "W+"
+
+msgid "result:resign"
+msgstr "R"
+
+msgid "result:time"
+msgstr "T"
+
+msgid "result:forfeit"
+msgstr "F"
+
+msgid "result:points"
+msgstr ""
+
+msgid "result:draw"
+msgstr "Draw"
+
+msgid "result:points_zi"
+msgstr ""
+
+msgid "result:points_moku"
+msgstr ""

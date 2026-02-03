@@ -1854,3 +1854,351 @@ msgstr "분석 처리 중..."
 
 msgid "live:analysis_auto_processed"
 msgstr "분석은 백그라운드에서 자동으로 처리됩니다"
+
+msgid "research:mode"
+msgstr "연구 모드"
+
+msgid "research:return_to_edit"
+msgstr "편집으로 돌아가기"
+
+msgid "research:analyzing_game"
+msgstr "기보 분석 중"
+
+msgid "research:progress"
+msgstr "{analyzed} / {total} 수 완료"
+
+msgid "research:connecting"
+msgstr "연구 세션에 연결 중..."
+
+msgid "research:eta"
+msgstr "예상 남은 시간: {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} 수"
+
+msgid "research:move_numbers"
+msgstr "수순"
+
+msgid "research:pass"
+msgstr "패스"
+
+msgid "research:move"
+msgstr "이동"
+
+msgid "research:delete"
+msgstr "삭제"
+
+msgid "research:place_black"
+msgstr "흑돌 놓기"
+
+msgid "research:place_white"
+msgstr "백돌 놓기"
+
+msgid "research:alternate"
+msgstr "교대"
+
+msgid "research:clear"
+msgstr "지우기"
+
+msgid "research:hints"
+msgstr "힌트"
+
+msgid "research:territory"
+msgstr "집"
+
+msgid "research:open"
+msgstr "열기"
+
+msgid "research:save"
+msgstr "저장"
+
+msgid "research:open_local_sgf"
+msgstr "로컬 SGF 열기"
+
+msgid "research:import_from_library"
+msgstr "기보 라이브러리에서 가져오기"
+
+msgid "research:save_sgf"
+msgstr "SGF 저장"
+
+msgid "research:save_to_library"
+msgstr "기보 라이브러리에 저장"
+
+msgid "research:copy_sgf"
+msgstr "SGF를 클립보드에 복사"
+
+msgid "research:pass_confirm_title"
+msgstr "패스"
+
+msgid "research:pass_confirm_msg"
+msgstr "현재 위치에 패스를 삽입하시겠습니까?"
+
+msgid "research:cancel"
+msgstr "취소"
+
+msgid "research:confirm"
+msgstr "확인"
+
+msgid "research:rules_chinese"
+msgstr "중국 규칙"
+
+msgid "research:rules_japanese"
+msgstr "일본 규칙"
+
+msgid "research:rules_korean"
+msgstr "한국 규칙"
+
+msgid "research:komi"
+msgstr "덤 {komi}"
+
+msgid "research:handicap"
+msgstr "{handicap}점 접바둑"
+
+msgid "research:ai_recommendations"
+msgstr "AI 추천"
+
+msgid "research:after_move"
+msgstr "{currentMove}수 이후"
+
+msgid "research:col_move"
+msgstr "착수"
+
+msgid "research:col_recommendation"
+msgstr "추천도"
+
+msgid "research:col_score_diff"
+msgstr "집 차이"
+
+msgid "research:col_winrate"
+msgstr "승률"
+
+msgid "research:analyzing"
+msgstr "분석 중..."
+
+msgid "research:waiting_analysis"
+msgstr "분석 데이터 대기 중"
+
+msgid "research:analysis_placeholder"
+msgstr "분석 데이터가 여기에 표시됩니다"
+
+msgid "research:trend_chart"
+msgstr "추세 차트"
+
+msgid "research:brilliant_moves"
+msgstr "묘수 ({count})"
+
+msgid "research:mistakes"
+msgstr "의문수 ({count})"
+
+msgid "research:black_winrate"
+msgstr "흑 승률: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "흑 우세: {score} 집"
+
+msgid "research:no_brilliant_moves"
+msgstr "묘수 없음"
+
+msgid "research:no_mistakes"
+msgstr "의문수 없음"
+
+msgid "research:move_n"
+msgstr "{n}수"
+
+msgid "research:points"
+msgstr "{delta} 집"
+
+msgid "research:first"
+msgstr "처음"
+
+msgid "research:back"
+msgstr "뒤로"
+
+msgid "research:next"
+msgstr "다음"
+
+msgid "research:last"
+msgstr "마지막"
+
+msgid "research:game_info"
+msgstr "대국 정보"
+
+msgid "research:rules_settings"
+msgstr "규칙 설정"
+
+msgid "research:board_size"
+msgstr "바둑판 크기"
+
+msgid "research:rules"
+msgstr "규칙"
+
+msgid "research:komi_label"
+msgstr "덤"
+
+msgid "research:handicap_label"
+msgstr "접바둑"
+
+msgid "research:none"
+msgstr "없음"
+
+msgid "research:n_stones"
+msgstr "{n}점"
+
+msgid "research:edit_tools"
+msgstr "편집 도구"
+
+msgid "research:start_research"
+msgstr "연구 시작"
+
+msgid "research:my_games"
+msgstr "내 기보"
+
+msgid "research:my_positions"
+msgstr "내 국면"
+
+msgid "research:tournament_games"
+msgstr "대회 기보"
+
+msgid "research:game_library"
+msgstr "기보 라이브러리"
+
+msgid "research:login_to_view"
+msgstr "로그인하여 기보를 확인하세요"
+
+msgid "research:search_placeholder"
+msgstr "기사, 대회 검색..."
+
+msgid "research:please_login"
+msgstr "로그인해주세요"
+
+msgid "research:no_games"
+msgstr "기보 없음"
+
+msgid "research:n_moves"
+msgstr "{n}수"
+
+msgid "research:black"
+msgstr "흑"
+
+msgid "research:white"
+msgstr "백"
+
+msgid "kifu:library"
+msgstr "기보 라이브러리"
+
+msgid "kifu:search_placeholder"
+msgstr "기사, 대회, 날짜로 검색..."
+
+msgid "kifu:records"
+msgstr "개 기보"
+
+msgid "kifu:no_results"
+msgstr "기보를 찾을 수 없습니다"
+
+msgid "kifu:col_event"
+msgstr "대회"
+
+msgid "kifu:col_black"
+msgstr "흑"
+
+msgid "kifu:col_white"
+msgstr "백"
+
+msgid "kifu:col_result"
+msgstr "결과"
+
+msgid "kifu:col_moves"
+msgstr "수"
+
+msgid "kifu:col_date"
+msgstr "날짜"
+
+msgid "kifu:moves_unit"
+msgstr "수"
+
+msgid "kifu:load_error"
+msgstr "기보 로드에 실패했습니다"
+
+msgid "kifu:back_to_list"
+msgstr "라이브러리로 돌아가기"
+
+msgid "kifu:date"
+msgstr "날짜"
+
+msgid "kifu:komi"
+msgstr "덤"
+
+msgid "kifu:handicap"
+msgstr "접바둑"
+
+msgid "kifu:board_size"
+msgstr "바둑판"
+
+msgid "kifu:moves"
+msgstr "수"
+
+msgid "kifu:rules"
+msgstr "규칙"
+
+msgid "kifu:place"
+msgstr "장소"
+
+msgid "kifu:source"
+msgstr "출처"
+
+msgid "kifu:open_in_research"
+msgstr "연구에서 열기"
+
+msgid "kifu:select_to_preview"
+msgstr "기보를 선택하여 미리보기"
+
+msgid "kifu:loading"
+msgstr "로딩 중..."
+
+msgid "research:time_min_sec"
+msgstr "{min}분{sec}초"
+
+msgid "research:time_sec"
+msgstr "{sec}초"
+
+msgid "tsumego:capturing"
+msgstr "따냄"
+
+msgid "tsumego:semeai"
+msgstr "수상전"
+
+msgid "tsumego:opening"
+msgstr "포석"
+
+msgid "tsumego:midgame"
+msgstr "중반"
+
+msgid "research:suggestions"
+msgstr "조언"
+
+msgid "result:black_win"
+msgstr "흑승"
+
+msgid "result:white_win"
+msgstr "백승"
+
+msgid "result:resign"
+msgstr "불계"
+
+msgid "result:time"
+msgstr "시간"
+
+msgid "result:forfeit"
+msgstr "몰수"
+
+msgid "result:points"
+msgstr "집"
+
+msgid "result:draw"
+msgstr "빅"
+
+msgid "result:points_zi"
+msgstr "집"
+
+msgid "result:points_moku"
+msgstr "집"

@@ -1895,3 +1895,351 @@ msgstr "Анализ в обработке..."
 
 msgid "live:analysis_auto_processed"
 msgstr "Анализ автоматически обрабатывается в фоновом режиме"
+
+msgid "research:mode"
+msgstr "Режим исследования"
+
+msgid "research:return_to_edit"
+msgstr "Вернуться к редактированию"
+
+msgid "research:analyzing_game"
+msgstr "Анализ партии"
+
+msgid "research:progress"
+msgstr "Завершено {analyzed} / {total} ходов"
+
+msgid "research:connecting"
+msgstr "Подключение к сессии исследования..."
+
+msgid "research:eta"
+msgstr "Ожидаемое оставшееся время: {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} ходов"
+
+msgid "research:move_numbers"
+msgstr "Номера ходов"
+
+msgid "research:pass"
+msgstr "Пас"
+
+msgid "research:move"
+msgstr "Ход"
+
+msgid "research:delete"
+msgstr "Удалить"
+
+msgid "research:place_black"
+msgstr "Поставить чёрный"
+
+msgid "research:place_white"
+msgstr "Поставить белый"
+
+msgid "research:alternate"
+msgstr "Чередовать"
+
+msgid "research:clear"
+msgstr "Очистить"
+
+msgid "research:hints"
+msgstr "Подсказки"
+
+msgid "research:territory"
+msgstr "Территория"
+
+msgid "research:open"
+msgstr "Открыть"
+
+msgid "research:save"
+msgstr "Сохранить"
+
+msgid "research:open_local_sgf"
+msgstr "Открыть локальный SGF"
+
+msgid "research:import_from_library"
+msgstr "Импортировать из библиотеки партий"
+
+msgid "research:save_sgf"
+msgstr "Сохранить SGF"
+
+msgid "research:save_to_library"
+msgstr "Сохранить в библиотеку партий"
+
+msgid "research:copy_sgf"
+msgstr "Копировать SGF в буфер обмена"
+
+msgid "research:pass_confirm_title"
+msgstr "Пас"
+
+msgid "research:pass_confirm_msg"
+msgstr "Вставить пас в текущую позицию?"
+
+msgid "research:cancel"
+msgstr "Отмена"
+
+msgid "research:confirm"
+msgstr "Подтвердить"
+
+msgid "research:rules_chinese"
+msgstr "Китайские правила"
+
+msgid "research:rules_japanese"
+msgstr "Японские правила"
+
+msgid "research:rules_korean"
+msgstr "Корейские правила"
+
+msgid "research:komi"
+msgstr "Коми {komi}"
+
+msgid "research:handicap"
+msgstr "Фора {handicap} камней"
+
+msgid "research:ai_recommendations"
+msgstr "Рекомендации ИИ"
+
+msgid "research:after_move"
+msgstr "После хода {currentMove}"
+
+msgid "research:col_move"
+msgstr "Ход"
+
+msgid "research:col_recommendation"
+msgstr "Рек. %"
+
+msgid "research:col_score_diff"
+msgstr "Разн. очков"
+
+msgid "research:col_winrate"
+msgstr "Винрейт"
+
+msgid "research:analyzing"
+msgstr "Анализ..."
+
+msgid "research:waiting_analysis"
+msgstr "Ожидание данных анализа"
+
+msgid "research:analysis_placeholder"
+msgstr "Данные анализа появятся здесь"
+
+msgid "research:trend_chart"
+msgstr "График тренда"
+
+msgid "research:brilliant_moves"
+msgstr "Блестящие ({count})"
+
+msgid "research:mistakes"
+msgstr "Ошибки ({count})"
+
+msgid "research:black_winrate"
+msgstr "Винрейт чёрных: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "Преимущество чёрных: {score} очков"
+
+msgid "research:no_brilliant_moves"
+msgstr "Нет блестящих ходов"
+
+msgid "research:no_mistakes"
+msgstr "Нет ошибок"
+
+msgid "research:move_n"
+msgstr "Ход {n}"
+
+msgid "research:points"
+msgstr "{delta} очков"
+
+msgid "research:first"
+msgstr "Начало"
+
+msgid "research:back"
+msgstr "Назад"
+
+msgid "research:next"
+msgstr "Далее"
+
+msgid "research:last"
+msgstr "Конец"
+
+msgid "research:game_info"
+msgstr "Информация о партии"
+
+msgid "research:rules_settings"
+msgstr "Настройки правил"
+
+msgid "research:board_size"
+msgstr "Размер доски"
+
+msgid "research:rules"
+msgstr "Правила"
+
+msgid "research:komi_label"
+msgstr "Коми"
+
+msgid "research:handicap_label"
+msgstr "Фора"
+
+msgid "research:none"
+msgstr "Нет"
+
+msgid "research:n_stones"
+msgstr "{n} камней"
+
+msgid "research:edit_tools"
+msgstr "Инструменты редактирования"
+
+msgid "research:start_research"
+msgstr "Начать исследование"
+
+msgid "research:my_games"
+msgstr "Мои партии"
+
+msgid "research:my_positions"
+msgstr "Мои позиции"
+
+msgid "research:tournament_games"
+msgstr "Турнирные партии"
+
+msgid "research:game_library"
+msgstr "Библиотека партий"
+
+msgid "research:login_to_view"
+msgstr "Войдите, чтобы увидеть свои партии"
+
+msgid "research:search_placeholder"
+msgstr "Поиск игроков, турниров..."
+
+msgid "research:please_login"
+msgstr "Пожалуйста, войдите"
+
+msgid "research:no_games"
+msgstr "Нет партий"
+
+msgid "research:n_moves"
+msgstr "{n} ходов"
+
+msgid "research:black"
+msgstr "Чёрные"
+
+msgid "research:white"
+msgstr "Белые"
+
+msgid "kifu:library"
+msgstr "Библиотека партий"
+
+msgid "kifu:search_placeholder"
+msgstr "Поиск по игроку, турниру, дате…"
+
+msgid "kifu:records"
+msgstr "записей"
+
+msgid "kifu:no_results"
+msgstr "Записи не найдены"
+
+msgid "kifu:col_event"
+msgstr "Турнир"
+
+msgid "kifu:col_black"
+msgstr "Чёрные"
+
+msgid "kifu:col_white"
+msgstr "Белые"
+
+msgid "kifu:col_result"
+msgstr "Результат"
+
+msgid "kifu:col_moves"
+msgstr "Ходы"
+
+msgid "kifu:col_date"
+msgstr "Дата"
+
+msgid "kifu:moves_unit"
+msgstr " ход."
+
+msgid "kifu:load_error"
+msgstr "Не удалось загрузить партию"
+
+msgid "kifu:back_to_list"
+msgstr "Назад к библиотеке"
+
+msgid "kifu:date"
+msgstr "Дата"
+
+msgid "kifu:komi"
+msgstr "Коми"
+
+msgid "kifu:handicap"
+msgstr "Фора"
+
+msgid "kifu:board_size"
+msgstr "Доска"
+
+msgid "kifu:moves"
+msgstr "Ходы"
+
+msgid "kifu:rules"
+msgstr "Правила"
+
+msgid "kifu:place"
+msgstr "Место"
+
+msgid "kifu:source"
+msgstr "Источник"
+
+msgid "kifu:open_in_research"
+msgstr "Открыть в исследовании"
+
+msgid "kifu:select_to_preview"
+msgstr "Выберите партию для просмотра"
+
+msgid "kifu:loading"
+msgstr "Загрузка..."
+
+msgid "research:time_min_sec"
+msgstr "{min}м{sec}с"
+
+msgid "research:time_sec"
+msgstr "{sec}с"
+
+msgid "tsumego:capturing"
+msgstr "Захват"
+
+msgid "tsumego:semeai"
+msgstr "Сэмэай"
+
+msgid "tsumego:opening"
+msgstr "Фусэки"
+
+msgid "tsumego:midgame"
+msgstr "Миттельшпиль"
+
+msgid "research:suggestions"
+msgstr "Совет"
+
+msgid "result:black_win"
+msgstr "Ч+"
+
+msgid "result:white_win"
+msgstr "Б+"
+
+msgid "result:resign"
+msgstr "Сд."
+
+msgid "result:time"
+msgstr "Вр."
+
+msgid "result:forfeit"
+msgstr "Неяв."
+
+msgid "result:points"
+msgstr ""
+
+msgid "result:draw"
+msgstr "Ничья"
+
+msgid "result:points_zi"
+msgstr ""
+
+msgid "result:points_moku"
+msgstr ""

@@ -1,5 +1,6 @@
 dist_sgf
 sgftest
+data/
 
 # additions
 KataGoData
@@ -174,4 +175,4 @@ dmypy.json
 
 # Local data (except tsumego problems)
 /data/*
-!/data/life-n-death/
+data.zip

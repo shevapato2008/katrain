@@ -58,13 +58,29 @@ export default function MatchCard({ match, compact = false, selected = false, on
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} sx={{ flex: 1, textAlign: 'left' }} noWrap>
-              {i18n.translatePlayer(match.player_black)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+              <Box sx={{
+                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, mr: 0.7,
+                bgcolor: '#1a1a1a',
+                border: '1px solid rgba(255,255,255,0.18)',
+                boxShadow: 'inset 0 -0.5px 1px rgba(255,255,255,0.1)',
+              }} />
+              <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} noWrap>
+                {i18n.translatePlayer(match.player_black)}
+              </Typography>
+            </Box>
             <Typography variant="body2" color="text.secondary" sx={{ px: 1, flexShrink: 0 }}>vs</Typography>
-            <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} sx={{ flex: 1, textAlign: 'right' }} noWrap>
-              {i18n.translatePlayer(match.player_white)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+              <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} noWrap>
+                {i18n.translatePlayer(match.player_white)}
+              </Typography>
+              <Box sx={{
+                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
+                bgcolor: '#e8e4df',
+                border: '1px solid rgba(0,0,0,0.25)',
+                boxShadow: 'inset 0 0.5px 1px rgba(0,0,0,0.06)',
+              }} />
+            </Box>
           </Box>
           <Box sx={{ mt: 1 }}>
             <LinearProgress
@@ -126,9 +142,17 @@ export default function MatchCard({ match, compact = false, selected = false, on
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 1.5 }}>
           <Box sx={{ flex: 1, textAlign: 'center' }}>
-            <Typography variant="h6" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
-              {i18n.translatePlayer(match.player_black)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mb: 0.3 }}>
+              <Box sx={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                bgcolor: '#1a1a1a',
+                border: '1.5px solid rgba(255,255,255,0.18)',
+                boxShadow: 'inset 0 -1px 2px rgba(255,255,255,0.1)',
+              }} />
+              <Typography variant="h6" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
+                {i18n.translatePlayer(match.player_black)}
+              </Typography>
+            </Box>
             {match.black_rank && (
               <Typography variant="caption" color="text.secondary">
                 {match.black_rank}
@@ -141,9 +165,17 @@ export default function MatchCard({ match, compact = false, selected = false, on
             </Typography>
           </Box>
           <Box sx={{ flex: 1, textAlign: 'center' }}>
-            <Typography variant="h6" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
-              {i18n.translatePlayer(match.player_white)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mb: 0.3 }}>
+              <Typography variant="h6" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
+                {i18n.translatePlayer(match.player_white)}
+              </Typography>
+              <Box sx={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                bgcolor: '#e8e4df',
+                border: '1.5px solid rgba(0,0,0,0.25)',
+                boxShadow: 'inset 0 0.5px 2px rgba(0,0,0,0.06)',
+              }} />
+            </Box>
             {match.white_rank && (
               <Typography variant="caption" color="text.secondary">
                 {match.white_rank}

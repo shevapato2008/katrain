@@ -1927,3 +1927,351 @@ msgstr "分析処理中..."
 
 msgid "live:analysis_auto_processed"
 msgstr "分析はバックグラウンドで自動処理されます"
+
+msgid "research:mode"
+msgstr "研究モード"
+
+msgid "research:return_to_edit"
+msgstr "編集に戻る"
+
+msgid "research:analyzing_game"
+msgstr "対局を分析中"
+
+msgid "research:progress"
+msgstr "{analyzed} / {total} 手完了"
+
+msgid "research:connecting"
+msgstr "研究セッションに接続中..."
+
+msgid "research:eta"
+msgstr "残り予想時間: {time}"
+
+msgid "research:move_counter"
+msgstr "{current} / {total} 手"
+
+msgid "research:move_numbers"
+msgstr "手数"
+
+msgid "research:pass"
+msgstr "パス"
+
+msgid "research:move"
+msgstr "移動"
+
+msgid "research:delete"
+msgstr "削除"
+
+msgid "research:place_black"
+msgstr "黒石を置く"
+
+msgid "research:place_white"
+msgstr "白石を置く"
+
+msgid "research:alternate"
+msgstr "交互"
+
+msgid "research:clear"
+msgstr "クリア"
+
+msgid "research:hints"
+msgstr "ヒント"
+
+msgid "research:territory"
+msgstr "地"
+
+msgid "research:open"
+msgstr "開く"
+
+msgid "research:save"
+msgstr "保存"
+
+msgid "research:open_local_sgf"
+msgstr "ローカルSGFを開く"
+
+msgid "research:import_from_library"
+msgstr "棋譜ライブラリからインポート"
+
+msgid "research:save_sgf"
+msgstr "SGFを保存"
+
+msgid "research:save_to_library"
+msgstr "棋譜ライブラリに保存"
+
+msgid "research:copy_sgf"
+msgstr "SGFをクリップボードにコピー"
+
+msgid "research:pass_confirm_title"
+msgstr "パス"
+
+msgid "research:pass_confirm_msg"
+msgstr "現在の位置にパスを挿入しますか？"
+
+msgid "research:cancel"
+msgstr "キャンセル"
+
+msgid "research:confirm"
+msgstr "確認"
+
+msgid "research:rules_chinese"
+msgstr "中国ルール"
+
+msgid "research:rules_japanese"
+msgstr "日本ルール"
+
+msgid "research:rules_korean"
+msgstr "韓国ルール"
+
+msgid "research:komi"
+msgstr "コミ {komi}"
+
+msgid "research:handicap"
+msgstr "{handicap}子局"
+
+msgid "research:ai_recommendations"
+msgstr "AI推奨"
+
+msgid "research:after_move"
+msgstr "第{currentMove}手後"
+
+msgid "research:col_move"
+msgstr "着手"
+
+msgid "research:col_recommendation"
+msgstr "推奨度"
+
+msgid "research:col_score_diff"
+msgstr "目差"
+
+msgid "research:col_winrate"
+msgstr "勝率"
+
+msgid "research:analyzing"
+msgstr "分析中..."
+
+msgid "research:waiting_analysis"
+msgstr "分析データを待機中"
+
+msgid "research:analysis_placeholder"
+msgstr "分析データがここに表示されます"
+
+msgid "research:trend_chart"
+msgstr "推移グラフ"
+
+msgid "research:brilliant_moves"
+msgstr "妙手 ({count})"
+
+msgid "research:mistakes"
+msgstr "疑問手 ({count})"
+
+msgid "research:black_winrate"
+msgstr "黒の勝率: {winrate}%"
+
+msgid "research:black_lead"
+msgstr "黒リード: {score} 目"
+
+msgid "research:no_brilliant_moves"
+msgstr "妙手なし"
+
+msgid "research:no_mistakes"
+msgstr "疑問手なし"
+
+msgid "research:move_n"
+msgstr "第{n}手"
+
+msgid "research:points"
+msgstr "{delta} 目"
+
+msgid "research:first"
+msgstr "最初"
+
+msgid "research:back"
+msgstr "戻る"
+
+msgid "research:next"
+msgstr "進む"
+
+msgid "research:last"
+msgstr "最後"
+
+msgid "research:game_info"
+msgstr "対局情報"
+
+msgid "research:rules_settings"
+msgstr "ルール設定"
+
+msgid "research:board_size"
+msgstr "盤面サイズ"
+
+msgid "research:rules"
+msgstr "ルール"
+
+msgid "research:komi_label"
+msgstr "コミ"
+
+msgid "research:handicap_label"
+msgstr "置石"
+
+msgid "research:none"
+msgstr "なし"
+
+msgid "research:n_stones"
+msgstr "{n}子"
+
+msgid "research:edit_tools"
+msgstr "編集ツール"
+
+msgid "research:start_research"
+msgstr "研究を開始"
+
+msgid "research:my_games"
+msgstr "マイ棋譜"
+
+msgid "research:my_positions"
+msgstr "マイ局面"
+
+msgid "research:tournament_games"
+msgstr "大会棋譜"
+
+msgid "research:game_library"
+msgstr "棋譜ライブラリ"
+
+msgid "research:login_to_view"
+msgstr "ログインして棋譜を表示"
+
+msgid "research:search_placeholder"
+msgstr "棋士、大会を検索..."
+
+msgid "research:please_login"
+msgstr "ログインしてください"
+
+msgid "research:no_games"
+msgstr "棋譜なし"
+
+msgid "research:n_moves"
+msgstr "{n}手"
+
+msgid "research:black"
+msgstr "黒"
+
+msgid "research:white"
+msgstr "白"
+
+msgid "kifu:library"
+msgstr "棋譜ライブラリ"
+
+msgid "kifu:search_placeholder"
+msgstr "棋士・大会・日付で検索…"
+
+msgid "kifu:records"
+msgstr "件"
+
+msgid "kifu:no_results"
+msgstr "棋譜が見つかりません"
+
+msgid "kifu:col_event"
+msgstr "大会"
+
+msgid "kifu:col_black"
+msgstr "黒"
+
+msgid "kifu:col_white"
+msgstr "白"
+
+msgid "kifu:col_result"
+msgstr "結果"
+
+msgid "kifu:col_moves"
+msgstr "手数"
+
+msgid "kifu:col_date"
+msgstr "日付"
+
+msgid "kifu:moves_unit"
+msgstr "手"
+
+msgid "kifu:load_error"
+msgstr "棋譜の読み込みに失敗しました"
+
+msgid "kifu:back_to_list"
+msgstr "ライブラリに戻る"
+
+msgid "kifu:date"
+msgstr "日付"
+
+msgid "kifu:komi"
+msgstr "コミ"
+
+msgid "kifu:handicap"
+msgstr "ハンデ"
+
+msgid "kifu:board_size"
+msgstr "盤面"
+
+msgid "kifu:moves"
+msgstr "手数"
+
+msgid "kifu:rules"
+msgstr "ルール"
+
+msgid "kifu:place"
+msgstr "場所"
+
+msgid "kifu:source"
+msgstr "出典"
+
+msgid "kifu:open_in_research"
+msgstr "研究で開く"
+
+msgid "kifu:select_to_preview"
+msgstr "棋譜を選択してプレビュー"
+
+msgid "kifu:loading"
+msgstr "読み込み中..."
+
+msgid "research:time_min_sec"
+msgstr "{min}分{sec}秒"
+
+msgid "research:time_sec"
+msgstr "{sec}秒"
+
+msgid "tsumego:capturing"
+msgstr "取り"
+
+msgid "tsumego:semeai"
+msgstr "攻め合い"
+
+msgid "tsumego:opening"
+msgstr "布石"
+
+msgid "tsumego:midgame"
+msgstr "中盤"
+
+msgid "research:suggestions"
+msgstr "アドバイス"
+
+msgid "result:black_win"
+msgstr "黒勝"
+
+msgid "result:white_win"
+msgstr "白勝"
+
+msgid "result:resign"
+msgstr "中押"
+
+msgid "result:time"
+msgstr "時間切"
+
+msgid "result:forfeit"
+msgstr "没収"
+
+msgid "result:points"
+msgstr "目"
+
+msgid "result:draw"
+msgstr "ジゴ"
+
+msgid "result:points_zi"
+msgstr "子"
+
+msgid "result:points_moku"
+msgstr "目"

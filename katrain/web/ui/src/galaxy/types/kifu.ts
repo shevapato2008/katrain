@@ -8,6 +8,7 @@ export interface KifuAlbumSummary {
   white_rank: string | null;
   event: string | null;
   result: string | null;
+  rules: string | null;
   date_played: string | null;
   komi: number | null;
   handicap: number;
@@ -18,7 +19,6 @@ export interface KifuAlbumSummary {
 
 export interface KifuAlbumDetail extends KifuAlbumSummary {
   place: string | null;
-  rules: string | null;
   source: string | null;
   sgf_content: string;
 }

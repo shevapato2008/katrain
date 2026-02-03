@@ -87,7 +87,7 @@ def parse_sgf_file(sgf_path: Path) -> dict:
         "player_white": root.get_property("PW", "Unknown"),
         "black_rank": root.get_property("BR"),
         "white_rank": root.get_property("WR"),
-        "event": root.get_property("EV"),
+        "event": root.get_property("EV") or root.get_property("GN"),
         "result": root.get_property("RE"),
         "date_played": date_played,
         "date_sort": normalize_date(date_played),
@@ -119,36 +119,48 @@ def import_kifu(dry_run: bool = False):
     # Ensure tables exist
     Base.metadata.create_all(engine)
 
+    total = len(sgf_files)
     stats = {"inserted": 0, "skipped": 0, "errors": 0}
+    error_files = []
 
     with Session(engine) as db:
         existing_paths = {
             r.source_path for r in db.query(KifuAlbum.source_path).all()
         }
+        print(f"Existing records in DB: {len(existing_paths)}")
 
-        for sgf_path in sgf_files:
+        for i, sgf_path in enumerate(sgf_files, 1):
             rel_path = str(sgf_path.relative_to(DATA_DIR.parent.parent))
             if rel_path in existing_paths:
                 stats["skipped"] += 1
-                continue
+            else:
+                try:
+                    data = parse_sgf_file(sgf_path)
+                    if not dry_run:
+                        db.add(KifuAlbum(**data))
+                    stats["inserted"] += 1
+                except Exception as e:
+                    stats["errors"] += 1
+                    error_files.append(f"{sgf_path.name}: {e}")
 
-            try:
-                data = parse_sgf_file(sgf_path)
-                if not dry_run:
-                    db.add(KifuAlbum(**data))
-                stats["inserted"] += 1
-                print(f"  INSERT: {data['player_black']} vs {data['player_white']} ({data['date_played']})")
-            except Exception as e:
-                stats["errors"] += 1
-                print(f"  ERROR: {sgf_path.name}: {e}")
+            if i % 500 == 0 or i == total:
+                print(
+                    f"  Progress: {i}/{total} ({i * 100 // total}%)"
+                    f" | inserted={stats['inserted']} skipped={stats['skipped']} errors={stats['errors']}"
+                )
 
         if not dry_run:
             db.commit()
 
-    print(f"\nImport {'(DRY RUN) ' if dry_run else ''}complete:")
+    mode = "(DRY RUN) " if dry_run else ""
+    print(f"\nImport {mode}complete:")
     print(f"  Inserted: {stats['inserted']}")
     print(f"  Skipped (already exists): {stats['skipped']}")
     print(f"  Errors: {stats['errors']}")
+    if error_files:
+        print(f"\nError details ({len(error_files)} files):")
+        for err in error_files:
+            print(f"  {err}")
 
 
 if __name__ == "__main__":

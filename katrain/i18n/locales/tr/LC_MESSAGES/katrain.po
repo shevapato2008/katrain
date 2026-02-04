@@ -1864,7 +1864,7 @@ msgid "live:suggested_move"
 msgstr "Hamle"
 
 msgid "live:recommendation"
-msgstr "Puan"
+msgstr "Öneri"
 
 msgid "live:lead_pts"
 msgstr "Önde"

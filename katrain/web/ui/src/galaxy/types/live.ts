@@ -58,8 +58,8 @@ export interface LiveStats {
 export interface TopMove {
   move: string;
   visits: number;
-  winrate: number;
-  score_lead: number;
+  winrate: number | null;
+  score_lead: number | null;
   prior: number;
   pv: string[];
   psv: number;  // playSelectionValue - KataGo's composite ranking metric

@@ -1794,7 +1794,7 @@ msgid "live:suggested_move"
 msgstr "着点"
 
 msgid "live:recommendation"
-msgstr "評価"
+msgstr "推奨度"
 
 msgid "live:lead_pts"
 msgstr "リード"

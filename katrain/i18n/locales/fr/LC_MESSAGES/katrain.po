@@ -1803,7 +1803,7 @@ msgid "live:suggested_move"
 msgstr "Coup"
 
 msgid "live:recommendation"
-msgstr "Score"
+msgstr "Recommandation"
 
 msgid "live:lead_pts"
 msgstr "Avance"

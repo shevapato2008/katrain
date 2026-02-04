@@ -68,8 +68,8 @@ export default function LiveMatchPage() {
       move: tm.move,
       rank: index + 1,
       visits: tm.visits,
-      winrate: tm.winrate,
-      score_lead: tm.score_lead,
+      winrate: tm.winrate ?? 0,
+      score_lead: tm.score_lead ?? 0,
     }));
   }, [analysis, currentMove]);
 

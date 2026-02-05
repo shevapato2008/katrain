@@ -97,6 +97,9 @@ if __name__ == "__main__":
         run_web()
         sys.exit(0)
 
+# Desktop mode: compile translations before importing lang.py
+_compile_translations()
+
 os.environ["KCFG_KIVY_LOG_LEVEL"] = os.environ.get("KCFG_KIVY_LOG_LEVEL", "warning")
 
 from kivy.utils import platform as kivy_platform

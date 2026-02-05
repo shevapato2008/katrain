@@ -8,6 +8,8 @@ import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useSettings } from '../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { API } from '../../api';
+import { useAuth } from '../context/AuthContext';
 
 const GamePage = () => {
     const { sessionId } = useParams();
@@ -15,6 +17,7 @@ const GamePage = () => {
     const navigate = useNavigate();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
+    const { token } = useAuth();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
@@ -49,6 +52,8 @@ const GamePage = () => {
 
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
+    const [showCountConfirm, setShowCountConfirm] = useState(false);
+    const [countResult, setCountResult] = useState<string | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
     // Sound playing callback
@@ -156,8 +161,26 @@ const GamePage = () => {
             if (!gameState?.end_result) {
                 setShowResignConfirm(true);
             }
+        } else if (action === 'count') {
+            if (!gameState?.end_result) {
+                setShowCountConfirm(true);
+            }
         } else {
             handleAction(action);
+        }
+    };
+
+    const confirmCount = async () => {
+        setShowCountConfirm(false);
+        if (!sessionId) return;
+        try {
+            const response = await API.requestCount(sessionId, token || undefined);
+            if (response.result) {
+                setCountResult(response.result);
+            }
+        } catch (e: any) {
+            console.error("Count request failed:", e);
+            alert(e.message || "Count request failed");
         }
     };
 
@@ -209,6 +232,33 @@ const GamePage = () => {
                 <DialogActions>
                     <Button onClick={() => setShowResignConfirm(false)}>{t('cancel', 'Cancel')}</Button>
                     <Button onClick={confirmResign} color="error" variant="contained">{t('RESIGN', 'Resign')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Count Confirmation Dialog */}
+            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)}>
+                <DialogTitle>{t('count_confirm_title', 'End Game by Counting?')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('count_confirm_text', 'Calculate the final score to end the game.')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowCountConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmCount} color="primary" variant="contained">{t('COUNT', 'Count')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Count Result Dialog */}
+            <Dialog open={!!countResult} onClose={() => setCountResult(null)}>
+                <DialogTitle>{t('Game Over', 'Game Over')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('game_end:count', 'Game ended by counting: {result}').replace('{result}', countResult || '')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCountResult(null)} variant="contained">{t('ok', 'OK')}</Button>
                 </DialogActions>
             </Dialog>
 

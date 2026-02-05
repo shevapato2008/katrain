@@ -144,6 +144,10 @@ export const API = {
     apiPost("/api/resign", { session_id: sessionId }),
   timeout: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/timeout", { session_id: sessionId }),
+  requestCount: (sessionId: string, token?: string): Promise<any> =>
+    apiPost("/api/count/request", { session_id: sessionId }, token),
+  respondCount: (sessionId: string, accept: boolean, token?: string): Promise<any> =>
+    apiPost("/api/count/respond", { session_id: sessionId, accept }, token),
   pauseTimer: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/timer/pause", { session_id: sessionId }),
   rotate: (sessionId: string): Promise<SessionResponse> =>

@@ -2,19 +2,27 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState } from '../../api';
 
 interface GameEndData {
-    reason: 'resign' | 'forfeit' | 'timeout' | 'normal';
+    reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
     winner_id?: number;
     result?: string;
     leaver_id?: number;
 }
 
+interface CountRequestData {
+    requester_id: number;
+    requester_name: string;
+}
+
 interface UseGameSessionOptions {
     token?: string;  // Auth token for multiplayer games
     onGameEnd?: (data: GameEndData) => void;  // Callback when game ends
+    onCountRequest?: (data: CountRequestData) => void;  // Callback for count request (HvH)
+    onCountRejected?: () => void;  // Callback when count request is rejected
+    onCountTimeout?: () => void;  // Callback when count request times out
 }
 
 export const useGameSession = (options: UseGameSessionOptions = {}) => {
-    const { token, onGameEnd } = options;
+    const { token, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -70,6 +78,18 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             setGameEndData(msg.data);
                             if (onGameEnd) {
                                 onGameEnd(msg.data);
+                            }
+                        } else if (msg.type === 'count_request') {
+                            if (onCountRequest) {
+                                onCountRequest(msg.data);
+                            }
+                        } else if (msg.type === 'count_rejected') {
+                            if (onCountRejected) {
+                                onCountRejected();
+                            }
+                        } else if (msg.type === 'count_timeout') {
+                            if (onCountTimeout) {
+                                onCountTimeout();
                             }
                         }
                     };

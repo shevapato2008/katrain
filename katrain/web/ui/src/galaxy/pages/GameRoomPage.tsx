@@ -20,9 +20,28 @@ const GameRoomPage = () => {
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showGameEndDialog, setShowGameEndDialog] = useState(false);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
+    const [showCountConfirm, setShowCountConfirm] = useState(false);
+    const [showCountRequestDialog, setShowCountRequestDialog] = useState(false);
+    const [countRequesterName, setCountRequesterName] = useState<string>('');
 
     const handleGameEnd = useCallback(() => {
         setShowGameEndDialog(true);
+    }, []);
+
+    const handleCountRequest = useCallback((data: { requester_id: number; requester_name: string }) => {
+        // Only show dialog if we're not the requester
+        if (data.requester_id !== user?.id) {
+            setCountRequesterName(data.requester_name);
+            setShowCountRequestDialog(true);
+        }
+    }, [user?.id]);
+
+    const handleCountRejected = useCallback(() => {
+        alert(t('count_rejected_msg', 'Your counting request was rejected.'));
+    }, [t]);
+
+    const handleCountTimeout = useCallback(() => {
+        setShowCountRequestDialog(false);
     }, []);
 
     const {
@@ -34,7 +53,13 @@ const GameRoomPage = () => {
         onNavigate,
         handleAction,
         gameEndData
-    } = useGameSession({ token: token || undefined, onGameEnd: handleGameEnd });
+    } = useGameSession({
+        token: token || undefined,
+        onGameEnd: handleGameEnd,
+        onCountRequest: handleCountRequest,
+        onCountRejected: handleCountRejected,
+        onCountTimeout: handleCountTimeout
+    });
 
     useEffect(() => {
         if (sessionId && sessionId !== currentSessionId) {
@@ -81,10 +106,40 @@ const GameRoomPage = () => {
     const handleActionWrapper = useCallback((action: string) => {
         if (action === 'resign') {
              setShowResignConfirm(true);
+        } else if (action === 'count') {
+             if (!gameState?.end_result) {
+                 setShowCountConfirm(true);
+             }
         } else {
              handleAction(action);
         }
-    }, [handleAction]);
+    }, [handleAction, gameState?.end_result]);
+
+    const confirmCount = useCallback(async () => {
+        setShowCountConfirm(false);
+        if (!sessionId || !token) return;
+        try {
+            const response = await API.requestCount(sessionId, token);
+            if (response.result) {
+                // Count completed immediately (e.g., other player already requested)
+                setShowGameEndDialog(true);
+            }
+            // If status is 'pending', wait for response via WebSocket
+        } catch (e: any) {
+            console.error("Count request failed:", e);
+            alert(e.message || "Count request failed");
+        }
+    }, [sessionId, token]);
+
+    const respondToCountRequest = useCallback(async (accept: boolean) => {
+        setShowCountRequestDialog(false);
+        if (!sessionId || !token) return;
+        try {
+            await API.respondCount(sessionId, accept, token);
+        } catch (e: any) {
+            console.error("Count response failed:", e);
+        }
+    }, [sessionId, token]);
 
     const confirmResign = useCallback(async () => {
         setShowResignConfirm(false);
@@ -113,6 +168,8 @@ const GameRoomPage = () => {
             return isWinner ? t('game_end:resign_win', "Your opponent resigned. You win!") : t('game_end:resign_loss', "You resigned.");
         } else if (reason === 'timeout') {
             return isWinner ? t('game_end:timeout_win', "Your opponent ran out of time. You win!") : t('game_end:timeout_loss', "You ran out of time.");
+        } else if (reason === 'count') {
+            return t('game_end:count', 'Game ended by counting: {result}').replace('{result}', result || '');
         } else {
             return t(result || "Game ended", result || "Game ended");
         }
@@ -158,6 +215,34 @@ const GameRoomPage = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleBackToLobby} variant="contained" color="primary">{t('game_room:back_to_lobby', 'Back to Lobby')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Count Confirmation Dialog - for initiator */}
+            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)}>
+                <DialogTitle>{t('count_confirm_title', 'End Game by Counting?')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('count_confirm_text', 'Calculate the final score to end the game.')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowCountConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmCount} color="primary" variant="contained">{t('COUNT', 'Count')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Count Request Dialog - for responder */}
+            <Dialog open={showCountRequestDialog} onClose={() => setShowCountRequestDialog(false)}>
+                <DialogTitle>{t('count_request_title', 'Counting Request')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('count_request_text', '{name} wants to end the game by counting. Do you agree?').replace('{name}', countRequesterName)}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => respondToCountRequest(false)} color="error">{t('reject', 'Reject')}</Button>
+                    <Button onClick={() => respondToCountRequest(true)} color="primary" variant="contained">{t('accept', 'Accept')}</Button>
                 </DialogActions>
             </Dialog>
 

@@ -489,6 +489,153 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return {"session_id": session.session_id, "state": state}
 
+    def _complete_count(session, app, current_user):
+        """Helper to complete counting and record result."""
+        # Get the score from current node's analysis
+        current_node = session.katrain.game.current_node
+        score = current_node.score
+
+        if score is None:
+            raise HTTPException(status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete.")
+
+        # Format result: positive = Black leads, negative = White leads
+        if score >= 0:
+            result = f"B+{abs(score):.1f}"
+            winner_color = "B"
+        else:
+            result = f"W+{abs(score):.1f}"
+            winner_color = "W"
+
+        # Set end state in game
+        session.katrain.game.game_result = result
+        session.katrain.game.end_state = result
+
+        # Record multiplayer game result
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if is_multiplayer:
+            winner_id = session.player_b_id if winner_color == "B" else session.player_w_id
+            try:
+                app.state.game_repo.record_multiplayer_game(
+                    sgf_content=session.katrain.get_sgf(),
+                    result=result,
+                    game_type=getattr(session, 'game_type', 'free'),
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id,
+                )
+            except Exception as e:
+                logging.getLogger("katrain_web").error(f"Failed to record count game result: {e}")
+
+            manager._schedule_broadcast(session, {
+                "type": "game_end",
+                "data": {"reason": "count", "winner_id": winner_id, "result": result}
+            })
+
+        return result
+
+    @app.post("/api/count/request")
+    def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
+        """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
+        session = _get_session_or_404(manager, request.session_id)
+
+        # Verify move count >= 100
+        state = session.katrain.get_state()
+        if len(state.get("history", [])) < 100:
+            raise HTTPException(status_code=400, detail="Cannot count before 100 moves")
+
+        # Check if game is already over
+        if state.get("end_result"):
+            raise HTTPException(status_code=400, detail="Game is already over")
+
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+
+        if is_multiplayer:
+            # HvH: Check if user is a player
+            if not current_user:
+                raise HTTPException(status_code=401, detail="Authentication required")
+
+            is_player = current_user.id in (session.player_b_id, session.player_w_id)
+            if not is_player:
+                raise HTTPException(status_code=403, detail="Only players can request count")
+
+            # Check if there's already a pending request
+            if session.pending_count_request is not None:
+                # If same user requests again, ignore
+                if session.pending_count_request == current_user.id:
+                    return {"session_id": session.session_id, "status": "pending"}
+
+                # If other player requests, treat as accept
+                with session.lock:
+                    result = _complete_count(session, app, current_user)
+                    session.pending_count_request = None
+                    session.pending_count_timestamp = None
+                    state = session.katrain.get_state()
+                    session.last_state = state
+                return {"session_id": session.session_id, "state": state, "result": result}
+
+            # Set pending request
+            import time as time_module
+            session.pending_count_request = current_user.id
+            session.pending_count_timestamp = time_module.time()
+
+            # Broadcast to opponent
+            manager._schedule_broadcast(session, {
+                "type": "count_request",
+                "data": {"requester_id": current_user.id, "requester_name": current_user.username}
+            })
+
+            return {"session_id": session.session_id, "status": "pending"}
+        else:
+            # HvAI: Complete immediately
+            with session.lock:
+                result = _complete_count(session, app, current_user)
+                state = session.katrain.get_state()
+                session.last_state = state
+            return {"session_id": session.session_id, "state": state, "result": result}
+
+    @app.post("/api/count/respond")
+    def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
+        """Respond to a count request (HvH only). Accept or reject."""
+        session = _get_session_or_404(manager, request.session_id)
+
+        # Only for multiplayer games
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if not is_multiplayer:
+            raise HTTPException(status_code=400, detail="Not a multiplayer game")
+
+        # Check if there's a pending request
+        if session.pending_count_request is None:
+            raise HTTPException(status_code=400, detail="No pending count request")
+
+        # Verify user is the opponent (not the requester)
+        if current_user.id == session.pending_count_request:
+            raise HTTPException(status_code=400, detail="Cannot respond to your own request")
+
+        # Verify user is a player
+        is_player = current_user.id in (session.player_b_id, session.player_w_id)
+        if not is_player:
+            raise HTTPException(status_code=403, detail="Only players can respond to count")
+
+        if request.accept:
+            # Accept: complete the count
+            with session.lock:
+                result = _complete_count(session, app, current_user)
+                session.pending_count_request = None
+                session.pending_count_timestamp = None
+                state = session.katrain.get_state()
+                session.last_state = state
+            return {"session_id": session.session_id, "state": state, "result": result, "accepted": True}
+        else:
+            # Reject: clear request and notify
+            session.pending_count_request = None
+            session.pending_count_timestamp = None
+
+            manager._schedule_broadcast(session, {
+                "type": "count_rejected",
+                "data": {"rejected_by": current_user.id}
+            })
+
+            return {"session_id": session.session_id, "accepted": False}
+
     @app.post("/api/timeout")
     def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         """End game due to timeout - current player loses on time"""

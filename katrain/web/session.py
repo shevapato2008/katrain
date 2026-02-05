@@ -22,6 +22,8 @@ class WebSession:
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
     last_state: Optional[Dict] = None
+    pending_count_request: Optional[int] = None  # User ID that initiated count request
+    pending_count_timestamp: Optional[float] = None  # Timestamp of count request
 
     def touch(self):
         self.last_access = time.time()
@@ -114,6 +116,18 @@ class SessionManager:
         for sid in expired:
             session = self._sessions.pop(sid, None)
             if session:               session.katrain.shutdown()
+
+        # Clean up expired count requests (60 second timeout)
+        for session in self._sessions.values():
+            if session.pending_count_request is not None and session.pending_count_timestamp is not None:
+                if now - session.pending_count_timestamp > 60:
+                    session.pending_count_request = None
+                    session.pending_count_timestamp = None
+                    # Broadcast timeout notification
+                    self._schedule_broadcast(session, {
+                        "type": "count_timeout",
+                        "data": {}
+                    })
 
     def _on_state(self, session_id: str, state: Dict):
         try:

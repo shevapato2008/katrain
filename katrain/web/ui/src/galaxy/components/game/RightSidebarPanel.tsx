@@ -14,6 +14,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FlagIcon from '@mui/icons-material/Flag';
 import UndoIcon from '@mui/icons-material/Undo';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
+import CalculateIcon from '@mui/icons-material/Calculate';
 import { type GameState, API } from '../../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -195,6 +196,13 @@ const RightSidebarPanel = ({
                             onClick={() => onAction('resign')}
                             disabled={isGameOver}
                             isDestructive={true}
+                        />
+                        <ItemToggle
+                            icon={<CalculateIcon />}
+                            label={t('COUNT', 'Count')}
+                            active={false}
+                            onClick={() => onAction('count')}
+                            disabled={isGameOver || gameState.history.length < 100}
                         />
                     </Box>
                     {isRated && !isGameOver && (

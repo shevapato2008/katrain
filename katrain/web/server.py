@@ -1147,28 +1147,6 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
-def compile_translations():
-    """Compile .po translation files to .mo binary format."""
-    import polib
-
-    i18n_path = Path(__file__).resolve().parent.parent / "i18n" / "locales"
-    if not i18n_path.exists():
-        logging.getLogger("katrain_web").warning("i18n locales directory not found, skipping translation compilation.")
-        return
-
-    for locale_dir in i18n_path.iterdir():
-        if not locale_dir.is_dir():
-            continue
-        po_file = locale_dir / "LC_MESSAGES" / "katrain.po"
-        mo_file = locale_dir / "LC_MESSAGES" / "katrain.mo"
-        if po_file.exists():
-            try:
-                po = polib.pofile(str(po_file))
-                po.save_as_mofile(str(mo_file))
-            except Exception as e:
-                logging.getLogger("katrain_web").warning(f"Failed to compile {po_file}: {e}")
-
-
 def build_frontend():
     ui_path = Path(__file__).resolve().parent / "ui"
     if not (ui_path / "package.json").exists():
@@ -1227,7 +1205,6 @@ def run_web():
     # However, create_app is used by uvicorn workers too, so we should be careful.
     # But run_web is the entry point.
     if not args.reload:  # Skip build in reload mode to avoid loops
-        compile_translations()
         build_frontend()
 
     import uvicorn

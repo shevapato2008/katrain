@@ -62,8 +62,36 @@ if start_mode == "web":
 from katrain.core.constants import DATA_FOLDER
 from katrain.core.utils import find_package_resource
 
+def _compile_translations():
+    """Compile .po translation files to .mo binary format before imports."""
+    from pathlib import Path
+    try:
+        import polib
+    except ImportError:
+        return  # polib not installed, skip
+
+    i18n_path = Path(__file__).resolve().parent / "i18n" / "locales"
+    if not i18n_path.exists():
+        return
+
+    for locale_dir in i18n_path.iterdir():
+        if not locale_dir.is_dir():
+            continue
+        po_file = locale_dir / "LC_MESSAGES" / "katrain.po"
+        mo_file = locale_dir / "LC_MESSAGES" / "katrain.mo"
+        if po_file.exists() and (not mo_file.exists() or po_file.stat().st_mtime > mo_file.stat().st_mtime):
+            try:
+                po = polib.pofile(str(po_file))
+                po.save_as_mofile(str(mo_file))
+            except Exception:
+                pass
+
+
 if __name__ == "__main__":
     if start_mode == "web":
+        # Compile translations BEFORE importing katrain.web (which triggers lang.py)
+        _compile_translations()
+
         from katrain.web.server import run_web
 
         run_web()

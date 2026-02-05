@@ -1180,10 +1180,10 @@ msgid "Move Numbers"
 msgstr "Números de movimiento"
 
 msgid "PASS"
-msgstr "PASAR"
+msgstr "Pasar"
 
 msgid "RESIGN"
-msgstr "RENDIRSE"
+msgstr "Rendirse"
 
 msgid "Undo (Smart)"
 msgstr "Deshacer (Inteligente)"
@@ -2148,3 +2148,24 @@ msgstr ""
 
 msgid "result:points_moku"
 msgstr ""
+
+msgid "COUNT"
+msgstr "Contar"
+
+msgid "count_confirm_title"
+msgstr "¿Terminar partida contando?"
+
+msgid "count_confirm_text"
+msgstr "Calcular la puntuación final para terminar la partida."
+
+msgid "count_request_title"
+msgstr "Solicitud de conteo"
+
+msgid "count_request_text"
+msgstr "{name} quiere terminar la partida contando. ¿Estás de acuerdo?"
+
+msgid "count_rejected_msg"
+msgstr "Tu solicitud de conteo fue rechazada."
+
+msgid "game_end:count"
+msgstr "Partida terminada por conteo: {result}"

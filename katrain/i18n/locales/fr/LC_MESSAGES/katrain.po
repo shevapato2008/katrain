@@ -1445,7 +1445,7 @@ msgid "Advice"
 msgstr "Conseil"
 
 msgid "PASS"
-msgstr "PASSER"
+msgstr "Passer"
 
 msgid "Settings"
 msgstr "Paramètres"
@@ -1460,7 +1460,7 @@ msgid "Next Mistake"
 msgstr "Erreur suivante"
 
 msgid "RESIGN"
-msgstr "ABANDONNER"
+msgstr "Abandonner"
 
 #. TODO
 msgid "new_zealand"
@@ -2284,3 +2284,24 @@ msgstr ""
 
 msgid "result:points_moku"
 msgstr ""
+
+msgid "COUNT"
+msgstr "Compter"
+
+msgid "count_confirm_title"
+msgstr "Terminer la partie par comptage?"
+
+msgid "count_confirm_text"
+msgstr "Calculer le score final pour terminer la partie."
+
+msgid "count_request_title"
+msgstr "Demande de comptage"
+
+msgid "count_request_text"
+msgstr "{name} souhaite terminer la partie par comptage. Acceptez-vous?"
+
+msgid "count_rejected_msg"
+msgstr "Votre demande de comptage a été refusée."
+
+msgid "game_end:count"
+msgstr "Partie terminée par comptage: {result}"

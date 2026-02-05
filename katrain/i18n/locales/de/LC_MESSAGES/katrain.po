@@ -1471,7 +1471,7 @@ msgid "Advice"
 msgstr "Rat"
 
 msgid "PASS"
-msgstr "PASSEN"
+msgstr "Passen"
 
 msgid "Settings"
 msgstr "Einstellungen"
@@ -1486,7 +1486,7 @@ msgid "Next Mistake"
 msgstr "Nächster Fehler"
 
 msgid "RESIGN"
-msgstr "AUFGEBEN"
+msgstr "Aufgeben"
 
 #. TODO
 msgid "new_zealand"
@@ -2310,3 +2310,24 @@ msgstr ""
 
 msgid "result:points_moku"
 msgstr ""
+
+msgid "COUNT"
+msgstr "Zählen"
+
+msgid "count_confirm_title"
+msgstr "Spiel durch Zählen beenden?"
+
+msgid "count_confirm_text"
+msgstr "Berechne die Endpunktzahl, um das Spiel zu beenden."
+
+msgid "count_request_title"
+msgstr "Zählungsanfrage"
+
+msgid "count_request_text"
+msgstr "{name} möchte das Spiel durch Zählen beenden. Stimmst du zu?"
+
+msgid "count_rejected_msg"
+msgstr "Deine Zählungsanfrage wurde abgelehnt."
+
+msgid "game_end:count"
+msgstr "Spiel durch Zählen beendet: {result}"

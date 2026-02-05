@@ -1434,10 +1434,10 @@ msgid "cancel"
 msgstr "Cancel"
 
 msgid "PASS"
-msgstr "PASS"
+msgstr "Pass"
 
 msgid "RESIGN"
-msgstr "RESIGN"
+msgstr "Resign"
 
 msgid "Undo (Smart)"
 msgstr "Undo (Smart)"
@@ -2279,3 +2279,24 @@ msgstr ""
 
 msgid "result:points_moku"
 msgstr ""
+
+msgid "COUNT"
+msgstr "Count"
+
+msgid "count_confirm_title"
+msgstr "End Game by Counting?"
+
+msgid "count_confirm_text"
+msgstr "Calculate the final score to end the game."
+
+msgid "count_request_title"
+msgstr "Counting Request"
+
+msgid "count_request_text"
+msgstr "{name} wants to end the game by counting. Do you agree?"
+
+msgid "count_rejected_msg"
+msgstr "Your counting request was rejected."
+
+msgid "game_end:count"
+msgstr "Game ended by counting: {result}"

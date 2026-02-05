@@ -2202,3 +2202,24 @@ msgstr "집"
 
 msgid "result:points_moku"
 msgstr "집"
+
+msgid "COUNT"
+msgstr "계가"
+
+msgid "count_confirm_title"
+msgstr "계가로 종료하시겠습니까?"
+
+msgid "count_confirm_text"
+msgstr "최종 점수를 계산하여 게임을 종료합니다."
+
+msgid "count_request_title"
+msgstr "계가 요청"
+
+msgid "count_request_text"
+msgstr "{name}님이 계가로 종료를 요청했습니다. 동의하시겠습니까?"
+
+msgid "count_rejected_msg"
+msgstr "계가 요청이 거절되었습니다."
+
+msgid "game_end:count"
+msgstr "계가 종료: {result}"

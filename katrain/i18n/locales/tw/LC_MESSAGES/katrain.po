@@ -1418,7 +1418,7 @@ msgid "Advice"
 msgstr "建議"
 
 msgid "PASS"
-msgstr "棄權"
+msgstr "停一手"
 
 msgid "Settings"
 msgstr "設定"
@@ -2257,3 +2257,24 @@ msgstr "子"
 
 msgid "result:points_moku"
 msgstr "目"
+
+msgid "COUNT"
+msgstr "數子"
+
+msgid "count_confirm_title"
+msgstr "通過數子結束對局？"
+
+msgid "count_confirm_text"
+msgstr "計算最終比分以結束對局。"
+
+msgid "count_request_title"
+msgstr "數子請求"
+
+msgid "count_request_text"
+msgstr "{name} 請求通過數子結束對局。你同意嗎？"
+
+msgid "count_rejected_msg"
+msgstr "你的數子請求被拒絕了。"
+
+msgid "game_end:count"
+msgstr "數子結束：{result}"

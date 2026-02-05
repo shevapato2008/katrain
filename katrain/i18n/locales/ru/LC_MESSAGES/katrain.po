@@ -1404,7 +1404,7 @@ msgid "Advice"
 msgstr "Совет"
 
 msgid "PASS"
-msgstr "ПАС"
+msgstr "Пас"
 
 msgid "Settings"
 msgstr "Настройки"
@@ -1419,7 +1419,7 @@ msgid "Next Mistake"
 msgstr "Следующая ошибка"
 
 msgid "RESIGN"
-msgstr "СДАТЬСЯ"
+msgstr "Сдаться"
 
 #. TODO
 msgid "new_zealand"
@@ -2243,3 +2243,24 @@ msgstr ""
 
 msgid "result:points_moku"
 msgstr ""
+
+msgid "COUNT"
+msgstr "Подсчёт"
+
+msgid "count_confirm_title"
+msgstr "Завершить игру подсчётом?"
+
+msgid "count_confirm_text"
+msgstr "Рассчитать итоговый счёт для завершения игры."
+
+msgid "count_request_title"
+msgstr "Запрос на подсчёт"
+
+msgid "count_request_text"
+msgstr "{name} хочет завершить игру подсчётом. Вы согласны?"
+
+msgid "count_rejected_msg"
+msgstr "Ваш запрос на подсчёт был отклонён."
+
+msgid "game_end:count"
+msgstr "Игра завершена подсчётом: {result}"

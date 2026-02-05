@@ -2275,3 +2275,24 @@ msgstr "子"
 
 msgid "result:points_moku"
 msgstr "目"
+
+msgid "COUNT"
+msgstr "計算"
+
+msgid "count_confirm_title"
+msgstr "計算で終局しますか？"
+
+msgid "count_confirm_text"
+msgstr "最終スコアを計算してゲームを終了します。"
+
+msgid "count_request_title"
+msgstr "計算リクエスト"
+
+msgid "count_request_text"
+msgstr "{name}が計算で終局することを希望しています。同意しますか？"
+
+msgid "count_rejected_msg"
+msgstr "計算リクエストが拒否されました。"
+
+msgid "game_end:count"
+msgstr "計算による終局：{result}"

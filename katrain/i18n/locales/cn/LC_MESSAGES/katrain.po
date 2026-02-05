@@ -1265,7 +1265,7 @@ msgid "cancel"
 msgstr "取消"
 
 msgid "PASS"
-msgstr "弃权"
+msgstr "停一手"
 
 msgid "RESIGN"
 msgstr "认输"
@@ -2107,3 +2107,24 @@ msgstr "子"
 
 msgid "result:points_moku"
 msgstr "目"
+
+msgid "COUNT"
+msgstr "数子"
+
+msgid "count_confirm_title"
+msgstr "通过数子结束对局？"
+
+msgid "count_confirm_text"
+msgstr "计算最终比分以结束对局。"
+
+msgid "count_request_title"
+msgstr "数子请求"
+
+msgid "count_request_text"
+msgstr "{name} 请求通过数子结束对局。你同意吗？"
+
+msgid "count_rejected_msg"
+msgstr "你的数子请求被拒绝了。"
+
+msgid "game_end:count"
+msgstr "数子结束：{result}"

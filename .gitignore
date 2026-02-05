@@ -35,6 +35,10 @@ katrain/models/*.bin.gz
 # Compiled translation files (regenerated on startup from .po files)
 *.mo
 
+# Frontend build artifacts (regenerated on startup)
+katrain/web/static/assets/
+katrain/web/static/index.html
+
 # standard python ignore
 # Byte-compiled / optimized / DLL files
 __pycache__/

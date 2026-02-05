@@ -1798,7 +1798,7 @@ msgid "live:suggested_move"
 msgstr "Move"
 
 msgid "live:recommendation"
-msgstr "Score"
+msgstr "Recommendation"
 
 msgid "live:lead_pts"
 msgstr "Lead"

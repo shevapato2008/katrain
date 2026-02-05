@@ -120,6 +120,7 @@ class KataGoClient:
                 "score_lead": mi.get("scoreLead", 0.0),
                 "prior": mi.get("prior", 0.0),
                 "pv": mi.get("pv", []),
+                "psv": mi.get("playSelectionValue", 0.0),
             })
 
         ownership_flat = response.get("ownership")

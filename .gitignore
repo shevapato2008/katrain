@@ -32,6 +32,9 @@ outdated_log.txt
 models/*.bin.gz
 katrain/models/*.bin.gz
 
+# Compiled translation files (regenerated on startup from .po files)
+*.mo
+
 # standard python ignore
 # Byte-compiled / optimized / DLL files
 __pycache__/

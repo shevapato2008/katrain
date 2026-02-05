@@ -1626,7 +1626,7 @@ msgid "live:suggested_move"
 msgstr "着点"
 
 msgid "live:recommendation"
-msgstr "评分"
+msgstr "推荐度"
 
 msgid "live:lead_pts"
 msgstr "领先"

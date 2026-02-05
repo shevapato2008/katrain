@@ -3,9 +3,16 @@ import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, B
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 
+interface DialogTextOptions {
+  title?: string;
+  message?: string;
+  cancelLabel?: string;
+  confirmLabel?: string;
+}
+
 interface GameNavigationContextType {
   /** Register an active game that requires confirmation before leaving */
-  registerActiveGame: (onLeave: () => Promise<void> | void) => void;
+  registerActiveGame: (onLeave: () => Promise<void> | void, dialogText?: DialogTextOptions) => void;
   /** Unregister the active game (game ended) */
   unregisterActiveGame: () => void;
   /** Check if there's an active game */
@@ -26,11 +33,13 @@ export const GameNavigationProvider = ({ children }: { children: ReactNode }) =>
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeGameHandler, setActiveGameHandler] = useState<(() => Promise<void> | void) | null>(null);
+  const [dialogText, setDialogText] = useState<DialogTextOptions>({});
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const registerActiveGame = useCallback((onLeave: () => Promise<void> | void) => {
+  const registerActiveGame = useCallback((onLeave: () => Promise<void> | void, options?: DialogTextOptions) => {
     setActiveGameHandler(() => onLeave);
+    setDialogText(options ?? {});
   }, []);
 
   const unregisterActiveGame = useCallback(() => {
@@ -76,16 +85,16 @@ export const GameNavigationProvider = ({ children }: { children: ReactNode }) =>
 
       {/* Leave Game Confirmation Dialog */}
       <Dialog open={showConfirm} onClose={handleCancel}>
-        <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
+        <DialogTitle>{dialogText.title ?? t('leave_game_title', 'Leave Game?')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
+            {dialogText.message ?? t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancel}>{t('continue_game', 'Continue Game')}</Button>
+          <Button onClick={handleCancel}>{dialogText.cancelLabel ?? t('continue_game', 'Continue Game')}</Button>
           <Button onClick={handleConfirmLeave} color="error" variant="contained">
-            {t('resign_and_exit', 'Resign & Exit')}
+            {dialogText.confirmLabel ?? t('resign_and_exit', 'Resign & Exit')}
           </Button>
         </DialogActions>
       </Dialog>

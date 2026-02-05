@@ -1776,7 +1776,7 @@ msgid "live:suggested_move"
 msgstr "著點"
 
 msgid "live:recommendation"
-msgstr "評分"
+msgstr "推薦度"
 
 msgid "live:lead_pts"
 msgstr "領先"

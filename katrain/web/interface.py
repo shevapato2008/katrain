@@ -18,6 +18,7 @@ from katrain.core.constants import (
     PLAYING_NORMAL,
     PRIORITY_DEFAULT,
     PRIORITY_GAME_ANALYSIS,
+    ADDITIONAL_MOVE_ORDER,
 )
 from katrain.core.engine import create_engine
 from katrain.core.game import Game
@@ -265,11 +266,15 @@ class WebKaTrain(KaTrainBase):
                         "scoreLoss": move_info.get("pointsLost", 0),
                         "winrate": move_info.get("winrate", 0),
                         "visits": move_info.get("visits", 0),
+                        "psv": move_info.get("playSelectionValue", 0),
                     })
                 except Exception:
                     pass
-            # Sort moves by visits descending (standard KaTrain behavior)
-            moves.sort(key=lambda x: x.get("visits", 0), reverse=True)
+            # Filter out pure back-propagated entries (order=999, not in KataGo's original candidates)
+            from katrain.core.constants import ADDITIONAL_MOVE_ORDER
+
+            moves = [m for m in moves if m.get("order", ADDITIONAL_MOVE_ORDER) < ADDITIONAL_MOVE_ORDER]
+            # Don't re-sort: candidate_moves already returns in KataGo's order (order, pointsLost)
 
             from katrain.core.utils import var_to_grid
             sz = self.game.board_size
@@ -866,8 +871,9 @@ class WebKaTrain(KaTrainBase):
                 entry["visits"] = node.analysis["root"].get("visits", 0)
                 # Top candidate moves (up to 5)
                 candidates = node.candidate_moves[:5] if node.candidate_moves else []
+                candidates = [m for m in candidates if m.get("order", ADDITIONAL_MOVE_ORDER) < ADDITIONAL_MOVE_ORDER]
                 entry["top_moves"] = [
-                    {"move": m.get("move"), "winrate": m.get("winrate"), "scoreLead": m.get("scoreLead"), "visits": m.get("visits")}
+                    {"move": m.get("move"), "winrate": m.get("winrate"), "scoreLead": m.get("scoreLead"), "visits": m.get("visits"), "psv": m.get("playSelectionValue", 0)}
                     for m in candidates
                 ]
                 # Ownership data

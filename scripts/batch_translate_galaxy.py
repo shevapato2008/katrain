@@ -2197,6 +2197,19 @@ GALAXY_TRANSLATIONS = {
         "tr": "Siyah Avantaj",
         "ua": "Перевага чорних",
     },
+    "live:recommendation": {
+        "en": "Recommendation",
+        "cn": "推荐度",
+        "tw": "推薦度",
+        "jp": "推奨度",
+        "ko": "추천도",
+        "de": "Empfehlung",
+        "es": "Recomendación",
+        "fr": "Recommandation",
+        "ru": "Рекомендация",
+        "tr": "Öneri",
+        "ua": "Рекомендація",
+    },
 
     # Live module feature buttons
     "live:try": {

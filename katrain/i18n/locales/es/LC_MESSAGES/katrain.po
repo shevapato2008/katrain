@@ -1667,7 +1667,7 @@ msgid "live:suggested_move"
 msgstr "Jugada"
 
 msgid "live:recommendation"
-msgstr "Puntuación"
+msgstr "Recomendación"
 
 msgid "live:lead_pts"
 msgstr "Ventaja"

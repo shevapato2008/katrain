@@ -1844,7 +1844,7 @@ msgid "live:suggested_move"
 msgstr "Хід"
 
 msgid "live:recommendation"
-msgstr "Оцінка"
+msgstr "Рекомендація"
 
 msgid "live:lead_pts"
 msgstr "Перевага"

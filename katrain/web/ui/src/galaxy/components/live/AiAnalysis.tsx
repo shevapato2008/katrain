@@ -194,10 +194,12 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
   // Score lead from next player's perspective (who these recommendations are for)
   // KataGo reports score_lead from Black's perspective (positive = Black ahead)
   // If next player is White, we negate it
-  const scoreLead = nextPlayer === 'B' ? move.score_lead : -move.score_lead;
+  const rawScoreLead = move.score_lead ?? 0;
+  const scoreLead = nextPlayer === 'B' ? rawScoreLead : -rawScoreLead;
 
   // Winrate from next player's perspective
-  const winrate = nextPlayer === 'B' ? move.winrate : 1 - move.winrate;
+  const rawWinrate = move.winrate ?? 0.5;
+  const winrate = nextPlayer === 'B' ? rawWinrate : 1 - rawWinrate;
   const opponentWinrate = 1 - winrate;
 
   return (

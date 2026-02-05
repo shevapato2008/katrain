@@ -15,12 +15,14 @@ import { KifuAPI } from '../api/kifuApi';
 import { UserGamesAPI } from '../api/userGamesApi';
 import GameLibraryModal from '../components/research/CloudSGFPanel';
 import { useAuth } from '../context/AuthContext';
+import { useGameNavigation } from '../context/GameNavigationContext';
 import type { ResearchBoardState } from '../hooks/useResearchBoard';
 
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
     const { token } = useAuth();
     const { t } = useTranslation();
+    const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
 
     // L1 ↔ L2 state
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -43,6 +45,9 @@ const ResearchPage = () => {
 
     // ETA tracking: record first meaningful progress to compute rate
     const analysisStartRef = useRef<{ time: number; analyzed: number } | null>(null);
+
+    // Guard: enable hints only once per analysis session
+    const hintsEnabledRef = useRef(false);
     const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
 
     // Board state hook (L1)
@@ -231,16 +236,20 @@ const ResearchPage = () => {
         return () => clearInterval(interval);
     }, [isAnalyzing, analysisComplete]);
 
-    // When analysis completes, navigate to the last move to get full state
+    // When analysis completes, navigate to the last move to get full state and enable hints
     useEffect(() => {
-        if (analysisComplete && session.gameState) {
+        if (analysisComplete && session.gameState && !hintsEnabledRef.current) {
+            hintsEnabledRef.current = true;
             const gs = session.gameState;
             const currentNodeId = gs.history[gs.current_node_index]?.node_id;
             if (currentNodeId !== undefined) {
                 session.onNavigate(currentNodeId);
             }
+            // Enable hints (Advice button) by default when analysis completes
+            setAnalysisToggles(prev => ({ ...prev, hints: true }));
+            session.toggleHints();
         }
-    }, [analysisComplete]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [analysisComplete, session.gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Auto-save analysis to cloud when complete (if logged in)
     useEffect(() => {
@@ -340,6 +349,7 @@ const ResearchPage = () => {
             setAnalysisProgress(null);
             setEtaSeconds(null);
             analysisStartRef.current = null;
+            hintsEnabledRef.current = false;
             setIsAnalyzing(true);
             // 5. Trigger full analysis scan (500 visits per node, engine queues internally)
             API.analysisScan(newSessionId, 500);
@@ -364,8 +374,23 @@ const ResearchPage = () => {
         setAnalysisProgress(null);
         setEtaSeconds(null);
         analysisStartRef.current = null;
+        hintsEnabledRef.current = false;
         setAnalysisToggles(prev => ({ ...prev, hints: false, ownership: false, policy: false }));
     }, [session, board]);
+
+    // Register navigation guard when analysis is in progress
+    useEffect(() => {
+        if (isAnalyzing) {
+            registerActiveGame(handleReturnToEdit, {
+                title: t('research:cancel_analysis_title', '取消分析？'),
+                message: t('research:cancel_analysis_warning', '分析正在进行中，确定要取消吗？'),
+                cancelLabel: t('research:continue_analysis', '继续分析'),
+                confirmLabel: t('research:cancel_and_leave', '取消并离开'),
+            });
+        } else {
+            unregisterActiveGame();
+        }
+    }, [isAnalyzing]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // L2 navigation - use node_id from history for direct jumps
     const handleL2MoveChange = useCallback(async (move: number) => {

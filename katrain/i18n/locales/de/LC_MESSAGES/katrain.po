@@ -1829,7 +1829,7 @@ msgid "live:suggested_move"
 msgstr "Zug"
 
 msgid "live:recommendation"
-msgstr "Bewertung"
+msgstr "Empfehlung"
 
 msgid "live:lead_pts"
 msgstr "Führung"

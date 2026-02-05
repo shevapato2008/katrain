@@ -1721,7 +1721,7 @@ msgid "live:suggested_move"
 msgstr "착점"
 
 msgid "live:recommendation"
-msgstr "평가"
+msgstr "추천도"
 
 msgid "live:lead_pts"
 msgstr "리드"

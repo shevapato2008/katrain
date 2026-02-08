@@ -159,5 +159,5 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         }
     }, []);
 
-    return { sessionId, setSessionId, gameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData };
+    return { sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData };
 };

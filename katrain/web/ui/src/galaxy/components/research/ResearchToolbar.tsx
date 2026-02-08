@@ -292,7 +292,7 @@ export default function ResearchToolbar({
       </Menu>
 
       {/* Pass confirmation dialog */}
-      <Dialog open={passConfirmOpen} onClose={() => setPassConfirmOpen(false)}>
+      <Dialog open={passConfirmOpen} onClose={() => setPassConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>{t('research:pass_confirm_title', '停一手')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('research:pass_confirm_msg', '确认在当前位置插入一个 Pass（停一手）？')}</DialogContentText>

@@ -36,20 +36,20 @@ class TestAIResignation:
 
     def test_min_moves_scaling(self, katrain):
         """Test that minimum moves are scaled correctly for different board sizes."""
-        # Standard config is 80 moves for 19x19 (361 intersections)
-        configured_min = AI_RESIGNATION_MIN_MOVE_NUMBER  # 80
+        # Standard config is 150 moves for 19x19 (361 intersections)
+        configured_min = AI_RESIGNATION_MIN_MOVE_NUMBER  # 150
 
-        # 19x19: 80 moves
+        # 19x19: 150 moves
         expected_19x19 = int(configured_min * 361 / 361)
-        assert expected_19x19 == 80
+        assert expected_19x19 == 150
 
-        # 13x13: 80 * (169/361) ≈ 37 moves
+        # 13x13: 150 * (169/361) ≈ 70 moves
         expected_13x13 = int(configured_min * 169 / 361)
-        assert expected_13x13 == 37
+        assert expected_13x13 == 70
 
-        # 9x9: 80 * (81/361) ≈ 17 moves (but min is 15)
+        # 9x9: 150 * (81/361) ≈ 33 moves
         expected_9x9 = int(configured_min * 81 / 361)
-        assert expected_9x9 == 17  # Before applying floor of 15
+        assert expected_9x9 == 33
 
     @pytest.mark.skipif(
         os.environ.get("CI", "").lower() == "true",
@@ -241,32 +241,32 @@ class TestResignationScaling:
         """Verify scaling formula for 19x19 board."""
         board_size = 19
         intersections = board_size * board_size  # 361
-        configured_min = 80
+        configured_min = 150
         standard = 361
 
         min_moves = int(configured_min * intersections / standard)
-        assert min_moves == 80
+        assert min_moves == 150
 
     def test_scaling_formula_13x13(self):
         """Verify scaling formula for 13x13 board."""
         board_size = 13
         intersections = board_size * board_size  # 169
-        configured_min = 80
+        configured_min = 150
         standard = 361
 
         min_moves = int(configured_min * intersections / standard)
-        assert min_moves == 37
+        assert min_moves == 70
 
     def test_scaling_formula_9x9(self):
         """Verify scaling formula for 9x9 board."""
         board_size = 9
         intersections = board_size * board_size  # 81
-        configured_min = 80
+        configured_min = 150
         standard = 361
 
         min_moves = int(configured_min * intersections / standard)
-        # 80 * 81 / 361 = 17.95 -> 17
-        assert min_moves == 17
+        # 150 * 81 / 361 = 33.65 -> 33
+        assert min_moves == 33
 
     def test_minimum_floor(self):
         """Verify that minimum floor of 15 is applied."""
@@ -277,12 +277,12 @@ class TestResignationScaling:
         # For very small boards or low configured values, floor should apply
         board_size = 5
         intersections = board_size * board_size  # 25
-        configured_min = 80
+        configured_min = 150
         standard = 361
 
         min_moves = int(configured_min * intersections / standard)
-        # 80 * 25 / 361 = 5.5 -> 5
-        assert min_moves == 5
+        # 150 * 25 / 361 = 10.38 -> 10
+        assert min_moves == 10
 
         # After applying floor
         min_moves_with_floor = max(min_moves, AI_RESIGNATION_MIN_ABSOLUTE_MOVES)

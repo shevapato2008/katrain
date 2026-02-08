@@ -506,9 +506,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             result = f"W+{abs(score):.1f}"
             winner_color = "W"
 
-        # Set end state in game
+        # Set end state on the current node (game.end_result reads from current_node.end_state)
         session.katrain.game.game_result = result
-        session.katrain.game.end_state = result
+        session.katrain.game.current_node.end_state = result
 
         # Record multiplayer game result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
@@ -537,10 +537,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
 
-        # Verify move count >= 100
+        # Verify move count >= configured minimum
         state = session.katrain.get_state()
-        if len(state.get("history", [])) < 100:
-            raise HTTPException(status_code=400, detail="Cannot count before 100 moves")
+        count_min_moves = session.katrain.config("game/count_min_moves", 100)
+        if len(state.get("history", [])) < count_min_moves:
+            raise HTTPException(status_code=400, detail=f"Cannot count before {count_min_moves} moves")
 
         # Check if game is already over
         if state.get("end_result"):

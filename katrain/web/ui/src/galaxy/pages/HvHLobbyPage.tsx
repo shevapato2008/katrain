@@ -292,7 +292,7 @@ const HvHLobbyPage = () => {
                 </Box>
             </Box>
 
-            <Dialog open={!!invitation} onClose={() => setInvitation(null)}>
+            <Dialog open={!!invitation} onClose={() => setInvitation(null)} maxWidth="xs" fullWidth>
                 <DialogTitle>{i18n.t('lobby:invitation_title', 'Game Invitation')}</DialogTitle>
                 <DialogContent>
                     <Typography>

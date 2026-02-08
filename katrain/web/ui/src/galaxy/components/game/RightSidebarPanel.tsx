@@ -202,7 +202,7 @@ const RightSidebarPanel = ({
                             label={t('COUNT', 'Count')}
                             active={false}
                             onClick={() => onAction('count')}
-                            disabled={isGameOver || gameState.history.length < 100}
+                            disabled={isGameOver || gameState.history.length < (gameState.count_min_moves ?? 100)}
                         />
                     </Box>
                     {isRated && !isGameOver && (

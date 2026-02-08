@@ -7,6 +7,7 @@ interface BoardProps {
   onMove: (x: number, y: number) => void;
   onNavigate?: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
+  playerColor?: 'B' | 'W' | null;
 }
 
 const ASSETS = {
@@ -26,7 +27,7 @@ const EVAL_COLORS = [
   "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles }) => {
+const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -362,7 +363,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     }
 
     // Hover ghost stone preview
-    if (hoverPosRef.current && !gameState.end_result) {
+    if (hoverPosRef.current && !gameState.end_result
+        && (!playerColor || gameState.player_to_move === playerColor)) {
       const { x: hx, y: hy } = hoverPosRef.current;
       if (hx >= 0 && hx < boardSize && hy >= 0 && hy < boardSize) {
         // Check if position is empty
@@ -514,6 +516,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gameState.end_result) return;
+    if (playerColor && gameState.player_to_move !== playerColor) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();

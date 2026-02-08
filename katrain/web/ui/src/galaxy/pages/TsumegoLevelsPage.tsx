@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgress } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -16,16 +16,21 @@ const TsumegoLevelsPage = () => {
   const { t } = useTranslation();
   const [levels, setLevels] = useState<LevelInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/v1/tsumego/levels')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setLevels(data);
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to load levels:', err);
+        setError(err.message);
         setLoading(false);
       });
   }, []);
@@ -34,6 +39,27 @@ const TsumegoLevelsPage = () => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
+        <Alert severity="error">
+          {t('tsumego:loadError', 'Failed to load tsumego data. Please run: python scripts/generate_tsumego_index.py')}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (levels.length === 0) {
+    return (
+      <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
+        <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{t('Tsumego')}</Typography>
+        <Alert severity="info">
+          {t('tsumego:noData', 'No tsumego problems available.')}
+        </Alert>
       </Box>
     );
   }

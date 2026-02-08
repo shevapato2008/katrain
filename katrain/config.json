@@ -57,7 +57,8 @@
         "rules": "japanese",
         "clear_cache": false,
         "setup_move": 100,
-        "setup_advantage": 20
+        "setup_advantage": 20,
+        "count_min_moves": 100
     },
     "trainer": {
         "theme": "theme:normal",
@@ -109,7 +110,7 @@
             "enabled": true,
             "winrate_threshold": 0.15,
             "consecutive_turns": 3,
-            "min_move_number": 80
+            "min_move_number": 150
         },
         "ai:default": {},
         "ai:antimirror": {},

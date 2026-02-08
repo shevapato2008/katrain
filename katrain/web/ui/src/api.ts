@@ -54,6 +54,7 @@ export interface GameState {
     };
   };
   language: string;
+  count_min_moves?: number;
   engine?: "local" | "cloud";
   trainer_settings?: {
     eval_thresholds: number[];

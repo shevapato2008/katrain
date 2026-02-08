@@ -357,7 +357,8 @@ class WebKaTrain(KaTrainBase):
                 "show_coordinates": self.show_coordinates,
                 "zen_mode": self.zen_mode,
             },
-            "engine": getattr(self, "last_engine", None)
+            "engine": getattr(self, "last_engine", None),
+            "count_min_moves": self.config("game/count_min_moves", 100)
         }
 
     def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None, rules=None, skip_initial_analysis=False):

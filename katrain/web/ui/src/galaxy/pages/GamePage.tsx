@@ -26,6 +26,7 @@ const GamePage = () => {
         sessionId: currentSessionId,
         setSessionId,
         gameState,
+        setGameState,
         error,
         onMove,
         onNavigate,
@@ -81,7 +82,7 @@ const GamePage = () => {
     }, [sessionId, currentSessionId, setSessionId]);
 
     // Sync with gameState.ui_state if available
-    // Note: 'hints' is excluded because it's managed locally (Cases 1-3)
+    // Note: 'hints' and 'numbers' are excluded because they're managed locally
     useEffect(() => {
         if (gameState?.ui_state) {
             setAnalysisToggles(prev => ({
@@ -89,7 +90,6 @@ const GamePage = () => {
                 policy: gameState.ui_state.show_policy,
                 ownership: gameState.ui_state.show_ownership,
                 coords: gameState.ui_state.show_coordinates,
-                numbers: gameState.ui_state.show_move_numbers,
             }));
         }
     }, [gameState]);
@@ -178,6 +178,9 @@ const GamePage = () => {
             if (response.result) {
                 setCountResult(response.result);
             }
+            if (response.state) {
+                setGameState(response.state);
+            }
         } catch (e: any) {
             console.error("Count request failed:", e);
             alert(e.message || "Count request failed");
@@ -202,13 +205,26 @@ const GamePage = () => {
         navigate('/galaxy/play/ai');
     };
 
+    const formatResult = (result: string) => {
+        const match = result.match(/^([BW])\+(.+)$/);
+        if (!match) return result;
+        const [, color, score] = match;
+        const winner = color === 'B' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
+        return `${winner}${score}${t('result:points', '')}`;
+    };
+
+    // Determine which color the human player controls (if any)
+    const humanColor: 'B' | 'W' | null = gameState?.players_info?.B?.player_type === 'player:human' ? 'B'
+        : gameState?.players_info?.W?.player_type === 'player:human' ? 'W'
+        : null;
+
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
-            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
+            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -222,7 +238,7 @@ const GamePage = () => {
             </Dialog>
 
             {/* Resign Confirmation Dialog */}
-            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('resign_game_title', 'Resign Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -236,7 +252,7 @@ const GamePage = () => {
             </Dialog>
 
             {/* Count Confirmation Dialog */}
-            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)}>
+            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('count_confirm_title', 'End Game by Counting?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -250,11 +266,11 @@ const GamePage = () => {
             </Dialog>
 
             {/* Count Result Dialog */}
-            <Dialog open={!!countResult} onClose={() => setCountResult(null)}>
+            <Dialog open={!!countResult} onClose={() => setCountResult(null)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('Game Over', 'Game Over')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {t('game_end:count', 'Game ended by counting: {result}').replace('{result}', countResult || '')}
+                        {t('game_end:count', 'Game ended by counting: {result}').replace('{result}', formatResult(countResult || ''))}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -287,6 +303,7 @@ const GamePage = () => {
                         onMove={onMove}
                         onNavigate={onNavigate}
                         analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                        playerColor={humanColor}
                     />
                 </Box>
             </Box>

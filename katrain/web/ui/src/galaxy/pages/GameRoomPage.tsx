@@ -156,6 +156,14 @@ const GameRoomPage = () => {
 
     const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
 
+    const formatResult = (result: string) => {
+        const match = result.match(/^([BW])\+(.+)$/);
+        if (!match) return result;
+        const [, color, score] = match;
+        const winner = color === 'B' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
+        return `${winner}${score}${t('result:points', '')}`;
+    };
+
     // Determine game end result message
     const getGameEndMessage = () => {
         if (!gameEndData) return "";
@@ -169,7 +177,7 @@ const GameRoomPage = () => {
         } else if (reason === 'timeout') {
             return isWinner ? t('game_end:timeout_win', "Your opponent ran out of time. You win!") : t('game_end:timeout_loss', "You ran out of time.");
         } else if (reason === 'count') {
-            return t('game_end:count', 'Game ended by counting: {result}').replace('{result}', result || '');
+            return t('game_end:count', 'Game ended by counting: {result}').replace('{result}', formatResult(result || ''));
         } else {
             return t(result || "Game ended", result || "Game ended");
         }
@@ -178,7 +186,7 @@ const GameRoomPage = () => {
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
-            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
+            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -192,7 +200,7 @@ const GameRoomPage = () => {
             </Dialog>
 
             {/* Resign Confirmation Dialog */}
-            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('resign_game_title', 'Resign Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -206,7 +214,7 @@ const GameRoomPage = () => {
             </Dialog>
 
             {/* Game End Dialog */}
-            <Dialog open={showGameEndDialog} onClose={handleBackToLobby}>
+            <Dialog open={showGameEndDialog} onClose={handleBackToLobby} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('Game Over', 'Game Over')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -219,7 +227,7 @@ const GameRoomPage = () => {
             </Dialog>
 
             {/* Count Confirmation Dialog - for initiator */}
-            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)}>
+            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('count_confirm_title', 'End Game by Counting?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -233,7 +241,7 @@ const GameRoomPage = () => {
             </Dialog>
 
             {/* Count Request Dialog - for responder */}
-            <Dialog open={showCountRequestDialog} onClose={() => setShowCountRequestDialog(false)}>
+            <Dialog open={showCountRequestDialog} onClose={() => setShowCountRequestDialog(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('count_request_title', 'Counting Request')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>

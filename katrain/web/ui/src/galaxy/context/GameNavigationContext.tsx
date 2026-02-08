@@ -84,7 +84,7 @@ export const GameNavigationProvider = ({ children }: { children: ReactNode }) =>
       {children}
 
       {/* Leave Game Confirmation Dialog */}
-      <Dialog open={showConfirm} onClose={handleCancel}>
+      <Dialog open={showConfirm} onClose={handleCancel} maxWidth="xs" fullWidth>
         <DialogTitle>{dialogText.title ?? t('leave_game_title', 'Leave Game?')}</DialogTitle>
         <DialogContent>
           <DialogContentText>

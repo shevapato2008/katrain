@@ -179,9 +179,6 @@ dmypy.json
 # Database
 .postgres_data/
 
-# Local data (except tsumego index)
-/data/*
-!/data/life-n-death/
-/data/life-n-death/*
-!/data/life-n-death/index.json
+# Local data
+/data/
 data.zip

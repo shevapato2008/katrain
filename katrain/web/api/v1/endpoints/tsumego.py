@@ -1,10 +1,9 @@
 """Tsumego API endpoints."""
 
-import json
 from datetime import datetime
-from pathlib import Path
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -15,10 +14,6 @@ from katrain.web.models import User
 
 
 router = APIRouter()
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
-DATA_DIR = PROJECT_ROOT / "data" / "life-n-death"
-INDEX_FILE = DATA_DIR / "index.json"
 
 
 # Response models
@@ -69,14 +64,6 @@ class ProgressUpdate(BaseModel):
     lastDuration: Optional[int] = None
 
 
-def load_index() -> dict:
-    """Load index.json file."""
-    if not INDEX_FILE.exists():
-        raise HTTPException(status_code=500, detail="Index file not found. Run generate_tsumego_index.py")
-    with open(INDEX_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
 def level_sort_key(level: str) -> tuple:
     """Sort levels: 15K, 14K, ..., 1K, 1D, 2D, ..., 7D (weakest to strongest)."""
     level = level.upper()
@@ -90,42 +77,56 @@ def level_sort_key(level: str) -> tuple:
 
 
 @router.get("/levels", response_model=List[LevelInfo])
-def get_levels():
+def get_levels(db: Session = Depends(get_db)):
     """Get all available difficulty levels with category counts."""
-    index = load_index()
+    rows = db.query(
+        TsumegoProblem.level,
+        TsumegoProblem.category,
+        func.count(TsumegoProblem.id),
+    ).group_by(TsumegoProblem.level, TsumegoProblem.category).all()
+
+    # Aggregate into {level: {category: count}}
+    levels: dict[str, dict[str, int]] = {}
+    for level, category, count in rows:
+        levels.setdefault(level, {})[category] = count
+
     result = []
-    for level, data in sorted(index["levels"].items(), key=lambda x: level_sort_key(x[0])):
-        categories = {cat: len(ids) for cat, ids in data["categories"].items()}
+    for level, categories in sorted(levels.items(), key=lambda x: level_sort_key(x[0])):
         result.append(LevelInfo(
             level=level,
             categories=categories,
-            total=sum(categories.values())
+            total=sum(categories.values()),
         ))
     return result
 
 
 @router.get("/levels/{level}/categories", response_model=List[CategoryInfo])
-def get_categories(level: str):
+def get_categories(level: str, db: Session = Depends(get_db)):
     """Get categories for a specific difficulty level."""
-    index = load_index()
-    level = level.lower()  # Normalize to lowercase
-    if level not in index["levels"]:
+    level = level.lower()
+
+    rows = db.query(
+        TsumegoProblem.category,
+        func.count(TsumegoProblem.id),
+    ).filter(TsumegoProblem.level == level).group_by(TsumegoProblem.category).all()
+
+    if not rows:
         raise HTTPException(status_code=404, detail=f"Level {level} not found")
 
     category_names = {
         "life-death": "死活题",
         "tesuji": "手筋题",
-        "endgame": "官子题"
+        "endgame": "官子题",
     }
 
-    result = []
-    for cat, ids in index["levels"][level]["categories"].items():
-        result.append(CategoryInfo(
+    return [
+        CategoryInfo(
             category=cat,
             name=category_names.get(cat, cat),
-            count=len(ids)
-        ))
-    return result
+            count=count,
+        )
+        for cat, count in rows
+    ]
 
 
 @router.get("/levels/{level}/categories/{category}", response_model=List[ProblemSummary])
@@ -133,34 +134,40 @@ def get_problems(
     level: str,
     category: str,
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=1000)
+    limit: int = Query(20, ge=1, le=1000),
+    db: Session = Depends(get_db),
 ):
     """Get problems for a level/category with pagination."""
-    index = load_index()
-    level = level.lower()  # Normalize to lowercase
+    level = level.lower()
 
-    if level not in index["levels"]:
-        raise HTTPException(status_code=404, detail=f"Level {level} not found")
+    problems = (
+        db.query(TsumegoProblem)
+        .filter(TsumegoProblem.level == level, TsumegoProblem.category == category)
+        .order_by(TsumegoProblem.id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
-    categories = index["levels"][level]["categories"]
-    if category not in categories:
-        raise HTTPException(status_code=404, detail=f"Category {category} not found")
+    if not problems and offset == 0:
+        # Check if level/category exist at all
+        exists = db.query(TsumegoProblem.id).filter(
+            TsumegoProblem.level == level, TsumegoProblem.category == category
+        ).first()
+        if not exists:
+            raise HTTPException(status_code=404, detail=f"Level {level} / category {category} not found")
 
-    problem_ids = categories[category][offset:offset + limit]
-
-    result = []
-    for pid in problem_ids:
-        p = index["problems"].get(pid)
-        if p:
-            result.append(ProblemSummary(
-                id=p["id"],
-                level=p["level"],
-                category=p["category"],
-                hint=p["hint"],
-                initialBlack=p["initialBlack"],
-                initialWhite=p["initialWhite"]
-            ))
-    return result
+    return [
+        ProblemSummary(
+            id=p.id,
+            level=p.level,
+            category=p.category,
+            hint=p.hint,
+            initialBlack=p.initial_black or [],
+            initialWhite=p.initial_white or [],
+        )
+        for p in problems
+    ]
 
 
 @router.get("/problems/{problem_id}", response_model=ProblemDetail)

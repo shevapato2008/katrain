@@ -47,7 +47,7 @@ const TsumegoLevelsPage = () => {
     return (
       <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
         <Alert severity="error">
-          {t('tsumego:loadError', 'Failed to load tsumego data. Please run: python scripts/generate_tsumego_index.py')}
+          {t('tsumego:loadError', 'Failed to load tsumego data. Please run: python scripts/sync_tsumego_db.py')}
         </Alert>
       </Box>
     );

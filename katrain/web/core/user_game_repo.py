@@ -10,11 +10,17 @@ class UserGameRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
 
-    def create(self, user_id: int, sgf_content: str, source: str, **kwargs) -> Dict[str, Any]:
+    def create(self, user_id: int, sgf_content: str, source: str, game_id: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         session = self.session_factory()
         try:
+            # Idempotent creation: if client provides an id that already exists, return existing record
+            if game_id:
+                existing = session.query(models_db.UserGame).filter(models_db.UserGame.id == game_id).first()
+                if existing:
+                    return self._to_dict(existing, include_sgf=True)
+
             sgf_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
-            db_game = models_db.UserGame(
+            game_kwargs = dict(
                 user_id=user_id,
                 sgf_content=sgf_content,
                 source=source,
@@ -32,6 +38,10 @@ class UserGameRepository:
                 event=kwargs.get("event"),
                 game_date=kwargs.get("game_date"),
             )
+            if game_id:
+                game_kwargs["id"] = game_id
+
+            db_game = models_db.UserGame(**game_kwargs)
             session.add(db_game)
             session.commit()
             session.refresh(db_game)

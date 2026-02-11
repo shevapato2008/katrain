@@ -77,8 +77,13 @@ def level_sort_key(level: str) -> tuple:
 
 
 @router.get("/levels", response_model=List[LevelInfo])
-def get_levels(db: Session = Depends(get_db)):
+async def get_levels(request: Request, db: Session = Depends(get_db)):
     """Get all available difficulty levels with category counts."""
+    # Board mode: delegate to repository dispatcher (online → remote, offline → empty)
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.tsumego_get_levels()
+
     rows = db.query(
         TsumegoProblem.level,
         TsumegoProblem.category,
@@ -101,8 +106,22 @@ def get_levels(db: Session = Depends(get_db)):
 
 
 @router.get("/levels/{level}/categories", response_model=List[CategoryInfo])
-def get_categories(level: str, db: Session = Depends(get_db)):
+async def get_categories(request: Request, level: str, db: Session = Depends(get_db)):
     """Get categories for a specific difficulty level."""
+    # Board mode: categories are included in levels response from remote
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        levels = await dispatcher.tsumego_get_levels()
+        for lvl in levels:
+            if lvl.get("level", "").lower() == level.lower():
+                cats = lvl.get("categories", {})
+                category_names = {"life-death": "死活题", "tesuji": "手筋题", "endgame": "官子题"}
+                return [
+                    CategoryInfo(category=cat, name=category_names.get(cat, cat), count=cnt)
+                    for cat, cnt in cats.items()
+                ]
+        raise HTTPException(status_code=404, detail=f"Level {level} not found")
+
     level = level.lower()
 
     rows = db.query(
@@ -130,7 +149,8 @@ def get_categories(level: str, db: Session = Depends(get_db)):
 
 
 @router.get("/levels/{level}/categories/{category}", response_model=List[ProblemSummary])
-def get_problems(
+async def get_problems(
+    request: Request,
     level: str,
     category: str,
     offset: int = Query(0, ge=0),
@@ -138,6 +158,10 @@ def get_problems(
     db: Session = Depends(get_db),
 ):
     """Get problems for a level/category with pagination."""
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.tsumego_get_problems(level, category, offset, limit)
+
     level = level.lower()
 
     problems = (
@@ -171,8 +195,15 @@ def get_problems(
 
 
 @router.get("/problems/{problem_id}", response_model=ProblemDetail)
-def get_problem(problem_id: str, db: Session = Depends(get_db)):
+async def get_problem(request: Request, problem_id: str, db: Session = Depends(get_db)):
     """Get full problem details including SGF content."""
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        result = await dispatcher.tsumego_get_problem(problem_id)
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Problem {problem_id} not found")
+        return result
+
     problem = db.query(TsumegoProblem).filter(TsumegoProblem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=404, detail=f"Problem {problem_id} not found")
@@ -191,10 +222,19 @@ def get_problem(problem_id: str, db: Session = Depends(get_db)):
 
 @router.get("/progress", response_model=dict[str, ProgressData])
 async def get_progress(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get current user's progress on all problems."""
+    # Board mode: proxy to remote server
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        if not dispatcher.is_online:
+            return {}
+        remote = dispatcher.remote_tsumego
+        return await remote.get_progress()
+
     progress_list = db.query(UserTsumegoProgress).filter(
         UserTsumegoProgress.user_id == current_user.id
     ).all()
@@ -214,12 +254,21 @@ async def get_progress(
 
 @router.post("/progress/{problem_id}")
 async def update_progress(
+    request: Request,
     problem_id: str,
     data: ProgressUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update user's progress on a specific problem."""
+    # Board mode: proxy to remote server
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        if not dispatcher.is_online:
+            raise HTTPException(status_code=503, detail="Offline — progress sync unavailable")
+        remote = dispatcher.remote_tsumego
+        return await remote.update_progress(problem_id, data.model_dump())
+
     # Verify problem exists
     problem = db.query(TsumegoProblem).filter(TsumegoProblem.id == problem_id).first()
     if not problem:
@@ -233,11 +282,16 @@ async def update_progress(
     now = datetime.utcnow()
 
     if progress:
-        progress.completed = data.completed
-        progress.attempts = data.attempts
+        # Field-level merge rules (design.md Section 4.12.2):
+        # attempts: max(existing, incoming) — reflect actual practice volume
+        progress.attempts = max(progress.attempts or 0, data.attempts)
+        # completed: existing OR incoming — once completed on any device, stays completed
+        progress.completed = progress.completed or data.completed
+        # last_attempt_at: max(existing, incoming) — most recent attempt time
         progress.last_attempt_at = now
         if data.lastDuration is not None:
             progress.last_duration = data.lastDuration
+        # first_completed_at: min_non_null(existing, incoming) — earliest completion time
         if data.completed and not progress.first_completed_at:
             progress.first_completed_at = now
     else:

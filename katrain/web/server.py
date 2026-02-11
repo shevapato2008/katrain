@@ -17,7 +17,38 @@ from katrain.web.models import *
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize User Persistence
+    log = logging.getLogger("katrain_web")
+
+    if settings.KATRAIN_MODE == "board":
+        # ── Board mode startup (design.md Section 4.9) ──
+        await _lifespan_board(app, log)
+    else:
+        # ── Server mode startup (existing logic, unchanged) ──
+        await _lifespan_server(app, log)
+
+    yield
+
+    # ── Shutdown ──
+    if settings.KATRAIN_MODE == "board":
+        connectivity = getattr(app.state, "connectivity_manager", None)
+        if connectivity:
+            await connectivity.stop()
+        remote_client = getattr(app.state, "remote_client", None)
+        if remote_client:
+            await remote_client.close()
+    else:
+        live_service = getattr(app.state, "live_service", None)
+        if live_service:
+            await live_service.stop()
+
+    task = getattr(app.state, "cleanup_task", None)
+    if task:
+        task.cancel()
+    app.state.session_manager.cleanup_expired()
+
+
+async def _lifespan_server(app: FastAPI, log):
+    """Server mode initialization — existing logic, unchanged."""
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
@@ -31,13 +62,12 @@ async def lifespan(app: FastAPI):
     user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
 
     # Create default admin user if no users exist
-    # Create default admin user if no users exist
     if not repo.list_users():
-        logging.getLogger("katrain_web").info("No users found. Creating default admin user (admin/admin)")
+        log.info("No users found. Creating default admin user (admin/admin)")
         try:
             repo.create_user("admin", get_password_hash("admin"))
         except ValueError:
-            pass # Already exists race condition
+            pass  # Already exists race condition
 
     app.state.user_repo = repo
     app.state.game_repo = game_repo
@@ -49,33 +79,32 @@ async def lifespan(app: FastAPI):
     # Initialize Engine Clients and Router
     from katrain.web.core.engine_client import KataGoClient
     from katrain.web.core.router import RequestRouter
-    
+
     local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
     cloud_client = None
     if settings.CLOUD_KATAGO_URL:
         cloud_client = KataGoClient(url=settings.CLOUD_KATAGO_URL)
-    
+
     app.state.router = RequestRouter(local_client=local_client, cloud_client=cloud_client)
 
     manager = app.state.session_manager
     try:
         from katrain.web.interface import WebKaTrain
-        # Just init to trigger imports and config loading
+
         kt = WebKaTrain(force_package_config=False, enable_engine=False)
-        
-        # Sync configuration with Environment Settings
+
         engine_cfg = kt.config("engine")
         if settings.LOCAL_KATAGO_URL and engine_cfg.get("http_url") != settings.LOCAL_KATAGO_URL:
             if engine_cfg.get("backend") == "http":
                 print(f"Syncing KataGo URL to {settings.LOCAL_KATAGO_URL} from environment")
                 kt.update_config("engine/http_url", settings.LOCAL_KATAGO_URL)
                 kt.save_config("engine")
-                engine_cfg = kt.config("engine") # Reload local ref
-        
-        # Auto-test HTTP Engine
+                engine_cfg = kt.config("engine")
+
         engine_cfg = kt.config("engine")
         if engine_cfg.get("backend") == "http":
             import httpx
+
             logging.getLogger("httpx").setLevel(logging.WARNING)
             logging.getLogger("httpcore").setLevel(logging.WARNING)
             url = engine_cfg.get("http_url")
@@ -93,32 +122,118 @@ async def lifespan(app: FastAPI):
                 print(f"WARNING: Failed to connect to KataGo Engine: {e}")
 
     except Exception as e:
-        logging.getLogger("katrain_web").error(f"Initialization failed: {e}")
+        log.error(f"Initialization failed: {e}")
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
+
     live_service = create_live_service()
     app.state.live_service = live_service
     try:
         await live_service.start()
-        logging.getLogger("katrain_web").info("Live broadcasting service started")
+        log.info("Live broadcasting service started")
     except Exception as e:
-        logging.getLogger("katrain_web").warning(f"Failed to start live service: {e}")
+        log.warning(f"Failed to start live service: {e}")
 
-    yield
 
-    # Shutdown live service
-    live_service = getattr(app.state, "live_service", None)
-    if live_service:
-        await live_service.stop()
+async def _lifespan_board(app: FastAPI, log):
+    """Board mode initialization — design.md Section 4.9."""
+    from functools import partial
 
-    task = getattr(app.state, "cleanup_task", None)
-    if task:
-        task.cancel()
-    manager.cleanup_expired()
+    from katrain.web.core.auth import SQLAlchemyUserRepository
+    from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+    from katrain.web.core.db import SessionLocal
+    from katrain.web.core.remote_client import RemoteAPIClient
+    from katrain.web.core.sync_worker import SyncWorker
+    from katrain.web.core.connectivity import ConnectivityManager
+    from katrain.web.core.repository import (
+        RepositoryDispatcher,
+        RemoteTsumegoRepository,
+        RemoteKifuRepository,
+        RemoteUserGameRepository,
+        enqueue_sync_item,
+    )
+
+    log.info(f"Starting in BOARD mode (device={settings.DEVICE_ID[:8]}..., remote={settings.REMOTE_API_URL})")
+
+    # Local SQLite — create only the core tables needed for offline
+    repo = SQLAlchemyUserRepository(SessionLocal)
+    repo.init_db()
+    app.state.user_repo = repo
+
+    local_user_game_repo = UserGameRepository(SessionLocal)
+    local_user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
+    app.state.user_game_repo = local_user_game_repo
+    app.state.user_game_analysis_repo = local_user_game_analysis_repo
+
+    # Remote API client
+    remote_client = RemoteAPIClient(
+        base_url=settings.REMOTE_API_URL,
+        device_id=settings.DEVICE_ID,
+    )
+    app.state.remote_client = remote_client
+
+    # Try to restore refresh token from encrypted credentials
+    try:
+        from katrain.web.core.credentials import load_refresh_token
+
+        saved_token = load_refresh_token(settings.DEVICE_ID)
+        if saved_token:
+            remote_client.set_refresh_token(saved_token)
+            log.info("Restored refresh token from credentials store")
+    except Exception as e:
+        log.debug(f"No saved credentials: {e}")
+
+    # Sync worker
+    sync_worker = SyncWorker(SessionLocal, remote_client)
+    sync_worker.recover_stale_leases()
+    app.state.sync_worker = sync_worker
+
+    # Connectivity manager
+    connectivity = ConnectivityManager(remote_client, sync_worker)
+    app.state.connectivity_manager = connectivity
+
+    # Repository dispatcher
+    sync_fn = partial(enqueue_sync_item, SessionLocal, device_id=settings.DEVICE_ID)
+    dispatcher = RepositoryDispatcher(
+        connectivity_manager=connectivity,
+        remote_tsumego=RemoteTsumegoRepository(remote_client),
+        remote_kifu=RemoteKifuRepository(remote_client),
+        remote_user_games=RemoteUserGameRepository(remote_client),
+        local_user_game_repo=local_user_game_repo,
+        sync_enqueue_fn=sync_fn,
+    )
+    app.state.repository_dispatcher = dispatcher
+
+    # Engine (local KataGo for offline play)
+    from katrain.web.core.engine_client import KataGoClient
+    from katrain.web.core.router import RequestRouter
+
+    local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
+    app.state.router = RequestRouter(local_client=local_client, cloud_client=None)
+
+    # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
+    app.state.lobby_manager = LobbyManager()
+    app.state.matchmaker = Matchmaker()
+    app.state.game_repo = None  # Multiplayer game_repo not used in board mode
+
+    manager = app.state.session_manager
+    try:
+        from katrain.web.interface import WebKaTrain
+
+        kt = WebKaTrain(force_package_config=False, enable_engine=False)
+    except Exception as e:
+        log.error(f"Board mode initialization warning: {e}")
+
+    manager.attach_loop(asyncio.get_running_loop())
+    app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+
+    # Start connectivity monitoring (do NOT start live_service in board mode)
+    connectivity.start()
+    log.info("Board mode initialization complete")
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional

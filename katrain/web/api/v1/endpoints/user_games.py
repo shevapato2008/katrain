@@ -12,6 +12,7 @@ router = APIRouter()
 # ── Request/Response Models ──
 
 class UserGameCreate(BaseModel):
+    id: Optional[str] = None  # Client-provided UUID for idempotent creation (board sync)
     sgf_content: str
     source: str  # play_ai / play_human / import / research
     title: Optional[str] = None
@@ -51,6 +52,15 @@ async def list_user_games(
     q: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
+    # Board mode: route through dispatcher (online → remote, offline → local)
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.user_games_list(
+            user_id=current_user.id,
+            page=page, page_size=page_size,
+            category=category, source=source, sort=sort, q=q,
+        )
+
     repo = request.app.state.user_game_repo
     return repo.list(
         user_id=current_user.id,
@@ -69,11 +79,20 @@ async def create_user_game(
     game_in: UserGameCreate,
     current_user: User = Depends(get_current_user),
 ):
+    # Board mode: route through dispatcher (online → remote, offline → local + sync queue)
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.user_games_create(
+            user_id=current_user.id,
+            data=game_in.model_dump(),
+        )
+
     repo = request.app.state.user_game_repo
     return repo.create(
         user_id=current_user.id,
         sgf_content=game_in.sgf_content,
         source=game_in.source,
+        game_id=game_in.id,
         title=game_in.title,
         player_black=game_in.player_black,
         player_white=game_in.player_white,
@@ -95,6 +114,14 @@ async def get_user_game(
     game_id: str,
     current_user: User = Depends(get_current_user),
 ):
+    # Board mode: route through dispatcher
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        game = await dispatcher.user_games_get(game_id, current_user.id)
+        if not game:
+            raise HTTPException(status_code=404, detail="Game not found")
+        return game
+
     repo = request.app.state.user_game_repo
     game = repo.get(game_id, current_user.id)
     if not game:

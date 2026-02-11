@@ -2,7 +2,7 @@
 
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session, defer
 
@@ -49,13 +49,19 @@ class KifuAlbumListResponse(BaseModel):
 
 
 @router.get("/albums", response_model=KifuAlbumListResponse)
-def list_kifu_albums(
+async def list_kifu_albums(
+    request: Request,
     q: Optional[str] = Query(None, description="Search query (fuzzy match on player names, event, date)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
     """List tournament game records with optional search and pagination."""
+    # Board mode: delegate to repository dispatcher
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.kifu_list_albums(q, page, page_size)
+
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
 
     if q:
@@ -77,8 +83,16 @@ def list_kifu_albums(
 
 
 @router.get("/albums/{album_id}", response_model=KifuAlbumDetail)
-def get_kifu_album(album_id: int, db: Session = Depends(get_db)):
+async def get_kifu_album(request: Request, album_id: int, db: Session = Depends(get_db)):
     """Get a single kifu album record with full SGF content."""
+    # Board mode: delegate to repository dispatcher
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        result = await dispatcher.kifu_get_album(album_id)
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
+        return result
+
     record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")

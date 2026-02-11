@@ -351,6 +351,48 @@ class UserGameAnalysis(Base):
     )
 
 
+class SyncQueueEntry(Base):
+    """Offline sync queue for board mode. See design.md Section 4.5.1."""
+    __tablename__ = "sync_queue"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    idempotency_key = Column(String(64), unique=True, nullable=False, index=True)
+    operation = Column(String(64), nullable=False)  # create_user_game / update_tsumego_progress
+    endpoint = Column(String(256), nullable=False)  # Remote API path
+    method = Column(String(8), nullable=False)  # POST / PUT
+    payload = Column(JSON, nullable=False)
+    status = Column(String(16), nullable=False, default="pending", index=True)  # pending/in_progress/completed/failed
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    locked_at = Column(DateTime(timezone=True), nullable=True)
+    synced_at = Column(DateTime(timezone=True), nullable=True)
+    retry_count = Column(Integer, nullable=False, default=0)
+    max_retries = Column(Integer, nullable=False, default=5)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+    last_http_status = Column(Integer, nullable=True)
+    last_error = Column(Text, nullable=True)
+    user_id = Column(String(64), nullable=True)
+    device_id = Column(String(64), nullable=True)
+
+    __table_args__ = (
+        Index("ix_sync_queue_status_retry", "status", "next_retry_at"),
+    )
+
+
+class DeviceHeartbeatDB(Base):
+    """Server-side device tracking. See design.md Section 4.15.2."""
+    __tablename__ = "device_heartbeats"
+
+    device_id = Column(String(64), primary_key=True)
+    last_seen = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    queue_depth = Column(Integer, default=0)
+    failed_count = Column(Integer, default=0)
+    oldest_unsynced_age_sec = Column(Integer, default=0)
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    ip_address = Column(String(64), nullable=True)
+    app_version = Column(String(32), nullable=True)
+
+
 class UpcomingMatchDB(Base):
     """Upcoming/scheduled matches from various sources (populated by katrain-cron)."""
     __tablename__ = "live_upcoming"

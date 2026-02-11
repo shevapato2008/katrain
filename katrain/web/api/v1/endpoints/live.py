@@ -115,9 +115,20 @@ class PlayerTranslationResponse(BaseModel):
 
 
 def get_live_service(request: Request):
-    """Dependency to get the live service from app state."""
+    """Dependency to get the live service from app state.
+
+    In board mode, live_service is not started — endpoints that need it
+    should check for repository_dispatcher and proxy to remote instead.
+    """
     live_service = getattr(request.app.state, "live_service", None)
     if not live_service:
+        # Board mode: check if we can proxy through remote client
+        dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+        if dispatcher is not None:
+            raise HTTPException(
+                status_code=503,
+                detail="Live service unavailable in board mode — use /api/v1/board/live proxy"
+            )
         raise HTTPException(status_code=503, detail="Live service not initialized")
     return live_service
 

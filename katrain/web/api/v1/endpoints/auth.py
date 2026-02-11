@@ -1,10 +1,10 @@
-from typing import Any
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-from katrain.web.core.auth import verify_password, create_access_token
+from katrain.web.core.auth import verify_password, create_access_token, create_refresh_token
 from katrain.web.core.config import settings
 from katrain.web.models import User, UserInDB
 
@@ -19,6 +19,11 @@ class LoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: Optional[str] = None
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 async def get_user_from_token(token: str, repo: Any) -> User:
     credentials_exception = HTTPException(
@@ -64,7 +69,34 @@ async def login(request: Request, login_data: LoginRequest) -> Any:
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(data={"sub": user_dict["username"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = create_refresh_token(data={"sub": user_dict["username"]})
+    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
+
+@router.post("/refresh", response_model=Token)
+async def refresh(request: Request, body: RefreshRequest) -> Any:
+    """Exchange a valid refresh token for a new access token."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(body.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        token_type: str = payload.get("type")
+        username: str = payload.get("sub")
+        if token_type != "refresh" or username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    repo = request.app.state.user_repo
+    user_dict = repo.get_user_by_username(username)
+    if user_dict is None:
+        raise credentials_exception
+
+    new_access_token = create_access_token(data={"sub": username})
+    return {"access_token": new_access_token, "token_type": "bearer"}
+
 
 @router.post("/register", response_model=User)
 async def register(request: Request, register_data: LoginRequest) -> Any:

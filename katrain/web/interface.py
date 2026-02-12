@@ -450,11 +450,44 @@ class WebKaTrain(KaTrainBase):
 
     def update_state(self, **_kwargs):
         """Called when the game state changes."""
-        # 1. Broadcast current state (useful for showing hints/analysis before AI moves)
+        now = time.time()
+
+        # --- Diagnostic: log call frequency every 5s ---
+        if not hasattr(self, "_update_state_count"):
+            self._update_state_count = 0
+            self._update_state_last_log = now
+        self._update_state_count += 1
+        if now - self._update_state_last_log >= 5.0:
+            logger.debug(
+                f"update_state called {self._update_state_count} times in last {now - self._update_state_last_log:.1f}s"
+            )
+            self._update_state_count = 0
+            self._update_state_last_log = now
+
+        # --- Throttled broadcast: max ~4/s (250ms interval) ---
+        if not hasattr(self, "_last_broadcast_time"):
+            self._last_broadcast_time = 0.0
+            self._pending_broadcast = False
+
         if self.update_state_callback:
-            self.update_state_callback(self.get_state())
-        
-        # 2. Handle logic that might change the state (like AI moving)
+            if now - self._last_broadcast_time < 0.25:
+                # Too soon – schedule a trailing broadcast so the final state is always sent
+                if not self._pending_broadcast:
+                    self._pending_broadcast = True
+
+                    def _delayed_broadcast():
+                        time.sleep(0.25)
+                        self._pending_broadcast = False
+                        if self.update_state_callback:
+                            self._last_broadcast_time = time.time()
+                            self.update_state_callback(self.get_state())
+
+                    threading.Thread(target=_delayed_broadcast, daemon=True).start()
+            else:
+                self._last_broadcast_time = now
+                self.update_state_callback(self.get_state())
+
+        # Handle logic that might change the state (like AI moving)
         self._do_update_state()
 
     def _do_update_state(self):

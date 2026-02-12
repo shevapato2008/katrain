@@ -14,23 +14,28 @@
 ```bash
 # Set environment variables
 export KATRAIN_MODE=board
-export KATRAIN_REMOTE_URL=https://<remote-server-ip>:8001  # your remote server (http:// or https://)
+export KATRAIN_REMOTE_URL=https://go.sailorvoyage.top     # remote server (must include https://)
 export KATRAIN_DEVICE_ID=test-board-001                    # stable device ID for testing
-export KATRAIN_DATABASE_URL=sqlite:///./board_test.db      # force local SQLite (see note below)
+export KATRAIN_DATABASE_URL=sqlite:///./board_test.db      # force local SQLite (see notes below)
 
 # Start
 python -m katrain --ui web --port 8001
 ```
 
-> **Note:** Must use `KATRAIN_DATABASE_URL` (not `KATRAIN_DATABASE_PATH`).
+> **Note 1 — DATABASE_URL:** Must use `KATRAIN_DATABASE_URL` (not `KATRAIN_DATABASE_PATH`).
 > If `~/.katrain/config.json` contains a `server.database_url` (e.g. PostgreSQL),
 > it takes precedence over `KATRAIN_DATABASE_PATH`. Setting `KATRAIN_DATABASE_URL`
 > explicitly is the only way to override it.
 
+> **Note 2 — REMOTE_URL:** Use远程服务器的实际入口地址（通常是 nginx 反代后的 HTTPS 443 端口），
+> 而非 KaTrain 进程的直接端口（如 8001）。`RemoteAPIClient` 使用 `trust_env=False`，
+> 不会读取 `http_proxy`/`https_proxy` 环境变量，因此 RK3588 必须能**直连**远程服务器。
+> 如需走代理，请关闭代理后确认直连可达再测试。
+
 Verify startup log shows:
 ```
 Database: Using SQLite at ./board_test.db
-Starting in BOARD mode (device=test-boa..., remote=https://...)
+Starting in BOARD mode (device=test-boa..., remote=https://go.sailorvoyage.top)
 ```
 
 ## 2. Test Login (Design 5.1 + 5.2 + 5.3)

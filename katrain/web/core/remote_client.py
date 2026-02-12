@@ -50,6 +50,12 @@ class RemoteAPIClient:
         self._refresh_token = refresh_token
         self._auth_required = False
 
+    def clear_tokens(self):
+        """Clear all tokens and mark auth as required (used on logout)."""
+        self._access_token = None
+        self._refresh_token = None
+        self._auth_required = True
+
     @property
     def is_authenticated(self) -> bool:
         return self._access_token is not None and not self._auth_required
@@ -96,17 +102,13 @@ class RemoteAPIClient:
     ) -> httpx.Response:
         """Make an HTTP request with automatic token refresh on 401."""
         headers = self._auth_headers() if auth else {}
-        resp = await self._client.request(
-            method, path, json=json, params=params, headers=headers
-        )
+        resp = await self._client.request(method, path, json=json, params=params, headers=headers)
 
         if resp.status_code == 401 and auth and self._refresh_token:
             refreshed = await self._refresh_access_token()
             if refreshed:
                 headers = self._auth_headers()
-                resp = await self._client.request(
-                    method, path, json=json, params=params, headers=headers
-                )
+                resp = await self._client.request(method, path, json=json, params=params, headers=headers)
             else:
                 self._auth_required = True
                 logger.warning("Auth required: both access and refresh tokens invalid")
@@ -144,9 +146,7 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
-    async def get_problems(
-        self, level: str, category: str, offset: int = 0, limit: int = 20
-    ) -> List[Dict]:
+    async def get_problems(self, level: str, category: str, offset: int = 0, limit: int = 20) -> List[Dict]:
         resp = await self._request(
             "GET",
             f"/api/v1/tsumego/levels/{level}/categories/{category}",
@@ -166,9 +166,7 @@ class RemoteAPIClient:
         return resp.json()
 
     async def update_progress(self, problem_id: str, data: Dict) -> Dict:
-        resp = await self._request(
-            "POST", f"/api/v1/tsumego/progress/{problem_id}", json=data
-        )
+        resp = await self._request("POST", f"/api/v1/tsumego/progress/{problem_id}", json=data)
         resp.raise_for_status()
         return resp.json()
 

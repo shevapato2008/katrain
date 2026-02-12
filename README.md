@@ -152,6 +152,7 @@ KaTrain consists of two services for production deployment:
 | Service | Command | Description |
 |---------|---------|-------------|
 | **katrain-web** | `python -m katrain --ui web` | Web UI and API server (port 8001) |
+| **katrain-board** | `KATRAIN_MODE=board python -m katrain --ui web` | RK3588 smart board client (port 8001) |
 | **katrain-cron** | `python -m katrain.cron` | Background jobs: match fetching, move polling, translation, analysis |
 
 ### Architecture
@@ -206,6 +207,17 @@ export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
 python -m katrain --ui web
 ```
 
+**katrain-board** (RK3588 smart board):
+```bash
+export KATRAIN_MODE=board
+export KATRAIN_REMOTE_URL="https://go.sailorvoyage.top"
+export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
+
+python -m katrain --ui web
+```
+
+> Board mode connects to the remote server for tsumego, kifu, and user game sync, while using local KataGo for gameplay. When offline, games are saved locally and synced automatically on reconnection.
+
 **katrain-cron:**
 ```bash
 export KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db"
@@ -249,7 +261,7 @@ docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
 
 ### Environment Variables
 
-**katrain-web:**
+**katrain-web (server mode, default):**
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -257,6 +269,15 @@ docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
 | `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | KataGo server for gameplay |
 | `KATRAIN_HOST` | `0.0.0.0` | Bind host |
 | `KATRAIN_PORT` | `8001` | Bind port |
+
+**katrain-board (board mode):**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `KATRAIN_MODE` | `server` | Set to `board` to enable board mode |
+| `KATRAIN_REMOTE_URL` | - | Remote server URL, e.g. `https://go.sailorvoyage.top` |
+| `KATRAIN_DEVICE_ID` | *(auto-generated UUID)* | Unique device identifier |
+| `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | Local KataGo for offline gameplay |
 
 **katrain-cron:**
 

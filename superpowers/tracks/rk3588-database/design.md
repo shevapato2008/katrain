@@ -1,7 +1,7 @@
 # RK3588 Smart Board Database Architecture Design
 
 > Date: 2026-02-09
-> Status: v4 — 补充基础设施部署拓扑（家庭服务器 → 云端集群迁移路径）
+> Status: v5 — 补充棋盘端认证转发机制（双层 Token + 影子用户）
 
 ## 1. Background
 
@@ -881,6 +881,80 @@ API-First 架构支持更多部署变体，均仅需修改服务端配置：
 - 用户以 guest 身份使用
 - 本地 SQLite 中创建一个 guest 用户记录（`user_id = "guest_{uuid}"`）
 - 联网后弹出绑定提示（见 4.13）
+
+### 5.1 Board 端 Auth 端点转发
+
+Board 模式下，auth 相关端点不走本地认证逻辑，而是转发到远程服务器：
+
+- **判断方式**：`request.app.state.remote_client is not None` → 当前为 board 模式
+- **`POST /api/v1/auth/login`**：转发到 `RemoteAPIClient.login(username, password)` → 远程服务器验证凭据
+- **`POST /api/v1/auth/register`**：转发到 `RemoteAPIClient.register(...)` → 在远程服务器创建账户
+- **`POST /api/v1/auth/refresh`**：转发到 `RemoteAPIClient.refresh()` → 远程续期，本地重新签发（见 5.2）
+- **非 board 模式**（server 模式）：auth 端点保持现有行为，直接操作本地数据库
+
+转发失败时（网络不可达），返回 `503 Service Unavailable`，前端显示"无法连接服务器"提示。
+
+### 5.2 双层 Token 架构
+
+核心设计决策：前端持有的 token 与远程服务器的 token **不是同一个**。
+
+```
+前端 React ←── 本地 token ──→ Board FastAPI ←── 远程 token ──→ Remote Server
+(localStorage)              (本地 SECRET_KEY 签发)         (RemoteAPIClient 内存)
+```
+
+| Token | 签发者 | 持有者 | 用途 |
+|-------|--------|--------|------|
+| 远程 access_token | Remote Server | RemoteAPIClient（内存） | 代理 API 调用时附加 Bearer |
+| 远程 refresh_token | Remote Server | 加密文件 `~/.katrain/board_credentials` | 续期远程 access_token |
+| 本地 access_token | Board FastAPI | 前端 React（localStorage） | 前端请求本地 FastAPI 时的认证 |
+| 本地 refresh_token | Board FastAPI | 前端 React（localStorage） | 续期本地 access_token |
+
+**为什么需要本地 token（而非直接透传远程 token）**：
+
+1. `get_current_user` 使用 `settings.SECRET_KEY` 解码 JWT。远程服务器的 SECRET_KEY 与本地不同，远程 token 无法在本地通过验证
+2. 前端代码不区分 server/board 模式，统一调用 `/api/v1/auth/login` 并存储返回的 token
+3. 本地 token 的 `sub` 字段包含本地 `user_id`，用于 session 管理和 `get_current_user` 依赖注入
+
+**Token 有效期**：本地 token 有效期与 4.7.1 一致（access_token 1 小时，refresh_token 90 天）。远程 token 的有效期由远程服务器控制，RemoteAPIClient 自行管理续期。
+
+### 5.3 影子用户（Shadow User）机制
+
+Board 端通过远程登录成功后，需要在本地 SQLite 中创建一条"影子用户"记录，以支持 `get_current_user` 和 session 管理。
+
+```
+RemoteAPIClient.login(username, password) 成功
+    │ 返回远程 access_token + refresh_token
+    ▼
+检查本地 user_repo：是否已有 username 相同的用户？
+    ├── 有 → 直接使用已有记录
+    └── 没有 → create_user(username=username, hashed_password=SHADOW_PLACEHOLDER)
+    │
+    ▼
+用本地 SECRET_KEY 签发 local_access_token（sub=local_user_id）+ local_refresh_token
+    │
+    ▼
+返回给前端：{ access_token: local_token, token_type: "bearer", refresh_token: local_refresh }
+同时：RemoteAPIClient 内存中缓存远程 token，credentials.py 持久化远程 refresh_token
+```
+
+**影子用户特点**：
+
+- `hashed_password` 为占位值（如 `"SHADOW_USER_NO_LOCAL_AUTH"`），不可用于本地密码登录
+- `username` 与远程服务器一致，作为匹配键
+- 作用：为 `get_current_user` 提供有效的 `user_id`，用于 session 管理、本地 UserGame 存储、做题进度记录
+- 与 guest 用户的区别：guest 是离线时自动创建的临时身份（`user_id = "guest_{uuid}"`），影子用户是在线登录后创建的持久身份
+
+### 5.4 多用户与用户切换
+
+棋盘为单用户设备，同一时刻只有一个活跃用户。
+
+- **切换用户** = 登出当前用户 + 登录新用户
+- **登出时**：清除 RemoteAPIClient 内存中的远程 token + 删除本地 credential 文件（`~/.katrain/board_credentials`）
+- **新用户登录**：创建新影子用户（或复用已有同名记录），签发新的本地 token
+- **数据隔离**：本地 UserGame / UserTsumegoProgress 按 `user_id` 隔离，不同用户数据互不干扰
+- **不做的事情**：多用户同时在线、快速切换保留会话等（参见 Section 6「多用户支持」为明确不做项）
+- **首期仅支持单用户切换**：需要完整的登出→登录流程，不提供用户列表或快速切换 UI
 
 ---
 

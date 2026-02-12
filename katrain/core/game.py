@@ -7,8 +7,6 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
-from kivy.clock import Clock
-
 from katrain.core.constants import (
     OUTPUT_DEBUG,
     OUTPUT_EXTRA_DEBUG,

@@ -698,9 +698,10 @@ class KataGoHttpEngine(BaseEngine):
                     self.queries.pop(query_id, None)
             time_taken = time.time() - start_time
             results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
+            log_level = OUTPUT_DEBUG if partial_result else OUTPUT_INFO
             self.katrain.log(
-                f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
-                OUTPUT_DEBUG,
+                f"[{time_taken:.1f}s][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
+                log_level,
             )
             self.katrain.log(json_truncate_arrays(analysis), OUTPUT_EXTRA_DEBUG)
             try:

@@ -107,6 +107,7 @@ class WebKaTrain(KaTrainBase):
         self.enable_engine = enable_engine
         self.user_id = user_id
         self.ai_lock = threading.Lock()
+        self._ai_move_pending = False
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
@@ -475,11 +476,10 @@ class WebKaTrain(KaTrainBase):
                 self.game.analyze_undo(cn)
                 cn = self.game.current_node # Re-fetch if undo happened
 
-            if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
-                self._do_ai_move(cn)
-                # 3. CRITICAL: Broadcast again after AI has placed its stone
-                if self.update_state_callback:
-                    self.update_state_callback(self.get_state())
+            if next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
+                if not self._ai_move_pending:
+                    self._ai_move_pending = True
+                    threading.Thread(target=self._do_ai_move_and_broadcast, args=(cn,), daemon=True).start()
 
         if self.game.end_result and not getattr(self, "_game_end_reported", False):
             self._game_end_reported = True
@@ -672,6 +672,15 @@ class WebKaTrain(KaTrainBase):
             elif not self.game.current_node.is_pass:
                 import random
                 self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+
+    def _do_ai_move_and_broadcast(self, cn):
+        """Background thread: generate AI move then broadcast state update."""
+        try:
+            self._do_ai_move(cn)
+            if self.update_state_callback:
+                self.update_state_callback(self.get_state())
+        finally:
+            self._ai_move_pending = False
 
     def _do_ai_move(self, node=None):
         with self.ai_lock:

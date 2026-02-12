@@ -15,7 +15,6 @@ import traceback
 from typing import Callable, Dict, List, Optional
 
 import urllib3
-from kivy.utils import platform as kivy_platform
 
 from katrain.core.constants import (
     OUTPUT_DEBUG,
@@ -80,9 +79,9 @@ class BaseEngine:  # some common elements between analysis and contribute engine
 
     def get_engine_path(self, exe):
         if not exe:
-            if kivy_platform == "win":
+            if sys.platform.startswith("win"):
                 exe = "katrain/KataGo/katago.exe"
-            elif kivy_platform == "linux":
+            elif sys.platform.startswith("linux"):
                 exe = "katrain/KataGo/katago"
             else:
                 exe = find_package_resource("katrain/KataGo/katago-osx")  # github actions built

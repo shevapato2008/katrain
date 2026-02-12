@@ -211,12 +211,18 @@ python -m katrain --ui web
 ```bash
 export KATRAIN_MODE=board
 export KATRAIN_REMOTE_URL="https://go.sailorvoyage.top"
+export KATRAIN_DATABASE_URL="sqlite:///./board.db"
+export KATRAIN_DEVICE_ID="rk3588-001"
 export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
 
 python -m katrain --ui web
 ```
 
-> Board mode connects to the remote server for tsumego, kifu, and user game sync, while using local KataGo for gameplay. When offline, games are saved locally and synced automatically on reconnection.
+> **Important:**
+> - `KATRAIN_DATABASE_URL` must be set explicitly to use local SQLite. If `~/.katrain/config.json` contains a `server.database_url` (e.g. PostgreSQL), it takes precedence over `KATRAIN_DATABASE_PATH`.
+> - `KATRAIN_REMOTE_URL` should point to the actual entry point (e.g. nginx reverse proxy on HTTPS 443), not the KaTrain process port directly.
+> - `KATRAIN_DEVICE_ID` should be a stable identifier for this board. If omitted, a random UUID is generated on each startup.
+> - Board mode connects to the remote server for auth, tsumego, kifu, and user game sync, while using local KataGo for gameplay. When offline, games are saved locally and synced automatically on reconnection.
 
 **katrain-cron:**
 ```bash
@@ -275,8 +281,9 @@ docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `KATRAIN_MODE` | `server` | Set to `board` to enable board mode |
-| `KATRAIN_REMOTE_URL` | - | Remote server URL, e.g. `https://go.sailorvoyage.top` |
-| `KATRAIN_DEVICE_ID` | *(auto-generated UUID)* | Unique device identifier |
+| `KATRAIN_REMOTE_URL` | - | Remote server entry URL, e.g. `https://go.sailorvoyage.top` |
+| `KATRAIN_DATABASE_URL` | *(from config.json)* | Must set to `sqlite:///./board.db` to force local SQLite |
+| `KATRAIN_DEVICE_ID` | *(auto-generated UUID)* | Stable device identifier (recommended to set explicitly) |
 | `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | Local KataGo for offline gameplay |
 
 **katrain-cron:**

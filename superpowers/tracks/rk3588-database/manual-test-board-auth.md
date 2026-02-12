@@ -14,17 +14,23 @@
 ```bash
 # Set environment variables
 export KATRAIN_MODE=board
-export KATRAIN_REMOTE_URL=http://<remote-server-ip>:8001   # your remote server
-export KATRAIN_DEVICE_ID=test-board-001                     # stable device ID for testing
-export KATRAIN_DATABASE_PATH=board_test.db                  # separate test DB
+export KATRAIN_REMOTE_URL=https://<remote-server-ip>:8001  # your remote server (http:// or https://)
+export KATRAIN_DEVICE_ID=test-board-001                    # stable device ID for testing
+export KATRAIN_DATABASE_URL=sqlite:///./board_test.db      # force local SQLite (see note below)
 
 # Start
 python -m katrain --ui web --port 8001
 ```
 
+> **Note:** Must use `KATRAIN_DATABASE_URL` (not `KATRAIN_DATABASE_PATH`).
+> If `~/.katrain/config.json` contains a `server.database_url` (e.g. PostgreSQL),
+> it takes precedence over `KATRAIN_DATABASE_PATH`. Setting `KATRAIN_DATABASE_URL`
+> explicitly is the only way to override it.
+
 Verify startup log shows:
 ```
-Starting in BOARD mode (device=test-boa..., remote=http://...)
+Database: Using SQLite at ./board_test.db
+Starting in BOARD mode (device=test-boa..., remote=https://...)
 ```
 
 ## 2. Test Login (Design 5.1 + 5.2 + 5.3)

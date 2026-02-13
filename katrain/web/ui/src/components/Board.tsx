@@ -109,20 +109,19 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   }, []);
 
   // Add a ref for animation time
-  const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   // Hover position for ghost stone preview
   const hoverPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    const animate = () => {
-      renderBoard();
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
+    renderBoard();
+
+    // Only run animation when pulsing hints are visible (~10fps is enough for pulse)
+    const needsAnimation = analysisToggles.hints && gameState?.analysis?.moves?.length > 0;
+    if (needsAnimation) {
+      const interval = setInterval(renderBoard, 100);
+      return () => clearInterval(interval);
+    }
   }, [gameState, analysisToggles, canvasSize]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
@@ -509,10 +508,12 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = canvasToGridPos(event);
     hoverPosRef.current = pos;
+    renderBoard();
   };
 
   const handleMouseLeave = () => {
     hoverPosRef.current = null;
+    renderBoard();
   };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {

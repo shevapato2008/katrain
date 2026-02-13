@@ -315,8 +315,7 @@ export default function LiveBoard({
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [canvasSize, setCanvasSize] = useState(600);
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  // Animation refs for pulsing effect
-  const animationFrameRef = useRef<number | null>(null);
+  // Animation ref for pulsing effect timing
   const startTimeRef = useRef<number>(Date.now());
   // Hover position for ghost stone preview
   const hoverPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -581,21 +580,16 @@ export default function LiveBoard({
     }
   };
 
-  // Animation loop for pulsing effect
+  // Render on state change; animate only when AI markers need pulsing
   useEffect(() => {
     if (!imagesLoaded) return;
+    renderBoard();
 
-    const animate = () => {
-      renderBoard();
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
+    const needsAnimation = showAiMarkers && aiMarkers && aiMarkers.length > 0;
+    if (needsAnimation) {
+      const interval = setInterval(renderBoard, 100); // ~10fps for pulse
+      return () => clearInterval(interval);
+    }
   }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
@@ -624,10 +618,12 @@ export default function LiveBoard({
     } else {
       hoverPosRef.current = null;
     }
+    renderBoard();
   };
 
   const handleMouseLeave = () => {
     hoverPosRef.current = null;
+    renderBoard();
   };
 
   // Handle click

@@ -167,9 +167,9 @@ const TsumegoProblemPage: React.FC = () => {
 
   const handleBack = () => {
     if (problem) {
-      navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`);
+      navigate(`/galaxy/tsumego/workbook/${problem.level}/${problem.category}`);
     } else {
-      navigate('/galaxy/tsumego');
+      navigate('/galaxy/tsumego/workbook');
     }
   };
 
@@ -370,7 +370,7 @@ const TsumegoProblemPage: React.FC = () => {
             <Link
               component="button"
               variant="body2"
-              onClick={() => navigate('/galaxy/tsumego')}
+              onClick={() => navigate('/galaxy/tsumego/workbook')}
               sx={{ cursor: 'pointer' }}
             >
               {t('Tsumego')}
@@ -378,7 +378,7 @@ const TsumegoProblemPage: React.FC = () => {
             <Link
               component="button"
               variant="body2"
-              onClick={() => navigate(`/galaxy/tsumego/${problem.level}`)}
+              onClick={() => navigate(`/galaxy/tsumego/workbook/${problem.level}`)}
               sx={{ cursor: 'pointer' }}
             >
               {problem.level.toUpperCase()}
@@ -386,7 +386,7 @@ const TsumegoProblemPage: React.FC = () => {
             <Link
               component="button"
               variant="body2"
-              onClick={() => navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`)}
+              onClick={() => navigate(`/galaxy/tsumego/workbook/${problem.level}/${problem.category}`)}
               sx={{ cursor: 'pointer' }}
             >
               {t(`tsumego:${problem.category}`)}

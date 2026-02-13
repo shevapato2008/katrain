@@ -50,14 +50,14 @@ const TsumegoCategoriesPage = () => {
     <Box sx={{ p: 4, pl: 6 }}>
       {/* Breadcrumbs */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/galaxy/tsumego')} sx={{ mr: 1 }}>
+        <IconButton onClick={() => navigate('/galaxy/tsumego/workbook')} sx={{ mr: 1 }}>
           <ArrowBackIcon />
         </IconButton>
         <Breadcrumbs>
           <Link
             component="button"
             variant="body1"
-            onClick={() => navigate('/galaxy/tsumego')}
+            onClick={() => navigate('/galaxy/tsumego/workbook')}
             sx={{ cursor: 'pointer' }}
           >
             {t('Tsumego')}
@@ -89,7 +89,7 @@ const TsumegoCategoriesPage = () => {
               }
             }}
           >
-            <CardActionArea onClick={() => navigate(`/galaxy/tsumego/${level}/${cat.category}`)}>
+            <CardActionArea onClick={() => navigate(`/galaxy/tsumego/workbook/${level}/${cat.category}`)}>
               <Box
                 sx={{
                   display: 'flex',

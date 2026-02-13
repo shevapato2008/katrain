@@ -113,14 +113,14 @@ const TsumegoListPage = () => {
     <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
       {/* Breadcrumbs */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate(`/galaxy/tsumego/${level}/${category}`)} sx={{ mr: 1 }}>
+        <IconButton onClick={() => navigate(`/galaxy/tsumego/workbook/${level}/${category}`)} sx={{ mr: 1 }}>
           <ArrowBackIcon />
         </IconButton>
         <Breadcrumbs>
           <Link
             component="button"
             variant="body1"
-            onClick={() => navigate('/galaxy/tsumego')}
+            onClick={() => navigate('/galaxy/tsumego/workbook')}
             sx={{ cursor: 'pointer' }}
           >
             {t('Tsumego')}
@@ -128,7 +128,7 @@ const TsumegoListPage = () => {
           <Link
             component="button"
             variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${level}`)}
+            onClick={() => navigate(`/galaxy/tsumego/workbook/${level}`)}
             sx={{ cursor: 'pointer' }}
           >
             {level?.toUpperCase()}
@@ -136,7 +136,7 @@ const TsumegoListPage = () => {
           <Link
             component="button"
             variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${level}/${category}`)}
+            onClick={() => navigate(`/galaxy/tsumego/workbook/${level}/${category}`)}
             sx={{ cursor: 'pointer' }}
           >
             {getCategoryName(category || '')}

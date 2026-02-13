@@ -181,6 +181,12 @@ export const API = {
     moves: string[][]; initial_stones?: string[][]; board_size?: number; komi?: number; rules?: string; max_visits?: number;
   }): Promise<any> =>
     apiPost("/api/v1/analysis/quick-analyze", params),
+  tsumegoSolve: (params: {
+    initial_stones: string[][]; moves?: string[][]; board_size?: number;
+    komi?: number; rules?: string; max_visits?: number; player_to_move?: string;
+    region?: { x1: number; y1: number; x2: number; y2: number } | null;
+  }): Promise<any> =>
+    apiPost("/api/v1/analysis/tsumego-solve", params),
   analysisProgress: async (sessionId: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
     const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`);
     if (!response.ok) throw new Error("Failed to fetch analysis progress");

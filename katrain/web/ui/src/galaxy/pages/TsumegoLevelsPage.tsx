@@ -86,7 +86,7 @@ const TsumegoLevelsPage = () => {
                 }
               }}
             >
-              <CardActionArea onClick={() => navigate(`/galaxy/tsumego/${level.level}`)}>
+              <CardActionArea onClick={() => navigate(`/galaxy/tsumego/workbook/${level.level}`)}>
                 <CardContent sx={{ textAlign: 'center', py: 4 }}>
                   <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
                     {level.level.toUpperCase()}

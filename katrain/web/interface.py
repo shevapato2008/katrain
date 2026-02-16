@@ -113,6 +113,9 @@ class WebKaTrain(KaTrainBase):
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
         super().__init__(force_package_config, debug_level, **kwargs)
 
+        # Apply engine profile overrides based on KATRAIN_MODE
+        self._apply_engine_profile()
+
         try:
             from kivymd.app import MDApp
             MDApp.gui = self
@@ -150,6 +153,20 @@ class WebKaTrain(KaTrainBase):
         
         # Actually switch the global i18n context to this instance's language
         i18n.switch_lang(lang)
+
+    def _apply_engine_profile(self):
+        """Merge engine_profiles overrides for the current KATRAIN_MODE."""
+        try:
+            from katrain.web.core.config import settings
+
+            mode = settings.KATRAIN_MODE
+        except ImportError:
+            return
+        profiles = self._config.get("engine_profiles", {})
+        profile = profiles.get(mode)
+        if profile and isinstance(profile, dict):
+            self._config.get("engine", {}).update(profile)
+            self.log(f"Applied engine profile '{mode}': {profile}", OUTPUT_INFO)
 
     def start(self):
         """Initializes the engine and starts a new game."""

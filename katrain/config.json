@@ -20,6 +20,13 @@
         "_enable_ownership": true,
         "http_has_human_model": false
     },
+    "engine_profiles": {
+        "board": {
+            "max_visits": 50,
+            "fast_visits": 10,
+            "max_time": 2.0
+        }
+    },
     "contribute": {
         "katago": "",
         "config": "katrain/KataGo/contribute_config.cfg",

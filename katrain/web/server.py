@@ -225,6 +225,11 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.interface import WebKaTrain
 
         kt = WebKaTrain(force_package_config=False, enable_engine=False)
+        engine_cfg = kt.config("engine")
+        log.info(
+            f"Board engine profile: max_visits={engine_cfg.get('max_visits')}, "
+            f"fast_visits={engine_cfg.get('fast_visits')}, max_time={engine_cfg.get('max_time')}"
+        )
     except Exception as e:
         log.error(f"Board mode initialization warning: {e}")
 

@@ -34,3 +34,11 @@ def grid_to_physical(pos_x: int, pos_y: int, config: BoardConfig) -> tuple[float
     x_mm = config.border_width_mm + pos_x * config.board_width_mm / gs
     y_mm = config.border_length_mm + pos_y * config.board_length_mm / gs
     return x_mm, y_mm
+
+
+def grid_to_pixel(pos_x: int, pos_y: int, img_w: int, img_h: int, config: BoardConfig) -> tuple[int, int]:
+    """Convert grid intersection to pixel coordinates in the warped image."""
+    x_mm, y_mm = grid_to_physical(pos_x, pos_y, config)
+    px = int(x_mm / config.total_width * img_w)
+    py = int(y_mm / config.total_length * img_h)
+    return px, py

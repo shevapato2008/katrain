@@ -2247,9 +2247,9 @@ git commit -m "fix(kiosk): address visual review feedback"
 
 ---
 
-## Phase Gate: Entry Criteria for Phase 3+
+## Phase Gate: Entry Criteria for Phase 6+
 
-Before proceeding to Phase 3 (Shared Layer Extraction), verify:
+Before proceeding to Phase 6 (Shared Layer Extraction), verify:
 
 - [ ] All P0 items from reviews are closed
 - [ ] All kiosk tests pass (`npx vitest run src/kiosk/`)
@@ -2261,14 +2261,14 @@ Before proceeding to Phase 3 (Shared Layer Extraction), verify:
 
 ## Future Phases (separate plans)
 
-- **Phase 3: Shared Layer Extraction** — Move Board.tsx, hooks, API, types to `src/shared/`, update imports in both galaxy and kiosk. Rule: no copying galaxy hooks into kiosk; if you need a hook, extract to shared immediately.
-- **Phase 4: Backend Integration** — Wire real game sessions, WebSocket, auth, tsumego API
-- **Phase 5: Kiosk Infrastructure** — systemd services, Chromium kiosk mode, OS virtual keyboard setup (`onboard`), deployment script, SPA fallback in FastAPI
-- **Phase 6: Hardware Integration** — Board sensor driver, WebSocket `board_input` protocol, input arbitration (physical board vs touch conflict rules)
-- **Phase 7: Performance Baseline** — First-screen time, FPS, memory, WebSocket latency on target RK3588 device
+- **Phase 6: Shared Layer Extraction** — Move Board.tsx, hooks, API, types to `src/shared/`, update imports in both galaxy and kiosk. Rule: no copying galaxy hooks into kiosk; if you need a hook, extract to shared immediately.
+- **Phase 7: Backend Integration** — Wire real game sessions, WebSocket, auth, tsumego API
+- **Phase 8: Kiosk Infrastructure** — systemd services, Chromium kiosk mode, OS virtual keyboard setup (`onboard`), deployment script, SPA fallback in FastAPI
+- **Phase 9: Hardware Integration** — Board sensor driver, WebSocket `board_input` protocol, input arbitration (physical board vs touch conflict rules)
+- **Phase 10: Performance Baseline** — First-screen time, FPS, memory, WebSocket latency on target RK3588 device
 
-## Infrastructure Notes (deferred to Phase 5)
+## Infrastructure Notes (deferred to Phase 8)
 
 **Virtual keyboard:** Kiosk text input (login, search) requires an OS-level virtual keyboard. On Ubuntu, use `onboard` configured for CJK input. React text inputs trigger it automatically. This is infrastructure setup, not frontend code.
 
-**Screen burn-in prevention:** For OLED/IPS kiosk displays, implement a screensaver or dimming after idle timeout. This is a Phase 5 concern.
+**Screen burn-in prevention:** For OLED/IPS kiosk displays, implement a screensaver or dimming after idle timeout. This is a Phase 8 concern.

@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13']
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -60,6 +60,25 @@ jobs:
 
     - name: Check package can be built
       run: uv build
+
+  test-vision:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python and uv
+      uses: ./.github/actions/setup-python-uv
+      with:
+        python-version: '3.11'
+        sync-groups: dev
+
+    - name: Install vision dependencies
+      run: uv sync --extra vision
+
+    - name: Run vision tests
+      run: uv run pytest tests/test_vision/ -v
 
   build-windows:
     needs: [prepare, test]

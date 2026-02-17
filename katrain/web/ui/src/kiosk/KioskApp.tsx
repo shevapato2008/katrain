@@ -10,6 +10,10 @@ import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
 import GamePage from './pages/GamePage';
 import TsumegoPage from './pages/TsumegoPage';
+import ResearchPage from './pages/ResearchPage';
+import KifuPage from './pages/KifuPage';
+import LivePage from './pages/LivePage';
+import SettingsPage from './pages/SettingsPage';
 
 const KioskRoutes = () => {
   const { user } = useKioskAuth();
@@ -34,11 +38,12 @@ const KioskRoutes = () => {
           <Route path="play/pvp/setup" element={<PlaceholderPage />} />
           <Route path="tsumego" element={<TsumegoPage />} />
           <Route path="tsumego/problem/:problemId" element={<PlaceholderPage />} />
-          <Route path="research" element={<PlaceholderPage />} />
-          <Route path="kifu" element={<PlaceholderPage />} />
-          <Route path="live" element={<PlaceholderPage />} />
+          <Route path="research" element={<ResearchPage />} />
+          <Route path="kifu" element={<KifuPage />} />
+          <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
+          <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<PlaceholderPage />} />
-          <Route path="settings" element={<PlaceholderPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="play" replace />} />
         </Route>
       </Route>

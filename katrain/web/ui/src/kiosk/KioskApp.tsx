@@ -7,6 +7,7 @@ import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
+import AiSetupPage from './pages/AiSetupPage';
 
 const KioskRoutes = () => {
   const { user } = useKioskAuth();
@@ -24,7 +25,7 @@ const KioskRoutes = () => {
         <Route element={<KioskLayout username={user?.name} />}>
           <Route index element={<Navigate to="play" replace />} />
           <Route path="play" element={<PlayPage />} />
-          <Route path="play/ai/setup/:mode" element={<PlaceholderPage />} />
+          <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PlaceholderPage />} />
           <Route path="tsumego" element={<PlaceholderPage />} />
           <Route path="tsumego/problem/:problemId" element={<PlaceholderPage />} />

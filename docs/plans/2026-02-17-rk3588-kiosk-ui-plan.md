@@ -1,97 +1,192 @@
-# RK3588 Kiosk UI Implementation Plan
+# RK3588 Kiosk UI Implementation Plan (Rev 2)
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a touch-optimized kiosk UI variant for 7-10 inch smart Go board terminals, frontend-first with mock data.
+**Goal:** Build a touch-optimized kiosk UI for 7-10 inch smart Go board terminals, frontend-first with mock data, parallel to Galaxy web UI.
 
-**Architecture:** New `src/kiosk/` directory parallel to `src/galaxy/`, sharing backend API and core types. Single Vite build serves both UIs at different URL prefixes (`/galaxy/*` and `/kiosk/*`). "Ink Stone" dark theme with Noto font family, all touch targets >= 48px.
+**Architecture:** New `src/kiosk/` directory with its own theme, layout, and pages. Shares backend API and core types with Galaxy via `src/shared/` (extracted in Phase 3). Single Vite build serves both at different URL prefixes (`/galaxy/*`, `/kiosk/*`). KioskApp wraps itself with its own `ThemeProvider` (nested inside AppRouter's default zenTheme). "Ink Stone" dark theme, NavigationRail (left vertical, 72px) for landscape optimization, mock auth with route guard.
 
-**Tech Stack:** React 19, TypeScript, MUI v7, React Router v6, Vite (rolldown-vite), Vitest
+**Tech Stack:** React 19, TypeScript, MUI v7, React Router v6, Vite (rolldown-vite), Vitest, Testing Library, @fontsource (self-hosted fonts)
 
 **Design doc:** `docs/plans/2026-02-17-rk3588-kiosk-ui-design.md`
 
+**Review feedback:**
+- `superpowers/tracks/rk3588-ui/review-feedback-codex.md`
+- `superpowers/tracks/rk3588-ui/review-feedback-gemini.md`
+
 ---
 
-## Phase 1: Scaffold & Theme (Tasks 1-4)
+## Changes from Rev 1
 
-### Task 1: Create Kiosk Theme
+| # | Change | Rationale | Source |
+|---|--------|-----------|--------|
+| 1 | ThemeProvider nested inside KioskApp, not conditional at AppRouter | `window.location.pathname` runs once, not reactive to navigation | Codex P0-1, Gemini #1 |
+| 2 | Local fonts via `@fontsource` npm packages, no CDN | Kiosk is offline/LAN; CDN = deployment failure | Codex P0-2 |
+| 3 | Smoke tests for ALL page tasks (not just "visual verify") | Strict TDD requirement; regression protection for shared layer refactor | Codex P0-3 |
+| 4 | Mock auth context + login page + route guard added | Requirement: "login required on each boot"; omission distorts flow evaluation | Codex P0-4 |
+| 5 | Removed global `MuiButton.minHeight: 56` | Over-constrains compact contexts (game control panel 3x2 grid) | Codex P1-1 |
+| 6 | Tab matching uses `matchPath` instead of `startsWith` | Prevents false positives (`/kiosk/livewatch` matching `/kiosk/live`) | Codex P1-2, Gemini #5 |
+| 7 | BottomTabBar → NavigationRail (left vertical, 72px) | Landscape: saves 64px vertical for board; board area +13% on 1024x600 | Codex P1-3, Gemini #2 |
+| 8 | 8 tabs → 6 items (merged AI+PvP into "对弈", 平台 moved to Settings) | Reduces cognitive load; follows Galaxy "Play" menu pattern | Codex P1-3, Gemini #2 |
+| 9 | Mock data: fixed fixtures in `kiosk/data/mocks.ts`, no `Math.random()` | Reproducible visual verification and debugging | Codex P1-4, Gemini #4 |
+| 10 | Secondary text color `#6b6560` → `#9a9590` | Original: 3.11:1 contrast (fails WCAG AA). New: ~4.7:1 (passes) | Codex review Q4 |
+| 11 | Fonts reduced: Serif only for h1 (single weight 700) | Reduce first-screen load and memory on embedded device | Codex P1-6 |
+| 12 | React.lazy for GalaxyApp/KioskApp code splitting | Prevent cross-app bundle bloat | Codex P2-3, Gemini #3 |
+
+### Navigation layout comparison (1024x600 display)
+
+| Layout | Chrome overhead | Board size | Panel size |
+|--------|----------------|------------|------------|
+| Bottom bar (Rev 1) | 40px top + 64px bottom = 104px vertical | 496×496 | 528×496 |
+| **Left rail (Rev 2)** | **40px top + 72px left** | **560×560** | **392×560** |
+
+Rail gives +13% board area — significant for a Go application where the board is the primary content.
+
+### Navigation structure (Rev 2)
+
+```
+┌─────────────────────────────────────────────┐
+│ StatusBar (40px)                            │
+├──────┬──────────────────────────────────────┤
+│ 对弈 │                                      │
+│ 死活 │                                      │
+│ 研究 │         Content (Outlet)             │
+│ 棋谱 │                                      │
+│ 直播 │                                      │
+│      │                                      │
+│ ──── │                                      │
+│ 设置 │                                      │
+├──────┴──────────────────────────────────────┤
+  72px
+```
+
+**Existing code to know about:**
+- Entry: `katrain/web/ui/src/main.tsx` → `AppRouter.tsx` → `GalaxyApp.tsx` / `ZenModeApp.tsx`
+- Galaxy theme: `katrain/web/ui/src/theme.ts` (MUI dark, Manrope font, jade accents)
+- Galaxy layout: `katrain/web/ui/src/galaxy/components/layout/MainLayout.tsx` (240px sidebar + Outlet)
+- Shared components: `katrain/web/ui/src/components/Board.tsx`, `ScoreGraph.tsx`, `PlayerCard.tsx`
+- Shared hooks: `katrain/web/ui/src/galaxy/hooks/useGameSession.ts` etc.
+- Tests run with: `cd katrain/web/ui && npx vitest run <path>`
+- Test setup: `src/test/setup.ts` imports `@testing-library/jest-dom`
+- Vite config: `katrain/web/ui/vite.config.ts` (proxy `/api` → `:8001`, proxy `/ws` → ws)
+
+---
+
+## Phase 1: Foundation
+
+### Task 1: Kiosk Theme + Local Fonts
 
 **Files:**
 - Create: `katrain/web/ui/src/kiosk/theme.ts`
-- Test: `katrain/web/ui/src/kiosk/__tests__/theme.test.ts`
+- Create: `katrain/web/ui/src/kiosk/__tests__/theme.test.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Install font packages**
+
+Run: `cd katrain/web/ui && npm install @fontsource/noto-sans-sc @fontsource/noto-serif-sc @fontsource/jetbrains-mono`
+
+**Step 2: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/theme.test.ts`:
 
 ```typescript
-// kiosk/__tests__/theme.test.ts
 import { describe, it, expect } from 'vitest';
 import { kioskTheme } from '../theme';
 
 describe('kioskTheme', () => {
-  it('uses dark mode with ink-black background', () => {
+  it('is dark mode with ink-black background', () => {
     expect(kioskTheme.palette.mode).toBe('dark');
     expect(kioskTheme.palette.background.default).toBe('#1a1714');
   });
 
-  it('uses Noto Sans SC as primary font', () => {
+  it('uses Noto Sans SC as primary body font', () => {
     expect(kioskTheme.typography.fontFamily).toContain('Noto Sans SC');
   });
 
-  it('has touch-friendly button sizing', () => {
-    const buttonOverrides = kioskTheme.components?.MuiButton?.styleOverrides as any;
-    expect(buttonOverrides.root.minHeight).toBe(56);
+  it('uses Noto Serif SC only for h1', () => {
+    expect((kioskTheme.typography.h1 as any).fontFamily).toContain('Noto Serif SC');
+    // h3+ should use Sans, not Serif
+    expect((kioskTheme.typography.h3 as any).fontFamily).toContain('Noto Sans SC');
   });
 
-  it('has jade-glow as primary color', () => {
+  it('has jade-glow #5cb57a as primary color', () => {
     expect(kioskTheme.palette.primary.main).toBe('#5cb57a');
+  });
+
+  it('has ember #c45d3e as error color', () => {
+    expect(kioskTheme.palette.error.main).toBe('#c45d3e');
+  });
+
+  it('has secondary text with sufficient contrast (WCAG AA)', () => {
+    // #9a9590 on #1a1714 gives ~4.7:1 ratio (AA requires 4.5:1)
+    expect(kioskTheme.palette.text.secondary).toBe('#9a9590');
+  });
+
+  it('does NOT globally force button minHeight', () => {
+    const overrides = kioskTheme.components?.MuiButton?.styleOverrides as any;
+    expect(overrides.root.minHeight).toBeUndefined();
+  });
+
+  it('enforces 48px min icon button size for touch targets', () => {
+    const overrides = kioskTheme.components?.MuiIconButton?.styleOverrides as any;
+    expect(overrides.root.minWidth).toBe(48);
+    expect(overrides.root.minHeight).toBe(48);
   });
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 3: Run test to verify it fails**
 
 Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/theme.test.ts`
-Expected: FAIL — module not found
+Expected: FAIL with "Cannot find module '../theme'"
 
-**Step 3: Write minimal implementation**
+**Step 4: Write minimal implementation**
+
+Create `katrain/web/ui/src/kiosk/theme.ts`:
 
 ```typescript
-// kiosk/theme.ts
 import { createTheme } from '@mui/material';
+
+// Self-hosted fonts via @fontsource — no CDN dependency
+import '@fontsource/noto-sans-sc/400.css';
+import '@fontsource/noto-sans-sc/600.css';
+import '@fontsource/noto-sans-sc/700.css';
+import '@fontsource/noto-serif-sc/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
 
 export const kioskTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#5cb57a',  // jade-glow
+      main: '#5cb57a',   // jade-glow
       light: '#7ec994',
-      dark: '#2d5a3d',  // jade-deep
+      dark: '#2d5a3d',   // jade-deep
     },
     secondary: {
-      main: '#8b7355',  // wood-amber
+      main: '#8b7355',   // wood-amber
     },
     background: {
-      default: '#1a1714',  // ink-black
+      default: '#1a1714', // ink-black
       paper: '#252019',
     },
     text: {
-      primary: '#e8e4dc',  // stone-white
-      secondary: '#6b6560', // mist
+      primary: '#e8e4dc',  // stone-white (14:1 on ink-black)
+      secondary: '#9a9590', // mist (~4.7:1 on ink-black, WCAG AA)
       disabled: '#3d3a36',
     },
     divider: 'rgba(232, 228, 220, 0.08)',
     success: { main: '#5cb57a' },
     warning: { main: '#c49a3c' },
-    error: { main: '#c45d3e' },   // ember
+    error: { main: '#c45d3e' },    // ember
     info: { main: '#5b9bd5' },
   },
   typography: {
     fontFamily: "'Noto Sans SC', 'Noto Sans', sans-serif",
     fontSize: 16,
     h1: { fontFamily: "'Noto Serif SC', 'Noto Serif', serif", fontWeight: 700 },
-    h2: { fontFamily: "'Noto Serif SC', 'Noto Serif', serif", fontWeight: 700 },
-    h3: { fontFamily: "'Noto Serif SC', 'Noto Serif', serif", fontWeight: 600 },
-    h4: { fontFamily: "'Noto Serif SC', 'Noto Serif', serif", fontWeight: 600 },
+    h2: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 700 },
+    h3: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },
+    h4: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },
     h5: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },
     h6: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },
     body1: { fontFamily: "'Noto Sans SC', sans-serif", fontSize: 16 },
@@ -99,22 +194,17 @@ export const kioskTheme = createTheme({
     button: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },
     caption: { fontFamily: "'JetBrains Mono', monospace", fontSize: 12 },
   },
-  shape: {
-    borderRadius: 12,
-  },
+  shape: { borderRadius: 12 },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none' as const,
           borderRadius: '12px',
-          minHeight: 56,
           padding: '12px 24px',
           fontSize: '1rem',
           transition: 'transform 100ms ease-out, background-color 150ms',
-          '&:active': {
-            transform: 'scale(0.96)',
-          },
+          '&:active': { transform: 'scale(0.96)' },
         },
       },
     },
@@ -123,119 +213,310 @@ export const kioskTheme = createTheme({
         root: {
           minWidth: 48,
           minHeight: 48,
-          '&:active': {
-            transform: 'scale(0.96)',
-          },
+          '&:active': { transform: 'scale(0.96)' },
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
-    MuiBottomNavigation: {
-      styleOverrides: {
-        root: {
-          height: 64,
-          backgroundColor: '#1a1714',
-          borderTop: '1px solid rgba(232, 228, 220, 0.08)',
-        },
-      },
-    },
-    MuiBottomNavigationAction: {
-      styleOverrides: {
-        root: {
-          minWidth: 'auto',
-          padding: '6px 0',
-          color: '#6b6560',
-          '&.Mui-selected': {
-            color: '#5cb57a',
-          },
-        },
+        root: { backgroundImage: 'none' },
       },
     },
   },
 });
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 5: Run test to verify it passes**
 
 Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/theme.test.ts`
-Expected: PASS
+Expected: 8 tests PASS
 
-**Step 5: Commit**
+**Step 6: Commit**
 
 ```bash
-git add katrain/web/ui/src/kiosk/
-git commit -m "feat(kiosk): add Ink Stone theme with touch-friendly sizing"
+git add katrain/web/ui/src/kiosk/theme.ts katrain/web/ui/src/kiosk/__tests__/theme.test.ts katrain/web/ui/package.json katrain/web/ui/package-lock.json
+git commit -m "feat(kiosk): add Ink Stone theme with local fonts and WCAG AA contrast"
 ```
 
 ---
 
-### Task 2: Create KioskLayout Shell
+### Task 2: Mock Auth Context + Login Page
 
 **Files:**
-- Create: `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`
-- Create: `katrain/web/ui/src/kiosk/components/layout/StatusBar.tsx`
-- Create: `katrain/web/ui/src/kiosk/components/layout/BottomTabBar.tsx`
-- Test: `katrain/web/ui/src/kiosk/__tests__/KioskLayout.test.tsx`
+- Create: `katrain/web/ui/src/kiosk/context/KioskAuthContext.tsx`
+- Create: `katrain/web/ui/src/kiosk/components/guards/KioskAuthGuard.tsx`
+- Create: `katrain/web/ui/src/kiosk/pages/LoginPage.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/KioskAuth.test.tsx`
 
 **Step 1: Write the failing test**
 
+Create `katrain/web/ui/src/kiosk/__tests__/KioskAuth.test.tsx`:
+
 ```typescript
-// kiosk/__tests__/KioskLayout.test.tsx
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import KioskLayout from '../components/layout/KioskLayout';
+import { KioskAuthProvider, useKioskAuth } from '../context/KioskAuthContext';
+import KioskAuthGuard from '../components/guards/KioskAuthGuard';
+import LoginPage from '../pages/LoginPage';
 
-const renderWithProviders = (ui: React.ReactElement, { route = '/' } = {}) => {
-  return render(
+const renderWithProviders = (ui: React.ReactElement, route = '/kiosk/play') =>
+  render(
     <ThemeProvider theme={kioskTheme}>
       <MemoryRouter initialEntries={[route]}>
-        {ui}
+        <KioskAuthProvider>{ui}</KioskAuthProvider>
       </MemoryRouter>
     </ThemeProvider>
   );
+
+const AuthStatus = () => {
+  const { isAuthenticated, user } = useKioskAuth();
+  return <div data-testid="auth-status">{isAuthenticated ? user!.name : 'not-auth'}</div>;
 };
 
-describe('KioskLayout', () => {
-  it('renders status bar with KaTrain branding', () => {
-    renderWithProviders(<KioskLayout />);
-    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+describe('KioskAuth', () => {
+  it('defaults to unauthenticated', () => {
+    renderWithProviders(<AuthStatus />);
+    expect(screen.getByTestId('auth-status')).toHaveTextContent('not-auth');
   });
 
-  it('renders all 8 bottom tabs', () => {
-    renderWithProviders(<KioskLayout />);
-    expect(screen.getByText('人机')).toBeInTheDocument();
-    expect(screen.getByText('人人')).toBeInTheDocument();
-    expect(screen.getByText('死活')).toBeInTheDocument();
-    expect(screen.getByText('研究')).toBeInTheDocument();
-    expect(screen.getByText('棋谱')).toBeInTheDocument();
-    expect(screen.getByText('直播')).toBeInTheDocument();
-    expect(screen.getByText('平台')).toBeInTheDocument();
-    expect(screen.getByText('设置')).toBeInTheDocument();
+  it('auth guard redirects to login when unauthenticated', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/kiosk/login" element={<div>LOGIN_PAGE</div>} />
+        <Route element={<KioskAuthGuard />}>
+          <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
+        </Route>
+      </Routes>
+    );
+    expect(screen.getByText('LOGIN_PAGE')).toBeInTheDocument();
+    expect(screen.queryByText('PLAY_PAGE')).not.toBeInTheDocument();
+  });
+
+  it('login page renders username and PIN inputs', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/kiosk/play" element={<LoginPage />} />
+      </Routes>,
+      '/kiosk/play'
+    );
+    expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/PIN/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
   });
 });
 ```
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskLayout.test.tsx`
-Expected: FAIL — modules not found
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskAuth.test.tsx`
+Expected: FAIL with "Cannot find module"
 
-**Step 3: Write StatusBar component**
+**Step 3: Create KioskAuthContext**
+
+Create `katrain/web/ui/src/kiosk/context/KioskAuthContext.tsx`:
 
 ```typescript
-// kiosk/components/layout/StatusBar.tsx
+import { createContext, useContext, useState, type ReactNode } from 'react';
+
+interface KioskUser {
+  name: string;
+  rank: string;
+}
+
+interface KioskAuthState {
+  isAuthenticated: boolean;
+  user: KioskUser | null;
+  login: (username: string, pin: string) => void;
+  logout: () => void;
+}
+
+const KioskAuthContext = createContext<KioskAuthState | null>(null);
+
+export const useKioskAuth = () => {
+  const ctx = useContext(KioskAuthContext);
+  if (!ctx) throw new Error('useKioskAuth must be used within KioskAuthProvider');
+  return ctx;
+};
+
+export const KioskAuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<KioskUser | null>(null);
+
+  const login = (username: string, _pin: string) => {
+    // Mock auth: always succeeds. Real auth integrated in Phase 4.
+    setUser({ name: username || '棋手', rank: '1D' });
+  };
+
+  const logout = () => setUser(null);
+
+  return (
+    <KioskAuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout }}>
+      {children}
+    </KioskAuthContext.Provider>
+  );
+};
+```
+
+**Step 4: Create KioskAuthGuard**
+
+Create `katrain/web/ui/src/kiosk/components/guards/KioskAuthGuard.tsx`:
+
+```typescript
+import { Navigate, Outlet } from 'react-router-dom';
+import { useKioskAuth } from '../../context/KioskAuthContext';
+
+const KioskAuthGuard = () => {
+  const { isAuthenticated } = useKioskAuth();
+  if (!isAuthenticated) return <Navigate to="/kiosk/login" replace />;
+  return <Outlet />;
+};
+
+export default KioskAuthGuard;
+```
+
+**Step 5: Create LoginPage**
+
+Create `katrain/web/ui/src/kiosk/pages/LoginPage.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { Box, Typography, TextField, Button } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useKioskAuth } from '../context/KioskAuthContext';
+
+const LoginPage = () => {
+  const [username, setUsername] = useState('');
+  const [pin, setPin] = useState('');
+  const { login } = useKioskAuth();
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    login(username, pin);
+    navigate('/kiosk/play', { replace: true });
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        bgcolor: 'background.default',
+      }}
+    >
+      <Box sx={{ width: 360, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Typography variant="h4" sx={{ textAlign: 'center', color: 'primary.main', fontWeight: 700 }}>
+          KaTrain
+        </Typography>
+        <TextField
+          label="用户名"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          fullWidth
+          autoFocus
+        />
+        <TextField
+          label="PIN"
+          type="password"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          fullWidth
+        />
+        <Button
+          variant="contained"
+          onClick={handleLogin}
+          fullWidth
+          sx={{ minHeight: 56, fontSize: '1.1rem' }}
+        >
+          登录
+        </Button>
+      </Box>
+    </Box>
+  );
+};
+
+export default LoginPage;
+```
+
+**Step 6: Run test to verify it passes**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskAuth.test.tsx`
+Expected: 3 tests PASS
+
+**Step 7: Commit**
+
+```bash
+git add katrain/web/ui/src/kiosk/context/ katrain/web/ui/src/kiosk/components/guards/ katrain/web/ui/src/kiosk/pages/LoginPage.tsx katrain/web/ui/src/kiosk/__tests__/KioskAuth.test.tsx
+git commit -m "feat(kiosk): add mock auth context, login page, and route guard"
+```
+
+---
+
+## Phase 2: Layout Shell
+
+### Task 3: StatusBar Component
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/components/layout/StatusBar.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/StatusBar.test.tsx`
+
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/StatusBar.test.tsx`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import StatusBar from '../components/layout/StatusBar';
+
+const renderWithTheme = (ui: React.ReactElement) =>
+  render(<ThemeProvider theme={kioskTheme}>{ui}</ThemeProvider>);
+
+describe('StatusBar', () => {
+  it('renders KaTrain branding', () => {
+    renderWithTheme(<StatusBar username="张三" />);
+    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+  });
+
+  it('renders engine status indicator', () => {
+    renderWithTheme(<StatusBar username="张三" />);
+    expect(screen.getByTestId('engine-status')).toBeInTheDocument();
+  });
+
+  it('renders username', () => {
+    renderWithTheme(<StatusBar username="张三" />);
+    expect(screen.getByText('张三')).toBeInTheDocument();
+  });
+
+  it('renders current time', () => {
+    renderWithTheme(<StatusBar username="张三" />);
+    expect(screen.getByTestId('clock')).toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/StatusBar.test.tsx`
+Expected: FAIL with "Cannot find module"
+
+**Step 3: Write minimal implementation**
+
+Create `katrain/web/ui/src/kiosk/components/layout/StatusBar.tsx`:
+
+```typescript
 import { Box, Typography } from '@mui/material';
 
-const StatusBar = () => {
+interface StatusBarProps {
+  username?: string;
+}
+
+const StatusBar = ({ username }: StatusBarProps) => {
   return (
     <Box
       sx={{
@@ -254,10 +535,22 @@ const StatusBar = () => {
         <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
           KaTrain
         </Typography>
-        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }} />
+        <Box
+          data-testid="engine-status"
+          sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }}
+        />
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        {username && (
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {username}
+          </Typography>
+        )}
+        <Typography
+          data-testid="clock"
+          variant="caption"
+          sx={{ color: 'text.secondary' }}
+        >
           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Typography>
       </Box>
@@ -268,72 +561,260 @@ const StatusBar = () => {
 export default StatusBar;
 ```
 
-**Step 4: Write BottomTabBar component**
+**Step 4: Run test to verify it passes**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/StatusBar.test.tsx`
+Expected: 4 tests PASS
+
+**Step 5: Commit**
+
+```bash
+git add katrain/web/ui/src/kiosk/components/layout/StatusBar.tsx katrain/web/ui/src/kiosk/__tests__/StatusBar.test.tsx
+git commit -m "feat(kiosk): add StatusBar with branding, engine status, user, clock"
+```
+
+---
+
+### Task 4: NavigationRail Component
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/components/layout/NavigationRail.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/NavigationRail.test.tsx`
+
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/NavigationRail.test.tsx`:
 
 ```typescript
-// kiosk/components/layout/BottomTabBar.tsx
-import { BottomNavigation, BottomNavigationAction } from '@mui/material';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import NavigationRail from '../components/layout/NavigationRail';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
+const renderWithProviders = (ui: React.ReactElement, route = '/kiosk/play') =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+    </ThemeProvider>
+  );
+
+describe('NavigationRail', () => {
+  it('renders all 6 navigation labels', () => {
+    renderWithProviders(<NavigationRail />);
+    ['对弈', '死活', '研究', '棋谱', '直播', '设置'].forEach((label) => {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    });
+  });
+
+  it('highlights active item based on current route using matchPath', () => {
+    renderWithProviders(<NavigationRail />, '/kiosk/tsumego/problem/123');
+    const tsumegoItem = screen.getByText('死活').closest('button');
+    expect(tsumegoItem).toHaveAttribute('data-active', 'true');
+  });
+
+  it('does not false-match similar route prefixes', () => {
+    renderWithProviders(<NavigationRail />, '/kiosk/live');
+    const liveItem = screen.getByText('直播').closest('button');
+    expect(liveItem).toHaveAttribute('data-active', 'true');
+    const kifuItem = screen.getByText('棋谱').closest('button');
+    expect(kifuItem).toHaveAttribute('data-active', 'false');
+  });
+
+  it('navigates on item click', () => {
+    renderWithProviders(<NavigationRail />);
+    fireEvent.click(screen.getByText('死活'));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego');
+  });
+
+  it('settings item is visually separated at the bottom', () => {
+    renderWithProviders(<NavigationRail />);
+    const settingsItem = screen.getByText('设置').closest('button');
+    expect(settingsItem).toHaveAttribute('data-section', 'footer');
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/NavigationRail.test.tsx`
+Expected: FAIL with "Cannot find module"
+
+**Step 3: Write minimal implementation**
+
+Create `katrain/web/ui/src/kiosk/components/layout/NavigationRail.tsx`:
+
+```typescript
+import { Box, ButtonBase, Typography } from '@mui/material';
 import {
-  SportsEsports as AiIcon,
-  Groups as PvpIcon,
+  SportsEsports as PlayIcon,
   Extension as TsumegoIcon,
   Science as ResearchIcon,
   MenuBook as KifuIcon,
   LiveTv as LiveIcon,
-  Language as PlatformIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 
-const tabs = [
-  { label: '人机', icon: <AiIcon />, path: '/kiosk/ai' },
-  { label: '人人', icon: <PvpIcon />, path: '/kiosk/pvp' },
-  { label: '死活', icon: <TsumegoIcon />, path: '/kiosk/tsumego' },
-  { label: '研究', icon: <ResearchIcon />, path: '/kiosk/research' },
-  { label: '棋谱', icon: <KifuIcon />, path: '/kiosk/kifu' },
-  { label: '直播', icon: <LiveIcon />, path: '/kiosk/live' },
-  { label: '平台', icon: <PlatformIcon />, path: '/kiosk/platforms' },
-  { label: '设置', icon: <SettingsIcon />, path: '/kiosk/settings' },
+const primaryTabs = [
+  { label: '对弈', icon: <PlayIcon />, path: '/kiosk/play', pattern: '/kiosk/play/*' },
+  { label: '死活', icon: <TsumegoIcon />, path: '/kiosk/tsumego', pattern: '/kiosk/tsumego/*' },
+  { label: '研究', icon: <ResearchIcon />, path: '/kiosk/research', pattern: '/kiosk/research' },
+  { label: '棋谱', icon: <KifuIcon />, path: '/kiosk/kifu', pattern: '/kiosk/kifu/*' },
+  { label: '直播', icon: <LiveIcon />, path: '/kiosk/live', pattern: '/kiosk/live/*' },
 ];
 
-const BottomTabBar = () => {
+const settingsTab = { label: '设置', icon: <SettingsIcon />, path: '/kiosk/settings', pattern: '/kiosk/settings' };
+
+const NavigationRail = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentTab = tabs.findIndex((tab) => location.pathname.startsWith(tab.path));
+  const isActive = (pattern: string) => !!matchPath(pattern, location.pathname);
+
+  const renderItem = (tab: typeof primaryTabs[0], section: 'main' | 'footer') => {
+    const active = isActive(tab.pattern);
+    return (
+      <ButtonBase
+        key={tab.path}
+        onClick={() => navigate(tab.path)}
+        data-active={active}
+        data-section={section}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 0.5,
+          py: 1.5,
+          width: '100%',
+          borderRadius: 1,
+          color: active ? 'primary.main' : 'text.secondary',
+          bgcolor: active ? 'rgba(92, 181, 122, 0.08)' : 'transparent',
+          transition: 'all 150ms ease-out',
+          '&:active': { transform: 'scale(0.94)' },
+        }}
+      >
+        <Box sx={{ fontSize: 22, display: 'flex' }}>{tab.icon}</Box>
+        <Typography variant="caption" sx={{ fontSize: 11, lineHeight: 1, fontFamily: "'Noto Sans SC', sans-serif" }}>
+          {tab.label}
+        </Typography>
+      </ButtonBase>
+    );
+  };
 
   return (
-    <BottomNavigation
-      value={currentTab === -1 ? 0 : currentTab}
-      onChange={(_, newValue) => navigate(tabs[newValue].path)}
-      showLabels
-      sx={{ flexShrink: 0 }}
+    <Box
+      component="nav"
+      sx={{
+        width: 72,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        py: 1,
+        px: 0.5,
+        gap: 0.5,
+        borderRight: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.default',
+        flexShrink: 0,
+      }}
     >
-      {tabs.map((tab) => (
-        <BottomNavigationAction
-          key={tab.path}
-          label={tab.label}
-          icon={tab.icon}
-          sx={{ minWidth: 0, px: 0.5 }}
-        />
-      ))}
-    </BottomNavigation>
+      {primaryTabs.map((tab) => renderItem(tab, 'main'))}
+      <Box sx={{ mt: 'auto' }} />
+      <Box sx={{ width: '80%', height: '1px', bgcolor: 'divider', my: 0.5 }} />
+      {renderItem(settingsTab, 'footer')}
+    </Box>
   );
 };
 
-export default BottomTabBar;
+export default NavigationRail;
 ```
 
-**Step 5: Write KioskLayout component**
+**Step 4: Run test to verify it passes**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/NavigationRail.test.tsx`
+Expected: 5 tests PASS
+
+**Step 5: Commit**
+
+```bash
+git add katrain/web/ui/src/kiosk/components/layout/NavigationRail.tsx katrain/web/ui/src/kiosk/__tests__/NavigationRail.test.tsx
+git commit -m "feat(kiosk): add NavigationRail with matchPath routing and 6 items"
+```
+
+---
+
+### Task 5: KioskLayout Shell
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/KioskLayout.test.tsx`
+
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/KioskLayout.test.tsx`:
 
 ```typescript
-// kiosk/components/layout/KioskLayout.tsx
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import KioskLayout from '../components/layout/KioskLayout';
+
+describe('KioskLayout', () => {
+  it('renders status bar, navigation rail, and outlet content', () => {
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter initialEntries={['/kiosk/play']}>
+          <Routes>
+            <Route element={<KioskLayout username="张三" />}>
+              <Route path="/kiosk/play" element={<div>PLAY_CONTENT</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+    // StatusBar
+    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+    // NavigationRail
+    expect(screen.getByText('对弈')).toBeInTheDocument();
+    expect(screen.getByText('设置')).toBeInTheDocument();
+    // Outlet
+    expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskLayout.test.tsx`
+Expected: FAIL
+
+**Step 3: Write minimal implementation**
+
+Create `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`:
+
+```typescript
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import StatusBar from './StatusBar';
-import BottomTabBar from './BottomTabBar';
+import NavigationRail from './NavigationRail';
 
-const KioskLayout = () => {
+interface KioskLayoutProps {
+  username?: string;
+}
+
+const KioskLayout = ({ username }: KioskLayoutProps) => {
   return (
     <Box
       sx={{
@@ -345,14 +826,16 @@ const KioskLayout = () => {
         bgcolor: 'background.default',
       }}
     >
-      <StatusBar />
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
-      >
-        <Outlet />
+      <StatusBar username={username} />
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <NavigationRail />
+        <Box
+          component="main"
+          sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
+        >
+          <Outlet />
+        </Box>
       </Box>
-      <BottomTabBar />
     </Box>
   );
 };
@@ -360,31 +843,88 @@ const KioskLayout = () => {
 export default KioskLayout;
 ```
 
-**Step 6: Run test to verify it passes**
+**Step 4: Run test to verify it passes**
 
 Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskLayout.test.tsx`
-Expected: PASS
+Expected: 1 test PASS
 
-**Step 7: Commit**
+**Step 5: Commit**
 
 ```bash
-git add katrain/web/ui/src/kiosk/
-git commit -m "feat(kiosk): add KioskLayout with StatusBar and BottomTabBar"
+git add katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx katrain/web/ui/src/kiosk/__tests__/KioskLayout.test.tsx
+git commit -m "feat(kiosk): add KioskLayout composing StatusBar + NavigationRail + Outlet"
 ```
 
 ---
 
-### Task 3: Create KioskApp Entry and Wire Router
+### Task 6: KioskApp and Wire into AppRouter
 
 **Files:**
 - Create: `katrain/web/ui/src/kiosk/KioskApp.tsx`
 - Create: `katrain/web/ui/src/kiosk/pages/PlaceholderPage.tsx`
 - Modify: `katrain/web/ui/src/AppRouter.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/KioskApp.test.tsx`
 
-**Step 1: Create placeholder page for all tabs**
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/KioskApp.test.tsx`:
 
 ```typescript
-// kiosk/pages/PlaceholderPage.tsx
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import KioskApp from '../KioskApp';
+
+describe('KioskApp', () => {
+  it('renders login page when not authenticated', () => {
+    render(
+      <MemoryRouter initialEntries={['/kiosk/play']}>
+        <KioskApp />
+      </MemoryRouter>
+    );
+    // Auth guard redirects to login
+    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+  });
+
+  it('renders nav rail on authenticated route', () => {
+    render(
+      <MemoryRouter initialEntries={['/kiosk/play']}>
+        <KioskApp />
+      </MemoryRouter>
+    );
+    // Login first
+    const usernameInput = screen.getByLabelText(/用户名/i);
+    const loginBtn = screen.getByRole('button', { name: /登录/i });
+    const { fireEvent } = require('@testing-library/react');
+    fireEvent.change(usernameInput, { target: { value: '张三' } });
+    fireEvent.click(loginBtn);
+    // After login, nav rail visible
+    expect(screen.getByText('对弈')).toBeInTheDocument();
+    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+  });
+
+  it('redirects /kiosk to /kiosk/play', () => {
+    render(
+      <MemoryRouter initialEntries={['/kiosk']}>
+        <KioskApp />
+      </MemoryRouter>
+    );
+    // Should redirect to login (which then redirects to play after auth)
+    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskApp.test.tsx`
+Expected: FAIL
+
+**Step 3: Create PlaceholderPage**
+
+Create `katrain/web/ui/src/kiosk/pages/PlaceholderPage.tsx`:
+
+```typescript
 import { Box, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 
@@ -403,7 +943,7 @@ const PlaceholderPage = () => {
         gap: 2,
       }}
     >
-      <Typography variant="h3" sx={{ color: 'text.secondary', opacity: 0.5 }}>
+      <Typography variant="h3" sx={{ color: 'text.secondary', opacity: 0.3 }}>
         {segment.toUpperCase()}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -416,67 +956,91 @@ const PlaceholderPage = () => {
 export default PlaceholderPage;
 ```
 
-**Step 2: Create KioskApp with routes**
+**Step 4: Create KioskApp**
+
+Create `katrain/web/ui/src/kiosk/KioskApp.tsx`:
 
 ```typescript
-// kiosk/KioskApp.tsx
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { kioskTheme } from './theme';
+import { KioskAuthProvider, useKioskAuth } from './context/KioskAuthContext';
+import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
+import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 
-const KioskApp = () => {
+const KioskRoutes = () => {
+  const { user } = useKioskAuth();
+
   return (
     <Routes>
-      <Route element={<KioskLayout />}>
-        <Route index element={<Navigate to="/kiosk/ai" replace />} />
-        <Route path="ai" element={<PlaceholderPage />} />
-        <Route path="ai/setup/:mode" element={<PlaceholderPage />} />
-        <Route path="ai/game/:sessionId" element={<PlaceholderPage />} />
-        <Route path="pvp" element={<PlaceholderPage />} />
-        <Route path="pvp/local/game/:sessionId" element={<PlaceholderPage />} />
-        <Route path="pvp/lobby" element={<PlaceholderPage />} />
-        <Route path="pvp/room/:sessionId" element={<PlaceholderPage />} />
-        <Route path="tsumego" element={<PlaceholderPage />} />
-        <Route path="tsumego/problem/:problemId" element={<PlaceholderPage />} />
-        <Route path="research" element={<PlaceholderPage />} />
-        <Route path="kifu" element={<PlaceholderPage />} />
-        <Route path="live" element={<PlaceholderPage />} />
-        <Route path="live/:matchId" element={<PlaceholderPage />} />
-        <Route path="platforms" element={<PlaceholderPage />} />
-        <Route path="settings" element={<PlaceholderPage />} />
-        <Route path="*" element={<Navigate to="/kiosk/ai" replace />} />
+      {/* Public */}
+      <Route path="login" element={<LoginPage />} />
+
+      {/* Auth-protected */}
+      <Route element={<KioskAuthGuard />}>
+        {/* Fullscreen — no nav rail (added in Task 12) */}
+
+        {/* Standard — with nav rail */}
+        <Route element={<KioskLayout username={user?.name} />}>
+          <Route index element={<Navigate to="play" replace />} />
+          <Route path="play" element={<PlaceholderPage />} />
+          <Route path="play/ai/setup/:mode" element={<PlaceholderPage />} />
+          <Route path="play/pvp/setup" element={<PlaceholderPage />} />
+          <Route path="tsumego" element={<PlaceholderPage />} />
+          <Route path="tsumego/problem/:problemId" element={<PlaceholderPage />} />
+          <Route path="research" element={<PlaceholderPage />} />
+          <Route path="kifu" element={<PlaceholderPage />} />
+          <Route path="live" element={<PlaceholderPage />} />
+          <Route path="live/:matchId" element={<PlaceholderPage />} />
+          <Route path="settings" element={<PlaceholderPage />} />
+          <Route path="*" element={<Navigate to="play" replace />} />
+        </Route>
       </Route>
     </Routes>
   );
 };
 
+const KioskApp = () => (
+  <ThemeProvider theme={kioskTheme}>
+    <CssBaseline />
+    <KioskAuthProvider>
+      <KioskRoutes />
+    </KioskAuthProvider>
+  </ThemeProvider>
+);
+
 export default KioskApp;
 ```
 
-**Step 3: Add kiosk route to AppRouter.tsx**
+**Step 5: Modify AppRouter.tsx**
 
-Modify `katrain/web/ui/src/AppRouter.tsx`:
+Replace `katrain/web/ui/src/AppRouter.tsx` with:
 
 ```typescript
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { zenTheme } from './theme';
-import { kioskTheme } from './kiosk/theme';
 import ZenModeApp from './ZenModeApp';
-import GalaxyApp from './GalaxyApp';
-import KioskApp from './kiosk/KioskApp';
+
+// Code-split: kiosk and galaxy bundles load independently
+const GalaxyApp = lazy(() => import('./GalaxyApp'));
+const KioskApp = lazy(() => import('./kiosk/KioskApp'));
 
 const AppRouter = () => {
-  const isKiosk = window.location.pathname.startsWith('/kiosk');
   return (
-    <ThemeProvider theme={isKiosk ? kioskTheme : zenTheme}>
+    <ThemeProvider theme={zenTheme}>
       <CssBaseline />
       <BrowserRouter>
-        <Routes>
-          <Route path="/kiosk/*" element={<KioskApp />} />
-          <Route path="/galaxy/*" element={<GalaxyApp />} />
-          <Route path="/*" element={<ZenModeApp />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/kiosk/*" element={<KioskApp />} />
+            <Route path="/galaxy/*" element={<GalaxyApp />} />
+            <Route path="/*" element={<ZenModeApp />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
   );
@@ -485,72 +1049,99 @@ const AppRouter = () => {
 export default AppRouter;
 ```
 
-**Step 4: Verify in browser**
+Note: AppRouter keeps a default `ThemeProvider` with `zenTheme` (for Galaxy and ZenMode). KioskApp nests its own `ThemeProvider` with `kioskTheme`, which overrides the parent. This is reactive — MUI's nested ThemeProvider applies whenever the KioskApp route is active.
+
+**Step 6: Run test to verify it passes**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KioskApp.test.tsx`
+Expected: 3 tests PASS
+
+**Step 7: Run ALL kiosk tests to make sure nothing broke**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/`
+Expected: All tests PASS (theme: 8, StatusBar: 4, NavigationRail: 5, KioskLayout: 1, Auth: 3, KioskApp: 3)
+
+**Step 8: Verify visually in browser**
 
 Run: `cd katrain/web/ui && npm run dev`
 Visit: `http://localhost:5173/kiosk/`
-Expected: See status bar, "AI" placeholder content, 8 bottom tabs. Clicking tabs switches placeholder text.
+Expected: Login page with ink-black background, KaTrain heading, username/PIN inputs, green login button. After login: NavigationRail on left (72px, 6 items), StatusBar at top, placeholder in center. Galaxy at `/galaxy/` still works unchanged.
 
-**Step 5: Commit**
+**Step 9: Commit**
 
 ```bash
 git add katrain/web/ui/src/kiosk/ katrain/web/ui/src/AppRouter.tsx
-git commit -m "feat(kiosk): wire KioskApp into AppRouter with all tab routes"
+git commit -m "feat(kiosk): wire KioskApp into AppRouter with auth, nav rail, and code splitting"
 ```
 
 ---
 
-### Task 4: Add Noto + JetBrains Mono Font Assets
+## Phase 3: Reusable Components
+
+### Task 7: ModeCard Component
 
 **Files:**
-- Modify: `katrain/web/ui/index.html` (or create `katrain/web/ui/src/kiosk/styles/fonts.css`)
-
-**Step 1: Add font imports for kiosk**
-
-Create `katrain/web/ui/src/kiosk/styles/fonts.css`:
-
-```css
-/* Local-first font loading for embedded terminal (no network dependency) */
-/* Fallback to Google Fonts CDN for dev environment */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-```
-
-Note: For production RK3588 deployment, fonts will be bundled locally. CDN is dev-only fallback.
-
-**Step 2: Import in KioskApp**
-
-Add to top of `kiosk/KioskApp.tsx`:
-```typescript
-import './styles/fonts.css';
-```
-
-**Step 3: Verify in browser**
-
-Visit `http://localhost:5173/kiosk/`, inspect font rendering in DevTools.
-Expected: Noto Sans SC for body text, serif headings visible in placeholder.
-
-**Step 4: Commit**
-
-```bash
-git add katrain/web/ui/src/kiosk/
-git commit -m "feat(kiosk): add Noto and JetBrains Mono font loading"
-```
-
----
-
-## Phase 2: Core Pages with Mock Data (Tasks 5-12)
-
-### Task 5: Human vs AI Selection Page
-
-**Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/AiPlayPage.tsx`
 - Create: `katrain/web/ui/src/kiosk/components/common/ModeCard.tsx`
-- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx` (replace placeholder)
+- Create: `katrain/web/ui/src/kiosk/__tests__/ModeCard.test.tsx`
 
-**Step 1: Create reusable ModeCard component**
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/ModeCard.test.tsx`:
 
 ```typescript
-// kiosk/components/common/ModeCard.tsx
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { SportsEsports } from '@mui/icons-material';
+import { kioskTheme } from '../theme';
+import ModeCard from '../components/common/ModeCard';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
+const renderCard = () =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter>
+        <ModeCard
+          title="自由对弈"
+          subtitle="随意选择AI强度"
+          icon={<SportsEsports />}
+          to="/kiosk/play/ai/setup/free"
+        />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+
+describe('ModeCard', () => {
+  it('renders title and subtitle', () => {
+    renderCard();
+    expect(screen.getByText('自由对弈')).toBeInTheDocument();
+    expect(screen.getByText('随意选择AI强度')).toBeInTheDocument();
+  });
+
+  it('navigates to target on click', () => {
+    renderCard();
+    fireEvent.click(screen.getByText('自由对弈'));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/setup/free');
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/ModeCard.test.tsx`
+Expected: FAIL
+
+**Step 3: Write minimal implementation**
+
+Create `katrain/web/ui/src/kiosk/components/common/ModeCard.tsx`:
+
+```typescript
 import { Box, Typography, ButtonBase } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
@@ -599,76 +1190,90 @@ const ModeCard = ({ title, subtitle, icon, to }: ModeCardProps) => {
 export default ModeCard;
 ```
 
-**Step 2: Create AiPlayPage**
+**Step 4: Run test to verify it passes**
 
-```typescript
-// kiosk/pages/AiPlayPage.tsx
-import { Box } from '@mui/material';
-import { SportsEsports, EmojiEvents } from '@mui/icons-material';
-import ModeCard from '../components/common/ModeCard';
-
-const AiPlayPage = () => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        gap: 3,
-        p: 3,
-      }}
-    >
-      <ModeCard
-        title="自由对弈"
-        subtitle="随意选择AI强度和棋盘设置"
-        icon={<SportsEsports fontSize="inherit" />}
-        to="/kiosk/ai/setup/free"
-      />
-      <ModeCard
-        title="升降级对弈"
-        subtitle="根据实力自动匹配AI难度"
-        icon={<EmojiEvents fontSize="inherit" />}
-        to="/kiosk/ai/setup/ranked"
-      />
-    </Box>
-  );
-};
-
-export default AiPlayPage;
-```
-
-**Step 3: Wire into KioskApp — replace placeholder for `ai` route**
-
-In `kiosk/KioskApp.tsx`, import `AiPlayPage` and replace:
-```typescript
-<Route path="ai" element={<AiPlayPage />} />
-```
-
-**Step 4: Verify in browser**
-
-Visit `http://localhost:5173/kiosk/ai`
-Expected: Two large cards side by side — "自由对弈" and "升降级对弈"
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/ModeCard.test.tsx`
+Expected: 2 tests PASS
 
 **Step 5: Commit**
 
 ```bash
-git add katrain/web/ui/src/kiosk/
-git commit -m "feat(kiosk): add Human vs AI selection page with ModeCard"
+git add katrain/web/ui/src/kiosk/components/common/ModeCard.tsx katrain/web/ui/src/kiosk/__tests__/ModeCard.test.tsx
+git commit -m "feat(kiosk): add ModeCard reusable touch-friendly card component"
 ```
 
 ---
 
-### Task 6: AI Game Setup Page
+### Task 8: OptionChips Component
 
 **Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx`
 - Create: `katrain/web/ui/src/kiosk/components/common/OptionChips.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/OptionChips.test.tsx`
 
-**Step 1: Create OptionChips reusable selector**
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/OptionChips.test.tsx`:
 
 ```typescript
-// kiosk/components/common/OptionChips.tsx
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import OptionChips from '../components/common/OptionChips';
+
+describe('OptionChips', () => {
+  it('renders label and all options', () => {
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <OptionChips
+          label="棋盘"
+          options={[
+            { value: 9, label: '9路' },
+            { value: 13, label: '13路' },
+            { value: 19, label: '19路' },
+          ]}
+          value={19}
+          onChange={() => {}}
+        />
+      </ThemeProvider>
+    );
+    expect(screen.getByText('棋盘')).toBeInTheDocument();
+    expect(screen.getByText('9路')).toBeInTheDocument();
+    expect(screen.getByText('13路')).toBeInTheDocument();
+    expect(screen.getByText('19路')).toBeInTheDocument();
+  });
+
+  it('calls onChange when an option is clicked', () => {
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <OptionChips
+          label="棋盘"
+          options={[
+            { value: 9, label: '9路' },
+            { value: 19, label: '19路' },
+          ]}
+          value={19}
+          onChange={onChange}
+        />
+      </ThemeProvider>
+    );
+    fireEvent.click(screen.getByText('9路'));
+    expect(onChange).toHaveBeenCalledWith(9);
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/OptionChips.test.tsx`
+Expected: FAIL
+
+**Step 3: Write minimal implementation**
+
+Create `katrain/web/ui/src/kiosk/components/common/OptionChips.tsx`:
+
+```typescript
 import { Box, ButtonBase, Typography } from '@mui/material';
 
 interface OptionChipsProps<T extends string | number> {
@@ -678,7 +1283,12 @@ interface OptionChipsProps<T extends string | number> {
   onChange: (value: T) => void;
 }
 
-function OptionChips<T extends string | number>({ label, options, value, onChange }: OptionChipsProps<T>) {
+function OptionChips<T extends string | number>({
+  label,
+  options,
+  value,
+  onChange,
+}: OptionChipsProps<T>) {
   return (
     <Box sx={{ mb: 2.5 }}>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
@@ -720,75 +1330,325 @@ function OptionChips<T extends string | number>({ label, options, value, onChang
 export default OptionChips;
 ```
 
-**Step 2: Create AiSetupPage with mock state**
+**Step 4: Run test to verify it passes**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/OptionChips.test.tsx`
+Expected: 2 tests PASS
+
+**Step 5: Commit**
+
+```bash
+git add katrain/web/ui/src/kiosk/components/common/OptionChips.tsx katrain/web/ui/src/kiosk/__tests__/OptionChips.test.tsx
+git commit -m "feat(kiosk): add OptionChips touch-friendly selector component"
+```
+
+---
+
+## Phase 4: Pages
+
+### Task 9: Mock Data Fixtures + Play Selection Page
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/data/mocks.ts`
+- Create: `katrain/web/ui/src/kiosk/pages/PlayPage.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/PlayPage.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx` (swap placeholder)
+
+**Step 1: Create mock data fixtures**
+
+Create `katrain/web/ui/src/kiosk/data/mocks.ts`:
 
 ```typescript
-// kiosk/pages/AiSetupPage.tsx
+// Fixed mock data — deterministic, no Math.random(). Used across all kiosk pages.
+
+export const mockGameState = {
+  blackPlayer: '张三 (2D)',
+  whitePlayer: 'KataGo 5D',
+  blackCaptures: 3,
+  whiteCaptures: 5,
+  winRate: 56.3,
+  bestMove: 'R16',
+  bestMoveProb: 94.2,
+  altMove: 'Q3',
+  altMoveProb: 3.1,
+  moveNumber: 42,
+};
+
+export const mockTsumegoProblems = [
+  { id: 'beginner-1', label: '入门 1', level: '入门', solved: true },
+  { id: 'beginner-2', label: '入门 2', level: '入门', solved: true },
+  { id: 'beginner-3', label: '入门 3', level: '入门', solved: false },
+  { id: 'beginner-4', label: '入门 4', level: '入门', solved: false },
+  { id: 'elementary-1', label: '初级 1', level: '初级', solved: true },
+  { id: 'elementary-2', label: '初级 2', level: '初级', solved: false },
+  { id: 'elementary-3', label: '初级 3', level: '初级', solved: false },
+  { id: 'elementary-4', label: '初级 4', level: '初级', solved: false },
+  { id: 'intermediate-1', label: '中级 1', level: '中级', solved: false },
+  { id: 'intermediate-2', label: '中级 2', level: '中级', solved: false },
+  { id: 'advanced-1', label: '高级 1', level: '高级', solved: false },
+  { id: 'advanced-2', label: '高级 2', level: '高级', solved: false },
+];
+
+export const mockKifuList = [
+  { id: 'kifu-1', black: '柯洁 九段', white: '申真谞 九段', event: '2024 LG杯决赛', result: 'W+R' },
+  { id: 'kifu-2', black: '李昌镐 九段', white: '曹薰铉 九段', event: '第18届三星杯', result: 'B+3.5' },
+  { id: 'kifu-3', black: '张三 2D', white: 'KataGo 5D', event: '自由对弈', result: 'W+12.5' },
+];
+
+export const mockLiveMatches = [
+  { id: 'live-1', black: '柯洁 九段', white: '朴廷桓 九段', event: '春兰杯半决赛', move: 127, status: 'live' as const },
+  { id: 'live-2', black: '申真谞 九段', white: '芝野虎丸 九段', event: '应氏杯四分之一决赛', move: 89, status: 'live' as const },
+  { id: 'live-3', black: '一力辽 九段', white: '卞相壹 九段', event: 'LG杯八强', move: 0, status: 'upcoming' as const },
+];
+```
+
+**Step 2: Write the failing test for PlayPage**
+
+Create `katrain/web/ui/src/kiosk/__tests__/PlayPage.test.tsx`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import PlayPage from '../pages/PlayPage';
+
+const renderPage = () =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter>
+        <PlayPage />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+
+describe('PlayPage', () => {
+  it('renders all 4 play mode cards', () => {
+    renderPage();
+    expect(screen.getByText('自由对弈')).toBeInTheDocument();
+    expect(screen.getByText('升降级对弈')).toBeInTheDocument();
+    expect(screen.getByText('本地对局')).toBeInTheDocument();
+    expect(screen.getByText('在线大厅')).toBeInTheDocument();
+  });
+
+  it('separates AI and PvP sections with headers', () => {
+    renderPage();
+    expect(screen.getByText('人机对弈')).toBeInTheDocument();
+    expect(screen.getByText('人人对弈')).toBeInTheDocument();
+  });
+});
+```
+
+**Step 3: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/PlayPage.test.tsx`
+Expected: FAIL
+
+**Step 4: Create PlayPage**
+
+Create `katrain/web/ui/src/kiosk/pages/PlayPage.tsx`:
+
+```typescript
+import { Box, Typography } from '@mui/material';
+import { SportsEsports, EmojiEvents, Handshake, Public } from '@mui/icons-material';
+import ModeCard from '../components/common/ModeCard';
+
+const PlayPage = () => {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 3, height: '100%', overflow: 'auto' }}>
+      <Typography variant="h5" sx={{ color: 'text.secondary' }}>人机对弈</Typography>
+      <Box sx={{ display: 'flex', gap: 3, flex: 1 }}>
+        <ModeCard
+          title="自由对弈"
+          subtitle="随意选择AI强度和棋盘设置"
+          icon={<SportsEsports fontSize="inherit" />}
+          to="/kiosk/play/ai/setup/free"
+        />
+        <ModeCard
+          title="升降级对弈"
+          subtitle="根据实力自动匹配AI难度"
+          icon={<EmojiEvents fontSize="inherit" />}
+          to="/kiosk/play/ai/setup/ranked"
+        />
+      </Box>
+      <Typography variant="h5" sx={{ color: 'text.secondary' }}>人人对弈</Typography>
+      <Box sx={{ display: 'flex', gap: 3, flex: 1 }}>
+        <ModeCard
+          title="本地对局"
+          subtitle="两人在智能棋盘上面对面对弈"
+          icon={<Handshake fontSize="inherit" />}
+          to="/kiosk/play/pvp/setup"
+        />
+        <ModeCard
+          title="在线大厅"
+          subtitle="匹配网络上的对手进行对弈"
+          icon={<Public fontSize="inherit" />}
+          to="/kiosk/play/pvp/lobby"
+        />
+      </Box>
+    </Box>
+  );
+};
+
+export default PlayPage;
+```
+
+**Step 5: Wire route in KioskApp.tsx**
+
+In `katrain/web/ui/src/kiosk/KioskApp.tsx`, add import and replace route:
+
+```typescript
+import PlayPage from './pages/PlayPage';
+// ...
+<Route path="play" element={<PlayPage />} />
+```
+
+**Step 6: Run test to verify it passes**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/PlayPage.test.tsx`
+Expected: 2 tests PASS
+
+**Step 7: Commit**
+
+```bash
+git add katrain/web/ui/src/kiosk/data/mocks.ts katrain/web/ui/src/kiosk/pages/PlayPage.tsx katrain/web/ui/src/kiosk/__tests__/PlayPage.test.tsx katrain/web/ui/src/kiosk/KioskApp.tsx
+git commit -m "feat(kiosk): add PlayPage with unified AI/PvP selection and mock data fixtures"
+```
+
+---
+
+### Task 10: AI Game Setup Page
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/AiSetupPage.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx`
+
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/AiSetupPage.test.tsx`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import AiSetupPage from '../pages/AiSetupPage';
+
+const renderPage = (mode = 'free') =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter initialEntries={[`/kiosk/play/ai/setup/${mode}`]}>
+        <Routes>
+          <Route path="/kiosk/play/ai/setup/:mode" element={<AiSetupPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+
+describe('AiSetupPage', () => {
+  it('renders board size options', () => {
+    renderPage();
+    expect(screen.getByText('棋盘')).toBeInTheDocument();
+    expect(screen.getByText('9路')).toBeInTheDocument();
+    expect(screen.getByText('19路')).toBeInTheDocument();
+  });
+
+  it('renders color selection', () => {
+    renderPage();
+    expect(screen.getByText(/黑/)).toBeInTheDocument();
+    expect(screen.getByText(/白/)).toBeInTheDocument();
+  });
+
+  it('renders start button', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: /开始对弈/i })).toBeInTheDocument();
+  });
+
+  it('shows AI strength slider for free mode', () => {
+    renderPage('free');
+    expect(screen.getByText(/AI 强度/i)).toBeInTheDocument();
+  });
+
+  it('hides AI strength slider for ranked mode', () => {
+    renderPage('ranked');
+    expect(screen.queryByText(/AI 强度/i)).not.toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/AiSetupPage.test.tsx`
+Expected: FAIL
+
+**Step 3: Create AiSetupPage**
+
+Create `katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx`:
+
+```typescript
 import { useState } from 'react';
 import { Box, Typography, Button, Slider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayArrow } from '@mui/icons-material';
+import { PlayArrow, ArrowBack } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
 
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
+  const isRanked = mode === 'ranked';
+
   const [boardSize, setBoardSize] = useState(19);
   const [color, setColor] = useState<'black' | 'white'>('black');
   const [aiStrength, setAiStrength] = useState(5);
   const [handicap, setHandicap] = useState(0);
   const [timeLimit, setTimeLimit] = useState(0);
 
-  const isRanked = mode === 'ranked';
-
   const handleStart = () => {
-    // TODO: call backend to create session, navigate to game page
-    navigate('/kiosk/ai/game/mock-session-id');
+    // TODO: POST /api/new-game → get sessionId → navigate to game
+    navigate('/kiosk/play/ai/game/mock-session');
   };
 
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left: board preview */}
+      {/* Left: board preview placeholder */}
       <Box
         sx={{
           aspectRatio: '1',
           height: '100%',
-          bgcolor: 'background.paper',
+          bgcolor: '#8b7355',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderRight: '1px solid',
-          borderColor: 'divider',
+          flexShrink: 0,
         }}
       >
-        <Typography variant="h6" sx={{ color: 'text.secondary', opacity: 0.3 }}>
-          {boardSize}x{boardSize} 棋盘预览
-        </Typography>
+        <Typography sx={{ color: 'rgba(0,0,0,0.3)' }}>{boardSize}x{boardSize}</Typography>
       </Box>
 
-      {/* Right: settings */}
+      {/* Right: settings form */}
       <Box sx={{ flex: 1, p: 3, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          {isRanked ? '升降级对弈' : '自由对弈'}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <Button
+            onClick={() => navigate('/kiosk/play')}
+            startIcon={<ArrowBack />}
+            sx={{ minWidth: 40, p: 0.5 }}
+          />
+          <Typography variant="h5">{isRanked ? '升降级对弈' : '自由对弈'}</Typography>
+        </Box>
 
         <OptionChips
           label="棋盘"
-          options={[
-            { value: 9, label: '9路' },
-            { value: 13, label: '13路' },
-            { value: 19, label: '19路' },
-          ]}
+          options={[{ value: 9, label: '9路' }, { value: 13, label: '13路' }, { value: 19, label: '19路' }]}
           value={boardSize}
           onChange={setBoardSize}
         />
 
         <OptionChips
           label="我执"
-          options={[
-            { value: 'black' as const, label: '● 黑' },
-            { value: 'white' as const, label: '○ 白' },
-          ]}
+          options={[{ value: 'black' as const, label: '● 黑' }, { value: 'white' as const, label: '○ 白' }]}
           value={color}
           onChange={setColor}
         />
@@ -798,14 +1658,7 @@ const AiSetupPage = () => {
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
               AI 强度: ~{aiStrength}D
             </Typography>
-            <Slider
-              value={aiStrength}
-              onChange={(_, v) => setAiStrength(v as number)}
-              min={-20}
-              max={9}
-              step={1}
-              sx={{ mx: 1 }}
-            />
+            <Slider value={aiStrength} onChange={(_, v) => setAiStrength(v as number)} min={-20} max={9} step={1} />
           </Box>
         )}
 
@@ -818,25 +1671,13 @@ const AiSetupPage = () => {
 
         <OptionChips
           label="用时"
-          options={[
-            { value: 0, label: '不限' },
-            { value: 10, label: '10分' },
-            { value: 20, label: '20分' },
-            { value: 30, label: '30分' },
-          ]}
+          options={[{ value: 0, label: '不限' }, { value: 10, label: '10分' }, { value: 20, label: '20分' }, { value: 30, label: '30分' }]}
           value={timeLimit}
           onChange={setTimeLimit}
         />
 
         <Box sx={{ mt: 'auto', pt: 2 }}>
-          <Button
-            variant="contained"
-            fullWidth
-            size="large"
-            startIcon={<PlayArrow />}
-            onClick={handleStart}
-            sx={{ py: 2, fontSize: '1.1rem' }}
-          >
+          <Button variant="contained" fullWidth size="large" startIcon={<PlayArrow />} onClick={handleStart} sx={{ minHeight: 56, py: 2, fontSize: '1.1rem' }}>
             开始对弈
           </Button>
         </Box>
@@ -848,95 +1689,134 @@ const AiSetupPage = () => {
 export default AiSetupPage;
 ```
 
-**Step 3: Wire route in KioskApp**
+**Step 4: Wire route, run tests, commit**
 
-```typescript
-<Route path="ai/setup/:mode" element={<AiSetupPage />} />
-```
-
-**Step 4: Verify in browser**
-
-Visit `http://localhost:5173/kiosk/ai`, click "自由对弈"
-Expected: Left board preview + right panel with chip selectors, slider, start button
-
-**Step 5: Commit**
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/AiSetupPage.test.tsx`
+Expected: 5 tests PASS
 
 ```bash
-git add katrain/web/ui/src/kiosk/
-git commit -m "feat(kiosk): add AI game setup page with touch-friendly controls"
+git add katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/__tests__/AiSetupPage.test.tsx katrain/web/ui/src/kiosk/KioskApp.tsx
+git commit -m "feat(kiosk): add AI game setup page with touch-friendly option chips"
 ```
 
 ---
 
-### Task 7: Game Page with Mock Analysis Data
+### Task 11: Game Page with Mock Analysis (Fullscreen)
 
 **Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`
-- Create: `katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx`
 - Create: `katrain/web/ui/src/kiosk/components/game/MockBoard.tsx`
+- Create: `katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx`
+- Create: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/GamePage.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx` (add fullscreen game routes)
 
-This is the core page. Use a mock board placeholder initially (real Board component will be wired in shared layer extraction phase).
+**Step 1: Write the failing test**
 
-**Step 1: Create MockBoard placeholder**
+Create `katrain/web/ui/src/kiosk/__tests__/GamePage.test.tsx`:
 
 ```typescript
-// kiosk/components/game/MockBoard.tsx
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import GamePage from '../pages/GamePage';
+
+const renderPage = () =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter initialEntries={['/kiosk/play/ai/game/mock-session']}>
+        <Routes>
+          <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+
+describe('GamePage', () => {
+  it('renders mock board with move number', () => {
+    renderPage();
+    expect(screen.getByText(/第42手/)).toBeInTheDocument();
+  });
+
+  it('renders player names', () => {
+    renderPage();
+    expect(screen.getByText(/张三/)).toBeInTheDocument();
+    expect(screen.getByText(/KataGo/)).toBeInTheDocument();
+  });
+
+  it('renders win rate', () => {
+    renderPage();
+    expect(screen.getByText(/56.3%/)).toBeInTheDocument();
+  });
+
+  it('renders control buttons', () => {
+    renderPage();
+    expect(screen.getByText('悔棋')).toBeInTheDocument();
+    expect(screen.getByText('认输')).toBeInTheDocument();
+  });
+
+  it('does NOT render navigation rail (fullscreen)', () => {
+    renderPage();
+    expect(screen.queryByText('对弈')).not.toBeInTheDocument();
+    expect(screen.queryByText('设置')).not.toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/GamePage.test.tsx`
+Expected: FAIL
+
+**Step 3: Create MockBoard**
+
+Create `katrain/web/ui/src/kiosk/components/game/MockBoard.tsx`:
+
+```typescript
 import { Box, Typography } from '@mui/material';
 
-interface MockBoardProps {
-  moveNumber?: number;
-}
-
-const MockBoard = ({ moveNumber = 0 }: MockBoardProps) => {
-  return (
+const MockBoard = ({ moveNumber = 0 }: { moveNumber?: number }) => (
+  <Box
+    sx={{
+      aspectRatio: '1',
+      height: '100%',
+      bgcolor: '#8b7355',
+      borderRadius: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      flexShrink: 0,
+    }}
+  >
     <Box
       sx={{
-        aspectRatio: '1',
-        height: '100%',
-        bgcolor: '#8b7355',
-        borderRadius: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
+        position: 'absolute',
+        inset: '8%',
+        backgroundImage:
+          'repeating-linear-gradient(0deg, transparent, transparent calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18)), repeating-linear-gradient(90deg, transparent, transparent calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18))',
       }}
-    >
-      {/* Grid lines placeholder */}
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: '8%',
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18)), ' +
-            'repeating-linear-gradient(90deg, transparent, transparent calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18 - 1px), rgba(0,0,0,0.3) calc(100%/18))',
-        }}
-      />
-      <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.4)', zIndex: 1 }}>
-        棋盘 (手数: {moveNumber})
-      </Typography>
-    </Box>
-  );
-};
+    />
+    <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.4)', zIndex: 1 }}>
+      棋盘 · 第{moveNumber}手
+    </Typography>
+  </Box>
+);
 
 export default MockBoard;
 ```
 
-**Step 2: Create GameControlPanel**
+**Step 4: Create GameControlPanel**
+
+Create `katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx`:
 
 ```typescript
-// kiosk/components/game/GameControlPanel.tsx
-import { Box, Typography, Button, LinearProgress, IconButton, Divider } from '@mui/material';
-import {
-  Undo as UndoIcon,
-  PanTool as PassIcon,
-  Calculate as CountIcon,
-  Flag as ResignIcon,
-  Settings as SettingsIcon,
-  Close as ExitIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Button, LinearProgress, Divider } from '@mui/material';
+import { Undo, PanTool, Calculate, Flag, Settings, Close } from '@mui/icons-material';
 
-interface GameControlPanelProps {
+interface Props {
   blackPlayer: string;
   whitePlayer: string;
   blackCaptures: number;
@@ -949,188 +1829,90 @@ interface GameControlPanelProps {
   moveNumber: number;
 }
 
-const GameControlPanel = ({
-  blackPlayer,
-  whitePlayer,
-  blackCaptures,
-  whiteCaptures,
-  winRate,
-  bestMove,
-  bestMoveProb,
-  altMove,
-  altMoveProb,
-  moveNumber,
-}: GameControlPanelProps) => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        p: 2,
-        gap: 1.5,
-      }}
-    >
-      {/* Players */}
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            ● {blackPlayer}
-          </Typography>
-          <Typography variant="caption">○ 提: {blackCaptures}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            ○ {whitePlayer}
-          </Typography>
-          <Typography variant="caption">● 提: {whiteCaptures}</Typography>
-        </Box>
+const GameControlPanel = (props: Props) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2, gap: 1.5 }}>
+    {/* Players */}
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>● {props.blackPlayer}</Typography>
+        <Typography variant="caption">○提: {props.blackCaptures}</Typography>
       </Box>
-
-      <Divider />
-
-      {/* Win rate */}
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>胜率</Typography>
-          <Typography
-            variant="body1"
-            sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}
-          >
-            {winRate.toFixed(1)}%
-          </Typography>
-        </Box>
-        <LinearProgress
-          variant="determinate"
-          value={winRate}
-          sx={{
-            height: 8,
-            borderRadius: 4,
-            bgcolor: 'rgba(232, 228, 220, 0.1)',
-            '& .MuiLinearProgress-bar': {
-              bgcolor: winRate > 50 ? 'success.main' : 'error.main',
-              borderRadius: 4,
-            },
-          }}
-        />
-      </Box>
-
-      {/* AI suggestions */}
-      <Box>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>AI 推荐</Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body1" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            {bestMove}
-          </Typography>
-          <Typography variant="caption" sx={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {bestMoveProb.toFixed(1)}%
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {altMove}
-          </Typography>
-          <Typography variant="caption" sx={{ fontFamily: "'JetBrains Mono', monospace", color: 'text.secondary' }}>
-            {altMoveProb.toFixed(1)}%
-          </Typography>
-        </Box>
-      </Box>
-
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        第 {moveNumber} 手
-      </Typography>
-
-      <Box sx={{ mt: 'auto' }} />
-
-      {/* Control buttons */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
-        <Button variant="outlined" startIcon={<UndoIcon />} sx={{ minHeight: 48 }}>
-          悔棋
-        </Button>
-        <Button variant="outlined" startIcon={<PassIcon />} sx={{ minHeight: 48 }}>
-          跳过
-        </Button>
-        <Button variant="outlined" startIcon={<CountIcon />} sx={{ minHeight: 48 }}>
-          计数
-        </Button>
-        <Button variant="outlined" color="error" startIcon={<ResignIcon />} sx={{ minHeight: 48 }}>
-          认输
-        </Button>
-        <Button variant="outlined" startIcon={<SettingsIcon />} sx={{ minHeight: 48 }}>
-          设置
-        </Button>
-        <Button variant="outlined" startIcon={<ExitIcon />} sx={{ minHeight: 48 }}>
-          退出
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>○ {props.whitePlayer}</Typography>
+        <Typography variant="caption">●提: {props.whiteCaptures}</Typography>
       </Box>
     </Box>
-  );
-};
+
+    <Divider />
+
+    {/* Win rate */}
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>胜率</Typography>
+        <Typography variant="body1" sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+          {props.winRate.toFixed(1)}%
+        </Typography>
+      </Box>
+      <LinearProgress
+        variant="determinate"
+        value={props.winRate}
+        sx={{
+          height: 8, borderRadius: 4, bgcolor: 'rgba(232,228,220,0.1)',
+          '& .MuiLinearProgress-bar': { bgcolor: props.winRate > 50 ? 'success.main' : 'error.main', borderRadius: 4 },
+        }}
+      />
+    </Box>
+
+    {/* AI suggestion */}
+    <Box>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>AI 推荐</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Typography sx={{ color: 'primary.main', fontWeight: 600 }}>{props.bestMove}</Typography>
+        <Typography variant="caption" sx={{ fontFamily: "'JetBrains Mono', monospace" }}>{props.bestMoveProb.toFixed(1)}%</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{props.altMove}</Typography>
+        <Typography variant="caption" sx={{ fontFamily: "'JetBrains Mono', monospace", color: 'text.secondary' }}>{props.altMoveProb.toFixed(1)}%</Typography>
+      </Box>
+    </Box>
+
+    <Typography variant="caption" sx={{ color: 'text.secondary' }}>第 {props.moveNumber} 手</Typography>
+
+    <Box sx={{ mt: 'auto' }} />
+
+    {/* Controls — 3x2 grid */}
+    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
+      <Button variant="outlined" startIcon={<Undo />} sx={{ minHeight: 48 }}>悔棋</Button>
+      <Button variant="outlined" startIcon={<PanTool />} sx={{ minHeight: 48 }}>跳过</Button>
+      <Button variant="outlined" startIcon={<Calculate />} sx={{ minHeight: 48 }}>计数</Button>
+      <Button variant="outlined" color="error" startIcon={<Flag />} sx={{ minHeight: 48 }}>认输</Button>
+      <Button variant="outlined" startIcon={<Settings />} sx={{ minHeight: 48 }}>设置</Button>
+      <Button variant="outlined" startIcon={<Close />} sx={{ minHeight: 48 }}>退出</Button>
+    </Box>
+  </Box>
+);
 
 export default GameControlPanel;
 ```
 
-**Step 3: Create GamePage**
+**Step 5: Create GamePage**
+
+Create `katrain/web/ui/src/kiosk/pages/GamePage.tsx`:
 
 ```typescript
-// kiosk/pages/GamePage.tsx
-import { Box, Typography } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { Box } from '@mui/material';
 import MockBoard from '../components/game/MockBoard';
 import GameControlPanel from '../components/game/GameControlPanel';
+import { mockGameState } from '../data/mocks';
 
 const GamePage = () => {
-  const { sessionId } = useParams();
-
-  // Mock data — will be replaced by useGameSession hook
-  const mockData = {
-    blackPlayer: '张三 (2D)',
-    whitePlayer: 'KataGo 5D',
-    blackCaptures: 3,
-    whiteCaptures: 5,
-    winRate: 56.3,
-    bestMove: 'R16',
-    bestMoveProb: 94.2,
-    altMove: 'Q3',
-    altMoveProb: 3.1,
-    moveNumber: 42,
-  };
-
   return (
-    <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Status bar override for game */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 40,
-          display: 'flex',
-          alignItems: 'center',
-          px: 2,
-          bgcolor: 'background.default',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          zIndex: 10,
-        }}
-      >
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          ● {mockData.blackPlayer} vs ○ {mockData.whitePlayer}
-        </Typography>
-        <Typography variant="caption" sx={{ ml: 'auto', color: 'text.secondary' }}>
-          {sessionId}
-        </Typography>
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+      <Box sx={{ height: '100%', aspectRatio: '1' }}>
+        <MockBoard moveNumber={mockGameState.moveNumber} />
       </Box>
-
-      {/* Board area */}
-      <Box sx={{ height: '100%', aspectRatio: '1', pt: '40px' }}>
-        <MockBoard moveNumber={mockData.moveNumber} />
-      </Box>
-
-      {/* Control panel */}
-      <Box sx={{ flex: 1, pt: '40px', overflow: 'auto' }}>
-        <GameControlPanel {...mockData} />
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <GameControlPanel {...mockGameState} />
       </Box>
     </Box>
   );
@@ -1139,188 +1921,128 @@ const GamePage = () => {
 export default GamePage;
 ```
 
-**Step 4: Wire route — GamePage hides tab bar**
+**Step 6: Add fullscreen game routes in KioskApp.tsx**
 
-In KioskApp.tsx, game routes render outside KioskLayout (no tab bar):
+In the `KioskRoutes` component, add fullscreen routes inside the auth guard but outside KioskLayout:
 
 ```typescript
-<Routes>
-  {/* Fullscreen pages (no tab bar) */}
-  <Route path="ai/game/:sessionId" element={<GamePage />} />
-  <Route path="pvp/local/game/:sessionId" element={<GamePage />} />
-  <Route path="pvp/room/:sessionId" element={<GamePage />} />
+import GamePage from './pages/GamePage';
+// ...
+<Route element={<KioskAuthGuard />}>
+  {/* Fullscreen — no nav rail */}
+  <Route path="play/ai/game/:sessionId" element={<GamePage />} />
+  <Route path="play/pvp/local/game/:sessionId" element={<GamePage />} />
+  <Route path="play/pvp/room/:sessionId" element={<GamePage />} />
 
-  {/* Tab-bar pages */}
-  <Route element={<KioskLayout />}>
-    <Route index element={<Navigate to="/kiosk/ai" replace />} />
-    <Route path="ai" element={<AiPlayPage />} />
-    <Route path="ai/setup/:mode" element={<AiSetupPage />} />
-    {/* ... rest of tab routes */}
+  {/* Standard — with nav rail */}
+  <Route element={<KioskLayout username={user?.name} />}>
+    {/* ... existing routes ... */}
   </Route>
-</Routes>
+</Route>
 ```
 
-**Step 5: Verify in browser**
+**Step 7: Run test to verify it passes**
 
-Navigate: Kiosk → 人机 → 自由对弈 → 开始对弈
-Expected: Fullscreen game page with mock board on left, control panel on right, no bottom tab bar
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/GamePage.test.tsx`
+Expected: 5 tests PASS
 
-**Step 6: Commit**
+**Step 8: Commit**
 
 ```bash
-git add katrain/web/ui/src/kiosk/
-git commit -m "feat(kiosk): add GamePage with mock board and control panel"
+git add katrain/web/ui/src/kiosk/components/game/ katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/__tests__/GamePage.test.tsx katrain/web/ui/src/kiosk/KioskApp.tsx
+git commit -m "feat(kiosk): add fullscreen GamePage with mock board and control panel"
 ```
 
 ---
 
-### Task 8: Human vs Human Selection Page
-
-**Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/PvpPlayPage.tsx`
-
-**Step 1: Create PvpPlayPage** (reuses ModeCard from Task 5)
-
-```typescript
-// kiosk/pages/PvpPlayPage.tsx
-import { Box } from '@mui/material';
-import { Handshake, Public } from '@mui/icons-material';
-import ModeCard from '../components/common/ModeCard';
-
-const PvpPlayPage = () => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        gap: 3,
-        p: 3,
-      }}
-    >
-      <ModeCard
-        title="本地对局"
-        subtitle="两人在智能棋盘上面对面对弈"
-        icon={<Handshake fontSize="inherit" />}
-        to="/kiosk/pvp/local/setup"
-      />
-      <ModeCard
-        title="在线大厅"
-        subtitle="匹配网络上的对手进行对弈"
-        icon={<Public fontSize="inherit" />}
-        to="/kiosk/pvp/lobby"
-      />
-    </Box>
-  );
-};
-
-export default PvpPlayPage;
-```
-
-**Step 2: Wire route, verify, commit**
-
-```bash
-git commit -m "feat(kiosk): add Human vs Human selection page"
-```
-
----
-
-### Task 9: Tsumego Selection Page
+### Task 12: Tsumego Selection Page
 
 **Files:**
 - Create: `katrain/web/ui/src/kiosk/pages/TsumegoPage.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/TsumegoPage.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx`
 
-**Step 1: Create TsumegoPage with mock problem grid**
+**Step 1: Write the failing test**
+
+Create `katrain/web/ui/src/kiosk/__tests__/TsumegoPage.test.tsx`:
 
 ```typescript
-// kiosk/pages/TsumegoPage.tsx
+import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import TsumegoPage from '../pages/TsumegoPage';
+
+const renderPage = () =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter>
+        <TsumegoPage />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+
+describe('TsumegoPage', () => {
+  it('renders level filter chips', () => {
+    renderPage();
+    ['全部', '入门', '初级', '中级', '高级'].forEach((level) => {
+      expect(screen.getByText(level)).toBeInTheDocument();
+    });
+  });
+
+  it('renders problem buttons from fixed mock data', () => {
+    renderPage();
+    expect(screen.getByText('入门 1')).toBeInTheDocument();
+    expect(screen.getByText('高级 2')).toBeInTheDocument();
+  });
+
+  it('filters problems when clicking a level chip', () => {
+    renderPage();
+    fireEvent.click(screen.getByText('入门'));
+    expect(screen.getByText('入门 1')).toBeInTheDocument();
+    expect(screen.queryByText('高级 1')).not.toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/TsumegoPage.test.tsx`
+Expected: FAIL
+
+**Step 3: Create TsumegoPage**
+
+Create `katrain/web/ui/src/kiosk/pages/TsumegoPage.tsx`:
+
+```typescript
 import { useState } from 'react';
 import { Box, Typography, ButtonBase, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { mockTsumegoProblems } from '../data/mocks';
 
 const levels = ['入门', '初级', '中级', '高级'];
 
-const mockProblems = levels.flatMap((level, li) =>
-  Array.from({ length: 8 }, (_, i) => ({
-    id: `${li}-${i}`,
-    label: `${level} ${i + 1}`,
-    level,
-    solved: Math.random() > 0.5,
-  }))
-);
-
 const TsumegoPage = () => {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<string>('全部');
-
-  const filtered = filter === '全部' ? mockProblems : mockProblems.filter((p) => p.level === filter);
+  const [filter, setFilter] = useState('全部');
+  const filtered = filter === '全部' ? mockTsumegoProblems : mockTsumegoProblems.filter((p) => p.level === filter);
 
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left: preview area */}
-      <Box
-        sx={{
-          height: '100%',
-          aspectRatio: '1',
-          bgcolor: 'background.paper',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRight: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.3 }}>
-          题目预览
-        </Typography>
+      <Box sx={{ height: '100%', aspectRatio: '1', bgcolor: 'background.paper', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.3 }}>题目预览</Typography>
       </Box>
-
-      {/* Right: problem grid */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Filter bar */}
         <Box sx={{ display: 'flex', gap: 1, p: 2, pb: 1, flexShrink: 0 }}>
           {['全部', ...levels].map((l) => (
-            <Chip
-              key={l}
-              label={l}
-              onClick={() => setFilter(l)}
-              variant={filter === l ? 'filled' : 'outlined'}
-              color={filter === l ? 'primary' : 'default'}
-              sx={{ minHeight: 40, fontSize: '0.9rem' }}
-            />
+            <Chip key={l} label={l} onClick={() => setFilter(l)} variant={filter === l ? 'filled' : 'outlined'} color={filter === l ? 'primary' : 'default'} sx={{ minHeight: 40, fontSize: '0.9rem' }} />
           ))}
         </Box>
-
-        {/* Problem grid */}
-        <Box
-          sx={{
-            flex: 1,
-            overflow: 'auto',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-            gap: 1,
-            p: 2,
-            pt: 1,
-            alignContent: 'start',
-          }}
-        >
+        <Box sx={{ flex: 1, overflow: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 1, p: 2, pt: 1, alignContent: 'start' }}>
           {filtered.map((p) => (
-            <ButtonBase
-              key={p.id}
-              onClick={() => navigate(`/kiosk/tsumego/problem/${p.id}`)}
-              sx={{
-                minHeight: 56,
-                borderRadius: 2,
-                bgcolor: p.solved ? 'primary.dark' : 'background.paper',
-                border: '1px solid',
-                borderColor: p.solved ? 'primary.main' : 'divider',
-                '&:active': { transform: 'scale(0.96)' },
-              }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {p.label}
-              </Typography>
+            <ButtonBase key={p.id} onClick={() => navigate(`/kiosk/tsumego/problem/${p.id}`)} sx={{ minHeight: 56, borderRadius: 2, bgcolor: p.solved ? 'primary.dark' : 'background.paper', border: '1px solid', borderColor: p.solved ? 'primary.main' : 'divider', '&:active': { transform: 'scale(0.96)' } }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.label}</Typography>
             </ButtonBase>
           ))}
         </Box>
@@ -1332,113 +2054,221 @@ const TsumegoPage = () => {
 export default TsumegoPage;
 ```
 
-**Step 2: Wire route, verify, commit**
+**Step 4: Wire route, run tests, commit**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/TsumegoPage.test.tsx`
+Expected: 3 tests PASS
 
 ```bash
-git commit -m "feat(kiosk): add Tsumego selection page with problem grid"
+git add katrain/web/ui/src/kiosk/pages/TsumegoPage.tsx katrain/web/ui/src/kiosk/__tests__/TsumegoPage.test.tsx katrain/web/ui/src/kiosk/KioskApp.tsx
+git commit -m "feat(kiosk): add Tsumego selection page with filterable problem grid"
 ```
 
 ---
 
-### Task 10: Research Page
+### Task 13: Remaining Tab Pages
+
+Each page follows the left-board + right-panel pattern where appropriate. Create one at a time with a smoke test, wire route, commit.
+
+**Files to create (each with a `__tests__` counterpart):**
+- `katrain/web/ui/src/kiosk/pages/ResearchPage.tsx` — MockBoard left + analysis panel right
+- `katrain/web/ui/src/kiosk/pages/KifuPage.tsx` — board preview left + scrollable game list right
+- `katrain/web/ui/src/kiosk/pages/LivePage.tsx` — match list with mock live/upcoming
+- `katrain/web/ui/src/kiosk/pages/SettingsPage.tsx` — language selector + external platforms section
+
+**For each page, follow this TDD flow:**
+
+**Step 1:** Write smoke test (renders key content, no runtime errors)
+
+Example smoke test pattern:
+
+```typescript
+// __tests__/ResearchPage.test.tsx
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { kioskTheme } from '../theme';
+import ResearchPage from '../pages/ResearchPage';
+
+describe('ResearchPage', () => {
+  it('renders without crashing and shows key elements', () => {
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter>
+          <ResearchPage />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+    expect(screen.getByText(/研究/i)).toBeInTheDocument();
+  });
+});
+```
+
+**Step 2:** Run test to verify it fails
+**Step 3:** Create page component importing from `data/mocks.ts`
+**Step 4:** Wire route in KioskApp.tsx
+**Step 5:** Run test to verify it passes
+**Step 6:** Commit individually
+
+```bash
+git commit -m "feat(kiosk): add ResearchPage with mock analysis panel"
+git commit -m "feat(kiosk): add KifuPage with mock game list"
+git commit -m "feat(kiosk): add LivePage with mock match list"
+git commit -m "feat(kiosk): add SettingsPage with language selector and platform links"
+```
+
+**SettingsPage note:** This page includes an "外部平台" section with cards for 99围棋, 野狐围棋, 腾讯围棋, 新浪围棋. This replaces the separate "平台" tab from Rev 1, consolidating infrequently-accessed features.
+
+---
+
+## Phase 5: Verification
+
+### Task 14: Navigation Integration Tests + SPA Fallback
 
 **Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/ResearchPage.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/navigation.integration.test.tsx`
 
-Similar layout to GamePage but with touch-to-place board and analysis panel. Uses MockBoard initially. Wire route, verify, commit.
+**Step 1: Write integration tests**
+
+Create `katrain/web/ui/src/kiosk/__tests__/navigation.integration.test.tsx`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import KioskApp from '../KioskApp';
+
+const renderApp = (route = '/kiosk') =>
+  render(
+    <MemoryRouter initialEntries={[route]}>
+      <KioskApp />
+    </MemoryRouter>
+  );
+
+const loginFirst = () => {
+  const usernameInput = screen.getByLabelText(/用户名/i);
+  fireEvent.change(usernameInput, { target: { value: '张三' } });
+  fireEvent.click(screen.getByRole('button', { name: /登录/i }));
+};
+
+describe('Kiosk navigation integration', () => {
+  it('unauthenticated user is redirected to login for any route', () => {
+    renderApp('/kiosk/tsumego');
+    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+  });
+
+  it('login → redirects to play page with nav rail', () => {
+    renderApp('/kiosk/play');
+    loginFirst();
+    expect(screen.getByText('对弈')).toBeInTheDocument();
+    expect(screen.getByText('人机对弈')).toBeInTheDocument();
+  });
+
+  it('nav rail items navigate correctly', () => {
+    renderApp('/kiosk/play');
+    loginFirst();
+    fireEvent.click(screen.getByText('死活'));
+    expect(screen.getByText('入门 1')).toBeInTheDocument();
+  });
+
+  it('/kiosk redirects to /kiosk/play', () => {
+    renderApp('/kiosk');
+    loginFirst();
+    expect(screen.getByText('人机对弈')).toBeInTheDocument();
+  });
+
+  it('unknown kiosk routes redirect to play', () => {
+    renderApp('/kiosk/nonexistent');
+    loginFirst();
+    expect(screen.getByText('人机对弈')).toBeInTheDocument();
+  });
+});
+```
+
+**Step 2: Run tests**
+
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/navigation.integration.test.tsx`
+Expected: 5 tests PASS
+
+**Step 3: Verify SPA fallback in dev server**
+
+Run: `cd katrain/web/ui && npm run dev`
+Test: Open `http://localhost:5173/kiosk/tsumego/problem/beginner-1` directly in browser.
+Expected: App loads (not 404). Vite dev server handles SPA fallback automatically.
+
+Note: For production deployment, FastAPI must be configured to serve `index.html` for `/kiosk/*` routes. This is handled in Phase 5 (kiosk infrastructure). Verify by checking `katrain/web/server.py` serves the SPA fallback.
+
+**Step 4: Commit**
 
 ```bash
-git commit -m "feat(kiosk): add Research page shell with mock board"
+git add katrain/web/ui/src/kiosk/__tests__/navigation.integration.test.tsx
+git commit -m "test(kiosk): add navigation integration tests and verify SPA fallback"
 ```
 
 ---
 
-### Task 11: Kifu Library Page
+### Task 15: Full Test Suite + Visual Review
 
-**Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/KifuPage.tsx`
+**Step 1: Run all kiosk tests**
 
-Left: board preview. Right: scrollable game list with mock data (player names, date, result). Wire route, verify, commit.
+Run: `cd katrain/web/ui && npx vitest run src/kiosk/`
+Expected: All tests PASS
+
+**Step 2: Run all tests to confirm no Galaxy regression**
+
+Run: `cd katrain/web/ui && npx vitest run`
+Expected: All existing tests still PASS
+
+**Step 3: Visual walkthrough in browser**
+
+Run: `cd katrain/web/ui && npm run dev`
+
+Visit `http://localhost:5173/kiosk/` and verify each flow:
+- [ ] Login page → enter username → 登录 → main interface
+- [ ] 对弈 → 4 mode cards → 自由对弈 → setup → 开始对弈 → fullscreen game
+- [ ] 对弈 → 升降级对弈 → setup (no AI slider) → start
+- [ ] 死活 → problem grid → filter by level → click problem
+- [ ] 研究 → board + analysis panel
+- [ ] 棋谱 → game list
+- [ ] 直播 → match list
+- [ ] 设置 → language selector + platform links
+- [ ] Nav rail highlights correct item on each page
+- [ ] Fullscreen game pages have NO nav rail or status bar
+- [ ] Back navigation from setup pages works
+
+Visit `http://localhost:5173/galaxy/` and confirm unchanged.
+
+**Step 4: Fix any visual issues**
 
 ```bash
-git commit -m "feat(kiosk): add Kifu library page with mock game list"
+git commit -m "fix(kiosk): address visual review feedback"
 ```
 
 ---
 
-### Task 12: Remaining Pages (Live, Platforms, Settings)
+## Phase Gate: Entry Criteria for Phase 3+
 
-**Files:**
-- Create: `katrain/web/ui/src/kiosk/pages/LivePage.tsx` — match list with mock data
-- Create: `katrain/web/ui/src/kiosk/pages/PlatformsPage.tsx` — large card grid for external platforms
-- Create: `katrain/web/ui/src/kiosk/pages/SettingsPage.tsx` — language selector only
+Before proceeding to Phase 3 (Shared Layer Extraction), verify:
 
-Each follows the same pattern: create page component, wire route, verify in browser, commit individually.
+- [ ] All P0 items from reviews are closed
+- [ ] All kiosk tests pass (`npx vitest run src/kiosk/`)
+- [ ] No Galaxy test regressions
+- [ ] No CDN dependencies (fonts loaded via @fontsource)
+- [ ] Login → select mode → start game → exit flow works end-to-end
+- [ ] Critical flow has automated test coverage (navigation integration test)
+- [ ] SPA fallback works for deep links
 
-```bash
-git commit -m "feat(kiosk): add Live, Platforms, and Settings pages"
-```
+## Future Phases (separate plans)
 
----
+- **Phase 3: Shared Layer Extraction** — Move Board.tsx, hooks, API, types to `src/shared/`, update imports in both galaxy and kiosk. Rule: no copying galaxy hooks into kiosk; if you need a hook, extract to shared immediately.
+- **Phase 4: Backend Integration** — Wire real game sessions, WebSocket, auth, tsumego API
+- **Phase 5: Kiosk Infrastructure** — systemd services, Chromium kiosk mode, OS virtual keyboard setup (`onboard`), deployment script, SPA fallback in FastAPI
+- **Phase 6: Hardware Integration** — Board sensor driver, WebSocket `board_input` protocol, input arbitration (physical board vs touch conflict rules)
+- **Phase 7: Performance Baseline** — First-screen time, FPS, memory, WebSocket latency on target RK3588 device
 
-## Phase 3: Shared Layer Extraction (Tasks 13-16)
+## Infrastructure Notes (deferred to Phase 5)
 
-### Task 13: Extract Board.tsx to shared/
+**Virtual keyboard:** Kiosk text input (login, search) requires an OS-level virtual keyboard. On Ubuntu, use `onboard` configured for CJK input. React text inputs trigger it automatically. This is infrastructure setup, not frontend code.
 
-Move `katrain/web/ui/src/components/Board.tsx` → `katrain/web/ui/src/shared/components/Board.tsx`. Update galaxy imports. Add touch event handlers for kiosk. This is the largest refactor task.
-
-### Task 14: Extract API and WebSocket Layer
-
-Move `galaxy/hooks/useGameSession.ts`, `galaxy/api/`, types to `shared/`. Update galaxy imports.
-
-### Task 15: Extract Auth and Settings Contexts
-
-Move `galaxy/context/AuthContext.tsx` and `galaxy/context/SettingsContext.tsx` to `shared/context/`. Both UIs need auth and i18n.
-
-### Task 16: Wire Kiosk Pages to Shared Components
-
-Replace MockBoard with real Board component. Wire useGameSession, auth, and settings into kiosk pages.
-
----
-
-## Phase 4: Backend Integration (Tasks 17-20)
-
-### Task 17: Serve Kiosk at /kiosk/* Path
-
-Configure Vite proxy and FastAPI static file serving to handle `/kiosk/*` routes.
-
-### Task 18: Connect Game Sessions
-
-Wire AiSetupPage to POST `/api/new-game`, GamePage to WebSocket, controls to REST endpoints.
-
-### Task 19: Connect Tsumego, Research, Kifu
-
-Wire each module to its corresponding backend API.
-
-### Task 20: Connect Auth Flow
-
-Wire login page to `/api/v1/auth/login`, integrate token storage, protect routes.
-
----
-
-## Phase 5: Kiosk Infrastructure (Tasks 21-22)
-
-### Task 21: Create systemd Service Files
-
-Create `deploy/rk3588/katrain-server.service` and `deploy/rk3588/katrain-kiosk.service`.
-
-### Task 22: Create Deployment Script
-
-Create `deploy/rk3588/setup.sh` to install services, configure auto-login, set up Chromium kiosk.
-
----
-
-## Phase 6: Hardware Integration (Tasks 23-24)
-
-### Task 23: Board Input WebSocket Protocol
-
-Add `board_input` and `board_sync` message types to backend WebSocket handler.
-
-### Task 24: Hardware Driver Service
-
-Create Python service that reads sensor data and forwards to KaTrain backend.
+**Screen burn-in prevention:** For OLED/IPS kiosk displays, implement a screensaver or dimming after idle timeout. This is a Phase 5 concern.

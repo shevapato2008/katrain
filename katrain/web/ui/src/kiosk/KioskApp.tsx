@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
+import GamePage from './pages/GamePage';
 
 const KioskRoutes = () => {
   const { user } = useKioskAuth();
@@ -19,7 +20,10 @@ const KioskRoutes = () => {
 
       {/* Auth-protected */}
       <Route element={<KioskAuthGuard />}>
-        {/* Fullscreen — no nav rail (added in Task 11) */}
+        {/* Fullscreen — no nav rail */}
+        <Route path="play/ai/game/:sessionId" element={<GamePage />} />
+        <Route path="play/pvp/local/game/:sessionId" element={<GamePage />} />
+        <Route path="play/pvp/room/:sessionId" element={<GamePage />} />
 
         {/* Standard — with nav rail */}
         <Route element={<KioskLayout username={user?.name} />}>

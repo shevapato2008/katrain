@@ -1,18 +1,25 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { zenTheme } from './theme';
 import ZenModeApp from './ZenModeApp';
-import GalaxyApp from './GalaxyApp';
+
+// Code-split: kiosk and galaxy bundles load independently
+const GalaxyApp = lazy(() => import('./GalaxyApp'));
+const KioskApp = lazy(() => import('./kiosk/KioskApp'));
 
 const AppRouter = () => {
   return (
     <ThemeProvider theme={zenTheme}>
       <CssBaseline />
       <BrowserRouter>
-        <Routes>
-          <Route path="/galaxy/*" element={<GalaxyApp />} />
-          <Route path="/*" element={<ZenModeApp />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/kiosk/*" element={<KioskApp />} />
+            <Route path="/galaxy/*" element={<GalaxyApp />} />
+            <Route path="/*" element={<ZenModeApp />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
   );

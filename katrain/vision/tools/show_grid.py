@@ -3,10 +3,12 @@ Show the 19x19 grid overlay on a live camera feed to verify board detection + co
 
 Usage:
     python -m katrain.vision.tools.show_grid --camera 0
+    python -m katrain.vision.tools.show_grid --camera 0 --marker-ids 0 1 2 3
+    python -m katrain.vision.tools.show_grid --camera 0 --debug --marker-ids 0 1 2 3
 
 No YOLO model needed — this only tests BoardFinder + coordinate mapping.
 
-Controls:  Q = quit | C = toggle CLAHE | S = save screenshot
+Controls:  Q = quit | C = toggle CLAHE | S = save screenshot | D = toggle debug
 """
 
 import argparse
@@ -57,12 +59,91 @@ def draw_grid(image: np.ndarray, config: BoardConfig) -> np.ndarray:
     return display
 
 
+def draw_debug_overlay(frame: np.ndarray, finder: BoardFinder, use_clahe: bool, min_threshold: int) -> np.ndarray:
+    """Draw debug visualization on the raw camera frame."""
+    display = frame.copy()
+    h, w = display.shape[:2]
+
+    # Preprocessing (same as find_focus)
+    processed = display.copy()
+    if use_clahe:
+        lab = cv2.cvtColor(processed, cv2.COLOR_BGR2LAB)
+        l_ch, a_ch, b_ch = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        l_ch = clahe.apply(l_ch)
+        lab = cv2.merge([l_ch, a_ch, b_ch])
+        processed = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+    gray = cv2.cvtColor(processed, cv2.COLOR_BGR2GRAY)
+
+    method = "None"
+
+    # ArUco detection overlay
+    if finder.marker_ids is not None and finder.aruco_dict is not None:
+        detector = cv2.aruco.ArucoDetector(finder.aruco_dict, finder.aruco_params)
+        marker_corners, marker_ids, _ = detector.detectMarkers(gray)
+        if marker_ids is not None and len(marker_ids) > 0:
+            cv2.aruco.drawDetectedMarkers(display, marker_corners, marker_ids)
+            # Check if all required markers found
+            found_ids = set(marker_ids.flatten())
+            required_ids = set(finder.marker_ids)
+            if required_ids.issubset(found_ids):
+                method = "ArUco"
+                # Draw inner corners
+                corners = finder._detect_aruco(gray)
+                if corners is not None:
+                    for i, (cx, cy) in enumerate(corners):
+                        cv2.circle(display, (cx, cy), 8, (0, 0, 255), 2)
+                        cv2.putText(
+                            display,
+                            f"C{i}",
+                            (cx + 10, cy - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (0, 0, 255),
+                            1,
+                        )
+
+    # Canny contour overlay (always show for debug)
+    blurred = cv2.GaussianBlur(processed, (3, 3), 0, 0)
+    canny = cv2.Canny(blurred, min_threshold, 250)
+    k = np.ones((3, 3), np.uint8)
+    canny = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, k)
+    contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+
+    for i, contour in enumerate(contours):
+        color = (0, 255, 0) if i == 0 else (0, 180, 0)
+        cv2.drawContours(display, [contour], -1, color, 2)
+        perimeter = cv2.arcLength(contour, True)
+        epsilon = 0.02 * perimeter
+        approx = cv2.approxPolyDP(contour, epsilon, True)
+        if len(approx) == 4 and method == "None":
+            method = "Canny"
+            for pt in approx:
+                cv2.circle(display, (pt[0][0], pt[0][1]), 8, (0, 0, 255), 2)
+
+    # Status text
+    stable = not finder.is_first
+    cv2.putText(display, f"Method: {method}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+    cv2.putText(
+        display, f"Stable: {'Yes' if stable else 'Init'}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2
+    )
+    cv2.putText(
+        display, f"CLAHE: {'ON' if use_clahe else 'OFF'}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2
+    )
+
+    return display
+
+
 def main():
     parser = argparse.ArgumentParser(description="Show 19x19 grid overlay on detected board")
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--use-clahe", action="store_true")
     parser.add_argument("--canny-min", type=int, default=20)
     parser.add_argument("--calibration", type=str, default=None)
+    parser.add_argument("--marker-ids", type=int, nargs=4, default=None, help="4 ArUco marker IDs: TL TR BR BL")
+    parser.add_argument("--debug", action="store_true", help="Show debug overlay with contours and markers")
     args = parser.parse_args()
 
     camera_config = None
@@ -73,15 +154,16 @@ def main():
         camera_config = CameraConfig(camera_matrix=data["camera_matrix"], dist_coeffs=data["dist_coeffs"])
 
     config = BoardConfig()
-    finder = BoardFinder(camera_config=camera_config)
+    finder = BoardFinder(camera_config=camera_config, marker_ids=args.marker_ids)
     use_clahe = args.use_clahe
+    debug = args.debug
 
     cap = cv2.VideoCapture(args.camera)
     if not cap.isOpened():
         print(f"Error: cannot open camera {args.camera}")
         return
 
-    print("Q = quit | C = toggle CLAHE | S = save screenshot")
+    print("Q = quit | C = toggle CLAHE | S = save screenshot | D = toggle debug")
 
     while True:
         ret, frame = cap.read()
@@ -98,7 +180,11 @@ def main():
         else:
             cv2.putText(frame, "Board not detected", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-        cv2.imshow("Camera", frame)
+        if debug:
+            debug_frame = draw_debug_overlay(frame, finder, use_clahe, args.canny_min)
+            cv2.imshow("Debug", debug_frame)
+        else:
+            cv2.imshow("Camera", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
@@ -106,6 +192,13 @@ def main():
         elif key == ord("c"):
             use_clahe = not use_clahe
             print(f"CLAHE: {'ON' if use_clahe else 'OFF'}")
+        elif key == ord("d"):
+            debug = not debug
+            print(f"Debug: {'ON' if debug else 'OFF'}")
+            if not debug:
+                cv2.destroyWindow("Debug")
+            else:
+                cv2.destroyWindow("Camera")
         elif key == ord("s") and found and warped is not None:
             cv2.imwrite("grid_screenshot.jpg", draw_grid(warped, config))
             print("Saved grid_screenshot.jpg")

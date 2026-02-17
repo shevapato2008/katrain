@@ -12,8 +12,8 @@ class BoardConfig:
     grid_size: int = 19
     board_width_mm: float = 424.2
     board_length_mm: float = 454.5
-    border_width_mm: float = 15.0
-    border_length_mm: float = 15.0
+    border_width_mm: float = 0.0
+    border_length_mm: float = 0.0
 
     @property
     def grid_spacing_w(self) -> float:

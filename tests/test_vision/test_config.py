@@ -7,8 +7,8 @@ class TestBoardConfig:
         assert cfg.grid_size == 19
         assert cfg.board_width_mm == 424.2
         assert cfg.board_length_mm == 454.5
-        assert cfg.border_width_mm == 15.0
-        assert cfg.border_length_mm == 15.0
+        assert cfg.border_width_mm == 0.0
+        assert cfg.border_length_mm == 0.0
 
     def test_grid_spacing(self):
         cfg = BoardConfig()
@@ -17,8 +17,8 @@ class TestBoardConfig:
 
     def test_total_dimensions(self):
         cfg = BoardConfig()
-        assert abs(cfg.total_width - 454.2) < 0.01
-        assert abs(cfg.total_length - 484.5) < 0.01
+        assert abs(cfg.total_width - 424.2) < 0.01
+        assert abs(cfg.total_length - 454.5) < 0.01
 
     def test_custom_board_config(self):
         cfg = BoardConfig(

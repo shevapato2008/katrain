@@ -9,6 +9,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
 import GamePage from './pages/GamePage';
+import TsumegoPage from './pages/TsumegoPage';
 
 const KioskRoutes = () => {
   const { user } = useKioskAuth();
@@ -31,7 +32,7 @@ const KioskRoutes = () => {
           <Route path="play" element={<PlayPage />} />
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PlaceholderPage />} />
-          <Route path="tsumego" element={<PlaceholderPage />} />
+          <Route path="tsumego" element={<TsumegoPage />} />
           <Route path="tsumego/problem/:problemId" element={<PlaceholderPage />} />
           <Route path="research" element={<PlaceholderPage />} />
           <Route path="kifu" element={<PlaceholderPage />} />

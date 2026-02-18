@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LiveAPI } from '../../api/live';
 import type { MatchSummary, MatchListResponse } from '../../types/live';
-import { useTranslation } from '../../../hooks/useTranslation';
+import { useTranslation } from '../useTranslation';
 
 interface UseLiveMatchesOptions {
   status?: 'live' | 'finished';

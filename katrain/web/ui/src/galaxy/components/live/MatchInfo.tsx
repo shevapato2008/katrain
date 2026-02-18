@@ -1,6 +1,6 @@
 import { Box, Typography, Chip, LinearProgress } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import type { MatchDetail, MoveAnalysis } from '../../types/live';
+import type { MatchDetail, MoveAnalysis } from '../../../types/live';
 import { i18n } from '../../../i18n';
 import { useTranslation } from '../../../hooks/useTranslation';
 

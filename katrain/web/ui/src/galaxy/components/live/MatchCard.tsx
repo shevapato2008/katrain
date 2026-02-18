@@ -1,7 +1,7 @@
 import { Box, Card, CardActionArea, Typography, Chip, LinearProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import type { MatchSummary } from '../../types/live';
+import type { MatchSummary } from '../../../types/live';
 import { i18n } from '../../../i18n';
 import { useTranslation } from '../../../hooks/useTranslation';
 

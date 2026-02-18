@@ -1,6 +1,6 @@
 import { Box, Typography, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import type { MoveAnalysis, TopMove } from '../../types/live';
+import type { MoveAnalysis, TopMove } from '../../../types/live';
 import { useMemo } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 

@@ -1,13 +1,13 @@
 import { Box, Typography, Tabs, Tab, Button, CircularProgress } from '@mui/material';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveMatches } from '../../hooks/live/useLiveMatches';
-import { useLiveMatch } from '../../hooks/live/useLiveMatch';
+import { useLiveMatches } from '../../../hooks/live/useLiveMatches';
+import { useLiveMatch } from '../../../hooks/live/useLiveMatch';
 import MatchList from '../../components/live/MatchList';
 import LiveBoard from '../../components/live/LiveBoard';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import UpcomingList from '../../components/live/UpcomingList';
-import type { MatchSummary } from '../../types/live';
+import type { MatchSummary } from '../../../types/live';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 export default function LivePage() {

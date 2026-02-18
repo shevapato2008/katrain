@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LiveAPI } from '../../api/live';
+import { LiveAPI } from '../../../api/live';
 import { useAuth } from '../../../context/AuthContext';
-import type { Comment } from '../../types/live';
+import type { Comment } from '../../../types/live';
 
 interface UseCommentsOptions {
   pollInterval?: number; // ms, 0 to disable polling (default 3000)

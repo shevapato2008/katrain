@@ -1,7 +1,7 @@
 import { Box, Typography, CircularProgress, Alert, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 import MatchCard from './MatchCard';
-import type { MatchSummary } from '../../types/live';
+import type { MatchSummary } from '../../../types/live';
 
 interface MatchListProps {
   matches: MatchSummary[];

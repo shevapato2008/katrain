@@ -1,7 +1,7 @@
 import { Box, Typography, Card, CardContent, Skeleton, Link } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { LiveAPI } from '../../api/live';
-import type { UpcomingMatch } from '../../types/live';
+import { LiveAPI } from '../../../api/live';
+import type { UpcomingMatch } from '../../../types/live';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { i18n } from '../../../i18n';

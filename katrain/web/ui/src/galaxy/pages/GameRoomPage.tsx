@@ -4,7 +4,7 @@ import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, 
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
-import { useGameSession } from '../hooks/useGameSession';
+import { useGameSession } from '../../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';

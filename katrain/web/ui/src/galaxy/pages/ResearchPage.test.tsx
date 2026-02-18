@@ -34,7 +34,7 @@ vi.mock('../../components/ScoreGraph', () => ({
 }));
 
 // Mock useGameSession
-vi.mock('../hooks/useGameSession', () => ({
+vi.mock('../../hooks/useGameSession', () => ({
   useGameSession: () => ({
     gameState: { 
         board_size: 19, 

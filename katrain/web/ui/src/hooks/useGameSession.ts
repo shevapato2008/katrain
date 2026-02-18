@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API, type GameState } from '../../api';
+import { API, type GameState } from '../api';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';

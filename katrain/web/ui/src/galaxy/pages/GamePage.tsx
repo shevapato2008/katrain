@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
-import { useGameSession } from '../hooks/useGameSession';
+import { useGameSession } from '../../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useSettings } from '../../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';

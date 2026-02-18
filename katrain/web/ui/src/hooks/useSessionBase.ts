@@ -3,7 +3,7 @@
  * shared between useGameSession and useResearchSession.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API, type GameState } from '../../api';
+import { API, type GameState } from '../api';
 
 export interface UseSessionBaseOptions {
     onStateUpdate?: (state: GameState) => void;

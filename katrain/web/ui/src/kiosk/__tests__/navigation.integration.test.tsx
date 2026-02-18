@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // Must be before importing KioskApp
@@ -46,6 +46,13 @@ describe('Kiosk navigation integration', () => {
         logout: vi.fn(),
         token: 'mock-token',
       });
+      // Mock fetch for pages that use API calls (e.g., TsumegoPage)
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([
+          { level: '15k', categories: { '手筋': 139 }, total: 1000 },
+        ]),
+      }) as any;
     });
 
     it('shows play page with nav rail', () => {
@@ -54,10 +61,12 @@ describe('Kiosk navigation integration', () => {
       expect(screen.getByText('人机对弈')).toBeInTheDocument();
     });
 
-    it('nav rail items navigate correctly', () => {
+    it('nav rail items navigate correctly', async () => {
       renderApp('/kiosk/play');
       fireEvent.click(screen.getByText('死活'));
-      expect(screen.getByText('选择难度级别')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('选择难度级别')).toBeInTheDocument();
+      });
     });
 
     it('/kiosk redirects to /kiosk/play', () => {

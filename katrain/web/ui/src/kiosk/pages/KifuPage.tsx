@@ -1,51 +1,220 @@
-import { Box, Typography, ButtonBase, Divider } from '@mui/material';
+import { useState } from 'react';
+import {
+  Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
+} from '@mui/material';
+import { Search as SearchIcon, Science as ScienceIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import MockBoard from '../components/game/MockBoard';
+import KioskResultBadge from '../components/game/KioskResultBadge';
 import { mockKifuList } from '../data/mocks';
+
+const ROW_STAGGER = 25;
 
 const KifuPage = () => {
   const navigate = useNavigate();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+
+  const selectedKifu = mockKifuList.find(k => k.id === selectedId);
 
   return (
-    <Box sx={{ display: 'flex', height: '100%' }}>
-      <Box sx={{ height: '100%', aspectRatio: '1', bgcolor: 'background.paper', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
-        <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.3 }}>棋谱预览</Typography>
-      </Box>
+    <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* Left panel: Title + Search + Card list */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ p: 2, pb: 1, flexShrink: 0 }}>
-          <Typography variant="h5">棋谱</Typography>
+        {/* Header */}
+        <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+              棋谱库
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
+              {mockKifuList.length} 局
+            </Typography>
+          </Box>
+
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="搜索棋手、赛事..."
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary', fontSize: 20, opacity: 0.6 }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'rgba(255,255,255,0.025)',
+                borderRadius: '10px',
+                fontSize: '0.88rem',
+                transition: 'all 200ms ease',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.05)' },
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  '& fieldset': { borderColor: 'rgba(255,255,255,0.08)' },
+                },
+                '&.Mui-focused': {
+                  bgcolor: 'rgba(255,255,255,0.045)',
+                  '& fieldset': { borderColor: 'rgba(74,107,92,0.4)' },
+                },
+              },
+            }}
+          />
         </Box>
-        <Divider />
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {mockKifuList.map((kifu) => (
-            <ButtonBase
-              key={kifu.id}
-              onClick={() => navigate(`/kiosk/kifu/${kifu.id}`)}
+
+        {/* Scrollable card list */}
+        <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1, minHeight: 0 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {mockKifuList.map((kifu, index) => {
+              const blackWins = kifu.result.startsWith('B') || kifu.result.startsWith('黑');
+              const selected = selectedId === kifu.id;
+
+              return (
+                <Fade key={kifu.id} in timeout={200 + index * ROW_STAGGER}>
+                  <Box>
+                    <Card
+                      sx={{
+                        bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)',
+                        border: selected ? 2 : 1,
+                        borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)',
+                        borderRadius: '8px',
+                        '&:hover': {
+                          borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.2)',
+                          bgcolor: selected ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.07)',
+                        },
+                      }}
+                    >
+                      <CardActionArea onClick={() => setSelectedId(kifu.id)} sx={{ p: 1.5 }}>
+                        {/* Row 1: Event + Date + Moves */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
+                            {kifu.event}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, fontSize: '0.7rem', opacity: 0.7 }}>
+                            {kifu.datePlayed}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                            {kifu.moveCount} 手
+                          </Typography>
+                        </Box>
+
+                        {/* Row 2: Black player [ResultBadge] White player */}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                            <Box sx={{
+                              width: 16, height: 16, borderRadius: '50%', flexShrink: 0, mr: 0.7,
+                              bgcolor: '#1a1a1a',
+                              border: '1px solid rgba(255,255,255,0.18)',
+                              boxShadow: 'inset 0 -0.5px 1px rgba(255,255,255,0.1)',
+                            }} />
+                            <Typography variant="body2" noWrap sx={{ fontWeight: blackWins ? 'bold' : 'normal' }}>
+                              {kifu.playerBlack}
+                              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5 }}>
+                                {kifu.blackRank}
+                              </Typography>
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ px: 1, flexShrink: 0 }}>
+                            <KioskResultBadge result={kifu.result} />
+                          </Box>
+
+                          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+                            <Typography variant="body2" noWrap sx={{ fontWeight: !blackWins ? 'bold' : 'normal' }}>
+                              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5 }}>
+                                {kifu.whiteRank}
+                              </Typography>
+                              {kifu.playerWhite}
+                            </Typography>
+                            <Box sx={{
+                              width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
+                              bgcolor: '#e8e4df',
+                              border: '1px solid rgba(0,0,0,0.25)',
+                              boxShadow: 'inset 0 0.5px 1px rgba(0,0,0,0.06)',
+                            }} />
+                          </Box>
+                        </Box>
+                      </CardActionArea>
+                    </Card>
+                  </Box>
+                </Fade>
+              );
+            })}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Right panel: Board Preview */}
+      <Box
+        sx={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          borderLeft: '1px solid rgba(255,255,255,0.06)', bgcolor: '#0f0f0f', overflow: 'hidden',
+        }}
+      >
+        {selectedKifu ? (
+          <>
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: 0 }}>
+              <MockBoard moveNumber={selectedKifu.moveCount} />
+            </Box>
+
+            {/* Bottom bar: Navigation + Open in Research */}
+            <Box
+              data-testid="kifu-preview-nav"
               sx={{
-                display: 'flex',
-                width: '100%',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                p: 2,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                textAlign: 'left',
-                '&:active': { bgcolor: 'rgba(92, 181, 122, 0.08)' },
+                px: 3, py: 1.5, bgcolor: '#1a1a1a',
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex', alignItems: 'center', width: '100%', flexShrink: 0,
               }}
             >
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {kifu.black} vs {kifu.white}
+              <Box sx={{ flex: 1 }} />
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>⏮</Button>
+                <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>◀</Button>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mx: 2,
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    color: 'text.secondary',
+                    minWidth: 80,
+                    textAlign: 'center',
+                  }}
+                >
+                  {selectedKifu.moveCount} / {selectedKifu.moveCount} 手
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {kifu.event}
-                </Typography>
+                <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>▶</Button>
+                <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>⏭</Button>
               </Box>
-              <Typography variant="body2" sx={{ fontFamily: "'JetBrains Mono', monospace", color: 'text.secondary' }}>
-                {kifu.result}
-              </Typography>
-            </ButtonBase>
-          ))}
-        </Box>
+
+              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<ScienceIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => navigate('/kiosk/research')}
+                  sx={{
+                    bgcolor: 'rgba(74,107,92,0.8)',
+                    '&:hover': { bgcolor: 'rgba(74,107,92,1)' },
+                    borderRadius: '8px',
+                    px: 3,
+                  }}
+                >
+                  在研究中打开
+                </Button>
+              </Box>
+            </Box>
+          </>
+        ) : (
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.4 }}>
+              选择一局棋谱预览
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Box>
   );

@@ -37,6 +37,7 @@ const KioskRoutes = () => {
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PlaceholderPage />} />
           <Route path="tsumego" element={<TsumegoPage />} />
+          <Route path="tsumego/:levelId" element={<PlaceholderPage />} />
           <Route path="tsumego/problem/:problemId" element={<PlaceholderPage />} />
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />

@@ -35,7 +35,7 @@ describe('Kiosk navigation integration', () => {
     renderApp('/kiosk/play');
     loginFirst();
     fireEvent.click(screen.getByText('死活'));
-    expect(screen.getByText('入门 1')).toBeInTheDocument();
+    expect(screen.getByText('选择难度级别')).toBeInTheDocument();
   });
 
   it('/kiosk redirects to /kiosk/play', () => {

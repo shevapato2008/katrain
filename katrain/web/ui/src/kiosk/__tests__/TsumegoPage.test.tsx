@@ -15,23 +15,40 @@ const renderPage = () =>
   );
 
 describe('TsumegoPage', () => {
-  it('renders level filter chips', () => {
+  it('renders title and subtitle', () => {
     renderPage();
-    ['全部', '入门', '初级', '中级', '高级'].forEach((level) => {
-      expect(screen.getByText(level)).toBeInTheDocument();
+    expect(screen.getByText('死活题')).toBeInTheDocument();
+    expect(screen.getByText('选择难度级别')).toBeInTheDocument();
+  });
+
+  it('renders all level cards from 15K to 4K', () => {
+    renderPage();
+    const ranks = ['15K', '14K', '13K', '12K', '11K', '10K', '9K', '8K', '7K', '6K', '5K', '4K'];
+    ranks.forEach((rank) => {
+      expect(screen.getByText(rank)).toBeInTheDocument();
     });
   });
 
-  it('renders problem buttons from fixed mock data', () => {
+  it('shows problem count for each level', () => {
     renderPage();
-    expect(screen.getByText('入门 1')).toBeInTheDocument();
-    expect(screen.getByText('高级 2')).toBeInTheDocument();
+    // 15K and 13K both have 1000 problems
+    expect(screen.getAllByText('1000 题')).toHaveLength(2);
+    expect(screen.getByText('988 题')).toBeInTheDocument();
+    expect(screen.getByText('993 题')).toBeInTheDocument();
   });
 
-  it('filters problems when clicking a level chip', () => {
+  it('shows category labels on level cards', () => {
     renderPage();
-    fireEvent.click(screen.getByText('入门'));
-    expect(screen.getByText('入门 1')).toBeInTheDocument();
-    expect(screen.queryByText('高级 1')).not.toBeInTheDocument();
+    // 15K card categories
+    expect(screen.getByText('手筋: 139')).toBeInTheDocument();
+    expect(screen.getByText('吃子: 630')).toBeInTheDocument();
+    expect(screen.getByText('死活: 167')).toBeInTheDocument();
+  });
+
+  it('level cards are clickable without errors', () => {
+    renderPage();
+    expect(() => {
+      fireEvent.click(screen.getByText('15K'));
+    }).not.toThrow();
   });
 });

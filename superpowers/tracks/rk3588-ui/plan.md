@@ -2259,6 +2259,62 @@ Before proceeding to Phase 6 (Shared Layer Extraction), verify:
 - [ ] Critical flow has automated test coverage (navigation integration test)
 - [ ] SPA fallback works for deep links
 
+## Post-Plan Enhancements (completed after Tasks 1–15)
+
+All 15 tasks from Phases 1–5 were completed and committed (commits `649ee98b`–`17490b7a`).
+The following enhancements were made on top of the plan to improve visual fidelity and align with the Galaxy Go reference design.
+
+### Enhancement A: Page detail enrichment (GamePage, ResearchPage, KifuPage, AiSetupPage)
+
+**Changed files:**
+- `src/kiosk/pages/GamePage.tsx` — Added KioskPlayerCard, KioskScoreGraph, KioskResultBadge integration; timer display with byoyomi
+- `src/kiosk/pages/ResearchPage.tsx` — Full two-panel layout: MockBoard left + analysis info right (winrate, score, best moves, AI suggestions)
+- `src/kiosk/pages/KifuPage.tsx` — Two-panel layout: kifu list left + board preview right with move navigation buttons; card selection state
+- `src/kiosk/pages/AiSetupPage.tsx` — Expanded setup options: board size, handicap, komi, time control, AI difficulty with ItemToggle components; mode-specific option visibility
+- `src/kiosk/components/game/GameControlPanel.tsx` — Richer game control with pass/resign/undo/score/analyze buttons and ItemToggle for coordinate/sound toggles
+
+**New components:**
+- `src/kiosk/components/game/KioskPlayerCard.tsx` — Compact player info card with name, rank, captures, timer
+- `src/kiosk/components/game/KioskScoreGraph.tsx` — SVG-based winrate/score graph with move cursor
+- `src/kiosk/components/game/KioskResultBadge.tsx` — Game result overlay badge
+- `src/kiosk/components/game/KioskMiniBoard.tsx` — Mini Go board SVG for tsumego/kifu previews
+- `src/kiosk/components/game/ItemToggle.tsx` — Compact toggle component for settings within game panels
+
+**Mock data additions (`src/kiosk/data/mocks.ts`):**
+- `mockTsumegoLevels` — 12 rank levels (15K–4K) with problem counts and category breakdowns
+- `mockResearchState` — Board state for research page
+- `mockLiveMatches` — Live/upcoming match data
+- Expanded `mockGameState` with timer states, analysis history, ruleset/komi fields
+
+**Test coverage additions:**
+- `AiSetupPage.test.tsx` — 18 tests covering board size, handicap, komi, time control, AI difficulty, mode-specific visibility
+- `GamePage.test.tsx` — 11 tests covering player cards, score graph, control panel, result badge
+- `KifuPage.test.tsx` — 5 tests covering list rendering, card selection, preview panel, navigation
+- `ResearchPage.test.tsx` — 6 tests covering two-panel layout, analysis data display, board controls
+
+### Enhancement B: TsumegoPage refactored to level selection (Galaxy Go alignment)
+
+**Changed files:**
+- `src/kiosk/pages/TsumegoPage.tsx` — Complete rewrite from flat problem card list to rank-level selection grid (4-column responsive, 12 levels from 15K to 4K, green rank labels, problem counts, category tags)
+- `src/kiosk/KioskApp.tsx` — Added `tsumego/:levelId` route for future level detail page
+- `src/kiosk/__tests__/TsumegoPage.test.tsx` — Rewritten: 5 tests for title/subtitle, level cards, problem counts, category labels, clickability
+- `src/kiosk/__tests__/navigation.integration.test.tsx` — Updated nav test assertion from "入门 1" to "选择难度级别"
+
+### Enhancement C: Package & tooling
+
+- `package.json` / `package-lock.json` — Added `@mui/x-data-grid` dependency
+- `superpowers/tracks/rk3588-ui/verification-guide.md` — Updated verification checklist to match enhanced pages
+
+### Test status
+
+All 17 test files pass, 82 tests total, 0 failures.
+
+```
+npx vitest run src/kiosk/   # ✅ 17 passed, 82 tests
+```
+
+---
+
 ## Future Phases (separate plans)
 
 - **Phase 6: Shared Layer Extraction** — Move Board.tsx, hooks, API, types to `src/shared/`, update imports in both galaxy and kiosk. Rule: no copying galaxy hooks into kiosk; if you need a hook, extract to shared immediately.

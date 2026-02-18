@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import ResearchPage from './ResearchPage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { vi, describe, it, expect, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
 // Mock useAuth
-vi.mock('../context/AuthContext', async (importOriginal) => {
+vi.mock('../../context/AuthContext', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,

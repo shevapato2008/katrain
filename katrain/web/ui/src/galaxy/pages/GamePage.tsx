@@ -9,7 +9,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const GamePage = () => {
     const { sessionId } = useParams();

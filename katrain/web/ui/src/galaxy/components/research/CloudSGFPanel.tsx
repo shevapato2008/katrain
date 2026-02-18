@@ -14,7 +14,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import FolderIcon from '@mui/icons-material/Folder';
 import PublicIcon from '@mui/icons-material/Public';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import { UserGamesAPI, type UserGameSummary } from '../../api/userGamesApi';
 import { KifuAPI } from '../../api/kifuApi';
 import { useTranslation } from '../../../hooks/useTranslation';

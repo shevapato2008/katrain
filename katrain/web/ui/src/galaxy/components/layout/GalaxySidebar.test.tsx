@@ -1,13 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import GalaxySidebar from './GalaxySidebar';
-import { AuthProvider, useAuth } from '../../context/AuthContext';
+import { AuthProvider, useAuth } from '../../../context/AuthContext';
 import { vi, describe, it, expect, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsProvider } from '../../context/SettingsContext';
 import { API } from '../../../api';
 
 // Mock useAuth
-vi.mock('../../context/AuthContext', async (importOriginal) => {
+vi.mock('../../../context/AuthContext', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,

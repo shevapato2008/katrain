@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import { Box, Typography, Paper } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 

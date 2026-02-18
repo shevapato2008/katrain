@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LiveAPI } from '../../api/live';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import type { Comment } from '../../types/live';
 
 interface UseCommentsOptions {

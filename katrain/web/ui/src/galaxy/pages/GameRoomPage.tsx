@@ -6,7 +6,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';

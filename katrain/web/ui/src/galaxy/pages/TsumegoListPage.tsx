@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, CircularProgress, IconButton, Chip, Breadcrumbs, Link } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import ProblemCard from '../components/tsumego/ProblemCard';

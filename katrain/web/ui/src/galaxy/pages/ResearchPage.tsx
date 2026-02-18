@@ -14,7 +14,7 @@ import { API } from '../../api';
 import { KifuAPI } from '../api/kifuApi';
 import { UserGamesAPI } from '../api/userGamesApi';
 import GameLibraryModal from '../components/research/CloudSGFPanel';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import type { ResearchBoardState } from '../hooks/useResearchBoard';
 

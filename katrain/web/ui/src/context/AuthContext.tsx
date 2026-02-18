@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { API } from '../../api';
+import { API } from '../api';
 
 // Define User type matching backend response
 interface User {

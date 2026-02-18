@@ -15,7 +15,7 @@ import TsumegoCategoriesPage from './galaxy/pages/TsumegoCategoriesPage';
 import TsumegoListPage from './galaxy/pages/TsumegoListPage';
 import TsumegoUnitsPage from './galaxy/pages/TsumegoUnitsPage';
 import TsumegoProblemPage from './galaxy/pages/TsumegoProblemPage';
-import { AuthProvider } from './galaxy/context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './galaxy/context/SettingsContext';
 
 const GalaxyApp = () => {

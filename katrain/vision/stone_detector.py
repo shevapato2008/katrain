@@ -21,6 +21,7 @@ class Detection:
     y_center: float
     class_id: int
     confidence: float
+    bbox: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)  # (x1, y1, x2, y2)
 
     @property
     def class_name(self) -> str:
@@ -51,6 +52,7 @@ class StoneDetector:
                         y_center=(y1 + y2) / 2,
                         class_id=int(box.cls[0]),
                         confidence=conf,
+                        bbox=(x1, y1, x2, y2),
                     )
                 )
         return detections

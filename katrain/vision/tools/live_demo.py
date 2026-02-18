@@ -3,8 +3,9 @@ Live camera demo: run the full detection pipeline and visualize results.
 
 Usage:
     python -m katrain.vision.tools.live_demo --model best.pt --camera 0
+    python -m katrain.vision.tools.live_demo --model best.pt --camera 0 --show-detections
 
-Controls:  Q = quit | C = toggle CLAHE | P = print board state
+Controls:  Q = quit | C = toggle CLAHE | P = print board state | D = toggle detections overlay
 """
 
 import argparse
@@ -14,6 +15,7 @@ import numpy as np
 
 from katrain.vision.board_state import BoardStateExtractor, BLACK, WHITE
 from katrain.vision.pipeline import DetectionPipeline
+from katrain.vision.tools.show_grid import draw_detections_overlay
 
 
 def draw_overlay(image: np.ndarray, board: np.ndarray, config) -> np.ndarray:
@@ -32,6 +34,7 @@ def main():
     parser.add_argument("--use-clahe", action="store_true")
     parser.add_argument("--canny-min", type=int, default=20)
     parser.add_argument("--calibration", type=str, default=None, help="Path to camera_calibration.npz")
+    parser.add_argument("--show-detections", action="store_true", help="Show YOLO bbox + label + confidence overlay")
     args = parser.parse_args()
 
     camera_config = None
@@ -54,7 +57,8 @@ def main():
         print(f"Error: cannot open camera {args.camera}")
         return
 
-    print("Q = quit | C = toggle CLAHE | P = print board")
+    show_detections = args.show_detections
+    print("Q = quit | C = toggle CLAHE | P = print board | D = toggle detections overlay")
 
     while True:
         ret, frame = cap.read()
@@ -64,7 +68,16 @@ def main():
         result = pipeline.process_frame(frame)
 
         if result is not None:
-            display = draw_overlay(result.warped, result.board, pipeline.config)
+            if show_detections:
+                display = draw_detections_overlay(result.warped, result.detections, pipeline.config)
+                # Add stone counts on top of detections overlay
+                black_count = int(np.sum(result.board == BLACK))
+                white_count = int(np.sum(result.board == WHITE))
+                cv2.putText(
+                    display, f"B:{black_count} W:{white_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2
+                )
+            else:
+                display = draw_overlay(result.warped, result.board, pipeline.config)
             if result.confirmed_move:
                 move_text = f"Move: {result.confirmed_move.gtp()} ({result.confirmed_move.player})"
                 cv2.putText(display, move_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
@@ -79,6 +92,9 @@ def main():
         elif key == ord("c"):
             pipeline.use_clahe = not pipeline.use_clahe
             print(f"CLAHE: {'ON' if pipeline.use_clahe else 'OFF'}")
+        elif key == ord("d"):
+            show_detections = not show_detections
+            print(f"Detections overlay: {'ON' if show_detections else 'OFF'}")
         elif key == ord("p") and result is not None:
             print(BoardStateExtractor.board_to_string(result.board))
 

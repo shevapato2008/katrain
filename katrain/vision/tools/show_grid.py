@@ -19,6 +19,7 @@ import numpy as np
 from katrain.vision.board_finder import BoardFinder
 from katrain.vision.config import BoardConfig
 from katrain.vision.coordinates import grid_to_pixel
+from katrain.vision.stone_detector import Detection
 
 
 def draw_grid(image: np.ndarray, config: BoardConfig) -> np.ndarray:
@@ -55,6 +56,84 @@ def draw_grid(image: np.ndarray, config: BoardConfig) -> np.ndarray:
     for col, row, label in [(0, 0, "A19"), (18, 0, "T19"), (0, 18, "A1"), (18, 18, "T1"), (9, 9, "K10")]:
         px, py = grid_to_pixel(col, row, w, h, config)
         cv2.putText(display, label, (px + 6, py - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
+
+    return display
+
+
+def draw_detections_overlay(image: np.ndarray, detections: list[Detection], config: BoardConfig) -> np.ndarray:
+    """Draw YOLO-style bbox + label + confidence on warped board image.
+
+    Args:
+        image: warped board BGR image
+        detections: list of Detection objects (with bbox coordinates in warped image space)
+        config: BoardConfig (unused currently, reserved for future grid-snapping)
+
+    Returns:
+        Image with bounding boxes, class labels, and confidence scores drawn.
+    """
+    display = image.copy()
+    # black stones: green box, white stones: orange box
+    colors = {0: (0, 200, 0), 1: (0, 140, 255)}
+
+    for det in detections:
+        x1, y1, x2, y2 = [int(v) for v in det.bbox]
+        color = colors.get(det.class_id, (128, 128, 128))
+        cv2.rectangle(display, (x1, y1), (x2, y2), color, 2)
+
+        label = f"{det.class_name} {det.confidence:.2f}"
+        (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+        # Draw label background
+        cv2.rectangle(display, (x1, y1 - th - baseline - 4), (x1 + tw + 4, y1), color, -1)
+        cv2.putText(display, label, (x1 + 2, y1 - baseline - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+
+    return display
+
+
+def draw_detection_overlay(
+    frame: np.ndarray,
+    corners: list[tuple[int, int]],
+    transform_matrix: np.ndarray,
+    warp_size: tuple[int, int],
+    config: BoardConfig,
+) -> np.ndarray:
+    """Draw detection boundary + projected grid points on the original camera image.
+
+    Args:
+        frame: original BGR image
+        corners: detected corners from _sort_corner [TR, TL, BL, BR]
+        transform_matrix: perspective transform M (warped = M * raw)
+        warp_size: (width, height) of the warped image
+        config: BoardConfig
+    """
+    display = frame.copy()
+
+    # Draw cyan quadrilateral boundary
+    pts = np.array(corners, dtype=np.int32).reshape((-1, 1, 2))
+    cv2.polylines(display, [pts], isClosed=True, color=(255, 255, 0), thickness=2)
+
+    # Label corners
+    labels = ["TR", "TL", "BL", "BR"]
+    for i, (cx, cy) in enumerate(corners):
+        cv2.putText(display, labels[i], (cx + 10, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+    # Back-project grid points from warped space to raw image space
+    if transform_matrix is not None and warp_size is not None:
+        w, h = warp_size
+        M_inv = np.linalg.inv(transform_matrix)
+
+        gs = config.grid_size
+        warped_pts = []
+        for row in range(gs):
+            for col in range(gs):
+                px, py = grid_to_pixel(col, row, w, h, config)
+                warped_pts.append([px, py])
+
+        warped_pts = np.array(warped_pts, dtype=np.float32).reshape(-1, 1, 2)
+        raw_pts = cv2.perspectiveTransform(warped_pts, M_inv)
+
+        for pt in raw_pts:
+            x, y = int(pt[0][0]), int(pt[0][1])
+            cv2.circle(display, (x, y), 3, (0, 255, 0), -1)
 
     return display
 
@@ -183,6 +262,11 @@ def main():
         if debug:
             debug_frame = draw_debug_overlay(frame, finder, use_clahe, args.canny_min)
             cv2.imshow("Debug", debug_frame)
+        elif found and finder.last_transform_matrix is not None:
+            detection_frame = draw_detection_overlay(
+                frame, finder.pre_corner_point, finder.last_transform_matrix, finder.last_warp_size, config
+            )
+            cv2.imshow("Camera", detection_frame)
         else:
             cv2.imshow("Camera", frame)
 

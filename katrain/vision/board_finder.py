@@ -197,9 +197,7 @@ class BoardFinder:
 
         return None
 
-    def _try_canny_with_epsilon(
-        self, contours, frame_area: int, eps_factor: float
-    ) -> list[tuple[int, int]] | None:
+    def _try_canny_with_epsilon(self, contours, frame_area: int, eps_factor: float) -> list[tuple[int, int]] | None:
         """Try to find a valid board quadrilateral at a given epsilon factor."""
         for contour in contours:
             perimeter = cv2.arcLength(contour, True)

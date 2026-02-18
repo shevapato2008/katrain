@@ -4,6 +4,7 @@ Diagnose board detection on a single image — saves annotated debug output.
 Usage:
     python -m katrain.vision.tools.diagnose_image --image photo.jpg
     python -m katrain.vision.tools.diagnose_image --image photo.jpg --use-clahe
+    python -m katrain.vision.tools.diagnose_image --image photo.jpg --marker-ids 0 1 2 3
 """
 
 import argparse
@@ -12,9 +13,17 @@ import cv2
 import numpy as np
 
 from katrain.vision.board_finder import BoardFinder
+from katrain.vision.config import BoardConfig
+from katrain.vision.tools.show_grid import draw_detection_overlay, draw_grid
 
 
-def diagnose(image_path: str, use_clahe: bool = False, canny_min: int = 30, canny_max: int = 250):
+def diagnose(
+    image_path: str,
+    use_clahe: bool = False,
+    canny_min: int = 30,
+    canny_max: int = 250,
+    marker_ids: list[int] | None = None,
+):
     img = cv2.imread(image_path)
     if img is None:
         print(f"Error: cannot read {image_path}")
@@ -23,7 +32,8 @@ def diagnose(image_path: str, use_clahe: bool = False, canny_min: int = 30, cann
     h, w = img.shape[:2]
     print(f"Image: {w}x{h}")
 
-    finder = BoardFinder()
+    config = BoardConfig()
+    finder = BoardFinder(marker_ids=marker_ids)
 
     # --- Run Canny pipeline manually for diagnostics ---
     processed = img.copy()
@@ -102,6 +112,19 @@ def diagnose(image_path: str, use_clahe: bool = False, canny_min: int = 30, cann
         cv2.imwrite("diag_warped.jpg", warped)
         print("Saved diag_warped.jpg")
 
+        # Grid overlay on warped image
+        grid_img = draw_grid(warped, config)
+        cv2.imwrite("diag_grid.png", grid_img)
+        print("Saved diag_grid.png")
+
+        # Detection overlay on original image
+        if finder.last_transform_matrix is not None:
+            det_img = draw_detection_overlay(
+                img, finder.pre_corner_point, finder.last_transform_matrix, finder.last_warp_size, config
+            )
+            cv2.imwrite("diag_detection.png", det_img)
+            print("Saved diag_detection.png")
+
     cv2.imwrite("diag_contours.jpg", debug)
     cv2.imwrite("diag_canny.jpg", canny)
     print("\nSaved diag_contours.jpg, diag_canny.jpg")
@@ -113,8 +136,9 @@ def main():
     parser.add_argument("--use-clahe", action="store_true")
     parser.add_argument("--canny-min", type=int, default=30)
     parser.add_argument("--canny-max", type=int, default=250)
+    parser.add_argument("--marker-ids", type=int, nargs=4, default=None, help="4 ArUco marker IDs: TL TR BR BL")
     args = parser.parse_args()
-    diagnose(args.image, args.use_clahe, args.canny_min, args.canny_max)
+    diagnose(args.image, args.use_clahe, args.canny_min, args.canny_max, args.marker_ids)
 
 
 if __name__ == "__main__":

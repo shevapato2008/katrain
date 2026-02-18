@@ -57,4 +57,6 @@ class TestDetectionPipeline:
             assert result.board.shape == (19, 19)
             assert result.board[9][9] == BLACK
             assert result.warped is not None
+            assert len(result.detections) == 1
+            assert result.detections[0].class_id == 0
             # confirmed_move is None until consistency check passes

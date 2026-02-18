@@ -14,6 +14,14 @@ class TestDetection:
         assert Detection(x_center=0, y_center=0, class_id=0, confidence=0.9).class_name == "black"
         assert Detection(x_center=0, y_center=0, class_id=1, confidence=0.9).class_name == "white"
 
+    def test_bbox_default(self):
+        d = Detection(x_center=0, y_center=0, class_id=0, confidence=0.9)
+        assert d.bbox == (0.0, 0.0, 0.0, 0.0)
+
+    def test_bbox_explicit(self):
+        d = Detection(x_center=20.0, y_center=30.0, class_id=1, confidence=0.8, bbox=(10.0, 20.0, 30.0, 40.0))
+        assert d.bbox == (10.0, 20.0, 30.0, 40.0)
+
 
 class TestStoneDetectorDetect:
     """Test YOLO result parsing with a mock model (no real .pt file needed)."""
@@ -36,6 +44,7 @@ class TestStoneDetectorDetect:
             assert len(results) == 1
             assert results[0].x_center == 20.0  # (10+30)/2
             assert results[0].class_id == 0
+            assert results[0].bbox == (10.0, 20.0, 30.0, 40.0)
 
     def test_filters_low_confidence(self):
         with patch("katrain.vision.stone_detector.YOLO") as mock_yolo_cls:

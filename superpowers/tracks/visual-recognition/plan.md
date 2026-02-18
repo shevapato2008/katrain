@@ -2077,6 +2077,77 @@ git commit -m "ci: add separate vision test job with --extra vision"
 
 ---
 
+## Task 17: YOLO Detection Visualization (BBox + Label + Confidence)
+
+**Files:**
+- Modify: `katrain/vision/stone_detector.py`
+- Modify: `katrain/vision/pipeline.py`
+- Modify: `katrain/vision/tools/show_grid.py`
+- Modify: `katrain/vision/tools/live_demo.py`
+- Modify: `tests/test_vision/test_stone_detector.py`
+- Modify: `tests/test_vision/test_pipeline.py`
+
+**Rationale:** The `Detection` dataclass discarded `xyxy` bbox coordinates (only keeping center points), and `FrameResult` did not expose the `detections` list. This prevented downstream visualization from drawing typical YOLO-style bbox + label + confidence overlays.
+
+**Step 1: Add `bbox` field to `Detection` (stone_detector.py)**
+
+```python
+bbox: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)  # (x1, y1, x2, y2)
+```
+
+Default value ensures backward compatibility with existing code that constructs `Detection` without bbox.
+
+Fill bbox in `detect()`:
+```python
+x1, y1, x2, y2 = box.xyxy[0].tolist()
+detections.append(Detection(
+    x_center=(x1 + x2) / 2,
+    y_center=(y1 + y2) / 2,
+    class_id=int(box.cls[0]),
+    confidence=conf,
+    bbox=(x1, y1, x2, y2),
+))
+```
+
+**Step 2: Add `detections` field to `FrameResult` (pipeline.py)**
+
+```python
+detections: list[Detection] = field(default_factory=list)
+```
+
+Pass detections through in `process_frame()`:
+```python
+return FrameResult(board=board, warped=warped, detections=detections, confirmed_move=confirmed_move)
+```
+
+**Step 3: Add `draw_detections_overlay()` (show_grid.py)**
+
+New function that draws YOLO-style visualization on the warped board image:
+- Black stones: green bounding box
+- White stones: orange bounding box
+- Each bbox has a label background with "black 0.95" / "white 0.88" text
+
+**Step 4: Integrate in live_demo.py**
+
+- Add `--show-detections` CLI flag
+- Add `D` key to toggle detections overlay at runtime
+- When enabled, use `draw_detections_overlay()` instead of basic `draw_overlay()`
+- Retain B/W counts and confirmed move text
+
+**Step 5: Add tests**
+
+- `test_stone_detector.py`: verify `bbox` default value and explicit value; verify `detect()` fills bbox
+- `test_pipeline.py`: verify `FrameResult.detections` is populated by `process_frame()`
+
+**Step 6: Verify**
+
+```bash
+CI=true uv run pytest tests/test_vision/ -v
+uv run black -l 120 katrain/vision tests/test_vision
+```
+
+---
+
 ## Summary
 
 | # | Task | Key Deliverable | Tests | Feedback Addressed |
@@ -2097,6 +2168,7 @@ git commit -m "ci: add separate vision test job with --extra vision"
 | 14 | Live demo | Camera demo with calibration + Move display | — | — |
 | 15 | KaTrain integration | `VisionPlayerBridge` → play API | 3 | Codex #3 |
 | 16 | Test suite & CI | Full regression + separate CI job | all | Codex #6, #7 |
+| 17 | YOLO Detection Visualization | `Detection.bbox` + `FrameResult.detections` + `draw_detections_overlay()` + live_demo integration | 4 | — |
 
 **Module structure:**
 ```

@@ -10,7 +10,7 @@ Pipeline order (per Codex review):
 6. Output: FrameResult with board matrix + optional confirmed Move
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -21,7 +21,7 @@ from katrain.vision.config import BoardConfig, CameraConfig
 from katrain.vision.katrain_bridge import vision_move_to_katrain
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
-from katrain.vision.stone_detector import StoneDetector
+from katrain.vision.stone_detector import Detection, StoneDetector
 
 
 @dataclass
@@ -30,6 +30,7 @@ class FrameResult:
 
     board: np.ndarray  # (grid_size, grid_size) with EMPTY/BLACK/WHITE
     warped: np.ndarray  # Perspective-corrected board image
+    detections: list[Detection] = field(default_factory=list)  # Raw YOLO detections with bbox
     confirmed_move: Move | None = None  # Set only when MoveDetector confirms a new move
 
 
@@ -85,4 +86,4 @@ class DetectionPipeline:
             row, col, color = move_result
             confirmed_move = vision_move_to_katrain(col, row, color, self.config.grid_size)
 
-        return FrameResult(board=board, warped=warped, confirmed_move=confirmed_move)
+        return FrameResult(board=board, warped=warped, detections=detections, confirmed_move=confirmed_move)

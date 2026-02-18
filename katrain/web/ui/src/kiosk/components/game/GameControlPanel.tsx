@@ -1,119 +1,86 @@
-import { useState } from 'react';
 import { Box, Typography, Divider, Stack, Switch, FormControlLabel, IconButton } from '@mui/material';
 import {
   Map as MapIcon, TipsAndUpdates, Timeline, Undo,
   PanToolAlt, Flag, Calculate,
   SkipPrevious, FastRewind, ArrowBack, ArrowForward, FastForward, SkipNext,
 } from '@mui/icons-material';
-import KioskPlayerCard from './KioskPlayerCard';
-import KioskScoreGraph from './KioskScoreGraph';
+import PlayerCard from '../../../components/PlayerCard';
+import ScoreGraph from '../../../components/ScoreGraph';
 import ItemToggle from './ItemToggle';
-import type { KioskTimerState, KioskAnalysisPoint } from '../../data/mocks';
+import type { GameState } from '../../../api';
 
 interface Props {
-  blackName: string;
-  blackRank: string;
-  whiteName: string;
-  whiteRank: string;
-  blackCaptures: number;
-  whiteCaptures: number;
-  blackTimer: KioskTimerState;
-  whiteTimer: KioskTimerState;
-  ruleset: string;
-  komi: number;
-  currentWinrate: number;
-  currentScore: number;
-  moveNumber: number;
-  currentMoveIndex: number;
-  analysisHistory: KioskAnalysisPoint[];
+  gameState: GameState;
+  onAction: (action: string) => void;
+  onNavigate: (nodeId: number) => void;
+  analysisToggles: Record<string, boolean>;
+  onToggleAnalysis: (key: string) => void;
 }
 
-/* ── GameControlPanel ── */
-
-const GameControlPanel = (props: Props) => {
-  const [toggles, setToggles] = useState({
-    ownership: false,
-    hints: false,
-    score: true,
-    coords: true,
-    numbers: false,
-  });
-
-  const toggle = (key: keyof typeof toggles) =>
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis }: Props) => {
+  const showScore = analysisToggles.show_score !== false;  // default true if not set
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Scrollable area */}
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
         {/* 1. Dual PlayerCards */}
         <Box sx={{ p: 2 }}>
           <Stack direction="row" spacing={1.5}>
-            <KioskPlayerCard
-              player="B" name={props.blackName} rank={props.blackRank}
-              mainTimeLeft={props.blackTimer.mainTimeLeft}
-              byoyomiLeft={props.blackTimer.byoyomiLeft}
-              periodsLeft={props.blackTimer.periodsLeft}
-              captures={props.blackCaptures} active={props.blackTimer.isActive}
-              isWarning={props.blackTimer.isWarning} isCritical={props.blackTimer.isCritical}
+            <PlayerCard
+              player="B"
+              info={gameState.players_info.B}
+              captures={gameState.prisoner_count.B}
+              active={gameState.player_to_move === 'B'}
+              timer={gameState.timer}
             />
-            <KioskPlayerCard
-              player="W" name={props.whiteName} rank={props.whiteRank}
-              mainTimeLeft={props.whiteTimer.mainTimeLeft}
-              byoyomiLeft={props.whiteTimer.byoyomiLeft}
-              periodsLeft={props.whiteTimer.periodsLeft}
-              captures={props.whiteCaptures} active={props.whiteTimer.isActive}
-              isWarning={props.whiteTimer.isWarning} isCritical={props.whiteTimer.isCritical}
+            <PlayerCard
+              player="W"
+              info={gameState.players_info.W}
+              captures={gameState.prisoner_count.W}
+              active={gameState.player_to_move === 'W'}
+              timer={gameState.timer}
             />
           </Stack>
         </Box>
 
         {/* 2. Game info bar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.15)' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{props.ruleset} 规则</Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>贴目: {props.komi}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{gameState.ruleset} 规则</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>贴目: {gameState.komi}</Typography>
         </Box>
 
-        {/* 3. Divider */}
         <Divider />
 
-        {/* 4. ItemToggle grid (2 columns × 4 rows) */}
+        {/* 4. ItemToggle grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
-          <ItemToggle icon={<MapIcon />} label="领地" active={toggles.ownership} onClick={() => toggle('ownership')} />
-          <ItemToggle icon={<TipsAndUpdates />} label="建议" active={toggles.hints} onClick={() => toggle('hints')} />
-          <ItemToggle icon={<Timeline />} label="图表" active={toggles.score} onClick={() => toggle('score')} />
-          <ItemToggle icon={<Undo />} label="悔棋" onClick={() => {}} />
-          <ItemToggle icon={<PanToolAlt />} label="停一手" onClick={() => {}} />
-          <ItemToggle icon={<Flag />} label="认输" onClick={() => {}} isDestructive />
-          <ItemToggle icon={<Calculate />} label="数子" onClick={() => {}} />
+          <ItemToggle icon={<MapIcon />} label="领地" active={!!analysisToggles.show_ownership} onClick={() => onToggleAnalysis('show_ownership')} />
+          <ItemToggle icon={<TipsAndUpdates />} label="建议" active={!!analysisToggles.show_hints} onClick={() => onToggleAnalysis('show_hints')} />
+          <ItemToggle icon={<Timeline />} label="图表" active={showScore} onClick={() => onToggleAnalysis('show_score')} />
+          <ItemToggle icon={<Undo />} label="悔棋" onClick={() => onAction('undo')} />
+          <ItemToggle icon={<PanToolAlt />} label="停一手" onClick={() => onAction('pass')} />
+          <ItemToggle icon={<Flag />} label="认输" onClick={() => onAction('resign')} isDestructive />
+          <ItemToggle icon={<Calculate />} label="数子" onClick={() => onAction('count')} />
         </Box>
 
-        {/* 5. Divider */}
         <Divider />
 
-        {/* 6. ScoreGraph (shown when score toggle is on) */}
-        {toggles.score && (
-          <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.1)' }}>
-            <KioskScoreGraph
-              history={props.analysisHistory}
-              currentMoveIndex={props.currentMoveIndex}
-              currentWinrate={props.currentWinrate}
-              currentScore={props.currentScore}
-            />
+        {/* 6. ScoreGraph */}
+        {showScore && (
+          <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.1)' }} data-testid="score-graph">
+            <ScoreGraph gameState={gameState} onNavigate={onNavigate} />
           </Box>
         )}
 
-        {/* 7. Divider */}
         <Divider />
 
         {/* 8. Switch settings */}
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <FormControlLabel
-            control={<Switch size="small" checked={toggles.coords} onChange={() => toggle('coords')} />}
+            control={<Switch size="small" checked={!!analysisToggles.show_coordinates} onChange={() => onToggleAnalysis('show_coordinates')} />}
             label={<Typography variant="body2">坐标</Typography>}
           />
           <FormControlLabel
-            control={<Switch size="small" checked={toggles.numbers} onChange={() => toggle('numbers')} />}
+            control={<Switch size="small" checked={!!analysisToggles.show_move_numbers} onChange={() => onToggleAnalysis('show_move_numbers')} />}
             label={<Typography variant="body2">手数</Typography>}
           />
         </Box>
@@ -122,12 +89,12 @@ const GameControlPanel = (props: Props) => {
       {/* Fixed bottom: navigation controls */}
       <Divider />
       <Box data-testid="nav-controls" sx={{ display: 'flex', justifyContent: 'center', gap: 0.5, px: 2, py: 1 }}>
-        <IconButton size="small"><SkipPrevious /></IconButton>
-        <IconButton size="small"><FastRewind /></IconButton>
-        <IconButton size="small"><ArrowBack /></IconButton>
-        <IconButton size="small"><ArrowForward /></IconButton>
-        <IconButton size="small"><FastForward /></IconButton>
-        <IconButton size="small"><SkipNext /></IconButton>
+        <IconButton size="small" onClick={() => onAction('start')}><SkipPrevious /></IconButton>
+        <IconButton size="small" onClick={() => onAction('back-10')}><FastRewind /></IconButton>
+        <IconButton size="small" onClick={() => onAction('back')}><ArrowBack /></IconButton>
+        <IconButton size="small" onClick={() => onAction('forward')}><ArrowForward /></IconButton>
+        <IconButton size="small" onClick={() => onAction('forward-10')}><FastForward /></IconButton>
+        <IconButton size="small" onClick={() => onAction('end')}><SkipNext /></IconButton>
       </Box>
     </Box>
   );

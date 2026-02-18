@@ -19,7 +19,7 @@ import {
   useTheme
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { useTsumegoProblem } from '../hooks/useTsumegoProblem';

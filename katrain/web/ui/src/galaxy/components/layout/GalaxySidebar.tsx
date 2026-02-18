@@ -12,7 +12,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { useAuth } from '../../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
+import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';

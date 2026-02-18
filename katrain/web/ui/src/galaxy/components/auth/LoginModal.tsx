@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Alert, Box, Link } from '@mui/material';
 import { useAuth } from '../../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
+import { useSettings } from '../../../context/SettingsContext';
 import { API } from '../../../api';
 import { i18n } from '../../../i18n';
 

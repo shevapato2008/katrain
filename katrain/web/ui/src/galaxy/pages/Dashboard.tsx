@@ -5,7 +5,7 @@ import ScienceIcon from '@mui/icons-material/Science';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import ExtensionIcon from '@mui/icons-material/Extension';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../i18n';
 
 const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {

@@ -3,7 +3,7 @@ import GalaxySidebar from './GalaxySidebar';
 import { AuthProvider, useAuth } from '../../../context/AuthContext';
 import { vi, describe, it, expect, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { SettingsProvider } from '../../context/SettingsContext';
+import { SettingsProvider } from '../../../context/SettingsContext';
 import { API } from '../../../api';
 
 // Mock useAuth

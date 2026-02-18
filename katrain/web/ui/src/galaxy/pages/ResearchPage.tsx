@@ -11,7 +11,7 @@ import { useResearchBoard } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
-import { KifuAPI } from '../api/kifuApi';
+import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../api/userGamesApi';
 import GameLibraryModal from '../components/research/CloudSGFPanel';
 import { useAuth } from '../../context/AuthContext';

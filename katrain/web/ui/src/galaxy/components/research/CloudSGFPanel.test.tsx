@@ -16,7 +16,7 @@ vi.mock('../../../context/AuthContext', async (importOriginal) => {
 });
 
 // Mock KifuAPI
-vi.mock('../../api/kifuApi', () => ({
+vi.mock('../../../api/kifuApi', () => ({
   KifuAPI: {
     getAlbums: vi.fn(),
     getAlbum: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('../../api/userGamesApi', () => ({
   },
 }));
 
-import { KifuAPI } from '../../api/kifuApi';
+import { KifuAPI } from '../../../api/kifuApi';
 import { UserGamesAPI } from '../../api/userGamesApi';
 
 describe('GameLibraryModal', () => {

@@ -15,36 +15,30 @@ import TsumegoCategoriesPage from './galaxy/pages/TsumegoCategoriesPage';
 import TsumegoListPage from './galaxy/pages/TsumegoListPage';
 import TsumegoUnitsPage from './galaxy/pages/TsumegoUnitsPage';
 import TsumegoProblemPage from './galaxy/pages/TsumegoProblemPage';
-import { AuthProvider } from './context/AuthContext';
-import { SettingsProvider } from './context/SettingsContext';
 
 const GalaxyApp = () => {
   console.log("GalaxyApp rendering");
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <Routes>
-          <Route element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="play" element={<PlayMenu />} />
-          <Route path="play/ai" element={<AiSetupPage />} />
-          <Route path="play/game/:sessionId" element={<GamePage />} />
-          <Route path="play/human" element={<HvHLobbyPage />} />
-          <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
-          <Route path="research" element={<ResearchPage />} />
-          <Route path="kifu" element={<KifuLibraryPage />} />
-          <Route path="live" element={<LivePage />} />
-          <Route path="live/:matchId" element={<LiveMatchPage />} />
-          <Route path="tsumego" element={<TsumegoLevelsPage />} />
-          <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
-          <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
-          <Route path="tsumego/:level/:category/:unit" element={<TsumegoListPage />} />
-          <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
-          <Route path="*" element={<Navigate to="/galaxy" replace />} />
-        </Route>
-      </Routes>
-      </SettingsProvider>
-    </AuthProvider>
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="play" element={<PlayMenu />} />
+        <Route path="play/ai" element={<AiSetupPage />} />
+        <Route path="play/game/:sessionId" element={<GamePage />} />
+        <Route path="play/human" element={<HvHLobbyPage />} />
+        <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
+        <Route path="research" element={<ResearchPage />} />
+        <Route path="kifu" element={<KifuLibraryPage />} />
+        <Route path="live" element={<LivePage />} />
+        <Route path="live/:matchId" element={<LiveMatchPage />} />
+        <Route path="tsumego" element={<TsumegoLevelsPage />} />
+        <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
+        <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
+        <Route path="tsumego/:level/:category/:unit" element={<TsumegoListPage />} />
+        <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+        <Route path="*" element={<Navigate to="/galaxy" replace />} />
+      </Route>
+    </Routes>
   );
 };
 

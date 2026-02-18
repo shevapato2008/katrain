@@ -1,9 +1,37 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import ResearchPage from '../pages/ResearchPage';
+
+vi.mock('../../hooks/useResearchSession', () => ({
+  useResearchSession: () => ({
+    createSession: vi.fn().mockResolvedValue('session-123'),
+    destroySession: vi.fn(),
+    sessionId: null,
+    gameState: null,
+    error: null,
+    isConnected: false,
+    onMove: vi.fn(),
+    onPass: vi.fn(),
+    onNavigate: vi.fn(),
+    handleNavAction: vi.fn(),
+    toggleHints: vi.fn(),
+    toggleOwnership: vi.fn(),
+    toggleMoveNumbers: vi.fn(),
+    toggleCoordinates: vi.fn(),
+    analyzeGame: vi.fn(),
+    analysisScan: vi.fn(),
+  }),
+}));
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
 
 const renderPage = () =>
   render(
@@ -60,5 +88,14 @@ describe('ResearchPage', () => {
   it('renders "开始研究" button', () => {
     renderPage();
     expect(screen.getByRole('button', { name: /开始研究/ })).toBeInTheDocument();
+  });
+
+  it('navigates on "开始研究" button click', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始研究/ }));
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research/session/session-123');
+    });
   });
 });

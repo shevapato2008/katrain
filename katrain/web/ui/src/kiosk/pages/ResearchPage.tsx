@@ -8,9 +8,10 @@ import {
   FormatListNumbered, PanToolAlt, OpenWith, DeleteForever,
   TipsAndUpdates, Map as MapIcon, FolderOpen, Save,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import MockBoard from '../components/game/MockBoard';
 import ItemToggle from '../components/game/ItemToggle';
-import { mockResearchState } from '../data/mocks';
+import { useResearchSession } from '../../hooks/useResearchSession';
 
 const inputSx = {
   '& .MuiInputBase-root': { fontSize: '0.9rem' },
@@ -19,14 +20,32 @@ const inputSx = {
 const menuItemSx = { fontSize: '0.9rem' };
 
 const ResearchPage = () => {
-  const [playerBlack, setPlayerBlack] = useState(mockResearchState.playerBlack);
-  const [playerWhite, setPlayerWhite] = useState(mockResearchState.playerWhite);
-  const [boardSize, setBoardSize] = useState(mockResearchState.boardSize);
-  const [rules, setRules] = useState(mockResearchState.rules);
-  const [komi, setKomi] = useState(mockResearchState.komi);
-  const [handicap, setHandicap] = useState(mockResearchState.handicap);
-  const [currentMove] = useState(mockResearchState.currentMove);
-  const [totalMoves] = useState(mockResearchState.totalMoves);
+  const [playerBlack, setPlayerBlack] = useState('');
+  const [playerWhite, setPlayerWhite] = useState('');
+  const [boardSize, setBoardSize] = useState(19);
+  const [rules, setRules] = useState('chinese');
+  const [komi, setKomi] = useState(7.5);
+  const [handicap, setHandicap] = useState(0);
+  const [currentMove] = useState(0);
+  const [totalMoves] = useState(0);
+
+  const { createSession } = useResearchSession();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handleStartResearch = async () => {
+    setLoading(true);
+    try {
+      const sessionId = await createSession();
+      if (sessionId) {
+        navigate(`/kiosk/research/session/${sessionId}`);
+      }
+    } catch {
+      // Session creation failed
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [toggles, setToggles] = useState({
     numbers: false,
@@ -189,6 +208,8 @@ const ResearchPage = () => {
             fullWidth
             size="large"
             startIcon={<ScienceIcon />}
+            onClick={handleStartResearch}
+            disabled={loading}
             sx={{
               bgcolor: 'success.main',
               color: '#fff',
@@ -198,7 +219,7 @@ const ResearchPage = () => {
               '&:hover': { bgcolor: 'success.dark' },
             }}
           >
-            开始研究
+            {loading ? '创建中...' : '开始研究'}
           </Button>
         </Box>
       </Box>

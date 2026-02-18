@@ -4,11 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PlayArrow, ArrowBack } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
 import { API } from '../../api';
-
-const rankLabel = (value: number): string => {
-  if (value < 20) return `${20 - value}k`;
-  return `${value - 19}d`;
-};
+import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
@@ -142,7 +138,7 @@ const AiSetupPage = () => {
         {showRankSlider && (
           <Box sx={{ mb: 2.5 }}>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-              AI 棋力: {rankLabel(rank)}
+              AI 棋力: {internalToRank(sliderToInternal(rank))}
             </Typography>
             <Slider
               value={rank}
@@ -151,7 +147,7 @@ const AiSetupPage = () => {
               max={28}
               step={1}
               valueLabelDisplay="auto"
-              valueLabelFormat={rankLabel}
+              valueLabelFormat={(v) => internalToRank(sliderToInternal(v))}
             />
           </Box>
         )}

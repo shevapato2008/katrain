@@ -1,21 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
+  CircularProgress,
 } from '@mui/material';
 import { Search as SearchIcon, Science as ScienceIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import MockBoard from '../components/game/MockBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
-import { mockKifuList } from '../data/mocks';
+import { KifuAPI } from '../../api/kifuApi';
+import type { KifuAlbumSummary } from '../../types/kifu';
 
 const ROW_STAGGER = 25;
+const DEBOUNCE_MS = 350;
 
 const KifuPage = () => {
   const navigate = useNavigate();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
+  const [kifuList, setKifuList] = useState<KifuAlbumSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const selectedKifu = mockKifuList.find(k => k.id === selectedId);
+  const fetchAlbums = useCallback((query: string) => {
+    setLoading(true);
+    setError(null);
+    KifuAPI.getAlbums({ q: query || undefined })
+      .then((resp) => {
+        setKifuList(resp.items);
+        setTotal(resp.total);
+      })
+      .catch((err: Error) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchAlbums('');
+  }, [fetchAlbums]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchAlbums(searchInput);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput, fetchAlbums]);
+
+  const selectedKifu = kifuList.find(k => k.id === selectedId);
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -28,7 +64,7 @@ const KifuPage = () => {
               棋谱库
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
-              {mockKifuList.length} 局
+              {total} 局
             </Typography>
           </Box>
 
@@ -67,83 +103,94 @@ const KifuPage = () => {
 
         {/* Scrollable card list */}
         <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1, minHeight: 0 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {mockKifuList.map((kifu, index) => {
-              const blackWins = kifu.result.startsWith('B') || kifu.result.startsWith('黑');
-              const selected = selectedId === kifu.id;
+          {loading && kifuList.length === 0 ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : error ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <Typography variant="body2" color="error">{error}</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {kifuList.map((kifu, index) => {
+                const result = kifu.result ?? '';
+                const blackWins = result.startsWith('B') || result.startsWith('黑');
+                const selected = selectedId === kifu.id;
 
-              return (
-                <Fade key={kifu.id} in timeout={200 + index * ROW_STAGGER}>
-                  <Box>
-                    <Card
-                      sx={{
-                        bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)',
-                        border: selected ? 2 : 1,
-                        borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)',
-                        borderRadius: '8px',
-                        '&:hover': {
-                          borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.2)',
-                          bgcolor: selected ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.07)',
-                        },
-                      }}
-                    >
-                      <CardActionArea onClick={() => setSelectedId(kifu.id)} sx={{ p: 1.5 }}>
-                        {/* Row 1: Event + Date + Moves */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
-                            {kifu.event}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, fontSize: '0.7rem', opacity: 0.7 }}>
-                            {kifu.datePlayed}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-                            {kifu.moveCount} 手
-                          </Typography>
-                        </Box>
-
-                        {/* Row 2: Black player [ResultBadge] White player */}
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                            <Box sx={{
-                              width: 16, height: 16, borderRadius: '50%', flexShrink: 0, mr: 0.7,
-                              bgcolor: '#1a1a1a',
-                              border: '1px solid rgba(255,255,255,0.18)',
-                              boxShadow: 'inset 0 -0.5px 1px rgba(255,255,255,0.1)',
-                            }} />
-                            <Typography variant="body2" noWrap sx={{ fontWeight: blackWins ? 'bold' : 'normal' }}>
-                              {kifu.playerBlack}
-                              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5 }}>
-                                {kifu.blackRank}
-                              </Typography>
+                return (
+                  <Fade key={kifu.id} in timeout={200 + index * ROW_STAGGER}>
+                    <Box>
+                      <Card
+                        sx={{
+                          bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)',
+                          border: selected ? 2 : 1,
+                          borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                          '&:hover': {
+                            borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.2)',
+                            bgcolor: selected ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.07)',
+                          },
+                        }}
+                      >
+                        <CardActionArea onClick={() => setSelectedId(kifu.id)} sx={{ p: 1.5 }}>
+                          {/* Row 1: Event + Date + Moves */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
+                              {kifu.event}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, fontSize: '0.7rem', opacity: 0.7 }}>
+                              {kifu.date_played}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                              {kifu.move_count} 手
                             </Typography>
                           </Box>
 
-                          <Box sx={{ px: 1, flexShrink: 0 }}>
-                            <KioskResultBadge result={kifu.result} />
-                          </Box>
-
-                          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-                            <Typography variant="body2" noWrap sx={{ fontWeight: !blackWins ? 'bold' : 'normal' }}>
-                              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5 }}>
-                                {kifu.whiteRank}
+                          {/* Row 2: Black player [ResultBadge] White player */}
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                              <Box sx={{
+                                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, mr: 0.7,
+                                bgcolor: '#1a1a1a',
+                                border: '1px solid rgba(255,255,255,0.18)',
+                                boxShadow: 'inset 0 -0.5px 1px rgba(255,255,255,0.1)',
+                              }} />
+                              <Typography variant="body2" noWrap sx={{ fontWeight: blackWins ? 'bold' : 'normal' }}>
+                                {kifu.player_black}
+                                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5 }}>
+                                  {kifu.black_rank}
+                                </Typography>
                               </Typography>
-                              {kifu.playerWhite}
-                            </Typography>
-                            <Box sx={{
-                              width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
-                              bgcolor: '#e8e4df',
-                              border: '1px solid rgba(0,0,0,0.25)',
-                              boxShadow: 'inset 0 0.5px 1px rgba(0,0,0,0.06)',
-                            }} />
+                            </Box>
+
+                            <Box sx={{ px: 1, flexShrink: 0 }}>
+                              <KioskResultBadge result={result} />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+                              <Typography variant="body2" noWrap sx={{ fontWeight: !blackWins ? 'bold' : 'normal' }}>
+                                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5 }}>
+                                  {kifu.white_rank}
+                                </Typography>
+                                {kifu.player_white}
+                              </Typography>
+                              <Box sx={{
+                                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
+                                bgcolor: '#e8e4df',
+                                border: '1px solid rgba(0,0,0,0.25)',
+                                boxShadow: 'inset 0 0.5px 1px rgba(0,0,0,0.06)',
+                              }} />
+                            </Box>
                           </Box>
-                        </Box>
-                      </CardActionArea>
-                    </Card>
-                  </Box>
-                </Fade>
-              );
-            })}
-          </Box>
+                        </CardActionArea>
+                      </Card>
+                    </Box>
+                  </Fade>
+                );
+              })}
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -157,7 +204,7 @@ const KifuPage = () => {
         {selectedKifu ? (
           <>
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: 0 }}>
-              <MockBoard moveNumber={selectedKifu.moveCount} />
+              <MockBoard moveNumber={selectedKifu.move_count} />
             </Box>
 
             {/* Bottom bar: Navigation + Open in Research */}
@@ -184,7 +231,7 @@ const KifuPage = () => {
                     textAlign: 'center',
                   }}
                 >
-                  {selectedKifu.moveCount} / {selectedKifu.moveCount} 手
+                  {selectedKifu.move_count} / {selectedKifu.move_count} 手
                 </Typography>
                 <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>▶</Button>
                 <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>⏭</Button>

@@ -15,6 +15,7 @@ import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
 import LivePage from './pages/LivePage';
+import LiveMatchPage from './pages/LiveMatchPage';
 import SettingsPage from './pages/SettingsPage';
 
 const KioskRoutes = () => {
@@ -45,7 +46,7 @@ const KioskRoutes = () => {
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
           <Route path="live" element={<LivePage />} />
-          <Route path="live/:matchId" element={<PlaceholderPage />} />
+          <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="play" replace />} />
         </Route>

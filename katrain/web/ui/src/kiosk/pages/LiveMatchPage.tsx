@@ -1,0 +1,49 @@
+import { Box, Typography, Button, CircularProgress, Alert, Chip } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowBack } from '@mui/icons-material';
+import { useLiveMatch } from '../../hooks/live/useLiveMatch';
+
+const LiveMatchPage = () => {
+  const { matchId } = useParams<{ matchId: string }>();
+  const navigate = useNavigate();
+  const { match, loading, error, currentMove } = useLiveMatch(matchId);
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
+  if (error) return <Box sx={{ p: 2 }}><Alert severity="error">{error.message}</Alert><Button onClick={() => navigate('/kiosk/live')} sx={{ mt: 1 }}>返回</Button></Box>;
+  if (!match) return null;
+
+  return (
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+      <Box sx={{ height: '100%', aspectRatio: '1' }}>
+        {/* Board will be wired with SGF parsing in future */}
+        <Box sx={{ height: '100%', bgcolor: '#8b7355', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography sx={{ color: 'rgba(0,0,0,0.3)' }}>棋盘 · 第{currentMove}手</Typography>
+        </Box>
+      </Box>
+      <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Button onClick={() => navigate('/kiosk/live')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
+          <Typography variant="h6">{match.tournament}</Typography>
+          <Chip
+            label={match.status === 'live' ? '直播中' : '已结束'}
+            size="small"
+            color={match.status === 'live' ? 'success' : 'default'}
+          />
+        </Box>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          {match.player_black} {match.black_rank && `(${match.black_rank})`} vs {match.player_white} {match.white_rank && `(${match.white_rank})`}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          第{currentMove}手 / {match.move_count}手
+        </Typography>
+        {match.result && (
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            结果: {match.result}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default LiveMatchPage;

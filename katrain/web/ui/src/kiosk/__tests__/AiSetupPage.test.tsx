@@ -1,10 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from '../pages/AiSetupPage';
+
+vi.mock('../../api', () => ({
+  API: {
+    createSession: vi.fn().mockResolvedValue({ session_id: 'new-session-123', state: {} }),
+    gameSetup: vi.fn().mockResolvedValue({ session_id: 'new-session-123', state: {} }),
+  },
+}));
 
 const renderPage = (mode = 'free') =>
   render(
@@ -143,5 +150,31 @@ describe('AiSetupPage', () => {
     expect(screen.getByText('1次')).toBeInTheDocument();
     expect(screen.getByText('3次')).toBeInTheDocument();
     expect(screen.getByText('5次')).toBeInTheDocument();
+  });
+
+  it('calls API.createSession and gameSetup on start', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => {
+      expect(API.createSession).toHaveBeenCalled();
+      expect(API.gameSetup).toHaveBeenCalledWith('new-session-123', 'free', expect.objectContaining({
+        board_size: 19,
+        rules: 'chinese',
+        color: 'black',
+      }));
+    });
+  });
+
+  it('shows error alert when API call fails', async () => {
+    const { API } = await import('../../api');
+    (API.createSession as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
   });
 });

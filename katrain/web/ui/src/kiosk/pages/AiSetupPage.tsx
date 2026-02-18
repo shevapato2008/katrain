@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Slider, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, Button, Slider, Switch, FormControlLabel, Alert } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PlayArrow, ArrowBack } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
+import { API } from '../../api';
 
 const rankLabel = (value: number): string => {
   if (value < 20) return `${20 - value}k`;
@@ -33,11 +34,35 @@ const AiSetupPage = () => {
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   const showRankSlider = isRanked || aiStrategy === 'ai:human';
 
-  const handleStart = () => {
-    // TODO: POST /api/new-game → get sessionId → navigate to game
-    navigate('/kiosk/play/ai/game/mock-session');
+  const handleStart = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { session_id } = await API.createSession();
+      await API.gameSetup(session_id, isRanked ? 'ranked' : 'free', {
+        board_size: boardSize,
+        rules,
+        color,
+        ai_strategy: aiStrategy,
+        rank,
+        handicap,
+        komi,
+        time_enabled: isRanked || timeEnabled,
+        main_time: mainTime,
+        byo_length: byoyomiTime,
+        byo_periods: byoyomiPeriods,
+      });
+      navigate(`/kiosk/play/ai/game/${session_id}`);
+    } catch (e: any) {
+      setError(e.message || '创建对局失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -241,8 +266,9 @@ const AiSetupPage = () => {
         )}
 
         <Box sx={{ mt: 'auto', pt: 2 }}>
-          <Button variant="contained" fullWidth size="large" startIcon={<PlayArrow />} onClick={handleStart} sx={{ minHeight: 56, py: 2, fontSize: '1.1rem' }}>
-            开始对弈
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Button variant="contained" fullWidth size="large" startIcon={<PlayArrow />} disabled={loading} onClick={handleStart} sx={{ minHeight: 56, py: 2, fontSize: '1.1rem' }}>
+            {loading ? '创建中...' : '开始对弈'}
           </Button>
         </Box>
       </Box>

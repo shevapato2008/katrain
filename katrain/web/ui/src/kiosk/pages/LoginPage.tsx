@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,7 +20,7 @@ const LoginPage = () => {
       await login(username, password);
       navigate('/kiosk/play', { replace: true });
     } catch (e: any) {
-      setError(e.message || '登录失败');
+      setError(e.message || t('Login failed', '登录失败'));
     } finally {
       setLoading(false);
     }
@@ -29,13 +31,13 @@ const LoginPage = () => {
       <Typography variant="h4" sx={{ mb: 3 }}>KaTrain</Typography>
       {error && <Alert severity="error" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>{error}</Alert>}
       <TextField
-        label="用户名"
+        label={t('Username', '用户名')}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         sx={{ mb: 2, width: '100%', maxWidth: 360 }}
       />
       <TextField
-        label="密码"
+        label={t('Password', '密码')}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -47,7 +49,7 @@ const LoginPage = () => {
         disabled={loading || !username}
         sx={{ width: '100%', maxWidth: 360, minHeight: 48 }}
       >
-        {loading ? '登录中...' : '登录'}
+        {loading ? t('Logging in...', '登录中...') : t('Login', '登录')}
       </Button>
     </Box>
   );

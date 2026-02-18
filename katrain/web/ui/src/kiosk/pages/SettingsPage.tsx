@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, Typography, Divider, Card, CardActionArea, CardContent } from '@mui/material';
 import OptionChips from '../components/common/OptionChips';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const platforms = [
   { name: '99围棋', desc: '少儿围棋教学平台' },
@@ -10,15 +11,16 @@ const platforms = [
 ];
 
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const [language, setLanguage] = useState('zh');
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>设置</Typography>
+      <Typography variant="h5" sx={{ mb: 2 }}>{t('Settings', '设置')}</Typography>
       <Divider sx={{ mb: 3 }} />
 
       <OptionChips
-        label="语言"
+        label={t('Language', '语言')}
         options={[
           { value: 'zh', label: '中文' },
           { value: 'en', label: 'English' },
@@ -30,7 +32,7 @@ const SettingsPage = () => {
       />
 
       <Typography variant="body2" sx={{ color: 'text.secondary', mt: 3, mb: 1.5 }}>
-        外部平台
+        {t('External Platforms', '外部平台')}
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
         {platforms.map((p) => (

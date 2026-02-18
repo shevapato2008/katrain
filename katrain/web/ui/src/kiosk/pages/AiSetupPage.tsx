@@ -5,10 +5,12 @@ import { PlayArrow, ArrowBack } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isRanked = mode === 'ranked';
 
   // Board & rules
@@ -55,7 +57,7 @@ const AiSetupPage = () => {
       });
       navigate(`/kiosk/play/ai/game/${session_id}`);
     } catch (e: any) {
-      setError(e.message || '创建对局失败');
+      setError(e.message || t('Failed to create game', '创建对局失败'));
     } finally {
       setLoading(false);
     }
@@ -86,24 +88,24 @@ const AiSetupPage = () => {
             startIcon={<ArrowBack />}
             sx={{ minWidth: 40, p: 0.5 }}
           />
-          <Typography variant="h5">{isRanked ? '升降级对弈' : '自由对弈'}</Typography>
+          <Typography variant="h5">{isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}</Typography>
         </Box>
 
         {/* Board size */}
         <OptionChips
-          label="棋盘"
-          options={[{ value: 9, label: '9路' }, { value: 13, label: '13路' }, { value: 19, label: '19路' }]}
+          label={t('Board', '棋盘')}
+          options={[{ value: 9, label: t('9x9', '9路') }, { value: 13, label: t('13x13', '13路') }, { value: 19, label: t('19x19', '19路') }]}
           value={boardSize}
           onChange={setBoardSize}
         />
 
         {/* Ruleset */}
         <OptionChips
-          label="规则"
+          label={t('Rules', '规则')}
           options={[
-            { value: 'chinese' as const, label: '中国' },
-            { value: 'japanese' as const, label: '日本' },
-            { value: 'korean' as const, label: '韩国' },
+            { value: 'chinese' as const, label: t('Chinese', '中国') },
+            { value: 'japanese' as const, label: t('Japanese', '日本') },
+            { value: 'korean' as const, label: t('Korean', '韩国') },
             { value: 'aga' as const, label: 'AGA' },
           ]}
           value={rules}
@@ -112,8 +114,8 @@ const AiSetupPage = () => {
 
         {/* Color */}
         <OptionChips
-          label="我执"
-          options={[{ value: 'black' as const, label: '● 黑' }, { value: 'white' as const, label: '○ 白' }]}
+          label={t('My Color', '我执')}
+          options={[{ value: 'black' as const, label: t('Black', '● 黑') }, { value: 'white' as const, label: t('White', '○ 白') }]}
           value={color}
           onChange={setColor}
         />
@@ -121,13 +123,13 @@ const AiSetupPage = () => {
         {/* AI strategy (free mode only) */}
         {!isRanked && (
           <OptionChips
-            label="AI 策略"
+            label={t('AI Strategy', 'AI 策略')}
             options={[
-              { value: 'ai:human', label: '拟人' },
+              { value: 'ai:human', label: t('Human-like', '拟人') },
               { value: 'ai:default', label: 'KataGo' },
-              { value: 'ai:territory', label: '实地' },
-              { value: 'ai:influence', label: '厚势' },
-              { value: 'ai:policy', label: '策略' },
+              { value: 'ai:territory', label: t('Territory', '实地') },
+              { value: 'ai:influence', label: t('Influence', '厚势') },
+              { value: 'ai:policy', label: t('Policy', '策略') },
             ]}
             value={aiStrategy}
             onChange={setAiStrategy}
@@ -138,7 +140,7 @@ const AiSetupPage = () => {
         {showRankSlider && (
           <Box sx={{ mb: 2.5 }}>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-              AI 棋力: {internalToRank(sliderToInternal(rank))}
+              {t('AI Strength', 'AI 棋力')}: {internalToRank(sliderToInternal(rank))}
             </Typography>
             <Slider
               value={rank}
@@ -155,7 +157,7 @@ const AiSetupPage = () => {
         {/* Handicap */}
         <Box sx={{ mb: 2.5 }}>
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-            让子: {handicap === 0 ? '无' : `${handicap}子`}
+            {t('Handicap', '让子')}: {handicap === 0 ? t('None', '无') : `${handicap}${t('stones', '子')}`}
           </Typography>
           <Slider
             value={handicap}
@@ -164,7 +166,7 @@ const AiSetupPage = () => {
             max={9}
             step={1}
             valueLabelDisplay="auto"
-            valueLabelFormat={(v) => (v === 0 ? '无' : `${v}子`)}
+            valueLabelFormat={(v) => (v === 0 ? t('None', '无') : `${v}${t('stones', '子')}`)}
           />
         </Box>
 
@@ -172,7 +174,7 @@ const AiSetupPage = () => {
         {!isRanked && handicap === 0 && (
           <Box sx={{ mb: 2.5 }}>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-              贴目: {komi}
+              {t('Komi', '贴目')}: {komi}
             </Typography>
             <Slider
               value={komi}
@@ -195,7 +197,7 @@ const AiSetupPage = () => {
                 disabled={isRanked}
               />
             }
-            label="用时"
+            label={t('Time Control', '用时')}
           />
         </Box>
 
@@ -203,7 +205,7 @@ const AiSetupPage = () => {
           <>
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                主时间: {mainTime === 0 ? '不限' : `${mainTime}分`}
+                {t('Main Time', '主时间')}: {mainTime === 0 ? t('Unlimited', '不限') : `${mainTime}${t('min', '分')}`}
               </Typography>
               <Slider
                 value={mainTime}
@@ -212,19 +214,19 @@ const AiSetupPage = () => {
                 max={60}
                 step={null}
                 marks={[
-                  { value: 0, label: '不限' },
-                  { value: 5, label: '5分' },
-                  { value: 10, label: '10分' },
-                  { value: 20, label: '20分' },
-                  { value: 30, label: '30分' },
-                  { value: 60, label: '60分' },
+                  { value: 0, label: t('Unlimited', '不限') },
+                  { value: 5, label: `5${t('min', '分')}` },
+                  { value: 10, label: `10${t('min', '分')}` },
+                  { value: 20, label: `20${t('min', '分')}` },
+                  { value: 30, label: `30${t('min', '分')}` },
+                  { value: 60, label: `60${t('min', '分')}` },
                 ]}
               />
             </Box>
 
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                读秒时间: {byoyomiTime}秒
+                {t('Byoyomi', '读秒时间')}: {byoyomiTime}{t('sec', '秒')}
               </Typography>
               <Slider
                 value={byoyomiTime}
@@ -233,17 +235,17 @@ const AiSetupPage = () => {
                 max={60}
                 step={null}
                 marks={[
-                  { value: 10, label: '10秒' },
-                  { value: 20, label: '20秒' },
-                  { value: 30, label: '30秒' },
-                  { value: 60, label: '60秒' },
+                  { value: 10, label: `10${t('sec', '秒')}` },
+                  { value: 20, label: `20${t('sec', '秒')}` },
+                  { value: 30, label: `30${t('sec', '秒')}` },
+                  { value: 60, label: `60${t('sec', '秒')}` },
                 ]}
               />
             </Box>
 
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                读秒次数: {byoyomiPeriods}次
+                {t('Byoyomi Periods', '读秒次数')}: {byoyomiPeriods}{t('times', '次')}
               </Typography>
               <Slider
                 value={byoyomiPeriods}
@@ -252,9 +254,9 @@ const AiSetupPage = () => {
                 max={5}
                 step={null}
                 marks={[
-                  { value: 1, label: '1次' },
-                  { value: 3, label: '3次' },
-                  { value: 5, label: '5次' },
+                  { value: 1, label: `1${t('times', '次')}` },
+                  { value: 3, label: `3${t('times', '次')}` },
+                  { value: 5, label: `5${t('times', '次')}` },
                 ]}
               />
             </Box>
@@ -264,7 +266,7 @@ const AiSetupPage = () => {
         <Box sx={{ mt: 'auto', pt: 2 }}>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Button variant="contained" fullWidth size="large" startIcon={<PlayArrow />} disabled={loading} onClick={handleStart} sx={{ minHeight: 56, py: 2, fontSize: '1.1rem' }}>
-            {loading ? '创建中...' : '开始对弈'}
+            {loading ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
           </Button>
         </Box>
       </Box>

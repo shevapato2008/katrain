@@ -9,12 +9,14 @@ import MockBoard from '../components/game/MockBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
 
 const KifuPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [kifuList, setKifuList] = useState<KifuAlbumSummary[]>([]);
@@ -61,17 +63,17 @@ const KifuPage = () => {
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-              棋谱库
+              {t('Game Records', '棋谱库')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
-              {total} 局
+              {total} {t('games', '局')}
             </Typography>
           </Box>
 
           <TextField
             fullWidth
             size="small"
-            placeholder="搜索棋手、赛事..."
+            placeholder={t('Search players, events...', '搜索棋手、赛事...')}
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             InputProps={{
@@ -143,7 +145,7 @@ const KifuPage = () => {
                               {kifu.date_played}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-                              {kifu.move_count} 手
+                              {kifu.move_count} {t('moves', '手')}
                             </Typography>
                           </Box>
 
@@ -231,7 +233,7 @@ const KifuPage = () => {
                     textAlign: 'center',
                   }}
                 >
-                  {selectedKifu.move_count} / {selectedKifu.move_count} 手
+                  {selectedKifu.move_count} / {selectedKifu.move_count} {t('moves', '手')}
                 </Typography>
                 <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>▶</Button>
                 <Button size="small" sx={{ minWidth: 32, color: 'text.secondary' }}>⏭</Button>
@@ -250,7 +252,7 @@ const KifuPage = () => {
                     px: 3,
                   }}
                 >
-                  在研究中打开
+                  {t('Open in Research', '在研究中打开')}
                 </Button>
               </Box>
             </Box>
@@ -258,7 +260,7 @@ const KifuPage = () => {
         ) : (
           <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.4 }}>
-              选择一局棋谱预览
+              {t('Select a game to preview', '选择一局棋谱预览')}
             </Typography>
           </Box>
         )}

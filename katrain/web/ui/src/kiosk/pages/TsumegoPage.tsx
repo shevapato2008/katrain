@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface LevelInfo {
   level: string;
@@ -10,6 +11,7 @@ interface LevelInfo {
 
 const TsumegoPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [levels, setLevels] = useState<LevelInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +51,8 @@ const TsumegoPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-        <Typography variant="h5">死活题</Typography>
-        <Typography variant="body2" color="text.secondary">选择难度级别</Typography>
+        <Typography variant="h5">{t('Tsumego', '死活题')}</Typography>
+        <Typography variant="body2" color="text.secondary">{t('Select difficulty level', '选择难度级别')}</Typography>
       </Box>
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Grid container spacing={2}>
@@ -72,7 +74,7 @@ const TsumegoPage = () => {
                     {level.level.toUpperCase()}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {level.total} 题
+                    {level.total} {t('problems', '题')}
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                     {Object.entries(level.categories).map(([name, count]) => (

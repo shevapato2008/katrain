@@ -8,6 +8,7 @@ import PlayerCard from '../../../components/PlayerCard';
 import ScoreGraph from '../../../components/ScoreGraph';
 import ItemToggle from './ItemToggle';
 import type { GameState } from '../../../api';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface Props {
   gameState: GameState;
@@ -18,6 +19,7 @@ interface Props {
 }
 
 const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis }: Props) => {
+  const { t } = useTranslation();
   const showScore = analysisToggles.show_score !== false;  // default true if not set
 
   return (
@@ -45,21 +47,21 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
 
         {/* 2. Game info bar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.15)' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{gameState.ruleset} 规则</Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>贴目: {gameState.komi}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{gameState.ruleset} {t('Rules', '规则')}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Komi', '贴目')}: {gameState.komi}</Typography>
         </Box>
 
         <Divider />
 
         {/* 4. ItemToggle grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
-          <ItemToggle icon={<MapIcon />} label="领地" active={!!analysisToggles.show_ownership} onClick={() => onToggleAnalysis('show_ownership')} />
-          <ItemToggle icon={<TipsAndUpdates />} label="建议" active={!!analysisToggles.show_hints} onClick={() => onToggleAnalysis('show_hints')} />
-          <ItemToggle icon={<Timeline />} label="图表" active={showScore} onClick={() => onToggleAnalysis('show_score')} />
-          <ItemToggle icon={<Undo />} label="悔棋" onClick={() => onAction('undo')} />
-          <ItemToggle icon={<PanToolAlt />} label="停一手" onClick={() => onAction('pass')} />
-          <ItemToggle icon={<Flag />} label="认输" onClick={() => onAction('resign')} isDestructive />
-          <ItemToggle icon={<Calculate />} label="数子" onClick={() => onAction('count')} />
+          <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.show_ownership} onClick={() => onToggleAnalysis('show_ownership')} />
+          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.show_hints} onClick={() => onToggleAnalysis('show_hints')} />
+          <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('show_score')} />
+          <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} />
+          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} />
+          <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive />
+          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} />
         </Box>
 
         <Divider />
@@ -77,11 +79,11 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <FormControlLabel
             control={<Switch size="small" checked={!!analysisToggles.show_coordinates} onChange={() => onToggleAnalysis('show_coordinates')} />}
-            label={<Typography variant="body2">坐标</Typography>}
+            label={<Typography variant="body2">{t('Coordinates', '坐标')}</Typography>}
           />
           <FormControlLabel
             control={<Switch size="small" checked={!!analysisToggles.show_move_numbers} onChange={() => onToggleAnalysis('show_move_numbers')} />}
-            label={<Typography variant="body2">手数</Typography>}
+            label={<Typography variant="body2">{t('Move Numbers', '手数')}</Typography>}
           />
         </Box>
       </Box>

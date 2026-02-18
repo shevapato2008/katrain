@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface Problem {
   id: string;
@@ -15,6 +16,7 @@ interface Problem {
 const TsumegoLevelPage = () => {
   const { levelId } = useParams<{ levelId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +58,8 @@ const TsumegoLevelPage = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
         <Button onClick={() => navigate('/kiosk/tsumego')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
         <Box>
-          <Typography variant="h5">{levelId?.toUpperCase()} 级题目</Typography>
-          <Typography variant="body2" color="text.secondary">{problems.length} 道题目</Typography>
+          <Typography variant="h5">{levelId?.toUpperCase()} {t('Level Problems', '级题目')}</Typography>
+          <Typography variant="body2" color="text.secondary">{problems.length} {t('problems', '道题目')}</Typography>
         </Box>
       </Box>
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>

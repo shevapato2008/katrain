@@ -6,9 +6,11 @@ import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const GamePage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
@@ -41,7 +43,7 @@ const GamePage = () => {
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
         <Button variant="outlined" size="small" startIcon={<ExitToApp />}
           onClick={() => navigate('/kiosk/play')}>
-          退出
+          {t('Exit', '退出')}
         </Button>
       </Box>
       {/* Board + Panel */}

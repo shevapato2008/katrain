@@ -1,5 +1,5 @@
 import { Box, Typography, Card, CardActionArea } from '@mui/material';
-import MiniBoard from './MiniBoard';
+import MiniBoard from '../../../components/MiniBoard';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface ProblemProgress {

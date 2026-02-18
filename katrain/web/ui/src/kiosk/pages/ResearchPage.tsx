@@ -124,7 +124,7 @@ const ResearchPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
                 <TextField
-                  size="small" fullWidth placeholder={t('Black', '黑方')}
+                  size="small" fullWidth placeholder={t('Black Player', '黑方')}
                   value={playerBlack} onChange={e => setPlayerBlack(e.target.value)}
                   sx={inputSx}
                 />
@@ -132,7 +132,7 @@ const ResearchPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: '#f5f5f5', border: '1px solid #666', flexShrink: 0 }} />
                 <TextField
-                  size="small" fullWidth placeholder={t('White', '白方')}
+                  size="small" fullWidth placeholder={t('White Player', '白方')}
                   value={playerWhite} onChange={e => setPlayerWhite(e.target.value)}
                   sx={inputSx}
                 />
@@ -193,7 +193,7 @@ const ResearchPage = () => {
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
               <ItemToggle icon={<FormatListNumbered sx={{ fontSize: 26 }} />} label={t('Move Numbers', '手数')} active={toggles.numbers} onClick={() => toggle('numbers')} />
               <ItemToggle icon={<PanToolAlt sx={{ fontSize: 26 }} />} label={t('Pass', '停一手')} onClick={() => {}} />
-              <ItemToggle icon={<OpenWith sx={{ fontSize: 26 }} />} label={t('Move', '移动')} onClick={() => {}} />
+              <ItemToggle icon={<OpenWith sx={{ fontSize: 26 }} />} label={t('Move Tool', '移动')} onClick={() => {}} />
               <ItemToggle icon={<DeleteForever sx={{ fontSize: 26 }} />} label={t('Delete', '删除')} onClick={() => {}} isDestructive />
               <ItemToggle icon={<TipsAndUpdates sx={{ fontSize: 26 }} />} label={t('Hints', '建议')} active={toggles.hints} onClick={() => toggle('hints')} />
               <ItemToggle icon={<MapIcon sx={{ fontSize: 26 }} />} label={t('Territory', '领地')} active={toggles.territory} onClick={() => toggle('territory')} />

@@ -59,7 +59,7 @@ const TsumegoLevelPage = () => {
         <Button onClick={() => navigate('/kiosk/tsumego')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
         <Box>
           <Typography variant="h5">{levelId?.toUpperCase()} {t('Level Problems', '级题目')}</Typography>
-          <Typography variant="body2" color="text.secondary">{problems.length} {t('problems', '道题目')}</Typography>
+          <Typography variant="body2" color="text.secondary">{problems.length} {t('problems count', '道题目')}</Typography>
         </Box>
       </Box>
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>

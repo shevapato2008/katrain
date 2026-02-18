@@ -3,16 +3,16 @@ import { Box, Typography, Divider, Card, CardActionArea, CardContent } from '@mu
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
 
-const platforms = [
-  { name: '99围棋', desc: '少儿围棋教学平台' },
-  { name: '野狐围棋', desc: '腾讯旗下专业对弈平台' },
-  { name: '腾讯围棋', desc: '在线对弈与观战' },
-  { name: '新浪围棋', desc: '围棋资讯与直播' },
-];
-
 const SettingsPage = () => {
   const { t } = useTranslation();
   const [language, setLanguage] = useState('zh');
+
+  const platforms = [
+    { name: '99围棋', desc: t('Kids Go teaching platform', '少儿围棋教学平台') },
+    { name: '野狐围棋', desc: t('Tencent professional Go platform', '腾讯旗下专业对弈平台') },
+    { name: '腾讯围棋', desc: t('Online play and spectating', '在线对弈与观战') },
+    { name: '新浪围棋', desc: t('Go news and live streaming', '围棋资讯与直播') },
+  ];
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>

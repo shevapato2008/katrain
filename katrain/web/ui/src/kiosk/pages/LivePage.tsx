@@ -55,11 +55,11 @@ const LivePage = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   {match.status === 'live' && (
                     <Typography variant="body2" sx={{ fontFamily: "'JetBrains Mono', monospace", color: 'text.secondary' }}>
-                      {t('Move', '第')}{match.move_count}{t('moves', '手')}
+                      {t('Move #', '第')}{match.move_count}{t('moves', '手')}
                     </Typography>
                   )}
                   <Chip
-                    label={match.status === 'live' ? t('Live', '直播中') : t('Ended', '已结束')}
+                    label={match.status === 'live' ? t('Live Status', '直播中') : t('Ended', '已结束')}
                     size="small"
                     color={match.status === 'live' ? 'success' : 'default'}
                     variant={match.status === 'live' ? 'filled' : 'outlined'}

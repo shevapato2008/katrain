@@ -19,7 +19,7 @@ const LiveMatchPage = () => {
       <Box sx={{ height: '100%', aspectRatio: '1' }}>
         {/* Board will be wired with SGF parsing in future */}
         <Box sx={{ height: '100%', bgcolor: '#8b7355', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography sx={{ color: 'rgba(0,0,0,0.3)' }}>{t('Board', '棋盘')} · {t('Move', '第')}{currentMove}{t('moves', '手')}</Typography>
+          <Typography sx={{ color: 'rgba(0,0,0,0.3)' }}>{t('Board', '棋盘')} · {t('Move #', '第')}{currentMove}{t('moves', '手')}</Typography>
         </Box>
       </Box>
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
@@ -27,7 +27,7 @@ const LiveMatchPage = () => {
           <Button onClick={() => navigate('/kiosk/live')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
           <Typography variant="h6">{match.tournament}</Typography>
           <Chip
-            label={match.status === 'live' ? t('Live', '直播中') : t('Ended', '已结束')}
+            label={match.status === 'live' ? t('Live Status', '直播中') : t('Ended', '已结束')}
             size="small"
             color={match.status === 'live' ? 'success' : 'default'}
           />
@@ -36,7 +36,7 @@ const LiveMatchPage = () => {
           {match.player_black} {match.black_rank && `(${match.black_rank})`} vs {match.player_white} {match.white_rank && `(${match.white_rank})`}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {t('Move', '第')}{currentMove}{t('moves', '手')} / {match.move_count}{t('moves', '手')}
+          {t('Move #', '第')}{currentMove}{t('moves', '手')} / {match.move_count}{t('moves', '手')}
         </Typography>
         {match.result && (
           <Typography variant="body2" sx={{ mt: 1 }}>

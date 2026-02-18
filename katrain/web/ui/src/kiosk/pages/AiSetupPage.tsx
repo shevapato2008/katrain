@@ -115,7 +115,7 @@ const AiSetupPage = () => {
         {/* Color */}
         <OptionChips
           label={t('My Color', '我执')}
-          options={[{ value: 'black' as const, label: t('Black', '● 黑') }, { value: 'white' as const, label: t('White', '○ 白') }]}
+          options={[{ value: 'black' as const, label: t('Black Stone', '● 黑') }, { value: 'white' as const, label: t('White Stone', '○ 白') }]}
           value={color}
           onChange={setColor}
         />

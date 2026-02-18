@@ -1,56 +1,54 @@
 import { useState } from 'react';
-import { Box, Typography, TextField, Button } from '@mui/material';
+import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useKioskAuth } from '../context/KioskAuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
-  const { login } = useKioskAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    login(username, pin);
-    navigate('/kiosk/play', { replace: true });
+  const handleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await login(username, password);
+      navigate('/kiosk/play', { replace: true });
+    } catch (e: any) {
+      setError(e.message || '登录失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        bgcolor: 'background.default',
-      }}
-    >
-      <Box sx={{ width: 360, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <Typography variant="h4" sx={{ textAlign: 'center', color: 'primary.main', fontWeight: 700 }}>
-          KaTrain
-        </Typography>
-        <TextField
-          label="用户名"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          fullWidth
-          autoFocus
-        />
-        <TextField
-          label="PIN"
-          type="password"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          fullWidth
-        />
-        <Button
-          variant="contained"
-          onClick={handleLogin}
-          fullWidth
-          sx={{ minHeight: 56, fontSize: '1.1rem' }}
-        >
-          登录
-        </Button>
-      </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', p: 3 }}>
+      <Typography variant="h4" sx={{ mb: 3 }}>KaTrain</Typography>
+      {error && <Alert severity="error" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>{error}</Alert>}
+      <TextField
+        label="用户名"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        sx={{ mb: 2, width: '100%', maxWidth: 360 }}
+      />
+      <TextField
+        label="密码"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        sx={{ mb: 2, width: '100%', maxWidth: 360 }}
+      />
+      <Button
+        variant="contained"
+        onClick={handleLogin}
+        disabled={loading || !username}
+        sx={{ width: '100%', maxWidth: 360, minHeight: 48 }}
+      >
+        {loading ? '登录中...' : '登录'}
+      </Button>
     </Box>
   );
 };

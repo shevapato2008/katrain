@@ -6,7 +6,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
-import { localizedRank } from '../galaxy/utils/rankUtils';
+import { localizedRank } from '../utils/rankUtils';
 
 interface PlayerCardProps {
   player: 'B' | 'W';

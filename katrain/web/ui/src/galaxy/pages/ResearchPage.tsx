@@ -8,7 +8,7 @@ import Board from '../../components/Board';
 import ResearchSetupPanel from '../components/research/ResearchSetupPanel';
 import ResearchAnalysisPanel from '../components/research/ResearchAnalysisPanel';
 import { useResearchBoard } from '../hooks/useResearchBoard';
-import { useResearchSession } from '../hooks/useResearchSession';
+import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';

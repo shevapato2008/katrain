@@ -6,9 +6,9 @@
  * - Analysis toggle controls
  */
 import { useCallback, useState } from 'react';
-import { useSessionBase } from '../../hooks/useSessionBase';
-import { API } from '../../api';
-import type { GameState } from '../../api';
+import { useSessionBase } from './useSessionBase';
+import { API } from '../api';
+import type { GameState } from '../api';
 
 export interface UseResearchSessionReturn {
     // Session state

@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
-import { KioskAuthProvider, useKioskAuth } from './context/KioskAuthContext';
+import { useAuth } from '../context/AuthContext';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
@@ -16,7 +16,7 @@ import LivePage from './pages/LivePage';
 import SettingsPage from './pages/SettingsPage';
 
 const KioskRoutes = () => {
-  const { user } = useKioskAuth();
+  const { user } = useAuth();
 
   return (
     <Routes>
@@ -31,7 +31,7 @@ const KioskRoutes = () => {
         <Route path="play/pvp/room/:sessionId" element={<GamePage />} />
 
         {/* Standard — with nav rail */}
-        <Route element={<KioskLayout username={user?.name} />}>
+        <Route element={<KioskLayout username={user?.username} />}>
           <Route index element={<Navigate to="play" replace />} />
           <Route path="play" element={<PlayPage />} />
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
@@ -55,9 +55,7 @@ const KioskRoutes = () => {
 const KioskApp = () => (
   <ThemeProvider theme={kioskTheme}>
     <CssBaseline />
-    <KioskAuthProvider>
-      <KioskRoutes />
-    </KioskAuthProvider>
+    <KioskRoutes />
   </ThemeProvider>
 );
 

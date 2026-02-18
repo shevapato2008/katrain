@@ -1,10 +1,9 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useKioskAuth } from '../../context/KioskAuthContext';
+import { useAuth } from '../../../context/AuthContext';
 
 const KioskAuthGuard = () => {
-  const { isAuthenticated } = useKioskAuth();
-  if (!isAuthenticated) return <Navigate to="/kiosk/login" replace />;
-  return <Outlet />;
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Outlet /> : <Navigate to="/kiosk/login" replace />;
 };
 
 export default KioskAuthGuard;

@@ -1,9 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+
+const mockUseAuth = vi.fn();
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 import KioskApp from '../KioskApp';
 
-// KioskApp uses relative routes, needs parent /kiosk/* context (same as AppRouter)
 const renderApp = (route = '/kiosk/play') =>
   render(
     <MemoryRouter initialEntries={[route]}>
@@ -15,24 +20,40 @@ const renderApp = (route = '/kiosk/play') =>
 
 describe('KioskApp', () => {
   it('renders login page when not authenticated', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      login: vi.fn(),
+      logout: vi.fn(),
+      token: null,
+    });
     renderApp('/kiosk/play');
     // Auth guard redirects to login
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
   });
 
   it('renders nav rail on authenticated route', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+      login: vi.fn(),
+      logout: vi.fn(),
+      token: 'mock-token',
+    });
     renderApp('/kiosk/play');
-    // Login first
-    const usernameInput = screen.getByLabelText(/用户名/i);
-    const loginBtn = screen.getByRole('button', { name: /登录/i });
-    fireEvent.change(usernameInput, { target: { value: '张三' } });
-    fireEvent.click(loginBtn);
-    // After login, nav rail visible
+    // After auth, nav rail visible
     expect(screen.getByText('对弈')).toBeInTheDocument();
     expect(screen.getByText('KaTrain')).toBeInTheDocument();
   });
 
   it('redirects /kiosk to /kiosk/play', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      login: vi.fn(),
+      logout: vi.fn(),
+      token: null,
+    });
     renderApp('/kiosk');
     // Should redirect to login (which then redirects to play after auth)
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();

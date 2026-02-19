@@ -32,6 +32,9 @@ class FrameResult:
     warped: np.ndarray  # Perspective-corrected board image
     detections: list[Detection] = field(default_factory=list)  # Raw YOLO detections with bbox
     confirmed_move: Move | None = None  # Set only when MoveDetector confirms a new move
+    corners: list[tuple[int, int]] | None = None  # Board corners in camera space
+    transform_matrix: np.ndarray | None = None  # Perspective transform matrix
+    warp_size: tuple[int, int] | None = None  # Warped image (width, height)
 
 
 class DetectionPipeline:
@@ -45,6 +48,7 @@ class DetectionPipeline:
         confidence_threshold: float = 0.5,
         use_clahe: bool = False,
         canny_min: int = 20,
+        skip_motion_filter: bool = False,
     ):
         self.config = config or BoardConfig()
         self.motion_filter = MotionFilter()
@@ -54,6 +58,7 @@ class DetectionPipeline:
         self.move_detector = MoveDetector()
         self.use_clahe = use_clahe
         self.canny_min = canny_min
+        self.skip_motion_filter = skip_motion_filter
 
     def process_frame(self, frame: np.ndarray) -> FrameResult | None:
         """
@@ -63,7 +68,7 @@ class DetectionPipeline:
             FrameResult if detection succeeded, None if frame was rejected.
         """
         # Step 1: Motion filter on RAW frame (before board detection)
-        if not self.motion_filter.is_stable(frame):
+        if not self.skip_motion_filter and not self.motion_filter.is_stable(frame):
             return None
 
         # Step 2: Board detection + perspective transform
@@ -86,4 +91,17 @@ class DetectionPipeline:
             row, col, color = move_result
             confirmed_move = vision_move_to_katrain(col, row, color, self.config.grid_size)
 
-        return FrameResult(board=board, warped=warped, detections=detections, confirmed_move=confirmed_move)
+        # Populate board_finder state for camera view back-projection
+        corners = list(self.board_finder.pre_corner_point)
+        transform_matrix = self.board_finder.last_transform_matrix
+        warp_size = self.board_finder.last_warp_size
+
+        return FrameResult(
+            board=board,
+            warped=warped,
+            detections=detections,
+            confirmed_move=confirmed_move,
+            corners=corners,
+            transform_matrix=transform_matrix,
+            warp_size=warp_size,
+        )

@@ -12,6 +12,9 @@ Validate:
 """
 
 import argparse
+from pathlib import Path
+
+MODEL_DIR = Path(__file__).resolve().parent.parent.parent.parent / "models"
 
 MODEL_SIZES = {
     "n": ("yolo11n.pt", "~2.6M params, fastest"),
@@ -32,14 +35,21 @@ def resolve_model(args) -> str:
     """
     if args.model != DEFAULT_MODEL and args.model_size:
         # --model was explicitly set, it takes precedence
-        return args.model
-    if args.model_size:
+        pt = args.model
+    elif args.model_size:
         if args.model_size not in MODEL_SIZES:
             raise SystemExit(f"Unknown model size '{args.model_size}'. Choose from: {', '.join(MODEL_SIZES)}")
         pt, desc = MODEL_SIZES[args.model_size]
         print(f"Model: {pt} ({desc})")
-        return pt
-    return args.model
+    else:
+        pt = args.model
+
+    # Check local models/ directory first
+    local = MODEL_DIR / Path(pt).name
+    if local.exists():
+        print(f"Using local model: {local}")
+        return str(local)
+    return pt
 
 
 def cmd_train(args):
@@ -55,6 +65,7 @@ def cmd_train(args):
         batch=args.batch,
         name=args.name,
         patience=args.patience,
+        device=args.device,
         save=True,
         plots=True,
     )
@@ -93,6 +104,7 @@ def main():
     train_p.add_argument("--batch", type=int, default=-1, help="Batch size (-1 for auto-batch based on GPU memory)")
     train_p.add_argument("--name", type=str, default="go_stones")
     train_p.add_argument("--patience", type=int, default=20)
+    train_p.add_argument("--device", type=str, default="mps", help="Device: mps (Mac GPU), cpu, 0 (CUDA GPU 0)")
 
     val_p = sub.add_parser("val", help="Validate a trained model")
     val_p.add_argument("--data", type=str, required=True)

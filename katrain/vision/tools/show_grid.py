@@ -60,13 +60,16 @@ def draw_grid(image: np.ndarray, config: BoardConfig) -> np.ndarray:
     return display
 
 
-def draw_detections_overlay(image: np.ndarray, detections: list[Detection], config: BoardConfig) -> np.ndarray:
+def draw_detections_overlay(
+    image: np.ndarray, detections: list[Detection], config: BoardConfig, font_scale: float = 0.45
+) -> np.ndarray:
     """Draw YOLO-style bbox + label + confidence on warped board image.
 
     Args:
         image: warped board BGR image
         detections: list of Detection objects (with bbox coordinates in warped image space)
         config: BoardConfig (unused currently, reserved for future grid-snapping)
+        font_scale: font size for labels (default 0.45)
 
     Returns:
         Image with bounding boxes, class labels, and confidence scores drawn.
@@ -81,10 +84,12 @@ def draw_detections_overlay(image: np.ndarray, detections: list[Detection], conf
         cv2.rectangle(display, (x1, y1), (x2, y2), color, 2)
 
         label = f"{det.class_name} {det.confidence:.2f}"
-        (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+        (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 1)
         # Draw label background
         cv2.rectangle(display, (x1, y1 - th - baseline - 4), (x1 + tw + 4, y1), color, -1)
-        cv2.putText(display, label, (x1 + 2, y1 - baseline - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+        cv2.putText(
+            display, label, (x1 + 2, y1 - baseline - 2), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), 1
+        )
 
     return display
 
@@ -134,6 +139,73 @@ def draw_detection_overlay(
         for pt in raw_pts:
             x, y = int(pt[0][0]), int(pt[0][1])
             cv2.circle(display, (x, y), 3, (0, 255, 0), -1)
+
+    return display
+
+
+def draw_camera_inference_overlay(
+    frame: np.ndarray,
+    corners: list[tuple[int, int]],
+    transform_matrix: np.ndarray,
+    warp_size: tuple[int, int],
+    detections: list[Detection],
+    config: BoardConfig,
+    font_scale: float = 0.3,
+) -> np.ndarray:
+    """Draw board boundary, grid, and back-projected stone detections on original camera frame.
+
+    Args:
+        frame: original BGR camera image
+        corners: detected corners in camera space [TR, TL, BL, BR]
+        transform_matrix: perspective transform M (warped = M * raw)
+        warp_size: (width, height) of the warped image
+        detections: YOLO detections with coordinates in warped image space
+        config: BoardConfig
+        font_scale: font size for labels (default 0.3)
+    """
+    display = frame.copy()
+    colors = {0: (0, 200, 0), 1: (0, 140, 255)}  # black→green, white→orange
+
+    # Draw cyan quadrilateral boundary
+    pts = np.array(corners, dtype=np.int32).reshape((-1, 1, 2))
+    cv2.polylines(display, [pts], isClosed=True, color=(255, 255, 0), thickness=2)
+
+    if transform_matrix is not None and warp_size is not None:
+        w, h = warp_size
+        M_inv = np.linalg.inv(transform_matrix)
+
+        # Back-project grid intersections
+        gs = config.grid_size
+        warped_pts = []
+        for row in range(gs):
+            for col in range(gs):
+                px, py = grid_to_pixel(col, row, w, h, config)
+                warped_pts.append([px, py])
+        warped_pts = np.array(warped_pts, dtype=np.float32).reshape(-1, 1, 2)
+        raw_pts = cv2.perspectiveTransform(warped_pts, M_inv)
+        for pt in raw_pts:
+            x, y = int(pt[0][0]), int(pt[0][1])
+            cv2.circle(display, (x, y), 2, (0, 255, 0), -1)
+
+        # Back-project stone detections
+        if detections:
+            det_pts = np.array([[det.x_center, det.y_center] for det in detections], dtype=np.float32).reshape(-1, 1, 2)
+            raw_det_pts = cv2.perspectiveTransform(det_pts, M_inv)
+
+            for i, det in enumerate(detections):
+                rx, ry = int(raw_det_pts[i][0][0]), int(raw_det_pts[i][0][1])
+                color = colors.get(det.class_id, (128, 128, 128))
+                cv2.circle(display, (rx, ry), 8, color, -1)
+                cv2.circle(display, (rx, ry), 8, (0, 0, 0), 1)  # outline
+
+                abbrev = "B" if det.class_id == 0 else "W"
+                label = f"{abbrev} .{int(det.confidence * 100):02d}"
+                cv2.putText(display, label, (rx + 10, ry - 5), cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, 1)
+
+    # Stone counts top-left
+    black_count = sum(1 for d in detections if d.class_id == 0)
+    white_count = sum(1 for d in detections if d.class_id == 1)
+    cv2.putText(display, f"B:{black_count} W:{white_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
     return display
 

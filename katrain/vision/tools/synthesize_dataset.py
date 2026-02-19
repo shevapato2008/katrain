@@ -52,6 +52,8 @@ def extract_assets(
     marker_ids: list[int] | None = None,
     empty_board_path: str | None = None,
     detect_method: str = "auto",
+    crop_method: str = "fixed",
+    sam_model_name: str = "mobile_sam.pt",
 ) -> SeedAssets:
     """Extract reusable assets from a seed board image.
 
@@ -145,7 +147,9 @@ def extract_assets(
     black_patches: list[tuple[np.ndarray, np.ndarray]] = []
     white_patches: list[tuple[np.ndarray, np.ndarray]] = []
     for px, py, color in stone_positions:
-        patch, mask = _crop_stone_patch(warped, px, py, half_w, half_h)
+        patch, mask = _crop_stone_patch_dispatch(
+            warped, empty_board, px, py, half_w, half_h, color, crop_method, sam_model_name
+        )
         if patch is not None:
             if color == "B":
                 black_patches.append((patch, mask))
@@ -271,6 +275,309 @@ def _crop_stone_patch(image: np.ndarray, cx: int, cy: int, half_w: int, half_h: 
     patch = image[y1:y2, x1:x2].copy()
     pw, ph = x2 - x1, y2 - y1
     mask = _make_elliptical_alpha(pw, ph, feather=0.12)
+
+    return patch, mask
+
+
+def _crop_stone_patch_cv(image: np.ndarray, cx: int, cy: int, half_w: int, half_h: int):
+    """Crop a stone patch using HoughCircles detection within a 1.5x search ROI.
+
+    Detects circles in a region around the grid intersection, picks the one closest
+    to the nominal center, and crops with a circular alpha mask.
+    """
+    img_h, img_w = image.shape[:2]
+    # 1.5x search ROI around intersection
+    roi_hw, roi_hh = int(half_w * 1.5), int(half_h * 1.5)
+    rx1 = max(0, cx - roi_hw)
+    ry1 = max(0, cy - roi_hh)
+    rx2 = min(img_w, cx + roi_hw)
+    ry2 = min(img_h, cy + roi_hh)
+
+    roi = image[ry1:ry2, rx1:rx2]
+    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray_roi, (9, 9), 2)
+
+    expected_r = (half_w + half_h) // 2
+    min_r = max(int(expected_r * 0.5), 3)
+    max_r = int(expected_r * 1.5)
+
+    circles = cv2.HoughCircles(
+        blurred,
+        cv2.HOUGH_GRADIENT,
+        dp=1.2,
+        minDist=expected_r,
+        param1=80,
+        param2=30,
+        minRadius=min_r,
+        maxRadius=max_r,
+    )
+
+    if circles is None:
+        return None, None
+
+    # Pick circle closest to nominal grid center (in ROI coords)
+    local_cx, local_cy = cx - rx1, cy - ry1
+    circles = np.round(circles[0]).astype(int)
+    dists = np.sqrt((circles[:, 0] - local_cx) ** 2 + (circles[:, 1] - local_cy) ** 2)
+    best = circles[np.argmin(dists)]
+    det_x, det_y, det_r = int(best[0]), int(best[1]), int(best[2])
+
+    # Crop with 1.02x padding
+    pad_r = int(det_r * 1.02)
+    crop_x1 = rx1 + det_x - pad_r
+    crop_y1 = ry1 + det_y - pad_r
+    crop_x2 = rx1 + det_x + pad_r
+    crop_y2 = ry1 + det_y + pad_r
+
+    if crop_x1 < 0 or crop_y1 < 0 or crop_x2 > img_w or crop_y2 > img_h:
+        return None, None
+
+    patch = image[crop_y1:crop_y2, crop_x1:crop_x2].copy()
+    size = crop_x2 - crop_x1
+
+    # Circular alpha mask from detected radius, feathered
+    y, x = np.mgrid[:size, :size]
+    center = size / 2.0
+    dist = np.sqrt((x - center + 0.5) ** 2 + (y - center + 0.5) ** 2)
+    mask = np.clip((det_r - dist) / max(det_r * 0.12, 1.0), 0.0, 1.0)
+    mask = (mask * 255).astype(np.uint8)
+    mask = cv2.GaussianBlur(mask, (5, 5), 1.5)
+
+    return patch, mask
+
+
+def _crop_stone_patch_grabcut(
+    image: np.ndarray, empty_board: np.ndarray | None, cx: int, cy: int, half_w: int, half_h: int
+):
+    """Crop a stone patch using GrabCut segmentation.
+
+    If empty_board is available, uses image difference to seed the mask (GC_INIT_WITH_MASK).
+    Otherwise falls back to rectangle-based initialization (GC_INIT_WITH_RECT).
+    """
+    img_h, img_w = image.shape[:2]
+    # 2x search ROI for GrabCut
+    roi_hw, roi_hh = half_w * 2, half_h * 2
+    rx1 = max(0, cx - roi_hw)
+    ry1 = max(0, cy - roi_hh)
+    rx2 = min(img_w, cx + roi_hw)
+    ry2 = min(img_h, cy + roi_hh)
+
+    roi = image[ry1:ry2, rx1:rx2].copy()
+    roi_h, roi_w = roi.shape[:2]
+    if roi_h < 4 or roi_w < 4:
+        return None, None
+
+    bgd_model = np.zeros((1, 65), np.float64)
+    fgd_model = np.zeros((1, 65), np.float64)
+
+    if empty_board is not None:
+        # Diff-seeded mask
+        empty_roi = empty_board[ry1:ry2, rx1:rx2]
+        diff = np.mean(np.abs(roi.astype(np.float32) - empty_roi.astype(np.float32)), axis=2)
+
+        gc_mask = np.full((roi_h, roi_w), cv2.GC_BGD, dtype=np.uint8)
+        gc_mask[diff > 15] = cv2.GC_PR_FGD
+        gc_mask[diff > 40] = cv2.GC_FGD
+
+        # Ensure some foreground pixels exist
+        if np.sum(gc_mask == cv2.GC_FGD) < 4 and np.sum(gc_mask == cv2.GC_PR_FGD) < 4:
+            return None, None
+
+        try:
+            cv2.grabCut(roi, gc_mask, None, bgd_model, fgd_model, 3, cv2.GC_INIT_WITH_MASK)
+        except cv2.error:
+            return None, None
+    else:
+        # Rectangle mode using stone bbox
+        local_cx, local_cy = cx - rx1, cy - ry1
+        rect_x1 = max(0, local_cx - half_w)
+        rect_y1 = max(0, local_cy - half_h)
+        rect_w = min(roi_w - rect_x1, half_w * 2)
+        rect_h = min(roi_h - rect_y1, half_h * 2)
+
+        if rect_w < 4 or rect_h < 4:
+            return None, None
+
+        gc_mask = np.zeros((roi_h, roi_w), dtype=np.uint8)
+        rect = (rect_x1, rect_y1, rect_w, rect_h)
+        try:
+            cv2.grabCut(roi, gc_mask, rect, bgd_model, fgd_model, 3, cv2.GC_INIT_WITH_RECT)
+        except cv2.error:
+            return None, None
+
+    # Extract foreground
+    fg = np.where((gc_mask == cv2.GC_FGD) | (gc_mask == cv2.GC_PR_FGD), 255, 0).astype(np.uint8)
+
+    # Keep only the connected component closest to the stone center
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(fg)
+    if num_labels > 1:
+        local_cx, local_cy = cx - rx1, cy - ry1
+        best_label = None
+        best_dist = float("inf")
+        for i in range(1, num_labels):  # skip background (label 0)
+            ccx, ccy = centroids[i]
+            dist = np.sqrt((ccx - local_cx) ** 2 + (ccy - local_cy) ** 2)
+            if dist < best_dist:
+                best_dist = dist
+                best_label = i
+        fg = np.where(labels == best_label, 255, 0).astype(np.uint8)
+
+    # Morphological close to fill holes
+    fg = cv2.morphologyEx(fg, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+
+    # Find tight bounding box of foreground
+    coords = cv2.findNonZero(fg)
+    if coords is None:
+        return None, None
+
+    bx, by, bw, bh = cv2.boundingRect(coords)
+    if bw < 4 or bh < 4:
+        return None, None
+
+    patch = roi[by : by + bh, bx : bx + bw].copy()
+    mask = fg[by : by + bh, bx : bx + bw].copy()
+    # Feather edges
+    mask = cv2.GaussianBlur(mask, (5, 5), 1.5)
+
+    return patch, mask
+
+
+# Module-level cache for SAM model to avoid reloading per stone
+_SAM_MODEL_CACHE: dict[str, object] = {}
+
+
+def _crop_stone_patch_sam(image: np.ndarray, cx: int, cy: int, half_w: int, half_h: int, sam_model_name: str):
+    """Crop a stone patch using SAM (Segment Anything Model) with a point prompt.
+
+    Uses ultralytics.SAM with a foreground point at (cx, cy). Picks the mask whose
+    centroid is closest to the prompt point. Caches the model at module level.
+    """
+    try:
+        from ultralytics import SAM
+    except ImportError:
+        print("  [sam] ultralytics package not available, skipping SAM crop")
+        return None, None
+
+    # Load or retrieve cached model
+    if sam_model_name not in _SAM_MODEL_CACHE:
+        print(f"  [sam] Loading SAM model: {sam_model_name}")
+        _SAM_MODEL_CACHE[sam_model_name] = SAM(sam_model_name)
+    model = _SAM_MODEL_CACHE[sam_model_name]
+
+    # Run inference with point prompt
+    try:
+        results = model(image, points=[[cx, cy]], labels=[1])
+    except Exception as e:
+        print(f"  [sam] Inference failed: {e}")
+        return None, None
+
+    if not results or results[0].masks is None or len(results[0].masks.data) == 0:
+        return None, None
+
+    masks = results[0].masks.data.cpu().numpy()
+
+    # Pick mask whose centroid is closest to prompt point,
+    # filtering out masks that are too large (board-level segments)
+    expected_area = np.pi * half_w * half_h  # approximate stone area
+    max_area = expected_area * 6  # allow up to ~6x for shadows/reflections
+
+    best_mask = None
+    best_dist = float("inf")
+    for i in range(masks.shape[0]):
+        m = masks[i]
+        ys, xs = np.where(m > 0.5)
+        if len(ys) == 0:
+            continue
+        # Skip masks that are much larger than a stone
+        if len(ys) > max_area:
+            continue
+        mcx, mcy = np.mean(xs), np.mean(ys)
+        dist = np.sqrt((mcx - cx) ** 2 + (mcy - cy) ** 2)
+        if dist < best_dist:
+            best_dist = dist
+            best_mask = m
+
+    if best_mask is None:
+        return None, None
+
+    # Bounding box of the mask
+    binary = (best_mask > 0.5).astype(np.uint8)
+    coords = cv2.findNonZero(binary)
+    if coords is None:
+        return None, None
+
+    bx, by, bw, bh = cv2.boundingRect(coords)
+    if bw < 4 or bh < 4:
+        return None, None
+
+    # Reject if bounding box is much larger than expected stone size
+    if bw > half_w * 6 or bh > half_h * 6:
+        return None, None
+
+    img_h, img_w = image.shape[:2]
+    # Clamp to image bounds
+    bx2, by2 = min(bx + bw, img_w), min(by + bh, img_h)
+    bx, by = max(bx, 0), max(by, 0)
+
+    patch = image[by:by2, bx:bx2].copy()
+    mask = (binary[by:by2, bx:bx2] * 255).astype(np.uint8)
+
+    return patch, mask
+
+
+def _crop_stone_patch_dispatch(
+    image: np.ndarray,
+    empty_board: np.ndarray | None,
+    cx: int,
+    cy: int,
+    half_w: int,
+    half_h: int,
+    color: str,
+    method: str,
+    sam_model_name: str,
+):
+    """Route to the chosen crop method, falling back to fixed crop on failure."""
+    patch, mask = None, None
+
+    if method == "fixed":
+        patch, mask = _crop_stone_patch(image, cx, cy, half_w, half_h)
+    elif method == "cv":
+        patch, mask = _crop_stone_patch_cv(image, cx, cy, half_w, half_h)
+    elif method == "grabcut":
+        patch, mask = _crop_stone_patch_grabcut(image, empty_board, cx, cy, half_w, half_h)
+    elif method == "sam":
+        patch, mask = _crop_stone_patch_sam(image, cx, cy, half_w, half_h, sam_model_name)
+    else:
+        raise ValueError(f"Unknown crop method: {method}")
+
+    # Fallback to fixed if chosen method returned nothing
+    if patch is None and method != "fixed":
+        patch, mask = _crop_stone_patch(image, cx, cy, half_w, half_h)
+
+    # Re-center at grid intersection for non-fixed methods.
+    # SAM/grabcut tight bounding boxes can be offset from (cx, cy),
+    # causing shadow/side-profile artifacts. Use centered rectangle
+    # (same as fixed method) for consistent patch content.
+    if patch is not None and method not in ("fixed",):
+        y1, y2 = cy - half_h, cy + half_h
+        x1, x2 = cx - half_w, cx + half_w
+        img_h, img_w = image.shape[:2]
+        if 0 <= x1 and 0 <= y1 and x2 <= img_w and y2 <= img_h:
+            patch = image[y1:y2, x1:x2].copy()
+
+    # Normalize to standard stone size so synthesize_image's
+    # perspective resize starts from the expected aspect ratio
+    target_w, target_h = 2 * half_w, 2 * half_h
+    if patch is not None and (patch.shape[1] != target_w or patch.shape[0] != target_h):
+        patch = cv2.resize(patch, (target_w, target_h), interpolation=cv2.INTER_AREA)
+        mask = cv2.resize(mask, (target_w, target_h), interpolation=cv2.INTER_AREA)
+
+    # Replace binary masks (SAM/cv/grabcut) with feathered elliptical mask
+    # to match the fixed method's smooth blending and prevent hard-edged
+    # rectangular artifacts (especially visible on white stones)
+    if patch is not None and method != "fixed":
+        mask = _make_elliptical_alpha(target_w, target_h, feather=0.12)
+
     return patch, mask
 
 
@@ -464,22 +771,6 @@ def _paste_patch(canvas: np.ndarray, patch: np.ndarray, mask: np.ndarray, cx: in
     canvas[dy1:dy2, dx1:dx2] = (roi_patch * alpha_3 + canvas[dy1:dy2, dx1:dx2] * (1.0 - alpha_3)).astype(np.uint8)
 
 
-def _stamp_alpha(alpha_canvas: np.ndarray, mask: np.ndarray, cx: int, cy: int):
-    """Stamp stone mask onto alpha canvas using max blending."""
-    ph, pw = mask.shape[:2]
-    ch, cw = alpha_canvas.shape[:2]
-    x1, y1 = cx - pw // 2, cy - ph // 2
-    x2, y2 = x1 + pw, y1 + ph
-    sx1, sy1 = max(0, -x1), max(0, -y1)
-    dx1, dy1 = max(0, x1), max(0, y1)
-    dx2, dy2 = min(cw, x2), min(ch, y2)
-    sx2, sy2 = sx1 + (dx2 - dx1), sy1 + (dy2 - dy1)
-    if dx2 <= dx1 or dy2 <= dy1:
-        return
-    roi_mask = mask[sy1:sy2, sx1:sx2]
-    np.maximum(alpha_canvas[dy1:dy2, dx1:dx2], roi_mask, out=alpha_canvas[dy1:dy2, dx1:dx2])
-
-
 def _random_augment_patch(patch: np.ndarray, mask: np.ndarray):
     """Randomly flip a patch (preserves aspect ratio for elliptical stones)."""
     if random.random() < 0.5:
@@ -554,7 +845,7 @@ def synthesize_image(
     positions: list[tuple[int, int, str]],
     off_board_range: tuple[int, int] = (3, 15),
 ) -> tuple[np.ndarray, list[tuple[int, int, str]], list[tuple[float, float, float, float, str]]]:
-    """Synthesize a training image: stones on empty board -> inverse warp -> composite.
+    """Synthesize a training image: composite empty board + paste stones in original space.
 
     Returns:
         (result_image, on_board_stones, off_board_stones)
@@ -562,53 +853,61 @@ def synthesize_image(
         off_board_stones: list of (norm_cx, norm_cy, norm_bw, norm_bh, color) in original image
     """
     config = BoardConfig()
-    warped = assets.empty_board.copy()
-    warp_h, warp_w = warped.shape[:2]
-
-    # Pad warped board so edge stones aren't clipped
-    pad_x = int(STONE_BBOX_W * warp_w) // 2 + 2
-    pad_y = int(STONE_BBOX_H * warp_h) // 2 + 2
-    warped = cv2.copyMakeBorder(warped, pad_y, pad_y, pad_x, pad_x, cv2.BORDER_REPLICATE)
-
-    # Alpha canvas: 255 inside board region, 0 in padding (transparent)
-    alpha_canvas = np.zeros(warped.shape[:2], dtype=np.uint8)
-    alpha_canvas[pad_y : pad_y + warp_h, pad_x : pad_x + warp_w] = 255
-
-    # Place stones in warped space (offset by padding)
-    on_board_stones = []
-    for gx, gy, color in positions:
-        px, py = grid_to_pixel(gx, gy, warp_w, warp_h, config)
-        px += pad_x
-        py += pad_y
-        patches = assets.black_patches if color == "B" else assets.white_patches
-        patch, mask = random.choice(patches)
-        patch, mask = _random_augment_patch(patch, mask)
-        _paste_patch(warped, patch, mask, px, py)
-        _stamp_alpha(alpha_canvas, mask, px, py)
-        on_board_stones.append((gx, gy, color))
-
-    # Adjust inverse transform for padded canvas: shift back before warping
-    T_shift = np.eye(3, dtype=np.float64)
-    T_shift[0, 2] = -pad_x
-    T_shift[1, 2] = -pad_y
-    M_inv_padded = assets.inv_transform_matrix @ T_shift
-
-    # Inverse warp with selective alpha compositing.
-    # alpha_canvas: 255 inside board region, 0 in padding, stone mask in padding overlap.
-    # Bilinear interpolation at board boundaries produces soft alpha transitions.
+    warp_w, warp_h = assets.warp_size
     orig_h, orig_w = assets.original_shape[:2]
-    warped_rgba = np.concatenate([warped, alpha_canvas[:, :, np.newaxis]], axis=2)
-    warped_back = cv2.warpPerspective(warped_rgba, M_inv_padded, (orig_w, orig_h))
 
-    # Alpha composite onto background
-    alpha_f = warped_back[:, :, 3:4].astype(np.float32) / 255.0
+    # Step 1: Warp empty board back to original perspective
+    warped_empty = cv2.warpPerspective(
+        assets.empty_board,
+        assets.inv_transform_matrix,
+        (orig_w, orig_h),
+        borderMode=cv2.BORDER_REPLICATE,
+    )
+
+    # Step 2: Composite empty board onto original using feathered board mask
+    mask_f = cv2.GaussianBlur(assets.board_mask, (5, 5), 1.5).astype(np.float32) / 255.0
+    mask_f = mask_f[:, :, np.newaxis]
     result = (
-        (assets.original_bg.astype(np.float32) * (1.0 - alpha_f) + warped_back[:, :, :3].astype(np.float32))
+        (assets.original_bg.astype(np.float32) * (1.0 - mask_f) + warped_empty.astype(np.float32) * mask_f)
         .clip(0, 255)
         .astype(np.uint8)
     )
 
-    # Random off-board stones
+    # Step 3: Paste stones directly in original image space
+    half_w = int(STONE_BBOX_W * warp_w) // 2
+    half_h = int(STONE_BBOX_H * warp_h) // 2
+    M_inv = assets.inv_transform_matrix
+
+    on_board_stones = []
+    for gx, gy, color in positions:
+        wpx, wpy = grid_to_pixel(gx, gy, warp_w, warp_h, config)
+
+        # Stone center in original image
+        center = _perspective_transform_points(np.float32([[wpx, wpy]]), M_inv)[0]
+        cx, cy = int(round(center[0])), int(round(center[1]))
+
+        # Stone bbox corners in warped space -> original space -> local size
+        corners_w = np.float32(
+            [
+                [wpx - half_w, wpy - half_h],
+                [wpx + half_w, wpy - half_h],
+                [wpx + half_w, wpy + half_h],
+                [wpx - half_w, wpy + half_h],
+            ]
+        )
+        corners_o = _perspective_transform_points(corners_w, M_inv)
+        local_w = max(int(round(np.ptp(corners_o[:, 0]))), 4)
+        local_h = max(int(round(np.ptp(corners_o[:, 1]))), 4)
+
+        patches = assets.black_patches if color == "B" else assets.white_patches
+        patch, mask = random.choice(patches)
+        patch, mask = _random_augment_patch(patch, mask)
+        patch = cv2.resize(patch, (local_w, local_h), interpolation=cv2.INTER_AREA)
+        mask = cv2.resize(mask, (local_w, local_h), interpolation=cv2.INTER_AREA)
+        _paste_patch(result, patch, mask, cx, cy)
+        on_board_stones.append((gx, gy, color))
+
+    # Step 4: Random off-board stones
     n_off = random.randint(*off_board_range)
     off_board_stones = _place_off_board_stones(result, assets, n_off)
 
@@ -645,6 +944,9 @@ def _place_off_board_stones(image: np.ndarray, assets: SeedAssets, count: int):
 
         patch, mask, color = random.choice(all_patches)
         patch, mask = _random_augment_patch(patch, mask)
+        # Resize to standard stone size for consistent off-board appearance
+        patch = cv2.resize(patch, (sw, sh), interpolation=cv2.INTER_AREA)
+        mask = cv2.resize(mask, (sw, sh), interpolation=cv2.INTER_AREA)
         _paste_patch(image, patch, mask, cx, cy)
 
         bw = sw / w
@@ -777,6 +1079,14 @@ def main():
         help="Stone detection method: auto (diff if empty-board else vision→adaptive), diff, vision, adaptive",
     )
     parser.add_argument("--verify", action="store_true", help="Generate bbox verification images")
+    parser.add_argument(
+        "--crop-method",
+        type=str,
+        default="fixed",
+        choices=["fixed", "cv", "grabcut", "sam"],
+        help="Stone patch crop method: fixed (bbox), cv (HoughCircles), grabcut, sam (Segment Anything)",
+    )
+    parser.add_argument("--sam-model", type=str, default="mobile_sam.pt", help="SAM model name (default: mobile_sam.pt)")
     args = parser.parse_args()
 
     off_min, off_max = map(int, args.off_board_stones.split("-"))
@@ -800,6 +1110,8 @@ def main():
         marker_ids=args.marker_ids,
         empty_board_path=args.empty_board,
         detect_method=args.detect_method,
+        crop_method=args.crop_method,
+        sam_model_name=args.sam_model,
     )
     sw, sh = assets.stone_size
     print(f"  Empty board: {assets.empty_board.shape[1]}x{assets.empty_board.shape[0]}")
@@ -810,10 +1122,11 @@ def main():
     # Save intermediate assets
     cv2.imwrite(str(assets_dir / "empty_board.png"), assets.empty_board)
     cv2.imwrite(str(assets_dir / "board_mask.png"), assets.board_mask)
-    for i, (p, _) in enumerate(assets.black_patches[:5]):
-        cv2.imwrite(str(assets_dir / f"patch_black_{i}.png"), p)
-    for i, (p, _) in enumerate(assets.white_patches[:5]):
-        cv2.imwrite(str(assets_dir / f"patch_white_{i}.png"), p)
+    method_tag = args.crop_method
+    for i, (p, _) in enumerate(assets.black_patches):
+        cv2.imwrite(str(assets_dir / f"patch_black_{method_tag}_{i}.png"), p)
+    for i, (p, _) in enumerate(assets.white_patches):
+        cv2.imwrite(str(assets_dir / f"patch_white_{method_tag}_{i}.png"), p)
 
     # Step 2: Find SGF files
     sgf_dir = Path(args.sgf_dir)

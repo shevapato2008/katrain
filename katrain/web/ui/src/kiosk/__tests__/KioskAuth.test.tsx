@@ -78,7 +78,7 @@ describe('LoginPage (shared auth)', () => {
     fireEvent.click(screen.getByRole('button', { name: /登录/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
+      expect(screen.getByText('登录失败')).toBeInTheDocument();
     });
   });
 });

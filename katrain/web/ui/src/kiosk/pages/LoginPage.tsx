@@ -20,7 +20,7 @@ const LoginPage = () => {
       await login(username, password);
       navigate('/kiosk/play', { replace: true });
     } catch (e: any) {
-      setError(e.message || t('Login failed', '登录失败'));
+      setError(t('Login failed', '登录失败'));
     } finally {
       setLoading(false);
     }

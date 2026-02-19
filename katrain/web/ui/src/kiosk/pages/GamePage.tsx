@@ -62,7 +62,7 @@ const GamePage = () => {
             onAction={session.handleAction}
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
-            onToggleAnalysis={(key: string) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key] }))}
+            onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
           />
         </Box>
       </Box>

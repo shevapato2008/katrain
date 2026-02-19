@@ -23,7 +23,6 @@ const TsumegoProblemPage = () => {
     attempts,
     showHint,
     hintCoords,
-    placeStone,
     undo,
     reset,
     toggleHint,

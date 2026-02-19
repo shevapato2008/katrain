@@ -53,7 +53,7 @@ def extract_assets(
     empty_board_path: str | None = None,
     detect_method: str = "auto",
     crop_method: str = "fixed",
-    sam_model_name: str = "mobile_sam.pt",
+    sam_model_name: str = "models/mobile_sam.pt",
 ) -> SeedAssets:
     """Extract reusable assets from a seed board image.
 
@@ -1086,7 +1086,7 @@ def main():
         choices=["fixed", "cv", "grabcut", "sam"],
         help="Stone patch crop method: fixed (bbox), cv (HoughCircles), grabcut, sam (Segment Anything)",
     )
-    parser.add_argument("--sam-model", type=str, default="mobile_sam.pt", help="SAM model name (default: mobile_sam.pt)")
+    parser.add_argument("--sam-model", type=str, default="models/mobile_sam.pt", help="SAM model path (default: models/mobile_sam.pt)")
     args = parser.parse_args()
 
     off_min, off_max = map(int, args.off_board_stones.split("-"))

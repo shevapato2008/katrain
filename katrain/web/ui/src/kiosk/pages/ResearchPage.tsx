@@ -9,7 +9,7 @@ import {
   TipsAndUpdates, Map as MapIcon, FolderOpen, Save,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import MockBoard from '../components/game/MockBoard';
+import LiveBoard from '../../components/live/LiveBoard';
 import ItemToggle from '../components/game/ItemToggle';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -62,7 +62,12 @@ const ResearchPage = () => {
       {/* Left: Board + Bottom Navigation */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <MockBoard moveNumber={currentMove} />
+          <LiveBoard
+            moves={[]}
+            currentMove={0}
+            boardSize={boardSize}
+            showCoordinates={true}
+          />
         </Box>
 
         {/* Bottom navigation */}

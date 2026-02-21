@@ -61,8 +61,14 @@ const KifuPage = () => {
   // Fetch full kifu detail (SGF) when a game is selected
   useEffect(() => {
     if (selectedId === null) return;
+    let cancelled = false;
+    setPreviewMoves([]);
+    setPreviewColors([]);
+    setPreviewCurrentMove(0);
+
     KifuAPI.getAlbum(selectedId)
       .then((detail) => {
+        if (cancelled) return;
         if (detail.sgf_content) {
           const parsed = sgfToMoves(detail.sgf_content);
           setPreviewMoves(parsed.moves);
@@ -71,7 +77,11 @@ const KifuPage = () => {
           setPreviewBoardSize(detail.board_size || 19);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (!cancelled) console.error('Failed to load kifu detail:', err);
+      });
+
+    return () => { cancelled = true; };
   }, [selectedId]);
 
   const selectedKifu = kifuList.find(k => k.id === selectedId);

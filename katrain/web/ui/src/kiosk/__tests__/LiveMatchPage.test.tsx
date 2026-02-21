@@ -134,7 +134,7 @@ describe('LiveMatchPage', () => {
     expect(screen.getByText('结果: B+2.5')).toBeInTheDocument();
   });
 
-  it('shows board placeholder with current move', () => {
+  it('renders board canvas', () => {
     mockUseLiveMatch.mockReturnValue({
       match: mockMatch,
       loading: false,
@@ -144,8 +144,8 @@ describe('LiveMatchPage', () => {
       analysis: {},
       refresh: vi.fn(),
     });
-    renderPage();
-    expect(screen.getByText('棋盘 · 第156手')).toBeInTheDocument();
+    const { container } = renderPage();
+    expect(container.querySelector('canvas')).toBeInTheDocument();
   });
 
   it('shows player ranks when available', () => {

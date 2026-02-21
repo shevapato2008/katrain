@@ -71,7 +71,7 @@ const TsumegoProblemPage = () => {
           moveHistory={moveHistory}
           onPlaceStone={(x, y) => {
             const result = placeStone(x, y);
-            if (result) playSound('stone');
+            if (result?.sound) playSound(result.sound);
           }}
         />
       </Box>

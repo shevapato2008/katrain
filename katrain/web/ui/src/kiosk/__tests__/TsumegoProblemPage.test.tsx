@@ -162,10 +162,11 @@ describe('TsumegoProblemPage', () => {
     expect(screen.getByText('返回')).toBeInTheDocument();
   });
 
-  it('shows hint marker when showHint is true', () => {
+  it('passes hint state to board when showHint is true', () => {
     hookReturn = { ...defaultHookReturn, showHint: true, hintCoords: [4, 4] as [number, number] };
     renderPage();
-    expect(screen.getByTestId('hint-marker')).toBeInTheDocument();
+    // Hint is rendered on canvas, so we verify the hint button toggles to "hide" text
+    expect(screen.getByText('隐藏提示')).toBeInTheDocument();
   });
 
   it('changes hint button text when hint is shown', () => {

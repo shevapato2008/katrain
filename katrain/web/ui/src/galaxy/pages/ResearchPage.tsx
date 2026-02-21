@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, Button, LinearProgress } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import ScienceIcon from '@mui/icons-material/Science';
-import LiveBoard, { type AiMoveMarker } from '../components/live/LiveBoard';
+import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import Board from '../../components/Board';
 import ResearchSetupPanel from '../components/research/ResearchSetupPanel';
 import ResearchAnalysisPanel from '../components/research/ResearchAnalysisPanel';

@@ -5,7 +5,8 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon, Science as ScienceIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import MockBoard from '../components/game/MockBoard';
+import LiveBoard from '../../components/live/LiveBoard';
+import { sgfToMoves } from '../../utils/sgfSerializer';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
@@ -23,6 +24,10 @@ const KifuPage = () => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewMoves, setPreviewMoves] = useState<string[]>([]);
+  const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
+  const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
+  const [previewBoardSize, setPreviewBoardSize] = useState(19);
 
   const fetchAlbums = useCallback((query: string) => {
     setLoading(true);
@@ -52,6 +57,22 @@ const KifuPage = () => {
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [searchInput, fetchAlbums]);
+
+  // Fetch full kifu detail (SGF) when a game is selected
+  useEffect(() => {
+    if (selectedId === null) return;
+    KifuAPI.getAlbum(selectedId)
+      .then((detail) => {
+        if (detail.sgf_content) {
+          const parsed = sgfToMoves(detail.sgf_content);
+          setPreviewMoves(parsed.moves);
+          setPreviewColors(parsed.stoneColors);
+          setPreviewCurrentMove(parsed.moves.length);
+          setPreviewBoardSize(detail.board_size || 19);
+        }
+      })
+      .catch(() => {});
+  }, [selectedId]);
 
   const selectedKifu = kifuList.find(k => k.id === selectedId);
 
@@ -206,7 +227,12 @@ const KifuPage = () => {
         {selectedKifu ? (
           <>
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: 0 }}>
-              <MockBoard moveNumber={selectedKifu.move_count} />
+              <LiveBoard
+                moves={previewMoves}
+                stoneColors={previewColors}
+                currentMove={previewCurrentMove}
+                boardSize={previewBoardSize}
+              />
             </Box>
 
             {/* Bottom bar: Navigation + Open in Research */}

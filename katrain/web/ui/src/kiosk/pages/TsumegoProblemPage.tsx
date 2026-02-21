@@ -18,7 +18,6 @@ const TsumegoProblemPage = () => {
     boardSize,
     stones,
     lastMove,
-    nextPlayer,
     isSolved,
     isFailed,
     isTryMode,

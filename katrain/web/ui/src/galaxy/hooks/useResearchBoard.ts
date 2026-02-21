@@ -3,8 +3,8 @@
  * Pure client-side — no backend session, no WebSocket, no KataGo.
  */
 import { useState, useCallback, useRef, useMemo } from 'react';
-import { movesToSGF, sgfToMoves } from '../utils/sgfSerializer';
-import type { SGFMetadata, SerializedSGF } from '../utils/sgfSerializer';
+import { movesToSGF, sgfToMoves } from '../../utils/sgfSerializer';
+import type { SGFMetadata, SerializedSGF } from '../../utils/sgfSerializer';
 import type { PlaceMode, EditMode } from '../components/research/ResearchToolbar';
 
 export interface ResearchBoardState {

@@ -18,7 +18,7 @@ import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary, KifuAlbumDetail } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateResult } from '../../utils/resultTranslation';
-import { sgfToMoves } from '../utils/sgfSerializer';
+import { sgfToMoves } from '../../utils/sgfSerializer';
 import LiveBoard from '../components/live/LiveBoard';
 
 const PAGE_SIZE = 20;

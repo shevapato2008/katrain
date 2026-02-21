@@ -1,14 +1,26 @@
+import { useRef, useEffect } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Chip } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
 import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
+import LiveBoard from '../../components/live/LiveBoard';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { play: playSound } = useSound();
   const { match, loading, error, currentMove } = useLiveMatch(matchId);
+
+  const prevMoveRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (match && currentMove > 0 && prevMoveRef.current !== null && currentMove !== prevMoveRef.current) {
+      playSound('stone');
+    }
+    prevMoveRef.current = currentMove;
+  }, [currentMove, match, playSound]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   if (error) return <Box sx={{ p: 2 }}><Alert severity="error">{error.message}</Alert><Button onClick={() => navigate('/kiosk/live')} sx={{ mt: 1 }}>{t('Back', '返回')}</Button></Box>;
@@ -17,10 +29,11 @@ const LiveMatchPage = () => {
   return (
     <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
       <Box sx={{ height: '100%', aspectRatio: '1' }}>
-        {/* Board will be wired with SGF parsing in future */}
-        <Box sx={{ height: '100%', bgcolor: '#8b7355', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography sx={{ color: 'rgba(0,0,0,0.3)' }}>{t('Board', '棋盘')} · {t('Move #', '第')}{currentMove}{t('moves', '手')}</Typography>
-        </Box>
+        <LiveBoard
+          moves={match.moves}
+          currentMove={currentMove}
+          boardSize={match.board_size}
+        />
       </Box>
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>

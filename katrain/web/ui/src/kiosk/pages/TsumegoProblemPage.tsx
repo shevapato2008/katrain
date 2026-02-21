@@ -3,11 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack, Undo, Lightbulb, Replay, Explore, ExploreOff } from '@mui/icons-material';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
+import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 
 const TsumegoProblemPage = () => {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { play: playSound } = useSound();
   const {
     problem,
     loading,
@@ -23,6 +26,8 @@ const TsumegoProblemPage = () => {
     attempts,
     showHint,
     hintCoords,
+    moveHistory,
+    placeStone,
     undo,
     reset,
     toggleHint,
@@ -56,29 +61,20 @@ const TsumegoProblemPage = () => {
   return (
     <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
       {/* Board area */}
-      <Box
-        sx={{ height: '100%', aspectRatio: '1', position: 'relative', bgcolor: '#c8a456' }}
-        data-testid="tsumego-board"
-      >
-        {/* Simplified board rendering: stones are displayed as indicators */}
-        <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.6)' }}>
-            {boardSize}x{boardSize} - {stones.length} stones
-          </Typography>
-          {lastMove && (
-            <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)' }}>
-              Last: ({lastMove[0]}, {lastMove[1]})
-            </Typography>
-          )}
-          {showHint && hintCoords && (
-            <Typography variant="caption" data-testid="hint-marker" sx={{ color: '#1976d2', fontWeight: 600 }}>
-              Hint: ({hintCoords[0]}, {hintCoords[1]})
-            </Typography>
-          )}
-          <Typography variant="caption" sx={{ mt: 1, color: 'rgba(0,0,0,0.5)' }}>
-            {nextPlayer === 'B' ? t('Black', '黑') : t('White', '白')}{t('to play', '先')}
-          </Typography>
-        </Box>
+      <Box sx={{ height: '100%', aspectRatio: '1' }} data-testid="tsumego-board">
+        <TsumegoBoard
+          boardSize={boardSize}
+          stones={stones}
+          lastMove={lastMove}
+          hintCoords={hintCoords}
+          showHint={showHint}
+          disabled={isSolved || (isFailed && !isTryMode)}
+          moveHistory={moveHistory}
+          onPlaceStone={(x, y) => {
+            const result = placeStone(x, y);
+            if (result) playSound('stone');
+          }}
+        />
       </Box>
 
       {/* Controls panel */}

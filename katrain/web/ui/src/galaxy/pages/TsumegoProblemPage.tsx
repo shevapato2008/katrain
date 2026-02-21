@@ -24,7 +24,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import type { MoveResult } from '../../hooks/useTsumegoProblem';
-import TsumegoBoard from '../components/tsumego/TsumegoBoard';
+import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import TsumegoProblemControls from '../components/tsumego/TsumegoProblemControls';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import { MobileHeader, MobileToolbar } from '../components/tsumego/MobileControls';

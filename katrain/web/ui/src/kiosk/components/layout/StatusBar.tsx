@@ -21,7 +21,7 @@ const StatusBar = ({ username }: StatusBarProps) => {
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-          KaTrain
+          弈航
         </Typography>
         <Box
           data-testid="engine-status"

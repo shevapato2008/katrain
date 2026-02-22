@@ -29,7 +29,7 @@ const LoginPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>KaTrain</Typography>
+      <Typography variant="h4" sx={{ mb: 3 }}>弈航</Typography>
       {error && <Alert severity="error" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>{error}</Alert>}
       <TextField
         label={t('Username', '用户名')}

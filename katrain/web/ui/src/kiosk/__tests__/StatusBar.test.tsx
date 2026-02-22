@@ -8,9 +8,9 @@ const renderWithTheme = (ui: React.ReactElement) =>
   render(<ThemeProvider theme={kioskTheme}>{ui}</ThemeProvider>);
 
 describe('StatusBar', () => {
-  it('renders KaTrain branding', () => {
+  it('renders 弈航 branding', () => {
     renderWithTheme(<StatusBar username="张三" />);
-    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+    expect(screen.getByText('弈航')).toBeInTheDocument();
   });
 
   it('renders engine status indicator', () => {

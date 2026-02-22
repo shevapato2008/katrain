@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Box, Typography, Divider, Card, CardActionArea, CardContent } from '@mui/material';
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useOrientation, type Rotation } from '../context/OrientationContext';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
+  const { rotation, setRotation } = useOrientation();
   const [language, setLanguage] = useState('zh');
 
   const platforms = [
@@ -18,6 +20,18 @@ const SettingsPage = () => {
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>{t('Settings', '设置')}</Typography>
       <Divider sx={{ mb: 3 }} />
+
+      <OptionChips
+        label={t('Screen Rotation', '屏幕旋转')}
+        options={[
+          { value: 0 as Rotation, label: '0° 横屏' },
+          { value: 90 as Rotation, label: '90° 竖屏' },
+          { value: 180 as Rotation, label: '180° 横屏翻转' },
+          { value: 270 as Rotation, label: '270° 竖屏翻转' },
+        ]}
+        value={rotation}
+        onChange={(v) => setRotation(v as Rotation)}
+      />
 
       <OptionChips
         label={t('Language', '语言')}

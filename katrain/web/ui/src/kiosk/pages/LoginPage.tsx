@@ -55,7 +55,7 @@ const LoginPage = () => {
         {loading ? t('Logging in...', '登录中...') : t('Login', '登录')}
       </Button>
       <Box sx={{ mt: 3 }}>
-        <RotationSelector />
+        <RotationSelector showLabel />
       </Box>
     </Box>
   );

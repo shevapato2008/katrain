@@ -16,15 +16,47 @@
       "alignItems": "center",
       "children": [
         {
-          "type": "text",
-          "id": "5NzXp",
-          "name": "loginLogo",
-          "fill": "#5cb57a",
-          "content": "KaTrain",
-          "fontFamily": "Sora",
-          "fontSize": 36,
-          "fontWeight": "700",
-          "letterSpacing": -2
+          "type": "frame",
+          "id": "XdRDB",
+          "name": "loginLogoGroup",
+          "layout": "vertical",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "wCYRo",
+              "name": "loginLogoImg",
+              "width": 100,
+              "height": 100,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./logo/board-navi-logo-white.png",
+                "mode": "fit"
+              }
+            },
+            {
+              "type": "text",
+              "id": "90hvf",
+              "name": "loginLogoText",
+              "fill": "#5cb57a",
+              "content": "弈航",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "i8mkc",
+              "name": "loginSlogan",
+              "fill": "#888888",
+              "content": "棋道导航者",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 13
+            }
+          ]
         },
         {
           "type": "frame",
@@ -170,6 +202,16 @@
               "fontWeight": "600"
             }
           ]
+        },
+        {
+          "type": "text",
+          "id": "VdyXk",
+          "name": "loginRegLink",
+          "fill": "#5cb57a",
+          "content": "没有账号？注册",
+          "fontFamily": "Noto Sans SC",
+          "fontSize": 13,
+          "fontWeight": "normal"
         }
       ]
     },
@@ -5723,7 +5765,7 @@
                       "id": "TcWQr",
                       "name": "stVersion",
                       "fill": "#666666",
-                      "content": "KaTrain v2.0.0 · RK3588 Smart Board Edition",
+                      "content": "弈航 v2.0.0 · RK3588 Smart Board Edition",
                       "fontFamily": "Inter",
                       "fontSize": 12,
                       "fontWeight": "normal"
@@ -5989,6 +6031,40 @@
               "fontWeight": "normal"
             }
           ]
+        },
+        {
+          "type": "frame",
+          "id": "fSQgE",
+          "name": "nav-rotation",
+          "width": "fill_container",
+          "height": 56,
+          "cornerRadius": 8,
+          "layout": "vertical",
+          "gap": 4,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "Z4UNJ",
+              "name": "navRotationIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "screen_rotation_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "#888888"
+            },
+            {
+              "type": "text",
+              "id": "3coZw",
+              "name": "navRotationLabel",
+              "fill": "#888888",
+              "content": "旋转",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            }
+          ]
         }
       ]
     },
@@ -6017,15 +6093,43 @@
       "alignItems": "center",
       "children": [
         {
-          "type": "text",
-          "id": "62U32",
-          "name": "sbLogo",
-          "fill": "#5cb57a",
-          "content": "KaTrain",
-          "fontFamily": "Sora",
-          "fontSize": 14,
-          "fontWeight": "600",
-          "letterSpacing": -0.5
+          "type": "frame",
+          "id": "twddj",
+          "name": "sbLogoGroup",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "PFVKU",
+              "name": "sbLogoImg",
+              "metadata": {
+                "type": "unsplash",
+                "username": "sschusterphotoart",
+                "link": "https://unsplash.com/@sschusterphotoart",
+                "author": "Sebastian Schuster"
+              },
+              "width": 36,
+              "height": 36,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./logo/board-navi-logo-white.png",
+                "mode": "fit"
+              }
+            },
+            {
+              "type": "text",
+              "id": "4t9py",
+              "name": "sbLogoText",
+              "fill": "#5cb57a",
+              "content": "弈航",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 14,
+              "fontWeight": "600",
+              "letterSpacing": -0.5
+            }
+          ]
         },
         {
           "type": "frame",
@@ -6357,6 +6461,41 @@
               "fontWeight": "normal"
             }
           ]
+        },
+        {
+          "type": "frame",
+          "id": "KoL1P",
+          "name": "tab-rotation",
+          "height": 36,
+          "cornerRadius": 8,
+          "gap": 4,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "2vdwv",
+              "name": "tabRotIcon",
+              "width": 18,
+              "height": 18,
+              "iconFontName": "screen_rotation_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "#888888"
+            },
+            {
+              "type": "text",
+              "id": "eK6Vk",
+              "name": "tabRotLabel",
+              "fill": "#888888",
+              "content": "旋转",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            }
+          ]
         }
       ]
     },
@@ -6375,15 +6514,47 @@
       "alignItems": "center",
       "children": [
         {
-          "type": "text",
-          "id": "xHM5C",
-          "name": "pLoginLogo",
-          "fill": "#5cb57a",
-          "content": "KaTrain",
-          "fontFamily": "Sora",
-          "fontSize": 36,
-          "fontWeight": "700",
-          "letterSpacing": -2
+          "type": "frame",
+          "id": "m5fy4",
+          "name": "pLoginLogoGroup",
+          "layout": "vertical",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "XQVvz",
+              "name": "pLoginLogoImg",
+              "width": 88,
+              "height": 88,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./logo/board-navi-logo-white.png",
+                "mode": "fit"
+              }
+            },
+            {
+              "type": "text",
+              "id": "18Pzy",
+              "name": "pLoginLogoText",
+              "fill": "#5cb57a",
+              "content": "弈航",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "xx3fa",
+              "name": "pLoginSlogan",
+              "fill": "#888888",
+              "content": "棋道导航者",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 13
+            }
+          ]
         },
         {
           "type": "frame",
@@ -6519,6 +6690,16 @@
               "fontWeight": "600"
             }
           ]
+        },
+        {
+          "type": "text",
+          "id": "hlyY2",
+          "name": "pLoginRegLink",
+          "fill": "#5cb57a",
+          "content": "没有账号？注册",
+          "fontFamily": "Noto Sans SC",
+          "fontSize": 13,
+          "fontWeight": "normal"
         },
         {
           "type": "frame",
@@ -7625,6 +7806,877 @@
                       "fontFamily": "IBM Plex Mono",
                       "fontSize": 24,
                       "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "VN7NQ",
+      "x": 0,
+      "y": 14400,
+      "name": "1b. Registration Page",
+      "width": 1920,
+      "height": 1080,
+      "fill": "#121212",
+      "layout": "vertical",
+      "gap": 24,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "zvtJg",
+          "name": "regLogoGroup",
+          "layout": "vertical",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "3H1Bb",
+              "name": "regLogoImg",
+              "width": 100,
+              "height": 100,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./logo/board-navi-logo-white.png",
+                "mode": "fit"
+              }
+            },
+            {
+              "type": "text",
+              "id": "ZakUw",
+              "name": "regLogoText",
+              "fill": "#5cb57a",
+              "content": "弈航",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "8GZ6E",
+              "name": "regSlogan",
+              "fill": "#888888",
+              "content": "棋道导航者",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 13
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "bXr41",
+          "name": "loginError",
+          "enabled": false,
+          "width": 360,
+          "height": 40,
+          "fill": "#2d1f1f",
+          "cornerRadius": 8,
+          "gap": 8,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "5gANl",
+              "name": "loginErrIcon",
+              "width": 18,
+              "height": 18,
+              "iconFontName": "error",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "#ef5350"
+            },
+            {
+              "type": "text",
+              "id": "ImjEs",
+              "name": "loginErrText",
+              "fill": "#ef5350",
+              "content": "登录失败",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vYaBz",
+          "name": "loginUser",
+          "width": 360,
+          "height": 56,
+          "fill": "#1e1e1e",
+          "cornerRadius": 8,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "padding": [
+            8,
+            16
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "ijnB5",
+              "name": "loginUserLabel",
+              "fill": "#888888",
+              "content": "用户名",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "vhpzQ",
+              "name": "loginUserInput",
+              "fill": "#ffffff",
+              "content": "admin",
+              "fontFamily": "Sora",
+              "fontSize": 15,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "MJQ1A",
+          "name": "loginPass",
+          "width": 360,
+          "height": 56,
+          "fill": "#1e1e1e",
+          "cornerRadius": 8,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "padding": [
+            8,
+            16
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "XWksl",
+              "name": "loginPassLabel",
+              "fill": "#888888",
+              "content": "密码",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "qn1NH",
+              "name": "loginPassInput",
+              "fill": "#ffffff",
+              "content": "••••••",
+              "fontFamily": "Sora",
+              "fontSize": 15,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "g4uq7",
+          "name": "regConfirmPass",
+          "width": 360,
+          "height": 56,
+          "fill": "#1e1e1e",
+          "cornerRadius": 8,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "padding": [
+            8,
+            16
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "36Tww",
+              "name": "confirmPassLabel",
+              "fill": "#888888",
+              "content": "确认密码",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "tRMMI",
+              "name": "confirmPassInput",
+              "fill": "#ffffff",
+              "content": "••••••",
+              "fontFamily": "Sora",
+              "fontSize": 15,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "N00mN",
+          "name": "regTermsRow",
+          "width": 360,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "rectangle",
+              "cornerRadius": 3,
+              "id": "bcOKH",
+              "name": "termsCheckbox",
+              "width": 16,
+              "height": 16,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1.5,
+                "fill": "#888888"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "mUmUu",
+              "name": "termsTextWrap",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "sa8Ls",
+                  "fill": "#888888",
+                  "content": "我已阅读并同意",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "vFEDU",
+                  "fill": "#5cb57a",
+                  "content": "《用户服务协议》",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "ljq6H",
+                  "fill": "#888888",
+                  "content": "和",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "6bhRL",
+                  "fill": "#5cb57a",
+                  "content": "《隐私策略》",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "avdjy",
+          "name": "loginBtn",
+          "opacity": 0.5,
+          "width": 360,
+          "height": 48,
+          "fill": "#3a3a3a",
+          "cornerRadius": 8,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "a0N3U",
+              "name": "loginBtnText",
+              "fill": "#ffffff",
+              "content": "注册",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 16,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "hX9vL",
+          "name": "loginRegLink",
+          "fill": "#5cb57a",
+          "content": "已有账号？登录",
+          "fontFamily": "Noto Sans SC",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "WBh16",
+      "x": 4320,
+      "y": 5750,
+      "name": "P1b. Registration Page (Portrait)",
+      "width": 600,
+      "height": 1024,
+      "fill": "#121212",
+      "layout": "vertical",
+      "gap": 24,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "mXseL",
+          "name": "pRegLogoGroup",
+          "layout": "vertical",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "RoH7E",
+              "name": "pRegLogoImg",
+              "width": 88,
+              "height": 88,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./logo/board-navi-logo-white.png",
+                "mode": "fit"
+              }
+            },
+            {
+              "type": "text",
+              "id": "dOJML",
+              "name": "pRegLogoText",
+              "fill": "#5cb57a",
+              "content": "弈航",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "dD2Vx",
+              "name": "pRegSlogan",
+              "fill": "#888888",
+              "content": "棋道导航者",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 13
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "iuAyc",
+          "name": "pLoginError",
+          "enabled": false,
+          "width": 340,
+          "height": 40,
+          "fill": "#2d1f1f",
+          "cornerRadius": 8,
+          "gap": 8,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "C0opE",
+              "name": "errText",
+              "fill": "#ff6b6b",
+              "content": "登录失败",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "p8KtF",
+          "name": "pLoginUser",
+          "width": 340,
+          "height": 56,
+          "fill": "#1e1e1e",
+          "cornerRadius": 8,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "padding": [
+            8,
+            16
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "5t2sc",
+              "name": "userLabel",
+              "fill": "#888888",
+              "content": "用户名",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "FcqoU",
+              "name": "userVal",
+              "fill": "#ffffff",
+              "content": "Player1",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "fkZJi",
+          "name": "pLoginPass",
+          "width": 340,
+          "height": 56,
+          "fill": "#1e1e1e",
+          "cornerRadius": 8,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "padding": [
+            8,
+            16
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "NgaVs",
+              "name": "passLabel",
+              "fill": "#888888",
+              "content": "密码",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "SkBBu",
+              "name": "passVal",
+              "fill": "#ffffff",
+              "content": "••••••",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "uJEoL",
+          "name": "pRegConfirmPass",
+          "width": 340,
+          "height": 56,
+          "fill": "#1e1e1e",
+          "cornerRadius": 8,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "padding": [
+            8,
+            16
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "0P8eF",
+              "name": "pConfirmPassLabel",
+              "fill": "#888888",
+              "content": "确认密码",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "vs79U",
+              "name": "pConfirmPassInput",
+              "fill": "#ffffff",
+              "content": "••••••",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "epwyW",
+          "name": "pRegTermsRow",
+          "width": 340,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "rectangle",
+              "cornerRadius": 3,
+              "id": "fOio9",
+              "name": "pTermsCheckbox",
+              "width": 16,
+              "height": 16,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1.5,
+                "fill": "#888888"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "3ZENz",
+              "name": "pTermsTextWrap",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "vu8Or",
+                  "fill": "#888888",
+                  "content": "我已阅读并同意",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "tiD4I",
+                  "fill": "#5cb57a",
+                  "content": "《用户服务协议》",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "PU9CD",
+                  "fill": "#888888",
+                  "content": "和",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "bwdVF",
+                  "fill": "#5cb57a",
+                  "content": "《隐私策略》",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Ya0vM",
+          "name": "pLoginBtn",
+          "opacity": 0.5,
+          "width": 340,
+          "height": 48,
+          "fill": "#3a3a3a",
+          "cornerRadius": 8,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "GgeEw",
+              "name": "btnText",
+              "fill": "#ffffff",
+              "content": "注册",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 16,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "IGnAo",
+          "name": "pLoginRegLink",
+          "fill": "#5cb57a",
+          "content": "已有账号？登录",
+          "fontFamily": "Noto Sans SC",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "qEopc",
+          "name": "pRotRow",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "tFpzE",
+              "name": "pRotIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "screen_rotation",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "#888888"
+            },
+            {
+              "type": "text",
+              "id": "IiM40",
+              "name": "rotLabel",
+              "fill": "#888888",
+              "content": "0° 横屏",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "weba3",
+      "x": 0,
+      "y": 15600,
+      "name": "1c. Terms Dialog",
+      "width": 1920,
+      "height": 1080,
+      "fill": "#000000cc",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "hs9Xc",
+          "x": 610,
+          "y": 240,
+          "name": "termsDialogCard",
+          "clip": true,
+          "width": 700,
+          "height": 600,
+          "fill": "#1e1e1e",
+          "cornerRadius": 12,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#333333"
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ETls4",
+              "name": "termsDialogTitle",
+              "width": "fill_container",
+              "height": 56,
+              "fill": "#252525",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#333333"
+              },
+              "padding": [
+                0,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "EIf7u",
+                  "name": "termsTitle",
+                  "fill": "#ffffff",
+                  "content": "弈航用户服务协议",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "TSYh6",
+                  "name": "closeIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontName": "close",
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "#888888"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "40XwQ",
+              "name": "termsContent",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BQZbT",
+                  "name": "termsSection1Title",
+                  "fill": "#ffffff",
+                  "content": "一、服务条款概述",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "HFnNR",
+                  "name": "termsSection1Body",
+                  "fill": "#aaaaaa",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "欢迎使用弈航围棋教学应用。本协议是您与弈航之间关于使用弈航产品和服务所订立的协议。请您仔细阅读以下全部内容，如果您不同意本协议的任何内容，请勿注册或使用本服务。",
+                  "lineHeight": 1.6,
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "4qfgw",
+                  "name": "termsSection2Title",
+                  "fill": "#ffffff",
+                  "content": "二、用户注册与账号管理",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "7KP4a",
+                  "name": "termsSection2Body",
+                  "fill": "#aaaaaa",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "用户在注册账号时应当提供真实、准确、完整的信息，并在信息发生变更时及时更新。用户应当妥善保管账号和密码，因用户原因导致账号被盗用或密码泄露的，由用户自行承担相应责任。",
+                  "lineHeight": 1.6,
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "Kz9Ov",
+                  "name": "termsSection3Title",
+                  "fill": "#ffffff",
+                  "content": "三、服务内容与使用规则",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "ptu1O",
+                  "name": "termsSection3Body",
+                  "fill": "#aaaaaa",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "弈航为用户提供围棋对弈、AI分析、棋谱复盘等服务。用户应遵守相关法律法规，不得利用本服务从事任何违法违规活动。弈航有权对违反规定的用户采取警告、限制或终止服务等措施。",
+                  "lineHeight": 1.6,
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "l5hb6",
+              "name": "termsFooter",
+              "width": "fill_container",
+              "height": 64,
+              "fill": "#252525",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#333333"
+              },
+              "padding": [
+                0,
+                24
+              ],
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rgr5z",
+                  "name": "termsCloseBtn",
+                  "width": 100,
+                  "height": 40,
+                  "fill": "#5cb57a",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "YdEuA",
+                      "name": "closeBtnText",
+                      "fill": "#ffffff",
+                      "content": "关闭",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 14,
+                      "fontWeight": "600"
                     }
                   ]
                 }

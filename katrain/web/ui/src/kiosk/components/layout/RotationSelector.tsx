@@ -12,9 +12,10 @@ const OPTIONS: { value: Rotation; label: string; desc: string }[] = [
 
 interface RotationSelectorProps {
   variant?: 'default' | 'compact';
+  showLabel?: boolean;
 }
 
-const RotationSelector = ({ variant = 'default' }: RotationSelectorProps) => {
+const RotationSelector = ({ variant = 'default', showLabel }: RotationSelectorProps) => {
   const { rotation, setRotation } = useOrientation();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -27,14 +28,27 @@ const RotationSelector = ({ variant = 'default' }: RotationSelectorProps) => {
 
   return (
     <>
-      <IconButton
-        data-testid="rotation-selector-button"
-        onClick={handleOpen}
-        size={variant === 'compact' ? 'small' : 'medium'}
-        sx={{ color: 'text.secondary' }}
-      >
-        <RotationIcon fontSize={variant === 'compact' ? 'small' : 'medium'} />
-      </IconButton>
+      {showLabel ? (
+        <Box
+          data-testid="rotation-selector-button"
+          onClick={handleOpen}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', color: 'text.secondary' }}
+        >
+          <RotationIcon sx={{ fontSize: 20 }} />
+          <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>
+            旋转桌面
+          </Typography>
+        </Box>
+      ) : (
+        <IconButton
+          data-testid="rotation-selector-button"
+          onClick={handleOpen}
+          size={variant === 'compact' ? 'small' : 'medium'}
+          sx={{ color: 'text.secondary' }}
+        >
+          <RotationIcon fontSize={variant === 'compact' ? 'small' : 'medium'} />
+        </IconButton>
+      )}
       <Popover
         open={!!anchorEl}
         anchorEl={anchorEl}

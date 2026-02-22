@@ -37,6 +37,17 @@ describe('RotationSelector', () => {
     });
   });
 
+  it('renders label text when showLabel is true', () => {
+    r(<RotationSelector showLabel />);
+    expect(screen.getByText('旋转桌面')).toBeInTheDocument();
+    expect(screen.getByTestId('rotation-selector-button')).toBeInTheDocument();
+  });
+
+  it('does not render label text by default', () => {
+    r(<RotationSelector />);
+    expect(screen.queryByText('旋转桌面')).not.toBeInTheDocument();
+  });
+
   it('highlights current rotation', () => {
     r(<RotationSelector />);
     fireEvent.click(screen.getByTestId('rotation-selector-button'));

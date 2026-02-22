@@ -436,7 +436,7 @@ function ZenModeApp() {
       />
       {!sessionId || !gameState ? (
         <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#0f0f0f' }}>
-          <Typography variant="h5" sx={{ color: '#f5f3f0' }}>{t("Initializing KaTrain...")}</Typography>
+          <Typography variant="h5" sx={{ color: '#f5f3f0' }}>{t("正在初始化...")}</Typography>
         </Box>
       ) : (
         <Box className="app-container animate-fade-in">

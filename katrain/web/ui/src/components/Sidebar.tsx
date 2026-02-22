@@ -73,7 +73,8 @@ const Sidebar: React.FC<SidebarProps> = ({ gameState, onNewGame, onLoadSGF, onSa
         onChange={handleFileChange}
       />
       <Box sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom sx={{ color: '#f5f3f0', fontWeight: 600 }}>弈航</Typography>
+        <Typography variant="h6" sx={{ color: '#f5f3f0', fontWeight: 600 }}>弈航</Typography>
+        <Typography variant="caption" sx={{ color: '#7a7772', fontSize: '0.65rem', display: 'block', mb: 1 }}>棋道导航者</Typography>
         <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
       </Box>
 

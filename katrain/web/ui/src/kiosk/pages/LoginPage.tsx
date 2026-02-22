@@ -29,7 +29,9 @@ const LoginPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>弈航</Typography>
+      <img src="/assets/img/logo.png" alt="弈航" style={{ width: 64, height: 64, marginBottom: 16 }} />
+      <Typography variant="h4" sx={{ mb: 1 }}>弈航</Typography>
+      <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>棋道导航者</Typography>
       {error && <Alert severity="error" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>{error}</Alert>}
       <TextField
         label={t('Username', '用户名')}

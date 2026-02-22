@@ -27,7 +27,7 @@ describe('KioskLayout', () => {
   it('renders status bar, navigation rail, and outlet in landscape', () => {
     mockUseOrientation.mockReturnValue({ isPortrait: false });
     renderLayout();
-    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+    expect(screen.getByText('弈航')).toBeInTheDocument();
     expect(screen.getByText('对弈')).toBeInTheDocument();
     expect(screen.getByText('设置')).toBeInTheDocument();
     expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe('KioskLayout', () => {
   it('renders status bar, top tab bar, and outlet in portrait', () => {
     mockUseOrientation.mockReturnValue({ isPortrait: true });
     renderLayout();
-    expect(screen.getByText('KaTrain')).toBeInTheDocument();
+    expect(screen.getByText('弈航')).toBeInTheDocument();
     expect(screen.getByText('对弈')).toBeInTheDocument();
     expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
     // TopTabBar renders as horizontal nav (48px tall)

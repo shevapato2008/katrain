@@ -20,6 +20,7 @@ const StatusBar = ({ username }: StatusBarProps) => {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <img src="/assets/img/logo-white.png" alt="弈航" style={{ width: 20, height: 20 }} />
         <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
           弈航
         </Typography>

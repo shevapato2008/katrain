@@ -71,10 +71,10 @@ const Dashboard = () => {
         <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%', overflow: 'auto' }}>
             <Box sx={{ mb: 6 }}>
                 <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    {i18n.t('dashboard:welcome', 'Welcome to Galaxy Go')}
+                    {i18n.t('dashboard:welcome', '欢迎使用弈航')}
                 </Typography>
                 <Typography variant="h6" color="text.secondary">
-                    {i18n.t('dashboard:tagline', 'Your professional Go training and analysis platform.')}
+                    {i18n.t('dashboard:tagline', '棋道导航者')}
                 </Typography>
             </Box>
 

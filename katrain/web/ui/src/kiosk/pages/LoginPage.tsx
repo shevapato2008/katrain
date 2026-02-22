@@ -3,6 +3,7 @@ import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import RotationSelector from '../components/layout/RotationSelector';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -27,7 +28,7 @@ const LoginPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', p: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', p: 3 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>KaTrain</Typography>
       {error && <Alert severity="error" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>{error}</Alert>}
       <TextField
@@ -51,6 +52,9 @@ const LoginPage = () => {
       >
         {loading ? t('Logging in...', '登录中...') : t('Login', '登录')}
       </Button>
+      <Box sx={{ mt: 3 }}>
+        <RotationSelector />
+      </Box>
     </Box>
   );
 };

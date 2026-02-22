@@ -11,6 +11,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+vi.mock('../context/OrientationContext', () => ({
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
 const renderWithProviders = (ui: React.ReactElement, route = '/kiosk/play') =>
   render(
     <ThemeProvider theme={kioskTheme}>

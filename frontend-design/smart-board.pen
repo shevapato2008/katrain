@@ -212,6 +212,35 @@
           "fontFamily": "Noto Sans SC",
           "fontSize": 13,
           "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "Zqzdf",
+          "name": "rotRow",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "Ycpb6",
+              "name": "rotIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "screen_rotation_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "#888888"
+            },
+            {
+              "type": "text",
+              "id": "oKBoU",
+              "name": "rotLabel",
+              "fill": "#888888",
+              "content": "旋转桌面",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
         }
       ]
     },
@@ -6714,7 +6743,7 @@
               "name": "pRotIcon",
               "width": 20,
               "height": 20,
-              "iconFontName": "screen_rotation",
+              "iconFontName": "screen_rotation_alt",
               "iconFontFamily": "Material Symbols Rounded",
               "fill": "#888888"
             },
@@ -6723,7 +6752,7 @@
               "id": "HjEVW",
               "name": "rotLabel",
               "fill": "#888888",
-              "content": "0° 横屏",
+              "content": "旋转桌面",
               "fontFamily": "Noto Sans SC",
               "fontSize": 12,
               "fontWeight": "normal"
@@ -8136,6 +8165,35 @@
           "fontFamily": "Noto Sans SC",
           "fontSize": 13,
           "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "307GX",
+          "name": "rotRow",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "R7ldG",
+              "name": "rotIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "screen_rotation_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "#888888"
+            },
+            {
+              "type": "text",
+              "id": "ukvve",
+              "name": "rotLabel",
+              "fill": "#888888",
+              "content": "旋转桌面",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
         }
       ]
     },
@@ -8464,7 +8522,7 @@
               "name": "pRotIcon",
               "width": 20,
               "height": 20,
-              "iconFontName": "screen_rotation",
+              "iconFontName": "screen_rotation_alt",
               "iconFontFamily": "Material Symbols Rounded",
               "fill": "#888888"
             },
@@ -8473,7 +8531,7 @@
               "id": "IiM40",
               "name": "rotLabel",
               "fill": "#888888",
-              "content": "0° 横屏",
+              "content": "旋转桌面",
               "fontFamily": "Noto Sans SC",
               "fontSize": 12,
               "fontWeight": "normal"

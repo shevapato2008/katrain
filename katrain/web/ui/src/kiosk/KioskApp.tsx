@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
+import { OrientationProvider } from './context/OrientationContext';
+import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
@@ -58,7 +60,11 @@ const KioskRoutes = () => {
 const KioskApp = () => (
   <ThemeProvider theme={kioskTheme}>
     <CssBaseline />
-    <KioskRoutes />
+    <OrientationProvider>
+      <RotationWrapper>
+        <KioskRoutes />
+      </RotationWrapper>
+    </OrientationProvider>
   </ThemeProvider>
 );
 

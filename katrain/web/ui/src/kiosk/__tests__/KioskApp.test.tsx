@@ -7,6 +7,15 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+vi.mock('../context/OrientationContext', () => ({
+  OrientationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
+vi.mock('../components/layout/RotationWrapper', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 import KioskApp from '../KioskApp';
 
 const renderApp = (route = '/kiosk/play') =>

@@ -5,6 +5,10 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KifuPage from '../pages/KifuPage';
 
+vi.mock('../context/OrientationContext', () => ({
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
 const mockAlbums = [
   {
     id: 1, player_black: '柯洁', player_white: '申真谞',

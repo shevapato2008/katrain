@@ -5,6 +5,10 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import LoginPage from '../pages/LoginPage';
 
+vi.mock('../context/OrientationContext', () => ({
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
 const mockLogin = vi.fn();
 const mockLogout = vi.fn();
 

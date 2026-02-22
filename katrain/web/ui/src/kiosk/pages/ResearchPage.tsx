@@ -13,6 +13,7 @@ import LiveBoard from '../../components/live/LiveBoard';
 import ItemToggle from '../components/game/ItemToggle';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useOrientation } from '../context/OrientationContext';
 
 const inputSx = {
   '& .MuiInputBase-root': { fontSize: '0.9rem' },
@@ -22,6 +23,7 @@ const menuItemSx = { fontSize: '0.9rem' };
 
 const ResearchPage = () => {
   const { t } = useTranslation();
+  const { isPortrait } = useOrientation();
   const [playerBlack, setPlayerBlack] = useState('');
   const [playerWhite, setPlayerWhite] = useState('');
   const [boardSize, setBoardSize] = useState(19);
@@ -58,9 +60,9 @@ const ResearchPage = () => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      {/* Left: Board + Bottom Navigation */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
+    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+      {/* Board + Bottom Navigation */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f', ...(isPortrait && { maxHeight: '50%' }) }}>
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <LiveBoard
             moves={[]}
@@ -106,12 +108,14 @@ const ResearchPage = () => {
         </Box>
       </Box>
 
-      {/* Right panel */}
+      {/* Side panel */}
       <Box
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column',
           bgcolor: 'background.paper',
-          borderLeft: '1px solid rgba(255,255,255,0.05)',
+          ...(isPortrait
+            ? { borderTop: '1px solid rgba(255,255,255,0.05)' }
+            : { borderLeft: '1px solid rgba(255,255,255,0.05)' }),
         }}
       >
         <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>

@@ -5,12 +5,14 @@ import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
+import { useOrientation } from '../context/OrientationContext';
 
 const TsumegoProblemPage = () => {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
+  const { isPortrait } = useOrientation();
   const {
     problem,
     loading,
@@ -36,7 +38,7 @@ const TsumegoProblemPage = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <CircularProgress />
       </Box>
     );
@@ -58,9 +60,9 @@ const TsumegoProblemPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board area */}
-      <Box sx={{ height: '100%', aspectRatio: '1' }} data-testid="tsumego-board">
+      <Box sx={isPortrait ? { width: '100%', maxHeight: '50%', aspectRatio: '1' } : { height: '100%', aspectRatio: '1' }} data-testid="tsumego-board">
         <TsumegoBoard
           boardSize={boardSize}
           stones={stones}

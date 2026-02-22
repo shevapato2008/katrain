@@ -11,6 +11,7 @@ import KioskResultBadge from '../components/game/KioskResultBadge';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useOrientation } from '../context/OrientationContext';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -18,6 +19,7 @@ const DEBOUNCE_MS = 350;
 const KifuPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isPortrait } = useOrientation();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [kifuList, setKifuList] = useState<KifuAlbumSummary[]>([]);
@@ -87,9 +89,9 @@ const KifuPage = () => {
   const selectedKifu = kifuList.find(k => k.id === selectedId);
 
   return (
-    <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      {/* Left panel: Title + Search + Card list */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+      {/* List panel: Title + Search + Card list */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...(isPortrait && { maxHeight: '50%' }) }}>
         {/* Header */}
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
@@ -227,11 +229,14 @@ const KifuPage = () => {
         </Box>
       </Box>
 
-      {/* Right panel: Board Preview */}
+      {/* Preview panel: Board Preview */}
       <Box
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          borderLeft: '1px solid rgba(255,255,255,0.06)', bgcolor: '#0f0f0f', overflow: 'hidden',
+          bgcolor: '#0f0f0f', overflow: 'hidden',
+          ...(isPortrait
+            ? { borderTop: '1px solid rgba(255,255,255,0.06)' }
+            : { borderLeft: '1px solid rgba(255,255,255,0.06)' }),
         }}
       >
         {selectedKifu ? (

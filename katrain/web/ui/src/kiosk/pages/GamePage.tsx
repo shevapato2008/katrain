@@ -7,12 +7,14 @@ import { useAuth } from '../../context/AuthContext';
 import Board from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useOrientation } from '../context/OrientationContext';
 
 const GamePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token } = useAuth();
+  const { isPortrait } = useOrientation();
   const session = useGameSession({ token: token ?? undefined });
   const [analysisToggles, setAnalysisToggles] = useState({
     show_ownership: false,
@@ -27,7 +29,7 @@ const GamePage = () => {
 
   if (!session.gameState) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <CircularProgress />
       </Box>
     );
@@ -37,7 +39,7 @@ const GamePage = () => {
   const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default' }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
@@ -47,8 +49,8 @@ const GamePage = () => {
         </Button>
       </Box>
       {/* Board + Panel */}
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Box sx={{ height: '100%', aspectRatio: '1' }}>
+      <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', flex: 1, overflow: 'hidden' }}>
+        <Box sx={isPortrait ? { width: '100%', maxHeight: '50%', aspectRatio: '1' } : { height: '100%', aspectRatio: '1' }}>
           <Board
             gameState={gameState}
             onMove={session.onMove}

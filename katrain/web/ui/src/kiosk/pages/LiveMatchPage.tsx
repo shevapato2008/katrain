@@ -6,12 +6,14 @@ import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import LiveBoard from '../../components/live/LiveBoard';
+import { useOrientation } from '../context/OrientationContext';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
+  const { isPortrait } = useOrientation();
   const { match, loading, error, currentMove } = useLiveMatch(matchId);
 
   const prevMoveRef = useRef<number | null>(null);
@@ -22,13 +24,13 @@ const LiveMatchPage = () => {
     prevMoveRef.current = currentMove;
   }, [currentMove, match, playSound]);
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
   if (error) return <Box sx={{ p: 2 }}><Alert severity="error">{error.message}</Alert><Button onClick={() => navigate('/kiosk/live')} sx={{ mt: 1 }}>{t('Back', '返回')}</Button></Box>;
   if (!match) return null;
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
-      <Box sx={{ height: '100%', aspectRatio: '1' }}>
+    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
+      <Box sx={isPortrait ? { width: '100%', maxHeight: '50%', aspectRatio: '1' } : { height: '100%', aspectRatio: '1' }}>
         <LiveBoard
           moves={match.moves}
           currentMove={currentMove}

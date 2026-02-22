@@ -4,6 +4,10 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
+vi.mock('../context/OrientationContext', () => ({
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
 const mockUndo = vi.fn();
 const mockReset = vi.fn();
 const mockToggleHint = vi.fn();

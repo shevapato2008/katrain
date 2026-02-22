@@ -5,6 +5,10 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import type { GameState } from '../../api';
 
+vi.mock('../context/OrientationContext', () => ({
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
 // Mock auth
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),

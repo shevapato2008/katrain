@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 
-interface BoardProps {
+export interface BoardProps {
   gameState: GameState;
   onMove: (x: number, y: number) => void;
   onNavigate?: (nodeId: number) => void;
@@ -17,6 +17,9 @@ const ASSETS = {
   lastMove: "/assets/img/inner.png",
   topMove: "/assets/img/topmove.png",
 };
+
+// Module-level image cache — survives component unmount/remount (3D toggle)
+const imageCache: Record<string, HTMLImageElement> = {};
 
 const EVAL_COLORS = [
   "rgba(150, 50, 140, 0.85)", // Purple > 12 (blunder)
@@ -46,6 +49,13 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
   useEffect(() => {
+    // Use cached images if available (survives unmount/remount from 3D toggle)
+    const assetKeys = Object.keys(ASSETS);
+    if (assetKeys.every(k => imageCache[k])) {
+      imagesRef.current = { ...imageCache };
+      renderBoard();
+      return;
+    }
     const loadImages = async () => {
       const entries = Object.entries(ASSETS);
       await Promise.all(
@@ -55,6 +65,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
               const img = new Image();
               img.onload = () => {
                 imagesRef.current[key] = img;
+                imageCache[key] = img;
                 resolve();
               };
               img.onerror = () => reject(new Error(`Failed to load ${src}`));

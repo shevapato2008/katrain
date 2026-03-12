@@ -15,6 +15,7 @@ import FlagIcon from '@mui/icons-material/Flag';
 import UndoIcon from '@mui/icons-material/Undo';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import CalculateIcon from '@mui/icons-material/Calculate';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import { type GameState, API } from '../../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -204,6 +205,12 @@ const RightSidebarPanel = ({
                             onClick={() => onAction('count')}
                             disabled={isGameOver || gameState.history.length < (gameState.count_min_moves ?? 100)}
                         />
+                        <ItemToggle
+                            icon={<ViewInArIcon />}
+                            label={t('3D', '3D')}
+                            active={analysisToggles.view3d}
+                            onClick={() => onToggleChange('view3d')}
+                        />
                     </Box>
                     {isRated && !isGameOver && (
                         <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
@@ -238,6 +245,12 @@ const RightSidebarPanel = ({
                         control={<Switch size="small" checked={analysisToggles.numbers} onChange={() => onToggleChange('numbers')} />}
                         label={<Typography variant="body2">{t('Move Numbers', 'Move Numbers')}</Typography>}
                     />
+                    {analysisToggles.view3d && (
+                        <FormControlLabel
+                            control={<Switch size="small" checked={!!analysisToggles.stoneDropEffect} onChange={() => onToggleChange('stoneDropEffect')} />}
+                            label={<Typography variant="body2">{t('Stone Effect', '落子特效')}</Typography>}
+                        />
+                    )}
                 </Box>
 
                 {/* Game Result Progress (If Rated) */}

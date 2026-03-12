@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
+import type { BoardProps } from '../../components/Board';
+
+type Board3DComponent = React.ComponentType<BoardProps>;
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +20,19 @@ const GameRoomPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
+    const [view3d, setView3d] = useState(false);
+    const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
+    const board3dLoadingRef = useRef(false);
+
+    useEffect(() => {
+        if (view3d && !Board3D && !board3dLoadingRef.current) {
+            board3dLoadingRef.current = true;
+            import('../../components/Board3D').then(mod => {
+                setBoard3D(() => mod.default);
+            });
+        }
+    }, [view3d, Board3D]);
+
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showGameEndDialog, setShowGameEndDialog] = useState(false);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
@@ -292,23 +308,47 @@ const GameRoomPage = () => {
                     </Box>
                 </Box>
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
-                    <Board 
-                        gameState={gameState} 
-                        onMove={(x, y) => isPlayer ? onMove(x, y) : {}} 
-                        onNavigate={onNavigate}
-                        analysisToggles={{ coords: true, numbers: false }} // Fixed for HvH
-                    />
+                    <div style={{
+                        display: (view3d && Board3D) ? 'none' : 'flex',
+                        width: '100%', height: '100%',
+                        justifyContent: 'center', alignItems: 'center'
+                    }}>
+                        <Board
+                            gameState={gameState}
+                            onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
+                            onNavigate={onNavigate}
+                            analysisToggles={{ coords: true, numbers: false }}
+                        />
+                    </div>
+                    {view3d && Board3D && (
+                        <Board3D
+                            gameState={gameState}
+                            onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
+                            onNavigate={onNavigate}
+                            analysisToggles={{ coords: true, numbers: false }}
+                        />
+                    )}
+                    {view3d && !Board3D && <CircularProgress />}
                 </Box>
             </Box>
 
             {/* Right Sidebar with Controls */}
-            <RightSidebarPanel 
+            <RightSidebarPanel
                 gameState={gameState}
-                analysisToggles={{ ownership: false, hints: false, score: false, policy: false, coords: true, numbers: false }}
-                onToggleChange={() => {}} // Disabled for HvH
+                analysisToggles={{ ownership: false, hints: false, score: false, policy: false, coords: true, numbers: false, stoneDropEffect: false, view3d }}
+                onToggleChange={(setting) => {
+                    if (setting === 'view3d') {
+                        setView3d(prev => {
+                            const next = !prev;
+                            localStorage.setItem('katrain_view3d', String(next));
+                            return next;
+                        });
+                    }
+                    // Other toggles are disabled for HvH — no-op (stoneDropEffect handled via analysisToggles in Board3D)
+                }}
                 onNavigate={onNavigate}
-                onAction={isPlayer ? handleActionWrapper : () => {}} // Only players can act? Spectators can navigate history?
-                isRated={true} // HvH usually rated
+                onAction={isPlayer ? handleActionWrapper : () => {}}
+                isRated={true}
             />
         </Box>
     );

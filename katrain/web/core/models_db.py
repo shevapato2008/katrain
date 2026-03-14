@@ -257,6 +257,22 @@ class UserTsumegoProgress(Base):
     problem = relationship("TsumegoProblem")
 
 
+# ============ Tutorial Models ============
+
+class UserTutorialProgress(Base):
+    """User's progress on a specific tutorial example."""
+    __tablename__ = "user_tutorial_progress"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    example_id = Column(String(64), primary_key=True)
+    topic_id = Column(String(64), nullable=False, index=True)
+    last_step_id = Column(String(64), nullable=True)
+    completed = Column(Boolean, default=False)
+    last_played_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", backref="tutorial_progress")
+
+
 class KifuAlbum(Base):
     """Database model for tournament game records (大赛棋谱)."""
     __tablename__ = "kifu_albums"

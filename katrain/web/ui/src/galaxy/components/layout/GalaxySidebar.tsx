@@ -11,6 +11,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -52,6 +53,7 @@ const GalaxySidebar = () => {
     { text: t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
     { text: t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
     { text: t('kifu:library', '棋谱库'), icon: <LibraryBooksIcon />, path: '/galaxy/kifu', disabled: false },
+    { text: t('Tutorials', '教程'), icon: <MenuBookIcon />, path: '/galaxy/tutorials', disabled: false },
   ];
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -32,14 +32,14 @@ export default function TutorialTopicsPage() {
       <Typography variant="h6" gutterBottom>选择主题</Typography>
       <List>
         {topics.map((topic, i) => (
-          <React.Fragment key={topic.id}>
+          <Fragment key={topic.id}>
             {i > 0 && <Divider />}
             <ListItem disablePadding>
               <ListItemButton onClick={() => navigate(`/galaxy/tutorials/topic/${topic.id}`)}>
                 <ListItemText primary={topic.title} secondary={topic.summary} />
               </ListItemButton>
             </ListItem>
-          </React.Fragment>
+          </Fragment>
         ))}
         {topics.length === 0 && <Typography color="text.secondary">该分类下暂无主题</Typography>}
       </List>

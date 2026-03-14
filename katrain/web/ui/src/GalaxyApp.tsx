@@ -15,6 +15,10 @@ import TsumegoCategoriesPage from './galaxy/pages/TsumegoCategoriesPage';
 import TsumegoListPage from './galaxy/pages/TsumegoListPage';
 import TsumegoUnitsPage from './galaxy/pages/TsumegoUnitsPage';
 import TsumegoProblemPage from './galaxy/pages/TsumegoProblemPage';
+import TutorialLandingPage from './galaxy/pages/tutorials/TutorialLandingPage';
+import TutorialTopicsPage from './galaxy/pages/tutorials/TutorialTopicsPage';
+import TutorialTopicDetailPage from './galaxy/pages/tutorials/TutorialTopicDetailPage';
+import TutorialExamplePage from './galaxy/pages/tutorials/TutorialExamplePage';
 import { AuthProvider } from './galaxy/context/AuthContext';
 import { SettingsProvider } from './galaxy/context/SettingsContext';
 
@@ -40,6 +44,10 @@ const GalaxyApp = () => {
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoListPage />} />
           <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          <Route path="tutorials" element={<TutorialLandingPage />} />
+          <Route path="tutorials/:categorySlug" element={<TutorialTopicsPage />} />
+          <Route path="tutorials/topic/:topicId" element={<TutorialTopicDetailPage />} />
+          <Route path="tutorials/example/:exampleId" element={<TutorialExamplePage />} />
           <Route path="*" element={<Navigate to="/galaxy" replace />} />
         </Route>
       </Routes>

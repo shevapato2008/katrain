@@ -1,0 +1,50 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActionArea from '@mui/material/CardActionArea';
+import Grid from '@mui/material/Grid';
+import CircularProgress from '@mui/material/CircularProgress';
+import { TutorialAPI } from '../../api/tutorialApi';
+import type { TutorialCategory } from '../../types/tutorial';
+
+export default function TutorialLandingPage() {
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState<TutorialCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    TutorialAPI.getCategories()
+      .then(setCategories)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
+
+  return (
+    <Box p={3}>
+      <Typography variant="h5" gutterBottom>教程</Typography>
+      <Typography variant="body2" color="text.secondary" gutterBottom>选择一个学习阶段开始学习</Typography>
+      <Grid container spacing={2} mt={1}>
+        {categories.map(cat => (
+          <Grid item xs={12} sm={6} md={4} key={cat.id}>
+            <Card>
+              <CardActionArea onClick={() => navigate(`/galaxy/tutorials/${cat.slug}`)}>
+                <CardContent>
+                  <Typography variant="h6">{cat.title}</Typography>
+                  <Typography variant="body2" color="text.secondary">{cat.summary}</Typography>
+                  <Typography variant="caption" color="text.secondary" mt={1} display="block">
+                    {cat.topic_count} 个主题
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}

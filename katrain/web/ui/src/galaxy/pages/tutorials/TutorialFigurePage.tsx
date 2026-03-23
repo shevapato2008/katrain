@@ -14,11 +14,13 @@ import { TutorialAPI } from '../../api/tutorialApi';
 import SGFBoard from '../../components/tutorials/SGFBoard';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
+import { useAuth } from '../../context/AuthContext';
 import type { TutorialSectionDetail, BoardPayload } from '../../types/tutorial';
 
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [section, setSection] = useState<TutorialSectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,14 +31,16 @@ export default function TutorialFigurePage() {
 
   const handleServerSave = useCallback(async (payload: BoardPayload) => {
     if (!currentFigure) return;
-    const updated = await TutorialAPI.saveBoardPayload(currentFigure.id, payload);
+    const updated = await TutorialAPI.saveBoardPayload(
+      currentFigure.id, payload, token ?? undefined, currentFigure.updated_at ?? undefined
+    );
     setSection(prev => {
       if (!prev) return prev;
       const figures = [...prev.figures];
-      figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload };
+      figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload, updated_at: updated.updated_at };
       return { ...prev, figures };
     });
-  }, [currentFigure, currentFigureIndex]);
+  }, [currentFigure, currentFigureIndex, token]);
 
   const editor = useBoardEditor(currentFigure?.board_payload ?? null, handleServerSave);
 

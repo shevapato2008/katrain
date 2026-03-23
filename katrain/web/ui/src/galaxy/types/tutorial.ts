@@ -50,6 +50,7 @@ export interface TutorialFigure {
   narration: string | null;
   audio_asset: string | null;
   order: number;
+  updated_at: string | null;
 }
 
 export interface TutorialSectionDetail extends TutorialSection {

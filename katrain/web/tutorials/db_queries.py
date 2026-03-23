@@ -5,7 +5,7 @@ Replaces the old TutorialLoader (JSON-based) with direct DB queries.
 
 from typing import Dict, List, Optional
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from katrain.web.core.models_db import (
     TutorialBook,
@@ -32,7 +32,9 @@ def get_categories() -> List[Dict]:
 # ── Books ─────────────────────────────────────────────────────────────────────
 
 def get_books_by_category(db: Session, category: str) -> List[TutorialBook]:
-    return db.query(TutorialBook).filter_by(category=category).order_by(TutorialBook.title).all()
+    return db.query(TutorialBook).options(
+        selectinload(TutorialBook.chapters)
+    ).filter_by(category=category).order_by(TutorialBook.title).all()
 
 
 def get_book(db: Session, book_id: int) -> Optional[TutorialBook]:
@@ -44,13 +46,17 @@ def get_book(db: Session, book_id: int) -> Optional[TutorialBook]:
 # ── Chapters ──────────────────────────────────────────────────────────────────
 
 def get_chapters_by_book(db: Session, book_id: int) -> List[TutorialChapter]:
-    return db.query(TutorialChapter).filter_by(book_id=book_id).order_by(TutorialChapter.order).all()
+    return db.query(TutorialChapter).options(
+        selectinload(TutorialChapter.sections)
+    ).filter_by(book_id=book_id).order_by(TutorialChapter.order).all()
 
 
 # ── Sections ──────────────────────────────────────────────────────────────────
 
 def get_sections_by_chapter(db: Session, chapter_id: int) -> List[TutorialSection]:
-    return db.query(TutorialSection).filter_by(chapter_id=chapter_id).order_by(TutorialSection.order).all()
+    return db.query(TutorialSection).options(
+        selectinload(TutorialSection.figures)
+    ).filter_by(chapter_id=chapter_id).order_by(TutorialSection.order).all()
 
 
 def get_section(db: Session, section_id: int) -> Optional[TutorialSection]:

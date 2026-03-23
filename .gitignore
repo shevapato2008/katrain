@@ -181,7 +181,6 @@ dmypy.json
 
 # Local data
 /data/
-!/data/tutorials_published/
 go_dataset/
 data.zip.superpowers/
 .superpowers/

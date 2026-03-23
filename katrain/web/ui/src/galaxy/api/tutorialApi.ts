@@ -16,10 +16,12 @@ async function apiGet<T>(path: string): Promise<T> {
   return resp.json() as Promise<T>;
 }
 
-async function apiPut<T>(path: string, body: unknown): Promise<T> {
+async function apiPut<T>(path: string, body: unknown, token?: string): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const resp = await fetch(`${BASE}${path}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
   if (!resp.ok) throw new Error(`Tutorial API ${resp.status}: ${await resp.text()}`);
@@ -43,11 +45,11 @@ export const TutorialAPI = {
 
   // Figures
   getFigure: (figureId: number): Promise<TutorialFigure> => apiGet(`/figures/${figureId}`),
-  saveBoardPayload: (figureId: number, payload: BoardPayload, expectedUpdatedAt?: string): Promise<TutorialFigure> =>
+  saveBoardPayload: (figureId: number, payload: BoardPayload, token?: string, expectedUpdatedAt?: string): Promise<TutorialFigure> =>
     apiPut(`/figures/${figureId}/board`, {
       board_payload: payload,
       expected_updated_at: expectedUpdatedAt ?? null,
-    }),
+    }, token),
 
   // Assets
   assetUrl: (relativePath: string): string => `${BASE}/assets/${relativePath}`,

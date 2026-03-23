@@ -3,6 +3,7 @@
 Hierarchy: Category → Book → Chapter → Section → Figure
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -65,6 +66,7 @@ class TutorialFigureOut(BaseModel):
     narration: Optional[str] = None
     audio_asset: Optional[str] = None
     order: int
+    updated_at: Optional[datetime] = None
 
 
 class TutorialSectionDetailOut(TutorialSectionOut):

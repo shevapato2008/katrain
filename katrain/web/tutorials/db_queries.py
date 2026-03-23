@@ -5,6 +5,7 @@ Replaces the old TutorialLoader (JSON-based) with direct DB queries.
 
 from typing import Dict, List, Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from katrain.web.core.models_db import (
@@ -27,6 +28,15 @@ CATEGORIES = [
 
 def get_categories() -> List[Dict]:
     return CATEGORIES
+
+
+def get_book_counts_by_category(db: Session) -> Dict[str, int]:
+    """Return {category_slug: book_count} using a single COUNT+GROUP BY query."""
+    rows = db.query(
+        TutorialBook.category,
+        func.count(TutorialBook.id),
+    ).group_by(TutorialBook.category).all()
+    return {category: count for category, count in rows}
 
 
 # ── Books ─────────────────────────────────────────────────────────────────────
@@ -75,11 +85,8 @@ def get_figure(db: Session, figure_id: int) -> Optional[TutorialFigure]:
     return db.query(TutorialFigure).filter_by(id=figure_id).first()
 
 
-def update_figure_board(db: Session, figure_id: int, board_payload: dict) -> Optional[TutorialFigure]:
-    """Update the board_payload for a figure and return the updated figure."""
-    figure = db.query(TutorialFigure).filter_by(id=figure_id).first()
-    if figure is None:
-        return None
+def update_figure_board(db: Session, figure: TutorialFigure, board_payload: dict) -> TutorialFigure:
+    """Update the board_payload on an already-fetched figure."""
     figure.board_payload = board_payload
     db.commit()
     db.refresh(figure)

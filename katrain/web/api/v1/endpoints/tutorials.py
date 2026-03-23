@@ -47,9 +47,9 @@ def _safe_asset_path(relative_path: str) -> Path:
 @router.get("/categories", response_model=List[TutorialCategoryOut])
 async def get_categories(db: Session = Depends(get_db)):
     cats = [dict(c) for c in db_queries.get_categories()]
+    counts = db_queries.get_book_counts_by_category(db)
     for cat in cats:
-        books = db_queries.get_books_by_category(db, cat["slug"])
-        cat["book_count"] = len(books)
+        cat["book_count"] = counts.get(cat["slug"], 0)
     return cats
 
 
@@ -148,7 +148,7 @@ async def update_figure_board(
     payload_dict = update.board_payload.model_dump()
     viewport = compute_viewport(payload_dict)
     payload_dict["viewport"] = viewport
-    figure = db_queries.update_figure_board(db, figure_id, payload_dict)
+    figure = db_queries.update_figure_board(db, figure, payload_dict)
     return TutorialFigureOut.model_validate(figure)
 
 

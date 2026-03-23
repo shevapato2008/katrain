@@ -1,62 +1,98 @@
-from typing import Any, List, Literal, Optional
+"""Pydantic response models for the tutorial module V2.
+
+Hierarchy: Category → Book → Chapter → Section → Figure
+"""
+
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
-class Category(BaseModel):
-    id: str
+class TutorialCategoryOut(BaseModel):
     slug: str
     title: str
     summary: str
     order: int
-    topic_count: int
-    cover_asset: Optional[str] = None
+    book_count: int = 0
 
 
-class Topic(BaseModel):
-    id: str
-    category_id: str
-    slug: str
+class TutorialBookOut(BaseModel):
+    id: int
+    category: str
+    subcategory: str
     title: str
-    summary: str
-    tags: Optional[List[str]] = None
-    difficulty: Optional[str] = None
-    estimated_minutes: Optional[int] = None
+    author: Optional[str] = None
+    translator: Optional[str] = None
+    slug: str
+    chapter_count: int = 0
+
+    class Config:
+        from_attributes = True
 
 
-class Step(BaseModel):
-    id: str
-    example_id: str
+class TutorialChapterOut(BaseModel):
+    id: int
+    book_id: int
+    chapter_number: str
+    title: str
     order: int
-    narration: str
-    image_asset: Optional[str] = None
+    section_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class TutorialSectionOut(BaseModel):
+    id: int
+    chapter_id: int
+    section_number: str
+    title: str
+    order: int
+    figure_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class TutorialFigureOut(BaseModel):
+    id: int
+    section_id: int
+    page: int
+    figure_label: str
+    book_text: Optional[str] = None
+    page_context_text: Optional[str] = None
+    bbox: Optional[Dict[str, float]] = None
+    page_image_path: Optional[str] = None
+    board_payload: Optional[Any] = None
+    narration: Optional[str] = None
     audio_asset: Optional[str] = None
-    audio_duration_ms: Optional[int] = None
-    board_mode: Literal["image", "sgf"]  # enforces rendering contract at API boundary
-    board_payload: Optional[Any] = None  # for sgf: {size, stones, labels, highlights, viewport}
-    book_figure_asset: Optional[str] = None  # e.g. "assets/book_figures/p011_fig1.png"
-    book_text: Optional[str] = None  # original Chinese book text for this figure
-
-
-class Example(BaseModel):
-    id: str
-    topic_id: str
-    title: str
-    summary: str
     order: int
-    total_duration_sec: Optional[float] = None
-    step_count: int
-    steps: List[Step]
+
+    class Config:
+        from_attributes = True
 
 
-class TutorialProgress(BaseModel):
-    example_id: str
-    topic_id: str
-    last_step_id: Optional[str] = None
-    completed: bool
-    last_played_at: Optional[str] = None
+class TutorialSectionDetailOut(TutorialSectionOut):
+    """Section with all its figures included."""
+    figures: List[TutorialFigureOut] = []
 
 
-class ProgressUpdate(BaseModel):
-    topic_id: str
-    last_step_id: str
-    completed: bool
+class TutorialBookDetailOut(TutorialBookOut):
+    """Book with chapters and their sections."""
+    chapters: List[TutorialChapterOut] = []
+
+
+class StrictBoardPayload(BaseModel):
+    """Validated board_payload — rejects malformed or oversized data."""
+    size: int = 19
+    stones: Dict[str, List[List[int]]]  # {"B": [[col,row]], "W": [[col,row]]}
+    labels: Optional[Dict[str, str]] = None
+    letters: Optional[Dict[str, str]] = None
+    shapes: Optional[Dict[str, str]] = None
+    highlights: Optional[List[List[int]]] = None
+    # viewport is computed server-side, not accepted from client
+
+
+class BoardPayloadUpdate(BaseModel):
+    """Request body for updating a figure's board_payload."""
+    board_payload: StrictBoardPayload
+    expected_updated_at: Optional[str] = None  # ISO timestamp for optimistic locking

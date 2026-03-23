@@ -1,116 +1,163 @@
+"""Tutorial module API endpoints (V2 — database-backed).
+
+Replaces the old JSON-file-based endpoints with DB queries.
+"""
+
 import logging
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
+from katrain.web.tutorials import db_queries
 from katrain.web.tutorials.models import (
-    Category,
-    Example,
-    ProgressUpdate,
-    Topic,
-    TutorialProgress,
+    BoardPayloadUpdate,
+    TutorialBookDetailOut,
+    TutorialBookOut,
+    TutorialCategoryOut,
+    TutorialChapterOut,
+    TutorialFigureOut,
+    TutorialSectionDetailOut,
+    TutorialSectionOut,
 )
-from katrain.web.tutorials import progress as progress_repo
+from katrain.web.tutorials.viewport import compute_viewport
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# ── Version directory base path used to validate asset refs stay in-bounds ──
-_PARDIR = ".."
+ASSET_BASE = Path("data")
 
 
-def _loader(request: Request):
-    loader = getattr(request.app.state, "tutorial_loader", None)
-    if loader is None:
-        raise HTTPException(status_code=503, detail="Tutorial module not initialized")
-    return loader
-
-
-def _safe_asset_path(loader, asset_path: str) -> Path:
+def _safe_asset_path(relative_path: str) -> Path:
     """Resolve asset path and reject any path traversal attempts."""
-    resolved = (loader.get_asset_path(f"assets/{asset_path}")).resolve()
-    base = loader.get_asset_path("assets").resolve()
-    if not str(resolved).startswith(str(base)):
+    resolved = (ASSET_BASE / relative_path).resolve()
+    base = ASSET_BASE.resolve()
+    if not resolved.is_relative_to(base):
         raise HTTPException(status_code=400, detail="Invalid asset path")
     return resolved
 
 
-@router.post("/reload")
-async def reload_tutorials(request: Request):
-    """Reload the active tutorial package from disk without restarting the server."""
-    loader = _loader(request)
-    loader.load()
-    return {"version": loader.version, "stats": loader.get_stats()}
+# ── Categories (hardcoded) ────────────────────────────────────────────────────
+
+@router.get("/categories", response_model=List[TutorialCategoryOut])
+async def get_categories(db: Session = Depends(get_db)):
+    cats = [dict(c) for c in db_queries.get_categories()]
+    for cat in cats:
+        books = db_queries.get_books_by_category(db, cat["slug"])
+        cat["book_count"] = len(books)
+    return cats
 
 
-@router.get("/categories", response_model=List[Category])
-async def get_categories(request: Request):
-    return _loader(request).get_categories()
+# ── Books ─────────────────────────────────────────────────────────────────────
+
+@router.get("/categories/{category}/books", response_model=List[TutorialBookOut])
+async def get_books(category: str, db: Session = Depends(get_db)):
+    books = db_queries.get_books_by_category(db, category)
+    result = []
+    for b in books:
+        out = TutorialBookOut.model_validate(b)
+        out.chapter_count = len(b.chapters) if b.chapters else 0
+        result.append(out)
+    return result
 
 
-@router.get("/categories/{slug}/topics", response_model=List[Topic])
-async def get_topics(slug: str, request: Request):
-    return _loader(request).get_topics_by_category(slug)
+@router.get("/books/{book_id}", response_model=TutorialBookDetailOut)
+async def get_book(book_id: int, db: Session = Depends(get_db)):
+    book = db_queries.get_book(db, book_id)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    out = TutorialBookDetailOut.model_validate(book)
+    out.chapter_count = len(book.chapters)
+    chapters_out = []
+    for ch in book.chapters:
+        ch_out = TutorialChapterOut.model_validate(ch)
+        ch_out.section_count = len(ch.sections) if ch.sections else 0
+        chapters_out.append(ch_out)
+    out.chapters = chapters_out
+    return out
 
 
-@router.get("/topics/{topic_id}", response_model=Topic)
-async def get_topic(topic_id: str, request: Request):
-    topic = _loader(request).get_topic(topic_id)
-    if topic is None:
-        raise HTTPException(status_code=404, detail="Topic not found")
-    return topic
+# ── Chapters ──────────────────────────────────────────────────────────────────
+
+@router.get("/books/{book_id}/chapters", response_model=List[TutorialChapterOut])
+async def get_chapters(book_id: int, db: Session = Depends(get_db)):
+    chapters = db_queries.get_chapters_by_book(db, book_id)
+    result = []
+    for ch in chapters:
+        out = TutorialChapterOut.model_validate(ch)
+        out.section_count = len(ch.sections) if ch.sections else 0
+        result.append(out)
+    return result
 
 
-@router.get("/topics/{topic_id}/examples", response_model=List[Example])
-async def get_topic_examples(topic_id: str, request: Request):
-    loader = _loader(request)
-    if loader.get_topic(topic_id) is None:
-        raise HTTPException(status_code=404, detail="Topic not found")
-    return loader.get_examples_for_topic(topic_id)
+# ── Sections ──────────────────────────────────────────────────────────────────
+
+@router.get("/chapters/{chapter_id}/sections", response_model=List[TutorialSectionOut])
+async def get_sections(chapter_id: int, db: Session = Depends(get_db)):
+    sections = db_queries.get_sections_by_chapter(db, chapter_id)
+    result = []
+    for sec in sections:
+        out = TutorialSectionOut.model_validate(sec)
+        out.figure_count = len(sec.figures) if sec.figures else 0
+        result.append(out)
+    return result
 
 
-@router.get("/examples/{example_id}", response_model=Example)
-async def get_example(example_id: str, request: Request):
-    example = _loader(request).get_example(example_id)
-    if example is None:
-        raise HTTPException(status_code=404, detail="Example not found")
-    return example
+@router.get("/sections/{section_id}", response_model=TutorialSectionDetailOut)
+async def get_section(section_id: int, db: Session = Depends(get_db)):
+    section = db_queries.get_section(db, section_id)
+    if section is None:
+        raise HTTPException(status_code=404, detail="Section not found")
+    out = TutorialSectionDetailOut.model_validate(section)
+    out.figure_count = len(section.figures)
+    out.figures = [TutorialFigureOut.model_validate(f) for f in section.figures]
+    return out
 
+
+# ── Figures ───────────────────────────────────────────────────────────────────
+
+@router.get("/figures/{figure_id}", response_model=TutorialFigureOut)
+async def get_figure(figure_id: int, db: Session = Depends(get_db)):
+    figure = db_queries.get_figure(db, figure_id)
+    if figure is None:
+        raise HTTPException(status_code=404, detail="Figure not found")
+    return TutorialFigureOut.model_validate(figure)
+
+
+@router.put("/figures/{figure_id}/board", response_model=TutorialFigureOut)
+async def update_figure_board(
+    figure_id: int,
+    update: BoardPayloadUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update the board_payload for a figure. Computes viewport server-side.
+    Uses optimistic locking via expected_updated_at to prevent silent overwrites."""
+    figure = db_queries.get_figure(db, figure_id)
+    if figure is None:
+        raise HTTPException(status_code=404, detail="Figure not found")
+    # Optimistic locking
+    if update.expected_updated_at and figure.updated_at:
+        if figure.updated_at.isoformat() != update.expected_updated_at:
+            raise HTTPException(status_code=409, detail="Board was modified by another session. Reload and retry.")
+    payload_dict = update.board_payload.model_dump()
+    viewport = compute_viewport(payload_dict)
+    payload_dict["viewport"] = viewport
+    figure = db_queries.update_figure_board(db, figure_id, payload_dict)
+    return TutorialFigureOut.model_validate(figure)
+
+
+# ── Assets ────────────────────────────────────────────────────────────────────
 
 @router.get("/assets/{asset_path:path}")
-async def get_asset(asset_path: str, request: Request):
-    """Serve a published asset. Path traversal outside the assets directory is rejected."""
-    file_path = _safe_asset_path(_loader(request), asset_path)
+async def get_asset(asset_path: str):
+    """Serve a page screenshot or other tutorial asset."""
+    file_path = _safe_asset_path(asset_path)
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Asset not found")
     return FileResponse(file_path)
-
-
-@router.get("/progress", response_model=List[TutorialProgress])
-async def get_progress(
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return progress_repo.get_user_progress(db, current_user.id)
-
-
-@router.post("/progress/{example_id}", response_model=TutorialProgress)
-async def update_progress(
-    example_id: str,
-    update: ProgressUpdate,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if _loader(request).get_example(example_id) is None:
-        raise HTTPException(status_code=404, detail="Example not found")
-    return progress_repo.upsert_progress(
-        db, current_user.id, example_id, update.topic_id, update.last_step_id, update.completed
-    )

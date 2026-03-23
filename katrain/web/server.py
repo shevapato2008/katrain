@@ -138,21 +138,23 @@ async def _lifespan_server(app: FastAPI, log):
     except Exception as e:
         log.warning(f"Failed to start live service: {e}")
 
-    # ── Tutorial Loader ──────────────────────────────────────────────────────
-    import pathlib
-    from katrain.web.tutorials.loader import TutorialLoader
-
-    tutorial_base = pathlib.Path("data/tutorials_published")
-    if tutorial_base.exists():
-        tutorial_loader = TutorialLoader(tutorial_base)
-        try:
-            tutorial_loader.load()
-            app.state.tutorial_loader = tutorial_loader
-            log.info("Tutorial package loaded successfully")
-        except Exception as e:
-            log.warning(f"Failed to load tutorial package: {e}")
+    # ── Tutorial Module ──────────────────────────────────────────────────────
+    import os
+    tutorials_v2 = os.environ.get("TUTORIALS_V2_ENABLED", "true").lower() == "true"
+    if tutorials_v2:
+        log.info("Tutorial V2 enabled — using database-backed tutorials")
     else:
-        log.info("No tutorial package found at data/tutorials_published — tutorial module disabled")
+        import pathlib
+        from katrain.web.tutorials.loader import TutorialLoader
+        tutorial_base = pathlib.Path("data/tutorials_published")
+        if tutorial_base.exists():
+            tutorial_loader = TutorialLoader(tutorial_base)
+            try:
+                tutorial_loader.load()
+                app.state.tutorial_loader = tutorial_loader
+                log.info("Tutorial V1 package loaded (legacy mode)")
+            except Exception as e:
+                log.warning(f"Failed to load tutorial V1 package: {e}")
 
 
 async def _lifespan_board(app: FastAPI, log):

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
 interface AudioPlayerProps {
   src: string | null;
@@ -13,6 +15,7 @@ interface AudioPlayerProps {
 export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -20,8 +23,9 @@ export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPla
     audio.pause();
     audio.load();
     setPlaying(false);
+    setError(false);
     if (autoPlay && src) {
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      audio.play().then(() => setPlaying(true)).catch(() => { setError(true); });
     }
   }, [src, autoPlay]);
 
@@ -32,7 +36,7 @@ export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPla
       audio.pause();
       setPlaying(false);
     } else {
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      audio.play().then(() => setPlaying(true)).catch(() => { setError(true); });
     }
   };
 
@@ -47,9 +51,14 @@ export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPla
         onPause={() => setPlaying(false)}
         onPlay={() => setPlaying(true)}
       />
-      <IconButton onClick={toggle} size="small" color="primary" aria-label={playing ? 'Pause' : 'Play'}>
+      <IconButton onClick={toggle} size="small" color={error ? 'default' : 'primary'} aria-label={playing ? 'Pause' : 'Play'} disabled={error}>
         {playing ? <PauseIcon /> : <PlayArrowIcon />}
       </IconButton>
+      {error && (
+        <Tooltip title="Audio unavailable">
+          <VolumeOffIcon fontSize="small" color="disabled" />
+        </Tooltip>
+      )}
     </Box>
   );
 }

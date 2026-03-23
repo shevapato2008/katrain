@@ -29,24 +29,24 @@ test.describe('Tutorial Module', () => {
   test('Clicking category navigates to topic list', async ({ page }) => {
     await page.goto('/galaxy/tutorials');
     await page.getByText('布局', { exact: true }).click();
-    await expect(page.getByText('角、边与中央的价值')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('角的战略价值')).toBeVisible({ timeout: 10000 });
   });
 
   test('Clicking topic navigates to topic detail with example list', async ({ page }) => {
     await page.goto('/galaxy/tutorials/opening');
-    await page.getByText('角、边与中央的价值').click();
-    await expect(page.getByText('星位与小目的选择')).toBeVisible({ timeout: 10000 });
+    await page.getByText('角的战略价值').click();
+    await expect(page.getByText('角部的效率优势')).toBeVisible({ timeout: 10000 });
   });
 
   test('Clicking example from topic detail opens playback page', async ({ page }) => {
     await page.goto('/galaxy/tutorials/topic/topic_opening_001');
-    await page.getByText('星位与小目的选择').click();
+    await page.getByText('角部的效率优势').click();
     await expect(page.getByText('第 1 / 2 步')).toBeVisible({ timeout: 10000 });
   });
 
   test('Example page shows step narration text', async ({ page }) => {
     await page.goto('/galaxy/tutorials/example/ex_opening_001');
-    await expect(page.getByText(/围棋开局时/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/角部是棋盘上效率最高/)).toBeVisible({ timeout: 10000 });
   });
 
   test('Example page shows step image (board_mode=image renders image_asset)', async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe('Tutorial Module', () => {
     await expect(page.getByText('第 1 / 2 步')).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: '下一步' }).click();
     await expect(page.getByText('第 2 / 2 步')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/星位强调外势/)).toBeVisible();
+    await expect(page.getByText(/优先占据四角/)).toBeVisible();
   });
 
   test('Back button is disabled on step 1', async ({ page }) => {

@@ -17,6 +17,7 @@ class TutorialLoader:
 
     def __init__(self, base_dir: Path):
         self._base_dir = base_dir
+        self._version: Optional[str] = None
         self._version_dir: Optional[Path] = None
         self._categories: List[Dict] = []
         self._topics_by_category: Dict[str, List[Dict]] = {}
@@ -34,6 +35,7 @@ class TutorialLoader:
         if not version_path.is_dir():
             raise FileNotFoundError(f"Tutorial version dir not found: {version_path}")
 
+        self._version = active["version"]
         self._version_dir = version_path
         self._categories = []
         self._topics_by_category = {}
@@ -72,7 +74,7 @@ class TutorialLoader:
             self._topics_by_id[topic["id"]] = topic
             for example_id in topic.get("example_ids", []):
                 self._load_example(example_id)
-        self._topics_by_category[slug] = topics
+        self._topics_by_category[slug] = sorted(topics, key=lambda t: t.get("id", ""))
 
     def _load_example(self, example_id: str) -> None:
         path = self._version_dir / "examples" / f"{example_id}.json"
@@ -82,6 +84,17 @@ class TutorialLoader:
         self._examples[example_id] = json.loads(path.read_text())
 
     # ── Public read API ───────────────────────────────────────────────────────
+
+    @property
+    def version(self) -> Optional[str]:
+        return self._version
+
+    def get_stats(self) -> Dict[str, Any]:
+        return {
+            "categories": len(self._categories),
+            "topics": len(self._topics_by_id),
+            "examples": len(self._examples),
+        }
 
     def get_categories(self) -> List[Dict]:
         return list(self._categories)

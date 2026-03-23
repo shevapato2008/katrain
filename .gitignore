@@ -184,3 +184,4 @@ dmypy.json
 !/data/tutorials_published/
 go_dataset/
 data.zip.superpowers/
+.superpowers/

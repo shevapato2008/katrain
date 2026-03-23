@@ -62,7 +62,7 @@ export default function TutorialExamplePage() {
   const progressPct = ((currentStepIndex + 1) / example.steps.length) * 100;
 
   return (
-    <Box p={3} maxWidth={640} mx="auto">
+    <Box p={3} maxWidth={1100} mx="auto">
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="h6">{example.title}</Typography>
         {completed && <Chip icon={<CheckCircleIcon />} label="已完成" color="success" size="small" />}

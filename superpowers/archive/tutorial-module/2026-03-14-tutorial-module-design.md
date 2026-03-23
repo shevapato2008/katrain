@@ -1,7 +1,7 @@
 # Tutorial Module Design
 
 Date: 2026-03-14
-Status: Draft for review
+Status: Revised after external review
 
 ## Summary
 
@@ -50,6 +50,18 @@ Public content must:
 3. Avoid near-verbatim reproduction of source passages.
 4. Remove OCR noise, redundant phrasing, special symbols, and page furniture.
 5. Be auditable before publication.
+6. Sanitize source screenshots before publication by cropping away non-board page furniture where possible.
+
+### Known legal risk
+
+Phase 1 still uses screenshot-derived visual material. Even without exposing book identity, those images may still carry copyright risk because they are derived from protected page content.
+
+This is an explicitly accepted phase-1 product risk, with the following mitigation:
+
+1. Do not expose book identity in the product or public APIs.
+2. Crop page furniture, margins, headers, footers, and other source-identifying visual residue wherever possible.
+3. Treat screenshot visuals as a temporary rendering layer to be replaced by SGF-backed board views in a later phase.
+4. Keep the screenshot-processing stage isolated so it can be swapped out without redesigning the public lesson model.
 
 ### First release scope
 
@@ -146,6 +158,7 @@ These exist only in the offline review workflow.
 #### `DraftTopic`
 
 - `topic_slug`
+- `stable_id`
 - `category`
 - `working_title`
 - `teaching_goal`
@@ -154,10 +167,12 @@ These exist only in the offline review workflow.
 #### `DraftExample`
 
 - `example_id`
+- `stable_id`
 - `topic_slug`
 - `draft_title`
 - `source_refs[]`
 - `steps[]`
+- `total_duration_sec?`
 
 #### `DraftStep`
 
@@ -168,6 +183,8 @@ These exist only in the offline review workflow.
 - `board_mode`
 - `board_payload`
 - `audio_ref`
+- `audio_duration_ms?`
+- `rewrite_similarity_score?`
 
 `board_mode` is expected to be `image` in phase 1 and may later become `sgf`.
 
@@ -206,9 +223,9 @@ These are safe to expose through the public app.
 - `slug`
 - `title`
 - `summary`
-- `tags[]`
-- `difficulty`
-- `estimated_minutes`
+- `tags[]?`
+- `difficulty?`
+- `estimated_minutes?`
 
 #### `Example`
 
@@ -228,8 +245,14 @@ These are safe to expose through the public app.
 - `narration`
 - `image_asset`
 - `audio_asset`
+- `audio_duration_ms`
 - `board_mode`
 - `board_payload`
+
+Phase-1 rendering contract:
+
+1. If `board_mode=image`, the frontend renders `image_asset` and `board_payload` must be `null`.
+2. If `board_mode=sgf`, the frontend renders from `board_payload` and `image_asset` becomes optional fallback media.
 
 #### `UserProgress`
 
@@ -277,17 +300,17 @@ Rules for published packages:
 
 ### Offline builder
 
-Recommended package:
+Recommended phase-1 package:
 
 ```text
 katrain/tutorial_builder/
-  ingest/
-  normalize/
-  dedupe/
-  rewrite/
-  tts/
-  review/
-  publish/
+  pipeline.py
+  ingest.py
+  build.py
+  rewrite.py
+  tts.py
+  publish.py
+  ids.py
 ```
 
 Reasoning:
@@ -295,6 +318,7 @@ Reasoning:
 - The builder belongs with the product because the publish format and app behavior will evolve together.
 - It should not live inside the online runtime package.
 - It should not depend on the source-book repository for long-term maintainability.
+- Phase 1 should start with a flatter structure and only split into subpackages after the first end-to-end path is proven.
 
 ### Online backend
 
@@ -345,6 +369,23 @@ Notes:
 2. Progress endpoints may store per-user state in the existing database stack.
 3. Public content payloads should stay stable even if the source pipeline changes.
 
+## ID Stability
+
+Published IDs must be stable across rebuilds. Otherwise stored `UserProgress` becomes invalid.
+
+Phase-1 rule:
+
+1. `topic_id` and `example_id` are generated deterministically from normalized editorial identity, not from build order.
+2. The builder keeps a persistent ID mapping record for any cases where deterministic derivation would otherwise change after editorial renames.
+3. Rebuilds must preserve published IDs unless an editor explicitly performs a breaking content migration.
+
+Recommended implementation options:
+
+1. Deterministic hash from canonicalized editorial keys
+2. A checked-in ID map file maintained by the builder
+
+Either approach is acceptable, but planning must pick one and test rebuild stability explicitly.
+
 ## Frontend UX Shape
 
 Recommended phase-1 page flow:
@@ -381,9 +422,55 @@ Therefore:
 1. The builder owns rewrite and publishing policy.
 2. CosyVoice only converts approved or draft narration text into audio assets.
 
+Phase-1 TTS assumptions:
+
+1. Use the HTTP FastAPI deployment path first, not gRPC, to minimize integration cost.
+2. Use a fixed preset voice in phase 1; no voice cloning.
+3. Generate audio offline in batch mode.
+4. Validate a short pronunciation whitelist for Go terms such as `三三`, `天元`, and `小目` before scaling content generation.
+
 Source:
 
 - https://github.com/FunAudioLLM/CosyVoice
+
+## Narration Rewrite Mechanism
+
+The rewrite stage is an explicit subsystem, not an unspecified editorial note.
+
+Phase-1 mechanism:
+
+1. Use an offline LLM-assisted rewrite step with a fixed prompt template and structured output schema.
+2. Input:
+   - source fragment text
+   - category/topic context
+   - desired spoken style constraints
+3. Output schema:
+   - `spoken_title?`
+   - `narration_final`
+   - `key_terms[]`
+   - `safety_notes?`
+4. Rewrite constraints:
+   - concise spoken Chinese
+   - no book names or source provenance
+   - no long verbatim spans from source
+   - remove OCR noise and symbols not suitable for audio
+5. Failure handling:
+   - if schema validation fails, keep the step in `draft`
+   - if similarity score exceeds threshold, reject and regenerate or require manual rewrite
+   - if rewrite quality remains poor after retry budget, the example stays unpublished
+
+This design intentionally treats rewrite quality as reviewable generated content, not as guaranteed automation.
+
+## Similarity Guardrail
+
+To reduce the chance of near-verbatim publication, the builder should run an automated similarity check between source text and final narration.
+
+Phase-1 rule:
+
+1. Compute a text-overlap or edit-distance-style score after rewrite.
+2. Record the result as `rewrite_similarity_score`.
+3. Reject publication when the score exceeds the editorial threshold.
+4. Human review remains mandatory even when the score passes.
 
 ## Editorial Review Workflow
 
@@ -410,6 +497,7 @@ Required review checklist:
 3. Spoken narration sounds natural
 4. Step sequence teaches a coherent concept
 5. Audio assets are present and playable
+6. Screenshot output is sanitized and does not retain unnecessary source-identifying page furniture
 
 ## Error Handling
 
@@ -426,13 +514,32 @@ Publish should be atomic:
 
 1. Build the next package version in a staging directory.
 2. Validate the full package.
-3. Swap the active manifest or directory pointer only after validation succeeds.
+3. Write a versioned package directory such as `data/tutorials_published/versions/vNNN/`.
+4. Update a single active manifest pointer only after validation succeeds.
+
+Phase-1 publish switch strategy:
+
+1. The online tutorial loader reads from a fixed `active.json` manifest file.
+2. Publishing writes a new version directory, validates it fully, then atomically replaces `active.json`.
+3. The online service reloads the active manifest on process start and on explicit refresh, not on every request.
+4. Phase 1 may use manual process restart as the refresh trigger after publication.
 
 ### Online app
 
 1. Missing topic or example returns 404, not silent empty success.
 2. Missing user progress falls back to empty progress state.
 3. Unsupported `board_mode` should fail explicitly rather than render incorrectly.
+4. If an example is already completed, reopening resumes from the first step by default while still showing completion state.
+
+## Progress Semantics
+
+Phase-1 progress behavior:
+
+1. When the user reaches the final step, the frontend marks the example as completed.
+2. Progress is saved when the current step changes and again when completion occurs.
+3. `last_step_id` represents the latest visited step, not a full per-step history.
+4. Phase 1 does not store `completed_steps[]`.
+5. Reopening a completed example starts from step 1 unless the user explicitly resumes from the previous step in a later phase.
 
 ## Testing Strategy
 
@@ -443,6 +550,9 @@ Publish should be atomic:
 3. Published packages exclude forbidden fields.
 4. Step payloads preserve image/audio/board consistency.
 5. Publish validation rejects incomplete examples.
+6. Rebuilds preserve `topic_id` and `example_id` for unchanged editorial units.
+7. Similarity guardrails reject over-close rewrites.
+8. Screenshot sanitization removes expected page-furniture regions for fixture inputs.
 
 ### Backend tests
 
@@ -450,6 +560,7 @@ Publish should be atomic:
 2. Not-found behavior is explicit.
 3. Index refresh logic handles package updates safely.
 4. Progress persistence behaves correctly for partial and completed examples.
+5. Active manifest switching does not expose partial publish state.
 
 ### Frontend tests
 
@@ -458,6 +569,7 @@ Publish should be atomic:
 3. Example playback advances between steps correctly.
 4. Audio and progress state stay in sync.
 5. `board_mode=image` renders screenshots correctly.
+6. Completed example re-entry behavior matches the defined progress semantics.
 
 ## Acceptance Criteria
 
@@ -469,6 +581,7 @@ Phase 1 is acceptable when:
 4. The public app and public APIs do not expose book identity or raw source text.
 5. The publish process requires explicit human approval.
 6. The public `Step` model remains compatible with a future SGF-backed renderer.
+7. Rebuilding unchanged content does not invalidate saved progress IDs.
 
 ## Key Decisions Captured
 
@@ -479,13 +592,21 @@ Phase 1 is acceptable when:
 5. Public lessons are topic-centric, not book-centric.
 6. Screenshots are acceptable in phase 1; SGF is a later upgrade.
 7. CosyVoice is a TTS dependency, not an editorial engine.
+8. Phase-1 publish refresh may use manual service restart after atomic manifest switch.
+9. Phase-1 rewrite is LLM-assisted but schema-constrained and human-reviewed.
 
 ## Open Follow-up
 
 These are implementation details, not blockers for the design:
 
 1. Exact topic dedupe heuristics
-2. Exact narration rewrite policy and prompt/template design
+2. Whether topic dedupe starts with deterministic rules only or adds embedding-based suggestions
 3. Whether tutorial progress should require authentication or support anonymous local progress
 4. Whether assets are served directly from disk or indexed through an asset manifest
 5. Whether the first release should show estimated lesson duration on topic and example cards
+
+Recommended starting point for topic dedupe:
+
+1. First pass: deterministic normalization plus editorial mapping rules
+2. Optional assist: similarity scoring or embedding suggestions for reviewer attention
+3. If duplication is uncertain, do not merge automatically; keep separate examples or topics until reviewed

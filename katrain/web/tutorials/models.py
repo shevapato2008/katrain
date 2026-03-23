@@ -32,7 +32,9 @@ class Step(BaseModel):
     audio_asset: Optional[str] = None
     audio_duration_ms: Optional[int] = None
     board_mode: Literal["image", "sgf"]  # enforces rendering contract at API boundary
-    board_payload: Optional[Any] = None
+    board_payload: Optional[Any] = None  # for sgf: {size, stones, labels, highlights, viewport}
+    book_figure_asset: Optional[str] = None  # e.g. "assets/book_figures/p011_fig1.png"
+    book_text: Optional[str] = None  # original Chinese book text for this figure
 
 
 class Example(BaseModel):

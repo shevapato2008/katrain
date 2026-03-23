@@ -55,6 +55,8 @@ katrain = "katrain.__main__:run_app"
 [dependency-groups]
 dev = [
     "black>=24.8.0,<25",
+    "edge-tts>=7.2.7",
+    "pillow>=11.2.1",
     "polib>=1.2.0,<2",
     "pyinstaller>=6.14.1",
     "pytest>=8.3.2,<9",

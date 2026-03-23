@@ -41,6 +41,14 @@ def _safe_asset_path(loader, asset_path: str) -> Path:
     return resolved
 
 
+@router.post("/reload")
+async def reload_tutorials(request: Request):
+    """Reload the active tutorial package from disk without restarting the server."""
+    loader = _loader(request)
+    loader.load()
+    return {"version": loader.version, "stats": loader.get_stats()}
+
+
 @router.get("/categories", response_model=List[Category])
 async def get_categories(request: Request):
     return _loader(request).get_categories()

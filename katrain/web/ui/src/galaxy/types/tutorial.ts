@@ -31,6 +31,8 @@ export interface TutorialStep {
   audio_duration_ms: number | null;
   board_mode: BoardMode;
   board_payload: unknown | null;
+  book_figure_asset: string | null;
+  book_text: string | null;
 }
 
 export interface TutorialExample {

@@ -42,20 +42,21 @@ def test_get_categories(client):
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["slug"] == "opening"
+    assert data[0]["slug"] == "chapter1"
 
 
 def test_get_topics(client):
-    resp = client.get("/api/v1/tutorials/categories/opening/topics")
+    resp = client.get("/api/v1/tutorials/categories/chapter1/topics")
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
-    assert resp.json()[0]["id"] == "topic_opening_001"
+    data = resp.json()
+    assert len(data) == 1
+    assert any(t["id"] == "topic_ch1_s1" for t in data)
 
 
 def test_get_topic(client):
-    resp = client.get("/api/v1/tutorials/topics/topic_opening_001")
+    resp = client.get("/api/v1/tutorials/topics/topic_ch1_s1")
     assert resp.status_code == 200
-    assert resp.json()["title"] == "角、边与中央的价值"
+    assert resp.json()["title"] == "外势和实地"
 
 
 def test_get_topic_not_found(client):
@@ -63,11 +64,11 @@ def test_get_topic_not_found(client):
 
 
 def test_get_topic_examples(client):
-    resp = client.get("/api/v1/tutorials/topics/topic_opening_001/examples")
+    resp = client.get("/api/v1/tutorials/topics/topic_ch1_s1/examples")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
-    assert data[0]["id"] == "ex_opening_001"
+    assert len(data) == 5
+    assert data[0]["id"] == "ex_s1_001"
 
 
 def test_get_topic_examples_not_found(client):
@@ -75,7 +76,7 @@ def test_get_topic_examples_not_found(client):
 
 
 def test_get_example(client):
-    resp = client.get("/api/v1/tutorials/examples/ex_opening_001")
+    resp = client.get("/api/v1/tutorials/examples/ex_s1_001")
     assert resp.status_code == 200
     data = resp.json()
     assert data["step_count"] == 2
@@ -86,23 +87,25 @@ def test_example_not_found(client):
     assert client.get("/api/v1/tutorials/examples/does_not_exist").status_code == 404
 
 
-def test_example_board_mode_image(client):
-    data = client.get("/api/v1/tutorials/examples/ex_opening_001").json()
+def test_example_board_mode_sgf(client):
+    data = client.get("/api/v1/tutorials/examples/ex_s1_001").json()
     for step in data["steps"]:
-        assert step["board_mode"] == "image"
-        assert step["board_payload"] is None
+        assert step["board_mode"] == "sgf"
+        assert step["board_payload"] is not None
+        assert "book_figure_asset" in step
+        assert "book_text" in step
 
 
 def test_example_no_forbidden_fields(client):
-    data = client.get("/api/v1/tutorials/examples/ex_opening_001").json()
+    data = client.get("/api/v1/tutorials/examples/ex_s1_001").json()
     forbidden = {"source_path", "raw_text", "source_id", "book_title", "author", "translator"}
     for step in data["steps"]:
         assert not forbidden.intersection(step.keys()), \
             f"Forbidden fields in step: {forbidden.intersection(step.keys())}"
 
 
-def test_get_asset_image(client):
-    resp = client.get("/api/v1/tutorials/assets/images/ex_opening_001_step_01.png")
+def test_get_asset_book_figure(client):
+    resp = client.get("/api/v1/tutorials/assets/book_figures/p011_fig1.png")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("image/png")
 

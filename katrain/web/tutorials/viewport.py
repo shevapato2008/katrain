@@ -22,7 +22,7 @@ def _occupied_positions(payload: Dict) -> Set[Tuple[int, int]]:
                 parts = coord_str.split(",")
                 if len(parts) == 2:
                     positions.add((int(parts[0]), int(parts[1])))
-    highlights = payload.get("highlights", [])
+    highlights = payload.get("highlights") or []
     for col, row in highlights:
         positions.add((col, row))
     return positions

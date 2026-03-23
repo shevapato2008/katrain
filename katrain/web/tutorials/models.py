@@ -4,7 +4,7 @@ Hierarchy: Category → Book → Chapter → Section → Figure
 """
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TutorialCategoryOut(BaseModel):
@@ -16,6 +16,8 @@ class TutorialCategoryOut(BaseModel):
 
 
 class TutorialBookOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     category: str
     subcategory: str
@@ -25,11 +27,10 @@ class TutorialBookOut(BaseModel):
     slug: str
     chapter_count: int = 0
 
-    class Config:
-        from_attributes = True
-
 
 class TutorialChapterOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     book_id: int
     chapter_number: str
@@ -37,11 +38,10 @@ class TutorialChapterOut(BaseModel):
     order: int
     section_count: int = 0
 
-    class Config:
-        from_attributes = True
-
 
 class TutorialSectionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     chapter_id: int
     section_number: str
@@ -49,11 +49,10 @@ class TutorialSectionOut(BaseModel):
     order: int
     figure_count: int = 0
 
-    class Config:
-        from_attributes = True
-
 
 class TutorialFigureOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     section_id: int
     page: int
@@ -66,9 +65,6 @@ class TutorialFigureOut(BaseModel):
     narration: Optional[str] = None
     audio_asset: Optional[str] = None
     order: int
-
-    class Config:
-        from_attributes = True
 
 
 class TutorialSectionDetailOut(TutorialSectionOut):

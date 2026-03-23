@@ -260,6 +260,7 @@ class UserTsumegoProgress(Base):
 # ============ Tutorial Models ============
 
 class UserTutorialProgress(Base):
+    # DEPRECATED in V2 — kept for data preservation. Will be replaced in Phase 3.
     """User's progress on a specific tutorial example."""
     __tablename__ = "user_tutorial_progress"
 
@@ -271,6 +272,95 @@ class UserTutorialProgress(Base):
     last_played_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", backref="tutorial_progress")
+
+
+# ============ Tutorial V2 Models ============
+
+class TutorialBook(Base):
+    """A Go tutorial book imported from book.json."""
+    __tablename__ = "tutorial_books"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(32), nullable=False, index=True)      # 入门/布局/中盘/官子
+    subcategory = Column(String(64), nullable=False, default="棋书")
+    title = Column(String(256), nullable=False)
+    author = Column(String(128), nullable=True)
+    translator = Column(String(128), nullable=True)
+    slug = Column(String(128), nullable=False, unique=True, index=True)
+    asset_dir = Column(String(512), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    chapters = relationship("TutorialChapter", back_populates="book", cascade="all, delete-orphan",
+                            order_by="TutorialChapter.order")
+
+    __table_args__ = (
+        CheckConstraint("category IN ('入门', '布局', '中盘', '官子')", name="ck_book_category"),
+    )
+
+
+class TutorialChapter(Base):
+    """A chapter within a tutorial book."""
+    __tablename__ = "tutorial_chapters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    book_id = Column(Integer, ForeignKey("tutorial_books.id", ondelete="CASCADE"), nullable=False, index=True)
+    chapter_number = Column(String(32), nullable=False)
+    title = Column(String(256), nullable=False)
+    order = Column(Integer, nullable=False)
+
+    book = relationship("TutorialBook", back_populates="chapters")
+    sections = relationship("TutorialSection", back_populates="chapter", cascade="all, delete-orphan",
+                            order_by="TutorialSection.order")
+
+    __table_args__ = (
+        UniqueConstraint("book_id", "order", name="uq_chapter_book_order"),
+    )
+
+
+class TutorialSection(Base):
+    """A section within a chapter (= one Example in the UI)."""
+    __tablename__ = "tutorial_sections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chapter_id = Column(Integer, ForeignKey("tutorial_chapters.id", ondelete="CASCADE"), nullable=False, index=True)
+    section_number = Column(String(32), nullable=False)
+    title = Column(String(256), nullable=False)
+    order = Column(Integer, nullable=False)
+
+    chapter = relationship("TutorialChapter", back_populates="sections")
+    figures = relationship("TutorialFigure", back_populates="section", cascade="all, delete-orphan",
+                           order_by="TutorialFigure.order")
+
+    __table_args__ = (
+        UniqueConstraint("chapter_id", "order", name="uq_section_chapter_order"),
+    )
+
+
+class TutorialFigure(Base):
+    """A single board diagram (= one Variation in the UI). Core content unit."""
+    __tablename__ = "tutorial_figures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    section_id = Column(Integer, ForeignKey("tutorial_sections.id", ondelete="CASCADE"), nullable=False, index=True)
+    page = Column(Integer, nullable=False)
+    figure_label = Column(String(32), nullable=False)
+    book_text = Column(Text, nullable=True)
+    page_context_text = Column(Text, nullable=True)
+    bbox = Column(JSON, nullable=True)
+    page_image_path = Column(String(512), nullable=True)
+    board_payload = Column(JSON, nullable=True)
+    narration = Column(Text, nullable=True)
+    audio_asset = Column(String(512), nullable=True)
+    order = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    section = relationship("TutorialSection", back_populates="figures")
+
+    __table_args__ = (
+        UniqueConstraint("section_id", "order", name="uq_figure_section_order"),
+    )
 
 
 class KifuAlbum(Base):

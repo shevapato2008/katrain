@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -12,7 +12,9 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
 import { TutorialAPI } from '../../api/tutorialApi';
 import SGFBoard from '../../components/tutorials/SGFBoard';
-import type { TutorialSectionDetail, TutorialFigure, BoardPayload } from '../../types/tutorial';
+import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
+import { useBoardEditor } from '../../hooks/useBoardEditor';
+import type { TutorialSectionDetail, BoardPayload } from '../../types/tutorial';
 
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();
@@ -21,8 +23,29 @@ export default function TutorialFigurePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentFigureIndex, setCurrentFigureIndex] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
   const [moveStep, setMoveStep] = useState<number | null>(null);
+
+  const currentFigure = section?.figures[currentFigureIndex] ?? null;
+
+  const handleServerSave = useCallback(async (payload: BoardPayload) => {
+    if (!currentFigure) return;
+    const updated = await TutorialAPI.saveBoardPayload(currentFigure.id, payload);
+    setSection(prev => {
+      if (!prev) return prev;
+      const figures = [...prev.figures];
+      figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload };
+      return { ...prev, figures };
+    });
+  }, [currentFigure, currentFigureIndex]);
+
+  const editor = useBoardEditor(currentFigure?.board_payload ?? null, handleServerSave);
+
+  // Sync editor payload when figure changes
+  useEffect(() => {
+    if (currentFigure?.board_payload) {
+      editor.setPayloadFromServer(currentFigure.board_payload);
+    }
+  }, [currentFigureIndex, currentFigure?.id]);
 
   const load = () => {
     if (!sectionId) return;
@@ -39,18 +62,17 @@ export default function TutorialFigurePage() {
 
   useEffect(() => { load(); }, [sectionId]);
 
-  const currentFigure: TutorialFigure | null = section?.figures[currentFigureIndex] ?? null;
-
-  // Compute max move number from labels
+  // Compute max move number from the displayed payload
+  const displayPayload = editor.isEditing ? editor.payload : (currentFigure?.board_payload ?? null);
   const maxMoveNumber = useMemo(() => {
-    if (!currentFigure?.board_payload?.labels) return 0;
+    if (!displayPayload?.labels) return 0;
     let max = 0;
-    for (const val of Object.values(currentFigure.board_payload.labels)) {
+    for (const val of Object.values(displayPayload.labels)) {
       const n = parseInt(val, 10);
       if (!isNaN(n) && n > max) max = n;
     }
     return max;
-  }, [currentFigure]);
+  }, [displayPayload]);
 
   // Reset move step when figure changes
   useEffect(() => {
@@ -61,22 +83,6 @@ export default function TutorialFigurePage() {
   const handleNext = () => {
     if (!section) return;
     setCurrentFigureIndex(i => Math.min(section.figures.length - 1, i + 1));
-  };
-
-  const handleSave = async (payload: BoardPayload) => {
-    if (!currentFigure) return;
-    try {
-      const updated = await TutorialAPI.saveBoardPayload(currentFigure.id, payload);
-      setSection(prev => {
-        if (!prev) return prev;
-        const figures = [...prev.figures];
-        figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload };
-        return { ...prev, figures };
-      });
-      setIsEditing(false);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '保存失败，请重试');
-    }
   };
 
   if (loading) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
@@ -91,22 +97,22 @@ export default function TutorialFigurePage() {
         {section.section_number}. {section.title}
       </Typography>
 
-      {/* Figure navigation bar */}
+      {/* Figure navigation */}
       <Box display="flex" alignItems="center" gap={1} mb={2}>
-        <IconButton onClick={handlePrev} disabled={currentFigureIndex === 0} aria-label="上一图">
+        <IconButton onClick={handlePrev} disabled={currentFigureIndex === 0 || editor.isEditing} aria-label="上一图">
           <NavigateBeforeIcon />
         </IconButton>
         <Typography variant="body2">
           {currentFigure?.figure_label} ({currentFigureIndex + 1} / {section.figures.length})
         </Typography>
-        <IconButton onClick={handleNext} disabled={currentFigureIndex === section.figures.length - 1} aria-label="下一图">
+        <IconButton onClick={handleNext} disabled={currentFigureIndex === section.figures.length - 1 || editor.isEditing} aria-label="下一图">
           <NavigateNextIcon />
         </IconButton>
       </Box>
 
       {/* Two-column layout */}
       <Box display="flex" gap={3} flexWrap="wrap">
-        {/* Left panel: page screenshot + book text */}
+        {/* Left: page screenshot + text */}
         <Box sx={{ flex: '1 1 400px', maxWidth: 600 }}>
           {currentFigure?.page_image_path && (
             <Box
@@ -128,18 +134,37 @@ export default function TutorialFigurePage() {
           )}
         </Box>
 
-        {/* Right panel: SGF board + controls */}
+        {/* Right: board + controls */}
         <Box sx={{ flex: '1 1 350px', maxWidth: 500 }}>
-          {currentFigure?.board_payload ? (
+          {displayPayload ? (
             <>
               <SGFBoard
-                payload={currentFigure.board_payload}
-                maxMoveStep={moveStep ?? undefined}
-                showFullBoard={isEditing}
+                payload={editor.isEditing ? editor.payload : displayPayload}
+                maxMoveStep={editor.isEditing ? undefined : (moveStep ?? undefined)}
+                showFullBoard={editor.isEditing}
+                onClick={editor.isEditing ? editor.handleClick : undefined}
               />
 
-              {/* Move-step slider */}
-              {maxMoveNumber > 0 && !isEditing && (
+              {/* Edit toolbar */}
+              {editor.isEditing && (
+                <BoardEditToolbar
+                  activeTool={editor.activeTool}
+                  stoneMode={editor.stoneMode}
+                  numbering={editor.numbering}
+                  selectedShape={editor.selectedShape}
+                  canUndo={editor.canUndo}
+                  onToolChange={editor.setActiveTool}
+                  onStoneModeChange={editor.setStoneMode}
+                  onNumberingChange={editor.setNumbering}
+                  onShapeChange={editor.setSelectedShape}
+                  onUndo={editor.undo}
+                  onSave={editor.save}
+                  onCancel={editor.cancelEdit}
+                />
+              )}
+
+              {/* Move-step slider (read-only mode only) */}
+              {maxMoveNumber > 0 && !editor.isEditing && (
                 <Box px={1} mt={1}>
                   <Typography variant="caption" color="text.secondary">手数: {moveStep ?? maxMoveNumber}</Typography>
                   <Slider
@@ -153,39 +178,11 @@ export default function TutorialFigurePage() {
                 </Box>
               )}
 
-              {/* Edit button */}
-              {!isEditing && (
+              {/* Edit button (read-only mode) */}
+              {!editor.isEditing && (
                 <Box mt={1}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={() => setIsEditing(true)}
-                    aria-label="编辑"
-                  >
+                  <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={editor.enterEdit} aria-label="编辑">
                     编辑
-                  </Button>
-                </Box>
-              )}
-
-              {/* Edit mode: save/cancel */}
-              {isEditing && (
-                <Box mt={1} display="flex" gap={1}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => currentFigure.board_payload && handleSave(currentFigure.board_payload)}
-                    aria-label="保存"
-                  >
-                    保存
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => setIsEditing(false)}
-                    aria-label="取消"
-                  >
-                    取消
                   </Button>
                 </Box>
               )}
@@ -197,17 +194,12 @@ export default function TutorialFigurePage() {
                 size="small"
                 variant="outlined"
                 sx={{ mt: 1 }}
-                onClick={() => {
-                  // Initialize empty board payload
+                onClick={async () => {
                   const emptyPayload: BoardPayload = {
-                    size: 19,
-                    stones: { B: [], W: [] },
-                    labels: {},
-                    letters: {},
-                    shapes: {},
-                    highlights: [],
+                    size: 19, stones: { B: [], W: [] },
+                    labels: {}, letters: {}, shapes: {}, highlights: [],
                   };
-                  handleSave(emptyPayload);
+                  await handleServerSave(emptyPayload);
                 }}
               >
                 初始化空棋盘
@@ -215,7 +207,6 @@ export default function TutorialFigurePage() {
             </Box>
           )}
 
-          {/* Narration */}
           {currentFigure?.narration && (
             <Typography variant="body2" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
               {currentFigure.narration}

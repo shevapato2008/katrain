@@ -16,9 +16,9 @@ import TsumegoListPage from './galaxy/pages/TsumegoListPage';
 import TsumegoUnitsPage from './galaxy/pages/TsumegoUnitsPage';
 import TsumegoProblemPage from './galaxy/pages/TsumegoProblemPage';
 import TutorialLandingPage from './galaxy/pages/tutorials/TutorialLandingPage';
-import TutorialTopicsPage from './galaxy/pages/tutorials/TutorialTopicsPage';
-import TutorialTopicDetailPage from './galaxy/pages/tutorials/TutorialTopicDetailPage';
-import TutorialExamplePage from './galaxy/pages/tutorials/TutorialExamplePage';
+import TutorialBooksPage from './galaxy/pages/tutorials/TutorialBooksPage';
+import TutorialBookDetailPage from './galaxy/pages/tutorials/TutorialBookDetailPage';
+import TutorialFigurePage from './galaxy/pages/tutorials/TutorialFigurePage';
 import { AuthProvider } from './galaxy/context/AuthContext';
 import { SettingsProvider } from './galaxy/context/SettingsContext';
 
@@ -45,9 +45,9 @@ const GalaxyApp = () => {
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoListPage />} />
           <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
           <Route path="tutorials" element={<TutorialLandingPage />} />
-          <Route path="tutorials/:categorySlug" element={<TutorialTopicsPage />} />
-          <Route path="tutorials/topic/:topicId" element={<TutorialTopicDetailPage />} />
-          <Route path="tutorials/example/:exampleId" element={<TutorialExamplePage />} />
+          <Route path="tutorials/:category" element={<TutorialBooksPage />} />
+          <Route path="tutorials/book/:bookId" element={<TutorialBookDetailPage />} />
+          <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
           <Route path="*" element={<Navigate to="/galaxy" replace />} />
         </Route>
       </Routes>

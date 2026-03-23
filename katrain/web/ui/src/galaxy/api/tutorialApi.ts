@@ -1,9 +1,11 @@
 import type {
   TutorialCategory,
-  TutorialExample,
-  TutorialProgress,
-  TutorialTopic,
-  ProgressUpdate,
+  TutorialBook,
+  TutorialBookDetail,
+  TutorialSection,
+  TutorialSectionDetail,
+  TutorialFigure,
+  BoardPayload,
 } from '../types/tutorial';
 
 const BASE = '/api/v1/tutorials';
@@ -14,9 +16,9 @@ async function apiGet<T>(path: string): Promise<T> {
   return resp.json() as Promise<T>;
 }
 
-async function apiPost<T>(path: string, body: unknown): Promise<T> {
+async function apiPut<T>(path: string, body: unknown): Promise<T> {
   const resp = await fetch(`${BASE}${path}`, {
-    method: 'POST',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -25,25 +27,28 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const TutorialAPI = {
+  // Categories
   getCategories: (): Promise<TutorialCategory[]> => apiGet('/categories'),
 
-  getTopics: (categorySlug: string): Promise<TutorialTopic[]> =>
-    apiGet(`/categories/${categorySlug}/topics`),
+  // Books
+  getBooks: (category: string): Promise<TutorialBook[]> =>
+    apiGet(`/categories/${encodeURIComponent(category)}/books`),
+  getBook: (bookId: number): Promise<TutorialBookDetail> => apiGet(`/books/${bookId}`),
 
-  getTopic: (topicId: string): Promise<TutorialTopic> => apiGet(`/topics/${topicId}`),
+  // Sections
+  getSections: (chapterId: number): Promise<TutorialSection[]> =>
+    apiGet(`/chapters/${chapterId}/sections`),
+  getSection: (sectionId: number): Promise<TutorialSectionDetail> =>
+    apiGet(`/sections/${sectionId}`),
 
-  getTopicExamples: (topicId: string): Promise<TutorialExample[]> =>
-    apiGet(`/topics/${topicId}/examples`),
+  // Figures
+  getFigure: (figureId: number): Promise<TutorialFigure> => apiGet(`/figures/${figureId}`),
+  saveBoardPayload: (figureId: number, payload: BoardPayload, expectedUpdatedAt?: string): Promise<TutorialFigure> =>
+    apiPut(`/figures/${figureId}/board`, {
+      board_payload: payload,
+      expected_updated_at: expectedUpdatedAt ?? null,
+    }),
 
-  getExample: (exampleId: string): Promise<TutorialExample> =>
-    apiGet(`/examples/${exampleId}`),
-
-  /** Build the URL for a published asset (image or audio). */
-  assetUrl: (assetRef: string): string =>
-    `${BASE}/assets/${assetRef.replace(/^assets\//, '')}`,
-
-  getProgress: (): Promise<TutorialProgress[]> => apiGet('/progress'),
-
-  updateProgress: (exampleId: string, update: ProgressUpdate): Promise<TutorialProgress> =>
-    apiPost(`/progress/${exampleId}`, update),
+  // Assets
+  assetUrl: (relativePath: string): string => `${BASE}/assets/${relativePath}`,
 };

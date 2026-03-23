@@ -1,61 +1,79 @@
+// ── Response types matching Pydantic models ──────────────────────────────────
+
 export interface TutorialCategory {
-  id: string;
   slug: string;
   title: string;
   summary: string;
   order: number;
-  topic_count: number;
-  cover_asset: string | null;
+  book_count: number;
 }
 
-export interface TutorialTopic {
-  id: string;
-  category_id: string;
-  slug: string;
+export interface TutorialBook {
+  id: number;
+  category: string;
+  subcategory: string;
   title: string;
-  summary: string;
-  tags: string[] | null;
-  difficulty: string | null;
-  estimated_minutes: number | null;
+  author: string | null;
+  translator: string | null;
+  slug: string;
+  chapter_count: number;
 }
 
-export type BoardMode = 'image' | 'sgf';
-
-export interface TutorialStep {
-  id: string;
-  example_id: string;
+export interface TutorialChapter {
+  id: number;
+  book_id: number;
+  chapter_number: string;
+  title: string;
   order: number;
-  narration: string;
-  image_asset: string | null;
-  audio_asset: string | null;
-  audio_duration_ms: number | null;
-  board_mode: BoardMode;
-  board_payload: unknown | null;
-  book_figure_asset: string | null;
+  section_count: number;
+}
+
+export interface TutorialSection {
+  id: number;
+  chapter_id: number;
+  section_number: string;
+  title: string;
+  order: number;
+  figure_count: number;
+}
+
+export interface TutorialFigure {
+  id: number;
+  section_id: number;
+  page: number;
+  figure_label: string;
   book_text: string | null;
-}
-
-export interface TutorialExample {
-  id: string;
-  topic_id: string;
-  title: string;
-  summary: string;
+  page_context_text: string | null;
+  bbox: { x_min: number; y_min: number; x_max: number; y_max: number } | null;
+  page_image_path: string | null;
+  board_payload: BoardPayload | null;
+  narration: string | null;
+  audio_asset: string | null;
   order: number;
-  total_duration_sec: number | null;
-  step_count: number;
-  steps: TutorialStep[];
 }
 
-export interface TutorialProgress {
-  example_id: string;
-  topic_id: string;
-  last_step_id: string | null;
-  completed: boolean;
-  last_played_at: string | null;
+export interface TutorialSectionDetail extends TutorialSection {
+  figures: TutorialFigure[];
 }
 
-export interface ProgressUpdate {
-  topic_id: string;
-  last_step_id: string;
-  completed: boolean;
+export interface TutorialBookDetail extends TutorialBook {
+  chapters: TutorialChapter[];
 }
+
+// ── Board payload ────────────────────────────────────────────────────────────
+
+export interface BoardPayload {
+  size: number;
+  stones: { B: [number, number][]; W: [number, number][] };
+  labels?: Record<string, string>;       // move numbers: "3,3" → "1"
+  letters?: Record<string, string>;      // letter annotations: "5,5" → "A"
+  shapes?: Record<string, string>;       // shape markers: "7,7" → "triangle"
+  highlights?: [number, number][];
+  viewport?: { col: number; row: number; size?: number; cols?: number; rows?: number } | null;
+}
+
+// ── Edit mode types ──────────────────────────────────────────────────────────
+
+export type StoneEditMode = 'black' | 'white' | 'alternate';
+export type EditTool = 'stone' | 'letter' | 'shape' | 'eraser' | null;
+export type ShapeType = 'triangle' | 'square' | 'circle';

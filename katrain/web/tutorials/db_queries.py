@@ -86,7 +86,16 @@ def get_figure(db: Session, figure_id: int) -> Optional[TutorialFigure]:
 
 
 def update_figure_board(db: Session, figure: TutorialFigure, board_payload: dict) -> TutorialFigure:
-    """Update the board_payload on an already-fetched figure."""
+    """Update the board_payload on an already-fetched figure.
+
+    Automatically computes and embeds the viewport if not already present.
+    """
+    from katrain.web.tutorials.viewport import compute_viewport
+
+    # Compute viewport before writing (ensures consistent display)
+    if "viewport" not in board_payload:
+        board_payload["viewport"] = compute_viewport(board_payload)
+
     figure.board_payload = board_payload
     db.commit()
     db.refresh(figure)

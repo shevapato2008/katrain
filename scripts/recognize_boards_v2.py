@@ -64,6 +64,34 @@ class PatchClassification:
     source: str = "cv"                    # "cv" | "vllm" | "model" | "human"
 
 
+@dataclass
+class FigureResult:
+    """Per-figure processing result for batch status tracking."""
+    label: str
+    figure_id: int
+    status: str  # "success" | "needs_review" | "failed_cv" | "failed_semantic" | "skipped"
+    detail: str = ""
+    stone_count: int = 0
+    label_count: int = 0
+    calibration_confidence: float = 0.0
+
+
+def print_summary_report(results):
+    """Print a summary report of figure processing results."""
+    log.info("\n═══ Processing Summary ═══")
+    status_counts = defaultdict(int)
+    for r in results:
+        status_counts[r.status] += 1
+        icon = {"success": "✓", "needs_review": "?", "skipped": "—"}.get(r.status, "✗")
+        log.info("  %s %s (id=%d): %s %s",
+                 icon, r.label, r.figure_id, r.status, r.detail)
+
+    log.info("──────────────────────────")
+    for status, count in sorted(status_counts.items()):
+        log.info("  %s: %d", status, count)
+    log.info("  total: %d", len(results))
+
+
 VLLM_CLASSIFY_PROMPT = """You are classifying Go board intersection patches from a textbook diagram.
 The contact sheet image shows cropped patches labeled A, B, C, etc.
 Each patch is a ~40×40px crop centered on a grid intersection.
@@ -758,11 +786,15 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
     """Process all diagrams on a single page.
 
     figure_ids: list of (figure_label, figure_db_id) e.g. [("图1", 1), ("图2", 2)]
+    Returns list of FigureResult for per-figure status tracking.
     """
+    results = []
     page_img = cv2.imread(str(page_image_path))
     if page_img is None:
         log.error("Cannot read image: %s", page_image_path)
-        return
+        for label, fig_id in figure_ids:
+            results.append(FigureResult(label, fig_id, "failed_cv", "cannot read page image"))
+        return results
     page_gray = cv2.cvtColor(page_img, cv2.COLOR_BGR2GRAY)
 
     # Step 0: detect diagram bounding boxes
@@ -800,6 +832,7 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
         bbox = bboxes.get(label)
         if bbox is None:
             log.warning("  No bbox found — skipping")
+            results.append(FigureResult(label, fig_id, "failed_cv", "no bbox detected"))
             continue
 
         # Crop diagram
@@ -823,6 +856,7 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
         if len(h_pos) < 3 or len(v_pos) < 3:
             log.warning("  Too few grid lines — skipping")
             crop_path.unlink(missing_ok=True)
+            results.append(FigureResult(label, fig_id, "failed_cv", f"too few grid lines ({len(h_pos)}×{len(v_pos)})"))
             continue
 
         # Step 3: CV occupied intersection detection
@@ -871,8 +905,22 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
                  len(payload["stones"]["B"]), len(payload["stones"]["W"]),
                  len(payload["labels"]), len(payload["letters"]))
 
+        stone_count = len(payload["stones"]["B"]) + len(payload["stones"]["W"])
+        label_count_total = len(payload.get("labels", {}))
+
+        # Determine per-figure status
+        if stone_count == 0:
+            status = "failed_cv"
+            detail = "no stones detected"
+        elif cal_conf < 0.3:
+            status = "needs_review"
+            detail = f"low calibration confidence ({cal_conf:.2f})"
+        else:
+            status = "success"
+            detail = f"{stone_count} stones, {label_count_total} labels"
+
         if dry_run:
-            print(f"\n=== {label} (id={fig_id}) ===")
+            print(f"\n=== {label} (id={fig_id}) [{status}] ===")
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         elif db is not None:
             figure = db_queries.get_figure(db, fig_id)
@@ -881,9 +929,19 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
                 log.info("  ✓ Saved to DB")
             else:
                 log.error("  Figure id=%d not found in DB", fig_id)
+                status = "failed_semantic"
+                detail = "figure not found in DB"
+
+        results.append(FigureResult(
+            label, fig_id, status, detail,
+            stone_count=stone_count, label_count=label_count_total,
+            calibration_confidence=cal_conf,
+        ))
 
         # Cleanup temp file
         crop_path.unlink(missing_ok=True)
+
+    return results
 
 
 # ── Test CV pipeline ──────────────────────────────────────────────────────────
@@ -1209,6 +1267,7 @@ def main():
         for fig in section.figures:
             pages[fig.page].append((fig.figure_label, fig.id))
 
+        all_results = []
         for page_num in sorted(pages.keys()):
             figure_ids = pages[page_num]
             # Find page image path from the first figure
@@ -1223,13 +1282,16 @@ def main():
                 continue
 
             log.info("\n── Page %d (%s) ── %d figure(s)", page_num, image_path.name, len(figure_ids))
-            process_page(image_path, figure_ids, dry_run=args.dry_run, db=db)
+            page_results = process_page(image_path, figure_ids, dry_run=args.dry_run, db=db)
+            if page_results:
+                all_results.extend(page_results)
+
+        # Print summary report
+        if all_results:
+            print_summary_report(all_results)
 
     finally:
         db.close()
-
-    if not args.dry_run:
-        log.info("\nDone. Reload browser to see results.")
 
 
 if __name__ == "__main__":

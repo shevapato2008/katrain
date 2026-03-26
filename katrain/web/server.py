@@ -1277,6 +1277,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def serve_galaxy_app(full_path: str = None):
         return str(static_root / "index.html")
 
+    # SPA Routing for Kiosk UI
+    @app.get("/kiosk", response_class=FileResponse)
+    @app.get("/kiosk/{full_path:path}", response_class=FileResponse)
+    async def serve_kiosk_app(full_path: str = None):
+        return str(static_root / "index.html")
+
     # Catch-all for other static files (like vite.svg and JS/CSS in assets/)
     app.mount("/", StaticFiles(directory=static_root, html=True), name="root")
 

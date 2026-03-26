@@ -24,8 +24,10 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
+from dataclasses import dataclass, field
 from math import ceil
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -43,6 +45,136 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
 
 ASSET_BASE = Path("data")
+
+
+# ── Structured classification schema ─────────────────────────────────────────
+
+@dataclass
+class PatchClassification:
+    """Classification result for a single intersection patch."""
+    label: str                            # contact sheet label: "A", "B", ...
+    local_col: int                        # grid index in cropped diagram
+    local_row: int
+    base_type: str                        # "black" | "white" | "empty" | "unknown"
+    text: Optional[str] = None            # move number "1"-"99+" or letter "A"-"Z" or None
+    shape: Optional[str] = None           # "triangle" | "square" | "circle" | None
+    confidence: float = 1.0               # 0.0-1.0; <0.8 → needs_review
+    source: str = "cv"                    # "cv" | "vllm" | "model" | "human"
+
+
+VLLM_CLASSIFY_PROMPT = """You are classifying Go board intersection patches from a textbook diagram.
+The contact sheet image shows cropped patches labeled A, B, C, etc.
+Each patch is a ~40×40px crop centered on a grid intersection.
+
+Classify each labeled patch into EXACTLY ONE category:
+- "black": solid black stone without a number
+- "white": outlined white stone without a number
+- "black+N": black stone with move number N (read the number carefully)
+- "white+N": white stone with move number N (read the number carefully)
+- "triangle_black": black stone marked with a triangle △
+- "triangle_white": white stone marked with a triangle △
+- "square_black": black stone marked with a square □
+- "square_white": white stone marked with a square □
+- "circle_black": black stone marked with a circle ○
+- "circle_white": white stone marked with a circle ○
+- "letter_X": letter X (A, B, C...) marked on an empty intersection
+- "empty": no stone or marking (false positive from CV)
+
+Return JSON only, no explanation:
+{"A": "black+1", "B": "white+8", "C": "black", "D": "letter_A", ...}
+"""
+
+
+def parse_classification(label, cls_str, local_col, local_row, source="vllm"):
+    """Parse a VLLM classification string into a PatchClassification."""
+    base_type = "unknown"
+    text = None
+    shape = None
+
+    if cls_str == "empty":
+        return PatchClassification(label, local_col, local_row, "empty", source=source)
+
+    if cls_str.startswith("black"):
+        base_type = "black"
+        if "+" in cls_str:
+            text = cls_str.split("+", 1)[1]
+    elif cls_str.startswith("white"):
+        base_type = "white"
+        if "+" in cls_str:
+            text = cls_str.split("+", 1)[1]
+    elif cls_str.startswith(("triangle_", "square_", "circle_")):
+        parts = cls_str.split("_", 1)
+        shape = parts[0]
+        base_type = parts[1] if len(parts) > 1 else "unknown"
+    elif cls_str.startswith("letter_"):
+        base_type = "empty"
+        text = cls_str.split("_", 1)[1]
+
+    return PatchClassification(label, local_col, local_row, base_type,
+                               text=text, shape=shape, source=source)
+
+
+def classification_to_payload(classifications, label_map, col_start=0, row_start=0):
+    """Convert classification results to board_payload format.
+
+    Args:
+        classifications: dict like {"A": "black+1", "B": "white+8", ...}
+            OR list of PatchClassification objects
+        label_map: dict like {"A": (col_idx, row_idx), ...}
+        col_start: offset to map local col to full 19×19 col
+        row_start: offset to map local row to full 19×19 row
+    """
+    black, white = [], []
+    labels, letters, shapes = {}, {}, {}
+
+    # Normalize to PatchClassification objects
+    if isinstance(classifications, dict):
+        parsed = []
+        for lbl, cls_str in classifications.items():
+            if lbl in label_map:
+                ci, ri = label_map[lbl]
+                parsed.append(parse_classification(lbl, cls_str, ci, ri))
+        items = parsed
+    else:
+        items = classifications
+
+    for pc in items:
+        if pc.base_type == "empty" and pc.text and pc.text.isalpha():
+            # Letter annotation on empty intersection
+            ci, ri = pc.local_col, pc.local_row
+            col = col_start + ci
+            row = row_start + ri
+            key = f"{col},{row}"
+            letters[key] = pc.text
+            continue
+
+        if pc.base_type in ("empty", "unknown"):
+            continue
+
+        ci, ri = pc.local_col, pc.local_row
+        col = col_start + ci
+        row = row_start + ri
+        key = f"{col},{row}"
+
+        if pc.base_type == "black":
+            black.append([col, row])
+        elif pc.base_type == "white":
+            white.append([col, row])
+
+        if pc.text and pc.text.isdigit():
+            labels[key] = pc.text
+
+        if pc.shape:
+            shapes[key] = pc.shape
+
+    return {
+        "size": 19,
+        "stones": {"B": black, "W": white},
+        "labels": labels,
+        "letters": letters,
+        "shapes": shapes,
+        "highlights": [],
+    }
 
 
 # ── Step 2: OpenCV grid detection ─────────────────────────────────────────────
@@ -731,6 +863,82 @@ def test_cv(page_image_path):
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+
+def apply_classifications_from_file(db, section_id, json_path):
+    """Apply VLLM classification results from a JSON file to DB.
+
+    JSON format:
+    {
+      "图1": {"classifications": {"A": "black+1", ...}, "col_start": 0, "row_start": 0},
+      "图2": {...},
+      ...
+    }
+    """
+    from katrain.web.tutorials.viewport import compute_viewport
+
+    with open(json_path) as f:
+        data = json.load(f)
+
+    section = db_queries.get_section(db, section_id)
+    if section is None:
+        log.error("Section %d not found", section_id)
+        return
+
+    # Build figure lookup
+    fig_by_label = {fig.figure_label: fig for fig in section.figures}
+
+    results = []  # (label, status, detail)
+
+    for label, entry in data.items():
+        figure = fig_by_label.get(label)
+        if figure is None:
+            log.warning("  %s: not found in section — skipping", label)
+            results.append((label, "failed_semantic", "figure not found in section"))
+            continue
+
+        # Skip if already has board_payload (safety check, avoid overwrite)
+        if figure.board_payload and figure.board_payload.get("stones", {}).get("B"):
+            log.info("  %s: already has board_payload — skipping (use --force to overwrite)", label)
+            results.append((label, "skipped", "already has payload"))
+            continue
+
+        classifications = entry.get("classifications", {})
+        col_start = entry.get("col_start", 0)
+        row_start = entry.get("row_start", 0)
+
+        # Load label_map from the contact sheet metadata if available
+        label_map = entry.get("label_map", {})
+        if not label_map:
+            log.warning("  %s: no label_map in JSON — skipping", label)
+            results.append((label, "failed_semantic", "missing label_map"))
+            continue
+
+        # Convert label_map values from lists to tuples
+        label_map = {k: tuple(v) for k, v in label_map.items()}
+
+        try:
+            payload = classification_to_payload(classifications, label_map, col_start, row_start)
+
+            # Compute viewport before DB write (Codex fix)
+            viewport = compute_viewport(payload)
+            payload["viewport"] = viewport
+
+            db_queries.update_figure_board(db, figure, payload)
+            stone_count = len(payload["stones"]["B"]) + len(payload["stones"]["W"])
+            log.info("  %s: applied (%d stones, %d labels) ✓",
+                     label, stone_count, len(payload.get("labels", {})))
+            results.append((label, "success", f"{stone_count} stones"))
+        except Exception as e:
+            log.error("  %s: failed — %s", label, e)
+            results.append((label, "failed_semantic", str(e)))
+
+    # Summary
+    success = sum(1 for _, s, _ in results if s == "success")
+    failed = sum(1 for _, s, _ in results if s.startswith("failed"))
+    skipped = sum(1 for _, s, _ in results if s == "skipped")
+    log.info("\nSummary: %d success, %d failed, %d skipped (total %d)",
+             success, failed, skipped, len(results))
+
 
 def save_sheets_for_section(db, section_id, output_dir):
     """Generate and save contact sheets for all figures in a section.

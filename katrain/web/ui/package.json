@@ -16,7 +16,6 @@
     "@emotion/styled": "^11.14.1",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/noto-sans-sc": "^5.2.9",
-    "@fontsource/noto-serif-sc": "^5.2.9",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "@react-three/drei": "^10.7.7",

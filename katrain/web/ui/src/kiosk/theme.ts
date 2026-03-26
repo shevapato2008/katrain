@@ -4,7 +4,6 @@ import { createTheme } from '@mui/material';
 import '@fontsource/noto-sans-sc/400.css';
 import '@fontsource/noto-sans-sc/600.css';
 import '@fontsource/noto-sans-sc/700.css';
-import '@fontsource/noto-serif-sc/700.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/500.css';
 
@@ -37,7 +36,7 @@ export const kioskTheme = createTheme({
   typography: {
     fontFamily: "'Noto Sans SC', 'Noto Sans', sans-serif",
     fontSize: 16,
-    h1: { fontFamily: "'Noto Serif SC', 'Noto Serif', serif", fontWeight: 700 },
+    h1: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 700 },
     h2: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 700 },
     h3: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },
     h4: { fontFamily: "'Noto Sans SC', sans-serif", fontWeight: 600 },

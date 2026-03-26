@@ -40,6 +40,7 @@ from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core.config import settings
 from katrain.web.tutorials import db_queries
+from katrain.web.tutorials.vision.region_calibrator import calibrate_region
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
@@ -759,15 +760,23 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
         w_count = sum(1 for _, _, c in stones if c == "W")
         log.info("  Step 3 (legacy): %d stones (B=%d, W=%d)", len(stones), b_count, w_count)
 
-        # Step 1: VLLM board region
-        try:
-            region = vllm_identify_region(crop_path, len(h_pos), len(v_pos))
-            col_start = region.get("col_start", 0)
-            row_start = region.get("row_start", 0)
-            log.info("  Step 1: col_start=%d, row_start=%d", col_start, row_start)
-        except Exception as e:
-            log.warning("  VLLM region failed (%s), assuming col_start=0, row_start=0", e)
-            col_start, row_start = 0, 0
+        # Step 1: Region calibration (multi-evidence CV, VLLM fallback)
+        occupied_set = {(ci, ri) for ci, ri, _ in occupied}
+        col_start, row_start, cal_conf, cal_evidence = calibrate_region(
+            crop_gray, h_pos, v_pos, spacing, occupied_set
+        )
+        log.info("  Step 1 (CV): col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
+                 col_start, row_start, cal_conf, cal_evidence)
+
+        if cal_conf < 0.3:
+            # Low confidence — fall back to VLLM
+            try:
+                region = vllm_identify_region(crop_path, len(h_pos), len(v_pos))
+                col_start = region.get("col_start", col_start)
+                row_start = region.get("row_start", row_start)
+                log.info("  Step 1 (VLLM fallback): col_start=%d, row_start=%d", col_start, row_start)
+            except Exception as e:
+                log.warning("  VLLM region also failed (%s), using CV result", e)
 
         # Step 4: VLLM number recognition
         try:
@@ -1022,6 +1031,14 @@ def save_sheets_for_section(db, section_id, output_dir):
                 log.warning("  %s: no occupied intersections — skipping", label)
                 continue
 
+            # Region calibration
+            occupied_set = {(ci, ri) for ci, ri, _ in occupied}
+            col_start, row_start, cal_conf, cal_evidence = calibrate_region(
+                crop_gray, h_pos, v_pos, spacing, occupied_set
+            )
+            log.info("  %s: region col_start=%d, row_start=%d (conf=%.2f)",
+                     label, col_start, row_start, cal_conf)
+
             # Build contact sheet
             sheet, label_map = build_contact_sheet(occupied, spacing)
             if sheet is None:
@@ -1031,6 +1048,13 @@ def save_sheets_for_section(db, section_id, output_dir):
             sheet_path = output_dir / f"{label}.png"
             cv2.imwrite(str(sheet_path), sheet)
 
+            # Build confident map: match label_map entries to confident patches
+            confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
+            conf_map = {}
+            for lbl, (ci, ri) in label_map.items():
+                if (ci, ri) in confident_set:
+                    conf_map[lbl] = confident_set[(ci, ri)]
+
             # Save label map + metadata
             meta = {
                 "figure_label": label,
@@ -1038,29 +1062,16 @@ def save_sheets_for_section(db, section_id, output_dir):
                 "grid_rows": len(h_pos),
                 "grid_cols": len(v_pos),
                 "spacing": spacing,
+                "col_start": col_start,
+                "row_start": row_start,
+                "calibration_confidence": cal_conf,
+                "calibration_evidence": cal_evidence,
                 "total_occupied": len(occupied),
                 "confident_count": len(confident),
                 "ambiguous_count": len(ambiguous),
                 "label_map": {k: list(v) for k, v in label_map.items()},
-                "confident": {
-                    # Pre-classified patches (skip VLLM for these)
-                    k: base_type
-                    for k, (ci, ri, _, base_type) in (
-                        (lbl, item) for lbl, item in (
-                            (lbl, next((ci, ri, p, bt) for ci, ri, p, bt in confident if (ci, ri) == pos), )
-                            for lbl, pos in label_map.items()
-                            if any((ci, ri) == pos for ci, ri, _, bt in confident)
-                        )
-                    )
-                } if confident else {},
+                "confident": conf_map,
             }
-            # Simpler confident map: match label_map entries to confident patches
-            conf_map = {}
-            confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
-            for lbl, (ci, ri) in label_map.items():
-                if (ci, ri) in confident_set:
-                    conf_map[lbl] = confident_set[(ci, ri)]
-            meta["confident"] = conf_map
 
             meta_path = output_dir / f"{label}.json"
             with open(meta_path, "w") as f:

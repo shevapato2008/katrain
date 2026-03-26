@@ -25,6 +25,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
 from typing import Optional
@@ -176,6 +177,82 @@ def classification_to_payload(classifications, label_map, col_start=0, row_start
         "shapes": shapes,
         "highlights": [],
     }
+
+
+# ── Training data collection ──────────────────────────────────────────────────
+
+TRAINING_DIR = Path("data/training_patches")
+
+
+def save_training_patch(patch, classification, book_slug, page, figure_label,
+                        local_col, local_row, global_col, global_row, source):
+    """Save a single classified patch with full provenance to manifest.jsonl."""
+    patch_id = f"{book_slug}_{figure_label}_{local_col}_{local_row}"
+
+    # Save image (organized by base_type for browsing)
+    base_type = classification.base_type  # "black", "white", "empty", "unknown"
+    class_dir = TRAINING_DIR / "images" / base_type
+    class_dir.mkdir(parents=True, exist_ok=True)
+    img_path = class_dir / f"{patch_id}.png"
+    cv2.imwrite(str(img_path), patch)
+
+    # Append to manifest.jsonl
+    record = {
+        "patch_id": patch_id,
+        "image_path": str(img_path.relative_to(TRAINING_DIR)),
+        "book": book_slug,
+        "page": page,
+        "figure": figure_label,
+        "local_col": local_col,
+        "local_row": local_row,
+        "global_col": global_col,
+        "global_row": global_row,
+        "base_type": base_type,
+        "text": classification.text,
+        "shape": classification.shape,
+        "confidence": classification.confidence,
+        "source": source,
+        "review_status": "raw_auto",  # raw_auto → reviewed → gold
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    manifest_path = TRAINING_DIR / "manifest.jsonl"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(manifest_path, "a") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    return patch_id
+
+
+def save_all_training_patches(occupied_patches, classifications, label_map,
+                              col_start, row_start, book_slug, page, figure_label):
+    """Save all patches (including empty) for a figure with full provenance."""
+    saved = 0
+    patch_lookup = {(ci, ri): patch for ci, ri, patch in occupied_patches}
+
+    for lbl, (ci, ri) in label_map.items():
+        patch = patch_lookup.get((ci, ri))
+        if patch is None:
+            continue
+
+        # Get classification for this label
+        if isinstance(classifications, dict):
+            cls_str = classifications.get(lbl, "empty")
+            pc = parse_classification(lbl, cls_str, ci, ri, source="vllm")
+        elif isinstance(classifications, list):
+            pc = next((c for c in classifications if c.label == lbl), None)
+            if pc is None:
+                pc = PatchClassification(lbl, ci, ri, "empty", source="cv")
+        else:
+            continue
+
+        save_training_patch(
+            patch, pc, book_slug, page, figure_label,
+            ci, ri, col_start + ci, row_start + ri, pc.source
+        )
+        saved += 1
+
+    log.info("  Saved %d training patches for %s", saved, figure_label)
+    return saved
 
 
 # ── Step 2: OpenCV grid detection ─────────────────────────────────────────────

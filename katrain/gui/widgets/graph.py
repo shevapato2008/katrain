@@ -62,18 +62,22 @@ class Graph(Widget):
 class ScoreGraph(Graph):
     show_score = BooleanProperty(True)
     show_winrate = BooleanProperty(True)
+    show_pointloss = BooleanProperty(False)
 
     score_points = ListProperty([])
     winrate_points = ListProperty([])
+    pointloss_points = ListProperty([])
 
     score_dot_pos = ListProperty([0, 0])
     winrate_dot_pos = ListProperty([0, 0])
+    pointloss_dot_pos = ListProperty([0, 0])
     highlight_size = NumericProperty(dp(6))
 
     score_scale = NumericProperty(5)
     winrate_scale = NumericProperty(5)
+    pointloss_scale = NumericProperty(5)
 
-    navigate_move = ListProperty([None, 0, 0, 0])
+    navigate_move = ListProperty([None, 0, 0, 0, 0])
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos) and "scroll" not in getattr(touch, "button", ""):
@@ -83,9 +87,10 @@ class ScoreGraph(Graph):
                 self.score_points[2 * ix],
                 self.score_points[2 * ix + 1],
                 self.winrate_points[2 * ix + 1],
+                self.pointloss_points[2 * ix + 1] if self.pointloss_points else 0,
             ]
         else:
-            self.navigate_move = [None, 0, 0, 0]
+            self.navigate_move = [None, 0, 0, 0, 0]
 
     def on_touch_move(self, touch):
         return self.on_touch_down(touch)
@@ -96,11 +101,12 @@ class ScoreGraph(Graph):
             if katrain and katrain.game:
                 katrain.game.set_current_node(self.navigate_move[0])
                 katrain.update_state()
-        self.navigate_move = [None, 0, 0, 0]
+        self.navigate_move = [None, 0, 0, 0, 0]
 
     def show_graphs(self, keys):
         self.show_score = keys["score"]
         self.show_winrate = keys["winrate"]
+        self.show_pointloss = keys.get("points", False)
 
     def update_graph(self, *args):
         nodes = self.nodes
@@ -113,6 +119,18 @@ class ScoreGraph(Graph):
             winrate_nn_values = [(n.winrate - 0.5) * 100 for n in nodes if n and n.winrate]
             winrate_values_range = min(winrate_nn_values or [0]), max(winrate_nn_values or [0])
 
+            # Point loss: both players' losses go upward from zero
+            # (avoids oscillation that would occur if one player went up and other went down)
+            pointloss_values = [
+                max(0, n.points_lost) if n and n.move and n.points_lost is not None else math.nan
+                for n in nodes
+            ]
+            pointloss_nn_values = [
+                max(0, n.points_lost)
+                for n in nodes if n and n.move and n.points_lost is not None
+            ]
+            pointloss_values_range = 0, max(pointloss_nn_values or [0])
+
             score_granularity = 5
             winrate_granularity = 10
             self.score_scale = (
@@ -123,6 +141,11 @@ class ScoreGraph(Graph):
                 max(math.ceil(max(-winrate_values_range[0], winrate_values_range[1]) / winrate_granularity), 1)
                 * winrate_granularity
             )
+            # Point loss scale: based on max loss, minimum of 5
+            pointloss_granularity = 5
+            self.pointloss_scale = max(
+                math.ceil(pointloss_values_range[1] / pointloss_granularity), 1
+            ) * pointloss_granularity
 
             xscale = self.width / max(len(score_values) - 1, 15)
             available_height = self.height
@@ -134,13 +157,20 @@ class ScoreGraph(Graph):
                 [self.x + i * xscale, self.y + self.height / 2 + available_height / 2 * (val / self.winrate_scale)]
                 for i, val in enumerate(winrate_values)
             ]
+            # Point loss: line from bottom going up (0 at bottom, max at top)
+            pointloss_line_points = [
+                [self.x + i * xscale, self.y + available_height * (val / self.pointloss_scale) if not math.isnan(val) else math.nan]
+                for i, val in enumerate(pointloss_values)
+            ]
             self.score_points = sum(score_line_points, [])
             self.winrate_points = sum(winrate_line_points, [])
+            self.pointloss_points = sum(pointloss_line_points, [])
 
             if self.highlighted_index is not None:
                 self.highlighted_index = min(self.highlighted_index, len(score_values) - 1)
                 score_dot_point = score_line_points[self.highlighted_index]
                 winrate_dot_point = winrate_line_points[self.highlighted_index]
+                pointloss_dot_point = pointloss_line_points[self.highlighted_index]
                 if math.isnan(score_dot_point[1]):
                     score_dot_point[1] = (
                         self.y
@@ -155,6 +185,12 @@ class ScoreGraph(Graph):
                         + available_height / 2 * ((winrate_nn_values or [0])[-1] / self.winrate_scale)
                     )
                 self.winrate_dot_pos = winrate_dot_point
+                if math.isnan(pointloss_dot_point[1]):
+                    # Fall back to last known value, positioned from bottom
+                    pointloss_dot_point[1] = (
+                        self.y + available_height * ((pointloss_nn_values or [0])[-1] / self.pointloss_scale)
+                    )
+                self.pointloss_dot_pos = pointloss_dot_point
 
 
 Builder.load_string(
@@ -190,6 +226,11 @@ Builder.load_string(
             points: root.winrate_points if root.show_winrate else []
             width: dp(1.1)
         Color:
+            rgba: Theme.POINTLOSS_COLOR
+        Line:
+            points: root.pointloss_points if root.show_pointloss else []
+            width: dp(1.1)
+        Color:
             rgba: [0.5,0.5,0.5,1] if root.navigate_move[0] else [0,0,0,0]
         Line:
             points: root.navigate_move[1], root.y, root.navigate_move[1], root.y+root.height
@@ -206,6 +247,12 @@ Builder.load_string(
             id: winrate_dot
             pos: [c - self.highlight_size / 2 for c in (self.winrate_dot_pos if not self.navigate_move[0] else [self.navigate_move[1],self.navigate_move[3]] ) ]
             size: (self.highlight_size,self.highlight_size) if root.show_winrate else (0.0001,0.0001)
+        Color:
+            rgba: Theme.GRAPH_DOT_COLOR
+        Ellipse:
+            id: pointloss_dot
+            pos: [c - self.highlight_size / 2 for c in (self.pointloss_dot_pos if not self.navigate_move[0] else [self.navigate_move[1],self.navigate_move[4]] ) ]
+            size: (self.highlight_size,self.highlight_size) if root.show_pointloss else (0.0001,0.0001)
     # score ticks
     GraphMarkerLabel:
         font_size: root.marker_font_size
@@ -238,5 +285,18 @@ Builder.load_string(
         pos:root.pos[0]+1, root.pos[1]
         text: "{}%".format(50 - root.winrate_scale)
         opacity: int(root.show_winrate)
+    # point loss ticks - left side like winrate
+    GraphMarkerLabel:
+        font_size: root.marker_font_size
+        color: Theme.POINTLOSS_MARKER_COLOR
+        pos: root.pos[0] + 1, root.pos[1] + root.height - self.font_size - 1
+        text: '-{}'.format(root.pointloss_scale)
+        opacity: int(root.show_pointloss)
+    GraphMarkerLabel:
+        font_size: root.marker_font_size
+        color: Theme.POINTLOSS_MARKER_COLOR
+        pos: root.pos[0] + 1, root.pos[1]
+        text: "0"
+        opacity: int(root.show_pointloss)
 """
 )

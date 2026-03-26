@@ -727,10 +727,14 @@ class WebKaTrain(KaTrainBase):
         """Background thread: generate AI move then broadcast state update."""
         try:
             self._do_ai_move(cn)
-            if self.update_state_callback:
-                self.update_state_callback(self.get_state())
+        except Exception as e:
+            self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
         finally:
             self._ai_move_pending = False
+            # Use update_state() instead of bare callback — this both broadcasts
+            # AND re-runs _do_update_state(), which re-triggers AI if the game
+            # tree changed (e.g., user undid + replayed while this thread ran).
+            self.update_state()
 
     def _do_ai_move(self, node=None):
         with self.ai_lock:
@@ -785,7 +789,6 @@ class WebKaTrain(KaTrainBase):
             if self.play_analyze_mode == MODE_PLAY and self.last_player_info.ai and self.next_player_info.human:
                 n_times = 2
         self.game.undo(n_times)
-        self.update_state()
 
     def _do_redo(self, n_times=1):
         self.game.redo(n_times)

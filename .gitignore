@@ -28,7 +28,7 @@ dist_sgf
 outdated_log.txt
 
 # too big
-models/*.bin.gz
+models/
 katrain/models/*.bin.gz
 
 # Compiled translation files (regenerated on startup from .po files)
@@ -182,4 +182,5 @@ dmypy.json
 
 # Local data
 /data/
-data.zip
+go_dataset/
+data.zip.superpowers/

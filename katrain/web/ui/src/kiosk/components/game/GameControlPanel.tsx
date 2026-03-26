@@ -78,11 +78,11 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
         {/* 8. Switch settings */}
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <FormControlLabel
-            control={<Switch size="small" checked={!!analysisToggles.show_coordinates} onChange={() => onToggleAnalysis('show_coordinates')} />}
+            control={<Switch size="small" checked={!!analysisToggles.coords} onChange={() => onToggleAnalysis('coords')} />}
             label={<Typography variant="body2">{t('Coordinates', '坐标')}</Typography>}
           />
           <FormControlLabel
-            control={<Switch size="small" checked={!!analysisToggles.show_move_numbers} onChange={() => onToggleAnalysis('show_move_numbers')} />}
+            control={<Switch size="small" checked={!!analysisToggles.numbers} onChange={() => onToggleAnalysis('numbers')} />}
             label={<Typography variant="body2">{t('Move Numbers', '手数')}</Typography>}
           />
         </Box>

@@ -17,10 +17,10 @@ const GamePage = () => {
   const { isPortrait } = useOrientation();
   const session = useGameSession({ token: token ?? undefined });
   const [analysisToggles, setAnalysisToggles] = useState({
-    show_ownership: false,
-    show_hints: false,
-    show_move_numbers: false,
-    show_coordinates: true,
+    ownership: false,
+    hints: false,
+    numbers: false,
+    coords: true,
   });
 
   useEffect(() => {

@@ -2,10 +2,16 @@
 """Batch translate missing player and tournament names using LLM.
 
 This script fetches all missing translations from the API and uses
-the Anthropic Claude API to translate them, then stores in the database.
+an LLM API to translate them, then stores in the database.
+
+Supports multiple backends (via --backend or LLM_BACKEND env var):
+- 'qwen': Alibaba Qwen via OpenAI-compatible API (default, uses DASHSCOPE_API_KEY)
+- 'anthropic': Anthropic Claude API (uses ANTHROPIC_API_KEY)
 
 Usage:
     python scripts/batch_translate_live.py [--dry-run]
+    python scripts/batch_translate_live.py --backend anthropic
+    LLM_BACKEND=anthropic python scripts/batch_translate_live.py
 """
 
 import argparse
@@ -54,30 +60,37 @@ Return ONLY a JSON object with keys "en", "jp", "ko" for the translations.
 Example: {{"en": "52nd Tengen Preliminary A", "jp": "第52期天元戦予選A組", "ko": "제52기 천원전 예선 A조"}}"""
 
 
-def call_llm(prompt: str) -> dict | None:
-    """Call Anthropic API to translate."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("ERROR: ANTHROPIC_API_KEY not set")
-        return None
+def _get_backend() -> str:
+    """Get the LLM backend from environment or default to 'qwen'."""
+    return os.environ.get("LLM_BACKEND", "qwen").lower()
+
+
+def _parse_llm_json(text: str) -> dict | None:
+    """Parse JSON from LLM response, handling markdown code blocks."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return json.loads(text)
+
+
+def call_llm(prompt: str, backend: str | None = None) -> dict | None:
+    """Call LLM API to translate.
+
+    Args:
+        prompt: Translation prompt
+        backend: 'qwen' or 'anthropic' (default from env LLM_BACKEND or 'qwen')
+    """
+    backend = backend or _get_backend()
 
     try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        if response.content:
-            text = response.content[0].text.strip()
-            # Parse JSON response
-            # Handle potential markdown code blocks
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            return json.loads(text)
+        if backend == "anthropic":
+            text = _call_anthropic(prompt)
+        else:
+            text = _call_qwen(prompt)
+        if text:
+            return _parse_llm_json(text)
         return None
     except json.JSONDecodeError as e:
         print(f"  JSON parse error: {e}")
@@ -85,6 +98,51 @@ def call_llm(prompt: str) -> dict | None:
     except Exception as e:
         print(f"  LLM error: {e}")
         return None
+
+
+def _call_qwen(prompt: str) -> str | None:
+    """Call Alibaba Qwen API via OpenAI-compatible interface."""
+    from openai import OpenAI
+
+    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    if not api_key:
+        print("ERROR: DASHSCOPE_API_KEY not set")
+        return None
+
+    base_url = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    model = os.environ.get("LLM_MODEL", "qwen-mt-turbo")
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    response = client.chat.completions.create(
+        model=model,
+        max_tokens=200,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    if response.choices:
+        return response.choices[0].message.content
+    return None
+
+
+def _call_anthropic(prompt: str) -> str | None:
+    """Call Anthropic Claude API."""
+    import anthropic
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("ERROR: ANTHROPIC_API_KEY not set")
+        return None
+
+    model = os.environ.get("LLM_MODEL", "claude-haiku-4-5-20251001")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model=model,
+        max_tokens=200,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    if response.content:
+        return response.content[0].text
+    return None
 
 
 def get_missing_translations() -> dict:
@@ -211,7 +269,12 @@ def main():
     parser.add_argument("--players-only", action="store_true", help="Only translate players")
     parser.add_argument("--tournaments-only", action="store_true", help="Only translate tournaments")
     parser.add_argument("--limit", type=int, default=50, help="Max items to translate")
+    parser.add_argument("--backend", choices=["qwen", "anthropic"], default=None, help="LLM backend (default: env LLM_BACKEND or 'qwen')")
     args = parser.parse_args()
+
+    backend = args.backend
+    if backend:
+        os.environ["LLM_BACKEND"] = backend
 
     print("Fetching missing translations...")
     missing = get_missing_translations()

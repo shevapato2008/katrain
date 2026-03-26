@@ -17,60 +17,94 @@ from katrain.web.models import *
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize User Persistence
+    log = logging.getLogger("katrain_web")
+
+    if settings.KATRAIN_MODE == "board":
+        # ── Board mode startup (design.md Section 4.9) ──
+        await _lifespan_board(app, log)
+    else:
+        # ── Server mode startup (existing logic, unchanged) ──
+        await _lifespan_server(app, log)
+
+    yield
+
+    # ── Shutdown ──
+    if settings.KATRAIN_MODE == "board":
+        connectivity = getattr(app.state, "connectivity_manager", None)
+        if connectivity:
+            await connectivity.stop()
+        remote_client = getattr(app.state, "remote_client", None)
+        if remote_client:
+            await remote_client.close()
+    else:
+        live_service = getattr(app.state, "live_service", None)
+        if live_service:
+            await live_service.stop()
+
+    task = getattr(app.state, "cleanup_task", None)
+    if task:
+        task.cancel()
+    app.state.session_manager.cleanup_expired()
+
+
+async def _lifespan_server(app: FastAPI, log):
+    """Server mode initialization — existing logic, unchanged."""
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository
+    from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.db import SessionLocal
-    
+
     repo = SQLAlchemyUserRepository(SessionLocal)
     repo.init_db()
-    
+
     game_repo = GameRepository(SessionLocal)
+    user_game_repo = UserGameRepository(SessionLocal)
+    user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
 
     # Create default admin user if no users exist
-    # Create default admin user if no users exist
     if not repo.list_users():
-        logging.getLogger("katrain_web").info("No users found. Creating default admin user (admin/admin)")
+        log.info("No users found. Creating default admin user (admin/admin)")
         try:
             repo.create_user("admin", get_password_hash("admin"))
         except ValueError:
-            pass # Already exists race condition
+            pass  # Already exists race condition
 
     app.state.user_repo = repo
     app.state.game_repo = game_repo
+    app.state.user_game_repo = user_game_repo
+    app.state.user_game_analysis_repo = user_game_analysis_repo
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
 
     # Initialize Engine Clients and Router
     from katrain.web.core.engine_client import KataGoClient
     from katrain.web.core.router import RequestRouter
-    
+
     local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
     cloud_client = None
     if settings.CLOUD_KATAGO_URL:
         cloud_client = KataGoClient(url=settings.CLOUD_KATAGO_URL)
-    
+
     app.state.router = RequestRouter(local_client=local_client, cloud_client=cloud_client)
 
     manager = app.state.session_manager
     try:
         from katrain.web.interface import WebKaTrain
-        # Just init to trigger imports and config loading
+
         kt = WebKaTrain(force_package_config=False, enable_engine=False)
-        
-        # Sync configuration with Environment Settings
+
         engine_cfg = kt.config("engine")
         if settings.LOCAL_KATAGO_URL and engine_cfg.get("http_url") != settings.LOCAL_KATAGO_URL:
             if engine_cfg.get("backend") == "http":
                 print(f"Syncing KataGo URL to {settings.LOCAL_KATAGO_URL} from environment")
                 kt.update_config("engine/http_url", settings.LOCAL_KATAGO_URL)
                 kt.save_config("engine")
-                engine_cfg = kt.config("engine") # Reload local ref
-        
-        # Auto-test HTTP Engine
+                engine_cfg = kt.config("engine")
+
         engine_cfg = kt.config("engine")
         if engine_cfg.get("backend") == "http":
             import httpx
+
             logging.getLogger("httpx").setLevel(logging.WARNING)
             logging.getLogger("httpcore").setLevel(logging.WARNING)
             url = engine_cfg.get("http_url")
@@ -88,32 +122,123 @@ async def lifespan(app: FastAPI):
                 print(f"WARNING: Failed to connect to KataGo Engine: {e}")
 
     except Exception as e:
-        logging.getLogger("katrain_web").error(f"Initialization failed: {e}")
+        log.error(f"Initialization failed: {e}")
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
+
     live_service = create_live_service()
     app.state.live_service = live_service
     try:
         await live_service.start()
-        logging.getLogger("katrain_web").info("Live broadcasting service started")
+        log.info("Live broadcasting service started")
     except Exception as e:
-        logging.getLogger("katrain_web").warning(f"Failed to start live service: {e}")
+        log.warning(f"Failed to start live service: {e}")
 
-    yield
 
-    # Shutdown live service
-    live_service = getattr(app.state, "live_service", None)
-    if live_service:
-        await live_service.stop()
+async def _lifespan_board(app: FastAPI, log):
+    """Board mode initialization — design.md Section 4.9."""
+    from functools import partial
 
-    task = getattr(app.state, "cleanup_task", None)
-    if task:
-        task.cancel()
-    manager.cleanup_expired()
+    from katrain.web.core.auth import SQLAlchemyUserRepository
+    from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+    from katrain.web.core.db import SessionLocal
+    from katrain.web.core.remote_client import RemoteAPIClient
+    from katrain.web.core.sync_worker import SyncWorker
+    from katrain.web.core.connectivity import ConnectivityManager
+    from katrain.web.core.repository import (
+        RepositoryDispatcher,
+        RemoteTsumegoRepository,
+        RemoteKifuRepository,
+        RemoteUserGameRepository,
+        enqueue_sync_item,
+    )
+
+    log.info(f"Starting in BOARD mode (device={settings.DEVICE_ID[:8]}..., remote={settings.REMOTE_API_URL})")
+
+    # Local SQLite — create only the core tables needed for offline
+    repo = SQLAlchemyUserRepository(SessionLocal)
+    repo.init_db()
+    app.state.user_repo = repo
+
+    local_user_game_repo = UserGameRepository(SessionLocal)
+    local_user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
+    app.state.user_game_repo = local_user_game_repo
+    app.state.user_game_analysis_repo = local_user_game_analysis_repo
+
+    # Remote API client
+    remote_client = RemoteAPIClient(
+        base_url=settings.REMOTE_API_URL,
+        device_id=settings.DEVICE_ID,
+    )
+    app.state.remote_client = remote_client
+
+    # Try to restore refresh token from encrypted credentials
+    try:
+        from katrain.web.core.credentials import load_refresh_token
+
+        saved_token = load_refresh_token(settings.DEVICE_ID)
+        if saved_token:
+            remote_client.set_refresh_token(saved_token)
+            log.info("Restored refresh token from credentials store")
+    except Exception as e:
+        log.debug(f"No saved credentials: {e}")
+
+    # Sync worker
+    sync_worker = SyncWorker(SessionLocal, remote_client)
+    sync_worker.recover_stale_leases()
+    app.state.sync_worker = sync_worker
+
+    # Connectivity manager
+    connectivity = ConnectivityManager(remote_client, sync_worker)
+    app.state.connectivity_manager = connectivity
+
+    # Repository dispatcher
+    sync_fn = partial(enqueue_sync_item, SessionLocal, device_id=settings.DEVICE_ID)
+    dispatcher = RepositoryDispatcher(
+        connectivity_manager=connectivity,
+        remote_tsumego=RemoteTsumegoRepository(remote_client),
+        remote_kifu=RemoteKifuRepository(remote_client),
+        remote_user_games=RemoteUserGameRepository(remote_client),
+        local_user_game_repo=local_user_game_repo,
+        sync_enqueue_fn=sync_fn,
+    )
+    app.state.repository_dispatcher = dispatcher
+
+    # Engine (local KataGo for offline play)
+    from katrain.web.core.engine_client import KataGoClient
+    from katrain.web.core.router import RequestRouter
+
+    local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
+    app.state.router = RequestRouter(local_client=local_client, cloud_client=None)
+
+    # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
+    app.state.lobby_manager = LobbyManager()
+    app.state.matchmaker = Matchmaker()
+    app.state.game_repo = None  # Multiplayer game_repo not used in board mode
+
+    manager = app.state.session_manager
+    try:
+        from katrain.web.interface import WebKaTrain
+
+        kt = WebKaTrain(force_package_config=False, enable_engine=False)
+        engine_cfg = kt.config("engine")
+        log.info(
+            f"Board engine profile: max_visits={engine_cfg.get('max_visits')}, "
+            f"fast_visits={engine_cfg.get('fast_visits')}, max_time={engine_cfg.get('max_time')}"
+        )
+    except Exception as e:
+        log.error(f"Board mode initialization warning: {e}")
+
+    manager.attach_loop(asyncio.get_running_loop())
+    app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+
+    # Start connectivity monitoring (do NOT start live_service in board mode)
+    connectivity.start()
+    log.info("Board mode initialization complete")
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
@@ -147,14 +272,31 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return await health_v1()
 
     @app.post("/api/session")
-    def create_session(current_user: User = Depends(get_current_user_optional)):
+    def create_session(current_user: User = Depends(get_current_user_optional), mode: str = "play"):
         try:
             katago_uuid = current_user.uuid if current_user else None
-            session = manager.create_session(katago_uuid=katago_uuid)
+            if mode == "research" and current_user:
+                session = manager.create_research_session(user_id=current_user.id, katago_uuid=katago_uuid)
+            else:
+                session = manager.create_session(katago_uuid=katago_uuid)
+                if current_user:
+                    session.user_id = current_user.id
         except Exception as exc:
             logging.getLogger("katrain_web").error(f"API: create_session failed: {exc}")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
-        return {"session_id": session.session_id, "state": session.last_state}
+        return {"session_id": session.session_id, "state": session.last_state, "mode": session.mode}
+
+    @app.delete("/api/session/{session_id}")
+    def delete_session(session_id: str, current_user: User = Depends(get_current_user_optional)):
+        try:
+            session = manager.get_session(session_id)
+            # Only allow owner to delete research sessions
+            if session.mode == "research" and current_user and session.user_id != current_user.id:
+                raise HTTPException(status_code=403, detail="Not authorized")
+            manager.remove_session(session_id)
+        except KeyError:
+            pass  # Already gone, that's fine
+        return {"status": "deleted"}
 
     @app.get("/api/state")
     def get_state(session_id: str):
@@ -168,8 +310,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
 
+        # Skip turn validation for research sessions
         # Enforce Multiplayer Turns (only if this is a multiplayer session)
-        if session.player_b_id is not None or session.player_w_id is not None:
+        if session.mode != "research" and (session.player_b_id is not None or session.player_w_id is not None):
             # This is a multiplayer game - require authentication and turn check
             if current_user is None:
                 raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
@@ -217,7 +360,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def load_sgf(request: LoadSGFRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
-            session.katrain("load_sgf", request.sgf)
+            session.katrain("load_sgf", request.sgf, skip_initial_analysis=request.skip_analysis)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -446,21 +589,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Record game result for multiplayer
         if is_multiplayer and current_user:
             try:
-                # Determine winner (the one who didn't resign)
                 winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"  # R for Resign
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
 
-                game_repo = app.state.game_repo
-                game_repo.create_game(
-                    user_id=current_user.id,
+                app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type="free",  # TODO: track rated games
+                    game_type=getattr(session, 'game_type', 'free'),
                     black_id=session.player_b_id,
-                    white_id=session.player_w_id
+                    white_id=session.player_w_id,
                 )
 
-                # Broadcast game end to all connected sockets
                 manager._schedule_broadcast(session, {
                     "type": "game_end",
                     "data": {"reason": "resign", "winner_id": winner_id, "result": result}
@@ -469,6 +608,154 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
         return {"session_id": session.session_id, "state": state}
+
+    def _complete_count(session, app, current_user):
+        """Helper to complete counting and record result."""
+        # Get the score from current node's analysis
+        current_node = session.katrain.game.current_node
+        score = current_node.score
+
+        if score is None:
+            raise HTTPException(status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete.")
+
+        # Format result: positive = Black leads, negative = White leads
+        if score >= 0:
+            result = f"B+{abs(score):.1f}"
+            winner_color = "B"
+        else:
+            result = f"W+{abs(score):.1f}"
+            winner_color = "W"
+
+        # Set end state on the current node (game.end_result reads from current_node.end_state)
+        session.katrain.game.game_result = result
+        session.katrain.game.current_node.end_state = result
+
+        # Record multiplayer game result
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if is_multiplayer:
+            winner_id = session.player_b_id if winner_color == "B" else session.player_w_id
+            try:
+                app.state.game_repo.record_multiplayer_game(
+                    sgf_content=session.katrain.get_sgf(),
+                    result=result,
+                    game_type=getattr(session, 'game_type', 'free'),
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id,
+                )
+            except Exception as e:
+                logging.getLogger("katrain_web").error(f"Failed to record count game result: {e}")
+
+            manager._schedule_broadcast(session, {
+                "type": "game_end",
+                "data": {"reason": "count", "winner_id": winner_id, "result": result}
+            })
+
+        return result
+
+    @app.post("/api/count/request")
+    def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
+        """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
+        session = _get_session_or_404(manager, request.session_id)
+
+        # Verify move count >= configured minimum
+        state = session.katrain.get_state()
+        count_min_moves = session.katrain.config("game/count_min_moves", 100)
+        if len(state.get("history", [])) < count_min_moves:
+            raise HTTPException(status_code=400, detail=f"Cannot count before {count_min_moves} moves")
+
+        # Check if game is already over
+        if state.get("end_result"):
+            raise HTTPException(status_code=400, detail="Game is already over")
+
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+
+        if is_multiplayer:
+            # HvH: Check if user is a player
+            if not current_user:
+                raise HTTPException(status_code=401, detail="Authentication required")
+
+            is_player = current_user.id in (session.player_b_id, session.player_w_id)
+            if not is_player:
+                raise HTTPException(status_code=403, detail="Only players can request count")
+
+            # Check if there's already a pending request
+            if session.pending_count_request is not None:
+                # If same user requests again, ignore
+                if session.pending_count_request == current_user.id:
+                    return {"session_id": session.session_id, "status": "pending"}
+
+                # If other player requests, treat as accept
+                with session.lock:
+                    result = _complete_count(session, app, current_user)
+                    session.pending_count_request = None
+                    session.pending_count_timestamp = None
+                    state = session.katrain.get_state()
+                    session.last_state = state
+                return {"session_id": session.session_id, "state": state, "result": result}
+
+            # Set pending request
+            import time as time_module
+            session.pending_count_request = current_user.id
+            session.pending_count_timestamp = time_module.time()
+
+            # Broadcast to opponent
+            manager._schedule_broadcast(session, {
+                "type": "count_request",
+                "data": {"requester_id": current_user.id, "requester_name": current_user.username}
+            })
+
+            return {"session_id": session.session_id, "status": "pending"}
+        else:
+            # HvAI: Complete immediately
+            with session.lock:
+                result = _complete_count(session, app, current_user)
+                state = session.katrain.get_state()
+                session.last_state = state
+            return {"session_id": session.session_id, "state": state, "result": result}
+
+    @app.post("/api/count/respond")
+    def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
+        """Respond to a count request (HvH only). Accept or reject."""
+        session = _get_session_or_404(manager, request.session_id)
+
+        # Only for multiplayer games
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if not is_multiplayer:
+            raise HTTPException(status_code=400, detail="Not a multiplayer game")
+
+        # Check if there's a pending request
+        if session.pending_count_request is None:
+            raise HTTPException(status_code=400, detail="No pending count request")
+
+        # Verify user is the opponent (not the requester)
+        if current_user.id == session.pending_count_request:
+            raise HTTPException(status_code=400, detail="Cannot respond to your own request")
+
+        # Verify user is a player
+        is_player = current_user.id in (session.player_b_id, session.player_w_id)
+        if not is_player:
+            raise HTTPException(status_code=403, detail="Only players can respond to count")
+
+        if request.accept:
+            # Accept: complete the count
+            with session.lock:
+                result = _complete_count(session, app, current_user)
+                session.pending_count_request = None
+                session.pending_count_timestamp = None
+                state = session.katrain.get_state()
+                session.last_state = state
+            return {"session_id": session.session_id, "state": state, "result": result, "accepted": True}
+        else:
+            # Reject: clear request and notify
+            session.pending_count_request = None
+            session.pending_count_timestamp = None
+
+            manager._schedule_broadcast(session, {
+                "type": "count_rejected",
+                "data": {"rejected_by": current_user.id}
+            })
+
+            return {"session_id": session.session_id, "accepted": False}
 
     @app.post("/api/timeout")
     def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
@@ -486,21 +773,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Record game result for multiplayer
         if is_multiplayer and current_user:
             try:
-                # Determine winner (the one who didn't timeout)
                 winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"  # T for Timeout
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
 
-                game_repo = app.state.game_repo
-                game_repo.create_game(
-                    user_id=current_user.id,
+                app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type="free",
+                    game_type=getattr(session, 'game_type', 'free'),
                     black_id=session.player_b_id,
-                    white_id=session.player_w_id
+                    white_id=session.player_w_id,
                 )
 
-                # Broadcast game end to all connected sockets
                 manager._schedule_broadcast(session, {
                     "type": "game_end",
                     "data": {"reason": "timeout", "winner_id": winner_id, "result": result}
@@ -530,14 +813,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         result = f"{'W' if winner_id == session.player_w_id else 'B'}+F"  # F for Forfeit
 
         try:
-            game_repo = app.state.game_repo
-            game_repo.create_game(
-                user_id=current_user.id,
+            app.state.game_repo.record_multiplayer_game(
                 sgf_content=session.katrain.get_sgf(),
                 result=result,
-                game_type="free",
+                game_type=getattr(session, 'game_type', 'free'),
                 black_id=session.player_b_id,
-                white_id=session.player_w_id
+                white_id=session.player_w_id,
             )
         except Exception as e:
             logging.getLogger("katrain_web").error(f"Failed to record game forfeit: {e}")
@@ -730,6 +1011,22 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
+
+    @app.post("/api/analysis/scan")
+    def analysis_scan(request: AnalysisScanRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("analysis_scan", visits=request.visits or 500)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
+
+    @app.get("/api/analysis/progress")
+    def analysis_progress(session_id: str):
+        session = _get_session_or_404(manager, session_id)
+        with session.lock:
+            progress = session.katrain._do_analysis_progress()
+        return {"session_id": session.session_id, **progress}
 
     @app.post("/api/analysis/report")
     def get_game_report(request: GameReportRequest):
@@ -1028,8 +1325,7 @@ def run_web():
     # We only build if we are actually starting the web server, or if --ui=web is explicit
     # However, create_app is used by uvicorn workers too, so we should be careful.
     # But run_web is the entry point.
-    if not args.reload:  # Skip build in reload mode to avoid loops, or handle differently? 
-        # Actually, user wants it on startup.
+    if not args.reload:  # Skip build in reload mode to avoid loops
         build_frontend()
 
     import uvicorn

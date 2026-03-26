@@ -28,8 +28,15 @@ dist_sgf
 outdated_log.txt
 
 # too big
-models/*.bin.gz
+models/
 katrain/models/*.bin.gz
+
+# Compiled translation files (regenerated on startup from .po files)
+*.mo
+
+# Frontend build artifacts (regenerated on startup)
+katrain/web/static/assets/
+katrain/web/static/index.html
 
 # standard python ignore
 # Byte-compiled / optimized / DLL files
@@ -172,6 +179,7 @@ dmypy.json
 # Database
 .postgres_data/
 
-# Local data (except tsumego problems)
-/data/*
-!/data/life-n-death/
+# Local data
+/data/
+go_dataset/
+data.zip.superpowers/

@@ -193,68 +193,66 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         </Typography>
       </Box>
 
-      {/* Timer Display - Compact Galaxy Design */}
-      {showTimer && (
+      {/* Timer Display - Always show, greyed out when no timing */}
+      <Box sx={{
+          mb: 1.5,
+          p: 1,
+          bgcolor: 'rgba(0,0,0,0.3)',
+          borderRadius: 2,
+          border: showTimer && active ? '2px solid' : '1px solid transparent',
+          borderColor: showTimer ? (isCritical ? '#e16b5c' : isWarning ? '#e89639' : '#4a6b5c') : 'transparent',
+          transition: 'all 200ms',
+          animation: showTimer && active && isCritical ? 'timerPulse 0.5s ease-in-out infinite' :
+                     showTimer && active && isWarning ? 'timerPulse 1s ease-in-out infinite' : 'none',
+          '@keyframes timerPulse': {
+              '0%, 100%': { opacity: 1 },
+              '50%': { opacity: 0.7 },
+          },
+      }}>
+          {/* Main Time - Large and prominent */}
+          <Typography
+              sx={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  color: showTimer ? (mainTimeLeft > 0 ? '#e89639' : '#4a4845') : '#3a3835',
+                  lineHeight: 1.2,
+              }}
+          >
+              {showTimer ? formatTime(mainTimeLeft) : '0:00'}
+          </Typography>
+
+          {/* Byoyomi with periods as superscript */}
           <Box sx={{
-              mb: 1.5,
-              p: 1,
-              bgcolor: 'rgba(0,0,0,0.3)',
-              borderRadius: 2,
-              border: active ? '2px solid' : '1px solid transparent',
-              borderColor: isCritical ? '#e16b5c' : isWarning ? '#e89639' : '#4a6b5c',
-              transition: 'all 200ms',
-              animation: active && isCritical ? 'timerPulse 0.5s ease-in-out infinite' :
-                         active && isWarning ? 'timerPulse 1s ease-in-out infinite' : 'none',
-              '@keyframes timerPulse': {
-                  '0%, 100%': { opacity: 1 },
-                  '50%': { opacity: 0.7 },
-              },
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'baseline',
+              mt: 0.5,
           }}>
-              {/* Main Time - Large and prominent */}
               <Typography
                   sx={{
                       fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '1.5rem',
-                      fontWeight: 700,
-                      textAlign: 'center',
-                      color: mainTimeLeft > 0 ? '#e89639' : '#4a4845',
-                      lineHeight: 1.2,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: showTimer ? (isWarning ? '#e89639' : '#7a7772') : '#3a3835',
                   }}
               >
-                  {formatTime(mainTimeLeft)}
+                  {showTimer ? `${Math.ceil(byoyomiLeft)}s` : '0s'}
               </Typography>
-
-              {/* Byoyomi with periods as superscript */}
-              <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'baseline',
-                  mt: 0.5,
-              }}>
-                  <Typography
-                      sx={{
-                          fontFamily: "'IBM Plex Mono', monospace",
-                          fontSize: '1rem',
-                          fontWeight: 600,
-                          color: isWarning ? '#e89639' : '#7a7772',
-                      }}
-                  >
-                      {Math.ceil(byoyomiLeft)}s
-                  </Typography>
-                  <Typography
-                      component="sup"
-                      sx={{
-                          fontSize: '0.65rem',
-                          fontWeight: 600,
-                          ml: 0.3,
-                          color: '#7a7772',
-                      }}
-                  >
-                      ×{periodsLeft}
-                  </Typography>
-              </Box>
+              <Typography
+                  component="sup"
+                  sx={{
+                      fontSize: '0.65rem',
+                      fontWeight: 600,
+                      ml: 0.3,
+                      color: showTimer ? '#7a7772' : '#3a3835',
+                  }}
+              >
+                  ×{showTimer ? periodsLeft : 0}
+              </Typography>
           </Box>
-      )}
+      </Box>
 
       {/* Footer Info */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

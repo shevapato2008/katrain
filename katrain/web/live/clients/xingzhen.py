@@ -13,7 +13,7 @@ Endpoints:
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
@@ -273,7 +273,7 @@ class XingZhenClient:
         status = MatchStatus.LIVE if match_data.get("liveStatus", 0) == 0 else MatchStatus.FINISHED
 
         # Parse date - handle complex startTime object or string
-        match_date = datetime.now()
+        match_date = datetime.now(timezone.utc)
         start_time = match_data.get("startTime")
         if start_time:
             if isinstance(start_time, dict):
@@ -339,7 +339,7 @@ class XingZhenClient:
             current_winrate=match_data.get("winrate") if match_data.get("winrate") is not None else 0.5,
             current_score=match_data.get("score") or match_data.get("blackScore") or 0.0,
             moves=moves,
-            last_updated=datetime.now(),
+            last_updated=datetime.now(timezone.utc),
             board_size=board_size,
             komi=komi,
             rules=rules,

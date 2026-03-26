@@ -610,12 +610,12 @@
         content_height: graph.height
         options_height: root.tab_option_height
         closed_label: 'closedlabel:scoregraph'
-        options: ['score','winrate']
-        option_colors: [Theme.SCORE_COLOR,Theme.WINRATE_COLOR]
+        options: ['score','winrate','points']
+        option_colors: [Theme.SCORE_COLOR,Theme.WINRATE_COLOR,Theme.POINTLOSS_COLOR]
         option_active: [True,False,False]
         on_option_state:
             graph.show_graphs(args[1])
-            graph.hidden = not (args[1]['score'] or args[1]['winrate'])
+            graph.hidden = not (args[1]['score'] or args[1]['winrate'] or args[1]['points'])
         ScoreGraph:
             id: graph
             opacity: 0 if self.hidden else 1

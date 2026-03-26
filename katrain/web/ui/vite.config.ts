@@ -15,6 +15,10 @@ export default defineConfig({
         target: 'ws://127.0.0.1:8001',
         ws: true,
       },
+      '/assets': {
+        target: 'http://127.0.0.1:8001',
+        changeOrigin: true,
+      },
     }
   },
   build: {

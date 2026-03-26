@@ -24,10 +24,18 @@ DATA_DIR = Path("data/life-n-death")
 
 
 def parse_category(comment: str) -> str:
-    if "手筋" in comment:
+    if "吃子" in comment:
+        return "capturing"
+    elif "对杀" in comment:
+        return "semeai"
+    elif "手筋" in comment:
         return "tesuji"
     elif "官子" in comment:
         return "endgame"
+    elif "布局" in comment:
+        return "opening"
+    elif "中盘" in comment:
+        return "midgame"
     return "life-death"
 
 

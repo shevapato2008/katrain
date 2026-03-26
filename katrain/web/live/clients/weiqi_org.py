@@ -9,7 +9,7 @@ Endpoints:
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
@@ -184,9 +184,9 @@ class WeiqiOrgClient:
                 else:
                     match_date = datetime.strptime(str(date_str)[:10], "%Y-%m-%d")
             except ValueError:
-                match_date = datetime.now()
+                match_date = datetime.now(timezone.utc)
         else:
-            match_date = datetime.now()
+            match_date = datetime.now(timezone.utc)
 
         # Games from weiqi.org are always finished (they provide historical kifu)
         status = MatchStatus.FINISHED
@@ -242,7 +242,7 @@ class WeiqiOrgClient:
             move_count=len(moves),
             sgf=sgf,
             moves=moves,
-            last_updated=datetime.now(),
+            last_updated=datetime.now(timezone.utc),
         )
 
     def _parse_sgf_moves(self, sgf: str) -> list[str]:

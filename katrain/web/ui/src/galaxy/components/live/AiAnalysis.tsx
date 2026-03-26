@@ -1,14 +1,10 @@
-import { Box, Typography, IconButton, Button, Tooltip } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { Box, Typography, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { MoveAnalysis, TopMove } from '../../types/live';
-import { LiveAPI } from '../../api/live';
-import { useState, useMemo } from 'react';
-import { i18n } from '../../../i18n';
+import { useMemo } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AiAnalysisProps {
-  matchId: string;
   currentMove: number;
   analysis: Record<number, MoveAnalysis>;
   onMoveHover?: (pv: string[] | null) => void;
@@ -32,29 +28,13 @@ function StoneIndicator({ color, size = 16 }: { color: 'B' | 'W'; size?: number 
 }
 
 export default function AiAnalysis({
-  matchId,
   currentMove,
   analysis,
   onMoveHover,
-  topN = 3,
+  topN = 3,  // Show top 3 + actual move if not in top 3
 }: AiAnalysisProps) {
-  useTranslation(); // subscribe to language changes
-  const [requesting, setRequesting] = useState(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
-
+  const { t } = useTranslation();
   const currentAnalysis = analysis[currentMove];
-
-  const handleRequestAnalysis = async () => {
-    setRequesting(true);
-    setRequestError(null);
-    try {
-      await LiveAPI.requestAnalysis(matchId, Math.max(0, currentMove - 5), currentMove);
-    } catch (err) {
-      setRequestError(err instanceof Error ? err.message : 'Request failed');
-    } finally {
-      setRequesting(false);
-    }
-  };
 
   // Determine who plays next (not who just moved)
   // At move 0 (empty board), Black plays next
@@ -135,69 +115,51 @@ export default function AiAnalysis({
 
   if (!currentAnalysis) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="subtitle2">{i18n.t('live:ai_recommendations', 'AI Recommendations')}</Typography>
-          <Tooltip title={i18n.t('live:request_analysis', 'Request analysis')}>
-            <IconButton size="small" onClick={handleRequestAnalysis} disabled={requesting}>
-              <RefreshIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-          {requesting ? i18n.t('live:requesting_analysis', 'Requesting analysis...') : i18n.t('live:no_analysis', 'No analysis data')}
+      <Box sx={{ px: 1.5, py: 1 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.8rem' }}>
+          {t('live:ai_recommendations', 'AI Recommendations')}
         </Typography>
-        {requestError && (
-          <Typography variant="caption" color="error" sx={{ display: 'block', textAlign: 'center' }}>
-            {requestError}
-          </Typography>
-        )}
-        {!requesting && (
-          <Button
-            size="small"
-            variant="outlined"
-            fullWidth
-            onClick={handleRequestAnalysis}
-            sx={{ mt: 1 }}
-          >
-            {i18n.t('live:request_analysis', 'Request analysis')}
-          </Button>
-        )}
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 1.5 }}>
+          {t('live:analysis_pending', 'Analysis pending...')}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
+          {t('live:analysis_auto_processed', 'Analysis is automatically processed in the background')}
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ px: 1.5, py: 1 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-        <Typography variant="subtitle2">{i18n.t('live:ai_recommendations', 'AI Recommendations')}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography variant="subtitle2" sx={{ fontSize: '0.8rem' }}>{t('live:ai_recommendations', 'AI Recommendations')}</Typography>
         <Typography variant="caption" color="text.secondary">
-          {i18n.t('live:after_move', 'After move')} {currentMove}
+          {t('live:after_move', 'After move')} {currentMove}
         </Typography>
       </Box>
 
-      {/* Column headers like XingZhen */}
+      {/* Column headers */}
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '80px 1fr 70px 100px',
-          gap: 1,
-          mb: 1,
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
+          gap: 0.5,
+          mb: 0.25,
           px: 1,
-          py: 0.5,
+          py: 0.25,
           bgcolor: 'rgba(255,255,255,0.05)',
           borderRadius: 1,
         }}
       >
-        <Typography variant="caption" color="text.secondary">{i18n.t('live:suggested_move', 'Move')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{i18n.t('live:recommendation', 'Score')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{i18n.t('live:lead_pts', 'Lead')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{i18n.t('live:winrate', 'Winrate')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
       </Box>
 
       {/* Move rows */}
-      <Box>
+      <Box sx={{ height: 150, overflowY: 'auto' }}>
         {displayMoves.map((move, index) => (
           <MoveRow
             key={move.move}
@@ -228,23 +190,27 @@ interface MoveRowProps {
 }
 
 function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: MoveRowProps) {
+  const { t } = useTranslation();
   // Score lead from next player's perspective (who these recommendations are for)
   // KataGo reports score_lead from Black's perspective (positive = Black ahead)
   // If next player is White, we negate it
-  const scoreLead = nextPlayer === 'B' ? move.score_lead : -move.score_lead;
+  const rawScoreLead = move.score_lead ?? 0;
+  const scoreLead = nextPlayer === 'B' ? rawScoreLead : -rawScoreLead;
 
   // Winrate from next player's perspective
-  const winrate = nextPlayer === 'B' ? move.winrate : 1 - move.winrate;
+  const rawWinrate = move.winrate ?? 0.5;
+  const winrate = nextPlayer === 'B' ? rawWinrate : 1 - rawWinrate;
   const opponentWinrate = 1 - winrate;
 
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '80px 1fr 70px 100px',
-        gap: 1,
-        p: 1,
-        mb: 0.5,
+        gridTemplateColumns: '1fr 1fr 1fr 1fr',
+        gap: 0.5,
+        py: 0.5,
+        px: 1,
+        mb: 0.25,
         borderRadius: 1,
         cursor: 'pointer',
         transition: 'background-color 0.15s',
@@ -257,13 +223,13 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
       onMouseLeave={() => onHover?.(false)}
     >
       {/* Move position with stone color indicator */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
         <StoneIndicator color={nextPlayer} size={14} />
-        <Typography variant="body2" fontWeight="bold">
+        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
           {move.move}
         </Typography>
         {isActualMove && (
-          <Tooltip title={i18n.t('live:actual_move', 'Actual move played')}>
+          <Tooltip title={t('live:actual_move', 'Actual move played')}>
             <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
           </Tooltip>
         )}
@@ -273,18 +239,22 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Box
           sx={{
-            minWidth: 45,
+            minWidth: 48,
+            height: 24,
             px: 1,
-            py: 0.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             bgcolor: rank === 1 ? 'primary.main' : 'rgba(255,255,255,0.1)',
             borderRadius: 1,
-            textAlign: 'center',
+            boxSizing: 'border-box',
           }}
         >
           <Typography
-            variant="caption"
+            variant="body2"
             fontWeight="bold"
             color={rank === 1 ? 'primary.contrastText' : 'text.primary'}
+            sx={{ lineHeight: 1, fontSize: '0.8rem' }}
           >
             {percentage.toFixed(0)}%
           </Typography>
@@ -296,16 +266,19 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
         <Box
           sx={{
             minWidth: 50,
-            px: 1,
-            py: 0.25,
+            height: 24,
+            px: 0.75,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
             color: nextPlayer === 'B' ? '#fff' : '#000',
             borderRadius: 1,
-            textAlign: 'center',
             border: nextPlayer === 'W' ? '1px solid #666' : 'none',
+            boxSizing: 'border-box',
           }}
         >
-          <Typography variant="caption" fontWeight="medium">
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
             {scoreLead >= 0 ? '+' : ''}{scoreLead.toFixed(1)}
           </Typography>
         </Box>
@@ -316,34 +289,42 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
         {/* Current player winrate - on colored background */}
         <Box
           sx={{
-            minWidth: 38,
+            minWidth: 40,
+            height: 24,
             px: 0.5,
-            py: 0.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
             color: nextPlayer === 'B' ? '#fff' : '#000',
             borderRadius: 1,
-            textAlign: 'center',
-            border: nextPlayer === 'W' ? '1px solid #666' : 'none',
+            border: '1px solid',
+            borderColor: nextPlayer === 'B' ? '#1a1a1a' : '#666',
+            boxSizing: 'border-box',
           }}
         >
-          <Typography variant="caption" fontWeight="bold">
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
             {(winrate * 100).toFixed(1)}
           </Typography>
         </Box>
         {/* Opponent winrate - on opposite colored background */}
         <Box
           sx={{
-            minWidth: 38,
+            minWidth: 40,
+            height: 24,
             px: 0.5,
-            py: 0.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             bgcolor: nextPlayer === 'W' ? '#1a1a1a' : '#f5f5f5',
             color: nextPlayer === 'W' ? '#fff' : '#000',
             borderRadius: 1,
-            textAlign: 'center',
-            border: nextPlayer === 'B' ? '1px solid #666' : 'none',
+            border: '1px solid',
+            borderColor: nextPlayer === 'W' ? '#1a1a1a' : '#666',
+            boxSizing: 'border-box',
           }}
         >
-          <Typography variant="caption" fontWeight="bold">
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
             {(opponentWinrate * 100).toFixed(1)}
           </Typography>
         </Box>

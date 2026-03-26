@@ -15,7 +15,6 @@ import traceback
 from typing import Callable, Dict, List, Optional
 
 import urllib3
-from kivy.utils import platform as kivy_platform
 
 from katrain.core.constants import (
     OUTPUT_DEBUG,
@@ -28,6 +27,7 @@ from katrain.core.constants import (
     PONDERING_REPORT_DT,
 )
 from katrain.core.game_node import GameNode
+from katrain.core.http_worker import do_request
 from katrain.core.lang import i18n
 from katrain.core.sgf_parser import Move
 from katrain.core.utils import find_package_resource, json_truncate_arrays
@@ -80,9 +80,9 @@ class BaseEngine:  # some common elements between analysis and contribute engine
 
     def get_engine_path(self, exe):
         if not exe:
-            if kivy_platform == "win":
+            if sys.platform.startswith("win"):
                 exe = "katrain/KataGo/katago.exe"
-            elif kivy_platform == "linux":
+            elif sys.platform.startswith("linux"):
                 exe = "katrain/KataGo/katago"
             else:
                 exe = find_package_resource("katrain/KataGo/katago-osx")  # github actions built
@@ -698,9 +698,10 @@ class KataGoHttpEngine(BaseEngine):
                     self.queries.pop(query_id, None)
             time_taken = time.time() - start_time
             results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
+            log_level = OUTPUT_DEBUG if partial_result else OUTPUT_INFO
             self.katrain.log(
-                f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
-                OUTPUT_DEBUG,
+                f"[{time_taken:.1f}s][{query_id}][{'....' if partial_result else 'done'}] KataGo HTTP analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
+                log_level,
             )
             self.katrain.log(json_truncate_arrays(analysis), OUTPUT_EXTRA_DEBUG)
             try:
@@ -716,7 +717,7 @@ class KataGoHttpEngine(BaseEngine):
         url = f"{self.base_url}{self.analyze_path}"
         ctx = multiprocessing.get_context("spawn")
         parent_conn, child_conn = ctx.Pipe(duplex=False)
-        p = ctx.Process(target=_do_request_process, args=(url, payload, self._headers, self.http_timeout, child_conn))
+        p = ctx.Process(target=do_request, args=(url, payload, self._headers, self.http_timeout, child_conn))
         p.start()
         child_conn.close()
         
@@ -825,31 +826,3 @@ def create_engine(katrain, config):
     katrain.log("Starting local KataGo engine...", OUTPUT_INFO)
     return KataGoEngine(katrain, config)
 
-def _do_request_process(url, payload, headers, timeout, conn):
-    import sys
-    import logging
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    try:
-        import requests
-        response = requests.post(url, json=payload, headers=headers, timeout=timeout)
-        
-        if response.status_code >= 400:
-            conn.send({"error": f"HTTP {response.status_code}"})
-        else:
-            try:
-                data = response.json()
-            except Exception as e:
-                raise e
-
-            try:
-                conn.send({"data": data})
-            except Exception as e:
-                raise e
-
-    except Exception as e:
-        try:
-            conn.send({"error": str(e)})
-        except:
-            pass
-    finally:
-        conn.close()

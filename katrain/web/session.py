@@ -17,10 +17,13 @@ class WebSession:
     user_id: Optional[int] = None # Primary user (usually for AI play)
     player_b_id: Optional[int] = None # For HvH
     player_w_id: Optional[int] = None # For HvH
+    mode: str = "play"  # "play" or "research"
     lock: threading.Lock = field(default_factory=threading.Lock)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
     last_state: Optional[Dict] = None
+    pending_count_request: Optional[int] = None  # User ID that initiated count request
+    pending_count_timestamp: Optional[float] = None  # Timestamp of count request
 
     def touch(self):
         self.last_access = time.time()
@@ -57,6 +60,12 @@ class SessionManager:
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
         katrain.start()
         session.last_state = katrain.get_state()
+        return session
+
+    def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
+        session = self.create_session(katago_uuid=katago_uuid)
+        session.mode = "research"
+        session.user_id = user_id
         return session
 
     def create_multiplayer_session(self, player_b_id: int, player_w_id: int, b_name: str = None, w_name: str = None) -> WebSession:
@@ -107,6 +116,18 @@ class SessionManager:
         for sid in expired:
             session = self._sessions.pop(sid, None)
             if session:               session.katrain.shutdown()
+
+        # Clean up expired count requests (60 second timeout)
+        for session in self._sessions.values():
+            if session.pending_count_request is not None and session.pending_count_timestamp is not None:
+                if now - session.pending_count_timestamp > 60:
+                    session.pending_count_request = None
+                    session.pending_count_timestamp = None
+                    # Broadcast timeout notification
+                    self._schedule_broadcast(session, {
+                        "type": "count_timeout",
+                        "data": {}
+                    })
 
     def _on_state(self, session_id: str, state: Dict):
         try:

@@ -179,14 +179,23 @@ const TsumegoUnitsPage = () => {
         {interpolate(t('tsumego:unitDesc'), { total: totalProblems, units: totalUnits })}
       </Typography>
 
-      {/* Unit cards */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Unit cards — row-first grid: 1,2,3 then 4,5,6 etc. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 1.5,
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(3, 1fr)',
+          },
+        }}
+      >
         {units.map((unit) => (
           <Card
             key={unit.unitNumber}
             sx={{
-              maxWidth: 480,
-              borderRadius: 3,
+              borderRadius: 2.5,
               bgcolor: 'rgba(255,255,255,0.05)',
               transition: 'transform 0.2s, box-shadow 0.2s',
               '&:hover': {
@@ -201,29 +210,29 @@ const TsumegoUnitsPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  px: 3,
-                  py: 2,
-                  height: 72
+                  px: 2.5,
+                  py: 1.5,
                 }}
               >
                 {/* Left side: unit info */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', minWidth: 70 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', minWidth: 56 }}>
                     {t('tsumego:unit')} {unit.unitNumber}
                   </Typography>
-                  <Typography variant="body1" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary">
                     {interpolate(t('tsumego:problemRange'), { start: unit.startProblem, end: unit.endProblem })}
                   </Typography>
                 </Box>
 
                 {/* Right side: progress */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <ProgressDots completed={unit.completed} total={unit.total} />
                   <Typography
                     variant="body2"
                     sx={{
-                      minWidth: 50,
+                      minWidth: 42,
                       textAlign: 'right',
+                      fontSize: '0.82rem',
                       color: unit.completed === unit.total ? '#4caf50' : 'text.secondary'
                     }}
                   >

@@ -23,12 +23,22 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
 from katrain.web.core import models_db
 
 class UserRepository(ABC):
@@ -76,7 +86,18 @@ class SQLAlchemyUserRepository(UserRepository):
         # With SQLAlchemy, we typically use Alembic for migrations.
         # But for simplicity/dev, we can use Base.metadata.create_all
         from katrain.web.core.db import engine
+        from sqlalchemy import inspect, text
         models_db.Base.metadata.create_all(bind=engine)
+
+        # Dev migration: drop old 'games' table and recreate 'rating_history'
+        # to update game_id FK from games.id (Integer) to user_games.id (String)
+        inspector = inspect(engine)
+        if "games" in inspector.get_table_names():
+            with engine.begin() as conn:
+                conn.execute(text("DROP TABLE IF EXISTS rating_history"))
+                conn.execute(text("DROP TABLE IF EXISTS games"))
+            # Recreate rating_history with the new schema
+            models_db.Base.metadata.create_all(bind=engine)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
         session = self.session_factory()
@@ -187,10 +208,10 @@ class SQLAlchemyUserRepository(UserRepository):
     def count_completed_rated_games(self, user_id: int) -> int:
         session = self.session_factory()
         try:
-            count = session.query(models_db.Game).filter(
-                or_(models_db.Game.black_player_id == user_id, models_db.Game.white_player_id == user_id),
-                models_db.Game.game_type == "rated",
-                models_db.Game.result.isnot(None)
+            count = session.query(models_db.UserGame).filter(
+                models_db.UserGame.user_id == user_id,
+                models_db.UserGame.game_type == "rated",
+                models_db.UserGame.result.isnot(None),
             ).count()
             return count
         finally:

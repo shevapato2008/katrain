@@ -3,31 +3,46 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
+import type { BoardProps } from '../../components/Board';
 import { useGameSession } from '../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
 import { useSettings } from '../context/SettingsContext';
-import { i18n } from '../../i18n';
+import { useGameNavigation } from '../context/GameNavigationContext';
+import { useTranslation } from '../../hooks/useTranslation';
+import { API } from '../../api';
+import { useAuth } from '../context/AuthContext';
+
+// Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
+type Board3DComponent = React.ComponentType<BoardProps>;
 
 const GamePage = () => {
     const { sessionId } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     useSettings(); // Subscribe to translation changes for re-render
+    const { t } = useTranslation();
+    const { token } = useAuth();
+    const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
 
-    const { 
-        sessionId: currentSessionId, 
-        setSessionId, 
-        gameState, 
-        error, 
-        onMove, 
+    // Dynamic Board3D import — loaded once, then cached
+    const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
+    const board3dLoadingRef = useRef(false);
+
+    const {
+        sessionId: currentSessionId,
+        setSessionId,
+        gameState,
+        setGameState,
+        error,
+        onMove,
         onNavigate,
-        handleAction 
+        handleAction
     } = useGameSession();
 
     // Analysis Toggles State
-    const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({
+    const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
         children: false,
         eval: false,
         hints: false,
@@ -36,11 +51,30 @@ const GamePage = () => {
         coords: true,
         numbers: false,
         score: true,
-        winrate: true
-    });
+        winrate: true,
+        view3d: false,
+        stoneDropEffect: false,
+    }));
+
+    // Load Board3D dynamically when first requested
+    useEffect(() => {
+        if (analysisToggles.view3d && !Board3D && !board3dLoadingRef.current) {
+            board3dLoadingRef.current = true;
+            import('../../components/Board3D').then(mod => {
+                setBoard3D(() => mod.default);
+            });
+        }
+    }, [analysisToggles.view3d, Board3D]);
+
+    // Track move count for resetting hints after user move (Case 3)
+    const prevMoveCountRef = useRef<number>(0);
+    // Track if we're waiting for analysis to auto-show (Case 2)
+    const waitingForAnalysisRef = useRef<boolean>(false);
 
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
+    const [showCountConfirm, setShowCountConfirm] = useState(false);
+    const [countResult, setCountResult] = useState<string | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
     // Sound playing callback
@@ -68,21 +102,86 @@ const GamePage = () => {
     }, [sessionId, currentSessionId, setSessionId]);
 
     // Sync with gameState.ui_state if available
+    // Note: 'hints' and 'numbers' are excluded because they're managed locally
     useEffect(() => {
         if (gameState?.ui_state) {
             setAnalysisToggles(prev => ({
                 ...prev,
-                hints: gameState.ui_state.show_hints,
                 policy: gameState.ui_state.show_policy,
                 ownership: gameState.ui_state.show_ownership,
                 coords: gameState.ui_state.show_coordinates,
-                numbers: gameState.ui_state.show_move_numbers,
             }));
         }
     }, [gameState]);
 
+    // Case 3: Reset hints to unselected after user makes a move
+    useEffect(() => {
+        if (!gameState) return;
+        const currentMoveCount = gameState.current_node_index;
+        if (prevMoveCountRef.current > 0 && currentMoveCount > prevMoveCountRef.current) {
+            // Move was made, reset hints
+            setAnalysisToggles(prev => ({ ...prev, hints: false }));
+            waitingForAnalysisRef.current = false;
+        }
+        prevMoveCountRef.current = currentMoveCount;
+    }, [gameState?.current_node_index]);
+
+    // Case 2: Auto-show hints when analysis arrives while waiting
+    // When analysis arrives, stop waiting and ensure hints stay ON (selected/highlighted)
+    // The board reads analysisToggles.hints to decide whether to show top3 markers
+    useEffect(() => {
+        if (waitingForAnalysisRef.current && gameState?.analysis?.moves?.length) {
+            // Analysis arrived - stop blinking, hints stays ON (already true)
+            // Board will auto-show top3 because hints is true and top_moves exist
+            waitingForAnalysisRef.current = false;
+            // Force re-render to ensure board picks up the hints=true + top_moves
+            setAnalysisToggles(prev => ({ ...prev, hints: true }));
+        }
+    }, [gameState?.analysis?.moves]);
+
+    // Register/unregister active game for sidebar navigation protection
+    useEffect(() => {
+        if (gameState && !gameState.end_result) {
+            registerActiveGame(async () => {
+                await handleAction('resign');
+            });
+        } else {
+            unregisterActiveGame();
+        }
+        return () => unregisterActiveGame();
+    }, [gameState?.end_result, registerActiveGame, unregisterActiveGame, handleAction]);
+
     const handleToggleChange = (setting: string) => {
-        setAnalysisToggles(prev => ({ ...prev, [setting]: !prev[setting] }));
+        if (setting === 'view3d') {
+            setAnalysisToggles(prev => {
+                const next = { ...prev, view3d: !prev.view3d };
+                localStorage.setItem('katrain_view3d', String(next.view3d));
+                return next;
+            });
+            return;
+        }
+        if (setting === 'hints') {
+            const hasAnalysis = !!gameState?.analysis?.moves?.length;
+            const currentlyOn = analysisToggles.hints;
+
+            if (currentlyOn) {
+                // Case 1: Turning off - always allow
+                setAnalysisToggles(prev => ({ ...prev, hints: false }));
+                waitingForAnalysisRef.current = false;
+            } else {
+                // Turning on
+                if (hasAnalysis) {
+                    // Case 1: Analysis available, just show
+                    setAnalysisToggles(prev => ({ ...prev, hints: true }));
+                } else {
+                    // Case 2: No analysis yet, start waiting and blink
+                    setAnalysisToggles(prev => ({ ...prev, hints: true }));
+                    waitingForAnalysisRef.current = true;
+                }
+            }
+        } else {
+            setAnalysisToggles(prev => ({ ...prev, [setting]: !prev[setting] }));
+        }
     };
 
     const handleActionWrapper = (action: string) => {
@@ -90,8 +189,29 @@ const GamePage = () => {
             if (!gameState?.end_result) {
                 setShowResignConfirm(true);
             }
+        } else if (action === 'count') {
+            if (!gameState?.end_result) {
+                setShowCountConfirm(true);
+            }
         } else {
             handleAction(action);
+        }
+    };
+
+    const confirmCount = async () => {
+        setShowCountConfirm(false);
+        if (!sessionId) return;
+        try {
+            const response = await API.requestCount(sessionId, token || undefined);
+            if (response.result) {
+                setCountResult(response.result);
+            }
+            if (response.state) {
+                setGameState(response.state);
+            }
+        } catch (e: any) {
+            console.error("Count request failed:", e);
+            alert(e.message || "Count request failed");
         }
     };
 
@@ -113,36 +233,76 @@ const GamePage = () => {
         navigate('/galaxy/play/ai');
     };
 
+    const formatResult = (result: string) => {
+        const match = result.match(/^([BW])\+(.+)$/);
+        if (!match) return result;
+        const [, color, score] = match;
+        const winner = color === 'B' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
+        return `${winner}${score}${t('result:points', '')}`;
+    };
+
+    // Determine which color the human player controls (if any)
+    const humanColor: 'B' | 'W' | null = gameState?.players_info?.B?.player_type === 'player:human' ? 'B'
+        : gameState?.players_info?.W?.player_type === 'player:human' ? 'W'
+        : null;
+
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
-            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)}>
-                <DialogTitle>{i18n.t('leave_game_title', 'Leave Game?')}</DialogTitle>
+            <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {i18n.t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
+                        {t('leave_game_warning', 'The game is still in progress. Leaving will resign the game. Are you sure?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowLeaveConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
-                    <Button onClick={handleConfirmLeave} color="error" variant="contained">{i18n.t('resign_and_exit', 'Resign & Exit')}</Button>
+                    <Button onClick={() => setShowLeaveConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={handleConfirmLeave} color="error" variant="contained">{t('resign_and_exit', 'Resign & Exit')}</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Resign Confirmation Dialog */}
-            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-                <DialogTitle>{i18n.t('resign_game_title', 'Resign Game?')}</DialogTitle>
+            <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>{t('resign_game_title', 'Resign Game?')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {i18n.t('resign_confirm_text', 'Are you sure you want to resign?')}
+                        {t('resign_confirm_text', 'Are you sure you want to resign?')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowResignConfirm(false)}>{i18n.t('cancel', 'Cancel')}</Button>
-                    <Button onClick={confirmResign} color="error" variant="contained">{i18n.t('RESIGN', 'Resign')}</Button>
+                    <Button onClick={() => setShowResignConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmResign} color="error" variant="contained">{t('RESIGN', 'Resign')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Count Confirmation Dialog */}
+            <Dialog open={showCountConfirm} onClose={() => setShowCountConfirm(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>{t('count_confirm_title', 'End Game by Counting?')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('count_confirm_text', 'Calculate the final score to end the game.')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowCountConfirm(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={confirmCount} color="primary" variant="contained">{t('COUNT', 'Count')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Count Result Dialog */}
+            <Dialog open={!!countResult} onClose={() => setCountResult(null)} maxWidth="xs" fullWidth>
+                <DialogTitle>{t('Game Over', 'Game Over')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('game_end:count', 'Game ended by counting: {result}').replace('{result}', formatResult(countResult || ''))}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCountResult(null)} variant="contained">{t('ok', 'OK')}</Button>
                 </DialogActions>
             </Dialog>
 
@@ -151,7 +311,7 @@ const GamePage = () => {
                 {/* Header */}
                 <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
                     <Typography variant="subtitle2" color="primary.main">
-                        {i18n.t('play_vs_ai', 'Play vs AI')} ({mode})
+                        {t('play_vs_ai', 'Play vs AI')} ({mode})
                     </Typography>
                     <Button
                         size="small"
@@ -161,17 +321,34 @@ const GamePage = () => {
                         onClick={handleLeaveRequest}
                         sx={{ textTransform: 'none' }}
                     >
-                        {i18n.t('exit', 'Exit')}
+                        {t('exit', 'Exit')}
                     </Button>
                 </Box>
 
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 0.5 }}>
-                    <Board
-                        gameState={gameState}
-                        onMove={onMove}
-                        onNavigate={onNavigate}
-                        analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
-                    />
+                    <div style={{
+                        display: (analysisToggles.view3d && Board3D) ? 'none' : 'flex',
+                        width: '100%', height: '100%',
+                        justifyContent: 'center', alignItems: 'center'
+                    }}>
+                        <Board
+                            gameState={gameState}
+                            onMove={onMove}
+                            onNavigate={onNavigate}
+                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            playerColor={humanColor}
+                        />
+                    </div>
+                    {analysisToggles.view3d && Board3D && (
+                        <Board3D
+                            gameState={gameState}
+                            onMove={onMove}
+                            onNavigate={onNavigate}
+                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            playerColor={humanColor}
+                        />
+                    )}
+                    {analysisToggles.view3d && !Board3D && <CircularProgress />}
                 </Box>
             </Box>
 
@@ -185,6 +362,7 @@ const GamePage = () => {
                 isRated={isRated}
                 onTimeout={handleTimeout}
                 onPlaySound={handlePlaySound}
+                isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
             />
         </Box>
     );

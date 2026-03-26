@@ -105,7 +105,7 @@ export default function LivePage() {
       {/* Right sidebar - matches list */}
       <Box
         sx={{
-          width: 440,
+          width: 500,
           borderLeft: 1,
           borderColor: 'divider',
           display: { xs: 'none', md: 'flex' },
@@ -157,19 +157,21 @@ export default function LivePage() {
           )}
         </Box>
 
-        {/* Enter match button */}
-        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-          <Button
-            variant="contained"
-            fullWidth
-            size="large"
-            onClick={handleEnterMatch}
-            disabled={!selectedMatchId || matchLoading}
-            sx={{ py: 1.5 }}
-          >
-            {selectedMatch?.status === 'live' ? t('live:enter_live') : t('live:view_game')}
-          </Button>
-        </Box>
+        {/* Enter match button - only show for Top Matches tab */}
+        {rightTab === 0 && (
+          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              onClick={handleEnterMatch}
+              disabled={!selectedMatchId || matchLoading}
+              sx={{ py: 1.5 }}
+            >
+              {selectedMatch?.status === 'live' ? t('live:enter_live') : t('live:view_game')}
+            </Button>
+          </Box>
+        )}
       </Box>
     </Box>
   );

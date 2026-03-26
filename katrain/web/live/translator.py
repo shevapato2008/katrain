@@ -4,70 +4,23 @@ Provides translation of player names, tournament names, and round names
 for the live broadcasting feature.
 
 Translation priority:
-1. Static JSON files (players.json, tournaments.json)
-2. Database cache (PlayerTranslationDB, TournamentTranslationDB)
-3. LLM fallback (generate translation and store in DB)
+1. Database lookup (exact match or alias)
+2. Fuzzy match in database
+3. Compound name parsing
+
+LLM translation is handled by katrain-cron. This module is read-only
+for translations (except manual corrections via store_player/store_tournament).
 """
 
-import json
 import logging
 import re
-from datetime import datetime
 from difflib import SequenceMatcher
 from functools import lru_cache
-from pathlib import Path
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger("katrain_web.live.translator")
-
-
-# LLM translation prompts by name type
-PLAYER_TRANSLATION_PROMPT = """Translate this Go player name to {lang}:
-Name: {name}
-
-Follow these conventions:
-- Chinese names to English: Use pinyin without tones (e.g., 柯洁 → Ke Jie)
-- Chinese names to Japanese: Use katakana with middle dot (e.g., 柯洁 → カ・ケツ)
-- Chinese names to Korean: Use hangul reading (e.g., 柯洁 → 커제)
-- Japanese names to English: Use romaji, surname first (e.g., 井山裕太 → Iyama Yuta)
-- Japanese names to Chinese: Keep kanji if same
-- Korean names to English: Use revised romanization (e.g., 신진서 → Shin Jinseo)
-
-Return ONLY the translated name, nothing else."""
-
-TOURNAMENT_TRANSLATION_PROMPT = """Translate this Go tournament name to {lang}:
-Name: {name}
-
-{lang_guidelines}
-
-Return ONLY the translated name, nothing else."""
-
-TOURNAMENT_LANG_GUIDELINES = {
-    "English": """Guidelines for English:
-- Use official English names when known (棋聖戦 → Kisei, 天元战 → Tengen)
-- For editions: 第52期 → 52nd, 27届 → 27th
-- Translate 战/杯/赛 as Tournament/Cup/Match""",
-    "Simplified Chinese": """Guidelines for Simplified Chinese:
-- Keep in simplified Chinese characters
-- Preserve original Chinese tournament names
-- For Korean/Japanese tournaments, translate to Chinese: 기성전 → 棋圣战, 棋聖戦 → 棋圣战
-- Keep edition format: 第N期, 第N届""",
-    "Traditional Chinese": """Guidelines for Traditional Chinese:
-- Convert to traditional Chinese characters: 战→戰, 预选→預選, 围棋→圍棋
-- For Korean/Japanese tournaments, translate to traditional Chinese
-- Keep edition format: 第N期, 第N屆""",
-    "Japanese": """Guidelines for Japanese:
-- Use Japanese kanji where different from simplified Chinese: 战→戦, 围→囲, 预→予
-- Use katakana for foreign proper nouns
-- Keep edition format: 第N期, 第N回
-- For known tournaments use Japanese names: 天元戦, 名人戦, 棋聖戦""",
-    "Korean": """Guidelines for Korean:
-- Use Korean reading in hangul: 天元战 → 천원전, 名人战 → 명인전
-- For editions: 第N期 → 제N기, N届 → 제N회
-- Translate fully to Korean""",
-}
 
 
 # Simplified Chinese to Japanese kanji conversion table
@@ -137,24 +90,19 @@ def convert_simplified_to_japanese(text: str) -> str:
 class LiveTranslator:
     """Translates player names, tournament names, and round names.
 
-    Uses database as the primary translation source with LLM fallback
-    for unknown names.
+    Uses database as the primary translation source.
+    LLM translation is handled by katrain-cron.
 
     Translation priority:
-    1. Database lookup
-    2. LLM fallback (if enabled, stores result in DB)
+    1. Database lookup (exact match or alias)
+    2. Fuzzy match in database
+    3. Compound name parsing
     """
 
     DEFAULT_LANG = "en"
     SUPPORTED_LANGS = {"en", "cn", "tw", "jp", "ko"}
 
-    def __init__(self, enable_llm: bool = True):
-        """Initialize the translator.
-
-        Args:
-            enable_llm: Whether to use LLM for unknown translations
-        """
-        self._enable_llm = enable_llm
+    def __init__(self):
         self._db_session: Optional[Session] = None
         self._player_index: dict[str, str] = {}  # alias -> canonical name (built from DB)
         self._index_built = False
@@ -206,7 +154,6 @@ class LiveTranslator:
         Translation priority:
         1. Database lookup (exact match or alias)
         2. Fuzzy match in database
-        3. LLM generation (if enabled, stores result in DB)
 
         Args:
             name: Player name to translate
@@ -241,14 +188,6 @@ class LiveTranslator:
             db_result = self._lookup_db_player(canonical, lang)
             if db_result:
                 return db_result
-
-        # 4. Try LLM translation (if enabled)
-        if self._enable_llm:
-            llm_result = self._translate_player_with_llm(name, lang)
-            if llm_result and llm_result != name:
-                # Store in database for future use
-                self._store_player_translation(name, lang, llm_result, source="llm")
-                return llm_result
 
         # No match - return original
         return name
@@ -285,7 +224,6 @@ class LiveTranslator:
         1. Database lookup (exact match)
         2. Compound name parsing (e.g., "第52期日本天元战预选A组")
         3. Space-separated compound name (e.g., "棋聖 ＦＴ")
-        4. LLM fallback (if enabled, stores result in DB)
 
         Args:
             name: Tournament name to translate
@@ -304,10 +242,10 @@ class LiveTranslator:
         result = self._lookup_db_tournament(name, lang)
 
         # 2. Try compound parsing for complex tournament names
+        # Note: Results are NOT stored to DB (katrain-cron handles persistence)
         if not result:
             parsed = self._parse_compound_tournament(name, lang)
             if parsed and parsed != name:
-                self._store_tournament_translation(name, lang, parsed, source="compound")
                 result = parsed
 
         # 3. Try space-separated compound name (e.g., "棋聖 ＦＴ")
@@ -326,16 +264,9 @@ class LiveTranslator:
                         translated_parts.append(part)
                 if any_translated:
                     result = " ".join(translated_parts)
-                    self._store_tournament_translation(name, lang, result, source="compound")
+                    # Note: Not stored to DB (katrain-cron handles persistence)
 
-        # 4. Try LLM translation (if enabled)
-        if not result and self._enable_llm:
-            llm_result = self._translate_tournament_with_llm(name, lang)
-            if llm_result and llm_result != name:
-                self._store_tournament_translation(name, lang, llm_result, source="llm")
-                result = llm_result
-
-        # 5. For Japanese, apply automatic character conversion
+        # 4. For Japanese, apply automatic character conversion
         if lang == "jp":
             text = result if result else name
             converted = convert_simplified_to_japanese(text)
@@ -669,8 +600,14 @@ class LiveTranslator:
     # ========== Database Methods ==========
 
     def _get_db_session(self) -> Optional[Session]:
-        """Get a database session for translation lookups."""
+        """Get a database session for translation lookups.
+
+        Note: We expire all cached objects to ensure we see new translations
+        added by katrain-cron process.
+        """
         if self._db_session is not None:
+            # Expire cached objects to see new translations from cron
+            self._db_session.expire_all()
             return self._db_session
         try:
             from katrain.web.core.db import SessionLocal
@@ -787,12 +724,13 @@ class LiveTranslator:
                 setattr(record, lang, translation)
                 session.add(record)
 
+            action = "updated" if record.id else "inserted"
             session.commit()
             self.clear_cache()  # Invalidate cache after storing
-            logger.info(f"Stored player translation: {name} -> {translation} ({lang})")
+            logger.info(f"DB write: {action} player translation [{source}]: {name} -> {translation} ({lang})")
             return True
         except Exception as e:
-            logger.error(f"Failed to store player translation: {e}")
+            logger.error(f"DB write failed: player translation {name} ({lang}): {e}")
             if session:
                 session.rollback()
             return False
@@ -836,140 +774,16 @@ class LiveTranslator:
                 setattr(record, lang, translation)
                 session.add(record)
 
+            action = "updated" if record.id else "inserted"
             session.commit()
             self.clear_cache()  # Invalidate cache after storing
-            logger.info(f"Stored tournament translation: {name} -> {translation} ({lang})")
+            logger.info(f"DB write: {action} tournament translation [{source}]: {name} -> {translation} ({lang})")
             return True
         except Exception as e:
-            logger.error(f"Failed to store tournament translation: {e}")
+            logger.error(f"DB write failed: tournament translation {name} ({lang}): {e}")
             if session:
                 session.rollback()
             return False
-
-    # ========== LLM Translation Methods ==========
-
-    def _translate_player_with_llm(self, name: str, lang: str) -> Optional[str]:
-        """Translate a player name using LLM.
-
-        Args:
-            name: Player name to translate
-            lang: Target language code
-
-        Returns:
-            Translated name or None if failed
-        """
-        if not self._enable_llm:
-            return None
-
-        try:
-            prompt = PLAYER_TRANSLATION_PROMPT.format(name=name, lang=self._lang_name(lang))
-            result = self._call_llm(prompt)
-            if result:
-                return result.strip()
-            return None
-        except Exception as e:
-            logger.debug(f"LLM translation failed for player {name}: {e}")
-            return None
-
-    def _translate_tournament_with_llm(self, name: str, lang: str) -> Optional[str]:
-        """Translate a tournament name using LLM.
-
-        Args:
-            name: Tournament name to translate
-            lang: Target language code
-
-        Returns:
-            Translated name or None if failed
-        """
-        if not self._enable_llm:
-            return None
-
-        try:
-            lang_name = self._lang_name(lang)
-            lang_guidelines = TOURNAMENT_LANG_GUIDELINES.get(lang_name, "")
-            prompt = TOURNAMENT_TRANSLATION_PROMPT.format(name=name, lang=lang_name, lang_guidelines=lang_guidelines)
-            result = self._call_llm(prompt)
-            if result:
-                return result.strip()
-            return None
-        except Exception as e:
-            logger.debug(f"LLM translation failed for tournament {name}: {e}")
-            return None
-
-    def _lang_name(self, lang: str) -> str:
-        """Convert language code to full name for LLM prompts."""
-        return {
-            "en": "English",
-            "cn": "Simplified Chinese",
-            "tw": "Traditional Chinese",
-            "jp": "Japanese",
-            "ko": "Korean",
-        }.get(lang, "English")
-
-    def _call_llm(self, prompt: str) -> Optional[str]:
-        """Call LLM API to generate translation.
-
-        Currently uses Anthropic Claude API if configured.
-        Falls back to None if no API key available.
-
-        Args:
-            prompt: The prompt to send to LLM
-
-        Returns:
-            LLM response text or None if failed
-        """
-        try:
-            import anthropic
-            import os
-
-            # API key from environment variable (security best practice)
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            if not api_key:
-                logger.debug("ANTHROPIC_API_KEY not set, skipping LLM translation")
-                return None
-
-            # Model name from database config or environment variable
-            model_name = self._get_llm_config("model_name") or os.environ.get(
-                "ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"
-            )
-
-            client = anthropic.Anthropic(api_key=api_key)
-            response = client.messages.create(
-                model=model_name,
-                max_tokens=100,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            if response.content:
-                return response.content[0].text
-            return None
-        except ImportError:
-            logger.debug("anthropic package not installed, skipping LLM translation")
-            return None
-        except Exception as e:
-            logger.debug(f"LLM API call failed: {e}")
-            return None
-
-    def _get_llm_config(self, key: str) -> Optional[str]:
-        """Get LLM configuration from database.
-
-        Args:
-            key: Config key (e.g., 'model_name')
-
-        Returns:
-            Config value or None if not found
-        """
-        try:
-            session = self._get_db_session()
-            if not session:
-                return None
-
-            from katrain.web.core.models_db import SystemConfigDB
-            config = session.query(SystemConfigDB).filter_by(key=f"llm_{key}").first()
-            return config.value if config else None
-        except Exception as e:
-            logger.debug(f"Failed to get LLM config: {e}")
-            return None
 
     # ========== Public Methods for Manual Translation ==========
 
@@ -1118,6 +932,9 @@ class LiveTranslator:
 
 # Global singleton
 _translator: Optional[LiveTranslator] = None
+
+
+LANGUAGES = list(LiveTranslator.SUPPORTED_LANGS)
 
 
 def get_translator() -> LiveTranslator:

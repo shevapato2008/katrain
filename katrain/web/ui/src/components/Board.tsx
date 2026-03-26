@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 
-interface BoardProps {
+export interface BoardProps {
   gameState: GameState;
   onMove: (x: number, y: number) => void;
   onNavigate?: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
+  playerColor?: 'B' | 'W' | null;
 }
 
 const ASSETS = {
@@ -17,6 +18,9 @@ const ASSETS = {
   topMove: "/assets/img/topmove.png",
 };
 
+// Module-level image cache — survives component unmount/remount (3D toggle)
+const imageCache: Record<string, HTMLImageElement> = {};
+
 const EVAL_COLORS = [
   "rgba(150, 50, 140, 0.85)", // Purple > 12 (blunder)
   "rgba(225, 107, 92, 0.85)",  // Red > 6 (big mistake)
@@ -26,7 +30,7 @@ const EVAL_COLORS = [
   "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles }) => {
+const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -45,6 +49,13 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
   useEffect(() => {
+    // Use cached images if available (survives unmount/remount from 3D toggle)
+    const assetKeys = Object.keys(ASSETS);
+    if (assetKeys.every(k => imageCache[k])) {
+      imagesRef.current = { ...imageCache };
+      renderBoard();
+      return;
+    }
     const loadImages = async () => {
       const entries = Object.entries(ASSETS);
       await Promise.all(
@@ -54,6 +65,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
               const img = new Image();
               img.onload = () => {
                 imagesRef.current[key] = img;
+                imageCache[key] = img;
                 resolve();
               };
               img.onerror = () => reject(new Error(`Failed to load ${src}`));
@@ -108,18 +120,19 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   }, []);
 
   // Add a ref for animation time
-  const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  // Hover position for ghost stone preview
+  const hoverPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    const animate = () => {
-      renderBoard();
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
+    renderBoard();
+
+    // Only run animation when pulsing hints are visible (~10fps is enough for pulse)
+    const needsAnimation = analysisToggles.hints && gameState?.analysis?.moves?.length > 0;
+    if (needsAnimation) {
+      const interval = setInterval(renderBoard, 100);
+      return () => clearInterval(interval);
+    }
   }, [gameState, analysisToggles, canvasSize]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
@@ -305,10 +318,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         ctx.textBaseline = "middle";
         // Use the actual move number from backend if available, fallback to index+1
         const numToDisplay = moveNumber !== null && moveNumber !== undefined ? moveNumber : index + 1;
-        // Check if this is the last move to offset text
-        const isLastMove = gameState.last_move && gameState.last_move[0] === coords[0] && gameState.last_move[1] === coords[1];
-        const yOffset = isLastMove ? -layout.gridSize * 0.08 : 0;
-        ctx.fillText(numToDisplay.toString(), pos.x, pos.y + yOffset);
+        // Center the text on the stone consistently for all moves
+        ctx.fillText(numToDisplay.toString(), pos.x, pos.y);
       }
 
       // Eval dots
@@ -359,6 +370,32 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       // Reset shadow
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
+    }
+
+    // Hover ghost stone preview
+    if (hoverPosRef.current && !gameState.end_result
+        && (!playerColor || gameState.player_to_move === playerColor)) {
+      const { x: hx, y: hy } = hoverPosRef.current;
+      if (hx >= 0 && hx < boardSize && hy >= 0 && hy < boardSize) {
+        // Check if position is empty
+        const occupied = gameState.stones.some(s => s[1] && s[1][0] === hx && s[1][1] === hy);
+        if (!occupied) {
+          const ghostColor = gameState.player_to_move === 'W' ? 'W' : 'B';
+          const pos = gridToCanvas(layout, hx, hy, boardSize);
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          const img = ghostColor === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone;
+          if (img) {
+            ctx.drawImage(img, pos.x - stoneSize, pos.y - stoneSize, stoneSize * 2, stoneSize * 2);
+          } else {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, stoneSize * 0.95, 0, Math.PI * 2);
+            ctx.fillStyle = ghostColor === 'B' ? '#000' : '#fff';
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
     }
 
     // Game End Result
@@ -458,7 +495,41 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
 
+  const canvasToGridPos = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    const boardSize = gameState.board_size[0];
+    const layout = boardLayout(canvas, boardSize);
+    const relX = (x - layout.offsetX) / layout.gridSize - layout.gridMargins.x[0];
+    const relY = (y - layout.offsetY) / layout.gridSize - layout.gridMargins.y[1];
+    const gridX = Math.round(relX);
+    const invertedY = Math.round(relY);
+    const gridY = boardSize - 1 - invertedY;
+    if (gridX >= 0 && gridX < boardSize && gridY >= 0 && gridY < boardSize) {
+      return { x: gridX, y: gridY };
+    }
+    return null;
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = canvasToGridPos(event);
+    hoverPosRef.current = pos;
+    renderBoard();
+  };
+
+  const handleMouseLeave = () => {
+    hoverPosRef.current = null;
+    renderBoard();
+  };
+
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gameState.end_result) return;
+    if (playerColor && gameState.player_to_move !== playerColor) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -511,6 +582,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         width={canvasSize}
         height={canvasSize}
         onClick={handleCanvasClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           borderRadius: '4px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',

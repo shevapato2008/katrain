@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Box, Typography, CircularProgress, Alert, Button, IconButton, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import MapIcon from '@mui/icons-material/Map';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
@@ -14,6 +14,7 @@ import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import { i18n } from '../../../i18n';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useSound } from '../../../hooks/useSound';
 // CommentSection import removed - Phase 7 deferred (was obscuring TrendChart)
 // import CommentSection from '../../components/live/CommentSection';
 
@@ -21,6 +22,7 @@ export default function LiveMatchPage() {
   useTranslation(); // subscribe to language changes
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // PV moves for preview variation display
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   // Toggle states for board features
@@ -40,6 +42,18 @@ export default function LiveMatchPage() {
     analysis,
   } = useLiveMatch(matchId);
 
+  // Sound effects
+  const { play: playSound } = useSound();
+  const prevMoveRef = useRef<number | null>(null);
+
+  // Play stone sound when move changes (navigation or new live moves)
+  useEffect(() => {
+    if (match && currentMove > 0 && prevMoveRef.current !== null && currentMove !== prevMoveRef.current) {
+      playSound('stone');
+    }
+    prevMoveRef.current = currentMove;
+  }, [currentMove, match, playSound]);
+
   // Handle PV hover from AI analysis panel - displays variation on board
   const handlePvHover = useCallback((pv: string[] | null) => {
     setPvMoves(pv);
@@ -55,8 +69,8 @@ export default function LiveMatchPage() {
       move: tm.move,
       rank: index + 1,
       visits: tm.visits,
-      winrate: tm.winrate,
-      score_lead: tm.score_lead,
+      winrate: tm.winrate ?? 0,
+      score_lead: tm.score_lead ?? 0,
     }));
   }, [analysis, currentMove]);
 
@@ -129,7 +143,7 @@ export default function LiveMatchPage() {
       {/* Right sidebar - use lighter background for visibility */}
       <Box
         sx={{
-          width: 440,
+          width: 500,
           borderLeft: 1,
           borderColor: 'divider',
           display: 'flex',
@@ -144,7 +158,7 @@ export default function LiveMatchPage() {
         {/* Feature buttons row */}
         <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
           <ToggleButtonGroup size="small" sx={{ width: '100%', display: 'flex' }}>
-            <Tooltip title={i18n.t('live:try_move', 'Try Move')}>
+            <Tooltip title={t('live:try_move', 'Try Move')}>
               <ToggleButton
                 value="tryMove"
                 selected={tryMoveMode}
@@ -155,10 +169,10 @@ export default function LiveMatchPage() {
                 sx={{ flex: 1, py: 0.5 }}
               >
                 <TouchAppIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>{i18n.t('live:try', 'Try')}</Typography>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{t('live:try', 'TRY')}</Typography>
               </ToggleButton>
             </Tooltip>
-            <Tooltip title={ownership ? i18n.t('live:territory', 'Territory') : i18n.t('live:territory_needs_analysis', 'Territory (needs analysis)')}>
+            <Tooltip title={ownership ? t('live:territory', 'Territory') : t('live:territory_needs_analysis', 'Territory (needs analysis)')}>
               <ToggleButton
                 value="territory"
                 selected={showTerritory}
@@ -167,10 +181,10 @@ export default function LiveMatchPage() {
                 disabled={!ownership}
               >
                 <MapIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>{i18n.t('live:territory', 'Territory')}</Typography>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{t('live:territory', 'TERRITORY')}</Typography>
               </ToggleButton>
             </Tooltip>
-            <Tooltip title={i18n.t('live:move_numbers', 'Move Numbers')}>
+            <Tooltip title={t('live:move_numbers', 'Move Numbers')}>
               <ToggleButton
                 value="numbers"
                 selected={showMoveNumbers}
@@ -178,27 +192,27 @@ export default function LiveMatchPage() {
                 sx={{ flex: 1, py: 0.5 }}
               >
                 <FormatListNumberedIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>{i18n.t('live:numbers', '#')}</Typography>
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{t('live:move_numbers', 'Numbers')}</Typography>
               </ToggleButton>
             </Tooltip>
-            <Tooltip title={showAiMarkers ? i18n.t('live:hide_ai', 'Hide AI') : i18n.t('live:show_ai', 'Show AI')}>
+            <Tooltip title={showAiMarkers ? t('live:hide_advice', 'Hide Advice') : t('live:show_advice', 'Show Advice')}>
               <ToggleButton
                 value="aiMarkers"
                 selected={showAiMarkers}
                 onChange={() => setShowAiMarkers(!showAiMarkers)}
                 sx={{ flex: 1, py: 0.5 }}
               >
-                <VisibilityIcon fontSize="small" />
-                <Typography variant="caption" sx={{ ml: 0.5 }}>AI</Typography>
+                <TipsAndUpdatesIcon fontSize="small" />
+                <Typography variant="caption" sx={{ ml: 0.5 }}>{t('Advice', 'Advice')}</Typography>
               </ToggleButton>
             </Tooltip>
           </ToggleButtonGroup>
           {tryMoveMode && tryMoves.length > 0 && (
             <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="caption" color="text.secondary">
-                {i18n.t('live:try', 'Try')}: {tryMoves.join(' → ')}
+                {t('live:try', 'TRY')}: {tryMoves.join(' → ')}
               </Typography>
-              <Button size="small" onClick={() => setTryMoves([])}>{i18n.t('live:clear', 'Clear')}</Button>
+              <Button size="small" onClick={() => setTryMoves([])}>{t('live:clear', 'Clear')}</Button>
             </Box>
           )}
         </Box>
@@ -206,7 +220,6 @@ export default function LiveMatchPage() {
         {/* AI Analysis panel */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <AiAnalysis
-            matchId={match.id}
             currentMove={currentMove}
             analysis={analysis}
             onMoveHover={handlePvHover}

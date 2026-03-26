@@ -24,14 +24,17 @@ export interface AiMoveMarker {
 
 interface LiveBoardProps {
   moves: string[]; // Array of moves in display format (e.g., "Q16", "D4")
+  stoneColors?: ('B' | 'W')[]; // Parallel array of stone colors; if absent, alternates B/W
   currentMove: number; // Which move to display up to
   boardSize?: number; // 9, 13, or 19
   showCoordinates?: boolean;
   onIntersectionClick?: (x: number, y: number) => void;
+  nextColor?: 'B' | 'W'; // Color of the next stone to place (for hover preview)
   pvMoves?: string[] | null; // Principal variation moves to display as semi-transparent stones
   aiMarkers?: AiMoveMarker[] | null; // AI recommended moves to mark on board
   showAiMarkers?: boolean; // Whether to display AI markers (default true)
   showMoveNumbers?: boolean; // Whether to display move numbers on stones
+  handicapCount?: number; // Number of leading setup stones to skip when numbering
   showTerritory?: boolean; // Whether to display territory/ownership overlay
   ownership?: number[][] | null; // 2D grid of ownership values (-1 to 1, positive=Black)
   tryMoves?: string[]; // Try moves for experimentation mode
@@ -291,14 +294,17 @@ function drawPvStone(
 
 export default function LiveBoard({
   moves,
+  stoneColors,
   currentMove,
   boardSize = 19,
   showCoordinates = true,
   onIntersectionClick,
+  nextColor,
   pvMoves,
   aiMarkers,
   showAiMarkers = true,
   showMoveNumbers = false,
+  handicapCount = 0,
   showTerritory = false,
   ownership,
   tryMoves,
@@ -309,9 +315,10 @@ export default function LiveBoard({
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [canvasSize, setCanvasSize] = useState(600);
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  // Animation refs for pulsing effect
-  const animationFrameRef = useRef<number | null>(null);
+  // Animation ref for pulsing effect timing
   const startTimeRef = useRef<number>(Date.now());
+  // Hover position for ghost stone preview
+  const hoverPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Load images
   useEffect(() => {
@@ -372,9 +379,11 @@ export default function LiveBoard({
       if (coords) {
         const [x, y] = coords;
         if (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
-          const player = i % 2 === 0 ? 'B' : 'W';
+          const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
           board[y][x] = player;
-          moveNumbers[y][x] = i + 1; // 1-indexed move number
+          // Handicap setup stones (indices 0..handicapCount-1) get no number.
+          // Game moves are numbered starting from 1.
+          moveNumbers[y][x] = i < handicapCount ? null : (i + 1 - handicapCount);
 
           // Remove captured opponent stones (also clear their move numbers)
           const capturedPositions = removeCaptures(board, x, y, boardSize);
@@ -424,7 +433,11 @@ export default function LiveBoard({
     if (showTerritory && ownership && ownership.length === boardSize) {
       for (let y = 0; y < boardSize; y++) {
         for (let x = 0; x < boardSize; x++) {
-          const val = ownership[y][x];
+          // ownership is stored with y=0 as top row (screen convention)
+          // but gridToCanvas expects y in Go convention (y=0 is bottom)
+          // so we invert the y index when reading ownership data
+          const ownershipY = boardSize - 1 - y;
+          const val = ownership[ownershipY]?.[x] ?? 0;
           if (Math.abs(val) > 0.05) {
             const pos = gridToCanvas(layout, x, y, boardSize);
             const alpha = Math.abs(val) * 0.4;
@@ -454,16 +467,14 @@ export default function LiveBoard({
           // Draw move number on stone if enabled
           if (showMoveNumbers && moveNumbers[y][x]) {
             const pos = gridToCanvas(layout, x, y, boardSize);
-            const isLastMove = lastMove && lastMove[0] === x && lastMove[1] === y;
             ctx.save();
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = stone === 'B' ? '#fff' : '#000';
             // Larger font size for better readability
             ctx.font = `bold ${Math.max(11, layout.gridSize * 0.38)}px sans-serif`;
-            // Offset text slightly upward on last move to avoid circle overlap
-            const yOffset = isLastMove ? -layout.gridSize * 0.08 : 0;
-            ctx.fillText(String(moveNumbers[y][x]), pos.x, pos.y + yOffset);
+            // Center the text on the stone consistently for all moves
+            ctx.fillText(String(moveNumbers[y][x]), pos.x, pos.y);
             ctx.restore();
           }
         }
@@ -539,24 +550,47 @@ export default function LiveBoard({
         pvPlayer = pvPlayer === 'B' ? 'W' : 'B';
       }
     }
+
+    // Draw hover ghost stone preview
+    if (hoverPosRef.current && onIntersectionClick) {
+      const { x: hx, y: hy } = hoverPosRef.current;
+      if (hx >= 0 && hx < boardSize && hy >= 0 && hy < boardSize && !board[hy][hx]) {
+        // Determine ghost color: use nextColor prop, or infer from lastPlayer
+        const ghostColor = nextColor ?? (lastPlayer === 'B' ? 'W' : 'B');
+        const { x: cx, y: cy } = gridToCanvas(layout, hx, hy, boardSize);
+        const stoneSize = layout.gridSize * 0.505;
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        const img = ghostColor === 'B' ? blackImg : whiteImg;
+        if (img) {
+          ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx, cy, stoneSize * 0.95, 0, Math.PI * 2);
+          ctx.fillStyle = ghostColor === 'B' ? '#000' : '#fff';
+          ctx.fill();
+          if (ghostColor === 'W') {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+    }
   };
 
-  // Animation loop for pulsing effect
+  // Render on state change; animate only when AI markers need pulsing
   useEffect(() => {
     if (!imagesLoaded) return;
+    renderBoard();
 
-    const animate = () => {
-      renderBoard();
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [moves, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves]);
+    const needsAnimation = showAiMarkers && aiMarkers && aiMarkers.length > 0;
+    if (needsAnimation) {
+      const interval = setInterval(renderBoard, 100); // ~10fps for pulse
+      return () => clearInterval(interval);
+    }
+  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
   const coordsToMove = (x: number, y: number): string => {
@@ -564,6 +598,32 @@ export default function LiveBoard({
     const col = letters[x];
     const row = y + 1;
     return `${col}${row}`;
+  };
+
+  // Handle mouse move for hover ghost stone
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !onIntersectionClick) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvasSize / rect.width;
+    const scaleY = canvasSize / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+
+    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize);
+    const gridPos = canvasToGrid(layout, mx, my, boardSize);
+    if (gridPos) {
+      hoverPosRef.current = gridPos;
+    } else {
+      hoverPosRef.current = null;
+    }
+    renderBoard();
+  };
+
+  const handleMouseLeave = () => {
+    hoverPosRef.current = null;
+    renderBoard();
   };
 
   // Handle click
@@ -614,6 +674,8 @@ export default function LiveBoard({
         width={canvasSize}
         height={canvasSize}
         onClick={handleClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           maxWidth: '100%',
           maxHeight: '100%',

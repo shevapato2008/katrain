@@ -1,0 +1,20 @@
+# Copy to your dataset directory and update the path.
+#
+# Directory structure:
+#   go_dataset/
+#   ├── data.yaml
+#   ├── images/
+#   │   ├── train/       ← ~80% of labeled images
+#   │   └── val/         ← ~20%
+#   └── labels/
+#       ├── train/       ← YOLO .txt matching images/train/
+#       └── val/
+#
+# Label format: class_id x_center y_center width height (normalized 0~1)
+
+path: /path/to/go_dataset
+train: images/train
+val: images/val
+
+nc: 2
+names: ['black', 'white']

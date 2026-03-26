@@ -1,6 +1,6 @@
 """Repository for live analysis database operations."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import logging
 
@@ -219,7 +219,7 @@ class LiveAnalysisRepo:
         record.is_brilliant = is_brilliant
         record.is_mistake = is_mistake
         record.is_questionable = is_questionable
-        record.analyzed_at = datetime.now()
+        record.analyzed_at = datetime.now(timezone.utc)
         record.error_message = None
 
         self.db.commit()

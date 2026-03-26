@@ -12,7 +12,7 @@ which requires a headless browser. FoxWQ provides static HTML with comprehensive
 import asyncio
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
@@ -123,14 +123,14 @@ class UpcomingScraper:
                     player_white = match.group(7).strip()
 
                     # Determine year
-                    year = datetime.now().year
-                    if month < datetime.now().month - 6:
+                    year = datetime.now(timezone.utc).year
+                    if month < datetime.now(timezone.utc).month - 6:
                         year += 1
 
                     scheduled_time = datetime(year, month, day, hour, minute)
 
                     # Only include future events
-                    if scheduled_time < datetime.now():
+                    if scheduled_time < datetime.now(timezone.utc):
                         continue
 
                     upcoming = UpcomingMatch(
@@ -167,14 +167,14 @@ class UpcomingScraper:
                     if "VS" in tournament or "vs" in tournament or "对" in tournament:
                         continue
 
-                    year = datetime.now().year
-                    if month < datetime.now().month - 6:
+                    year = datetime.now(timezone.utc).year
+                    if month < datetime.now(timezone.utc).month - 6:
                         year += 1
 
                     scheduled_time = datetime(year, month, day, hour, minute)
 
                     # Only include future events
-                    if scheduled_time < datetime.now():
+                    if scheduled_time < datetime.now(timezone.utc):
                         continue
 
                     # Check for duplicates
@@ -239,9 +239,9 @@ class UpcomingScraper:
                     if date_match:
                         month = int(date_match.group(1))
                         day = int(date_match.group(2))
-                        year = datetime.now().year
+                        year = datetime.now(timezone.utc).year
                         # Handle year rollover
-                        if month < datetime.now().month - 6:
+                        if month < datetime.now(timezone.utc).month - 6:
                             year += 1
                         current_date = datetime(year, month, day, 10, 0)  # Default 10:00
                         continue
@@ -261,7 +261,7 @@ class UpcomingScraper:
                         elif "vs" in cell_text.lower() or "対" in cell_text:
                             players_text = cell_text
 
-                    if tournament and current_date >= datetime.now():
+                    if tournament and current_date >= datetime.now(timezone.utc):
                         player_black, player_white = self._parse_players(players_text)
 
                         match = UpcomingMatch(

@@ -10,15 +10,14 @@ interface MatchInfoProps {
   analysis?: MoveAnalysis | null;  // KataGo analysis for current position
 }
 
-export default function MatchInfo({ match, currentMove, analysis }: MatchInfoProps) {
+export default function MatchInfo({ match, analysis }: MatchInfoProps) {
   const { t } = useTranslation();
   const isLive = match.status === 'live';
-  const displayMove = currentMove ?? match.move_count;
 
   // Use KataGo analysis data if available, otherwise fall back to match data
   const winrate = analysis?.winrate ?? match.current_winrate;
   const scoreLead = analysis?.score_lead ?? match.current_score;
-  const winratePercent = Math.round(winrate * 100);
+  const winratePercent = winrate * 100;
   const blackAdvantage = winrate > 0.5;
 
   // Format date
@@ -109,7 +108,7 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
           <Typography variant="caption" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
-            {winratePercent}%
+            {winratePercent.toFixed(1)}%
           </Typography>
           {analysis && (
             <Typography
@@ -121,7 +120,7 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
             </Typography>
           )}
           <Typography variant="caption" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
-            {100 - winratePercent}%
+            {(100 - winratePercent).toFixed(1)}%
           </Typography>
         </Box>
         <LinearProgress
@@ -132,32 +131,20 @@ export default function MatchInfo({ match, currentMove, analysis }: MatchInfoPro
             borderRadius: 4,
             bgcolor: 'grey.200',
             '& .MuiLinearProgress-bar': {
-              bgcolor: 'grey.800',
+              bgcolor: '#000',
               borderRadius: 4,
             },
           }}
         />
       </Box>
 
-      {/* Move count and result */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          {t('live:move_count').replace('{0}', String(displayMove)).replace('{1}', String(match.move_count))}
-        </Typography>
-        {match.result && (
-          <Typography variant="caption" color="text.secondary">
-            {match.result}
-          </Typography>
-        )}
-      </Box>
-
       {/* Rules and komi */}
-      <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
         <Typography variant="caption" color="text.secondary">
           {match.rules === 'japanese' ? t('live:rules_japanese') : match.rules === 'korean' ? t('live:rules_korean') : t('live:rules_chinese')}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {t('live:komi').replace('{0}', String(match.komi))}
+          {t('live:komi')} {match.komi}
         </Typography>
       </Box>
     </Box>

@@ -16,6 +16,9 @@ from katrain.core.constants import (
     OUTPUT_ERROR,
     OUTPUT_INFO,
     PLAYING_NORMAL,
+    PRIORITY_DEFAULT,
+    PRIORITY_GAME_ANALYSIS,
+    ADDITIONAL_MOVE_ORDER,
 )
 from katrain.core.engine import create_engine
 from katrain.core.game import Game
@@ -104,10 +107,14 @@ class WebKaTrain(KaTrainBase):
         self.enable_engine = enable_engine
         self.user_id = user_id
         self.ai_lock = threading.Lock()
+        self._ai_move_pending = False
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
         super().__init__(force_package_config, debug_level, **kwargs)
+
+        # Apply engine profile overrides based on KATRAIN_MODE
+        self._apply_engine_profile()
 
         try:
             from kivymd.app import MDApp
@@ -146,6 +153,20 @@ class WebKaTrain(KaTrainBase):
         
         # Actually switch the global i18n context to this instance's language
         i18n.switch_lang(lang)
+
+    def _apply_engine_profile(self):
+        """Merge engine_profiles overrides for the current KATRAIN_MODE."""
+        try:
+            from katrain.web.core.config import settings
+
+            mode = settings.KATRAIN_MODE
+        except ImportError:
+            return
+        profiles = self._config.get("engine_profiles", {})
+        profile = profiles.get(mode)
+        if profile and isinstance(profile, dict):
+            self._config.get("engine", {}).update(profile)
+            self.log(f"Applied engine profile '{mode}': {profile}", OUTPUT_INFO)
 
     def start(self):
         """Initializes the engine and starts a new game."""
@@ -202,28 +223,39 @@ class WebKaTrain(KaTrainBase):
         cn = self.game.current_node
         last_move = cn.move.coords if cn.move else None
 
-        # Get history of nodes from root to current
-        history = []
-        nodes = []
+        # Get history: full main line from root, with current node's position marked
+        # 1. Walk from current node to root to get the path up
+        path_to_root = []
         node = cn
         while node:
-            nodes.append(node)
+            path_to_root.append(node)
             node = node.parent
-        nodes.reverse()
+        path_to_root.reverse()
 
+        # 2. Continue from current node down the main line (first child)
+        continuation = []
+        node = cn.children[0] if cn.children else None
+        while node:
+            continuation.append(node)
+            node = node.children[0] if node.children else None
+
+        # 3. Full main line = path_to_root + continuation
+        nodes = path_to_root + continuation
+        current_node_index = len(path_to_root) - 1
+
+        history = []
         for node in nodes:
             history.append({
                 "node_id": id(node),
                 "score": node.score if node.analysis_exists else None,
                 "winrate": node.winrate if node.analysis_exists else None,
             })
-        current_node_index = len(history) - 1
 
         # Format stones with evaluation and move numbers
         stones_with_eval = []
-        # To get evaluation and move number for each stone, we map coordinates to nodes in history.
+        # To get evaluation and move number for each stone, we map coordinates to nodes in path to current.
         coord_to_info = {}
-        for idx, h_node in enumerate(nodes):
+        for idx, h_node in enumerate(path_to_root):
             if h_node.move and h_node.move.coords:
                 coord_to_info[h_node.move.coords] = {"score_loss": h_node.points_lost, "move_number": idx}
 
@@ -252,11 +284,15 @@ class WebKaTrain(KaTrainBase):
                         "scoreLoss": move_info.get("pointsLost", 0),
                         "winrate": move_info.get("winrate", 0),
                         "visits": move_info.get("visits", 0),
+                        "psv": move_info.get("playSelectionValue", 0),
                     })
                 except Exception:
                     pass
-            # Sort moves by visits descending (standard KaTrain behavior)
-            moves.sort(key=lambda x: x.get("visits", 0), reverse=True)
+            # Filter out pure back-propagated entries (order=999, not in KataGo's original candidates)
+            from katrain.core.constants import ADDITIONAL_MOVE_ORDER
+
+            moves = [m for m in moves if m.get("order", ADDITIONAL_MOVE_ORDER) < ADDITIONAL_MOVE_ORDER]
+            # Don't re-sort: candidate_moves already returns in KataGo's order (order, pointsLost)
 
             from katrain.core.utils import var_to_grid
             sz = self.game.board_size
@@ -339,10 +375,11 @@ class WebKaTrain(KaTrainBase):
                 "show_coordinates": self.show_coordinates,
                 "zen_mode": self.zen_mode,
             },
-            "engine": getattr(self, "last_engine", None)
+            "engine": getattr(self, "last_engine", None),
+            "count_min_moves": self.config("game/count_min_moves", 100)
         }
 
-    def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None, rules=None):
+    def _do_new_game(self, move_tree=None, analyze_fast=False, sgf_filename=None, size=None, handicap=None, komi=None, rules=None, skip_initial_analysis=False):
         if self.engine:
             self.engine.on_new_game()
         
@@ -376,6 +413,7 @@ class WebKaTrain(KaTrainBase):
             sgf_filename=sgf_filename,
             game_properties=game_properties,
             user_id=self.user_id,
+            skip_initial_analysis=skip_initial_analysis,
         )
         
         # Ensure handicap stones are placed if handicap is set
@@ -429,11 +467,44 @@ class WebKaTrain(KaTrainBase):
 
     def update_state(self, **_kwargs):
         """Called when the game state changes."""
-        # 1. Broadcast current state (useful for showing hints/analysis before AI moves)
+        now = time.time()
+
+        # --- Diagnostic: log call frequency every 5s ---
+        if not hasattr(self, "_update_state_count"):
+            self._update_state_count = 0
+            self._update_state_last_log = now
+        self._update_state_count += 1
+        if now - self._update_state_last_log >= 5.0:
+            logger.debug(
+                f"update_state called {self._update_state_count} times in last {now - self._update_state_last_log:.1f}s"
+            )
+            self._update_state_count = 0
+            self._update_state_last_log = now
+
+        # --- Throttled broadcast: max ~4/s (250ms interval) ---
+        if not hasattr(self, "_last_broadcast_time"):
+            self._last_broadcast_time = 0.0
+            self._pending_broadcast = False
+
         if self.update_state_callback:
-            self.update_state_callback(self.get_state())
-        
-        # 2. Handle logic that might change the state (like AI moving)
+            if now - self._last_broadcast_time < 0.25:
+                # Too soon – schedule a trailing broadcast so the final state is always sent
+                if not self._pending_broadcast:
+                    self._pending_broadcast = True
+
+                    def _delayed_broadcast():
+                        time.sleep(0.25)
+                        self._pending_broadcast = False
+                        if self.update_state_callback:
+                            self._last_broadcast_time = time.time()
+                            self.update_state_callback(self.get_state())
+
+                    threading.Thread(target=_delayed_broadcast, daemon=True).start()
+            else:
+                self._last_broadcast_time = now
+                self.update_state_callback(self.get_state())
+
+        # Handle logic that might change the state (like AI moving)
         self._do_update_state()
 
     def _do_update_state(self):
@@ -455,11 +526,10 @@ class WebKaTrain(KaTrainBase):
                 self.game.analyze_undo(cn)
                 cn = self.game.current_node # Re-fetch if undo happened
 
-            if cn.analysis_complete and next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
-                self._do_ai_move(cn)
-                # 3. CRITICAL: Broadcast again after AI has placed its stone
-                if self.update_state_callback:
-                    self.update_state_callback(self.get_state())
+            if next_player.ai and not cn.children and not self.game.end_result and not (teaching_undo and cn.auto_undo is None):
+                if not self._ai_move_pending:
+                    self._ai_move_pending = True
+                    threading.Thread(target=self._do_ai_move_and_broadcast, args=(cn,), daemon=True).start()
 
         if self.game.end_result and not getattr(self, "_game_end_reported", False):
             self._game_end_reported = True
@@ -574,16 +644,65 @@ class WebKaTrain(KaTrainBase):
         node = self._find_node_by_id(node_id)
         if node:
             self.game.set_current_node(node)
+            # On-demand analysis: if this node has no analysis yet, trigger deep analysis
+            if not node.analysis_exists:
+                engine = self.game.engines[node.next_player]
+                node.analyze(engine, priority=PRIORITY_DEFAULT, visits=500)
         else:
             self.log(f"Node not found: {node_id}", OUTPUT_ERROR)
 
-    def _do_load_sgf(self, content):
+    def _do_load_sgf(self, content, skip_initial_analysis=False):
         from katrain.core.game import KaTrainSGF
         try:
             move_tree = KaTrainSGF.parse_sgf(content)
-            self._do_new_game(move_tree=move_tree)
+            self._do_new_game(move_tree=move_tree, skip_initial_analysis=skip_initial_analysis)
         except Exception as e:
             self.log(f"Failed to load SGF: {e}", OUTPUT_ERROR)
+
+    def _do_analysis_scan(self, visits=500, batch_size=10):
+        """Background scan: analyze all unanalyzed nodes in batches to avoid overwhelming the engine."""
+        import threading as _threading
+
+        # Collect main-line nodes that need analysis
+        nodes_to_analyze = []
+        node = self.game.root
+        while node:
+            if not node.analysis_exists:
+                nodes_to_analyze.append(node)
+            node = node.children[0] if node.children else None
+
+        if not nodes_to_analyze:
+            return
+
+        def _run_batched_scan():
+            for i in range(0, len(nodes_to_analyze), batch_size):
+                batch = nodes_to_analyze[i : i + batch_size]
+                for n in batch:
+                    engine = self.game.engines[n.next_player]
+                    n.analyze(engine, priority=PRIORITY_GAME_ANALYSIS, visits=visits)
+                # Wait for this batch to complete before sending next
+                for _ in range(600):  # up to 60s per batch
+                    if all(n.analysis_exists for n in batch):
+                        break
+                    import time
+                    time.sleep(0.1)
+
+        _threading.Thread(target=_run_batched_scan, daemon=True).start()
+
+    def _do_analysis_progress(self):
+        """Return analysis progress: how many nodes in the main line have been analyzed."""
+        if not self.game:
+            return {"analyzed": 0, "total": 0}
+        # Count nodes along the main line (root to deepest child following first child)
+        total = 0
+        analyzed = 0
+        node = self.game.root
+        while node:
+            total += 1
+            if node.analysis_exists:
+                analyzed += 1
+            node = node.children[0] if node.children else None
+        return {"analyzed": analyzed, "total": total}
 
     def _do_swap_players(self):
         self.players_info["B"], self.players_info["W"] = self.players_info["W"], self.players_info["B"]
@@ -603,6 +722,19 @@ class WebKaTrain(KaTrainBase):
             elif not self.game.current_node.is_pass:
                 import random
                 self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+
+    def _do_ai_move_and_broadcast(self, cn):
+        """Background thread: generate AI move then broadcast state update."""
+        try:
+            self._do_ai_move(cn)
+        except Exception as e:
+            self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
+        finally:
+            self._ai_move_pending = False
+            # Use update_state() instead of bare callback — this both broadcasts
+            # AND re-runs _do_update_state(), which re-triggers AI if the game
+            # tree changed (e.g., user undid + replayed while this thread ran).
+            self.update_state()
 
     def _do_ai_move(self, node=None):
         with self.ai_lock:
@@ -783,6 +915,55 @@ class WebKaTrain(KaTrainBase):
 
     def _do_game_analysis(self, **kwargs):
         self.game.analyze_extra("game", **kwargs)
+
+    def _do_extract_analysis(self):
+        """Extract per-node analysis data from the main line for persistence."""
+        if not self.game:
+            return []
+        results = []
+        node = self.game.root
+        move_number = 0
+        prev_winrate = None
+        prev_score = None
+        while node:
+            entry = {"move_number": move_number}
+            if node.analysis_exists:
+                entry["status"] = "complete"
+                entry["winrate"] = node.winrate
+                entry["score_lead"] = node.score
+                entry["visits"] = node.analysis["root"].get("visits", 0)
+                # Top candidate moves (up to 5)
+                candidates = node.candidate_moves[:5] if node.candidate_moves else []
+                candidates = [m for m in candidates if m.get("order", ADDITIONAL_MOVE_ORDER) < ADDITIONAL_MOVE_ORDER]
+                entry["top_moves"] = [
+                    {"move": m.get("move"), "winrate": m.get("winrate"), "scoreLead": m.get("scoreLead"), "visits": m.get("visits"), "psv": m.get("playSelectionValue", 0)}
+                    for m in candidates
+                ]
+                # Ownership data
+                entry["ownership"] = node.analysis["root"].get("ownership")
+                # Move info
+                if node.move:
+                    entry["move"] = node.move.gtp()
+                    entry["actual_player"] = node.move.player
+                # Delta from previous node
+                if prev_winrate is not None and node.winrate is not None:
+                    entry["delta_winrate"] = node.winrate - prev_winrate
+                if prev_score is not None and node.score is not None:
+                    entry["delta_score"] = node.score - prev_score
+                # Points lost (from player's perspective)
+                pl = node.points_lost
+                if pl is not None:
+                    entry["is_mistake"] = pl > 1.0
+                    entry["is_questionable"] = 0.5 < pl <= 1.0
+                    entry["is_brilliant"] = pl < -0.5
+                prev_winrate = node.winrate
+                prev_score = node.score
+            else:
+                entry["status"] = "pending"
+            results.append(entry)
+            node = node.children[0] if node.children else None
+            move_number += 1
+        return results
 
     def _do_game_report(self, depth_filter=None):
         from katrain.core.ai import game_report

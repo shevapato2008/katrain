@@ -1,0 +1,43 @@
+# KaTrain Application Services
+# Only katrain-web and katrain-cron
+#
+# Prerequisites (run separately):
+#   - PostgreSQL (port 5432)
+#   - KataGo web instance (port 8000) - for user gameplay
+#   - KataGo cron instance (port 8002) - for batch analysis
+#
+# Usage:
+#   docker-compose up -d
+#
+# Environment variables (create .env file or export):
+#   POSTGRES_PASSWORD=your_db_password
+#   DASHSCOPE_API_KEY=your_dashscope_api_key
+
+services:
+  katrain-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: katrain-web
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
+      - LOCAL_KATAGO_URL=http://host.docker.internal:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  katrain-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: katrain-cron
+    restart: unless-stopped
+    environment:
+      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
+      - KATAGO_URL=http://host.docker.internal:8002
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - CRON_LOG_LEVEL=INFO
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

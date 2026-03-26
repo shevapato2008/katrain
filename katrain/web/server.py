@@ -426,6 +426,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/main_time", settings.get("main_time", 0))
                     session.katrain.update_config("timer/byo_length", settings.get("byo_length", 30))
                     session.katrain.update_config("timer/byo_periods", settings.get("byo_periods", 3))
+                    session.katrain.update_config("timer/paused", False)
+                else:
+                    session.katrain.update_config("timer/main_time", 0)
+                    session.katrain.update_config("timer/byo_length", 0)
+                    session.katrain.update_config("timer/paused", True)
 
                 session.katrain("new_game",
                     size=settings.get("board_size", 19),

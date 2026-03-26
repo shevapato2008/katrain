@@ -16,11 +16,12 @@ interface Props {
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
   onToggleAnalysis: (key: string) => void;
+  isGameOver?: boolean;
 }
 
-const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis }: Props) => {
+const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false }: Props) => {
   const { t } = useTranslation();
-  const showScore = analysisToggles.show_score !== false;  // default true if not set
+  const showScore = !!analysisToggles.score;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -55,13 +56,13 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
 
         {/* 4. ItemToggle grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
-          <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.show_ownership} onClick={() => onToggleAnalysis('show_ownership')} />
-          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.show_hints} onClick={() => onToggleAnalysis('show_hints')} />
-          <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('show_score')} />
-          <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} />
-          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} />
-          <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive />
-          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} />
+          <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.ownership} onClick={() => onToggleAnalysis('ownership')} />
+          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.hints} onClick={() => onToggleAnalysis('hints')} />
+          <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
+          <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} disabled={isGameOver} />
+          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver} />
+          <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive disabled={isGameOver} />
+          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={isGameOver} />
         </Box>
 
         <Divider />
@@ -91,12 +92,12 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
       {/* Fixed bottom: navigation controls */}
       <Divider />
       <Box data-testid="nav-controls" sx={{ display: 'flex', justifyContent: 'center', gap: 0.5, px: 2, py: 1 }}>
-        <IconButton size="small" onClick={() => onAction('start')}><SkipPrevious /></IconButton>
-        <IconButton size="small" onClick={() => onAction('back-10')}><FastRewind /></IconButton>
-        <IconButton size="small" onClick={() => onAction('back')}><ArrowBack /></IconButton>
-        <IconButton size="small" onClick={() => onAction('forward')}><ArrowForward /></IconButton>
-        <IconButton size="small" onClick={() => onAction('forward-10')}><FastForward /></IconButton>
-        <IconButton size="small" onClick={() => onAction('end')}><SkipNext /></IconButton>
+        <IconButton size="small" onClick={() => onAction('start')} disabled={!isGameOver}><SkipPrevious /></IconButton>
+        <IconButton size="small" onClick={() => onAction('back-10')} disabled={!isGameOver}><FastRewind /></IconButton>
+        <IconButton size="small" onClick={() => onAction('back')} disabled={!isGameOver}><ArrowBack /></IconButton>
+        <IconButton size="small" onClick={() => onAction('forward')} disabled={!isGameOver}><ArrowForward /></IconButton>
+        <IconButton size="small" onClick={() => onAction('forward-10')} disabled={!isGameOver}><FastForward /></IconButton>
+        <IconButton size="small" onClick={() => onAction('end')} disabled={!isGameOver}><SkipNext /></IconButton>
       </Box>
     </Box>
   );

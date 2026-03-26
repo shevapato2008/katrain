@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions } from '@mui/material';
 import { ExitToApp } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
@@ -21,7 +21,10 @@ const GamePage = () => {
     hints: false,
     numbers: false,
     coords: true,
+    score: true,
   });
+  const [showResignConfirm, setShowResignConfirm] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   useEffect(() => {
     if (sessionId) session.setSessionId(sessionId);
@@ -37,14 +40,40 @@ const GamePage = () => {
 
   const gameState = session.gameState;
   const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
+  const isGameOver = !!gameState.end_result;
+
+  // Determine which color the human plays (for turn enforcement)
+  const humanColor: 'B' | 'W' | null =
+    gameState.players_info?.B?.player_type === 'player:human' ? 'B'
+    : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
+    : null;
+
+  const handleAction = (action: string) => {
+    if (action === 'resign') {
+      setShowResignConfirm(true);
+    } else {
+      session.handleAction(action);
+    }
+  };
+
+  const handleExit = () => {
+    if (!isGameOver) {
+      setShowExitConfirm(true);
+    } else {
+      navigate('/kiosk/play');
+    }
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default' }}>
+      {/* Error display */}
+      {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
+
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
         <Button variant="outlined" size="small" startIcon={<ExitToApp />}
-          onClick={() => navigate('/kiosk/play')}>
+          onClick={handleExit}>
           {t('Exit', '退出')}
         </Button>
       </Box>
@@ -56,18 +85,42 @@ const GamePage = () => {
             onMove={session.onMove}
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
+            playerColor={humanColor}
           />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <GameControlPanel
             gameState={gameState}
-            onAction={session.handleAction}
+            onAction={handleAction}
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+            isGameOver={isGameOver}
           />
         </Box>
       </Box>
+
+      {/* Resign confirmation */}
+      <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+        <DialogTitle>{t('Confirm resign?', '确认认输？')}</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
+          <Button color="error" onClick={() => { setShowResignConfirm(false); session.handleAction('resign'); }}>
+            {t('Resign', '认输')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Exit confirmation */}
+      <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+        <DialogTitle>{t('Game in progress. Resign and exit?', '对局进行中，认输并退出？')}</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
+          <Button color="error" onClick={() => { session.handleAction('resign'); navigate('/kiosk/play'); }}>
+            {t('Exit', '退出')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

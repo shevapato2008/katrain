@@ -782,7 +782,7 @@ def crop_diagram(page_img, page_gray, y_start, y_end, padding=15):
 
 # ── Full pipeline ─────────────────────────────────────────────────────────────
 
-def process_page(page_image_path, figure_ids, dry_run=False, db=None):
+def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=False):
     """Process all diagrams on a single page.
 
     figure_ids: list of (figure_label, figure_db_id) e.g. [("图1", 1), ("图2", 2)]
@@ -865,12 +865,6 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
         log.info("  Step 3: %d occupied (%d confident, %d ambiguous)",
                  len(occupied), len(confident), len(ambiguous))
 
-        # Legacy stone detection for payload (until VLLM classification is wired up)
-        stones = cv_detect_stones_legacy(crop_gray, h_pos, v_pos, spacing)
-        b_count = sum(1 for _, _, c in stones if c == "B")
-        w_count = sum(1 for _, _, c in stones if c == "W")
-        log.info("  Step 3 (legacy): %d stones (B=%d, W=%d)", len(stones), b_count, w_count)
-
         # Step 1: Region calibration (multi-evidence CV, VLLM fallback)
         occupied_set = {(ci, ri) for ci, ri, _ in occupied}
         col_start, row_start, cal_conf, cal_evidence = calibrate_region(
@@ -880,7 +874,6 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
                  col_start, row_start, cal_conf, cal_evidence)
 
         if cal_conf < 0.3:
-            # Low confidence — fall back to VLLM
             try:
                 region = vllm_identify_region(crop_path, len(h_pos), len(v_pos))
                 col_start = region.get("col_start", col_start)
@@ -889,21 +882,69 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
             except Exception as e:
                 log.warning("  VLLM region also failed (%s), using CV result", e)
 
-        # Step 4: VLLM number recognition
-        try:
-            labels_data = vllm_read_numbers(crop_path, stones)
-            label_count = sum(1 for v in labels_data.get("labels", {}).values() if v is not None)
-            letter_count = len(labels_data.get("letters", {}))
-            log.info("  Step 4: %d labels, %d letters", label_count, letter_count)
-        except Exception as e:
-            log.warning("  VLLM number recognition failed (%s)", e)
-            labels_data = {}
+        # Step 4: Contact sheet classification
+        # Build full label_map for ALL occupied patches
+        full_label_map = {}
+        for idx, (ci, ri, _) in enumerate(occupied):
+            if idx < 26:
+                lbl = chr(65 + idx)
+            else:
+                lbl = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
+            full_label_map[lbl] = (ci, ri)
 
-        # Step 5: Build payload
-        payload = build_payload(stones, labels_data, col_start, row_start)
+        # Start with CV-confident classifications
+        confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
+        merged_classifications = {}
+        for lbl, (ci, ri) in full_label_map.items():
+            if (ci, ri) in confident_set:
+                merged_classifications[lbl] = confident_set[(ci, ri)]  # "black" or "white"
+
+        # VLLM classification for ambiguous patches only
+        if ambiguous:
+            sheet, ambiguous_label_map = build_contact_sheet(ambiguous, spacing)
+            if sheet is not None:
+                sheet_path = Path(tempfile.mktemp(suffix=".png", prefix=f"sheet_{label}_"))
+                cv2.imwrite(str(sheet_path), sheet)
+                try:
+                    vllm_result = vllm_call(sheet_path, VLLM_CLASSIFY_PROMPT)
+                    log.info("  Step 4 (VLLM): classified %d ambiguous patches", len(vllm_result))
+
+                    # Map ambiguous sheet labels back to full label_map labels
+                    ambiguous_pos = {(ci, ri): lbl for lbl, (ci, ri) in ambiguous_label_map.items()}
+                    for amb_lbl, cls_str in vllm_result.items():
+                        if amb_lbl in ambiguous_label_map:
+                            ci, ri = ambiguous_label_map[amb_lbl]
+                            # Find the corresponding label in full_label_map
+                            for full_lbl, (fci, fri) in full_label_map.items():
+                                if (fci, fri) == (ci, ri):
+                                    merged_classifications[full_lbl] = cls_str
+                                    break
+                except Exception as e:
+                    log.warning("  VLLM classification failed (%s), using CV-confident only", e)
+                finally:
+                    sheet_path.unlink(missing_ok=True)
+        else:
+            log.info("  Step 4: all %d patches CV-confident, skipping VLLM", len(confident))
+
+        log.info("  Classifications: %d total (%d confident + %d VLLM)",
+                 len(merged_classifications),
+                 sum(1 for v in merged_classifications.values() if v in ("black", "white")),
+                 sum(1 for v in merged_classifications.values() if v not in ("black", "white")))
+
+        # Step 5: Build payload via classification_to_payload
+        payload = classification_to_payload(merged_classifications, full_label_map, col_start, row_start)
         log.info("  Payload: B=%d W=%d labels=%d letters=%d",
                  len(payload["stones"]["B"]), len(payload["stones"]["W"]),
                  len(payload["labels"]), len(payload["letters"]))
+
+        # Save training data
+        # Extract page number from image path for training data provenance
+        page_num_str = page_image_path.stem.replace("page_", "")
+        book_slug = page_image_path.parent.parent.name  # e.g. "曹薰铉布局技巧-上册-曹薰铉-1997"
+        save_all_training_patches(
+            occupied, merged_classifications, full_label_map,
+            col_start, row_start, book_slug, page_num_str, label
+        )
 
         stone_count = len(payload["stones"]["B"]) + len(payload["stones"]["W"])
         label_count_total = len(payload.get("labels", {}))
@@ -925,8 +966,13 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None):
         elif db is not None:
             figure = db_queries.get_figure(db, fig_id)
             if figure:
-                db_queries.update_figure_board(db, figure, payload)
-                log.info("  ✓ Saved to DB")
+                if figure.board_payload and not force:
+                    log.info("  Skipping %s (already has payload, use --force to overwrite)", label)
+                    status = "skipped"
+                    detail = "already has payload"
+                else:
+                    db_queries.update_figure_board(db, figure, payload)
+                    log.info("  ✓ Saved to DB")
             else:
                 log.error("  Figure id=%d not found in DB", fig_id)
                 status = "failed_semantic"
@@ -1008,7 +1054,7 @@ def test_cv(page_image_path):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def apply_classifications_from_file(db, section_id, json_path):
+def apply_classifications_from_file(db, section_id, json_path, force=False):
     """Apply VLLM classification results from a JSON file to DB.
 
     JSON format:
@@ -1017,6 +1063,9 @@ def apply_classifications_from_file(db, section_id, json_path):
       "图2": {...},
       ...
     }
+
+    If patches directory exists alongside the JSON file (from --save-sheets),
+    training data is automatically saved.
     """
     from katrain.web.tutorials.viewport import compute_viewport
 
@@ -1040,8 +1089,7 @@ def apply_classifications_from_file(db, section_id, json_path):
             results.append((label, "failed_semantic", "figure not found in section"))
             continue
 
-        # Skip if already has board_payload (safety check, avoid overwrite)
-        if figure.board_payload and figure.board_payload.get("stones", {}).get("B"):
+        if figure.board_payload and figure.board_payload.get("stones", {}).get("B") and not force:
             log.info("  %s: already has board_payload — skipping (use --force to overwrite)", label)
             results.append((label, "skipped", "already has payload"))
             continue
@@ -1071,6 +1119,26 @@ def apply_classifications_from_file(db, section_id, json_path):
             stone_count = len(payload["stones"]["B"]) + len(payload["stones"]["W"])
             log.info("  %s: applied (%d stones, %d labels) ✓",
                      label, stone_count, len(payload.get("labels", {})))
+
+            # Save training data if patches directory exists
+            json_dir = Path(json_path).parent
+            patches_dir = json_dir / "patches" / label
+            if patches_dir.exists():
+                occupied_patches = []
+                for lbl, (ci, ri) in label_map.items():
+                    patch_path = patches_dir / f"{lbl}_{ci}_{ri}.png"
+                    if patch_path.exists():
+                        patch = cv2.imread(str(patch_path), cv2.IMREAD_GRAYSCALE)
+                        if patch is not None:
+                            occupied_patches.append((ci, ri, patch))
+                if occupied_patches:
+                    book_slug = entry.get("book_slug", "unknown")
+                    page = entry.get("page", 0)
+                    save_all_training_patches(
+                        occupied_patches, classifications, label_map,
+                        col_start, row_start, book_slug, page, label
+                    )
+
             results.append((label, "success", f"{stone_count} stones"))
         except Exception as e:
             log.error("  %s: failed — %s", label, e)
@@ -1212,11 +1280,21 @@ def save_sheets_for_section(db, section_id, output_dir):
             with open(meta_path, "w") as f:
                 json.dump(meta, f, ensure_ascii=False, indent=2)
 
+            # Save individual patches for training data
+            patches_dir = output_dir / "patches" / label
+            patches_dir.mkdir(parents=True, exist_ok=True)
+            patch_lookup = {(ci, ri): patch for ci, ri, patch in occupied}
+            for lbl, (ci, ri) in label_map.items():
+                patch = patch_lookup.get((ci, ri))
+                if patch is not None:
+                    patch_path = patches_dir / f"{lbl}_{ci}_{ri}.png"
+                    cv2.imwrite(str(patch_path), patch)
+
             # Also save the raw crop for reference
             crop_path = output_dir / f"{label}_crop.png"
             cv2.imwrite(str(crop_path), crop)
 
-            log.info("  %s: saved sheet (%d patches) → %s", label, len(label_map), sheet_path)
+            log.info("  %s: saved sheet (%d patches) + individual patches → %s", label, len(label_map), sheet_path)
 
     log.info("Contact sheets saved to %s", output_dir)
 
@@ -1226,6 +1304,7 @@ def main():
     parser.add_argument("--section-id", type=int, help="Process all figures in this section")
     parser.add_argument("--test-cv", type=str, help="Test CV pipeline on a page image")
     parser.add_argument("--dry-run", action="store_true", help="Print payloads without DB write")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing board_payload")
     parser.add_argument("--save-sheets", type=str,
                         help="Save contact sheets to this directory (no DB write)")
     parser.add_argument("--apply-classifications", type=str,
@@ -1251,7 +1330,7 @@ def main():
 
         # Mode: apply VLLM classifications from JSON file
         if args.apply_classifications:
-            apply_classifications_from_file(db, args.section_id, args.apply_classifications)
+            apply_classifications_from_file(db, args.section_id, args.apply_classifications, force=args.force)
             return
 
         # Default mode: full pipeline
@@ -1282,7 +1361,7 @@ def main():
                 continue
 
             log.info("\n── Page %d (%s) ── %d figure(s)", page_num, image_path.name, len(figure_ids))
-            page_results = process_page(image_path, figure_ids, dry_run=args.dry_run, db=db)
+            page_results = process_page(image_path, figure_ids, dry_run=args.dry_run, db=db, force=args.force)
             if page_results:
                 all_results.extend(page_results)
 

@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
+from math import ceil
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -206,6 +207,67 @@ def cv_preclass_confident(occupied_patches, spacing):
             ambiguous.append((ci, ri, patch))
 
     return confident, ambiguous
+
+
+# ── Contact sheet generation ──────────────────────────────────────────────────
+
+def build_contact_sheet(occupied_patches, spacing, cols_per_row=8):
+    """Arrange occupied intersection patches into a labeled contact sheet image.
+
+    Args:
+        occupied_patches: list of (col_idx, row_idx, patch_image)
+        spacing: grid spacing in pixels (determines patch size)
+        cols_per_row: number of patches per row in the sheet
+
+    Returns:
+        (sheet_image, label_map) where label_map is {"A": (col_idx, row_idx), ...}
+    """
+    if not occupied_patches:
+        return None, {}
+
+    patch_size = int(spacing * 1.0)
+    margin = 4
+    label_h = 16  # height for text label below each patch
+    cell_w = patch_size + margin * 2
+    cell_h = patch_size + margin * 2 + label_h
+
+    n = len(occupied_patches)
+    rows = ceil(n / cols_per_row)
+    sheet_w = cols_per_row * cell_w
+    sheet_h = rows * cell_h
+
+    sheet = np.ones((sheet_h, sheet_w), dtype=np.uint8) * 240  # light gray background
+    label_map = {}
+
+    for idx, (ci, ri, patch) in enumerate(occupied_patches):
+        row_i = idx // cols_per_row
+        col_i = idx % cols_per_row
+        x_off = col_i * cell_w + margin
+        y_off = row_i * cell_h + margin
+
+        # Resize patch to standard size
+        resized = cv2.resize(patch, (patch_size, patch_size), interpolation=cv2.INTER_AREA)
+
+        # Place patch
+        sheet[y_off:y_off + patch_size, x_off:x_off + patch_size] = resized
+
+        # Draw border
+        cv2.rectangle(sheet, (x_off - 1, y_off - 1),
+                      (x_off + patch_size, y_off + patch_size), 0, 1)
+
+        # Label: A, B, C, ... AA, AB, ...
+        if idx < 26:
+            label = chr(65 + idx)
+        else:
+            label = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
+
+        label_map[label] = (ci, ri)
+
+        # Draw label text
+        cv2.putText(sheet, f"{label}:({ci},{ri})", (x_off, y_off + patch_size + label_h - 3),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, 0, 1)
+
+    return sheet, label_map
 
 
 # ── Step 3b: OpenCV stone detection (legacy) ─────────────────────────────────
@@ -670,11 +732,150 @@ def test_cv(page_image_path):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def save_sheets_for_section(db, section_id, output_dir):
+    """Generate and save contact sheets for all figures in a section.
+
+    Runs CV pipeline only (Steps 0-3), builds contact sheets, saves to output_dir.
+    No VLLM calls, no DB writes.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    section = db_queries.get_section(db, section_id)
+    if section is None:
+        log.error("Section %d not found", section_id)
+        return
+
+    log.info("Section %d: %s (%d figures)", section.id, section.title, len(section.figures))
+
+    pages = defaultdict(list)
+    for fig in section.figures:
+        pages[fig.page].append((fig.figure_label, fig.id))
+
+    for page_num in sorted(pages.keys()):
+        figure_ids = pages[page_num]
+        fig0 = next(f for f in section.figures if f.page == page_num)
+        if not fig0.page_image_path:
+            log.warning("Page %d: no image path — skipping", page_num)
+            continue
+        image_path = ASSET_BASE / fig0.page_image_path
+        if not image_path.exists():
+            log.warning("Page %d: image not found at %s — skipping", page_num, image_path)
+            continue
+
+        page_img = cv2.imread(str(image_path))
+        if page_img is None:
+            log.error("Cannot read image: %s", image_path)
+            continue
+        page_gray = cv2.cvtColor(page_img, cv2.COLOR_BGR2GRAY)
+
+        # Step 0: detect diagram bboxes (CV only — no VLLM)
+        cv_regions = cv_detect_diagram_bboxes(page_gray)
+        log.info("Page %d: CV detected %d diagram regions for %d figures",
+                 page_num, len(cv_regions), len(figure_ids))
+
+        bboxes = {}
+        for i, (label, _) in enumerate(figure_ids):
+            if i < len(cv_regions):
+                y1, y2 = cv_regions[i]
+                strip = page_gray[y1:y2, :]
+                col_dark = np.sum(strip < 100, axis=0)
+                dark_cols = np.where(col_dark > 5)[0]
+                if len(dark_cols) > 0:
+                    x1, x2 = int(dark_cols[0]) - 10, int(dark_cols[-1]) + 10
+                    bboxes[label] = [x1, y1 - 10, x2, y2 + 10]
+
+        for label, fig_id in figure_ids:
+            bbox = bboxes.get(label)
+            if bbox is None:
+                log.warning("  %s: no bbox — skipping", label)
+                continue
+
+            x1, y1, x2, y2 = [max(0, int(c)) for c in bbox]
+            x2 = min(page_img.shape[1], x2)
+            y2 = min(page_img.shape[0], y2)
+            crop = page_img[y1:y2, x1:x2]
+            crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+
+            # Step 2: grid detection
+            h_pos, v_pos, spacing = cv_detect_grid(crop_gray)
+            if len(h_pos) < 3 or len(v_pos) < 3:
+                log.warning("  %s: too few grid lines — skipping", label)
+                continue
+
+            # Step 3: occupied detection
+            occupied = cv_detect_occupied(crop_gray, h_pos, v_pos, spacing)
+            confident, ambiguous = cv_preclass_confident(occupied, spacing)
+            log.info("  %s: %d×%d grid, %d occupied (%d confident, %d ambiguous)",
+                     label, len(v_pos), len(h_pos), len(occupied),
+                     len(confident), len(ambiguous))
+
+            if not occupied:
+                log.warning("  %s: no occupied intersections — skipping", label)
+                continue
+
+            # Build contact sheet
+            sheet, label_map = build_contact_sheet(occupied, spacing)
+            if sheet is None:
+                continue
+
+            # Save sheet image
+            sheet_path = output_dir / f"{label}.png"
+            cv2.imwrite(str(sheet_path), sheet)
+
+            # Save label map + metadata
+            meta = {
+                "figure_label": label,
+                "figure_id": fig_id,
+                "grid_rows": len(h_pos),
+                "grid_cols": len(v_pos),
+                "spacing": spacing,
+                "total_occupied": len(occupied),
+                "confident_count": len(confident),
+                "ambiguous_count": len(ambiguous),
+                "label_map": {k: list(v) for k, v in label_map.items()},
+                "confident": {
+                    # Pre-classified patches (skip VLLM for these)
+                    k: base_type
+                    for k, (ci, ri, _, base_type) in (
+                        (lbl, item) for lbl, item in (
+                            (lbl, next((ci, ri, p, bt) for ci, ri, p, bt in confident if (ci, ri) == pos), )
+                            for lbl, pos in label_map.items()
+                            if any((ci, ri) == pos for ci, ri, _, bt in confident)
+                        )
+                    )
+                } if confident else {},
+            }
+            # Simpler confident map: match label_map entries to confident patches
+            conf_map = {}
+            confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
+            for lbl, (ci, ri) in label_map.items():
+                if (ci, ri) in confident_set:
+                    conf_map[lbl] = confident_set[(ci, ri)]
+            meta["confident"] = conf_map
+
+            meta_path = output_dir / f"{label}.json"
+            with open(meta_path, "w") as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+
+            # Also save the raw crop for reference
+            crop_path = output_dir / f"{label}_crop.png"
+            cv2.imwrite(str(crop_path), crop)
+
+            log.info("  %s: saved sheet (%d patches) → %s", label, len(label_map), sheet_path)
+
+    log.info("Contact sheets saved to %s", output_dir)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Hybrid VLLM+CV board recognition")
     parser.add_argument("--section-id", type=int, help="Process all figures in this section")
     parser.add_argument("--test-cv", type=str, help="Test CV pipeline on a page image")
     parser.add_argument("--dry-run", action="store_true", help="Print payloads without DB write")
+    parser.add_argument("--save-sheets", type=str,
+                        help="Save contact sheets to this directory (no DB write)")
+    parser.add_argument("--apply-classifications", type=str,
+                        help="Apply VLLM classification results from JSON file to DB")
     args = parser.parse_args()
 
     if args.test_cv:
@@ -689,6 +890,17 @@ def main():
     db = Session()
 
     try:
+        # Mode: save contact sheets (CV only, no VLLM, no DB write)
+        if args.save_sheets:
+            save_sheets_for_section(db, args.section_id, args.save_sheets)
+            return
+
+        # Mode: apply VLLM classifications from JSON file
+        if args.apply_classifications:
+            apply_classifications_from_file(db, args.section_id, args.apply_classifications)
+            return
+
+        # Default mode: full pipeline
         section = db_queries.get_section(db, args.section_id)
         if section is None:
             log.error("Section %d not found", args.section_id)

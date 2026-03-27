@@ -66,8 +66,8 @@ class RemoteTsumegoRepository:
     async def get_problems(self, level: str, category: str, offset: int = 0, limit: int = 20) -> List[Dict]:
         return await self._client.get_problems(level, category, offset, limit)
 
-    async def get_all_problems(self, level: str, limit: int = 1000) -> List[Dict]:
-        return await self._client.get_all_problems(level, limit)
+    async def get_all_problems(self, level: str, page: int = 1, page_size: int = 50) -> Dict:
+        return await self._client.get_all_problems(level, page, page_size)
 
     async def get_problem(self, problem_id: str) -> Dict:
         return await self._client.get_problem(problem_id)
@@ -151,14 +151,14 @@ class RepositoryDispatcher:
             logger.warning("tsumego_get_levels remote failed: %s", e)
             return []
 
-    async def tsumego_get_all_problems(self, level, limit=1000):
+    async def tsumego_get_all_problems(self, level, page=1, page_size=50):
         if not self.is_online:
-            return []
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
         try:
-            return await self.remote_tsumego.get_all_problems(level, limit)
+            return await self.remote_tsumego.get_all_problems(level, page, page_size)
         except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
             logger.warning("tsumego_get_all_problems remote failed: %s", e)
-            return []
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     async def tsumego_get_problems(self, level, category, offset=0, limit=20):
         if not self.is_online:

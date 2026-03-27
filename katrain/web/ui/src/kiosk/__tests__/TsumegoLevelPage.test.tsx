@@ -1,19 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
-const mockProblems = [
-  { id: 'p1', level: '15k', category: '手筋', hint: '找到关键点', initialBlack: [], initialWhite: [] },
-  { id: 'p2', level: '15k', category: '死活', hint: '', initialBlack: [], initialWhite: [] },
+const mockItems = [
+  { id: 'p1', category: '手筋', hint: '找到关键点' },
+  { id: 'p2', category: '死活', hint: '' },
 ];
+
+const mockResponse = { items: mockItems, total: 100, page: 1, page_size: 50 };
 
 beforeEach(() => {
   vi.restoreAllMocks();
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
-    json: () => Promise.resolve(mockProblems),
+    json: () => Promise.resolve(mockResponse),
   }) as any;
 });
 
@@ -38,11 +41,11 @@ describe('TsumegoLevelPage', () => {
     });
   });
 
-  it('calls single problems endpoint', async () => {
+  it('calls paginated problems endpoint', async () => {
     renderPage();
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/v1/tsumego/levels/15k/problems?limit=1000',
+        '/api/v1/tsumego/levels/15k/problems?page=1&page_size=50',
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });
@@ -71,10 +74,10 @@ describe('TsumegoLevelPage', () => {
     });
   });
 
-  it('shows problem count', async () => {
+  it('shows loaded / total count', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('2 道题目')).toBeInTheDocument();
+      expect(screen.getByText('2 / 100 道题目')).toBeInTheDocument();
     });
   });
 
@@ -92,7 +95,10 @@ describe('TsumegoLevelPage', () => {
   });
 
   it('shows empty state when no problems', async () => {
-    (global.fetch as any).mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ items: [], total: 0, page: 1, page_size: 50 }),
+    });
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('该难度暂无题目')).toBeInTheDocument();
@@ -104,6 +110,48 @@ describe('TsumegoLevelPage', () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('重试')).toBeInTheDocument();
+    });
+  });
+
+  it('shows load more button when there are more problems', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('加载更多')).toBeInTheDocument();
+    });
+  });
+
+  it('hides load more when all problems loaded', async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ items: mockItems, total: 2, page: 1, page_size: 50 }),
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('#1')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('加载更多')).not.toBeInTheDocument();
+  });
+
+  it('fetches next page on load more click', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('加载更多')).toBeInTheDocument();
+    });
+
+    // Mock page 2 response
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ items: [{ id: 'p3', category: '官子', hint: '' }], total: 100, page: 2, page_size: 50 }),
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('加载更多'));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/tsumego/levels/15k/problems?page=2&page_size=50',
+        expect.any(Object)
+      );
     });
   });
 });

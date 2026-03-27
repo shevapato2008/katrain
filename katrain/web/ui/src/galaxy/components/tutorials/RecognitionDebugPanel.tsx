@@ -26,8 +26,8 @@ function Section({ title, step, defaultOpen, children }: {
           bgcolor: '#f5f5f5', cursor: 'pointer', '&:hover': { bgcolor: '#eeeeee' },
         }}
       >
-        <Chip label={step} size="small" variant="outlined" sx={{ fontFamily: 'monospace', fontSize: 11 }} />
-        <Typography variant="body2" sx={{ flex: 1, fontWeight: 500 }}>{title}</Typography>
+        <Chip label={step} size="small" variant="outlined" sx={{ fontFamily: 'monospace', fontSize: 11, color: '#333', borderColor: '#999' }} />
+        <Typography variant="body2" sx={{ flex: 1, fontWeight: 500, color: '#333' }}>{title}</Typography>
         <IconButton size="small">{open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}</IconButton>
       </Box>
       <Collapse in={open}>

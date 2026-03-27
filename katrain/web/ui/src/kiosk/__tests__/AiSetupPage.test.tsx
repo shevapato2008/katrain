@@ -25,6 +25,12 @@ const renderPage = (mode = 'free') =>
   );
 
 describe('AiSetupPage', () => {
+  it('renders board preview canvas', () => {
+    renderPage();
+    const canvas = document.querySelector('canvas');
+    expect(canvas).toBeInTheDocument();
+  });
+
   it('renders board size options', () => {
     renderPage();
     expect(screen.getByText('棋盘')).toBeInTheDocument();

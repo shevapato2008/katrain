@@ -18,6 +18,7 @@ import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
 import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
+import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
 
 const KioskRoutes = () => {
@@ -41,6 +42,7 @@ const KioskRoutes = () => {
           <Route path="play" element={<PlayPage />} />
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PlaceholderPage />} />
+          <Route path="play/pvp/lobby" element={<LobbyPage />} />
           <Route path="tsumego" element={<TsumegoPage />} />
           <Route path="tsumego/:levelId" element={<TsumegoLevelPage />} />
           <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />

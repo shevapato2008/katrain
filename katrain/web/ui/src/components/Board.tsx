@@ -84,11 +84,9 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         // Use the smaller dimension to keep the board square, minus padding
-        // Also cap at window height to handle cross-monitor DPI differences
-        const maxSize = Math.min(width, height, window.innerHeight - 100);
-        const size = Math.floor(maxSize - 8);
-        // Clamp between 400 and 1200 for reasonable bounds
-        setCanvasSize(Math.max(400, Math.min(1200, size)));
+        const size = Math.floor(Math.min(width, height) - 8);
+        // Clamp between 200 and 1200 for reasonable bounds
+        setCanvasSize(Math.max(200, Math.min(1200, size)));
       }
     };
 
@@ -585,6 +583,9 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          display: 'block',
           borderRadius: '4px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',
           cursor: 'pointer'

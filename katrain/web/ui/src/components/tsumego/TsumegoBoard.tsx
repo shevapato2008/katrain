@@ -86,11 +86,9 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         // Use the smaller dimension to keep the board square, minus padding
-        // Also cap at window height to handle cross-monitor DPI differences
-        const maxSize = Math.min(width, height, window.innerHeight - 100);
-        const size = Math.floor(maxSize - 8);
-        // Clamp between 400 and 1200 for reasonable bounds (matching main Board component)
-        setCanvasSize(Math.max(400, Math.min(1200, size)));
+        const size = Math.floor(Math.min(width, height) - 8);
+        // Clamp between 200 and 1200 for reasonable bounds (matching main Board component)
+        setCanvasSize(Math.max(200, Math.min(1200, size)));
       }
     };
 
@@ -349,6 +347,9 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
         height={canvasSize}
         onClick={handleClick}
         style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          display: 'block',
           borderRadius: '4px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
           cursor: disabled ? 'default' : 'pointer'

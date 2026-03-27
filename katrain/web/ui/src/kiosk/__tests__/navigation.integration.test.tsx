@@ -90,5 +90,12 @@ describe('Kiosk navigation integration', () => {
       renderApp('/kiosk/nonexistent');
       expect(screen.getByText('人机对弈')).toBeInTheDocument();
     });
+
+    it('navigates to lobby from play/pvp/lobby route', async () => {
+      renderApp('/kiosk/play/pvp/lobby');
+      await waitFor(() => {
+        expect(screen.getByText('在线大厅')).toBeInTheDocument();
+      });
+    });
   });
 });

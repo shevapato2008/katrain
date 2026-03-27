@@ -6,6 +6,7 @@ import OptionChips from '../components/common/OptionChips';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
+import LiveBoard from '../../components/live/LiveBoard';
 
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
@@ -65,19 +66,14 @@ const AiSetupPage = () => {
 
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left: board preview placeholder */}
-      <Box
-        sx={{
-          aspectRatio: '1',
-          height: '100%',
-          bgcolor: '#8b7355',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Typography sx={{ color: 'rgba(0,0,0,0.3)' }}>{boardSize}x{boardSize}</Typography>
+      {/* Left: board preview */}
+      <Box sx={{ aspectRatio: '1', height: '100%', flexShrink: 0, overflow: 'hidden' }}>
+        <LiveBoard
+          moves={[]}
+          currentMove={0}
+          boardSize={boardSize}
+          showCoordinates={true}
+        />
       </Box>
 
       {/* Right: settings form */}

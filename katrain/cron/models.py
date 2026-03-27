@@ -30,7 +30,8 @@ from katrain.cron.db import Base
 
 class MatchSourceEnum(str, enum.Enum):
     XINGZHEN = "xingzhen"
-    WEIQI_ORG = "weiqi_org"
+    YIKE = "yike"
+    PANDANET = "pandanet"
 
 
 class MatchStatusEnum(str, enum.Enum):

@@ -3,8 +3,35 @@
 import os
 
 
+def _resolve_database_url() -> str:
+    """Resolve DATABASE_URL: env var > ~/.katrain/config.json > SQLite fallback.
+
+    Uses the same resolution logic as the web process to ensure both
+    processes connect to the same database.
+    """
+    env_url = os.getenv("KATRAIN_DATABASE_URL")
+    if env_url:
+        return env_url
+
+    # Try to load from config.json (same logic as katrain/web/core/config.py)
+    import json
+    from pathlib import Path
+
+    for path in [Path.home() / ".katrain" / "config.json", Path("katrain/config.json")]:
+        try:
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if "server" in data and "database_url" in data["server"]:
+                    return data["server"]["database_url"]
+        except Exception:
+            pass
+
+    return "sqlite:///./db.sqlite3"
+
+
 # Database
-DATABASE_URL = os.getenv("KATRAIN_DATABASE_URL", "sqlite:///./db.sqlite3")
+DATABASE_URL = _resolve_database_url()
 DATABASE_POOL_SIZE = int(os.getenv("CRON_DB_POOL_SIZE", "20"))
 DATABASE_MAX_OVERFLOW = int(os.getenv("CRON_DB_MAX_OVERFLOW", "10"))
 
@@ -21,6 +48,19 @@ ANALYSIS_PREEMPT_THRESHOLD = int(os.getenv("CRON_ANALYSIS_PREEMPT_THRESHOLD", "5
 
 # XingZhen API
 XINGZHEN_BASE_URL = os.getenv("XINGZHEN_BASE_URL", "https://api.19x19.com/api/engine/golives")
+XINGZHEN_ENABLED = os.getenv("CRON_XINGZHEN_ENABLED", "true").lower() == "true"
+
+# YikeWeiQi API (弈客围棋)
+YIKE_BASE_URL = os.getenv("YIKE_BASE_URL", "https://api-new.yikeweiqi.com")
+YIKE_APP_KEY = os.getenv("YIKE_APP_KEY", "3396jtzhK57XhJom")
+YIKE_APP_SECRET = os.getenv("YIKE_APP_SECRET", "hfdSXRKm0DQyLmNXmNCNkZpjy2o5q1Hk")
+YIKE_ENABLED = os.getenv("CRON_YIKE_ENABLED", "true").lower() == "true"
+
+# Pandanet-IGS (日本头衔战)
+PANDANET_HOST = os.getenv("PANDANET_HOST", "igs.joyjoy.net")
+PANDANET_PORT = int(os.getenv("PANDANET_PORT", "7777"))
+PANDANET_ENABLED = os.getenv("CRON_PANDANET_ENABLED", "true").lower() == "true"
+PANDANET_POLL_INTERVAL = int(os.getenv("CRON_PANDANET_POLL_INTERVAL", "300"))
 
 # Job intervals (seconds)
 FETCH_LIST_INTERVAL = int(os.getenv("CRON_FETCH_LIST_INTERVAL", "60"))

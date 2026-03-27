@@ -1,11 +1,16 @@
-"""PollMovesJob: poll live games for new moves, create pending analysis tasks."""
+"""PollMovesJob: poll live games for new moves, create pending analysis tasks.
+
+Dispatches to the correct source client based on match.source.
+"""
 
 import logging
 
 from sqlalchemy import func, text
 
+from katrain.cron import config
 from katrain.cron.jobs.base import BaseJob
-from katrain.cron.clients.xingzhen import XingZhenClient, _parse_moves
+from katrain.cron.clients.registry import SourceRegistry
+from katrain.cron.clients.xingzhen import _parse_moves
 from katrain.cron.db import SessionLocal, engine
 from katrain.cron.models import LiveMatchDB, PRIORITY_LIVE_NEW, PRIORITY_LIVE_BACKFILL
 from katrain.cron.analysis_repo import AnalysisRepo
@@ -46,18 +51,70 @@ class PollMovesJob(BaseJob):
             if not all_matches:
                 return
 
-            client = XingZhenClient()
+            registry = self._build_registry()
             repo = AnalysisRepo(db)
 
             for match in all_matches:
-                await self._poll_one(client, repo, match, db)
+                await self._poll_one(registry, repo, match, db)
         except Exception:
             db.rollback()
             self.logger.exception("PollMovesJob failed")
         finally:
             db.close()
 
-    async def _poll_one(self, client: XingZhenClient, repo: AnalysisRepo, match: LiveMatchDB, db) -> None:
+    @staticmethod
+    def _build_registry() -> SourceRegistry:
+        registry = SourceRegistry()
+        if config.YIKE_ENABLED:
+            from katrain.cron.clients.yike import YikeWeiQiClient
+            registry.register("yike", YikeWeiQiClient())
+        if config.XINGZHEN_ENABLED:
+            from katrain.cron.clients.xingzhen import XingZhenClient
+            registry.register("xingzhen", XingZhenClient())
+        return registry
+
+    async def _poll_one(self, registry: SourceRegistry, repo: AnalysisRepo, match: LiveMatchDB, db) -> None:
+        """Poll a single match for new moves, dispatching to the correct source."""
+        if match.source == "yike":
+            await self._poll_yike(registry, repo, match, db)
+        elif match.source == "xingzhen":
+            await self._poll_xingzhen(registry, repo, match, db)
+        else:
+            self.logger.debug("No poll handler for source %s (match %s)", match.source, match.match_id)
+
+    async def _poll_yike(self, registry: SourceRegistry, repo: AnalysisRepo, match: LiveMatchDB, db) -> None:
+        """Poll a YikeWeiQi match for new moves."""
+        from katrain.cron.clients.yike import _parse_sgf_moves
+
+        client = registry.get_client("yike")
+        if client is None:
+            return
+        detail = await client.get_detail(int(match.source_id))
+        if not detail:
+            return
+
+        # Parse moves from SGF
+        sgf = detail.get("sgf") or detail.get("clean_sgf", "")
+        new_moves = _parse_sgf_moves(sgf)
+
+        new_status = "live" if str(detail.get("status")) == "2" else "finished"
+
+        # Update winrate (YikeWeiQi provides 0-100 percentage)
+        meta = detail.get("meta") or {}
+        wr = meta.get("black_win_rate")
+        if wr is not None:
+            try:
+                match.current_winrate = float(wr) / 100.0
+            except (TypeError, ValueError):
+                pass
+
+        self._update_match(repo, match, db, new_moves, new_status, detail.get("game_result"))
+
+    async def _poll_xingzhen(self, registry: SourceRegistry, repo: AnalysisRepo, match: LiveMatchDB, db) -> None:
+        """Poll a XingZhen match for new moves (existing logic)."""
+        client = registry.get_client("xingzhen")
+        if client is None:
+            return
         situation = await client.get_situation(match.source_id)
         if not situation:
             return
@@ -70,24 +127,31 @@ class PollMovesJob(BaseJob):
         moves_data = situation.get("moves") or md.get("moves") or md.get("moveList")
         new_moves = _parse_moves(moves_data)
 
-        old_count = len(match.moves) if match.moves else 0
-        old_status = match.status
-        new_count = len(new_moves)
-
-        # Update match record
-        # Only update moves and move_count if we got valid data (avoid regression on API errors)
-        if new_moves and new_count >= old_count:
-            match.moves = new_moves
-            match.move_count = new_count
-        match.status = new_status
-        match.result = md.get("gameResult") or md.get("result") or match.result
-
         wr = md.get("winrate")
         if wr is not None:
             match.current_winrate = wr
         sc = md.get("score") or md.get("blackScore")
         if sc is not None:
             match.current_score = sc
+
+        result = md.get("gameResult") or md.get("result")
+        self._update_match(repo, match, db, new_moves, new_status, result)
+
+    def _update_match(
+        self, repo: AnalysisRepo, match: LiveMatchDB, db, new_moves: list[str], new_status: str, result: str | None
+    ) -> None:
+        """Common logic: update match record and create analysis tasks for new moves."""
+        old_count = len(match.moves) if match.moves else 0
+        old_status = match.status
+        new_count = len(new_moves)
+
+        # Only update moves and move_count if we got valid data (avoid regression on API errors)
+        if new_moves and new_count >= old_count:
+            match.moves = new_moves
+            match.move_count = new_count
+        match.status = new_status
+        if result:
+            match.result = result
 
         db.commit()
 

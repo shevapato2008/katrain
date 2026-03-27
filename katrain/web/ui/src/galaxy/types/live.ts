@@ -1,6 +1,6 @@
 // Types for live broadcasting module
 
-export type MatchSource = 'xingzhen' | 'weiqi_org';
+export type MatchSource = 'xingzhen' | 'yike' | 'pandanet';
 export type MatchStatus = 'live' | 'finished';
 
 export interface MatchSummary {

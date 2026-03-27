@@ -137,7 +137,7 @@ def get_live_service(request: Request):
 async def get_matches(
     request: Request,
     status: Optional[str] = Query(None, description="Filter by status: live, finished"),
-    source: Optional[str] = Query(None, description="Filter by source: xingzhen, weiqi_org"),
+    source: Optional[str] = Query(None, description="Filter by source: xingzhen, yike"),
     lang: Optional[str] = Query(None, description="Target language for translations: en, jp, ko, cn, tw"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of matches to return"),
     live_service=Depends(get_live_service),

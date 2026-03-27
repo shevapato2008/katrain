@@ -10,9 +10,16 @@ interface MatchInfoProps {
   analysis?: MoveAnalysis | null;  // KataGo analysis for current position
 }
 
+const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
+  yike: { label: '弈客', color: '#1976d2' },
+  xingzhen: { label: '星阵', color: '#7b1fa2' },
+  pandanet: { label: 'IGS', color: '#e65100' },
+};
+
 export default function MatchInfo({ match, analysis }: MatchInfoProps) {
   const { t } = useTranslation();
   const isLive = match.status === 'live';
+  const sourceInfo = SOURCE_LABELS[match.source];
 
   // Use KataGo analysis data if available, otherwise fall back to match data
   const winrate = analysis?.winrate ?? match.current_winrate;
@@ -47,6 +54,17 @@ export default function MatchInfo({ match, analysis }: MatchInfoProps) {
         <Typography variant="caption" color="text.secondary">
           {dateStr}
         </Typography>
+        {sourceInfo && (
+          <Chip
+            label={sourceInfo.label}
+            size="small"
+            sx={{
+              height: 20, fontSize: '0.7rem',
+              bgcolor: sourceInfo.color, color: '#fff',
+              '& .MuiChip-label': { px: 0.8 },
+            }}
+          />
+        )}
       </Box>
 
       {/* Tournament name */}

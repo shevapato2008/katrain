@@ -74,7 +74,7 @@ export const LiveAPI = {
    */
   getMatches: (options?: {
     status?: 'live' | 'finished';
-    source?: 'xingzhen' | 'weiqi_org';
+    source?: 'xingzhen' | 'yike' | 'pandanet';
     limit?: number;
     lang?: string;
   }): Promise<MatchListResponse> => {

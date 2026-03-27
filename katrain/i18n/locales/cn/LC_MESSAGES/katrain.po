@@ -1509,7 +1509,7 @@ msgid "live:tomorrow"
 msgstr "明天"
 
 msgid "live:in_days"
-msgstr "天后"
+msgstr "{0}天后"
 
 msgid "live:moves"
 msgstr "手"

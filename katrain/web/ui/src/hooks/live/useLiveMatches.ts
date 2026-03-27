@@ -5,7 +5,7 @@ import { useTranslation } from '../useTranslation';
 
 interface UseLiveMatchesOptions {
   status?: 'live' | 'finished';
-  source?: 'xingzhen' | 'weiqi_org';
+  source?: 'xingzhen' | 'yike' | 'pandanet';
   limit?: number;
   pollInterval?: number; // ms, 0 to disable
 }

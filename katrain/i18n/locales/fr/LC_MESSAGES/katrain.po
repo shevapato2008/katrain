@@ -1686,7 +1686,7 @@ msgid "live:tomorrow"
 msgstr "Demain"
 
 msgid "live:in_days"
-msgstr "jours"
+msgstr "dans {0} jours"
 
 msgid "live:moves"
 msgstr "coups"

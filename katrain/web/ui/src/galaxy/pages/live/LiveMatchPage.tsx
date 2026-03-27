@@ -19,6 +19,7 @@ import { useSound } from '../../../hooks/useSound';
 // import CommentSection from '../../components/live/CommentSection';
 
 export default function LiveMatchPage() {
+  useTranslation(); // subscribe to language changes
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();

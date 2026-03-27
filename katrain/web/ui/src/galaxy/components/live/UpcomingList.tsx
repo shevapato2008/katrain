@@ -1,11 +1,18 @@
 import { Box, Typography, Card, CardContent, Skeleton, Link } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { LiveAPI } from '../../../api/live';
-import type { UpcomingMatch } from '../../../types/live';
+import type { UpcomingMatch, UpcomingSource } from '../../../types/live';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { i18n } from '../../../i18n';
 import { useTranslation } from '../../../hooks/useTranslation';
+
+const UPCOMING_SOURCE_LABELS: Record<UpcomingSource, { label: string; color: string }> = {
+  foxwq: { label: '野狐', color: '#2e7d32' },
+  yike: { label: '弈客', color: '#1976d2' },
+  yugen: { label: '幽玄', color: '#c62828' },
+  nihonkiin: { label: '棋院', color: '#e65100' },
+};
 
 interface UpcomingListProps {
   limit?: number;
@@ -41,7 +48,10 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
-    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    // Use calendar date difference (ignore time-of-day)
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((eventDay.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
 
     const locale = lang === 'en' ? 'en-US' : 'zh-CN';
     const dateFormatted = date.toLocaleDateString(locale, {
@@ -109,14 +119,27 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
             <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography
-                    variant="body2"
-                    fontWeight="medium"
-                    noWrap
-                    title={i18n.translateTournament(event.tournament)}
-                  >
-                    {i18n.translateTournament(event.tournament)}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {(() => {
+                      const sourceInfo = UPCOMING_SOURCE_LABELS[event.source as UpcomingSource];
+                      return sourceInfo ? (
+                        <Typography variant="caption" sx={{
+                          px: 0.5, py: 0.1, borderRadius: 0.5, fontSize: '0.6rem', lineHeight: 1.2,
+                          bgcolor: sourceInfo.color, color: '#fff', flexShrink: 0,
+                        }}>
+                          {sourceInfo.label}
+                        </Typography>
+                      ) : null;
+                    })()}
+                    <Typography
+                      variant="body2"
+                      fontWeight="medium"
+                      noWrap
+                      title={i18n.translateTournament(event.tournament)}
+                    >
+                      {i18n.translateTournament(event.tournament)}
+                    </Typography>
+                  </Box>
                   {event.round_name && (
                     <Typography variant="caption" color="text.secondary" noWrap>
                       {i18n.translateRound(event.round_name)}

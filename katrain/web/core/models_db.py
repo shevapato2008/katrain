@@ -9,7 +9,8 @@ import uuid as uuid_module
 class MatchSourceEnum(str, enum.Enum):
     """Data source for live matches."""
     XINGZHEN = "xingzhen"
-    WEIQI_ORG = "weiqi_org"
+    YIKE = "yike"
+    PANDANET = "pandanet"
 
 
 class MatchStatusEnum(str, enum.Enum):
@@ -75,7 +76,7 @@ class LiveMatchDB(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     match_id = Column(String(64), unique=True, nullable=False, index=True)  # Format: {source}_{source_id}
-    source = Column(String(20), nullable=False)  # xingzhen / weiqi_org
+    source = Column(String(20), nullable=False)  # xingzhen / yike
     source_id = Column(String(64), nullable=False)
     tournament = Column(String(256), nullable=False)
     round_name = Column(String(128), nullable=True)

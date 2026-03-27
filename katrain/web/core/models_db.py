@@ -350,6 +350,7 @@ class TutorialFigure(Base):
     bbox = Column(JSON, nullable=True)
     page_image_path = Column(String(512), nullable=True)
     board_payload = Column(JSON, nullable=True)
+    recognition_debug = Column(JSON, nullable=True)
     narration = Column(Text, nullable=True)
     audio_asset = Column(String(512), nullable=True)
     order = Column(Integer, nullable=False)

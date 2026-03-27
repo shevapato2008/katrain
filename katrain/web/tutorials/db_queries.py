@@ -100,3 +100,11 @@ def update_figure_board(db: Session, figure: TutorialFigure, board_payload: dict
     db.commit()
     db.refresh(figure)
     return figure
+
+
+def update_figure_recognition_debug(db: Session, figure: TutorialFigure, debug_data: dict) -> TutorialFigure:
+    """Update the recognition_debug on an already-fetched figure."""
+    figure.recognition_debug = debug_data
+    db.commit()
+    db.refresh(figure)
+    return figure

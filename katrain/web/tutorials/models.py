@@ -63,6 +63,7 @@ class TutorialFigureOut(BaseModel):
     bbox: Optional[Dict[str, float]] = None
     page_image_path: Optional[str] = None
     board_payload: Optional[Any] = None
+    recognition_debug: Optional[Any] = None
     narration: Optional[str] = None
     audio_asset: Optional[str] = None
     order: int

@@ -238,6 +238,87 @@ def classification_to_payload(classifications, label_map, col_start=0, row_start
     }
 
 
+# ── Debug image generation ────────────────────────────────────────────────────
+
+def generate_bbox_debug_image(page_img, bboxes, figure_labels):
+    """Draw bounding boxes on page image. Returns annotated image."""
+    debug = page_img.copy()
+    colors = [(0, 200, 0), (200, 0, 0), (0, 0, 200), (200, 200, 0)]
+    for i, (label, bbox) in enumerate(zip(figure_labels, bboxes)):
+        if bbox is None:
+            continue
+        x1, y1, x2, y2 = [int(c) for c in bbox]
+        color = colors[i % len(colors)]
+        cv2.rectangle(debug, (x1, y1), (x2, y2), color, 3)
+        cv2.putText(debug, label, (x1 + 5, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+    return debug
+
+
+def generate_grid_debug_image(crop, h_pos, v_pos, spacing, occupied, confident, ambiguous):
+    """Draw grid lines and occupied patches on crop. Returns annotated image."""
+    debug = crop.copy()
+    if len(debug.shape) == 2:
+        debug = cv2.cvtColor(debug, cv2.COLOR_GRAY2BGR)
+
+    # Draw grid lines
+    for y in h_pos:
+        cv2.line(debug, (0, int(y)), (debug.shape[1], int(y)), (0, 0, 200), 1)
+    for x in v_pos:
+        cv2.line(debug, (int(x), 0), (int(x), debug.shape[0]), (200, 0, 0), 1)
+
+    r = int(spacing * 0.4) if spacing > 0 else 8
+
+    # Draw occupied intersections
+    confident_set = {(ci, ri) for ci, ri, _, _ in confident}
+    for ci, ri, _ in occupied:
+        vx, hy = int(v_pos[ci]), int(h_pos[ri])
+        if (ci, ri) in confident_set:
+            cv2.circle(debug, (vx, hy), r, (0, 220, 0), 2)  # green = confident
+        else:
+            cv2.circle(debug, (vx, hy), r, (0, 220, 220), 2)  # yellow = ambiguous
+
+    # Label indices
+    for ci, ri, _ in occupied:
+        vx, hy = int(v_pos[ci]), int(h_pos[ri])
+        cv2.putText(debug, f"{ci},{ri}", (vx + r + 2, hy + 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+
+    return debug
+
+
+def save_debug_images(page_img, crop, h_pos, v_pos, spacing, occupied, confident, ambiguous,
+                      bboxes_dict, figure_labels, label, book_slug):
+    """Save all debug images and return their relative paths."""
+    debug_dir = ASSET_BASE / "tutorial_assets" / book_slug / "debug" / label
+    debug_dir.mkdir(parents=True, exist_ok=True)
+
+    paths = {}
+
+    # 1. Bbox debug image (page with rectangles)
+    bbox_list = [bboxes_dict.get(l) for l in figure_labels]
+    bbox_debug = generate_bbox_debug_image(page_img, bbox_list, figure_labels)
+    bbox_path = debug_dir / "bbox_debug.png"
+    cv2.imwrite(str(bbox_path), bbox_debug)
+    paths["bbox_debug"] = str(bbox_path.relative_to(ASSET_BASE))
+
+    # 2. Grid + occupied debug image
+    grid_debug = generate_grid_debug_image(crop, h_pos, v_pos, spacing, occupied, confident, ambiguous)
+    grid_path = debug_dir / "grid_debug.png"
+    cv2.imwrite(str(grid_path), grid_debug)
+    paths["grid_debug"] = str(grid_path.relative_to(ASSET_BASE))
+
+    # 3. Contact sheet (save a copy)
+    # (built and saved separately in the caller, path added later)
+
+    # 4. Crop image
+    crop_path = debug_dir / "crop.png"
+    cv2.imwrite(str(crop_path), crop)
+    paths["crop"] = str(crop_path.relative_to(ASSET_BASE))
+
+    return paths
+
+
 # ── Training data collection ──────────────────────────────────────────────────
 
 TRAINING_DIR = Path("data/training_patches")
@@ -1153,6 +1234,15 @@ def apply_classifications_from_file(db, section_id, json_path, force=False):
             log.info("  %s: applied (%d stones, %d labels) ✓",
                      label, stone_count, len(payload.get("labels", {})))
 
+            # Update recognition_debug with classification results + final region
+            # Deep copy to avoid SQLAlchemy in-place mutation detection issue
+            existing_debug = json.loads(json.dumps(figure.recognition_debug or {}))
+            existing_debug.setdefault("classification", {})["classifications"] = classifications
+            existing_debug.setdefault("region", {})["col_start"] = col_start
+            existing_debug["region"]["row_start"] = row_start
+            existing_debug["region"]["method"] = "vllm"
+            db_queries.update_figure_recognition_debug(db, figure, existing_debug)
+
             # Save training data if patches directory exists
             json_dir = Path(json_path).parent
             patches_dir = json_dir / "patches" / label
@@ -1284,17 +1374,69 @@ def save_sheets_for_section(db, section_id, output_dir):
             sheet_path = output_dir / f"{label}.png"
             cv2.imwrite(str(sheet_path), sheet)
 
-            # Build confident map: match label_map entries to confident patches
+            # Build confident map
             confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
             conf_map = {}
             for lbl, (ci, ri) in label_map.items():
                 if (ci, ri) in confident_set:
                     conf_map[lbl] = confident_set[(ci, ri)]
 
-            # Region: CV result is a hint; VLLM should confirm via crop image
             region_needs_vllm = cal_conf < 0.5
 
-            # Save label map + metadata
+            # Generate and save debug images to data/ dir
+            book_slug = image_path.parent.parent.name
+            figure_labels = [l for l, _ in figure_ids]
+            debug_paths = save_debug_images(
+                page_img, crop, h_pos, v_pos, spacing,
+                occupied, confident, ambiguous,
+                bboxes, figure_labels, label, book_slug
+            )
+
+            # Save contact sheet to debug dir too
+            debug_dir = ASSET_BASE / "tutorial_assets" / book_slug / "debug" / label
+            debug_sheet_path = debug_dir / "contact_sheet.png"
+            cv2.imwrite(str(debug_sheet_path), sheet)
+            debug_paths["contact_sheet"] = str(debug_sheet_path.relative_to(ASSET_BASE))
+
+            # Build recognition_debug metadata for DB
+            recognition_debug = {
+                "bbox": {
+                    "method": "cv",
+                    "bbox": bboxes.get(label),
+                    "debug_image": debug_paths.get("bbox_debug"),
+                },
+                "region": {
+                    "method": "cv_hint",
+                    "col_start": col_start,
+                    "row_start": row_start,
+                    "confidence": cal_conf,
+                    "evidence": cal_evidence,
+                    "grid_rows": len(h_pos),
+                    "grid_cols": len(v_pos),
+                    "needs_vllm": region_needs_vllm,
+                },
+                "cv_detection": {
+                    "debug_image": debug_paths.get("grid_debug"),
+                    "spacing": spacing,
+                    "total_occupied": len(occupied),
+                    "confident_count": len(confident),
+                    "ambiguous_count": len(ambiguous),
+                },
+                "classification": {
+                    "contact_sheet": debug_paths.get("contact_sheet"),
+                    "label_map": {k: list(v) for k, v in label_map.items()},
+                    "confident_cv": conf_map,
+                    "classifications": None,  # filled after VLLM step
+                },
+                "crop_image": debug_paths.get("crop"),
+            }
+
+            # Save recognition_debug to DB
+            figure = db_queries.get_figure(db, fig_id)
+            if figure:
+                db_queries.update_figure_recognition_debug(db, figure, recognition_debug)
+
+            # Save metadata to output dir (for --apply-classifications)
             meta = {
                 "figure_label": label,
                 "figure_id": fig_id,
@@ -1312,12 +1454,11 @@ def save_sheets_for_section(db, section_id, output_dir):
                 "label_map": {k: list(v) for k, v in label_map.items()},
                 "confident": conf_map,
             }
-
             meta_path = output_dir / f"{label}.json"
             with open(meta_path, "w") as f:
                 json.dump(meta, f, ensure_ascii=False, indent=2)
 
-            # Save individual patches for training data
+            # Save individual patches
             patches_dir = output_dir / "patches" / label
             patches_dir.mkdir(parents=True, exist_ok=True)
             patch_lookup = {(ci, ri): patch for ci, ri, patch in occupied}
@@ -1327,11 +1468,10 @@ def save_sheets_for_section(db, section_id, output_dir):
                     patch_path = patches_dir / f"{lbl}_{ci}_{ri}.png"
                     cv2.imwrite(str(patch_path), patch)
 
-            # Also save the raw crop for reference
             crop_path = output_dir / f"{label}_crop.png"
             cv2.imwrite(str(crop_path), crop)
 
-            log.info("  %s: saved sheet (%d patches) + individual patches → %s", label, len(label_map), sheet_path)
+            log.info("  %s: saved sheet + debug images → %s", label, debug_dir)
 
     log.info("Contact sheets saved to %s", output_dir)
 

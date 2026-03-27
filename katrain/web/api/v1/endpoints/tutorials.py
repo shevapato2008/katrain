@@ -4,6 +4,7 @@ Replaces the old JSON-file-based endpoints with DB queries.
 """
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
@@ -141,14 +142,45 @@ async def update_figure_board(
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
-    # Optimistic locking
+    # Optimistic locking — compare as datetime objects to avoid Z vs +00:00 format mismatch
     if update.expected_updated_at and figure.updated_at:
-        if figure.updated_at.isoformat() != update.expected_updated_at:
+        try:
+            expected_dt = datetime.fromisoformat(update.expected_updated_at.replace("Z", "+00:00"))
+            actual_dt = figure.updated_at
+            if expected_dt.tzinfo is None:
+                expected_dt = expected_dt.replace(tzinfo=timezone.utc)
+            if actual_dt.tzinfo is None:
+                actual_dt = actual_dt.replace(tzinfo=timezone.utc)
+            if actual_dt != expected_dt:
+                raise HTTPException(status_code=409, detail="Board was modified by another session. Reload and retry.")
+        except (ValueError, AttributeError):
             raise HTTPException(status_code=409, detail="Board was modified by another session. Reload and retry.")
     payload_dict = update.board_payload.model_dump()
     viewport = compute_viewport(payload_dict)
     payload_dict["viewport"] = viewport
     figure = db_queries.update_figure_board(db, figure, payload_dict)
+    return TutorialFigureOut.model_validate(figure)
+
+
+# ── Verify ────────────────────────────────────────────────────────────────────
+
+
+@router.put("/figures/{figure_id}/verify", response_model=TutorialFigureOut)
+async def verify_figure(
+    figure_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mark a figure as human-verified. The current board_payload becomes ground truth."""
+    import json as _json
+    figure = db_queries.get_figure(db, figure_id)
+    if figure is None:
+        raise HTTPException(status_code=404, detail="Figure not found")
+    debug = _json.loads(_json.dumps(figure.recognition_debug or {}))
+    debug["human_verified"] = True
+    debug["verified_at"] = datetime.now(timezone.utc).isoformat()
+    debug["verified_by"] = current_user.username
+    db_queries.update_figure_recognition_debug(db, figure, debug)
     return TutorialFigureOut.model_validate(figure)
 
 

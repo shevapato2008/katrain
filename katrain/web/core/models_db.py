@@ -364,6 +364,33 @@ class TutorialFigure(Base):
     )
 
 
+class TrainingSample(Base):
+    """Individual patch sample for EfficientNet-B0 stone classifier training.
+
+    Populated from human-verified figures via scripts/export_training_data.py.
+    Each row = one CV-cropped intersection patch with ground-truth label.
+    """
+    __tablename__ = "training_samples"
+
+    id = Column(Integer, primary_key=True, index=True)
+    figure_id = Column(Integer, ForeignKey("tutorial_figures.id", ondelete="CASCADE"), nullable=False, index=True)
+    patch_label = Column(String(4), nullable=False)       # "A", "B", "AA"
+    local_col = Column(Integer, nullable=False)
+    local_row = Column(Integer, nullable=False)
+    global_col = Column(Integer, nullable=False)
+    global_row = Column(Integer, nullable=False)
+    patch_image_path = Column(String(512), nullable=False)  # relative to data/
+    base_type = Column(String(16), nullable=False)          # black/white/empty
+    move_number = Column(Integer, nullable=True)            # 1-99 or null
+    shape = Column(String(16), nullable=True)               # triangle/square/circle or null
+    letter = Column(String(4), nullable=True)               # A/B/C or null
+    source = Column(String(16), nullable=False, server_default="human")
+    book_slug = Column(String(256), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    figure = relationship("TutorialFigure")
+
+
 class KifuAlbum(Base):
     """Database model for tournament game records (大赛棋谱)."""
     __tablename__ = "kifu_albums"

@@ -77,6 +77,9 @@ export interface BoardPayload {
 // ── Recognition debug types ──────────────────────────────────────────────────
 
 export interface RecognitionDebug {
+  human_verified?: boolean;
+  verified_at?: string;
+  verified_by?: string;
   bbox?: {
     method: string;
     bbox: [number, number, number, number] | null;

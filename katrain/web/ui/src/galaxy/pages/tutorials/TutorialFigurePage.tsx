@@ -10,6 +10,8 @@ import Slider from '@mui/material/Slider';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { TutorialAPI } from '../../api/tutorialApi';
 import SGFBoard from '../../components/tutorials/SGFBoard';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
@@ -87,6 +89,23 @@ export default function TutorialFigurePage() {
   useEffect(() => {
     setMoveStep(maxMoveNumber > 0 ? maxMoveNumber : null);
   }, [currentFigureIndex, maxMoveNumber]);
+
+  const isVerified = currentFigure?.recognition_debug?.human_verified === true;
+
+  const handleVerify = useCallback(async () => {
+    if (!currentFigure) return;
+    try {
+      const updated = await TutorialAPI.verifyFigure(currentFigure.id, token ?? undefined);
+      setSection(prev => {
+        if (!prev) return prev;
+        const figures = [...prev.figures];
+        figures[currentFigureIndex] = { ...figures[currentFigureIndex], recognition_debug: updated.recognition_debug };
+        return { ...prev, figures };
+      });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '审核失败');
+    }
+  }, [currentFigure, currentFigureIndex, token]);
 
   const handlePrev = () => setCurrentFigureIndex(i => Math.max(0, i - 1));
   const handleNext = () => {
@@ -187,11 +206,22 @@ export default function TutorialFigurePage() {
                 </Box>
               )}
 
-              {/* Edit button (read-only mode) */}
+              {/* Edit + Verify buttons (read-only mode) */}
               {!editor.isEditing && (
-                <Box mt={1}>
+                <Box mt={1} display="flex" gap={1}>
                   <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={editor.enterEdit} aria-label="编辑">
                     编辑
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={isVerified ? "contained" : "outlined"}
+                    color={isVerified ? "success" : "inherit"}
+                    startIcon={isVerified ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+                    onClick={handleVerify}
+                    disabled={isVerified}
+                    aria-label="确认审核"
+                  >
+                    {isVerified ? "已审核" : "确认审核"}
                   </Button>
                 </Box>
               )}

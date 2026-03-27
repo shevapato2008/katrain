@@ -62,11 +62,11 @@ export default function RecognitionDebugPanel({ debug }: Props) {
   return (
     <Box sx={{ mt: 2 }}>
       <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-        Recognition Pipeline
+        识别流程 Recognition Pipeline
       </Typography>
 
       {/* Step 0: Bbox detection */}
-      <Section title="Bbox Detection" step="S0">
+      <Section title="画框检测 — 识别页面中每张棋谱图的位置" step="S0">
         <DebugImage path={debug.bbox?.debug_image} alt="bbox detection" />
         {debug.bbox && (
           <Box mt={0.5}>
@@ -79,7 +79,7 @@ export default function RecognitionDebugPanel({ debug }: Props) {
       </Section>
 
       {/* Step 1: Region identification */}
-      <Section title="Region (col_start, row_start)" step="S1">
+      <Section title="棋盘定位 — 确定棋谱在19×19棋盘中的区域" step="S1">
         {debug.crop_image && <DebugImage path={debug.crop_image} alt="board crop" />}
         {debug.region && (
           <Box mt={0.5}>
@@ -97,7 +97,7 @@ export default function RecognitionDebugPanel({ debug }: Props) {
       </Section>
 
       {/* Step 2-3: Grid + Occupied detection */}
-      <Section title="Grid + Occupied Detection" step="S2-3" defaultOpen>
+      <Section title="网格与落子检测 — OpenCV识别网格线和落子点" step="S2-3" defaultOpen>
         <DebugImage path={debug.cv_detection?.debug_image} alt="grid detection" />
         {debug.cv_detection && (
           <Box mt={0.5}>
@@ -106,14 +106,14 @@ export default function RecognitionDebugPanel({ debug }: Props) {
               `${debug.cv_detection.total_occupied} total (${debug.cv_detection.confident_count} confident, ${debug.cv_detection.ambiguous_count} ambiguous)`
             } />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Green = CV-confident, Yellow = needs VLLM
+              绿色=CV高置信, 黄色=需要VLLM确认
             </Typography>
           </Box>
         )}
       </Section>
 
       {/* Step 4: VLLM classification */}
-      <Section title="VLLM Classification" step="S4" defaultOpen>
+      <Section title="落子识别 — 识别每个落子点的黑白、手数、标记" step="S4" defaultOpen>
         <DebugImage path={debug.classification?.annotated_crop ?? debug.classification?.contact_sheet} alt="annotated crop" />
         {debug.classification?.classifications && (
           <Box mt={1} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -138,7 +138,7 @@ export default function RecognitionDebugPanel({ debug }: Props) {
         )}
         {debug.classification?.confident_cv && Object.keys(debug.classification.confident_cv).length > 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            Filled chips = CV pre-classified, Outlined = VLLM classified
+            实心=CV预分类, 空心=VLLM分类
           </Typography>
         )}
       </Section>

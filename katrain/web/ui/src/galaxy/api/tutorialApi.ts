@@ -51,6 +51,10 @@ export const TutorialAPI = {
       expected_updated_at: expectedUpdatedAt ?? null,
     }, token),
 
+  // Verify
+  verifyFigure: (figureId: number, token?: string): Promise<TutorialFigure> =>
+    apiPut(`/figures/${figureId}/verify`, {}, token),
+
   // Assets
   assetUrl: (relativePath: string): string => `${BASE}/assets/${relativePath}`,
 };

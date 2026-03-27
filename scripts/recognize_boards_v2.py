@@ -102,23 +102,26 @@ def print_summary_report(results):
     log.info("  total: %d", len(results))
 
 
-VLLM_CLASSIFY_PROMPT = """You are classifying Go board intersection patches from a textbook diagram.
-The contact sheet image shows cropped patches labeled A, B, C, etc.
-Each patch is a ~40×40px crop centered on a grid intersection.
+VLLM_CLASSIFY_PROMPT = """This is a Go (围棋) board diagram from a textbook.
+Magenta letters (A, B, C...) mark positions where stones or markings were detected.
+For each labeled position, classify what is at that position on the board.
 
-Classify each labeled patch into EXACTLY ONE category:
-- "black": solid black stone without a number
-- "white": outlined white stone without a number
-- "black+N": black stone with move number N (read the number carefully)
-- "white+N": white stone with move number N (read the number carefully)
-- "triangle_black": black stone marked with a triangle △
-- "triangle_white": white stone marked with a triangle △
-- "square_black": black stone marked with a square □
-- "square_white": white stone marked with a square □
-- "circle_black": black stone marked with a circle ○
-- "circle_white": white stone marked with a circle ○
-- "letter_X": letter X (A, B, C...) marked on an empty intersection
-- "empty": no stone or marking (false positive from CV)
+How to distinguish black vs white stones:
+- BLACK stone: solid filled dark circle (completely dark, may have a white number printed on it)
+- WHITE stone: outlined circle with a hollow/light center (thin dark circular border, may have a dark number)
+- If the circle is mostly dark/filled → it is BLACK
+- If the circle has a light/empty center with just an outline → it is WHITE
+
+Categories:
+- "black": solid black stone, no number
+- "white": outlined white stone, no number
+- "black+N": black stone with move number N (white number on dark stone)
+- "white+N": white stone with move number N (dark number on light stone)
+- "triangle_black" / "triangle_white": stone marked with △
+- "square_black" / "square_white": stone marked with □
+- "circle_black" / "circle_white": stone marked with ○
+- "letter_X": letter X (A, B, C...) annotation on an empty intersection (not a stone)
+- "empty": no stone at this position (false detection)
 
 Return JSON only, no explanation:
 {"A": "black+1", "B": "white+8", "C": "black", "D": "letter_A", ...}
@@ -620,6 +623,47 @@ def build_contact_sheet(occupied_patches, spacing, cols_per_row=8):
     return sheet, label_map
 
 
+# ── Annotated crop for VLLM classification ───────────────────────────────────
+
+def build_annotated_crop(crop, h_positions, v_positions, occupied_patches, spacing):
+    """Draw letter labels at occupied intersections on the full crop image.
+
+    Unlike build_contact_sheet (isolated patches), this gives VLLM full context:
+    complete stone shapes, surrounding board lines, and neighboring stones.
+
+    Returns (annotated_image, label_map) where label_map is {"A": (col_idx, row_idx), ...}
+    """
+    annotated = crop.copy()
+    if len(annotated.shape) == 2:
+        annotated = cv2.cvtColor(annotated, cv2.COLOR_GRAY2BGR)
+
+    label_map = {}
+    r = max(8, int(spacing * 0.25))  # label circle radius
+
+    for idx, (ci, ri, _) in enumerate(occupied_patches):
+        if idx < 26:
+            label = chr(65 + idx)
+        else:
+            label = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
+        label_map[label] = (ci, ri)
+
+        vx = int(v_positions[ci])
+        hy = int(h_positions[ri])
+
+        # Draw a white circle background with magenta border for the label
+        cv2.circle(annotated, (vx, hy), r, (255, 255, 255), -1)  # white fill
+        cv2.circle(annotated, (vx, hy), r, (200, 0, 200), 2)     # magenta border
+
+        # Draw the letter label centered
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.4 if len(label) == 1 else 0.3
+        (tw, th), _ = cv2.getTextSize(label, font, font_scale, 1)
+        cv2.putText(annotated, label, (vx - tw // 2, hy + th // 2),
+                    font, font_scale, (200, 0, 200), 1, cv2.LINE_AA)
+
+    return annotated, label_map
+
+
 # ── Step 3b: OpenCV stone detection (legacy) ─────────────────────────────────
 
 def cv_detect_stones_legacy(gray, h_positions, v_positions, spacing):
@@ -996,54 +1040,36 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         except Exception as e:
             log.warning("  VLLM region failed (%s), using CV hint", e)
 
-        # Step 4: Contact sheet classification
-        # Build full label_map for ALL occupied patches
-        full_label_map = {}
-        for idx, (ci, ri, _) in enumerate(occupied):
-            if idx < 26:
-                lbl = chr(65 + idx)
-            else:
-                lbl = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
-            full_label_map[lbl] = (ci, ri)
+        # Step 4: VLLM classification via annotated crop (full context)
+        # Build annotated crop with letter labels at ALL occupied positions
+        annotated, full_label_map = build_annotated_crop(
+            crop, h_pos, v_pos, occupied, spacing
+        )
+        log.info("  Step 4: built annotated crop with %d labeled positions", len(full_label_map))
 
-        # Start with CV-confident classifications
+        # Start with CV-confident as fallback
         confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
         merged_classifications = {}
         for lbl, (ci, ri) in full_label_map.items():
             if (ci, ri) in confident_set:
-                merged_classifications[lbl] = confident_set[(ci, ri)]  # "black" or "white"
+                merged_classifications[lbl] = confident_set[(ci, ri)]
 
-        # VLLM classification for ambiguous patches only
-        if ambiguous:
-            sheet, ambiguous_label_map = build_contact_sheet(ambiguous, spacing)
-            if sheet is not None:
-                sheet_path = Path(tempfile.mktemp(suffix=".png", prefix=f"sheet_{label}_"))
-                cv2.imwrite(str(sheet_path), sheet)
-                try:
-                    vllm_result = vllm_call(sheet_path, VLLM_CLASSIFY_PROMPT)
-                    log.info("  Step 4 (VLLM): classified %d ambiguous patches", len(vllm_result))
+        # VLLM classifies ALL positions using the full annotated crop
+        annotated_path = Path(tempfile.mktemp(suffix=".png", prefix=f"annotated_{label}_"))
+        cv2.imwrite(str(annotated_path), annotated)
+        try:
+            vllm_result = vllm_call(annotated_path, VLLM_CLASSIFY_PROMPT)
+            log.info("  Step 4 (VLLM): classified %d positions", len(vllm_result))
+            # VLLM results override CV pre-classifications (VLLM sees full context)
+            for lbl, cls_str in vllm_result.items():
+                if lbl in full_label_map:
+                    merged_classifications[lbl] = cls_str
+        except Exception as e:
+            log.warning("  VLLM classification failed (%s), using CV-confident only", e)
+        finally:
+            annotated_path.unlink(missing_ok=True)
 
-                    # Map ambiguous sheet labels back to full label_map labels
-                    ambiguous_pos = {(ci, ri): lbl for lbl, (ci, ri) in ambiguous_label_map.items()}
-                    for amb_lbl, cls_str in vllm_result.items():
-                        if amb_lbl in ambiguous_label_map:
-                            ci, ri = ambiguous_label_map[amb_lbl]
-                            # Find the corresponding label in full_label_map
-                            for full_lbl, (fci, fri) in full_label_map.items():
-                                if (fci, fri) == (ci, ri):
-                                    merged_classifications[full_lbl] = cls_str
-                                    break
-                except Exception as e:
-                    log.warning("  VLLM classification failed (%s), using CV-confident only", e)
-                finally:
-                    sheet_path.unlink(missing_ok=True)
-        else:
-            log.info("  Step 4: all %d patches CV-confident, skipping VLLM", len(confident))
-
-        log.info("  Classifications: %d total (%d confident + %d VLLM)",
-                 len(merged_classifications),
-                 sum(1 for v in merged_classifications.values() if v in ("black", "white")),
-                 sum(1 for v in merged_classifications.values() if v not in ("black", "white")))
+        log.info("  Classifications: %d total", len(merged_classifications))
 
         # Step 5: Build payload via classification_to_payload
         payload = classification_to_payload(merged_classifications, full_label_map, col_start, row_start)
@@ -1365,14 +1391,18 @@ def save_sheets_for_section(db, section_id, output_dir):
             log.info("  %s: region col_start=%d, row_start=%d (conf=%.2f)",
                      label, col_start, row_start, cal_conf)
 
-            # Build contact sheet
-            sheet, label_map = build_contact_sheet(occupied, spacing)
-            if sheet is None:
-                continue
+            # Build annotated crop (primary VLLM input) + contact sheet (for display)
+            annotated, label_map = build_annotated_crop(
+                crop, h_pos, v_pos, occupied, spacing
+            )
+            sheet, _ = build_contact_sheet(occupied, spacing)
 
-            # Save sheet image
+            # Save both
+            annotated_path = output_dir / f"{label}_annotated.png"
+            cv2.imwrite(str(annotated_path), annotated)
             sheet_path = output_dir / f"{label}.png"
-            cv2.imwrite(str(sheet_path), sheet)
+            if sheet is not None:
+                cv2.imwrite(str(sheet_path), sheet)
 
             # Build confident map
             confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
@@ -1392,11 +1422,15 @@ def save_sheets_for_section(db, section_id, output_dir):
                 bboxes, figure_labels, label, book_slug
             )
 
-            # Save contact sheet to debug dir too
+            # Save annotated crop + contact sheet to debug dir
             debug_dir = ASSET_BASE / "tutorial_assets" / book_slug / "debug" / label
-            debug_sheet_path = debug_dir / "contact_sheet.png"
-            cv2.imwrite(str(debug_sheet_path), sheet)
-            debug_paths["contact_sheet"] = str(debug_sheet_path.relative_to(ASSET_BASE))
+            debug_annotated_path = debug_dir / "annotated_crop.png"
+            cv2.imwrite(str(debug_annotated_path), annotated)
+            debug_paths["annotated_crop"] = str(debug_annotated_path.relative_to(ASSET_BASE))
+            if sheet is not None:
+                debug_sheet_path = debug_dir / "contact_sheet.png"
+                cv2.imwrite(str(debug_sheet_path), sheet)
+                debug_paths["contact_sheet"] = str(debug_sheet_path.relative_to(ASSET_BASE))
 
             # Build recognition_debug metadata for DB
             recognition_debug = {
@@ -1423,6 +1457,7 @@ def save_sheets_for_section(db, section_id, output_dir):
                     "ambiguous_count": len(ambiguous),
                 },
                 "classification": {
+                    "annotated_crop": debug_paths.get("annotated_crop"),
                     "contact_sheet": debug_paths.get("contact_sheet"),
                     "label_map": {k: list(v) for k, v in label_map.items()},
                     "confident_cv": conf_map,

@@ -114,7 +114,7 @@ export default function RecognitionDebugPanel({ debug }: Props) {
 
       {/* Step 4: VLLM classification */}
       <Section title="VLLM Classification" step="S4" defaultOpen>
-        <DebugImage path={debug.classification?.contact_sheet} alt="contact sheet" />
+        <DebugImage path={debug.classification?.annotated_crop ?? debug.classification?.contact_sheet} alt="annotated crop" />
         {debug.classification?.classifications && (
           <Box mt={1} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {Object.entries(debug.classification.classifications).map(([label, cls]) => {

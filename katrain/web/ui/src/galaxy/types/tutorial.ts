@@ -100,6 +100,7 @@ export interface RecognitionDebug {
     ambiguous_count?: number;
   };
   classification?: {
+    annotated_crop?: string;
     contact_sheet?: string;
     label_map?: Record<string, [number, number]>;
     confident_cv?: Record<string, string>;

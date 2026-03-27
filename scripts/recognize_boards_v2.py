@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
-"""Hybrid VLLM+CV Go board recognition from book page images.
+"""Hybrid CV+VLLM Go board recognition from book page images.
 
 Pipeline:
-  Step 0: VLLM detects bounding boxes for each diagram on the page
-  Step 1: VLLM identifies which part of the 19x19 board is shown
-  Step 2: OpenCV detects grid lines precisely (no counting errors)
-  Step 3: OpenCV detects stones at grid intersections (black/white)
-  Step 4: VLLM reads move numbers on stones
-  Step 5: Combine into board_payload and write to DB
+  Step 0: CV detects diagram bounding boxes on the page (VLLM fallback)
+  Step 1: VLLM identifies which part of the 19x19 board is shown (col_start/row_start)
+  Step 2: CV detects grid lines precisely (no counting errors)
+  Step 3: CV detects occupied intersections + pre-classifies obvious B/W
+  Step 4: VLLM classifies ambiguous patches via contact sheet
+  Step 5: Merge CV+VLLM → board_payload → DB + training data
+
+Division of labor:
+  CV  handles WHERE: grid lines, intersection positions, patch cropping
+  VLLM handles WHAT: stone color, move numbers, annotations, board region
 
 Usage:
-    # Test CV pipeline on a single page (no DB write)
-    python scripts/recognize_boards_v2.py --test-cv PAGE_IMAGE
+    # Generate contact sheets (CV only, fast)
+    python scripts/recognize_boards_v2.py --section-id 1 --save-sheets /tmp/sheets/
 
-    # Process a full section
-    python scripts/recognize_boards_v2.py --section-id 1 [--dry-run]
+    # Apply subagent classifications to DB
+    python scripts/recognize_boards_v2.py --section-id 1 --apply-classifications FILE.json --force
+
+    # Full auto pipeline (requires working VLLM)
+    python scripts/recognize_boards_v2.py --section-id 1 --force [--dry-run]
+
+    # Test CV pipeline only
+    python scripts/recognize_boards_v2.py --test-cv PAGE_IMAGE
 """
 
 import argparse
@@ -112,6 +122,27 @@ Classify each labeled patch into EXACTLY ONE category:
 
 Return JSON only, no explanation:
 {"A": "black+1", "B": "white+8", "C": "black", "D": "letter_A", ...}
+"""
+
+
+VLLM_REGION_PROMPT = """This is a cropped Go (围棋) board diagram from a textbook.
+The full board is 19×19. This diagram shows only part of the board.
+OpenCV detected {num_v} vertical lines and {num_h} horizontal lines.
+
+Determine which portion of the full 19×19 board is shown:
+- col_start: column index (0-based) of the leftmost visible line
+- row_start: row index (0-based) of the topmost visible line
+
+Rules:
+- If the LEFT edge has a thick border line → col_start = 0
+- If the RIGHT edge has a thick border line → col_start = 19 - {num_v}
+- If the TOP edge has a thick border line → row_start = 0
+- If the BOTTOM edge has a thick border line → row_start = 19 - {num_h}
+- Star points (hoshi) on a 19×19 board are at lines 3, 9, 15 (0-indexed) on each axis
+- Most textbook diagrams show a corner (col_start=0 or row_start=0)
+
+Return JSON only:
+{{"col_start": 0, "row_start": 0}}
 """
 
 
@@ -865,22 +896,24 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         log.info("  Step 3: %d occupied (%d confident, %d ambiguous)",
                  len(occupied), len(confident), len(ambiguous))
 
-        # Step 1: Region calibration (multi-evidence CV, VLLM fallback)
+        # Step 1: Region calibration — CV hint, VLLM determines final value
         occupied_set = {(ci, ri) for ci, ri, _ in occupied}
         col_start, row_start, cal_conf, cal_evidence = calibrate_region(
             crop_gray, h_pos, v_pos, spacing, occupied_set
         )
-        log.info("  Step 1 (CV): col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
+        log.info("  Step 1 (CV hint): col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
                  col_start, row_start, cal_conf, cal_evidence)
 
-        if cal_conf < 0.3:
-            try:
-                region = vllm_identify_region(crop_path, len(h_pos), len(v_pos))
-                col_start = region.get("col_start", col_start)
-                row_start = region.get("row_start", row_start)
-                log.info("  Step 1 (VLLM fallback): col_start=%d, row_start=%d", col_start, row_start)
-            except Exception as e:
-                log.warning("  VLLM region also failed (%s), using CV result", e)
+        # VLLM region identification (always, CV is unreliable for this)
+        try:
+            region_prompt = VLLM_REGION_PROMPT.format(
+                num_v=len(v_pos), num_h=len(h_pos))
+            region = vllm_call(crop_path, region_prompt)
+            col_start = region.get("col_start", col_start)
+            row_start = region.get("row_start", row_start)
+            log.info("  Step 1 (VLLM): col_start=%d, row_start=%d", col_start, row_start)
+        except Exception as e:
+            log.warning("  VLLM region failed (%s), using CV hint", e)
 
         # Step 4: Contact sheet classification
         # Build full label_map for ALL occupied patches
@@ -1057,7 +1090,7 @@ def test_cv(page_image_path):
 def apply_classifications_from_file(db, section_id, json_path, force=False):
     """Apply VLLM classification results from a JSON file to DB.
 
-    JSON format:
+    JSON format (col_start/row_start determined by VLLM/subagent, NOT CV):
     {
       "图1": {"classifications": {"A": "black+1", ...}, "col_start": 0, "row_start": 0},
       "图2": {...},
@@ -1258,6 +1291,9 @@ def save_sheets_for_section(db, section_id, output_dir):
                 if (ci, ri) in confident_set:
                     conf_map[lbl] = confident_set[(ci, ri)]
 
+            # Region: CV result is a hint; VLLM should confirm via crop image
+            region_needs_vllm = cal_conf < 0.5
+
             # Save label map + metadata
             meta = {
                 "figure_label": label,
@@ -1267,6 +1303,7 @@ def save_sheets_for_section(db, section_id, output_dir):
                 "spacing": spacing,
                 "col_start": col_start,
                 "row_start": row_start,
+                "region_needs_vllm": region_needs_vllm,
                 "calibration_confidence": cal_conf,
                 "calibration_evidence": cal_evidence,
                 "total_occupied": len(occupied),

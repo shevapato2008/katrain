@@ -522,6 +522,7 @@ def cv_detect_occupied(gray, h_positions, v_positions, spacing):
 
     # Mark as occupied if ANY feature is anomalous (wide net, minimal false negatives)
     occupied = []
+    occupied_set = set()
     for ci, ri, vx, hy, dark, edge, std_v, circ, roi in features:
         is_occupied = (
             dark > dark_med + 2.0 * dark_std
@@ -532,6 +533,38 @@ def cv_detect_occupied(gray, h_positions, v_positions, spacing):
         )
         if is_occupied:
             occupied.append((ci, ri, roi))
+            occupied_set.add((ci, ri))
+
+    # Second pass: detect letter annotations (A, B, C...) at unoccupied intersections.
+    # Strategy: for each patch, mask out the grid cross pattern, count remaining dark pixels.
+    # Letters have strokes OUTSIDE the grid lines; empty intersections don't.
+    cross_w = max(3, int(spacing * 0.08))  # grid line thickness
+    for ci, ri, vx, hy, dark, edge, std_v, circ, roi in features:
+        if (ci, ri) in occupied_set:
+            continue
+        # Skip border rows/columns (thick border lines are noisy)
+        if ci == 0 or ci == len(v_positions) - 1:
+            continue
+        if ri == 0 or ri == len(h_positions) - 1:
+            continue
+        # Mask out the grid cross (horizontal + vertical line through center)
+        h_roi, w_roi = roi.shape
+        mask = np.ones_like(roi, dtype=np.uint8) * 255
+        cy, cx = h_roi // 2, w_roi // 2
+        mask[cy - cross_w:cy + cross_w + 1, :] = 0  # horizontal line
+        mask[:, cx - cross_w:cx + cross_w + 1] = 0   # vertical line
+        # Count dark pixels OUTSIDE the grid cross
+        outside_dark = np.sum((roi < 120) & (mask > 0))
+        outside_total = np.sum(mask > 0)
+        if outside_total == 0:
+            continue
+        outside_ratio = float(outside_dark) / outside_total
+        # Real letters have outside_ratio > 0.12 (e.g. "A"=0.156)
+        # Noise from grid/text residue is typically 0.02-0.10
+        if outside_ratio > 0.12:
+            occupied.append((ci, ri, roi))
+            occupied_set.add((ci, ri))
+            log.debug("  Letter candidate at (%d,%d): outside_ratio=%.3f", ci, ri, outside_ratio)
 
     return occupied
 

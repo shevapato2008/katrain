@@ -148,6 +148,44 @@ async def get_categories(request: Request, level: str, db: Session = Depends(get
     ]
 
 
+@router.get("/levels/{level}/problems", response_model=List[ProblemSummary])
+async def get_all_problems(
+    request: Request,
+    level: str,
+    limit: int = Query(1000, ge=1, le=5000),
+    db: Session = Depends(get_db),
+):
+    """Get all problems for a level across all categories in one request."""
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.tsumego_get_all_problems(level, limit)
+
+    level = level.lower()
+
+    problems = (
+        db.query(TsumegoProblem)
+        .filter(TsumegoProblem.level == level)
+        .order_by(TsumegoProblem.category, TsumegoProblem.id)
+        .limit(limit)
+        .all()
+    )
+
+    if not problems:
+        raise HTTPException(status_code=404, detail=f"Level {level} not found")
+
+    return [
+        ProblemSummary(
+            id=p.id,
+            level=p.level,
+            category=p.category,
+            hint=p.hint,
+            initialBlack=p.initial_black or [],
+            initialWhite=p.initial_white or [],
+        )
+        for p in problems
+    ]
+
+
 @router.get("/levels/{level}/categories/{category}", response_model=List[ProblemSummary])
 async def get_problems(
     request: Request,

@@ -24,57 +24,21 @@ const TsumegoLevelPage = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    const fetchProblems = async () => {
-      try {
-        // Step 1: Get categories for this level
-        const catRes = await fetch(
-          `/api/v1/tsumego/levels/${levelId}/categories`,
-          { signal: controller.signal }
-        );
-        if (!catRes.ok) throw new Error(`HTTP ${catRes.status}`);
-        const categories = await catRes.json();
-
-        if (categories.length === 0) {
-          setProblems([]);
-          setLoading(false);
-          return;
-        }
-
-        // Step 2: Fetch problems for each category in parallel
-        const allProblems: Problem[] = [];
-        const results = await Promise.allSettled(
-          categories.map(async (cat: { category: string }) => {
-            const probRes = await fetch(
-              `/api/v1/tsumego/levels/${levelId}/categories/${cat.category}?limit=1000`,
-              { signal: controller.signal }
-            );
-            if (!probRes.ok) {
-              console.warn(`Failed to fetch category ${cat.category}: HTTP ${probRes.status}`);
-              return [];
-            }
-            const data = await probRes.json();
-            const problems = Array.isArray(data) ? data : data.problems ?? [];
-            return problems.map((p: Problem) => ({ ...p, category: p.category || cat.category }));
-          })
-        );
-
-        for (const result of results) {
-          if (result.status === 'fulfilled') {
-            allProblems.push(...result.value);
-          }
-        }
-
-        setProblems(allProblems);
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
+    fetch(`/api/v1/tsumego/levels/${levelId}/problems?limit=1000`, { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        setProblems(Array.isArray(data) ? data : []);
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') {
           setError(err.message);
         }
-      } finally {
-        setLoading(false);
-      }
-    };
+      })
+      .finally(() => setLoading(false));
 
-    fetchProblems();
     return () => controller.abort();
   }, [levelId]);
 

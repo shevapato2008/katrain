@@ -155,6 +155,15 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_all_problems(self, level: str, limit: int = 1000) -> List[Dict]:
+        resp = await self._request(
+            "GET",
+            f"/api/v1/tsumego/levels/{level}/problems",
+            params={"limit": limit},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     async def get_problem(self, problem_id: str) -> Dict:
         resp = await self._request("GET", f"/api/v1/tsumego/problems/{problem_id}")
         resp.raise_for_status()

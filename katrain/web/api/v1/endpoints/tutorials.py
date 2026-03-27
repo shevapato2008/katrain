@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
 from katrain.web.tutorials import db_queries
@@ -135,7 +135,7 @@ async def update_figure_board(
     figure_id: int,
     update: BoardPayloadUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """Update the board_payload for a figure. Computes viewport server-side.
     Uses optimistic locking via expected_updated_at to prevent silent overwrites."""
@@ -169,7 +169,7 @@ async def update_figure_board(
 async def verify_figure(
     figure_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """Mark a figure as human-verified. The current board_payload becomes ground truth."""
     import json as _json
@@ -179,8 +179,21 @@ async def verify_figure(
     debug = _json.loads(_json.dumps(figure.recognition_debug or {}))
     debug["human_verified"] = True
     debug["verified_at"] = datetime.now(timezone.utc).isoformat()
-    debug["verified_by"] = current_user.username
+    debug["verified_by"] = current_user.username if current_user else "anonymous"
     db_queries.update_figure_recognition_debug(db, figure, debug)
+
+    # Auto-export training samples from the verified figure
+    try:
+        from katrain.web.tutorials.training_export import export_figure_training_samples
+        count = export_figure_training_samples(db, figure)
+        logging.getLogger("katrain_web").info(
+            "Exported %d training samples for figure %d", count, figure.id
+        )
+    except Exception as e:
+        logging.getLogger("katrain_web").warning(
+            "Training export failed for figure %d: %s", figure.id, e
+        )
+
     return TutorialFigureOut.model_validate(figure)
 
 

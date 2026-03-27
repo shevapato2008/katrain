@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
@@ -16,11 +17,13 @@ interface BoardEditToolbarProps {
   activeTool: EditTool;
   stoneMode: StoneEditMode;
   numbering: boolean;
+  nextMoveNumber: number;
   selectedShape: ShapeType;
   canUndo: boolean;
   onToolChange: (tool: EditTool) => void;
   onStoneModeChange: (mode: StoneEditMode) => void;
   onNumberingChange: (v: boolean) => void;
+  onNextMoveNumberChange: (n: number) => void;
   onShapeChange: (s: ShapeType) => void;
   onUndo: () => void;
   onSave: () => void;
@@ -28,8 +31,8 @@ interface BoardEditToolbarProps {
 }
 
 export default function BoardEditToolbar({
-  activeTool, stoneMode, numbering, selectedShape, canUndo,
-  onToolChange, onStoneModeChange, onNumberingChange, onShapeChange,
+  activeTool, stoneMode, numbering, nextMoveNumber, selectedShape, canUndo,
+  onToolChange, onStoneModeChange, onNumberingChange, onNextMoveNumberChange, onShapeChange,
   onUndo, onSave, onCancel,
 }: BoardEditToolbarProps) {
   const [shapeAnchor, setShapeAnchor] = useState<null | HTMLElement>(null);
@@ -86,6 +89,20 @@ export default function BoardEditToolbar({
           >
             <Tooltip title="编号"><span>123</span></Tooltip>
           </ToggleButton>
+
+          {numbering && (
+            <TextField
+              size="small"
+              type="number"
+              value={nextMoveNumber}
+              onChange={e => {
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n) && n > 0) onNextMoveNumberChange(n);
+              }}
+              inputProps={{ min: 1, style: { textAlign: 'center' } }}
+              sx={{ width: 56 }}
+            />
+          )}
         </>
       )}
 

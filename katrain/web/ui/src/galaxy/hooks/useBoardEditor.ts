@@ -15,6 +15,7 @@ export interface BoardEditorState {
   stoneMode: StoneEditMode;
   nextStoneColor: 'B' | 'W';
   numbering: boolean;
+  nextMoveNumber: number;
   selectedShape: ShapeType;
   canUndo: boolean;
 
@@ -26,6 +27,7 @@ export interface BoardEditorState {
   setActiveTool: (tool: EditTool) => void;
   setStoneMode: (mode: StoneEditMode) => void;
   setNumbering: (v: boolean) => void;
+  setNextMoveNumber: (n: number) => void;
   setSelectedShape: (s: ShapeType) => void;
   setPayloadFromServer: (p: BoardPayload) => void;
 }
@@ -44,7 +46,7 @@ export function useBoardEditor(
   const [numbering, setNumbering] = useState(false);
   const [selectedShape, setSelectedShape] = useState<ShapeType>('triangle');
 
-  const moveCounterRef = useRef(0);
+  const [moveCounter, setMoveCounter] = useState(0);
   const letterCounterRef = useRef(0);
 
   const computeMaxLabel = (p: BoardPayload): number => {
@@ -66,7 +68,7 @@ export function useBoardEditor(
   };
 
   const enterEdit = useCallback(() => {
-    moveCounterRef.current = computeMaxLabel(payload);
+    setMoveCounter(computeMaxLabel(payload));
     letterCounterRef.current = computeMaxLetter(payload);
     setUndoStack([]);
     setIsEditing(true);
@@ -96,7 +98,7 @@ export function useBoardEditor(
       const prev = stack[stack.length - 1];
       setPayload(prev);
       // Recompute counters from restored state
-      moveCounterRef.current = computeMaxLabel(prev);
+      setMoveCounter(computeMaxLabel(prev));
       letterCounterRef.current = computeMaxLetter(prev);
       return stack.slice(0, -1);
     });
@@ -148,9 +150,10 @@ export function useBoardEditor(
         const color = stoneMode === 'alternate' ? nextStoneColor : (stoneMode === 'black' ? 'B' : 'W');
         next.stones[color].push([col, row]);
         if (numbering) {
-          moveCounterRef.current += 1;
+          const num = moveCounter + 1;
+          setMoveCounter(num);
           if (!next.labels) next.labels = {};
-          next.labels[coordKey] = String(moveCounterRef.current);
+          next.labels[coordKey] = String(num);
         }
         if (stoneMode === 'alternate') {
           setNextStoneColor(color === 'B' ? 'W' : 'B');
@@ -180,7 +183,7 @@ export function useBoardEditor(
 
       return prev;
     });
-  }, [isEditing, activeTool, stoneMode, nextStoneColor, numbering, selectedShape]);
+  }, [isEditing, activeTool, stoneMode, nextStoneColor, numbering, moveCounter, selectedShape]);
 
   return {
     payload,
@@ -190,6 +193,7 @@ export function useBoardEditor(
     stoneMode,
     nextStoneColor,
     numbering,
+    nextMoveNumber: moveCounter + 1,
     selectedShape,
     canUndo: undoStack.length > 0,
 
@@ -201,6 +205,7 @@ export function useBoardEditor(
     setActiveTool,
     setStoneMode,
     setNumbering,
+    setNextMoveNumber: (n: number) => setMoveCounter(n - 1),
     setSelectedShape,
     setPayloadFromServer,
   };

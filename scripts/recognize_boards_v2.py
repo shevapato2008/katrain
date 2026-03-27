@@ -30,6 +30,7 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import subprocess
 import sys
 import tempfile
@@ -697,6 +698,123 @@ def build_annotated_crop(crop, h_positions, v_positions, occupied_patches, spaci
     return annotated, label_map
 
 
+# ── Few-shot sheet for VLLM classification ───────────────────────────────────
+
+FEWSHOT_EXAMPLES_DIR = Path("data/training_patches/examples")
+
+FEWSHOT_EXAMPLES = [
+    ("black_plain.png", "black"),
+    ("black_numbered.png", "black+N"),
+    ("white_plain.png", "white"),
+    ("white_numbered.png", "white+N"),
+    ("letter.png", "letter_A"),
+    ("empty.png", "empty"),
+]
+
+VLLM_CLASSIFY_FEWSHOT_PROMPT = """Classify Go board intersection patches.
+
+Image 1: Reference examples (top row) and patches to classify (below).
+  Top row shows correctly labeled examples for each category.
+  Below are patches labeled A, B, C... — classify each one.
+Image 2: The full board diagram with labeled positions for context.
+
+Categories:
+- "black": solid black stone, no number
+- "white": white stone (light center, dark border), no number
+- "black+N": black stone with move number N (white digits on dark stone)
+- "white+N": white stone with move number N (dark digits on light stone)
+- "triangle_black"/"triangle_white": stone with △ mark
+- "square_black"/"square_white": stone with □ mark
+- "circle_black"/"circle_white": stone with ○ mark
+- "letter_X": letter X annotation on empty intersection
+- "empty": no stone (false detection)
+
+Return JSON only: {"A": "black+1", "B": "white", ...}
+"""
+
+
+def build_fewshot_sheet(occupied_patches, spacing, cols_per_row=8):
+    """Build a composite image with example patches (top) and target patches (below).
+
+    Returns (sheet_image, label_map) or (None, {}) if examples dir is missing.
+    """
+    if not occupied_patches:
+        return None, {}
+
+    # Load example patches
+    examples = []
+    for fname, elabel in FEWSHOT_EXAMPLES:
+        epath = FEWSHOT_EXAMPLES_DIR / fname
+        if epath.exists():
+            examples.append((cv2.imread(str(epath), cv2.IMREAD_GRAYSCALE), elabel))
+
+    if not examples:
+        log.warning("No few-shot examples found in %s, falling back to plain sheet", FEWSHOT_EXAMPLES_DIR)
+        return build_contact_sheet(occupied_patches, spacing, cols_per_row)
+
+    patch_size = int(spacing * 1.0)
+    margin = 4
+    label_h = 18
+    cell_w = patch_size + margin * 2
+    cell_h = patch_size + margin * 2 + label_h
+
+    # Example row
+    ex_cols = len(examples)
+    ex_row_w = max(ex_cols * cell_w, cols_per_row * cell_w)
+
+    # Target rows
+    n = len(occupied_patches)
+    target_rows = ceil(n / cols_per_row)
+    separator_h = 6
+
+    sheet_w = max(ex_cols, cols_per_row) * cell_w
+    sheet_h = cell_h + separator_h + target_rows * cell_h
+
+    sheet = np.ones((sheet_h, sheet_w), dtype=np.uint8) * 240
+
+    # Draw example row with labels
+    for i, (epatch, elabel) in enumerate(examples):
+        x_off = i * cell_w + margin
+        y_off = margin
+        resized = cv2.resize(epatch, (patch_size, patch_size), interpolation=cv2.INTER_AREA)
+        sheet[y_off:y_off + patch_size, x_off:x_off + patch_size] = resized
+        cv2.rectangle(sheet, (x_off - 1, y_off - 1),
+                      (x_off + patch_size, y_off + patch_size), 0, 1)
+        # Label below
+        cv2.putText(sheet, elabel, (x_off, y_off + patch_size + label_h - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, 0, 1)
+
+    # Draw separator line
+    sep_y = cell_h + separator_h // 2
+    cv2.line(sheet, (0, sep_y), (sheet_w, sep_y), 100, 1)
+
+    # Draw target patches
+    label_map = {}
+    base_y = cell_h + separator_h
+
+    for idx, (ci, ri, patch) in enumerate(occupied_patches):
+        row_i = idx // cols_per_row
+        col_i = idx % cols_per_row
+        x_off = col_i * cell_w + margin
+        y_off = base_y + row_i * cell_h + margin
+
+        resized = cv2.resize(patch, (patch_size, patch_size), interpolation=cv2.INTER_AREA)
+        sheet[y_off:y_off + patch_size, x_off:x_off + patch_size] = resized
+        cv2.rectangle(sheet, (x_off - 1, y_off - 1),
+                      (x_off + patch_size, y_off + patch_size), 0, 1)
+
+        if idx < 26:
+            label = chr(65 + idx)
+        else:
+            label = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
+
+        label_map[label] = (ci, ri)
+        cv2.putText(sheet, label, (x_off + patch_size // 2 - 5, y_off + patch_size + label_h - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, 0, 1)
+
+    return sheet, label_map
+
+
 # ── Step 3b: OpenCV stone detection (legacy) ─────────────────────────────────
 
 def cv_detect_stones_legacy(gray, h_positions, v_positions, spacing):
@@ -769,15 +887,43 @@ def cv_detect_stones_legacy(gray, h_positions, v_positions, spacing):
 
 # ── Step 0: VLLM bbox detection (via claude CLI) ─────────────────────────────
 
-def vllm_call(image_path, prompt):
-    """Call Claude via the claude CLI (uses Max membership, no API key needed)."""
+def vllm_call(image_path, prompt, extra_images=None):
+    """Call Claude via claude CLI with Max membership (no API credits needed).
+
+    Clears ANTHROPIC_API_KEY from subprocess env so the CLI uses Max OAuth.
+    Images are base64-encoded inline in the prompt text.
+
+    Args:
+        image_path: primary image path
+        prompt: text prompt
+        extra_images: optional list of additional image paths
+    """
+    import base64
+
+    def _encode_inline(path):
+        path = Path(path)
+        with open(path, "rb") as f:
+            return base64.standard_b64encode(f.read()).decode("utf-8")
+
+    # Build prompt with inline base64 images
+    parts = [f"[Image: data:image/png;base64,{_encode_inline(image_path)}]"]
+    for img in (extra_images or []):
+        parts.append(f"[Image: data:image/png;base64,{_encode_inline(img)}]")
+    parts.append(prompt)
+    full_prompt = "\n\n".join(parts)
+
+    # Clear pay-per-use API key so claude CLI uses Max OAuth
+    env = os.environ.copy()
+    env.pop("ANTHROPIC_API_KEY", None)
+
     result = subprocess.run(
-        ["claude", "-p", prompt, "--image", str(image_path)],
-        capture_output=True, text=True, timeout=120,
+        ["claude", "-p", full_prompt],
+        capture_output=True, text=True, timeout=120, env=env,
     )
     if result.returncode != 0:
         raise RuntimeError(f"claude CLI failed: {result.stderr[:300]}")
     text = result.stdout.strip()
+
     # Extract JSON from response
     start = text.find("{")
     end = text.rfind("}") + 1
@@ -1080,6 +1226,19 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         )
         log.info("  Step 4: built annotated crop with %d labeled positions", len(full_label_map))
 
+        # Save individual patches to debug dir (for training data export)
+        book_slug_dir = page_image_path.parent.parent.name
+        fig_debug_dir = ASSET_BASE / "tutorial_assets" / book_slug_dir / "debug" / label
+        fig_debug_dir.mkdir(parents=True, exist_ok=True)
+        patches_dir = fig_debug_dir / "patches"
+        patches_dir.mkdir(exist_ok=True)
+        patch_lookup = {(ci, ri): patch for ci, ri, patch in occupied}
+        for lbl, (ci, ri) in full_label_map.items():
+            patch = patch_lookup.get((ci, ri))
+            if patch is not None:
+                cv2.imwrite(str(patches_dir / f"{lbl}_{ci}_{ri}.png"), patch)
+        log.info("  Saved %d patches to %s", len(full_label_map), patches_dir)
+
         # Start with CV-confident as fallback
         confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
         merged_classifications = {}
@@ -1087,12 +1246,24 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
             if (ci, ri) in confident_set:
                 merged_classifications[lbl] = confident_set[(ci, ri)]
 
-        # VLLM classifies ALL positions using the full annotated crop
+        # VLLM classifies ALL positions using few-shot sheet + annotated crop
         annotated_path = Path(tempfile.mktemp(suffix=".png", prefix=f"annotated_{label}_"))
         cv2.imwrite(str(annotated_path), annotated)
+        fewshot_path = None
         try:
-            vllm_result = vllm_call(annotated_path, VLLM_CLASSIFY_PROMPT)
-            log.info("  Step 4 (VLLM): classified %d positions", len(vllm_result))
+            # Build few-shot sheet (example patches + target patches)
+            fewshot_sheet, fewshot_label_map = build_fewshot_sheet(occupied, spacing)
+            if fewshot_sheet is not None and FEWSHOT_EXAMPLES_DIR.exists():
+                fewshot_path = Path(tempfile.mktemp(suffix=".png", prefix=f"fewshot_{label}_"))
+                cv2.imwrite(str(fewshot_path), fewshot_sheet)
+                # Send both images: few-shot sheet (primary) + annotated crop (context)
+                vllm_result = vllm_call(fewshot_path, VLLM_CLASSIFY_FEWSHOT_PROMPT,
+                                        extra_images=[annotated_path])
+                log.info("  Step 4 (VLLM few-shot): classified %d positions", len(vllm_result))
+            else:
+                # Fallback: original annotated crop only
+                vllm_result = vllm_call(annotated_path, VLLM_CLASSIFY_PROMPT)
+                log.info("  Step 4 (VLLM): classified %d positions", len(vllm_result))
             # VLLM results override CV pre-classifications (VLLM sees full context)
             for lbl, cls_str in vllm_result.items():
                 if lbl in full_label_map:
@@ -1101,6 +1272,8 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
             log.warning("  VLLM classification failed (%s), using CV-confident only", e)
         finally:
             annotated_path.unlink(missing_ok=True)
+            if fewshot_path:
+                fewshot_path.unlink(missing_ok=True)
 
         log.info("  Classifications: %d total", len(merged_classifications))
 

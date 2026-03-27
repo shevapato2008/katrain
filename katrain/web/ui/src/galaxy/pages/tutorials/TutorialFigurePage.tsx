@@ -13,6 +13,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { TutorialAPI } from '../../api/tutorialApi';
 import SGFBoard from '../../components/tutorials/SGFBoard';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
+import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPanel';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
 import { useAuth } from '../../context/AuthContext';
 import type { TutorialSectionDetail, BoardPayload } from '../../types/tutorial';
@@ -31,15 +32,19 @@ export default function TutorialFigurePage() {
 
   const handleServerSave = useCallback(async (payload: BoardPayload) => {
     if (!currentFigure) return;
-    const updated = await TutorialAPI.saveBoardPayload(
-      currentFigure.id, payload, token ?? undefined, currentFigure.updated_at ?? undefined
-    );
-    setSection(prev => {
-      if (!prev) return prev;
-      const figures = [...prev.figures];
-      figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload, updated_at: updated.updated_at };
-      return { ...prev, figures };
-    });
+    try {
+      const updated = await TutorialAPI.saveBoardPayload(
+        currentFigure.id, payload, token ?? undefined, currentFigure.updated_at ?? undefined
+      );
+      setSection(prev => {
+        if (!prev) return prev;
+        const figures = [...prev.figures];
+        figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload, updated_at: updated.updated_at };
+        return { ...prev, figures };
+      });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '保存失败，请重试');
+    }
   }, [currentFigure, currentFigureIndex, token]);
 
   const editor = useBoardEditor(currentFigure?.board_payload ?? null, handleServerSave);
@@ -138,8 +143,8 @@ export default function TutorialFigurePage() {
           )}
         </Box>
 
-        {/* Right: board + controls */}
-        <Box sx={{ flex: '1 1 350px', maxWidth: 500 }}>
+        {/* Right: board + controls + debug panel (scrollable) */}
+        <Box sx={{ flex: '1 1 350px', maxWidth: 500, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
           {displayPayload ? (
             <>
               <SGFBoard
@@ -215,6 +220,11 @@ export default function TutorialFigurePage() {
             <Typography variant="body2" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
               {currentFigure.narration}
             </Typography>
+          )}
+
+          {/* Recognition debug panel */}
+          {currentFigure?.recognition_debug && (
+            <RecognitionDebugPanel debug={currentFigure.recognition_debug} />
           )}
         </Box>
       </Box>

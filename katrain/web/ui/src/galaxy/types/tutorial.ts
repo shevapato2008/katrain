@@ -47,6 +47,7 @@ export interface TutorialFigure {
   bbox: { x_min: number; y_min: number; x_max: number; y_max: number } | null;
   page_image_path: string | null;
   board_payload: BoardPayload | null;
+  recognition_debug: RecognitionDebug | null;
   narration: string | null;
   audio_asset: string | null;
   order: number;
@@ -71,6 +72,40 @@ export interface BoardPayload {
   shapes?: Record<string, string>;       // shape markers: "7,7" → "triangle"
   highlights?: [number, number][];
   viewport?: { col: number; row: number; size?: number; cols?: number; rows?: number } | null;
+}
+
+// ── Recognition debug types ──────────────────────────────────────────────────
+
+export interface RecognitionDebug {
+  bbox?: {
+    method: string;
+    bbox: [number, number, number, number] | null;
+    debug_image?: string;
+  };
+  region?: {
+    method: string;
+    col_start: number;
+    row_start: number;
+    confidence?: number;
+    evidence?: string[];
+    grid_rows?: number;
+    grid_cols?: number;
+    needs_vllm?: boolean;
+  };
+  cv_detection?: {
+    debug_image?: string;
+    spacing?: number;
+    total_occupied?: number;
+    confident_count?: number;
+    ambiguous_count?: number;
+  };
+  classification?: {
+    contact_sheet?: string;
+    label_map?: Record<string, [number, number]>;
+    confident_cv?: Record<string, string>;
+    classifications?: Record<string, string> | null;
+  };
+  crop_image?: string;
 }
 
 // ── Edit mode types ──────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ Board mode:  endpoints use RepositoryDispatcher which routes to Remote (online)
              or Local (offline) + sync_queue.
 """
 
+import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -67,7 +68,44 @@ class RemoteTsumegoRepository:
         return await self._client.get_problems(level, category, offset, limit)
 
     async def get_all_problems(self, level: str, page: int = 1, page_size: int = 50) -> Dict:
-        return await self._client.get_all_problems(level, page, page_size)
+        """Aggregate problems across categories using existing remote endpoints.
+
+        The remote server may not have the /levels/{level}/problems endpoint,
+        so we build the paginated response from get_levels + get_problems.
+        """
+        # Step 1: get categories for this level from the levels list
+        levels = await self._client.get_levels()
+        categories: Dict[str, int] = {}
+        for lvl in levels:
+            if lvl.get("level", "").lower() == level.lower():
+                categories = lvl.get("categories", {})
+                break
+
+        if not categories:
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+
+        total = sum(categories.values())
+
+        # Step 2: fetch problems from each category in parallel (slim fields only)
+        async def fetch_category(cat: str, count: int) -> List[Dict]:
+            raw = await self._client.get_problems(level, cat, offset=0, limit=count)
+            return [{"id": p["id"], "category": p.get("category", cat), "hint": p.get("hint", "")} for p in raw]
+
+        results = await asyncio.gather(
+            *(fetch_category(cat, cnt) for cat, cnt in categories.items()),
+            return_exceptions=True,
+        )
+
+        all_problems: List[Dict] = []
+        for result in results:
+            if isinstance(result, list):
+                all_problems.extend(result)
+
+        # Step 3: paginate
+        start = (page - 1) * page_size
+        page_items = all_problems[start:start + page_size]
+
+        return {"items": page_items, "total": total, "page": page, "page_size": page_size}
 
     async def get_problem(self, problem_id: str) -> Dict:
         return await self._client.get_problem(problem_id)

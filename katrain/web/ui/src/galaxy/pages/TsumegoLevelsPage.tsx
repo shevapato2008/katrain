@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 
 interface LevelInfo {

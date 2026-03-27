@@ -17,8 +17,8 @@ import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import { type GameState, API } from '../../../api';
-import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 // Blinking animation for loading state

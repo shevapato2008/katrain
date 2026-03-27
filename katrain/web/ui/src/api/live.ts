@@ -11,7 +11,7 @@ import type {
   CommentListResponse,
   CommentPollResponse,
 } from '../types/live';
-import { i18n } from '../../i18n';
+import { i18n } from '../i18n';
 
 const API_BASE = '/api/v1/live';
 

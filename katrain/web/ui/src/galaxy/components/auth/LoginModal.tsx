@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Alert, Box, Link } from '@mui/material';
-import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useSettings } from '../../../context/SettingsContext';
 import { API } from '../../../api';
 import { i18n } from '../../../i18n';
 
@@ -72,7 +72,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     return (
         <Dialog open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: 3, p: 1, minWidth: 350 } }}>
             <DialogTitle>
-                {isRegister ? i18n.t('auth:register_title', 'Create Account') : i18n.t('auth:login_title', 'Login to Galaxy Go')}
+                {isRegister ? i18n.t('auth:register_title', 'Create Account') : i18n.t('auth:login_title', '登录弈航')}
             </DialogTitle>
             <DialogContent>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

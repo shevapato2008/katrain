@@ -13,8 +13,8 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useComments } from '../../hooks/live/useComments';
-import { useAuth } from '../../context/AuthContext';
-import type { Comment } from '../../types/live';
+import { useAuth } from '../../../context/AuthContext';
+import type { Comment } from '../../../types/live';
 import { i18n } from '../../../i18n';
 import { useTranslation } from '../../../hooks/useTranslation';
 

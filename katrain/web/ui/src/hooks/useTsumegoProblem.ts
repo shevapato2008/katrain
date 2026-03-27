@@ -11,8 +11,8 @@ import {
   getAIResponse,
   getValidMoves,
   sgfToCoords
-} from '../../utils/sgfParser';
-import type { SGFNode, ParsedSGF } from '../../utils/sgfParser';
+} from '../utils/sgfParser';
+import type { SGFNode, ParsedSGF } from '../utils/sgfParser';
 
 export interface ProblemDetail {
   id: string;

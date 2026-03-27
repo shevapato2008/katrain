@@ -58,6 +58,7 @@ class UpcomingMatchResponse(BaseModel):
     scheduled_time: str
     player_black: Optional[str]
     player_white: Optional[str]
+    source: str
     source_url: Optional[str]
 
 
@@ -405,6 +406,7 @@ async def get_upcoming_matches(
             scheduled_time=m.scheduled_time.isoformat(),
             player_black=player_black,
             player_white=player_white,
+            source=m.source,
             source_url=m.source_url,
         ))
 

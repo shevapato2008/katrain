@@ -1604,7 +1604,7 @@ msgid "live:tomorrow"
 msgstr "내일"
 
 msgid "live:in_days"
-msgstr "일 후"
+msgstr "{0}일 후"
 
 msgid "live:moves"
 msgstr "수"

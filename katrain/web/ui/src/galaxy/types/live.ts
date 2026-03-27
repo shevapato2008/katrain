@@ -36,6 +36,8 @@ export interface MatchListResponse {
   live_count: number;
 }
 
+export type UpcomingSource = 'foxwq' | 'yike' | 'yugen' | 'nihonkiin';
+
 export interface UpcomingMatch {
   id: string;
   tournament: string;
@@ -43,6 +45,7 @@ export interface UpcomingMatch {
   scheduled_time: string;
   player_black: string | null;
   player_white: string | null;
+  source: UpcomingSource;
   source_url: string | null;
 }
 

@@ -1550,7 +1550,7 @@ msgid "live:tomorrow"
 msgstr "Mañana"
 
 msgid "live:in_days"
-msgstr "días"
+msgstr "en {0} días"
 
 msgid "live:moves"
 msgstr "movs"

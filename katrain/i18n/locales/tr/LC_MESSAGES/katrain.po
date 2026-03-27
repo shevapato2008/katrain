@@ -1747,7 +1747,7 @@ msgid "live:tomorrow"
 msgstr "Yarın"
 
 msgid "live:in_days"
-msgstr "gün sonra"
+msgstr "{0} gün sonra"
 
 msgid "live:moves"
 msgstr "hamle"

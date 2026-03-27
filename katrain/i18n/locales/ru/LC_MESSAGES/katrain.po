@@ -1645,7 +1645,7 @@ msgid "live:tomorrow"
 msgstr "Завтра"
 
 msgid "live:in_days"
-msgstr "дней"
+msgstr "через {0} дней"
 
 msgid "live:moves"
 msgstr "ходов"

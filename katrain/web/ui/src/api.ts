@@ -76,6 +76,14 @@ export interface SessionResponse {
   state: GameState;
 }
 
+export interface VisionStatusResponse {
+  enabled: boolean;
+  camera_connected: boolean;
+  pose_locked: boolean;
+  sync_state: string;
+  bound_session_id: string | null;
+}
+
 async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) {
@@ -264,6 +272,21 @@ export const API = {
   },
   leaveMultiplayerGame: (sessionId: string, token: string): Promise<any> =>
     apiPost("/api/multiplayer/leave", { session_id: sessionId }, token),
+
+  // Vision API
+  visionStatus: (): Promise<VisionStatusResponse> =>
+    fetch("/api/v1/vision/status").then(r => r.json()),
+  visionConfirmPoseLock: (): Promise<void> =>
+    apiPost("/api/v1/vision/pose-lock/confirm", {}),
+  visionBind: (sessionId: string): Promise<void> =>
+    apiPost("/api/v1/vision/bind", { session_id: sessionId }),
+  visionUnbind: (): Promise<void> =>
+    apiPost("/api/v1/vision/unbind", {}),
+  visionResetSync: (): Promise<void> =>
+    apiPost("/api/v1/vision/sync/reset", {}),
+  visionSetupMode: (targetBoard: number[][]): Promise<void> =>
+    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
+
   logout: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/logout", {
       method: "POST",

@@ -3,6 +3,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
 import { OrientationProvider } from './context/OrientationContext';
+import { VisionProvider } from './context/VisionContext';
 import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
@@ -20,6 +21,7 @@ import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
+import VisionSetupPage from './pages/VisionSetupPage';
 
 const KioskRoutes = () => {
   const { user } = useAuth();
@@ -47,10 +49,12 @@ const KioskRoutes = () => {
           <Route path="tsumego/:levelId" element={<TsumegoLevelPage />} />
           <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
           <Route path="research" element={<ResearchPage />} />
+          <Route path="research/session/:sessionId" element={<GamePage />} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
+          <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="play" replace />} />
         </Route>
@@ -63,9 +67,11 @@ const KioskApp = () => (
   <ThemeProvider theme={kioskTheme}>
     <CssBaseline />
     <OrientationProvider>
-      <RotationWrapper>
-        <KioskRoutes />
-      </RotationWrapper>
+      <VisionProvider>
+        <RotationWrapper>
+          <KioskRoutes />
+        </RotationWrapper>
+      </VisionProvider>
     </OrientationProvider>
   </ThemeProvider>
 );

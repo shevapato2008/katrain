@@ -29,6 +29,14 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
+    # Vision service shutdown (board mode)
+    vision = getattr(app.state, "vision", None)
+    if vision:
+        vision.stop()
+    vision_poller = getattr(app.state, "vision_poller_task", None)
+    if vision_poller:
+        vision_poller.cancel()
+
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
         if connectivity:
@@ -238,6 +246,20 @@ async def _lifespan_board(app: FastAPI, log):
 
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
+
+    # Vision service (optional — enabled when --vision-model is provided)
+    vision_config = getattr(settings, "_vision_config", None)
+    if vision_config and vision_config.enabled:
+        from katrain.vision.service import VisionService
+
+        vision = VisionService(vision_config)
+        vision.start()
+        app.state.vision = vision
+        app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
+        log.info("Vision service started (backend=%s)", vision_config.backend)
+    else:
+        app.state.vision = None
+
     log.info("Board mode initialization complete")
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
@@ -1276,6 +1298,43 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             if session.sockets:  # Only if there are still connected clients
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
+    @app.websocket("/ws/vision")
+    async def vision_websocket(websocket: WebSocket):
+        """Vision event WebSocket — pushes sync events and status changes to the frontend."""
+        await websocket.accept()
+        vision = getattr(app.state, "vision", None)
+        if vision is None:
+            await websocket.close(code=1008, reason="Vision service not enabled")
+            return
+        try:
+            while True:
+                # Poll for events and send them
+                vision.refresh_status()
+                events = vision.poll_events()
+                for evt in events:
+                    if isinstance(evt, dict):
+                        await websocket.send_json(evt)
+
+                # Send status update periodically
+                await websocket.send_json({
+                    "type": "vision_status",
+                    "data": {
+                        "camera_status": vision.camera_status,
+                        "pose_lock_status": vision.pose_lock_status,
+                        "sync_state": vision.sync_state,
+                    },
+                })
+
+                # Check for client messages (ping)
+                try:
+                    message = await asyncio.wait_for(websocket.receive_json(), timeout=0.5)
+                    if message.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                except asyncio.TimeoutError:
+                    pass
+        except WebSocketDisconnect:
+            pass
+
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
     @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
@@ -1305,6 +1364,41 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         return manager.get_session(session_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+
+
+async def _vision_move_poller(app: FastAPI):
+    """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.vision.katrain_bridge import vision_move_to_katrain
+    from katrain.vision.sync import game_state_stones_to_board
+
+    log = logging.getLogger("katrain_web.vision")
+    while True:
+        try:
+            vision = getattr(app.state, "vision", None)
+            if vision and vision.bound_session_id:
+                move_data = vision.get_confirmed_move()
+                if move_data and isinstance(move_data, ConfirmedMove):
+                    session_id = vision.bound_session_id
+                    manager = app.state.session_manager
+                    session = manager.get_session(session_id)
+                    if session:
+                        # Convert to KaTrain move and submit
+                        move = vision_move_to_katrain(
+                            move_data.col, move_data.row, move_data.color, board_size=19
+                        )
+                        session.katrain("play", move.coords)
+                        log.info("Vision move submitted: col=%d row=%d color=%d", move_data.col, move_data.row, move_data.color)
+
+                        # Update expected board from new game state
+                        game_state = session.get_game_state()
+                        if game_state and "stones" in game_state:
+                            vision.set_expected_from_stones(game_state["stones"])
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            log.error("Vision move poller error: %s", e)
+        await asyncio.sleep(0.1)
 
 
 def build_frontend():
@@ -1358,7 +1452,22 @@ def run_web():
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
     parser.add_argument("--ui", default=None, help="Interface mode to use. web (default) starts the FastAPI server, while desktop launches the Kivy GUI.")
+    parser.add_argument("--vision-backend", default="onnx", choices=["onnx", "rknn", "ultralytics"], help="Vision inference backend")
+    parser.add_argument("--vision-model", default=None, help="Path to vision model file. Providing this enables the vision service.")
+    parser.add_argument("--vision-camera", type=int, default=0, help="Camera device ID")
     args, _unknown = parser.parse_known_args()
+
+    # Configure vision service if model path provided
+    if args.vision_model:
+        from katrain.vision.config_service import VisionServiceConfig
+
+        settings._vision_config = VisionServiceConfig(
+            enabled=True,
+            backend=args.vision_backend,
+            model_path=args.vision_model,
+            camera_device=args.vision_camera,
+            process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess",
+        )
 
     # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)
     # We only build if we are actually starting the web server, or if --ui=web is explicit

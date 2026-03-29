@@ -49,11 +49,12 @@ class DetectionPipeline:
         use_clahe: bool = False,
         canny_min: int = 20,
         skip_motion_filter: bool = False,
+        backend: str = "ultralytics",
     ):
         self.config = config or BoardConfig()
         self.motion_filter = MotionFilter()
         self.board_finder = BoardFinder(camera_config=camera_config)
-        self.detector = StoneDetector(model_path, confidence_threshold=confidence_threshold)
+        self.detector = StoneDetector(model_path, backend=backend, confidence_threshold=confidence_threshold)
         self.state_extractor = BoardStateExtractor(self.config)
         self.move_detector = MoveDetector()
         self.use_clahe = use_clahe

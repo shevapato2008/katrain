@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions } from '@mui/material';
-import { ExitToApp } from '@mui/icons-material';
+import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
+import { ExitToApp, Videocam } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
+import { API } from '../../api';
 import Board from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
+import { useVision } from '../context/VisionContext';
+import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation } from '../context/OrientationContext';
 
@@ -25,10 +29,45 @@ const GamePage = () => {
   });
   const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [aiMoveToast, setAiMoveToast] = useState<string | null>(null);
+  const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
+
+  const { visionStatus, isVisionEnabled } = useVision();
+  const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
 
   useEffect(() => {
     if (sessionId) session.setSessionId(sessionId);
   }, [sessionId]);
+
+  // Bind vision on mount, unbind on unmount
+  useEffect(() => {
+    if (isVisionEnabled && sessionId) {
+      API.visionBind(sessionId);
+      return () => { API.visionUnbind(); };
+    }
+  }, [isVisionEnabled, sessionId]);
+
+  // Show toast when AI makes a move (vision mode: physical board player needs coordinate hint)
+  useEffect(() => {
+    if (!isVisionEnabled || !session.gameState) return;
+    const gs = session.gameState;
+    const human: 'B' | 'W' | null =
+      gs.players_info?.B?.player_type === 'player:human' ? 'B'
+      : gs.players_info?.W?.player_type === 'player:human' ? 'W'
+      : null;
+    if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
+      const col = String.fromCharCode(65 + (gs.last_move[0] >= 8 ? gs.last_move[0] + 1 : gs.last_move[0]));
+      const row = gs.board_size[0] - gs.last_move[1];
+      setAiMoveToast(`AI 落子: ${col}${row}`);
+    }
+  }, [isVisionEnabled, session.gameState?.current_node_id]);
+
+  // Camera disconnect fallback
+  useEffect(() => {
+    if (isVisionEnabled && !visionStatus.cameraConnected) {
+      setCameraDisconnectToast(true);
+    }
+  }, [isVisionEnabled, visionStatus.cameraConnected]);
 
   if (!session.gameState) {
     return (
@@ -65,9 +104,16 @@ const GamePage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       {/* Error display */}
       {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
+
+      {/* Floating vision status (fullscreen GamePage has no KioskLayout/StatusBar) */}
+      {isVisionEnabled && (
+        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5, opacity: 0.8, zIndex: 10 }}>
+          <Videocam sx={{ color: visionStatus.cameraConnected ? 'success.main' : 'error.main', fontSize: 20 }} />
+        </Box>
+      )}
 
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
@@ -121,6 +167,23 @@ const GamePage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Vision sync overlay */}
+      {isVisionEnabled && <VisionSyncOverlay syncEvents={visionSync.syncEvents} />}
+
+      {/* AI move toast */}
+      <Snackbar open={!!aiMoveToast} autoHideDuration={8000} onClose={() => setAiMoveToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="info" onClose={() => setAiMoveToast(null)}>{aiMoveToast}</Alert>
+      </Snackbar>
+
+      {/* Camera disconnect toast */}
+      <Snackbar open={cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="warning" onClose={() => setCameraDisconnectToast(false)}>
+          {t('Camera disconnected, switched to touch mode', '摄像头断开，已切换为触屏模式')}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

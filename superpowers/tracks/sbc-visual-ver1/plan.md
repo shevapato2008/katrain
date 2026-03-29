@@ -8,7 +8,9 @@
 
 **Target modules (this phase):** 对弈 (GamePage), 死活题 (TsumegoProblemPage), 研究 (ResearchPage)
 
-**Revision notes:** Incorporates Codex review feedback (all items verified against codebase). Key changes:
+**Revision notes:** Incorporates Codex review feedback (all items verified against codebase) and Gemini review feedback.
+
+Codex feedback (structural):
 - Added Phase 0 feasibility gate before building anything
 - Switched to separate worker process architecture (not in-process thread)
 - Fixed GameState.stones structure: tuple `[player, coords, scoreLoss, moveNumber][]`, not object
@@ -18,6 +20,14 @@
 - Reuse/extend VisionPlayerBridge instead of HTTP self-call
 - Clear separation: MoveDetector confirms new stones, SyncStateMachine compares overall state
 - Export contract with `model.meta.json` sidecar instead of hardcoded output shapes
+
+Gemini feedback (incremental):
+- Phase 0: explicitly measure Chromium kiosk RSS while vision worker active
+- Camera hot-plug auto-reconnect in worker loop (not crash)
+- MJPEG preview: shared memory overwrite (not queue), resize to 480x480 before encoding
+- Degraded mode trigger: mean detection confidence < 0.35 for 10 consecutive seconds
+- Phase 6: add 1-hour memory stress test
+- UI rotation does NOT affect vision coordinates (camera works in physical space; display rotation is frontend rendering only, handled by board pose calibration)
 - Throttled frame rates: capture 8-10fps, inference 2-5fps, preview 2-3fps
 - Separate "camera intrinsics" (persistent) from "board pose lock" (per-boot)
 - Research resync creates setup node in game tree (not fake UI-only sync)
@@ -103,44 +113,153 @@ Vision runs in-process via an adapter that mimics the IPC interface but calls mo
 
 **Purpose:** Validate that ONNX inference is viable on RK3562 before building 13 tasks on top of it. This is a non-coding investigation phase.
 
-**Deliverables:**
-1. Export 3 candidate models to ONNX: `yolo11n`, `yolo11s`, `yolo11m`
-2. Transfer to RK3562 and run benchmarks:
-   - Cold start time (model load)
-   - Resident memory (RSS) during inference
-   - Single-frame latency at imgsz=640 and imgsz=960
-   - Detection accuracy on 3-5 real board photos
-3. (Optional) Test RKNN conversion: does `rknn-toolkit2` accept the ONNX? Can `rknn-lite2` load it?
-4. Measure whole-system memory: Chromium kiosk + FastAPI + vision worker running simultaneously
+### Phase 0A: ONNX CPU Benchmark — COMPLETED ✅
 
-**Pass criteria:**
-- At least one ONNX model: RSS < 400MB, latency < 1s/frame, acceptable accuracy on real boards
-- Total system memory (Chromium + FastAPI + vision worker) < 1.8GB RSS
-- If RKNN is unstable → downgrade to "future experiment", proceed with ONNX only
+**Hardware:** RK3562 (4x Cortex-A55, 2GB RAM + 2GB swap), Debian, Python 3.11, onnxruntime CPU.
 
-**Fail action:** If no model fits in memory, consider (a) remote inference fallback, (b) smaller input resolution, (c) pruned model.
+**Benchmark results (imgsz=640, COCO pretrained weights, dummy input):**
 
-**Steps:**
+| Model | ONNX Size | Load Time | RSS (推理中) | Avg Latency | 可行性 |
+|-------|-----------|-----------|-------------|-------------|--------|
+| **yolo11n** | 10MB | 0.23s | **135MB** | **600ms** | ✅ **最佳选择** |
+| yolo11s | 36MB | 0.37s | 221MB | 1.56s | ⚠️ 勉强可用 |
+| yolo11m | 77MB | 0.56s | 369MB | 4.3s | ⚠️ CPU 慢，但功能可用 |
+| yolo11x | 217MB | 3.87s | 631MB | 11.4s | ❌ 不可行 |
 
-Step 1: Export models on dev machine
+**ONNX CPU 结论:**
+- **yolo11n 为首选**：135MB RSS + 600ms 延迟，远低于内存/延迟阈值。
+- yolo11s 可作为备选（1.5s 延迟可接受，221MB RSS 安全）。
+- yolo11m 在 CPU 上太慢（4.3s），但如果 NPU 能加速则仍有价值。
+- yolo11x 在 RK3562 上完全不可行（11s + 631MB）。
+- **精度是独立问题**：yolo11n 之前在真实棋盘上泛化差是训练数据不足（仅 201 张合成图），不是模型能力问题。需要更多/更好的训练数据重新训练。
+
+**实际使用延迟估算**（含运动过滤 — 仅画面稳定后推理）：
+- yolo11n：落子后 ~1-2s 响应（流畅）
+- yolo11s：落子后 ~2-3s 响应（可接受）
+- yolo11m：落子后 ~5-6s 响应（能用但��）
+
+### Phase 0B: RKNN NPU Benchmark — BLOCKED (驱动过旧)
+
+**硬件探测结果 (2026-03-29):**
+- NPU 硬件存在：`/sys/class/devfreq/ff300000.npu`，映射为 DRI 设备（card1 / renderD129）
+- NPU 频率：当前 600MHz，可用 300MHz-1GHz
+- 内核配置：`CONFIG_ROCKCHIP_RKNPU=y`，`CONFIG_ROCKCHIP_RKNPU_DRM_GEM=y`（编译进内核）
+- **驱动版本：RKNPU v0.9.8** — 使用 DRM GEM 模式，无 `/dev/rknpu` 设备节点
+- 内核：5.10.209，Debian 11 (bullseye)
+
+**阻塞原因：** `rknn-toolkit-lite2` 需要 RKNPU 驱动 >= v1.4.0 和 `/dev/rknpu` 设备节点。当前 v0.9.8 不兼容。升级驱动需要更新内核/固件，或联系厂商（格致培特）提供新固件。
+
+**厂商资料调研 (2026-03-29):** 已翻阅广州佩特科技全部资料（Debian 应用编程手册 8 页、主板规格书、一体屏/一体机规格书）。规格书仅列出"1TOPS NPU"参数，**无任何 NPU 开发指南、RKNN SDK 安装说明或驱动升级文档**。厂商联系方式：www.gzpeite.net，微信二维码在 Debian 手册最后一页。
+
+**决定：NPU 搁置为后续优化项。** 当前使用 ONNX CPU (yolo11n) 推进所有后续 Phase。如需 NPU 支持，需主动联系厂商索要新固件。
+
+**NPU 升级工具调研 (2026-03-29):**
+- 系统预装了 `/usr/bin/npu_upgrade`，用法：`npu_upgrade loader uboot trust boot`
+- 这是硬件级固件刷写工具，需要 4 个固件文件（loader、uboot、trust、boot），不是简单的驱动更新
+- 还有 `/usr/bin/upgrade_tool`（Rockchip 通用刷机工具），需要 USB rockusb 连接
+- 系统也安装了 Rockchip MPP 多媒体库（`librockchip-mpp1` v1.5.0），说明厂商有定制 BSP
+- **操作风险高**：刷错固件可能变砖，不建议自行操作
+- **正确路径：联系格致培特(gzpeite)厂商，索要包含 RKNPU v1.6+ 驱动的完整固件包**
+
+**NPU 未来启用路径（供参考）：**
+1. 联系厂商获取新固件（包含 RKNPU v1.6+ 驱动），用 `npu_upgrade` 刷入
+2. 在 x86 Linux (Docker) 上安装 `rknn-toolkit2`，将 ONNX 转为 RKNN（含 INT8 量化）
+3. 在 RK3562 上安装 `rknn-toolkit-lite2` ARM wheel
+4. 预期加速：yolo11n CPU 600ms → NPU 估计 60-200ms；yolo11m CPU 4.3s → NPU 估计 0.5-1.5s
+
+_(以下旧步骤已废弃，保留供未来参考)_
+
+在 RK3562 上运行：
 ```bash
-# Requires ultralytics
-python -m katrain.vision.tools.export_onnx --model best.pt --imgsz 960 --output best-960.onnx
-python -m katrain.vision.tools.export_onnx --model yolo11n-best.pt --imgsz 640 --output yolo11n-640.onnx
-python -m katrain.vision.tools.export_onnx --model yolo11s-best.pt --imgsz 640 --output yolo11s-640.onnx
+# 检查 NPU 驱动是否加载
+dmesg | grep -i npu
+ls /dev/npu*
+cat /sys/kernel/debug/rknpu/version 2>/dev/null
+
+# 检查 rknn_lite 是否可用
+pip list | grep rknn
+python -c "from rknnlite.api import RKNNLite; print('rknn-lite OK')"
 ```
 
-Step 2: Create minimal benchmark script (runs on SBC)
+如果 NPU 驱动不存在或 `rknn-toolkit-lite2` 未安装，需要：
+```bash
+# 安装 rknn-toolkit-lite2 (ARM64 wheel)
+# 从 https://github.com/airockchip/rknn-toolkit2/tree/master/rknn-toolkit-lite2/packages 下载
+pip install rknn_toolkit_lite2-2.3.0-cp311-cp311-linux_aarch64.whl
+```
+
+**Step 2: 在开发机 (x86) 上将 ONNX 转为 RKNN**
+
+需要在 x86 机器上安装 `rknn-toolkit2`（不能在 ARM 上运行），转换脚本：
 ```python
-# katrain/vision/tools/benchmark_onnx.py
-# Loads ONNX model, runs inference on a test image N times, reports:
-# - Model load time
-# - RSS after load (via /proc/self/status)
-# - Avg/P95 inference latency
-# - Detection count and confidence range
+# export_rknn.py (在 MacBook 或 x86 Linux 上运行)
+from rknn.api import RKNN
+
+rknn = RKNN()
+rknn.config(target_platform='rk3562', quantized_dtype='w8a8')  # INT8 量化
+rknn.load_onnx(model='yolo11n.onnx')
+rknn.build(do_quantization=True, dataset='calibration_images.txt')  # 需要校准图片
+rknn.export_rknn('yolo11n.rknn')
 ```
 
-Step 3: Run on RK3562, record results, decide model + resolution.
+注意：
+- `rknn-toolkit2` 仅支持 x86 Linux（不��持 macOS），可能需要 Docker 或 Linux VM
+- INT8 量化需要校准图片集（10-50 张棋盘图）
+- RK3562 NPU 是 RK3588 NPU 的缩减版（0.8 TOPS vs 6 TOPS），部分算子可能不支持
+
+**Step 3: 在 RK3562 上运行 RKNN benchmark**
+
+```python
+# benchmark_rknn.py
+from rknnlite.api import RKNNLite
+import numpy as np, time
+
+rknn = RKNNLite()
+rknn.load_rknn('yolo11n.rknn')
+rknn.init_runtime(core_mask=RKNNLite.NPU_CORE_AUTO)
+
+img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
+# warmup
+rknn.inference(inputs=[img])
+# benchmark
+for i in range(10):
+    t0 = time.perf_counter()
+    rknn.inference(inputs=[img])
+    print(f"Run {i+1}: {(time.perf_counter()-t0)*1000:.1f} ms")
+```
+
+**NPU 预期加速比：**
+- RK3562 NPU 0.8 TOPS INT8，理论上比 4x A55 CPU 快 3-10 倍
+- yolo11n: CPU 600ms → NPU 估计 60-200ms（如果算子全支持）
+- yolo11m: CPU 4.3s → NPU 估计 0.5-1.5s（如果可行，精度显著提升）
+- 实际加速比取决于算子支持度和量化精度损失
+
+**Pass criteria (NPU):**
+- 至少 yolo11n 可在 NPU 上运行且延迟 < 300ms
+- RSS 增量 < 200MB（RKNN runtime 通常比 onnxruntime 更轻）
+- INT8 量化后检测精���无显著下降（对比 ONNX FP32 输出）
+
+### Phase 0 总体通过状态
+
+| Gate | 状态 |
+|------|------|
+| ONNX CPU 可行性 | ✅ PASSED — yolo11n 135MB/600ms |
+| RKNN NPU 可行性 | ❌ BLOCKED — 驱动 v0.9.8 过旧，需 v1.4+；联系厂商升级固件后重试 |
+| 整机内存预算 | ⏳ TODO — 需要 Chromium + FastAPI + vision worker 同时运行测量 |
+| 真实棋盘精度 | ⏳ TODO — 需要用围棋训练数据重新训练后测试 |
+
+**Phase 0 决定：以 ONNX CPU + yolo11n 为主路径推进 Phase 1-6。** yolo11s (1.56s) 作为备选。NPU 加速和 yolo11m/x 大模型作为后续优化，取决于厂商固件更新。
+
+### 已导出的 ONNX 模型（存放于 MacBook `katrain-visual-recognition/models/`）
+
+| 文件 | 大小 | 来源 | 备注 |
+|------|------|------|------|
+| `yolo11n.onnx` | 10MB | COCO 预训练 | 首选部署模型 |
+| `yolo11s.onnx` | 36MB | COCO 预训练 | 备选 |
+| `yolo11m.onnx` | 77MB | COCO 预训练 | 仅在 NPU 启用后考虑 |
+| `yolo11x.onnx` | 217MB | COCO 预训练 | RK3562 上不可行 |
+
+注：以上均为 COCO 80 类预训练权重（输出 shape `(1, 84, 8400)`），用于 benchmark。实际部署需要用围棋数据集重新训练的 2 类模型（输出 shape `(1, 6, 8400)`）。围棋训练后的 `best.pt` 文件（`runs/detect/go_stones_sam_*/weights/`）已丢失，需要重新训练。
 
 ---
 
@@ -294,6 +413,8 @@ class CameraManager:
     def detect_cameras(max_id: int = 4) -> list[int]: ...
 ```
 
+**Hot-plug robustness (Gemini #3.2):** `read_frame()` catches `cv2` exceptions on device disconnect. When disconnected, `is_connected` returns False and auto-reconnect is attempted every 5 seconds. The worker loop does NOT crash on camera loss — it emits a `camera_disconnected` status and keeps running, waiting for reconnection.
+
 ### Task 2.2: Vision Worker
 
 **Files:**
@@ -304,7 +425,7 @@ class CameraManager:
 - Camera capture loop (8-10 fps)
 - Run existing `DetectionPipeline` stages (motion filter → board finder → inference → board state → move detector)
 - Maintain sync state machine (Phase 3)
-- JPEG encode preview frames (2-3 fps, only when viewer is active — backpressure-aware)
+- JPEG encode preview frames (2-3 fps, only when viewer is active — backpressure-aware). Preview frames are **resized to 480x480** before JPEG encoding to save CPU (Gemini #3.4). Uses **shared memory overwrite** (not queue) — worker overwrites the latest frame; if main process is slow to read, old frame is silently replaced (Gemini #2.4 backpressure refinement)
 - Expose outputs via IPC
 
 **IPC protocol** (`ipc.py`):
@@ -431,7 +552,7 @@ Additional states:
 2. **ILLEGAL_CHANGE** requires N consecutive frames (default 5) of stable mismatch — not a single-frame glitch.
 3. **CAPTURE_PENDING** is a persistent state (sticky), not a one-time event. Stays until stones are physically removed.
 4. **Board displacement** (many positions change simultaneously) triggers `BOARD_LOST`, not N illegal changes.
-5. **Degraded mode:** If average detection confidence drops below threshold, enter DEGRADED — show warning, stop auto-submitting.
+5. **Degraded mode (Gemini #3.3):** Monitor mean confidence of all detections per frame. If mean_confidence < 0.35 persists for 10 consecutive seconds, enter DEGRADED — show warning "检测质量下降，请检查光线", stop auto-submitting. Exit DEGRADED when mean_confidence recovers above 0.45 for 5 seconds (hysteresis to prevent flapping).
 
 **SyncEvent types:**
 
@@ -810,7 +931,9 @@ When `--vision-model` is provided, vision is automatically enabled.
 watch -n 5 'ps aux | grep -E "katrain|chromium" | awk "{print \$6/1024\"MB\", \$11}"'
 ```
 
-Must verify: no RSS growth >50MB over 30 minutes.
+Must verify:
+- No RSS growth >50MB over 30 minutes
+- **1-hour stress test (Gemini #4):** Run a full game session while Chromium has kiosk page active. Monitor for memory leaks, swap growth, and UI responsiveness degradation. Swap usage must stay < 500MB under steady-state.
 
 ---
 

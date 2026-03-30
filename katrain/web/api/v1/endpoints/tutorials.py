@@ -18,6 +18,7 @@ from katrain.web.core.models_db import User
 from katrain.web.tutorials import db_queries
 from katrain.web.tutorials.models import (
     BoardPayloadUpdate,
+    NarrationUpdate,
     TutorialBookDetailOut,
     TutorialBookOut,
     TutorialCategoryOut,
@@ -159,6 +160,24 @@ async def update_figure_board(
     viewport = compute_viewport(payload_dict)
     payload_dict["viewport"] = viewport
     figure = db_queries.update_figure_board(db, figure, payload_dict)
+    return TutorialFigureOut.model_validate(figure)
+
+
+# ── Narration ────────────────────────────────────────────────────────────────
+
+
+@router.put("/figures/{figure_id}/narration", response_model=TutorialFigureOut)
+async def update_figure_narration(
+    figure_id: int,
+    update: NarrationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """Update the narration text and optional audio_asset for a figure."""
+    figure = db_queries.get_figure(db, figure_id)
+    if figure is None:
+        raise HTTPException(status_code=404, detail="Figure not found")
+    figure = db_queries.update_figure_narration(db, figure, update.narration, update.audio_asset)
     return TutorialFigureOut.model_validate(figure)
 
 

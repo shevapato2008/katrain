@@ -102,6 +102,16 @@ def update_figure_board(db: Session, figure: TutorialFigure, board_payload: dict
     return figure
 
 
+def update_figure_narration(db: Session, figure: TutorialFigure, narration: str, audio_asset: str | None) -> TutorialFigure:
+    """Update narration text and audio_asset path on a figure."""
+    figure.narration = narration
+    if audio_asset is not None:
+        figure.audio_asset = audio_asset
+    db.commit()
+    db.refresh(figure)
+    return figure
+
+
 def update_figure_recognition_debug(db: Session, figure: TutorialFigure, debug_data: dict) -> TutorialFigure:
     """Update the recognition_debug on an already-fetched figure."""
     figure.recognition_debug = debug_data

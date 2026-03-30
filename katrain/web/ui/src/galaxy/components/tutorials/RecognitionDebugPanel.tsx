@@ -78,6 +78,37 @@ export default function RecognitionDebugPanel({ debug }: Props) {
         )}
       </Section>
 
+      {/* Deskew + Grid overlay */}
+      <Section title="纠偏与网格 — 扫描纠偏 + 检测到的网格线叠加" step="S2-3" defaultOpen>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ flex: '1 1 45%', minWidth: 200 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              原图 + 网格线（验证纠偏效果）
+            </Typography>
+            <DebugImage path={debug.deskew?.debug_image} alt="grid lines on original crop" />
+          </Box>
+          <Box sx={{ flex: '1 1 45%', minWidth: 200 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              纠偏后 + 网格线（验证网格匹配）
+            </Typography>
+            <DebugImage path={debug.deskew?.grid_image} alt="grid lines on deskewed crop" />
+          </Box>
+        </Box>
+        <Box mt={0.5}>
+          {debug.deskew && (
+            <KV label="纠偏角度" value={debug.deskew.angle !== 0 ? `${debug.deskew.angle.toFixed(2)}°` : '无需纠偏'} />
+          )}
+          {debug.cv_detection && (
+            <>
+              <KV label="Spacing" value={`${debug.cv_detection.spacing?.toFixed(1)}px`} />
+              <KV label="Occupied" value={
+                `${debug.cv_detection.total_occupied} total (${debug.cv_detection.confident_count} confident, ${debug.cv_detection.ambiguous_count} ambiguous)`
+              } />
+            </>
+          )}
+        </Box>
+      </Section>
+
       {/* Step 1: Region identification */}
       <Section title="棋盘定位 — 确定棋谱在19×19棋盘中的区域" step="S1">
         {debug.crop_image && <DebugImage path={debug.crop_image} alt="board crop" />}
@@ -96,19 +127,13 @@ export default function RecognitionDebugPanel({ debug }: Props) {
         )}
       </Section>
 
-      {/* Step 2-3: Grid + Occupied detection */}
-      <Section title="网格与落子检测 — OpenCV识别网格线和落子点" step="S2-3" defaultOpen>
-        <DebugImage path={debug.cv_detection?.debug_image} alt="grid detection" />
+      {/* Step 2-3: Occupied detection (annotated crop with labels) */}
+      <Section title="落子检测 — 检测到的落子点标注" step="S3">
+        <DebugImage path={debug.cv_detection?.debug_image} alt="occupied detection" />
         {debug.cv_detection && (
-          <Box mt={0.5}>
-            <KV label="Spacing" value={`${debug.cv_detection.spacing?.toFixed(1)}px`} />
-            <KV label="Occupied" value={
-              `${debug.cv_detection.total_occupied} total (${debug.cv_detection.confident_count} confident, ${debug.cv_detection.ambiguous_count} ambiguous)`
-            } />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              绿色=CV高置信, 黄色=需要VLLM确认
-            </Typography>
-          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+            绿色=CV高置信, 黄色=需要VLLM确认
+          </Typography>
         )}
       </Section>
 
@@ -118,29 +143,45 @@ export default function RecognitionDebugPanel({ debug }: Props) {
         {debug.classification?.classifications && (
           <Box mt={1} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {Object.entries(debug.classification.classifications).map(([label, cls]) => {
-              const isConfidentCV = debug.classification?.confident_cv?.[label];
+              const cvResult = debug.classification?.cv_preclass?.[label] ?? debug.classification?.confident_cv?.[label];
+              const isCV = cvResult && cvResult !== 'ambiguous';
+              const patchPath = debug.classification?.patch_images?.[label];
               const color = cls === 'empty' ? 'default'
                 : cls.startsWith('black') ? 'info'
                 : cls.startsWith('white') ? 'warning'
                 : 'secondary';
               return (
-                <Chip
-                  key={label}
-                  label={`${label}: ${cls}`}
-                  size="small"
-                  color={color}
-                  variant={isConfidentCV ? 'filled' : 'outlined'}
-                  sx={{ fontFamily: 'monospace', fontSize: 10 }}
-                />
+                <Box key={label} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.25, minWidth: 56 }}>
+                  {patchPath ? (
+                    <Box
+                      component="img"
+                      src={TutorialAPI.assetUrl(patchPath)}
+                      alt={`patch ${label}`}
+                      sx={{ width: 48, height: 48, objectFit: 'contain', borderRadius: 0.5, border: '1px solid #ccc' }}
+                    />
+                  ) : (
+                    <Box sx={{ width: 48, height: 48, bgcolor: '#f0f0f0', borderRadius: 0.5, border: '1px solid #ddd' }} />
+                  )}
+                  {cvResult && (
+                    <Typography variant="caption" sx={{ fontSize: 9, color: isCV ? '#4caf50' : '#999', fontFamily: 'monospace' }}>
+                      CV:{cvResult}
+                    </Typography>
+                  )}
+                  <Chip
+                    label={`${label}: ${cls}`}
+                    size="small"
+                    color={color}
+                    variant={isCV ? 'filled' : 'outlined'}
+                    sx={{ fontFamily: 'monospace', fontSize: 10 }}
+                  />
+                </Box>
               );
             })}
           </Box>
         )}
-        {debug.classification?.confident_cv && Object.keys(debug.classification.confident_cv).length > 0 && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            实心=CV预分类, 空心=VLLM分类
-          </Typography>
-        )}
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+          CV:black/white=CV直接判定, CV:ambiguous=需Haiku判定; 实心chip=CV结果, 空心chip=Haiku结果
+        </Typography>
       </Section>
     </Box>
   );

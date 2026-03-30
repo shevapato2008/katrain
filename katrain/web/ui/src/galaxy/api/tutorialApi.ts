@@ -51,6 +51,13 @@ export const TutorialAPI = {
       expected_updated_at: expectedUpdatedAt ?? null,
     }, token),
 
+  // Narration
+  saveNarration: (figureId: number, narration: string, audioAsset?: string | null, token?: string): Promise<TutorialFigure> =>
+    apiPut(`/figures/${figureId}/narration`, {
+      narration,
+      audio_asset: audioAsset ?? null,
+    }, token),
+
   // Verify
   verifyFigure: (figureId: number, token?: string): Promise<TutorialFigure> =>
     apiPut(`/figures/${figureId}/verify`, {}, token),

@@ -175,7 +175,8 @@ export function useBoardEditor(
       }
 
       if (activeTool === 'shape') {
-        if (hasStone || hasLetter) return prev; // blocked by different type
+        if (hasLetter) return prev; // blocked by letter
+        // Shapes can be placed on stones (e.g. triangle on black/white stone) or empty intersections
         if (!next.shapes) next.shapes = {};
         next.shapes[coordKey] = selectedShape;
         return next;

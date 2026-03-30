@@ -16,6 +16,7 @@ import { TutorialAPI } from '../../api/tutorialApi';
 import SGFBoard from '../../components/tutorials/SGFBoard';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
 import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPanel';
+import AudioPlayer from '../../components/tutorials/AudioPlayer';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
 import { useAuth } from '../../context/AuthContext';
 import type { TutorialSectionDetail, BoardPayload } from '../../types/tutorial';
@@ -138,10 +139,16 @@ export default function TutorialFigurePage() {
         </IconButton>
       </Box>
 
-      {/* Two-column layout */}
-      <Box display="flex" gap={3} flexWrap="wrap">
-        {/* Left: page screenshot + text */}
-        <Box sx={{ flex: '1 1 400px', maxWidth: 600 }}>
+      {/* Three-column layout */}
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+        gap: 2,
+        maxHeight: 'calc(100vh - 140px)',
+      }}>
+        {/* Column 1: page screenshot + book text */}
+        <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>原书内容</Typography>
           {currentFigure?.page_image_path && (
             <Box
               component="img"
@@ -162,8 +169,9 @@ export default function TutorialFigurePage() {
           )}
         </Box>
 
-        {/* Right: board + controls + debug panel (scrollable) */}
-        <Box sx={{ flex: '1 1 350px', maxWidth: 500, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
+        {/* Column 2: board + controls + debug panel */}
+        <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>棋盘识别</Typography>
           {displayPayload ? (
             <>
               <SGFBoard
@@ -248,15 +256,28 @@ export default function TutorialFigurePage() {
             </Box>
           )}
 
-          {currentFigure?.narration && (
-            <Typography variant="body2" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
-              {currentFigure.narration}
-            </Typography>
-          )}
-
           {/* Recognition debug panel */}
           {currentFigure?.recognition_debug && (
             <RecognitionDebugPanel debug={currentFigure.recognition_debug} />
+          )}
+        </Box>
+
+        {/* Column 3: narration + audio */}
+        <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>语音讲解</Typography>
+          {currentFigure?.narration ? (
+            <>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 2, lineHeight: 1.8 }}>
+                {currentFigure.narration}
+              </Typography>
+              <AudioPlayer
+                src={currentFigure.audio_asset ? TutorialAPI.assetUrl(currentFigure.audio_asset) : null}
+              />
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              暂无讲解文本。运行 generate_voice.py 生成。
+            </Typography>
           )}
         </Box>
       </Box>

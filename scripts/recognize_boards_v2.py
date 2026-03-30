@@ -28,6 +28,7 @@ Usage:
 """
 
 import argparse
+import base64
 import json
 import logging
 import os
@@ -39,6 +40,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -58,6 +60,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
 
 ASSET_BASE = Path("data")
+MODEL_DIR = Path(__file__).resolve().parent.parent / "katrain" / "models" / "book-kifu"
 
 
 # ── Structured classification schema ─────────────────────────────────────────
@@ -103,53 +106,6 @@ def print_summary_report(results):
     log.info("  total: %d", len(results))
 
 
-VLLM_CLASSIFY_PROMPT = """This is a Go (围棋) board diagram from a textbook.
-Magenta letters (A, B, C...) mark positions where stones or markings were detected.
-For each labeled position, classify what is at that position on the board.
-
-How to distinguish black vs white stones:
-- BLACK stone: solid filled dark circle (completely dark, may have a white number printed on it)
-- WHITE stone: outlined circle with a hollow/light center (thin dark circular border, may have a dark number)
-- If the circle is mostly dark/filled → it is BLACK
-- If the circle has a light/empty center with just an outline → it is WHITE
-
-Categories:
-- "black": solid black stone, no number
-- "white": outlined white stone, no number
-- "black+N": black stone with move number N (white number on dark stone)
-- "white+N": white stone with move number N (dark number on light stone)
-- "triangle_black" / "triangle_white": stone marked with △
-- "square_black" / "square_white": stone marked with □
-- "circle_black" / "circle_white": stone marked with ○
-- "letter_X": letter X (A, B, C...) annotation on an empty intersection (not a stone)
-- "empty": no stone at this position (false detection)
-
-Return JSON only, no explanation:
-{"A": "black+1", "B": "white+8", "C": "black", "D": "letter_A", ...}
-"""
-
-
-VLLM_REGION_PROMPT = """This is a cropped Go (围棋) board diagram from a textbook.
-The full board is 19×19. This diagram shows only part of the board.
-OpenCV detected {num_v} vertical lines and {num_h} horizontal lines.
-
-Determine which portion of the full 19×19 board is shown:
-- col_start: column index (0-based) of the leftmost visible line
-- row_start: row index (0-based) of the topmost visible line
-
-Rules:
-- If the LEFT edge has a thick border line → col_start = 0
-- If the RIGHT edge has a thick border line → col_start = 19 - {num_v}
-- If the TOP edge has a thick border line → row_start = 0
-- If the BOTTOM edge has a thick border line → row_start = 19 - {num_h}
-- Star points (hoshi) on a 19×19 board are at lines 3, 9, 15 (0-indexed) on each axis
-- Most textbook diagrams show a corner (col_start=0 or row_start=0)
-
-Return JSON only:
-{{"col_start": 0, "row_start": 0}}
-"""
-
-
 def parse_classification(label, cls_str, local_col, local_row, source="vllm"):
     """Parse a VLLM classification string into a PatchClassification."""
     base_type = "unknown"
@@ -167,10 +123,13 @@ def parse_classification(label, cls_str, local_col, local_row, source="vllm"):
         base_type = "white"
         if "+" in cls_str:
             text = cls_str.split("+", 1)[1]
+    elif cls_str in ("triangle", "square", "circle"):
+        shape = cls_str
+        base_type = "empty"  # bare shape on empty intersection
     elif cls_str.startswith(("triangle_", "square_", "circle_")):
         parts = cls_str.split("_", 1)
         shape = parts[0]
-        base_type = parts[1] if len(parts) > 1 else "unknown"
+        base_type = parts[1] if len(parts) > 1 else "empty"
     elif cls_str.startswith("letter_"):
         base_type = "empty"
         text = cls_str.split("_", 1)[1]
@@ -211,6 +170,14 @@ def classification_to_payload(classifications, label_map, col_start=0, row_start
             row = row_start + ri
             key = f"{col},{row}"
             letters[key] = pc.text
+            continue
+
+        if pc.base_type == "empty" and pc.shape:
+            # Shape mark on empty intersection (e.g. triangle without stone)
+            ci, ri = pc.local_col, pc.local_row
+            col = col_start + ci
+            row = row_start + ri
+            shapes[f"{col},{row}"] = pc.shape
             continue
 
         if pc.base_type in ("empty", "unknown"):
@@ -291,8 +258,62 @@ def generate_grid_debug_image(crop, h_pos, v_pos, spacing, occupied, confident, 
     return debug
 
 
+def generate_deskew_debug_image(original_crop, h_pos, v_pos, deskew_angle):
+    """Draw detected grid lines projected back onto the original (pre-deskew) crop.
+
+    Grid lines are detected on the deskewed image. This function applies the
+    inverse rotation to project them back onto the original image, so the user
+    can visually verify both deskew accuracy and grid alignment.
+
+    Returns annotated BGR image.
+    """
+    debug = original_crop.copy()
+    if len(debug.shape) == 2:
+        debug = cv2.cvtColor(debug, cv2.COLOR_GRAY2BGR)
+    h_img, w_img = debug.shape[:2]
+
+    if abs(deskew_angle) < 0.1:
+        # No deskew — just draw straight grid lines (same as grid_debug)
+        for y in h_pos:
+            cv2.line(debug, (0, int(y)), (w_img, int(y)), (0, 180, 0), 1)
+        for x in v_pos:
+            cv2.line(debug, (int(x), 0), (int(x), h_img), (0, 180, 0), 1)
+        return debug
+
+    # Inverse rotation matrix: rotate by -deskew_angle around image center
+    center = (w_img / 2, h_img / 2)
+    M_inv = cv2.getRotationMatrix2D(center, -deskew_angle, 1.0)
+
+    def transform_point(x, y):
+        """Apply inverse rotation to a point."""
+        pt = np.array([x, y, 1.0])
+        result = M_inv @ pt
+        return int(round(result[0])), int(round(result[1]))
+
+    # Draw horizontal grid lines (projected back to original space)
+    for y in h_pos:
+        y_int = int(round(y))
+        p1 = transform_point(0, y_int)
+        p2 = transform_point(w_img, y_int)
+        cv2.line(debug, p1, p2, (0, 180, 0), 1)
+
+    # Draw vertical grid lines (projected back to original space)
+    for x in v_pos:
+        x_int = int(round(x))
+        p1 = transform_point(x_int, 0)
+        p2 = transform_point(x_int, h_img)
+        cv2.line(debug, p1, p2, (0, 180, 0), 1)
+
+    # Add deskew angle annotation
+    cv2.putText(debug, f"deskew: {deskew_angle:+.2f}deg", (5, 20),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+
+    return debug
+
+
 def save_debug_images(page_img, crop, h_pos, v_pos, spacing, occupied, confident, ambiguous,
-                      bboxes_dict, figure_labels, label, book_slug):
+                      bboxes_dict, figure_labels, label, book_slug,
+                      original_crop=None, deskew_angle=0.0):
     """Save all debug images and return their relative paths."""
     debug_dir = ASSET_BASE / "tutorial_assets" / book_slug / "debug" / label
     debug_dir.mkdir(parents=True, exist_ok=True)
@@ -306,14 +327,18 @@ def save_debug_images(page_img, crop, h_pos, v_pos, spacing, occupied, confident
     cv2.imwrite(str(bbox_path), bbox_debug)
     paths["bbox_debug"] = str(bbox_path.relative_to(ASSET_BASE))
 
-    # 2. Grid + occupied debug image
+    # 2. Grid + occupied debug image (on deskewed crop)
     grid_debug = generate_grid_debug_image(crop, h_pos, v_pos, spacing, occupied, confident, ambiguous)
     grid_path = debug_dir / "grid_debug.png"
     cv2.imwrite(str(grid_path), grid_debug)
     paths["grid_debug"] = str(grid_path.relative_to(ASSET_BASE))
 
-    # 3. Contact sheet (save a copy)
-    # (built and saved separately in the caller, path added later)
+    # 3. Deskew debug image (grid lines projected back onto original crop)
+    if original_crop is not None:
+        deskew_debug = generate_deskew_debug_image(original_crop, h_pos, v_pos, deskew_angle)
+        deskew_path = debug_dir / "deskew_debug.png"
+        cv2.imwrite(str(deskew_path), deskew_debug)
+        paths["deskew_debug"] = str(deskew_path.relative_to(ASSET_BASE))
 
     # 4. Crop image
     crop_path = debug_dir / "crop.png"
@@ -368,7 +393,8 @@ def save_training_patch(patch, classification, book_slug, page, figure_label,
 
 
 def save_all_training_patches(occupied_patches, classifications, label_map,
-                              col_start, row_start, book_slug, page, figure_label):
+                              col_start, row_start, book_slug, page, figure_label,
+                              classification_source="vllm"):
     """Save all patches (including empty) for a figure with full provenance."""
     saved = 0
     patch_lookup = {(ci, ri): patch for ci, ri, patch in occupied_patches}
@@ -381,7 +407,7 @@ def save_all_training_patches(occupied_patches, classifications, label_map,
         # Get classification for this label
         if isinstance(classifications, dict):
             cls_str = classifications.get(lbl, "empty")
-            pc = parse_classification(lbl, cls_str, ci, ri, source="vllm")
+            pc = parse_classification(lbl, cls_str, ci, ri, source=classification_source)
         elif isinstance(classifications, list):
             pc = next((c for c in classifications if c.label == lbl), None)
             if pc is None:
@@ -409,6 +435,32 @@ def _find_peaks(arr, min_val, min_dist):
             if not peaks or i - peaks[-1] >= min_dist:
                 peaks.append(i)
     return np.array(peaks)
+
+
+def _refine_positions(line_image, positions, axis, window=15):
+    """Refine grid line positions to sub-pixel accuracy using weighted centroid.
+
+    Uses the morphological line image (where only H or V lines remain) as weights.
+    For each detected peak, computes the center-of-mass in a window around it.
+    """
+    h_img, w_img = line_image.shape
+    refined = []
+    for pos in positions:
+        idx = int(pos)
+        if axis == "h":
+            y1 = max(0, idx - window)
+            y2 = min(h_img, idx + window + 1)
+            weights = np.sum(line_image[y1:y2, :], axis=1).astype(float)
+        else:
+            x1 = max(0, idx - window)
+            x2 = min(w_img, idx + window + 1)
+            weights = np.sum(line_image[:, x1:x2], axis=0).astype(float)
+        if np.sum(weights) > 0:
+            centroid = np.average(np.arange(len(weights)), weights=weights)
+            refined.append((y1 if axis == "h" else x1) + centroid)
+        else:
+            refined.append(float(pos))
+    return np.array(refined)
 
 
 def cv_detect_grid(gray):
@@ -466,6 +518,11 @@ def cv_detect_grid(gray):
 
     h_positions = _fill_gaps(h_positions, h_spacing)
     v_positions = _fill_gaps(v_positions, v_spacing)
+
+    # Sub-pixel refinement: use weighted centroid on the morphological line image
+    window = max(3, int(spacing * 0.4))
+    h_positions = _refine_positions(h_lines, h_positions, axis="h", window=window)
+    v_positions = _refine_positions(v_lines, v_positions, axis="v", window=window)
 
     return h_positions, v_positions, spacing
 
@@ -596,68 +653,7 @@ def cv_preclass_confident(occupied_patches, spacing):
     return confident, ambiguous
 
 
-# ── Contact sheet generation ──────────────────────────────────────────────────
-
-def build_contact_sheet(occupied_patches, spacing, cols_per_row=8):
-    """Arrange occupied intersection patches into a labeled contact sheet image.
-
-    Args:
-        occupied_patches: list of (col_idx, row_idx, patch_image)
-        spacing: grid spacing in pixels (determines patch size)
-        cols_per_row: number of patches per row in the sheet
-
-    Returns:
-        (sheet_image, label_map) where label_map is {"A": (col_idx, row_idx), ...}
-    """
-    if not occupied_patches:
-        return None, {}
-
-    patch_size = int(spacing * 1.0)
-    margin = 4
-    label_h = 16  # height for text label below each patch
-    cell_w = patch_size + margin * 2
-    cell_h = patch_size + margin * 2 + label_h
-
-    n = len(occupied_patches)
-    rows = ceil(n / cols_per_row)
-    sheet_w = cols_per_row * cell_w
-    sheet_h = rows * cell_h
-
-    sheet = np.ones((sheet_h, sheet_w), dtype=np.uint8) * 240  # light gray background
-    label_map = {}
-
-    for idx, (ci, ri, patch) in enumerate(occupied_patches):
-        row_i = idx // cols_per_row
-        col_i = idx % cols_per_row
-        x_off = col_i * cell_w + margin
-        y_off = row_i * cell_h + margin
-
-        # Resize patch to standard size
-        resized = cv2.resize(patch, (patch_size, patch_size), interpolation=cv2.INTER_AREA)
-
-        # Place patch
-        sheet[y_off:y_off + patch_size, x_off:x_off + patch_size] = resized
-
-        # Draw border
-        cv2.rectangle(sheet, (x_off - 1, y_off - 1),
-                      (x_off + patch_size, y_off + patch_size), 0, 1)
-
-        # Label: A, B, C, ... AA, AB, ...
-        if idx < 26:
-            label = chr(65 + idx)
-        else:
-            label = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
-
-        label_map[label] = (ci, ri)
-
-        # Draw label text
-        cv2.putText(sheet, f"{label}:({ci},{ri})", (x_off, y_off + patch_size + label_h - 3),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, 0, 1)
-
-    return sheet, label_map
-
-
-# ── Annotated crop for VLLM classification ───────────────────────────────────
+# ── Annotated crop for debug visualization ───────────────────────────────────
 
 def build_annotated_crop(crop, h_positions, v_positions, occupied_patches, spacing):
     """Draw letter labels at occupied intersections on the full crop image.
@@ -696,123 +692,6 @@ def build_annotated_crop(crop, h_positions, v_positions, occupied_patches, spaci
                     font, font_scale, (200, 0, 200), 1, cv2.LINE_AA)
 
     return annotated, label_map
-
-
-# ── Few-shot sheet for VLLM classification ───────────────────────────────────
-
-FEWSHOT_EXAMPLES_DIR = Path("data/training_patches/examples")
-
-FEWSHOT_EXAMPLES = [
-    ("black_plain.png", "black"),
-    ("black_numbered.png", "black+N"),
-    ("white_plain.png", "white"),
-    ("white_numbered.png", "white+N"),
-    ("letter.png", "letter_A"),
-    ("empty.png", "empty"),
-]
-
-VLLM_CLASSIFY_FEWSHOT_PROMPT = """Classify Go board intersection patches.
-
-Image 1: Reference examples (top row) and patches to classify (below).
-  Top row shows correctly labeled examples for each category.
-  Below are patches labeled A, B, C... — classify each one.
-Image 2: The full board diagram with labeled positions for context.
-
-Categories:
-- "black": solid black stone, no number
-- "white": white stone (light center, dark border), no number
-- "black+N": black stone with move number N (white digits on dark stone)
-- "white+N": white stone with move number N (dark digits on light stone)
-- "triangle_black"/"triangle_white": stone with △ mark
-- "square_black"/"square_white": stone with □ mark
-- "circle_black"/"circle_white": stone with ○ mark
-- "letter_X": letter X annotation on empty intersection
-- "empty": no stone (false detection)
-
-Return JSON only: {"A": "black+1", "B": "white", ...}
-"""
-
-
-def build_fewshot_sheet(occupied_patches, spacing, cols_per_row=8):
-    """Build a composite image with example patches (top) and target patches (below).
-
-    Returns (sheet_image, label_map) or (None, {}) if examples dir is missing.
-    """
-    if not occupied_patches:
-        return None, {}
-
-    # Load example patches
-    examples = []
-    for fname, elabel in FEWSHOT_EXAMPLES:
-        epath = FEWSHOT_EXAMPLES_DIR / fname
-        if epath.exists():
-            examples.append((cv2.imread(str(epath), cv2.IMREAD_GRAYSCALE), elabel))
-
-    if not examples:
-        log.warning("No few-shot examples found in %s, falling back to plain sheet", FEWSHOT_EXAMPLES_DIR)
-        return build_contact_sheet(occupied_patches, spacing, cols_per_row)
-
-    patch_size = int(spacing * 1.0)
-    margin = 4
-    label_h = 18
-    cell_w = patch_size + margin * 2
-    cell_h = patch_size + margin * 2 + label_h
-
-    # Example row
-    ex_cols = len(examples)
-    ex_row_w = max(ex_cols * cell_w, cols_per_row * cell_w)
-
-    # Target rows
-    n = len(occupied_patches)
-    target_rows = ceil(n / cols_per_row)
-    separator_h = 6
-
-    sheet_w = max(ex_cols, cols_per_row) * cell_w
-    sheet_h = cell_h + separator_h + target_rows * cell_h
-
-    sheet = np.ones((sheet_h, sheet_w), dtype=np.uint8) * 240
-
-    # Draw example row with labels
-    for i, (epatch, elabel) in enumerate(examples):
-        x_off = i * cell_w + margin
-        y_off = margin
-        resized = cv2.resize(epatch, (patch_size, patch_size), interpolation=cv2.INTER_AREA)
-        sheet[y_off:y_off + patch_size, x_off:x_off + patch_size] = resized
-        cv2.rectangle(sheet, (x_off - 1, y_off - 1),
-                      (x_off + patch_size, y_off + patch_size), 0, 1)
-        # Label below
-        cv2.putText(sheet, elabel, (x_off, y_off + patch_size + label_h - 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, 0, 1)
-
-    # Draw separator line
-    sep_y = cell_h + separator_h // 2
-    cv2.line(sheet, (0, sep_y), (sheet_w, sep_y), 100, 1)
-
-    # Draw target patches
-    label_map = {}
-    base_y = cell_h + separator_h
-
-    for idx, (ci, ri, patch) in enumerate(occupied_patches):
-        row_i = idx // cols_per_row
-        col_i = idx % cols_per_row
-        x_off = col_i * cell_w + margin
-        y_off = base_y + row_i * cell_h + margin
-
-        resized = cv2.resize(patch, (patch_size, patch_size), interpolation=cv2.INTER_AREA)
-        sheet[y_off:y_off + patch_size, x_off:x_off + patch_size] = resized
-        cv2.rectangle(sheet, (x_off - 1, y_off - 1),
-                      (x_off + patch_size, y_off + patch_size), 0, 1)
-
-        if idx < 26:
-            label = chr(65 + idx)
-        else:
-            label = chr(65 + idx // 26 - 1) + chr(65 + idx % 26)
-
-        label_map[label] = (ci, ri)
-        cv2.putText(sheet, label, (x_off + patch_size // 2 - 5, y_off + patch_size + label_h - 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, 0, 1)
-
-    return sheet, label_map
 
 
 # ── Step 3b: OpenCV stone detection (legacy) ─────────────────────────────────
@@ -885,132 +764,283 @@ def cv_detect_stones_legacy(gray, h_positions, v_positions, spacing):
     return stones
 
 
-# ── Step 0: VLLM bbox detection (via claude CLI) ─────────────────────────────
+# ── Step 4: Haiku per-patch classification ────────────────────────────────────
 
-def vllm_call(image_path, prompt, extra_images=None):
-    """Call Claude via claude CLI with Max membership (no API credits needed).
+HAIKU_CLASSIFY_PROMPT = """This is a small cropped patch from a Go (围棋) textbook diagram, centered on one grid intersection.
 
-    Clears ANTHROPIC_API_KEY from subprocess env so the CLI uses Max OAuth.
-    Images are base64-encoded inline in the prompt text.
+Classify what is at this intersection. Use EXACTLY one of these formats:
+- black+N  — black stone (dark filled circle) with move number N (where N is 1-999)
+- white+N  — white stone (open circle with thick dark border) with move number N (where N is 1-999)
+- black    — black stone without any number (solid dark circle)
+- white    — white stone without any number (open circle with thick dark border, light/empty inside)
+- letter_X — a letter annotation (A-Z or a-z) on an empty intersection, e.g. letter_A, letter_b
+- triangle_black — a triangle mark (△) on a BLACK stone
+- triangle_white — a triangle mark (△) on a WHITE stone
+- triangle — a triangle mark (△) on an empty intersection (no stone)
+- empty    — just thin grid lines crossing, nothing else
 
-    Args:
-        image_path: primary image path
-        prompt: text prompt
-        extra_images: optional list of additional image paths
+IMPORTANT distinctions:
+- White stones have a THICK circular border. Empty intersections only have THIN crossing grid lines.
+- Numbers on stones (1, 2, 3... up to 3 digits) are MOVE numbers, NOT letters. A "2" on a white stone = white+2, NOT letter_2.
+- Letters are ONLY alphabetic (A-Z or a-z), never numeric. They appear on empty intersections without any stone.
+
+Answer with just one classification, nothing else."""
+
+
+def haiku_classify_patch(patch_image_path, max_retries=3):
+    """Classify a single Go intersection patch using Claude Haiku via Anthropic SDK.
+
+    Uses ANTHROPIC_API_KEY directly (no claude CLI overhead).
+    Retries on 429 rate limit errors with exponential backoff.
+    Returns classification string like "black+1", "white", "letter_A", "empty".
     """
-    import base64
+    import time
+    import anthropic
 
-    def _encode_inline(path):
-        path = Path(path)
-        with open(path, "rb") as f:
-            return base64.standard_b64encode(f.read()).decode("utf-8")
+    img_bytes = Path(patch_image_path).read_bytes()
+    b64 = base64.b64encode(img_bytes).decode()
 
-    # Build prompt with inline base64 images
-    parts = [f"[Image: data:image/png;base64,{_encode_inline(image_path)}]"]
-    for img in (extra_images or []):
-        parts.append(f"[Image: data:image/png;base64,{_encode_inline(img)}]")
-    parts.append(prompt)
-    full_prompt = "\n\n".join(parts)
+    use_thinking = os.environ.get("HAIKU_THINKING", "").lower() in ("1", "true", "yes")
+    client = anthropic.Anthropic()
+    for attempt in range(max_retries):
+        try:
+            kwargs = {
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 2048 if use_thinking else 20,
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                        {"type": "text", "text": HAIKU_CLASSIFY_PROMPT},
+                    ],
+                }],
+            }
+            if use_thinking:
+                kwargs["thinking"] = {"type": "enabled", "budget_tokens": 1024}
+            response = client.messages.create(**kwargs)
+            break
+        except anthropic.RateLimitError:
+            if attempt < max_retries - 1:
+                wait = 2 ** attempt + 1  # 2s, 3s, 5s
+                log.info("    Rate limited, waiting %ds before retry...", wait)
+                time.sleep(wait)
+            else:
+                raise
+        except (anthropic.APIConnectionError, anthropic.APITimeoutError):
+            if attempt < max_retries - 1:
+                wait = 3 * (attempt + 1)  # 3s, 6s, 9s
+                log.info("    Connection error, waiting %ds before retry...", wait)
+                time.sleep(wait)
+            else:
+                raise
 
-    # Clear pay-per-use API key so claude CLI uses Max OAuth
-    env = os.environ.copy()
-    env.pop("ANTHROPIC_API_KEY", None)
-
-    result = subprocess.run(
-        ["claude", "-p", full_prompt],
-        capture_output=True, text=True, timeout=120, env=env,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"claude CLI failed: {result.stderr[:300]}")
-    text = result.stdout.strip()
-
-    # Extract JSON from response
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start == -1 or end == 0:
-        # Try array
-        start = text.find("[")
-        end = text.rfind("]") + 1
-    if start == -1 or end == 0:
-        raise ValueError(f"No JSON in VLLM response: {text[:300]}")
-    return json.loads(text[start:end])
+    # With thinking, response has [thinking_block, text_block]; without, just [text_block]
+    text = next(b.text for b in response.content if b.type == "text").strip()
+    text = text.split("\n")[0].strip().strip('"').strip("'").rstrip(".")
+    # Normalize prefix to lowercase but preserve letter case in letter_X
+    if text.lower().startswith("letter_"):
+        return "letter_" + text[7:]  # keep original case of the letter
+    return text.lower()
 
 
-def vllm_detect_bboxes(page_image_path):
-    """Step 0: Detect bounding boxes for each board diagram on the page.
+def qwen_classify_patch(patch_image_path, max_retries=3):
+    """Classify a single Go intersection patch using Qwen VL via DashScope API.
 
-    Returns dict mapping figure_label → (x1, y1, x2, y2) in pixels.
+    Uses DASHSCOPE_API_KEY from environment. Compatible with OpenAI SDK format.
+    Retries on rate limit errors with exponential backoff.
+    Returns classification string like "black+1", "white", "letter_A", "empty".
     """
-    prompt = """This is a page from a Go (围棋) textbook. Identify each board diagram (棋盘图) on the page.
-For each diagram, return its bounding box in pixel coordinates.
-The figure label is the text like "图1", "图2" shown below or near each diagram.
+    import time
+    from openai import OpenAI
 
-Return JSON only, no explanation:
-{"figures": {"图1": [x1, y1, x2, y2], "图2": [x1, y1, x2, y2]}}
+    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    if not api_key:
+        raise RuntimeError("DASHSCOPE_API_KEY not set — add it to .zshrc or export it")
 
-Where x1,y1 is the top-left corner and x2,y2 is the bottom-right corner of the board grid area (not including the "图N" label text)."""
+    img_bytes = Path(patch_image_path).read_bytes()
+    b64 = base64.b64encode(img_bytes).decode()
 
-    result = vllm_call(page_image_path, prompt)
-    return result.get("figures", {})
+    client = OpenAI(api_key=api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="qwen3-vl-plus",
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                        {"type": "text", "text": HAIKU_CLASSIFY_PROMPT},
+                    ],
+                }],
+                max_tokens=256,
+                extra_body={"enable_thinking": True, "thinking_budget": 200},
+            )
+            break
+        except Exception as e:
+            err_str = str(e).lower()
+            if "rate" in err_str or "429" in err_str or "throttl" in err_str:
+                if attempt < max_retries - 1:
+                    wait = 2 ** attempt + 1
+                    log.info("    Rate limited, waiting %ds before retry...", wait)
+                    time.sleep(wait)
+                else:
+                    raise
+            elif "connect" in err_str or "timeout" in err_str:
+                if attempt < max_retries - 1:
+                    wait = 3 * (attempt + 1)
+                    log.info("    Connection error, waiting %ds before retry...", wait)
+                    time.sleep(wait)
+                else:
+                    raise
+            else:
+                raise
+
+    text = response.choices[0].message.content.strip()
+    text = text.split("\n")[0].strip().strip('"').strip("'").rstrip(".")
+    if text.lower().startswith("letter_"):
+        return "letter_" + text[7:]
+    return text.lower()
 
 
-# ── Step 1: VLLM board region identification ──────────────────────────────────
+def gemini_classify_patch(patch_image_path, max_retries=3):
+    """Classify a single Go intersection patch using Gemini via Google GenAI SDK.
 
-def vllm_identify_region(crop_image_path, num_h_lines, num_v_lines):
-    """Step 1: Identify which part of the 19x19 board this diagram shows.
-
-    Uses the number of detected grid lines from CV to constrain the answer.
-    Returns dict with 'col_start' and 'row_start'.
+    Uses GEMINI_API_KEY from environment. Uses native SDK to disable thinking.
+    Returns classification string like "black+1", "white", "letter_A", "empty".
     """
-    prompt = f"""This is a cropped Go (围棋) board diagram from a textbook.
-OpenCV detected {num_v_lines} vertical lines and {num_h_lines} horizontal lines.
+    import time
+    from google import genai
+    from google.genai import types
 
-The full board is 19×19. This diagram shows only part of the board.
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set — get one at https://aistudio.google.com/apikey")
 
-Coordinate system: col=0 is leftmost, row=0 is topmost on the full 19×19 board.
-Star points (hoshi) are at positions: (3,3), (9,3), (15,3), (3,9), (9,9), (15,9), (3,15), (9,15), (15,15).
+    img_bytes = Path(patch_image_path).read_bytes()
+    client = genai.Client(api_key=api_key)
 
-Determine which portion of the full board is shown:
-- col_start: the column index of the leftmost visible line (0 if left edge is the board edge)
-- row_start: the row index of the topmost visible line (0 if top edge is the board edge)
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=[
+                    types.Part.from_bytes(data=img_bytes, mime_type="image/png"),
+                    HAIKU_CLASSIFY_PROMPT,
+                ],
+                config=types.GenerateContentConfig(
+                    max_output_tokens=20,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+            break
+        except Exception as e:
+            err_str = str(e).lower()
+            if "rate" in err_str or "429" in err_str or "resource" in err_str:
+                if attempt < max_retries - 1:
+                    wait = 2 ** attempt + 1
+                    log.info("    Rate limited, waiting %ds before retry...", wait)
+                    time.sleep(wait)
+                else:
+                    raise
+            elif "connect" in err_str or "timeout" in err_str:
+                if attempt < max_retries - 1:
+                    wait = 3 * (attempt + 1)
+                    log.info("    Connection error, waiting %ds before retry...", wait)
+                    time.sleep(wait)
+                else:
+                    raise
+            else:
+                raise
 
-The board has {num_v_lines} columns visible (col_start to col_start+{num_v_lines - 1}) and {num_h_lines} rows visible (row_start to row_start+{num_h_lines - 1}).
+    raw = response.text
+    if raw is None:
+        raise RuntimeError("Gemini returned empty response (thinking consumed all tokens)")
+    text = raw.strip()
+    text = text.strip("`").strip()
+    text = text.split("\n")[0].strip().strip('"').strip("'").rstrip(".")
+    if text.lower().startswith("letter_"):
+        return "letter_" + text[7:]
+    return text.lower()
 
-Look for star points (small dots on intersections) to calibrate your answer.
-If the left edge and top edge are thick board borders, col_start=0 and row_start=0.
 
-Return JSON only:
-{{"col_start": 0, "row_start": 0}}"""
+def _coarse_to_compound(coarse: str, patch: np.ndarray, ocr) -> str:
+    """Convert EfficientNet coarse class + OCR into pipeline compound format.
 
-    return vllm_call(crop_image_path, prompt)
-
-
-# ── Step 4: VLLM number recognition ──────────────────────────────────────────
-
-def vllm_read_numbers(crop_image_path, stones):
-    """Step 4: Read move numbers on detected stones.
-
-    Returns dict mapping "col_idx,row_idx" → number (int) for stones that have labels.
+    Fallback when OCR fails: numbered → bare color, letter → empty, marked → bare color.
     """
-    if not stones:
-        return {}
+    if coarse in ("black", "white", "empty"):
+        return coarse
+    if coarse == "black_numbered":
+        num = ocr.read_number(patch, "black")
+        return f"black+{num}" if num else "black"
+    if coarse == "white_numbered":
+        num = ocr.read_number(patch, "white")
+        return f"white+{num}" if num else "white"
+    if coarse == "letter":
+        letter = ocr.read_letter(patch)
+        return f"letter_{letter}" if letter else "empty"
+    if coarse == "marked_black":
+        shape = ocr.read_shape(patch, "black")
+        return f"{shape}_black" if shape else "black"
+    if coarse == "marked_white":
+        shape = ocr.read_shape(patch, "white")
+        return f"{shape}_white" if shape else "white"
+    return "empty"
 
-    stone_desc = ", ".join(
-        f"{color} stone at grid position ({ci},{ri})"
-        for ci, ri, color in stones
-    )
-    prompt = f"""This is a cropped Go board diagram from a textbook.
-The following stones were detected: {stone_desc}
 
-For each stone, check if it has a move number printed on it (like ①②③ or 1,2,3...).
-Also check for any letter annotations (like A, B, C) on empty intersections.
+def local_classify_patch(patch_image_path, max_retries=3):
+    """Classify a single Go intersection patch using local EfficientNet-B0 + OCR.
 
-Return JSON only:
-{{"labels": {{"col_idx,row_idx": number_or_null, ...}}, "letters": {{"col_idx,row_idx": "A", ...}}}}
+    Same signature as haiku_classify_patch. Combines coarse EfficientNet class
+    with PatchOCR to produce compound strings matching the pipeline format.
+    """
+    from katrain.web.tutorials.vision.patch_classifier import PatchClassifier
+    from katrain.web.tutorials.vision.patch_ocr import PatchOCR
 
-For stones without numbers, set the value to null. Only include entries that have actual labels."""
+    patch = cv2.imread(str(patch_image_path), cv2.IMREAD_GRAYSCALE)
+    if patch is None:
+        return "empty"
+    classifier = PatchClassifier.get_instance(MODEL_DIR)
+    ocr = PatchOCR()
+    coarse, conf = classifier.classify_single(patch)
+    return _coarse_to_compound(coarse, patch, ocr)
 
-    return vllm_call(crop_image_path, prompt)
+
+def cv_detect_bboxes(page_image_path):
+    """Step 0: Detect bounding boxes for each board diagram on the page using OpenCV.
+
+    Uses morphological line detection to find regions with dense grid patterns.
+    Returns list of (x1, y1, x2, y2) tuples sorted top-to-bottom, left-to-right.
+    """
+    gray = cv2.imread(str(page_image_path), cv2.IMREAD_GRAYSCALE)
+    h, w = gray.shape
+
+    _, binary = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY_INV)
+
+    # Detect horizontal and vertical lines
+    min_line_len = min(h, w) // 10
+    h_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (min_line_len, 1))
+    h_lines = cv2.morphologyEx(binary, cv2.MORPH_OPEN, h_kernel)
+    v_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_line_len))
+    v_lines = cv2.morphologyEx(binary, cv2.MORPH_OPEN, v_kernel)
+
+    # Areas with both H and V lines = board regions
+    combined = cv2.bitwise_or(h_lines, v_lines)
+    dilate_k = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 30))
+    dilated = cv2.dilate(combined, dilate_k, iterations=3)
+
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter small regions, sort by position (top-to-bottom, left-to-right)
+    min_area = (min(h, w) // 8) ** 2
+    boxes = []
+    for cnt in contours:
+        x, y, bw, bh = cv2.boundingRect(cnt)
+        if bw * bh > min_area:
+            boxes.append((x, y, x + bw, y + bh))
+
+    boxes.sort(key=lambda b: (b[1] // 200, b[0]))
+    return boxes
 
 
 # ── Step 5: Build board_payload ───────────────────────────────────────────────
@@ -1055,6 +1085,80 @@ def build_payload(stones, labels_data, col_start, row_start):
         "shapes": {},
         "highlights": [],
     }
+
+
+# ── Deskew: straighten tilted scanned board images ───────────────────────────
+
+def deskew_board(gray, debug=False):
+    """Detect and correct rotation in a scanned Go board diagram.
+
+    Uses HoughLinesP to detect grid lines, computes median angle, and rotates
+    the image to straighten it. Only corrects small angles (< 5°).
+
+    Returns (corrected_gray, angle_degrees). If no correction needed, returns
+    the original image with angle=0.
+    """
+    h_img, w_img = gray.shape
+
+    # Detect lines using probabilistic Hough transform
+    _, binary = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY_INV)
+    min_line_len = min(h_img, w_img) // 3  # only long lines for reliable angle
+    lines = cv2.HoughLinesP(binary, 1, np.pi / 1800, threshold=100,
+                            minLineLength=min_line_len, maxLineGap=10)
+
+    if lines is None or len(lines) < 4:
+        return gray, 0.0
+
+    # Compute angle of each line, separate into ~horizontal and ~vertical
+    angles = []
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        angle = np.degrees(np.arctan2(y2 - y1, x2 - x1))
+        # Near-horizontal lines (angle close to 0°)
+        if abs(angle) < 10:
+            angles.append(angle)
+        # Near-vertical lines (angle close to ±90°)
+        elif abs(abs(angle) - 90) < 10:
+            angles.append(angle - 90 if angle > 0 else angle + 90)
+
+    if len(angles) < 4:
+        return gray, 0.0
+
+    # Use trimmed mean (remove outlier 20%) for robustness
+    sorted_angles = sorted(angles)
+    trim = max(1, len(sorted_angles) // 5)
+    trimmed = sorted_angles[trim:-trim] if len(sorted_angles) > 2 * trim else sorted_angles
+    median_angle = float(np.mean(trimmed))
+
+    # Only correct small tilts (< 5°), larger angles suggest a different issue
+    if abs(median_angle) < 0.1 or abs(median_angle) > 5.0:
+        return gray, 0.0
+
+    # Rotate image to correct the skew
+    center = (w_img / 2, h_img / 2)
+    M = cv2.getRotationMatrix2D(center, median_angle, 1.0)
+    corrected = cv2.warpAffine(gray, M, (w_img, h_img),
+                               flags=cv2.INTER_LINEAR,
+                               borderMode=cv2.BORDER_CONSTANT,
+                               borderValue=255)
+
+    if debug:
+        log.info("  Deskew: corrected %.2f° rotation (%d lines detected)", median_angle, len(angles))
+
+    return corrected, median_angle
+
+
+def deskew_board_color(img, gray, angle):
+    """Apply the same deskew rotation to a color image."""
+    if abs(angle) < 0.1:
+        return img
+    h_img, w_img = gray.shape
+    center = (w_img / 2, h_img / 2)
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    return cv2.warpAffine(img, M, (w_img, h_img),
+                          flags=cv2.INTER_LINEAR,
+                          borderMode=cv2.BORDER_CONSTANT,
+                          borderValue=(255, 255, 255))
 
 
 # ── Page-level crop detection (CV fallback for VLLM bbox) ────────────────────
@@ -1117,10 +1221,11 @@ def crop_diagram(page_img, page_gray, y_start, y_end, padding=15):
 
 # ── Full pipeline ─────────────────────────────────────────────────────────────
 
-def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=False):
+def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=False, vllm="haiku"):
     """Process all diagrams on a single page.
 
     figure_ids: list of (figure_label, figure_db_id) e.g. [("图1", 1), ("图2", 2)]
+    vllm: VLLM backend for S4 — "haiku" (Claude) or "qwen" (DashScope).
     Returns list of FigureResult for per-figure status tracking.
     """
     results = []
@@ -1132,33 +1237,17 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         return results
     page_gray = cv2.cvtColor(page_img, cv2.COLOR_BGR2GRAY)
 
-    # Step 0: detect diagram bounding boxes
+    # Step 0: detect diagram bounding boxes (pure CV — fast and accurate)
     log.info("Step 0: detecting diagram bboxes on %s", page_image_path.name)
+    cv_boxes = cv_detect_bboxes(page_image_path)
+    log.info("  CV detected %d diagram regions", len(cv_boxes))
 
-    # Try VLLM first, fall back to CV
-    try:
-        bboxes = vllm_detect_bboxes(page_image_path)
-        log.info("  VLLM bboxes: %s", bboxes)
-    except Exception as e:
-        log.warning("  VLLM bbox failed (%s), using CV fallback", e)
-        bboxes = {}
-
-    # CV fallback: detect diagram vertical ranges
-    if not bboxes or len(bboxes) < len(figure_ids):
-        cv_regions = cv_detect_diagram_bboxes(page_gray)
-        log.info("  CV detected %d diagram regions", len(cv_regions))
-
-        # Map CV regions to figure labels (by order)
-        for i, (label, _) in enumerate(figure_ids):
-            if label not in bboxes and i < len(cv_regions):
-                y1, y2 = cv_regions[i]
-                # Find horizontal extent
-                strip = page_gray[y1:y2, :]
-                col_dark = np.sum(strip < 100, axis=0)
-                dark_cols = np.where(col_dark > 5)[0]
-                if len(dark_cols) > 0:
-                    x1, x2 = int(dark_cols[0]) - 10, int(dark_cols[-1]) + 10
-                    bboxes[label] = [x1, y1 - 10, x2, y2 + 10]
+    # Map CV regions to figure labels by order
+    bboxes = {}
+    for i, (label, _) in enumerate(figure_ids):
+        if i < len(cv_boxes):
+            x1, y1, x2, y2 = cv_boxes[i]
+            bboxes[label] = [x1, y1, x2, y2]
 
     # Process each figure
     for label, fig_id in figure_ids:
@@ -1179,6 +1268,12 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         crop = page_img[y1:y2, x1:x2]
         crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
 
+        # Deskew: straighten tilted scans before grid detection
+        original_crop = crop.copy()  # keep pre-deskew copy for debug overlay
+        crop_gray, deskew_angle = deskew_board(crop_gray, debug=True)
+        if abs(deskew_angle) >= 0.1:
+            crop = deskew_board_color(crop, crop_gray, deskew_angle)
+
         # Save crop for VLLM steps
         crop_path = Path(tempfile.mktemp(suffix=".png", prefix=f"board_{label}_"))
         cv2.imwrite(str(crop_path), crop)
@@ -1187,6 +1282,15 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         # Step 2: CV grid detection
         h_pos, v_pos, spacing = cv_detect_grid(crop_gray)
         log.info("  Step 2: %d rows × %d cols, spacing=%.1fpx", len(h_pos), len(v_pos), spacing)
+
+        # Generate grid debug image: deskewed crop with detected grid lines overlay
+        grid_debug = crop.copy() if len(crop.shape) == 3 else cv2.cvtColor(crop_gray, cv2.COLOR_GRAY2BGR)
+        for hy in h_pos:
+            y = int(round(hy))
+            cv2.line(grid_debug, (0, y), (grid_debug.shape[1], y), (0, 180, 0), 1)
+        for vx in v_pos:
+            x = int(round(vx))
+            cv2.line(grid_debug, (x, 0), (x, grid_debug.shape[0]), (0, 180, 0), 1)
 
         if len(h_pos) < 3 or len(v_pos) < 3:
             log.warning("  Too few grid lines — skipping")
@@ -1200,24 +1304,13 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         log.info("  Step 3: %d occupied (%d confident, %d ambiguous)",
                  len(occupied), len(confident), len(ambiguous))
 
-        # Step 1: Region calibration — CV hint, VLLM determines final value
+        # Step 1: Region calibration (pure CV — border detection + star points)
         occupied_set = {(ci, ri) for ci, ri, _ in occupied}
         col_start, row_start, cal_conf, cal_evidence = calibrate_region(
             crop_gray, h_pos, v_pos, spacing, occupied_set
         )
-        log.info("  Step 1 (CV hint): col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
+        log.info("  Step 1: col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
                  col_start, row_start, cal_conf, cal_evidence)
-
-        # VLLM region identification (always, CV is unreliable for this)
-        try:
-            region_prompt = VLLM_REGION_PROMPT.format(
-                num_v=len(v_pos), num_h=len(h_pos))
-            region = vllm_call(crop_path, region_prompt)
-            col_start = region.get("col_start", col_start)
-            row_start = region.get("row_start", row_start)
-            log.info("  Step 1 (VLLM): col_start=%d, row_start=%d", col_start, row_start)
-        except Exception as e:
-            log.warning("  VLLM region failed (%s), using CV hint", e)
 
         # Step 4: VLLM classification via annotated crop (full context)
         # Build annotated crop with letter labels at ALL occupied positions
@@ -1228,7 +1321,7 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
 
         # Save individual patches to debug dir (for training data export)
         book_slug_dir = page_image_path.parent.parent.name
-        fig_debug_dir = ASSET_BASE / "tutorial_assets" / book_slug_dir / "debug" / label
+        fig_debug_dir = ASSET_BASE / "tutorial_assets" / book_slug_dir / "debug" / f"{fig_id}_{label}"
         fig_debug_dir.mkdir(parents=True, exist_ok=True)
         patches_dir = fig_debug_dir / "patches"
         patches_dir.mkdir(exist_ok=True)
@@ -1239,41 +1332,64 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
                 cv2.imwrite(str(patches_dir / f"{lbl}_{ci}_{ri}.png"), patch)
         log.info("  Saved %d patches to %s", len(full_label_map), patches_dir)
 
-        # Start with CV-confident as fallback
+        # Build CV pre-classification for ALL patches (for debug display)
         confident_set = {(ci, ri): bt for ci, ri, _, bt in confident}
+        cv_preclass = {}  # label → CV result for every patch
         merged_classifications = {}
         for lbl, (ci, ri) in full_label_map.items():
             if (ci, ri) in confident_set:
+                cv_preclass[lbl] = confident_set[(ci, ri)]
                 merged_classifications[lbl] = confident_set[(ci, ri)]
-
-        # VLLM classifies ALL positions using few-shot sheet + annotated crop
-        annotated_path = Path(tempfile.mktemp(suffix=".png", prefix=f"annotated_{label}_"))
-        cv2.imwrite(str(annotated_path), annotated)
-        fewshot_path = None
-        try:
-            # Build few-shot sheet (example patches + target patches)
-            fewshot_sheet, fewshot_label_map = build_fewshot_sheet(occupied, spacing)
-            if fewshot_sheet is not None and FEWSHOT_EXAMPLES_DIR.exists():
-                fewshot_path = Path(tempfile.mktemp(suffix=".png", prefix=f"fewshot_{label}_"))
-                cv2.imwrite(str(fewshot_path), fewshot_sheet)
-                # Send both images: few-shot sheet (primary) + annotated crop (context)
-                vllm_result = vllm_call(fewshot_path, VLLM_CLASSIFY_FEWSHOT_PROMPT,
-                                        extra_images=[annotated_path])
-                log.info("  Step 4 (VLLM few-shot): classified %d positions", len(vllm_result))
             else:
-                # Fallback: original annotated crop only
-                vllm_result = vllm_call(annotated_path, VLLM_CLASSIFY_PROMPT)
-                log.info("  Step 4 (VLLM): classified %d positions", len(vllm_result))
-            # VLLM results override CV pre-classifications (VLLM sees full context)
-            for lbl, cls_str in vllm_result.items():
-                if lbl in full_label_map:
+                cv_preclass[lbl] = "ambiguous"
+
+        # Step 4: VLLM per-patch classification for ambiguous positions (concurrent)
+        classify_fn = {"haiku": haiku_classify_patch, "qwen": qwen_classify_patch, "gemini": gemini_classify_patch, "local": local_classify_patch}[vllm]
+        classification_source = vllm
+        ambiguous_labels = [lbl for lbl in full_label_map if lbl not in merged_classifications]
+        if ambiguous_labels:
+            log.info("  Step 4: classifying %d ambiguous patches with %s (concurrent)", len(ambiguous_labels), vllm)
+            # Build tasks: (label, patch_path) pairs
+            vllm_tasks = []
+            for lbl in ambiguous_labels:
+                ci, ri = full_label_map[lbl]
+                patch_path = patches_dir / f"{lbl}_{ci}_{ri}.png"
+                if not patch_path.exists():
+                    log.warning("    Patch %s not found, skipping", patch_path)
+                    continue
+                vllm_tasks.append((lbl, patch_path))
+
+            if vllm == "local":
+                # Batch fast-path: single forward pass over all ambiguous patches
+                from katrain.web.tutorials.vision.patch_classifier import PatchClassifier
+                from katrain.web.tutorials.vision.patch_ocr import PatchOCR
+
+                classifier = PatchClassifier.get_instance(MODEL_DIR)
+                ocr = PatchOCR()
+                patches_np = []
+                for lbl, pp in vllm_tasks:
+                    patch = cv2.imread(str(pp), cv2.IMREAD_GRAYSCALE)
+                    patches_np.append(patch if patch is not None else np.zeros((40, 40), dtype=np.uint8))
+                batch_results = classifier.classify_batch(patches_np)
+                for (lbl, pp), (coarse, conf), patch in zip(vllm_tasks, batch_results, patches_np):
+                    cls_str = _coarse_to_compound(coarse, patch, ocr)
                     merged_classifications[lbl] = cls_str
-        except Exception as e:
-            log.warning("  VLLM classification failed (%s), using CV-confident only", e)
-        finally:
-            annotated_path.unlink(missing_ok=True)
-            if fewshot_path:
-                fewshot_path.unlink(missing_ok=True)
+                    log.info("    %s → %s (conf=%.2f)", lbl, cls_str, conf)
+            else:
+                # Run VLLM calls concurrently (max 4 threads to respect rate limits)
+                with ThreadPoolExecutor(max_workers=min(4, len(vllm_tasks))) as executor:
+                    futures = {
+                        executor.submit(classify_fn, pp): lbl
+                        for lbl, pp in vllm_tasks
+                    }
+                    for future in as_completed(futures):
+                        lbl = futures[future]
+                        try:
+                            cls_str = future.result()
+                            merged_classifications[lbl] = cls_str
+                            log.info("    %s → %s", lbl, cls_str)
+                        except Exception as e:
+                            log.warning("    VLLM failed for %s: %s", lbl, e)
 
         log.info("  Classifications: %d total", len(merged_classifications))
 
@@ -1289,14 +1405,19 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         book_slug = page_image_path.parent.parent.name  # e.g. "曹薰铉布局技巧-上册-曹薰铉-1997"
         save_all_training_patches(
             occupied, merged_classifications, full_label_map,
-            col_start, row_start, book_slug, page_num_str, label
+            col_start, row_start, book_slug, page_num_str, label,
+            classification_source=classification_source,
         )
 
         stone_count = len(payload["stones"]["B"]) + len(payload["stones"]["W"])
         label_count_total = len(payload.get("labels", {}))
 
         # Determine per-figure status
-        if stone_count == 0:
+        missing_count = len(full_label_map) - len(merged_classifications)
+        if missing_count > 0:
+            status = "failed_vllm"
+            detail = f"{missing_count}/{len(full_label_map)} patches failed classification ({vllm})"
+        elif stone_count == 0:
             status = "failed_cv"
             detail = "no stones detected"
         elif cal_conf < 0.3:
@@ -1309,6 +1430,8 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         if dry_run:
             print(f"\n=== {label} (id={fig_id}) [{status}] ===")
             print(json.dumps(payload, ensure_ascii=False, indent=2))
+        elif status == "failed_vllm":
+            log.warning("  ✗ Skipping DB save for %s: %s", label, detail)
         elif db is not None:
             figure = db_queries.get_figure(db, fig_id)
             if figure:
@@ -1318,6 +1441,67 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
                     detail = "already has payload"
                 else:
                     db_queries.update_figure_board(db, figure, payload)
+                    # Write recognition_debug with bbox, region, patches, classification
+                    # Save annotated crop and bbox debug to debug dir
+                    cv2.imwrite(str(fig_debug_dir / "annotated_crop.png"), annotated)
+                    cv2.imwrite(str(fig_debug_dir / "crop.png"), crop)
+                    cv2.imwrite(str(fig_debug_dir / "grid_debug.png"), grid_debug)
+                    # Generate deskew debug image (grid lines on original crop)
+                    deskew_debug = generate_deskew_debug_image(original_crop, h_pos, v_pos, deskew_angle)
+                    cv2.imwrite(str(fig_debug_dir / "deskew_debug.png"), deskew_debug)
+                    # Generate bbox debug image
+                    bbox_vis = page_img.copy()
+                    for bl, bb in bboxes.items():
+                        bx1, by1, bx2, by2 = [int(c) for c in bb]
+                        cv2.rectangle(bbox_vis, (bx1, by1), (bx2, by2), (0, 200, 0), 3)
+                        cv2.putText(bbox_vis, bl, (bx1+5, by1+30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,200,0), 3)
+                    cv2.imwrite(str(fig_debug_dir / "bbox_debug.png"), bbox_vis)
+
+                    rel = lambda p: str(p.relative_to(ASSET_BASE))
+                    # Build patch paths map
+                    patch_paths = {}
+                    for lbl, (ci, ri) in full_label_map.items():
+                        pp = patches_dir / f"{lbl}_{ci}_{ri}.png"
+                        if pp.exists():
+                            patch_paths[lbl] = rel(pp)
+
+                    recognition_debug = {
+                        "deskew": {
+                            "angle": round(deskew_angle, 3),
+                            "debug_image": rel(fig_debug_dir / "deskew_debug.png"),
+                            "grid_image": rel(fig_debug_dir / "grid_debug.png"),
+                        },
+                        "bbox": {
+                            "method": "cv",
+                            "bbox": list(bboxes.get(label, [])),
+                            "debug_image": rel(fig_debug_dir / "bbox_debug.png"),
+                        },
+                        "region": {
+                            "method": "cv",
+                            "col_start": col_start,
+                            "row_start": row_start,
+                            "confidence": cal_conf,
+                            "evidence": cal_evidence,
+                            "grid_rows": len(h_pos),
+                            "grid_cols": len(v_pos),
+                        },
+                        "cv_detection": {
+                            "spacing": spacing,
+                            "total_occupied": len(occupied),
+                            "confident_count": len(confident),
+                            "ambiguous_count": len(ambiguous),
+                            "debug_image": rel(fig_debug_dir / "annotated_crop.png"),
+                        },
+                        "classification": {
+                            "label_map": {k: list(v) for k, v in full_label_map.items()},
+                            "cv_preclass": cv_preclass,
+                            "classifications": merged_classifications,
+                            "source": classification_source,
+                            "patch_images": patch_paths,
+                        },
+                        "crop_image": rel(fig_debug_dir / "crop.png"),
+                    }
+                    db_queries.update_figure_recognition_debug(db, figure, recognition_debug)
                     log.info("  ✓ Saved to DB")
             else:
                 log.error("  Figure id=%d not found in DB", fig_id)
@@ -1572,6 +1756,12 @@ def save_sheets_for_section(db, section_id, output_dir):
             crop = page_img[y1:y2, x1:x2]
             crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
 
+            # Deskew: straighten tilted scans before grid detection
+            original_crop = crop.copy()
+            crop_gray, deskew_angle = deskew_board(crop_gray, debug=True)
+            if abs(deskew_angle) >= 0.1:
+                crop = deskew_board_color(crop, crop_gray, deskew_angle)
+
             # Step 2: grid detection
             h_pos, v_pos, spacing = cv_detect_grid(crop_gray)
             if len(h_pos) < 3 or len(v_pos) < 3:
@@ -1625,7 +1815,8 @@ def save_sheets_for_section(db, section_id, output_dir):
             debug_paths = save_debug_images(
                 page_img, crop, h_pos, v_pos, spacing,
                 occupied, confident, ambiguous,
-                bboxes, figure_labels, label, book_slug
+                bboxes, figure_labels, label, book_slug,
+                original_crop=original_crop, deskew_angle=deskew_angle,
             )
 
             # Save annotated crop + contact sheet to debug dir
@@ -1640,6 +1831,11 @@ def save_sheets_for_section(db, section_id, output_dir):
 
             # Build recognition_debug metadata for DB
             recognition_debug = {
+                "deskew": {
+                    "angle": round(deskew_angle, 3),
+                    "debug_image": debug_paths.get("deskew_debug"),
+                    "grid_image": debug_paths.get("grid_debug"),
+                },
                 "bbox": {
                     "method": "cv",
                     "bbox": bboxes.get(label),
@@ -1727,6 +1923,8 @@ def main():
                         help="Save contact sheets to this directory (no DB write)")
     parser.add_argument("--apply-classifications", type=str,
                         help="Apply VLLM classification results from JSON file to DB")
+    parser.add_argument("--vllm", choices=["haiku", "qwen", "gemini", "local"], default="gemini",
+                        help="Backend for S4 patch classification: API (gemini/haiku/qwen) or local EfficientNet-B0 (default: gemini)")
     args = parser.parse_args()
 
     if args.test_cv:
@@ -1779,7 +1977,7 @@ def main():
                 continue
 
             log.info("\n── Page %d (%s) ── %d figure(s)", page_num, image_path.name, len(figure_ids))
-            page_results = process_page(image_path, figure_ids, dry_run=args.dry_run, db=db, force=args.force)
+            page_results = process_page(image_path, figure_ids, dry_run=args.dry_run, db=db, force=args.force, vllm=args.vllm)
             if page_results:
                 all_results.extend(page_results)
 

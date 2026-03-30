@@ -136,3 +136,9 @@ class BoardPayloadUpdate(BaseModel):
     """Request body for updating a figure's board_payload."""
     board_payload: StrictBoardPayload
     expected_updated_at: Optional[str] = None  # ISO timestamp for optimistic locking
+
+
+class NarrationUpdate(BaseModel):
+    """Request body for updating a figure's narration text and audio asset."""
+    narration: str
+    audio_asset: Optional[str] = None

@@ -25,6 +25,7 @@ dependencies = [
     "kivymd==0.104.1",
     "passlib>=1.7.4",
     "sqlalchemy>=2.0.46",
+    "anthropic>=0.86.0",
 ]
 
 [project.optional-dependencies]
@@ -44,6 +45,14 @@ vision = [
     "ultralytics>=8.3.0",
     "opencv-python>=4.8.0",
     "numpy>=1.24.0",
+]
+classifier = [
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "pytesseract>=0.3.10",
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
+    "easyocr>=1.7.2",
 ]
 
 [project.urls]

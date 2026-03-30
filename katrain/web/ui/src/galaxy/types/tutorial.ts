@@ -80,6 +80,11 @@ export interface RecognitionDebug {
   human_verified?: boolean;
   verified_at?: string;
   verified_by?: string;
+  deskew?: {
+    angle: number;
+    debug_image?: string;   // grid lines projected onto original (pre-deskew) crop
+    grid_image?: string;    // grid lines on deskewed crop
+  };
   bbox?: {
     method: string;
     bbox: [number, number, number, number] | null;
@@ -107,7 +112,9 @@ export interface RecognitionDebug {
     contact_sheet?: string;
     label_map?: Record<string, [number, number]>;
     confident_cv?: Record<string, string>;
+    cv_preclass?: Record<string, string>;
     classifications?: Record<string, string> | null;
+    patch_images?: Record<string, string>;
   };
   crop_image?: string;
 }

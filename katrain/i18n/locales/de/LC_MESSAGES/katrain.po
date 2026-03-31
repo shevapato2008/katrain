@@ -1712,7 +1712,7 @@ msgid "live:tomorrow"
 msgstr "Morgen"
 
 msgid "live:in_days"
-msgstr "Tage entfernt"
+msgstr "in {0} Tagen"
 
 msgid "live:moves"
 msgstr "Züge"

@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 class MatchSource(str, Enum):
     """Data source for live matches."""
     XINGZHEN = "xingzhen"
-    WEIQI_ORG = "weiqi_org"
+    YIKE = "yike"
+    PANDANET = "pandanet"
 
 
 class MatchStatus(str, Enum):
@@ -160,10 +161,6 @@ class LiveConfig(BaseModel):
     # Data source settings
     xingzhen_enabled: bool = True
     xingzhen_api_base: str = "https://api.19x19.com/api/engine/golives"
-    # WeiqiOrg disabled: SGF data is encrypted/encoded, cannot parse moves
-    # Will be re-enabled in Phase 2 once decryption is implemented
-    weiqi_org_enabled: bool = False
-    weiqi_org_api_base: str = "https://wqapi.cwql.org.cn"
 
     # Polling intervals (seconds)
     list_interval: int = 60  # How often to refresh match list

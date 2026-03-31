@@ -138,6 +138,9 @@ async def _lifespan_server(app: FastAPI, log):
     except Exception as e:
         log.warning(f"Failed to start live service: {e}")
 
+    # ── Tutorial Module (V2 — database-backed) ─────────────────────────────
+    log.info("Tutorial V2: using database-backed tutorials")
+
 
 async def _lifespan_board(app: FastAPI, log):
     """Board mode initialization — design.md Section 4.9."""
@@ -405,6 +408,39 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain("selfplay_setup", until_move=settings.get("setup_move"), target_b_advantage=settings.get("setup_advantage"))
             elif mode == "editgame":
                 session.katrain("_do_edit_game", size=settings.get("size"), handicap=settings.get("handicap"), komi=settings.get("komi"), rules=settings.get("rules"))
+            elif mode in ("free", "ranked"):
+                # Kiosk human-vs-AI game setup
+                color = settings.get("color", "black")
+                human_bw = "B" if color == "black" else "W"
+                ai_bw = "W" if color == "black" else "B"
+                ai_strategy = settings.get("ai_strategy", "ai:default")
+                rank_slider = int(settings.get("rank", 14))  # 0-28 slider value
+
+                session.katrain("update_player", bw=human_bw, player_type="player:human", player_subtype="player:human")
+                session.katrain("update_player", bw=ai_bw, player_type="player:ai", player_subtype=ai_strategy)
+
+                if ai_strategy == "ai:human":
+                    session.katrain.update_config(f"ai/ai:human/human_kyu_rank", 20 - rank_slider)
+                else:
+                    session.katrain.update_config(f"ai/{ai_strategy}/kyu_rank", rank_slider - 19)
+
+                time_enabled = settings.get("time_enabled", False)
+                if time_enabled:
+                    session.katrain.update_config("timer/main_time", settings.get("main_time", 0))
+                    session.katrain.update_config("timer/byo_length", settings.get("byo_length", 30))
+                    session.katrain.update_config("timer/byo_periods", settings.get("byo_periods", 3))
+                    session.katrain.update_config("timer/paused", False)
+                else:
+                    session.katrain.update_config("timer/main_time", 0)
+                    session.katrain.update_config("timer/byo_length", 0)
+                    session.katrain.update_config("timer/paused", True)
+
+                session.katrain("new_game",
+                    size=settings.get("board_size", 19),
+                    handicap=settings.get("handicap", 0),
+                    komi=settings.get("komi", 6.5),
+                    rules=settings.get("rules", "japanese")
+                )
             
             state = session.katrain.get_state()
             session.last_state = state
@@ -1247,6 +1283,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.get("/galaxy", response_class=FileResponse)
     @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
     async def serve_galaxy_app(full_path: str = None):
+        return str(static_root / "index.html")
+
+    # SPA Routing for Kiosk UI
+    @app.get("/kiosk", response_class=FileResponse)
+    @app.get("/kiosk/{full_path:path}", response_class=FileResponse)
+    async def serve_kiosk_app(full_path: str = None):
         return str(static_root / "index.html")
 
     # Catch-all for other static files (like vite.svg and JS/CSS in assets/)

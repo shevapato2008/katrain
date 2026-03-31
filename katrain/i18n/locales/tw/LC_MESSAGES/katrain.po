@@ -1659,7 +1659,7 @@ msgid "live:tomorrow"
 msgstr "明天"
 
 msgid "live:in_days"
-msgstr "天後"
+msgstr "{0}天後"
 
 msgid "live:moves"
 msgstr "手"

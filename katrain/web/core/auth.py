@@ -99,6 +99,29 @@ class SQLAlchemyUserRepository(UserRepository):
             # Recreate rating_history with the new schema
             models_db.Base.metadata.create_all(bind=engine)
 
+        # Schema drift guard (SQLite only): if ORM model columns don't match the
+        # existing table, drop all local tables and recreate from scratch.
+        # Safe because local SQLite is cache-only (shadow users, offline queue).
+        if engine.dialect.name == "sqlite":
+            inspector = inspect(engine)
+            needs_rebuild = False
+            for table in models_db.Base.metadata.sorted_tables:
+                if table.name not in inspector.get_table_names():
+                    continue
+                existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
+                expected_cols = {c.name for c in table.columns}
+                if not expected_cols.issubset(existing_cols):
+                    import logging
+                    logging.getLogger("katrain_web").warning(
+                        f"Schema drift in table '{table.name}': missing columns "
+                        f"{expected_cols - existing_cols}. Rebuilding local DB."
+                    )
+                    needs_rebuild = True
+                    break
+            if needs_rebuild:
+                models_db.Base.metadata.drop_all(bind=engine)
+                models_db.Base.metadata.create_all(bind=engine)
+
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
         session = self.session_factory()
         try:

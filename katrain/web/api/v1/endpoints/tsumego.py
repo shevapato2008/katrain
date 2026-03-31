@@ -29,6 +29,21 @@ class CategoryInfo(BaseModel):
     count: int
 
 
+class ProblemListItem(BaseModel):
+    """Slim model for list views — no initialBlack/initialWhite."""
+    id: str
+    category: str
+    hint: str
+
+
+class ProblemListResponse(BaseModel):
+    """Paginated list response."""
+    items: List[ProblemListItem]
+    total: int
+    page: int
+    page_size: int
+
+
 class ProblemSummary(BaseModel):
     id: str
     level: str
@@ -146,6 +161,45 @@ async def get_categories(request: Request, level: str, db: Session = Depends(get
         )
         for cat, count in rows
     ]
+
+
+@router.get("/levels/{level}/problems", response_model=ProblemListResponse)
+async def get_all_problems(
+    request: Request,
+    level: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """Get problems for a level with pagination (slim response for list views)."""
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await dispatcher.tsumego_get_all_problems(level, page, page_size)
+
+    level = level.lower()
+
+    query = db.query(TsumegoProblem).filter(TsumegoProblem.level == level)
+    total = query.count()
+
+    if total == 0:
+        raise HTTPException(status_code=404, detail=f"Level {level} not found")
+
+    problems = (
+        query.order_by(TsumegoProblem.category, TsumegoProblem.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    return ProblemListResponse(
+        items=[
+            ProblemListItem(id=p.id, category=p.category, hint=p.hint)
+            for p in problems
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/levels/{level}/categories/{category}", response_model=List[ProblemSummary])

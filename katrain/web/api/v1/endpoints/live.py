@@ -58,6 +58,7 @@ class UpcomingMatchResponse(BaseModel):
     scheduled_time: str
     player_black: Optional[str]
     player_white: Optional[str]
+    source: str
     source_url: Optional[str]
 
 
@@ -137,7 +138,7 @@ def get_live_service(request: Request):
 async def get_matches(
     request: Request,
     status: Optional[str] = Query(None, description="Filter by status: live, finished"),
-    source: Optional[str] = Query(None, description="Filter by source: xingzhen, weiqi_org"),
+    source: Optional[str] = Query(None, description="Filter by source: xingzhen, yike"),
     lang: Optional[str] = Query(None, description="Target language for translations: en, jp, ko, cn, tw"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of matches to return"),
     live_service=Depends(get_live_service),
@@ -405,6 +406,7 @@ async def get_upcoming_matches(
             scheduled_time=m.scheduled_time.isoformat(),
             player_black=player_black,
             player_white=player_white,
+            source=m.source,
             source_url=m.source_url,
         ))
 

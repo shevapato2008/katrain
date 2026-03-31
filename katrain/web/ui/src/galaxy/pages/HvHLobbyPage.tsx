@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import FriendsPanel from '../components/FriendsPanel';
 import { i18n } from '../../i18n';
 

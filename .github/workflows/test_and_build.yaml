@@ -124,7 +124,15 @@ jobs:
 
   build-macos:
     needs: [prepare, test]
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
     env:
       KATRAIN_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -171,14 +179,14 @@ jobs:
                        -srcfolder dmg_temp \
                        -ov \
                        -format UDZO \
-                       "KaTrain-${{ env.KATRAIN_VERSION }}.dmg"
+                       "KaTrain-${{ env.KATRAIN_VERSION }}-${{ matrix.arch }}.dmg"
         mkdir -p osx_app
-        mv "KaTrain-${{ env.KATRAIN_VERSION }}.dmg" osx_app/
+        mv "KaTrain-${{ env.KATRAIN_VERSION }}-${{ matrix.arch }}.dmg" osx_app/
 
     - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: KaTrainMacOS-${{ env.KATRAIN_VERSION }}
+        name: KaTrainMacOS-${{ env.KATRAIN_VERSION }}-${{ matrix.arch }}
         path: osx_app
 
   # This job publishes the package to PyPI.
@@ -231,7 +239,8 @@ jobs:
           
           ### Downloads
           - **Windows**: Download the `.exe` files or `.zip` folders.
-          - **macOS**: Download the `.dmg` file.
+          - **macOS (Apple Silicon)**: Download the `arm64` `.dmg` file.
+          - **macOS (Intel)**: Download the `x86_64` `.dmg` file.
         files: ./artifacts/*
         draft: true
         prerelease: false

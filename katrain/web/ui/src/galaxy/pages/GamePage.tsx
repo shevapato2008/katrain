@@ -3,13 +3,17 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
-import { useGameSession } from '../hooks/useGameSession';
+import type { BoardProps } from '../../components/Board';
+import { useGameSession } from '../../hooks/useGameSession';
 import RightSidebarPanel from '../components/game/RightSidebarPanel';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+
+// Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
+type Board3DComponent = React.ComponentType<BoardProps>;
 
 const GamePage = () => {
     const { sessionId } = useParams();
@@ -21,6 +25,10 @@ const GamePage = () => {
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
+
+    // Dynamic Board3D import — loaded once, then cached
+    const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
+    const board3dLoadingRef = useRef(false);
 
     const {
         sessionId: currentSessionId,
@@ -34,7 +42,7 @@ const GamePage = () => {
     } = useGameSession();
 
     // Analysis Toggles State
-    const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({
+    const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
         children: false,
         eval: false,
         hints: false,
@@ -43,8 +51,20 @@ const GamePage = () => {
         coords: true,
         numbers: false,
         score: true,
-        winrate: true
-    });
+        winrate: true,
+        view3d: false,
+        stoneDropEffect: false,
+    }));
+
+    // Load Board3D dynamically when first requested
+    useEffect(() => {
+        if (analysisToggles.view3d && !Board3D && !board3dLoadingRef.current) {
+            board3dLoadingRef.current = true;
+            import('../../components/Board3D').then(mod => {
+                setBoard3D(() => mod.default);
+            });
+        }
+    }, [analysisToggles.view3d, Board3D]);
 
     // Track move count for resetting hints after user move (Case 3)
     const prevMoveCountRef = useRef<number>(0);
@@ -132,6 +152,14 @@ const GamePage = () => {
     }, [gameState?.end_result, registerActiveGame, unregisterActiveGame, handleAction]);
 
     const handleToggleChange = (setting: string) => {
+        if (setting === 'view3d') {
+            setAnalysisToggles(prev => {
+                const next = { ...prev, view3d: !prev.view3d };
+                localStorage.setItem('katrain_view3d', String(next.view3d));
+                return next;
+            });
+            return;
+        }
         if (setting === 'hints') {
             const hasAnalysis = !!gameState?.analysis?.moves?.length;
             const currentlyOn = analysisToggles.hints;
@@ -298,13 +326,29 @@ const GamePage = () => {
                 </Box>
 
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 0.5 }}>
-                    <Board
-                        gameState={gameState}
-                        onMove={onMove}
-                        onNavigate={onNavigate}
-                        analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
-                        playerColor={humanColor}
-                    />
+                    <div style={{
+                        display: (analysisToggles.view3d && Board3D) ? 'none' : 'flex',
+                        width: '100%', height: '100%',
+                        justifyContent: 'center', alignItems: 'center'
+                    }}>
+                        <Board
+                            gameState={gameState}
+                            onMove={onMove}
+                            onNavigate={onNavigate}
+                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            playerColor={humanColor}
+                        />
+                    </div>
+                    {analysisToggles.view3d && Board3D && (
+                        <Board3D
+                            gameState={gameState}
+                            onMove={onMove}
+                            onNavigate={onNavigate}
+                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            playerColor={humanColor}
+                        />
+                    )}
+                    {analysisToggles.view3d && !Board3D && <CircularProgress />}
                 </Box>
             </Box>
 
@@ -318,7 +362,7 @@ const GamePage = () => {
                 isRated={isRated}
                 onTimeout={handleTimeout}
                 onPlaySound={handlePlaySound}
-                isAnalysisPending={analysisToggles.hints && !gameState.analysis?.top_moves?.length}
+                isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
             />
         </Box>
     );

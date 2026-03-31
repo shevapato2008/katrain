@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 
-interface BoardProps {
+export interface BoardProps {
   gameState: GameState;
   onMove: (x: number, y: number) => void;
   onNavigate?: (nodeId: number) => void;
@@ -17,6 +17,9 @@ const ASSETS = {
   lastMove: "/assets/img/inner.png",
   topMove: "/assets/img/topmove.png",
 };
+
+// Module-level image cache — survives component unmount/remount (3D toggle)
+const imageCache: Record<string, HTMLImageElement> = {};
 
 const EVAL_COLORS = [
   "rgba(150, 50, 140, 0.85)", // Purple > 12 (blunder)
@@ -46,6 +49,13 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
   };
 
   useEffect(() => {
+    // Use cached images if available (survives unmount/remount from 3D toggle)
+    const assetKeys = Object.keys(ASSETS);
+    if (assetKeys.every(k => imageCache[k])) {
+      imagesRef.current = { ...imageCache };
+      renderBoard();
+      return;
+    }
     const loadImages = async () => {
       const entries = Object.entries(ASSETS);
       await Promise.all(
@@ -55,6 +65,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
               const img = new Image();
               img.onload = () => {
                 imagesRef.current[key] = img;
+                imageCache[key] = img;
                 resolve();
               };
               img.onerror = () => reject(new Error(`Failed to load ${src}`));
@@ -73,11 +84,9 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         // Use the smaller dimension to keep the board square, minus padding
-        // Also cap at window height to handle cross-monitor DPI differences
-        const maxSize = Math.min(width, height, window.innerHeight - 100);
-        const size = Math.floor(maxSize - 8);
-        // Clamp between 400 and 1200 for reasonable bounds
-        setCanvasSize(Math.max(400, Math.min(1200, size)));
+        const size = Math.floor(Math.min(width, height) - 8);
+        // Clamp between 200 and 1200 for reasonable bounds
+        setCanvasSize(Math.max(200, Math.min(1200, size)));
       }
     };
 
@@ -574,6 +583,9 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          display: 'block',
           borderRadius: '4px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',
           cursor: 'pointer'

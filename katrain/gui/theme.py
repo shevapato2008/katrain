@@ -154,6 +154,7 @@ class Theme:
     GRAPH_DOT_COLOR = [0.85, 0.3, 0.3, 1]
     WINRATE_MARKER_COLOR = [0.05, 0.7, 0.05, 1]
     SCORE_MARKER_COLOR = [0.2, 0.6, 0.8, 1]
+    POINTLOSS_MARKER_COLOR = [0.7, 0.7, 0.05, 1]
 
     # move tree
     MOVE_TREE_LINE = LIGHT_GREY

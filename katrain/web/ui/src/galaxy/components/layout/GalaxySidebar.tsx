@@ -11,8 +11,9 @@ import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { useAuth } from '../../../context/AuthContext';
+import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';
@@ -52,6 +53,7 @@ const GalaxySidebar = () => {
     { text: t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
     { text: t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
     { text: t('kifu:library', '棋谱库'), icon: <LibraryBooksIcon />, path: '/galaxy/kifu', disabled: false },
+    { text: t('Tutorials', '教程'), icon: <MenuBookIcon />, path: '/galaxy/tutorials', disabled: false },
   ];
 
   return (
@@ -65,9 +67,11 @@ const GalaxySidebar = () => {
     }}>
       {/* Logo Area */}
       <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }} onClick={() => requestNavigation('/galaxy')}>
-         {/* Use existing icon or placeholder */}
-         <Box sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: '50%' }} />
-         <Typography variant="h6" fontWeight="bold">Galaxy Go</Typography>
+         <img src="/assets/img/logo-white.png" alt="弈航" style={{ width: 32, height: 32 }} />
+         <Box>
+           <Typography variant="h6" fontWeight="bold" sx={{ lineHeight: 1.2 }}>弈航</Typography>
+           <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>棋道导航者</Typography>
+         </Box>
       </Box>
 
       <Divider sx={{ mb: 2 }} />

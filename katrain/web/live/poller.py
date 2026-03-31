@@ -10,7 +10,7 @@ from typing import Callable, Optional, TYPE_CHECKING
 
 from katrain.web.core.db import SessionLocal
 from katrain.web.live.cache import LiveCache
-from katrain.web.live.clients import XingZhenClient, WeiqiOrgClient
+from katrain.web.live.clients import XingZhenClient
 from katrain.web.live.clients.upcoming import UpcomingScraper
 from katrain.web.live.models import LiveConfig, LiveMatch, MatchStatus
 from katrain.web.live.analysis_repo import LiveAnalysisRepo, PRIORITY_LIVE_NEW, PRIORITY_LIVE_BACKFILL
@@ -37,7 +37,6 @@ class LivePoller:
         cache: LiveCache,
         config: Optional[LiveConfig] = None,
         xingzhen_client: Optional[XingZhenClient] = None,
-        weiqi_org_client: Optional[WeiqiOrgClient] = None,
     ):
         self.cache = cache
         self.config = config or LiveConfig()
@@ -45,9 +44,6 @@ class LivePoller:
         # Initialize clients
         self.xingzhen = xingzhen_client or XingZhenClient(
             base_url=self.config.xingzhen_api_base
-        )
-        self.weiqi_org = weiqi_org_client or WeiqiOrgClient(
-            base_url=self.config.weiqi_org_api_base
         )
 
         # Upcoming events scraper
@@ -212,21 +208,6 @@ class LivePoller:
 
             except Exception as e:
                 logger.error(f"Failed to fetch from XingZhen: {e}")
-
-        # Fetch from weiqi.org (recent finished games)
-        if self.config.weiqi_org_enabled:
-            try:
-                raw_list = await self.weiqi_org.get_battle_list(page_num=1, page_size=30)
-                for raw in raw_list:
-                    try:
-                        match = self.weiqi_org.parse_match(raw)
-                        # Avoid duplicates (unlikely since different sources)
-                        if not any(m.id == match.id for m in all_matches):
-                            all_matches.append(match)
-                    except Exception as e:
-                        logger.warning(f"Failed to parse WeiqiOrg match: {e}")
-            except Exception as e:
-                logger.error(f"Failed to fetch from WeiqiOrg: {e}")
 
         # Update cache
         if all_matches:
@@ -442,13 +423,6 @@ class LivePoller:
                 analysis = await self.xingzhen.get_analysis(match.source_id)
                 if analysis and "sgf" in analysis:
                     match.sgf = analysis["sgf"]
-
-        elif match.source.value == "weiqi_org":
-            # Fetch detail with SGF
-            detail = await self.weiqi_org.get_battle_detail(match.source_id)
-            if detail:
-                match = self.weiqi_org.parse_match({}, detail)
-                await self.cache.update_match(match)
 
         match.last_updated = datetime.now(timezone.utc)
         await self.cache.update_match(match)

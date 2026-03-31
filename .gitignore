@@ -37,6 +37,7 @@ katrain/models/*.bin.gz
 # Frontend build artifacts (regenerated on startup)
 katrain/web/static/assets/
 katrain/web/static/index.html
+node_modules/
 
 # standard python ignore
 # Byte-compiled / optimized / DLL files
@@ -185,3 +186,4 @@ go_dataset/
 go_dataset_diff_sam/
 runs/
 data.zip
+.superpowers/

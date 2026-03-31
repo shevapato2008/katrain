@@ -182,4 +182,6 @@ dmypy.json
 # Local data
 /data/
 go_dataset/
+go_dataset_diff_sam/
+runs/
 data.zip

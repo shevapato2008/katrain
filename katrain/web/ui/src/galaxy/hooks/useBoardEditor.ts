@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import type { BoardPayload, EditTool, StoneEditMode, ShapeType } from '../types/tutorial';
+import type { BoardPayload, EditTool, StoneEditMode, ShapeType } from '../../types/tutorial';
 
 const MAX_UNDO = 50;
 

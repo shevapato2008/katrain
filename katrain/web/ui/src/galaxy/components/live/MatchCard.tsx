@@ -1,7 +1,7 @@
 import { Box, Card, CardActionArea, Typography, Chip, LinearProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import type { MatchSummary } from '../../types/live';
+import type { MatchSummary } from '../../../types/live';
 import { i18n } from '../../../i18n';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -12,10 +12,17 @@ interface MatchCardProps {
   onSelect?: (match: MatchSummary) => void;  // Callback when selected (doesn't navigate)
 }
 
+const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
+  yike: { label: '弈客', color: '#1976d2' },
+  xingzhen: { label: '星阵', color: '#7b1fa2' },
+  pandanet: { label: 'IGS', color: '#e65100' },
+};
+
 export default function MatchCard({ match, compact = false, selected = false, onSelect }: MatchCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const isLive = match.status === 'live';
+  const sourceInfo = SOURCE_LABELS[match.source];
 
   // Format winrate as percentage
   const winratePercent = Math.round(match.current_winrate * 100);
@@ -53,6 +60,14 @@ export default function MatchCard({ match, compact = false, selected = false, on
             <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
               {i18n.translateTournament(match.tournament)}
             </Typography>
+            {sourceInfo && (
+              <Typography variant="caption" sx={{
+                px: 0.6, py: 0.1, borderRadius: 0.5, fontSize: '0.65rem', lineHeight: 1.2,
+                bgcolor: sourceInfo.color, color: '#fff', flexShrink: 0,
+              }}>
+                {sourceInfo.label}
+              </Typography>
+            )}
             <Typography variant="caption" color="text.secondary">
               {match.move_count} {t('live:moves')}
             </Typography>
@@ -123,6 +138,17 @@ export default function MatchCard({ match, compact = false, selected = false, on
           <Typography variant="caption" color="text.secondary">
             {dateStr}
           </Typography>
+          {sourceInfo && (
+            <Chip
+              label={sourceInfo.label}
+              size="small"
+              sx={{
+                height: 20, fontSize: '0.7rem',
+                bgcolor: sourceInfo.color, color: '#fff',
+                '& .MuiChip-label': { px: 0.8 },
+              }}
+            />
+          )}
           {/* For finished games, show move count + result prominently */}
           {!isLive && match.result && (
             <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>

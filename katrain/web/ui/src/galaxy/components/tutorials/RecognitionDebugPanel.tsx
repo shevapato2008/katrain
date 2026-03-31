@@ -7,7 +7,7 @@ import Chip from '@mui/material/Chip';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { TutorialAPI } from '../../api/tutorialApi';
-import type { RecognitionDebug } from '../../types/tutorial';
+import type { RecognitionDebug } from '../../../types/tutorial';
 
 interface Props {
   debug: RecognitionDebug;

@@ -59,7 +59,7 @@ const TopBar: React.FC<TopBarProps> = ({
             mr: 2
           }}
         >
-          KaTrain
+          弈航
           <Typography
             variant="caption"
             sx={{
@@ -71,7 +71,7 @@ const TopBar: React.FC<TopBarProps> = ({
               letterSpacing: '0.5px',
             }}
           >
-            {t('WEB UI')}
+            棋道导航者
           </Typography>
         </Typography>
 

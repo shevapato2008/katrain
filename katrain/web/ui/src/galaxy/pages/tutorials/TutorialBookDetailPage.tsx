@@ -13,7 +13,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TutorialAPI } from '../../api/tutorialApi';
-import type { TutorialBookDetail, TutorialSection } from '../../types/tutorial';
+import type { TutorialBookDetail, TutorialSection } from '../../../types/tutorial';
 
 export default function TutorialBookDetailPage() {
   const { bookId } = useParams<{ bookId: string }>();

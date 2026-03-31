@@ -14,12 +14,12 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ScienceIcon from '@mui/icons-material/Science';
-import { KifuAPI } from '../api/kifuApi';
-import type { KifuAlbumSummary, KifuAlbumDetail } from '../types/kifu';
+import { KifuAPI } from '../../api/kifuApi';
+import type { KifuAlbumSummary, KifuAlbumDetail } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
-import { translateResult } from '../utils/resultTranslation';
-import { sgfToMoves } from '../utils/sgfSerializer';
-import LiveBoard from '../components/live/LiveBoard';
+import { translateResult } from '../../utils/resultTranslation';
+import { sgfToMoves } from '../../utils/sgfSerializer';
+import LiveBoard from '../../components/live/LiveBoard';
 
 const PAGE_SIZE = 20;
 const ROW_STAGGER = 25;

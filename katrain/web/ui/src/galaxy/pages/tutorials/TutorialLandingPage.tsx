@@ -9,7 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import { TutorialAPI } from '../../api/tutorialApi';
-import type { TutorialCategory } from '../../types/tutorial';
+import type { TutorialCategory } from '../../../types/tutorial';
 
 export default function TutorialLandingPage() {
   const navigate = useNavigate();

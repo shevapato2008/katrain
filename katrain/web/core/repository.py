@@ -7,10 +7,13 @@ Board mode:  endpoints use RepositoryDispatcher which routes to Remote (online)
              or Local (offline) + sync_queue.
 """
 
+import asyncio
 import logging
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+
+import httpx
 
 from katrain.web.core.remote_client import RemoteAPIClient
 
@@ -63,6 +66,46 @@ class RemoteTsumegoRepository:
 
     async def get_problems(self, level: str, category: str, offset: int = 0, limit: int = 20) -> List[Dict]:
         return await self._client.get_problems(level, category, offset, limit)
+
+    async def get_all_problems(self, level: str, page: int = 1, page_size: int = 50) -> Dict:
+        """Aggregate problems across categories using existing remote endpoints.
+
+        The remote server may not have the /levels/{level}/problems endpoint,
+        so we build the paginated response from get_levels + get_problems.
+        """
+        # Step 1: get categories for this level from the levels list
+        levels = await self._client.get_levels()
+        categories: Dict[str, int] = {}
+        for lvl in levels:
+            if lvl.get("level", "").lower() == level.lower():
+                categories = lvl.get("categories", {})
+                break
+
+        if not categories:
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+
+        total = sum(categories.values())
+
+        # Step 2: fetch problems from each category in parallel (slim fields only)
+        async def fetch_category(cat: str, count: int) -> List[Dict]:
+            raw = await self._client.get_problems(level, cat, offset=0, limit=count)
+            return [{"id": p["id"], "category": p.get("category", cat), "hint": p.get("hint", "")} for p in raw]
+
+        results = await asyncio.gather(
+            *(fetch_category(cat, cnt) for cat, cnt in categories.items()),
+            return_exceptions=True,
+        )
+
+        all_problems: List[Dict] = []
+        for result in results:
+            if isinstance(result, list):
+                all_problems.extend(result)
+
+        # Step 3: paginate
+        start = (page - 1) * page_size
+        page_items = all_problems[start:start + page_size]
+
+        return {"items": page_items, "total": total, "page": page, "page_size": page_size}
 
     async def get_problem(self, problem_id: str) -> Dict:
         return await self._client.get_problem(problem_id)
@@ -140,66 +183,101 @@ class RepositoryDispatcher:
     async def tsumego_get_levels(self):
         if not self.is_online:
             return []
-        return await self.remote_tsumego.get_levels()
+        try:
+            return await self.remote_tsumego.get_levels()
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            logger.warning("tsumego_get_levels remote failed: %s", e)
+            return []
+
+    async def tsumego_get_all_problems(self, level, page=1, page_size=50):
+        if not self.is_online:
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+        try:
+            return await self.remote_tsumego.get_all_problems(level, page, page_size)
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            logger.warning("tsumego_get_all_problems remote failed: %s", e)
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     async def tsumego_get_problems(self, level, category, offset=0, limit=20):
         if not self.is_online:
             return []
-        return await self.remote_tsumego.get_problems(level, category, offset, limit)
+        try:
+            return await self.remote_tsumego.get_problems(level, category, offset, limit)
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            logger.warning("tsumego_get_problems remote failed: %s", e)
+            return []
 
     async def tsumego_get_problem(self, problem_id):
         if not self.is_online:
             return None
-        return await self.remote_tsumego.get_problem(problem_id)
+        try:
+            return await self.remote_tsumego.get_problem(problem_id)
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            logger.warning("tsumego_get_problem remote failed: %s", e)
+            return None
 
     # ── Kifu (online-only, offline = unavailable) ──
 
     async def kifu_list_albums(self, q=None, page=1, page_size=20):
         if not self.is_online:
             return {"items": [], "total": 0, "page": page, "page_size": page_size}
-        return await self.remote_kifu.list_albums(q, page, page_size)
+        try:
+            return await self.remote_kifu.list_albums(q, page, page_size)
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            logger.warning("kifu_list_albums remote failed: %s", e)
+            return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     async def kifu_get_album(self, album_id):
         if not self.is_online:
             return None
-        return await self.remote_kifu.get_album(album_id)
+        try:
+            return await self.remote_kifu.get_album(album_id)
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            logger.warning("kifu_get_album remote failed: %s", e)
+            return None
 
     # ── User Games (online→remote, offline→local+sync) ──
 
     async def user_games_create(self, user_id: int, data: Dict) -> Dict:
         if self.is_online:
-            return await self.remote_user_games.create_game(data)
-        else:
-            # Write to local SQLite
-            result = self._local_user_game_repo.create(
-                user_id=user_id,
-                sgf_content=data.get("sgf_content", ""),
-                source=data.get("source", "play_ai"),
-                game_id=data.get("id"),
-                **{k: v for k, v in data.items() if k not in ("sgf_content", "source", "id")},
+            try:
+                return await self.remote_user_games.create_game(data)
+            except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+                logger.warning("user_games_create remote failed, falling back to local: %s", e)
+        # Offline or remote failed — write locally
+        result = self._local_user_game_repo.create(
+            user_id=user_id,
+            sgf_content=data.get("sgf_content", ""),
+            source=data.get("source", "play_ai"),
+            game_id=data.get("id"),
+            **{k: v for k, v in data.items() if k not in ("sgf_content", "source", "id")},
+        )
+        # Enqueue for later sync
+        if self._sync_enqueue:
+            self._sync_enqueue(
+                operation="create_user_game",
+                endpoint="/api/v1/user-games/",
+                method="POST",
+                payload=data,
+                user_id=str(user_id),
             )
-            # Enqueue for later sync
-            if self._sync_enqueue:
-                self._sync_enqueue(
-                    operation="create_user_game",
-                    endpoint="/api/v1/user-games/",
-                    method="POST",
-                    payload=data,
-                    user_id=str(user_id),
-                )
-            return result
+        return result
 
     async def user_games_list(self, user_id: int, **params) -> Dict:
         if self.is_online:
-            return await self.remote_user_games.list_games(**params)
-        else:
-            return self._local_user_game_repo.list(user_id=user_id, **params)
+            try:
+                return await self.remote_user_games.list_games(**params)
+            except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+                logger.warning("user_games_list remote failed, falling back to local: %s", e)
+        return self._local_user_game_repo.list(user_id=user_id, **params)
 
     async def user_games_get(self, game_id: str, user_id: int):
         if self.is_online:
-            return await self.remote_user_games.get_game(game_id)
-        else:
-            return self._local_user_game_repo.get(game_id, user_id)
+            try:
+                return await self.remote_user_games.get_game(game_id)
+            except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+                logger.warning("user_games_get remote failed, falling back to local: %s", e)
+        return self._local_user_game_repo.get(game_id, user_id)
 
 
 def enqueue_sync_item(session_factory, operation: str, endpoint: str, method: str, payload: Dict, user_id: str = None, device_id: str = None):

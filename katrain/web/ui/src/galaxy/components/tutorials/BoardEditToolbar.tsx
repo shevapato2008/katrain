@@ -10,7 +10,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
-import type { EditTool, StoneEditMode, ShapeType } from '../../types/tutorial';
+import type { EditTool, StoneEditMode, ShapeType } from '../../../types/tutorial';
 
 /* ── Stone icon components (matching ResearchToolbar style) ── */
 

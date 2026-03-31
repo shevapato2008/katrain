@@ -6,7 +6,7 @@ import type {
   TutorialSectionDetail,
   TutorialFigure,
   BoardPayload,
-} from '../types/tutorial';
+} from '../../types/tutorial';
 
 const BASE = '/api/v1/tutorials';
 

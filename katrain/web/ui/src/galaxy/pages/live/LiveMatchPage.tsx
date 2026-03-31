@@ -6,8 +6,8 @@ import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import MapIcon from '@mui/icons-material/Map';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
-import { useLiveMatch } from '../../hooks/live/useLiveMatch';
-import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
+import { useLiveMatch } from '../../../hooks/live/useLiveMatch';
+import LiveBoard, { type AiMoveMarker } from '../../../components/live/LiveBoard';
 import MatchInfo from '../../components/live/MatchInfo';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import TrendChart from '../../components/live/TrendChart';
@@ -19,6 +19,7 @@ import { useSound } from '../../../hooks/useSound';
 // import CommentSection from '../../components/live/CommentSection';
 
 export default function LiveMatchPage() {
+  useTranslation(); // subscribe to language changes
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();

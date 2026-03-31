@@ -19,7 +19,7 @@ import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPa
 import AudioPlayer from '../../components/tutorials/AudioPlayer';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
 import { useAuth } from '../../context/AuthContext';
-import type { TutorialSectionDetail, BoardPayload } from '../../types/tutorial';
+import type { TutorialSectionDetail, BoardPayload } from '../../../types/tutorial';
 
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();

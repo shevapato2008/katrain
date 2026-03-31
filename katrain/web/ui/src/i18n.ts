@@ -1,5 +1,5 @@
 import { API } from './api';
-import { LiveAPI } from './galaxy/api/live';
+import { LiveAPI } from './api/live';
 
 type TranslationCallback = () => void;
 

@@ -18,7 +18,7 @@ import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
 import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPanel';
 import AudioPlayer from '../../components/tutorials/AudioPlayer';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import type { TutorialSectionDetail, BoardPayload } from '../../../types/tutorial';
 
 export default function TutorialFigurePage() {

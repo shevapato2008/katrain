@@ -19,7 +19,7 @@ S0-S3 are pure OpenCV (millisecond-level). S4 uses CV pre-classification + Gemin
 Book PDF → Page Images → [S0] CV BBox → [Deskew] Rotation Correction
 → [S1] CV Region Calibration → [S2] CV Grid Detection
 → [S3] CV Occupied Detection
-→ [S4] CV pre-classify + Haiku per-patch → BoardPayload
+→ [S4] CV pre-classify + Gemini per-patch → BoardPayload
 → Human Verification → Training Samples Export
 ```
 
@@ -59,11 +59,12 @@ Steps 1 and 2 are independent — can run in any order or in parallel. Both requ
 # Full pipeline for a section (default: Gemini 3 Flash for S4)
 python scripts/recognize_boards_v2.py --section-id <ID>
 
-# Use Claude Haiku instead of Gemini for S4 classification
-python scripts/recognize_boards_v2.py --section-id <ID> --vllm haiku
-
 # Use local EfficientNet-B0 model (fast, lower accuracy)
 python scripts/recognize_boards_v2.py --section-id <ID> --vllm local
+
+# Other backends (only use if user explicitly requests):
+# python scripts/recognize_boards_v2.py --section-id <ID> --vllm haiku
+# python scripts/recognize_boards_v2.py --section-id <ID> --vllm qwen
 
 # Dry run (print results without DB write)
 python scripts/recognize_boards_v2.py --section-id <ID> --dry-run
@@ -97,31 +98,25 @@ Two-tier approach:
 
 2. **VLLM per-patch**: each ambiguous patch sent individually with simple prompt. Four backends available via `--vllm`:
 
-   **Gemini 3 Flash** (`--vllm gemini`, default):
+   **Gemini 3 Flash** (`--vllm gemini`, default — always use this):
    - Model: `gemini-3-flash-preview` (thinking model) via Google GenAI SDK
    - Auth: `GEMINI_API_KEY` environment variable
    - Calls run concurrently via ThreadPoolExecutor (max 4 threads)
-   - Slower than Haiku due to thinking overhead, but good accuracy
-
-   **Claude Haiku** (`--vllm haiku`):
-   - Model: `claude-haiku-4-5-20251001`
-   - Auth: `ANTHROPIC_API_KEY` environment variable
-   - Calls run concurrently via ThreadPoolExecutor (max 4 threads)
-
-   **Qwen VL** (`--vllm qwen`):
-   - Model: `qwen-vl-plus` via DashScope API
-   - Auth: `DASHSCOPE_API_KEY` environment variable
-   - API: OpenAI-compatible endpoint at `dashscope.aliyuncs.com`
-   - Calls run concurrently via ThreadPoolExecutor (max 4 threads)
+   - Good accuracy, preferred backend
+   - **On transient errors (503, SSL):** wait and retry with Gemini. Do NOT auto-switch to another backend.
 
    **Local EfficientNet-B0** (`--vllm local`):
    - Model: `katrain/models/book-kifu/model.pt`
    - No API key needed, runs on CPU/MPS/CUDA
    - Fastest option, but lower accuracy (needs more training data)
 
+   **Other backends** (only use if user explicitly requests):
+   - **Claude Haiku** (`--vllm haiku`): `claude-haiku-4-5-20251001`, `ANTHROPIC_API_KEY`
+   - **Qwen VL** (`--vllm qwen`): `qwen-vl-plus` via DashScope, `DASHSCOPE_API_KEY`
+
    All API backends accurately read move numbers (1-999), detect letters (A-Z, a-z), shapes. Same prompt used for all.
 
-**Haiku prompt:**
+**Classification prompt (used by all VLLM backends):**
 ```
 This is a small cropped patch from a Go (围棋) textbook diagram, centered on one grid intersection.
 
@@ -145,18 +140,18 @@ Answer with just one classification, nothing else.
 ```
 
 **Debug data stored in `recognition_debug.classification`:**
-- `cv_preclass`: dict mapping every label → CV result ("black"/"white" for confident, "ambiguous" for Haiku-bound)
-- `classifications`: dict mapping every label → final result (CV or Haiku)
+- `cv_preclass`: dict mapping every label → CV result ("black"/"white" for confident, "ambiguous" for VLLM-bound)
+- `classifications`: dict mapping every label → final result (CV or VLLM)
 - `patch_images`: dict mapping every label → relative path to patch PNG
 - `label_map`: dict mapping label → `[col_idx, row_idx]`
 
 **Debug UI** (`RecognitionDebugPanel.tsx`): Each patch shows thumbnail image + CV pre-classification + final classification chip. CV-confident results shown in green, ambiguous in grey.
 
 **Authentication:**
-- **Gemini**: `GEMINI_API_KEY` environment variable (Google GenAI SDK)
-- **Haiku**: `ANTHROPIC_API_KEY` environment variable (Anthropic SDK)
-- **Qwen**: `DASHSCOPE_API_KEY` environment variable (OpenAI-compatible SDK)
+- **Gemini** (default): `GEMINI_API_KEY` environment variable (Google GenAI SDK)
 - **Local**: no API key needed
+- **Haiku**: `ANTHROPIC_API_KEY` (only if explicitly requested)
+- **Qwen**: `DASHSCOPE_API_KEY` (only if explicitly requested)
 
 ## Data Model
 

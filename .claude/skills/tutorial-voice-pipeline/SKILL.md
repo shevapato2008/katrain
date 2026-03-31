@@ -12,8 +12,9 @@ description: >
 # Tutorial Voice Pipeline
 
 Convert Go textbook prose into tutorial narration text and synthesized speech audio.
-The pipeline rewrites `book_text` via Claude API into natural tutorial narration, then
-generates MP3 audio via edge-tts (or CosyVoice), saving both to the database.
+The pipeline rewrites `book_text` via claude CLI (Max subscription, no API cost) or
+Anthropic API into natural tutorial narration, then generates MP3 audio via edge-tts
+(or CosyVoice), saving both to the database. Supports parallel processing.
 
 ## Architecture
 
@@ -21,8 +22,9 @@ generates MP3 audio via edge-tts (or CosyVoice), saving both to the database.
 Book Import (import_book.py)
   └─ book_text (OCR from textbook)
        │
-       ├─ [Step 1] Claude API rewrite → narration
-       │     Model: claude-sonnet-4-20250514
+       ├─ [Step 1] claude CLI rewrite → narration (default, uses Max subscription)
+       │     CLI: claude -p --model sonnet
+       │     Fallback: Anthropic API (--rewriter api)
        │     Prompt: rephrase for tutorial tone, keep all Go concepts
        │
        ├─ [Step 2] TTS synthesis → MP3 audio file
@@ -67,14 +69,20 @@ Steps 1 and 2 are independent — can run in any order or in parallel. Both requ
 ## Running the Pipeline
 
 ```bash
-# Generate narration + audio for all figures in a section
+# Generate narration + audio (default: claude CLI + edge-tts, 5 parallel tasks)
 python scripts/generate_voice.py --section-id <ID>
+
+# Higher parallelism
+python scripts/generate_voice.py --section-id <ID> --concurrency 8
 
 # Dry run (preview what would be generated, no DB writes or API calls)
 python scripts/generate_voice.py --section-id <ID> --dry-run
 
 # Force re-generate (overwrite existing narration + audio)
 python scripts/generate_voice.py --section-id <ID> --force
+
+# Use Anthropic API instead of claude CLI (costs money)
+python scripts/generate_voice.py --section-id <ID> --rewriter api
 
 # Use CosyVoice backend instead of edge-tts
 python scripts/generate_voice.py --section-id <ID> --tts cosyvoice --cosyvoice-url http://localhost:50000
@@ -90,26 +98,37 @@ python scripts/generate_voice.py --section-id <ID> --voice zh-CN-YunxiNeural
 | `--section-id` | (required) | Section ID to process |
 | `--force` | `false` | Re-generate even if narration/audio already exists |
 | `--dry-run` | `false` | Preview without writing to DB or generating audio |
+| `--rewriter` | `cli` | Narration rewriter: `cli` (claude CLI, Max subscription, free) or `api` (Anthropic API, billed) |
+| `--model` | `sonnet` | Model for claude CLI rewriter |
+| `--concurrency` | `5` | Max parallel narration+TTS tasks |
 | `--tts` | `edge-tts` | TTS backend: `edge-tts` or `cosyvoice` |
 | `--cosyvoice-url` | `http://localhost:50000` | CosyVoice HTTP API base URL |
 | `--voice` | `zh-CN-XiaoxiaoNeural` | edge-tts voice name |
 
-### Processing Logic per Figure
+### Processing Logic
+
+Figures within a section are processed **in parallel** (up to `--concurrency` limit):
 
 1. **Skip** if `book_text` is empty (no source text to narrate)
 2. **Skip** if `narration` AND `audio_asset` both exist (unless `--force`)
-3. **Step 1**: Rewrite `book_text` → `narration` via Claude API (or reuse existing narration if only audio is missing)
+3. **Step 1**: Rewrite `book_text` → `narration` via claude CLI or API (or reuse existing narration if only audio is missing)
 4. **Step 2**: Generate TTS audio → `data/tutorial_assets/{book_slug}/audio/fig_{figure_id}.mp3`
-5. **Step 3**: Save `narration` + `audio_asset` path to database
+5. **Step 3**: Save all results to database in a single commit
 
 On narration failure, falls back to using `book_text` verbatim. On audio failure, `audio_asset` is set to `None`.
 
 ## Narration Rewriting
 
-### Model and Authentication
+### Rewriter: claude CLI (default)
 
-- **Model**: `claude-sonnet-4-20250514` (in `generate_voice.py`)
-- **Auth**: `ANTHROPIC_API_KEY` environment variable (Anthropic SDK default)
+- **Command**: `claude -p --model sonnet` (subprocess)
+- **Auth**: Uses Max subscription (no API cost)
+- **Parallelism**: Multiple `claude` CLI processes via `asyncio.Semaphore`
+
+### Rewriter: Anthropic API (fallback)
+
+- **Model**: `claude-sonnet-4-20250514`
+- **Auth**: `ANTHROPIC_API_KEY` environment variable (billed separately)
 - **Max tokens**: 1024
 
 ### Prompt
@@ -131,7 +150,7 @@ Original text:
 
 ### Library Module
 
-`scripts/lib/narration_rewriter.py` provides a reusable `rewrite_narration()` function with the same prompt. Note: the lib module uses `claude-opus-4-6` while the main script uses `claude-sonnet-4-20250514`. The main script has its own inline `rewrite_narration()` and does **not** import from the lib module. The higher-level script `scripts/generate_tutorial_v003.py` imports from the lib module.
+`scripts/lib/narration_rewriter.py` provides a reusable `rewrite_narration()` function with the same prompt (uses Anthropic API with `claude-opus-4-6`). The main script has its own `rewrite_narration_cli()` (claude CLI, default) and `rewrite_narration_api()` (Anthropic API, fallback) and does **not** import from the lib module. The higher-level script `scripts/generate_tutorial_v003.py` imports from the lib module.
 
 ## TTS Backends
 

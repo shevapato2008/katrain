@@ -27,7 +27,7 @@ export interface VisionSyncEvent {
 export interface VisionSyncState {
   syncEvents: VisionSyncEvent[];
   latestEvent: VisionSyncEvent | null;
-  setupProgress: { matched: number; total: number } | null;
+  setupProgress: { matched: number; total: number; missing: Array<[number, number]> } | null;
   isSetupComplete: boolean;
 }
 
@@ -38,7 +38,7 @@ const MAX_EVENTS = 100;
 export function useVisionSync(sessionId: string | null): VisionSyncState {
   const [syncEvents, setSyncEvents] = useState<VisionSyncEvent[]>([]);
   const [latestEvent, setLatestEvent] = useState<VisionSyncEvent | null>(null);
-  const [setupProgress, setSetupProgress] = useState<{ matched: number; total: number } | null>(null);
+  const [setupProgress, setSetupProgress] = useState<{ matched: number; total: number; missing: Array<[number, number]> } | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -53,8 +53,8 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
       });
 
       if (parsed.type === 'setup_progress') {
-        const { matched, total } = parsed.data as { matched: number; total: number };
-        setSetupProgress({ matched, total });
+        const { matched, total, missing } = parsed.data as { matched: number; total: number; missing?: Array<[number, number]> };
+        setSetupProgress({ matched, total, missing: missing ?? [] });
       } else if (parsed.type === 'setup_complete') {
         setIsSetupComplete(true);
         setSetupProgress(null);

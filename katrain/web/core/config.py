@@ -90,6 +90,11 @@ class Settings(BaseModel):
         data.setdefault("DEVICE_ID", device_id)
         data.setdefault("REFRESH_TOKEN_EXPIRE_DAYS", int(os.getenv("KATRAIN_REFRESH_TOKEN_EXPIRE_DAYS", 90)))
 
+        # Board mode always uses local SQLite — ignore any PostgreSQL URL from config.json
+        if data.get("KATRAIN_MODE") == "board" and not os.getenv("KATRAIN_DATABASE_URL"):
+            db_path = data.get("DATABASE_PATH", "db.sqlite3")
+            data["DATABASE_URL"] = f"sqlite:///./{db_path}"
+
         super().__init__(**data)
 
 settings = Settings()

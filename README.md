@@ -223,6 +223,26 @@ python -m katrain --ui web
 > - `KATRAIN_DEVICE_ID` should be a stable identifier for this board. If omitted, a random UUID is generated on each startup.
 > - Board mode connects to the remote server for auth, tsumego, kifu, and user game sync, while using local KataGo for gameplay. When offline, games are saved locally and synced automatically on reconnection.
 
+**Touchscreen virtual keyboard (SBC kiosk mode):**
+
+On ARM SBCs with a touchscreen (e.g. RK3588/RK3576), install an on-screen keyboard so users can tap input fields to type:
+
+```bash
+# Install on-screen keyboard and accessibility service
+sudo apt install -y onboard at-spi2-core
+
+# Set VNC password (optional, for remote desktop access)
+x11vnc -storepasswd
+
+# Start onboard (configure Auto-show in Preferences → Auto-show → "Auto-show when editing text")
+onboard &
+
+# Start Chromium with accessibility enabled (required for auto-show to detect input focus)
+chromium --kiosk --no-first-run --disable-gpu --force-renderer-accessibility http://127.0.0.1:8001/kiosk &
+```
+
+> **Note:** `--force-renderer-accessibility` makes Chromium broadcast focus events via AT-SPI, which `onboard` needs to auto-show/hide the keyboard when input fields are tapped.
+
 **katrain-cron:**
 ```bash
 export KATRAIN_DATABASE_URL="postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db"

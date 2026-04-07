@@ -23,6 +23,7 @@ export interface BoardEditorState {
   cancelEdit: () => void;
   save: () => Promise<void>;
   undo: () => void;
+  clearAll: () => void;
   handleClick: (col: number, row: number) => void;
   setActiveTool: (tool: EditTool) => void;
   setStoneMode: (mode: StoneEditMode) => void;
@@ -101,6 +102,18 @@ export function useBoardEditor(
       setMoveCounter(computeMaxLabel(prev));
       letterCounterRef.current = computeMaxLetter(prev);
       return stack.slice(0, -1);
+    });
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setPayload(prev => {
+      setUndoStack(stack => [...stack.slice(-(MAX_UNDO - 1)), prev]);
+      const cleared = emptyPayload();
+      cleared.viewport = prev.viewport;
+      setMoveCounter(0);
+      letterCounterRef.current = 0;
+      setNextStoneColor('B');
+      return cleared;
     });
   }, []);
 
@@ -202,6 +215,7 @@ export function useBoardEditor(
     cancelEdit,
     save,
     undo,
+    clearAll,
     handleClick,
     setActiveTool,
     setStoneMode,

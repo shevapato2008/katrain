@@ -66,7 +66,7 @@ export default function RecognitionDebugPanel({ debug }: Props) {
       </Typography>
 
       {/* Step 0: Bbox detection */}
-      <Section title="画框检测 — 识别页面中每张棋谱图的位置" step="S0">
+      <Section title="S0 画框检测 — 识别页面中每张棋谱图的位置" step="S0">
         <DebugImage path={debug.bbox?.debug_image} alt="bbox detection" />
         {debug.bbox && (
           <Box mt={0.5}>
@@ -78,8 +78,8 @@ export default function RecognitionDebugPanel({ debug }: Props) {
         )}
       </Section>
 
-      {/* Deskew + Grid overlay */}
-      <Section title="纠偏与网格 — 扫描纠偏 + 检测到的网格线叠加" step="S2-3" defaultOpen>
+      {/* Step 1: Deskew + Grid detection */}
+      <Section title="S1 纠偏与网格 — 扫描纠偏 + 检测到的网格线" step="S1" defaultOpen>
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <Box sx={{ flex: '1 1 45%', minWidth: 200 }}>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
@@ -98,19 +98,27 @@ export default function RecognitionDebugPanel({ debug }: Props) {
           {debug.deskew && (
             <KV label="纠偏角度" value={debug.deskew.angle !== 0 ? `${debug.deskew.angle.toFixed(2)}°` : '无需纠偏'} />
           )}
-          {debug.cv_detection && (
-            <>
-              <KV label="Spacing" value={`${debug.cv_detection.spacing?.toFixed(1)}px`} />
-              <KV label="Occupied" value={
-                `${debug.cv_detection.total_occupied} total (${debug.cv_detection.confident_count} confident, ${debug.cv_detection.ambiguous_count} ambiguous)`
-              } />
-            </>
-          )}
         </Box>
       </Section>
 
-      {/* Step 1: Region identification */}
-      <Section title="棋盘定位 — 确定棋谱在19×19棋盘中的区域" step="S1">
+      {/* Step 2: Occupied intersection detection */}
+      <Section title="S2 落子检测 — 检测到的落子点标注" step="S2">
+        <DebugImage path={debug.cv_detection?.debug_image} alt="occupied detection" />
+        {debug.cv_detection && (
+          <Box mt={0.5}>
+            <KV label="Spacing" value={`${debug.cv_detection.spacing?.toFixed(1)}px`} />
+            <KV label="Occupied" value={
+              `${debug.cv_detection.total_occupied} total (${debug.cv_detection.confident_count} confident, ${debug.cv_detection.ambiguous_count} ambiguous)`
+            } />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              绿色=CV高置信, 黄色=需要VLLM确认
+            </Typography>
+          </Box>
+        )}
+      </Section>
+
+      {/* Step 3: Region calibration */}
+      <Section title="S3 棋盘定位 — 确定棋谱在19×19棋盘中的区域" step="S3">
         {debug.crop_image && <DebugImage path={debug.crop_image} alt="board crop" />}
         {debug.region && (
           <Box mt={0.5}>
@@ -127,18 +135,8 @@ export default function RecognitionDebugPanel({ debug }: Props) {
         )}
       </Section>
 
-      {/* Step 2-3: Occupied detection (annotated crop with labels) */}
-      <Section title="落子检测 — 检测到的落子点标注" step="S3">
-        <DebugImage path={debug.cv_detection?.debug_image} alt="occupied detection" />
-        {debug.cv_detection && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            绿色=CV高置信, 黄色=需要VLLM确认
-          </Typography>
-        )}
-      </Section>
-
       {/* Step 4: VLLM classification */}
-      <Section title="落子识别 — 识别每个落子点的黑白、手数、标记" step="S4" defaultOpen>
+      <Section title="S4 落子识别 — 识别每个落子点的黑白、手数、标记" step="S4" defaultOpen>
         <DebugImage path={debug.classification?.annotated_crop ?? debug.classification?.contact_sheet} alt="annotated crop" />
         {debug.classification?.classifications && (
           <Box mt={1} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>

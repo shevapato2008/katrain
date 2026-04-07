@@ -288,6 +288,7 @@ export default function TutorialFigurePage() {
                   onNextMoveNumberChange={editor.setNextMoveNumber}
                   onShapeChange={editor.setSelectedShape}
                   onUndo={editor.undo}
+                  onClearAll={editor.clearAll}
                   onSave={editor.save}
                   onCancel={editor.cancelEdit}
                 />

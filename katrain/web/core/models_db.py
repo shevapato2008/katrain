@@ -368,6 +368,20 @@ class TutorialFigure(Base):
     )
 
 
+class BoardPayloadHistory(Base):
+    """Audit trail for board_payload changes (edits and verifications)."""
+    __tablename__ = "board_payload_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    figure_id = Column(Integer, ForeignKey("tutorial_figures.id", ondelete="CASCADE"), nullable=False, index=True)
+    board_payload = Column(JSON, nullable=False)
+    changed_by = Column(String(128), default="anonymous")
+    change_type = Column(String(16), nullable=False, default="edit")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    figure = relationship("TutorialFigure")
+
+
 class TrainingSample(Base):
     """Individual patch sample for EfficientNet-B0 stone classifier training.
 

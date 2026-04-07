@@ -182,6 +182,7 @@ dmypy.json
 
 # Local data
 /data/
+!/data/verified_board_payloads/
 go_dataset/
 go_dataset_diff_sam/
 runs/

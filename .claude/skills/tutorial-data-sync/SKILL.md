@@ -5,6 +5,12 @@ description: Sync tutorial database tables and page assets from local Macbook to
 
 # Tutorial Data Sync (Local -> Remote)
 
+> **WARNING: This sync does TRUNCATE CASCADE on all tutorial tables.**
+> Any human-verified `board_payload` corrections on the server that are NOT in
+> your local database WILL BE PERMANENTLY LOST. **Always run Step 0 first.**
+> The `board_payload` data involves extensive manual annotation work and is
+> the most valuable and hardest-to-reproduce data in the system.
+
 ## Overview
 
 Full sync of tutorial module data from the local Macbook (PostgreSQL via Docker) to the remote server `fan@home-ubuntu` (same Docker PostgreSQL setup). Syncs both database records (5 tables) and asset files (page images, debug images, audio).
@@ -20,6 +26,42 @@ Full sync of tutorial module data from the local Macbook (PostgreSQL via Docker)
 | **Assets** | `data/tutorial_assets/` | `data/tutorial_assets/` (volume-mounted into `katrain-web` at `/app/data/tutorial_assets:ro`) |
 
 ## Sync Process
+
+### Step 0: MANDATORY — Backup server data before sync
+
+```bash
+# Export verified board payloads to git-tracked JSON (preserves manual corrections)
+ssh home-ubuntu "cd ~/Repositories/katrain && \
+  KATRAIN_DATABASE_URL='postgresql://katrain_user:katrain_secure_password_CHANGE_ME@localhost:5432/katrain_db' \
+  python scripts/export_verified_payloads.py"
+
+# Full database backup (all 5 tables as compressed JSON)
+ssh home-ubuntu "cd ~/Repositories/katrain && \
+  docker exec katrain-postgres pg_dump -U katrain_user -d katrain_db \
+    --data-only --column-inserts \
+    -t tutorial_books -t tutorial_chapters -t tutorial_sections \
+    -t tutorial_figures -t training_samples \
+    | gzip > data/tutorial_backups/pre_sync_$(date +%Y%m%d_%H%M%S).sql.gz"
+```
+
+Verify the backup exists before proceeding:
+```bash
+ssh home-ubuntu "ls -la ~/Repositories/katrain/data/tutorial_backups/ | tail -3"
+```
+
+### Step 0.5: Compare verified counts (recommended)
+
+```bash
+# Check how many verified figures exist on the server
+ssh home-ubuntu "docker exec katrain-postgres psql -U katrain_user -d katrain_db -c \
+  \"SELECT COUNT(*) as verified FROM tutorial_figures WHERE recognition_debug::text LIKE '%human_verified%true%'\""
+
+# Compare with local
+docker exec katrain-postgres psql -U katrain_user -d katrain_db -c \
+  "SELECT COUNT(*) as verified FROM tutorial_figures WHERE recognition_debug::text LIKE '%human_verified%true%'"
+```
+
+If the server has MORE verified figures than local, the sync will lose those corrections. Consider syncing the server's verified data back to local first.
 
 ### Step 1: Export local DB (with column names for schema safety)
 
@@ -44,7 +86,7 @@ scp tutorial_data.sql home-ubuntu:~/tutorial_data.sql
 
 # Truncate then import (foreign keys require cascade)
 ssh home-ubuntu "docker exec -i katrain-postgres psql -U katrain_user -d katrain_db \
-  -c 'TRUNCATE training_samples, tutorial_figures, tutorial_sections, tutorial_chapters, tutorial_books CASCADE;' \
+  -c 'TRUNCATE board_payload_history, training_samples, tutorial_figures, tutorial_sections, tutorial_chapters, tutorial_books CASCADE;' \
   && docker exec -i katrain-postgres psql -U katrain_user -d katrain_db < ~/tutorial_data.sql"
 ```
 

@@ -7,6 +7,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import UndoIcon from '@mui/icons-material/Undo';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
@@ -113,6 +114,7 @@ interface BoardEditToolbarProps {
   onNextMoveNumberChange: (n: number) => void;
   onShapeChange: (s: ShapeType) => void;
   onUndo: () => void;
+  onClearAll: () => void;
   onSave: () => void;
   onCancel: () => void;
 }
@@ -120,7 +122,7 @@ interface BoardEditToolbarProps {
 export default function BoardEditToolbar({
   activeTool, stoneMode, numbering, nextMoveNumber, selectedShape, canUndo,
   onToolChange, onStoneModeChange, onNumberingChange, onNextMoveNumberChange, onShapeChange,
-  onUndo, onSave, onCancel,
+  onUndo, onClearAll, onSave, onCancel,
 }: BoardEditToolbarProps) {
   const [shapeAnchor, setShapeAnchor] = useState<null | HTMLElement>(null);
 
@@ -216,6 +218,9 @@ export default function BoardEditToolbar({
         <span>
           <IconButton size="small" onClick={onUndo} disabled={!canUndo}><UndoIcon /></IconButton>
         </span>
+      </Tooltip>
+      <Tooltip title="一键清空">
+        <IconButton size="small" onClick={onClearAll} color="warning"><DeleteSweepIcon /></IconButton>
       </Tooltip>
       <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={onSave} aria-label="保存">
         保存

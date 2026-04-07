@@ -169,6 +169,12 @@ async def update_figure_board(
     viewport = compute_viewport(payload_dict)
     payload_dict["viewport"] = viewport
     figure = db_queries.update_figure_board(db, figure, payload_dict)
+    db_queries.record_payload_history(
+        db, figure.id, payload_dict,
+        changed_by=current_user.username if current_user else "anonymous",
+        change_type="edit",
+    )
+    db.commit()
     return TutorialFigureOut.model_validate(figure)
 
 
@@ -209,6 +215,13 @@ async def verify_figure(
     debug["verified_at"] = datetime.now(timezone.utc).isoformat()
     debug["verified_by"] = current_user.username if current_user else "anonymous"
     db_queries.update_figure_recognition_debug(db, figure, debug)
+    if figure.board_payload:
+        db_queries.record_payload_history(
+            db, figure.id, figure.board_payload,
+            changed_by=current_user.username if current_user else "anonymous",
+            change_type="verify",
+        )
+        db.commit()
 
     # Auto-export training samples from the verified figure
     try:

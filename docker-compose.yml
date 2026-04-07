@@ -36,6 +36,8 @@ services:
       dockerfile: Dockerfile.cron
     container_name: katrain-cron
     restart: unless-stopped
+    volumes:
+      - ./data/tutorial_backups:/app/data/tutorial_backups
     environment:
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - KATAGO_URL=http://host.docker.internal:8002

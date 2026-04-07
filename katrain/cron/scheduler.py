@@ -27,6 +27,7 @@ class CronScheduler:
         from katrain.cron.jobs.analyze import AnalyzeJob
         from katrain.cron.jobs.fetch_upcoming import FetchUpcomingJob
         from katrain.cron.jobs.cleanup import CleanupJob
+        from katrain.cron.jobs.tutorial_backup import TutorialBackupJob
 
         # Interval jobs
         interval_jobs = [
@@ -36,6 +37,7 @@ class CronScheduler:
             (TranslateJob, config.TRANSLATE_INTERVAL, config.TRANSLATE_ENABLED),
             (FetchUpcomingJob, config.FETCH_UPCOMING_INTERVAL, config.FETCH_UPCOMING_ENABLED),
             (CleanupJob, config.CLEANUP_INTERVAL, config.CLEANUP_ENABLED),
+            (TutorialBackupJob, config.TUTORIAL_BACKUP_INTERVAL, config.TUTORIAL_BACKUP_ENABLED),
         ]
 
         # Start scheduler first (jobs will be added and run immediately)

@@ -2,10 +2,10 @@
 """Hybrid CV+VLLM Go board recognition from book page images.
 
 Pipeline:
-  Step 0: CV detects diagram bounding boxes on the page (VLLM fallback)
-  Step 1: VLLM identifies which part of the 19x19 board is shown (col_start/row_start)
-  Step 2: CV detects grid lines precisely (no counting errors)
-  Step 3: CV detects occupied intersections + pre-classifies obvious B/W
+  Step 0: CV detects diagram bounding boxes on the page (+ deskew)
+  Step 1: CV detects grid lines precisely (no counting errors)
+  Step 2: CV detects occupied intersections + pre-classifies obvious B/W
+  Step 3: Region calibration — identifies which part of the 19x19 board is shown (col_start/row_start)
   Step 4: VLLM classifies ambiguous patches via contact sheet
   Step 5: Merge CV+VLLM → board_payload → DB + training data
 
@@ -483,7 +483,7 @@ def save_all_training_patches(occupied_patches, classifications, label_map,
     return saved
 
 
-# ── Step 2: OpenCV grid detection ─────────────────────────────────────────────
+# ── Step 1: OpenCV grid detection ─────────────────────────────────────────────
 
 def _find_peaks(arr, min_val, min_dist):
     """Simple 1D peak finder without scipy dependency."""
@@ -586,7 +586,7 @@ def cv_detect_grid(gray, cv_params=None):
     return h_positions, v_positions, spacing
 
 
-# ── Step 3a: OpenCV occupied intersection detection ──────────────────────────
+# ── Step 2a: OpenCV occupied intersection detection ──────────────────────────
 
 def cv_detect_occupied(gray, h_positions, v_positions, spacing, cv_params=None):
     """Detect all non-empty intersections using multi-feature anomaly detection.
@@ -757,7 +757,7 @@ def build_annotated_crop(crop, h_positions, v_positions, occupied_patches, spaci
     return annotated, label_map
 
 
-# ── Step 3b: OpenCV stone detection (legacy) ─────────────────────────────────
+# ── Step 2b: OpenCV stone detection (legacy) ─────────────────────────────────
 
 def cv_detect_stones_legacy(gray, h_positions, v_positions, spacing):
     """Detect stones at grid intersections using dark-ratio + edge analysis.
@@ -1372,9 +1372,9 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
         cv2.imwrite(str(crop_path), crop)
         log.info("  Cropped: %dx%d → %s", crop.shape[1], crop.shape[0], crop_path.name)
 
-        # Step 2: CV grid detection
+        # Step 1: CV grid detection
         h_pos, v_pos, spacing = cv_detect_grid(crop_gray, cv_params)
-        log.info("  Step 2: %d rows × %d cols, spacing=%.1fpx", len(h_pos), len(v_pos), spacing)
+        log.info("  Step 1: %d rows × %d cols, spacing=%.1fpx", len(h_pos), len(v_pos), spacing)
 
         # Generate grid debug image: deskewed crop with detected grid lines overlay
         grid_debug = crop.copy() if len(crop.shape) == 3 else cv2.cvtColor(crop_gray, cv2.COLOR_GRAY2BGR)
@@ -1391,18 +1391,18 @@ def process_page(page_image_path, figure_ids, dry_run=False, db=None, force=Fals
             results.append(FigureResult(label, fig_id, "failed_cv", f"too few grid lines ({len(h_pos)}×{len(v_pos)})"))
             continue
 
-        # Step 3: CV occupied intersection detection
+        # Step 2: CV occupied intersection detection
         occupied = cv_detect_occupied(crop_gray, h_pos, v_pos, spacing, cv_params)
         confident, ambiguous = cv_preclass_confident(occupied, spacing, cv_params)
-        log.info("  Step 3: %d occupied (%d confident, %d ambiguous)",
+        log.info("  Step 2: %d occupied (%d confident, %d ambiguous)",
                  len(occupied), len(confident), len(ambiguous))
 
-        # Step 1: Region calibration (pure CV — border detection + star points)
+        # Step 3: Region calibration (pure CV — border detection + star points)
         occupied_set = {(ci, ri) for ci, ri, _ in occupied}
         col_start, row_start, cal_conf, cal_evidence = calibrate_region(
             crop_gray, h_pos, v_pos, spacing, occupied_set
         )
-        log.info("  Step 1: col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
+        log.info("  Step 3: col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
                  col_start, row_start, cal_conf, cal_evidence)
 
         # Step 4: VLLM classification via annotated crop (full context)
@@ -1855,13 +1855,13 @@ def save_sheets_for_section(db, section_id, output_dir, cv_params=None):
             if abs(deskew_angle) >= 0.1:
                 crop = deskew_board_color(crop, crop_gray, deskew_angle)
 
-            # Step 2: grid detection
+            # Step 1: grid detection
             h_pos, v_pos, spacing = cv_detect_grid(crop_gray, cv_params)
             if len(h_pos) < 3 or len(v_pos) < 3:
                 log.warning("  %s: too few grid lines — skipping", label)
                 continue
 
-            # Step 3: occupied detection
+            # Step 2: occupied detection
             occupied = cv_detect_occupied(crop_gray, h_pos, v_pos, spacing, cv_params)
             confident, ambiguous = cv_preclass_confident(occupied, spacing, cv_params)
             log.info("  %s: %d×%d grid, %d occupied (%d confident, %d ambiguous)",

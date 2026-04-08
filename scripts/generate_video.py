@@ -572,21 +572,8 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
                     await asyncio.wait_for(page.evaluate(f"window.__setFrame({t_ms})"), timeout=10)
                     await asyncio.wait_for(page.evaluate("window.__forceRender && window.__forceRender()"), timeout=10)
                     await page.wait_for_timeout(50)
-                    frame_path = frames_dir / f"frame_{i:05d}.jpg"
-                    # Direct canvas capture — faster than page.screenshot()
-                    data_url = await asyncio.wait_for(page.evaluate("""() => {
-                        const canvas = document.querySelector('canvas');
-                        if (canvas) return canvas.toDataURL('image/jpeg', 0.92);
-                        return null;
-                    }"""), timeout=15)
-                    if data_url:
-                        jpg_data = base64.b64decode(data_url.split(',')[1])
-                        with open(str(frame_path), 'wb') as fout:
-                            fout.write(jpg_data)
-                    else:
-                        # Fallback to page.screenshot if no canvas found
-                        frame_path = frame_path.with_suffix('.png')
-                        await asyncio.wait_for(page.screenshot(path=str(frame_path)), timeout=15)
+                    frame_path = frames_dir / f"frame_{i:05d}.png"
+                    await asyncio.wait_for(page.screenshot(path=str(frame_path)), timeout=30)
                 except asyncio.TimeoutError:
                     print(f"    Frame {i} timed out at t={t_ms}ms — aborting capture")
                     raise
@@ -602,10 +589,7 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
     concat_file = str(Path(output_dir) / "frames.txt")
     with open(concat_file, "w") as f:
         for i in range(len(frame_schedule)):
-            # Try .jpg first (canvas capture), fallback to .png (page.screenshot)
-            jpg_path = frames_dir / f"frame_{i:05d}.jpg"
-            png_path = frames_dir / f"frame_{i:05d}.png"
-            frame_path = str(jpg_path if jpg_path.exists() else png_path)
+            frame_path = str(frames_dir / f"frame_{i:05d}.png")
             if i + 1 < len(frame_schedule):
                 duration = (frame_schedule[i + 1] - frame_schedule[i]) / 1000.0
             else:

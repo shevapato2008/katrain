@@ -44,7 +44,21 @@ If not all ready, run `tutorial-voice-pipeline` first.
 
 Choose concurrency based on machine:
 - Macbook: `--concurrency 2`
-- Server (192 cores): `--concurrency 20`
+- Server (192 cores): `--concurrency 6`
+
+**Concurrency sweet spot (server):** The bottleneck is NOT CPU/memory but **NVIDIA EGL driver-level mutex on `glReadPixels`** (used by `page.screenshot()`). Each Chromium headless browser uses `--use-gl=egl` for WebGL rendering. When many browsers call ReadPixels concurrently, the NVIDIA driver serializes them, causing per-frame slowdown. Empirical results on the 192-core / 2×RTX 3090 server:
+
+| Total concurrent browsers | Result |
+|--------------------------|--------|
+| 6 (1 section × 6) | 100% success, ~2 min/figure |
+| 9-12 (2-3 sections × 6) | 100% success, ~5-10 min/figure |
+| ~20-30 | Works but slower per figure |
+| 60+ (10 sections × 6) | **Chromium CDP crashes**: `Page.captureScreenshot: Unable to capture screenshot` — ~35% failure rate |
+
+**Recommended strategy for batch processing:**
+- Run **3 sections in parallel**, each with `--concurrency 6` (max ~18 browsers)
+- This gives 100% success rate with reasonable throughput
+- Do NOT launch all sections at once — Chromium's CDP protocol layer crashes with 60+ concurrent screenshot requests regardless of CPU/memory availability
 
 ```bash
 PYTHONUNBUFFERED=1 python scripts/generate_video.py \
@@ -105,7 +119,35 @@ db.close()
 
 ### Processing multiple sections
 
-For multiple sections, process them sequentially (each section = steps 2-3):
+**Batch strategy (server):** Run 3 sections at a time with concurrency 6, then generate section videos for completed batches while the next batch runs:
+
+```bash
+# Process in batches of 3 sections (max ~18 concurrent browsers)
+SECTIONS=(1 2 3 4 5 6 7 8 9)
+BATCH_SIZE=3
+CONCURRENCY=6
+
+for ((i=0; i<${#SECTIONS[@]}; i+=BATCH_SIZE)); do
+  batch=("${SECTIONS[@]:i:BATCH_SIZE}")
+  echo "=== Batch: ${batch[*]} ==="
+  
+  # Launch figure videos in parallel
+  for sid in "${batch[@]}"; do
+    PYTHONUNBUFFERED=1 python scripts/generate_video.py \
+      --section-id $sid --concurrency $CONCURRENCY --force \
+      > /tmp/video_section_${sid}.log 2>&1 &
+  done
+  wait
+  
+  # Generate section videos (ffmpeg only, very fast)
+  for sid in "${batch[@]}"; do
+    python scripts/generate_video.py --section-video $sid --force &
+  done
+  wait
+done
+```
+
+**Macbook:** Process sections sequentially (each section = steps 2-3):
 
 ```bash
 for sid in 1 2 3; do
@@ -265,9 +307,12 @@ done
 
 | Issue | Fix |
 |-------|-----|
-| Board not rendering | Increase warmup (default 5s) or check `--use-gl=angle` flag |
+| Board not rendering | Increase warmup (default 5s) or check `--use-gl=egl` flag |
 | Camera angle wrong | StaticCamera is used for recording; adjust `--polar-angle` |
 | Stones not appearing | Ensure 300ms+ wait after `__setFrame()` for React re-render |
 | ffmpeg drawtext missing | Uses Pillow for title cards (no drawtext dependency) |
 | Audio out of sync | Audio is regenerated with timing each run; don't skip step 2 |
 | Generation too slow | Increase `--concurrency`; use server with more CPU cores |
+| `Unable to capture screenshot` | Too many concurrent browsers (>20). Reduce to 3 sections × concurrency 6. This is a Chromium CDP protocol crash, not a resource issue |
+| `GPU stall due to ReadPixels` | Normal warning with EGL + multiple browsers. Not a problem if per-frame timeouts are large enough (60s/120s). The NVIDIA driver serializes ReadPixels across WebGL contexts |
+| High concurrency all timeout | Per-frame timeouts too tight. Current defaults: evaluate=60s, screenshot=120s, page.goto=120s, figure-level=3600s |

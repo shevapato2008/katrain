@@ -126,5 +126,5 @@ export interface RecognitionDebug {
 // ── Edit mode types ──────────────────────────────────────────────────────────
 
 export type StoneEditMode = 'black' | 'white' | 'alternate';
-export type EditTool = 'stone' | 'letter' | 'shape' | 'eraser' | null;
+export type EditTool = 'stone' | 'letter_upper' | 'letter_lower' | 'shape' | 'eraser' | null;
 export type ShapeType = 'triangle' | 'square' | 'circle' | 'cross';

@@ -149,3 +149,6 @@ class NarrationUpdate(BaseModel):
     video_asset: Optional[str] = None
     video_duration_ms: Optional[int] = None
     video_size_bytes: Optional[int] = None
+
+class NarrationUpdateRequest(BaseModel):
+    narration: str

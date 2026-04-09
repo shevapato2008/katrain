@@ -280,12 +280,14 @@ export default function TutorialFigurePage() {
                   stoneMode={editor.stoneMode}
                   numbering={editor.numbering}
                   nextMoveNumber={editor.nextMoveNumber}
+                  nextLetter={editor.nextLetter}
                   selectedShape={editor.selectedShape}
                   canUndo={editor.canUndo}
                   onToolChange={editor.setActiveTool}
                   onStoneModeChange={editor.setStoneMode}
                   onNumberingChange={editor.setNumbering}
                   onNextMoveNumberChange={editor.setNextMoveNumber}
+                  onNextLetterChange={editor.setNextLetter}
                   onShapeChange={editor.setSelectedShape}
                   onUndo={editor.undo}
                   onClearAll={editor.clearAll}

@@ -103,6 +103,8 @@ function ToolButton({ icon, label, active, onClick, disabled, compact }: {
 
 interface BoardEditToolbarProps {
   activeTool: EditTool;
+  nextLetter: string;
+  onNextLetterChange: (l: string) => void;
   stoneMode: StoneEditMode;
   numbering: boolean;
   nextMoveNumber: number;
@@ -120,8 +122,8 @@ interface BoardEditToolbarProps {
 }
 
 export default function BoardEditToolbar({
-  activeTool, stoneMode, numbering, nextMoveNumber, selectedShape, canUndo,
-  onToolChange, onStoneModeChange, onNumberingChange, onNextMoveNumberChange, onShapeChange,
+  activeTool, stoneMode, numbering, nextMoveNumber, nextLetter, selectedShape, canUndo,
+  onToolChange, onStoneModeChange, onNumberingChange, onNextMoveNumberChange, onNextLetterChange, onShapeChange,
   onUndo, onClearAll, onSave, onCancel,
 }: BoardEditToolbarProps) {
   const [shapeAnchor, setShapeAnchor] = useState<null | HTMLElement>(null);
@@ -181,10 +183,17 @@ export default function BoardEditToolbar({
       {/* Annotation tools */}
       <Box display="flex" gap={0.25}>
         <ToolButton
-          icon={<Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>ABC</Typography>}
-          label="字母"
-          active={activeTool === 'letter'}
-          onClick={() => onToolChange('letter')}
+          icon={<Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>A</Typography>}
+          label="大写"
+          active={activeTool === 'letter_upper'}
+          onClick={() => onToolChange('letter_upper')}
+          compact
+        />
+        <ToolButton
+          icon={<Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>a</Typography>}
+          label="小写"
+          active={activeTool === 'letter_lower'}
+          onClick={() => onToolChange('letter_lower')}
           compact
         />
         <ToolButton
@@ -194,6 +203,15 @@ export default function BoardEditToolbar({
           onClick={(e) => { onToolChange('shape'); setShapeAnchor(e.currentTarget as HTMLElement); }}
           compact
         />
+        {(activeTool === 'letter_upper' || activeTool === 'letter_lower') && (
+          <TextField
+            size="small"
+            value={nextLetter}
+            onChange={(e) => onNextLetterChange(e.target.value)}
+            inputProps={{ style: { textAlign: 'center', padding: '4px 2px' } }}
+            sx={{ width: 36, ml: 0.5, '& .MuiOutlinedInput-root': { height: 32 } }}
+          />
+        )}
         <ToolButton
           icon={<Typography sx={{ fontSize: 14, lineHeight: 1 }}>✕</Typography>}
           label="橡皮"

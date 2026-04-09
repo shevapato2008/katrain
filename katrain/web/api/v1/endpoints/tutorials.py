@@ -180,6 +180,23 @@ async def update_figure_board(
 
 # ── Narration ────────────────────────────────────────────────────────────────
 
+from katrain.web.api.v1.services.tutorials_tts import generate_figure_audio
+from katrain.web.tutorials.models import NarrationUpdateRequest
+
+@router.post("/figures/{figure_id}/generate-audio")
+def generate_audio_for_figure(
+    figure_id: int, 
+    request: NarrationUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    figure = db_queries.get_figure(db, figure_id)
+    if not figure:
+        raise HTTPException(status_code=404, detail="Figure not found")
+        
+    audio_asset = generate_figure_audio(db, figure, request.narration)
+    
+    return {"status": "success", "audio_asset": audio_asset, "narration": figure.narration}
+
 
 @router.put("/figures/{figure_id}/narration", response_model=TutorialFigureOut)
 async def update_figure_narration(

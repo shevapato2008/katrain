@@ -11,6 +11,7 @@ import Slider from '@mui/material/Slider';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RuleIcon from '@mui/icons-material/Rule';
@@ -21,7 +22,7 @@ import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPa
 import AudioPlayer from '../../components/tutorials/AudioPlayer';
 import { useBoardEditor } from '../../hooks/useBoardEditor';
 import { useAuth } from '../../../context/AuthContext';
-import type { TutorialSectionDetail, BoardPayload } from '../../../types/tutorial';
+import type { TutorialSectionDetail, TutorialFigure, BoardPayload } from '../../../types/tutorial';
 
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();
@@ -32,8 +33,20 @@ export default function TutorialFigurePage() {
   const [error, setError] = useState<string | null>(null);
   const [currentFigureIndex, setCurrentFigureIndex] = useState(0);
   const [moveStep, setMoveStep] = useState<number | null>(null);
+  const [isEditingNarration, setIsEditingNarration] = useState(false);
+  const [editedNarration, setEditedNarration] = useState('');
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
 
   const currentFigure = section?.figures[currentFigureIndex] ?? null;
+
+  const updateCurrentFigure = useCallback((updater: (figure: TutorialFigure) => TutorialFigure) => {
+    setSection(prev => {
+      if (!prev || !prev.figures[currentFigureIndex]) return prev;
+      const figures = [...prev.figures];
+      figures[currentFigureIndex] = updater(figures[currentFigureIndex]);
+      return { ...prev, figures };
+    });
+  }, [currentFigureIndex]);
 
   const handleServerSave = useCallback(async (payload: BoardPayload) => {
     if (!currentFigure) return;
@@ -41,16 +54,15 @@ export default function TutorialFigurePage() {
       const updated = await TutorialAPI.saveBoardPayload(
         currentFigure.id, payload, token ?? undefined, currentFigure.updated_at ?? undefined
       );
-      setSection(prev => {
-        if (!prev) return prev;
-        const figures = [...prev.figures];
-        figures[currentFigureIndex] = { ...figures[currentFigureIndex], board_payload: updated.board_payload, updated_at: updated.updated_at };
-        return { ...prev, figures };
-      });
+      updateCurrentFigure(figure => ({
+        ...figure,
+        board_payload: updated.board_payload,
+        updated_at: updated.updated_at,
+      }));
     } catch (err) {
       alert(err instanceof Error ? err.message : '保存失败，请重试');
     }
-  }, [currentFigure, currentFigureIndex, token]);
+  }, [currentFigure, token, updateCurrentFigure]);
 
   const editor = useBoardEditor(currentFigure?.board_payload ?? null, handleServerSave);
 
@@ -60,6 +72,12 @@ export default function TutorialFigurePage() {
       editor.setPayloadFromServer(currentFigure.board_payload);
     }
   }, [currentFigureIndex, currentFigure?.id]);
+
+  useEffect(() => {
+    setEditedNarration(currentFigure?.narration ?? '');
+    setIsEditingNarration(false);
+    setIsGeneratingAudio(false);
+  }, [currentFigure?.id, currentFigure?.narration]);
 
   const load = () => {
     if (!sectionId) return;
@@ -190,16 +208,48 @@ export default function TutorialFigurePage() {
     if (!currentFigure) return;
     try {
       const updated = await TutorialAPI.verifyFigure(currentFigure.id, token ?? undefined);
-      setSection(prev => {
-        if (!prev) return prev;
-        const figures = [...prev.figures];
-        figures[currentFigureIndex] = { ...figures[currentFigureIndex], recognition_debug: updated.recognition_debug };
-        return { ...prev, figures };
-      });
+      updateCurrentFigure(figure => ({
+        ...figure,
+        recognition_debug: updated.recognition_debug,
+      }));
     } catch (err) {
       alert(err instanceof Error ? err.message : '审核失败');
     }
-  }, [currentFigure, currentFigureIndex, token]);
+  }, [currentFigure, token, updateCurrentFigure]);
+
+  const handleGenerateAudio = useCallback(async () => {
+    if (!currentFigure) return;
+    setIsGeneratingAudio(true);
+    try {
+      const updated = await TutorialAPI.generateFigureAudio(
+        currentFigure.id,
+        editedNarration,
+        token ?? undefined,
+      );
+      updateCurrentFigure(() => updated);
+      setIsEditingNarration(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '生成语音失败');
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  }, [currentFigure, editedNarration, token, updateCurrentFigure]);
+
+  const handleSaveNarration = useCallback(async () => {
+    if (!currentFigure) return;
+    try {
+      const updated = await TutorialAPI.saveNarration(
+        currentFigure.id,
+        editedNarration,
+        currentFigure.audio_asset ?? null,
+        token ?? undefined,
+      );
+      updateCurrentFigure(() => updated);
+      setIsEditingNarration(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '保存讲解失败');
+    }
+  }, [currentFigure, editedNarration, token, updateCurrentFigure]);
 
   const handlePrev = () => setCurrentFigureIndex(i => Math.max(0, i - 1));
   const handleNext = () => {
@@ -363,39 +413,92 @@ export default function TutorialFigurePage() {
 
         {/* Column 3: narration + audio */}
         <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>语音讲解</Typography>
-          {currentFigure?.narration ? (
-            <>
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 2, lineHeight: 1.8 }}>
-                {currentFigure.narration}
-              </Typography>
-              <AudioPlayer
-                src={currentFigure.audio_asset ? TutorialAPI.assetUrl(currentFigure.audio_asset) : null}
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+            <Typography variant="subtitle2" color="text.secondary">语音讲解</Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={() => setIsEditingNarration(v => !v)}
+              aria-label="编辑讲解"
+            >
+              {isEditingNarration ? '收起编辑' : '编辑讲解'}
+            </Button>
+          </Box>
+
+          {isEditingNarration ? (
+            <Box>
+              <TextField
+                label="讲解文本"
+                multiline
+                fullWidth
+                minRows={5}
+                value={editedNarration}
+                onChange={(e) => setEditedNarration(e.target.value)}
               />
-              {currentFigure.video_asset && (
-                <Box sx={{ mt: 2 }}>
-                  <video
-                    controls
-                    preload="none"
-                    poster={TutorialAPI.assetUrl(currentFigure.video_asset.replace('.mp4', '.jpg'))}
-                    width="100%"
-                    style={{ borderRadius: 8, maxHeight: 400 }}
-                    src={TutorialAPI.assetUrl(currentFigure.video_asset)}
-                    onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-                  />
-                  {currentFigure.video_duration_ms && (
-                    <Typography variant="caption" color="text.secondary">
-                      {Math.floor(currentFigure.video_duration_ms / 60000)}:
-                      {String(Math.floor((currentFigure.video_duration_ms % 60000) / 1000)).padStart(2, '0')}
-                    </Typography>
-                  )}
-                </Box>
+              <Box display="flex" gap={1} mt={1.5}>
+                <Button
+                  variant="outlined"
+                  onClick={handleSaveNarration}
+                  aria-label="保存文字"
+                >
+                  保存文字
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<RecordVoiceOverIcon />}
+                  onClick={handleGenerateAudio}
+                  disabled={isGeneratingAudio}
+                  aria-label="生成语音并保存"
+                >
+                  {isGeneratingAudio ? '生成中...' : '生成语音并保存'}
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => {
+                    setEditedNarration(currentFigure?.narration ?? '');
+                    setIsEditingNarration(false);
+                  }}
+                >
+                  取消
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <>
+              {currentFigure?.narration ? (
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 2, lineHeight: 1.8 }}>
+                  {currentFigure.narration}
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
+                  暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。
+                </Typography>
               )}
             </>
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-              暂无讲解文本。运行 generate_voice.py 生成。
-            </Typography>
+          )}
+
+          <AudioPlayer
+            src={currentFigure?.audio_asset ? TutorialAPI.assetUrl(currentFigure.audio_asset) : null}
+          />
+          {currentFigure?.video_asset && (
+            <Box sx={{ mt: 2 }}>
+              <video
+                controls
+                preload="none"
+                poster={TutorialAPI.assetUrl(currentFigure.video_asset.replace('.mp4', '.jpg'))}
+                width="100%"
+                style={{ borderRadius: 8, maxHeight: 400 }}
+                src={TutorialAPI.assetUrl(currentFigure.video_asset)}
+                onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+              />
+              {currentFigure.video_duration_ms && (
+                <Typography variant="caption" color="text.secondary">
+                  {Math.floor(currentFigure.video_duration_ms / 60000)}:
+                  {String(Math.floor((currentFigure.video_duration_ms % 60000) / 1000)).padStart(2, '0')}
+                </Typography>
+              )}
+            </Box>
           )}
         </Box>
       </Box>

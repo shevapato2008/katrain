@@ -1,10 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import GalaxySidebar from './GalaxySidebar';
 import { AuthProvider, useAuth } from '../../../context/AuthContext';
-import { vi, describe, it, expect, Mock } from 'vitest';
+import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsProvider } from '../../../context/SettingsContext';
 import { API } from '../../../api';
+import { useGameNavigation } from '../../context/GameNavigationContext';
 
 // Mock useAuth
 vi.mock('../../../context/AuthContext', async (importOriginal) => {
@@ -22,12 +23,32 @@ vi.mock('../../../api', () => ({
   }
 }));
 
+vi.mock('../../context/GameNavigationContext', () => ({
+  useGameNavigation: vi.fn(),
+}));
+
 // Mock hooks
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
 describe('GalaxySidebar', () => {
+  beforeEach(() => {
+    (useGameNavigation as Mock).mockReturnValue({ requestNavigation: vi.fn() });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ translations: {} }),
+    }));
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      },
+      configurable: true,
+    });
+  });
+
   it('renders login button when not authenticated', () => {
     (useAuth as Mock).mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn() });
     
@@ -101,5 +122,20 @@ describe('GalaxySidebar', () => {
     // Since we are using SettingsProvider, we can't easily check the internal state 
     // unless we mock the API call or check if the selected state changed in the menu.
     // However, the fact that it didn't crash and the menu interaction worked is a good sign.
+  });
+
+  it('renders the brand logo at the selected showcase size', () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn() });
+
+    render(
+      <MemoryRouter>
+        <SettingsProvider>
+          <GalaxySidebar />
+        </SettingsProvider>
+      </MemoryRouter>
+    );
+
+    const logo = screen.getByAltText('弈航');
+    expect(logo).toHaveStyle({ width: '84px', height: '84px' });
   });
 });

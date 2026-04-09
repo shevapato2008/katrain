@@ -68,11 +68,18 @@ const GalaxySidebar = () => {
       flexDirection: 'column'
     }}>
       {/* Logo Area */}
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }} onClick={() => requestNavigation('/galaxy')}>
-         <img src="/assets/img/logo-white.png" alt="弈航" style={{ width: 32, height: 32 }} />
-         <Box>
-           <Typography variant="h6" fontWeight="bold" sx={{ lineHeight: 1.2 }}>弈航</Typography>
-           <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>棋道导航者</Typography>
+      <Box
+        sx={{ px: 3, py: 3.25, display: 'flex', alignItems: 'center', gap: 1.75, cursor: 'pointer' }}
+        onClick={() => requestNavigation('/galaxy')}
+      >
+         <img src="/assets/img/logo-white.png" alt="弈航" style={{ width: 84, height: 84, objectFit: 'contain' }} />
+         <Box sx={{ minWidth: 0 }}>
+           <Typography sx={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1, letterSpacing: '0.01em', mb: 0.5 }}>
+             弈航
+           </Typography>
+           <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', lineHeight: 1.2, letterSpacing: '0.08em' }}>
+             棋道导航者
+           </Typography>
          </Box>
       </Box>
 

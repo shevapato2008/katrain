@@ -16,9 +16,11 @@ from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
 from katrain.web.tutorials import db_queries
+from katrain.web.tutorials.services import generate_figure_audio
 from katrain.web.tutorials.models import (
     BoardPayloadUpdate,
     NarrationUpdate,
+    NarrationUpdateRequest,
     TutorialBookDetailOut,
     TutorialBookOut,
     TutorialCategoryOut,
@@ -180,22 +182,18 @@ async def update_figure_board(
 
 # ── Narration ────────────────────────────────────────────────────────────────
 
-from katrain.web.api.v1.services.tutorials_tts import generate_figure_audio
-from katrain.web.tutorials.models import NarrationUpdateRequest
-
-@router.post("/figures/{figure_id}/generate-audio")
-def generate_audio_for_figure(
-    figure_id: int, 
+@router.post("/figures/{figure_id}/generate-audio", response_model=TutorialFigureOut)
+async def generate_audio_for_figure(
+    figure_id: int,
     request: NarrationUpdateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     figure = db_queries.get_figure(db, figure_id)
-    if not figure:
+    if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
-        
-    audio_asset = generate_figure_audio(db, figure, request.narration)
-    
-    return {"status": "success", "audio_asset": audio_asset, "narration": figure.narration}
+
+    updated_figure = await generate_figure_audio(db, figure, request.narration)
+    return TutorialFigureOut.model_validate(updated_figure)
 
 
 @router.put("/figures/{figure_id}/narration", response_model=TutorialFigureOut)

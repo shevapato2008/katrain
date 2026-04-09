@@ -540,7 +540,7 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
             # Capture console errors for debugging
             page.on("console", lambda msg: print(f"    [browser {msg.type}] {msg.text}") if msg.type in ("error", "warning") else None)
 
-            await page.goto(f"http://localhost:{port}/record", wait_until="networkidle", timeout=30000)
+            await page.goto(f"http://localhost:{port}/record", wait_until="networkidle", timeout=120000)
 
             # Inject timeline data and trigger initialization
             await page.evaluate(f"window.__RECORDING_DATA = {json.dumps(timeline)}")
@@ -549,7 +549,7 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
             # Wait for Three.js to initialize (board rendering warmup)
             print("  Waiting for Three.js initialization...")
             await page.wait_for_timeout(5000)
-            await page.wait_for_function("window.__RECORDING_READY === true", timeout=10000)
+            await page.wait_for_function("window.__RECORDING_READY === true", timeout=120000)
 
             # Preload troika font: show all moves briefly to trigger font loading + SDF generation,
             # then reset. Without this, the async font load wouldn't complete within frame windows.
@@ -569,11 +569,11 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
 
             for i, t_ms in enumerate(frame_schedule):
                 try:
-                    await asyncio.wait_for(page.evaluate(f"window.__setFrame({t_ms})"), timeout=10)
-                    await asyncio.wait_for(page.evaluate("window.__forceRender && window.__forceRender()"), timeout=10)
+                    await asyncio.wait_for(page.evaluate(f"window.__setFrame({t_ms})"), timeout=60)
+                    await asyncio.wait_for(page.evaluate("window.__forceRender && window.__forceRender()"), timeout=60)
                     await page.wait_for_timeout(50)
                     frame_path = frames_dir / f"frame_{i:05d}.png"
-                    await asyncio.wait_for(page.screenshot(path=str(frame_path)), timeout=30)
+                    await asyncio.wait_for(page.screenshot(path=str(frame_path)), timeout=120)
                 except asyncio.TimeoutError:
                     print(f"    Frame {i} timed out at t={t_ms}ms — aborting capture")
                     raise
@@ -841,9 +841,9 @@ async def process_section(section_id: int, concurrency: int = 1, **kwargs):
         async def process_one(fid):
             async with sem:
                 try:
-                    await asyncio.wait_for(process_figure(fid, **kwargs), timeout=600)
+                    await asyncio.wait_for(process_figure(fid, **kwargs), timeout=3600)
                 except asyncio.TimeoutError:
-                    print(f"  Figure {fid} TIMED OUT after 600s — skipping")
+                    print(f"  Figure {fid} TIMED OUT after 3600s — skipping")
                 except Exception as e:
                     print(f"  Figure {fid} FAILED: {e}")
 

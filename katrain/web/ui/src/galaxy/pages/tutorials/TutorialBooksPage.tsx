@@ -42,7 +42,7 @@ export default function TutorialBooksPage() {
       ) : (
         <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
           {books.map(book => (
-            <Box key={book.id} sx={{ flex: '1 1 280px', maxWidth: 400 }}>
+            <Box key={book.id} sx={{ flex: '0 0 280px', maxWidth: 280 }}>
               <Card>
                 <CardActionArea onClick={() => navigate(`/galaxy/tutorials/book/${book.id}`)}>
                   <CardContent>

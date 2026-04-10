@@ -239,7 +239,7 @@ Section video pipeline:
 - Per-figure poster: `data/tutorial_assets/{book_slug}/video/fig_{figure_id}.jpg`
 - Per-section: `data/tutorial_assets/{book_slug}/video/section_{section_id}.mp4`
 - Per-section poster: `data/tutorial_assets/{book_slug}/video/section_{section_id}.jpg`
-- Resolution: 2560x1440 (2K), H.264, 5fps, AAC audio
+- Resolution: 2560x1440 (2K) - THIS IS MANDATORY, H.264, 5fps, AAC audio
 - Poster: JPG, ~150-200KB, single frame extracted at ~5s
 - Served via existing `/api/v1/tutorials/assets/` endpoint
 

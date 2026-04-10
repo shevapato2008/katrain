@@ -87,6 +87,30 @@ def find_letter_references(text: str) -> list[dict]:
         })
     return refs
 
+# Matches patterns like: X标, X位, X处, 叉, ❌, △, 三角, □, 方块, ○, 圆圈 
+SHAPE_REF_PATTERNS = { 
+    "cross": re.compile(r"X(?:标|位|点|处|)?|[叉乘]|❌", re.IGNORECASE), 
+    "triangle": re.compile(r"三角(?:形|标|位|点|处)?|△"), 
+    "square": re.compile(r"方块(?:标|位|点|处)?|正方形|□"), 
+    "circle": re.compile(r"圆圈(?:标|位|点|处)?|○"), 
+} 
+
+
+def find_shape_references(text: str) -> list[dict]: 
+    """Extract shape references from narration text. 
+
+    Returns list of {start_char, end_char, shape} sorted by position. 
+    """ 
+    refs = [] 
+    for shape, pattern in SHAPE_REF_PATTERNS.items(): 
+        for m in pattern.finditer(text): 
+            refs.append({ 
+                "start_char": m.start(), 
+                "end_char": m.end(), 
+                "shape": shape, 
+            }) 
+    return sorted(refs, key=lambda x: x["start_char"])
+
 
 # ---------------------------------------------------------------------------
 # Subtitle segmenter
@@ -406,8 +430,23 @@ def build_timeline(
     last_letter_time = max((lt["trigger_ms"] for lt in letters), default=0) if letters else 0
     total_duration_ms = max(audio_end_ms, last_move_time + 1000, last_letter_time + 1000) + 2000
 
-    # Build shape annotations (always visible from start)
+    # Build shape annotations with trigger times
     shapes = build_shapes(bp)
+    if shapes:
+        shape_refs = find_shape_references(narration)
+        if shape_refs: print(f"    Found {len(shape_refs)} shape references: {shape_refs}")
+        for shape_entry in shapes:
+            matched = False
+            for ref in shape_refs:
+                if ref["shape"] == shape_entry["shape"]:
+                    mid_char = (ref["start_char"] + ref["end_char"]) // 2
+                    if mid_char in char_to_timing:
+                        wt = char_to_timing[mid_char]
+                        shape_entry["trigger_ms"] = round(wt["offset_ms"], 1)
+                        matched = True
+                        break
+            if not matched:
+                shape_entry["trigger_ms"] = 0
 
     # Build audio URL for the recording page to play
     audio_asset = figure.audio_asset or ""
@@ -538,7 +577,7 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
             page = await context.new_page()
 
             # Capture console errors for debugging
-            page.on("console", lambda msg: print(f"    [browser {msg.type}] {msg.text}") if msg.type in ("error", "warning") else None)
+            page.on("console", lambda msg: print(f"    [browser {msg.type}] {msg.text}"))
 
             await page.goto(f"http://localhost:{port}/record", wait_until="networkidle", timeout=120000)
 
@@ -571,7 +610,7 @@ async def capture_video(timeline: dict, port: int, output_dir: str, fps: int = 5
                 try:
                     await asyncio.wait_for(page.evaluate(f"window.__setFrame({t_ms})"), timeout=60)
                     await asyncio.wait_for(page.evaluate("window.__forceRender && window.__forceRender()"), timeout=60)
-                    await page.wait_for_timeout(50)
+                    await page.evaluate("() => new Promise(requestAnimationFrame)")
                     frame_path = frames_dir / f"frame_{i:05d}.png"
                     await asyncio.wait_for(page.screenshot(path=str(frame_path)), timeout=120)
                 except asyncio.TimeoutError:

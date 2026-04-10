@@ -51,6 +51,7 @@ interface TimelineLetter {
 interface TimelineShape {
   shape: 'triangle' | 'square' | 'circle' | 'cross';
   pos: [number, number];
+  trigger_ms: number;
 }
 
 interface Timeline {
@@ -218,6 +219,7 @@ export default function VideoRecorderPage() {
     r3fStateRef.current = state;
     (window as any).__r3fState = state;
     console.log('Canvas ready, R3F state captured for direct rendering');
+    if ((window as any).__setFrame) { (window as any).__setFrame(0); }
   }, []);
 
   useEffect(() => {
@@ -290,10 +292,10 @@ export default function VideoRecorderPage() {
         } else {
           setLetterOverlays([]);
         }
-        // Shape annotations (on stones) — always visible, perspective-scaled
-        const timelineShapes = tl.shapes || [];
-        if (timelineShapes.length > 0) {
-          setShapeOverlays(timelineShapes.map((sh) => {
+        // Shape annotations (on stones) — perspective-scaled
+        const visibleShapes = (tl.shapes || []).filter((sh) => (sh.trigger_ms || 0) <= time_ms);
+        if (visibleShapes.length > 0) {
+          setShapeOverlays(visibleShapes.map((sh) => {
             const [col, row] = flipRow(sh.pos);
             const worldPos = gridToWorld(col, row, bs);
             const screen = projectToScreen(worldPos, camera, canvasW, canvasH);

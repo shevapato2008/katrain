@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user_optional
@@ -256,9 +256,39 @@ async def verify_figure(
 # ── Assets ────────────────────────────────────────────────────────────────────
 
 @router.get("/assets/{asset_path:path}")
-async def get_asset(asset_path: str):
-    """Serve a page screenshot or other tutorial asset."""
+async def get_asset(asset_path: str, request: Request):
+    """Serve a tutorial asset with HTTP Range support for video seeking."""
     file_path = _safe_asset_path(asset_path)
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Asset not found")
-    return FileResponse(file_path)
+
+    file_size = file_path.stat().st_size
+    range_header = request.headers.get("range")
+
+    if range_header and range_header.startswith("bytes="):
+        range_spec = range_header[6:]
+        parts = range_spec.split("-", 1)
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if parts[1] else file_size - 1
+        end = min(end, file_size - 1)
+        length = end - start + 1
+
+        with open(file_path, "rb") as f:
+            f.seek(start)
+            data = f.read(length)
+
+        import mimetypes
+
+        content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+        return Response(
+            content=data,
+            status_code=206,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(length),
+                "Content-Type": content_type,
+            },
+        )
+
+    return FileResponse(file_path, headers={"Accept-Ranges": "bytes"})

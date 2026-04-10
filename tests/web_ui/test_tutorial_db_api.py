@@ -142,6 +142,65 @@ def test_empty_category_returns_empty_list(client):
     assert resp.json() == []
 
 
+def test_video_asset_range_request(client, tmp_path, monkeypatch):
+    """Asset endpoint returns 206 Partial Content for Range requests."""
+    import katrain.web.api.v1.endpoints.tutorials as tut_mod
+
+    asset_dir = tmp_path / "tutorial_assets" / "test" / "video"
+    asset_dir.mkdir(parents=True)
+    video_file = asset_dir / "fig_1.mp4"
+    video_file.write_bytes(b"x" * 1000)
+
+    monkeypatch.setattr(tut_mod, "ASSET_BASE", tmp_path)
+
+    resp = client.get(
+        "/api/v1/tutorials/assets/tutorial_assets/test/video/fig_1.mp4",
+        headers={"Range": "bytes=0-99"},
+    )
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 0-99/1000"
+    assert resp.headers["accept-ranges"] == "bytes"
+    assert len(resp.content) == 100
+
+
+def test_video_asset_range_request_open_ended(client, tmp_path, monkeypatch):
+    """Asset endpoint handles open-ended Range (bytes=500-)."""
+    import katrain.web.api.v1.endpoints.tutorials as tut_mod
+
+    asset_dir = tmp_path / "tutorial_assets" / "test" / "video"
+    asset_dir.mkdir(parents=True)
+    video_file = asset_dir / "fig_1.mp4"
+    video_file.write_bytes(b"x" * 1000)
+
+    monkeypatch.setattr(tut_mod, "ASSET_BASE", tmp_path)
+
+    resp = client.get(
+        "/api/v1/tutorials/assets/tutorial_assets/test/video/fig_1.mp4",
+        headers={"Range": "bytes=500-"},
+    )
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 500-999/1000"
+    assert len(resp.content) == 500
+
+
+def test_asset_without_range_has_accept_ranges(client, tmp_path, monkeypatch):
+    """Non-range requests still include Accept-Ranges header."""
+    import katrain.web.api.v1.endpoints.tutorials as tut_mod
+
+    asset_dir = tmp_path / "tutorial_assets" / "test" / "video"
+    asset_dir.mkdir(parents=True)
+    video_file = asset_dir / "fig_1.mp4"
+    video_file.write_bytes(b"x" * 100)
+
+    monkeypatch.setattr(tut_mod, "ASSET_BASE", tmp_path)
+
+    resp = client.get(
+        "/api/v1/tutorials/assets/tutorial_assets/test/video/fig_1.mp4",
+    )
+    assert resp.status_code == 200
+    assert resp.headers["accept-ranges"] == "bytes"
+
+
 @pytest.fixture
 def client_with_auth():
     from katrain.web.server import create_app

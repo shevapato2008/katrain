@@ -121,7 +121,7 @@ msgstr "Рамка для цумеґо"
 
 #. View a player performance report
 msgid "analysis:report"
-msgstr "Звіт про результати гравця"
+msgstr "Розбір"
 
 #. game filter in performance report
 msgid "Entire Game"
@@ -1420,7 +1420,7 @@ msgid "Library"
 msgstr "Бібліотека"
 
 msgid "dashboard:report_desc"
-msgstr "Детальні звіти про ігри та аналіз стилю. (Незабаром)"
+msgstr "Створюйте покрокові аналітичні звіти та переглядайте свої партії."
 
 msgid "game_room:leave_forfeit"
 msgstr "Покинути і здатися"
@@ -1727,7 +1727,7 @@ msgid "live:tomorrow"
 msgstr "Завтра"
 
 msgid "live:in_days"
-msgstr "через {0} днів"
+msgstr "днів"
 
 msgid "live:moves"
 msgstr "ходів"
@@ -1868,7 +1868,7 @@ msgid "live:winrate_trend"
 msgstr "Тренд перемог"
 
 msgid "live:no_brilliant"
-msgstr "Немає блискучих ходів"
+msgstr "Вінрейт"
 
 msgid "live:move_number"
 msgstr "Хід"
@@ -2093,7 +2093,7 @@ msgid "research:col_score_diff"
 msgstr "Різн. очок"
 
 msgid "research:col_winrate"
-msgstr "Вінрейт"
+msgstr "Відсоток перемог"
 
 msgid "research:analyzing"
 msgstr "Аналіз..."
@@ -2346,3 +2346,216 @@ msgstr "Ваш запит на підрахунок було відхилено.
 
 msgid "game_end:count"
 msgstr "Гру завершено підрахунком: {result}"
+
+msgid "report:login_required"
+msgstr "Увійдіть, щоб переглядати та створювати звіти розбору."
+
+msgid "report:my_reports"
+msgstr "Розбір"
+
+msgid "report:page_hint"
+msgstr ""
+"Оберіть партію праворуч для перегляду. Звіти створюються через картку "
+"партії."
+
+msgid "report:select_game"
+msgstr "Обрати партію"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Оберіть партію на правій панелі або імпортуйте новий SGF / партію з "
+"бібліотеки."
+
+msgid "report:no_preview"
+msgstr "Немає партій для перегляду."
+
+msgid "report:game_list"
+msgstr "Список партій"
+
+msgid "report:game_list_hint"
+msgstr ""
+"{count} партій. Пошук за іменем гравця та створення звичайних/глибоких "
+"звітів."
+
+msgid "report:search_placeholder"
+msgstr "Пошук за іменем гравця"
+
+msgid "report:no_match"
+msgstr "Не знайдено партій за запитом «{query}»."
+
+msgid "report:no_games"
+msgstr "Партій ще немає. Імпортуйте одну, щоб створити звіт."
+
+msgid "report:load_games_failed"
+msgstr "Не вдалося завантажити список партій"
+
+msgid "report:load_tasks_failed"
+msgstr "Не вдалося завантажити завдання звітів"
+
+msgid "report:import_failed"
+msgstr "Не вдалося імпортувати SGF"
+
+msgid "report:library_import_failed"
+msgstr "Не вдалося імпортувати з бібліотеки"
+
+msgid "report:create_task_failed"
+msgstr "Не вдалося створити завдання звіту"
+
+msgid "report:login_required_detail"
+msgstr "Увійдіть, щоб переглянути деталі звіту."
+
+msgid "report:back_to_list"
+msgstr "Повернутися до списку розборів"
+
+msgid "report:enter_research"
+msgstr "Відкрити в дослідженні"
+
+msgid "report:no_sgf"
+msgstr "Немає даних SGF для розбору."
+
+msgid "report:try"
+msgstr "Спробувати"
+
+msgid "report:territory"
+msgstr "Територія"
+
+msgid "report:move_numbers"
+msgstr "Номери"
+
+msgid "report:suggestions"
+msgstr "Підказки"
+
+msgid "report:hide_suggestions"
+msgstr "Приховати підказки"
+
+msgid "report:show_suggestions"
+msgstr "Показати підказки"
+
+msgid "report:clear"
+msgstr "Очистити"
+
+msgid "report:normal"
+msgstr "Звичайний"
+
+msgid "report:deep"
+msgstr "Глибокий"
+
+msgid "report:no_result"
+msgstr "Немає результату"
+
+msgid "report:unnamed_game"
+msgstr "Без назви"
+
+msgid "report:queuing"
+msgstr "У черзі"
+
+msgid "report:generating"
+msgstr "Створюється"
+
+msgid "report:generate_deep"
+msgstr "Створити глибокий звіт"
+
+msgid "report:generate_normal"
+msgstr "Створити звичайний звіт"
+
+msgid "report:generate"
+msgstr "Створити звіт"
+
+msgid "report:import"
+msgstr "Імпортувати партію"
+
+msgid "report:import_local"
+msgstr "Імпортувати локальний SGF"
+
+msgid "report:import_library"
+msgstr "Імпортувати з бібліотеки"
+
+msgid "report:title_label"
+msgstr "Назва"
+
+msgid "report:optional"
+msgstr "Необов'язково"
+
+msgid "report:choose_file"
+msgstr "Обрати локальний файл"
+
+msgid "report:choose_file_hint"
+msgstr "Оберіть локальний SGF-файл або вставте вміст SGF безпосередньо."
+
+msgid "report:board_size"
+msgstr "Дошка"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Правила"
+
+msgid "report:komi_label"
+msgstr "Комі"
+
+msgid "report:cancel"
+msgstr "Скасувати"
+
+msgid "report:importing"
+msgstr "Імпортується..."
+
+msgid "report:import_only"
+msgstr "Лише імпорт"
+
+msgid "report:import_and_normal"
+msgstr "Імпортувати та створити звичайний звіт"
+
+msgid "report:import_and_deep"
+msgstr "Імпортувати та створити глибокий звіт"
+
+msgid "report:search"
+msgstr "Пошук"
+
+msgid "report:search_placeholder_lib"
+msgstr "Пошук за гравцем, турніром, датою"
+
+msgid "report:loading"
+msgstr "Завантаження..."
+
+msgid "report:no_results"
+msgstr "Партій не знайдено."
+
+msgid "report:completed"
+msgstr "Завершено"
+
+msgid "report:failed"
+msgstr "Помилка"
+
+msgid "report:unknown_status"
+msgstr "Невідомо"
+
+msgid "report:japanese_rules"
+msgstr "Японські"
+
+msgid "report:korean_rules"
+msgstr "Корейські"
+
+msgid "report:chinese_rules"
+msgstr "Китайські"
+
+msgid "report:black"
+msgstr "Чорні"
+
+msgid "report:white"
+msgstr "Білі"
+
+msgid "report:moves_unit"
+msgstr "ходів"
+
+msgid "report:points_unit"
+msgstr "очк"
+
+msgid "report:move_prefix"
+msgstr "Хід"
+
+msgid "report:refresh_failed"
+msgstr "Не вдалося оновити звіт"
+
+msgid "report:load_failed"
+msgstr "Не вдалося завантажити звіт"

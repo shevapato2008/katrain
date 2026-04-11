@@ -927,9 +927,9 @@ msgstr "New Zealand"
 msgid "tromp-taylor"
 msgstr "Tromp-Taylor"
 
-#. TODO - View a player performance report
+#. View a player performance report
 msgid "analysis:report"
-msgstr "Performance Report"
+msgstr "Revisión"
 
 #. TODO
 msgid "engine died popup opening message"
@@ -1057,7 +1057,7 @@ msgstr ""
 "Analiza partidas con IA, explora variaciones y gestiona tu biblioteca SGF."
 
 msgid "dashboard:report_desc"
-msgstr "Informes detallados de partidas y análisis de estilo. (Próximamente)"
+msgstr "Genera informes de análisis jugada a jugada y revisa tus partidas."
 
 msgid "dashboard:live_desc"
 msgstr "Ver partidas de alto nivel y torneos en vivo. (Próximamente)"
@@ -1550,7 +1550,7 @@ msgid "live:tomorrow"
 msgstr "Mañana"
 
 msgid "live:in_days"
-msgstr "en {0} días"
+msgstr "días"
 
 msgid "live:moves"
 msgstr "movs"
@@ -1583,7 +1583,7 @@ msgid "live:status_live"
 msgstr "EN VIVO"
 
 msgid "live:status_finished"
-msgstr "Finalizado"
+msgstr "Finalizada"
 
 msgid "live:pts"
 msgstr "pts"
@@ -2169,3 +2169,216 @@ msgstr "Tu solicitud de conteo fue rechazada."
 
 msgid "game_end:count"
 msgstr "Partida terminada por conteo: {result}"
+
+msgid "report:login_required"
+msgstr "Inicia sesión para ver y generar informes de revisión."
+
+msgid "report:my_reports"
+msgstr "Revisión"
+
+msgid "report:page_hint"
+msgstr ""
+"Selecciona una partida a la derecha para previsualizar. Los informes se "
+"crean desde la tarjeta."
+
+msgid "report:select_game"
+msgstr "Seleccionar partida"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Selecciona una partida del panel derecho o importa un nuevo SGF / partida de"
+" la biblioteca."
+
+msgid "report:no_preview"
+msgstr "Aún no hay partida para previsualizar."
+
+msgid "report:game_list"
+msgstr "Lista de partidas"
+
+msgid "report:game_list_hint"
+msgstr ""
+"{count} partidas. Buscar por nombre de jugador y generar informes "
+"normales/detallados."
+
+msgid "report:search_placeholder"
+msgstr "Buscar por nombre de jugador"
+
+msgid "report:no_match"
+msgstr "No se encontraron partidas para \"{query}\"."
+
+msgid "report:no_games"
+msgstr "Aún no hay partidas. Importa una para generar informes."
+
+msgid "report:load_games_failed"
+msgstr "Error al cargar la lista de partidas"
+
+msgid "report:load_tasks_failed"
+msgstr "Error al cargar las tareas de informe"
+
+msgid "report:import_failed"
+msgstr "Error al importar SGF"
+
+msgid "report:library_import_failed"
+msgstr "Error al importar desde la biblioteca"
+
+msgid "report:create_task_failed"
+msgstr "Error al crear la tarea de informe"
+
+msgid "report:login_required_detail"
+msgstr "Inicia sesión para ver los detalles del informe."
+
+msgid "report:back_to_list"
+msgstr "Volver a la lista de revisiones"
+
+msgid "report:enter_research"
+msgstr "Abrir en investigación"
+
+msgid "report:no_sgf"
+msgstr "No hay datos SGF disponibles para la revisión."
+
+msgid "report:try"
+msgstr "Probar"
+
+msgid "report:territory"
+msgstr "Territorio"
+
+msgid "report:move_numbers"
+msgstr "Nº jugada"
+
+msgid "report:suggestions"
+msgstr "Sugerencias"
+
+msgid "report:hide_suggestions"
+msgstr "Ocultar sugerencias"
+
+msgid "report:show_suggestions"
+msgstr "Mostrar sugerencias"
+
+msgid "report:clear"
+msgstr "Limpiar"
+
+msgid "report:normal"
+msgstr "Normal"
+
+msgid "report:deep"
+msgstr "Profundo"
+
+msgid "report:no_result"
+msgstr "Sin resultado"
+
+msgid "report:unnamed_game"
+msgstr "Partida sin nombre"
+
+msgid "report:queuing"
+msgstr "En cola"
+
+msgid "report:generating"
+msgstr "Generando"
+
+msgid "report:generate_deep"
+msgstr "Generar informe profundo"
+
+msgid "report:generate_normal"
+msgstr "Generar informe normal"
+
+msgid "report:generate"
+msgstr "Generar informe"
+
+msgid "report:import"
+msgstr "Importar partida"
+
+msgid "report:import_local"
+msgstr "Importar SGF local"
+
+msgid "report:import_library"
+msgstr "Importar desde biblioteca"
+
+msgid "report:title_label"
+msgstr "Título"
+
+msgid "report:optional"
+msgstr "Opcional"
+
+msgid "report:choose_file"
+msgstr "Elegir archivo local"
+
+msgid "report:choose_file_hint"
+msgstr "Selecciona un archivo SGF local o pega el contenido SGF directamente."
+
+msgid "report:board_size"
+msgstr "Tablero"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Reglas"
+
+msgid "report:komi_label"
+msgstr "Komi"
+
+msgid "report:cancel"
+msgstr "Cancelar"
+
+msgid "report:importing"
+msgstr "Importando..."
+
+msgid "report:import_only"
+msgstr "Solo importar"
+
+msgid "report:import_and_normal"
+msgstr "Importar y generar informe normal"
+
+msgid "report:import_and_deep"
+msgstr "Importar y generar informe profundo"
+
+msgid "report:search"
+msgstr "Buscar"
+
+msgid "report:search_placeholder_lib"
+msgstr "Buscar por jugador, evento, fecha"
+
+msgid "report:loading"
+msgstr "Cargando..."
+
+msgid "report:no_results"
+msgstr "No se encontraron partidas."
+
+msgid "report:completed"
+msgstr "Completado"
+
+msgid "report:failed"
+msgstr "Fallido"
+
+msgid "report:unknown_status"
+msgstr "Desconocido"
+
+msgid "report:japanese_rules"
+msgstr "Japonés"
+
+msgid "report:korean_rules"
+msgstr "Coreano"
+
+msgid "report:chinese_rules"
+msgstr "Chino"
+
+msgid "report:black"
+msgstr "Negro"
+
+msgid "report:white"
+msgstr "Blanco"
+
+msgid "report:moves_unit"
+msgstr "jugadas"
+
+msgid "report:points_unit"
+msgstr "pts"
+
+msgid "report:move_prefix"
+msgstr "Jugada"
+
+msgid "report:refresh_failed"
+msgstr "Error al actualizar el informe"
+
+msgid "report:load_failed"
+msgstr "Error al cargar el informe"

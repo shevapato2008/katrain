@@ -873,7 +873,7 @@ msgid "tromp-taylor"
 msgstr "Тромп-Тейлор"
 
 msgid "analysis:report"
-msgstr "Отчёт о производительности"
+msgstr "Разбор"
 
 msgid "engine died popup opening message"
 msgstr ""
@@ -1338,7 +1338,7 @@ msgid "Library"
 msgstr "Библиотека"
 
 msgid "dashboard:report_desc"
-msgstr "Подробные отчеты об играх и анализ стиля. (Скоро)"
+msgstr "Создавайте пошаговые аналитические отчёты и разбирайте свои партии."
 
 msgid "game_room:leave_forfeit"
 msgstr "Покинуть и сдаться"
@@ -1645,7 +1645,7 @@ msgid "live:tomorrow"
 msgstr "Завтра"
 
 msgid "live:in_days"
-msgstr "через {0} дней"
+msgstr "дней"
 
 msgid "live:moves"
 msgstr "ходов"
@@ -1678,7 +1678,7 @@ msgid "live:status_live"
 msgstr "LIVE"
 
 msgid "live:status_finished"
-msgstr "Завершено"
+msgstr "Завершена"
 
 msgid "live:pts"
 msgstr "очк"
@@ -2264,3 +2264,215 @@ msgstr "Ваш запрос на подсчёт был отклонён."
 
 msgid "game_end:count"
 msgstr "Игра завершена подсчётом: {result}"
+
+msgid "report:login_required"
+msgstr "Войдите, чтобы просматривать и создавать отчёты разбора."
+
+msgid "report:my_reports"
+msgstr "Разбор"
+
+msgid "report:page_hint"
+msgstr ""
+"Выберите партию справа для просмотра. Отчёты создаются через карточку "
+"партии."
+
+msgid "report:select_game"
+msgstr "Выбрать партию"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Выберите партию на правой панели или импортируйте новый SGF / партию из "
+"библиотеки."
+
+msgid "report:no_preview"
+msgstr "Нет партий для просмотра."
+
+msgid "report:game_list"
+msgstr "Список партий"
+
+msgid "report:game_list_hint"
+msgstr ""
+"{count} партий. Поиск по имени игрока и создание обычных/глубоких отчётов."
+
+msgid "report:search_placeholder"
+msgstr "Поиск по имени игрока"
+
+msgid "report:no_match"
+msgstr "Не найдено партий по запросу «{query}»."
+
+msgid "report:no_games"
+msgstr "Партий пока нет. Импортируйте партию, чтобы создать отчёт."
+
+msgid "report:load_games_failed"
+msgstr "Не удалось загрузить список партий"
+
+msgid "report:load_tasks_failed"
+msgstr "Не удалось загрузить задачи отчётов"
+
+msgid "report:import_failed"
+msgstr "Не удалось импортировать SGF"
+
+msgid "report:library_import_failed"
+msgstr "Не удалось импортировать из библиотеки"
+
+msgid "report:create_task_failed"
+msgstr "Не удалось создать задачу отчёта"
+
+msgid "report:login_required_detail"
+msgstr "Войдите, чтобы просмотреть подробности отчёта."
+
+msgid "report:back_to_list"
+msgstr "Вернуться к списку разборов"
+
+msgid "report:enter_research"
+msgstr "Открыть в исследовании"
+
+msgid "report:no_sgf"
+msgstr "Нет данных SGF для разбора."
+
+msgid "report:try"
+msgstr "Попробовать"
+
+msgid "report:territory"
+msgstr "Территория"
+
+msgid "report:move_numbers"
+msgstr "Номера"
+
+msgid "report:suggestions"
+msgstr "Подсказки"
+
+msgid "report:hide_suggestions"
+msgstr "Скрыть подсказки"
+
+msgid "report:show_suggestions"
+msgstr "Показать подсказки"
+
+msgid "report:clear"
+msgstr "Очистить"
+
+msgid "report:normal"
+msgstr "Обычный"
+
+msgid "report:deep"
+msgstr "Глубокий"
+
+msgid "report:no_result"
+msgstr "Нет результата"
+
+msgid "report:unnamed_game"
+msgstr "Без названия"
+
+msgid "report:queuing"
+msgstr "В очереди"
+
+msgid "report:generating"
+msgstr "Создаётся"
+
+msgid "report:generate_deep"
+msgstr "Создать глубокий отчёт"
+
+msgid "report:generate_normal"
+msgstr "Создать обычный отчёт"
+
+msgid "report:generate"
+msgstr "Создать отчёт"
+
+msgid "report:import"
+msgstr "Импортировать партию"
+
+msgid "report:import_local"
+msgstr "Импортировать локальный SGF"
+
+msgid "report:import_library"
+msgstr "Импортировать из библиотеки"
+
+msgid "report:title_label"
+msgstr "Название"
+
+msgid "report:optional"
+msgstr "Необязательно"
+
+msgid "report:choose_file"
+msgstr "Выбрать локальный файл"
+
+msgid "report:choose_file_hint"
+msgstr "Выберите локальный SGF-файл или вставьте содержимое SGF напрямую."
+
+msgid "report:board_size"
+msgstr "Доска"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Правила"
+
+msgid "report:komi_label"
+msgstr "Коми"
+
+msgid "report:cancel"
+msgstr "Отмена"
+
+msgid "report:importing"
+msgstr "Импорт..."
+
+msgid "report:import_only"
+msgstr "Только импорт"
+
+msgid "report:import_and_normal"
+msgstr "Импортировать и создать обычный отчёт"
+
+msgid "report:import_and_deep"
+msgstr "Импортировать и создать глубокий отчёт"
+
+msgid "report:search"
+msgstr "Поиск"
+
+msgid "report:search_placeholder_lib"
+msgstr "Поиск по игроку, турниру, дате"
+
+msgid "report:loading"
+msgstr "Загрузка..."
+
+msgid "report:no_results"
+msgstr "Партии не найдены."
+
+msgid "report:completed"
+msgstr "Завершён"
+
+msgid "report:failed"
+msgstr "Ошибка"
+
+msgid "report:unknown_status"
+msgstr "Неизвестно"
+
+msgid "report:japanese_rules"
+msgstr "Японские"
+
+msgid "report:korean_rules"
+msgstr "Корейские"
+
+msgid "report:chinese_rules"
+msgstr "Китайские"
+
+msgid "report:black"
+msgstr "Чёрные"
+
+msgid "report:white"
+msgstr "Белые"
+
+msgid "report:moves_unit"
+msgstr "ходов"
+
+msgid "report:points_unit"
+msgstr "очк"
+
+msgid "report:move_prefix"
+msgstr "Ход"
+
+msgid "report:refresh_failed"
+msgstr "Не удалось обновить отчёт"
+
+msgid "report:load_failed"
+msgstr "Не удалось загрузить отчёт"

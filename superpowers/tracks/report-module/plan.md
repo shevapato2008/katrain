@@ -1,379 +1,227 @@
 # Report Module Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+最后更新：2026-04-11
 
-**Goal:** Implement the "Report" module for analyzing and visualizing a user's `user_games` using KataGo engine, providing a 1st-level "My Reports" view (polling progress) and a 2nd-level "Report Detail" view (read-only analysis graph).
+本文档不再描述最初的目标态，而是明确区分：
 
-**Architecture:** 
-1. Database tables for `report_tasks` (task tracking) and `report_task_moves` (per-move analysis results) tied to `user_games`.
-2. FastAPI endpoints with ownership checks to start analysis, poll progress, and fetch move data.
-3. Persistent background analyzer (`ReportAnalyzerService`) running in the FastAPI `lifespan` loop to process queued `report_tasks`.
-4. React frontend built on top of the Galaxy layout. Level 1 (My Reports) reuses KifuLibrary layout for list + preview. Level 2 (Report Detail) reuses existing board and analysis components in a read-only mode.
+1. 当前已经完成并落库/上线的部分
+2. 仍然需要继续开发的部分
 
-**Tech Stack:** Python (FastAPI, SQLAlchemy), PostgreSQL/SQLite, React (MUI), three.js (via existing board).
+## 1. 当前实现状态总览
 
----
+### 1.1 已完成的主线能力
 
-### Task 1: Database Schema Expansion (SQLAlchemy)
+- [x] 报告对象绑定到 `user_games`
+- [x] 普通报告和深度报告统一落在 `report_tasks` / `report_task_moves`
+- [x] `POST /api/v1/reports/`、`GET /api/v1/reports/`、`GET /api/v1/reports/{taskId}`、`GET /api/v1/reports/{taskId}/moves` 已接通
+- [x] 报告任务 ownership 校验、同局同类型幂等、`force=true` 覆盖已实现
+- [x] `ReportAnalyzerService` 已在 `katrain-web` 内启动并消费队列
+- [x] analyzer 已支持逐手落库、断点续跑、有限重试、stale running task reset
+- [x] 默认报告并发数已配置化，当前默认值为 `3`
+- [x] 一级页已改成“中间棋盘 + 右侧棋局列表”结构
+- [x] 一级页已支持本地 SGF 导入和棋谱库导入
+- [x] 一级页已支持搜索、分页、卡片内创建普通/深度报告
+- [x] 一级页已支持 `pending` / `running` / `completed` 的状态展示
+- [x] 二级页已切换到接近直播详情页的布局
+- [x] 二级页已复用 `AiAnalysis`、`TrendChart`、`PlaybackBar`
+- [x] 前后端对应测试已经补齐到当前主路径
+- [x] 所有前端文字已接入 i18n（11 种语言），左侧栏已从"表现报告"改为"复盘"
+- [x] 导入棋局基于 `sgf_hash` 去重，同一用户同一棋局不会重复入库
+- [x] 棋谱库导入对话框分页大小与棋谱库主页对齐（20 条/页）
+- [x] 报告分析器增加逐手重试（3 次，间隔 2 秒），减少因瞬时网络错误导致整个任务失败
+- [x] 二级页导航落子时播放落子音效，与直播模块保持一致
 
-**Files:**
-- Modify: `katrain/web/core/models_db.py`
-- Create: `tests/web_ui/test_reports_db.py`
+### 1.2 当前不是 bug 的行为
 
-- [ ] **Step 1: Add new models in `models_db.py`**
+以下行为需要在计划中明确标记为“按现状设计如此”，避免重复误判：
 
-```python
-# In katrain/web/core/models_db.py (add near UserGame / UserGameAnalysis)
-class ReportTask(Base):
-    __tablename__ = "report_tasks"
+- [x] 同时提交 4 份报告时，默认只会有 3 份进入 `running`
+- [x] 第 4 份会停留在 `pending`
+- [x] 前端应该显示“排队中”，而不是伪装成“卡住”
+- [x] 报告执行器当前属于 `katrain-web`，不是 `katrain-cron`
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    user_game_id = Column(String(32), ForeignKey("user_games.id"), nullable=False, index=True)
-    report_type = Column(String(20), default="normal") # normal / deep
-    requested_visits = Column(Integer, default=500)
-    status = Column(String(20), default="pending") # pending / running / completed / failed
-    total_moves = Column(Integer, default=0)
-    analyzed_moves = Column(Integer, default=0)
-    error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    started_at = Column(DateTime(timezone=True), nullable=True)
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+## 2. 当前代码对应的模块分布
 
-    user_game = relationship("UserGame", backref="report_tasks")
-    moves = relationship("ReportTaskMove", back_populates="task", cascade="all, delete-orphan")
+### 2.1 后端
 
-    __table_args__ = (
-        Index("ix_report_tasks_user_created", "user_id", "created_at"),
-        Index("ix_report_tasks_game_type_created", "user_game_id", "report_type", "created_at"),
-        Index("ix_report_tasks_status_created", "status", "created_at"),
-    )
+- `katrain/web/api/v1/endpoints/reports.py`
+- `katrain/web/report/analyzer.py`
+- `katrain/web/core/models_db.py`
+- `katrain/web/core/config.py`
+- `katrain/web/server.py`
 
-class ReportTaskMove(Base):
-    __tablename__ = "report_task_moves"
+### 2.2 前端一级页
 
-    id = Column(Integer, primary_key=True, index=True)
-    task_id = Column(Integer, ForeignKey("report_tasks.id"), nullable=False, index=True)
-    move_number = Column(Integer, nullable=False)
-    status = Column(String(16), default="success")
-    winrate = Column(Float, nullable=True)
-    score_lead = Column(Float, nullable=True)
-    visits = Column(Integer, nullable=True)
-    top_moves = Column(JSON, nullable=True)
-    ownership = Column(JSON, nullable=True)
-    actual_move = Column(String(8), nullable=True)
-    actual_player = Column(String(1), nullable=True)
-    delta_score = Column(Float, nullable=True)
-    delta_winrate = Column(Float, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+- `katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx`
+- `katrain/web/ui/src/galaxy/components/report/ReportGameCard.tsx`
+- `katrain/web/ui/src/galaxy/components/report/ReportImportMenu.tsx`
+- `katrain/web/ui/src/galaxy/components/report/ReportLocalImportDialog.tsx`
+- `katrain/web/ui/src/galaxy/components/report/ReportLibraryImportDialog.tsx`
 
-    task = relationship("ReportTask", back_populates="moves")
+### 2.3 前端二级页
 
-    __table_args__ = (
-        UniqueConstraint('task_id', 'move_number', name='uq_report_task_move'),
-    )
-```
+- `katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.tsx`
+- `katrain/web/ui/src/galaxy/components/report/ReportMetaPanel.tsx`
 
-- [ ] **Step 2: Write DB Model Test**
+### 2.4 测试
 
-```python
-# Create tests/web_ui/test_reports_db.py
-# 1. Create a dummy User and UserGame
-# 2. Create a ReportTask tied to that UserGame
-# 3. Create a ReportTaskMove tied to the ReportTask
-# 4. Verify insertion and relationship traversing (e.g. task.moves, task.user_game)
-```
+- `tests/web_ui/test_reports_api.py`
+- `tests/web_ui/test_reports_db.py`
+- `tests/web_ui/test_report_analyzer.py`
+- `katrain/web/ui/src/galaxy/pages/report/ReportsPage.test.tsx`
+- `katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.test.tsx`
 
-- [ ] **Step 3: Commit**
+## 3. 已完成项明细
 
-```bash
-git add katrain/web/core/models_db.py tests/web_ui/test_reports_db.py
-git commit -m "db: add report_tasks and report_task_moves SQLAlchemy models with relationships"
-```
+### 3.1 后端数据与接口
 
-### Task 2: Backend API Layer (Auth, Creation & Status)
+- [x] `ReportTask` / `ReportTaskMove` 已建模，并配置 relationship
+- [x] 普通报告与深度报告通过 `report_type` 区分
+- [x] `requested_visits` 当前映射为 `normal=500`、`deep=2000`
+- [x] `get_report_moves` 已支持读取逐手分析结果
+- [x] API 层已经支持返回 ownership、top moves、delta score、delta winrate
 
-**Files:**
-- Create: `katrain/web/api/v1/endpoints/reports.py`
-- Modify: `katrain/web/api/v1/api.py`
-- Create: `tests/web_ui/test_reports_api.py`
+### 3.2 报告分析器
 
-- [ ] **Step 1: Create Endpoint File**
+- [x] 报告分析是逐手发请求，不是整盘一次性提交
+- [x] 每一步分析完成后立即落库
+- [x] 恢复时从数据库里最后一手继续
+- [x] `playSelectionValue` 已正确映射为 `top_moves[].psv`
+- [x] 失败任务会在重试上限内重新进入 `pending`
+- [x] stale running task 会在超时后回到 `pending`
+- [x] 并发 worker 已支持同时跑多条任务
+- [x] 当前默认并发数为 `3`
 
-```python
-# katrain/web/api/v1/endpoints/reports.py
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from pydantic import BaseModel
-from katrain.web.core import models_db
-from katrain.web.api.v1.endpoints.auth import get_current_user
+### 3.3 一级页
 
-router = APIRouter()
+- [x] 页面结构已经切换为中间棋盘 + 右侧侧栏
+- [x] 棋盘下方报告按钮已移除
+- [x] 右侧侧栏已经支持搜索、分页、导入和卡片操作
+- [x] 本地导入支持文件选择和 SGF 文本粘贴
+- [x] 棋谱库导入支持搜索和分页
+- [x] 导入后支持直接生成普通报告或深度报告
+- [x] 卡片已展示比赛名、日期、手数、结果、棋手名、黑白标识
+- [x] 已完成 badge 已支持跳转到对应二级页
+- [x] active task 已支持进度条
+- [x] `pending` 和 `running` 已在 UI 中分开呈现为“排队中”和“生成中”
+- [x] 当 `total_moves` 尚未回填时，前端已回退到 `game.move_count`
+- [x] 一级页已在存在 active task 时每 2 秒轮询刷新
 
-class ReportTaskCreate(BaseModel):
-    user_game_id: str
-    report_type: str = "normal"
-    force: bool = False
+### 3.4 二级页
 
-class ReportTaskStatus(BaseModel):
-    id: int
-    user_game_id: str
-    status: str
-    report_type: str
-    total_moves: int
-    analyzed_moves: int
-    
-    class Config:
-        from_attributes = True
+- [x] 页面已经改成左侧大棋盘、右侧分析栏、底部回放
+- [x] 已接入 `TRY / 领地 / 手数 / 建议` 四个开关
+- [x] 已接入 `AiAnalysis`
+- [x] 已接入 `TrendChart`
+- [x] 已接入 `PlaybackBar`
+- [x] 在任务为 `pending` 或 `running` 时会继续轮询刷新
+- [x] 页面顶部已提供“进入研究室”入口
 
-# Placeholder for dependencies
-def get_db():
-    pass # Replaced by actual get_db
+## 4. 当前仍然存在的差距
 
-@router.post("/", response_model=ReportTaskStatus)
-async def create_report_task(task: ReportTaskCreate, current_user = Depends(get_current_user)):
-    # TODO: implementation
-    # 1. Verify ownership of user_game_id
-    # 2. Check for existing pending/running tasks (idempotency)
-    # 3. Create or return existing task
-    raise HTTPException(status_code=501, detail="Not implemented")
+### 4.0 对弈模块完赛自动入库 ✅ 已完成
 
-@router.get("/", response_model=List[ReportTaskStatus])
-async def list_report_tasks(current_user = Depends(get_current_user)):
-    # TODO: fetch user's tasks (can also return user_games combined with latest report status)
-    raise HTTPException(status_code=501, detail="Not implemented")
+- [x] 对于已登录用户，只要在”对弈”模块完成一局棋，无论是 `play_human` 还是 `play_ai`，都必须自动写入 `user_games`
+- [x] 自动保存后的棋局应直接出现在 `/galaxy/report`，不需要二次导入
+- [x] 自动保存时必须尽量完整记录双方姓名、对局时间、结果、SGF、`source`、`game_type`
 
-@router.get("/{task_id}", response_model=ReportTaskStatus)
-async def get_report_status(task_id: int, current_user = Depends(get_current_user)):
-    # TODO: fetch specific task, verify ownership
-    raise HTTPException(status_code=501, detail="Not implemented")
+当前代码状态：
 
-@router.get("/{task_id}/moves")
-async def get_report_moves(task_id: int, current_user = Depends(get_current_user)):
-    # TODO: fetch all report_task_moves for task_id, verify ownership
-    raise HTTPException(status_code=501, detail="Not implemented")
-```
+- [x] `play_human` 完赛后会自动写入 `user_games`（通过 `GameRepository.record_multiplayer_game`）
+- [x] `play_ai` 完赛后自动写入 `user_games`（通过 `_record_ai_game` in server.py）
+- [x] 自动入库覆盖 resign、timeout、count 三条完赛路径
+- [x] AI 对局设置时自动将人类玩家名设为用户名，AI 玩家名设为计算段位
+- [x] 后端测试已覆盖：resign/timeout 自动入库、匿名用户不保存、AI 名称回退、报告页可见性、多人对弈不重复保存
 
-- [ ] **Step 2: Register Router in `api.py`**
+### 4.1 二级页与直播详情页还未完全对齐
 
-```python
-# In katrain/web/api/v1/api.py
-from katrain.web.api.v1.endpoints import reports
-# ...
-api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
-```
+- [ ] `user_games` 还没有 `round_name`
+- [ ] `user_games` 还没有 `black_rank`
+- [ ] `user_games` 还没有 `white_rank`
+- [ ] 头部信息还缺少来源 badge 等更完整元数据
+- [ ] 复盘详情的数据模型仍然是 `task + moves + user_game`，不是直播页那种更统一的语义对象
+- [ ] 当前报告页没有评论区和直播特有状态，这一点需要明确保持为差异，不应误写成“缺陷”
 
-- [ ] **Step 3: Write API Test (Failing/Mocked)**
+### 4.2 任务运维能力还不完整
 
-```python
-# Create tests/web_ui/test_reports_api.py
-# Test POST /api/v1/reports with bad game_id (should 404 or 403)
-# Test POST /api/v1/reports with valid game_id (idempotency)
-# Test GET /api/v1/reports/{task_id}/moves
-```
+- [ ] 失败任务还没有显式“重试”按钮
+- [ ] 进程重启后不会立即恢复旧的 `running` 任务，而是等待 stale timeout
+- [ ] 没有队列深度、worker 占用之类的可视化运维指标
+- [ ] 报告消费器还没有迁移到独立 worker / cron
 
-- [ ] **Step 4: Commit**
+### 4.3 一级页还有可继续打磨的细节
 
-```bash
-git add katrain/web/api/v1/endpoints/reports.py katrain/web/api/v1/api.py tests/web_ui/test_reports_api.py
-git commit -m "feat(api): scaffold report API endpoints including moves and idempotency tests"
-```
+- [ ] 搜索占位文案当前是“按用户名 / 棋手名搜索”，但后端真实匹配字段是 `title/player_black/player_white/event`，文案仍可更精确
+- [ ] 卡片已经接近棋谱库密度，但还没有完全复刻棋谱库卡片的所有元信息
+- [ ] 多任务排队时，目前只在卡片层展示 `排队中`，没有统一队列总览
 
-### Task 3: Backend Analyzer Service (DB-Backed Polling)
+## 5. 下一阶段开发计划
 
-**Files:**
-- Create: `katrain/web/report/analyzer.py`
-- Modify: `katrain/web/server.py`
+以下计划按优先级排序，都是“剩余工作”，不是已完成项。
 
-- [ ] **Step 1: Create `ReportAnalyzerService`**
+### P0：补齐对弈模块完赛自动入库 ✅ 已完成
 
-```python
-# katrain/web/report/analyzer.py
-import asyncio
-import logging
-from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+- [x] 梳理当前 `play_human` 自动入库链路，明确它经过的后端入口、`GameRepository` 字段映射和落库字段
+- [x] 为 `play_ai` 增加对等的完赛自动入库逻辑，不论是数子结束、认输、超时还是其他完赛路径，都要写入 `user_games`
+- [x] 统一 `play_human` 与 `play_ai` 的落库字段，至少保证：
+  - `sgf_content`
+  - `player_black`
+  - `player_white`
+  - `result`
+  - `source`
+  - `game_type`
+  - `game_date` 或等价完赛时间
+- [x] 补充前后端测试，验证已登录用户完赛后无需导入即可在报告页看到新棋局
 
-logger = logging.getLogger(__name__)
+### P1：补齐二级页元数据
 
-class ReportAnalyzerService:
-    def __init__(self, session_factory, katago_url="http://127.0.0.1:8000"):
-        self.session_factory = session_factory
-        self.katago_url = katago_url
-        self._running = False
-        self._task = None
+- [ ] 扩展 `user_games` 或导入链路，把棋谱库已有的 `round_name`、`black_rank`、`white_rank` 等字段一路带进来
+- [ ] 更新 `ReportMetaPanel`，让头部信息更接近直播详情页
+- [ ] 为导入后的用户棋局保留更完整的来源信息
 
-    def start(self):
-        if not self._running:
-            self._running = True
-            self._task = asyncio.create_task(self._analysis_loop())
-            logger.info("ReportAnalyzerService started")
+### P2：补任务恢复与重试体验
 
-    async def stop(self):
-        self._running = False
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-            logger.info("ReportAnalyzerService stopped")
+- [ ] 在一级页或二级页增加失败任务的“重试”入口
+- [ ] 缩短或替换 stale reset 机制，避免服务重启后长时间卡在旧 `running`
+- [ ] 评估是否在 `reports` API 增加队列态摘要，方便前端展示“运行中 / 排队中”总览
 
-    async def _analysis_loop(self):
-        while self._running:
-            try:
-                # 1. Stale task reset: find 'running' tasks updated > 5 mins ago -> set 'pending'
-                # 2. Pick next 'pending' task
-                # 3. Mark 'running', parse SGF to get total_moves
-                # 4. Process each move, map report_type to requested_visits
-                # 5. Insert to report_task_moves
-                # 6. Update analyzed_moves, mark 'completed' when done
-                pass
-            except Exception as e:
-                logger.error(f"Analysis loop error: {e}")
-            await asyncio.sleep(5)
-```
+### P3：解耦执行器
 
-- [ ] **Step 2: Wire into FastAPI Lifespan**
+- [ ] 评估把 `ReportAnalyzerService` 从 `katrain-web` 中拆出
+- [ ] 如果迁移到独立 worker，则需要同步更新部署文档、启动顺序和健康检查
+- [ ] 如果继续留在 `katrain-web`，至少要补更明确的运维说明
 
-```python
-# In katrain/web/server.py
-# Import ReportAnalyzerService and session_factory
-# In lifespan(app: FastAPI):
-#   report_analyzer = ReportAnalyzerService(SessionLocal)
-#   report_analyzer.start()
-#   yield
-#   await report_analyzer.stop()
-```
+### P4：继续补测试
 
-- [ ] **Step 3: Commit**
+- [ ] 增加前端对多任务排队与并发显示的更强断言
+- [ ] 增加浏览器级手测或 E2E 覆盖导入、创建、排队、完成、跳转详情这条完整链路
+- [ ] 如果后续补重试入口，新增对应 API 和 UI 测试
+
+## 6. 推荐执行顺序
+
+如果继续推进这条线，建议按这个顺序做：
+
+1. 先补“对弈模块完赛自动入库”
+2. 再补二级页元数据缺口
+3. 然后补失败重试和重启恢复
+4. 最后再考虑是否要拆独立 worker
+
+原因很简单：
+
+- 现在报告模块的主链路已经能跑，但“对弈完赛自动进入报告”这条主流程还没完全闭环
+- 当前最直接的产品断点是 `play_ai` 完赛后不会自然进入报告模块
+- 当前第二重要的问题才是二级页信息密度还不够
+- 当前最影响稳定性的是任务恢复和重试体验
+- worker 解耦虽然重要，但不是当前最直接的产品短板
+
+## 7. 当前验证基线
+
+每次继续修改报告模块时，至少保持以下验证命令通过：
 
 ```bash
-git add katrain/web/report/analyzer.py katrain/web/server.py
-git commit -m "feat(backend): add ReportAnalyzerService with retry and stale task recovery"
+pytest tests/web_ui/test_report_analyzer.py tests/web_ui/test_reports_db.py tests/web_ui/test_reports_api.py tests/web_ui/test_user_data_api.py -q
+npm test -- src/galaxy/pages/report/ReportsPage.test.tsx src/galaxy/pages/report/ReportDetailPage.test.tsx
+npm run build
 ```
 
-### Task 4: Frontend Routing & Skeleton (Galaxy Layout)
-
-**Files:**
-- Modify: `katrain/web/ui/src/GalaxyApp.tsx`
-- Modify: `katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx`
-- Create: `katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx`
-- Create: `katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.tsx`
-
-- [ ] **Step 1: Create Page Skeletons**
-
-```tsx
-// katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx
-import React from 'react';
-import { Box, Typography } from '@mui/material';
-
-export default function ReportsPage() {
-    return (
-        <Box p={3}>
-            <Typography variant="h4">My Reports</Typography>
-        </Box>
-    );
-}
-
-// katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.tsx
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
-
-export default function ReportDetailPage() {
-    const { taskId } = useParams();
-    return (
-        <Box p={3}>
-            <Typography variant="h4">Report Detail: {taskId}</Typography>
-        </Box>
-    );
-}
-```
-
-- [ ] **Step 2: Add Routes & Enable Sidebar Link**
-
-```tsx
-// In katrain/web/ui/src/GalaxyApp.tsx
-import ReportsPage from './galaxy/pages/report/ReportsPage';
-import ReportDetailPage from './galaxy/pages/report/ReportDetailPage';
-
-// Inside <Routes><Route element={<MainLayout />}>
-<Route path="report" element={<ReportsPage />} />
-<Route path="report/:taskId" element={<ReportDetailPage />} />
-```
-```tsx
-// In katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx
-// Change disabled: true to disabled: false for the Report path
-{ text: t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: false },
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add katrain/web/ui/src/GalaxyApp.tsx katrain/web/ui/src/galaxy/pages/report/ katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx
-git commit -m "feat(ui): setup galaxy report routes and skeletons"
-```
-
-### Task 5: Frontend Level 1 - My Reports List & Polling
-
-**Files:**
-- Modify: `katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx`
-- Create: `katrain/web/ui/src/galaxy/pages/report/ReportsPage.test.tsx`
-
-- [ ] **Step 1: Implement `useReportTasks` Polling Hook**
-
-```tsx
-// inside ReportsPage.tsx or a hooks folder
-import { useState, useEffect } from 'react';
-
-function useReportTasks() {
-    const [tasks, setTasks] = useState([]);
-    
-    useEffect(() => {
-        // Poll every 2 seconds (only if there are pending/running tasks)
-        const interval = setInterval(() => {
-            // fetch /api/v1/reports
-            // setTasks(data)
-        }, 2000);
-        return () => clearInterval(interval);
-    }, []);
-
-    return tasks;
-}
-```
-
-- [ ] **Step 2: Implement dual-panel UI (KifuLibrary style)**
-
-*Left Panel: Task List. Right Panel: SGF Preview of selected game.*
-*The list data should combine all user_games and their report status.*
-*Upload SGF workflow: Use existing `POST /api/v1/user-games/` to upload game, then trigger `POST /api/v1/reports`.*
-
-- [ ] **Step 3: Write Frontend Test**
-
-*Add a basic render test `katrain/web/ui/src/galaxy/pages/report/ReportsPage.test.tsx` verifying the layout.*
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx katrain/web/ui/src/galaxy/pages/report/ReportsPage.test.tsx
-git commit -m "feat(ui): implement report list polling, existing SGF import, and layout"
-```
-
-### Task 6: Frontend Level 2 - Report Detail Read-Only View
-
-**Files:**
-- Modify: `katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.tsx`
-
-- [ ] **Step 1: Implement detail layout reusing LiveBoard/ResearchBoard**
-
-*Fetch `/api/v1/reports/{taskId}/moves` to get all snapshot data. Feed this data to existing graph components and board.*
-*Ensure variations/branches either redirect to `/galaxy/research` or are handled read-only.*
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.tsx
-git commit -m "feat(ui): implement report detail view using snapshot data"
-```
+这三组命令已经是当前报告模块的最低回归基线，不应再回退到“只看页面能不能打开”。

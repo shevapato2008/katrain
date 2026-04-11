@@ -20,6 +20,16 @@ class UserGameRepository:
                     return self._to_dict(existing, include_sgf=True)
 
             sgf_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
+
+            # Dedup: if same user already has a game with identical SGF content, return existing
+            if sgf_hash:
+                existing = session.query(models_db.UserGame).filter(
+                    models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.sgf_hash == sgf_hash,
+                ).first()
+                if existing:
+                    return self._to_dict(existing, include_sgf=True)
+
             game_kwargs = dict(
                 user_id=user_id,
                 sgf_content=sgf_content,

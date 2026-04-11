@@ -19,6 +19,8 @@ import TutorialLandingPage from './galaxy/pages/tutorials/TutorialLandingPage';
 import TutorialBooksPage from './galaxy/pages/tutorials/TutorialBooksPage';
 import TutorialBookDetailPage from './galaxy/pages/tutorials/TutorialBookDetailPage';
 import TutorialFigurePage from './galaxy/pages/tutorials/TutorialFigurePage';
+import ReportsPage from './galaxy/pages/report/ReportsPage';
+import ReportDetailPage from './galaxy/pages/report/ReportDetailPage';
 
 const GalaxyApp = () => {
   console.log("GalaxyApp rendering");
@@ -32,6 +34,8 @@ const GalaxyApp = () => {
         <Route path="play/human" element={<HvHLobbyPage />} />
         <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
         <Route path="research" element={<ResearchPage />} />
+        <Route path="report" element={<ReportsPage />} />
+        <Route path="report/:taskId" element={<ReportDetailPage />} />
         <Route path="kifu" element={<KifuLibraryPage />} />
         <Route path="live" element={<LivePage />} />
         <Route path="live/:matchId" element={<LiveMatchPage />} />

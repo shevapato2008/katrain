@@ -462,6 +462,7 @@ class UserGame(Base):
 
     user = relationship("User", backref="user_games")
     analysis_records = relationship("UserGameAnalysis", back_populates="game", cascade="all, delete-orphan")
+    report_tasks = relationship("ReportTask", back_populates="user_game", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_user_games_user_category", "user_id", "category"),
@@ -500,6 +501,61 @@ class UserGameAnalysis(Base):
     __table_args__ = (
         UniqueConstraint('game_id', 'move_number', name='uq_user_game_analysis_move'),
         Index("ix_user_game_analysis_status", "status", "priority"),
+    )
+
+
+class ReportTask(Base):
+    """Persistent report-generation task for a user-owned game."""
+    __tablename__ = "report_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_game_id = Column(String(32), ForeignKey("user_games.id"), nullable=False, index=True)
+    report_type = Column(String(20), default="normal")
+    requested_visits = Column(Integer, default=500)
+    status = Column(String(20), default="pending")  # pending / running / completed / failed
+    total_moves = Column(Integer, default=0)
+    analyzed_moves = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user_game = relationship("UserGame", back_populates="report_tasks")
+    moves = relationship("ReportTaskMove", back_populates="task", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("ix_report_tasks_user_created", "user_id", "created_at"),
+        Index("ix_report_tasks_game_type_created", "user_game_id", "report_type", "created_at"),
+        Index("ix_report_tasks_status_created", "status", "created_at"),
+    )
+
+
+class ReportTaskMove(Base):
+    """Stored move-by-move analysis snapshot for a report task."""
+    __tablename__ = "report_task_moves"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("report_tasks.id"), nullable=False, index=True)
+    move_number = Column(Integer, nullable=False)
+    status = Column(String(16), default="success")
+    winrate = Column(Float, nullable=True)
+    score_lead = Column(Float, nullable=True)
+    visits = Column(Integer, nullable=True)
+    top_moves = Column(JSON, nullable=True)
+    ownership = Column(JSON, nullable=True)
+    actual_move = Column(String(8), nullable=True)
+    actual_player = Column(String(1), nullable=True)
+    delta_score = Column(Float, nullable=True)
+    delta_winrate = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    task = relationship("ReportTask", back_populates="moves")
+
+    __table_args__ = (
+        UniqueConstraint('task_id', 'move_number', name='uq_report_task_move'),
     )
 
 

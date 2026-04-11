@@ -40,6 +40,9 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
+    report_analyzer = getattr(app.state, "report_analyzer", None)
+    if report_analyzer:
+        await report_analyzer.stop()
 
     task = getattr(app.state, "cleanup_task", None)
     if task:
@@ -53,6 +56,7 @@ async def _lifespan_server(app: FastAPI, log):
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.db import SessionLocal
+    from katrain.web.report import ReportAnalyzerService
 
     repo = SQLAlchemyUserRepository(SessionLocal)
     repo.init_db()
@@ -73,6 +77,7 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
     app.state.user_game_analysis_repo = user_game_analysis_repo
+    app.state.report_session_factory = SessionLocal
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
 
@@ -86,6 +91,13 @@ async def _lifespan_server(app: FastAPI, log):
         cloud_client = KataGoClient(url=settings.CLOUD_KATAGO_URL)
 
     app.state.router = RequestRouter(local_client=local_client, cloud_client=cloud_client)
+    report_analyzer = ReportAnalyzerService(
+        SessionLocal,
+        app.state.router,
+        max_concurrent_tasks=settings.REPORT_ANALYZER_CONCURRENCY,
+    )
+    app.state.report_analyzer = report_analyzer
+    report_analyzer.start()
 
     manager = app.state.session_manager
     try:
@@ -149,6 +161,7 @@ async def _lifespan_board(app: FastAPI, log):
     from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.db import SessionLocal
+    from katrain.web.report import ReportAnalyzerService
     from katrain.web.core.remote_client import RemoteAPIClient
     from katrain.web.core.sync_worker import SyncWorker
     from katrain.web.core.connectivity import ConnectivityManager
@@ -171,6 +184,7 @@ async def _lifespan_board(app: FastAPI, log):
     local_user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
+    app.state.report_session_factory = SessionLocal
 
     # Remote API client
     remote_client = RemoteAPIClient(
@@ -217,6 +231,13 @@ async def _lifespan_board(app: FastAPI, log):
 
     local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
     app.state.router = RequestRouter(local_client=local_client, cloud_client=None)
+    report_analyzer = ReportAnalyzerService(
+        SessionLocal,
+        app.state.router,
+        max_concurrent_tasks=settings.REPORT_ANALYZER_CONCURRENCY,
+    )
+    app.state.report_analyzer = report_analyzer
+    report_analyzer.start()
 
     # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
     app.state.lobby_manager = LobbyManager()
@@ -387,7 +408,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/game/setup")
-    def game_setup(request: GameSettingsRequest):
+    def game_setup(request: GameSettingsRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         mode = request.mode
         settings = request.settings
@@ -416,8 +437,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 ai_strategy = settings.get("ai_strategy", "ai:default")
                 rank_slider = int(settings.get("rank", 14))  # 0-28 slider value
 
-                session.katrain("update_player", bw=human_bw, player_type="player:human", player_subtype="player:human")
+                # Set human player name from logged-in user
+                human_name = current_user.username if current_user else ""
+                session.katrain("update_player", bw=human_bw, player_type="player:human", player_subtype="player:human", name=human_name)
                 session.katrain("update_player", bw=ai_bw, player_type="player:ai", player_subtype=ai_strategy)
+
+                # Store game_type on session for auto-save at game end
+                session.game_type = mode
 
                 if ai_strategy == "ai:human":
                     session.katrain.update_config(f"ai/ai:human/human_kyu_rank", 20 - rank_slider)
@@ -610,6 +636,63 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    def _record_ai_game(session, app, current_user, result):
+        """Record a completed AI (single-player) game to user_games for the logged-in user."""
+        try:
+            sgf_content = session.katrain.get_sgf()
+            state = session.katrain.get_state()
+            players_info = session.katrain.players_info
+
+            # Determine player names
+            player_black = players_info["B"].name or ""
+            player_white = players_info["W"].name or ""
+            # Fill in username for the human side if still empty
+            if current_user:
+                if players_info["B"].human and not player_black:
+                    player_black = current_user.username
+                if players_info["W"].human and not player_white:
+                    player_white = current_user.username
+            # Label AI side with calculated rank if name is still empty
+            for bw, info in players_info.items():
+                if info.ai:
+                    name = info.name
+                    if not name and info.calculated_rank:
+                        name = f"AI ({info.calculated_rank})"
+                    elif not name:
+                        name = "AI"
+                    if bw == "B":
+                        player_black = player_black or name
+                    else:
+                        player_white = player_white or name
+
+            board_size_val = state.get("board_size", [19, 19])
+            board_size = board_size_val[0] if isinstance(board_size_val, (list, tuple)) else board_size_val
+            move_count = len(state.get("history", []))
+            komi = state.get("komi", 7.5)
+            rules = state.get("ruleset", "chinese")
+            game_type = getattr(session, "game_type", "free")
+
+            from datetime import datetime
+            game_date = datetime.now().strftime("%Y-%m-%d")
+
+            app.state.user_game_repo.create(
+                user_id=current_user.id,
+                sgf_content=sgf_content,
+                source="play_ai",
+                player_black=player_black,
+                player_white=player_white,
+                result=result,
+                move_count=move_count,
+                board_size=board_size,
+                komi=komi,
+                rules=rules,
+                game_type=game_type,
+                category="game",
+                game_date=game_date,
+            )
+        except Exception as e:
+            logging.getLogger("katrain_web").error(f"Failed to record AI game: {e}")
+
     @app.post("/api/resign")
     def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
@@ -642,6 +725,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 })
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+        elif not is_multiplayer and current_user and session.user_id:
+            result = session.katrain.game.end_result
+            if result:
+                _record_ai_game(session, app, current_user, result)
 
         return {"session_id": session.session_id, "state": state}
 
@@ -685,6 +772,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "type": "game_end",
                 "data": {"reason": "count", "winner_id": winner_id, "result": result}
             })
+        elif current_user and session.user_id:
+            _record_ai_game(session, app, current_user, result)
 
         return result
 
@@ -826,6 +915,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 })
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+        elif not is_multiplayer and current_user and session.user_id:
+            result = session.katrain.game.end_result
+            if result:
+                _record_ai_game(session, app, current_user, result)
 
         return {"session_id": session.session_id, "state": state}
 

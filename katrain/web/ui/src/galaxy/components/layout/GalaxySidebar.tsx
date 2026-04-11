@@ -50,7 +50,7 @@ const GalaxySidebar = () => {
     { text: t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
     { text: t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false },
     { text: t('Tsumego', '死活题'), icon: <ExtensionIcon />, path: '/galaxy/tsumego', disabled: false },
-    { text: t('analysis:report', 'Report'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: true },
+    { text: t('analysis:report', 'Review'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: false },
     { text: t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
     { text: t('kifu:library', '棋谱库'), icon: <LibraryBooksIcon />, path: '/galaxy/kifu', disabled: false },
     { text: t('Tutorials', '教程'), icon: <MenuBookIcon />, path: '/galaxy/tutorials', disabled: false },

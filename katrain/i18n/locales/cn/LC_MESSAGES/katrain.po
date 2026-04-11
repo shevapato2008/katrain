@@ -123,7 +123,7 @@ msgid "analysis:tsumegoframe"
 msgstr "死活分析模式"
 
 msgid "analysis:report"
-msgstr "表现报告"
+msgstr "复盘"
 
 msgid "Entire Game"
 msgstr "全局"
@@ -1193,7 +1193,7 @@ msgid "Library"
 msgstr "棋谱库"
 
 msgid "dashboard:report_desc"
-msgstr "详细的对局报告和风格分析。(即将推出)"
+msgstr "生成逐手分析报告，复盘你的棋局。"
 
 msgid "game_room:leave_forfeit"
 msgstr "离开并弃权"
@@ -1509,7 +1509,7 @@ msgid "live:tomorrow"
 msgstr "明天"
 
 msgid "live:in_days"
-msgstr "{0}天后"
+msgstr "天后"
 
 msgid "live:moves"
 msgstr "手"
@@ -2128,3 +2128,210 @@ msgstr "你的数子请求被拒绝了。"
 
 msgid "game_end:count"
 msgstr "数子结束：{result}"
+
+msgid "report:login_required"
+msgstr "请先登录后查看和生成复盘报告。"
+
+msgid "report:my_reports"
+msgstr "复盘"
+
+msgid "report:page_hint"
+msgstr "选择右侧棋局预览棋盘，报告生成和跳转都在棋局卡片上完成。"
+
+msgid "report:select_game"
+msgstr "选择一局棋谱"
+
+msgid "report:select_game_hint"
+msgstr "从右侧选择棋局，或导入新的 SGF / 棋谱库对局。"
+
+msgid "report:no_preview"
+msgstr "还没有可预览的棋局。"
+
+msgid "report:game_list"
+msgstr "棋局列表"
+
+msgid "report:game_list_hint"
+msgstr "共 {count} 局，支持按棋手名搜索并直接生成普通/深度报告。"
+
+msgid "report:search_placeholder"
+msgstr "按用户名 / 棋手名搜索"
+
+msgid "report:no_match"
+msgstr "没有找到与 \"{query}\" 匹配的棋局。"
+
+msgid "report:no_games"
+msgstr "还没有棋局，先导入一局再生成报告。"
+
+msgid "report:load_games_failed"
+msgstr "加载棋局列表失败"
+
+msgid "report:load_tasks_failed"
+msgstr "加载报告任务失败"
+
+msgid "report:import_failed"
+msgstr "导入 SGF 失败"
+
+msgid "report:library_import_failed"
+msgstr "从棋谱库导入失败"
+
+msgid "report:create_task_failed"
+msgstr "创建报告任务失败"
+
+msgid "report:login_required_detail"
+msgstr "请先登录后查看报告详情。"
+
+msgid "report:back_to_list"
+msgstr "返回报告列表"
+
+msgid "report:enter_research"
+msgstr "进入研究室"
+
+msgid "report:no_sgf"
+msgstr "没有可用于复盘展示的 SGF 数据。"
+
+msgid "report:try"
+msgstr "试下"
+
+msgid "report:territory"
+msgstr "领地"
+
+msgid "report:move_numbers"
+msgstr "手数"
+
+msgid "report:suggestions"
+msgstr "建议"
+
+msgid "report:hide_suggestions"
+msgstr "隐藏建议"
+
+msgid "report:show_suggestions"
+msgstr "显示建议"
+
+msgid "report:clear"
+msgstr "清空"
+
+msgid "report:normal"
+msgstr "普通报告"
+
+msgid "report:deep"
+msgstr "深度报告"
+
+msgid "report:no_result"
+msgstr "未录入结果"
+
+msgid "report:unnamed_game"
+msgstr "未命名棋局"
+
+msgid "report:queuing"
+msgstr "排队中"
+
+msgid "report:generating"
+msgstr "生成中"
+
+msgid "report:generate_deep"
+msgstr "生成深度报告"
+
+msgid "report:generate_normal"
+msgstr "生成普通报告"
+
+msgid "report:generate"
+msgstr "生成报告"
+
+msgid "report:import"
+msgstr "导入棋谱"
+
+msgid "report:import_local"
+msgstr "从本地导入 SGF"
+
+msgid "report:import_library"
+msgstr "从棋谱库导入"
+
+msgid "report:title_label"
+msgstr "标题"
+
+msgid "report:optional"
+msgstr "可选"
+
+msgid "report:choose_file"
+msgstr "选择本地文件"
+
+msgid "report:choose_file_hint"
+msgstr "选择本地 SGF 文件，或直接粘贴 SGF 内容。"
+
+msgid "report:board_size"
+msgstr "棋盘"
+
+msgid "report:board_size_unit"
+msgstr "路"
+
+msgid "report:rules_label"
+msgstr "规则"
+
+msgid "report:komi_label"
+msgstr "贴目"
+
+msgid "report:cancel"
+msgstr "取消"
+
+msgid "report:importing"
+msgstr "导入中..."
+
+msgid "report:import_only"
+msgstr "仅导入"
+
+msgid "report:import_and_normal"
+msgstr "导入并生成普通报告"
+
+msgid "report:import_and_deep"
+msgstr "导入并生成深度报告"
+
+msgid "report:search"
+msgstr "搜索"
+
+msgid "report:search_placeholder_lib"
+msgstr "按棋手、赛事、日期搜索"
+
+msgid "report:loading"
+msgstr "加载中..."
+
+msgid "report:no_results"
+msgstr "没有搜索到棋谱。"
+
+msgid "report:completed"
+msgstr "已完成"
+
+msgid "report:failed"
+msgstr "失败"
+
+msgid "report:unknown_status"
+msgstr "未知状态"
+
+msgid "report:japanese_rules"
+msgstr "日本规则"
+
+msgid "report:korean_rules"
+msgstr "韩国规则"
+
+msgid "report:chinese_rules"
+msgstr "中国规则"
+
+msgid "report:black"
+msgstr "黑方"
+
+msgid "report:white"
+msgstr "白方"
+
+msgid "report:moves_unit"
+msgstr "手"
+
+msgid "report:points_unit"
+msgstr "目"
+
+msgid "report:move_prefix"
+msgstr "第"
+
+msgid "report:refresh_failed"
+msgstr "刷新报告失败"
+
+msgid "report:load_failed"
+msgstr "加载报告失败"

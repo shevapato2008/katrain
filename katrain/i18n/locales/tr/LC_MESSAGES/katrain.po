@@ -107,7 +107,7 @@ msgstr "Tüm oyununun derin analizi"
 
 #. View a player performance report
 msgid "analysis:report"
-msgstr "Performans Raporu"
+msgstr "İnceleme"
 
 #. game filter in performance report
 msgid "Entire Game"
@@ -1440,7 +1440,8 @@ msgid "Library"
 msgstr "Kütüphane"
 
 msgid "dashboard:report_desc"
-msgstr "Ayrıntılı oyun raporları ve stil analizi. (Yakında)"
+msgstr ""
+"Hamle hamle analiz raporları oluşturun ve oyunlarınızı gözden geçirin."
 
 msgid "game_room:leave_forfeit"
 msgstr "Ayrıl ve Pes Et"
@@ -1747,7 +1748,7 @@ msgid "live:tomorrow"
 msgstr "Yarın"
 
 msgid "live:in_days"
-msgstr "{0} gün sonra"
+msgstr "gün sonra"
 
 msgid "live:moves"
 msgstr "hamle"
@@ -1888,7 +1889,7 @@ msgid "live:winrate_trend"
 msgstr "Kazanma oranı trendi"
 
 msgid "live:no_brilliant"
-msgstr "Parlak hamle yok"
+msgstr "Kazanma Oranı"
 
 msgid "live:move_number"
 msgstr "Hamle"
@@ -2113,7 +2114,7 @@ msgid "research:col_score_diff"
 msgstr "Puan Farkı"
 
 msgid "research:col_winrate"
-msgstr "Kazanma Oranı"
+msgstr "Kazanma oranı"
 
 msgid "research:analyzing"
 msgstr "Analiz ediliyor..."
@@ -2366,3 +2367,213 @@ msgstr "Sayım isteğin reddedildi."
 
 msgid "game_end:count"
 msgstr "Oyun sayarak bitti: {result}"
+
+msgid "report:login_required"
+msgstr "İnceleme raporlarını görüntülemek ve oluşturmak için giriş yapın."
+
+msgid "report:my_reports"
+msgstr "İnceleme"
+
+msgid "report:page_hint"
+msgstr ""
+"Önizleme için sağdaki bir oyunu seçin. Raporlar oyun kartından oluşturulur."
+
+msgid "report:select_game"
+msgstr "Oyun seç"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Sağ panelden bir oyun seçin veya yeni bir SGF / kütüphane oyunu içe aktarın."
+
+msgid "report:no_preview"
+msgstr "Henüz önizlenecek oyun yok."
+
+msgid "report:game_list"
+msgstr "Oyun listesi"
+
+msgid "report:game_list_hint"
+msgstr ""
+"{count} oyun. Oyuncu adına göre arayın ve normal/derin raporlar oluşturun."
+
+msgid "report:search_placeholder"
+msgstr "Oyuncu adına göre ara"
+
+msgid "report:no_match"
+msgstr "\"{query}\" ile eşleşen oyun bulunamadı."
+
+msgid "report:no_games"
+msgstr "Henüz oyun yok. Rapor oluşturmak için bir tane içe aktarın."
+
+msgid "report:load_games_failed"
+msgstr "Oyun listesi yüklenemedi"
+
+msgid "report:load_tasks_failed"
+msgstr "Rapor görevleri yüklenemedi"
+
+msgid "report:import_failed"
+msgstr "SGF içe aktarılamadı"
+
+msgid "report:library_import_failed"
+msgstr "Kütüphaneden içe aktarılamadı"
+
+msgid "report:create_task_failed"
+msgstr "Rapor görevi oluşturulamadı"
+
+msgid "report:login_required_detail"
+msgstr "Rapor ayrıntılarını görüntülemek için giriş yapın."
+
+msgid "report:back_to_list"
+msgstr "İnceleme listesine dön"
+
+msgid "report:enter_research"
+msgstr "Araştırmada aç"
+
+msgid "report:no_sgf"
+msgstr "İnceleme için SGF verisi mevcut değil."
+
+msgid "report:try"
+msgstr "Dene"
+
+msgid "report:territory"
+msgstr "Bölge"
+
+msgid "report:move_numbers"
+msgstr "Hamle no"
+
+msgid "report:suggestions"
+msgstr "Öneriler"
+
+msgid "report:hide_suggestions"
+msgstr "Önerileri gizle"
+
+msgid "report:show_suggestions"
+msgstr "Önerileri göster"
+
+msgid "report:clear"
+msgstr "Temizle"
+
+msgid "report:normal"
+msgstr "Normal"
+
+msgid "report:deep"
+msgstr "Derin"
+
+msgid "report:no_result"
+msgstr "Sonuç yok"
+
+msgid "report:unnamed_game"
+msgstr "İsimsiz oyun"
+
+msgid "report:queuing"
+msgstr "Sırada"
+
+msgid "report:generating"
+msgstr "Oluşturuluyor"
+
+msgid "report:generate_deep"
+msgstr "Derin rapor oluştur"
+
+msgid "report:generate_normal"
+msgstr "Normal rapor oluştur"
+
+msgid "report:generate"
+msgstr "Rapor oluştur"
+
+msgid "report:import"
+msgstr "Oyun içe aktar"
+
+msgid "report:import_local"
+msgstr "Yerel SGF içe aktar"
+
+msgid "report:import_library"
+msgstr "Kütüphaneden içe aktar"
+
+msgid "report:title_label"
+msgstr "Başlık"
+
+msgid "report:optional"
+msgstr "İsteğe bağlı"
+
+msgid "report:choose_file"
+msgstr "Yerel dosya seç"
+
+msgid "report:choose_file_hint"
+msgstr "Yerel bir SGF dosyası seçin veya SGF içeriğini doğrudan yapıştırın."
+
+msgid "report:board_size"
+msgstr "Tahta"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Kurallar"
+
+msgid "report:komi_label"
+msgstr "Komi"
+
+msgid "report:cancel"
+msgstr "İptal"
+
+msgid "report:importing"
+msgstr "İçe aktarılıyor..."
+
+msgid "report:import_only"
+msgstr "Sadece içe aktar"
+
+msgid "report:import_and_normal"
+msgstr "İçe aktar ve normal rapor oluştur"
+
+msgid "report:import_and_deep"
+msgstr "İçe aktar ve derin rapor oluştur"
+
+msgid "report:search"
+msgstr "Ara"
+
+msgid "report:search_placeholder_lib"
+msgstr "Oyuncu, etkinlik, tarih ile ara"
+
+msgid "report:loading"
+msgstr "Yükleniyor..."
+
+msgid "report:no_results"
+msgstr "Oyun bulunamadı."
+
+msgid "report:completed"
+msgstr "Tamamlandı"
+
+msgid "report:failed"
+msgstr "Başarısız"
+
+msgid "report:unknown_status"
+msgstr "Bilinmiyor"
+
+msgid "report:japanese_rules"
+msgstr "Japon"
+
+msgid "report:korean_rules"
+msgstr "Kore"
+
+msgid "report:chinese_rules"
+msgstr "Çin"
+
+msgid "report:black"
+msgstr "Siyah"
+
+msgid "report:white"
+msgstr "Beyaz"
+
+msgid "report:moves_unit"
+msgstr "hamle"
+
+msgid "report:points_unit"
+msgstr "puan"
+
+msgid "report:move_prefix"
+msgstr "Hamle"
+
+msgid "report:refresh_failed"
+msgstr "Rapor yenilenemedi"
+
+msgid "report:load_failed"
+msgstr "Rapor yüklenemedi"

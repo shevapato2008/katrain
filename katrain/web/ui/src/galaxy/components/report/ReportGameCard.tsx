@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   Box,
   Button,
   Card,
   Chip,
+  IconButton,
   LinearProgress,
   Menu,
   MenuItem,
@@ -21,6 +23,8 @@ export interface ReportGameStatus {
   activeDeep?: ReportTaskSummary;
   completedNormal?: ReportTaskSummary;
   completedDeep?: ReportTaskSummary;
+  failedNormal?: ReportTaskSummary;
+  failedDeep?: ReportTaskSummary;
 }
 
 interface ReportGameCardProps {
@@ -30,6 +34,8 @@ interface ReportGameCardProps {
   onSelect: () => void;
   onCreateReport: (reportType: 'normal' | 'deep') => void;
   onOpenReport: (taskId: number) => void;
+  onRetry: (taskId: number) => void;
+  onDelete: () => void;
 }
 
 function reportBadgeColor(reportType: 'normal' | 'deep') {
@@ -55,6 +61,8 @@ export default function ReportGameCard({
   onSelect,
   onCreateReport,
   onOpenReport,
+  onRetry,
+  onDelete,
 }: ReportGameCardProps) {
   const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -80,6 +88,8 @@ export default function ReportGameCard({
   const deepColor = reportBadgeColor('deep');
   const showCompletedNormal = Boolean(reportState.completedNormal && !reportState.activeNormal);
   const showCompletedDeep = Boolean(reportState.completedDeep && !reportState.activeDeep);
+  const showFailedNormal = Boolean(reportState.failedNormal && !reportState.activeNormal && !reportState.completedNormal);
+  const showFailedDeep = Boolean(reportState.failedDeep && !reportState.activeDeep && !reportState.completedDeep);
 
   return (
     <Card
@@ -118,6 +128,22 @@ export default function ReportGameCard({
           <Typography variant="caption" color="text.secondary">
             {game.move_count} {t('report:moves_unit', 'moves')}
           </Typography>
+          <IconButton
+            size="small"
+            aria-label={t('report:delete_game', 'Delete game')}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete();
+            }}
+            sx={{
+              p: 0.25,
+              color: 'text.secondary',
+              opacity: 0.5,
+              '&:hover': { color: 'error.main', opacity: 1 },
+            }}
+          >
+            <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+          </IconButton>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -205,7 +231,34 @@ export default function ReportGameCard({
             </Button>
           )}
 
-          {!progressMeta && (!showCompletedNormal || !showCompletedDeep) && (
+          {showFailedNormal && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRetry(reportState.failedNormal!.id);
+              }}
+            >
+              {t('report:retry_normal', 'Retry normal')}
+            </Button>
+          )}
+          {showFailedDeep && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRetry(reportState.failedDeep!.id);
+              }}
+            >
+              {t('report:retry_deep', 'Retry deep')}
+            </Button>
+          )}
+
+          {!progressMeta && (!showCompletedNormal || !showCompletedDeep) && !showFailedNormal && !showFailedDeep && (
             <>
               <Button
                 size="small"

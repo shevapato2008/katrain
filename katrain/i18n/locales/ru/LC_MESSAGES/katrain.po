@@ -2291,11 +2291,10 @@ msgid "report:game_list"
 msgstr "Список партий"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} партий. Поиск по имени игрока и создание обычных/глубоких отчётов."
+msgstr "{count} партий. Поиск по игроку, названию или турниру."
 
 msgid "report:search_placeholder"
-msgstr "Поиск по имени игрока"
+msgstr "Поиск по игроку, названию или турниру"
 
 msgid "report:no_match"
 msgstr "Не найдено партий по запросу «{query}»."
@@ -2491,3 +2490,50 @@ msgstr "Импортированная партия"
 
 msgid "report:title_kifu"
 msgstr "Из библиотеки"
+
+msgid "report:delete_game"
+msgstr "Удалить партию"
+
+msgid "report:delete_confirm_title"
+msgstr "Подтвердить удаление"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"Партия и все связанные данные анализа будут удалены безвозвратно. Вы "
+"уверены?"
+
+msgid "report:delete_success"
+msgstr "Партия удалена"
+
+msgid "report:delete_failed"
+msgstr "Не удалось удалить партию"
+
+msgid "report:source_import"
+msgstr "Импорт"
+
+msgid "report:source_play_ai"
+msgstr "Игра с ИИ"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Библиотека"
+
+msgid "report:retry_normal"
+msgstr "Повторить обычный"
+
+msgid "report:retry_deep"
+msgstr "Повторить глубокий"
+
+msgid "report:retry_failed"
+msgstr "Не удалось повторить отчёт"
+
+msgid "report:summary_running"
+msgstr "выполняется"
+
+msgid "report:summary_queued"
+msgstr "в очереди"
+
+msgid "report:summary_failed"
+msgstr "ошибка"

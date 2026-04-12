@@ -95,9 +95,15 @@ class ReportAnalyzerJob(BaseJob):
         # Crash recovery: reset stale running tasks
         self._reset_stale_tasks()
 
+        stale_check_counter = 0
+
         while self._running:
             try:
                 self._prune_finished_workers()
+                stale_check_counter += 1
+                if stale_check_counter >= 60:  # ~every 60 poll cycles
+                    self._reset_runtime_stale_tasks()
+                    stale_check_counter = 0
                 while self._running and len(self._workers) < self.max_concurrent_tasks:
                     claimed_task_id = self._claim_pending_task()
                     if not claimed_task_id:
@@ -136,6 +142,30 @@ class ReportAnalyzerJob(BaseJob):
                 task.error_message = None
             db.commit()
             logger.info("Reset %d interrupted report tasks to pending", len(running_tasks))
+
+    def _reset_runtime_stale_tasks(self):
+        """Reset tasks stuck in running for more than 30 minutes.
+
+        Catches cases where a worker died silently without updating the DB.
+        The task will be re-queued and resume from the last analyzed move.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+        with SessionLocal() as db:
+            stale_tasks = (
+                db.query(ReportTaskDB)
+                .filter(
+                    ReportTaskDB.status == "running",
+                    ReportTaskDB.updated_at < cutoff,
+                )
+                .all()
+            )
+            if not stale_tasks:
+                return
+            for task in stale_tasks:
+                task.status = "pending"
+                task.error_message = "Reset: stale running task"
+            db.commit()
+            logger.info("Reset %d stale running report tasks to pending", len(stale_tasks))
 
     def _prune_finished_workers(self) -> None:
         done = {w for w in self._workers if w.done()}

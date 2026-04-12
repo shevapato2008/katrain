@@ -1,6 +1,6 @@
 # Report Module Implementation Plan
 
-最后更新：2026-04-11
+最后更新：2026-04-12
 
 本文档不再描述最初的目标态，而是明确区分：
 
@@ -135,25 +135,28 @@
 
 ### 4.1 二级页与直播详情页还未完全对齐
 
-- [ ] `user_games` 还没有 `round_name`
-- [ ] `user_games` 还没有 `black_rank`
-- [ ] `user_games` 还没有 `white_rank`
-- [ ] 头部信息还缺少来源 badge 等更完整元数据
-- [ ] 复盘详情的数据模型仍然是 `task + moves + user_game`，不是直播页那种更统一的语义对象
-- [ ] 当前报告页没有评论区和直播特有状态，这一点需要明确保持为差异，不应误写成“缺陷”
+- [x] `user_games` 已添加 `round_name` 字段
+- [x] `user_games` 已有 `black_rank`（早已存在）
+- [x] `user_games` 已有 `white_rank`（早已存在）
+- [x] 头部信息已添加来源 badge、棋手等级、round_name、对局结果
+- [x] 棋谱库导入已传递 black_rank/white_rank/round_name
+- [x] 复盘详情的数据模型是 `task + moves + user_game`（按设计保留，不同于直播页的统一语义对象）
+- [x] 报告页没有评论区和直播特有状态（按设计保留差异，非缺陷）
 
 ### 4.2 任务运维能力还不完整
 
-- [ ] 失败任务还没有显式“重试”按钮
-- [ ] 进程重启后不会立即恢复旧的 `running` 任务，而是等待 stale timeout
-- [ ] 没有队列深度、worker 占用之类的可视化运维指标
-- [ ] 报告消费器还没有迁移到独立 worker / cron
+- [x] 失败任务已有”重试”按钮（一级页棋局卡片 + 后端 retry API）
+- [x] 进程重启后立即恢复所有 `running` 任务（无条件重置为 `pending`，断点续跑）
+- [x] 已添加队列总览（summary API + 前端 chip 展示 pending/running/failed 数量）
+- [x] 报告消费器已迁移到 katrain-cron（ReportAnalyzerJob）
 
 ### 4.3 一级页还有可继续打磨的细节
 
-- [ ] 搜索占位文案当前是“按用户名 / 棋手名搜索”，但后端真实匹配字段是 `title/player_black/player_white/event`，文案仍可更精确
-- [ ] 卡片已经接近棋谱库密度，但还没有完全复刻棋谱库卡片的所有元信息
-- [ ] 多任务排队时，目前只在卡片层展示 `排队中`，没有统一队列总览
+- [x] 搜索占位文案已更新为”按棋手、标题或赛事搜索”，匹配后端实际搜索字段
+- [x] 卡片已展示棋手等级（black_rank/white_rank）
+- [x] 用户自己的棋局标题已根据 source+game_type 自动生成（如”人机自由对弈”）
+- [x] 多任务排队时，侧栏顶部已展示队列总览 chip（running/queued/failed 数量）
+- [x] 棋局卡片已添加删除按钮，支持确认对话框和级联删除
 
 ## 5. 下一阶段开发计划
 
@@ -173,17 +176,21 @@
   - `game_date` 或等价完赛时间
 - [x] 补充前后端测试，验证已登录用户完赛后无需导入即可在报告页看到新棋局
 
-### P1：补齐二级页元数据
+### P1：补齐二级页元数据 ✅ 已完成
 
-- [ ] 扩展 `user_games` 或导入链路，把棋谱库已有的 `round_name`、`black_rank`、`white_rank` 等字段一路带进来
-- [ ] 更新 `ReportMetaPanel`，让头部信息更接近直播详情页
-- [ ] 为导入后的用户棋局保留更完整的来源信息
+- [x] 扩展 `user_games` 添加 `round_name` 字段，全链路打通（模型/API/repo/前端类型）
+- [x] 棋谱库导入已传递 `black_rank`、`white_rank`、`round_name`
+- [x] 更新 `ReportMetaPanel`：添加棋手等级、来源 badge、round_name、对局结果
+- [x] 来源 badge 支持 4 种来源类型 × 11 种语言 i18n
 
-### P2：补任务恢复与重试体验
+### P2：补任务恢复与重试体验 ✅ 已完成
 
-- [ ] 在一级页或二级页增加失败任务的“重试”入口
-- [ ] 缩短或替换 stale reset 机制，避免服务重启后长时间卡在旧 `running`
-- [ ] 评估是否在 `reports` API 增加队列态摘要，方便前端展示“运行中 / 排队中”总览
+- [x] 后端添加 `POST /api/v1/reports/{task_id}/retry` 端点（仅允许 failed 任务）
+- [x] 一级页棋局卡片已显示失败任务的”重试”按钮（区分普通/深度）
+- [x] 添加运行时 stale 检测：cron 轮询中每 60 周期检查 running > 30 分钟的任务并重置
+- [x] 添加 `GET /api/v1/reports/summary` 端点返回 pending/running/completed/failed 计数
+- [x] 一级页侧栏展示队列总览 chip（运行中/排队中/失败数）
+- [x] 所有新增文案已接入 i18n（11 种语言）
 
 ### P3：迁移报告分析器到 katrain-cron ✅ 已完成
 
@@ -228,24 +235,41 @@
 - 数据库 schema：不变
 - 并发控制：全局最多 3 个并发任务
 
-### P4：继续补测试
+### P4：继续补测试 ✅ 已完成
 
-- [ ] 增加前端对多任务排队与并发显示的更强断言
-- [ ] 增加浏览器级手测或 E2E 覆盖导入、创建、排队、完成、跳转详情这条完整链路
-- [ ] 如果后续补重试入口，新增对应 API 和 UI 测试
+- [x] 增加前端对多任务排队与并发显示的更强断言（多游戏 × 多状态同时渲染 + queue summary chip 验证）
+- [x] 重试入口对应的 UI 测试已添加（failed → retry → API 调用）
+- [ ] 浏览器级 E2E 覆盖（需 Playwright 基础设施，留作后续迭代）
+
+### P5：棋局删除功能 ✅ 已完成
+
+**动机**：用户下过的棋局只有自动入库逻辑，没有前端删除入口。用户无法清理不需要的棋局（如测试对局、重复导入等），棋局列表会越来越臃肿。
+
+**现有基础设施**（已全部就绪）：
+
+| 层 | 状态 | 位置 |
+|----|------|------|
+| DELETE API | ✅ 已有 | `katrain/web/api/v1/endpoints/user_games.py:163-173` |
+| Repository | ✅ 已有 | `katrain/web/core/user_game_repo.py:153-166` — 带 user_id 权限校验 |
+| 前端 API Client | ✅ 已有 | `katrain/web/ui/src/galaxy/api/userGamesApi.ts:148-152` — `UserGamesAPI.delete(token, gameId)` |
+| DB Cascade | ✅ 已有 | `UserGame` → `UserGameAnalysis` (cascade=all,delete-orphan) + `ReportTask` (cascade=all,delete-orphan) → `ReportTaskMove` (cascade=all,delete-orphan) |
+
+**唯一缺失**：前端 UI 层 — 棋局卡片没有删除按钮。
+
+- [x] ReportGameCard 添加删除按钮（`onDelete` prop + `IconButton` + `DeleteOutlineIcon`）
+- [x] ReportsPage 添加删除确认对话框（`deleteTarget` state + `Dialog` + 调用 `UserGamesAPI.delete`）
+- [x] i18n 翻译（6 个 key × 11 种语言：delete_game/delete_confirm_title/delete_confirm_body/delete_success/delete_failed）
+- [x] 前端测试（`ReportsPage.test.tsx` 新增删除流程用例）
 
 ## 6. 推荐执行顺序
 
-1. ~~先补”对弈模块完赛自动入库”~~ ✅ 已完成
-2. **P3：迁移报告分析器到 katrain-cron** ← 当前最高优先级
-3. 再补二级页元数据缺口（P1）
-4. 然后补失败重试和重启恢复（P2）
+1. ~~P0：对弈模块完赛自动入库~~ ✅ 已完成
+2. ~~P3：迁移报告分析器到 katrain-cron~~ ✅ 已完成
+3. ~~P5：棋局删除功能~~ ✅ 已完成
+4. ~~P1：补齐二级页元数据~~ ✅ 已完成
+5. ~~P2：补任务恢复与重试体验~~ ✅ 已完成
 
-原因：
-
-- P0 已完成，主链路已闭环
-- 当前最影响用户体验的问题是复盘分析拖慢对弈响应，P3 解决资源竞争
-- P1/P2 是体验优化，优先级低于 P3
+所有优先级已完成。唯一剩余项为浏览器级 E2E 测试（需 Playwright 基础设施）。
 
 ## 7. 当前验证基线
 

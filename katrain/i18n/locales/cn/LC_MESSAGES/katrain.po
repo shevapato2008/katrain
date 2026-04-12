@@ -2151,10 +2151,10 @@ msgid "report:game_list"
 msgstr "棋局列表"
 
 msgid "report:game_list_hint"
-msgstr "共 {count} 局，支持按棋手名搜索并直接生成普通/深度报告。"
+msgstr "共 {count} 局，支持按棋手、标题或赛事搜索。"
 
 msgid "report:search_placeholder"
-msgstr "按用户名 / 棋手名搜索"
+msgstr "按棋手、标题或赛事搜索"
 
 msgid "report:no_match"
 msgstr "没有找到与 \"{query}\" 匹配的棋局。"
@@ -2350,3 +2350,48 @@ msgstr "导入棋局"
 
 msgid "report:title_kifu"
 msgstr "棋谱库"
+
+msgid "report:delete_game"
+msgstr "删除棋局"
+
+msgid "report:delete_confirm_title"
+msgstr "确认删除"
+
+msgid "report:delete_confirm_body"
+msgstr "删除后棋局及所有关联分析数据将不可恢复，确认删除？"
+
+msgid "report:delete_success"
+msgstr "棋局已删除"
+
+msgid "report:delete_failed"
+msgstr "删除棋局失败"
+
+msgid "report:source_import"
+msgstr "导入"
+
+msgid "report:source_play_ai"
+msgstr "人机对弈"
+
+msgid "report:source_play_human"
+msgstr "人人对弈"
+
+msgid "report:source_kifu_library"
+msgstr "棋谱库"
+
+msgid "report:retry_normal"
+msgstr "重试普通报告"
+
+msgid "report:retry_deep"
+msgstr "重试深度报告"
+
+msgid "report:retry_failed"
+msgstr "重试报告失败"
+
+msgid "report:summary_running"
+msgstr "运行中"
+
+msgid "report:summary_queued"
+msgstr "排队中"
+
+msgid "report:summary_failed"
+msgstr "失败"

@@ -2196,12 +2196,10 @@ msgid "report:game_list"
 msgstr "Lista de partidas"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} partidas. Buscar por nombre de jugador y generar informes "
-"normales/detallados."
+msgstr "{count} partidas. Buscar por jugador, título o evento."
 
 msgid "report:search_placeholder"
-msgstr "Buscar por nombre de jugador"
+msgstr "Buscar por jugador, título o evento"
 
 msgid "report:no_match"
 msgstr "No se encontraron partidas para \"{query}\"."
@@ -2397,3 +2395,50 @@ msgstr "Partida importada"
 
 msgid "report:title_kifu"
 msgstr "De la biblioteca"
+
+msgid "report:delete_game"
+msgstr "Eliminar partida"
+
+msgid "report:delete_confirm_title"
+msgstr "Confirmar eliminación"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"Se eliminará permanentemente la partida y todos los datos de análisis "
+"asociados. ¿Está seguro?"
+
+msgid "report:delete_success"
+msgstr "Partida eliminada"
+
+msgid "report:delete_failed"
+msgstr "Error al eliminar la partida"
+
+msgid "report:source_import"
+msgstr "Importar"
+
+msgid "report:source_play_ai"
+msgstr "Juego IA"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Biblioteca"
+
+msgid "report:retry_normal"
+msgstr "Reintentar normal"
+
+msgid "report:retry_deep"
+msgstr "Reintentar profundo"
+
+msgid "report:retry_failed"
+msgstr "Error al reintentar el informe"
+
+msgid "report:summary_running"
+msgstr "en ejecución"
+
+msgid "report:summary_queued"
+msgstr "en cola"
+
+msgid "report:summary_failed"
+msgstr "fallido"

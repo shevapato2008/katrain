@@ -22,6 +22,7 @@ export interface UserGameSummary {
   category: string;
   game_type: string | null;
   event: string | null;
+  round_name: string | null;
   game_date: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -73,6 +74,7 @@ export interface CreateUserGameParams {
   category?: string;
   game_type?: string;
   event?: string;
+  round_name?: string;
   game_date?: string;
 }
 

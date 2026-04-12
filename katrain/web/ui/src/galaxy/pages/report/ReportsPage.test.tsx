@@ -7,8 +7,11 @@ import ReportsPage from './ReportsPage';
 const mockUserGamesList = vi.fn();
 const mockUserGamesGet = vi.fn();
 const mockUserGamesCreate = vi.fn();
+const mockUserGamesDelete = vi.fn();
 const mockReportsList = vi.fn();
 const mockReportsCreate = vi.fn();
+const mockReportsRetry = vi.fn();
+const mockReportsSummary = vi.fn();
 const mockKifuGetAlbums = vi.fn();
 const mockKifuGetAlbum = vi.fn();
 
@@ -25,6 +28,7 @@ vi.mock('../../api/userGamesApi', () => ({
     list: (...args: unknown[]) => mockUserGamesList(...args),
     get: (...args: unknown[]) => mockUserGamesGet(...args),
     create: (...args: unknown[]) => mockUserGamesCreate(...args),
+    delete: (...args: unknown[]) => mockUserGamesDelete(...args),
   },
 }));
 
@@ -32,6 +36,8 @@ vi.mock('../../api/reportApi', () => ({
   ReportsAPI: {
     list: (...args: unknown[]) => mockReportsList(...args),
     create: (...args: unknown[]) => mockReportsCreate(...args),
+    retry: (...args: unknown[]) => mockReportsRetry(...args),
+    summary: (...args: unknown[]) => mockReportsSummary(...args),
   },
 }));
 
@@ -80,8 +86,11 @@ describe('ReportsPage', () => {
     mockUserGamesList.mockReset();
     mockUserGamesGet.mockReset();
     mockUserGamesCreate.mockReset();
+    mockUserGamesDelete.mockReset();
     mockReportsList.mockReset();
     mockReportsCreate.mockReset();
+    mockReportsRetry.mockReset();
+    mockReportsSummary.mockReset();
     mockKifuGetAlbums.mockReset();
     mockKifuGetAlbum.mockReset();
 
@@ -93,6 +102,7 @@ describe('ReportsPage', () => {
     });
     mockUserGamesGet.mockResolvedValue(gameDetail);
     mockReportsList.mockResolvedValue([]);
+    mockReportsSummary.mockResolvedValue({ pending: 0, running: 0, completed: 0, failed: 0 });
     mockKifuGetAlbums.mockResolvedValue({
       items: [],
       total: 0,
@@ -124,7 +134,7 @@ describe('ReportsPage', () => {
     expect(screen.getByTestId('mock-playback-bar')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Import game' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Search by player name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search by player, title, or event')).toBeInTheDocument();
   });
 
   it('opens local import dialog from the import menu', async () => {
@@ -418,5 +428,127 @@ describe('ReportsPage', () => {
 
     expect(screen.queryByText('Deep Generating')).not.toBeInTheDocument();
     expect(screen.getByText('0/2')).toBeInTheDocument();
+  });
+
+  it('deletes a game after confirmation and refreshes the list', async () => {
+    mockUserGamesDelete.mockResolvedValue({ status: 'ok' });
+
+    render(
+      <MemoryRouter>
+        <ReportsPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
+
+    expect(screen.getByText('Confirm deletion')).toBeInTheDocument();
+    expect(screen.getByText('This will permanently delete the game and all associated analysis data. Are you sure?')).toBeInTheDocument();
+
+    const callsBefore = mockUserGamesList.mock.calls.length;
+
+    mockUserGamesList.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 12,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
+
+    await waitFor(() => {
+      expect(mockUserGamesDelete).toHaveBeenCalledWith('token', 'game-1');
+    });
+
+    await waitFor(() => {
+      expect(mockUserGamesList.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  it('shows retry button for failed tasks and retries on click', async () => {
+    mockReportsList.mockResolvedValue([
+      {
+        id: 15,
+        user_game_id: 'game-1',
+        status: 'failed',
+        report_type: 'normal',
+        total_moves: 2,
+        analyzed_moves: 1,
+        requested_visits: 500,
+      },
+    ]);
+    mockReportsSummary.mockResolvedValue({ pending: 0, running: 0, completed: 0, failed: 1 });
+    mockReportsRetry.mockResolvedValue({
+      id: 15,
+      user_game_id: 'game-1',
+      status: 'pending',
+      report_type: 'normal',
+      total_moves: 2,
+      analyzed_moves: 1,
+      requested_visits: 500,
+    });
+
+    render(
+      <MemoryRouter>
+        <ReportsPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('1 failed')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry normal' }));
+
+    await waitFor(() => {
+      expect(mockReportsRetry).toHaveBeenCalledWith('token', 15);
+    });
+  });
+
+  it('displays queue summary chips and multiple task states simultaneously', async () => {
+    const game2 = { ...gameSummary, id: 'game-2', title: 'Game Two' };
+    const game3 = { ...gameSummary, id: 'game-3', title: 'Game Three' };
+    mockUserGamesList.mockResolvedValue({
+      items: [gameSummary, game2, game3],
+      total: 3,
+      page: 1,
+      page_size: 12,
+    });
+    mockReportsList.mockResolvedValue([
+      { id: 20, user_game_id: 'game-1', status: 'running', report_type: 'normal', total_moves: 10, analyzed_moves: 5, requested_visits: 500 },
+      { id: 21, user_game_id: 'game-2', status: 'pending', report_type: 'deep', total_moves: 0, analyzed_moves: 0, requested_visits: 2000 },
+      { id: 22, user_game_id: 'game-3', status: 'failed', report_type: 'normal', total_moves: 8, analyzed_moves: 3, requested_visits: 500 },
+      { id: 23, user_game_id: 'game-3', status: 'completed', report_type: 'deep', total_moves: 8, analyzed_moves: 8, requested_visits: 2000 },
+    ]);
+    mockReportsSummary.mockResolvedValue({ pending: 1, running: 1, completed: 1, failed: 1 });
+
+    render(
+      <MemoryRouter>
+        <ReportsPage />
+      </MemoryRouter>,
+    );
+
+    // Queue summary chips
+    await waitFor(() => {
+      expect(screen.getByText('1 running')).toBeInTheDocument();
+    });
+    expect(screen.getByText('1 queued')).toBeInTheDocument();
+    expect(screen.getByText('1 failed')).toBeInTheDocument();
+
+    // Game 1: running progress
+    expect(screen.getByText('Normal Generating')).toBeInTheDocument();
+    expect(screen.getByText('5/10')).toBeInTheDocument();
+
+    // Game 2: pending
+    expect(screen.getByText('Deep Queued')).toBeInTheDocument();
+
+    // Game 3: failed normal + completed deep
+    expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Deep' })).toBeInTheDocument();
   });
 });

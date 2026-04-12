@@ -2,6 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
@@ -148,6 +149,53 @@ async def list_report_tasks(
         .all()
     )
     return [_task_to_dict(task) for task in tasks]
+
+
+@router.get("/summary")
+async def get_report_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_report_db),
+):
+    rows = (
+        db.query(models_db.ReportTask.status, sa_func.count())
+        .filter(models_db.ReportTask.user_id == current_user.id)
+        .group_by(models_db.ReportTask.status)
+        .all()
+    )
+    counts = {status: count for status, count in rows}
+    return {
+        "pending": counts.get("pending", 0),
+        "running": counts.get("running", 0),
+        "completed": counts.get("completed", 0),
+        "failed": counts.get("failed", 0),
+    }
+
+
+@router.post("/{task_id}/retry", response_model=ReportTaskStatus)
+async def retry_report_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_report_db),
+):
+    task = (
+        db.query(models_db.ReportTask)
+        .filter(
+            models_db.ReportTask.id == task_id,
+            models_db.ReportTask.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not task:
+        raise HTTPException(status_code=404, detail="Report task not found")
+    if task.status != "failed":
+        raise HTTPException(status_code=400, detail="Only failed tasks can be retried")
+    task.status = "pending"
+    task.retry_count = 0
+    task.error_message = None
+    task.completed_at = None
+    db.commit()
+    db.refresh(task)
+    return _task_to_dict(task)
 
 
 @router.get("/{task_id}", response_model=ReportTaskStatus)

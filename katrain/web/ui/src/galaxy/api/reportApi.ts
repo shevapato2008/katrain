@@ -1,5 +1,12 @@
 import type { TopMove } from '../../types/live';
 
+export interface ReportQueueSummary {
+  pending: number;
+  running: number;
+  completed: number;
+  failed: number;
+}
+
 export interface ReportTaskSummary {
   id: number;
   user_game_id: string;
@@ -47,6 +54,10 @@ export const ReportsAPI = {
     return authFetch('/api/v1/reports/', token);
   },
 
+  summary: (token: string): Promise<ReportQueueSummary> => {
+    return authFetch('/api/v1/reports/summary', token);
+  },
+
   get: (token: string, taskId: number): Promise<ReportTaskSummary> => {
     return authFetch(`/api/v1/reports/${taskId}`, token);
   },
@@ -59,6 +70,10 @@ export const ReportsAPI = {
       method: 'POST',
       body: JSON.stringify(params),
     });
+  },
+
+  retry: (token: string, taskId: number): Promise<ReportTaskSummary> => {
+    return authFetch(`/api/v1/reports/${taskId}/retry`, token, { method: 'POST' });
   },
 
   getMoves: (token: string, taskId: number): Promise<ReportTaskMove[]> => {

@@ -2373,12 +2373,10 @@ msgid "report:game_list"
 msgstr "Список партій"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} партій. Пошук за іменем гравця та створення звичайних/глибоких "
-"звітів."
+msgstr "{count} партій. Пошук за гравцем, назвою або турніром."
 
 msgid "report:search_placeholder"
-msgstr "Пошук за іменем гравця"
+msgstr "Пошук за гравцем, назвою або турніром"
 
 msgid "report:no_match"
 msgstr "Не знайдено партій за запитом «{query}»."
@@ -2574,3 +2572,49 @@ msgstr "Імпортована партія"
 
 msgid "report:title_kifu"
 msgstr "З бібліотеки"
+
+msgid "report:delete_game"
+msgstr "Видалити партію"
+
+msgid "report:delete_confirm_title"
+msgstr "Підтвердити видалення"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"Партію та всі пов'язані дані аналізу буде видалено назавжди. Ви впевнені?"
+
+msgid "report:delete_success"
+msgstr "Партію видалено"
+
+msgid "report:delete_failed"
+msgstr "Не вдалося видалити партію"
+
+msgid "report:source_import"
+msgstr "Імпорт"
+
+msgid "report:source_play_ai"
+msgstr "Гра з ШІ"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Бібліотека"
+
+msgid "report:retry_normal"
+msgstr "Повторити звичайний"
+
+msgid "report:retry_deep"
+msgstr "Повторити глибокий"
+
+msgid "report:retry_failed"
+msgstr "Не вдалося повторити звіт"
+
+msgid "report:summary_running"
+msgstr "виконується"
+
+msgid "report:summary_queued"
+msgstr "в черзі"
+
+msgid "report:summary_failed"
+msgstr "помилка"

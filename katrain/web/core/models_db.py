@@ -458,6 +458,7 @@ class UserGame(Base):
     game_type = Column(String(50), nullable=True)  # free / rated / null
     sgf_hash = Column(String(64), nullable=True, index=True)
     event = Column(String(255), nullable=True)
+    round_name = Column(String(100), nullable=True)
     game_date = Column(String(32), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

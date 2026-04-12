@@ -2325,11 +2325,10 @@ msgid "report:game_list"
 msgstr "Game List"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} games. Search by player name and generate normal/deep reports."
+msgstr "{count} games. Search by player, title, or event."
 
 msgid "report:search_placeholder"
-msgstr "Search by player name"
+msgstr "Search by player, title, or event"
 
 msgid "report:no_match"
 msgstr "No games matching \"{query}\"."
@@ -2525,3 +2524,50 @@ msgstr "Imported Game"
 
 msgid "report:title_kifu"
 msgstr "From Library"
+
+msgid "report:delete_game"
+msgstr "Delete game"
+
+msgid "report:delete_confirm_title"
+msgstr "Confirm deletion"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"This will permanently delete the game and all associated analysis data. Are "
+"you sure?"
+
+msgid "report:delete_success"
+msgstr "Game deleted"
+
+msgid "report:delete_failed"
+msgstr "Failed to delete game"
+
+msgid "report:source_import"
+msgstr "Import"
+
+msgid "report:source_play_ai"
+msgstr "AI Play"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Library"
+
+msgid "report:retry_normal"
+msgstr "Retry normal"
+
+msgid "report:retry_deep"
+msgstr "Retry deep"
+
+msgid "report:retry_failed"
+msgstr "Failed to retry report"
+
+msgid "report:summary_running"
+msgstr "running"
+
+msgid "report:summary_queued"
+msgstr "queued"
+
+msgid "report:summary_failed"
+msgstr "failed"

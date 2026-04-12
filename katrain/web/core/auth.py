@@ -122,6 +122,25 @@ class SQLAlchemyUserRepository(UserRepository):
                 models_db.Base.metadata.drop_all(bind=engine)
                 models_db.Base.metadata.create_all(bind=engine)
 
+        # PostgreSQL: add missing columns via ALTER TABLE (preserves data)
+        if engine.dialect.name == "postgresql":
+            import logging
+            pg_inspector = inspect(engine)
+            with engine.begin() as conn:
+                for table in models_db.Base.metadata.sorted_tables:
+                    if table.name not in pg_inspector.get_table_names():
+                        continue
+                    existing_cols = {c["name"] for c in pg_inspector.get_columns(table.name)}
+                    for col in table.columns:
+                        if col.name not in existing_cols:
+                            col_type = col.type.compile(engine.dialect)
+                            conn.execute(text(
+                                f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}'
+                            ))
+                            logging.getLogger("katrain_web").info(
+                                f"Added missing column '{col.name}' to table '{table.name}'"
+                            )
+
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
         session = self.session_factory()
         try:

@@ -48,6 +48,7 @@ class UserGameRepository:
                 category=kwargs.get("category", "game"),
                 game_type=kwargs.get("game_type"),
                 event=kwargs.get("event"),
+                round_name=kwargs.get("round_name"),
                 game_date=kwargs.get("game_date"),
             )
             if game_id:
@@ -183,6 +184,7 @@ class UserGameRepository:
             "category": game.category,
             "game_type": game.game_type,
             "event": game.event,
+            "round_name": game.round_name,
             "game_date": game.game_date,
             "created_at": str(game.created_at) if game.created_at else None,
             "updated_at": str(game.updated_at) if game.updated_at else None,

@@ -28,6 +28,7 @@ class UserGameCreate(BaseModel):
     category: str = "game"  # game / position
     game_type: Optional[str] = None
     event: Optional[str] = None
+    round_name: Optional[str] = None
     game_date: Optional[str] = None
 
 

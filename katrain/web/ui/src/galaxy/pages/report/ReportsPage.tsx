@@ -4,7 +4,14 @@ import SearchIcon from '@mui/icons-material/Search';
 import {
   Alert,
   Box,
+  Button,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Fade,
   InputAdornment,
   Pagination,
@@ -25,7 +32,7 @@ import {
   type UserGameDetail,
   type UserGameSummary,
 } from '../../api/userGamesApi';
-import { ReportsAPI, type ReportTaskSummary } from '../../api/reportApi';
+import { ReportsAPI, type ReportQueueSummary, type ReportTaskSummary } from '../../api/reportApi';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import ReportGameCard, { type ReportGameStatus } from '../../components/report/ReportGameCard';
 import ReportImportMenu from '../../components/report/ReportImportMenu';
@@ -79,6 +86,8 @@ function toLibraryCreateParams(album: KifuAlbumSummary, sgfContent: string): Cre
     title: album.event || `${album.player_black} vs ${album.player_white}`,
     player_black: album.player_black,
     player_white: album.player_white,
+    black_rank: album.black_rank || undefined,
+    white_rank: album.white_rank || undefined,
     result: album.result || undefined,
     board_size: album.board_size,
     rules: album.rules || 'chinese',
@@ -86,6 +95,7 @@ function toLibraryCreateParams(album: KifuAlbumSummary, sgfContent: string): Cre
     move_count: album.move_count,
     category: 'game',
     event: album.event || undefined,
+    round_name: album.round_name || undefined,
     game_date: album.date_played || undefined,
   };
 }
@@ -108,6 +118,7 @@ export default function ReportsPage() {
   const [tasks, setTasks] = useState<ReportTaskSummary[]>([]);
   const [optimisticTasks, setOptimisticTasks] = useState<ReportTaskSummary[]>([]);
   const [taskError, setTaskError] = useState<string | null>(null);
+  const [queueSummary, setQueueSummary] = useState<ReportQueueSummary | null>(null);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
@@ -121,6 +132,9 @@ export default function ReportsPage() {
   const [libraryImportOpen, setLibraryImportOpen] = useState(false);
   const [localImporting, setLocalImporting] = useState<ImportAction>(null);
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const loadGames = useCallback(async () => {
     if (!token || !isAuthenticated) {
@@ -150,8 +164,12 @@ export default function ReportsPage() {
       return;
     }
     try {
-      const response = await ReportsAPI.list(token);
-      setTasks(response);
+      const [taskResponse, summaryResponse] = await Promise.all([
+        ReportsAPI.list(token),
+        ReportsAPI.summary(token),
+      ]);
+      setTasks(taskResponse);
+      setQueueSummary(summaryResponse);
       setTaskError(null);
     } catch (error) {
       setTaskError(error instanceof Error ? error.message : t('report:load_tasks_failed', 'Failed to load report tasks'));
@@ -241,6 +259,12 @@ export default function ReportsPage() {
         const activeKey = `active${typeKey}` as keyof ReportGameStatus;
         if (!state[activeKey]) {
           state[activeKey] = task;
+        }
+      }
+      if (task.status === 'failed') {
+        const failedKey = `failed${typeKey}` as keyof ReportGameStatus;
+        if (!state[failedKey]) {
+          state[failedKey] = task;
         }
       }
       result[task.user_game_id] = state;
@@ -368,6 +392,40 @@ export default function ReportsPage() {
     [createReportForGame],
   );
 
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!token || !deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      await UserGamesAPI.delete(token, deleteTarget);
+      if (selectedGameId === deleteTarget) {
+        setSelectedGameId(null);
+        setSelectedGame(null);
+        setPreviewMoves([]);
+        setPreviewColors([]);
+        setPreviewCurrentMove(0);
+      }
+      await refreshAfterMutation();
+    } catch (error) {
+      setTaskError(error instanceof Error ? error.message : t('report:delete_failed', 'Failed to delete game'));
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
+    }
+  }, [token, deleteTarget, selectedGameId, refreshAfterMutation]);
+
+  const handleRetry = useCallback(
+    async (taskId: number) => {
+      if (!token) return;
+      try {
+        await ReportsAPI.retry(token, taskId);
+        await loadTasks();
+      } catch (error) {
+        setTaskError(error instanceof Error ? error.message : t('report:retry_failed', 'Failed to retry report'));
+      }
+    },
+    [token, loadTasks],
+  );
+
   if (!isAuthenticated) {
     return (
       <Box sx={{ p: 4 }}>
@@ -469,9 +527,22 @@ export default function ReportsPage() {
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               {t('report:game_list', 'Game List')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, mb: 2 }}>
-              {t('report:game_list_hint', '{count} games. Search by player name and generate normal/deep reports.').replace('{count}', totalGames.toLocaleString())}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, mb: queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) ? 1 : 2 }}>
+              {t('report:game_list_hint', '{count} games. Search by player, title, or event.').replace('{count}', totalGames.toLocaleString())}
             </Typography>
+            {queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) && (
+              <Stack direction="row" spacing={0.75} sx={{ mb: 1.5 }}>
+                {queueSummary.running > 0 && (
+                  <Chip label={`${queueSummary.running} ${t('report:summary_running', 'running')}`} size="small" color="warning" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                )}
+                {queueSummary.pending > 0 && (
+                  <Chip label={`${queueSummary.pending} ${t('report:summary_queued', 'queued')}`} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                )}
+                {queueSummary.failed > 0 && (
+                  <Chip label={`${queueSummary.failed} ${t('report:summary_failed', 'failed')}`} size="small" color="error" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                )}
+              </Stack>
+            )}
             <Stack spacing={1.5}>
               <ReportImportMenu
                 onImportLocal={() => setLocalImportOpen(true)}
@@ -480,7 +551,7 @@ export default function ReportsPage() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder={t('report:search_placeholder', 'Search by player name')}
+                placeholder={t('report:search_placeholder', 'Search by player, title, or event')}
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 onKeyDown={(event) => {
@@ -533,6 +604,8 @@ export default function ReportsPage() {
                         onSelect={() => setSelectedGameId(game.id)}
                         onCreateReport={(reportType) => handleCreateReport(game, reportType)}
                         onOpenReport={(taskId) => navigate(`/galaxy/report/${taskId}`)}
+                        onRetry={(taskId) => handleRetry(taskId)}
+                        onDelete={() => setDeleteTarget(game.id)}
                       />
                     </Box>
                   </Fade>
@@ -570,6 +643,26 @@ export default function ReportsPage() {
         onClose={() => setLibraryImportOpen(false)}
         onImport={handleLibraryImport}
       />
+
+      <Dialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+      >
+        <DialogTitle>{t('report:delete_confirm_title', 'Confirm deletion')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('report:delete_confirm_body', 'This will permanently delete the game and all associated analysis data. Are you sure?')}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleteLoading}>
+            {t('common:cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" disabled={deleteLoading}>
+            {t('report:delete_game', 'Delete game')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

@@ -2392,11 +2392,10 @@ msgid "report:game_list"
 msgstr "Oyun listesi"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} oyun. Oyuncu adına göre arayın ve normal/derin raporlar oluşturun."
+msgstr "{count} oyun. Oyuncu, başlık veya etkinlik ile arayın."
 
 msgid "report:search_placeholder"
-msgstr "Oyuncu adına göre ara"
+msgstr "Oyuncu, başlık veya etkinlik ile ara"
 
 msgid "report:no_match"
 msgstr "\"{query}\" ile eşleşen oyun bulunamadı."
@@ -2592,3 +2591,50 @@ msgstr "İçe Aktarılan Oyun"
 
 msgid "report:title_kifu"
 msgstr "Kütüphaneden"
+
+msgid "report:delete_game"
+msgstr "Oyunu sil"
+
+msgid "report:delete_confirm_title"
+msgstr "Silmeyi onayla"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"Oyun ve tüm ilişkili analiz verileri kalıcı olarak silinecektir. Emin "
+"misiniz?"
+
+msgid "report:delete_success"
+msgstr "Oyun silindi"
+
+msgid "report:delete_failed"
+msgstr "Oyun silinemedi"
+
+msgid "report:source_import"
+msgstr "İçe aktar"
+
+msgid "report:source_play_ai"
+msgstr "AI Oyun"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Kütüphane"
+
+msgid "report:retry_normal"
+msgstr "Normal tekrar dene"
+
+msgid "report:retry_deep"
+msgstr "Derin tekrar dene"
+
+msgid "report:retry_failed"
+msgstr "Rapor yeniden deneme başarısız"
+
+msgid "report:summary_running"
+msgstr "çalışıyor"
+
+msgid "report:summary_queued"
+msgstr "sırada"
+
+msgid "report:summary_failed"
+msgstr "başarısız"

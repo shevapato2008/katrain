@@ -2360,12 +2360,10 @@ msgid "report:game_list"
 msgstr "Partieliste"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} Partien. Nach Spielername suchen und Normal-/Tiefenberichte direkt "
-"erstellen."
+msgstr "{count} Partien. Suche nach Spieler, Titel oder Turnier."
 
 msgid "report:search_placeholder"
-msgstr "Nach Spielername suchen"
+msgstr "Nach Spieler, Titel oder Turnier suchen"
 
 msgid "report:no_match"
 msgstr "Keine Partien passend zu \"{query}\"."
@@ -2562,3 +2560,50 @@ msgstr "Importiertes Spiel"
 
 msgid "report:title_kifu"
 msgstr "Aus der Bibliothek"
+
+msgid "report:delete_game"
+msgstr "Partie löschen"
+
+msgid "report:delete_confirm_title"
+msgstr "Löschen bestätigen"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind"
+" Sie sicher?"
+
+msgid "report:delete_success"
+msgstr "Partie gelöscht"
+
+msgid "report:delete_failed"
+msgstr "Partie konnte nicht gelöscht werden"
+
+msgid "report:source_import"
+msgstr "Import"
+
+msgid "report:source_play_ai"
+msgstr "KI-Spiel"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Bibliothek"
+
+msgid "report:retry_normal"
+msgstr "Normal wiederholen"
+
+msgid "report:retry_deep"
+msgstr "Tiefenanalyse wiederholen"
+
+msgid "report:retry_failed"
+msgstr "Wiederholung des Berichts fehlgeschlagen"
+
+msgid "report:summary_running"
+msgstr "laufend"
+
+msgid "report:summary_queued"
+msgstr "in Warteschlange"
+
+msgid "report:summary_failed"
+msgstr "fehlgeschlagen"

@@ -1,6 +1,7 @@
 import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
 import { useTranslation } from '../../../hooks/useTranslation';
+import { translateResult } from '../../../utils/resultTranslation';
 import type { MoveAnalysis } from '../../../types/live';
 import type { UserGameDetail } from '../../api/userGamesApi';
 import type { ReportTaskSummary } from '../../api/reportApi';
@@ -30,6 +31,13 @@ function rulesLabel(rules: string | undefined, t: (key: string, fallback: string
   return t('report:chinese_rules', 'Chinese');
 }
 
+const SOURCE_LABELS: Record<string, { key: string; fallback: string; color: string }> = {
+  import: { key: 'report:source_import', fallback: 'Import', color: '#616161' },
+  play_ai: { key: 'report:source_play_ai', fallback: 'AI Play', color: '#1976d2' },
+  play_human: { key: 'report:source_play_human', fallback: 'PvP', color: '#2e7d32' },
+  kifu_library: { key: 'report:source_kifu_library', fallback: 'Library', color: '#7b1fa2' },
+};
+
 export default function ReportMetaPanel({
   game,
   task,
@@ -42,6 +50,7 @@ export default function ReportMetaPanel({
   const progress = blackWinrate ?? 50;
   const scoreLead = currentAnalysis?.score_lead ?? null;
   const blackAdvantage = scoreLead == null ? (blackWinrate ?? 50) >= 50 : scoreLead >= 0;
+  const sourceInfo = game?.source ? SOURCE_LABELS[game.source] : null;
 
   return (
     <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -58,11 +67,31 @@ export default function ReportMetaPanel({
             }}
           />
         )}
+        {sourceInfo && (
+          <Chip
+            label={t(sourceInfo.key, sourceInfo.fallback)}
+            size="small"
+            sx={{
+              height: 20,
+              fontSize: '0.7rem',
+              bgcolor: sourceInfo.color,
+              color: '#fff',
+              '& .MuiChip-label': { px: 0.8 },
+            }}
+          />
+        )}
       </Stack>
 
       <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
         {game?.event || game?.title || t('report:unnamed_game', 'Untitled game')}
+        {game?.round_name && ` · ${game.round_name}`}
       </Typography>
+
+      {game?.result && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {translateResult(game.result, t, game.rules)}
+        </Typography>
+      )}
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 2 }}>
         <Box sx={{ flex: 1 }}>
@@ -79,11 +108,21 @@ export default function ReportMetaPanel({
             <Typography variant="body1" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
               {game?.player_black || t('report:black', 'Black')}
             </Typography>
+            {game?.black_rank && (
+              <Typography variant="caption" color="text.secondary">
+                {game.black_rank}
+              </Typography>
+            )}
           </Box>
         </Box>
         <Typography variant="body2" color="text.secondary">vs</Typography>
         <Box sx={{ flex: 1, textAlign: 'right' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+            {game?.white_rank && (
+              <Typography variant="caption" color="text.secondary">
+                {game.white_rank}
+              </Typography>
+            )}
             <Typography variant="body1" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
               {game?.player_white || t('report:white', 'White')}
             </Typography>

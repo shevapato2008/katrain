@@ -2331,12 +2331,10 @@ msgid "report:game_list"
 msgstr "Liste des parties"
 
 msgid "report:game_list_hint"
-msgstr ""
-"{count} parties. Recherchez par nom de joueur et générez des rapports "
-"normaux/approfondis."
+msgstr "{count} parties. Recherche par joueur, titre ou événement."
 
 msgid "report:search_placeholder"
-msgstr "Rechercher par nom de joueur"
+msgstr "Rechercher par joueur, titre ou événement"
 
 msgid "report:no_match"
 msgstr "Aucune partie correspondant à « {query} »."
@@ -2533,3 +2531,50 @@ msgstr "Partie importée"
 
 msgid "report:title_kifu"
 msgstr "De la bibliothèque"
+
+msgid "report:delete_game"
+msgstr "Supprimer la partie"
+
+msgid "report:delete_confirm_title"
+msgstr "Confirmer la suppression"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"La partie et toutes les données d'analyse associées seront définitivement "
+"supprimées. Êtes-vous sûr ?"
+
+msgid "report:delete_success"
+msgstr "Partie supprimée"
+
+msgid "report:delete_failed"
+msgstr "Échec de la suppression de la partie"
+
+msgid "report:source_import"
+msgstr "Import"
+
+msgid "report:source_play_ai"
+msgstr "Jeu IA"
+
+msgid "report:source_play_human"
+msgstr "JcJ"
+
+msgid "report:source_kifu_library"
+msgstr "Bibliothèque"
+
+msgid "report:retry_normal"
+msgstr "Réessayer normal"
+
+msgid "report:retry_deep"
+msgstr "Réessayer approfondi"
+
+msgid "report:retry_failed"
+msgstr "Échec de la relance du rapport"
+
+msgid "report:summary_running"
+msgstr "en cours"
+
+msgid "report:summary_queued"
+msgstr "en attente"
+
+msgid "report:summary_failed"
+msgstr "échoué"

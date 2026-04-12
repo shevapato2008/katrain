@@ -2382,3 +2382,18 @@ msgstr "Error al actualizar el informe"
 
 msgid "report:load_failed"
 msgstr "Error al cargar el informe"
+
+msgid "report:title_ai_free"
+msgstr "Juego libre vs IA"
+
+msgid "report:title_ai_ranked"
+msgstr "Partida clasificatoria vs IA"
+
+msgid "report:title_human"
+msgstr "Humano vs Humano"
+
+msgid "report:title_import"
+msgstr "Partida importada"
+
+msgid "report:title_kifu"
+msgstr "De la biblioteca"

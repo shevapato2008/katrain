@@ -100,7 +100,7 @@ function ZenModeApp() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const data = await API.createSession();
+        const data = await API.createSession(token || undefined);
         setSessionId(data.session_id);
         setGameState(data.state);
         
@@ -204,7 +204,7 @@ function ZenModeApp() {
       else if (action === 'forward-10') data = await API.redo(sessionId, 10);
       else if (action === 'end') data = await API.redo(sessionId, 9999);
       else if (action === 'ai-move') data = await API.aiMove(sessionId);
-      else if (action === 'resign') data = await API.resign(sessionId);
+      else if (action === 'resign') data = await API.resign(sessionId, token || undefined);
       else if (action === 'rotate') data = await API.rotate(sessionId);
       else if (action === 'mistake-prev') data = await API.findMistake(sessionId, 'undo');
       else if (action === 'mistake-next') data = await API.findMistake(sessionId, 'redo');

@@ -11,6 +11,7 @@ import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { translateResult } from '../../utils/resultTranslation';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -39,7 +40,7 @@ const GamePage = () => {
         onMove,
         onNavigate,
         handleAction
-    } = useGameSession();
+    } = useGameSession({ token: token || undefined });
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -233,14 +234,6 @@ const GamePage = () => {
         navigate('/galaxy/play/ai');
     };
 
-    const formatResult = (result: string) => {
-        const match = result.match(/^([BW])\+(.+)$/);
-        if (!match) return result;
-        const [, color, score] = match;
-        const winner = color === 'B' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
-        return `${winner}${score}${t('result:points', '')}`;
-    };
-
     // Determine which color the human player controls (if any)
     const humanColor: 'B' | 'W' | null = gameState?.players_info?.B?.player_type === 'player:human' ? 'B'
         : gameState?.players_info?.W?.player_type === 'player:human' ? 'W'
@@ -298,7 +291,7 @@ const GamePage = () => {
                 <DialogTitle>{t('Game Over', 'Game Over')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {t('game_end:count', 'Game ended by counting: {result}').replace('{result}', formatResult(countResult || ''))}
+                        {t('game_end:count', 'Game ended by counting: {result}').replace('{result}', translateResult(countResult, t, gameState?.ruleset))}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>

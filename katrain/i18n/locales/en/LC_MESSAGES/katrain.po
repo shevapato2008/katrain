@@ -2510,3 +2510,18 @@ msgstr "Failed to refresh report"
 
 msgid "report:load_failed"
 msgstr "Failed to load report"
+
+msgid "report:title_ai_free"
+msgstr "AI Free Play"
+
+msgid "report:title_ai_ranked"
+msgstr "AI Ranked Play"
+
+msgid "report:title_human"
+msgstr "Human vs Human"
+
+msgid "report:title_import"
+msgstr "Imported Game"
+
+msgid "report:title_kifu"
+msgstr "From Library"

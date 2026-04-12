@@ -59,6 +59,8 @@ export interface SGFMetadata {
   rules: string;
   playerBlack: string;
   playerWhite: string;
+  blackRank?: string;
+  whiteRank?: string;
 }
 
 // ── Serialization: moves[] → SGF ──
@@ -172,6 +174,8 @@ export function sgfToMoves(sgfContent: string): {
     if (props.RU) metadata.rules = props.RU[0];
     if (props.PB) metadata.playerBlack = props.PB[0];
     if (props.PW) metadata.playerWhite = props.PW[0];
+    if (props.BR) metadata.blackRank = props.BR[0];
+    if (props.WR) metadata.whiteRank = props.WR[0];
 
     const boardSize = metadata.boardSize || 19;
 

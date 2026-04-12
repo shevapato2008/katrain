@@ -62,6 +62,8 @@ function toLocalCreateParams(payload: LocalImportPayload): CreateUserGameParams 
     title: payload.title,
     player_black: payload.playerBlack,
     player_white: payload.playerWhite,
+    black_rank: payload.blackRank,
+    white_rank: payload.whiteRank,
     board_size: payload.boardSize,
     rules: payload.rules,
     komi: payload.komi,

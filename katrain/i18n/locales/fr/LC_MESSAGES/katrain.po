@@ -2518,3 +2518,18 @@ msgstr "Échec de l'actualisation du rapport"
 
 msgid "report:load_failed"
 msgstr "Échec du chargement du rapport"
+
+msgid "report:title_ai_free"
+msgstr "Partie libre vs IA"
+
+msgid "report:title_ai_ranked"
+msgstr "Partie classée vs IA"
+
+msgid "report:title_human"
+msgstr "Humain vs Humain"
+
+msgid "report:title_import"
+msgstr "Partie importée"
+
+msgid "report:title_kifu"
+msgstr "De la bibliothèque"

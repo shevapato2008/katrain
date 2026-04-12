@@ -11,6 +11,8 @@ export interface UserGameSummary {
   title: string | null;
   player_black: string | null;
   player_white: string | null;
+  black_rank: string | null;
+  white_rank: string | null;
   result: string | null;
   board_size: number;
   rules: string;
@@ -61,6 +63,8 @@ export interface CreateUserGameParams {
   title?: string;
   player_black?: string;
   player_white?: string;
+  black_rank?: string;
+  white_rank?: string;
   result?: string;
   board_size?: number;
   rules?: string;

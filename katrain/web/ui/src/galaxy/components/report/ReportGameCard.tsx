@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 
 import { useTranslation } from '../../../hooks/useTranslation';
+import { translateResult } from '../../../utils/resultTranslation';
 import type { UserGameSummary } from '../../api/userGamesApi';
 import type { ReportTaskSummary } from '../../api/reportApi';
 
@@ -33,6 +34,18 @@ interface ReportGameCardProps {
 
 function reportBadgeColor(reportType: 'normal' | 'deep') {
   return reportType === 'normal' ? '#5e88c4' : '#4caf50';
+}
+
+function getGameDisplayTitle(game: UserGameSummary, t: (key: string, fallback?: string) => string): string {
+  if (game.source === 'play_ai') {
+    return game.game_type === 'ranked'
+      ? t('report:title_ai_ranked', 'AI Ranked Play')
+      : t('report:title_ai_free', 'AI Free Play');
+  }
+  if (game.source === 'play_human') return t('report:title_human', 'Human vs Human');
+  if (game.source === 'import') return t('report:title_import', 'Imported Game');
+  if (game.source === 'kifu_library') return t('report:title_kifu', 'From Library');
+  return t('report:unnamed_game', 'Untitled game');
 }
 
 export default function ReportGameCard({
@@ -95,7 +108,7 @@ export default function ReportGameCard({
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
           <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
-            {game.event || game.title || t('report:unnamed_game', 'Untitled game')}
+            {game.event || game.title || getGameDisplayTitle(game, t)}
           </Typography>
           {game.game_date && (
             <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.7 }}>
@@ -123,10 +136,15 @@ export default function ReportGameCard({
             <Typography variant="body2" noWrap sx={{ fontWeight: 700 }}>
               {game.player_black || t('report:black', 'Black')}
             </Typography>
+            {game.black_rank && (
+              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
+                {game.black_rank}
+              </Typography>
+            )}
           </Box>
 
           <Chip
-            label={game.result || t('report:no_result', 'No result')}
+            label={game.result ? translateResult(game.result, t, game.rules) : t('report:no_result', 'No result')}
             size="small"
             sx={{
               height: 22,
@@ -137,6 +155,11 @@ export default function ReportGameCard({
           />
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+            {game.white_rank && (
+              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
+                {game.white_rank}
+              </Typography>
+            )}
             <Typography variant="body2" noWrap sx={{ fontWeight: 700 }}>
               {game.player_white || t('report:white', 'White')}
             </Typography>

@@ -2559,3 +2559,18 @@ msgstr "Не вдалося оновити звіт"
 
 msgid "report:load_failed"
 msgstr "Не вдалося завантажити звіт"
+
+msgid "report:title_ai_free"
+msgstr "Вільна гра з ШІ"
+
+msgid "report:title_ai_ranked"
+msgstr "Рейтингова гра з ШІ"
+
+msgid "report:title_human"
+msgstr "Людина проти Людини"
+
+msgid "report:title_import"
+msgstr "Імпортована партія"
+
+msgid "report:title_kifu"
+msgstr "З бібліотеки"

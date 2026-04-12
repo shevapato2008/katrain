@@ -40,10 +40,6 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
-    report_analyzer = getattr(app.state, "report_analyzer", None)
-    if report_analyzer:
-        await report_analyzer.stop()
-
     task = getattr(app.state, "cleanup_task", None)
     if task:
         task.cancel()
@@ -56,7 +52,6 @@ async def _lifespan_server(app: FastAPI, log):
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.db import SessionLocal
-    from katrain.web.report import ReportAnalyzerService
 
     repo = SQLAlchemyUserRepository(SessionLocal)
     repo.init_db()
@@ -91,13 +86,6 @@ async def _lifespan_server(app: FastAPI, log):
         cloud_client = KataGoClient(url=settings.CLOUD_KATAGO_URL)
 
     app.state.router = RequestRouter(local_client=local_client, cloud_client=cloud_client)
-    report_analyzer = ReportAnalyzerService(
-        SessionLocal,
-        app.state.router,
-        max_concurrent_tasks=settings.REPORT_ANALYZER_CONCURRENCY,
-    )
-    app.state.report_analyzer = report_analyzer
-    report_analyzer.start()
 
     manager = app.state.session_manager
     try:
@@ -161,7 +149,6 @@ async def _lifespan_board(app: FastAPI, log):
     from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.db import SessionLocal
-    from katrain.web.report import ReportAnalyzerService
     from katrain.web.core.remote_client import RemoteAPIClient
     from katrain.web.core.sync_worker import SyncWorker
     from katrain.web.core.connectivity import ConnectivityManager
@@ -231,13 +218,6 @@ async def _lifespan_board(app: FastAPI, log):
 
     local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
     app.state.router = RequestRouter(local_client=local_client, cloud_client=None)
-    report_analyzer = ReportAnalyzerService(
-        SessionLocal,
-        app.state.router,
-        max_concurrent_tasks=settings.REPORT_ANALYZER_CONCURRENCY,
-    )
-    app.state.report_analyzer = report_analyzer
-    report_analyzer.start()
 
     # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
     app.state.lobby_manager = LobbyManager()
@@ -665,6 +645,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     else:
                         player_white = player_white or name
 
+            # Extract ranks
+            black_rank = getattr(players_info["B"], "calculated_rank", None) or getattr(players_info["B"], "sgf_rank", None) or ""
+            white_rank = getattr(players_info["W"], "calculated_rank", None) or getattr(players_info["W"], "sgf_rank", None) or ""
+
             board_size_val = state.get("board_size", [19, 19])
             board_size = board_size_val[0] if isinstance(board_size_val, (list, tuple)) else board_size_val
             move_count = len(state.get("history", []))
@@ -681,6 +665,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 source="play_ai",
                 player_black=player_black,
                 player_white=player_white,
+                black_rank=black_rank,
+                white_rank=white_rank,
                 result=result,
                 move_count=move_count,
                 board_size=board_size,

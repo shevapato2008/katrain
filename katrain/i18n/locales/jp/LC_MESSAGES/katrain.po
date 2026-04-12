@@ -2503,3 +2503,18 @@ msgstr "レポートの更新に失敗しました"
 
 msgid "report:load_failed"
 msgstr "レポートの読み込みに失敗しました"
+
+msgid "report:title_ai_free"
+msgstr "AI自由対局"
+
+msgid "report:title_ai_ranked"
+msgstr "AIランク戦"
+
+msgid "report:title_human"
+msgstr "対人対局"
+
+msgid "report:title_import"
+msgstr "インポート棋局"
+
+msgid "report:title_kifu"
+msgstr "棋譜ライブラリ"

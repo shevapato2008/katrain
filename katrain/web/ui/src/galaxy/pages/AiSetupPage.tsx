@@ -20,7 +20,7 @@ const valueToRank = (val: number) => {
 const AiSetupPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
@@ -129,7 +129,7 @@ const AiSetupPage = () => {
     const handleStartGame = async () => {
         setLoading(true);
         try {
-            const session = await API.createSession();
+            const session = await API.createSession(token || undefined);
             const humanKyuRank = sliderToHumanKyuRankFixed(rankValue);
 
             const aiColor = color === 'B' ? 'W' : 'B';

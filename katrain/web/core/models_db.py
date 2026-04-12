@@ -446,6 +446,8 @@ class UserGame(Base):
     sgf_content = Column(Text, nullable=True)
     player_black = Column(String(100), nullable=True)
     player_white = Column(String(100), nullable=True)
+    black_rank = Column(String(16), nullable=True)
+    white_rank = Column(String(16), nullable=True)
     result = Column(String(50), nullable=True)
     board_size = Column(Integer, default=19)
     rules = Column(String(64), default="chinese")

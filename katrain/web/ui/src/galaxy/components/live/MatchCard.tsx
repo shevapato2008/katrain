@@ -83,9 +83,19 @@ export default function MatchCard({ match, compact = false, selected = false, on
               <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} noWrap>
                 {i18n.translatePlayer(match.player_black)}
               </Typography>
+              {match.black_rank && (
+                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
+                  {match.black_rank}
+                </Typography>
+              )}
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ px: 1, flexShrink: 0 }}>vs</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+              {match.white_rank && (
+                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
+                  {match.white_rank}
+                </Typography>
+              )}
               <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} noWrap>
                 {i18n.translatePlayer(match.player_white)}
               </Typography>

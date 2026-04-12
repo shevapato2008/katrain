@@ -2430,3 +2430,18 @@ msgstr "보고서 새로고침 실패"
 
 msgid "report:load_failed"
 msgstr "보고서를 불러오지 못했습니다"
+
+msgid "report:title_ai_free"
+msgstr "AI 자유 대국"
+
+msgid "report:title_ai_ranked"
+msgstr "AI 랭크 대국"
+
+msgid "report:title_human"
+msgstr "대인 대국"
+
+msgid "report:title_import"
+msgstr "불러온 기보"
+
+msgid "report:title_kifu"
+msgstr "기보 라이브러리"

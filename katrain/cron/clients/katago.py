@@ -37,6 +37,8 @@ class KataGoClient:
         include_ownership: bool = True,
         include_policy: bool = True,
         priority: int = 0,
+        initial_stones: list[list[str]] | None = None,
+        initial_player: str = "B",
     ) -> dict:
         """Send a single analysis request to KataGo.
 
@@ -70,6 +72,8 @@ class KataGoClient:
             "komi": komi,
             "boardXSize": board_size,
             "boardYSize": board_size,
+            "initialStones": initial_stones or [],
+            "initialPlayer": initial_player,
             "moves": moves,
             "analyzeTurns": analyze_turns,
             "maxVisits": max_visits,

@@ -2577,3 +2577,18 @@ msgstr "Rapor yenilenemedi"
 
 msgid "report:load_failed"
 msgstr "Rapor yüklenemedi"
+
+msgid "report:title_ai_free"
+msgstr "Yapay Zeka Serbest Oyun"
+
+msgid "report:title_ai_ranked"
+msgstr "Yapay Zeka Dereceli Oyun"
+
+msgid "report:title_human"
+msgstr "İnsan vs İnsan"
+
+msgid "report:title_import"
+msgstr "İçe Aktarılan Oyun"
+
+msgid "report:title_kifu"
+msgstr "Kütüphaneden"

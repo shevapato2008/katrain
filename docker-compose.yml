@@ -43,5 +43,7 @@ services:
       - KATAGO_URL=http://host.docker.internal:8002
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
       - CRON_LOG_LEVEL=INFO
+      - CRON_REPORT_ANALYZE_ENABLED=true
+      - CRON_REPORT_CONCURRENCY=3
     extra_hosts:
       - "host.docker.internal:host-gateway"

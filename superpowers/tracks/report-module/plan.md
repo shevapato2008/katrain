@@ -185,11 +185,48 @@
 - [ ] 缩短或替换 stale reset 机制，避免服务重启后长时间卡在旧 `running`
 - [ ] 评估是否在 `reports` API 增加队列态摘要，方便前端展示“运行中 / 排队中”总览
 
-### P3：解耦执行器
+### P3：迁移报告分析器到 katrain-cron ✅ 已完成
 
-- [ ] 评估把 `ReportAnalyzerService` 从 `katrain-web` 中拆出
-- [ ] 如果迁移到独立 worker，则需要同步更新部署文档、启动顺序和健康检查
-- [ ] 如果继续留在 `katrain-web`，至少要补更明确的运维说明
+**动机**：报告分析（复盘）与实时对弈共享 KataGo:8000，3 个并发复盘任务会拖慢对弈响应。katrain-cron 已有独立的 KataGo:8002（GPU 1, 16 线程, 批处理优化），已将报告分析迁移到 cron 执行。
+
+**方案**：数据库作为共享队列。katrain-web 只负责创建 `report_tasks` 记录，katrain-cron 负责轮询并执行分析。前端零改动。
+
+#### Step 1: 在 katrain-cron 中添加 ReportTask / ReportTaskMove 模型
+
+- [x] 在 `katrain/cron/models.py` 中添加 `ReportTaskDB`、`ReportTaskMoveDB`、`UserGameDB` 独立模型
+- [x] 遵循 cron 约定：不从 `katrain/web/` 导入任何内容，使用 `extend_existing=True`
+
+#### Step 2: 创建 ReportAnalyzerJob
+
+- [x] 新建 `katrain/cron/jobs/report_analyze.py`
+- [x] 采用与 `AnalyzeJob` 相同的 **持久异步循环** 模式
+- [x] 使用 cron 的 `KataGoClient`（port 8002）替代 web 的 `RequestRouter`
+- [x] 保留所有行为：并发=3、逐手重试、断点续跑、stale reset、SGF 解析、delta 计算
+
+#### Step 3: 注册到 CronScheduler
+
+- [x] 在 `katrain/cron/scheduler.py` 中作为持久循环启动，由 `config.REPORT_ANALYZE_ENABLED` 控制
+
+#### Step 4: 添加配置项
+
+- [x] `REPORT_ANALYZE_ENABLED`、`REPORT_CONCURRENCY`、`REPORT_POLL_INTERVAL` 已添加到 `katrain/cron/config.py`
+
+#### Step 5: 从 katrain-web 移除 ReportAnalyzerService
+
+- [x] 从 `server.py` 的 `_lifespan_server` 和 `_lifespan_board` 中移除启动/停止逻辑
+- [x] 删除 `katrain/web/report/analyzer.py`
+- [x] 移除 web config 中的 `REPORT_ANALYZER_CONCURRENCY`
+
+#### Step 6: 更新部署
+
+- [x] `docker-compose.yml` 已添加 `CRON_REPORT_ANALYZE_ENABLED=true` 和 `CRON_REPORT_CONCURRENCY=3`
+
+#### 不变的部分
+
+- 前端：零改动
+- Reports API：留在 katrain-web
+- 数据库 schema：不变
+- 并发控制：全局最多 3 个并发任务
 
 ### P4：继续补测试
 
@@ -199,20 +236,16 @@
 
 ## 6. 推荐执行顺序
 
-如果继续推进这条线，建议按这个顺序做：
+1. ~~先补”对弈模块完赛自动入库”~~ ✅ 已完成
+2. **P3：迁移报告分析器到 katrain-cron** ← 当前最高优先级
+3. 再补二级页元数据缺口（P1）
+4. 然后补失败重试和重启恢复（P2）
 
-1. 先补“对弈模块完赛自动入库”
-2. 再补二级页元数据缺口
-3. 然后补失败重试和重启恢复
-4. 最后再考虑是否要拆独立 worker
+原因：
 
-原因很简单：
-
-- 现在报告模块的主链路已经能跑，但“对弈完赛自动进入报告”这条主流程还没完全闭环
-- 当前最直接的产品断点是 `play_ai` 完赛后不会自然进入报告模块
-- 当前第二重要的问题才是二级页信息密度还不够
-- 当前最影响稳定性的是任务恢复和重试体验
-- worker 解耦虽然重要，但不是当前最直接的产品短板
+- P0 已完成，主链路已闭环
+- 当前最影响用户体验的问题是复盘分析拖慢对弈响应，P3 解决资源竞争
+- P1/P2 是体验优化，优先级低于 P3
 
 ## 7. 当前验证基线
 

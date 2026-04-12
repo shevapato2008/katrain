@@ -2485,3 +2485,18 @@ msgstr "刷新報告失敗"
 
 msgid "report:load_failed"
 msgstr "載入報告失敗"
+
+msgid "report:title_ai_free"
+msgstr "人機自由對弈"
+
+msgid "report:title_ai_ranked"
+msgstr "人機排位對弈"
+
+msgid "report:title_human"
+msgstr "人人對弈"
+
+msgid "report:title_import"
+msgstr "導入棋局"
+
+msgid "report:title_kifu"
+msgstr "棋譜庫"

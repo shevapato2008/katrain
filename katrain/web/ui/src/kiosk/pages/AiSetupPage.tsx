@@ -6,12 +6,14 @@ import OptionChips from '../components/common/OptionChips';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../context/AuthContext';
 import LiveBoard from '../../components/live/LiveBoard';
 
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { token } = useAuth();
   const isRanked = mode === 'ranked';
 
   // Board & rules
@@ -42,7 +44,7 @@ const AiSetupPage = () => {
     setError('');
     setLoading(true);
     try {
-      const { session_id } = await API.createSession();
+      const { session_id } = await API.createSession(token ?? undefined);
       await API.gameSetup(session_id, isRanked ? 'ranked' : 'free', {
         board_size: boardSize,
         rules,

@@ -2547,3 +2547,18 @@ msgstr "Bericht konnte nicht aktualisiert werden"
 
 msgid "report:load_failed"
 msgstr "Bericht konnte nicht geladen werden"
+
+msgid "report:title_ai_free"
+msgstr "KI Freies Spiel"
+
+msgid "report:title_ai_ranked"
+msgstr "KI Ranglistenspiel"
+
+msgid "report:title_human"
+msgstr "Mensch gegen Mensch"
+
+msgid "report:title_import"
+msgstr "Importiertes Spiel"
+
+msgid "report:title_kifu"
+msgstr "Aus der Bibliothek"

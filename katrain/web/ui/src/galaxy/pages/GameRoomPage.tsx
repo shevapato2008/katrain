@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
+import { translateResult } from '../../utils/resultTranslation';
 
 const GameRoomPage = () => {
     const { sessionId } = useParams();
@@ -172,14 +173,6 @@ const GameRoomPage = () => {
 
     const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
 
-    const formatResult = (result: string) => {
-        const match = result.match(/^([BW])\+(.+)$/);
-        if (!match) return result;
-        const [, color, score] = match;
-        const winner = color === 'B' ? t('result:black_win', 'B+') : t('result:white_win', 'W+');
-        return `${winner}${score}${t('result:points', '')}`;
-    };
-
     // Determine game end result message
     const getGameEndMessage = () => {
         if (!gameEndData) return "";
@@ -193,7 +186,7 @@ const GameRoomPage = () => {
         } else if (reason === 'timeout') {
             return isWinner ? t('game_end:timeout_win', "Your opponent ran out of time. You win!") : t('game_end:timeout_loss', "You ran out of time.");
         } else if (reason === 'count') {
-            return t('game_end:count', 'Game ended by counting: {result}').replace('{result}', formatResult(result || ''));
+            return t('game_end:count', 'Game ended by counting: {result}').replace('{result}', translateResult(result, t, gameState?.ruleset));
         } else {
             return t(result || "Game ended", result || "Game ended");
         }

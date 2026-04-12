@@ -2476,3 +2476,18 @@ msgstr "Не удалось обновить отчёт"
 
 msgid "report:load_failed"
 msgstr "Не удалось загрузить отчёт"
+
+msgid "report:title_ai_free"
+msgstr "Свободная игра с ИИ"
+
+msgid "report:title_ai_ranked"
+msgstr "Рейтинговая игра с ИИ"
+
+msgid "report:title_human"
+msgstr "Человек против Человека"
+
+msgid "report:title_import"
+msgstr "Импортированная партия"
+
+msgid "report:title_kifu"
+msgstr "Из библиотеки"

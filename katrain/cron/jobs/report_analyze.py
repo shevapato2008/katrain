@@ -1,17 +1,26 @@
+"""ReportAnalyzerJob: persistent async loop for user game report analysis.
+
+Migrated from katrain.web.report.analyzer.ReportAnalyzerService.
+Uses the cron-side KataGo engine (port 8002) instead of the web gameplay engine.
+"""
+
 import asyncio
 import logging
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy.orm import Session
+from katrain.cron import config
+from katrain.cron.clients.katago import KataGoClient
+from katrain.cron.db import SessionLocal
+from katrain.cron.jobs.base import BaseJob
+from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
 
-from katrain.web.core import models_db
-from katrain.web.core.router import RequestRouter
+logger = logging.getLogger("katrain_cron.report_analyze")
 
-logger = logging.getLogger("katrain_web.report")
 MAX_RETRIES = 3
 
+# SGF parsing patterns
 SGF_MOVE_RE = re.compile(r";([BW])\[([a-z]{0,2})\]", re.IGNORECASE)
 SGF_SIZE_RE = re.compile(r"SZ\[(\d+)\]")
 SGF_KOMI_RE = re.compile(r"KM\[([^\]]+)\]")
@@ -53,53 +62,42 @@ def _ownership_grid(raw: Any, board_size: int) -> list[list[float]] | None:
     grid: list[list[float]] = []
     for y in range(board_size):
         start = y * board_size
-        grid.append([float(v) for v in raw[start:start + board_size]])
+        grid.append([float(v) for v in raw[start : start + board_size]])
     return grid
 
 
-class ReportAnalyzerService:
-    def __init__(
-        self,
-        session_factory,
-        router: RequestRouter,
-        poll_interval: float = 2.0,
-        max_concurrent_tasks: int = 3,
-    ):
-        self.session_factory = session_factory
-        self.router = router
-        self.poll_interval = poll_interval
-        self.max_concurrent_tasks = max(1, max_concurrent_tasks)
-        self._running = False
-        self._task: asyncio.Task | None = None
-        self._workers: set[asyncio.Task] = set()
+class ReportAnalyzerJob(BaseJob):
+    """Persistent async loop that processes pending report tasks.
 
-    def start(self):
-        if self._running:
-            return
+    Maintains up to ``max_concurrent_tasks`` workers, each processing one
+    report task move-by-move via cron's KataGo engine (port 8002).
+    """
+
+    name = "report_analyze"
+    interval_seconds = 0  # Persistent loop, not interval-driven
+
+    def __init__(self):
+        super().__init__()
         self._running = True
-        self._task = asyncio.create_task(self._analysis_loop())
-        logger.info("ReportAnalyzerService started")
+        self._katago = KataGoClient()
+        self._workers: set[asyncio.Task] = set()
+        self.max_concurrent_tasks = max(1, config.REPORT_CONCURRENCY)
+        self.poll_interval = config.REPORT_POLL_INTERVAL
 
-    async def stop(self):
-        self._running = False
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-        for worker in list(self._workers):
-            worker.cancel()
-        if self._workers:
-            await asyncio.gather(*self._workers, return_exceptions=True)
-        self._workers.clear()
-        logger.info("ReportAnalyzerService stopped")
+    async def run(self) -> None:
+        self._running = True
 
-    async def _analysis_loop(self):
+        # Startup health check: warn early if KataGo is unreachable
+        healthy = await self._katago.health_check()
+        if not healthy:
+            logger.error("KataGo at %s is not reachable — report analysis will fail", config.KATAGO_URL)
+
+        # Crash recovery: reset stale running tasks
+        self._reset_stale_tasks()
+
         while self._running:
             try:
                 self._prune_finished_workers()
-                self._reset_stale_tasks()
                 while self._running and len(self._workers) < self.max_concurrent_tasks:
                     claimed_task_id = self._claim_pending_task()
                     if not claimed_task_id:
@@ -113,30 +111,37 @@ class ReportAnalyzerService:
                 logger.exception("Unhandled report analysis loop error")
                 await asyncio.sleep(self.poll_interval)
 
+    def stop(self):
+        self._running = False
+
+    # ── Task management ──
+
     def _reset_stale_tasks(self):
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=5)
-        with self.session_factory() as db:
-            stale_tasks = (
-                db.query(models_db.ReportTask)
-                .filter(
-                    models_db.ReportTask.status == "running",
-                    models_db.ReportTask.updated_at.is_not(None),
-                    models_db.ReportTask.updated_at < cutoff,
-                )
+        """Reset all running tasks back to pending on startup.
+
+        A restart kills all workers, so any task still marked "running"
+        was interrupted and must be re-queued.  The resume logic in
+        _get_resume_move_number will skip already-analyzed moves.
+        """
+        with SessionLocal() as db:
+            running_tasks = (
+                db.query(ReportTaskDB)
+                .filter(ReportTaskDB.status == "running")
                 .all()
             )
-            if not stale_tasks:
+            if not running_tasks:
                 return
-            for task in stale_tasks:
+            for task in running_tasks:
                 task.status = "pending"
-                task.error_message = "Recovered stale running task"
+                task.error_message = None
             db.commit()
+            logger.info("Reset %d interrupted report tasks to pending", len(running_tasks))
 
     def _prune_finished_workers(self) -> None:
-        done = {worker for worker in self._workers if worker.done()}
-        for worker in done:
+        done = {w for w in self._workers if w.done()}
+        for w in done:
             try:
-                worker.result()
+                w.result()
             except asyncio.CancelledError:
                 pass
             except Exception:
@@ -144,11 +149,11 @@ class ReportAnalyzerService:
         self._workers.difference_update(done)
 
     def _claim_pending_task(self) -> int | None:
-        with self.session_factory() as db:
+        with SessionLocal() as db:
             task = (
-                db.query(models_db.ReportTask)
-                .filter(models_db.ReportTask.status == "pending")
-                .order_by(models_db.ReportTask.created_at.asc(), models_db.ReportTask.id.asc())
+                db.query(ReportTaskDB)
+                .filter(ReportTaskDB.status == "pending")
+                .order_by(ReportTaskDB.created_at.asc(), ReportTaskDB.id.asc())
                 .first()
             )
             if not task:
@@ -158,47 +163,34 @@ class ReportAnalyzerService:
             task.completed_at = None
             task.error_message = None
             db.commit()
+            logger.info("Claimed report task %d (type=%s, visits=%d)", task.id, task.report_type, task.requested_visits)
             return task.id
 
-    def _get_resume_move_number(self, db: Session, task_id: int) -> int:
+    def _get_resume_move_number(self, db, task_id: int) -> int:
         latest = (
-            db.query(models_db.ReportTaskMove)
-            .filter(models_db.ReportTaskMove.task_id == task_id)
-            .order_by(models_db.ReportTaskMove.move_number.desc(), models_db.ReportTaskMove.id.desc())
+            db.query(ReportTaskMoveDB)
+            .filter(ReportTaskMoveDB.task_id == task_id)
+            .order_by(ReportTaskMoveDB.move_number.desc(), ReportTaskMoveDB.id.desc())
             .first()
         )
         if not latest:
             return 0
         return latest.move_number + 1
 
-    def _mark_task_for_retry_or_failure(self, task: models_db.ReportTask, message: str) -> None:
+    def _mark_task_for_retry_or_failure(self, task: ReportTaskDB, message: str) -> None:
         task.retry_count = (task.retry_count or 0) + 1
         task.error_message = message
         task.completed_at = None
         task.status = "pending" if task.retry_count < MAX_RETRIES else "failed"
 
-    def _build_top_moves(self, move_infos: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        top_moves = []
-        for move_info in move_infos[:10]:
-            top_moves.append(
-                {
-                    "move": move_info.get("move"),
-                    "visits": move_info.get("visits"),
-                    "winrate": move_info.get("winrate"),
-                    "score_lead": move_info.get("scoreLead"),
-                    "prior": move_info.get("prior"),
-                    "pv": move_info.get("pv"),
-                    "psv": move_info.get("playSelectionValue", 0.0),
-                }
-            )
-        return top_moves
+    # ── Task processing ──
 
     async def _process_task(self, task_id: int):
-        with self.session_factory() as db:
-            task = db.query(models_db.ReportTask).filter(models_db.ReportTask.id == task_id).first()
+        with SessionLocal() as db:
+            task = db.query(ReportTaskDB).filter(ReportTaskDB.id == task_id).first()
             if not task:
                 return
-            game = db.query(models_db.UserGame).filter(models_db.UserGame.id == task.user_game_id).first()
+            game = db.query(UserGameDB).filter(UserGameDB.id == task.user_game_id).first()
             if not game or not game.sgf_content:
                 task.status = "failed"
                 task.error_message = "Game or SGF content not found"
@@ -216,6 +208,9 @@ class ReportAnalyzerService:
             task.error_message = None
             db.commit()
 
+        if resume_from > 0:
+            logger.info("Resuming task %d from move %d/%d", task_id, resume_from, len(moves))
+
         for move_number in range(resume_from, len(moves) + 1):
             if not self._running:
                 return
@@ -229,8 +224,8 @@ class ReportAnalyzerService:
                 move_number=move_number,
                 requested_visits=requested_visits,
             )
-            with self.session_factory() as db:
-                task = db.query(models_db.ReportTask).filter(models_db.ReportTask.id == task_id).first()
+            with SessionLocal() as db:
+                task = db.query(ReportTaskDB).filter(ReportTaskDB.id == task_id).first()
                 if not task:
                     return
                 if result is None:
@@ -239,15 +234,15 @@ class ReportAnalyzerService:
                     return
 
                 record = (
-                    db.query(models_db.ReportTaskMove)
+                    db.query(ReportTaskMoveDB)
                     .filter(
-                        models_db.ReportTaskMove.task_id == task_id,
-                        models_db.ReportTaskMove.move_number == move_number,
+                        ReportTaskMoveDB.task_id == task_id,
+                        ReportTaskMoveDB.move_number == move_number,
                     )
                     .first()
                 )
                 if not record:
-                    record = models_db.ReportTaskMove(task_id=task_id, move_number=move_number)
+                    record = ReportTaskMoveDB(task_id=task_id, move_number=move_number)
                     db.add(record)
 
                 for key, value in result.items():
@@ -257,8 +252,8 @@ class ReportAnalyzerService:
                 task.analyzed_moves = max(task.analyzed_moves, move_number)
                 db.commit()
 
-        with self.session_factory() as db:
-            task = db.query(models_db.ReportTask).filter(models_db.ReportTask.id == task_id).first()
+        with SessionLocal() as db:
+            task = db.query(ReportTaskDB).filter(ReportTaskDB.id == task_id).first()
             if task:
                 task.status = "completed"
                 task.retry_count = 0
@@ -266,6 +261,9 @@ class ReportAnalyzerService:
                 task.completed_at = datetime.now(timezone.utc)
                 task.error_message = None
                 db.commit()
+                logger.info("Report task %d completed (%d moves)", task_id, len(moves))
+
+    # ── KataGo analysis ──
 
     async def _analyze_position(
         self,
@@ -278,26 +276,25 @@ class ReportAnalyzerService:
         requested_visits: int,
     ) -> dict[str, Any] | None:
         played = [[color, coord] for color, coord in moves[:move_number]]
-        payload = {
-            "id": f"report_{task_id}_{move_number}",
-            "rules": rules,
-            "komi": komi,
-            "boardXSize": board_size,
-            "boardYSize": board_size,
-            "analyzeTurns": [len(played)],
-            "maxVisits": requested_visits,
-            "initialStones": [],
-            "initialPlayer": "B",
-            "moves": played,
-            "includeOwnership": True,
-            "includePolicy": False,
-            "overrideSettings": {"reportAnalysisWinratesAs": "BLACK"},
-        }
 
+        # Per-move retry (3 attempts, 2s delay)
         last_exc = None
         for attempt in range(3):
             try:
-                response = await self.router.route(payload)
+                response = await self._katago.analyze(
+                    request_id=f"report_{task_id}_{move_number}",
+                    moves=played,
+                    rules=rules,
+                    komi=komi,
+                    board_size=board_size,
+                    max_visits=requested_visits,
+                    analyze_turns=[len(played)],
+                    include_ownership=True,
+                    include_policy=False,
+                    initial_stones=[],
+                    initial_player="B",
+                    priority=config.REPORT_ANALYSIS_PRIORITY,
+                )
                 break
             except Exception as exc:
                 last_exc = exc
@@ -305,7 +302,7 @@ class ReportAnalyzerService:
                     logger.info("Report analysis retry %d for task %s move %s", attempt + 1, task_id, move_number)
                     await asyncio.sleep(2)
         else:
-            logger.warning("Report analysis request failed for task %s move %s: %s", task_id, move_number, last_exc)
+            logger.warning("Report analysis failed for task %s move %s: %s", task_id, move_number, last_exc)
             return None
 
         root_info = response.get("rootInfo", {})
@@ -315,15 +312,16 @@ class ReportAnalyzerService:
         actual_move = moves[move_number - 1][1] if move_number > 0 else None
         actual_player = moves[move_number - 1][0] if move_number > 0 else None
 
+        # Compute delta relative to previous move
         previous_score = None
         previous_winrate = None
         if move_number > 0:
-            with self.session_factory() as db:
+            with SessionLocal() as db:
                 prev = (
-                    db.query(models_db.ReportTaskMove)
+                    db.query(ReportTaskMoveDB)
                     .filter(
-                        models_db.ReportTaskMove.task_id == task_id,
-                        models_db.ReportTaskMove.move_number == move_number - 1,
+                        ReportTaskMoveDB.task_id == task_id,
+                        ReportTaskMoveDB.move_number == move_number - 1,
                     )
                     .first()
                 )
@@ -344,12 +342,27 @@ class ReportAnalyzerService:
                 delta_score = previous_score - score_lead
                 delta_winrate = previous_winrate - winrate
 
+        # Build top moves
+        top_moves = []
+        for mi in move_infos[:10]:
+            top_moves.append(
+                {
+                    "move": mi.get("move"),
+                    "visits": mi.get("visits"),
+                    "winrate": mi.get("winrate"),
+                    "score_lead": mi.get("scoreLead"),
+                    "prior": mi.get("prior"),
+                    "pv": mi.get("pv"),
+                    "psv": mi.get("playSelectionValue", 0.0),
+                }
+            )
+
         return {
             "status": "success",
             "winrate": winrate,
             "score_lead": score_lead,
             "visits": max((m.get("visits", 0) for m in move_infos[:1]), default=0),
-            "top_moves": self._build_top_moves(move_infos),
+            "top_moves": top_moves,
             "ownership": ownership,
             "actual_move": actual_move,
             "actual_player": actual_player,

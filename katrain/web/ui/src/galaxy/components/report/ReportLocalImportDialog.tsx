@@ -24,6 +24,8 @@ export interface LocalImportPayload {
   moveCount: number;
   playerBlack?: string;
   playerWhite?: string;
+  blackRank?: string;
+  whiteRank?: string;
 }
 
 interface ReportLocalImportDialogProps {
@@ -73,6 +75,8 @@ export default function ReportLocalImportDialog({
         moveCount: parsed.moves.length,
         playerBlack: parsed.metadata.playerBlack || undefined,
         playerWhite: parsed.metadata.playerWhite || undefined,
+        blackRank: parsed.metadata.blackRank || undefined,
+        whiteRank: parsed.metadata.whiteRank || undefined,
       }
     : null;
 

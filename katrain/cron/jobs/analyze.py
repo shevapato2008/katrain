@@ -9,7 +9,7 @@ from katrain.cron.jobs.base import BaseJob
 from katrain.cron.clients.katago import KataGoClient
 from katrain.cron.db import SessionLocal
 from katrain.cron.analysis_repo import AnalysisRepo
-from katrain.cron.models import LiveMatchDB
+from katrain.cron.models import LiveMatchDB, ReportTaskDB
 
 logger = logging.getLogger("katrain_cron.analyze")
 
@@ -73,14 +73,25 @@ class AnalyzeJob(BaseJob):
             await self._maybe_preempt(in_flight, priorities)
 
             # Refill
-            slots = self.window_size - len(in_flight)
+            slots = self._effective_window_size() - len(in_flight)
             if slots > 0:
                 await self._fill_slots(in_flight, priorities, slots)
 
     # ── Window management ────────────────────────────────────
 
+    def _effective_window_size(self) -> int:
+        """Reduce window when report analysis is active to free GPU."""
+        db = SessionLocal()
+        try:
+            active = db.query(ReportTaskDB).filter(ReportTaskDB.status == "running").count()
+        finally:
+            db.close()
+        if active > 0:
+            return config.ANALYSIS_WINDOW_SIZE_REPORTING
+        return self.window_size
+
     async def _fill_window(self, in_flight: dict, priorities: dict) -> None:
-        await self._fill_slots(in_flight, priorities, self.window_size - len(in_flight))
+        await self._fill_slots(in_flight, priorities, self._effective_window_size() - len(in_flight))
 
     async def _fill_slots(self, in_flight: dict, priorities: dict, slots: int) -> None:
         if slots <= 0:

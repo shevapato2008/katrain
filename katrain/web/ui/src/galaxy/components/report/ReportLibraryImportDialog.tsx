@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 
 import { KifuAPI } from '../../../api/kifuApi';
+import { translateResult } from '../../../utils/resultTranslation';
 import type { KifuAlbumSummary } from '../../../types/kifu';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -111,7 +112,7 @@ export default function ReportLibraryImportDialog({
                   </Stack>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="subtitle2">{album.player_black}</Typography>
-                    <Typography variant="caption" color="text.secondary">{album.result || t('report:no_result', 'No result')}</Typography>
+                    <Typography variant="caption" color="text.secondary">{album.result ? translateResult(album.result, t, album.rules) : t('report:no_result', 'No result')}</Typography>
                     <Typography variant="subtitle2">{album.player_white}</Typography>
                   </Stack>
                 </Box>

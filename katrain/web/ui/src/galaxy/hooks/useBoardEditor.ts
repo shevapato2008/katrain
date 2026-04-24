@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { BoardPayload, EditTool, StoneEditMode, ShapeType } from '../../types/tutorial';
 
 const MAX_UNDO = 50;
@@ -16,6 +16,7 @@ export interface BoardEditorState {
   nextStoneColor: 'B' | 'W';
   numbering: boolean;
   nextMoveNumber: number;
+  nextLetter: string;
   selectedShape: ShapeType;
   canUndo: boolean;
 
@@ -23,11 +24,13 @@ export interface BoardEditorState {
   cancelEdit: () => void;
   save: () => Promise<void>;
   undo: () => void;
+  clearAll: () => void;
   handleClick: (col: number, row: number) => void;
   setActiveTool: (tool: EditTool) => void;
   setStoneMode: (mode: StoneEditMode) => void;
   setNumbering: (v: boolean) => void;
   setNextMoveNumber: (n: number) => void;
+  setNextLetter: (letter: string) => void;
   setSelectedShape: (s: ShapeType) => void;
   setPayloadFromServer: (p: BoardPayload) => void;
 }
@@ -44,10 +47,10 @@ export function useBoardEditor(
   const [stoneMode, setStoneMode] = useState<StoneEditMode>('black');
   const [nextStoneColor, setNextStoneColor] = useState<'B' | 'W'>('B');
   const [numbering, setNumbering] = useState(false);
+  const [nextLetter, setNextLetter] = useState<string>('A');
   const [selectedShape, setSelectedShape] = useState<ShapeType>('triangle');
 
   const [moveCounter, setMoveCounter] = useState(0);
-  const letterCounterRef = useRef(0);
 
   const computeMaxLabel = (p: BoardPayload): number => {
     let max = 0;
@@ -58,18 +61,9 @@ export function useBoardEditor(
     return max;
   };
 
-  const computeMaxLetter = (p: BoardPayload): number => {
-    let max = -1;
-    for (const val of Object.values(p.letters ?? {})) {
-      const code = val.charCodeAt(0) - 65; // A=0, B=1, ...
-      if (code > max) max = code;
-    }
-    return max + 1; // next letter index
-  };
 
   const enterEdit = useCallback(() => {
     setMoveCounter(computeMaxLabel(payload));
-    letterCounterRef.current = computeMaxLetter(payload);
     setUndoStack([]);
     setIsEditing(true);
     setActiveToolState('stone');
@@ -99,20 +93,25 @@ export function useBoardEditor(
       setPayload(prev);
       // Recompute counters from restored state
       setMoveCounter(computeMaxLabel(prev));
-      letterCounterRef.current = computeMaxLetter(prev);
       return stack.slice(0, -1);
+    });
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setPayload(prev => {
+      setUndoStack(stack => [...stack.slice(-(MAX_UNDO - 1)), prev]);
+      const cleared = emptyPayload();
+      cleared.viewport = prev.viewport;
+      setMoveCounter(0);
+      setNextStoneColor('B');
+      return cleared;
     });
   }, []);
 
   const setActiveTool = useCallback((tool: EditTool) => {
     setActiveToolState(tool);
-    if (tool === 'letter') {
-      // Rescan current payload for max letter
-      setPayload(p => {
-        letterCounterRef.current = computeMaxLetter(p);
-        return p;
-      });
-    }
+    if (tool === 'letter_upper') setNextLetter('A');
+    if (tool === 'letter_lower') setNextLetter('a');
   }, []);
 
   const setPayloadFromServer = useCallback((p: BoardPayload) => {
@@ -161,16 +160,11 @@ export function useBoardEditor(
         return next;
       }
 
-      if (activeTool === 'letter') {
+      if (activeTool === 'letter_upper' || activeTool === 'letter_lower') {
         if (hasStone || hasShape) return prev; // blocked by different type
-        if (letterCounterRef.current > 25) {
-          alert('字母已用完 (A-Z)');
-          return prev;
-        }
-        const letter = String.fromCharCode(65 + letterCounterRef.current);
         if (!next.letters) next.letters = {};
-        next.letters[coordKey] = letter;
-        letterCounterRef.current += 1;
+        next.letters[coordKey] = nextLetter;
+        setNextLetter(String.fromCharCode(nextLetter.charCodeAt(0) + 1));
         return next;
       }
 
@@ -184,7 +178,7 @@ export function useBoardEditor(
 
       return prev;
     });
-  }, [isEditing, activeTool, stoneMode, nextStoneColor, numbering, moveCounter, selectedShape]);
+  }, [isEditing, activeTool, stoneMode, nextStoneColor, numbering, moveCounter, selectedShape, nextLetter]);
 
   return {
     payload,
@@ -195,6 +189,7 @@ export function useBoardEditor(
     nextStoneColor,
     numbering,
     nextMoveNumber: moveCounter + 1,
+    nextLetter,
     selectedShape,
     canUndo: undoStack.length > 0,
 
@@ -202,11 +197,13 @@ export function useBoardEditor(
     cancelEdit,
     save,
     undo,
+    clearAll,
     handleClick,
     setActiveTool,
     setStoneMode,
     setNumbering,
     setNextMoveNumber: (n: number) => setMoveCounter(n - 1),
+    setNextLetter,
     setSelectedShape,
     setPayloadFromServer,
   };

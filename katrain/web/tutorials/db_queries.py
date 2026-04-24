@@ -9,6 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from katrain.web.core.models_db import (
+    BoardPayloadHistory,
     TutorialBook,
     TutorialChapter,
     TutorialFigure,
@@ -110,6 +111,17 @@ def update_figure_narration(db: Session, figure: TutorialFigure, narration: str,
     db.commit()
     db.refresh(figure)
     return figure
+
+
+def record_payload_history(db: Session, figure_id: int, board_payload: dict, changed_by: str, change_type: str = "edit"):
+    """Record a board_payload change for audit trail."""
+    entry = BoardPayloadHistory(
+        figure_id=figure_id,
+        board_payload=board_payload,
+        changed_by=changed_by,
+        change_type=change_type,
+    )
+    db.add(entry)
 
 
 def update_figure_recognition_debug(db: Session, figure: TutorialFigure, debug_data: dict) -> TutorialFigure:

@@ -132,7 +132,7 @@ async function apiPost(path: string, payload: any, token?: string) {
 }
 
 export const API = {
-  createSession: (): Promise<SessionResponse> => apiPost("/api/session", {}),
+  createSession: (token?: string): Promise<SessionResponse> => apiPost("/api/session", {}, token),
   getState: async (sessionId: string): Promise<SessionResponse> => {
     const params = new URLSearchParams({ session_id: sessionId });
     const response = await fetch(`/api/state?${params.toString()}`);
@@ -179,10 +179,10 @@ export const API = {
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype, name }),
   swapPlayers: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/player/swap", { session_id: sessionId }),
-  resign: (sessionId: string): Promise<SessionResponse> =>
-    apiPost("/api/resign", { session_id: sessionId }),
-  timeout: (sessionId: string): Promise<SessionResponse> =>
-    apiPost("/api/timeout", { session_id: sessionId }),
+  resign: (sessionId: string, token?: string): Promise<SessionResponse> =>
+    apiPost("/api/resign", { session_id: sessionId }, token),
+  timeout: (sessionId: string, token?: string): Promise<SessionResponse> =>
+    apiPost("/api/timeout", { session_id: sessionId }, token),
   requestCount: (sessionId: string, token?: string): Promise<any> =>
     apiPost("/api/count/request", { session_id: sessionId }, token),
   respondCount: (sessionId: string, accept: boolean, token?: string): Promise<any> =>

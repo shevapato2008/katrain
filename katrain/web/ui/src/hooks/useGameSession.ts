@@ -129,8 +129,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             else if (action === 'forward-10') result = await API.redo(sessionId, 10);
             else if (action === 'end') result = await API.redo(sessionId, 9999);
             else if (action === 'ai-move') await API.aiMove(sessionId);
-            else if (action === 'resign') await API.resign(sessionId);
-            else if (action === 'timeout') await API.timeout(sessionId);
+            else if (action === 'resign') await API.resign(sessionId, token);
+            else if (action === 'timeout') await API.timeout(sessionId, token);
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');
             else if (action === 'mistake-next') result = await API.findMistake(sessionId, 'redo');
@@ -145,10 +145,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     }, [sessionId, token]);
 
     const initNewSession = useCallback(async () => {
-        const data = await API.createSession();
+        const data = await API.createSession(token);
         setSessionId(data.session_id);
         return data.session_id;
-    }, []);
+    }, [token]);
 
     const sendChat = useCallback((text: string, sender: string) => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

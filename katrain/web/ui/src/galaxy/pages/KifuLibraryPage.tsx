@@ -148,12 +148,12 @@ function GameRecordCard({
               sx={{ fontWeight: blackWins ? 'bold' : 'normal' }}
             >
               {album.player_black}
-              {album.black_rank && (
-                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5 }}>
-                  {album.black_rank}
-                </Typography>
-              )}
             </Typography>
+            {album.black_rank && (
+              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
+                {album.black_rank}
+              </Typography>
+            )}
           </Box>
 
           <Box sx={{ px: 1, flexShrink: 0 }}>
@@ -161,16 +161,16 @@ function GameRecordCard({
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+            {album.white_rank && (
+              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
+                {album.white_rank}
+              </Typography>
+            )}
             <Typography
               variant="body2"
               noWrap
               sx={{ fontWeight: !blackWins ? 'bold' : 'normal' }}
             >
-              {album.white_rank && (
-                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5 }}>
-                  {album.white_rank}
-                </Typography>
-              )}
               {album.player_white}
             </Typography>
             <Box sx={{

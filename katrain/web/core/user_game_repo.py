@@ -20,6 +20,16 @@ class UserGameRepository:
                     return self._to_dict(existing, include_sgf=True)
 
             sgf_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
+
+            # Dedup: if same user already has a game with identical SGF content, return existing
+            if sgf_hash:
+                existing = session.query(models_db.UserGame).filter(
+                    models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.sgf_hash == sgf_hash,
+                ).first()
+                if existing:
+                    return self._to_dict(existing, include_sgf=True)
+
             game_kwargs = dict(
                 user_id=user_id,
                 sgf_content=sgf_content,
@@ -28,6 +38,8 @@ class UserGameRepository:
                 title=kwargs.get("title"),
                 player_black=kwargs.get("player_black"),
                 player_white=kwargs.get("player_white"),
+                black_rank=kwargs.get("black_rank"),
+                white_rank=kwargs.get("white_rank"),
                 result=kwargs.get("result"),
                 board_size=kwargs.get("board_size", 19),
                 rules=kwargs.get("rules", "chinese"),
@@ -36,6 +48,7 @@ class UserGameRepository:
                 category=kwargs.get("category", "game"),
                 game_type=kwargs.get("game_type"),
                 event=kwargs.get("event"),
+                round_name=kwargs.get("round_name"),
                 game_date=kwargs.get("game_date"),
             )
             if game_id:
@@ -160,6 +173,8 @@ class UserGameRepository:
             "title": game.title,
             "player_black": game.player_black,
             "player_white": game.player_white,
+            "black_rank": game.black_rank,
+            "white_rank": game.white_rank,
             "result": game.result,
             "board_size": game.board_size,
             "rules": game.rules,
@@ -169,6 +184,7 @@ class UserGameRepository:
             "category": game.category,
             "game_type": game.game_type,
             "event": game.event,
+            "round_name": game.round_name,
             "game_date": game.game_date,
             "created_at": str(game.created_at) if game.created_at else None,
             "updated_at": str(game.updated_at) if game.updated_at else None,

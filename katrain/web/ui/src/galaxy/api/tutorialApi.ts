@@ -28,6 +28,18 @@ async function apiPut<T>(path: string, body: unknown, token?: string): Promise<T
   return resp.json() as Promise<T>;
 }
 
+async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const resp = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) throw new Error(`Tutorial API ${resp.status}: ${await resp.text()}`);
+  return resp.json() as Promise<T>;
+}
+
 export const TutorialAPI = {
   // Categories
   getCategories: (): Promise<TutorialCategory[]> => apiGet('/categories'),
@@ -57,6 +69,8 @@ export const TutorialAPI = {
       narration,
       audio_asset: audioAsset ?? null,
     }, token),
+  generateFigureAudio: (figureId: number, narration: string, token?: string): Promise<TutorialFigure> =>
+    apiPost(`/figures/${figureId}/generate-audio`, { narration }, token),
 
   // Verify
   verifyFigure: (figureId: number, token?: string): Promise<TutorialFigure> =>

@@ -37,7 +37,7 @@ export default function TutorialLandingPage() {
       <Typography variant="body2" color="text.secondary" gutterBottom>选择一个学习阶段开始学习</Typography>
       <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
         {categories.map(cat => (
-          <Box key={cat.slug} sx={{ flex: '1 1 260px', maxWidth: 360 }}>
+          <Box key={cat.slug} sx={{ flex: '0 0 260px', maxWidth: 260 }}>
             <Card>
               <CardActionArea onClick={() => navigate(`/galaxy/tutorials/${cat.slug}`)}>
                 <CardContent>

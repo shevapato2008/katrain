@@ -912,7 +912,7 @@ msgid "tromp-taylor"
 msgstr "Tromp-Taylor"
 
 msgid "analysis:report"
-msgstr "Rapport de partie"
+msgstr "Révision"
 
 msgid "engine died popup opening message"
 msgstr ""
@@ -1376,8 +1376,7 @@ msgid "Library"
 msgstr "Bibliothèque"
 
 msgid "dashboard:report_desc"
-msgstr ""
-"Rapports de parties détaillés et analyse de style. (Bientôt disponible)"
+msgstr "Générez des rapports d'analyse coup par coup et révisez vos parties."
 
 msgid "game_room:leave_forfeit"
 msgstr "Quitter et abandonner"
@@ -1686,7 +1685,7 @@ msgid "live:tomorrow"
 msgstr "Demain"
 
 msgid "live:in_days"
-msgstr "dans {0} jours"
+msgstr "jours"
 
 msgid "live:moves"
 msgstr "coups"
@@ -1719,7 +1718,7 @@ msgid "live:status_live"
 msgstr "EN DIRECT"
 
 msgid "live:status_finished"
-msgstr "Terminé"
+msgstr "Terminée"
 
 msgid "live:pts"
 msgstr "pts"
@@ -2305,3 +2304,277 @@ msgstr "Votre demande de comptage a été refusée."
 
 msgid "game_end:count"
 msgstr "Partie terminée par comptage: {result}"
+
+msgid "report:login_required"
+msgstr "Connectez-vous pour consulter et générer des rapports de révision."
+
+msgid "report:my_reports"
+msgstr "Révision"
+
+msgid "report:page_hint"
+msgstr ""
+"Sélectionnez une partie à droite pour l'aperçu. Les rapports se créent "
+"depuis la carte."
+
+msgid "report:select_game"
+msgstr "Sélectionner une partie"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Sélectionnez une partie dans le panneau droit ou importez un nouveau SGF / "
+"partie de la bibliothèque."
+
+msgid "report:no_preview"
+msgstr "Pas encore de partie à prévisualiser."
+
+msgid "report:game_list"
+msgstr "Liste des parties"
+
+msgid "report:game_list_hint"
+msgstr "{count} parties. Recherche par joueur, titre ou événement."
+
+msgid "report:search_placeholder"
+msgstr "Rechercher par joueur, titre ou événement"
+
+msgid "report:no_match"
+msgstr "Aucune partie correspondant à « {query} »."
+
+msgid "report:no_games"
+msgstr "Pas encore de parties. Importez-en une pour générer des rapports."
+
+msgid "report:load_games_failed"
+msgstr "Échec du chargement de la liste des parties"
+
+msgid "report:load_tasks_failed"
+msgstr "Échec du chargement des tâches de rapport"
+
+msgid "report:import_failed"
+msgstr "Échec de l'importation SGF"
+
+msgid "report:library_import_failed"
+msgstr "Échec de l'importation depuis la bibliothèque"
+
+msgid "report:create_task_failed"
+msgstr "Échec de la création de la tâche de rapport"
+
+msgid "report:login_required_detail"
+msgstr "Connectez-vous pour consulter les détails du rapport."
+
+msgid "report:back_to_list"
+msgstr "Retour à la liste des révisions"
+
+msgid "report:enter_research"
+msgstr "Ouvrir en mode recherche"
+
+msgid "report:no_sgf"
+msgstr "Aucune donnée SGF disponible pour la révision."
+
+msgid "report:try"
+msgstr "Essayer"
+
+msgid "report:territory"
+msgstr "Territoire"
+
+msgid "report:move_numbers"
+msgstr "N° coup"
+
+msgid "report:suggestions"
+msgstr "Suggestions"
+
+msgid "report:hide_suggestions"
+msgstr "Masquer les suggestions"
+
+msgid "report:show_suggestions"
+msgstr "Afficher les suggestions"
+
+msgid "report:clear"
+msgstr "Effacer"
+
+msgid "report:normal"
+msgstr "Normal"
+
+msgid "report:deep"
+msgstr "Approfondi"
+
+msgid "report:no_result"
+msgstr "Pas de résultat"
+
+msgid "report:unnamed_game"
+msgstr "Partie sans titre"
+
+msgid "report:queuing"
+msgstr "En file d'attente"
+
+msgid "report:generating"
+msgstr "En cours"
+
+msgid "report:generate_deep"
+msgstr "Générer un rapport approfondi"
+
+msgid "report:generate_normal"
+msgstr "Générer un rapport normal"
+
+msgid "report:generate"
+msgstr "Générer un rapport"
+
+msgid "report:import"
+msgstr "Importer une partie"
+
+msgid "report:import_local"
+msgstr "Importer un SGF local"
+
+msgid "report:import_library"
+msgstr "Importer depuis la bibliothèque"
+
+msgid "report:title_label"
+msgstr "Titre"
+
+msgid "report:optional"
+msgstr "Facultatif"
+
+msgid "report:choose_file"
+msgstr "Choisir un fichier local"
+
+msgid "report:choose_file_hint"
+msgstr ""
+"Sélectionnez un fichier SGF local ou collez le contenu SGF directement."
+
+msgid "report:board_size"
+msgstr "Plateau"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Règles"
+
+msgid "report:komi_label"
+msgstr "Komi"
+
+msgid "report:cancel"
+msgstr "Annuler"
+
+msgid "report:importing"
+msgstr "Importation..."
+
+msgid "report:import_only"
+msgstr "Importer uniquement"
+
+msgid "report:import_and_normal"
+msgstr "Importer et générer un rapport normal"
+
+msgid "report:import_and_deep"
+msgstr "Importer et générer un rapport approfondi"
+
+msgid "report:search"
+msgstr "Rechercher"
+
+msgid "report:search_placeholder_lib"
+msgstr "Rechercher par joueur, événement, date"
+
+msgid "report:loading"
+msgstr "Chargement..."
+
+msgid "report:no_results"
+msgstr "Aucune partie trouvée."
+
+msgid "report:completed"
+msgstr "Terminé"
+
+msgid "report:failed"
+msgstr "Échoué"
+
+msgid "report:unknown_status"
+msgstr "Inconnu"
+
+msgid "report:japanese_rules"
+msgstr "Japonais"
+
+msgid "report:korean_rules"
+msgstr "Coréen"
+
+msgid "report:chinese_rules"
+msgstr "Chinois"
+
+msgid "report:black"
+msgstr "Noir"
+
+msgid "report:white"
+msgstr "Blanc"
+
+msgid "report:moves_unit"
+msgstr "coups"
+
+msgid "report:points_unit"
+msgstr "pts"
+
+msgid "report:move_prefix"
+msgstr "Coup"
+
+msgid "report:refresh_failed"
+msgstr "Échec de l'actualisation du rapport"
+
+msgid "report:load_failed"
+msgstr "Échec du chargement du rapport"
+
+msgid "report:title_ai_free"
+msgstr "Partie libre vs IA"
+
+msgid "report:title_ai_ranked"
+msgstr "Partie classée vs IA"
+
+msgid "report:title_human"
+msgstr "Humain vs Humain"
+
+msgid "report:title_import"
+msgstr "Partie importée"
+
+msgid "report:title_kifu"
+msgstr "De la bibliothèque"
+
+msgid "report:delete_game"
+msgstr "Supprimer la partie"
+
+msgid "report:delete_confirm_title"
+msgstr "Confirmer la suppression"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"La partie et toutes les données d'analyse associées seront définitivement "
+"supprimées. Êtes-vous sûr ?"
+
+msgid "report:delete_success"
+msgstr "Partie supprimée"
+
+msgid "report:delete_failed"
+msgstr "Échec de la suppression de la partie"
+
+msgid "report:source_import"
+msgstr "Import"
+
+msgid "report:source_play_ai"
+msgstr "Jeu IA"
+
+msgid "report:source_play_human"
+msgstr "JcJ"
+
+msgid "report:source_kifu_library"
+msgstr "Bibliothèque"
+
+msgid "report:retry_normal"
+msgstr "Réessayer normal"
+
+msgid "report:retry_deep"
+msgstr "Réessayer approfondi"
+
+msgid "report:retry_failed"
+msgstr "Échec de la relance du rapport"
+
+msgid "report:summary_running"
+msgstr "en cours"
+
+msgid "report:summary_queued"
+msgstr "en attente"
+
+msgid "report:summary_failed"
+msgstr "échoué"

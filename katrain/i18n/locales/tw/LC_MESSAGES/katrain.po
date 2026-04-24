@@ -882,7 +882,7 @@ msgstr "Tromp-Taylor"
 
 #. View a player performance report
 msgid "analysis:report"
-msgstr "表現報告"
+msgstr "復盤"
 
 msgid "engine died popup opening message"
 msgstr ""
@@ -1352,7 +1352,7 @@ msgid "Library"
 msgstr "棋譜庫"
 
 msgid "dashboard:report_desc"
-msgstr "詳細的對局報告和風格分析。(即將推出)"
+msgstr "生成逐手分析報告，復盤你的棋局。"
 
 msgid "game_room:leave_forfeit"
 msgstr "離開並棄權"
@@ -1659,7 +1659,7 @@ msgid "live:tomorrow"
 msgstr "明天"
 
 msgid "live:in_days"
-msgstr "{0}天後"
+msgstr "天後"
 
 msgid "live:moves"
 msgstr "手"
@@ -2278,3 +2278,270 @@ msgstr "你的數子請求被拒絕了。"
 
 msgid "game_end:count"
 msgstr "數子結束：{result}"
+
+msgid "report:login_required"
+msgstr "請先登入後查看和生成復盤報告。"
+
+msgid "report:my_reports"
+msgstr "復盤"
+
+msgid "report:page_hint"
+msgstr "選擇右側棋局預覽棋盤，報告生成和跳轉都在棋局卡片上完成。"
+
+msgid "report:select_game"
+msgstr "選擇一局棋譜"
+
+msgid "report:select_game_hint"
+msgstr "從右側選擇棋局，或導入新的 SGF / 棋譜庫對局。"
+
+msgid "report:no_preview"
+msgstr "還沒有可預覽的棋局。"
+
+msgid "report:game_list"
+msgstr "棋局列表"
+
+msgid "report:game_list_hint"
+msgstr "共 {count} 局，支持按棋手、標題或賽事搜尋。"
+
+msgid "report:search_placeholder"
+msgstr "按棋手、標題或賽事搜尋"
+
+msgid "report:no_match"
+msgstr "沒有找到與 \"{query}\" 匹配的棋局。"
+
+msgid "report:no_games"
+msgstr "還沒有棋局，先導入一局再生成報告。"
+
+msgid "report:load_games_failed"
+msgstr "載入棋局列表失敗"
+
+msgid "report:load_tasks_failed"
+msgstr "載入報告任務失敗"
+
+msgid "report:import_failed"
+msgstr "導入 SGF 失敗"
+
+msgid "report:library_import_failed"
+msgstr "從棋譜庫導入失敗"
+
+msgid "report:create_task_failed"
+msgstr "建立報告任務失敗"
+
+msgid "report:login_required_detail"
+msgstr "請先登入後查看報告詳情。"
+
+msgid "report:back_to_list"
+msgstr "返回報告列表"
+
+msgid "report:enter_research"
+msgstr "進入研究室"
+
+msgid "report:no_sgf"
+msgstr "沒有可用於復盤展示的 SGF 資料。"
+
+msgid "report:try"
+msgstr "試下"
+
+msgid "report:territory"
+msgstr "領地"
+
+msgid "report:move_numbers"
+msgstr "手數"
+
+msgid "report:suggestions"
+msgstr "建議"
+
+msgid "report:hide_suggestions"
+msgstr "隱藏建議"
+
+msgid "report:show_suggestions"
+msgstr "顯示建議"
+
+msgid "report:clear"
+msgstr "清空"
+
+msgid "report:normal"
+msgstr "普通報告"
+
+msgid "report:deep"
+msgstr "深度報告"
+
+msgid "report:no_result"
+msgstr "未錄入結果"
+
+msgid "report:unnamed_game"
+msgstr "未命名棋局"
+
+msgid "report:queuing"
+msgstr "排隊中"
+
+msgid "report:generating"
+msgstr "生成中"
+
+msgid "report:generate_deep"
+msgstr "生成深度報告"
+
+msgid "report:generate_normal"
+msgstr "生成普通報告"
+
+msgid "report:generate"
+msgstr "生成報告"
+
+msgid "report:import"
+msgstr "導入棋譜"
+
+msgid "report:import_local"
+msgstr "從本地導入 SGF"
+
+msgid "report:import_library"
+msgstr "從棋譜庫導入"
+
+msgid "report:title_label"
+msgstr "標題"
+
+msgid "report:optional"
+msgstr "可選"
+
+msgid "report:choose_file"
+msgstr "選擇本地文件"
+
+msgid "report:choose_file_hint"
+msgstr "選擇本地 SGF 文件，或直接貼上 SGF 內容。"
+
+msgid "report:board_size"
+msgstr "棋盤"
+
+msgid "report:board_size_unit"
+msgstr "路"
+
+msgid "report:rules_label"
+msgstr "規則"
+
+msgid "report:komi_label"
+msgstr "貼目"
+
+msgid "report:cancel"
+msgstr "取消"
+
+msgid "report:importing"
+msgstr "導入中..."
+
+msgid "report:import_only"
+msgstr "僅導入"
+
+msgid "report:import_and_normal"
+msgstr "導入並生成普通報告"
+
+msgid "report:import_and_deep"
+msgstr "導入並生成深度報告"
+
+msgid "report:search"
+msgstr "搜索"
+
+msgid "report:search_placeholder_lib"
+msgstr "按棋手、賽事、日期搜索"
+
+msgid "report:loading"
+msgstr "載入中..."
+
+msgid "report:no_results"
+msgstr "沒有搜索到棋譜。"
+
+msgid "report:completed"
+msgstr "已完成"
+
+msgid "report:failed"
+msgstr "失敗"
+
+msgid "report:unknown_status"
+msgstr "未知狀態"
+
+msgid "report:japanese_rules"
+msgstr "日本規則"
+
+msgid "report:korean_rules"
+msgstr "韓國規則"
+
+msgid "report:chinese_rules"
+msgstr "中國規則"
+
+msgid "report:black"
+msgstr "黑方"
+
+msgid "report:white"
+msgstr "白方"
+
+msgid "report:moves_unit"
+msgstr "手"
+
+msgid "report:points_unit"
+msgstr "目"
+
+msgid "report:move_prefix"
+msgstr "第"
+
+msgid "report:refresh_failed"
+msgstr "刷新報告失敗"
+
+msgid "report:load_failed"
+msgstr "載入報告失敗"
+
+msgid "report:title_ai_free"
+msgstr "人機自由對弈"
+
+msgid "report:title_ai_ranked"
+msgstr "人機排位對弈"
+
+msgid "report:title_human"
+msgstr "人人對弈"
+
+msgid "report:title_import"
+msgstr "導入棋局"
+
+msgid "report:title_kifu"
+msgstr "棋譜庫"
+
+msgid "report:delete_game"
+msgstr "刪除棋局"
+
+msgid "report:delete_confirm_title"
+msgstr "確認刪除"
+
+msgid "report:delete_confirm_body"
+msgstr "刪除後棋局及所有關聯分析資料將無法恢復，確認刪除？"
+
+msgid "report:delete_success"
+msgstr "棋局已刪除"
+
+msgid "report:delete_failed"
+msgstr "刪除棋局失敗"
+
+msgid "report:source_import"
+msgstr "匯入"
+
+msgid "report:source_play_ai"
+msgstr "人機對弈"
+
+msgid "report:source_play_human"
+msgstr "人人對弈"
+
+msgid "report:source_kifu_library"
+msgstr "棋譜庫"
+
+msgid "report:retry_normal"
+msgstr "重試普通報告"
+
+msgid "report:retry_deep"
+msgstr "重試深度報告"
+
+msgid "report:retry_failed"
+msgstr "重試報告失敗"
+
+msgid "report:summary_running"
+msgstr "執行中"
+
+msgid "report:summary_queued"
+msgstr "排隊中"
+
+msgid "report:summary_failed"
+msgstr "失敗"

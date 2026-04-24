@@ -18,6 +18,8 @@ class UserGameCreate(BaseModel):
     title: Optional[str] = None
     player_black: Optional[str] = None
     player_white: Optional[str] = None
+    black_rank: Optional[str] = None
+    white_rank: Optional[str] = None
     result: Optional[str] = None
     board_size: int = 19
     rules: str = "chinese"
@@ -26,6 +28,7 @@ class UserGameCreate(BaseModel):
     category: str = "game"  # game / position
     game_type: Optional[str] = None
     event: Optional[str] = None
+    round_name: Optional[str] = None
     game_date: Optional[str] = None
 
 
@@ -96,6 +99,8 @@ async def create_user_game(
         title=game_in.title,
         player_black=game_in.player_black,
         player_white=game_in.player_white,
+        black_rank=game_in.black_rank,
+        white_rank=game_in.white_rank,
         result=game_in.result,
         board_size=game_in.board_size,
         rules=game_in.rules,

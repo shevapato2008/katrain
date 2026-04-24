@@ -921,7 +921,7 @@ msgstr "Tromp-Taylor"
 
 #.  - View a player performance report
 msgid "analysis:report"
-msgstr "Leistungsbericht"
+msgstr "Analyse"
 
 msgid "engine died popup opening message"
 msgstr ""
@@ -1403,7 +1403,8 @@ msgid "Library"
 msgstr "Bibliothek"
 
 msgid "dashboard:report_desc"
-msgstr "Detaillierte Spielberichte und Stilanalyse. (Demnächst)"
+msgstr ""
+"Erstellen Sie Zug-für-Zug-Analyseberichte und überprüfen Sie Ihre Partien."
 
 msgid "game_room:leave_forfeit"
 msgstr "Verlassen & Aufgeben"
@@ -1712,7 +1713,7 @@ msgid "live:tomorrow"
 msgstr "Morgen"
 
 msgid "live:in_days"
-msgstr "in {0} Tagen"
+msgstr "Tage entfernt"
 
 msgid "live:moves"
 msgstr "Züge"
@@ -2331,3 +2332,278 @@ msgstr "Deine Zählungsanfrage wurde abgelehnt."
 
 msgid "game_end:count"
 msgstr "Spiel durch Zählen beendet: {result}"
+
+msgid "report:login_required"
+msgstr ""
+"Bitte melden Sie sich an, um Analyseberichte anzuzeigen und zu erstellen."
+
+msgid "report:my_reports"
+msgstr "Analyse"
+
+msgid "report:page_hint"
+msgstr ""
+"Wählen Sie rechts eine Partie zur Vorschau. Berichte werden über die "
+"Partiekarte erstellt."
+
+msgid "report:select_game"
+msgstr "Partie auswählen"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Wählen Sie eine Partie aus dem rechten Panel oder importieren Sie eine neue "
+"SGF-/Bibliothekspartie."
+
+msgid "report:no_preview"
+msgstr "Noch keine Partie zur Vorschau."
+
+msgid "report:game_list"
+msgstr "Partieliste"
+
+msgid "report:game_list_hint"
+msgstr "{count} Partien. Suche nach Spieler, Titel oder Turnier."
+
+msgid "report:search_placeholder"
+msgstr "Nach Spieler, Titel oder Turnier suchen"
+
+msgid "report:no_match"
+msgstr "Keine Partien passend zu \"{query}\"."
+
+msgid "report:no_games"
+msgstr "Noch keine Partien. Importieren Sie eine, um Berichte zu erstellen."
+
+msgid "report:load_games_failed"
+msgstr "Partieliste konnte nicht geladen werden"
+
+msgid "report:load_tasks_failed"
+msgstr "Berichtsaufgaben konnten nicht geladen werden"
+
+msgid "report:import_failed"
+msgstr "SGF-Import fehlgeschlagen"
+
+msgid "report:library_import_failed"
+msgstr "Import aus der Bibliothek fehlgeschlagen"
+
+msgid "report:create_task_failed"
+msgstr "Berichtsaufgabe konnte nicht erstellt werden"
+
+msgid "report:login_required_detail"
+msgstr "Bitte melden Sie sich an, um die Berichtsdetails anzuzeigen."
+
+msgid "report:back_to_list"
+msgstr "Zurück zur Analyseliste"
+
+msgid "report:enter_research"
+msgstr "Im Forschungsmodus öffnen"
+
+msgid "report:no_sgf"
+msgstr "Keine SGF-Daten für die Analyse verfügbar."
+
+msgid "report:try"
+msgstr "Ausprobieren"
+
+msgid "report:territory"
+msgstr "Gebiet"
+
+msgid "report:move_numbers"
+msgstr "Zugnr."
+
+msgid "report:suggestions"
+msgstr "Hinweise"
+
+msgid "report:hide_suggestions"
+msgstr "Hinweise ausblenden"
+
+msgid "report:show_suggestions"
+msgstr "Hinweise anzeigen"
+
+msgid "report:clear"
+msgstr "Löschen"
+
+msgid "report:normal"
+msgstr "Normal"
+
+msgid "report:deep"
+msgstr "Tief"
+
+msgid "report:no_result"
+msgstr "Kein Ergebnis"
+
+msgid "report:unnamed_game"
+msgstr "Unbenannte Partie"
+
+msgid "report:queuing"
+msgstr "In Warteschlange"
+
+msgid "report:generating"
+msgstr "Wird erstellt"
+
+msgid "report:generate_deep"
+msgstr "Tiefenanalyse erstellen"
+
+msgid "report:generate_normal"
+msgstr "Normalen Bericht erstellen"
+
+msgid "report:generate"
+msgstr "Bericht erstellen"
+
+msgid "report:import"
+msgstr "Partie importieren"
+
+msgid "report:import_local"
+msgstr "Lokale SGF importieren"
+
+msgid "report:import_library"
+msgstr "Aus Bibliothek importieren"
+
+msgid "report:title_label"
+msgstr "Titel"
+
+msgid "report:optional"
+msgstr "Optional"
+
+msgid "report:choose_file"
+msgstr "Lokale Datei auswählen"
+
+msgid "report:choose_file_hint"
+msgstr ""
+"Wählen Sie eine lokale SGF-Datei oder fügen Sie SGF-Inhalt direkt ein."
+
+msgid "report:board_size"
+msgstr "Brett"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Regeln"
+
+msgid "report:komi_label"
+msgstr "Komi"
+
+msgid "report:cancel"
+msgstr "Abbrechen"
+
+msgid "report:importing"
+msgstr "Importieren..."
+
+msgid "report:import_only"
+msgstr "Nur importieren"
+
+msgid "report:import_and_normal"
+msgstr "Importieren & Normalbericht erstellen"
+
+msgid "report:import_and_deep"
+msgstr "Importieren & Tiefenbericht erstellen"
+
+msgid "report:search"
+msgstr "Suchen"
+
+msgid "report:search_placeholder_lib"
+msgstr "Nach Spieler, Turnier, Datum suchen"
+
+msgid "report:loading"
+msgstr "Laden..."
+
+msgid "report:no_results"
+msgstr "Keine Partien gefunden."
+
+msgid "report:completed"
+msgstr "Abgeschlossen"
+
+msgid "report:failed"
+msgstr "Fehlgeschlagen"
+
+msgid "report:unknown_status"
+msgstr "Unbekannt"
+
+msgid "report:japanese_rules"
+msgstr "Japanisch"
+
+msgid "report:korean_rules"
+msgstr "Koreanisch"
+
+msgid "report:chinese_rules"
+msgstr "Chinesisch"
+
+msgid "report:black"
+msgstr "Schwarz"
+
+msgid "report:white"
+msgstr "Weiß"
+
+msgid "report:moves_unit"
+msgstr "Züge"
+
+msgid "report:points_unit"
+msgstr "Pkt"
+
+msgid "report:move_prefix"
+msgstr "Zug"
+
+msgid "report:refresh_failed"
+msgstr "Bericht konnte nicht aktualisiert werden"
+
+msgid "report:load_failed"
+msgstr "Bericht konnte nicht geladen werden"
+
+msgid "report:title_ai_free"
+msgstr "KI Freies Spiel"
+
+msgid "report:title_ai_ranked"
+msgstr "KI Ranglistenspiel"
+
+msgid "report:title_human"
+msgstr "Mensch gegen Mensch"
+
+msgid "report:title_import"
+msgstr "Importiertes Spiel"
+
+msgid "report:title_kifu"
+msgstr "Aus der Bibliothek"
+
+msgid "report:delete_game"
+msgstr "Partie löschen"
+
+msgid "report:delete_confirm_title"
+msgstr "Löschen bestätigen"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind"
+" Sie sicher?"
+
+msgid "report:delete_success"
+msgstr "Partie gelöscht"
+
+msgid "report:delete_failed"
+msgstr "Partie konnte nicht gelöscht werden"
+
+msgid "report:source_import"
+msgstr "Import"
+
+msgid "report:source_play_ai"
+msgstr "KI-Spiel"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Bibliothek"
+
+msgid "report:retry_normal"
+msgstr "Normal wiederholen"
+
+msgid "report:retry_deep"
+msgstr "Tiefenanalyse wiederholen"
+
+msgid "report:retry_failed"
+msgstr "Wiederholung des Berichts fehlgeschlagen"
+
+msgid "report:summary_running"
+msgstr "laufend"
+
+msgid "report:summary_queued"
+msgstr "in Warteschlange"
+
+msgid "report:summary_failed"
+msgstr "fehlgeschlagen"

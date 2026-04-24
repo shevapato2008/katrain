@@ -42,6 +42,7 @@ KATAGO_HEALTH_PATH = os.getenv("KATAGO_HEALTH_PATH", "/health")
 
 # Analysis flight window
 ANALYSIS_WINDOW_SIZE = int(os.getenv("CRON_ANALYSIS_WINDOW_SIZE", "16"))
+ANALYSIS_WINDOW_SIZE_REPORTING = int(os.getenv("CRON_ANALYSIS_WINDOW_SIZE_REPORTING", "4"))
 ANALYSIS_REQUEST_TIMEOUT = float(os.getenv("CRON_ANALYSIS_REQUEST_TIMEOUT", "60.0"))
 ANALYSIS_MAX_VISITS = int(os.getenv("CRON_ANALYSIS_MAX_VISITS", "500"))
 ANALYSIS_PREEMPT_THRESHOLD = int(os.getenv("CRON_ANALYSIS_PREEMPT_THRESHOLD", "500"))
@@ -69,6 +70,12 @@ TRANSLATE_INTERVAL = int(os.getenv("CRON_TRANSLATE_INTERVAL", "120"))
 FETCH_UPCOMING_INTERVAL = int(os.getenv("CRON_FETCH_UPCOMING_INTERVAL", "7200"))  # 2 hours
 CLEANUP_INTERVAL = int(os.getenv("CRON_CLEANUP_INTERVAL", "86400"))  # 24 hours
 
+# Report analysis (migrated from katrain-web)
+REPORT_ANALYZE_ENABLED = os.getenv("CRON_REPORT_ANALYZE_ENABLED", "true").lower() == "true"
+REPORT_CONCURRENCY = int(os.getenv("CRON_REPORT_CONCURRENCY", "3"))
+REPORT_POLL_INTERVAL = float(os.getenv("CRON_REPORT_POLL_INTERVAL", "2.0"))
+REPORT_ANALYSIS_PRIORITY = int(os.getenv("CRON_REPORT_ANALYSIS_PRIORITY", "1000"))
+
 # Job enable/disable toggles
 FETCH_LIST_ENABLED = os.getenv("CRON_FETCH_LIST_ENABLED", "true").lower() == "true"
 POLL_MOVES_ENABLED = os.getenv("CRON_POLL_MOVES_ENABLED", "true").lower() == "true"
@@ -80,6 +87,12 @@ CLEANUP_ENABLED = os.getenv("CRON_CLEANUP_ENABLED", "true").lower() == "true"
 # Cleanup settings
 CLEANUP_MATCH_RETENTION_DAYS = int(os.getenv("CRON_CLEANUP_MATCH_RETENTION_DAYS", "30"))
 CLEANUP_ANALYSIS_RETENTION_DAYS = int(os.getenv("CRON_CLEANUP_ANALYSIS_RETENTION_DAYS", "30"))
+
+# Tutorial backup settings
+TUTORIAL_BACKUP_ENABLED = os.getenv("CRON_TUTORIAL_BACKUP_ENABLED", "true").lower() == "true"
+TUTORIAL_BACKUP_INTERVAL = int(os.getenv("CRON_TUTORIAL_BACKUP_INTERVAL", "86400"))  # 24 hours
+TUTORIAL_BACKUP_RETENTION_DAYS = int(os.getenv("CRON_TUTORIAL_BACKUP_RETENTION_DAYS", "14"))
+TUTORIAL_BACKUP_DIR = os.getenv("CRON_TUTORIAL_BACKUP_DIR", "data/tutorial_backups")
 
 # LLM (Qwen via DashScope)
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")

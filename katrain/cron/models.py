@@ -177,6 +177,81 @@ class TournamentTranslationDB(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+# ──────────────────────────── Report models ────────────────────────────
+
+
+class ReportTaskDB(Base):
+    """Persistent report-generation task for a user-owned game.
+
+    Maps to the same table as katrain.web.core.models_db.ReportTask.
+    """
+
+    __tablename__ = "report_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    user_game_id = Column(String(32), nullable=False, index=True)
+    report_type = Column(String(20), default="normal")
+    requested_visits = Column(Integer, default=500)
+    status = Column(String(20), default="pending")  # pending / running / completed / failed
+    total_moves = Column(Integer, default=0)
+    analyzed_moves = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("ix_report_tasks_status_created", "status", "created_at"),
+        {"extend_existing": True},
+    )
+
+
+class ReportTaskMoveDB(Base):
+    """Stored move-by-move analysis snapshot for a report task.
+
+    Maps to the same table as katrain.web.core.models_db.ReportTaskMove.
+    """
+
+    __tablename__ = "report_task_moves"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, nullable=False, index=True)
+    move_number = Column(Integer, nullable=False)
+    status = Column(String(16), default="success")
+    winrate = Column(Float, nullable=True)
+    score_lead = Column(Float, nullable=True)
+    visits = Column(Integer, nullable=True)
+    top_moves = Column(JSON, nullable=True)
+    ownership = Column(JSON, nullable=True)
+    actual_move = Column(String(8), nullable=True)
+    actual_player = Column(String(1), nullable=True)
+    delta_score = Column(Float, nullable=True)
+    delta_winrate = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("task_id", "move_number", name="uq_report_task_move"),
+        {"extend_existing": True},
+    )
+
+
+class UserGameDB(Base):
+    """Minimal read-only view of user_games for report analyzer.
+
+    Only the fields needed to retrieve SGF content for analysis.
+    """
+
+    __tablename__ = "user_games"
+
+    id = Column(String(32), primary_key=True)
+    sgf_content = Column(Text, nullable=True)
+
+    __table_args__ = ({"extend_existing": True},)
+
+
 class UpcomingMatchDB(Base):
     """Upcoming/scheduled matches from various sources."""
 

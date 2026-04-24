@@ -13,6 +13,10 @@ vi.mock('../../api', () => ({
   },
 }));
 
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
+}));
+
 const renderPage = (mode = 'free') =>
   render(
     <ThemeProvider theme={kioskTheme}>

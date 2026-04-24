@@ -8,17 +8,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
 from katrain.web.tutorials import db_queries
+from katrain.web.tutorials.services import generate_figure_audio
 from katrain.web.tutorials.models import (
     BoardPayloadUpdate,
     NarrationUpdate,
+    NarrationUpdateRequest,
     TutorialBookDetailOut,
     TutorialBookOut,
     TutorialCategoryOut,
@@ -169,10 +171,29 @@ async def update_figure_board(
     viewport = compute_viewport(payload_dict)
     payload_dict["viewport"] = viewport
     figure = db_queries.update_figure_board(db, figure, payload_dict)
+    db_queries.record_payload_history(
+        db, figure.id, payload_dict,
+        changed_by=current_user.username if current_user else "anonymous",
+        change_type="edit",
+    )
+    db.commit()
     return TutorialFigureOut.model_validate(figure)
 
 
 # ── Narration ────────────────────────────────────────────────────────────────
+
+@router.post("/figures/{figure_id}/generate-audio", response_model=TutorialFigureOut)
+async def generate_audio_for_figure(
+    figure_id: int,
+    request: NarrationUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    figure = db_queries.get_figure(db, figure_id)
+    if figure is None:
+        raise HTTPException(status_code=404, detail="Figure not found")
+
+    updated_figure = await generate_figure_audio(db, figure, request.narration)
+    return TutorialFigureOut.model_validate(updated_figure)
 
 
 @router.put("/figures/{figure_id}/narration", response_model=TutorialFigureOut)
@@ -209,6 +230,13 @@ async def verify_figure(
     debug["verified_at"] = datetime.now(timezone.utc).isoformat()
     debug["verified_by"] = current_user.username if current_user else "anonymous"
     db_queries.update_figure_recognition_debug(db, figure, debug)
+    if figure.board_payload:
+        db_queries.record_payload_history(
+            db, figure.id, figure.board_payload,
+            changed_by=current_user.username if current_user else "anonymous",
+            change_type="verify",
+        )
+        db.commit()
 
     # Auto-export training samples from the verified figure
     try:
@@ -228,9 +256,39 @@ async def verify_figure(
 # ── Assets ────────────────────────────────────────────────────────────────────
 
 @router.get("/assets/{asset_path:path}")
-async def get_asset(asset_path: str):
-    """Serve a page screenshot or other tutorial asset."""
+async def get_asset(asset_path: str, request: Request):
+    """Serve a tutorial asset with HTTP Range support for video seeking."""
     file_path = _safe_asset_path(asset_path)
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Asset not found")
-    return FileResponse(file_path)
+
+    file_size = file_path.stat().st_size
+    range_header = request.headers.get("range")
+
+    if range_header and range_header.startswith("bytes="):
+        range_spec = range_header[6:]
+        parts = range_spec.split("-", 1)
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if parts[1] else file_size - 1
+        end = min(end, file_size - 1)
+        length = end - start + 1
+
+        with open(file_path, "rb") as f:
+            f.seek(start)
+            data = f.read(length)
+
+        import mimetypes
+
+        content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+        return Response(
+            content=data,
+            status_code=206,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(length),
+                "Content-Type": content_type,
+            },
+        )
+
+    return FileResponse(file_path, headers={"Accept-Ranges": "bytes"})

@@ -11,11 +11,12 @@ logger = logging.getLogger("katrain_cron.scheduler")
 
 
 class CronScheduler:
-    """Manages all scheduled jobs and the persistent AnalyzeJob loop."""
+    """Manages all scheduled jobs and persistent loop jobs (Analyze, ReportAnalyze)."""
 
     def __init__(self):
         self._scheduler = AsyncIOScheduler()
         self._analyze_task: asyncio.Task | None = None
+        self._report_analyze_task: asyncio.Task | None = None
         self._shutdown_event = asyncio.Event()
 
     async def start(self):
@@ -27,6 +28,7 @@ class CronScheduler:
         from katrain.cron.jobs.analyze import AnalyzeJob
         from katrain.cron.jobs.fetch_upcoming import FetchUpcomingJob
         from katrain.cron.jobs.cleanup import CleanupJob
+        from katrain.cron.jobs.tutorial_backup import TutorialBackupJob
 
         # Interval jobs
         interval_jobs = [
@@ -36,6 +38,7 @@ class CronScheduler:
             (TranslateJob, config.TRANSLATE_INTERVAL, config.TRANSLATE_ENABLED),
             (FetchUpcomingJob, config.FETCH_UPCOMING_INTERVAL, config.FETCH_UPCOMING_ENABLED),
             (CleanupJob, config.CLEANUP_INTERVAL, config.CLEANUP_ENABLED),
+            (TutorialBackupJob, config.TUTORIAL_BACKUP_INTERVAL, config.TUTORIAL_BACKUP_ENABLED),
         ]
 
         # Start scheduler first (jobs will be added and run immediately)
@@ -73,6 +76,15 @@ class CronScheduler:
         else:
             logger.info("AnalyzeJob is disabled, skipping")
 
+        # ReportAnalyzerJob: persistent loop for user game report analysis
+        if config.REPORT_ANALYZE_ENABLED:
+            from katrain.cron.jobs.report_analyze import ReportAnalyzerJob
+            report_job = ReportAnalyzerJob()
+            self._report_analyze_task = asyncio.create_task(self._run_analyze_loop(report_job))
+            logger.info("ReportAnalyzerJob persistent loop started (concurrency=%d)", config.REPORT_CONCURRENCY)
+        else:
+            logger.info("ReportAnalyzerJob is disabled, skipping")
+
         # Block until shutdown signal
         await self._shutdown_event.wait()
 
@@ -99,11 +111,12 @@ class CronScheduler:
         """Graceful shutdown: stop scheduler, cancel analyze loop."""
         logger.info("Shutting down scheduler")
         self._scheduler.shutdown(wait=False)
-        if self._analyze_task and not self._analyze_task.done():
-            self._analyze_task.cancel()
-            try:
-                await self._analyze_task
-            except asyncio.CancelledError:
-                pass
+        for task in [self._analyze_task, self._report_analyze_task]:
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         self._shutdown_event.set()
         logger.info("Scheduler shut down")

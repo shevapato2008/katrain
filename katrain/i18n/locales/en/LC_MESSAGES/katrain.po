@@ -74,7 +74,7 @@ msgstr ""
 "Analyze games with AI, explore variations, and manage your SGF library."
 
 msgid "dashboard:report_desc"
-msgstr "Detailed game reports and style analysis. (Coming Soon)"
+msgstr "Generate move-by-move analysis reports and review your games."
 
 msgid "dashboard:live_desc"
 msgstr "Watch top games and live tournaments. (Coming Soon)"
@@ -356,7 +356,7 @@ msgstr "Tsumego Frame"
 
 #. View a player performance report
 msgid "analysis:report"
-msgstr "Performance Report"
+msgstr "Review"
 
 #. game filter in performance report
 msgid "Entire Game"
@@ -1681,7 +1681,7 @@ msgid "live:tomorrow"
 msgstr "Tomorrow"
 
 msgid "live:in_days"
-msgstr "in {0} days"
+msgstr "days away"
 
 msgid "live:moves"
 msgstr "moves"
@@ -2300,3 +2300,274 @@ msgstr "Your counting request was rejected."
 
 msgid "game_end:count"
 msgstr "Game ended by counting: {result}"
+
+msgid "report:login_required"
+msgstr "Please log in to view and generate game reviews."
+
+msgid "report:my_reports"
+msgstr "Review"
+
+msgid "report:page_hint"
+msgstr ""
+"Select a game on the right to preview. Create reports from the game card."
+
+msgid "report:select_game"
+msgstr "Select a game"
+
+msgid "report:select_game_hint"
+msgstr ""
+"Select a game from the right panel, or import a new SGF / library game."
+
+msgid "report:no_preview"
+msgstr "No game to preview yet."
+
+msgid "report:game_list"
+msgstr "Game List"
+
+msgid "report:game_list_hint"
+msgstr "{count} games. Search by player, title, or event."
+
+msgid "report:search_placeholder"
+msgstr "Search by player, title, or event"
+
+msgid "report:no_match"
+msgstr "No games matching \"{query}\"."
+
+msgid "report:no_games"
+msgstr "No games yet. Import one to start generating reports."
+
+msgid "report:load_games_failed"
+msgstr "Failed to load game list"
+
+msgid "report:load_tasks_failed"
+msgstr "Failed to load report tasks"
+
+msgid "report:import_failed"
+msgstr "Failed to import SGF"
+
+msgid "report:library_import_failed"
+msgstr "Failed to import from library"
+
+msgid "report:create_task_failed"
+msgstr "Failed to create report task"
+
+msgid "report:login_required_detail"
+msgstr "Please log in to view report details."
+
+msgid "report:back_to_list"
+msgstr "Back to review list"
+
+msgid "report:enter_research"
+msgstr "Open in Research"
+
+msgid "report:no_sgf"
+msgstr "No SGF data available for review."
+
+msgid "report:try"
+msgstr "Try"
+
+msgid "report:territory"
+msgstr "Territory"
+
+msgid "report:move_numbers"
+msgstr "Move #"
+
+msgid "report:suggestions"
+msgstr "Hints"
+
+msgid "report:hide_suggestions"
+msgstr "Hide hints"
+
+msgid "report:show_suggestions"
+msgstr "Show hints"
+
+msgid "report:clear"
+msgstr "Clear"
+
+msgid "report:normal"
+msgstr "Normal"
+
+msgid "report:deep"
+msgstr "Deep"
+
+msgid "report:no_result"
+msgstr "No result"
+
+msgid "report:unnamed_game"
+msgstr "Untitled game"
+
+msgid "report:queuing"
+msgstr "Queued"
+
+msgid "report:generating"
+msgstr "Generating"
+
+msgid "report:generate_deep"
+msgstr "Generate deep report"
+
+msgid "report:generate_normal"
+msgstr "Generate normal report"
+
+msgid "report:generate"
+msgstr "Generate report"
+
+msgid "report:import"
+msgstr "Import game"
+
+msgid "report:import_local"
+msgstr "Import local SGF"
+
+msgid "report:import_library"
+msgstr "Import from library"
+
+msgid "report:title_label"
+msgstr "Title"
+
+msgid "report:optional"
+msgstr "Optional"
+
+msgid "report:choose_file"
+msgstr "Choose local file"
+
+msgid "report:choose_file_hint"
+msgstr "Select a local SGF file, or paste SGF content directly."
+
+msgid "report:board_size"
+msgstr "Board"
+
+msgid "report:board_size_unit"
+msgstr "×"
+
+msgid "report:rules_label"
+msgstr "Rules"
+
+msgid "report:komi_label"
+msgstr "Komi"
+
+msgid "report:cancel"
+msgstr "Cancel"
+
+msgid "report:importing"
+msgstr "Importing..."
+
+msgid "report:import_only"
+msgstr "Import only"
+
+msgid "report:import_and_normal"
+msgstr "Import & generate normal report"
+
+msgid "report:import_and_deep"
+msgstr "Import & generate deep report"
+
+msgid "report:search"
+msgstr "Search"
+
+msgid "report:search_placeholder_lib"
+msgstr "Search by player, event, date"
+
+msgid "report:loading"
+msgstr "Loading..."
+
+msgid "report:no_results"
+msgstr "No games found."
+
+msgid "report:completed"
+msgstr "Completed"
+
+msgid "report:failed"
+msgstr "Failed"
+
+msgid "report:unknown_status"
+msgstr "Unknown"
+
+msgid "report:japanese_rules"
+msgstr "Japanese"
+
+msgid "report:korean_rules"
+msgstr "Korean"
+
+msgid "report:chinese_rules"
+msgstr "Chinese"
+
+msgid "report:black"
+msgstr "Black"
+
+msgid "report:white"
+msgstr "White"
+
+msgid "report:moves_unit"
+msgstr "moves"
+
+msgid "report:points_unit"
+msgstr "pts"
+
+msgid "report:move_prefix"
+msgstr "Move"
+
+msgid "report:refresh_failed"
+msgstr "Failed to refresh report"
+
+msgid "report:load_failed"
+msgstr "Failed to load report"
+
+msgid "report:title_ai_free"
+msgstr "AI Free Play"
+
+msgid "report:title_ai_ranked"
+msgstr "AI Ranked Play"
+
+msgid "report:title_human"
+msgstr "Human vs Human"
+
+msgid "report:title_import"
+msgstr "Imported Game"
+
+msgid "report:title_kifu"
+msgstr "From Library"
+
+msgid "report:delete_game"
+msgstr "Delete game"
+
+msgid "report:delete_confirm_title"
+msgstr "Confirm deletion"
+
+msgid "report:delete_confirm_body"
+msgstr ""
+"This will permanently delete the game and all associated analysis data. Are "
+"you sure?"
+
+msgid "report:delete_success"
+msgstr "Game deleted"
+
+msgid "report:delete_failed"
+msgstr "Failed to delete game"
+
+msgid "report:source_import"
+msgstr "Import"
+
+msgid "report:source_play_ai"
+msgstr "AI Play"
+
+msgid "report:source_play_human"
+msgstr "PvP"
+
+msgid "report:source_kifu_library"
+msgstr "Library"
+
+msgid "report:retry_normal"
+msgstr "Retry normal"
+
+msgid "report:retry_deep"
+msgstr "Retry deep"
+
+msgid "report:retry_failed"
+msgstr "Failed to retry report"
+
+msgid "report:summary_running"
+msgstr "running"
+
+msgid "report:summary_queued"
+msgstr "queued"
+
+msgid "report:summary_failed"
+msgstr "failed"

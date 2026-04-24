@@ -47,11 +47,11 @@ const Dashboard = () => {
             path: "/galaxy/research" 
         },
         { 
-            title: i18n.t('analysis:report', 'Report'), 
-            desc: i18n.t('dashboard:report_desc', "Detailed game reports and style analysis. (Coming Soon)"), 
+            title: i18n.t('analysis:report', 'Review'),
+            desc: i18n.t('dashboard:report_desc', "Generate move-by-move analysis reports and review your games."), 
             icon: <AssessmentIcon fontSize="large"/>, 
             path: "/galaxy/report",
-            disabled: true 
+            disabled: false 
         },
         {
             title: i18n.t('Live', 'Live'),

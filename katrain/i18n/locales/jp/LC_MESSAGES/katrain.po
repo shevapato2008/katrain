@@ -902,7 +902,7 @@ msgstr "Tromp-Taylor"
 
 #. View a player performance report
 msgid "analysis:report"
-msgstr "評価レポート"
+msgstr "検討"
 
 msgid "engine died popup opening message"
 msgstr ""
@@ -1370,7 +1370,7 @@ msgid "Library"
 msgstr "ライブラリ"
 
 msgid "dashboard:report_desc"
-msgstr "詳細なゲームレポートとスタイル分析。（近日公開）"
+msgstr "一手ごとの分析レポートを生成し、対局を検討します。"
 
 msgid "game_room:leave_forfeit"
 msgstr "離れて没収試合"
@@ -1677,7 +1677,7 @@ msgid "live:tomorrow"
 msgstr "明日"
 
 msgid "live:in_days"
-msgstr "{0}日後"
+msgstr "日後"
 
 msgid "live:moves"
 msgstr "手"
@@ -2296,3 +2296,270 @@ msgstr "計算リクエストが拒否されました。"
 
 msgid "game_end:count"
 msgstr "計算による終局：{result}"
+
+msgid "report:login_required"
+msgstr "検討レポートを閲覧・作成するにはログインしてください。"
+
+msgid "report:my_reports"
+msgstr "検討"
+
+msgid "report:page_hint"
+msgstr "右側の対局を選択してプレビュー。レポートの作成は対局カードから行います。"
+
+msgid "report:select_game"
+msgstr "対局を選択"
+
+msgid "report:select_game_hint"
+msgstr "右パネルから対局を選択するか、新しいSGF/棋譜ライブラリの対局をインポートしてください。"
+
+msgid "report:no_preview"
+msgstr "プレビューできる対局がありません。"
+
+msgid "report:game_list"
+msgstr "対局リスト"
+
+msgid "report:game_list_hint"
+msgstr "全{count}局。棋士名・タイトル・大会で検索できます。"
+
+msgid "report:search_placeholder"
+msgstr "棋士名・タイトル・大会で検索"
+
+msgid "report:no_match"
+msgstr "「{query}」に一致する対局が見つかりません。"
+
+msgid "report:no_games"
+msgstr "まだ対局がありません。インポートしてレポートを作成しましょう。"
+
+msgid "report:load_games_failed"
+msgstr "対局リストの読み込みに失敗しました"
+
+msgid "report:load_tasks_failed"
+msgstr "レポートタスクの読み込みに失敗しました"
+
+msgid "report:import_failed"
+msgstr "SGFのインポートに失敗しました"
+
+msgid "report:library_import_failed"
+msgstr "棋譜ライブラリからのインポートに失敗しました"
+
+msgid "report:create_task_failed"
+msgstr "レポートタスクの作成に失敗しました"
+
+msgid "report:login_required_detail"
+msgstr "レポートの詳細を表示するにはログインしてください。"
+
+msgid "report:back_to_list"
+msgstr "検討リストに戻る"
+
+msgid "report:enter_research"
+msgstr "研究室で開く"
+
+msgid "report:no_sgf"
+msgstr "検討に使用できるSGFデータがありません。"
+
+msgid "report:try"
+msgstr "試し打ち"
+
+msgid "report:territory"
+msgstr "地"
+
+msgid "report:move_numbers"
+msgstr "手数"
+
+msgid "report:suggestions"
+msgstr "候補手"
+
+msgid "report:hide_suggestions"
+msgstr "候補手を隠す"
+
+msgid "report:show_suggestions"
+msgstr "候補手を表示"
+
+msgid "report:clear"
+msgstr "クリア"
+
+msgid "report:normal"
+msgstr "通常レポート"
+
+msgid "report:deep"
+msgstr "詳細レポート"
+
+msgid "report:no_result"
+msgstr "結果なし"
+
+msgid "report:unnamed_game"
+msgstr "無題の対局"
+
+msgid "report:queuing"
+msgstr "待機中"
+
+msgid "report:generating"
+msgstr "生成中"
+
+msgid "report:generate_deep"
+msgstr "詳細レポートを作成"
+
+msgid "report:generate_normal"
+msgstr "通常レポートを作成"
+
+msgid "report:generate"
+msgstr "レポートを作成"
+
+msgid "report:import"
+msgstr "棋譜をインポート"
+
+msgid "report:import_local"
+msgstr "ローカルSGFをインポート"
+
+msgid "report:import_library"
+msgstr "棋譜ライブラリからインポート"
+
+msgid "report:title_label"
+msgstr "タイトル"
+
+msgid "report:optional"
+msgstr "任意"
+
+msgid "report:choose_file"
+msgstr "ローカルファイルを選択"
+
+msgid "report:choose_file_hint"
+msgstr "ローカルSGFファイルを選択するか、SGFの内容を直接貼り付けてください。"
+
+msgid "report:board_size"
+msgstr "盤面"
+
+msgid "report:board_size_unit"
+msgstr "路"
+
+msgid "report:rules_label"
+msgstr "ルール"
+
+msgid "report:komi_label"
+msgstr "コミ"
+
+msgid "report:cancel"
+msgstr "キャンセル"
+
+msgid "report:importing"
+msgstr "インポート中..."
+
+msgid "report:import_only"
+msgstr "インポートのみ"
+
+msgid "report:import_and_normal"
+msgstr "インポートして通常レポートを作成"
+
+msgid "report:import_and_deep"
+msgstr "インポートして詳細レポートを作成"
+
+msgid "report:search"
+msgstr "検索"
+
+msgid "report:search_placeholder_lib"
+msgstr "棋士、大会、日付で検索"
+
+msgid "report:loading"
+msgstr "読み込み中..."
+
+msgid "report:no_results"
+msgstr "棋譜が見つかりません。"
+
+msgid "report:completed"
+msgstr "完了"
+
+msgid "report:failed"
+msgstr "失敗"
+
+msgid "report:unknown_status"
+msgstr "不明"
+
+msgid "report:japanese_rules"
+msgstr "日本ルール"
+
+msgid "report:korean_rules"
+msgstr "韓国ルール"
+
+msgid "report:chinese_rules"
+msgstr "中国ルール"
+
+msgid "report:black"
+msgstr "黒"
+
+msgid "report:white"
+msgstr "白"
+
+msgid "report:moves_unit"
+msgstr "手"
+
+msgid "report:points_unit"
+msgstr "目"
+
+msgid "report:move_prefix"
+msgstr "第"
+
+msgid "report:refresh_failed"
+msgstr "レポートの更新に失敗しました"
+
+msgid "report:load_failed"
+msgstr "レポートの読み込みに失敗しました"
+
+msgid "report:title_ai_free"
+msgstr "AI自由対局"
+
+msgid "report:title_ai_ranked"
+msgstr "AIランク戦"
+
+msgid "report:title_human"
+msgstr "対人対局"
+
+msgid "report:title_import"
+msgstr "インポート棋局"
+
+msgid "report:title_kifu"
+msgstr "棋譜ライブラリ"
+
+msgid "report:delete_game"
+msgstr "対局を削除"
+
+msgid "report:delete_confirm_title"
+msgstr "削除の確認"
+
+msgid "report:delete_confirm_body"
+msgstr "対局と関連する分析データが完全に削除されます。よろしいですか？"
+
+msgid "report:delete_success"
+msgstr "対局を削除しました"
+
+msgid "report:delete_failed"
+msgstr "対局の削除に失敗しました"
+
+msgid "report:source_import"
+msgstr "インポート"
+
+msgid "report:source_play_ai"
+msgstr "AI対局"
+
+msgid "report:source_play_human"
+msgstr "対人戦"
+
+msgid "report:source_kifu_library"
+msgstr "棋譜ライブラリ"
+
+msgid "report:retry_normal"
+msgstr "通常レポートを再試行"
+
+msgid "report:retry_deep"
+msgstr "詳細レポートを再試行"
+
+msgid "report:retry_failed"
+msgstr "レポートの再試行に失敗しました"
+
+msgid "report:summary_running"
+msgstr "実行中"
+
+msgid "report:summary_queued"
+msgstr "キュー待ち"
+
+msgid "report:summary_failed"
+msgstr "失敗"

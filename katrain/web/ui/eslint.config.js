@@ -5,6 +5,31 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+// SBC build boundary — kiosk bundle must not reach galaxy / three.js / VideoRecorder.
+// The build-time gate is `npm run verify:kiosk-2d`; these ESLint rules surface
+// violations earlier (at edit time) so regressions can't slip into a PR.
+const forbiddenFromKiosk = [
+  {
+    group: ['**/galaxy/**', '*/galaxy/*', '../galaxy/*', '../../galaxy/*', '../../../galaxy/*'],
+    message: 'kiosk bundle must not import galaxy code — would drag in three.js / admin UI',
+  },
+  {
+    group: ['**/components/Board3D/**', '*/components/Board3D/*', '../components/Board3D/*', '../../components/Board3D/*'],
+    message: 'kiosk bundle must not import Board3D — three.js is excluded in the SBC build',
+  },
+  {
+    group: ['**/pages/VideoRecorderPage*', '*/pages/VideoRecorderPage', '../pages/VideoRecorderPage'],
+    message: 'kiosk bundle must not import VideoRecorderPage — it statically imports three',
+  },
+]
+
+const forbiddenFromServer = [
+  {
+    group: ['**/kiosk/**', '*/kiosk/*', '../kiosk/*', '../../kiosk/*', '../../../kiosk/*'],
+    message: 'galaxy/server UI must not import kiosk code — kiosk is a standalone SBC bundle',
+  },
+]
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -18,6 +43,18 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+  },
+  {
+    files: ['src/kiosk/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: forbiddenFromKiosk }],
+    },
+  },
+  {
+    files: ['src/galaxy/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}', 'src/ZenModeApp.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: forbiddenFromServer }],
     },
   },
 ])

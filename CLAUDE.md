@@ -141,6 +141,34 @@ Configure via `~/.katrain/config.json`:
 5. `katrain/web/server.py` - FastAPI initialization
 6. `katrain/web/session.py` - Session management
 
+## SBC 构建边界契约
+
+KaTrain ships **two web-UI build outputs** from a single codebase:
+
+| Output | Produced by | Shipped to | Contents |
+|---|---|---|---|
+| `katrain/web/static/` | `npm run build` | Server (full web) | Everything — galaxy admin, 3D board, tutorial recording, etc. |
+| `katrain/web/static-kiosk-2d/` | `npm run build:kiosk-2d` | **SBC kiosk terminals** (RK3562/RK3576/RK3588) | Kiosk UI only — **no three.js, no `@react-three/*`, no `/galaxy/*`, no `/record`** |
+
+**How isolation is enforced (three layers):**
+1. Compile-time flag `__KIOSK_2D_ONLY__` (declared in `katrain/web/ui/src/vite-env.d.ts`, wired via `define` in `vite.config.ts`). In `AppRouter.tsx` the kiosk ternary collapses to `null`, so Rollup DCEs the `/galaxy/*` and `/record` lazy `import()` chunks entirely.
+2. `rollupOptions.external: ['three', '@react-three/fiber', '@react-three/drei']` in kiosk mode — if a surviving import path reaches these, Rollup fails/warns.
+3. `npm run verify:kiosk-2d` (chained into `build:kiosk-2d`) greps the dist for `THREE.` and `three`/`@react-three` import strings. **Exit 0 = clean; any match = build fails.** CI (`.github/workflows/kiosk_build.yml`) runs this on every PR touching `katrain/web/ui/**`.
+
+**Boundary rules (enforced by `katrain/web/ui/eslint.config.js`):**
+- Files under `src/kiosk/**` may **not** import from `src/galaxy/**`, `src/components/Board3D/**`, or `src/pages/VideoRecorderPage*`
+- Files under `src/galaxy/**`, `src/pages/**`, and `src/ZenModeApp.tsx` may **not** import from `src/kiosk/**`
+
+**Shared territory (both builds may import):**
+`src/components/` (except `Board3D/`), `src/hooks/`, `src/context/`, `src/api.ts` + `src/api/`, `src/utils/`, `src/types/`, `src/theme.ts`, `src/i18n.ts`. ~10.6K LOC. **Modifying a shared file affects BOTH builds** — run both `npm run build` and `npm run build:kiosk-2d` before pushing.
+
+**When modifying the web UI:**
+- Adding a page/route in `src/kiosk/` → use only shared territory + `src/kiosk/`.
+- Adding a 3D-dependent feature → put it under `src/galaxy/` or `src/pages/` behind a non-kiosk route; `Board3D/` is OK from those paths.
+- Changing something in shared territory (e.g. `Board.tsx`, `api.ts`, `useTsumegoProblem.ts`) → assume kiosk consumes it; keep the kiosk build green.
+
+**Related docs:** `superpowers/tracks/sbc-ui-ver3/plan.md` (the kiosk-build implementation plan from 2026-04-24).
+
 ## gstack
 
 Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.

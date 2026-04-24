@@ -1,0 +1,21 @@
+{
+  "full": {
+    "label": "full",
+    "bytes": 19285133,
+    "fcp": 1008,
+    "lcp": 1008,
+    "domComplete": 319,
+    "loadEvent": 319,
+    "tti": 1210
+  },
+  "kiosk": {
+    "label": "kiosk-2d",
+    "bytes": 17968916,
+    "fcp": 276,
+    "lcp": 620,
+    "domComplete": 514,
+    "loadEvent": 514,
+    "tti": 1122
+  },
+  "generatedAt": "2026-04-24T11:30:21.837Z"
+}

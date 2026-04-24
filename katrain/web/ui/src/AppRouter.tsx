@@ -8,9 +8,10 @@ import ZenModeApp from './ZenModeApp';
 
 // Code-split: kiosk and galaxy bundles load independently.
 // Galaxy + VideoRecorder reach three.js (via Board3D / direct import),
-// so they are excluded from the kiosk-2d build at the source level —
-// the ternary collapses to `null` at compile time and Rollup drops
-// the dynamic `import()` and its transitive chunk.
+// so they are excluded from the kiosk-2d build. Vite's `define`
+// substitutes __KIOSK_2D_ONLY__ with the literal true/false before
+// Rollup runs, making the unused branch eligible for tree-shaking.
+// Task 6's verify:kiosk-2d grep is the final gate.
 const KioskApp = lazy(() => import('./kiosk/KioskApp'));
 const GalaxyApp = __KIOSK_2D_ONLY__
   ? null

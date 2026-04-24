@@ -128,6 +128,6 @@ for (const [k, a, b, d] of rows) {
 }
 
 await writeFile(path.join(UI_DIR, 'kiosk-metrics.json'),
-  JSON.stringify({ full, kiosk, generatedAt: new Date().toISOString() }, null, 2));
+  JSON.stringify({ full, kiosk, generatedAt: new Date().toISOString() }, null, 2) + '\n');
 
 console.error('→ wrote kiosk-metrics.json');

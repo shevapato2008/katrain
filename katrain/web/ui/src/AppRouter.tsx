@@ -11,7 +11,7 @@ import ZenModeApp from './ZenModeApp';
 // so they are excluded from the kiosk-2d build. Vite's `define`
 // substitutes __KIOSK_2D_ONLY__ with the literal true/false before
 // Rollup runs, making the unused branch eligible for tree-shaking.
-// Task 6's verify:kiosk-2d grep is the final gate.
+// npm run verify:kiosk-2d is the final gate against regressions.
 const KioskApp = lazy(() => import('./kiosk/KioskApp'));
 const GalaxyApp = __KIOSK_2D_ONLY__
   ? null

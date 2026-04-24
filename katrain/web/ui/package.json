@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true vite build",
+    "build:kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true vite build && npm run verify:kiosk-2d",
     "verify:kiosk-2d": "scripts/verify-kiosk.sh",
     "lint": "eslint .",
     "test": "vitest run",

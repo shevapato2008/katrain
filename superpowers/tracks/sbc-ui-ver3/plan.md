@@ -515,13 +515,13 @@ du -sh ../static-full-baseline
 du -sh ../static-full-baseline/assets/*.js 2>/dev/null | sort -h | tail -5
 ls ../static-full-baseline/assets/*.js 2>/dev/null | wc -l
 ```
-Save output to `/tmp/kiosk-stats.txt` for Task 9's commit message. Expected savings: **~30-45 MB** removed from kiosk dist.
+Save output to `/tmp/kiosk-stats.txt` for Task 9's commit message. Expected savings: **~1 MB raw JS (three + R3F chunks)** removed. Disk-size delta is smaller (~2 MB) because font assets dominate both builds.
 
 - [ ] **Step 5: Acceptance checkpoint**
 
 Eyeball three requirements before proceeding:
 - [ ] `npm run verify:kiosk-2d` passed
-- [ ] `du -sh ../static-kiosk-2d` is at least 10 MB smaller than `../static-full-baseline`
+- [ ] `du -sh ../static-kiosk-2d` is at least 1 MB smaller than `../static-full-baseline` (fonts dominate disk total; raw JS drop is the real signal)
 - [ ] kiosk dist JS chunk count is fewer than full baseline (because Galaxy+Record chunks are gone)
 
 No commit — we only ran commands.
@@ -879,7 +879,7 @@ Confirm each:
 - [ ] `feat/kiosk-2d-build-2026-04-24` pushed to origin
 - [ ] `npm run verify:kiosk-2d` exits 0 on a fresh `npm run build:kiosk-2d`
 - [ ] `kiosk-metrics.json` committed and has non-zero FCP/LCP for both builds
-- [ ] kiosk bundle ≥ 10 MB smaller than full
+- [ ] kiosk dist disk-size smaller than full; raw-JS chunk count ≥ 5 fewer than full (eliminates three + R3F + Galaxy + VideoRecorder chunks)
 - [ ] `smartbox-software/docs/dev-plan-2026-04-24.md` §"实测数字" table is filled, committed, pushed
 - [ ] `ROADMAP.md` W1 4/24 row can be marked ✅ (do this in the late-night W1 wrap-up session per master plan, not here)
 

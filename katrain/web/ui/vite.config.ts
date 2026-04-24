@@ -1,11 +1,12 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config'
+// loadEnv is not re-exported by vitest/config, so import directly from vite
 import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
   const kioskMode = env.VITE_KIOSK_2D_ONLY === 'true'
 
   return {

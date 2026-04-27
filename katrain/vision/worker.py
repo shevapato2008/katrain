@@ -173,11 +173,11 @@ class _VisionWorkerLoop:
             stable_ok = False
             if frame is None:
                 if self._frame_count % 30 == 0:
-                    logger.debug("camera read_frame returned None (frame #%d)", self._frame_count)
+                    logger.info("camera read_frame returned None (frame #%d)", self._frame_count)
             else:
                 stable_ok, motion_ratio = self._motion_filter.is_stable_with_ratio(frame)
                 if not stable_ok and self._frame_count % 30 == 0:
-                    logger.debug(
+                    logger.info(
                         "motion filter rejected frame #%d (changed_ratio=%.3f, threshold=%.3f)",
                         self._frame_count, motion_ratio, self._motion_filter.change_ratio_threshold,
                     )
@@ -242,7 +242,7 @@ class _VisionWorkerLoop:
                     if detections:
                         mean_confidence = sum(d.confidence for d in detections) / len(detections)
                     if self._frame_count % 30 == 0:
-                        logger.debug(
+                        logger.info(
                             "detection ok: %d stones, mean_conf=%.2f, board=%.0fms + yolo=%.0fms",
                             len(detections), mean_confidence, board_finder_ms, yolo_ms,
                         )
@@ -255,7 +255,7 @@ class _VisionWorkerLoop:
                     # Board not found
                     self._consecutive_failures += 1
                     if self._frame_count % 30 == 0:
-                        logger.debug(
+                        logger.info(
                             "board finder failed (frame #%d, board_finder_ms=%.0f, consecutive_failures=%d)",
                             self._frame_count, board_finder_ms, self._consecutive_failures,
                         )

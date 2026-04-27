@@ -42,6 +42,13 @@ npm run build                        # Production build → katrain/web/static/
 npm test                             # Playwright e2e tests
 ```
 
+`python -m katrain --ui web` auto-builds the frontend on first run (creates `katrain/web/static/index.html`). Subsequent runs **reuse** the existing dist — critical on slow ARM SBCs where `npm run build` takes ~60s. To rebuild after pulling new UI code:
+```bash
+python -m katrain --ui web --force-build       # explicit rebuild flag
+# or:
+rm -rf katrain/web/static && python -m katrain --ui web   # nuke and re-trigger first-run build
+```
+
 ### Code Formatting
 ```bash
 uv run black -l 120 katrain tests    # Format Python code (120 char lines)

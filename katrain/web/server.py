@@ -1566,7 +1566,7 @@ async def _vision_move_poller(app: FastAPI):
         await asyncio.sleep(0.1)
 
 
-def build_frontend():
+def build_frontend(force: bool = False):
     ui_path = Path(__file__).resolve().parent / "ui"
     if not (ui_path / "package.json").exists():
         logging.getLogger("katrain_web").warning("Frontend source not found, skipping build.")
@@ -1578,6 +1578,14 @@ def build_frontend():
 
     if not shutil.which("npm"):
         logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
+        return
+
+    static_index = ui_path.parent / "static" / "index.html"
+    if static_index.exists() and not force:
+        logging.getLogger("katrain_web").info(
+            "Frontend already built at %s, skipping (use --force-build to rebuild).",
+            static_index.parent,
+        )
         return
 
     print("Building frontend...", flush=True)
@@ -1614,6 +1622,11 @@ def run_web():
         help="Port to bind the server to. Default: $KATRAIN_PORT or 8001.",
     )
     parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--force-build",
+        action="store_true",
+        help="Force a fresh `npm run build` even if katrain/web/static/index.html already exists.",
+    )
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
     parser.add_argument("--ui", default=None, help="Interface mode to use. web (default) starts the FastAPI server, while desktop launches the Kivy GUI.")
@@ -1644,7 +1657,7 @@ def run_web():
     # However, create_app is used by uvicorn workers too, so we should be careful.
     # But run_web is the entry point.
     if not args.reload:  # Skip build in reload mode to avoid loops
-        build_frontend()
+        build_frontend(force=args.force_build)
 
     import uvicorn
 

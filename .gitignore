@@ -37,6 +37,8 @@ katrain/models/*.bin.gz
 # Frontend build artifacts (regenerated on startup)
 katrain/web/static/assets/
 katrain/web/static/index.html
+katrain/web/static-kiosk-2d/
+katrain/web/static-full-baseline/
 node_modules/
 
 # standard python ignore

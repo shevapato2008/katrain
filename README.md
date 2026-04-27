@@ -207,22 +207,116 @@ export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
 python -m katrain --ui web
 ```
 
-**katrain-board** (RK3588 smart board):
+**katrain-board** (RK3588/RK3576 smart board):
 ```bash
 export KATRAIN_MODE=board
 export KATRAIN_REMOTE_URL="https://go.sailorvoyage.top"
-export KATRAIN_DATABASE_URL="sqlite:///./board.db"
 export KATRAIN_DEVICE_ID="rk3588-001"
 export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
 
+# Basic startup (no camera)
 python -m katrain --ui web
+
+# With camera vision — ONNX backend (CPU inference, default)
+python -m katrain --ui web --vision-model katrain/vision/models/yolo11n/best.onnx --vision-camera 73
+
+# With camera vision — RKNN backend (NPU acceleration, recommended on RK3576/RK3588)
+python -m katrain --ui web --vision-backend rknn --vision-model katrain/vision/models/yolo11n/best_rk3576.rknn --vision-camera 73
+
+# With 2K camera resolution (better board detection, more CPU)
+python -m katrain --ui web --vision-model katrain/vision/models/yolo11n/best.onnx --vision-camera 73 --vision-resolution 2560x1440
+
+# With 640x480 (lowest CPU usage)
+python -m katrain --ui web --vision-model katrain/vision/models/yolo11n/best.onnx --vision-camera 73 --vision-resolution 640x480
+
+# Force rebuild after pulling new UI code (skip otherwise — see note below)
+python -m katrain --ui web --force-build --vision-model katrain/vision/models/yolo11n/best.onnx --vision-camera 73
 ```
 
+> **Frontend build behavior on SBC:**
+> The first launch runs `npm run build` and emits `katrain/web/static/`. On RK3576/RK3588 this takes **~60 seconds** (12k+ TypeScript modules transpiled by Vite). **Subsequent launches reuse the existing dist** and start in 2–3 seconds.
+>
+> After `git pull` brings new UI code, force a rebuild one of two ways:
+> ```bash
+> python -m katrain --ui web --force-build [other args...]   # explicit flag
+> # or:
+> rm -rf katrain/web/static && python -m katrain --ui web    # nuke + auto-rebuild
+> ```
+> If you don't rebuild after pulling UI changes, you'll be running the old UI against the new backend — usually harmless, but worth knowing.
+
+**Vision CLI options:**
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--vision-model` | *(none)* | Path to model file (`.onnx`, `.rknn`, or `.pt`). Providing this enables the vision service |
+| `--vision-camera` | `0` | Camera device ID (int) or path (e.g. `/dev/video73`) |
+| `--vision-resolution` | `1280x720` | Camera resolution `WxH` (e.g. `640x480`, `1280x720`, `2560x1440`) |
+| `--vision-backend` | `onnx` | Inference backend: `onnx`, `rknn`, or `ultralytics` |
+
+> **Note:** On Rockchip SBCs with many ISP/media devices, the USB camera may have a high device number (e.g. `/dev/video73`). Run `v4l2-ctl --list-devices` to find the correct one.
+
+**Vision inference backends** (`--vision-backend`):
+
+| Backend | Model Format | Hardware | Dependency | Use Case |
+|---------|-------------|----------|------------|----------|
+| `onnx` | `.onnx` | CPU | `onnxruntime` | Default for SBC deployment |
+| `rknn` | `.rknn` | Rockchip NPU | `rknn-toolkit2-lite` | RK3576/RK3588 NPU acceleration (recommended) |
+| `ultralytics` | `.pt` | CPU/GPU | `ultralytics` + PyTorch | Development and training |
+
+**Vision model options** (`--vision-model`):
+
+| Model | ONNX Path | Size | mAP50-95 | SBC Latency (est.) |
+|-------|-----------|------|----------|---------------------|
+| yolo11n | `katrain/vision/models/yolo11n/best.onnx` | 10 MB | 0.9364 | ~400-600ms |
+| yolo11s | `katrain/vision/models/yolo11s/best.onnx` | 36 MB | 0.9593 | ~1.0-1.5s |
+| yolo11m | `katrain/vision/models/yolo11m/best.onnx` | 77 MB | 0.9749 | ~3-4s |
+| yolo11x | `katrain/vision/models/yolo11x/best.onnx` | 217 MB | 0.9414 | ~10s+ |
+
+> **Recommendation:** Use `yolo11n` on SBC (best speed/accuracy tradeoff). Use `yolo11s` if memory allows.
+
 > **Important:**
-> - `KATRAIN_DATABASE_URL` must be set explicitly to use local SQLite. If `~/.katrain/config.json` contains a `server.database_url` (e.g. PostgreSQL), it takes precedence over `KATRAIN_DATABASE_PATH`.
+> - Board mode (`KATRAIN_MODE=board`) automatically uses local SQLite (`db.sqlite3`), ignoring any PostgreSQL URL in `config.json`. To use a custom SQLite path, set `KATRAIN_DATABASE_URL` explicitly (e.g. `sqlite:///./board.db`).
 > - `KATRAIN_REMOTE_URL` should point to the actual entry point (e.g. nginx reverse proxy on HTTPS 443), not the KaTrain process port directly.
 > - `KATRAIN_DEVICE_ID` should be a stable identifier for this board. If omitted, a random UUID is generated on each startup.
 > - Board mode connects to the remote server for auth, tsumego, kifu, and user game sync, while using local KataGo for gameplay. When offline, games are saved locally and synced automatically on reconnection.
+
+**Upgrading RKNN runtime (RK3576/RK3588):**
+
+The RKNN model and runtime versions must match. If you see a warning like `RKNN Model version: 2.3.2 not match with rknn runtime version: 2.0.0`, upgrade both the Python package and the native library:
+
+```bash
+# 1. Upgrade Python package
+pip install rknn-toolkit-lite2==2.3.2
+
+# 2. Upgrade native runtime library (librknnrt.so)
+git clone --depth 1 --branch v2.3.2 https://github.com/airockchip/rknn-toolkit2.git /tmp/rknn-toolkit2
+sudo cp /tmp/rknn-toolkit2/rknpu2/runtime/Linux/librknn_api/aarch64/librknnrt.so /usr/lib/librknnrt.so
+rm -rf /tmp/rknn-toolkit2
+
+# 3. Verify
+strings /usr/lib/librknnrt.so | grep "librknnrt version"
+# Expected: librknnrt version: 2.3.2
+```
+
+**Touchscreen virtual keyboard (SBC kiosk mode):**
+
+On ARM SBCs with a touchscreen (e.g. RK3588/RK3576), install an on-screen keyboard so users can tap input fields to type:
+
+```bash
+# Install on-screen keyboard and accessibility service
+sudo apt install -y onboard at-spi2-core
+
+# Set VNC password (optional, for remote desktop access)
+x11vnc -storepasswd
+
+# Start onboard (configure Auto-show in Preferences → Auto-show → "Auto-show when editing text")
+onboard &
+
+# Start Chromium with accessibility enabled (required for auto-show to detect input focus)
+chromium --kiosk --no-first-run --disable-gpu --force-renderer-accessibility http://127.0.0.1:8001/kiosk &
+```
+
+> **Note:** `--force-renderer-accessibility` makes Chromium broadcast focus events via AT-SPI, which `onboard` needs to auto-show/hide the keyboard when input fields are tapped.
 
 **katrain-cron:**
 ```bash
@@ -282,7 +376,7 @@ docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
 |----------|---------|-------------|
 | `KATRAIN_MODE` | `server` | Set to `board` to enable board mode |
 | `KATRAIN_REMOTE_URL` | - | Remote server entry URL, e.g. `https://go.sailorvoyage.top` |
-| `KATRAIN_DATABASE_URL` | *(from config.json)* | Must set to `sqlite:///./board.db` to force local SQLite |
+| `KATRAIN_DATABASE_URL` | `sqlite:///./db.sqlite3` | Auto-set to SQLite in board mode; override only if custom path needed |
 | `KATRAIN_DEVICE_ID` | *(auto-generated UUID)* | Stable device identifier (recommended to set explicitly) |
 | `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | Local KataGo for offline gameplay |
 

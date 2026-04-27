@@ -1,23 +1,20 @@
 """
 Board detection and perspective correction.
 
-Hybrid detection: ArUco markers (primary, reliable) + improved Canny (fallback).
-
-ArUco mode: Place 4 printed ArUco markers at the board corners.
-Canny mode: Detects the board outline via edge detection (original approach, improved).
+Detection priority:
+1. ArUco markers (most reliable, when configured)
+2. HSV color segmentation (robust — isolates warm wood tones)
+3. Canny edge detection (legacy fallback)
 
 Ported from Fe-Fool/code/robot/image_find_focus.py (FocusFinder class).
-Enhanced with:
-- ArUco marker detection (primary method when configured)
-- Improved Canny pipeline with aspect ratio / convexity / area filters
-- Fixed stability filter (no baseline reset on rejection)
-- CLAHE preprocessing for low-contrast wood boards
-- cv2.undistort when camera calibration is available
-- Fallback to last known transform matrix on detection failure
 """
+
+import logging
 
 import cv2
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 from katrain.vision.config import CameraConfig
 
@@ -27,7 +24,7 @@ class BoardFinder:
         self,
         scale: float = 1.0,
         marker_ids: list[int] | None = None,
-        allowed_moving_length: int = 50,
+        allowed_moving_length: int = 10,
         min_perimeter: int = 600,
         camera_config: CameraConfig | None = None,
     ):
@@ -79,12 +76,14 @@ class BoardFinder:
 
         gray = cv2.cvtColor(processed, cv2.COLOR_BGR2GRAY)
 
-        # Try ArUco detection first
+        # Detection priority: ArUco → color segmentation → Canny
         corners = None
         if self.marker_ids is not None:
             corners = self._detect_aruco(gray)
 
-        # Canny fallback
+        if corners is None:
+            corners = self._detect_by_color(processed)
+
         if corners is None:
             corners = self._detect_canny(processed, gray, min_threshold, max_threshold)
 
@@ -98,7 +97,10 @@ class BoardFinder:
             self.pre_corner_point = sort_corner
             self.is_first = False
         elif np.max(abs(np.array(sort_corner) - np.array(self.pre_corner_point))) > self.allowed_moving_length:
-            # Don't update baseline on rejection — keep old baseline
+            # Update baseline even on rejection (Fe-Fool pattern) so the system
+            # recovers after camera/board movement: next frame's corners will be
+            # close to the updated baseline and get accepted.
+            self.pre_corner_point = sort_corner
             return None, False
 
         # Accepted — update baseline
@@ -165,20 +167,64 @@ class BoardFinder:
 
         return result
 
+    def _detect_by_color(self, image_bgr: np.ndarray) -> list[tuple[int, int]] | None:
+        """Detect board via HSV color segmentation of warm wood tones.
+
+        Go boards have a distinctive warm yellow-brown color (HSV hue 10-40)
+        that separates cleanly from white paper, dark furniture, and other
+        background surfaces.  Morphological open breaks thin bridges to
+        adjacent wood-colored objects; close fills grid lines and stone gaps.
+        """
+        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
+        frame_area = image_bgr.shape[0] * image_bgr.shape[1]
+
+        # Warm wood: hue 10-40, moderate saturation, bright (V>=140 excludes
+        # dark furniture that may share the same hue).
+        mask = cv2.inRange(hsv, np.array([10, 30, 140]), np.array([40, 180, 255]))
+
+        # Open to disconnect adjacent wood-colored objects (furniture edges)
+        k_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k_open)
+
+        # Close to fill internal gaps from grid lines and stones
+        k_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k_close)
+
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            area_ratio = area / frame_area
+            if area_ratio < 0.10:
+                break  # too small
+            if area_ratio > 0.80:
+                continue  # too large (background)
+
+            hull = cv2.convexHull(contour)
+            for eps_f in (0.02, 0.04, 0.06, 0.08):
+                approx = cv2.approxPolyDP(hull, eps_f * cv2.arcLength(hull, True), True)
+                if len(approx) == 4:
+                    points = [(int(p[0][0]), int(p[0][1])) for p in approx]
+                    logger.debug("Color detection found board: area=%.1f%% eps=%.2f", area_ratio * 100, eps_f)
+                    return points
+
+        logger.debug("Color detection: no valid quadrilateral found")
+        return None
+
     def _detect_canny(
         self, processed: np.ndarray, gray: np.ndarray, min_threshold: int, max_threshold: int
     ) -> list[tuple[int, int]] | None:
         """
         Detect board via Canny edge detection with improved filtering.
 
-        Improvements over original:
-        - Progressive approxPolyDP epsilon (0.02 → 0.04 → 0.06)
-        - Aspect ratio filter (0.7–1.4)
-        - Convexity check
-        - Area filter (>10% of frame)
-        - Direct use of approxPolyDP 4-point result
+        Pipeline:
+        1. Blur + Canny + morphological close → edge map
+        2. Find external contours, sorted by area
+        3. For each contour: convex hull → approxPolyDP with progressive epsilon
+        4. Filters: area (10-80%), aspect ratio (0.7-1.4), not white surface
         """
-        blurred = cv2.GaussianBlur(processed, (3, 3), 0, 0)
+        blurred = cv2.GaussianBlur(processed, (7, 7), 0, 0)
         canny = cv2.Canny(blurred, min_threshold, max_threshold)
         k = np.ones((3, 3), np.uint8)
         canny = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, k)
@@ -188,35 +234,52 @@ class BoardFinder:
 
         frame_area = gray.shape[0] * gray.shape[1]
 
+        if logger.isEnabledFor(logging.DEBUG):
+            top_areas = [f"{cv2.contourArea(c)/frame_area:.1%}" for c in contours[:5]]
+            logger.debug("Canny found %d contours, top areas: %s", len(contours), top_areas)
+
         # Progressive epsilon: try tighter first, relax if needed.
-        # Real-world boards (grid lines, oblique angles) often need 0.04–0.06.
-        for eps_factor in (0.02, 0.04, 0.06):
-            result = self._try_canny_with_epsilon(contours, frame_area, eps_factor)
+        for eps_factor in (0.02, 0.04, 0.06, 0.08):
+            result = self._try_canny_with_epsilon(contours, frame_area, eps_factor, processed)
             if result is not None:
                 return result
 
         return None
 
-    def _try_canny_with_epsilon(self, contours, frame_area: int, eps_factor: float) -> list[tuple[int, int]] | None:
-        """Try to find a valid board quadrilateral at a given epsilon factor."""
+    def _try_canny_with_epsilon(
+        self, contours, frame_area: int, eps_factor: float, image_bgr: np.ndarray
+    ) -> list[tuple[int, int]] | None:
+        """Try to find a valid board quadrilateral at a given epsilon factor.
+
+        Uses convex hull before polygon approximation to handle complex
+        contours caused by grid lines and stones on the board edge.
+        """
         for contour in contours:
             perimeter = cv2.arcLength(contour, True)
             if perimeter < self.min_perimeter:
                 break  # sorted by area, so remaining are smaller
 
-            epsilon = eps_factor * perimeter
-            approx = cv2.approxPolyDP(contour, epsilon, True)
+            # Convex hull first — removes concavities from grid lines / stones
+            # that prevent approxPolyDP from finding 4 clean corners.
+            hull = cv2.convexHull(contour)
+            hull_perimeter = cv2.arcLength(hull, True)
+            epsilon = eps_factor * hull_perimeter
+            approx = cv2.approxPolyDP(hull, epsilon, True)
 
             if len(approx) != 4:
+                if logger.isEnabledFor(logging.DEBUG):
+                    area_pct = cv2.contourArea(contour) / frame_area
+                    logger.debug(
+                        "eps=%.2f contour area=%.1f%% hull→approx gave %d pts (need 4)",
+                        eps_factor, area_pct * 100, len(approx),
+                    )
                 continue
 
-            # Convexity check
-            if not cv2.isContourConvex(approx):
-                continue
-
-            # Area filter: must fill at least 10% of frame
+            # Area filter: must fill 10%–80% of frame
             area = cv2.contourArea(approx)
-            if area < 0.10 * frame_area:
+            if area < 0.10 * frame_area or area > 0.80 * frame_area:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug("eps=%.2f rejected: area=%.1f%% outside 10-80%%", eps_factor, area / frame_area * 100)
                 continue
 
             # Aspect ratio filter
@@ -226,6 +289,14 @@ class BoardFinder:
                 continue
             aspect = rw / rh
             if aspect < 0.7 or aspect > 1.4:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug("eps=%.2f rejected: aspect=%.2f outside 0.7-1.4", eps_factor, aspect)
+                continue
+
+            # Color validation: reject white paper / plastic surfaces
+            if not self._is_board_surface(image_bgr, approx):
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug("eps=%.2f rejected: white surface", eps_factor)
                 continue
 
             # Use the 4 points directly
@@ -234,13 +305,43 @@ class BoardFinder:
 
         return None
 
+    @staticmethod
+    def _is_board_surface(image_bgr: np.ndarray, approx: np.ndarray) -> bool:
+        """Reject regions that are predominantly white/gray (paper surfaces).
+
+        Rather than matching specific wood colors (fragile under varying
+        lighting and when stones cover the board), we reject regions where
+        the majority of pixels are near-white — the distinctive signature
+        of paper/plastic surfaces that typically surround Go boards.
+        """
+        mask = np.zeros(image_bgr.shape[:2], dtype=np.uint8)
+        cv2.fillPoly(mask, [approx], 255)
+
+        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
+        # Near-white: any hue, very low saturation, high brightness
+        white_mask = cv2.inRange(hsv, np.array([0, 0, 160]), np.array([180, 30, 255]))
+
+        interior_pixels = cv2.countNonZero(mask)
+        if interior_pixels == 0:
+            return False
+        white_ratio = cv2.countNonZero(cv2.bitwise_and(white_mask, mask)) / interior_pixels
+        # Paper is typically >60% white; boards (even with white stones) are <50%
+        return white_ratio < 0.5
+
     def _calc_size(self, corners):
-        h = max(corners[2][1] - corners[1][1], corners[3][1] - corners[0][1]) * self.scale
-        w = max(corners[0][0] - corners[1][0], corners[3][0] - corners[2][0]) * self.scale
-        return h, w
+        # corners = [TL, TR, BR, BL]
+        # Use average of opposite edge lengths for balanced perspective output.
+        # max() produced extreme aspect ratios at steep viewing angles (e.g. 517x233),
+        # making YOLO's square-resize distort stones beyond recognition.
+        tl, tr, br, bl = [np.array(c, dtype=np.float64) for c in corners]
+        avg_w = (np.linalg.norm(tr - tl) + np.linalg.norm(br - bl)) / 2 * self.scale
+        avg_h = (np.linalg.norm(bl - tl) + np.linalg.norm(br - tr)) / 2 * self.scale
+        return avg_h, avg_w
 
     def _sort_corner(self, pts):
+        # Sort by y to split top/bottom, then by x within each pair.
+        # Returns [TL, TR, BR, BL] matching dst [[0,0], [w,0], [w,h], [0,h]].
         pts = sorted(pts, key=lambda p: p[1])
-        top = sorted(pts[:2], key=lambda p: p[0], reverse=True)
-        bot = sorted(pts[2:], key=lambda p: p[0])
-        return [top[0], top[1], bot[0], bot[1]]
+        top = sorted(pts[:2], key=lambda p: p[0])  # ascending x: [left, right]
+        bot = sorted(pts[2:], key=lambda p: p[0])  # ascending x: [left, right]
+        return [top[0], top[1], bot[1], bot[0]]  # [TL, TR, BR, BL]

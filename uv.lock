@@ -1007,6 +1007,20 @@ classifier = [
 vision = [
     { name = "numpy" },
     { name = "opencv-python" },
+]
+vision-onnx = [
+    { name = "numpy" },
+    { name = "onnxruntime" },
+    { name = "opencv-python" },
+]
+vision-rknn = [
+    { name = "numpy" },
+    { name = "opencv-python" },
+    { name = "rknn-toolkit-lite2" },
+]
+vision-train = [
+    { name = "numpy" },
+    { name = "opencv-python" },
     { name = "ultralytics" },
 ]
 web = [
@@ -1047,11 +1061,18 @@ requires-dist = [
     { name = "kivymd", specifier = "==0.104.1" },
     { name = "numpy", marker = "extra == 'classifier'", specifier = ">=1.24.0" },
     { name = "numpy", marker = "extra == 'vision'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'vision-onnx'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'vision-rknn'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'vision-train'", specifier = ">=1.24.0" },
     { name = "onnx", specifier = ">=1.12.0,<2.0.0" },
     { name = "onnxruntime", specifier = ">=1.24.4" },
+    { name = "onnxruntime", marker = "extra == 'vision-onnx'", specifier = ">=1.16.0" },
     { name = "onnxslim", specifier = ">=0.1.90" },
     { name = "opencv-python", marker = "extra == 'classifier'", specifier = ">=4.8.0" },
     { name = "opencv-python", marker = "extra == 'vision'", specifier = ">=4.8.0" },
+    { name = "opencv-python", marker = "extra == 'vision-onnx'", specifier = ">=4.8.0" },
+    { name = "opencv-python", marker = "extra == 'vision-rknn'", specifier = ">=4.8.0" },
+    { name = "opencv-python", marker = "extra == 'vision-train'", specifier = ">=4.8.0" },
     { name = "passlib", specifier = ">=1.7.4" },
     { name = "passlib", extras = ["bcrypt"], marker = "extra == 'web'", specifier = ">=1.7.4" },
     { name = "psycopg2-binary", marker = "extra == 'web'", specifier = ">=2.9.0" },
@@ -1060,16 +1081,17 @@ requires-dist = [
     { name = "pytesseract", marker = "extra == 'classifier'", specifier = ">=0.3.10" },
     { name = "python-jose", extras = ["cryptography"], marker = "extra == 'web'", specifier = ">=3.3.0" },
     { name = "requests", specifier = ">=2.32.0" },
+    { name = "rknn-toolkit-lite2", marker = "extra == 'vision-rknn'", specifier = ">=2.0.0" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'", specifier = ">=0.8.1,<0.9" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "sqlalchemy", marker = "extra == 'web'", specifier = ">=2.0.0" },
     { name = "torch", marker = "extra == 'classifier'", specifier = ">=2.0" },
     { name = "torchvision", marker = "extra == 'classifier'", specifier = ">=0.15" },
-    { name = "ultralytics", marker = "extra == 'vision'", specifier = ">=8.3.0" },
+    { name = "ultralytics", marker = "extra == 'vision-train'", specifier = ">=8.3.0" },
     { name = "urllib3", specifier = ">=2.2.2" },
     { name = "uvicorn", marker = "extra == 'web'", specifier = ">=0.27.1" },
 ]
-provides-extras = ["web", "vision", "classifier"]
+provides-extras = ["web", "vision", "vision-train", "vision-onnx", "vision-rknn", "classifier"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2560,6 +2582,20 @@ wheels = [
 ]
 
 [[package]]
+name = "rknn-toolkit-lite2"
+version = "2.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "psutil" },
+    { name = "ruamel-yaml" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/3d/e80e1742420f62cb628d40a8bf547d6f7c9dbe4e13dcb7b7e7c0b5620e74/rknn_toolkit_lite2-2.3.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bda74f1179e15fccb8726054a24898982522784b65bb340b20146955d254e800", size = 569160, upload-time = "2025-04-09T09:39:56.149Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/db/64c756f3f06b219e92ff4f0fd4e000870ee49f214d505ff01c8b0275e26d/rknn_toolkit_lite2-2.3.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e1e4ec691fed900c0e6fde5e7d8eeba17f806aa45092b63b361ee775e2c1b50e", size = 527458, upload-time = "2025-04-09T09:39:58.881Z" },
+]
+
+[[package]]
 name = "rsa"
 version = "4.9.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2569,6 +2605,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/da/8a/22b7beea3ee0d44b1916c0c1cb0ee3af23b700b6da9f04991899d0c555d4/rsa-4.9.1.tar.gz", hash = "sha256:e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75", size = 29034, upload-time = "2025-04-16T09:51:18.218Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/64/8d/0133e4eb4beed9e425d9a98ed6e081a55d195481b7632472be1af08d2f6b/rsa-4.9.1-py3-none-any.whl", hash = "sha256:68635866661c6836b8d39430f97a996acbd61bfa49406748ea243539fe239762", size = 34696, upload-time = "2025-04-16T09:51:17.142Z" },
+]
+
+[[package]]
+name = "ruamel-yaml"
+version = "0.19.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/3b/ebda527b56beb90cb7652cb1c7e4f91f48649fbcd8d2eb2fb6e77cd3329b/ruamel_yaml-0.19.1.tar.gz", hash = "sha256:53eb66cd27849eff968ebf8f0bf61f46cdac2da1d1f3576dd4ccee9b25c31993", size = 142709, upload-time = "2026-01-02T16:50:31.84Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/0c/51f6841f1d84f404f92463fc2b1ba0da357ca1e3db6b7fbda26956c3b82a/ruamel_yaml-0.19.1-py3-none-any.whl", hash = "sha256:27592957fedf6e0b62f281e96effd28043345e0e66001f97683aa9a40c667c93", size = 118102, upload-time = "2026-01-02T16:50:29.201Z" },
 ]
 
 [[package]]

@@ -15,7 +15,7 @@ def make_board_image(width=640, height=480, board_rect=(100, 50, 440, 380)):
     img = np.zeros((height, width, 3), dtype=np.uint8)
     img[:] = (200, 200, 200)
     x1, y1, x2, y2 = board_rect
-    cv2.rectangle(img, (x1, y1), (x2, y2), (139, 119, 101), -1)
+    cv2.rectangle(img, (x1, y1), (x2, y2), (80, 155, 200), -1)  # warm wood tone (HSV H≈19)
     cv2.rectangle(img, (x1, y1), (x2, y2), (50, 50, 50), 3)
     return img
 
@@ -49,7 +49,7 @@ def make_aruco_image(marker_ids=(0, 1, 2, 3), width=800, height=800, marker_size
 class TestBoardFinderInit:
     def test_init_defaults(self):
         finder = BoardFinder()
-        assert finder.allowed_moving_length == 50
+        assert finder.allowed_moving_length == 10
         assert finder.marker_ids is None
         assert finder.aruco_dict is None
         assert finder.aruco_params is None
@@ -170,20 +170,24 @@ class TestStabilityFilter:
         _, found2 = finder.find_focus(img2)
         assert found2 is False
 
-    def test_stability_no_baseline_reset(self):
-        """Verify baseline is NOT updated when a frame is rejected."""
+    def test_stability_baseline_updated_on_rejection(self):
+        """Verify baseline IS updated on rejection (Fe-Fool pattern).
+
+        This allows recovery after camera/board movement: the next frame's
+        corners will be close to the updated baseline and get accepted.
+        """
         finder = BoardFinder()
         img1 = make_board_image()
         _, found1 = finder.find_focus(img1)
         assert found1 is True
         baseline_after_accept = list(finder.pre_corner_point)
 
-        # Large jump — should be rejected
+        # Large jump — should be rejected but baseline updated
         img2 = make_board_image(board_rect=(200, 150, 540, 430))
         _, found2 = finder.find_focus(img2)
         assert found2 is False
-        # Baseline should NOT have changed
-        assert finder.pre_corner_point == baseline_after_accept
+        # Baseline SHOULD have changed (allows recovery on next frame)
+        assert finder.pre_corner_point != baseline_after_accept
 
     def test_fallback_uses_last_transform(self, finder):
         """When detection fails but board is stable, reuse last transform matrix."""

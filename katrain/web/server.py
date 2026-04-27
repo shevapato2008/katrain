@@ -29,6 +29,14 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
+    # Vision service shutdown (board mode)
+    vision = getattr(app.state, "vision", None)
+    if vision:
+        vision.stop()
+    vision_poller = getattr(app.state, "vision_poller_task", None)
+    if vision_poller:
+        vision_poller.cancel()
+
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
         if connectivity:
@@ -141,6 +149,36 @@ async def _lifespan_server(app: FastAPI, log):
     # ── Tutorial Module (V2 — database-backed) ─────────────────────────────
     log.info("Tutorial V2: using database-backed tutorials")
 
+    # ── Platform Manager (cross-platform online play) ─────────────────────
+    _init_platform_manager(app, manager, log)
+
+
+def _init_platform_manager(app, session_manager, log):
+    """Initialize platform manager and adapters. Shared by both server and board modes."""
+    from katrain.web.platforms.manager import PlatformManager
+    from katrain.web.platforms.gateway import PlatformCommandGateway
+    from katrain.web.platforms.credentials import PlatformCredentialStore
+
+    platform_cred_store = PlatformCredentialStore()
+    platform_manager = PlatformManager(session_manager, credential_store=platform_cred_store)
+    app.state.platform_manager = platform_manager
+    app.state.platform_gateway = PlatformCommandGateway(platform_manager, session_manager)
+
+    for adapter_path, name in [
+        ("katrain.web.platforms.ogs.adapter", "OGS"),
+        ("katrain.web.platforms.fox.adapter", "Fox"),
+        ("katrain.web.platforms.golaxy.adapter", "Golaxy"),
+    ]:
+        try:
+            import importlib
+
+            mod = importlib.import_module(adapter_path)
+            adapter_cls = getattr(mod, f"{name}Adapter")
+            platform_manager.register_adapter(adapter_cls())
+            log.info(f"{name} platform adapter registered")
+        except Exception as e:
+            log.warning(f"Failed to register {name} adapter: {e}")
+
 
 async def _lifespan_board(app: FastAPI, log):
     """Board mode initialization — design.md Section 4.9."""
@@ -242,6 +280,23 @@ async def _lifespan_board(app: FastAPI, log):
 
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
+
+    # Vision service (optional — enabled when --vision-model is provided)
+    vision_config = getattr(settings, "_vision_config", None)
+    if vision_config and vision_config.enabled:
+        from katrain.vision.service import VisionService
+
+        vision = VisionService(vision_config)
+        vision.start()
+        app.state.vision = vision
+        app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
+        log.info("Vision service started (backend=%s)", vision_config.backend)
+    else:
+        app.state.vision = None
+
+    # Platform manager for cross-platform online play (shared init)
+    _init_platform_manager(app, manager, log)
+
     log.info("Board mode initialization complete")
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
@@ -311,7 +366,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": session.last_state or session.katrain.get_state()}
 
     @app.post("/api/move")
-    def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
+    async def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
 
         # Skip turn validation for research sessions
@@ -329,6 +384,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         coords = None if request.pass_move else request.coords
         if coords is None and not request.pass_move:
             raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
+
+        # Route through platform gateway for cross-platform games
+        gateway = getattr(app.state, "platform_gateway", None)
+        if gateway and gateway.is_platform_game(request.session_id):
+            from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+            try:
+                user_id = current_user.id if current_user else 0
+                if request.pass_move:
+                    await gateway.pass_move(request.session_id, user_id)
+                else:
+                    await gateway.play_move(request.session_id, coords[0], coords[1], user_id)
+                state = session.katrain.get_state()
+                session.last_state = state
+                return {"session_id": session.session_id, "state": state}
+            except PlatformMoveRejectedError as e:
+                raise HTTPException(status_code=409, detail=str(e))
+
         with session.lock:
             session.katrain("play", None if coords is None else tuple(coords))
             state = session.katrain.get_state()
@@ -680,14 +753,29 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logging.getLogger("katrain_web").error(f"Failed to record AI game: {e}")
 
     @app.post("/api/resign")
-    def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+    async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+
+        # Route through platform gateway for cross-platform games
+        gateway = getattr(app.state, "platform_gateway", None)
+        if gateway and gateway.is_platform_game(request.session_id):
+            from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+            try:
+                user_id = current_user.id if current_user else 0
+                await gateway.resign(request.session_id, user_id)
+            except PlatformMoveRejectedError as e:
+                raise HTTPException(status_code=409, detail=str(e))
 
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
-        with session.lock:
-            session.katrain("resign")
+        if not (gateway and gateway.is_platform_game(request.session_id)):
+            with session.lock:
+                session.katrain("resign")
+                state = session.katrain.get_state()
+                session.last_state = state
+        else:
             state = session.katrain.get_state()
             session.last_state = state
 
@@ -1358,6 +1446,43 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             if session.sockets:  # Only if there are still connected clients
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
+    @app.websocket("/ws/vision")
+    async def vision_websocket(websocket: WebSocket):
+        """Vision event WebSocket — pushes sync events and status changes to the frontend."""
+        await websocket.accept()
+        vision = getattr(app.state, "vision", None)
+        if vision is None:
+            await websocket.close(code=1008, reason="Vision service not enabled")
+            return
+        try:
+            while True:
+                # Poll for events and send them
+                vision.refresh_status()
+                events = vision.poll_events()
+                for evt in events:
+                    if isinstance(evt, dict):
+                        await websocket.send_json(evt)
+
+                # Send status update periodically
+                await websocket.send_json({
+                    "type": "vision_status",
+                    "data": {
+                        "camera_status": vision.camera_status,
+                        "pose_lock_status": vision.pose_lock_status,
+                        "sync_state": vision.sync_state,
+                    },
+                })
+
+                # Check for client messages (ping)
+                try:
+                    message = await asyncio.wait_for(websocket.receive_json(), timeout=0.5)
+                    if message.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                except asyncio.TimeoutError:
+                    pass
+        except WebSocketDisconnect:
+            pass
+
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
     @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
@@ -1394,7 +1519,54 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
-def build_frontend():
+async def _vision_move_poller(app: FastAPI):
+    """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.vision.katrain_bridge import vision_move_to_katrain
+    from katrain.vision.sync import game_state_stones_to_board
+
+    log = logging.getLogger("katrain_web.vision")
+    while True:
+        try:
+            vision = getattr(app.state, "vision", None)
+            if vision and vision.bound_session_id:
+                move_data = vision.get_confirmed_move()
+                if move_data and isinstance(move_data, ConfirmedMove):
+                    session_id = vision.bound_session_id
+                    manager = app.state.session_manager
+                    session = manager.get_session(session_id)
+                    if session:
+                        # Convert to KaTrain move and submit
+                        move = vision_move_to_katrain(
+                            move_data.col, move_data.row, move_data.color, board_size=19
+                        )
+
+                        # Route through platform gateway for cross-platform games
+                        gateway = getattr(app.state, "platform_gateway", None)
+                        if gateway and gateway.is_platform_game(session_id):
+                            try:
+                                await gateway.play_move(session_id, move.coords[0], move.coords[1], user_id=0)
+                                log.info("Vision move submitted via platform gateway: col=%d row=%d", move_data.col, move_data.row)
+                            except Exception as gw_err:
+                                log.warning("Platform gateway rejected vision move: %s", gw_err)
+                                await asyncio.sleep(0.5)
+                                continue
+                        else:
+                            session.katrain("play", move.coords)
+                            log.info("Vision move submitted: col=%d row=%d color=%d", move_data.col, move_data.row, move_data.color)
+
+                        # Update expected board from new game state
+                        game_state = session.get_game_state()
+                        if game_state and "stones" in game_state:
+                            vision.set_expected_from_stones(game_state["stones"])
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            log.error("Vision move poller error: %s", e)
+        await asyncio.sleep(0.1)
+
+
+def build_frontend(force: bool = False):
     ui_path = Path(__file__).resolve().parent / "ui"
     if not (ui_path / "package.json").exists():
         logging.getLogger("katrain_web").warning("Frontend source not found, skipping build.")
@@ -1406,6 +1578,14 @@ def build_frontend():
 
     if not shutil.which("npm"):
         logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
+        return
+
+    static_index = ui_path.parent / "static" / "index.html"
+    if static_index.exists() and not force:
+        logging.getLogger("katrain_web").info(
+            "Frontend already built at %s, skipping (use --force-build to rebuild).",
+            static_index.parent,
+        )
         return
 
     print("Building frontend...", flush=True)
@@ -1442,17 +1622,42 @@ def run_web():
         help="Port to bind the server to. Default: $KATRAIN_PORT or 8001.",
     )
     parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--force-build",
+        action="store_true",
+        help="Force a fresh `npm run build` even if katrain/web/static/index.html already exists.",
+    )
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
     parser.add_argument("--ui", default=None, help="Interface mode to use. web (default) starts the FastAPI server, while desktop launches the Kivy GUI.")
+    parser.add_argument("--vision-backend", default="onnx", choices=["onnx", "rknn", "ultralytics"], help="Vision inference backend")
+    parser.add_argument("--vision-model", default=None, help="Path to vision model file. Providing this enables the vision service.")
+    parser.add_argument("--vision-camera", default="0", help="Camera device ID (int) or path (e.g. /dev/video73)")
+    parser.add_argument("--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)")
     args, _unknown = parser.parse_known_args()
+
+    # Configure vision service if model path provided
+    if args.vision_model:
+        from katrain.vision.config_service import VisionServiceConfig
+
+        camera_dev = int(args.vision_camera) if args.vision_camera.isdigit() else args.vision_camera
+        res_w, res_h = (int(x) for x in args.vision_resolution.split("x"))
+        settings._vision_config = VisionServiceConfig(
+            enabled=True,
+            backend=args.vision_backend,
+            model_path=args.vision_model,
+            camera_device=camera_dev,
+            camera_width=res_w,
+            camera_height=res_h,
+            process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess",
+        )
 
     # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)
     # We only build if we are actually starting the web server, or if --ui=web is explicit
     # However, create_app is used by uvicorn workers too, so we should be careful.
     # But run_web is the entry point.
     if not args.reload:  # Skip build in reload mode to avoid loops
-        build_frontend()
+        build_frontend(force=args.force_build)
 
     import uvicorn
 

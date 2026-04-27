@@ -1,10 +1,15 @@
+import { useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Chip } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack, Undo, Lightbulb, Replay, Explore, ExploreOff } from '@mui/icons-material';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
+import { API } from '../../api';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
+import BoardSetupGuide from '../components/vision/BoardSetupGuide';
+import { useVision } from '../context/VisionContext';
+import { useVisionSync } from '../hooks/useVisionSync';
 import { useOrientation } from '../context/OrientationContext';
 
 const TsumegoProblemPage = () => {
@@ -35,6 +40,33 @@ const TsumegoProblemPage = () => {
     enterTryMode,
     exitTryMode,
   } = useTsumegoProblem(problemId || '');
+
+  const { isVisionEnabled } = useVision();
+  const visionSync = useVisionSync(null); // No session bind for tsumego — uses setup mode
+  const [setupSkipped, setSetupSkipped] = useState(false);
+  const [setupDone, setSetupDone] = useState(!isVisionEnabled);
+
+  // Enter vision setup mode when problem loads with initial stones
+  useEffect(() => {
+    if (!isVisionEnabled || setupSkipped || !stones.length || !boardSize) return;
+    // Convert stones to board matrix for vision setup
+    const board: number[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+    for (const s of stones) {
+      const [col, row] = s.coords;
+      if (col >= 0 && col < boardSize && row >= 0 && row < boardSize) {
+        board[boardSize - 1 - row][col] = s.player === 'B' ? 1 : 2; // Y-flip for vision
+      }
+    }
+    API.visionSetupMode(board);
+    setSetupDone(false);
+  }, [isVisionEnabled, setupSkipped, stones.length, boardSize]);
+
+  // Watch for setup complete
+  useEffect(() => {
+    if (!isVisionEnabled) return;
+    const completeEvent = visionSync.syncEvents.find(e => e.type === 'setup_complete');
+    if (completeEvent) setSetupDone(true);
+  }, [visionSync.syncEvents]);
 
   if (loading) {
     return (
@@ -128,6 +160,20 @@ const TsumegoProblemPage = () => {
             <Button variant="outlined" startIcon={<ExploreOff />} onClick={exitTryMode}>{t('Exit Try', '退出试下')}</Button>
           )}
         </Box>
+
+        {/* Vision setup guide for initial position */}
+        {isVisionEnabled && !setupDone && !setupSkipped && stones.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <BoardSetupGuide
+              matched={visionSync.setupProgress?.matched ?? 0}
+              total={visionSync.setupProgress?.total ?? stones.length}
+              missing={visionSync.setupProgress?.missing ?? []}
+              isComplete={visionSync.isSetupComplete}
+              onStartProblem={() => setSetupDone(true)}
+              onSkip={() => { setSetupSkipped(true); setSetupDone(true); }}
+            />
+          </Box>
+        )}
       </Box>
     </Box>
   );

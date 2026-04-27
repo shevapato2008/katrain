@@ -1,3 +1,10 @@
+if (__KIOSK_2D_ONLY__) {
+  throw new Error(
+    'VideoRecorderPage must not be imported in kiosk-2d builds. ' +
+    'If this fires, AppRouter gating regressed.'
+  );
+}
+
 /**
  * VideoRecorderPage — Full-screen page for recording tutorial lecture videos.
  *

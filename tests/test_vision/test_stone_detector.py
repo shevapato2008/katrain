@@ -23,41 +23,32 @@ class TestDetection:
         assert d.bbox == (10.0, 20.0, 30.0, 40.0)
 
 
-class TestStoneDetectorDetect:
-    """Test YOLO result parsing with a mock model (no real .pt file needed)."""
+class TestStoneDetectorWithMockBackend:
+    """Test StoneDetector delegates to InferenceBackend correctly."""
 
-    def test_parses_yolo_results(self):
-        with patch("katrain.vision.stone_detector.YOLO") as mock_yolo_cls:
-            mock_box = MagicMock()
-            mock_box.xyxy = [MagicMock(tolist=lambda: [10.0, 20.0, 30.0, 40.0])]
-            mock_box.cls = [MagicMock(__int__=lambda s: 0, __index__=lambda s: 0)]
-            mock_box.conf = [MagicMock(__float__=lambda s: 0.95)]
-            mock_result = MagicMock()
-            mock_result.boxes = [mock_box]
-            mock_model = MagicMock()
-            mock_model.return_value = [mock_result]
-            mock_yolo_cls.return_value = mock_model
+    def test_detect_delegates_to_backend(self):
+        expected_detections = [
+            Detection(x_center=20.0, y_center=30.0, class_id=0, confidence=0.95, bbox=(10.0, 20.0, 30.0, 40.0))
+        ]
+        mock_backend = MagicMock()
+        mock_backend.detect.return_value = expected_detections
 
-            det = StoneDetector("dummy.pt", confidence_threshold=0.5)
+        with patch("katrain.vision.inference.create_backend", return_value=mock_backend):
+            det = StoneDetector("dummy.pt", backend="onnx", confidence_threshold=0.5)
             img = np.zeros((400, 400, 3), dtype=np.uint8)
             results = det.detect(img)
-            assert len(results) == 1
-            assert results[0].x_center == 20.0  # (10+30)/2
-            assert results[0].class_id == 0
-            assert results[0].bbox == (10.0, 20.0, 30.0, 40.0)
 
-    def test_filters_low_confidence(self):
-        with patch("katrain.vision.stone_detector.YOLO") as mock_yolo_cls:
-            mock_box = MagicMock()
-            mock_box.xyxy = [MagicMock(tolist=lambda: [10.0, 20.0, 30.0, 40.0])]
-            mock_box.cls = [MagicMock(__int__=lambda s: 0, __index__=lambda s: 0)]
-            mock_box.conf = [MagicMock(__float__=lambda s: 0.3)]  # below threshold
-            mock_result = MagicMock()
-            mock_result.boxes = [mock_box]
-            mock_model = MagicMock()
-            mock_model.return_value = [mock_result]
-            mock_yolo_cls.return_value = mock_model
+        mock_backend.load.assert_called_once_with("dummy.pt")
+        mock_backend.detect.assert_called_once_with(img, 0.5)
+        assert results == expected_detections
 
-            det = StoneDetector("dummy.pt", confidence_threshold=0.5)
-            results = det.detect(np.zeros((400, 400, 3), dtype=np.uint8))
-            assert len(results) == 0
+    def test_backend_factory_called_with_name(self):
+        mock_backend = MagicMock()
+
+        with patch("katrain.vision.inference.create_backend", return_value=mock_backend) as mock_factory:
+            StoneDetector("dummy.pt", backend="ultralytics")
+            mock_factory.assert_called_once_with("ultralytics")
+
+        with patch("katrain.vision.inference.create_backend", return_value=mock_backend) as mock_factory:
+            StoneDetector("dummy.onnx", backend="onnx")
+            mock_factory.assert_called_once_with("onnx")

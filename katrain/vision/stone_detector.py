@@ -1,14 +1,13 @@
 """
-YOLO11-based Go stone detector.
+Go stone detector with pluggable inference backends.
 
-Uses ultralytics YOLO for detecting black and white stones.
-Enables agnostic_nms to prevent overlapping black/white boxes at same position.
+Supports ultralytics (dev), ONNX Runtime (SBC), and RKNN NPU (experimental)
+via the InferenceBackend protocol.
 """
 
 from dataclasses import dataclass
 
 import numpy as np
-from ultralytics import YOLO
 
 CLASS_NAMES = {0: "black", 1: "white"}
 
@@ -29,30 +28,29 @@ class Detection:
 
 
 class StoneDetector:
-    """Wraps ultralytics YOLO model for stone detection."""
+    """Wraps an inference backend for stone detection.
 
-    def __init__(self, model_path: str, confidence_threshold: float = 0.5, imgsz: int = 960):
-        self.model = YOLO(model_path)
+    Args:
+        model_path: Path to model weights (.pt, .onnx, or .rknn).
+        backend: Backend name — "ultralytics", "onnx", or "rknn".
+        confidence_threshold: Minimum detection confidence.
+        imgsz: Input image size (used by ultralytics backend; ONNX reads from meta.json).
+    """
+
+    def __init__(
+        self,
+        model_path: str,
+        backend: str = "ultralytics",
+        confidence_threshold: float = 0.5,
+        imgsz: int = 960,
+    ):
+        from katrain.vision.inference import create_backend
+
         self.confidence_threshold = confidence_threshold
         self.imgsz = imgsz
+        self.backend_impl = create_backend(backend)
+        self.backend_impl.load(model_path)
 
     def detect(self, image: np.ndarray) -> list[Detection]:
-        """Run YOLO inference on a perspective-corrected board image."""
-        results = self.model(image, verbose=False, imgsz=self.imgsz, agnostic_nms=True)
-        detections = []
-        for r in results:
-            for box in r.boxes:
-                conf = float(box.conf[0])
-                if conf < self.confidence_threshold:
-                    continue
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-                detections.append(
-                    Detection(
-                        x_center=(x1 + x2) / 2,
-                        y_center=(y1 + y2) / 2,
-                        class_id=int(box.cls[0]),
-                        confidence=conf,
-                        bbox=(x1, y1, x2, y2),
-                    )
-                )
-        return detections
+        """Run inference on a perspective-corrected board image."""
+        return self.backend_impl.detect(image, self.confidence_threshold)

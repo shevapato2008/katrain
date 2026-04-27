@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true vite build && npm run verify:kiosk-2d",
+    "verify:kiosk-2d": "scripts/verify-kiosk.sh",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -45,10 +47,7 @@
     "jsdom": "^27.4.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "npm:rolldown-vite@7.2.5",
+    "vite": "^7.3.1",
     "vitest": "^4.0.17"
-  },
-  "overrides": {
-    "vite": "npm:rolldown-vite@7.2.5"
   }
 }

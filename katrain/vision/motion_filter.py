@@ -26,12 +26,16 @@ class MotionFilter:
 
     def is_stable(self, frame: np.ndarray) -> bool:
         """Check if the frame is stable (no significant motion)."""
+        return self.is_stable_with_ratio(frame)[0]
+
+    def is_stable_with_ratio(self, frame: np.ndarray) -> tuple[bool, float]:
+        """Check stability and return (stable, changed_ratio) for diagnostics."""
         if self.prev_frame is None:
             self.prev_frame = frame.copy()
-            return True
+            return True, 0.0
 
         diff = cv2.absdiff(frame, self.prev_frame)
         gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY) if len(diff.shape) == 3 else diff
-        changed_ratio = np.sum(gray_diff > self.pixel_diff_threshold) / gray_diff.size
+        changed_ratio = float(np.sum(gray_diff > self.pixel_diff_threshold) / gray_diff.size)
         self.prev_frame = frame.copy()
-        return bool(changed_ratio < self.change_ratio_threshold)
+        return bool(changed_ratio < self.change_ratio_threshold), changed_ratio

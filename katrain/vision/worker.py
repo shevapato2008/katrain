@@ -112,6 +112,7 @@ class _VisionWorkerLoop:
         self._consecutive_failures = 0  # Track detection failures for auto-unlock
         self._prev_observed_board: np.ndarray | None = None  # For temporal smoothing
         self._last_stable_board: np.ndarray | None = None
+        self._frame_count = 0  # Throttle for per-gate debug logging
 
     def _init_inference(self) -> None:
         """Load inference backend and board finder (heavy imports)."""
@@ -168,7 +169,20 @@ class _VisionWorkerLoop:
             observed_board = None
             mean_confidence = 0.0
 
-            if frame is not None and self._motion_filter.is_stable(frame):
+            self._frame_count += 1
+            stable_ok = False
+            if frame is None:
+                if self._frame_count % 30 == 0:
+                    logger.debug("camera read_frame returned None (frame #%d)", self._frame_count)
+            else:
+                stable_ok, motion_ratio = self._motion_filter.is_stable_with_ratio(frame)
+                if not stable_ok and self._frame_count % 30 == 0:
+                    logger.debug(
+                        "motion filter rejected frame #%d (changed_ratio=%.3f, threshold=%.3f)",
+                        self._frame_count, motion_ratio, self._motion_filter.change_ratio_threshold,
+                    )
+
+            if stable_ok:
                 # Board detection + perspective transform
                 t0 = time.monotonic()
 
@@ -227,6 +241,11 @@ class _VisionWorkerLoop:
 
                     if detections:
                         mean_confidence = sum(d.confidence for d in detections) / len(detections)
+                    if self._frame_count % 30 == 0:
+                        logger.debug(
+                            "detection ok: %d stones, mean_conf=%.2f, board=%.0fms + yolo=%.0fms",
+                            len(detections), mean_confidence, board_finder_ms, yolo_ms,
+                        )
                     if self._bound:
                         move_result = self._move_detector.detect_new_move(self._last_stable_board)
                         if move_result is not None:
@@ -235,6 +254,11 @@ class _VisionWorkerLoop:
                 else:
                     # Board not found
                     self._consecutive_failures += 1
+                    if self._frame_count % 30 == 0:
+                        logger.debug(
+                            "board finder failed (frame #%d, board_finder_ms=%.0f, consecutive_failures=%d)",
+                            self._frame_count, board_finder_ms, self._consecutive_failures,
+                        )
 
                     # Auto-unlock if locked but detection fails 10+ times
                     # (camera or board moved out of locked position)
@@ -323,6 +347,12 @@ class _VisionWorkerLoop:
                     color = (0, 0, 0) if det.class_id == 0 else (255, 255, 255)
                     cv2.circle(frame, (ox, oy), 8, color, -1)
                     cv2.circle(frame, (ox, oy), 8, (0, 255, 0), 1)
+                    label = f"{det.confidence:.2f}"
+                    cv2.putText(
+                        frame, label, (ox + 10, oy - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4,
+                        (0, 255, 0), 1, cv2.LINE_AA,
+                    )
 
         # 3. Timing info (bottom-left with black background)
         if overlay.timing:

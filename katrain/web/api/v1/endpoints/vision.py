@@ -45,8 +45,8 @@ async def vision_status(request: Request):
     vision.refresh_status()
     return {
         "enabled": vision.enabled,
-        "camera_status": vision.camera_status,
-        "pose_lock_status": vision.pose_lock_status,
+        "camera_connected": vision.camera_status == "connected",
+        "pose_locked": vision.pose_lock_status == "locked",
         "sync_state": vision.sync_state,
         "bound_session_id": vision.bound_session_id,
     }

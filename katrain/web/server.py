@@ -1467,8 +1467,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 await websocket.send_json({
                     "type": "vision_status",
                     "data": {
-                        "camera_status": vision.camera_status,
-                        "pose_lock_status": vision.pose_lock_status,
+                        "camera_connected": vision.camera_status == "connected",
+                        "pose_locked": vision.pose_lock_status == "locked",
                         "sync_state": vision.sync_state,
                     },
                 })

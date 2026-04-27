@@ -228,7 +228,21 @@ python -m katrain --ui web --vision-model katrain/vision/models/yolo11n/best.onn
 
 # With 640x480 (lowest CPU usage)
 python -m katrain --ui web --vision-model katrain/vision/models/yolo11n/best.onnx --vision-camera 73 --vision-resolution 640x480
+
+# Force rebuild after pulling new UI code (skip otherwise — see note below)
+python -m katrain --ui web --force-build --vision-model katrain/vision/models/yolo11n/best.onnx --vision-camera 73
 ```
+
+> **Frontend build behavior on SBC:**
+> The first launch runs `npm run build` and emits `katrain/web/static/`. On RK3576/RK3588 this takes **~60 seconds** (12k+ TypeScript modules transpiled by Vite). **Subsequent launches reuse the existing dist** and start in 2–3 seconds.
+>
+> After `git pull` brings new UI code, force a rebuild one of two ways:
+> ```bash
+> python -m katrain --ui web --force-build [other args...]   # explicit flag
+> # or:
+> rm -rf katrain/web/static && python -m katrain --ui web    # nuke + auto-rebuild
+> ```
+> If you don't rebuild after pulling UI changes, you'll be running the old UI against the new backend — usually harmless, but worth knowing.
 
 **Vision CLI options:**
 

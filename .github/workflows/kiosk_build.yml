@@ -1,0 +1,55 @@
+# Kiosk 2D-only build gate.
+#
+# Guards the SBC build boundary: kiosk bundle must contain zero three.js /
+# @react-three / galaxy code. `npm run build:kiosk-2d` chains:
+#   1. tsc -b                      — typecheck
+#   2. VITE_KIOSK_2D_ONLY=true vite build  — produce ../static-kiosk-2d/
+#   3. scripts/verify-kiosk.sh     — grep the dist for THREE. / three / @react-three (fails on any match)
+#
+# If this job fails, the kiosk bundle leaked a forbidden dependency — do NOT
+# merge; fix the import in src/kiosk/** or revisit the AppRouter guards.
+
+name: Kiosk 2D Build Gate
+
+on:
+  pull_request:
+    paths:
+      - 'katrain/web/ui/**'
+      - '.github/workflows/kiosk_build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-kiosk-2d:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: katrain/web/ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: katrain/web/ui
+        run: npm ci
+
+      - name: Build kiosk-2d + verify no three.js
+        working-directory: katrain/web/ui
+        run: npm run build:kiosk-2d
+
+      - name: Report kiosk bundle size
+        working-directory: katrain/web/ui
+        run: |
+          echo "### Kiosk 2D bundle" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          du -sh ../static-kiosk-2d >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          ls ../static-kiosk-2d/assets/*.js | xargs -n1 basename >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

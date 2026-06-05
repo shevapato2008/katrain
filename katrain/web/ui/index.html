@@ -9,5 +9,19 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- SBC kiosk 触屏键盘:仅在 /kiosk 路由加载,桌面/服务器版(galaxy)不受影响 -->
+    <script>
+      if (location.pathname.indexOf('/kiosk') === 0) {
+        document.documentElement.lang = 'zh-CN';
+        var kbCss = document.createElement('link');
+        kbCss.rel = 'stylesheet'; kbCss.href = '/smartkeyboard.css?v=kbd1';
+        document.head.appendChild(kbCss);
+        ['/pinyin-ime.js?v=kbd1', '/smartkeyboard.js?v=kbd1'].forEach(function (src) {
+          var s = document.createElement('script');
+          s.src = src; s.async = false; // 保证 pinyin-ime 先于 smartkeyboard 执行
+          document.body.appendChild(s);
+        });
+      }
+    </script>
   </body>
 </html>

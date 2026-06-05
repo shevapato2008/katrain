@@ -118,10 +118,12 @@ const GamePage = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
-        <Button variant="outlined" size="small" startIcon={<ExitToApp />}
-          onClick={handleExit}>
-          {t('Exit', '退出')}
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button variant="outlined" size="small" startIcon={<ExitToApp />}
+            onClick={handleExit}>
+            {t('Exit', '退出')}
+          </Button>
+        </Box>
       </Box>
       {/* Board + Panel */}
       <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', flex: 1, overflow: 'hidden' }}>

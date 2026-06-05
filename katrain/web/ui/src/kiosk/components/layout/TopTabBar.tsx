@@ -1,7 +1,6 @@
 import { Box, ButtonBase, Typography } from '@mui/material';
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import { primaryTabs, settingsTab, type NavTab } from './navTabs';
-import RotationSelector from './RotationSelector';
 
 const TopTabBar = () => {
   const navigate = useNavigate();
@@ -55,7 +54,6 @@ const TopTabBar = () => {
       {primaryTabs.map(renderItem)}
       <Box sx={{ ml: 'auto' }} />
       {renderItem(settingsTab)}
-      <RotationSelector variant="compact" />
     </Box>
   );
 };

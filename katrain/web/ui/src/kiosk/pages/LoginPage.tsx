@@ -3,7 +3,6 @@ import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import RotationSelector from '../components/layout/RotationSelector';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -55,7 +54,6 @@ const LoginPage = () => {
         {loading ? t('Logging in...', '登录中...') : t('Login', '登录')}
       </Button>
       <Box sx={{ mt: 3 }}>
-        <RotationSelector showLabel />
       </Box>
     </Box>
   );

@@ -1,7 +1,6 @@
 import { Box, ButtonBase, Typography } from '@mui/material';
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import { primaryTabs, settingsTab, type NavTab } from './navTabs';
-import RotationSelector from './RotationSelector';
 
 const NavigationRail = () => {
   const navigate = useNavigate();
@@ -62,7 +61,6 @@ const NavigationRail = () => {
       <Box sx={{ mt: 'auto' }} />
       <Box sx={{ width: '80%', height: '1px', bgcolor: 'divider', my: 0.5 }} />
       {renderItem(settingsTab, 'footer')}
-      <RotationSelector variant="compact" />
     </Box>
   );
 };

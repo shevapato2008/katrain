@@ -1,0 +1,121 @@
+/*!
+ * smartkeyboard.css — SmartBox kiosk 触屏键盘(iOS/安卓风)样式
+ * 配合 smartkeyboard.js + pinyin-ime.js 使用。
+ * 尺寸随屏高 clamp 自适应(矮屏/横屏自动变矮),内容宽度收到 600px 居中,键大小与竖屏一致。
+ */
+.skbd {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 99999;
+  background: #d1d4da;
+  padding: 5px 6px calc(5px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -2px 12px rgba(0,0,0,.18);
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+  transform: translateY(100%);
+  transition: transform .22s cubic-bezier(.4,0,.2,1);
+}
+.skbd.skbd-open { transform: translateY(0); }
+.skbd * { box-sizing: border-box; }
+
+/* 候选条 */
+.skbd-cand {
+  display: none;
+  align-items: center;
+  height: clamp(34px, 5vh, 44px);
+  margin: 0 auto 6px;
+  max-width: 600px;
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+.skbd.skbd-zh .skbd-cand { display: flex; }
+.skbd-compose {
+  color: #2563eb;
+  font-size: clamp(14px, 2.2vh, 17px);
+  padding: 0 10px 0 2px;
+  border-right: 1px solid #e5e7eb;
+  margin-right: 6px;
+  flex: 0 0 auto;
+}
+.skbd-compose:empty { display: none; }
+.skbd-cand-item {
+  flex: 0 0 auto;
+  font-size: clamp(16px, 3vh, 20px);
+  color: #111;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+.skbd-cand-item:active { background: #e5e7eb; }
+.skbd-cand-empty { color:#9ca3af; font-size:15px; padding:0 8px; }
+
+/* 键盘行 */
+.skbd-rows {
+  display: flex; flex-direction: column;
+  gap: clamp(4px, 1vh, 7px);
+  max-width: 600px; width: 100%; margin: 0 auto;
+}
+.skbd-row { display: flex; gap: clamp(4px, 1vw, 6px); justify-content: center; }
+
+/* 按键 */
+.skbd-key {
+  flex: 1 1 0;
+  min-width: 0;
+  height: clamp(34px, 5.4vh, 46px);
+  background: #fff;
+  border-radius: 7px;
+  border: none;
+  font-size: clamp(15px, 2.4vh, 20px);
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 0 rgba(0,0,0,.28);
+  cursor: pointer;
+}
+.skbd-key:active { background: #b9bdc6; }
+.skbd-key-fn { background: #adb3bd; font-size: clamp(13px, 1.9vh, 16px); color:#111; }
+.skbd-key-fn:active { background: #9298a3; }
+.skbd-key-wide { flex: 1.5 1 0; }
+.skbd-key-space { flex: 4 1 0; font-size: clamp(12px, 1.7vh, 15px); color:#444; }
+.skbd-key-return { flex: 1.6 1 0; background:#2563eb; color:#fff; }
+.skbd-key-return:active { background:#1d4ed8; }
+.skbd-key-active { background:#2563eb; color:#fff; }   /* shift 锁定等 */
+.skbd-key svg { width: clamp(18px, 2.6vh, 22px); height: clamp(18px, 2.6vh, 22px); fill: currentColor; }
+
+/* 顶部把手 + 收起键 */
+.skbd-handle {
+  display: flex;
+  align-items: center;
+  height: clamp(20px, 3vh, 26px);
+  margin: 0 auto 4px;
+  max-width: 600px; width: 100%;
+}
+.skbd-grab {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+}
+.skbd-grab::before {
+  content: "";
+  width: 44px; height: 5px;
+  border-radius: 3px;
+  background: #9aa0aa;
+}
+.skbd-hide {
+  flex: 0 0 auto;
+  width: 40px; height: clamp(20px, 3vh, 26px);
+  border: none; background: transparent;
+  color: #4b5563; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; cursor: pointer;
+}
+.skbd-hide:active { background: rgba(0,0,0,.08); }
+
+/* 给页面底部留出键盘高度,避免遮住输入框(由 JS 设置 padding-bottom) */
+body.skbd-padded { transition: padding-bottom .2s; }

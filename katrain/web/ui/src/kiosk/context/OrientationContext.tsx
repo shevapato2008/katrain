@@ -26,8 +26,9 @@ export const OrientationProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(STORAGE_KEY, String(r));
   }, []);
 
+  // 棋智盒外壳屏幕为固定横屏(60° 倾斜立式),kiosk 一律按横屏布局,不再做竖屏/旋转判断。
   return (
-    <OrientationContext.Provider value={{ rotation, isPortrait: rotation === 90 || rotation === 270, setRotation }}>
+    <OrientationContext.Provider value={{ rotation, isPortrait: false, setRotation }}>
       {children}
     </OrientationContext.Provider>
   );

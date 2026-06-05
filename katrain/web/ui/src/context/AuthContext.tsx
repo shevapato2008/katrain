@@ -65,10 +65,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             const data = await response.json();
             const newToken = data.access_token;
-            
+
+            // 先把用户资料拉到再返回,确保 isAuthenticated(=!!user)在 navigate 前已为 true,
+            // 否则首次登录会因 user 尚未加载被 AuthGuard 弹回登录页(需点两次)。
+            const meRes = await fetch('/api/v1/auth/me', {
+                headers: { 'Authorization': `Bearer ${newToken}` }
+            });
+            if (!meRes.ok) {
+                throw new Error('Login failed');
+            }
+            const userData = await meRes.json();
+
             localStorage.setItem('token', newToken);
+            setUser(userData);
             setToken(newToken);
-            // fetchUserProfile(newToken); // useEffect will trigger
         } catch (error) {
             throw error;
         }

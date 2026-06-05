@@ -37,6 +37,10 @@ katrain/models/*.bin.gz
 # Frontend build artifacts (regenerated on startup)
 katrain/web/static/assets/
 katrain/web/static/index.html
+# public/ files copied into static/ root by vite at build time (source lives in katrain/web/ui/public/)
+katrain/web/static/pinyin-ime.js
+katrain/web/static/smartkeyboard.js
+katrain/web/static/smartkeyboard.css
 katrain/web/static-kiosk-2d/
 katrain/web/static-full-baseline/
 node_modules/

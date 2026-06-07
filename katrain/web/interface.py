@@ -137,6 +137,13 @@ class WebKaTrain(KaTrainBase):
         from katrain.web.core.config import settings as _settings
 
         self.suppress_auto_eval = _settings.KATRAIN_MODE == "board"
+        # R3/R5: rated games forbid ALL analysis (anti-cheat). game_type defaults to
+        # "free"; rated/ranked games disable every analysis action at the dispatch
+        # chokepoint (see __call__) and via analysis_allowed.
+        self.game_type = "free"
+        # R6: optional second engine for analysis/review (remote strong engine on kiosk).
+        # None until start(); analysis_engine() falls back to self.engine.
+        self.analysis_engine_instance = None
         self.pondering = False
         self.timer_paused = True
         self.last_timer_update = time.time()
@@ -189,6 +196,46 @@ class WebKaTrain(KaTrainBase):
         """
         return getattr(self, "suppress_auto_eval", False) and self.play_analyze_mode == MODE_PLAY
 
+    @property
+    def analysis_allowed(self):
+        """R3/R5: rated/ranked games forbid ALL analysis (anti-cheat). Free games allow it."""
+        return getattr(self, "game_type", "free") not in ("rated", "ranked")
+
+    def analysis_engine(self):
+        """R6: engine used for analysis/review. The remote strong engine when configured
+        (kiosk), otherwise the play engine. Always returns a usable engine."""
+        return getattr(self, "analysis_engine_instance", None) or self.engine
+
+    def _init_analysis_engine(self):
+        """Create a second engine for analysis if engine/remote_url is configured.
+
+        Health-gated by create_engine; on any failure we fall back to the play engine
+        (never silently route paid analysis to a dead remote without the caller knowing —
+        the paid handler checks remote health separately)."""
+        self.analysis_engine_instance = None
+        remote_url = self.config("engine/remote_url")
+        if not remote_url:
+            return
+        try:
+            engine_cfg = dict(self.config("engine") or {})
+            remote_cfg = {
+                **engine_cfg,
+                "backend": "http",
+                "http_url": remote_url,
+                "http_analyze_path": self.config("engine/remote_analyze_path")
+                or engine_cfg.get("http_analyze_path", "/analyze"),
+                "http_health_path": self.config("engine/remote_health_path")
+                or engine_cfg.get("http_health_path", "/health"),
+                "http_has_human_model": self.config(
+                    "engine/remote_has_human_model", engine_cfg.get("http_has_human_model", False)
+                ),
+            }
+            self.analysis_engine_instance = create_engine(self, remote_cfg)
+            self.log(f"Analysis engine configured: {remote_url}", OUTPUT_INFO)
+        except Exception as exc:
+            self.log(f"Remote analysis engine unavailable ({exc}); using local for analysis", OUTPUT_ERROR)
+            self.analysis_engine_instance = None
+
     def start(self):
         """Initializes the engine and starts a new game."""
         if self.engine:
@@ -210,6 +257,9 @@ class WebKaTrain(KaTrainBase):
                 self.engine = NullEngine()
         else:
             self.engine = NullEngine()
+
+        # R6: optional remote analysis engine (no-op unless engine/remote_url is set)
+        self._init_analysis_engine()
 
         # Start a new game
         self._do_new_game()
@@ -411,6 +461,8 @@ class WebKaTrain(KaTrainBase):
             },
             "engine": getattr(self, "last_engine", None),
             "count_min_moves": self.config("game/count_min_moves", 100),
+            "game_type": getattr(self, "game_type", "free"),
+            "analysis_allowed": self.analysis_allowed,
         }
 
     def _do_new_game(
@@ -423,7 +475,11 @@ class WebKaTrain(KaTrainBase):
         komi=None,
         rules=None,
         skip_initial_analysis=False,
+        game_type=None,
     ):
+        # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
+        if game_type is not None:
+            self.game_type = game_type
         if self.engine:
             self.engine.on_new_game()
 
@@ -601,7 +657,7 @@ class WebKaTrain(KaTrainBase):
             self._game_end_reported = False
 
         if self.engine:
-            if getattr(self, "pondering", False) and not self.should_suppress_auto_eval():
+            if getattr(self, "pondering", False) and not self.should_suppress_auto_eval() and self.analysis_allowed:
                 self.game.analyze_extra("ponder")
             else:
                 self.engine.stop_pondering()
@@ -644,6 +700,13 @@ class WebKaTrain(KaTrainBase):
         or offload to a background task. For simplicity, we execute directly for now,
         but thread safety is a concern if multiple requests come in.
         """
+        # R3/R5: anti-cheat chokepoint — rated/ranked games forbid ALL analysis. Every
+        # analysis action funnels through here, so one guard covers all REST routes.
+        if message in self.ANALYSIS_ACTIONS and not self.analysis_allowed:
+            self.log(f"Analysis action '{message}' blocked in {self.game_type} game", OUTPUT_INFO)
+            self.controls.set_status(i18n._("analysis disabled in rated games"), OUTPUT_INFO)
+            return
+
         # Map message strings to methods, e.g. "undo" -> self._do_undo
         method_name = f"_do_{message.replace('-', '_')}"
         if hasattr(self, method_name):
@@ -652,6 +715,21 @@ class WebKaTrain(KaTrainBase):
                 self.update_state()
         else:
             self.log(f"Unknown action: {message}", OUTPUT_ERROR)
+
+    # Actions that perform/expose analysis — blocked in rated/ranked games.
+    ANALYSIS_ACTIONS = frozenset(
+        {
+            "analyze_extra",
+            "analyze_all",
+            "analysis_scan",
+            "continuous_analysis",
+            "toggle_continuous_analysis",
+            "show_pv",
+            "_do_show_pv",
+            "find_mistake",
+            "paid_analysis",
+        }
+    )
 
     # --- Helper methods ---
     def _find_node_by_id(self, node_id):
@@ -945,7 +1023,14 @@ class WebKaTrain(KaTrainBase):
                     parent = parent.parent
                 parent.add_shortcut(node)
 
+    # Toggles that reveal analysis — forbidden in rated/ranked games.
+    ANALYSIS_TOGGLES = frozenset({"eval", "hints", "ownership", "policy", "dots"})
+
     def _do_toggle_ui(self, setting):
+        # R3/R5: block analysis-revealing toggles in rated games (anti-cheat).
+        if setting in self.ANALYSIS_TOGGLES and not self.analysis_allowed:
+            self.log(f"Toggle '{setting}' blocked in {self.game_type} game", OUTPUT_INFO)
+            return
         # Map frontend keys to backend attributes
         mapping = {"eval": "dots", "coords": "coordinates", "numbers": "move_numbers"}
         key = mapping.get(setting, setting)

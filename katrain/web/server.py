@@ -15,6 +15,7 @@ from katrain.web.core.config import settings
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log = logging.getLogger("katrain_web")
@@ -329,20 +330,22 @@ async def _lifespan_board(app: FastAPI, log):
 
     log.info("Board mode initialization complete")
 
+
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
+
     if session_timeout is None:
         session_timeout = settings.SESSION_TIMEOUT
     if max_sessions is None:
         max_sessions = settings.MAX_SESSIONS
     # Set logging levels for our application
     logging.getLogger("katrain_web").setLevel(logging.INFO)
-    
+
     app = FastAPI(lifespan=lifespan)
     app.include_router(api_router, prefix="/api/v1")
     static_root = Path(__file__).resolve().parent / "static"
     assets_root = Path(__file__).resolve().parent.parent
-    
+
     # Specific asset mounts first
     app.mount("/assets/img", StaticFiles(directory=assets_root / "img"), name="img")
     app.mount("/assets/fonts", StaticFiles(directory=assets_root / "fonts"), name="fonts")
@@ -358,6 +361,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.get("/health")
     async def health():
         from katrain.web.api.v1.endpoints.health import health as health_v1
+
         return await health_v1()
 
     @app.post("/api/session")
@@ -407,7 +411,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
             state = session.katrain.get_state()
             next_player = state["player_to_move"]
-            allowed_user_id = session.player_b_id if next_player == 'B' else session.player_w_id
+            allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
             if current_user.id != allowed_user_id:
                 raise HTTPException(status_code=403, detail="Not your turn")
 
@@ -478,14 +482,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         with session.lock:
             if request.players:
                 for bw, p in request.players.items():
-                    session.katrain("update_player", bw=bw, player_type=p.player_type, player_subtype=p.player_subtype, name=p.name)
+                    session.katrain(
+                        "update_player", bw=bw, player_type=p.player_type, player_subtype=p.player_subtype, name=p.name
+                    )
                     if p.name:
                         session.katrain.game.root.set_property("P" + bw, p.name)
-            
+
             if request.clear_cache:
                 session.katrain.engine.on_new_game()
 
-            session.katrain("new_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules)
+            session.katrain(
+                "new_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules
+            )
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -500,18 +508,36 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             players = settings.get("players")
             if players:
                 for bw, p in players.items():
-                    session.katrain("update_player", bw=bw, player_type=p["player_type"], player_subtype=p["player_subtype"], name=p.get("name"))
+                    session.katrain(
+                        "update_player",
+                        bw=bw,
+                        player_type=p["player_type"],
+                        player_subtype=p["player_subtype"],
+                        name=p.get("name"),
+                    )
                     if p.get("name"):
                         session.katrain.game.root.set_property("P" + bw, p["name"])
 
             if mode == "newgame" or mode == "setupposition":
                 if settings.get("clear_cache"):
                     session.katrain.engine.on_new_game()
-                session.katrain("new_game", size=settings.get("size"), handicap=settings.get("handicap"), komi=settings.get("komi"))
+                session.katrain(
+                    "new_game", size=settings.get("size"), handicap=settings.get("handicap"), komi=settings.get("komi")
+                )
                 if mode == "setupposition":
-                    session.katrain("selfplay_setup", until_move=settings.get("setup_move"), target_b_advantage=settings.get("setup_advantage"))
+                    session.katrain(
+                        "selfplay_setup",
+                        until_move=settings.get("setup_move"),
+                        target_b_advantage=settings.get("setup_advantage"),
+                    )
             elif mode == "editgame":
-                session.katrain("_do_edit_game", size=settings.get("size"), handicap=settings.get("handicap"), komi=settings.get("komi"), rules=settings.get("rules"))
+                session.katrain(
+                    "_do_edit_game",
+                    size=settings.get("size"),
+                    handicap=settings.get("handicap"),
+                    komi=settings.get("komi"),
+                    rules=settings.get("rules"),
+                )
             elif mode in ("free", "ranked"):
                 # Kiosk human-vs-AI game setup
                 color = settings.get("color", "black")
@@ -522,7 +548,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 # Set human player name from logged-in user
                 human_name = current_user.username if current_user else ""
-                session.katrain("update_player", bw=human_bw, player_type="player:human", player_subtype="player:human", name=human_name)
+                session.katrain(
+                    "update_player",
+                    bw=human_bw,
+                    player_type="player:human",
+                    player_subtype="player:human",
+                    name=human_name,
+                )
                 session.katrain("update_player", bw=ai_bw, player_type="player:ai", player_subtype=ai_strategy)
 
                 # Store game_type on session for auto-save at game end
@@ -544,13 +576,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
-                session.katrain("new_game",
+                session.katrain(
+                    "new_game",
                     size=settings.get("board_size", 19),
                     handicap=settings.get("handicap", 0),
                     komi=settings.get("komi", 6.5),
-                    rules=settings.get("rules", "japanese")
+                    rules=settings.get("rules", "japanese"),
+                    game_type=mode,  # R3/R5: rated/ranked games forbid analysis (anti-cheat)
                 )
-            
+
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -559,7 +593,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def edit_game(request: EditGameRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
-            session.katrain("edit_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules)
+            session.katrain(
+                "edit_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules
+            )
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -612,7 +648,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def update_player(request: UpdatePlayerRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
-            session.katrain("update_player", bw=request.bw, player_type=request.player_type, player_subtype=request.player_subtype, name=request.name)
+            session.katrain(
+                "update_player",
+                bw=request.bw,
+                player_type=request.player_type,
+                player_subtype=request.player_subtype,
+                name=request.name,
+            )
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -705,7 +747,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def selfplay(request: SelfPlayRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
-            session.katrain("selfplay_setup", until_move=request.until_move, target_b_advantage=request.target_b_advantage)
+            session.katrain(
+                "selfplay_setup", until_move=request.until_move, target_b_advantage=request.target_b_advantage
+            )
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
@@ -749,8 +793,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         player_white = player_white or name
 
             # Extract ranks
-            black_rank = getattr(players_info["B"], "calculated_rank", None) or getattr(players_info["B"], "sgf_rank", None) or ""
-            white_rank = getattr(players_info["W"], "calculated_rank", None) or getattr(players_info["W"], "sgf_rank", None) or ""
+            black_rank = (
+                getattr(players_info["B"], "calculated_rank", None)
+                or getattr(players_info["B"], "sgf_rank", None)
+                or ""
+            )
+            white_rank = (
+                getattr(players_info["W"], "calculated_rank", None)
+                or getattr(players_info["W"], "sgf_rank", None)
+                or ""
+            )
 
             board_size_val = state.get("board_size", [19, 19])
             board_size = board_size_val[0] if isinstance(board_size_val, (list, tuple)) else board_size_val
@@ -760,6 +812,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             game_type = getattr(session, "game_type", "free")
 
             from datetime import datetime
+
             game_date = datetime.now().strftime("%Y-%m-%d")
 
             app.state.user_game_repo.create(
@@ -818,15 +871,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type=getattr(session, 'game_type', 'free'),
+                    game_type=getattr(session, "game_type", "free"),
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
 
-                manager._schedule_broadcast(session, {
-                    "type": "game_end",
-                    "data": {"reason": "resign", "winner_id": winner_id, "result": result}
-                })
+                manager._schedule_broadcast(
+                    session,
+                    {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
+                )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
         elif not is_multiplayer and current_user and session.user_id:
@@ -843,7 +896,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         score = current_node.score
 
         if score is None:
-            raise HTTPException(status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete.")
+            raise HTTPException(
+                status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete."
+            )
 
         # Format result: positive = Black leads, negative = White leads
         if score >= 0:
@@ -865,17 +920,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type=getattr(session, 'game_type', 'free'),
+                    game_type=getattr(session, "game_type", "free"),
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record count game result: {e}")
 
-            manager._schedule_broadcast(session, {
-                "type": "game_end",
-                "data": {"reason": "count", "winner_id": winner_id, "result": result}
-            })
+            manager._schedule_broadcast(
+                session, {"type": "game_end", "data": {"reason": "count", "winner_id": winner_id, "result": result}}
+            )
         elif current_user and session.user_id:
             _record_ai_game(session, app, current_user, result)
 
@@ -924,14 +978,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             # Set pending request
             import time as time_module
+
             session.pending_count_request = current_user.id
             session.pending_count_timestamp = time_module.time()
 
             # Broadcast to opponent
-            manager._schedule_broadcast(session, {
-                "type": "count_request",
-                "data": {"requester_id": current_user.id, "requester_name": current_user.username}
-            })
+            manager._schedule_broadcast(
+                session,
+                {
+                    "type": "count_request",
+                    "data": {"requester_id": current_user.id, "requester_name": current_user.username},
+                },
+            )
 
             return {"session_id": session.session_id, "status": "pending"}
         else:
@@ -979,10 +1037,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.pending_count_request = None
             session.pending_count_timestamp = None
 
-            manager._schedule_broadcast(session, {
-                "type": "count_rejected",
-                "data": {"rejected_by": current_user.id}
-            })
+            manager._schedule_broadcast(session, {"type": "count_rejected", "data": {"rejected_by": current_user.id}})
 
             return {"session_id": session.session_id, "accepted": False}
 
@@ -1008,15 +1063,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
-                    game_type=getattr(session, 'game_type', 'free'),
+                    game_type=getattr(session, "game_type", "free"),
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
 
-                manager._schedule_broadcast(session, {
-                    "type": "game_end",
-                    "data": {"reason": "timeout", "winner_id": winner_id, "result": result}
-                })
+                manager._schedule_broadcast(
+                    session,
+                    {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
+                )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
         elif not is_multiplayer and current_user and session.user_id:
@@ -1049,7 +1104,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             app.state.game_repo.record_multiplayer_game(
                 sgf_content=session.katrain.get_sgf(),
                 result=result,
-                game_type=getattr(session, 'game_type', 'free'),
+                game_type=getattr(session, "game_type", "free"),
                 black_id=session.player_b_id,
                 white_id=session.player_w_id,
             )
@@ -1057,10 +1112,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logging.getLogger("katrain_web").error(f"Failed to record game forfeit: {e}")
 
         # Broadcast game end to all connected sockets
-        manager._schedule_broadcast(session, {
-            "type": "game_end",
-            "data": {"reason": "forfeit", "winner_id": winner_id, "result": result, "leaver_id": current_user.id}
-        })
+        manager._schedule_broadcast(
+            session,
+            {
+                "type": "game_end",
+                "data": {"reason": "forfeit", "winner_id": winner_id, "result": result, "leaver_id": current_user.id},
+            },
+        )
 
         # Clean up the session
         manager.remove_session(request.session_id)
@@ -1137,12 +1195,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.katrain("switch_lang", lang=request.lang)
             state = session.katrain.get_state()
             session.last_state = state
-        return {"session_id": session.session_id, "state": state, "language": session.katrain.config("general/language")}
+        return {
+            "session_id": session.session_id,
+            "state": state,
+            "language": session.katrain.config("general/language"),
+        }
 
     @app.get("/api/translations")
     def get_translations(lang: str):
         from katrain.core.lang import i18n
-        # Switch language temporarily to get the catalog if needed, 
+
+        # Switch language temporarily to get the catalog if needed,
         # but i18n.switch_lang is global.
         # However, the frontend will call this when it wants to refresh its labels.
         i18n.switch_lang(lang)
@@ -1155,8 +1218,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             AI_STRATEGIES_RECOMMENDED_ORDER,
             AI_OPTION_VALUES,
             AI_KEY_PROPERTIES,
-            AI_CONFIG_DEFAULT
+            AI_CONFIG_DEFAULT,
         )
+
         # Convert range objects to lists for JSON serialization
         json_option_values = {}
         for k, v in AI_OPTION_VALUES.items():
@@ -1188,14 +1252,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "opponent_fac": 0.5,
                 "min_visits": 3,
                 "attach_penalty": 1,
-                "tenuki_penalty": 0.5
+                "tenuki_penalty": 0.5,
             },
             "ai:p:weighted": {"weaken_fac": 0.5, "pick_override": 1.0, "lower_bound": 0.001},
             "ai:p:pick": {"pick_override": 0.95, "pick_n": 5, "pick_frac": 0.35},
             "ai:p:local": {"pick_override": 0.95, "stddev": 1.5, "pick_n": 15, "pick_frac": 0.0, "endgame": 0.5},
             "ai:p:tenuki": {"pick_override": 0.85, "stddev": 7.5, "pick_n": 5, "pick_frac": 0.4, "endgame": 0.45},
-            "ai:p:influence": {"pick_override": 0.95, "pick_n": 5, "pick_frac": 0.3, "threshold": 3.5, "line_weight": 10, "endgame": 0.4},
-            "ai:p:territory": {"pick_override": 0.95, "pick_n": 5, "pick_frac": 0.3, "threshold": 3.5, "line_weight": 2, "endgame": 0.4},
+            "ai:p:influence": {
+                "pick_override": 0.95,
+                "pick_n": 5,
+                "pick_frac": 0.3,
+                "threshold": 3.5,
+                "line_weight": 10,
+                "endgame": 0.4,
+            },
+            "ai:p:territory": {
+                "pick_override": 0.95,
+                "pick_n": 5,
+                "pick_frac": 0.3,
+                "threshold": 3.5,
+                "line_weight": 2,
+                "endgame": 0.4,
+            },
             "ai:p:rank": {"kyu_rank": -2},
             "ai:human": {"human_kyu_rank": 0, "modern_style": True},
             "ai:pro": {"pro_year": 2010, "modern_style": True},
@@ -1206,13 +1284,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             "options": json_option_values,
             "key_properties": list(AI_KEY_PROPERTIES),
             "default_strategy": AI_CONFIG_DEFAULT,
-            "strategy_defaults": strategy_defaults
+            "strategy_defaults": strategy_defaults,
         }
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):
         from katrain.core.ai import ai_rank_estimation
         from katrain.core.lang import rank_label
+
         try:
             rank = ai_rank_estimation(request.strategy, request.settings)
             return {"rank": rank_label(rank)}
@@ -1281,6 +1360,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.websocket("/ws/lobby")
     async def lobby_websocket_endpoint(websocket: WebSocket):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
+
         logger = logging.getLogger("katrain_web")
         token = websocket.query_params.get("token")
         if not token:
@@ -1300,29 +1380,37 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         await websocket.accept()
         lobby_manager = app.state.lobby_manager
         lobby_manager.add_user(current_user.id, websocket)
-        logger.info(f"User {current_user.username} (ID: {current_user.id}) joined the lobby. Online users: {lobby_manager.get_online_user_ids()}")
+        logger.info(
+            f"User {current_user.username} (ID: {current_user.id}) joined the lobby. Online users: {lobby_manager.get_online_user_ids()}"
+        )
         try:
             # Broadcast update immediately
-            await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
+            await lobby_manager.broadcast(
+                {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}
+            )
             while True:
                 message = await websocket.receive_json()
                 msg_type = message.get("type")
                 if msg_type == "ping":
                     await websocket.send_json({"type": "pong"})
-                
+
                 elif msg_type == "start_matchmaking":
                     game_type = message.get("game_type", "free")
-                    logging.getLogger("katrain_web").info(f"User {current_user.username} (ID: {current_user.id}) started matchmaking for {game_type}")
+                    logging.getLogger("katrain_web").info(
+                        f"User {current_user.username} (ID: {current_user.id}) started matchmaking for {game_type}"
+                    )
 
                     # Prerequisite Check for Rated Games
                     if game_type == "rated":
                         count = app.state.user_repo.count_completed_rated_games(current_user.id)
                         if count < 3:
-                            await websocket.send_json({
-                                "type": "error",
-                                "code": "PREREQUISITE_FAILED",
-                                "message": f"You must complete 3 rated AI games before playing rated PvP. (Completed: {count}/3)"
-                            })
+                            await websocket.send_json(
+                                {
+                                    "type": "error",
+                                    "code": "PREREQUISITE_FAILED",
+                                    "message": f"You must complete 3 rated AI games before playing rated PvP. (Completed: {count}/3)",
+                                }
+                            )
                             continue
 
                     match = app.state.matchmaker.add_to_queue(current_user.id, game_type, websocket)
@@ -1332,21 +1420,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         user_repo = app.state.user_repo
                         u1 = user_repo.get_user_by_id(match.player1_id)
                         u2 = user_repo.get_user_by_id(match.player2_id)
-                        
+
                         # Create Multiplayer Session
                         # Randomly assign B/W
                         import random
+
                         if random.random() < 0.5:
                             pb, pw = match.player1_id, match.player2_id
-                            pb_name, pw_name = u1.get("username") if u1 else "Black", u2.get("username") if u2 else "White"
+                            pb_name, pw_name = u1.get("username") if u1 else "Black", (
+                                u2.get("username") if u2 else "White"
+                            )
                         else:
                             pb, pw = match.player2_id, match.player1_id
-                            pb_name, pw_name = u2.get("username") if u2 else "Black", u1.get("username") if u1 else "White"
-                        
+                            pb_name, pw_name = u2.get("username") if u2 else "Black", (
+                                u1.get("username") if u1 else "White"
+                            )
+
                         game_session = app.state.session_manager.create_multiplayer_session(
                             pb, pw, b_name=pb_name, w_name=pw_name
                         )
-                        
+
                         # Found a match!
                         match_payload = {
                             "type": "match_found",
@@ -1357,16 +1450,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 "player_b": pb,
                                 "player_w": pw,
                                 "player_b_name": pb_name,
-                                "player_w_name": pw_name
-                            }
+                                "player_w_name": pw_name,
+                            },
                         }
-                        
+
                         # Send reliably
                         try:
                             await match.player1_socket.send_json(match_payload)
                         except Exception as e:
                             logger.error(f"Failed to send match to Player 1: {e}")
-                            
+
                         try:
                             await match.player2_socket.send_json(match_payload)
                         except Exception as e:
@@ -1384,57 +1477,58 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         # Ideally LobbyManager should expose a method 'send_to_user'
                         with lobby_manager._lock:
                             target_sockets = list(lobby_manager._online_users.get(target_id, []))
-                        
+
                         if target_sockets:
                             invite_payload = {
                                 "type": "invitation",
                                 "from_id": current_user.id,
                                 "from_name": current_user.username,
-                                "mode": message.get("mode", "free")
+                                "mode": message.get("mode", "free"),
                             }
                             for ws in target_sockets:
-                                try: await ws.send_json(invite_payload)
-                                except: pass
-                            
+                                try:
+                                    await ws.send_json(invite_payload)
+                                except:
+                                    pass
+
                             # Confirm to sender
                             await websocket.send_json({"type": "info", "message": "Invitation sent."})
                         else:
                             await websocket.send_json({"type": "error", "message": "User is offline or not in lobby."})
 
                 elif msg_type == "accept_invite":
-                    target_id = message.get("target_id") # The inviter
+                    target_id = message.get("target_id")  # The inviter
                     if target_id:
-                         # Fetch Usernames
+                        # Fetch Usernames
                         user_repo = app.state.user_repo
                         all_users = user_repo.list_users()
                         users_by_id = {u["id"]: u["username"] for u in all_users}
 
                         # Create Session (Inviter = Black, Acceptor = White by default, or random)
                         pb, pw = target_id, current_user.id
-                        
+
                         game_session = app.state.session_manager.create_multiplayer_session(
                             pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw)
                         )
-                        
+
                         match_payload = {
                             "type": "match_found",
                             "session_id": game_session.session_id,
-                            "game_type": "free", # Direct invites are free for now
-                             "players": {
-                                "player_b": pb,
-                                "player_w": pw
-                            }
+                            "game_type": "free",  # Direct invites are free for now
+                            "players": {"player_b": pb, "player_w": pw},
                         }
-                        
+
                         # Send to self (Acceptor)
                         await websocket.send_json(match_payload)
-                        
+
                         # Send to Inviter
                         with lobby_manager._lock:
                             target_sockets = list(lobby_manager._online_users.get(target_id, []))
                         for ws in target_sockets:
-                            try: await ws.send_json(match_payload)
-                            except: pass
+                            try:
+                                await ws.send_json(match_payload)
+                            except:
+                                pass
 
         except WebSocketDisconnect:
             logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")
@@ -1442,7 +1536,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         finally:
             app.state.matchmaker.remove_from_queue(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
-            await lobby_manager.broadcast({"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())})
+            await lobby_manager.broadcast(
+                {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}
+            )
 
     @app.websocket("/ws/{session_id}")
     async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -1494,14 +1590,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         await websocket.send_json(evt)
 
                 # Send status update periodically
-                await websocket.send_json({
-                    "type": "vision_status",
-                    "data": {
-                        "camera_connected": vision.camera_status == "connected",
-                        "pose_locked": vision.pose_lock_status == "locked",
-                        "sync_state": vision.sync_state,
-                    },
-                })
+                await websocket.send_json(
+                    {
+                        "type": "vision_status",
+                        "data": {
+                            "camera_connected": vision.camera_status == "connected",
+                            "pose_locked": vision.pose_lock_status == "locked",
+                            "sync_state": vision.sync_state,
+                        },
+                    }
+                )
 
                 # Check for client messages (ping)
                 try:
@@ -1567,23 +1665,30 @@ async def _vision_move_poller(app: FastAPI):
                     session = manager.get_session(session_id)
                     if session:
                         # Convert to KaTrain move and submit
-                        move = vision_move_to_katrain(
-                            move_data.col, move_data.row, move_data.color, board_size=19
-                        )
+                        move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
 
                         # Route through platform gateway for cross-platform games
                         gateway = getattr(app.state, "platform_gateway", None)
                         if gateway and gateway.is_platform_game(session_id):
                             try:
                                 await gateway.play_move(session_id, move.coords[0], move.coords[1], user_id=0)
-                                log.info("Vision move submitted via platform gateway: col=%d row=%d", move_data.col, move_data.row)
+                                log.info(
+                                    "Vision move submitted via platform gateway: col=%d row=%d",
+                                    move_data.col,
+                                    move_data.row,
+                                )
                             except Exception as gw_err:
                                 log.warning("Platform gateway rejected vision move: %s", gw_err)
                                 await asyncio.sleep(0.5)
                                 continue
                         else:
                             session.katrain("play", move.coords)
-                            log.info("Vision move submitted: col=%d row=%d color=%d", move_data.col, move_data.row, move_data.color)
+                            log.info(
+                                "Vision move submitted: col=%d row=%d color=%d",
+                                move_data.col,
+                                move_data.row,
+                                move_data.color,
+                            )
 
                         # Update expected board from new game state
                         game_state = session.get_game_state()
@@ -1624,7 +1729,7 @@ def build_frontend(force: bool = False):
         if not (ui_path / "node_modules").exists():
             print("Installing frontend dependencies...", flush=True)
             subprocess.run(["npm", "install"], cwd=ui_path, check=True, capture_output=False)
-        
+
         # Build
         subprocess.run(["npm", "run", "build"], cwd=ui_path, check=True, capture_output=False)
         print("Frontend build successful.", flush=True)
@@ -1659,11 +1764,21 @@ def run_web():
     )
     parser.add_argument("--log-level", default="warning")
     parser.add_argument("--disable-engine", action="store_true")
-    parser.add_argument("--ui", default=None, help="Interface mode to use. web (default) starts the FastAPI server, while desktop launches the Kivy GUI.")
-    parser.add_argument("--vision-backend", default="onnx", choices=["onnx", "rknn", "ultralytics"], help="Vision inference backend")
-    parser.add_argument("--vision-model", default=None, help="Path to vision model file. Providing this enables the vision service.")
+    parser.add_argument(
+        "--ui",
+        default=None,
+        help="Interface mode to use. web (default) starts the FastAPI server, while desktop launches the Kivy GUI.",
+    )
+    parser.add_argument(
+        "--vision-backend", default="onnx", choices=["onnx", "rknn", "ultralytics"], help="Vision inference backend"
+    )
+    parser.add_argument(
+        "--vision-model", default=None, help="Path to vision model file. Providing this enables the vision service."
+    )
     parser.add_argument("--vision-camera", default="0", help="Camera device ID (int) or path (e.g. /dev/video73)")
-    parser.add_argument("--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)")
+    parser.add_argument(
+        "--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)"
+    )
     args, _unknown = parser.parse_known_args()
 
     # Configure vision service if model path provided
@@ -1693,7 +1808,7 @@ def run_web():
 
     host = args.host
     port = args.port
-    
+
     # Configure uvicorn logging to reduce noise
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["formatters"]["default"]["fmt"] = "%(levelname)s:     %(message)s"
@@ -1710,12 +1825,12 @@ def run_web():
 
     app = create_app(enable_engine=not args.disable_engine)
     uvicorn.run(
-        app, 
-        host=host, 
-        port=port, 
-        reload=args.reload, 
+        app,
+        host=host,
+        port=port,
+        reload=args.reload,
         log_level=args.log_level,
-        access_log=False # Disable access logs to keep console clean for KataGo logs
+        access_log=False,  # Disable access logs to keep console clean for KataGo logs
     )
 
 

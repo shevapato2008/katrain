@@ -6,6 +6,19 @@
 > **v2 变更**:吸收 Codex / Gemini 对抗式评审(见 `review-feedback-codex.md`、`review-feedback-gemini.md`),
 > 修正了 R1 代码定位、补强了「云端权威 / 排位服务端封口 / 扣费幂等与崩溃退款 / 管理员权限 / 整数账本」等资产安全要点。
 
+## 执行状态(2026-06-08)
+
+- ✅ **阶段 1** R1 抑制自动 eval — 完成,7 测试,commit `fb4d2fc2`。
+- ✅ **阶段 2** 积分账本(整数/reserve-commit-refund/幂等/redeem 硬化/admin/迁移/board fail-safe)— 完成,26 测试,commit `62c4ffb2`。
+- ✅ **阶段 3** 远程 analysis_engine(可配置、健康门控、回退本地)— 完成(additive),commit `0507a5f7`。
+- ✅ **阶段 4a** 排位禁分析(服务端 `__call__` 单点封口 + toggle 拦截 + get_state 暴露)— 完成,11 测试,commit `0507a5f7`。
+- ⏳ **阶段 4b** 付费分析 handler — 待做(需真引擎集成 + 非请求上下文 DB/user-id 解析)。
+- ⏳ **阶段 5** 前端两端改造 — 待做(**先出 mockup 评审**,见用户偏好)。
+- ⏳ **阶段 6** 充值模块 UI/Provider — 待做(需收款码素材 + 套餐数值)。
+- ⏳ **board 云端 billing 代理** — 待做(需在线云端联调);**matchmaker 排位局 game_type 透传** 待收尾。
+
+手动测试见同目录 `MANUAL-TESTING.md`。环境:conda `py311_katago`。
+
 ## 评审取舍(v1 → v2)
 
 | 评审发现 | 严重度 | 处置 | 落点 |

@@ -36,7 +36,8 @@ class User(Base):
     rank = Column(String, default="20k")
     net_wins = Column(Integer, default=0)
     elo_points = Column(Integer, default=0)
-    credits = Column(Float, default=10000.00)
+    credits = Column(Integer, default=10000, nullable=False)  # integer credit balance (single pool); server-authoritative
+    is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -645,3 +646,75 @@ class PlatformGameDB(Base):
     user = relationship("User", backref="platform_games")
 
     __table_args__ = (UniqueConstraint("platform", "platform_game_id", name="uq_platform_game"),)
+
+
+# ============ Billing / Credits Models (single-pool integer ledger) ============
+#
+# Asset accounting uses INTEGER amounts only (credits as whole units; CNY as 分/fen).
+# Server is authoritative — board (kiosk) terminals proxy to the cloud and never
+# spend against local SQLite. See katrain/web/core/billing.py for the service layer.
+
+
+class CreditTransaction(Base):
+    """Append-only credit ledger. One row per balance-affecting event.
+
+    status lifecycle for spends: reserved -> committed | refunded.
+    Grants (recharge/redeem/admin) are written directly as committed.
+    `ref_id` is the idempotency key — a unique, server-derived string. Replaying
+    the same ref_id is a no-op that returns the existing row's balance_after.
+    """
+
+    __tablename__ = "credit_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    delta = Column(Integer, nullable=False)  # signed: negative=spend(reserve), positive=grant/refund
+    reason = Column(String(64), nullable=False)  # e.g. analysis_territory, redeem, order, admin_grant, refund_*
+    ref_id = Column(String(160), nullable=False, unique=True)  # idempotency key
+    status = Column(String(16), nullable=False, default="committed")  # committed | reserved | refunded
+    balance_after = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("ix_credit_tx_user_status", "user_id", "status"),
+    )
+
+
+class RedeemCode(Base):
+    """High-entropy redeemable codes that grant credits. Single-use, optional expiry."""
+
+    __tablename__ = "redeem_codes"
+
+    code = Column(String(64), primary_key=True)  # >=128-bit random hex; not enumerable
+    credits = Column(Integer, nullable=False)
+    used_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class RechargeOrder(Base):
+    """A recharge order through a PaymentProvider. ManualConfirm + redeem this round.
+
+    status: pending -> proof_submitted -> paid | cancelled. No auto-expiry this round.
+    Package amount/credits come from server config — never trusted from the client.
+    """
+
+    __tablename__ = "recharge_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    out_trade_no = Column(String(64), nullable=False, unique=True, index=True)  # provider order id
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    package_id = Column(String(64), nullable=False)
+    amount_fen = Column(Integer, nullable=False)  # CNY in 分 (cents)
+    credits = Column(Integer, nullable=False)
+    provider = Column(String(32), nullable=False)  # manual | wechat | alipay
+    status = Column(String(24), nullable=False, default="pending")
+    proof_url = Column(Text, nullable=True)
+    proof_hash = Column(String(64), nullable=True)
+    confirmed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    confirm_note = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    settled_at = Column(DateTime(timezone=True), nullable=True)

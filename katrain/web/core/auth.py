@@ -87,6 +87,7 @@ class SQLAlchemyUserRepository(UserRepository):
         # But for simplicity/dev, we can use Base.metadata.create_all
         from katrain.web.core.db import engine
         from sqlalchemy import inspect, text
+        from katrain.web.core import migrations
         models_db.Base.metadata.create_all(bind=engine)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
@@ -99,47 +100,41 @@ class SQLAlchemyUserRepository(UserRepository):
             # Recreate rating_history with the new schema
             models_db.Base.metadata.create_all(bind=engine)
 
-        # Schema drift guard (SQLite only): if ORM model columns don't match the
-        # existing table, drop all local tables and recreate from scratch.
-        # Safe because local SQLite is cache-only (shadow users, offline queue).
+        # Lightweight, non-destructive migration (all dialects): ADD COLUMN / CREATE
+        # INDEX for anything missing (e.g. users.is_admin, billing indexes). Runs
+        # BEFORE the SQLite drift-rebuild so a simple new column never drops data.
+        migrations.add_missing_columns(engine)
+        migrations.create_missing_indexes(engine)
+
+        # Schema drift guard (SQLite only): if ORM model columns STILL don't match
+        # (e.g. a column type change that ADD COLUMN can't fix), drop and recreate
+        # local tables — but NEVER the billing/ledger tables, which hold real assets.
         if engine.dialect.name == "sqlite":
             inspector = inspect(engine)
-            needs_rebuild = False
+            drift_tables = []
             for table in models_db.Base.metadata.sorted_tables:
                 if table.name not in inspector.get_table_names():
                     continue
                 existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
                 expected_cols = {c.name for c in table.columns}
                 if not expected_cols.issubset(existing_cols):
-                    import logging
-                    logging.getLogger("katrain_web").warning(
-                        f"Schema drift in table '{table.name}': missing columns "
-                        f"{expected_cols - existing_cols}. Rebuilding local DB."
-                    )
-                    needs_rebuild = True
-                    break
-            if needs_rebuild:
-                models_db.Base.metadata.drop_all(bind=engine)
-                models_db.Base.metadata.create_all(bind=engine)
-
-        # PostgreSQL: add missing columns via ALTER TABLE (preserves data)
-        if engine.dialect.name == "postgresql":
-            import logging
-            pg_inspector = inspect(engine)
-            with engine.begin() as conn:
-                for table in models_db.Base.metadata.sorted_tables:
-                    if table.name not in pg_inspector.get_table_names():
-                        continue
-                    existing_cols = {c["name"] for c in pg_inspector.get_columns(table.name)}
-                    for col in table.columns:
-                        if col.name not in existing_cols:
-                            col_type = col.type.compile(engine.dialect)
-                            conn.execute(text(
-                                f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}'
-                            ))
-                            logging.getLogger("katrain_web").info(
-                                f"Added missing column '{col.name}' to table '{table.name}'"
-                            )
+                    drift_tables.append(table.name)
+            # Only rebuild non-billing tables; refuse to drop asset tables.
+            rebuildable = [t for t in drift_tables if t not in migrations.BILLING_TABLES]
+            if any(t in migrations.BILLING_TABLES for t in drift_tables):
+                import logging
+                logging.getLogger("katrain_web").error(
+                    f"Schema drift in billing table(s) {set(drift_tables) & migrations.BILLING_TABLES}; "
+                    "refusing to drop. Resolve manually."
+                )
+            if rebuildable:
+                import logging
+                logging.getLogger("katrain_web").warning(
+                    f"Schema drift in {rebuildable}; rebuilding those local tables."
+                )
+                tables = [models_db.Base.metadata.tables[t] for t in rebuildable]
+                models_db.Base.metadata.drop_all(bind=engine, tables=tables)
+                models_db.Base.metadata.create_all(bind=engine, tables=tables)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
         session = self.session_factory()
@@ -267,6 +262,7 @@ class SQLAlchemyUserRepository(UserRepository):
             "hashed_password": user_obj.hashed_password,
             "rank": user_obj.rank,
             "credits": user_obj.credits,
+            "is_admin": bool(user_obj.is_admin),
             "avatar_url": user_obj.avatar_url,
             "created_at": user_obj.created_at
         }

@@ -76,6 +76,36 @@ async def _lifespan_server(app: FastAPI, log):
         except ValueError:
             pass  # Already exists race condition
 
+    # Ensure the default 'admin' account carries the is_admin flag (billing admin).
+    try:
+        from katrain.web.core import models_db
+        from katrain.web.core.db import SessionLocal as _SL
+
+        _s = _SL()
+        try:
+            admin_row = _s.query(models_db.User).filter(models_db.User.username == "admin").one_or_none()
+            if admin_row is not None and not admin_row.is_admin:
+                admin_row.is_admin = True
+                _s.commit()
+                log.info("Marked default 'admin' account as is_admin=True")
+        finally:
+            _s.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Could not ensure admin flag: {e}")
+
+    # Reconcile any credit reservations stuck after a previous crash.
+    try:
+        from katrain.web.core import billing
+        from katrain.web.core.db import SessionLocal as _SL2
+
+        _s2 = _SL2()
+        try:
+            billing.reconcile_stale_reservations(_s2, settings.BILLING_RESERVATION_TTL_SEC)
+        finally:
+            _s2.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Billing reconcile skipped: {e}")
+
     app.state.user_repo = repo
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo

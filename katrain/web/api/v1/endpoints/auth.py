@@ -60,6 +60,13 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
     return await get_user_from_token(token, request.app.state.user_repo)
 
 
+async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """Require an authenticated user with the is_admin flag. Shadow users never qualify."""
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
+    return current_user
+
+
 # Optional auth - returns None if not authenticated, doesn't require token
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 

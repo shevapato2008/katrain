@@ -34,6 +34,17 @@ class Settings(BaseModel):
     REMOTE_API_URL: str = ""  # Remote server URL for board mode, e.g. "https://katrain.example.com"
     DEVICE_ID: str = ""  # Unique device identifier, auto-generated if empty
 
+    # Billing / paid-analysis (single-pool integer credits). Prices are per analysis action.
+    BILLING_PRICES: dict = {"territory": 10, "hints": 10, "variations": 10}
+    BILLING_PACKAGES: list = [
+        {"package_id": "p6", "credits": 600, "amount_fen": 600, "title": "6 元 600 积分"},
+        {"package_id": "p30", "credits": 3300, "amount_fen": 3000, "title": "30 元 3300 积分"},
+        {"package_id": "p98", "credits": 12000, "amount_fen": 9800, "title": "98 元 12000 积分"},
+    ]
+    BILLING_FREE_GRANT: int = 10000  # initial credits for a new account
+    BILLING_RESERVATION_TTL_SEC: int = 120  # stale 'reserved' refund threshold
+    REDEEM_RATE_LIMIT: int = 5  # max failed redeem attempts / user / minute
+
     def __init__(self, **data):
         # Override with env vars if not provided in data
         data.setdefault("KATRAIN_HOST", os.getenv("KATRAIN_HOST", "0.0.0.0"))

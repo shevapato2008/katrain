@@ -75,6 +75,7 @@
   - 充值页面(参考 19x19 充值模块)。
 - **R6 远程引擎打通(不计费)**:
 - **R7 抑制开关解耦(离线可测)**:eval抑制 不得依赖 board 远程瘦客户端模式;新增独立开关 `KATRAIN_SBC_PURE_PLAY`,使板子在 `server` 模式(本地登录可用)下也能抑制 eval。详见 `R7-decouple-suppress-from-board.md`。
+- **R8 HTTP 引擎去 per-query spawn(性能·主因)**:`engine.py:_post_json` 每条查询用 `multiprocessing spawn` 起子进程(重 import 整个 server,RK3562 ~9s/步)。改用线程/async httpx,使每步落子 ≤~2s。详见 `R8-http-engine-per-query-spawn.md`。
   - 新增可配置 `engine/remote_url`(realtime_api 协议,`humanSLProfile`/`overrideSettings` 透传)。
   - kiosk 付费实时分析 + 复盘 → 远程 b28(**b28 未部署,本期按可配置 URL 开发**,用本地 :8000 或 mock 验证链路)。
   - 复盘报告**本期不计费**,只打通远程引擎能出报告。

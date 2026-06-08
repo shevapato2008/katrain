@@ -17,6 +17,7 @@
 - ⏳ **阶段 6** 充值模块 UI/Provider — 待做(需收款码素材 + 套餐数值)。
 - ⏳ **board 云端 billing 代理** — 待做(需在线云端联调);**matchmaker 排位局 game_type 透传** 待收尾。
 - 🔴 **R7 解耦** eval抑制 当前绑死在 `KATRAIN_MODE=="board"`,而 board 又强制远程登录(`REMOTE_API_URL` 未建)→ 实机 admin/admin 登录失败、R1 无法验收。需独立开关 `KATRAIN_SBC_PURE_PLAY`,详见同目录 `R7-decouple-suppress-from-board.md`。
+- 🔴 **R8 真凶** AI 落子每步 ~11s 的主因 = `engine.py:_post_json` 每条查询 `multiprocessing spawn` 一个子进程,spawn 重新 import 整个 `katrain.web.server`(RK3562 ~9s);引擎本身仅 1.2s。改线程/async httpx。详见 `R8-http-engine-per-query-spawn.md`。
 
 手动测试见同目录 `MANUAL-TESTING.md`。环境:conda `py311_katago`。
 

@@ -1447,8 +1447,9 @@ class HumanStyleStrategy(AIStrategy):
             callback=set_analysis,
             error_callback=set_error,
             priority=PRIORITY_EXTRA_AI_QUERY,
+            visits=1,  # human SL move is chosen from humanPolicy (network output, search-independent); 1 visit keeps play fast
             include_policy=True,
-            extra_settings=override_settings
+            extra_settings=override_settings,
         )
         self.game.katrain.log(f"[HumanStyleStrategy] Analysis request sent, waiting for results", OUTPUT_DEBUG)
         

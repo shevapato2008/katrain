@@ -1,5 +1,4 @@
 import sys
-import multiprocessing
 import requests
 from requests.adapters import HTTPAdapter
 import logging
@@ -15,8 +14,6 @@ import time
 import traceback
 from typing import Callable, Dict, List, Optional
 
-import urllib3
-
 from katrain.core.constants import (
     OUTPUT_DEBUG,
     OUTPUT_ERROR,
@@ -28,7 +25,6 @@ from katrain.core.constants import (
     PONDERING_REPORT_DT,
 )
 from katrain.core.game_node import GameNode
-from katrain.core.http_worker import do_request
 from katrain.core.lang import i18n
 from katrain.core.sgf_parser import Move
 from katrain.core.utils import find_package_resource, json_truncate_arrays

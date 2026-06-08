@@ -57,3 +57,19 @@ katrain 日志:`[11.0s][HTTP:1][done] ... 1 visits` / `[10.5s][HTTP:2][done]` / 
 
 - 与 R1(抑制 eval)互补:R1 减条数、R8 降单条成本,**两者都到位**才能稳定 ≤2s。
 - 与 R7(抑制解耦 board)正交。R8 是引擎层、两模式共用。
+
+## 8. galaxy/服务器端走同一路径 + 规模隐患(2026-06-08 追加)
+
+`KaTrainWeb`(interface.py,**galaxy 与 kiosk 共用**)的对局引擎 = `create_engine(self.config("engine"))`。
+`create_engine`(engine.py:768)对 `backend in ["http","remote","cloud"]` **一律返回 `KataGoHttpEngine`**(即 `_post_json` → `multiprocessing spawn` 那个类)。
+服务器按 README 部署就是 http backend(`LOCAL_KATAGO_URL=:8000`,server.py:136-144 据 `backend=="http"` 同步 url)。
+**结论:galaxy/服务器网页端的每条对局/分析查询,也走同一个 per-query spawn。**
+
+**规模隐患(本期评审重点)**:
+- 板上(单用户、弱 ARM):表现为**延迟**(re-import ~9s/步)。
+- 服务器(多用户、强算力):表现为**吞吐/资源**问题。每条 analyze 都 fork+spawn 一个新 Python 进程并**重新 import 整个 `katrain.web.server`**(SQLAlchemy/FastAPI/…)。成百上千并发棋局 → 每秒成百上千次进程创建 + 框架重 import:
+  - CPU 被 import 吃满;每个临时进程驻留数百 MB → 内存压力/OOM;PID/FD 压力;fork 开销。
+  - 这是 **O(查询数)的进程创建**反模式,强硬件只能推迟撞墙、不能消除。高负载下正是"处理变慢"的来源。
+- 故 R8 对**服务器的优先级高于板子**(板子是 1 个用户的体验问题,服务器是上线后的扩展性问题)。
+
+**现成样板**:仓库里已有干净的 async httpx 客户端 `katrain/web/core/engine_client.py::KataGoClient.analyze`(`async with httpx.AsyncClient`)。R8 应让 `KataGoHttpEngine` 收敛到这种"线程/async + 连接复用"的方式,彻底去掉 per-query 进程创建(galaxy/kiosk 同享收益)。

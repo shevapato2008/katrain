@@ -1,5 +1,7 @@
 # R8 · HTTP 引擎后端"每条查询 spawn 一个子进程" → 每步落子多 ~9s(RK3562 实测)
 
+> ➜ 已独立成专门 track:`tracks/http-engine-remove-spawn/requirements.md`(更详细,以那边为开发依据)。本文保留作背景。
+
 > Track: `sbc-pure-play-remote-analysis` · 分支 `feature/rk3588-ui`
 > 2026-06-08 RK3562 实机验收 2b(AI≤2s)时定位。这是拖慢落子的**真正主因**,优先级高于 R1。
 

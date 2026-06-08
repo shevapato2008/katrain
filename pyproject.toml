@@ -33,13 +33,16 @@ dependencies = [
 
 [project.optional-dependencies]
 web = [
-    "fastapi>=0.109.2",
+    # fastapi 0.115 / starlette 0.41 required for httpx>=0.28 compatibility
+    # (older starlette's TestClient passes app= to httpx.Client, removed in httpx 0.28;
+    #  google-genai pins httpx>=0.28.1, so downgrading httpx is not an option).
+    "fastapi>=0.115.2,<0.116",
     "uvicorn>=0.27.1",
     "pydantic>=2.6.1",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
     "bcrypt>=4.0.1",
-    "httpx>=0.27.0",
+    "httpx>=0.28.1",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
     "alembic>=1.13.0",

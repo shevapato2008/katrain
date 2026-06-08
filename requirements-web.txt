@@ -3,7 +3,10 @@ chardet==5.2.0
 polib>=1.2.0
 
 # Dependencies for Real-Time API (Step 2 Implementation)
-fastapi==0.109.2
+# fastapi 0.115 / starlette 0.41 are required for httpx>=0.28 compatibility
+# (older starlette 0.36's TestClient passes app= to httpx.Client, removed in httpx 0.28;
+#  google-genai pins httpx>=0.28.1, so downgrading httpx is not an option).
+fastapi==0.115.14
 uvicorn[standard]==0.27.1
 pydantic==2.6.1
 python-jose[cryptography]==3.3.0
@@ -23,7 +26,7 @@ anthropic>=0.40.0
 # Testing and Development
 pytest==8.0.1
 pytest-asyncio
-httpx
+httpx>=0.28.1
 respx
 requests==2.32.4
 sqlalchemy>=2.0.0

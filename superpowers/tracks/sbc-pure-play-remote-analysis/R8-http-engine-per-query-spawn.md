@@ -73,3 +73,11 @@ katrain 日志:`[11.0s][HTTP:1][done] ... 1 visits` / `[10.5s][HTTP:2][done]` / 
 - 故 R8 对**服务器的优先级高于板子**(板子是 1 个用户的体验问题,服务器是上线后的扩展性问题)。
 
 **现成样板**:仓库里已有干净的 async httpx 客户端 `katrain/web/core/engine_client.py::KataGoClient.analyze`(`async with httpx.AsyncClient`)。R8 应让 `KataGoHttpEngine` 收敛到这种"线程/async + 连接复用"的方式,彻底去掉 per-query 进程创建(galaxy/kiosk 同享收益)。
+
+## 9. 交给 R8 实现时先确认(代办,2026-06-08)
+
+本文档第 8 节"galaxy 也走 spawn"是**据代码推断**(`create_engine`→`KataGoHttpEngine`)。
+R8 实现前请先在服务器/源码侧**确认 galaxy 对局实际经过的引擎类**:
+是 `core/engine.py::KataGoHttpEngine._post_json`(spawn,需修),
+还是 `web/core/engine_client.py::KataGoClient.analyze`(已是 async httpx,无需修)?
+据此决定收敛点;无论结论如何,板/kiosk 这条(KataGoHttpEngine)都要去 spawn。

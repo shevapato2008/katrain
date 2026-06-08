@@ -88,9 +88,7 @@ def test_post_json_returns_parsed_json(server):
 def test_post_json_creates_no_subprocess(server):
     engine = _make_engine(server)
     try:
-        with mock.patch("subprocess.Popen") as popen, mock.patch(
-            "multiprocessing.get_context"
-        ) as get_context:
+        with mock.patch("subprocess.Popen") as popen, mock.patch("multiprocessing.get_context") as get_context:
             result = engine._post_json({"id": "q2", "moves": []})
         assert "moveInfos" in result
         get_context.assert_not_called()

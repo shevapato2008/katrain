@@ -222,17 +222,17 @@ class KataGoEngine(BaseEngine):
         if config.get("altcommand", ""):
             self.command = config["altcommand"]
             self.shell = True
-        else:    
+        else:
             model = find_package_resource(config["model"])
             cfg = find_package_resource(config["config"])
             exe = self.get_engine_path(config.get("katago", "").strip())
-            
+
             if not exe:
                 return
-                
+
             # Add human model to command if provided
             if config.get("humanlike_model", ""):
-                human_model_path = find_package_resource(config.get("humanlike_model",""))
+                human_model_path = find_package_resource(config.get("humanlike_model", ""))
                 if os.path.isfile(human_model_path):
                     self.command = shlex.split(
                         f'"{exe}" analysis -model "{model}" -human-model "{human_model_path}" -config "{cfg}" -override-config "homeDataDir={os.path.expanduser(DATA_FOLDER)}"'
@@ -424,7 +424,9 @@ class KataGoEngine(BaseEngine):
                     if not partial_result:
                         del self.queries[query_id]
                     time_taken = time.time() - start_time
-                    results_exist = not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
+                    results_exist = (
+                        not analysis.get("noResults", False) and "moveInfos" in analysis and "rootInfo" in analysis
+                    )
                     self.katrain.log(
                         f"[{time_taken:.1f}][{query_id}][{'....' if partial_result else 'done'}] KataGo analysis received: {len(analysis.get('moveInfos',[]))} candidate moves, {analysis.get('rootInfo', {}).get('visits', 'n/a') if results_exist else 'n/a'} visits",
                         OUTPUT_DEBUG,
@@ -667,7 +669,7 @@ class KataGoHttpEngine(BaseEngine):
                 item = self.write_queue.get(block=True, timeout=0.1)
             except queue.Empty:
                 continue
-            
+
             # Process in a separate thread to avoid head-of-line blocking
             threading.Thread(target=self._handle_request, args=(item,), daemon=True).start()
 
@@ -685,7 +687,10 @@ class KataGoHttpEngine(BaseEngine):
                 self.ponder_query = {"id": query_id}
             self.queries[query_id] = (callback, error_callback, time.time(), next_move, node)
 
-        self.katrain.log(f"Sending KataGo HTTP analysis query {query_id} to {self.base_url}{self.analyze_path} with payload: {json.dumps(json_truncate_arrays(query))}", OUTPUT_INFO)
+        self.katrain.log(
+            f"Sending KataGo HTTP analysis query {query_id} to {self.base_url}{self.analyze_path} with payload: {json.dumps(json_truncate_arrays(query))}",
+            OUTPUT_INFO,
+        )
         try:
             analysis = self._post_json(query)
             if analysis is None:
@@ -769,6 +774,7 @@ class KataGoHttpEngine(BaseEngine):
         if response.status_code >= 400:
             raise RuntimeError(f"HTTP {response.status_code}")
         return response.json()
+
     def send_query(self, query, callback, error_callback, next_move=None, node=None):
         self.write_queue.put((query, callback, error_callback, next_move, node))
 
@@ -826,7 +832,7 @@ def create_engine(katrain, config):
             katrain.log(f"Checking HTTP engine status at {target}...", OUTPUT_INFO)
             response = requests.get(target, timeout=2.0)
             katrain.log(f"HTTP engine found and healthy. Status code: {response.status_code}", OUTPUT_INFO)
-            
+
             # Auto-detect human model support
             server_has_human_model = False
             try:
@@ -837,16 +843,15 @@ def create_engine(katrain, config):
                         katrain.log("Server reports support for human-like models.", OUTPUT_INFO)
             except Exception:
                 pass  # Use fallback
-                
+
             engine = KataGoHttpEngine(katrain, config)
             # Use detected capability or fallback to config
             engine.has_human_model = server_has_human_model or config.get("http_has_human_model", False)
             return engine
-            
+
         except Exception as e:
             katrain.log(f"Could not connect to HTTP engine: {e}. Falling back to local engine.", OUTPUT_ERROR)
             config["backend"] = "local"
 
     katrain.log("Starting local KataGo engine...", OUTPUT_INFO)
     return KataGoEngine(katrain, config)
-

@@ -51,15 +51,17 @@ def _default_clause(col):
         if not col.nullable:
             # Non-null column with no scalar default — supply a safe zero/empty.
             type_name = col.type.__class__.__name__.lower()
-            if "int" in type_name or "numeric" in type_name or "float" in type_name:
-                return "0"
+            # Check bool before int: PostgreSQL rejects `BOOLEAN DEFAULT 0` (needs
+            # TRUE/FALSE). SQLite 3.23+ also accepts TRUE/FALSE, so this works on both.
             if "bool" in type_name:
+                return "FALSE"
+            if "int" in type_name or "numeric" in type_name or "float" in type_name:
                 return "0"
             return "''"
         return None
     value = default.arg
     if isinstance(value, bool):
-        return "1" if value else "0"
+        return "TRUE" if value else "FALSE"
     if isinstance(value, (int, float)):
         return str(value)
     return f"'{value}'"

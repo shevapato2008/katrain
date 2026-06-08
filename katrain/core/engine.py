@@ -1,6 +1,7 @@
 import sys
 import multiprocessing
 import requests
+from requests.adapters import HTTPAdapter
 import logging
 import copy
 import json
@@ -558,8 +559,9 @@ class KataGoHttpEngine(BaseEngine):
         self.analyze_path = self.config.get("http_analyze_path", "/analyze")
         self.health_path = self.config.get("http_health_path", "/health")
         self.http_timeout = self.config.get("http_timeout", self.config.get("max_time", 8.0) + 30.0)
-        self._timeout = urllib3.Timeout(total=self.http_timeout)
-        self._headers = {"Content-Type": "application/json", "Connection": "close"}
+        self._headers = {"Content-Type": "application/json"}
+        self._session = None
+        self._generation = 0
         logging.getLogger("urllib3").setLevel(logging.WARNING)
         self.katago_process = HttpEngineStatus(self)
         self.worker_thread = None
@@ -583,8 +585,33 @@ class KataGoHttpEngine(BaseEngine):
 
     def start(self):
         self._stop_event.clear()
+        self._generation += 1
+        self._session = self._build_session()
         self.worker_thread = threading.Thread(target=self._request_loop, daemon=True)
         self.worker_thread.start()
+
+    def _build_session(self):
+        session = requests.Session()
+        # Keep-alive: reuse the TCP connection to the KataGo server across queries on
+        # this engine instead of opening a new socket per query.
+        #
+        # pool_maxsize is the IDLE-connection cache size, NOT a concurrency limiter:
+        # with pool_block=False (the default), extra concurrent requests still open
+        # extra sockets and simply discard them when done. KaTrain runs one engine
+        # instance per game against a single localhost target, so concurrency here is
+        # low and an idle cache of 10 is ample.
+        #
+        # max_retries=0: never silently retry; a failed POST surfaces immediately
+        # (this disables urllib3's retry loop — it does NOT impose a total-time cap;
+        # the per-request cap is the (connect, read) timeout tuple in _post_json).
+        #
+        # Thread-safety: we never mutate session headers/cookies after construction,
+        # and /analyze is expected not to set cookies, so the shared Session is safe
+        # across the per-query request threads.
+        adapter = HTTPAdapter(pool_connections=4, pool_maxsize=10, max_retries=0)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session
 
     def restart(self):
         self.shutdown(finish=False)
@@ -624,6 +651,13 @@ class KataGoHttpEngine(BaseEngine):
         if self.worker_thread:
             self.worker_thread.join()
             self.worker_thread = None
+        session = self._session
+        self._session = None
+        if session is not None:
+            try:
+                session.close()
+            except Exception:
+                pass
 
     def is_idle(self):
         return not self.queries and self.write_queue.empty()
@@ -643,7 +677,8 @@ class KataGoHttpEngine(BaseEngine):
 
     def _handle_request(self, item):
         query, callback, error_callback, next_move, node = item
-        
+        generation = self._generation  # so a stale request post-restart can't flip _available
+
         with self.thread_lock:
             if "id" not in query:
                 self.query_counter += 1
@@ -659,9 +694,11 @@ class KataGoHttpEngine(BaseEngine):
             analysis = self._post_json(query)
             if analysis is None:
                 raise RuntimeError("Empty response from HTTP engine")
-            self._available = True
+            if generation == self._generation:
+                self._available = True
         except Exception as e:
-            self._available = False
+            if generation == self._generation:
+                self._available = False
             with self.thread_lock:
                 entry = self.queries.pop(query_id, None)
             error_msg = f"HTTP analysis request failed: {e}"
@@ -715,36 +752,27 @@ class KataGoHttpEngine(BaseEngine):
 
     def _post_json(self, payload: Dict) -> Dict:
         url = f"{self.base_url}{self.analyze_path}"
-        ctx = multiprocessing.get_context("spawn")
-        parent_conn, child_conn = ctx.Pipe(duplex=False)
-        p = ctx.Process(target=do_request, args=(url, payload, self._headers, self.http_timeout, child_conn))
-        p.start()
-        child_conn.close()
-        
-        try:
-            if parent_conn.poll(self.http_timeout + 1.0):
-                res = parent_conn.recv()
-            else:
-                if p.is_alive():
-                    p.terminate()
-                p.join()
-                raise RuntimeError("HTTP request timed out or returned no data")
-        except Exception as e:
-            if p.is_alive():
-                p.terminate()
-            p.join()
-            raise e
-        finally:
-            parent_conn.close()
-        
-        p.join(timeout=1.0)
-        if p.is_alive():
-            p.terminate()
-            p.join()
-
-        if "error" in res:
-            raise RuntimeError(res["error"])
-        return res["data"]
+        # Capture the session locally: shutdown()/restart() may null/close self._session
+        # under us (we run on this query's own daemon thread, which shutdown does not
+        # join). Holding a local ref keeps the object alive for the in-flight request.
+        session = self._session
+        if session is None:
+            raise RuntimeError("HTTP engine session is closed")
+        # Runs on this query's own daemon thread (_request_loop -> _handle_request),
+        # so a blocking POST is safe and does not stall the worker or other queries.
+        # requests raises ConnectionError (connect failure) or Timeout (inactivity);
+        # _handle_request's `except` catches both and routes to error_callback/on_error.
+        #
+        # timeout is a (connect, read) INACTIVITY tuple, NOT a hard total deadline.
+        # This deliberately differs from the old poll(http_timeout + 1.0) wall-clock
+        # cap. KataGo returns a single, non-streaming JSON body, so a read-inactivity
+        # cap is adequate; a true total deadline would require an extra cancellation
+        # layer that plain blocking requests cannot provide.
+        timeout = (min(3.05, self.http_timeout), self.http_timeout)
+        response = session.post(url, json=payload, headers=self._headers, timeout=timeout)
+        if response.status_code >= 400:
+            raise RuntimeError(f"HTTP {response.status_code}")
+        return response.json()
     def send_query(self, query, callback, error_callback, next_move=None, node=None):
         self.write_queue.put((query, callback, error_callback, next_move, node))
 

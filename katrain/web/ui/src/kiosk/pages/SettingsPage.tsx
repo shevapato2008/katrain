@@ -1,13 +1,20 @@
 import { useState } from 'react';
-import { Box, Typography, Divider, Card, CardActionArea, CardContent } from '@mui/material';
+import { Box, Typography, Divider, Card, CardActionArea, CardContent, FormControlLabel, Switch } from '@mui/material';
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation, type Rotation } from '../context/OrientationContext';
+import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
   const { rotation, setRotation } = useOrientation();
   const [language, setLanguage] = useState('zh');
+  const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
+
+  const handleAutoAdvanceChange = (checked: boolean) => {
+    setAutoAdvance(checked);
+    writeAutoAdvance(checked);
+  };
 
   const platforms = [
     { name: '99围棋', desc: t('Kids Go teaching platform', '少儿围棋教学平台') },
@@ -32,6 +39,21 @@ const SettingsPage = () => {
         value={rotation}
         onChange={(v) => setRotation(v as Rotation)}
       />
+
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+          {t('Tsumego', '死活题')}
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={autoAdvance}
+              onChange={(e) => handleAutoAdvanceChange(e.target.checked)}
+            />
+          }
+          label={t('tsumego:autoAdvance', '做对后自动进入下一题')}
+        />
+      </Box>
 
       <OptionChips
         label={t('Language', '语言')}

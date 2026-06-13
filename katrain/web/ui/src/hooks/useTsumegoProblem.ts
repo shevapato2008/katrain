@@ -13,6 +13,7 @@ import {
   sgfToCoords
 } from '../utils/sgfParser';
 import type { SGFNode, ParsedSGF } from '../utils/sgfParser';
+import { useTsumegoProgress, writeLocalProgress } from '../context/TsumegoProgressContext';
 
 export interface ProblemDetail {
   id: string;
@@ -186,10 +187,19 @@ export interface UseTsumegoProblemReturn extends TsumegoProblemState {
 
   // Progress
   saveProgress: () => void;
+  /**
+   * Flush this problem's progress to the unified source (localStorage + server) once.
+   * Safe to call on navigate/unmount; no-ops if there was no attempt or it was already
+   * persisted this session.
+   */
+  flushProgress: () => void;
 }
 
 
 export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
+  // Unified progress source (safe default when no Provider — see TsumegoProgressContext).
+  const { markProgress } = useTsumegoProgress();
+
   // Problem data
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -597,32 +607,104 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     tryModeSnapshotRef.current = null;
   }, [isTryMode]);
 
-  // Save progress to localStorage and optionally to server
-  const saveProgress = useCallback(() => {
-    if (!problem) return;
+  // ---- Progress persistence (unified source: localStorage live + server terminal-once) ----
+  //
+  // D2/R3: server (unified) write fires at most ~once per problem — on the isSolved false->true
+  // transition, or on leave/unmount flush. A wrong move (isFailed) only refreshes localStorage,
+  // never the server (fixes the old "save on every wrong move" bug).
 
-    const progressKey = 'tsumego_progress';
-    const stored = localStorage.getItem(progressKey);
-    const progress = stored ? JSON.parse(stored) : {};
+  // Guards (reset per problem):
+  //  - serverPersistedRef: the unified/server write already happened this session for this problem.
+  //  - prevSolvedRef: previous isSolved value, to detect the false->true edge.
+  const serverPersistedRef = useRef(false);
+  const prevSolvedRef = useRef(false);
+  const currentProblemIdRef = useRef<string | null>(null);
 
-    progress[problem.id] = {
-      completed: isSolved,
-      attempts: attempts,
-      lastDuration: elapsedTime,
-      lastAttemptAt: new Date().toISOString()
-    };
+  // Latest values captured for the unmount cleanup (which runs with stale closure otherwise).
+  const latestRef = useRef({ problem, isSolved, attempts, elapsedTime, moveHistoryLen: moveHistory.length });
+  latestRef.current = { problem, isSolved, attempts, elapsedTime, moveHistoryLen: moveHistory.length };
 
-    localStorage.setItem(progressKey, JSON.stringify(progress));
+  // markProgress is stable per token but capture it in a ref for the unmount cleanup.
+  const markProgressRef = useRef(markProgress);
+  markProgressRef.current = markProgress;
 
-    // TODO: Also save to server if user is logged in
-  }, [problem, isSolved, attempts, elapsedTime]);
-
-  // Auto-save progress when solved or failed
+  // Reset per-problem guards whenever the loaded problem changes.
   useEffect(() => {
-    if (isSolved || isFailed) {
-      saveProgress();
+    if (problem && currentProblemIdRef.current !== problem.id) {
+      currentProblemIdRef.current = problem.id;
+      serverPersistedRef.current = false;
+      prevSolvedRef.current = false;
     }
-  }, [isSolved, isFailed, saveProgress]);
+  }, [problem]);
+
+  // localStorage-only write (no in-memory/server) — used for non-terminal/wrong-move caching.
+  const cacheLocalProgress = useCallback((completed: boolean) => {
+    if (!problem) return;
+    writeLocalProgress(problem.id, {
+      completed,
+      attempts,
+      lastDuration: elapsedTime,
+      lastAttemptAt: new Date().toISOString(),
+    });
+  }, [problem, attempts, elapsedTime]);
+
+  // Unified write through the progress source (localStorage + server when authenticated).
+  // Marks serverPersistedRef so flush/unmount won't double-post.
+  const persistProgress = useCallback((completed: boolean) => {
+    if (!problem) return;
+    serverPersistedRef.current = true;
+    markProgress(problem.id, { completed, attempts, lastDuration: elapsedTime });
+  }, [problem, attempts, elapsedTime, markProgress]);
+
+  // Backward-compat entry point. Routes through the unified write (localStorage + server).
+  const saveProgress = useCallback(() => {
+    persistProgress(isSolved);
+  }, [persistProgress, isSolved]);
+
+  // Flush on leave: if this problem had any attempt and wasn't already persisted this
+  // session, write once. Safe to call repeatedly (guarded by serverPersistedRef).
+  const flushProgress = useCallback(() => {
+    if (!problem) return;
+    if (serverPersistedRef.current) return;
+    if (attempts <= 0 && moveHistory.length <= 0) return;
+    persistProgress(isSolved);
+  }, [problem, attempts, moveHistory.length, isSolved, persistProgress]);
+
+  // Server/unified write fires ONLY on the isSolved false->true transition (once per problem).
+  useEffect(() => {
+    if (isSolved && !prevSolvedRef.current) {
+      prevSolvedRef.current = true;
+      if (!serverPersistedRef.current && problem) {
+        serverPersistedRef.current = true;
+        markProgress(problem.id, { completed: true, attempts, lastDuration: elapsedTime });
+      }
+    } else if (!isSolved) {
+      prevSolvedRef.current = false;
+    }
+    // attempts/elapsedTime intentionally read at transition time (not deps) — we want the
+    // values current at the moment of solving, and avoid re-firing on their changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSolved, problem]);
+
+  // Wrong move: refresh localStorage cache only (no server spam).
+  useEffect(() => {
+    if (isFailed) {
+      cacheLocalProgress(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFailed]);
+
+  // Flush once on unmount (navigate away) if there was an unpersisted attempt.
+  useEffect(() => {
+    return () => {
+      const { problem: p, isSolved: solved, attempts: att, elapsedTime: et, moveHistoryLen } = latestRef.current;
+      if (!p) return;
+      if (serverPersistedRef.current) return;
+      if (att <= 0 && moveHistoryLen <= 0) return;
+      serverPersistedRef.current = true;
+      markProgressRef.current(p.id, { completed: solved, attempts: att, lastDuration: et });
+    };
+  }, []);
 
   return {
     // State
@@ -651,6 +733,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     toggleHint,
     enterTryMode,
     exitTryMode,
-    saveProgress
+    saveProgress,
+    flushProgress
   };
 }

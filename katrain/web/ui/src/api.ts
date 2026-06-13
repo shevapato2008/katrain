@@ -114,7 +114,7 @@ export interface VisionStatusResponse {
   bound_session_id: string | null;
 }
 
-async function apiPost(path: string, payload: any, token?: string) {
+export async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;

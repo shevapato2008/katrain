@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
+import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import RotationWrapper from './components/layout/RotationWrapper';
@@ -72,9 +73,11 @@ const KioskApp = () => (
     <CssBaseline />
     <OrientationProvider>
       <VisionProvider>
-        <RotationWrapper>
-          <KioskRoutes />
-        </RotationWrapper>
+        <TsumegoProgressProvider>
+          <RotationWrapper>
+            <KioskRoutes />
+          </RotationWrapper>
+        </TsumegoProgressProvider>
       </VisionProvider>
     </OrientationProvider>
   </ThemeProvider>

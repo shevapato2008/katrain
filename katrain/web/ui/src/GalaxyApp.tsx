@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
 import MainLayout from './galaxy/components/layout/MainLayout';
 import Dashboard from './galaxy/pages/Dashboard';
 import ResearchPage from './galaxy/pages/ResearchPage';
@@ -25,7 +26,8 @@ import ReportDetailPage from './galaxy/pages/report/ReportDetailPage';
 const GalaxyApp = () => {
   console.log("GalaxyApp rendering");
   return (
-    <Routes>
+    <TsumegoProgressProvider>
+      <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="play" element={<PlayMenu />} />
@@ -50,7 +52,8 @@ const GalaxyApp = () => {
         <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
         <Route path="*" element={<Navigate to="/galaxy" replace />} />
       </Route>
-    </Routes>
+      </Routes>
+    </TsumegoProgressProvider>
   );
 };
 

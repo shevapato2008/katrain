@@ -217,6 +217,7 @@ async def _lifespan_board(app: FastAPI, log):
 
     from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+    from katrain.web.core.tsumego_progress_repo import LocalTsumegoProgressRepository
     from katrain.web.core.db import SessionLocal
     from katrain.web.core.remote_client import RemoteAPIClient
     from katrain.web.core.sync_worker import SyncWorker
@@ -238,8 +239,10 @@ async def _lifespan_board(app: FastAPI, log):
 
     local_user_game_repo = UserGameRepository(SessionLocal)
     local_user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
+    local_tsumego_progress_repo = LocalTsumegoProgressRepository(SessionLocal)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
+    app.state.tsumego_progress_repo = local_tsumego_progress_repo
     app.state.report_session_factory = SessionLocal
 
     # Remote API client
@@ -278,6 +281,7 @@ async def _lifespan_board(app: FastAPI, log):
         remote_user_games=RemoteUserGameRepository(remote_client),
         local_user_game_repo=local_user_game_repo,
         sync_enqueue_fn=sync_fn,
+        local_tsumego_progress_repo=local_tsumego_progress_repo,
     )
     app.state.repository_dispatcher = dispatcher
 

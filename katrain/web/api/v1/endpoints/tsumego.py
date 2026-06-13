@@ -1,6 +1,5 @@
 """Tsumego API endpoints."""
 
-from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
@@ -9,6 +8,7 @@ from pydantic import BaseModel
 
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import TsumegoProblem, UserTsumegoProgress
+from katrain.web.core.tsumego_progress_repo import merge_tsumego_progress
 from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
 from katrain.web.models import User
 
@@ -31,6 +31,7 @@ class CategoryInfo(BaseModel):
 
 class ProblemListItem(BaseModel):
     """Slim model for list views — no initialBlack/initialWhite."""
+
     id: str
     category: str
     hint: str
@@ -38,6 +39,7 @@ class ProblemListItem(BaseModel):
 
 class ProblemListResponse(BaseModel):
     """Paginated list response."""
+
     items: List[ProblemListItem]
     total: int
     page: int
@@ -82,10 +84,10 @@ class ProgressUpdate(BaseModel):
 def level_sort_key(level: str) -> tuple:
     """Sort levels: 15K, 14K, ..., 1K, 1D, 2D, ..., 7D (weakest to strongest)."""
     level = level.upper()
-    if level.endswith('K'):
+    if level.endswith("K"):
         # Kyu levels: higher number = weaker = comes first
         return (0, -int(level[:-1]))
-    elif level.endswith('D'):
+    elif level.endswith("D"):
         # Dan levels: lower number = weaker = comes first
         return (1, int(level[:-1]))
     return (2, 0)
@@ -99,11 +101,15 @@ async def get_levels(request: Request, db: Session = Depends(get_db)):
     if dispatcher is not None:
         return await dispatcher.tsumego_get_levels()
 
-    rows = db.query(
-        TsumegoProblem.level,
-        TsumegoProblem.category,
-        func.count(TsumegoProblem.id),
-    ).group_by(TsumegoProblem.level, TsumegoProblem.category).all()
+    rows = (
+        db.query(
+            TsumegoProblem.level,
+            TsumegoProblem.category,
+            func.count(TsumegoProblem.id),
+        )
+        .group_by(TsumegoProblem.level, TsumegoProblem.category)
+        .all()
+    )
 
     # Aggregate into {level: {category: count}}
     levels: dict[str, dict[str, int]] = {}
@@ -112,11 +118,13 @@ async def get_levels(request: Request, db: Session = Depends(get_db)):
 
     result = []
     for level, categories in sorted(levels.items(), key=lambda x: level_sort_key(x[0])):
-        result.append(LevelInfo(
-            level=level,
-            categories=categories,
-            total=sum(categories.values()),
-        ))
+        result.append(
+            LevelInfo(
+                level=level,
+                categories=categories,
+                total=sum(categories.values()),
+            )
+        )
     return result
 
 
@@ -139,10 +147,15 @@ async def get_categories(request: Request, level: str, db: Session = Depends(get
 
     level = level.lower()
 
-    rows = db.query(
-        TsumegoProblem.category,
-        func.count(TsumegoProblem.id),
-    ).filter(TsumegoProblem.level == level).group_by(TsumegoProblem.category).all()
+    rows = (
+        db.query(
+            TsumegoProblem.category,
+            func.count(TsumegoProblem.id),
+        )
+        .filter(TsumegoProblem.level == level)
+        .group_by(TsumegoProblem.category)
+        .all()
+    )
 
     if not rows:
         raise HTTPException(status_code=404, detail=f"Level {level} not found")
@@ -185,17 +198,11 @@ async def get_all_problems(
         raise HTTPException(status_code=404, detail=f"Level {level} not found")
 
     problems = (
-        query.order_by(TsumegoProblem.category, TsumegoProblem.id)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
+        query.order_by(TsumegoProblem.category, TsumegoProblem.id).offset((page - 1) * page_size).limit(page_size).all()
     )
 
     return ProblemListResponse(
-        items=[
-            ProblemListItem(id=p.id, category=p.category, hint=p.hint)
-            for p in problems
-        ],
+        items=[ProblemListItem(id=p.id, category=p.category, hint=p.hint) for p in problems],
         total=total,
         page=page,
         page_size=page_size,
@@ -229,9 +236,11 @@ async def get_problems(
 
     if not problems and offset == 0:
         # Check if level/category exist at all
-        exists = db.query(TsumegoProblem.id).filter(
-            TsumegoProblem.level == level, TsumegoProblem.category == category
-        ).first()
+        exists = (
+            db.query(TsumegoProblem.id)
+            .filter(TsumegoProblem.level == level, TsumegoProblem.category == category)
+            .first()
+        )
         if not exists:
             raise HTTPException(status_code=404, detail=f"Level {level} / category {category} not found")
 
@@ -270,28 +279,22 @@ async def get_problem(request: Request, problem_id: str, db: Session = Depends(g
         boardSize=problem.board_size,
         initialBlack=problem.initial_black or [],
         initialWhite=problem.initial_white or [],
-        sgfContent=problem.sgf_content or ""
+        sgfContent=problem.sgf_content or "",
     )
 
 
 @router.get("/progress", response_model=dict[str, ProgressData])
-async def get_progress(
-    request: Request,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def get_progress(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get current user's progress on all problems."""
-    # Board mode: proxy to remote server
+    # Board mode: online → remote; offline → local SQLite cache
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
         if not dispatcher.is_online:
-            return {}
+            return await dispatcher.tsumego_get_progress_local(current_user.id)
         remote = dispatcher.remote_tsumego
         return await remote.get_progress()
 
-    progress_list = db.query(UserTsumegoProgress).filter(
-        UserTsumegoProgress.user_id == current_user.id
-    ).all()
+    progress_list = db.query(UserTsumegoProgress).filter(UserTsumegoProgress.user_id == current_user.id).all()
 
     result = {}
     for p in progress_list:
@@ -301,7 +304,7 @@ async def get_progress(
             attempts=p.attempts,
             firstCompletedAt=p.first_completed_at.isoformat() if p.first_completed_at else None,
             lastAttemptAt=p.last_attempt_at.isoformat() if p.last_attempt_at else None,
-            lastDuration=p.last_duration
+            lastDuration=p.last_duration,
         )
     return result
 
@@ -312,51 +315,53 @@ async def update_progress(
     problem_id: str,
     data: ProgressUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Update user's progress on a specific problem."""
-    # Board mode: proxy to remote server
+    # Board mode: online → remote; offline → local write + sync-queue enqueue
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        if not dispatcher.is_online:
-            raise HTTPException(status_code=503, detail="Offline — progress sync unavailable")
-        remote = dispatcher.remote_tsumego
-        return await remote.update_progress(problem_id, data.model_dump())
+        return await dispatcher.tsumego_update_progress(current_user.id, problem_id, data.model_dump())
 
     # Verify problem exists
     problem = db.query(TsumegoProblem).filter(TsumegoProblem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=404, detail=f"Problem {problem_id} not found")
 
-    progress = db.query(UserTsumegoProgress).filter(
-        UserTsumegoProgress.user_id == current_user.id,
-        UserTsumegoProgress.problem_id == problem_id
-    ).first()
+    progress = (
+        db.query(UserTsumegoProgress)
+        .filter(UserTsumegoProgress.user_id == current_user.id, UserTsumegoProgress.problem_id == problem_id)
+        .first()
+    )
 
-    now = datetime.utcnow()
+    # Field-level merge rules live in core.tsumego_progress_repo so the local
+    # offline repo and this direct-DB path stay in lockstep.
+    existing = None
+    if progress:
+        existing = {
+            "completed": progress.completed,
+            "attempts": progress.attempts,
+            "last_duration": progress.last_duration,
+            "first_completed_at": progress.first_completed_at,
+            "last_attempt_at": progress.last_attempt_at,
+        }
+    merged = merge_tsumego_progress(existing, data.model_dump())
 
     if progress:
-        # Field-level merge rules (design.md Section 4.12.2):
-        # attempts: max(existing, incoming) — reflect actual practice volume
-        progress.attempts = max(progress.attempts or 0, data.attempts)
-        # completed: existing OR incoming — once completed on any device, stays completed
-        progress.completed = progress.completed or data.completed
-        # last_attempt_at: max(existing, incoming) — most recent attempt time
-        progress.last_attempt_at = now
-        if data.lastDuration is not None:
-            progress.last_duration = data.lastDuration
-        # first_completed_at: min_non_null(existing, incoming) — earliest completion time
-        if data.completed and not progress.first_completed_at:
-            progress.first_completed_at = now
+        progress.completed = merged["completed"]
+        progress.attempts = merged["attempts"]
+        progress.last_duration = merged["last_duration"]
+        progress.first_completed_at = merged["first_completed_at"]
+        progress.last_attempt_at = merged["last_attempt_at"]
     else:
         progress = UserTsumegoProgress(
             user_id=current_user.id,
             problem_id=problem_id,
-            completed=data.completed,
-            attempts=data.attempts,
-            last_attempt_at=now,
-            last_duration=data.lastDuration,
-            first_completed_at=now if data.completed else None
+            completed=merged["completed"],
+            attempts=merged["attempts"],
+            last_duration=merged["last_duration"],
+            first_completed_at=merged["first_completed_at"],
+            last_attempt_at=merged["last_attempt_at"],
         )
         db.add(progress)
 

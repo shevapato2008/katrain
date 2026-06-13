@@ -103,7 +103,7 @@ class RemoteTsumegoRepository:
 
         # Step 3: paginate
         start = (page - 1) * page_size
-        page_items = all_problems[start:start + page_size]
+        page_items = all_problems[start : start + page_size]
 
         return {"items": page_items, "total": total, "page": page, "page_size": page_size}
 
@@ -166,6 +166,7 @@ class RepositoryDispatcher:
         remote_user_games: RemoteUserGameRepository,
         local_user_game_repo,
         sync_enqueue_fn=None,
+        local_tsumego_progress_repo=None,
     ):
         self._connectivity = connectivity_manager
         self.remote_tsumego = remote_tsumego
@@ -173,6 +174,7 @@ class RepositoryDispatcher:
         self.remote_user_games = remote_user_games
         self._local_user_game_repo = local_user_game_repo
         self._sync_enqueue = sync_enqueue_fn
+        self._local_tsumego_progress_repo = local_tsumego_progress_repo
 
     @property
     def is_online(self) -> bool:
@@ -215,6 +217,30 @@ class RepositoryDispatcher:
         except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
             logger.warning("tsumego_get_problem remote failed: %s", e)
             return None
+
+    # ── Tsumego progress (online→remote, offline→local+sync) ──
+
+    async def tsumego_update_progress(self, user_id: int, problem_id: str, data: Dict) -> Dict:
+        if self.is_online:
+            try:
+                return await self.remote_tsumego.update_progress(problem_id, data)
+            except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+                logger.warning("tsumego_update_progress remote failed, falling back to local: %s", e)
+        # Offline or remote failed — write locally + enqueue for later sync
+        result = self._local_tsumego_progress_repo.upsert(user_id, problem_id, data)
+        if self._sync_enqueue:
+            self._sync_enqueue(
+                operation="update_tsumego_progress",
+                endpoint=f"/api/v1/tsumego/progress/{problem_id}",
+                method="POST",
+                payload=data,
+                user_id=str(user_id),
+                coalesce_on_endpoint=True,  # per-problem dedup (endpoint contains problem_id)
+            )
+        return result
+
+    async def tsumego_get_progress_local(self, user_id: int) -> Dict:
+        return self._local_tsumego_progress_repo.list(user_id)
 
     # ── Kifu (online-only, offline = unavailable) ──
 
@@ -280,12 +306,34 @@ class RepositoryDispatcher:
         return self._local_user_game_repo.get(game_id, user_id)
 
 
-def enqueue_sync_item(session_factory, operation: str, endpoint: str, method: str, payload: Dict, user_id: str = None, device_id: str = None):
-    """Helper to insert a sync queue entry."""
+def enqueue_sync_item(
+    session_factory,
+    operation: str,
+    endpoint: str,
+    method: str,
+    payload: Dict,
+    user_id: str = None,
+    device_id: str = None,
+    coalesce_on_endpoint: bool = False,
+):
+    """Helper to insert a sync queue entry.
+
+    If ``coalesce_on_endpoint`` is True, any existing *pending* rows for the
+    same endpoint are deleted before inserting the new one. The endpoint embeds
+    a unique key (e.g. problem_id), so this collapses repeated updates of the
+    same resource to a single latest-wins entry. Latest-wins is safe because
+    progress fields are monotonic (completed via OR at both local upsert and
+    remote merge; attempts via max).
+    """
     from katrain.web.core.models_db import SyncQueueEntry
 
     db = session_factory()
     try:
+        if coalesce_on_endpoint:
+            db.query(SyncQueueEntry).filter(
+                SyncQueueEntry.endpoint == endpoint,
+                SyncQueueEntry.status == "pending",
+            ).delete(synchronize_session=False)
         entry = SyncQueueEntry(
             idempotency_key=uuid.uuid4().hex,
             operation=operation,

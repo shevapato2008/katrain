@@ -1,6 +1,9 @@
 """Tsumego API endpoints."""
 
+import logging
 from typing import Optional, List
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -12,6 +15,7 @@ from katrain.web.core.tsumego_progress_repo import merge_tsumego_progress
 from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
 from katrain.web.models import User
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -291,8 +295,13 @@ async def get_progress(request: Request, current_user: User = Depends(get_curren
     if dispatcher is not None:
         if not dispatcher.is_online:
             return await dispatcher.tsumego_get_progress_local(current_user.id)
-        remote = dispatcher.remote_tsumego
-        return await remote.get_progress()
+        try:
+            return await dispatcher.remote_tsumego.get_progress()
+        except httpx.HTTPError as e:
+            # Online check passed but the read failed mid-request — serve the local cache
+            # instead of 500ing, mirroring the write path's resilience.
+            logger.warning("tsumego get_progress remote failed, falling back to local cache: %s", e)
+            return await dispatcher.tsumego_get_progress_local(current_user.id)
 
     progress_list = db.query(UserTsumegoProgress).filter(UserTsumegoProgress.user_id == current_user.id).all()
 

@@ -650,25 +650,29 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Unified write through the progress source (localStorage + server when authenticated).
   // Marks serverPersistedRef so flush/unmount won't double-post.
-  const persistProgress = useCallback((completed: boolean) => {
-    if (!problem) return;
+  // Reads from latestRef (not the callback closure) so same-instance prev/next flushes
+  // always persist the CURRENT attempts/elapsedTime/isSolved, never a stale closure value.
+  const persistProgress = useCallback(() => {
+    const { problem: p, isSolved: solved, attempts: att, elapsedTime: et } = latestRef.current;
+    if (!p) return;
     serverPersistedRef.current = true;
-    markProgress(problem.id, { completed, attempts, lastDuration: elapsedTime });
-  }, [problem, attempts, elapsedTime, markProgress]);
+    markProgressRef.current(p.id, { completed: solved, attempts: att, lastDuration: et });
+  }, []);
 
   // Backward-compat entry point. Routes through the unified write (localStorage + server).
   const saveProgress = useCallback(() => {
-    persistProgress(isSolved);
-  }, [persistProgress, isSolved]);
+    persistProgress();
+  }, [persistProgress]);
 
   // Flush on leave: if this problem had any attempt and wasn't already persisted this
   // session, write once. Safe to call repeatedly (guarded by serverPersistedRef).
   const flushProgress = useCallback(() => {
-    if (!problem) return;
+    const { problem: p, attempts: att, moveHistoryLen } = latestRef.current;
+    if (!p) return;
     if (serverPersistedRef.current) return;
-    if (attempts <= 0 && moveHistory.length <= 0) return;
-    persistProgress(isSolved);
-  }, [problem, attempts, moveHistory.length, isSolved, persistProgress]);
+    if (att <= 0 && moveHistoryLen <= 0) return;
+    persistProgress();
+  }, [persistProgress]);
 
   // Server/unified write fires ONLY on the isSolved false->true transition (once per problem).
   useEffect(() => {

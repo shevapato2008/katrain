@@ -165,7 +165,7 @@ describe('Kiosk navigation integration', () => {
       });
 
       // The units page wrote the prev/next sequence to sessionStorage.
-      const seq = sessionStorage.getItem('problems_15k_tesuji');
+      const seq = sessionStorage.getItem('kiosk_problems_15k_tesuji');
       expect(seq).not.toBeNull();
       expect(JSON.parse(seq!)).toHaveLength(25);
 

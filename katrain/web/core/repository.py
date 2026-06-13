@@ -330,10 +330,15 @@ def enqueue_sync_item(
     db = session_factory()
     try:
         if coalesce_on_endpoint:
-            db.query(SyncQueueEntry).filter(
+            dedup_q = db.query(SyncQueueEntry).filter(
                 SyncQueueEntry.endpoint == endpoint,
                 SyncQueueEntry.status == "pending",
-            ).delete(synchronize_session=False)
+            )
+            # Scope dedup to the same user so a board with sequential multi-user
+            # sessions never drops another user's pending progress for the same problem.
+            if user_id is not None:
+                dedup_q = dedup_q.filter(SyncQueueEntry.user_id == user_id)
+            dedup_q.delete(synchronize_session=False)
         entry = SyncQueueEntry(
             idempotency_key=uuid.uuid4().hex,
             operation=operation,

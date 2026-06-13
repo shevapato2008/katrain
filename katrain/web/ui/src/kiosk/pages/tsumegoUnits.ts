@@ -10,8 +10,13 @@ export const UNIT_SIZE = 20;
  * sessionStorage key for the ordered full-category problem-id sequence.
  * Value = JSON.stringify(string[]) — problem ids in display order.
  * Phase 4 (TsumegoProblemPage) reads this to compute prev/next + boundaries.
+ *
+ * NOTE: the `kiosk_` prefix deliberately differs from galaxy's `problems_${level}_${category}`
+ * key (galaxy stores ProblemListItem[] objects, kiosk stores string[]). Keeping them distinct
+ * prevents the two build outputs from corrupting each other's cache if ever loaded in the same
+ * browser (e.g. during dev), since the shared-zone hook is used by both.
  */
-export const sequenceKey = (level: string, category: string) => `problems_${level}_${category}`;
+export const sequenceKey = (level: string, category: string) => `kiosk_problems_${level}_${category}`;
 
 /**
  * localStorage key for the "auto-advance to next problem after solving" preference (D4).

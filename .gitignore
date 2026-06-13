@@ -176,6 +176,7 @@ dmypy.json
 .shared/
 .gemini-clipboard/
 .playwright-mcp/
+.codex/
 
 # Git worktrees
 .worktrees/

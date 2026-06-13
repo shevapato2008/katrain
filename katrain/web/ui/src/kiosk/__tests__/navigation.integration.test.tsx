@@ -98,4 +98,81 @@ describe('Kiosk navigation integration', () => {
       });
     });
   });
+
+  // Phase 3: the tsumego flow is now 5 levels deep:
+  //   tsumego (levels) → :level (categories) → :level/:category (units)
+  //   → :level/:category/:unit (unit list) → problem/:id (problem page).
+  describe('5-level tsumego navigation (authenticated)', () => {
+    // 25 problems → 2 units (20 + 5).
+    const problemIds = Array.from({ length: 25 }, (_, i) => ({
+      id: `prob${i}`,
+      level: '15k',
+      category: 'tesuji',
+      hint: '',
+      initialBlack: ['pd'],
+      initialWhite: ['dp'],
+    }));
+
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true,
+        user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+        login: vi.fn(),
+        logout: vi.fn(),
+        token: 'mock-token',
+      });
+      localStorageMock.clear();
+
+      // URL-routed mock covering every endpoint along the 5-level path. Most-specific
+      // patterns are matched first so they aren't shadowed by the generic ones.
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        const u = String(url);
+        const json = (data: unknown) => Promise.resolve({ ok: true, json: () => Promise.resolve(data) });
+        if (/\/tsumego\/progress$/.test(u)) return json({});
+        if (/\/tsumego\/problems\/prob\d+/.test(u)) {
+          return json({ id: 'prob0', level: '15k', category: 'tesuji', hint: '', boardSize: 9, initialBlack: [], initialWhite: [], sgfContent: '' });
+        }
+        if (/\/categories\/tesuji\?offset=/.test(u)) {
+          // unit slice (offset/limit=20) — return up to 20 problems.
+          return json(problemIds.slice(0, 20));
+        }
+        if (/\/categories\/tesuji\?limit=1000/.test(u)) return json(problemIds);
+        if (/\/levels\/15k\/categories$/.test(u)) return json([{ category: 'tesuji', name: '手筋', count: 25 }]);
+        if (/\/tsumego\/levels$/.test(u)) return json([{ level: '15k', categories: { '手筋': 25 }, total: 25 }]);
+        return json([]);
+      }) as any;
+    });
+
+    it('drills from levels → categories → units → unit list → problem', async () => {
+      renderApp('/kiosk/tsumego');
+
+      // Level 1: levels grid → click 15K.
+      await waitFor(() => expect(screen.getByText('15K')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('15K'));
+
+      // Level 2: categories page → "选择分类" subtitle + 手筋 category card.
+      await waitFor(() => expect(screen.getByText('手筋')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('手筋'));
+
+      // Level 3: units page → 2 units (1–20, 21–25). Click unit 1.
+      await waitFor(() => expect(screen.getByText('1–20')).toBeInTheDocument());
+      expect(screen.getByText('21–25')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('1–20'));
+
+      // Level 4: unit list page → problem cards. The unit heading shows the range.
+      await waitFor(() => {
+        expect(document.querySelectorAll('.MuiCardActionArea-root').length).toBeGreaterThan(0);
+      });
+
+      // The units page wrote the prev/next sequence to sessionStorage.
+      const seq = sessionStorage.getItem('problems_15k_tesuji');
+      expect(seq).not.toBeNull();
+      expect(JSON.parse(seq!)).toHaveLength(25);
+
+      // Level 5: click the first problem card → problem page (board renders).
+      const firstCard = document.querySelector('.MuiCardActionArea-root') as HTMLElement;
+      fireEvent.click(firstCard);
+      await waitFor(() => expect(screen.getByTestId('tsumego-board')).toBeInTheDocument());
+    });
+  });
 });

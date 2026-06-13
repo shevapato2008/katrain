@@ -5,6 +5,23 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
+// Phase 3 moved this page to the `tsumego/:level/all` route (the "全部题目" flat list)
+// and renamed the param `:levelId` -> `:level`. It also reads the unified progress source
+// via useTsumegoProgress for the per-card border color. We seed that source by mocking the
+// hook so the border-state branches are deterministic without a Provider.
+const { mockProgress } = vi.hoisted(() => ({ mockProgress: {} as Record<string, unknown> }));
+
+vi.mock('../../context/TsumegoProgressContext', () => ({
+  useTsumegoProgress: () => ({
+    progress: mockProgress,
+    markProgress: vi.fn(),
+    isCompleted: () => false,
+    unitProgress: () => ({ completed: 0, total: 0 }),
+    categoryProgress: () => ({ completed: 0, total: 0 }),
+    refresh: vi.fn(),
+  }),
+}));
+
 const mockItems = [
   { id: 'p1', category: '手筋', hint: '找到关键点' },
   { id: 'p2', category: '死活', hint: '' },
@@ -14,6 +31,7 @@ const mockResponse = { items: mockItems, total: 100, page: 1, page_size: 50 };
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve(mockResponse),
@@ -25,9 +43,9 @@ import TsumegoLevelPage from '../pages/TsumegoLevelPage';
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={['/kiosk/tsumego/15k']}>
+      <MemoryRouter initialEntries={['/kiosk/tsumego/15k/all']}>
         <Routes>
-          <Route path="/kiosk/tsumego/:levelId" element={<TsumegoLevelPage />} />
+          <Route path="/kiosk/tsumego/:level/all" element={<TsumegoLevelPage />} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>
@@ -37,7 +55,7 @@ describe('TsumegoLevelPage', () => {
   it('renders level title', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('15K 级题目')).toBeInTheDocument();
+      expect(screen.getByText(/15K/)).toBeInTheDocument();
     });
   });
 
@@ -153,5 +171,20 @@ describe('TsumegoLevelPage', () => {
         expect.any(Object)
       );
     });
+  });
+
+  it('applies completion border color from progress source', async () => {
+    mockProgress['p1'] = { completed: true, attempts: 3 };
+    mockProgress['p2'] = { completed: false, attempts: 2 };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('#1')).toBeInTheDocument();
+    });
+    // #1 (completed) → green border, #2 (attempted-not-completed) → amber border.
+    // toHaveStyle normalizes hex → rgb, so assert on the computed border-color.
+    const card1 = screen.getByText('#1').closest('.MuiCard-root') as HTMLElement;
+    const card2 = screen.getByText('#2').closest('.MuiCard-root') as HTMLElement;
+    expect(card1).toHaveStyle('border-color: rgb(92, 181, 122)'); // #5cb57a
+    expect(card2).toHaveStyle('border-color: rgb(196, 154, 60)'); // #c49a3c
   });
 });

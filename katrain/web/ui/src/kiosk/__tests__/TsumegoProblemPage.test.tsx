@@ -1,11 +1,58 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { AUTO_ADVANCE_KEY, sequenceKey } from '../pages/tsumegoUnits';
+
+// ---- Hoisted spies referenced by the mock factories below ----
+const { mockNavigate, mockFlush } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+  mockFlush: vi.fn(),
+}));
+
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return { ...actual, useNavigate: () => mockNavigate };
+});
 
 vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
+
+// Vision disabled — keeps the vision-setup branch (BoardSetupGuide / API.visionSetupMode) inert.
+vi.mock('../context/VisionContext', () => ({
+  useVision: () => ({
+    visionStatus: { enabled: false, cameraConnected: false, poseLocked: false, syncState: 'idle', boundSessionId: null },
+    isVisionEnabled: false,
+    refreshStatus: vi.fn(),
+  }),
+}));
+
+vi.mock('../hooks/useVisionSync', () => ({
+  useVisionSync: () => ({
+    syncEvents: [],
+    latestEvent: null,
+    setupProgress: null,
+    isSetupComplete: false,
+  }),
+}));
+
+vi.mock('../../hooks/useSound', () => ({
+  useSound: () => ({ play: vi.fn() }),
+}));
+
+// Progress source — `progress` map drives the "上次用时" (last-time) display.
+const { mockProgress } = vi.hoisted(() => ({ mockProgress: {} as Record<string, any> }));
+vi.mock('../../context/TsumegoProgressContext', () => ({
+  useTsumegoProgress: () => ({
+    progress: mockProgress,
+    markProgress: vi.fn(),
+    isCompleted: () => false,
+    unitProgress: () => ({ completed: 0, total: 0 }),
+    categoryProgress: () => ({ completed: 0, total: 0 }),
+    refresh: vi.fn(),
+  }),
 }));
 
 const mockUndo = vi.fn();
@@ -41,6 +88,8 @@ const defaultHookReturn = {
   enterTryMode: mockEnterTryMode,
   exitTryMode: mockExitTryMode,
   saveProgress: mockSaveProgress,
+  // Phase 4: the page calls flushProgress before every navigation away from a problem.
+  flushProgress: mockFlush,
 };
 
 let hookReturn = { ...defaultHookReturn };
@@ -51,10 +100,13 @@ vi.mock('../../hooks/useTsumegoProblem', () => ({
 
 import TsumegoProblemPage from '../pages/TsumegoProblemPage';
 
-const renderPage = () =>
+// The category sequence used for prev/next. The mocked problem id is 'p1'.
+const SEQUENCE = ['p0', 'p1', 'p2'];
+
+const renderPage = (problemId = 'p1') =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}>
+      <MemoryRouter initialEntries={[`/kiosk/tsumego/problem/${problemId}`]}>
         <Routes>
           <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
         </Routes>
@@ -65,9 +117,15 @@ const renderPage = () =>
 beforeEach(() => {
   vi.clearAllMocks();
   hookReturn = { ...defaultHookReturn };
+  for (const k of Object.keys(mockProgress)) delete mockProgress[k];
+  sessionStorage.clear();
+  localStorage.clear();
+  // Seed the prev/next sequence the units page would have written.
+  sessionStorage.setItem(sequenceKey('15k', '手筋'), JSON.stringify(SEQUENCE));
 });
 
 describe('TsumegoProblemPage', () => {
+  // ---- Existing behavior (still covered) ----
   it('renders category and level', () => {
     renderPage();
     expect(screen.getByText('手筋')).toBeInTheDocument();
@@ -166,16 +224,146 @@ describe('TsumegoProblemPage', () => {
     expect(screen.getByText('返回')).toBeInTheDocument();
   });
 
-  it('passes hint state to board when showHint is true', () => {
-    hookReturn = { ...defaultHookReturn, showHint: true, hintCoords: [4, 4] as [number, number] };
-    renderPage();
-    // Hint is rendered on canvas, so we verify the hint button toggles to "hide" text
-    expect(screen.getByText('隐藏提示')).toBeInTheDocument();
-  });
-
   it('changes hint button text when hint is shown', () => {
     hookReturn = { ...defaultHookReturn, showHint: true };
     renderPage();
     expect(screen.getByText('隐藏提示')).toBeInTheDocument();
+  });
+
+  // ---- Phase 4: prev/next navigation ----
+  describe('prev/next navigation', () => {
+    it('renders prev and next buttons', () => {
+      renderPage();
+      expect(screen.getByTestId('prev-problem')).toBeInTheDocument();
+      expect(screen.getByTestId('next-problem')).toBeInTheDocument();
+    });
+
+    it('disables prev on the first problem in the sequence', () => {
+      renderPage('p0');
+      expect(screen.getByTestId('prev-problem')).toBeDisabled();
+    });
+
+    it('enables prev when not first', () => {
+      renderPage('p1');
+      expect(screen.getByTestId('prev-problem')).not.toBeDisabled();
+    });
+
+    it('navigates to the previous problem and flushes progress first', () => {
+      renderPage('p1');
+      fireEvent.click(screen.getByTestId('prev-problem'));
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/p0');
+      // flush must run BEFORE navigate.
+      expect(mockFlush.mock.invocationCallOrder[0]).toBeLessThan(
+        mockNavigate.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('navigates to the next problem and flushes progress first', () => {
+      renderPage('p1');
+      fireEvent.click(screen.getByTestId('next-problem'));
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/p2');
+      expect(mockFlush.mock.invocationCallOrder[0]).toBeLessThan(
+        mockNavigate.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('on the last problem the next button becomes "返回单元" and navigates to the units page', () => {
+      renderPage('p2');
+      const nextBtn = screen.getByTestId('next-problem');
+      expect(nextBtn).toHaveTextContent('返回单元');
+      fireEvent.click(nextBtn);
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/手筋');
+    });
+
+    it('back arrow flushes progress and returns to the units page', () => {
+      renderPage('p1');
+      // The header back-arrow button (icon-only) is the first button rendered.
+      const backArrow = screen.getAllByRole('button')[0];
+      fireEvent.click(backArrow);
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/手筋');
+    });
+  });
+
+  // ---- Phase 4: last-time display ----
+  describe('last-time display', () => {
+    it('does not show last-time when there is no prior record', () => {
+      renderPage('p1');
+      expect(screen.queryByTestId('last-time')).not.toBeInTheDocument();
+    });
+
+    it('shows last-time from progress[problemId].lastDuration', () => {
+      mockProgress['p1'] = { completed: true, attempts: 2, lastDuration: 65 };
+      renderPage('p1');
+      const lastTime = screen.getByTestId('last-time');
+      expect(lastTime).toBeInTheDocument();
+      expect(lastTime).toHaveTextContent('1:05');
+    });
+  });
+
+  // ---- Phase 4: SuccessOverlay + auto-advance ----
+  describe('success overlay & auto-advance', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    });
+
+    it('shows the success overlay message when solved', () => {
+      hookReturn = { ...defaultHookReturn, isSolved: true };
+      renderPage('p1');
+      expect(screen.getByText('恭喜答对！')).toBeInTheDocument();
+    });
+
+    it('auto-advances to the next problem ~1.5s after solving (default ON)', () => {
+      // auto-advance default is ON when the key is unset.
+      hookReturn = { ...defaultHookReturn, isSolved: true };
+      renderPage('p1'); // p1 has a next (p2)
+
+      expect(mockNavigate).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/p2');
+    });
+
+    it('does NOT auto-advance when the preference is disabled', () => {
+      localStorage.setItem(AUTO_ADVANCE_KEY, 'false');
+      hookReturn = { ...defaultHookReturn, isSolved: true };
+      renderPage('p1');
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('does NOT auto-advance on the last problem (no next)', () => {
+      localStorage.setItem(AUTO_ADVANCE_KEY, 'true');
+      hookReturn = { ...defaultHookReturn, isSolved: true };
+      renderPage('p2'); // p2 is the last → no next
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('does NOT auto-advance while unsolved', () => {
+      localStorage.setItem(AUTO_ADVANCE_KEY, 'true');
+      hookReturn = { ...defaultHookReturn, isSolved: false };
+      renderPage('p1');
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
   });
 });

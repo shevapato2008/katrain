@@ -3,7 +3,7 @@
 - **Track**: `sbc-tsumego-parity`
 - **分支**: `feature/rk3588-ui`
 - **Spec 来源**: `superpowers/tracks/sbc-tsumego-parity/prd.md`
-- **状态**: Architecture LOCKED (brainstorming 已定) — Ready to execute
+- **状态**: ✅ 已执行 (Phase 1–6 完成, 2026-06-13) — 见文末「执行记录」。剩真机 + 离线端到端验收待用户。
 - **日期**: 2026-06-13
 
 > 本计划面向「无上下文的执行者」（另一 session 或 agent）。每阶段自包含、可独立验证、可单独提交。代码片段是**指导性**的（展示意图与关键属性），落地以实际编译/测试通过为准。
@@ -327,3 +327,31 @@ tsumego/problem/:problemId      → TsumegoProblemPage    (Phase 4 改造)
 | Codex Review | 0 | 未运行 |
 
 - **VERDICT**: Architecture LOCKED（brainstorming D1–D9）。直接 executing-plans，按 Phase 0→6 执行，Phase 1∥2、3∥4 可并行。
+
+---
+
+## 执行记录 (2026-06-13, 自主执行)
+
+提交链（feature/rk3588-ui）：`828fb3c6`(docs) → `35c9d68b`(P1) → `9a69e21f`(P2) → `27b5974a`(P3) → `334c13df`(P4) → `f97f8180`(P5) → `5d54828f`(对抗式审查修复)。
+
+**各 Phase 落地**
+- P1 后端：新增 `core/tsumego_progress_repo.py`(`merge_tsumego_progress` 共享合并 + `LocalTsumegoProgressRepository`)；`repository.py` dispatcher `tsumego_update_progress`/`tsumego_get_progress_local` + `enqueue_sync_item(coalesce_on_endpoint)`；`endpoints/tsumego.py` 离线 503→本地写+排队、`get_progress` 离线读本地；`server.py` 接线。`sync_worker`/`remote_client` 未改。
+- P2 共享前端：`api/tsumegoApi.ts` + `context/TsumegoProgressContext.tsx`(单一进度源 + 安全 no-op 默认)；`useTsumegoProblem` 服务器写仅 isSolved 一次 + 卸载 flush（修「每步错招都写」缺陷）+ `flushProgress`；KioskApp/GalaxyApp 接 Provider。
+- P3 kiosk 五级导航 + `ProgressDots/ProblemCard(MiniBoard 缩略图)/SuccessOverlay` + Categories/Units/UnitList 页 + `:level/all` 保留平铺；sessionStorage 序列契约。
+- P4 做题页 prev/next（导航前 flush）、做对 SuccessOverlay + 自动跳转(默认开~1.5s，设置可关)、上次用时、Vision 按 problemId 重置。
+- P5 测试：tsumego **121 passed / 8 文件**（修 LevelPage、重写 ProblemPage、新增 Categories/Units/UnitList/components/Context、扩 nav 集成）。
+- 对抗式自审（2×reviewer）修复：B2 队列去重加 user_id 过滤；B4 在线 get_progress 失败回退本地；F1 persist/flush 改读 latestRef（防 stale）；F4 kiosk sessionStorage key 加 `kiosk_` 前缀（与 galaxy 隔离）。
+
+**闸门结果**
+- `npm run build`(galaxy) ✓；`npm run build:kiosk-2d` ✓ + `verify:kiosk-2d` ✅ 无 three.js。
+- `npx tsc -b` ✓。
+- 前端 tsumego 121 passed；后端 tsumego 34 passed（repo+offline+board_auth）。
+
+**已知/待办（不阻塞，交付回报）**
+1. **本分支 pre-existing 测试债**：9 个 stale 测试文件（25 用例）在干净 HEAD 即失败，与本 track 无关（如 `theme.test` 期望 Noto Serif 但已改 Sans、`orientation*` 期望竖屏但外壳固定横屏、`AuthContext/GamePage/KioskLayout/StatusBar/ResearchPage/TeachingSettingsDialog`）。建议另开清理 track。
+2. **后端 pre-existing**：`tests/test_user_game_repo.py` 2 条失败（sgf_hash 去重设计），与本 work 无关。
+3. **B1 跨切面已知项**：远端 4xx（含 401/403）会静默回退本地+排队（与既有 `user_games_create` 同模式，已 logger.warning）。如需「鉴权失效时提示重登/暂停队列而非永久失败」，应作为同步管线的统一改进另开 track。
+4. **真机验收**：RK 终端实际分辨率下的卡片栅格/缩略图性能、横屏布局（PRD §5 物理项）。
+5. **离线端到端验收**：断网做对→本地可见→恢复→远端字段合并，目前由 dispatcher 级单测覆盖（`test_tsumego_offline.py`），**未跑活体两端 e2e**（需 board 模式服务 + 远端）。建议真机/联调环境跑一次。
+6. **等级层进度**为弱汇总（仅总数，R2 性能权衡）；分类层完成数为惰性并行 best-effort。
+7. Galaxy 现获服务器持久化（D9，UrI/流程不变）；其各页仍用自带 localStorage⊕server 读法（未强制迁到 Provider，避免回归）。

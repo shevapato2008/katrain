@@ -3,6 +3,7 @@ import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, B
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 
 interface ProblemItem {
   id: string;
@@ -12,10 +13,17 @@ interface ProblemItem {
 
 const PAGE_SIZE = 50;
 
+/**
+ * Route: tsumego/:level/all — the "全部题目" flat list (kept from the old level page,
+ * repurposed under /all). Uses the slim paginated endpoint (no board stones, so no MiniBoard)
+ * with load-more. Each card's completion state is read from the unified useTsumegoProgress
+ * source: green border = completed, orange = attempted-not-completed, gray = untouched.
+ */
 const TsumegoLevelPage = () => {
-  const { levelId } = useParams<{ levelId: string }>();
+  const { level } = useParams<{ level: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { progress } = useTsumegoProgress();
   const [problems, setProblems] = useState<ProblemItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -25,9 +33,9 @@ const TsumegoLevelPage = () => {
 
   const fetchPage = useCallback((pageNum: number, signal?: AbortSignal) => {
     const isFirst = pageNum === 1;
-    if (isFirst) setLoading(true); else setLoadingMore(true);
+    if (isFirst) { setLoading(true); setError(null); setProblems([]); } else setLoadingMore(true);
 
-    fetch(`/api/v1/tsumego/levels/${levelId}/problems?page=${pageNum}&page_size=${PAGE_SIZE}`, { signal })
+    fetch(`/api/v1/tsumego/levels/${level}/problems?page=${pageNum}&page_size=${PAGE_SIZE}`, { signal })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -46,16 +54,13 @@ const TsumegoLevelPage = () => {
       .finally(() => {
         if (isFirst) setLoading(false); else setLoadingMore(false);
       });
-  }, [levelId]);
+  }, [level]);
 
   useEffect(() => {
     const controller = new AbortController();
-    setProblems([]);
-    setPage(1);
-    setError(null);
     fetchPage(1, controller.signal);
     return () => controller.abort();
-  }, [levelId, fetchPage]);
+  }, [level, fetchPage]);
 
   if (loading) {
     return (
@@ -80,7 +85,7 @@ const TsumegoLevelPage = () => {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 8 }}>
         <Typography variant="h6" color="text.secondary">{t('No problems for this level', '该难度暂无题目')}</Typography>
-        <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')} startIcon={<ArrowBack />}>
+        <Button variant="outlined" onClick={() => navigate(`/kiosk/tsumego/${level}`)} startIcon={<ArrowBack />}>
           {t('Back', '返回')}
         </Button>
       </Box>
@@ -89,12 +94,20 @@ const TsumegoLevelPage = () => {
 
   const hasMore = problems.length < total;
 
+  // Border color by completion state (D6).
+  const borderFor = (id: string): string => {
+    const entry = progress[id];
+    if (entry?.completed) return '#5cb57a';
+    if (entry && entry.attempts > 0) return '#c49a3c';
+    return 'rgba(232,228,220,0.10)';
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button onClick={() => navigate('/kiosk/tsumego')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
+        <Button onClick={() => navigate(`/kiosk/tsumego/${level}`)} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
         <Box>
-          <Typography variant="h5">{levelId?.toUpperCase()} {t('Level Problems', '级题目')}</Typography>
+          <Typography variant="h5">{level?.toUpperCase()} {t('tsumego:allProblems', '全部题目')}</Typography>
           <Typography variant="body2" color="text.secondary">
             {problems.length} / {total} {t('problems count', '道题目')}
           </Typography>
@@ -104,10 +117,10 @@ const TsumegoLevelPage = () => {
         <Grid container spacing={2}>
           {problems.map((problem, idx) => (
             <Grid key={problem.id} size={{ xs: 6, sm: 4, md: 3 }}>
-              <Card sx={{ bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '12px', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}>
+              <Card sx={{ bgcolor: 'rgba(255,255,255,0.05)', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}>
                 <CardActionArea onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)} sx={{ p: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>#{idx + 1}</Typography>
-                  <Chip label={problem.category} size="small" sx={{ mt: 0.5 }} />
+                  <Chip label={t(`tsumego:${problem.category}`, problem.category)} size="small" sx={{ mt: 0.5 }} />
                   {problem.hint && (
                     <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>{problem.hint}</Typography>
                   )}

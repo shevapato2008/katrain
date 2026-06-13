@@ -14,7 +14,10 @@ import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
 import GamePage from './pages/GamePage';
 import TsumegoPage from './pages/TsumegoPage';
+import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
 import TsumegoLevelPage from './pages/TsumegoLevelPage';
+import TsumegoUnitsPage from './pages/TsumegoUnitsPage';
+import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
@@ -50,9 +53,13 @@ const KioskRoutes = () => {
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
+          {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/:levelId" element={<TsumegoLevelPage />} />
           <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
+          <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
+          <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
+          <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           <Route path="research" element={<ResearchPage />} />
           <Route path="research/session/:sessionId" element={<GamePage />} />
           <Route path="kifu" element={<KifuPage />} />

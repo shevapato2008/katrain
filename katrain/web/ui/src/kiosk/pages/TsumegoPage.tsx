@@ -9,6 +9,16 @@ interface LevelInfo {
   total: number;
 }
 
+/**
+ * Route: tsumego — difficulty-level grid (entry point for the 5-level navigation).
+ *
+ * Navigates to /kiosk/tsumego/{level} (the categories page). Level-level "completed/total"
+ * is intentionally NOT shown here: an accurate level completion count would require fetching
+ * every problem ID for every level up-front, which is expensive on SBC terminals (R2 / §3.5).
+ * We show only the total problem count + category breakdown (a weak summary, 弱汇总). Precise
+ * per-category progress is computed one layer down (categories page) where the ID lists are
+ * already needed for navigation.
+ */
 const TsumegoPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();

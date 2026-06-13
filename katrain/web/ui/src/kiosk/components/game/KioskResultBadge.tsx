@@ -1,10 +1,15 @@
 import { Typography } from '@mui/material';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { translateResult } from '../../../utils/resultTranslation';
 
 interface KioskResultBadgeProps {
   result: string;
+  rules?: string | null;
 }
 
-const KioskResultBadge = ({ result }: KioskResultBadgeProps) => {
+const KioskResultBadge = ({ result, rules }: KioskResultBadgeProps) => {
+  const { t } = useTranslation();
+  const label = translateResult(result, t, rules);
   const isBlack = result.startsWith('B') || result.startsWith('黑');
 
   return (
@@ -27,7 +32,7 @@ const KioskResultBadge = ({ result }: KioskResultBadgeProps) => {
         whiteSpace: 'nowrap',
       }}
     >
-      {result}
+      {label}
     </Typography>
   );
 };

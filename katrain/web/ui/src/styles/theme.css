@@ -6,16 +6,14 @@
  * with modern precision instrumentation for Go game analysis.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;600;700&display=swap');
-
 :root {
   /* ============================================
      TYPOGRAPHY
      ============================================ */
 
   /* Font Families */
-  --font-mono: 'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 
   /* Font Sizes */
   --font-xs: 0.75rem;      /* 12px - Small labels, metadata */

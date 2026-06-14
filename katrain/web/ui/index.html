@@ -16,11 +16,24 @@
         var kbCss = document.createElement('link');
         kbCss.rel = 'stylesheet'; kbCss.href = '/smartkeyboard.css?v=kbd1';
         document.head.appendChild(kbCss);
-        ['/pinyin-ime.js?v=kbd1', '/smartkeyboard.js?v=kbd1', '/kiosk-home-button.js?v=hb1'].forEach(function (src) {
+        function loadScript(src, next) {
           var s = document.createElement('script');
-          s.src = src; s.async = false; // pinyin-ime 先于 smartkeyboard;home-button 独立
+          s.src = src;
+          if (next) s.onload = next;
           document.body.appendChild(s);
-        });
+        }
+        function loadKioskKeyboard() {
+          loadScript('/pinyin-ime.js?v=kbd1', function () {
+            loadScript('/smartkeyboard.js?v=kbd1', function () {
+              loadScript('/kiosk-home-button.js?v=hb1');
+            });
+          });
+        }
+        if (document.readyState === 'complete') {
+          setTimeout(loadKioskKeyboard, 0);
+        } else {
+          window.addEventListener('load', loadKioskKeyboard, { once: true });
+        }
       }
     </script>
   </body>

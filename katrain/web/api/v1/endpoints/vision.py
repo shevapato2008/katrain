@@ -41,7 +41,16 @@ def _get_vision(request: Request):
 @router.get("/status")
 async def vision_status(request: Request):
     """Return vision service status."""
-    vision = _get_vision(request)
+    vision = getattr(request.app.state, "vision", None)
+    if vision is None:
+        return {
+            "enabled": False,
+            "camera_connected": False,
+            "pose_locked": False,
+            "sync_state": "idle",
+            "bound_session_id": None,
+        }
+
     vision.refresh_status()
     return {
         "enabled": vision.enabled,

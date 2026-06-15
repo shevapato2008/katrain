@@ -1,0 +1,330 @@
+# 实施计划：Kiosk 摆谱 + LED 引导落子（sbc-baipu-led-guide）
+
+- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-16（**v3**，已过内部 67-agent 评审 + Codex/Gemini/gstack 三方外部评审 + 与作者逐条决策）
+- **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
+- **状态**: 待执行
+
+> 写给「无上下文的执行者」（人或子 agent）。执行顺序 **P0(可选) → P1 → P2 → P3 → P4**。
+> v2→v3 改了什么见 [§10](#10-修订记录v2v3)。
+
+---
+
+## 0. 目标、前置、决策
+
+### 0.1 目标与范围
+kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点**引导人工摆子，**确认时做 CV 校验防摆错**，**带灯拍照**每一步，照片+manifest+SGF 落到 katrain 文件夹；交给 `autoresearch` 训练 YOLO（**SGF=ground truth**）。本 track **只建 katrain 侧**；固件已烧好；YOLO 标签/训练在 `autoresearch`。
+
+### 0.2 已确认前置（brainstorming + 硬件实测 2026-06-15）
+- **协议固件已烧** ESP32-S3：`SETI <idx> <r> <g> <b>` / `SHOW` / `CLEAR` / `CLEAR!` / `BRIGHT <v>` / `SCAN` / `STATUS`；`MAX_ON=20`、`MAX_BRIGHT=40`（全局亮度钳制，非单通道）；主机持 LUT。Mac 端口 `/dev/cu.usbmodem2101 @115200`，单颗点亮已实测。
+- **LED (row,col)→链索引 = 纯公式**（实测：线扫整齐 + idx0=(0,0)顶左 + 星位命中），见 [附录 A](#附录-a확认的-led-lut公式)。
+- **采集=带灯拍(方案B)**；**确认=触屏**；**相机接 Mac**。
+
+### 0.3 关键决策（与作者逐条敲定，2026-06-16）
+| # | 决策 | 选择 | 影响 |
+|---|---|---|---|
+| ① | 摆谱/LED 是产品功能 vs 一次性工具 | **产品功能** → 保留 LED 摆谱 | 照计划做；**并入数据去相关** + **Phase 0 分类器基准（可选门）** |
+| ② | 逐手盘面/提子真值算在前端 vs 后端 | **后端权威** | 新增 `POST /baipu/load`，引擎(game.py)算真值；前端哑播放；**白送修好让子(AB/AW)**；`goBoard.ts` 收敛降级为可选清理 |
+| ③ | 摆错兜底 QA 程度 | **L2 主动阻断 + 操作者覆盖** | 确认时 CV 差分校验，不一致**阻断+提示**，可改正或「确认无误继续」；manifest 记 `qa_status` |
+| ④ | 采集中「上一手/下一手/跳过」 | **前进 + 单步引导撤回 + 退出重来** | 去掉「下一手/跳过」；保留物理引导的「撤回上一手」 |
+
+### 0.4 其它已确认事实
+- 全链路 **规范坐标 `(row,col)`，row=0 顶部、col=0 左**（= LED LUT，附录 A）。后端 `/baipu/load` 直接输出规范坐标；用 **branded types** + round-trip 测试封死边界。
+- 采集 **限 19×19**（LED 板物理 19×19）。
+- **Ko/非法手不校验**（重放合法 SGF，引擎镜像）；真正兜底的是 ③ 的人为**摆错** QA。
+
+---
+
+## 1. 架构与数据流
+
+```
+[BaipuListPage] 选 19×19 SGF
+   └ POST /baipu/load → 后端引擎(game.py/sgf_parser)算整盘逐手真值:
+        steps[k] = {kind:setup|move|pass, move_index, row, col, color, removed[], board_hash}
+[BaipuSessionPage] 哑播放 steps（前端不算提子）；状态机：前进 + 单步引导撤回
+   每手 k：
+     GUIDING(k)  屏幕高亮 + (P2) 点亮 LED(steps[k] 颜色)；人摆子
+     └「确认」
+     QA(k)       (P4) led 全灭(strict ack) → 抓新帧 → stones.classify vs 期望盘面(0..k)
+                  一致→放行；不一致→阻断+提示→改正 / 「确认无误继续」(override)
+     CAPTURE(k)  (P4) 点亮下一手 LED(strict ack, 记 show_at) → 等 show_at 之后的新帧(缓冲已被后台线程抽空)+锁曝光 → 抓帧带灯
+                  → 存 frame + manifest 条目(qa_status, frame_kind, led_point, board_hash, geometry 快照)
+     → GUIDING(k+1) … 谱尾 DONE
+```
+- LED 命令分两路：**UI 容错路**（点屏导航，入队即返回）与 **采集强一致路**（等串口 `SHOW` 的 OK ack 才返回，拿到 `show_at`）。
+- 相机由**单一 `CaptureService`** 持有（vision/几何/采集都从它取帧）；采集模式**默认拒绝**同时启用 YOLO `VisionService`。
+- 后端服务都按 `VisionService` 模式：`_lifespan_board()` 按命令行 gate 启动 + 绑 `app.state.*`；`lifespan()` 关停 `.stop()` + **强制 `led.clear()` 兜底灭灯**。
+
+---
+
+## P0. 分类器基准（可选，autoresearch 侧，**建议先做**）
+
+**目的**：30 分钟低成本实验，决定 ③ 的 L2 QA 用的经典 CV（`stones.py` 空盘差分）在本橙木盘上**是否可靠**，并校准阈值；顺带验证「CV 自动标注可信度」。
+- 步骤：几何锁定后，实摆若干黑/白子（含贴边/邻接/被提形态）→ `detect_stones.py`/`stones.classify` → 出 black/white/empty 混淆矩阵。
+- 产出：阈值参数 + 一句结论：CV 可靠（→ L2 默认开、少误报）/ 不可靠（→ L2 退化为「每 N 手人工复核」，见 P4.3）。
+- **不阻断 P1/P2**（纯前端 + LED 不依赖它）；但 **P4 的 L2 QA 强烈建议在 P0 之后**调参。
+
+---
+
+## P1. 摆谱 UI + 后端逐手真值（**纯屏幕，不接硬件**）
+
+**目标**：选谱(19×19) → 会话页(LiveBoard + 双 PlayerCard 当前方高亮 + N/total) → 前进/撤回/确认 状态机；确认时若该手提子，提示移除哪些子（数据来自后端）。屏幕高亮模拟 LED；`CAPTURE/QA` 在 P1 为 no-op。
+
+### 1.1 后端：逐手真值接口（决策 ②）
+- **新建** `katrain/web/api/v1/endpoints/baipu.py` 的 `POST /baipu/load`：
+  - 入参 `{sgf: str}` 或 `{kifu_id}`（见 1.2 离线来源）。
+  - 用既有引擎：`katrain/core/sgf_parser.py`（已展开 AB/AW/AE）+ `katrain/core/game.py`（`_calculate_groups`/`_validate_move_and_update_chains` 已正确算提子）重建整盘，逐节点输出：
+    ```json
+    {
+      "board_size": 19,
+      "steps": [
+        {"kind": "setup|move|pass", "move_index": 0, "property": "AB|AW|B|W",
+         "row": 3, "col": 3, "color": "B|W|null",
+         "removed": [{"row": 9, "col": 9}],
+         "board_hash": "…"}
+      ],
+      "meta": {"player_black": "...", "player_white": "...", "handicap": 0}
+    }
+    ```
+  - **坐标规范化**在此完成。game.py/sgf_parser 内部为 `y=0 底部`（`sgf_parser.py` 用 `board_size[1]-index-1`）；规范坐标 `row=0 顶部`。转换：**`row = (board_size-1) - y_internal`，`col = x_internal`**（仅垂直翻转，列不变）。**单测**覆盖 D4/Q16/非对称角点在 19/13/9 路，并 round-trip 校验 `规范→引擎→规范 == 恒等`，且 `规范(row,col)` 经附录 A `rc2idx` 落到正确 LED（封死垂直倒置——本链路最高风险）。
+  - **per-step `removed[]` 与 `board_hash` 须在重放循环内逐节点采集**（可行性修正）：game.py 的 `last_capture` 是每手重置的瞬时态、`GameNode` 不持久化它，也无 `board_hash`。故 `/baipu/load` 必须在 `_calculate_groups` 重放时**每步收集** `last_capture`（→`removed[]`）并对当步盘面快照 `hashlib`（→`board_hash`）；不要假设引擎已存好这些。
+  - `kind=setup` 不触发提子/非法判断（修 Codex#4 让子缺口）；`pass` 显式标记，`row/col/color=null`。
+  - 注册进 `api.py`（prefix `/baipu`）。
+- **打谱复用**：未来打谱/复盘走同一 `/baipu/load`（或抽成 `/sgf/steps`）。
+
+### 1.2 选谱入口 + **离线 SGF 来源**（修 Codex#9）
+- **新建** `katrain/web/ui/src/kiosk/pages/BaipuListPage.tsx`：以 `KifuPage.tsx` 为骨架；**过滤(非置灰) 只显示 19×19**；**空状态**（「未找到 19 路棋谱」+ 操作指引）；列表顶「继续上次会话」入口（见 1.3 resume）。
+- **离线来源**：board-mode 的 kifu repository 是 **online-only**（`web/core/repository.py:245-263` 离线返回空/404）。**P1 必须加本地 SGF 来源**之一：
+  - **采用 (b) 为主**：选中 kifu 时把 SGF 文本随 `/baipu/load` 一并缓存到本地（localStorage/IndexedDB，键 `kifu_id`；列表加「已缓存」区）；**(a) 文件导入为兜底**（上传/选择 .sgf → 存本地）。两条路都直接喂 `/baipu/load`。
+  - 采集现场不得依赖远端网络。
+- **路由** `KioskApp.tsx`：`<Route path="baipu" element={<BaipuListPage/>}/>`、`<Route path="baipu/session/:source" element={<BaipuSessionPage/>}/>`。
+- **导航 Tab** `navTabs.tsx`：`primaryTabs` 插 `{label:'摆谱', icon:<GridOn/>, path:'/kiosk/baipu', pattern:'/kiosk/baipu/*'}`。
+
+### 1.3 会话页 + 状态机 + UX
+- **新建** `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx`：
+  - 进页 `POST /baipu/load` 取 `steps`（**前端不算提子**，哑播放）。`game_id = <source>_<sessionTs>`（slug 安全，写 manifest）。
+  - **布局层级（修 gstack 设计 #4，参考元萝卜）**：顶部**常驻大状态条**（`●当前色 落子 第 k/N 手 · 已采集 M 帧 · 健康点[LED/相机] · ~剩余时间`，字号 @1.5m 可读）；左 `LiveBoard`；右两张 `PlayerCard`（`active` 跟随当前色）+ **下一手色片**（= LED 色，最醒目元素）。规则：**屏幕是仪表盘，物理盘才是主体**。
+  - **LiveBoard 新 prop**（不滥用 pvMoves）：`nextMovePoint?:{row,col}|null`（**高亮色须与 LED 一致**：黑→红、白→绿）、`capturedPositions?:{row,col}[]|null`（提子待移除，红闪）。**坐标边界转换**在喂 LiveBoard 时做（规范↔LiveBoard 内部 y 底部），用 branded types。
+  - **状态机**（决策 ③④；P1 阶段 QA/CAPTURE 为 no-op）：
+    ```
+    GUIDING(k)  屏幕高亮 nextMovePoint=steps[k]; pass→直接 ADVANCE; (P2)点灯
+       └「确认」(人已摆好 k)
+    QA(k)       (P4)CV 校验；P1 直接通过
+       └ 不一致→阻断横幅+「改正后确认」/「确认无误继续(override)」
+    CHECK_REMOVE(k)  steps[k].removed 非空→AWAIT_REMOVAL(独立模式)→「已移除 N 子」
+    ADVANCE(k)  屏幕落子+提子动画→盘面 0..k；k++
+    CAPTURE     (P4)带灯拍；P1 no-op
+    → GUIDING(k) … k==N → DONE(汇总 N 手/采集 M 帧)
+    撤回上一手   (决策④)物理引导：提示「拿掉刚摆的子(并恢复被提子)」→作废该帧→回 k-1
+    退出        二次确认对话框（移出控制行）→ led.clear()
+    ```
+    - **去掉「下一手/跳过」**（物理摆谱不摆子无法前进）。
+    - **提子=独立模式（修设计#3）**：进入 AWAIT_REMOVAL 时盘面变态（暗化已落子、待移除红闪）+ 全宽横幅「请移除 N 个被提的子（闪烁处）」+ 动作键**改文案改色**为「已移除 N 子」（warning/info 色，呼应蓝灯），打断「落子-确认」节奏；完成有明确回到 place 模式的过渡。
+  - **控制条人体工学（修设计#2）**：`确认` ≥88px 高、≥60% 宽、底部居中、`primary.main`、保留 scale-on-active（拇指盲按）；`撤回上一手` 次级；`重新点灯` 三级；`退出` 移出控制行到顶角 + 二次确认。规则：**会话级控件不与每手控件相邻**。
+  - **轻量 resume（修设计#6）**：每次 ADVANCE 把 `{game_id,k,frames}` 存 localStorage（磁盘 manifest 为真值源）；进会话若存在未完成 manifest，提供「继续上次(第 X 手)」/「重新开始」。
+  - **i18n**：`useTranslation()`。
+
+### 1.4 P1 验收
+1. 「摆谱」Tab 可达；列表只让选 19×19 + 空状态；**离线**（断远端）仍可选到本地 SGF 进会话。
+2. `/baipu/load` 对**含让子(AB/AW)**与**含提子**的谱返回正确 `steps`（提子点、setup 标记、board_hash 正确）。
+3. 左盘逐手渲染、右当前方高亮、`k/N` 正确；前进/撤回(物理引导文案)/确认正常；提子为独立模式。
+4. 谱尾 DONE 汇总。
+5. **双构建绿** + `npm run lint` 无 kiosk 越界 import。
+6. **测试(阻断)**：`tests/test_baipu_load.py`（让子/提子/pass/board_hash/坐标规范化）；Playwright `baipu.spec.ts`（路由→选谱(本地)→逐手→提子独立模式→撤回→谱尾，mock /baipu/load）；坐标 branded-type round-trip 单测。
+
+---
+
+## P2. LED 串口服务 + 引导接入（**硬件就绪可联调**）
+
+**目标**：`LedService` 用公式 LUT 把规范 (row,col)→idx 发 `SETI/SHOW`；两路（UI 容错 / 采集强一致）；摆谱页点亮下一手（黑红/白绿/提子蓝）。
+
+### 2.1 LedService
+- **新建** `katrain/web/core/led_service.py`：
+  - `LedServiceConfig`：`enabled, serial_port, baud_rate=115200, max_bright=40, lut_path=None`。
+  - `LedService`：
+    - `start()`：开串口；起后台线程 + **有界队列**(`maxsize=10`)；读 `READY`；发 `BRIGHT 40`。
+    - `stop()`：`CLEAR!` + 关串口 + 停线程。
+    - `set_points(points, *, strict=False)`：`points=[{row,col,color}]`。**整批命令（CLEAR+多 SETI+SHOW）作为单个队列项入队**（修 Gemini#5：`queue.Queue` 本身线程安全，**去掉多余 Lock**；队满 `put_nowait`→`Full`→丢最旧）。`strict=True`（采集路）：**同步等串口逐条 OK，直到 `SHOW` 的 OK**，返回 `{ok, connected, shown_at, errors}`；`strict=False`（UI 路）：入队即返回。
+    - `clear(*, strict=False)`。
+    - `is_connected()`（advisory）。
+    - **LUT**：默认内嵌 [附录 A](#附录-a확认的-led-lut公式) `rc2idx`；`lut_path` 给定且 `validate_lut()`(覆盖全 361、∈[0,360]) 通过则覆盖。
+    - **颜色**：`black→红`、`white→绿`、`remove→蓝`。**RGB 为 0-255 帧缓冲值，实际输出由全局 `BRIGHT 40` 缩放**（修 Codex#12：用 `(0,255,0)` 之类全饱和值，亮度由 BRIGHT 钳；文档写清）。
+    - **健壮性**：`pyserial timeout=1~2s`；读写包 try/except；断开标 disconnected + 线程内每 5~10s 重连；未连接时 UI 路静默丢弃，**采集路返回 `{ok:false}`（该帧不得写训练 manifest）**（修 Codex#5）。
+- **gate + 兜底灭灯** `server.py`：`run_web()` 加 `--led-serial-port/--led-baud-rate/--led-lut-path`；`_lifespan_board()` 启用则 `app.state.led`。**`lifespan()` 关停 `led.stop()`**；并加**会话断开/超时兜底**（修 Gemini 新#2）：WebSocket disconnect 或 **>5 分钟**无活动（前端心跳，或 WS on_disconnect 钩子）→ 强制 `led.clear()`，避免 Kiosk LED 亮一整天。
+
+### 2.2 LED REST
+- `endpoints/led.py`（仿 vision.py），`_get_led` None→404，响应统一 `{ok, connected}`（采集路附 `shown_at, errors`）：
+  - `POST /point {row,col,color}`、`POST /points {points}`、`POST /clear`、`GET /status`。校验 0..18。
+  - 注册 `api.py`（prefix `/led`）。
+
+### 2.3 前端接入
+- **新建** `src/api/ledApi.ts`：`point/points/clear`。
+- `BaipuSessionPage` 状态机：`GUIDING(k)`→`ledApi.point({row,col: steps[k], color: steps[k].color==='B'?'black':'white'})`（**规范坐标直接传，不反转**）；`AWAIT_REMOVAL`→`ledApi.points(steps[k].removed.map(p=>({...p,color:'remove'})))`；退出/DONE→`clear()`。UI 路 LED 失败仅记日志/状态点变灰，不阻塞屏幕。
+
+### 2.4 P2 验收
+1. `--led-serial-port /dev/cu.usbmodem2101` → `GET /led/status` connected。
+2. **坐标硬件验证（关键）**：对若干**非对称**已知手（左上 3-3、右下角、边）点亮，**物理 LED == 屏幕高亮 == SGF 落子点**；黑红/白绿；提子蓝。
+3. 拔插 USB 不崩、重连恢复；浏览器关闭/超时后 LED 自动灭。
+4. **测试(阻断)** `tests/test_led_service.py`(mock serial)：`rc2idx` 8 校验点(附录 A)+内部点；颜色/RGB-BRIGHT；strict 路等到 SHOW OK 才返回；队满丢弃；重连。
+
+---
+
+## P3. 几何识别迁移 + CaptureService（相机基座，**硬件就绪**）
+
+**目标**：把 autoresearch `autocal` 移植进 katrain，提供「锁定几何」；建立**单一相机 owner** `CaptureService`（供几何锁 + P4 采集 + QA 取帧）；退役 `grid_calibrator`。
+
+### 3.1 CaptureService（单一相机 owner，修 Codex#8 / Gemini#1 / Gemini 新#1）
+- **新建** `katrain/web/core/capture_service.py`：包 `katrain/vision/camera.py` 的 `CameraManager`。
+  - `CaptureServiceConfig`：`enabled, camera_device, width, height, out_dir(默认 Path.home()/".katrain"/"baipu_captures"，init expanduser)`。
+  - `start()/stop()/is_connected()`。
+  - **`CameraManager` 增帧序号+时间戳**（后台读线程**每次 `cap.read()` 后在锁内**打 `time.monotonic()` 时间戳 + 递增 seq），`grab_fresh(after_ts, settle_ms) -> (frame, seq, ts)`：**轮询直到帧的读取时间戳 `ts>after_ts`** 才返回。**正确性来自时间戳门控**——只要后台线程持续读取，必然丢弃点灯前的旧帧，**不依赖 `CAP_PROP_BUFFERSIZE=1` 生效**；二者叠加更稳（修 Gemini#1 滞后帧）。`test_capture_service.py` 注入「点灯标记后延迟」验证返回的是标记后的新帧。
+  - **锁曝光/白平衡**（Gemini 新#1）：`CameraManager.open()` 在 AUTOFOCUS 之后设 `cv2.CAP_PROP_AUTO_EXPOSURE`=手动档 + `CAP_PROP_AUTO_WB=0` + 固定 `CAP_PROP_EXPOSURE`，避免 LED 强光触发自动降曝把黑子压成死黑。**曝光值随相机而异（无可移植常量），列为配置项，在 P0/几何锁阶段标定**；锁定须**贯穿整个会话**（QA 无灯帧与带灯帧用同一曝光）。`test_capture_service.py` 验证 open() 后 AUTO_EXPOSURE 保持锁定。
+  - `capture_to(path, after_ts) -> str`：`grab_fresh` → `Path(path).parent.mkdir(parents=True, exist_ok=True)` → `cv2.imwrite`；写失败抛异常。
+  - `grab_burst(n)`（几何锁）。
+- **相机互斥（运行时硬互斥，修 Codex#8）**：采集模式**默认拒绝**同时启用 `VisionService`（不只比较同 camera 参数——参数可能别名）。`_lifespan_board()` 若二者都 enabled → `RuntimeError`。CaptureService 为唯一 owner；CLI help 注明用途互斥。
+- **gate**：`--capture-camera/--capture-dir`；`app.state.capture`（关停见 §2.1）。
+
+### 3.2 几何迁移
+- **复制改造**（来源 `~/Repositories/autoresearch/board-detection/`）：`autocal.py→geometry_autocal.py`、`detect.py→geometry_detect.py`、`calibrate.py→geometry_calibrate.py`、`stones.py→stone_classifier.py`（入 `katrain/vision/`，同步改内部 import）。删 `__main__` 块（消除 `/tmp/*overlay.png`）；`save_session` 的 `HERE/SESSION` 改 `save_path` 入参；`out_size` 锁定/保存统一 950。依赖仅 numpy+cv2。
+- **新建** `katrain/vision/geometry_lock.py`：
+  - `lock_geometry_from_frames(frames, conf_min=0.80, out_size=950) -> GeometryLock|None`；`GeometryLock` 含 8 持久化字段（`corners/points(19,19,2)/M/Minv/xs/ys/out_size/baseline`）+ 内存态 `confidence/nmatch`。
+  - `save_geometry_lock`：**npz 只存 8 字段**（与 autoresearch `session.npz` round-trip 兼容；`confidence` 存旁 `.json`）。`load_geometry_lock`。
+- **退役** `grid_calibrator.py`：确认无调用方；**标 deprecated 保留一个周期再删**（修 Codex D7），无悬空引用。
+
+### 3.3 几何锁定接口（前置硬条件，修 Codex#10）
+- **依赖 P2**：本接口调用 `led.clear()`，故须 P2 LedService 已启用（`--led-serial-port`）。LED 不可用时**降级**（跳过灭灯，横幅提示「请人工确认 LED 全灭 + 空盘」后继续），不要 500。
+- `POST /api/v1/geometry/lock`：**先 `led.clear()`（不可用则降级）+ 要求确认空盘** → `capture.grab_burst` → `lock_geometry_from_frames` → **空盘自检**（black/white≈0，非空则拒锁/警告）→ 存 `~/.katrain/geometry_lock.npz` + sidecar 诊断 json → 返回 `{ok, confidence, nmatch, empty_self_check}`。`VisionSetupPage.tsx` 加「自动锁定几何」按钮 + conf 显示。
+
+### 3.4 P3 验收
+1. `tests/test_geometry_lock.py`：save/load round-trip，**npz 恰好 8 字段**，用 autoresearch `session.npz` 校验 schema 一致。
+2. `tests/test_capture_service.py`(mock CameraManager)：`grab_fresh` 只返回 `ts>after_ts` 的帧；`capture_to` 自建目录+命名；曝光锁调用；生命周期。
+3. 真机：空盘 burst → conf≥0.80 + 空盘自检过；`points` 投影回原图与交叉点吻合。
+4. `grep -r grid_calibrator katrain/` 仅剩 deprecated 标记，无功能调用。
+
+---
+
+## P4. 带灯拍采集 + L2 QA + 交付（**硬件就绪**；依赖 P3 几何+stone_classifier）
+
+**目标**：确认→CV 校验(L2)→带灯拍（同步屏障，无滞后/无手入镜）→落盘+富 manifest→交付 autoresearch。
+
+### 4.1 采集 + QA 时序（决策 ③ + 同步屏障，修 Codex#1/Gemini#1/#3）
+`POST /api/v1/baipu/capture` body `{game_id, move_index, override?:bool}`，后端按序：
+1. **QA（L2，决策③）**：`led.clear(strict)` → `capture.grab_fresh` 取**无灯**帧 → `stone_classifier.classify(frame, geometry)` → 与期望盘面 `steps[0..k]` 差分（刚确认点出现对应色子、被提点已清空）。
+   - 一致 → 继续。不一致且 `override!=true` → 返回 `409 {qa:"mismatch", move_index:k, diffs:[{row,col,expected:"B|W|empty",actual:"B|W|empty",reason:"missing|extra|color_mismatch"}]}`（**不落盘**）；前端按 diff 阻断+提示「D4 应黑却空 / K10 多了白子」+ 「改正后确认」/「确认无误继续」。override=true → 继续，`qa_status="operator_override"`（记 diffs）。
+   - （阈值来自 P0 基准；P0 判定不可靠时降级为「每 N 手人工复核 overlay」，不自动阻断。）
+   - 可选：把这张**无灯 QA 帧**也存为附加 no-LED 样本（配置开关）。
+2. **点灯**：`led.set_points([next_point], strict=True)` 等 `SHOW` OK → 得 `show_at`（next 不存在/末手/pass → `led.clear(strict)`，无灯）。
+3. **带灯抓帧**：`capture.grab_fresh(after=show_at, settle_ms≈150)`（后台线程已抽空缓冲，确保拿到点灯后的新帧；曝光已锁）→ `capture_to`。
+4. **落盘 + manifest**（见 4.2）。返回 `{ok, path, qa_status}`。前端：步骤 1→3 期间禁用 确认/撤回/退出 + 屏幕显示「正在拍照，请勿伸手」；**前端收到 `/baipu/capture` 返回 200（帧已写盘）后**才帧计数跳动 + 播放「咔嚓」声（修 Gemini#3：声音是"可落下一子"的放行信号，必须在帧写盘确认之后，而非点灯瞬间）。
+
+### 4.2 落盘 + 富 manifest（修 Codex#2/#6 / Gemini#2）
+- 路径 `{out_dir}/{game_id}/frame_{seq:03d}.jpg`；**首帧把当时 `geometry_lock` 拷贝固化**到 `{out_dir}/{game_id}/geometry.npz`（修 Gemini#2：避免日后重标定毁旧数据）+ SGF 拷 `game.sgf`(UTF-8 无 BOM)。
+- **加固**（Codex#6）：`game_id` Pydantic slug 校验；落盘后校验 resolved path 仍在 `out_dir` 内；**按 game_id 串行锁**；manifest **tmp+atomic replace**；**幂等**：重复 `(game_id, move_index)` 且状态一致 → `200` 返回原记录（不重拍）；冲突（seq/qa_status 不一致或 move_index 越界）→ `409`。
+- **manifest.json schema**（权威）：
+  ```json
+  {
+    "game_id": "...", "session_timestamp": "ISO8601", "board_size": 19,
+    "sgf_path": "game.sgf", "geometry_path": "geometry.npz", "total_moves": 150,
+    "frames": [
+      {"file": "frame_000.jpg", "seq": 0,
+       "frame_kind": "initial_led|after_move|final_no_led",
+       "applied_move_index": -1,            // 已落到盘上的最后一手 index（initial 为 -1）
+       "next_guided_move_index": 0,          // 此帧点亮的下一手 index（无灯为 null）
+       "led_point": {"row":3,"col":3,"color":"black"} ,  // = 亮灯点；无灯 null
+       "board_through_index": -1,            // 盘面含 0..该 index
+       "board_hash": "…",
+       "qa_status": "ok|operator_override|skipped"}
+    ]
+  }
+  ```
+  - `next_move:null` 不再兼表「谱尾」「pass」——由 `frame_kind` + `next_guided_move_index` 显式区分（修 Codex#2）。
+  - **字段语义（autoresearch 数据契约，权威）**：`applied_move_index`=当前物理盘上已落的**最后一手** `steps[]` 索引（`initial_led` 为 -1）；`next_guided_move_index`=本帧点亮的下一手 `steps[]` 索引（无灯为 null，**跳过 pass 指向下一物理落子**）；`board_through_index`=盘面含 `steps[0..该值]`（即 = `applied_move_index`）。三者**均索引 `/baipu/load` 的 `steps[]`，非 `frames[]`**。
+  - **pass 不产帧**；`frames.length = 1(initial_led) + 非 pass 落子数`，与 `steps.length` 不必相等，对齐靠 `applied_move_index` 而非数组下标。
+  - **示例** `steps=[M0(0), M1(1), pass(2), M3(3)]` → `frames`：`[0]` initial_led(applied=-1, next=0) · `[1]` after_move(applied=0, next=1) · `[2]` after_move(applied=1, **next=3** 跳过 pass) · `[3]` final_no_led(applied=3, next=null)。
+  - `frame_kind` 仅三值；`manual_check` 已删（P4.3「每 N 手人工复核」走 overlay，不写训练帧），避免悬空枚举。
+- **强制首帧**（修 Gemini#4）：`GUIDING(0)` 首次确认前抓一张 `frame_kind=initial_led`（空盘 + move0 灯），**默认开**（好负样本）。末手 `final_no_led`（全子无灯）。pass 不拍（manifest 不产帧，状态机仅 ADVANCE）。
+
+### 4.3 数据去相关（决策 ①(a)）
+- protocol/manifest 写明并提示操作者：**跨会话/跨局变换光照、角度、曝光档、盘面填充度**；少局多样 > 多局高相关。`manifest` 可记 `capture_condition` 标签（lighting/angle…）便于 autoresearch 分层。
+
+### 4.4 交付契约（给 autoresearch）
+- 产物：`{game_id}/frame_NNN.jpg` + `game.sgf` + `geometry.npz` + `manifest.json`。
+- **本 track 不写 YOLO 标签**。autoresearch 用 manifest(`board_through_index`/`led_point`/固化 `geometry.npz`)+SGF 产 4 类标签（black/white/led_red/led_green）；坐标为规范 (row 顶部基, col)。
+
+### 4.5 P4 验收
+1. **同步屏障**：人为延迟点灯，验证拍到的永远是**点灯后**的新帧（非旧灯/无灯）；曝光锁下黑子不糊。
+2. **L2 QA**：故意摆错颜色/偏一路/漏提子 → 阻断+提示；改正后放行；override 路 manifest 记 `operator_override`。
+3. 每手 `frame_NNN.jpg` 落盘，首帧 initial_led、末帧 final_no_led；`geometry.npz`/`game.sgf` 随谱固化；manifest 富字段齐全且与盘面一致；seq 去重、并发安全、原子写。
+4. 拍照期间禁用按钮；咔嚓声 + 帧计数；「请勿伸手」提示。
+5. **测试(阻断)** `tests/test_baipu_api.py`(AsyncClient + mock camera/led/geometry)：QA 阻断/override 分支、同步屏障(mock 帧 ts)、manifest schema/原子写/seq 幂等、路径包含校验。
+
+---
+
+## 6. 不在范围
+YOLO 标签/训练/RKNN（autoresearch）；固件再改（已烧）；物理确认键（用触屏）；后端 baipu 数据表（用 /baipu/load + 本地 SGF）；非 19×19；完整任意跳转 repair 流程（只做单步引导撤回）。
+
+## 7. 横切：构建/测试/验证
+- **前端构建边界**：新页只在 `src/kiosk/` + 共享区；改共享文件 → `npm run lint && npm run build && npm run build:kiosk-2d`(含 verify:kiosk-2d)。建议写进 CLAUDE.md 合并清单。
+- **后端**：`CI=true uv run pytest tests`；新服务 mock(serial/camera/geometry)。**各阶段测试为验收阻断项**。
+- **格式/i18n**：`uv run black -l 120 katrain tests`；`uv run python i18n.py -todo`。
+- `goBoard.ts` 收敛降级为**可选清理**（决策②后非关键路径）：若做，先补单测再让 LiveBoard/tsumego 改用 + 双构建。
+
+## 8. 风险
+- **采集时序**（最高）：LED SHOW ack + 点灯后新帧 + 曝光锁 + 手入镜屏障，缺一会污染。
+- **QA 依赖经典 CV 可靠性**：P0 基准调阈值 + 人工 override 兜底；不可靠则降级人工复核。
+- **相机争用**：CaptureService 单一 owner + 运行时拒绝 vision+capture 同开。
+- **几何版本漂移**：geometry 随谱固化到 `{game_id}/`。
+- **坐标系**：规范 (row 顶部) 全链路；branded types + round-trip + 硬件验证。
+- **离线**：board-mode kifu online-only → 必须本地 SGF 来源。
+- **后端真值正确性**：`/baipu/load` 复用引擎，单测覆盖让子/提子/pass。
+
+---
+
+## 附录 A：确认的 LED LUT 公式
+实测确认（2026-06-15）。链序 `UL→LL→LR→UR`；蛇形 `serp`；UL/LL 正常、LR 垂直翻转、UR 180°。**规范坐标 row=0 顶部、col=0 左。**
+```python
+def serp(lr, lc, cols):
+    return lr*cols + lc + 1 if lr % 2 == 0 else (lr+1)*cols - lc
+def rc2idx(row, col):                       # row,col ∈ [0,18]，row=0 顶部
+    if row <= 9 and col <= 9:   return        serp(row,      col,      10) - 1   # UL  0..99
+    if row >= 10 and col <= 9:  return 100  + serp(row-10,   col,      10) - 1   # LL  100..189
+    if row >= 10 and col >= 10: return 190  + serp(18-row,   col-10,   9)  - 1   # LR  190..270 (垂直翻转)
+    return                              271  + serp(9-row,    18-col,   9)  - 1   # UR  271..360 (180°)
+```
+校验点：`(0,0)→0 (9,0)→99 (10,0)→100 (18,9)→189 (18,10)→190 (10,18)→270 (9,18)→271 (0,18)→360`。
+
+## 附录 B：新增/改动文件清单
+**前端(新增)**：`src/kiosk/pages/BaipuListPage.tsx`、`src/kiosk/pages/BaipuSessionPage.tsx`、`src/api/ledApi.ts`、`src/api/baipuApi.ts`(load/capture/manifest)
+**前端(改)**：`src/kiosk/KioskApp.tsx`、`navTabs.tsx`、`src/components/live/LiveBoard.tsx`(+nextMovePoint/capturedPositions props，坐标边界转换)；(可选) goBoard.ts 收敛 + `useTsumegoProblem.ts`
+**后端(新增)**：`katrain/web/core/led_service.py`、`katrain/web/core/capture_service.py`、`katrain/web/api/v1/endpoints/led.py`、`katrain/web/api/v1/endpoints/baipu.py`(load/capture/manifest)、`katrain/vision/geometry_{autocal,detect,calibrate}.py`、`katrain/vision/stone_classifier.py`、`katrain/vision/geometry_lock.py`
+**后端(改)**：`katrain/web/server.py`(gate+lifespan 启停+相机互斥+兜底灭灯)、`katrain/web/api/v1/api.py`(注册 led/baipu)、`katrain/vision/camera.py`(帧序号/时间戳+曝光锁)、退役 `grid_calibrator.py`、(复用) `katrain/core/game.py`+`sgf_parser.py`(经 /baipu/load)
+**测试(新增)**：`tests/test_baipu_load.py`、`tests/test_led_service.py`、`tests/test_capture_service.py`、`tests/test_geometry_lock.py`、`tests/test_baipu_api.py`、`katrain/web/ui/tests/baipu.spec.ts`、坐标 round-trip 单测
+**固件**：无(已烧)。
+
+---
+
+## 10. 修订记录（v2→v3）
+
+三方外部评审（Codex/Gemini/gstack）+ 与作者 4 项决策后的系统性改写：
+- **决策①**：保留 LED 摆谱(产品功能)；加 **P0 分类器基准(可选门)** + **数据去相关**(§4.3)。
+- **决策②**：**逐手真值改后端权威** `/baipu/load`(引擎算提子/让子)，前端哑播放；`goBoard.ts` 收敛降级为可选；修好让子(AB/AW)缺口(Codex#4)。
+- **决策③**：**L2 QA 主动阻断 + 操作者 override**(§4.1)，manifest `qa_status`；阈值挂 P0。
+- **决策④**：采集导航 **前进 + 单步引导撤回 + 退出重来**；去掉「下一手/跳过」。
+- **同步屏障(Codex#1/Gemini#1)**：LED strict SHOW ack + 点灯后新帧(帧序号/时间戳)+ OpenCV 缓冲由后台线程抽空 + 曝光锁(Gemini 新#1)。
+- **几何随谱固化(Gemini#2)**：首帧拷 `geometry.npz` 到 `{game_id}/`。
+- **富 manifest(Codex#2)**：`frame_kind/applied_move_index/next_guided_move_index/led_point/board_through_index/board_hash/qa_status`；原子写/seq 去重/可恢复。`null` 不再兼表谱尾/pass。
+- **手入镜屏障(Gemini#3)**：「请勿伸手」+ 咔嚓声 + 帧计数；capture-pending 禁用按钮。
+- **强制首帧(Gemini#4)**：initial_led 默认开。
+- **相机单一 owner + 硬互斥(Codex#8)**；**离线 SGF 来源(Codex#9)**；**几何锁前置 led off+空盘自检(Codex#10)**；**grid_calibrator 延迟退役(Codex D7)**。
+- **/capture 加固(Codex#6)**：slug/路径包含/串行锁/原子 manifest/seq 幂等。
+- **LedService**：去多余 Lock(Gemini#5)、批为单队列项、strict 路等 SHOW OK、**兜底灭灯**(Gemini 新#2)、RGB-by-BRIGHT 澄清(Codex#12)。
+- **坐标 branded types + round-trip 测试(Codex#11)**。
+- **设计 UX(gstack)**：状态条层级/LED 配色片、失败可见健康点+相机掉线阻断、退出移出+二次确认+resume、提子独立模式、列表过滤+空状态、拍照反馈。
+
+**v3 验证补丁**（4-lens 对抗验证后，decisions lens=clean；以下为采纳的真缺口，其余 ~24 项为「计划层不必含执行级细节」未采纳）：
+- **坐标转换公式显式化**：`row=(board_size-1)-y_internal, col=x_internal` 写进 §1.1（封死垂直倒置，最高风险）。
+- **`removed[]`/`board_hash` 可行性**：game.py 无 per-node 提子/哈希，须在重放循环逐步采集（§1.1）。
+- **manifest 字段语义 + 含 pass 的工作示例**（§4.2，autoresearch 数据契约）；删悬空 `manual_check`。
+- **`grab_fresh` 正确性论证**：时间戳门控，不依赖 BUFFERSIZE（§3.1）。
+- **曝光锁细化**：cv2 手动曝光/AWB，值随相机标定、贯穿会话（§3.1）。
+- **小决断**：离线 SGF 取 (b) 缓存为主(§1.2)；灭灯超时 = 5 分钟(§2.1)；几何锁依赖 P2+降级(§3.3)；QA diff 结构化(§4.1)；幂等 200/冲突 409(§4.2)；咔嚓声在帧写盘后(§4.1)。
+```

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Videocam, VideocamOff, ArrowBack, Check, Refresh } from '@mui/icons-material';
 import { useVision } from '../context/VisionContext';
 import { API } from '../../api';
+import { GeometryAPI, type GeometryLockResult } from '../../api/geometryApi';
 import VisionBoard from '../components/vision/VisionBoard';
 
 const STREAM_URL = '/api/v1/vision/stream';
@@ -18,6 +19,20 @@ const VisionSetupPage = () => {
   const [streamKey, setStreamKey] = useState(0);
   const [detectedBoard, setDetectedBoard] = useState<number[][] | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [geoLocking, setGeoLocking] = useState(false);
+  const [geoResult, setGeoResult] = useState<GeometryLockResult | null>(null);
+
+  const handleLockGeometry = useCallback(async () => {
+    setGeoLocking(true);
+    setGeoResult(null);
+    try {
+      setGeoResult(await GeometryAPI.lock());
+    } catch (e) {
+      setGeoResult({ ok: false, reason: e instanceof Error ? e.message : 'error' });
+    } finally {
+      setGeoLocking(false);
+    }
+  }, []);
 
   // Poll detected board state
   useEffect(() => {
@@ -239,6 +254,26 @@ const VisionSetupPage = () => {
           >
             {confirming ? '确认中...' : '确认'}
           </Button>
+        </Box>
+
+        {/* 摆谱 capture: empty-board geometry lock (no-op unless capture mode is enabled) */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%', maxWidth: 500 }}>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={handleLockGeometry}
+            disabled={geoLocking}
+            sx={{ minHeight: 48, width: '100%' }}
+          >
+            {geoLocking ? '锁定中...' : '自动锁定几何（空盘）'}
+          </Button>
+          {geoResult && (
+            <Typography variant="body2" sx={{ color: geoResult.ok ? 'success.main' : 'error.main' }}>
+              {geoResult.ok
+                ? `已锁定 · 置信度 ${geoResult.confidence ?? '?'}（匹配 ${geoResult.nmatch ?? '?'}/19）`
+                : `未锁定：${geoResult.reason ?? '失败'}`}
+            </Typography>
+          )}
         </Box>
       </Box>
     </Box>

@@ -47,6 +47,11 @@ async def lifespan(app: FastAPI):
     if led:
         led.stop()
 
+    # Capture service shutdown (board mode)
+    capture = getattr(app.state, "capture", None)
+    if capture:
+        capture.stop()
+
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
         if connectivity:
@@ -351,6 +356,33 @@ async def _lifespan_board(app: FastAPI, log):
         log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
+
+    # Capture service (optional — 摆谱 capture; the SINGLE camera owner, plan §3.1)
+    capture_config = getattr(settings, "_capture_config", None)
+    if capture_config and capture_config.enabled:
+        if vision_config and vision_config.enabled:
+            raise RuntimeError(
+                "CaptureService is the exclusive camera owner; disable VisionService "
+                "(--vision-model) to use --capture-camera"
+            )
+        from katrain.web.core.capture_service import CaptureService
+
+        capture = CaptureService(capture_config)
+        capture.start()
+        app.state.capture = capture
+        # Load an existing geometry lock if present (so capture/QA can run immediately).
+        try:
+            from katrain.vision.geometry_lock import load_geometry_lock
+
+            geo_path = Path("~/.katrain/geometry_lock.npz").expanduser()
+            app.state.geometry = load_geometry_lock(geo_path) if geo_path.exists() else None
+        except Exception as e:
+            log.warning("Failed to load geometry lock: %s", e)
+            app.state.geometry = None
+        log.info("Capture service started (camera=%s)", capture_config.camera_device)
+    else:
+        app.state.capture = None
+        app.state.geometry = None
 
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
@@ -1843,6 +1875,21 @@ def run_web():
     parser.add_argument(
         "--led-lut-path", default=None, help="Optional JSON (row,col)->index LUT; defaults to the built-in formula."
     )
+    parser.add_argument(
+        "--capture-camera",
+        default=None,
+        help="Camera device for 摆谱 capture (int or /dev/videoN). Enables CaptureService. Mutually exclusive with --vision-model.",
+    )
+    parser.add_argument(
+        "--capture-dir", default="~/.katrain/baipu_captures", help="Output dir for captured frames + manifests."
+    )
+    parser.add_argument("--capture-resolution", default="1280x720", help="Capture camera resolution WxH.")
+    parser.add_argument(
+        "--capture-exposure",
+        type=float,
+        default=None,
+        help="Manual exposure value (camera-specific; tuned on the box).",
+    )
     args, _unknown = parser.parse_known_args()
 
     # Configure vision service if model path provided
@@ -1870,6 +1917,21 @@ def run_web():
             serial_port=args.led_serial_port,
             baud_rate=args.led_baud_rate,
             lut_path=args.led_lut_path,
+        )
+
+    # Configure capture service if a capture camera was provided
+    if args.capture_camera is not None:
+        from katrain.web.core.capture_service import CaptureServiceConfig
+
+        cap_dev = int(args.capture_camera) if str(args.capture_camera).isdigit() else args.capture_camera
+        cap_w, cap_h = (int(x) for x in args.capture_resolution.split("x"))
+        settings._capture_config = CaptureServiceConfig(
+            enabled=True,
+            camera_device=cap_dev,
+            width=cap_w,
+            height=cap_h,
+            out_dir=args.capture_dir,
+            exposure=args.capture_exposure,
         )
 
     # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)

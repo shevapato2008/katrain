@@ -145,6 +145,29 @@ class TestExpectedBoardAndNext:
         assert next_placement_index(steps, 0) == 2  # skips the pass at index 1
         assert next_placement_index(steps, 2) is None
 
+    def test_out_of_range_k_is_clamped(self):
+        steps = _steps("(;SZ[19];B[pd])")["steps"]
+        # k beyond the last step must not raise (defensive clamp)
+        b = expected_board_from_steps(steps, 99)
+        assert b[3][15] == "B"
+
+    def test_ae_clear_emitted_and_applied(self):
+        # AB places a stone, AE removes it, then a move. The clear must be recorded
+        # so expected_board reflects the removal (decision ②, review fix).
+        data = _steps("(;SZ[19]AB[aa];AE[aa];B[pd])")
+        steps = data["steps"]
+        kinds = [s["kind"] for s in steps]
+        assert "clear" in kinds
+        clear_step = next(s for s in steps if s["kind"] == "clear")
+        assert {"row": 0, "col": 0} in clear_step["removed"]
+        # final board: aa cleared, pd present
+        board = expected_board_from_steps(steps, len(steps) - 1)
+        assert board[0][0] is None
+        assert board[3][15] == "B"
+        # next_placement_index skips the clear step
+        clear_idx = kinds.index("clear")
+        assert next_placement_index(steps, clear_idx - 1) != clear_idx
+
 
 class TestRealGame:
     @pytest.mark.parametrize("name", ["ogs.sgf", "LS vs AG - G4 - English.sgf"])

@@ -155,9 +155,10 @@ class LedService:
         self._thread.start()
 
     def stop(self) -> None:
-        # Best-effort blackout, then tear down the worker + port.
+        # Blackout via the WORKER (strict) so all serial I/O stays on one thread,
+        # then tear down. No post-join serial access → no main/worker race.
         try:
-            self.clear(strict=False)
+            self.clear(strict=True)
         except Exception:
             pass
         self._stop.set()
@@ -167,7 +168,6 @@ class LedService:
             pass
         if self._thread:
             self._thread.join(timeout=3)
-        self._send_now("CLEAR!")  # final hard clear if the port is still open
         self._close_serial()
 
     def is_connected(self) -> bool:
@@ -280,8 +280,17 @@ class LedService:
         try:
             self._serial = self._serial_factory()
             self._connected = True
-            # Drain boot banner, set global brightness.
+            # Set global brightness AND consume its ack (+ any boot "READY" banner).
+            # If we left the BRIGHT ack in the buffer, the next _send_and_ack would
+            # mis-pair it with CLEAR, cascading an off-by-one across the batch.
             self._send_now(f"BRIGHT {self.config.max_bright}")
+            for _ in range(4):
+                try:
+                    line = self._serial.readline().decode("ascii", errors="replace").strip()
+                except Exception:
+                    break
+                if line.startswith("OK") or line.startswith("ERR"):
+                    break
             log.info("LED serial opened on %s", self.config.serial_port)
         except Exception as e:
             self._serial = None

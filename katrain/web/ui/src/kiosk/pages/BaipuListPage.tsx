@@ -79,6 +79,11 @@ const BaipuListPage = () => {
   }, [query, page, fetchAlbums]);
 
   // Only 19×19 records can be guide-placed (the LED board is physically 19×19).
+  // NOTE: this filters the CURRENT page client-side; `total`/pagination still
+  // reflects all board sizes (the board-mode kifu dispatcher has no board_size
+  // filter). For pro libraries (≈all 19×19) the difference is negligible; a fully
+  // filtered-out page shows the empty state below. A precise fix needs a
+  // board_size query param threaded through the kifu repository/dispatcher.
   const visibleKifu = kifuList.filter((k) => k.board_size === 19);
 
   // Select a library game: clear stale preview (event handler — allowed) and trigger fetch.

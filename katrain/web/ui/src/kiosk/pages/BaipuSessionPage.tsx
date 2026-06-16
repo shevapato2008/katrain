@@ -97,6 +97,7 @@ const BaipuSessionPage = () => {
   const [frameCount, setFrameCount] = useState(0);
   const [qaDiffs, setQaDiffs] = useState<QaDiff[] | null>(null);
   const initialCapturedRef = useRef(false);
+  const mountedRef = useRef(true);
 
   // Resolve SGF: fresh navigation state first, then the offline localStorage cache.
   const sgf = useMemo(() => {
@@ -131,6 +132,7 @@ const BaipuSessionPage = () => {
   }, [sgf, source]);
 
   const currentStep: BaipuStep | undefined = steps[k];
+  const isPlaceable = !!currentStep && currentStep.kind !== 'pass' && currentStep.kind !== 'clear';
 
   // Build LiveBoard inputs from canonical steps.
   const moves = useMemo(
@@ -156,6 +158,7 @@ const BaipuSessionPage = () => {
       setCapturePending(true);
       setQaDiffs(null);
       const out = await BaipuAPI.capture({ game_id: source, move_index: moveIndex, sgf, override });
+      if (!mountedRef.current) return; // navigated away mid-capture
       setCapturePending(false);
       if (out.kind === 'qa_mismatch') {
         setQaDiffs(out.diffs);
@@ -177,14 +180,14 @@ const BaipuSessionPage = () => {
     if (phase === 'guiding' && k === 0 && !initialCapturedRef.current && sgf && steps.length > 0) {
       initialCapturedRef.current = true;
       BaipuAPI.capture({ game_id: source, move_index: -1, sgf })
-        .then((out) => { if (out.kind === 'ok') setFrameCount((c) => c + 1); })
+        .then((out) => { if (out.kind === 'ok' && mountedRef.current) setFrameCount((c) => c + 1); })
         .catch(() => undefined);
     }
   }, [phase, k, sgf, source, steps.length]);
 
-  // Pass steps require no physical action — auto-advance (plan §1.3).
+  // Steps with no physical placement (pass, AE-clear) auto-advance (plan §1.3).
   useEffect(() => {
-    if (phase === 'guiding' && currentStep && currentStep.kind === 'pass') {
+    if (phase === 'guiding' && currentStep && (currentStep.kind === 'pass' || currentStep.kind === 'clear')) {
       const timer = setTimeout(advance, 500);
       return () => clearTimeout(timer);
     }
@@ -206,8 +209,14 @@ const BaipuSessionPage = () => {
     }
   }, [phase, k, currentStep]);
 
-  // Blackout the LED when leaving the session.
-  useEffect(() => () => { LedAPI.clear().catch(() => undefined); }, []);
+  // Blackout the LED when leaving the session; flag unmount for async guards.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      LedAPI.clear().catch(() => undefined);
+    };
+  }, []);
 
   const relight = () => {
     if (currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
@@ -346,7 +355,7 @@ const BaipuSessionPage = () => {
           <Box sx={{ flex: 1 }} />
 
           {/* Primary action */}
-          {phase === 'guiding' && currentStep?.kind !== 'pass' && (
+          {phase === 'guiding' && isPlaceable && (
             <Button
               fullWidth variant="contained" onClick={handleConfirm} disabled={capturePending} data-testid="baipu-confirm"
               sx={{ minHeight: 88, fontSize: '1.3rem', borderRadius: '12px', fontWeight: 700 }}
@@ -354,8 +363,10 @@ const BaipuSessionPage = () => {
               {t('Confirm', '确认落子')}
             </Button>
           )}
-          {phase === 'guiding' && currentStep?.kind === 'pass' && (
-            <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>{t('Pass — continuing…', '虚手，继续…')}</Typography>
+          {phase === 'guiding' && currentStep && !isPlaceable && (
+            <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>
+              {currentStep.kind === 'pass' ? t('Pass — continuing…', '虚手，继续…') : t('Clearing — continuing…', '清除，继续…')}
+            </Typography>
           )}
           {phase === 'await_removal' && (
             <Button
@@ -388,7 +399,7 @@ const BaipuSessionPage = () => {
           )}
 
           {/* Secondary controls (session-level kept away from the per-move primary) */}
-          {phase === 'guiding' && currentStep?.kind !== 'pass' && (
+          {phase === 'guiding' && isPlaceable && (
             <Button variant="text" onClick={relight} data-testid="baipu-relight" sx={{ color: 'text.secondary' }}>
               {t('Re-light', '重新点灯')}
             </Button>

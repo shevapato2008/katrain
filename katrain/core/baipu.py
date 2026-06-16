@@ -115,12 +115,29 @@ def build_steps_from_sgf(sgf: str) -> Dict[str, Any]:
 
         if node.clear_placements:
             # AE (rare in game records): replay survivors from empty so later
-            # board_hashes stay correct. No guided step is emitted for AE.
+            # board_hashes stay correct, AND emit a 'clear' step recording the
+            # removed stones — otherwise expected_board_from_steps (which rebuilds
+            # from steps[]) would never apply the clear and QA would compare against
+            # a stale board.
             clear_coords = {c.coords for c in node.clear_placements}
+            cleared = [m for chain in game.chains for m in chain if m.coords in clear_coords]
             survivors = [m for chain in game.chains for m in chain if m.coords not in clear_coords]
             game._init_state()
             for m in survivors:
                 game._validate_move_and_update_chains(m, True)
+            if cleared:
+                steps.append(
+                    {
+                        "kind": "clear",
+                        "move_index": len(steps),
+                        "property": "AE",
+                        "row": None,
+                        "col": None,
+                        "color": None,
+                        "removed": [_canon_point(m, board_y) for m in cleared],
+                        "board_hash": _board_hash(game.chains),
+                    }
+                )
 
     try:
         komi = float(root.komi)
@@ -143,7 +160,8 @@ def expected_board_from_steps(steps: List[Dict[str, Any]], k: int, board_size: i
     physical board *should* look like after the operator has placed move ``k``.
     """
     board = [[None] * board_size for _ in range(board_size)]
-    for i in range(0, k + 1):
+    # Defensive bound: callers may pass an out-of-range k (validated upstream too).
+    for i in range(0, min(k + 1, len(steps))):
         s = steps[i]
         if s["kind"] in ("setup", "move") and s["row"] is not None:
             board[s["row"]][s["col"]] = s["color"]
@@ -152,13 +170,18 @@ def expected_board_from_steps(steps: List[Dict[str, Any]], k: int, board_size: i
     return board
 
 
+# Step kinds that involve no physical stone placement (no LED guidance, auto-skip).
+NON_PLACEMENT_KINDS = ("pass", "clear")
+
+
 def next_placement_index(steps: List[Dict[str, Any]], after: int):
-    """First index ``j > after`` that is a physical placement (``kind != 'pass'``).
+    """First index ``j > after`` that is a physical placement (a setup/move stone).
 
     Returns ``None`` if there is no further stone to guide (the capture becomes a
-    final, no-LED frame). Passes are skipped because they need no physical action.
+    final, no-LED frame). Pass and AE-clear steps are skipped — they need no
+    physical placement.
     """
     for j in range(after + 1, len(steps)):
-        if steps[j]["kind"] != "pass":
+        if steps[j]["kind"] not in NON_PLACEMENT_KINDS:
             return j
     return None

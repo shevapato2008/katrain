@@ -128,6 +128,31 @@ class TestColorsAndProtocol:
         assert len(fake.seti_lines()) == 1  # only the in-range point
 
 
+class BootFakeSerial(FakeSerial):
+    """Like FakeSerial but emits a boot 'READY' banner before the first ack,
+    so the BRIGHT-ack drain in _open_serial must consume both READY and the OK."""
+
+    def __init__(self, ack: str = "OK"):
+        super().__init__(ack=ack)
+        self._buf.append(b"READY\n")
+
+
+class TestAckPairing:
+    def test_boot_banner_and_bright_ack_consumed_so_show_ack_pairs(self):
+        # Regression: if BRIGHT's ack (or the boot READY) leaked into the buffer,
+        # _send_and_ack would mis-pair and SHOW's ack would never be seen.
+        clock = FakeClock()
+        fake = BootFakeSerial()
+        svc = LedService(LedServiceConfig(enabled=True, serial_port="fake"), serial_factory=lambda: fake, clock=clock)
+        svc.start()
+        try:
+            res = svc.set_points([{"row": 3, "col": 3, "color": "black"}], strict=True)
+        finally:
+            svc.stop()
+        assert res["ok"] is True
+        assert res["shown_at"] == clock.t  # SHOW correctly acked → barrier timestamp set
+
+
 class TestStrictPath:
     def test_strict_returns_shown_at_after_show_ok(self):
         clock = FakeClock()

@@ -102,6 +102,8 @@ def run_capture(
     """Run one capture step. Returns a result dict; raises QAMismatch / LedUnavailable /
     ValueError. Geometry must be locked (caller checks). LED is required (the frame must
     show the guidance LED unless it's the final frame)."""
+    if not (-1 <= move_index < len(steps)):
+        raise ValueError(f"move_index {move_index} out of range [-1, {len(steps) - 1}]")
     game_dir = _resolve_game_dir(out_dir, game_id)
     manifest_path = game_dir / "manifest.json"
 

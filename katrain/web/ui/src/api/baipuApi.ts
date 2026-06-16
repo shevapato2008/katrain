@@ -11,7 +11,7 @@
 
 const API_BASE = '/api/v1/baipu';
 
-export type BaipuStepKind = 'setup' | 'move' | 'pass';
+export type BaipuStepKind = 'setup' | 'move' | 'pass' | 'clear';
 
 export interface BaipuPoint {
   row: number; // 0 = top

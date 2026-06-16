@@ -21,6 +21,8 @@ import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
+import BaipuListPage from './pages/BaipuListPage';
+import BaipuSessionPage from './pages/BaipuSessionPage';
 import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
@@ -64,6 +66,8 @@ const KioskRoutes = () => {
           <Route path="research/session/:sessionId" element={<GamePage />} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
+          <Route path="baipu" element={<BaipuListPage />} />
+          <Route path="baipu/session/:source" element={<BaipuSessionPage />} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />

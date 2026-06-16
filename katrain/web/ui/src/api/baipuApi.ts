@@ -43,6 +43,31 @@ export interface BaipuLoadResponse {
   meta: BaipuMeta;
 }
 
+export interface QaDiff {
+  row: number;
+  col: number;
+  expected: string;
+  actual: string;
+  reason: string;
+}
+
+export interface BaipuCaptureResult {
+  ok: boolean;
+  idempotent?: boolean;
+  path?: string;
+  qa_status?: string;
+  frame_kind?: string;
+  next_guided_move_index?: number | null;
+}
+
+// Discriminated outcome so the UI can fall back when capture isn't enabled
+// (404 = dev/screen-only mode) and block only on a real QA mismatch.
+export type BaipuCaptureOutcome =
+  | { kind: 'ok'; result: BaipuCaptureResult }
+  | { kind: 'disabled' } // 404: capture/geometry not available
+  | { kind: 'qa_mismatch'; moveIndex: number; diffs: QaDiff[] }
+  | { kind: 'error'; message: string };
+
 export const BaipuAPI = {
   load: async (req: { sgf?: string; kifu_id?: number }): Promise<BaipuLoadResponse> => {
     const response = await fetch(`${API_BASE}/load`, {
@@ -55,6 +80,36 @@ export const BaipuAPI = {
       throw new Error(`baipu/load failed ${response.status}: ${body}`);
     }
     return response.json();
+  },
+
+  capture: async (req: {
+    game_id: string;
+    move_index: number;
+    sgf: string;
+    override?: boolean;
+    capture_condition?: Record<string, unknown>;
+  }): Promise<BaipuCaptureOutcome> => {
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE}/capture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      });
+    } catch (e) {
+      return { kind: 'error', message: e instanceof Error ? e.message : 'network error' };
+    }
+    if (response.status === 404) return { kind: 'disabled' };
+    if (response.ok) return { kind: 'ok', result: await response.json() };
+    if (response.status === 409) {
+      const body = await response.json().catch(() => ({}));
+      const detail = body?.detail ?? {};
+      if (detail.qa === 'mismatch') {
+        return { kind: 'qa_mismatch', moveIndex: detail.move_index, diffs: detail.diffs ?? [] };
+      }
+      return { kind: 'error', message: detail.message ?? 'capture conflict' };
+    }
+    return { kind: 'error', message: `capture failed ${response.status}` };
   },
 };
 

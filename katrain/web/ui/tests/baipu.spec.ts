@@ -32,11 +32,24 @@ async function setupSession(page: Page) {
     route.fulfill({ json: { id: 1, username: 'tester', email: 't@example.com' } }),
   );
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: STEPS }));
+  // LED is advisory in the UI; ack everything.
+  await page.route('**/api/v1/led/**', (route) =>
+    route.fulfill({ json: { ok: true, connected: true, shown_at: null, errors: [] } }),
+  );
+}
+
+// Capture disabled (dev/screen-only): /baipu/capture 404s → the UI falls back to a
+// plain advance. This keeps the screen-only flow deterministic without hardware.
+async function captureDisabled(page: Page) {
+  await page.route('**/api/v1/baipu/capture', (route) =>
+    route.fulfill({ status: 404, json: { detail: 'Capture service not enabled' } }),
+  );
 }
 
 test.describe('baipu session', () => {
   test('guides through moves, removal, and completion', async ({ page }) => {
     await setupSession(page);
+    await captureDisabled(page);
     await page.goto('/kiosk/baipu/session/test1');
 
     // Status bar + first guidance (black to place = red LED).
@@ -64,6 +77,7 @@ test.describe('baipu session', () => {
 
   test('undo steps back one move', async ({ page }) => {
     await setupSession(page);
+    await captureDisabled(page);
     await page.goto('/kiosk/baipu/session/test1');
 
     await page.getByTestId('baipu-confirm').click(); // now at move 1 (white)
@@ -72,5 +86,28 @@ test.describe('baipu session', () => {
     await page.getByTestId('baipu-undo').click();
     await page.getByRole('button', { name: '已撤回' }).click();
     await expect(page.getByTestId('baipu-next-chip')).toContainText('黑');
+  });
+
+  test('L2 QA mismatch blocks, override continues', async ({ page }) => {
+    await setupSession(page);
+    // Capture enabled: move 0 reports a QA mismatch unless overridden.
+    await page.route('**/api/v1/baipu/capture', async (route) => {
+      const body = route.request().postDataJSON();
+      if (body.move_index === 0 && !body.override) {
+        return route.fulfill({
+          status: 409,
+          json: { detail: { qa: 'mismatch', move_index: 0, diffs: [{ row: 3, col: 15, expected: 'B', actual: 'empty', reason: 'missing' }] } },
+        });
+      }
+      return route.fulfill({
+        json: { ok: true, qa_status: body.override ? 'operator_override' : 'ok', frame_kind: 'after_move', next_guided_move_index: 1 },
+      });
+    });
+    await page.goto('/kiosk/baipu/session/test1');
+
+    await page.getByTestId('baipu-confirm').click(); // move 0 → QA mismatch
+    await expect(page.getByTestId('baipu-qa-banner')).toBeVisible();
+    await page.getByTestId('baipu-qa-override').click(); // confirm correct → continue
+    await expect(page.getByTestId('baipu-next-chip')).toContainText('白');
   });
 });

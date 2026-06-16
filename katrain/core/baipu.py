@@ -134,3 +134,31 @@ def build_steps_from_sgf(sgf: str) -> Dict[str, Any]:
         "ruleset": root.ruleset,
     }
     return {"board_size": board_x, "steps": steps, "meta": meta}
+
+
+def expected_board_from_steps(steps: List[Dict[str, Any]], k: int, board_size: int = 19):
+    """Canonical 19x19 board (``'B'``/``'W'``/``None``) after applying ``steps[0..k]``.
+
+    ``k == -1`` yields the empty board. Used by L2 QA (decision ③) to know what the
+    physical board *should* look like after the operator has placed move ``k``.
+    """
+    board = [[None] * board_size for _ in range(board_size)]
+    for i in range(0, k + 1):
+        s = steps[i]
+        if s["kind"] in ("setup", "move") and s["row"] is not None:
+            board[s["row"]][s["col"]] = s["color"]
+        for rm in s.get("removed", []):
+            board[rm["row"]][rm["col"]] = None
+    return board
+
+
+def next_placement_index(steps: List[Dict[str, Any]], after: int):
+    """First index ``j > after`` that is a physical placement (``kind != 'pass'``).
+
+    Returns ``None`` if there is no further stone to guide (the capture becomes a
+    final, no-LED frame). Passes are skipped because they need no physical action.
+    """
+    for j in range(after + 1, len(steps)):
+        if steps[j]["kind"] != "pass":
+            return j
+    return None

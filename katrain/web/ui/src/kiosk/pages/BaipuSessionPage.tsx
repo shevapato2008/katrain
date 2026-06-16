@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box, Typography, Button, Chip, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
@@ -8,13 +8,34 @@ import LiveBoard from '../../components/live/LiveBoard';
 import { useTranslation } from '../../hooks/useTranslation';
 import {
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
-  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta,
+  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta, type QaDiff,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
-type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
+// Short shutter "click" via WebAudio (no asset). Plays AFTER the frame is written
+// (the "you may place the next stone" go-signal). Best-effort; ignored if blocked.
+function playShutter() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+    osc.onended = () => ctx.close();
+  } catch {
+    // no audio available — silent
+  }
+}
+
+type Phase = 'loading' | 'guiding' | 'await_removal' | 'qa_block' | 'done' | 'error';
 
 const HealthDot = ({ label, ok }: { label: string; ok: boolean | null }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -72,6 +93,10 @@ const BaipuSessionPage = () => {
   const [undoOpen, setUndoOpen] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<number | null>(null);
   const [ledOk, setLedOk] = useState<boolean | null>(null); // null = unknown / not enabled
+  const [capturePending, setCapturePending] = useState(false);
+  const [frameCount, setFrameCount] = useState(0);
+  const [qaDiffs, setQaDiffs] = useState<QaDiff[] | null>(null);
+  const initialCapturedRef = useRef(false);
 
   // Resolve SGF: fresh navigation state first, then the offline localStorage cache.
   const sgf = useMemo(() => {
@@ -123,6 +148,40 @@ const BaipuSessionPage = () => {
     });
   }, [source, steps.length]);
 
+  // 带灯拍: capture frame for step k (QA + LED + photo on the backend). Falls back
+  // to a plain advance when capture isn't enabled (404, dev/screen-only mode).
+  const doCapture = useCallback(
+    async (moveIndex: number, override = false) => {
+      if (!sgf) return;
+      setCapturePending(true);
+      setQaDiffs(null);
+      const out = await BaipuAPI.capture({ game_id: source, move_index: moveIndex, sgf, override });
+      setCapturePending(false);
+      if (out.kind === 'qa_mismatch') {
+        setQaDiffs(out.diffs);
+        setPhase('qa_block');
+        return;
+      }
+      if (out.kind === 'ok') {
+        setFrameCount((c) => c + 1);
+        playShutter(); // go-signal AFTER the frame is written
+      }
+      // ok | disabled | error → advance (capture is advisory in non-hardware modes)
+      advance();
+    },
+    [sgf, source, advance],
+  );
+
+  // Forced initial empty+LED frame (default ON) — best-effort, before the first move.
+  useEffect(() => {
+    if (phase === 'guiding' && k === 0 && !initialCapturedRef.current && sgf && steps.length > 0) {
+      initialCapturedRef.current = true;
+      BaipuAPI.capture({ game_id: source, move_index: -1, sgf })
+        .then((out) => { if (out.kind === 'ok') setFrameCount((c) => c + 1); })
+        .catch(() => undefined);
+    }
+  }, [phase, k, sgf, source, steps.length]);
+
   // Pass steps require no physical action — auto-advance (plan §1.3).
   useEffect(() => {
     if (phase === 'guiding' && currentStep && currentStep.kind === 'pass') {
@@ -160,10 +219,12 @@ const BaipuSessionPage = () => {
 
   const handleConfirm = () => {
     if (!currentStep) return;
+    // Captures must be physically removed BEFORE QA (so the board matches expected);
+    // route through the independent removal mode first when this move captures.
     if (currentStep.removed.length > 0) {
       setPhase('await_removal');
     } else {
-      advance();
+      void doCapture(k);
     }
   };
 
@@ -184,7 +245,7 @@ const BaipuSessionPage = () => {
 
   // --- guidance overlays (convert canonical -> LiveBoard y=0 bottom) ---
   const nextMovePoint = useMemo(() => {
-    if ((phase !== 'guiding' && phase !== 'await_removal') || !currentStep) return null;
+    if (!['guiding', 'await_removal', 'qa_block'].includes(phase) || !currentStep) return null;
     if (currentStep.kind === 'pass' || currentStep.row == null || currentStep.col == null) return null;
     return { ...canonToBoard(currentStep.row, currentStep.col, boardSize), color: (currentStep.color ?? 'B') as 'B' | 'W' };
   }, [phase, currentStep, boardSize]);
@@ -220,7 +281,7 @@ const BaipuSessionPage = () => {
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       {/* Persistent dashboard status bar — the screen is the instrument, the board is the subject. */}
       <Box
         data-testid="baipu-status-bar"
@@ -239,8 +300,8 @@ const BaipuSessionPage = () => {
           label={`${t('Move', '第')} ${Math.min(k + (phase === 'done' ? 0 : 1), steps.length)}/${steps.length} ${t('moves', '手')}`}
           sx={{ bgcolor: 'rgba(255,255,255,0.08)', fontFamily: '"IBM Plex Mono", monospace' }}
         />
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {t('Captured', '已采集')} 0 {t('frames', '帧')}
+        <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="baipu-frame-count">
+          {t('Captured', '已采集')} {frameCount} {t('frames', '帧')}
         </Typography>
         <Box sx={{ flex: 1 }} />
         <HealthDot label="LED" ok={ledOk} />
@@ -287,7 +348,7 @@ const BaipuSessionPage = () => {
           {/* Primary action */}
           {phase === 'guiding' && currentStep?.kind !== 'pass' && (
             <Button
-              fullWidth variant="contained" onClick={handleConfirm} data-testid="baipu-confirm"
+              fullWidth variant="contained" onClick={handleConfirm} disabled={capturePending} data-testid="baipu-confirm"
               sx={{ minHeight: 88, fontSize: '1.3rem', borderRadius: '12px', fontWeight: 700 }}
             >
               {t('Confirm', '确认落子')}
@@ -298,11 +359,27 @@ const BaipuSessionPage = () => {
           )}
           {phase === 'await_removal' && (
             <Button
-              fullWidth variant="contained" color="warning" onClick={advance} data-testid="baipu-removed"
+              fullWidth variant="contained" color="warning" onClick={() => void doCapture(k)} disabled={capturePending} data-testid="baipu-removed"
               sx={{ minHeight: 88, fontSize: '1.2rem', borderRadius: '12px', fontWeight: 700 }}
             >
               {t('Removed', '已移除')} {currentStep?.removed.length} {t('stones', '子')}
             </Button>
+          )}
+          {phase === 'qa_block' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Button
+                fullWidth variant="contained" onClick={() => void doCapture(k)} disabled={capturePending} data-testid="baipu-qa-retry"
+                sx={{ minHeight: 64, borderRadius: '12px', fontWeight: 700 }}
+              >
+                {t('Corrected — retry', '改正后重试')}
+              </Button>
+              <Button
+                fullWidth variant="outlined" color="warning" onClick={() => void doCapture(k, true)} disabled={capturePending} data-testid="baipu-qa-override"
+                sx={{ minHeight: 48, borderRadius: '12px' }}
+              >
+                {t('Confirmed correct — continue', '确认无误，继续')}
+              </Button>
+            </Box>
           )}
           {phase === 'done' && (
             <Button fullWidth variant="contained" onClick={() => navigate('/kiosk/baipu')} data-testid="baipu-done-back" sx={{ minHeight: 64, borderRadius: '12px' }}>
@@ -317,10 +394,10 @@ const BaipuSessionPage = () => {
             </Button>
           )}
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button fullWidth variant="outlined" disabled={k === 0 || phase === 'done'} onClick={() => setUndoOpen(true)} data-testid="baipu-undo" sx={{ borderRadius: '10px' }}>
+            <Button fullWidth variant="outlined" disabled={k === 0 || phase === 'done' || capturePending} onClick={() => setUndoOpen(true)} data-testid="baipu-undo" sx={{ borderRadius: '10px' }}>
               {t('Undo', '撤回上一手')}
             </Button>
-            <Button variant="text" color="inherit" onClick={() => setExitOpen(true)} data-testid="baipu-exit" sx={{ color: 'text.secondary', minWidth: 64 }}>
+            <Button variant="text" color="inherit" disabled={capturePending} onClick={() => setExitOpen(true)} data-testid="baipu-exit" sx={{ color: 'text.secondary', minWidth: 64 }}>
               {t('Exit', '退出')}
             </Button>
           </Box>
@@ -335,6 +412,36 @@ const BaipuSessionPage = () => {
         >
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {t('Remove the captured stones (flashing)', '请移除被提的子（闪烁处）')} — {currentStep?.removed.length}
+          </Typography>
+        </Box>
+      )}
+
+      {/* L2 QA mismatch banner (decision ③) */}
+      {phase === 'qa_block' && qaDiffs && (
+        <Box
+          data-testid="baipu-qa-banner"
+          sx={{ px: 3, py: 1.5, bgcolor: 'rgba(255,59,48,0.18)', borderTop: '2px solid #ff3b30', textAlign: 'center', flexShrink: 0 }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {t('Move', '第')} {k + 1} {t('looks misplaced', '手疑似摆错')} — {qaDiffs.length} {t('diffs', '处不一致')}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {qaDiffs.slice(0, 3).map((d) => `${canonToGtp(d.row, d.col, boardSize)}: ${d.expected}≠${d.actual}`).join('  ·  ')}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Capture-pending barrier: keep hands out of frame until the shutter fires */}
+      {capturePending && (
+        <Box
+          data-testid="baipu-capture-pending"
+          sx={{
+            position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center',
+            bgcolor: 'rgba(0,0,0,0.55)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff' }}>
+            {t('Capturing — keep hands clear', '正在拍照，请勿伸手')}
           </Typography>
         </Box>
       )}

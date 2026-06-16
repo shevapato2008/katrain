@@ -8,9 +8,10 @@ per-step canonical-coordinate truth. The heavy lifting lives in
 P4's `/baipu/capture` endpoint is added later in the same router.
 """
 
+import asyncio
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from katrain.core.baipu import build_steps_from_sgf
@@ -88,3 +89,51 @@ async def baipu_load(body: BaipuLoadRequest) -> Dict[str, Any]:
         raise
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Failed to parse SGF: {exc}") from exc
+
+
+class BaipuCaptureRequest(BaseModel):
+    game_id: str
+    move_index: int  # the step just placed; -1 = forced initial empty+LED frame
+    sgf: str
+    override: bool = False
+    capture_condition: Optional[Dict[str, Any]] = None
+
+
+@router.post("/capture")
+async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str, Any]:
+    capture = getattr(request.app.state, "capture", None)
+    if capture is None:
+        raise HTTPException(status_code=404, detail="Capture service not enabled")
+    geometry = getattr(request.app.state, "geometry", None)
+    if geometry is None:
+        raise HTTPException(status_code=409, detail="Geometry not locked; run /geometry/lock first")
+    led = getattr(request.app.state, "led", None)
+
+    try:
+        data = build_steps_from_sgf(body.sgf)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Failed to parse SGF: {exc}") from exc
+
+    from katrain.web.core.baipu_capture import run_capture, QAMismatch, LedUnavailable
+
+    try:
+        return await asyncio.to_thread(
+            run_capture,
+            led=led,
+            capture=capture,
+            geometry=geometry,
+            steps=data["steps"],
+            board_size=data["board_size"],
+            out_dir=str(capture.out_dir),
+            game_id=body.game_id,
+            move_index=body.move_index,
+            sgf=body.sgf,
+            override=body.override,
+            capture_condition=body.capture_condition,
+        )
+    except QAMismatch as qa:
+        raise HTTPException(status_code=409, detail={"qa": "mismatch", "move_index": qa.move_index, "diffs": qa.diffs})
+    except LedUnavailable as exc:
+        raise HTTPException(status_code=409, detail={"error": "led_unavailable", "message": str(exc)})
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))

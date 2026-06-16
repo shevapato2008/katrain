@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from katrain.core.baipu import build_steps_from_sgf
+from katrain.core.baipu import build_steps_from_sgf, expected_board_from_steps, next_placement_index
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
@@ -122,6 +122,28 @@ class TestDeterminism:
         assert data["meta"]["player_black"] == "Lee"
         assert data["meta"]["player_white"] == "AlphaGo"
         assert data["meta"]["komi"] == 7.5
+
+
+class TestExpectedBoardAndNext:
+    def test_expected_board_applies_and_captures(self):
+        # W[aa] then B[ba],B[ab] captures the corner W stone.
+        steps = _steps("(;SZ[19];W[aa];B[ba];B[ab])")["steps"]
+        # empty board at k=-1
+        assert all(cell is None for row in expected_board_from_steps(steps, -1) for cell in row)
+        # after the W stone is placed (k=0)
+        b0 = expected_board_from_steps(steps, 0)
+        assert b0[0][0] == "W"
+        # after the capture (k=2) the corner is empty again, B stones present
+        b2 = expected_board_from_steps(steps, 2)
+        assert b2[0][0] is None
+        assert b2[0][1] == "B" and b2[1][0] == "B"
+
+    def test_next_placement_skips_pass(self):
+        steps = _steps("(;SZ[19];B[pd];W[];B[pp])")["steps"]
+        # steps: [0]=move, [1]=pass, [2]=move
+        assert next_placement_index(steps, -1) == 0
+        assert next_placement_index(steps, 0) == 2  # skips the pass at index 1
+        assert next_placement_index(steps, 2) is None
 
 
 class TestRealGame:

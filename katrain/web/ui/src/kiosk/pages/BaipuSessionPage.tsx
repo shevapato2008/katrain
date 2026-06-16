@@ -10,6 +10,9 @@ import {
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
   canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta,
 } from '../../api/baipuApi';
+import { LedAPI, type LedColor } from '../../api/ledApi';
+
+const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
 type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
 
@@ -68,6 +71,7 @@ const BaipuSessionPage = () => {
   const [exitOpen, setExitOpen] = useState(false);
   const [undoOpen, setUndoOpen] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<number | null>(null);
+  const [ledOk, setLedOk] = useState<boolean | null>(null); // null = unknown / not enabled
 
   // Resolve SGF: fresh navigation state first, then the offline localStorage cache.
   const sgf = useMemo(() => {
@@ -126,6 +130,33 @@ const BaipuSessionPage = () => {
       return () => clearTimeout(timer);
     }
   }, [phase, currentStep, advance]);
+
+  // Drive the LED board to mirror the on-screen guidance (UI-tolerant path:
+  // failures only gray out the health dot, they never block placement).
+  useEffect(() => {
+    if (phase === 'guiding' && currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
+      LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) })
+        .then((r) => setLedOk(r.connected))
+        .catch(() => setLedOk(false));
+    } else if (phase === 'await_removal' && currentStep && currentStep.removed.length > 0) {
+      LedAPI.points(currentStep.removed.map((p) => ({ row: p.row, col: p.col, color: 'remove' as LedColor })))
+        .then((r) => setLedOk(r.connected))
+        .catch(() => setLedOk(false));
+    } else if (phase === 'done') {
+      LedAPI.clear().then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
+    }
+  }, [phase, k, currentStep]);
+
+  // Blackout the LED when leaving the session.
+  useEffect(() => () => { LedAPI.clear().catch(() => undefined); }, []);
+
+  const relight = () => {
+    if (currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
+      LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) })
+        .then((r) => setLedOk(r.connected))
+        .catch(() => setLedOk(false));
+    }
+  };
 
   const handleConfirm = () => {
     if (!currentStep) return;
@@ -212,7 +243,7 @@ const BaipuSessionPage = () => {
           {t('Captured', '已采集')} 0 {t('frames', '帧')}
         </Typography>
         <Box sx={{ flex: 1 }} />
-        <HealthDot label="LED" ok={null} />
+        <HealthDot label="LED" ok={ledOk} />
         <HealthDot label={t('Camera', '相机')} ok={null} />
       </Box>
 
@@ -280,6 +311,11 @@ const BaipuSessionPage = () => {
           )}
 
           {/* Secondary controls (session-level kept away from the per-move primary) */}
+          {phase === 'guiding' && currentStep?.kind !== 'pass' && (
+            <Button variant="text" onClick={relight} data-testid="baipu-relight" sx={{ color: 'text.secondary' }}>
+              {t('Re-light', '重新点灯')}
+            </Button>
+          )}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button fullWidth variant="outlined" disabled={k === 0 || phase === 'done'} onClick={() => setUndoOpen(true)} data-testid="baipu-undo" sx={{ borderRadius: '10px' }}>
               {t('Undo', '撤回上一手')}

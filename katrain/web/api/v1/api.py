@@ -16,6 +16,7 @@ from katrain.web.api.v1.endpoints import (
     reports,
     billing,
     baipu,
+    led,
 )
 
 api_router = APIRouter()
@@ -35,3 +36,4 @@ api_router.include_router(platforms.router, prefix="/platforms", tags=["platform
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
 api_router.include_router(baipu.router, prefix="/baipu", tags=["baipu"])
+api_router.include_router(led.router, prefix="/led", tags=["led"])

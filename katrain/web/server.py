@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, List, Optional, Union, Dict
 
@@ -37,6 +38,14 @@ async def lifespan(app: FastAPI):
     vision_poller = getattr(app.state, "vision_poller_task", None)
     if vision_poller:
         vision_poller.cancel()
+
+    # LED service shutdown (board mode) — stop() does a final CLEAR! blackout.
+    led_failsafe = getattr(app.state, "led_failsafe_task", None)
+    if led_failsafe:
+        led_failsafe.cancel()
+    led = getattr(app.state, "led", None)
+    if led:
+        led.stop()
 
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
@@ -328,6 +337,20 @@ async def _lifespan_board(app: FastAPI, log):
         log.info("Vision service started (backend=%s)", vision_config.backend)
     else:
         app.state.vision = None
+
+    # LED service (optional — enabled when --led-serial-port is provided)
+    led_config = getattr(settings, "_led_config", None)
+    if led_config and led_config.enabled:
+        from katrain.web.core.led_service import LedService
+
+        led = LedService(led_config)
+        led.start()
+        app.state.led = led
+        app.state.led_last_activity = time.monotonic()
+        app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+        log.info("LED service started (port=%s)", led_config.serial_port)
+    else:
+        app.state.led = None
 
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
@@ -1651,6 +1674,34 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
+    """Blackout the LED board after >5 min of inactivity (plan §2.1 Gemini 新#2).
+
+    Prevents a Kiosk from leaving the LED lit all day if the operator walks off
+    without exiting. Activity is stamped by the /led/* endpoints. (A WebSocket
+    on-disconnect hook is a future refinement; the idle timer is the floor.)
+    """
+    log = logging.getLogger("katrain_web.led")
+    cleared = False
+    while True:
+        try:
+            await asyncio.sleep(30)
+            led = getattr(app.state, "led", None)
+            if not led:
+                continue
+            idle = time.monotonic() - getattr(app.state, "led_last_activity", time.monotonic())
+            if idle > idle_timeout and not cleared:
+                led.clear(strict=False)
+                cleared = True
+                log.info("LED idle >%.0fs — failsafe clear", idle_timeout)
+            elif idle <= idle_timeout:
+                cleared = False
+        except asyncio.CancelledError:
+            break
+        except Exception as e:  # pragma: no cover - defensive
+            log.debug("LED failsafe loop error: %s", e)
+
+
 async def _vision_move_poller(app: FastAPI):
     """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
     from katrain.vision.ipc import ConfirmedMove
@@ -1783,6 +1834,15 @@ def run_web():
     parser.add_argument(
         "--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)"
     )
+    parser.add_argument(
+        "--led-serial-port",
+        default=None,
+        help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
+    )
+    parser.add_argument("--led-baud-rate", type=int, default=115200, help="LED serial baud rate. Default: 115200.")
+    parser.add_argument(
+        "--led-lut-path", default=None, help="Optional JSON (row,col)->index LUT; defaults to the built-in formula."
+    )
     args, _unknown = parser.parse_known_args()
 
     # Configure vision service if model path provided
@@ -1799,6 +1859,17 @@ def run_web():
             camera_width=res_w,
             camera_height=res_h,
             process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess",
+        )
+
+    # Configure LED service if a serial port was provided
+    if args.led_serial_port:
+        from katrain.web.core.led_service import LedServiceConfig
+
+        settings._led_config = LedServiceConfig(
+            enabled=True,
+            serial_port=args.led_serial_port,
+            baud_rate=args.led_baud_rate,
+            lut_path=args.led_lut_path,
         )
 
     # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)

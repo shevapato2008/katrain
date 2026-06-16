@@ -2,7 +2,7 @@
 
 - **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-16（**v3**，已过内部 67-agent 评审 + Codex/Gemini/gstack 三方外部评审 + 与作者逐条决策）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: 待执行
+- **状态**: **P1–P4 已执行**（2026-06-16，screen-only / mock 测试通过；真机测试待硬件日）。见 [§11 执行记录](#11-执行记录2026-06-16)。
 
 > 写给「无上下文的执行者」（人或子 agent）。执行顺序 **P0(可选) → P1 → P2 → P3 → P4**。
 > v2→v3 改了什么见 [§10](#10-修订记录v2v3)。
@@ -328,3 +328,21 @@ def rc2idx(row, col):                       # row,col ∈ [0,18]，row=0 顶部
 - **曝光锁细化**：cv2 手动曝光/AWB，值随相机标定、贯穿会话（§3.1）。
 - **小决断**：离线 SGF 取 (b) 缓存为主(§1.2)；灭灯超时 = 5 分钟(§2.1)；几何锁依赖 P2+降级(§3.3)；QA diff 结构化(§4.1)；幂等 200/冲突 409(§4.2)；咔嚓声在帧写盘后(§4.1)。
 ```
+
+---
+
+## 11. 执行记录（2026-06-16）
+
+P1–P4 全部实现并提交到 `feature/rk3588-ui`（commits `410550d6` P1 · `93d2c4aa` P2 · `dd7c6fec` P3 · `df25d048` P4 · `4fce7c4e` 评审修复）。**屏幕/Mock 测试通过；真机测试（串口 LED / 实相机 / 空盘几何锁 / 带灯拍）待硬件日。**
+
+**新增/改动（关键）**
+- 后端：`katrain/core/baipu.py`（SGF→规范逐手真值 + expected_board + next_placement）；`web/core/led_service.py`、`capture_service.py`、`baipu_capture.py`；`vision/{geometry_autocal,geometry_detect,geometry_calibrate,stone_classifier,geometry_lock,board_qa}.py`（autoresearch 移植 + 锁存）；`vision/camera.py`（seq/ts + grab_fresh 时间戳门控 + 曝光锁）；endpoints `baipu/led/geometry`；`server.py` gate+lifespan+兜底灭灯+相机硬互斥；`grid_calibrator.py` 标 deprecated。
+- 前端：`api/{baipuApi,ledApi,geometryApi}.ts`；`kiosk/pages/{BaipuListPage,BaipuSessionPage}.tsx`；`components/live/LiveBoard.tsx`（nextMovePoint/capturedPositions）；navTab/路由；VisionSetupPage「自动锁定几何」。
+
+**测试**：17 core (.venv) + 49 web (py311_katago，需 fastapi/cv2) + 4 vitest + 3 Playwright(就绪)。两套构建绿（`verify:kiosk-2d` 无 three.js）；lint+tsc 净。
+
+**对抗式评审**（5 维 find→verify，10/17 确认已修）：AE clear 入 steps、move_index 边界、LED ack 配对/stop 竞态、doCapture 卸载守卫、分页过滤说明。未修（有据）：camera close() 竞态（既有+已 try/except）、队列 drop TOCTOU（UI 容错路可接受）、多人 game_repo None（既有非本 track）。
+
+**环境拆分**：core/vision 测试跑 `.venv`；`katrain.web.*` 因 `web/__init__.py` 预载 server→需 web 环境（`py311_katago`，fastapi 0.115/cv2 4.13）。
+
+**硬件日联调**：`python -m katrain --ui web --led-serial-port /dev/cu.usbmodem2101 --capture-camera <dev>` → VisionSetupPage 空盘「自动锁定几何」→ 摆谱选谱→逐手带灯拍。需补：真机 LED 单点/星位、空盘锁 conf≥0.80、stones.classify 阈值(P0 基准)、同步屏障实测、Playwright e2e(起服务)。

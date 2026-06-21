@@ -691,7 +691,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Create: `katrain/web/ui/src/kiosk/components/vision/geometryOverlay.ts`
 - Create: `katrain/web/ui/src/kiosk/components/vision/geometryOverlay.test.ts`
 
-- [ ] **Step 3.1: 写 RED——API 类型和 layout 请求**
+- [x] **Step 3.1: 写 RED——API 类型和 layout 请求**
 
   `geometryApi.test.ts` mock fetch 返回 layout，并断言 `GeometryAPI.layout()` 请求 `/api/v1/geometry/layout`。需要定义：
 
@@ -712,14 +712,14 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   `GeometryStatus` 增加 `geometry_revision` 和 `detected_anchors`。
 
-- [ ] **Step 3.2: 运行 RED，最小实现 API，运行 GREEN**
+- [x] **Step 3.2: 运行 RED，最小实现 API，运行 GREEN**
 
   Run: `cd katrain/web/ui && npm test -- --run src/api/geometryApi.test.ts`
   Expected RED: `GeometryAPI.layout is not a function`。
 
   实现 `layout: () => json(fetch(...))` 后重跑，Expected: PASS。
 
-- [ ] **Step 3.3: 写 RED——contain 缩放和绘图元素**
+- [x] **Step 3.3: 写 RED——contain 缩放和绘图元素**
 
   `geometryOverlay.test.ts` 覆盖：
 
@@ -735,14 +735,14 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   active 锚点模型单独断言只含 `detected_anchors`，不含完整网格。
 
-- [ ] **Step 3.4: 运行 RED 并实现纯函数**
+- [x] **Step 3.4: 运行 RED 并实现纯函数**
 
   Run: `cd katrain/web/ui && npm test -- --run src/kiosk/components/vision/geometryOverlay.test.ts`
   Expected: FAIL，模块不存在。
 
   实现 `fitContain`、`buildRawGeometryModel`、`buildWarpedGeometryModel`；只进行缩放、偏移和绘图 primitive 组装，不计算单应矩阵。
 
-- [ ] **Step 3.5: 运行 GREEN、lint 并提交**
+- [x] **Step 3.5: 运行 GREEN、lint 并提交**
 
   Run: `cd katrain/web/ui && npm test -- --run src/api/geometryApi.test.ts src/kiosk/components/vision/geometryOverlay.test.ts`
   Run: `cd katrain/web/ui && npx eslint src/api/geometryApi.ts src/api/geometryApi.test.ts src/kiosk/components/vision/geometryOverlay.ts src/kiosk/components/vision/geometryOverlay.test.ts`

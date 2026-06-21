@@ -17,6 +17,31 @@ export type GeometryPhase =
   | 'flashing_corners' | 'verifying' | 'building_baseline'
   | 'ready' | 'degraded' | 'failed' | 'cancelled';
 
+export interface GeometryPoint {
+  row: number;
+  col: number;
+  x: number;
+  y: number;
+}
+
+export interface GeometryAnchor extends GeometryPoint {
+  color: string;
+}
+
+export interface GeometryCorner extends GeometryPoint {
+  label: string;
+}
+
+export interface GeometryLayout {
+  revision: number;
+  phase: GeometryPhase;
+  stale: boolean;
+  frame: { width: number; height: number };
+  out_size: number;
+  corners: GeometryCorner[];
+  points: [number, number][][];
+}
+
 export interface GeometryStatus {
   phase: GeometryPhase;
   session_calibrated: boolean;
@@ -24,6 +49,8 @@ export interface GeometryStatus {
   progress?: { current: number; total: number };
   error?: string | null;
   metrics?: Record<string, number | null>;
+  geometry_revision?: number;
+  detected_anchors?: GeometryAnchor[];
   capabilities: {
     camera_ready: boolean;
     led_ready: boolean;
@@ -61,4 +88,5 @@ export const GeometryAPI = {
     body: JSON.stringify({ trigger, empty_confirmed: true }),
   })),
   cancel: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/cancel`, { method: 'POST' })),
+  layout: async (): Promise<GeometryLayout> => json(await fetch(`${API_BASE}/layout`)),
 };

@@ -45,7 +45,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
     const poll = async () => {
       await refresh();
       if (cancelled) return;
-      timerRef.current = setTimeout(poll, ACTIVE.includes(status.phase) ? 300 : 3000);
+      timerRef.current = setTimeout(poll, ACTIVE.includes(status.phase) ? 300 : 1000);
     };
     void poll();
     return () => {

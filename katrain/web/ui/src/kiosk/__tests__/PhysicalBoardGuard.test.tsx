@@ -39,7 +39,7 @@ describe('PhysicalBoardGuard', () => {
 
     expect(screen.queryByText('实体棋盘内容')).not.toBeInTheDocument();
     expect(await screen.findByText('请清空棋盘')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '开始自动标定' }));
+    fireEvent.click(screen.getByRole('button', { name: '已清空，开始自动标定' }));
     await waitFor(() => expect(GeometryAPI.calibrate).toHaveBeenCalledWith('auto'));
   });
 

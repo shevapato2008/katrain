@@ -765,7 +765,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `katrain/web/ui/src/kiosk/pages/VisionSetupPage.tsx`
 - Modify: `katrain/web/ui/src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
 
-- [ ] **Step 4.1: 写 RED——双画面、空盘确认和状态**
+- [x] **Step 4.1: 写 RED——双画面、空盘确认和状态**
 
   在 Workspace 测试 mock GeometryContext，断言：
 
@@ -778,18 +778,18 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   点击按钮才调用 `startCalibration('auto')`；`degraded` 显示“摄像头或棋盘位置已变化”；camera/LED capability 不满足时按钮禁用；active 显示 `current/13` 和取消按钮；ready 显示 RMS/置信度及“重新标定”。
 
-- [ ] **Step 4.2: 运行 RED**
+- [x] **Step 4.2: 运行 RED**
 
   Run: `cd katrain/web/ui && npm test -- --run src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
   Expected: FAIL，组件不存在。
 
-- [ ] **Step 4.3: 实现视频卡片和 Canvas**
+- [x] **Step 4.3: 实现视频卡片和 Canvas**
 
   `GeometryVideoPanel` 负责标题、`<img>`、错误重试和 overlay slot。`CameraGeometryOverlay` 使用 `ResizeObserver`，在 effect 中根据 `geometryOverlay.ts` 模型绘制；必须设置 canvas 的设备像素比并保持 CSS 尺寸，不能从视频帧读取像素。
 
   原始流固定 `/api/v1/geometry/stream`；有 layout 时矫正流使用 `/api/v1/geometry/warped-stream?revision=<revision>`，无 layout 显示等待文案。
 
-- [ ] **Step 4.4: 实现 Workspace 数据与交互**
+- [x] **Step 4.4: 实现 Workspace 数据与交互**
 
   - status 的 revision/phase 变化时调用 `GeometryAPI.layout()`；409 表示尚无布局，不显示通用错误。
   - active 时用 status `detected_anchors` 绘制部分锚点。
@@ -797,12 +797,12 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   - 启动按钮本身就是用户空盘确认，调用现有 calibrate API；绝不自动 POST。
   - cancel 调用 GeometryContext 的 `cancelCalibration()`。
 
-- [ ] **Step 4.5: 运行 GREEN**
+- [x] **Step 4.5: 运行 GREEN**
 
   Run: `cd katrain/web/ui && npm test -- --run src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
   Expected: PASS。
 
-- [ ] **Step 4.6: 接入 Guard 和设置页**
+- [x] **Step 4.6: 接入 Guard 和设置页**
 
   `PhysicalBoardGuard` 保留 ready 放行判断，其他状态直接渲染：
 
@@ -812,7 +812,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   `VisionSetupPage` 删除独立 stream、detected-board polling 和旧电子棋盘布局，改为同一 Workspace 的 `mode="settings"`，只保留页面返回导航。`GeometryContext` active 300ms、ready/degraded/required 1000ms 轮询。
 
-- [ ] **Step 4.7: 更新测试、双构建并提交**
+- [x] **Step 4.7: 更新测试、双构建并提交**
 
   Run: `cd katrain/web/ui && npm test -- --run src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx src/kiosk/__tests__/StatusBar.test.tsx`
   Run: `cd katrain/web/ui && npx eslint src/kiosk/components/vision/CameraGeometryOverlay.tsx src/kiosk/components/vision/GeometryVideoPanel.tsx src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx src/kiosk/context/GeometryContext.tsx src/kiosk/components/vision/PhysicalBoardGuard.tsx src/kiosk/pages/VisionSetupPage.tsx`

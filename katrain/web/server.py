@@ -31,6 +31,10 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
+    geometry_calibration = getattr(app.state, "geometry_calibration", None)
+    if geometry_calibration:
+        geometry_calibration.stop()
+
     # Vision service shutdown (board mode)
     vision = getattr(app.state, "vision", None)
     if vision:
@@ -416,6 +420,25 @@ async def _lifespan_board(app: FastAPI, log):
     else:
         app.state.capture = None
         app.state.geometry = None
+
+    if app.state.capture is not None and app.state.led is not None:
+        from katrain.web.core.geometry_calibration_service import GeometryCalibrationService
+
+        def promote_geometry(lock):
+            app.state.geometry = lock
+            vision_service = getattr(app.state, "vision", None)
+            if vision_service is not None and hasattr(vision_service, "set_geometry"):
+                vision_service.set_geometry(lock)
+
+        app.state.geometry_calibration = GeometryCalibrationService(
+            led=app.state.led,
+            capture=app.state.capture,
+            save_path=Path("~/.katrain/geometry_lock.npz").expanduser(),
+            initial_lock=app.state.geometry,
+            on_success=promote_geometry,
+        )
+    else:
+        app.state.geometry_calibration = None
 
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
@@ -1911,7 +1934,7 @@ def run_web():
     parser.add_argument(
         "--capture-camera",
         default=None,
-        help="Camera device for 摆谱 capture (int or /dev/videoN). Enables CaptureService. Mutually exclusive with --vision-model.",
+        help="Camera device for physical-board capture/calibration (int or /dev/videoN). Shared with VisionService.",
     )
     parser.add_argument(
         "--capture-dir", default="~/.katrain/baipu_captures", help="Output dir for captured frames + manifests."

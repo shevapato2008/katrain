@@ -10,7 +10,8 @@ import asyncio
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel
 
 router = APIRouter()
 log = logging.getLogger("katrain_web")
@@ -18,11 +19,43 @@ log = logging.getLogger("katrain_web")
 DEFAULT_GEOMETRY_PATH = Path("~/.katrain/geometry_lock.npz").expanduser()
 
 
+class GeometryCalibrateRequest(BaseModel):
+    trigger: str = "manual"
+    empty_confirmed: bool = False
+
+
 def _get_capture(request: Request):
     cap = getattr(request.app.state, "capture", None)
     if cap is None:
         raise HTTPException(status_code=404, detail="Capture service not enabled")
     return cap
+
+
+@router.post("/calibrate", status_code=status.HTTP_202_ACCEPTED)
+async def geometry_calibrate(request: Request, body: GeometryCalibrateRequest):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="LED geometry calibration not enabled")
+    try:
+        calibration.start(trigger=body.trigger, empty_confirmed=body.empty_confirmed)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        from katrain.web.core.geometry_calibration_service import CalibrationBusy
+
+        if isinstance(exc, CalibrationBusy):
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise
+    return calibration.status()
+
+
+@router.post("/cancel")
+async def geometry_cancel(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="LED geometry calibration not enabled")
+    calibration.cancel()
+    return calibration.status()
 
 
 def _run_lock(capture, led_cleared: bool):
@@ -64,6 +97,19 @@ def _run_lock(capture, led_cleared: bool):
 
 @router.post("/lock")
 async def geometry_lock(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is not None:
+        try:
+            calibration.start(trigger="legacy", empty_confirmed=True)
+        except Exception as exc:
+            from katrain.web.core.geometry_calibration_service import CalibrationBusy
+
+            if isinstance(exc, CalibrationBusy):
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            raise
+        await asyncio.to_thread(calibration.wait, 30)
+        return calibration.status()
+
     capture = _get_capture(request)
 
     # Prerequisite (plan §3.3): LED off so it doesn't pollute the empty baseline.
@@ -87,6 +133,9 @@ async def geometry_lock(request: Request):
 
 @router.get("/status")
 async def geometry_status(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is not None:
+        return calibration.status()
     lock = getattr(request.app.state, "geometry", None)
     if lock is None:
         return {"locked": False}

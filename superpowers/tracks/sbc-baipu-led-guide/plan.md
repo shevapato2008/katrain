@@ -362,27 +362,27 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `tests/test_geometry_calibration_service.py`
 - Test: `tests/test_geometry_api.py`
 
-- [ ] **Step 3.1: 写状态机和原子替换失败测试**
+- [x] **Step 3.1: 写状态机和原子替换失败测试**
 
   状态：`required/waiting_empty/dark_reference/flashing_corners/verifying/building_baseline/ready/degraded/failed/cancelled`。覆盖并发 start=409、取消灭灯、失败保留旧锁、成功才替换 app 使用的 lock、服务重启后 `session_calibrated=false`。
 
-- [ ] **Step 3.2: 运行 RED**
+- [x] **Step 3.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_calibration_service.py tests/test_geometry_api.py`
   Expected: FAIL。
 
-- [ ] **Step 3.3: 实现 GeometryCalibrationService**
+- [x] **Step 3.3: 实现 GeometryCalibrationService**
 
   后台单任务运行同步标定器；锁保护 status；通过成功回调热替换 `app.state.geometry`；保存仍使用 `save_geometry_lock` 原子写。cancel 使用锚点之间检查 Event 的协作式取消，stop 必须等待任务并清灯。
 
-- [ ] **Step 3.4: 扩展 API**
+- [x] **Step 3.4: 扩展 API**
 
   - `POST /geometry/calibrate {trigger:"auto|manual", empty_confirmed:true}` → `202`
   - `POST /geometry/cancel`
   - `GET /geometry/status` → phase/progress/session_calibrated/last_valid/metrics/error/capabilities
   - 旧 `POST /geometry/lock` 暂保留为兼容入口，内部调用同一服务，不再维护第二套算法。
 
-- [ ] **Step 3.5: 运行 GREEN 和摆谱 API 回归**
+- [x] **Step 3.5: 运行 GREEN 和摆谱 API 回归**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_baipu_api.py tests/test_baipu_capture.py`
   Expected: PASS。

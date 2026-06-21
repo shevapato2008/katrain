@@ -56,6 +56,27 @@ def _ok_lock():
 
 
 class TestGeometryEndpoint:
+    def test_async_calibration_start_and_status(self):
+        class FakeCalibration:
+            def __init__(self):
+                self.started = None
+
+            def start(self, *, trigger, empty_confirmed):
+                self.started = (trigger, empty_confirmed)
+
+            def status(self):
+                return {"phase": "flashing_corners", "progress": {"current": 2, "total": 13}}
+
+        app, c = _client(capture=FakeCapture([]), led=FakeLed())
+        calibration = FakeCalibration()
+        app.state.geometry_calibration = calibration
+
+        response = c.post("/geometry/calibrate", json={"trigger": "auto", "empty_confirmed": True})
+
+        assert response.status_code == 202
+        assert calibration.started == ("auto", True)
+        assert c.get("/geometry/status").json()["phase"] == "flashing_corners"
+
     def test_404_without_capture(self):
         _, c = _client()
         assert c.post("/geometry/lock").status_code == 404

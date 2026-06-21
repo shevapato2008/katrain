@@ -605,7 +605,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `katrain/web/api/v1/endpoints/geometry.py`
 - Test: `tests/test_geometry_api.py`
 
-- [ ] **Step 2.1: 写 RED——layout 完整坐标契约**
+- [x] **Step 2.1: 写 RED——layout 完整坐标契约**
 
   扩展测试 fake lock 使用可区分的四角和 `points=np.arange(19*19*2).reshape(19,19,2)`，增加：
 
@@ -623,12 +623,12 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   同时断言无有效几何返回 `409`，`phase=degraded` 时 `stale=true` 且仍返回旧点。
 
-- [ ] **Step 2.2: 运行 RED**
+- [x] **Step 2.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_api.py -k layout`
   Expected: FAIL，路由不存在。
 
-- [ ] **Step 2.3: 实现 layout 序列化**
+- [x] **Step 2.3: 实现 layout 序列化**
 
   在 geometry endpoint 增加 `_current_geometry(request)` 和 `_serialize_layout(lock, frame, phase, revision)`。四角严格按人视角规范输出：
 
@@ -643,7 +643,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   `frame.shape[:2]` 提供真实宽高；NumPy 值全部转 Python `float`；`points` 固定 `[19][19][2]`。
 
-- [ ] **Step 2.4: 写 RED——矫正帧 helper**
+- [x] **Step 2.4: 写 RED——矫正帧 helper**
 
   ```python
   def test_encode_warped_frame_uses_lock_size():
@@ -656,7 +656,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   再测试 `/geometry/warped-stream` 在无 lock 时返回 `409`。
 
-- [ ] **Step 2.5: 运行 RED 并实现 warped stream**
+- [x] **Step 2.5: 运行 RED 并实现 warped stream**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_api.py -k warped`
   Expected: FAIL，helper/路由不存在。
@@ -673,7 +673,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   endpoint 在创建 `StreamingResponse` 前验证 lock；生成器每 200ms 读取共享 capture，检查 `await request.is_disconnected()`，不创建 capture 或后台线程。
 
-- [ ] **Step 2.6: 运行 GREEN 并提交**
+- [x] **Step 2.6: 运行 GREEN 并提交**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_api.py tests/test_capture_service.py`
   Expected: PASS。

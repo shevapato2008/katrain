@@ -32,6 +32,39 @@ def _get_capture(request: Request):
     return cap
 
 
+def _geometry_snapshot(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is not None:
+        calibration_status = calibration.status()
+        return (
+            getattr(calibration, "current_lock", None),
+            calibration_status.get("phase", "required"),
+            int(calibration_status.get("geometry_revision", 0)),
+        )
+    lock = getattr(request.app.state, "geometry", None)
+    return lock, "ready" if lock is not None else "required", 0
+
+
+def _encode_warped_frame(frame, lock) -> bytes:
+    import cv2
+
+    warped = cv2.warpPerspective(frame, lock.M, (lock.out_size, lock.out_size))
+    ok, jpeg = cv2.imencode(".jpg", warped, [cv2.IMWRITE_JPEG_QUALITY, 65])
+    if not ok:
+        raise RuntimeError("failed to encode warped geometry frame")
+    return jpeg.tobytes()
+
+
+def _mjpeg_part(payload: bytes) -> bytes:
+    return (
+        b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
+        + str(len(payload)).encode()
+        + b"\r\n\r\n"
+        + payload
+        + b"\r\n"
+    )
+
+
 @router.post("/calibrate", status_code=status.HTTP_202_ACCEPTED)
 async def geometry_calibrate(request: Request, body: GeometryCalibrateRequest):
     calibration = getattr(request.app.state, "geometry_calibration", None)
@@ -71,14 +104,61 @@ async def geometry_stream(request: Request):
             if frame is not None:
                 ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 65])
                 if ok:
-                    payload = jpeg.tobytes()
-                    yield (
-                        b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
-                        + str(len(payload)).encode()
-                        + b"\r\n\r\n"
-                        + payload
-                        + b"\r\n"
-                    )
+                    yield _mjpeg_part(jpeg.tobytes())
+            await asyncio.sleep(0.2)
+
+    return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")
+
+
+@router.get("/layout")
+async def geometry_layout(request: Request):
+    capture = _get_capture(request)
+    lock, phase, revision = _geometry_snapshot(request)
+    if lock is None:
+        raise HTTPException(status_code=409, detail="geometry_not_available")
+    frame = capture.read_frame()
+    if frame is None:
+        raise HTTPException(status_code=503, detail="camera_frame_not_available")
+    height, width = frame.shape[:2]
+    corner_specs = (
+        (0, 0, "左上"),
+        (0, 18, "右上"),
+        (18, 18, "右下"),
+        (18, 0, "左下"),
+    )
+    corners = [
+        {
+            "row": row,
+            "col": col,
+            "label": label,
+            "x": float(point[0]),
+            "y": float(point[1]),
+        }
+        for (row, col, label), point in zip(corner_specs, lock.corners)
+    ]
+    return {
+        "revision": revision,
+        "phase": phase,
+        "stale": phase != "ready",
+        "frame": {"width": int(width), "height": int(height)},
+        "out_size": int(lock.out_size),
+        "corners": corners,
+        "points": lock.points.astype(float).tolist(),
+    }
+
+
+@router.get("/warped-stream")
+async def geometry_warped_stream(request: Request):
+    capture = _get_capture(request)
+    lock, _phase, _revision = _geometry_snapshot(request)
+    if lock is None:
+        raise HTTPException(status_code=409, detail="geometry_not_available")
+
+    async def generate():
+        while not await request.is_disconnected():
+            frame = capture.read_frame()
+            if frame is not None:
+                yield _mjpeg_part(_encode_warped_frame(frame, lock))
             await asyncio.sleep(0.2)
 
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")

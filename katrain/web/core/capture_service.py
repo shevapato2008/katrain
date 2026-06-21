@@ -36,45 +36,53 @@ class CaptureServiceConfig:
 
 
 class CaptureService:
-    def __init__(self, config: CaptureServiceConfig, camera=None):
+    def __init__(self, config: CaptureServiceConfig, camera=None, hub=None):
         self.config = config
         self.out_dir = Path(config.out_dir).expanduser()
-        self._camera = camera  # injected for tests; created in start() otherwise
+        self._owns_hub = hub is None
+        if hub is None:
+            from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+            hub = CameraHub(
+                CameraHubConfig(
+                    device_id=config.camera_device,
+                    width=config.width,
+                    height=config.height,
+                    lock_exposure=config.lock_exposure,
+                    exposure=config.exposure,
+                    lock_awb=config.lock_awb,
+                ),
+                camera=camera,
+            )
+        self._hub = hub
 
     # -- lifecycle --------------------------------------------------------- #
     def start(self) -> None:
-        if self._camera is None:
-            from katrain.vision.camera import CameraManager
-
-            self._camera = CameraManager(
-                device_id=self.config.camera_device,
-                width=self.config.width,
-                height=self.config.height,
-                lock_exposure=self.config.lock_exposure,
-                exposure=self.config.exposure,
-                lock_awb=self.config.lock_awb,
-            )
-        self._camera.open()
+        if self._owns_hub:
+            self._hub.start()
         log.info("CaptureService started (camera=%s, out_dir=%s)", self.config.camera_device, self.out_dir)
 
     def stop(self) -> None:
-        if self._camera is not None:
-            self._camera.close()
+        if self._owns_hub:
+            self._hub.stop()
 
     def is_connected(self) -> bool:
-        cam = self._camera
-        return bool(cam is not None and getattr(cam, "is_connected", False))
+        return self._hub.is_connected() if callable(getattr(self._hub, "is_connected", None)) else bool(
+            getattr(self._hub, "is_connected", False)
+        )
 
     # -- frame access ------------------------------------------------------ #
     def grab_fresh(self, after_ts: Optional[float] = None, settle_ms: float = 150.0):
         """Return ``(frame, seq, ts)`` of a frame read after ``after_ts + settle``."""
-        return self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+        return self._hub.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
 
     def grab_burst(self, n: int = 8, interval: float = 0.1):
         """Grab ``n`` frames (for empty-board geometry locking)."""
+        if hasattr(self._hub, "grab_burst"):
+            return self._hub.grab_burst(n=n, interval=interval)
         frames = []
         for _ in range(n):
-            frame, _seq, _ts = self._camera.grab_fresh(settle_ms=0.0)
+            frame, _seq, _ts = self._hub.grab_fresh(settle_ms=0.0)
             if frame is not None:
                 frames.append(frame)
             time.sleep(interval)
@@ -87,7 +95,7 @@ class CaptureService:
         via tmp+rename. Returns ``(path, seq, ts)``; raises on no-frame / write failure."""
         import cv2
 
-        frame, seq, ts = self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+        frame, seq, ts = self.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
         if frame is None:
             raise RuntimeError("capture_to: no frame available")
         p = Path(path)

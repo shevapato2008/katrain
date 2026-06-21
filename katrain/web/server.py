@@ -51,6 +51,9 @@ async def lifespan(app: FastAPI):
     capture = getattr(app.state, "capture", None)
     if capture:
         capture.stop()
+    camera_hub = getattr(app.state, "camera_hub", None)
+    if camera_hub:
+        camera_hub.stop()
 
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
@@ -330,12 +333,48 @@ async def _lifespan_board(app: FastAPI, log):
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
 
-    # Vision service (optional — enabled when --vision-model is provided)
     vision_config = getattr(settings, "_vision_config", None)
+    capture_config = getattr(settings, "_capture_config", None)
+
+    # One physical camera owner shared by capture, calibration, and recognition.
+    camera_hub = None
+    if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
+        from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+        if vision_config and vision_config.enabled and capture_config and capture_config.enabled:
+            vision_camera = (vision_config.camera_device, vision_config.camera_width, vision_config.camera_height)
+            capture_camera = (capture_config.camera_device, capture_config.width, capture_config.height)
+            if vision_camera != capture_camera:
+                raise RuntimeError(
+                    "Vision and capture must use the same camera device and resolution when sharing CameraHub: "
+                    f"vision={vision_camera}, capture={capture_camera}"
+                )
+        if capture_config and capture_config.enabled:
+            hub_config = CameraHubConfig(
+                device_id=capture_config.camera_device,
+                width=capture_config.width,
+                height=capture_config.height,
+                lock_exposure=capture_config.lock_exposure,
+                exposure=capture_config.exposure,
+                lock_awb=capture_config.lock_awb,
+            )
+        else:
+            hub_config = CameraHubConfig(
+                device_id=vision_config.camera_device,
+                width=vision_config.camera_width,
+                height=vision_config.camera_height,
+                lock_exposure=False,
+                lock_awb=False,
+            )
+        camera_hub = CameraHub(hub_config)
+        camera_hub.start()
+    app.state.camera_hub = camera_hub
+
+    # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled:
         from katrain.vision.service import VisionService
 
-        vision = VisionService(vision_config)
+        vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
         app.state.vision = vision
         app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
@@ -357,17 +396,11 @@ async def _lifespan_board(app: FastAPI, log):
     else:
         app.state.led = None
 
-    # Capture service (optional — 摆谱 capture; the SINGLE camera owner, plan §3.1)
-    capture_config = getattr(settings, "_capture_config", None)
+    # Capture service consumes the shared CameraHub and only owns file output.
     if capture_config and capture_config.enabled:
-        if vision_config and vision_config.enabled:
-            raise RuntimeError(
-                "CaptureService is the exclusive camera owner; disable VisionService "
-                "(--vision-model) to use --capture-camera"
-            )
         from katrain.web.core.capture_service import CaptureService
 
-        capture = CaptureService(capture_config)
+        capture = CaptureService(capture_config, hub=camera_hub)
         capture.start()
         app.state.capture = capture
         # Load an existing geometry lock if present (so capture/QA can run immediately).

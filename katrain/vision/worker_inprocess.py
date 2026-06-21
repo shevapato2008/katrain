@@ -38,7 +38,7 @@ class InProcessAdapter:
     Mimics the VisionWorkerProcess API so VisionService can use either.
     """
 
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any], camera=None):
         self._config = config
         self._thread: threading.Thread | None = None
         self._running = False
@@ -52,7 +52,8 @@ class InProcessAdapter:
 
         # Components
         board_config = BoardConfig()
-        self._camera = CameraManager(device_id=config.get("camera_device", 0))
+        self._owns_camera = camera is None
+        self._camera = camera or CameraManager(device_id=config.get("camera_device", 0))
         self._motion_filter = MotionFilter()
         self._board_finder = BoardFinder(camera_config=CameraConfig())
         self._detector = StoneDetector(
@@ -78,7 +79,8 @@ class InProcessAdapter:
         self._running = False
         if self._thread:
             self._thread.join(timeout=5)
-        self._camera.close()
+        if self._owns_camera:
+            self._camera.close()
 
     def send_command(self, cmd: WorkerCommand) -> None:
         self._cmd_queue.put(cmd)
@@ -103,7 +105,7 @@ class InProcessAdapter:
         return self._thread is not None and self._thread.is_alive()
 
     def _loop(self) -> None:
-        if not self._camera.open():
+        if self._owns_camera and not self._camera.open():
             logger.error("Failed to open camera")
 
         target_interval = 1.0 / self._config.get("capture_fps", 8)
@@ -158,7 +160,8 @@ class InProcessAdapter:
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
-        self._camera.close()
+        if self._owns_camera:
+            self._camera.close()
 
     def _drain_commands(self) -> None:
         while True:

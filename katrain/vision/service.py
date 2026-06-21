@@ -22,8 +22,9 @@ logger = logging.getLogger(__name__)
 class VisionService:
     """Main-process controller for the vision worker."""
 
-    def __init__(self, config: VisionServiceConfig):
+    def __init__(self, config: VisionServiceConfig, frame_source=None):
         self._config = config
+        self._frame_source = frame_source
         self._worker = None  # VisionWorkerProcess | InProcessAdapter
         self._bound_session_id: str | None = None
         self._event_callbacks: list[Callable] = []
@@ -35,10 +36,10 @@ class VisionService:
         """Spawn the vision worker (subprocess or in-process thread)."""
         worker_config = self._config.to_worker_config()
 
-        if self._config.process_mode == "inprocess":
+        if self._config.process_mode == "inprocess" or self._frame_source is not None:
             from katrain.vision.worker_inprocess import InProcessAdapter
 
-            self._worker = InProcessAdapter(worker_config)
+            self._worker = InProcessAdapter(worker_config, camera=self._frame_source)
         else:
             from katrain.vision.worker import VisionWorkerProcess
 

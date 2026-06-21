@@ -291,28 +291,28 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `tests/test_capture_service.py`
 - Test: `tests/test_vision/test_shared_camera.py`
 
-- [ ] **Step 1.1: 写 CameraHub 生命周期和共享帧源失败测试**
+- [x] **Step 1.1: 写 CameraHub 生命周期和共享帧源失败测试**
 
   覆盖：相机只 `open()`/`close()` 一次；`read_frame()`、`grab_fresh()`、`grab_burst()` 保留 seq/ts；多个消费者 stop 不得关闭相机。
 
-- [ ] **Step 1.2: 运行 RED**
+- [x] **Step 1.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_camera_hub.py tests/test_capture_service.py`
   Expected: FAIL（`CameraHub` 尚不存在或 CaptureService 仍直接拥有相机）。
 
-- [ ] **Step 1.3: 最小实现 CameraHub 并把 CaptureService 改为委托**
+- [x] **Step 1.3: 最小实现 CameraHub 并把 CaptureService 改为委托**
 
   `CameraHub.start/stop/is_connected/read_frame/grab_fresh/grab_burst` 是唯一相机生命周期边界；`CaptureService.capture_to` 只负责原子落盘。
 
-- [ ] **Step 1.4: 写 VisionService 共享帧源失败测试并运行 RED**
+- [x] **Step 1.4: 写 VisionService 共享帧源失败测试并运行 RED**
 
   注入 CameraHub 后 `InProcessAdapter` 不调用 `open/close`；无共享帧源时保持原行为。板端启用 capture+vision 时使用后台线程消费者，先不引入高带宽 multiprocessing Queue。
 
-- [ ] **Step 1.5: 实现共享帧源并移除 server 的 vision/capture RuntimeError**
+- [x] **Step 1.5: 实现共享帧源并移除 server 的 vision/capture RuntimeError**
 
   `_lifespan_board()` 先启动 CameraHub，再向 CaptureService/VisionService 注入；配置的设备或分辨率不一致时启动失败并给出明确错误。
 
-- [ ] **Step 1.6: 运行 GREEN 和回归**
+- [x] **Step 1.6: 运行 GREEN 和回归**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_camera_hub.py tests/test_capture_service.py tests/test_vision/test_shared_camera.py`
   Expected: PASS。

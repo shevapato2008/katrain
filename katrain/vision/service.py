@@ -136,6 +136,10 @@ class VisionService:
                 WorkerCommand(action=CommandType.SET_VIEWER_ACTIVE, data={"active": active})
             )
 
+    def set_geometry(self, geometry) -> None:
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_GEOMETRY, data={"geometry": geometry}))
+
     # -- data retrieval ------------------------------------------------------
 
     def get_detected_board(self) -> list[list[int]] | None:

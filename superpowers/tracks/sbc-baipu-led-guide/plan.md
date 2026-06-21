@@ -398,28 +398,28 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `tests/test_geometry_drift.py`
 - Test: `tests/test_vision/test_shared_camera.py`
 
-- [ ] **Step 4.1: 写位移判定失败测试**
+- [x] **Step 4.1: 写位移判定失败测试**
 
   用合成网格 reference/current 验证：光照整体变化不触发；小于 `0.10 cell` 不触发；连续 3 帧超过阈值进入 degraded；单帧异常不触发。
 
-- [ ] **Step 4.2: 运行 RED**
+- [x] **Step 4.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_drift.py`
   Expected: FAIL。
 
-- [ ] **Step 4.3: 实现 GeometryDriftMonitor**
+- [x] **Step 4.3: 实现 GeometryDriftMonitor**
 
   使用静态网格/木纹特征匹配 + RANSAC 估计参考帧到当前帧位移，输出 shift、inlier ratio、confidence；仅监测，不在对局中点灯。
 
-- [ ] **Step 4.4: 写实时识别使用锁定 M 的失败测试**
+- [x] **Step 4.4: 写实时识别使用锁定 M 的失败测试**
 
   注入 GeometryLock 后直接 `warpPerspective(frame, M)`，不调用 `BoardFinder.find_focus`；没有锁时状态为 `geometry_required`，而不是回退到可能旋转错误的自动轮廓。
 
-- [ ] **Step 4.5: 实现 VisionService geometry 更新和能力拆分**
+- [x] **Step 4.5: 实现 VisionService geometry 更新和能力拆分**
 
   `VisionStatus` 分别上报 `camera_ready/geometry_ready/model_ready/recognition_ready`。GeometryCalibrationService 成功后通知 VisionService 热更新 M；模型缺失不影响标定与摆谱采集。
 
-- [ ] **Step 4.6: 运行 GREEN**
+- [x] **Step 4.6: 运行 GREEN**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_drift.py tests/test_vision/test_shared_camera.py tests/test_vision/test_pipeline.py tests/test_vision/test_sync.py`
   Expected: PASS。

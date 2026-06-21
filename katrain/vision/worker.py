@@ -426,6 +426,10 @@ class _VisionWorkerLoop:
             pose_lock_status="locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked",
             sync_state=self._sync.state.value,
             detected_board=self._last_detected_board,
+            camera_ready=bool(self._camera.is_connected),
+            geometry_ready=self._board_finder.last_transform_matrix is not None,
+            model_ready=self._detector is not None,
+            recognition_ready=bool(self._camera.is_connected and self._detector is not None),
         )
 
         # Overwrite: drain old, put new

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import threading
+import time
 from pathlib import Path
+
+import numpy as np
 
 from katrain.vision.geometry_lock import save_geometry_lock
 from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator
@@ -35,6 +38,10 @@ class GeometryCalibrationService:
         self._lock = threading.Lock()
         self._cancel_event = threading.Event()
         self._thread = None
+        self._drift_monitor = None
+        self._drift_stop = threading.Event()
+        self._drift_thread = threading.Thread(target=self._drift_loop, daemon=True, name="geometry-drift")
+        self._drift_thread.start()
         self._status = {
             "phase": "required",
             "progress": {"current": 0, "total": 13},
@@ -52,6 +59,7 @@ class GeometryCalibrationService:
             if self._thread is not None and self._thread.is_alive():
                 raise CalibrationBusy("geometry calibration already running")
             self._cancel_event = threading.Event()
+            self._drift_monitor = None
             self._status.update(
                 phase="waiting_empty",
                 progress={"current": 0, "total": 13},
@@ -72,6 +80,8 @@ class GeometryCalibrationService:
     def stop(self) -> None:
         self.cancel()
         self.wait(timeout=5)
+        self._drift_stop.set()
+        self._drift_thread.join(timeout=2)
 
     def wait(self, timeout=None) -> bool:
         thread = self._thread
@@ -130,6 +140,7 @@ class GeometryCalibrationService:
             save_geometry_lock(result.lock, self.save_path)
             self.current_lock = result.lock
             self.on_success(result.lock)
+            self._init_drift_monitor(result.lock)
             fit = result.fit
             metrics = {
                 "inlier_count": getattr(fit, "inlier_count", None),
@@ -154,3 +165,40 @@ class GeometryCalibrationService:
                 self.led.clear(strict=True)
             except Exception:
                 pass
+
+    def _init_drift_monitor(self, lock) -> None:
+        if not hasattr(self.capture, "grab_fresh"):
+            return
+        frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+        if frame is None:
+            return
+        from katrain.vision.geometry_drift import GeometryDriftMonitor
+
+        horizontal = np.linalg.norm(lock.points[:, 1:] - lock.points[:, :-1], axis=2)
+        vertical = np.linalg.norm(lock.points[1:] - lock.points[:-1], axis=2)
+        spacing = float(np.median(np.concatenate([horizontal.ravel(), vertical.ravel()])))
+        self._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=spacing)
+
+    def _drift_loop(self) -> None:
+        while not self._drift_stop.wait(1.0):
+            monitor = self._drift_monitor
+            if monitor is None or not hasattr(self.capture, "grab_fresh"):
+                continue
+            with self._lock:
+                if self._status["phase"] != "ready":
+                    continue
+            try:
+                frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+                if frame is None:
+                    continue
+                drift = monitor.update(frame)
+                if drift.degraded:
+                    with self._lock:
+                        self._status["phase"] = "degraded"
+                        self._status["error"] = "board_moved"
+                        self._status["metrics"].update(
+                            shift_cells=drift.shift_cells,
+                            drift_response=drift.response,
+                        )
+            except Exception:
+                time.sleep(0.1)

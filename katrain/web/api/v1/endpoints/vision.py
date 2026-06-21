@@ -49,6 +49,10 @@ async def vision_status(request: Request):
         "pose_locked": vision.pose_lock_status == "locked",
         "sync_state": vision.sync_state,
         "bound_session_id": vision.bound_session_id,
+        "camera_ready": vision._latest_status.camera_ready,
+        "geometry_ready": vision._latest_status.geometry_ready,
+        "model_ready": vision._latest_status.model_ready,
+        "recognition_ready": vision._latest_status.recognition_ready,
     }
 
 

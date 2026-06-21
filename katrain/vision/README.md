@@ -1,3 +1,30 @@
+# Physical Board LED-Anchor Calibration
+
+Board mode uses a single `CameraHub` for capture, geometry calibration, and optional live recognition. A geometry lock is valid for an interactive session only after the 13 LED anchors (four corners and nine star points) have been detected on an empty board. A previous lock remains on disk as rollback data, but does not bypass session calibration.
+
+Start the MacBook hardware service:
+
+```bash
+KATRAIN_MODE=board python -m katrain --ui web --host 127.0.0.1 --port 8001 \
+  --disable-engine --led-serial-port /dev/cu.usbmodem2101 \
+  --led-lut-path ~/.katrain/led_lut.json \
+  --capture-camera 0 --capture-resolution 1920x1080 \
+  --capture-dir ~/.katrain/baipu_captures
+```
+
+Verify capabilities and start a manual calibration after clearing the board:
+
+```bash
+curl http://127.0.0.1:8001/api/v1/geometry/status
+curl -X POST http://127.0.0.1:8001/api/v1/geometry/calibrate \
+  -H 'Content-Type: application/json' \
+  -d '{"trigger":"manual","empty_confirmed":true}'
+```
+
+The kiosk guard invokes the same endpoint with `trigger=auto` after the operator confirms the board is empty. During calibration, poll `/api/v1/geometry/status`; success is `phase=ready`, `session_calibrated=true`, and `capabilities.geometry_ready=true`. `recognition_ready` additionally requires a loaded stone-recognition model. The settings page and geometry status icon open the manual recalibration screen.
+
+Coordinates are always seated-human coordinates: `(row=0,col=0)` is upper-left and `(row=0,col=18)` is upper-right. Camera orientation is learned from the LED anchors and must not be manually rotated in the capture path. Geometry files are atomically stored at `~/.katrain/geometry_lock.npz` and `.json`; each baipu game also freezes its geometry beside the captured frames.
+
 # YOLO Training Results: go_dataset_diff_sam
 
 **Date**: 2026-02-19

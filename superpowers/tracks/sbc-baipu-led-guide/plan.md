@@ -2,7 +2,7 @@
 
 - **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-21（**v4**；P5 为真机联调后新增）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P4 已执行并完成首轮真机联调**；**P5 待执行**。见 [§11 执行记录](#11-执行记录2026-06-16)。
+- **状态**: **P1–P5 已实现**；P5 已完成 HBV + ESP32 真机标定与首帧采集，尚余一次由操作者实际移动相机的 degraded 验收。见 §11–§12 执行记录。
 
 > **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement P5. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
 
@@ -468,18 +468,18 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `katrain/vision/README.md`
 - Test: relevant backend/frontend suites
 
-- [ ] **Step 6.1: 后端回归**
+- [x] **Step 6.1: 后端回归**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_camera_hub.py tests/test_capture_service.py tests/test_led_service.py tests/test_led_geometry_calibrator.py tests/test_geometry_lock.py tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_geometry_drift.py tests/test_baipu_api.py tests/test_baipu_capture.py tests/test_vision`
   Expected: 0 failures。
 
-- [ ] **Step 6.2: 前端回归和构建**
+- [x] **Step 6.2: 前端回归和构建**
 
   Run: `cd katrain/web/ui && npm test`
   Run: `cd katrain/web/ui && npm run lint && npm run build && npm run build:kiosk-2d`
   Expected: 0 failures。
 
-- [ ] **Step 6.3: MacBook 真机验证**
+- [x] **Step 6.3: MacBook 真机验证（移动相机项待操作者执行）**
 
   1. 启动 board mode，确认 `/led/status connected`、CameraHub camera 0=HBV。
   2. 首次进入摆谱，清盘后自动标定；确认 raw0 左上、raw360 右上、R16 人视角右上。
@@ -488,7 +488,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   5. 轻微移动相机，确认不闪灯且状态进入 degraded；手动清盘重标定后恢复 ready。
   6. 有 YOLO 模型时再验证 recognition_ready；无模型时确认摆谱仍可用且 UI 明示 model unavailable。
 
-- [ ] **Step 6.4: 更新 P5 执行记录**
+- [x] **Step 6.4: 更新 P5 执行记录**
 
   记录测试计数、硬件坐标、残差、相机身份、已知限制和启动命令；不得把诊断采集目录混入训练数据。
 
@@ -581,3 +581,30 @@ P1–P4 全部实现并提交到 `feature/rk3588-ui`（commits `410550d6` P1 · 
 **环境拆分**：core/vision 测试跑 `.venv`；`katrain.web.*` 因 `web/__init__.py` 预载 server→需 web 环境（`py311_katago`，fastapi 0.115/cv2 4.13）。
 
 **硬件日联调**：`python -m katrain --ui web --led-serial-port /dev/cu.usbmodem2101 --capture-camera <dev>` → VisionSetupPage 空盘「自动锁定几何」→ 摆谱选谱→逐手带灯拍。需补：真机 LED 单点/星位、空盘锁 conf≥0.80、stones.classify 阈值(P0 基准)、同步屏障实测、Playwright e2e(起服务)。
+
+---
+
+## 12. P5 执行记录（2026-06-21）
+
+**提交**：`9bac1b4c` 共享 CameraHub · `90358544` LED 13 锚点标定 · `4e5fe925` 异步标定服务/API · `abd96e7e` 漂移监测和识别热更新 · `986e7134` 全实体入口 Guard/手动重标定 · `77a9fcb1` 可选 Provider 状态栏。
+
+**实现**：Capture、几何标定和实时识别共用 camera 0 的单一帧源；四角+九星位按绿→红→蓝回退检测，RANSAC 生成完整 19×19 几何；标定后台执行、可取消、失败保留上一有效锁、成功原子替换；会话外旧锁不直接放行。AI/PVP/跨平台对局、死活题、研究和摆谱实体入口统一要求本会话标定，设置页和状态栏均可手动重标定。摆谱只要求 geometry，需识别的入口额外要求 model/recognition ready。
+
+**自动化验证**：后端 P5 相关套件 `207 passed`；P5 前端新增/受影响用例通过，生产构建和 kiosk-2d 构建通过，`verify:kiosk-2d` 确认无 three.js；所有本次变更 TS/TSX 文件 ESLint 通过。全仓 Vitest 的基线为 `78 failed / 286 passed`，P5 分支为 `72 failed / 295 passed`，未新增失败并修复 6 个 StatusBar/KioskLayout 失败。全仓 ESLint 仍有既有 `218 errors / 46 warnings`，不在本 track 扩散修复。
+
+**MacBook 真机**：`HBV HD CAMERA` = AVFoundation/OpenCV camera 0，分辨率 `1920x1080`；ESP32-S3 为 `/dev/cu.usbmodem2101`，LED connected。手动标定 13/13 内点，RMS `1.458 px`、最大 `2.456 px`、confidence `0.9723`；随后自动入口标定 13/13 内点，RMS `1.385 px`、最大 `2.333 px`、confidence `0.9737`。两次均进入 ready 并在结束后灭灯。人视角 `row=0,col=0` 为左上、`row=0,col=18` 为右上；测试谱 R16 解析为 `(row=3,col=16)`，相机像素约 `(562,345)`，真机照片落在正确的人视角右上区域。
+
+**采集验收**：`p5-hw-20260621/frame_000.jpg` 写入成功，manifest 为 `frame_kind=initial_led`、`qa_status=ok`、`next_guided_move_index=0`，冻结 `geometry.npz` 和 `game.sgf`；红灯持续时漂移监测仍保持 ready。未安装 YOLO 模型时明确返回 `model_ready=false/recognition_ready=false`，不阻断摆谱。诊断目录 `p5-hw-20260621` 仅用于验收，不并入训练集。
+
+**启动命令**：
+
+```bash
+KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
+  --ui web --host 127.0.0.1 --port 8001 --disable-engine \
+  --led-serial-port /dev/cu.usbmodem2101 \
+  --led-lut-path /Users/fan/.katrain/led_lut.json \
+  --capture-camera 0 --capture-resolution 1920x1080 \
+  --capture-dir /Users/fan/.katrain/baipu_captures --log-level info
+```
+
+**剩余人工验收**：实际轻移相机，确认连续 3 帧超过阈值后进入 degraded，且不闪标定灯；清盘后从设置页重标定恢复 ready。算法路径已有确定性单测，Codex 无法代替操作者移动实体相机。

@@ -2,7 +2,7 @@
 
 - **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-21（**v4**；P5 为真机联调后新增）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P5 已实现**；P5 已完成 HBV + ESP32 真机标定与首帧采集，尚余一次由操作者实际移动相机的 degraded 验收。见 §11–§12 执行记录。
+- **状态**: **P1–P5 已实现**；**P6 待执行**，补齐 SBC 前端双实时画面、四角/361 点可视化和位移后重标定闭环。见 §11–§12 执行记录及 P6 计划。
 
 > **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement P5. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
 
@@ -491,6 +491,405 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - [x] **Step 6.4: 更新 P5 执行记录**
 
   记录测试计数、硬件坐标、残差、相机身份、已知限制和启动命令；不得把诊断采集目录混入训练数据。
+
+---
+
+## P6. SBC 前端实时几何预览与重标定闭环（2026-06-22）
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Follow every RED/GREEN checkpoint and update checkboxes after each task.
+
+**Goal:** 用户只通过 KaTrain SBC 前端即可同时查看 HBV 原始画面和俯视矫正画面，确认 LED 定位的四角、完整网格和 361 个落子点，并在摄像头位移后完成自动提示与手动确认重标定。
+
+**Architecture:** 继续使用唯一 `CameraHub` 和当前 `GeometryLock`。后端只扩展锚点快照、只读几何布局和按需矫正 MJPEG；前端用透明 Canvas 缩放绘制后端坐标，并让 `PhysicalBoardGuard` 与设置页复用同一个 `GeometryCalibrationWorkspace`。完整设计见 `docs/superpowers/specs/2026-06-22-geometry-live-preview-design.md`。
+
+**Tech Stack:** Python 3.11、FastAPI、OpenCV、NumPy、React 19、TypeScript、MUI、Vitest、Testing Library、in-app Browser。
+
+### Task 1：发布逐点 LED 锚点与几何版本
+
+**Files:**
+- Modify: `katrain/vision/led_geometry_calibrator.py`
+- Modify: `katrain/web/core/geometry_calibration_service.py`
+- Test: `tests/test_led_geometry_calibrator.py`
+- Test: `tests/test_geometry_calibration_service.py`
+
+- [ ] **Step 1.1: 写 RED——成功锚点观察回调**
+
+  在 `tests/test_led_geometry_calibrator.py` 增加：
+
+  ```python
+  def test_calibrator_reports_each_detected_anchor(fake_led, fake_capture):
+      observed = []
+      result = LedGeometryCalibrator(
+          led=fake_led,
+          capture=fake_capture,
+          anchor_observer=lambda row, col, point, color: observed.append((row, col, point, color)),
+      ).calibrate()
+      assert result.ok
+      assert [(row, col) for row, col, _point, _color in observed] == list(CALIBRATION_ANCHORS)
+      assert all(color == "green" for _row, _col, _point, color in observed)
+  ```
+
+- [ ] **Step 1.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_geometry_calibrator.py::test_calibrator_reports_each_detected_anchor`
+  Expected: FAIL，`LedGeometryCalibrator.__init__` 不接受 `anchor_observer`。
+
+- [ ] **Step 1.3: 最小实现锚点回调**
+
+  `LedGeometryCalibrator.__init__` 增加：
+
+  ```python
+  anchor_observer: Callable[[int, int, tuple[float, float], str], None] | None = None
+  ```
+
+  保存为 no-op；`_locate_anchor` 成功时调用：
+
+  ```python
+  point = (float(result.centroid[0]), float(result.centroid[1]))
+  self.anchor_observer(row, col, point, color_name)
+  return result.centroid
+  ```
+
+- [ ] **Step 1.4: 写 RED——服务快照清空和 revision**
+
+  在 `tests/test_geometry_calibration_service.py` 增加一个接受 `anchor_observer` 的 fake calibrator，并断言：
+
+  ```python
+  service.start(trigger="manual", empty_confirmed=True)
+  service.wait(2)
+  status = service.status()
+  assert status["detected_anchors"] == [
+      {"row": 0, "col": 0, "x": 12.5, "y": 34.5, "color": "green"}
+  ]
+  assert status["geometry_revision"] == 1
+
+  service.start(trigger="manual", empty_confirmed=True)
+  assert service.status()["detected_anchors"] == []
+  ```
+
+- [ ] **Step 1.5: 运行 RED 并实现服务状态**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_calibration_service.py`
+  Expected: FAIL，缺少字段或 fake factory 参数不匹配。
+
+  实现要求：
+
+  ```python
+  self._geometry_revision = 0
+  self._detected_anchors: list[dict] = []
+
+  def _anchor_observed(self, row, col, point, color):
+      with self._lock:
+          self._detected_anchors.append({
+              "row": row, "col": col,
+              "x": float(point[0]), "y": float(point[1]),
+              "color": color,
+          })
+  ```
+
+  `start()` 清空列表；calibrator factory 接收 `anchor_observer=self._anchor_observed`；成功提升锁后 revision 加一；`status()` 深拷贝列表并返回 revision。
+
+- [ ] **Step 1.6: 运行 GREEN 并提交**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_geometry_calibrator.py tests/test_geometry_calibration_service.py`
+  Expected: PASS。
+
+  ```bash
+  git add katrain/vision/led_geometry_calibrator.py katrain/web/core/geometry_calibration_service.py tests/test_led_geometry_calibrator.py tests/test_geometry_calibration_service.py
+  git commit -m "publish geometry calibration anchors"
+  ```
+
+### Task 2：几何布局接口和俯视矫正流
+
+**Files:**
+- Modify: `katrain/web/api/v1/endpoints/geometry.py`
+- Test: `tests/test_geometry_api.py`
+
+- [ ] **Step 2.1: 写 RED——layout 完整坐标契约**
+
+  扩展测试 fake lock 使用可区分的四角和 `points=np.arange(19*19*2).reshape(19,19,2)`，增加：
+
+  ```python
+  def test_layout_returns_human_oriented_grid(client_with_calibration):
+      body = client_with_calibration.get("/geometry/layout").json()
+      assert body["frame"] == {"width": 1920, "height": 1080}
+      assert body["corners"][0]["label"] == "左上"
+      assert body["corners"][1]["label"] == "右上"
+      assert len(body["points"]) == 19
+      assert len(body["points"][0]) == 19
+      assert body["revision"] == 1
+      assert body["stale"] is False
+  ```
+
+  同时断言无有效几何返回 `409`，`phase=degraded` 时 `stale=true` 且仍返回旧点。
+
+- [ ] **Step 2.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_api.py -k layout`
+  Expected: FAIL，路由不存在。
+
+- [ ] **Step 2.3: 实现 layout 序列化**
+
+  在 geometry endpoint 增加 `_current_geometry(request)` 和 `_serialize_layout(lock, frame, phase, revision)`。四角严格按人视角规范输出：
+
+  ```python
+  corner_specs = (
+      (0, 0, "左上"),
+      (0, 18, "右上"),
+      (18, 18, "右下"),
+      (18, 0, "左下"),
+  )
+  ```
+
+  `frame.shape[:2]` 提供真实宽高；NumPy 值全部转 Python `float`；`points` 固定 `[19][19][2]`。
+
+- [ ] **Step 2.4: 写 RED——矫正帧 helper**
+
+  ```python
+  def test_encode_warped_frame_uses_lock_size():
+      frame = np.zeros((720, 1280, 3), np.uint8)
+      lock = _ok_lock(out_size=64, M=np.eye(3))
+      jpeg = geometry._encode_warped_frame(frame, lock)
+      decoded = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+      assert decoded.shape[:2] == (64, 64)
+  ```
+
+  再测试 `/geometry/warped-stream` 在无 lock 时返回 `409`。
+
+- [ ] **Step 2.5: 运行 RED 并实现 warped stream**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_api.py -k warped`
+  Expected: FAIL，helper/路由不存在。
+
+  `_encode_warped_frame` 必须只做现有逻辑：
+
+  ```python
+  warped = cv2.warpPerspective(frame, lock.M, (lock.out_size, lock.out_size))
+  ok, jpeg = cv2.imencode(".jpg", warped, [cv2.IMWRITE_JPEG_QUALITY, 65])
+  if not ok:
+      raise RuntimeError("failed to encode warped geometry frame")
+  return jpeg.tobytes()
+  ```
+
+  endpoint 在创建 `StreamingResponse` 前验证 lock；生成器每 200ms 读取共享 capture，检查 `await request.is_disconnected()`，不创建 capture 或后台线程。
+
+- [ ] **Step 2.6: 运行 GREEN 并提交**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_api.py tests/test_capture_service.py`
+  Expected: PASS。
+
+  ```bash
+  git add katrain/web/api/v1/endpoints/geometry.py tests/test_geometry_api.py
+  git commit -m "expose live geometry layout previews"
+  ```
+
+### Task 3：前端几何 API 与纯绘图模型
+
+**Files:**
+- Modify: `katrain/web/ui/src/api/geometryApi.ts`
+- Modify: `katrain/web/ui/src/api/geometryApi.test.ts`
+- Create: `katrain/web/ui/src/kiosk/components/vision/geometryOverlay.ts`
+- Create: `katrain/web/ui/src/kiosk/components/vision/geometryOverlay.test.ts`
+
+- [ ] **Step 3.1: 写 RED——API 类型和 layout 请求**
+
+  `geometryApi.test.ts` mock fetch 返回 layout，并断言 `GeometryAPI.layout()` 请求 `/api/v1/geometry/layout`。需要定义：
+
+  ```typescript
+  export interface GeometryPoint { row: number; col: number; x: number; y: number }
+  export interface GeometryAnchor extends GeometryPoint { color: string }
+  export interface GeometryCorner extends GeometryPoint { label: string }
+  export interface GeometryLayout {
+    revision: number;
+    phase: GeometryPhase;
+    stale: boolean;
+    frame: { width: number; height: number };
+    out_size: number;
+    corners: GeometryCorner[];
+    points: [number, number][][];
+  }
+  ```
+
+  `GeometryStatus` 增加 `geometry_revision` 和 `detected_anchors`。
+
+- [ ] **Step 3.2: 运行 RED，最小实现 API，运行 GREEN**
+
+  Run: `cd katrain/web/ui && npm test -- --run src/api/geometryApi.test.ts`
+  Expected RED: `GeometryAPI.layout is not a function`。
+
+  实现 `layout: () => json(fetch(...))` 后重跑，Expected: PASS。
+
+- [ ] **Step 3.3: 写 RED——contain 缩放和绘图元素**
+
+  `geometryOverlay.test.ts` 覆盖：
+
+  ```typescript
+  expect(fitContain(1000, 600, 1920, 1080)).toEqual({ scale: 1000 / 1920, offsetX: 0, offsetY: 18.75 });
+  const model = buildRawGeometryModel(layout, 'ready', { width: 1000, height: 600 });
+  expect(model.lines).toHaveLength(38);
+  expect(model.points).toHaveLength(361);
+  expect(model.corners.map((c) => c.label)).toEqual(['左上', '右上', '右下', '左下']);
+  expect(model.starPoints).toHaveLength(9);
+  expect(buildRawGeometryModel(layout, 'degraded', viewport).tone).toBe('stale');
+  ```
+
+  active 锚点模型单独断言只含 `detected_anchors`，不含完整网格。
+
+- [ ] **Step 3.4: 运行 RED 并实现纯函数**
+
+  Run: `cd katrain/web/ui && npm test -- --run src/kiosk/components/vision/geometryOverlay.test.ts`
+  Expected: FAIL，模块不存在。
+
+  实现 `fitContain`、`buildRawGeometryModel`、`buildWarpedGeometryModel`；只进行缩放、偏移和绘图 primitive 组装，不计算单应矩阵。
+
+- [ ] **Step 3.5: 运行 GREEN、lint 并提交**
+
+  Run: `cd katrain/web/ui && npm test -- --run src/api/geometryApi.test.ts src/kiosk/components/vision/geometryOverlay.test.ts`
+  Run: `cd katrain/web/ui && npx eslint src/api/geometryApi.ts src/api/geometryApi.test.ts src/kiosk/components/vision/geometryOverlay.ts src/kiosk/components/vision/geometryOverlay.test.ts`
+  Expected: PASS，0 lint errors。
+
+  ```bash
+  git add katrain/web/ui/src/api/geometryApi.ts katrain/web/ui/src/api/geometryApi.test.ts katrain/web/ui/src/kiosk/components/vision/geometryOverlay.ts katrain/web/ui/src/kiosk/components/vision/geometryOverlay.test.ts
+  git commit -m "add frontend geometry overlay model"
+  ```
+
+### Task 4：共享双画面标定工作区
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/components/vision/CameraGeometryOverlay.tsx`
+- Create: `katrain/web/ui/src/kiosk/components/vision/GeometryVideoPanel.tsx`
+- Create: `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx`
+- Create: `katrain/web/ui/src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/context/GeometryContext.tsx`
+- Modify: `katrain/web/ui/src/kiosk/components/vision/PhysicalBoardGuard.tsx`
+- Modify: `katrain/web/ui/src/kiosk/pages/VisionSetupPage.tsx`
+- Modify: `katrain/web/ui/src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+
+- [ ] **Step 4.1: 写 RED——双画面、空盘确认和状态**
+
+  在 Workspace 测试 mock GeometryContext，断言：
+
+  ```typescript
+  expect(screen.getByText('摄像头原始画面')).toBeInTheDocument();
+  expect(screen.getByText('俯视矫正画面')).toBeInTheDocument();
+  expect(screen.getByAltText('摄像头原始画面')).toHaveAttribute('src', '/api/v1/geometry/stream');
+  expect(screen.getByRole('button', { name: '已清空，开始自动标定' })).toBeEnabled();
+  ```
+
+  点击按钮才调用 `startCalibration('auto')`；`degraded` 显示“摄像头或棋盘位置已变化”；camera/LED capability 不满足时按钮禁用；active 显示 `current/13` 和取消按钮；ready 显示 RMS/置信度及“重新标定”。
+
+- [ ] **Step 4.2: 运行 RED**
+
+  Run: `cd katrain/web/ui && npm test -- --run src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+  Expected: FAIL，组件不存在。
+
+- [ ] **Step 4.3: 实现视频卡片和 Canvas**
+
+  `GeometryVideoPanel` 负责标题、`<img>`、错误重试和 overlay slot。`CameraGeometryOverlay` 使用 `ResizeObserver`，在 effect 中根据 `geometryOverlay.ts` 模型绘制；必须设置 canvas 的设备像素比并保持 CSS 尺寸，不能从视频帧读取像素。
+
+  原始流固定 `/api/v1/geometry/stream`；有 layout 时矫正流使用 `/api/v1/geometry/warped-stream?revision=<revision>`，无 layout 显示等待文案。
+
+- [ ] **Step 4.4: 实现 Workspace 数据与交互**
+
+  - status 的 revision/phase 变化时调用 `GeometryAPI.layout()`；409 表示尚无布局，不显示通用错误。
+  - active 时用 status `detected_anchors` 绘制部分锚点。
+  - ready/degraded 用 layout 绘制完整网格；degraded tone 为红色。
+  - 启动按钮本身就是用户空盘确认，调用现有 calibrate API；绝不自动 POST。
+  - cancel 调用 GeometryContext 的 `cancelCalibration()`。
+
+- [ ] **Step 4.5: 运行 GREEN**
+
+  Run: `cd katrain/web/ui && npm test -- --run src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+  Expected: PASS。
+
+- [ ] **Step 4.6: 接入 Guard 和设置页**
+
+  `PhysicalBoardGuard` 保留 ready 放行判断，其他状态直接渲染：
+
+  ```tsx
+  return <GeometryCalibrationWorkspace mode="guard" requireRecognition={requireRecognition} />;
+  ```
+
+  `VisionSetupPage` 删除独立 stream、detected-board polling 和旧电子棋盘布局，改为同一 Workspace 的 `mode="settings"`，只保留页面返回导航。`GeometryContext` active 300ms、ready/degraded/required 1000ms 轮询。
+
+- [ ] **Step 4.7: 更新测试、双构建并提交**
+
+  Run: `cd katrain/web/ui && npm test -- --run src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx src/kiosk/__tests__/StatusBar.test.tsx`
+  Run: `cd katrain/web/ui && npx eslint src/kiosk/components/vision/CameraGeometryOverlay.tsx src/kiosk/components/vision/GeometryVideoPanel.tsx src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx src/kiosk/context/GeometryContext.tsx src/kiosk/components/vision/PhysicalBoardGuard.tsx src/kiosk/pages/VisionSetupPage.tsx`
+  Run: `cd katrain/web/ui && npm run build && npm run build:kiosk-2d`
+  Expected: tests/lint/build PASS，`verify:kiosk-2d` 无 three.js。
+
+  ```bash
+  git add katrain/web/ui/src/kiosk
+  git commit -m "add live geometry calibration workspace"
+  ```
+
+### Task 5：真实浏览器、真机闭环和完整回归
+
+**Files:**
+- Modify: `katrain/vision/README.md`
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`（P6 执行记录）
+- Test: P6 backend/frontend suites and in-app Browser
+
+- [ ] **Step 5.1: 后端完整相关回归**
+
+  Run:
+
+  ```bash
+  /opt/miniconda3/envs/py311_katago/bin/python -m pytest -q \
+    tests/test_camera_hub.py tests/test_capture_service.py tests/test_led_service.py \
+    tests/test_led_geometry_calibrator.py tests/test_geometry_lock.py \
+    tests/test_geometry_calibration_service.py tests/test_geometry_api.py \
+    tests/test_geometry_drift.py tests/test_baipu_api.py tests/test_baipu_capture.py tests/test_vision
+  ```
+
+  Expected: 0 failures。
+
+- [ ] **Step 5.2: 前端回归、lint 和构建**
+
+  Run: `cd katrain/web/ui && npm test`，记录全仓结果并与 P5 基线 `78 failed / 286 passed` 比较，P6 不得新增失败。
+  Run: 本次所有变更文件的 `npx eslint ...`，Expected: 0 errors。
+  Run: `npm run build && npm run build:kiosk-2d`，Expected: PASS。
+  Run: `npm run lint`，记录全仓既有错误数量，不把无关修复混入 P6。
+
+- [ ] **Step 5.3: 重启 P6 board mode 真机服务**
+
+  停止当前 8001 服务后，从本工作树启动：
+
+  ```bash
+  KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
+    --ui web --host 127.0.0.1 --port 8001 --disable-engine \
+    --led-serial-port /dev/cu.usbmodem2101 \
+    --led-lut-path /Users/fan/.katrain/led_lut.json \
+    --capture-camera 0 --capture-resolution 1920x1080 \
+    --capture-dir /Users/fan/.katrain/baipu_captures --log-level info
+  ```
+
+  确认 HBV camera 0 和 LED connected；标定开始前棋盘必须为空。
+
+- [ ] **Step 5.4: 使用 in-app Browser 模拟 SBC 操作**
+
+  严格按 `browser:control-in-app-browser` 操作真实 `http://127.0.0.1:8001`：
+
+  1. 设定 SBC 横屏视口（目标 1920×1080；另测窄屏堆叠）。
+  2. 使用现有登录会话进入设置→棋盘标定；若会话失效，只能由用户提供/完成登录，不从代码或数据库提取密码。
+  3. 验证页面身份、非空白、无框架错误 overlay、控制台无 P6 错误。
+  4. 截图验证左右两路 HBV 实时画面、四角标签、38 条网格线和 361 点 Canvas。
+  5. 点击“重新标定”后确认不会立即闪灯；点击“已清空，开始自动标定”才启动 LED 扫描。
+  6. 在扫描中采集截图，确认已发现锚点逐个显示；完成后确认两个画面与绿色网格。
+  7. 通过后端测试注入不得伪造真机视觉验收；摄像头实际位移需用户物理移动时，保留 ready→degraded UI 的自动化组件测试，并在执行记录明确人工限制。
+  8. 截图保存到 `/tmp`，不加入 git，不混入训练数据。
+
+- [ ] **Step 5.5: 文档、执行记录和最终提交**
+
+  README 增加前端操作说明；P6 执行记录包含测试计数、浏览器视口、控制台结果、真机 metrics、截图路径和未完成的物理动作。更新 P6 状态和所有 checkbox。
+
+  ```bash
+  git diff --check
+  git status --short
+  git add katrain/vision/README.md superpowers/tracks/sbc-baipu-led-guide/plan.md
+  git commit -m "document live geometry preview verification"
+  ```
 
 ---
 

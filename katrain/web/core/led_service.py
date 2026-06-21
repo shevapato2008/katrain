@@ -191,6 +191,21 @@ class LedService:
         commands.append("SHOW")
         return self._submit(commands, strict=strict)
 
+    def set_rgb_points(self, points: List[Dict], *, strict: bool = False) -> Dict:
+        """Light points with explicit RGB values for calibration and diagnostics."""
+        commands = ["CLEAR"]
+        for point in points:
+            row, col = point.get("row"), point.get("col")
+            rgb = point.get("rgb")
+            if row is None or col is None or not (0 <= row <= 18 and 0 <= col <= 18):
+                continue
+            if not isinstance(rgb, (list, tuple)) or len(rgb) != 3:
+                continue
+            red, green, blue = (max(0, min(255, int(value))) for value in rgb)
+            commands.append(f"SETI {self._lut(row, col)} {red} {green} {blue}")
+        commands.append("SHOW")
+        return self._submit(commands, strict=strict)
+
     def clear(self, *, strict: bool = False) -> Dict:
         return self._submit(["CLEAR", "SHOW"], strict=strict)
 

@@ -326,28 +326,28 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `tests/test_led_geometry_calibrator.py`
 - Test: `tests/test_led_service.py`
 
-- [ ] **Step 2.1: 写 raw RGB 与光斑中心检测失败测试**
+- [x] **Step 2.1: 写 raw RGB 与光斑中心检测失败测试**
 
   测试 `LedService.set_rgb_points([{row,col,rgb}])` 发出精确 `SETI`；合成 dark/lit 图中存在反光噪声时，检测器仍返回主连通域亮度加权中心；低信噪比、多主光斑返回结构化失败。
 
-- [ ] **Step 2.2: 运行 RED**
+- [x] **Step 2.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_service.py tests/test_led_geometry_calibrator.py`
   Expected: FAIL（raw RGB/检测器尚不存在）。
 
-- [ ] **Step 2.3: 实现 raw RGB、帧差检测与颜色重试**
+- [x] **Step 2.3: 实现 raw RGB、帧差检测与颜色重试**
 
   每个锚点执行 `CLEAR→fresh dark→SETI/SHOW strict→fresh lit`；优先 `(0,96,0)`，失败再试 `(96,0,0)`、`(0,0,96)`；返回 centroid、peak、area、margin 和颜色尝试记录。
 
-- [ ] **Step 2.4: 写 13 点 RANSAC 和人视角测试并运行 RED**
+- [x] **Step 2.4: 写 13 点 RANSAC 和人视角测试并运行 RED**
 
   合成摄像机透视下，四角+九星包含两个离群点仍恢复 19×19 points；断言 `(0,0)`、`(0,18)`、`R16=(3,16)` 的投影和顺序；残差超阈值拒绝。
 
-- [ ] **Step 2.5: 实现标定、baseline 和 GeometryLock 诊断**
+- [x] **Step 2.5: 实现标定、baseline 和 GeometryLock 诊断**
 
   用 `cv2.findHomography(camera_points, canonical_points, RANSAC)` 生成 `M/Minv/points`；空灯采 8 帧，以前 7 帧 baseline、最后 1 帧留出验证，再用全部 8 帧生成最终 baseline。sidecar 记录 camera identity/resolution/exposure、13 点、inlier、RMS/max residual、orientation 和重试信息。
 
-- [ ] **Step 2.6: 运行 GREEN 和几何回归**
+- [x] **Step 2.6: 运行 GREEN 和几何回归**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_geometry_calibrator.py tests/test_led_service.py tests/test_geometry_lock.py`
   Expected: PASS。

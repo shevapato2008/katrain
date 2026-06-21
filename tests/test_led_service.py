@@ -88,6 +88,17 @@ def _make_service(ack="OK", clock=None):
 
 
 class TestColorsAndProtocol:
+    def test_set_rgb_points_emits_exact_calibration_rgb(self):
+        svc, fake = _make_service()
+        svc.start()
+        try:
+            result = svc.set_rgb_points([{"row": 3, "col": 16, "rgb": (0, 96, 0)}], strict=True)
+        finally:
+            svc.stop()
+
+        assert result["ok"] is True
+        assert f"SETI {rc2idx(3, 16)} 0 96 0" in fake.seti_lines()
+
     def test_start_uses_visible_default_brightness(self):
         svc, fake = _make_service()
 

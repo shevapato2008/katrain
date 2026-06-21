@@ -88,6 +88,15 @@ def _make_service(ack="OK", clock=None):
 
 
 class TestColorsAndProtocol:
+    def test_start_uses_visible_default_brightness(self):
+        svc, fake = _make_service()
+
+        svc.start()
+        try:
+            assert "BRIGHT 200" in fake.written
+        finally:
+            svc.stop()
+
     def test_set_points_emits_clear_seti_show_with_colors(self):
         svc, fake = _make_service()
         svc.start()

@@ -42,9 +42,18 @@ def _run_lock(capture, led_cleared: bool):
             "confidence": lock.confidence,
             "empty_self_check": {"black": lock.empty_black, "white": lock.empty_white},
         }
+    if lock.confidence < 0.80:
+        return {
+            "ok": False,
+            "reason": "low_confidence",
+            "confidence": lock.confidence,
+            "nmatch": lock.nmatch,
+            "empty_self_check": {"black": lock.empty_black, "white": lock.empty_white},
+            "led_cleared": led_cleared,
+        }
     save_geometry_lock(lock, DEFAULT_GEOMETRY_PATH)
     return {
-        "ok": lock.confidence >= 0.80,
+        "ok": True,
         "confidence": lock.confidence,
         "nmatch": lock.nmatch,
         "empty_self_check": {"black": lock.empty_black, "white": lock.empty_white},

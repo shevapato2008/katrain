@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
@@ -101,17 +103,6 @@ def save_geometry_lock(lock: GeometryLock, npz_path) -> None:
     """Write the 8-array npz (autoresearch-compatible) plus a diagnostics sidecar json."""
     p = Path(npz_path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    np.savez(
-        str(p),
-        corners=lock.corners,
-        points=lock.points,
-        xs=lock.xs,
-        ys=lock.ys,
-        M=lock.M,
-        Minv=lock.Minv,
-        out_size=np.int64(lock.out_size),
-        baseline=lock.baseline,
-    )
     sidecar = {
         "confidence": lock.confidence,
         "nmatch": lock.nmatch,
@@ -119,8 +110,45 @@ def save_geometry_lock(lock: GeometryLock, npz_path) -> None:
         "empty_white": lock.empty_white,
         "diag": lock.diag,
     }
-    with open(_sidecar_path(p), "w", encoding="utf-8") as fh:
-        json.dump(sidecar, fh, indent=2)
+    sidecar_json = json.dumps(
+        sidecar,
+        indent=2,
+        default=lambda value: value.item() if isinstance(value, np.generic) else _raise_json_type_error(value),
+    )
+
+    npz_tmp = json_tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=p.parent, prefix=f".{p.name}.", suffix=".tmp", delete=False) as fh:
+            npz_tmp = Path(fh.name)
+            np.savez(
+                fh,
+                corners=lock.corners,
+                points=lock.points,
+                xs=lock.xs,
+                ys=lock.ys,
+                M=lock.M,
+                Minv=lock.Minv,
+                out_size=np.int64(lock.out_size),
+                baseline=lock.baseline,
+            )
+        sidecar_path = _sidecar_path(p)
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=p.parent, prefix=f".{sidecar_path.name}.", suffix=".tmp", delete=False
+        ) as fh:
+            json_tmp = Path(fh.name)
+            fh.write(sidecar_json)
+        os.replace(npz_tmp, p)
+        npz_tmp = None
+        os.replace(json_tmp, sidecar_path)
+        json_tmp = None
+    finally:
+        for tmp in (npz_tmp, json_tmp):
+            if tmp is not None:
+                tmp.unlink(missing_ok=True)
+
+
+def _raise_json_type_error(value):
+    raise TypeError(f"Object of type {value.__class__.__name__} is not JSON serializable")
 
 
 def load_geometry_lock(npz_path) -> GeometryLock:

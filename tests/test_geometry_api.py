@@ -86,3 +86,22 @@ class TestGeometryEndpoint:
         monkeypatch.setattr("katrain.vision.geometry_lock.lock_geometry_from_frames", lambda frames: lock)
         body = c.post("/geometry/lock").json()
         assert body["ok"] is False and body["reason"] == "non_empty_baseline"
+
+    def test_low_confidence_does_not_replace_existing_lock(self, monkeypatch):
+        lock = _ok_lock()
+        lock.confidence = 0.4
+        saved = False
+
+        def record_save(_lock, _path):
+            nonlocal saved
+            saved = True
+
+        app, c = _client(capture=FakeCapture([np.zeros((4, 4, 3), np.uint8)]), led=FakeLed())
+        monkeypatch.setattr("katrain.vision.geometry_lock.lock_geometry_from_frames", lambda frames: lock)
+        monkeypatch.setattr("katrain.vision.geometry_lock.save_geometry_lock", record_save)
+
+        body = c.post("/geometry/lock").json()
+
+        assert body["ok"] is False and body["reason"] == "low_confidence"
+        assert saved is False
+        assert getattr(app.state, "geometry", None) is None

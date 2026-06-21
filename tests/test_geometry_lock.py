@@ -62,6 +62,31 @@ class TestPersistence:
         assert loaded.nmatch == 18
         assert loaded.empty_self_check_ok is True
 
+    def test_round_trip_accepts_numpy_scalars_in_diagnostics(self, tmp_path):
+        path = tmp_path / "geometry_lock.npz"
+        original = _synth()
+        original.diag = {"diag_px": np.float32(123.5)}
+
+        save_geometry_lock(original, path)
+
+        loaded = load_geometry_lock(path)
+        assert loaded.diag["diag_px"] == pytest.approx(123.5)
+
+    def test_failed_save_preserves_existing_lock(self, tmp_path):
+        path = tmp_path / "geometry_lock.npz"
+        original = _synth()
+        save_geometry_lock(original, path)
+        replacement = _synth()
+        replacement.confidence = 0.5
+        replacement.diag = {"unsupported": object()}
+
+        with pytest.raises(TypeError):
+            save_geometry_lock(replacement, path)
+
+        loaded = load_geometry_lock(path)
+        assert loaded.confidence == original.confidence
+        assert loaded.diag == original.diag
+
     def test_load_rejects_missing_field(self, tmp_path):
         path = tmp_path / "bad.npz"
         np.savez(path, corners=np.zeros((4, 2), np.float32))  # missing the rest

@@ -1,10 +1,12 @@
 # 实施计划：Kiosk 摆谱 + LED 引导落子（sbc-baipu-led-guide）
 
-- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-16（**v3**，已过内部 67-agent 评审 + Codex/Gemini/gstack 三方外部评审 + 与作者逐条决策）
+- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-21（**v4**；P5 为真机联调后新增）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P4 已执行**（2026-06-16，screen-only / mock 测试通过；真机测试待硬件日）。见 [§11 执行记录](#11-执行记录2026-06-16)。
+- **状态**: **P1–P4 已执行并完成首轮真机联调**；**P5 待执行**。见 [§11 执行记录](#11-执行记录2026-06-16)。
 
-> 写给「无上下文的执行者」（人或子 agent）。执行顺序 **P0(可选) → P1 → P2 → P3 → P4**。
+> **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement P5. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
+
+> 写给「无上下文的执行者」（人或子 agent）。执行顺序 **P0(可选) → P1 → P2 → P3 → P4 → P5**。
 > v2→v3 改了什么见 [§10](#10-修订记录v2v3)。
 
 ---
@@ -51,7 +53,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
      → GUIDING(k+1) … 谱尾 DONE
 ```
 - LED 命令分两路：**UI 容错路**（点屏导航，入队即返回）与 **采集强一致路**（等串口 `SHOW` 的 OK ack 才返回，拿到 `show_at`）。
-- 相机由**单一 `CaptureService`** 持有（vision/几何/采集都从它取帧）；采集模式**默认拒绝**同时启用 YOLO `VisionService`。
+- P1–P4 相机由**单一 `CaptureService`** 持有并拒绝与 `VisionService` 同开；P5 将其演进为**单一 `CameraHub`**，向几何标定、采集和实时识别发布同一帧源，移除互斥。
 - 后端服务都按 `VisionService` 模式：`_lifespan_board()` 按命令行 gate 启动 + 绑 `app.state.*`；`lifespan()` 关停 `.stop()` + **强制 `led.clear()` 兜底灭灯**。
 
 ---
@@ -259,8 +261,241 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
 ---
 
+## P5. LED 锚点自动标定 + 统一相机管线（2026-06-21 新增）
+
+**Goal:** 用户首次进入任一依赖实体棋盘的功能时，清空棋盘后由 LED 四角定位、九星验证和空盘 baseline 自动建立人视角 GeometryLock；相机或棋盘位移后可从状态栏/设置页手动重标定，同时让摆谱采集和现有实时 YOLO 识别共享唯一摄像头。
+
+**Architecture:** `CameraHub` 是 HBV 摄像头的唯一所有者，`CaptureService` 与 `VisionService` 只消费它提供的最新帧。`LedGeometryCalibrator` 使用严格 LED ACK 和点灯后新帧做 13 点 RANSAC Homography，`GeometryCalibrationService` 管理异步状态、最后有效锁和位移监测；前端 `PhysicalBoardGuard` 统一保护所有实体棋盘路由。
+
+**Tech Stack:** Python 3.11、OpenCV、NumPy、FastAPI、React/TypeScript、MUI、pytest、Vitest。
+
+### P5 范围和硬约束
+
+- 规范坐标始终是**人坐视角**：`row=0` 上、`col=0` 左；LED LUT 已确认 `(0,0)→raw 0`、`(0,18)→raw 360`。摄像头位于棋盘右侧不改变规范坐标。
+- 四角定位后扫描九星位：`D16/K16/Q16 · D10/K10/Q10 · D4/K4/Q4`，共 13 个已知对应点；用全部点 RANSAC 拟合，不只信任四角。
+- 标定使用明确 `rgb`，不复用 `white=白棋引导色=绿色` 的业务语义；优先低亮度绿色，低置信时重试红/蓝，禁止高亮白光直接过曝。
+- 任何失败/取消/异常都在 `finally` 中 `led.clear(strict=True)`；新锁全部验证通过前不得覆盖最后有效锁。
+- 空盘主要由用户确认；有可用 YOLO 时额外要求 0 stones。经典 CV 对刚生成的 baseline 自检不能证明原盘无子，不作虚假保证。
+- 自动标定只在一次服务运行期首次进入实体棋盘功能时触发一次；路由切换复用。对局中不得自动闪灯，位移仅进入 `degraded` 并提示清盘重标定。
+- 摆谱仅要求 camera+LED+geometry；对弈/死活/研究的实时落子还要求 recognition model ready。两种能力分开上报。
+
+### Task 1：CameraHub 成为唯一相机所有者
+
+**Files:**
+- Create: `katrain/web/core/camera_hub.py`
+- Modify: `katrain/web/core/capture_service.py`
+- Modify: `katrain/vision/worker_inprocess.py`
+- Modify: `katrain/vision/service.py`
+- Modify: `katrain/web/server.py`
+- Test: `tests/test_camera_hub.py`
+- Test: `tests/test_capture_service.py`
+- Test: `tests/test_vision/test_shared_camera.py`
+
+- [ ] **Step 1.1: 写 CameraHub 生命周期和共享帧源失败测试**
+
+  覆盖：相机只 `open()`/`close()` 一次；`read_frame()`、`grab_fresh()`、`grab_burst()` 保留 seq/ts；多个消费者 stop 不得关闭相机。
+
+- [ ] **Step 1.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_camera_hub.py tests/test_capture_service.py`
+  Expected: FAIL（`CameraHub` 尚不存在或 CaptureService 仍直接拥有相机）。
+
+- [ ] **Step 1.3: 最小实现 CameraHub 并把 CaptureService 改为委托**
+
+  `CameraHub.start/stop/is_connected/read_frame/grab_fresh/grab_burst` 是唯一相机生命周期边界；`CaptureService.capture_to` 只负责原子落盘。
+
+- [ ] **Step 1.4: 写 VisionService 共享帧源失败测试并运行 RED**
+
+  注入 CameraHub 后 `InProcessAdapter` 不调用 `open/close`；无共享帧源时保持原行为。板端启用 capture+vision 时使用后台线程消费者，先不引入高带宽 multiprocessing Queue。
+
+- [ ] **Step 1.5: 实现共享帧源并移除 server 的 vision/capture RuntimeError**
+
+  `_lifespan_board()` 先启动 CameraHub，再向 CaptureService/VisionService 注入；配置的设备或分辨率不一致时启动失败并给出明确错误。
+
+- [ ] **Step 1.6: 运行 GREEN 和回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_camera_hub.py tests/test_capture_service.py tests/test_vision/test_shared_camera.py`
+  Expected: PASS。
+
+### Task 2：LED 13 点标定算法
+
+**Files:**
+- Create: `katrain/vision/led_geometry_calibrator.py`
+- Modify: `katrain/web/core/led_service.py`
+- Modify: `katrain/vision/geometry_lock.py`
+- Test: `tests/test_led_geometry_calibrator.py`
+- Test: `tests/test_led_service.py`
+
+- [ ] **Step 2.1: 写 raw RGB 与光斑中心检测失败测试**
+
+  测试 `LedService.set_rgb_points([{row,col,rgb}])` 发出精确 `SETI`；合成 dark/lit 图中存在反光噪声时，检测器仍返回主连通域亮度加权中心；低信噪比、多主光斑返回结构化失败。
+
+- [ ] **Step 2.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_service.py tests/test_led_geometry_calibrator.py`
+  Expected: FAIL（raw RGB/检测器尚不存在）。
+
+- [ ] **Step 2.3: 实现 raw RGB、帧差检测与颜色重试**
+
+  每个锚点执行 `CLEAR→fresh dark→SETI/SHOW strict→fresh lit`；优先 `(0,96,0)`，失败再试 `(96,0,0)`、`(0,0,96)`；返回 centroid、peak、area、margin 和颜色尝试记录。
+
+- [ ] **Step 2.4: 写 13 点 RANSAC 和人视角测试并运行 RED**
+
+  合成摄像机透视下，四角+九星包含两个离群点仍恢复 19×19 points；断言 `(0,0)`、`(0,18)`、`R16=(3,16)` 的投影和顺序；残差超阈值拒绝。
+
+- [ ] **Step 2.5: 实现标定、baseline 和 GeometryLock 诊断**
+
+  用 `cv2.findHomography(camera_points, canonical_points, RANSAC)` 生成 `M/Minv/points`；空灯采 8 帧，以前 7 帧 baseline、最后 1 帧留出验证，再用全部 8 帧生成最终 baseline。sidecar 记录 camera identity/resolution/exposure、13 点、inlier、RMS/max residual、orientation 和重试信息。
+
+- [ ] **Step 2.6: 运行 GREEN 和几何回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_geometry_calibrator.py tests/test_led_service.py tests/test_geometry_lock.py`
+  Expected: PASS。
+
+### Task 3：异步标定服务、API 与最后有效锁
+
+**Files:**
+- Create: `katrain/web/core/geometry_calibration_service.py`
+- Modify: `katrain/web/api/v1/endpoints/geometry.py`
+- Modify: `katrain/web/server.py`
+- Modify: `katrain/web/api/v1/endpoints/baipu.py`
+- Test: `tests/test_geometry_calibration_service.py`
+- Test: `tests/test_geometry_api.py`
+
+- [ ] **Step 3.1: 写状态机和原子替换失败测试**
+
+  状态：`required/waiting_empty/dark_reference/flashing_corners/verifying/building_baseline/ready/degraded/failed/cancelled`。覆盖并发 start=409、取消灭灯、失败保留旧锁、成功才替换 app 使用的 lock、服务重启后 `session_calibrated=false`。
+
+- [ ] **Step 3.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_calibration_service.py tests/test_geometry_api.py`
+  Expected: FAIL。
+
+- [ ] **Step 3.3: 实现 GeometryCalibrationService**
+
+  后台单任务运行同步标定器；锁保护 status；通过成功回调热替换 `app.state.geometry`；保存仍使用 `save_geometry_lock` 原子写。cancel 使用锚点之间检查 Event 的协作式取消，stop 必须等待任务并清灯。
+
+- [ ] **Step 3.4: 扩展 API**
+
+  - `POST /geometry/calibrate {trigger:"auto|manual", empty_confirmed:true}` → `202`
+  - `POST /geometry/cancel`
+  - `GET /geometry/status` → phase/progress/session_calibrated/last_valid/metrics/error/capabilities
+  - 旧 `POST /geometry/lock` 暂保留为兼容入口，内部调用同一服务，不再维护第二套算法。
+
+- [ ] **Step 3.5: 运行 GREEN 和摆谱 API 回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_baipu_api.py tests/test_baipu_capture.py`
+  Expected: PASS。
+
+### Task 4：位移监测和实时识别复用 GeometryLock
+
+**Files:**
+- Create: `katrain/vision/geometry_drift.py`
+- Modify: `katrain/vision/worker_inprocess.py`
+- Modify: `katrain/vision/service.py`
+- Modify: `katrain/vision/ipc.py`
+- Modify: `katrain/web/core/geometry_calibration_service.py`
+- Test: `tests/test_geometry_drift.py`
+- Test: `tests/test_vision/test_shared_camera.py`
+
+- [ ] **Step 4.1: 写位移判定失败测试**
+
+  用合成网格 reference/current 验证：光照整体变化不触发；小于 `0.10 cell` 不触发；连续 3 帧超过阈值进入 degraded；单帧异常不触发。
+
+- [ ] **Step 4.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_drift.py`
+  Expected: FAIL。
+
+- [ ] **Step 4.3: 实现 GeometryDriftMonitor**
+
+  使用静态网格/木纹特征匹配 + RANSAC 估计参考帧到当前帧位移，输出 shift、inlier ratio、confidence；仅监测，不在对局中点灯。
+
+- [ ] **Step 4.4: 写实时识别使用锁定 M 的失败测试**
+
+  注入 GeometryLock 后直接 `warpPerspective(frame, M)`，不调用 `BoardFinder.find_focus`；没有锁时状态为 `geometry_required`，而不是回退到可能旋转错误的自动轮廓。
+
+- [ ] **Step 4.5: 实现 VisionService geometry 更新和能力拆分**
+
+  `VisionStatus` 分别上报 `camera_ready/geometry_ready/model_ready/recognition_ready`。GeometryCalibrationService 成功后通知 VisionService 热更新 M；模型缺失不影响标定与摆谱采集。
+
+- [ ] **Step 4.6: 运行 GREEN**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_drift.py tests/test_vision/test_shared_camera.py tests/test_vision/test_pipeline.py tests/test_vision/test_sync.py`
+  Expected: PASS。
+
+### Task 5：PhysicalBoardGuard、标定进度和手动入口
+
+**Files:**
+- Create: `katrain/web/ui/src/api/geometryApi.test.ts`
+- Modify: `katrain/web/ui/src/api/geometryApi.ts`
+- Create: `katrain/web/ui/src/kiosk/context/GeometryContext.tsx`
+- Create: `katrain/web/ui/src/kiosk/components/vision/PhysicalBoardGuard.tsx`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx`
+- Modify: `katrain/web/ui/src/kiosk/pages/VisionSetupPage.tsx`
+- Modify: `katrain/web/ui/src/kiosk/pages/SettingsPage.tsx`
+- Modify: `katrain/web/ui/src/kiosk/components/layout/StatusBar.tsx`
+- Test: `katrain/web/ui/src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+- Test: `katrain/web/ui/src/kiosk/__tests__/SettingsPage.test.tsx`
+
+- [ ] **Step 5.1: 写 API 与 Guard 失败测试**
+
+  首次进入受保护路由显示“请清空棋盘”；用户确认后启动标定并显示 0–13 点进度；ready 后放行；failed/degraded 保持阻断并可重试；路由切换不重复标定。
+
+- [ ] **Step 5.2: 运行 RED**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+  Expected: FAIL。
+
+- [ ] **Step 5.3: 实现 GeometryContext 和 Guard**
+
+  标定活动期 300ms poll，空闲期 3s；包装实体功能页：AI/PVP/跨平台 game、死活 problem、研究 session、摆谱 session。列表/设置/棋谱查看/直播不阻断。
+
+- [ ] **Step 5.4: 实现手动重标定入口**
+
+  `VisionSetupPage`、设置页和 StatusBar degraded 图标统一调用同一 API；对局中点击时先提示将暂停且要求清盘。相机、几何、识别模型分别显示健康状态。
+
+- [ ] **Step 5.5: 运行 GREEN、lint 和构建**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/PhysicalBoardGuard.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx`
+  Run: `cd katrain/web/ui && npm run lint && npm run build && npm run build:kiosk-2d`
+  Expected: PASS。
+
+### Task 6：全链路验证、文档和真机验收
+
+**Files:**
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`（P5 执行记录）
+- Modify: `katrain/vision/README.md`
+- Test: relevant backend/frontend suites
+
+- [ ] **Step 6.1: 后端回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_camera_hub.py tests/test_capture_service.py tests/test_led_service.py tests/test_led_geometry_calibrator.py tests/test_geometry_lock.py tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_geometry_drift.py tests/test_baipu_api.py tests/test_baipu_capture.py tests/test_vision`
+  Expected: 0 failures。
+
+- [ ] **Step 6.2: 前端回归和构建**
+
+  Run: `cd katrain/web/ui && npm test`
+  Run: `cd katrain/web/ui && npm run lint && npm run build && npm run build:kiosk-2d`
+  Expected: 0 failures。
+
+- [ ] **Step 6.3: MacBook 真机验证**
+
+  1. 启动 board mode，确认 `/led/status connected`、CameraHub camera 0=HBV。
+  2. 首次进入摆谱，清盘后自动标定；确认 raw0 左上、raw360 右上、R16 人视角右上。
+  3. 检查 13 点 residual、空盘 held-out QA、`geometry_lock.npz/json` 原子更新。
+  4. 完成一手 initial_led capture，确认 `qa_status=ok`。
+  5. 轻微移动相机，确认不闪灯且状态进入 degraded；手动清盘重标定后恢复 ready。
+  6. 有 YOLO 模型时再验证 recognition_ready；无模型时确认摆谱仍可用且 UI 明示 model unavailable。
+
+- [ ] **Step 6.4: 更新 P5 执行记录**
+
+  记录测试计数、硬件坐标、残差、相机身份、已知限制和启动命令；不得把诊断采集目录混入训练数据。
+
+---
+
 ## 6. 不在范围
-YOLO 标签/训练/RKNN（autoresearch）；固件再改（已烧）；物理确认键（用触屏）；后端 baipu 数据表（用 /baipu/load + 本地 SGF）；非 19×19；完整任意跳转 repair 流程（只做单步引导撤回）。
+YOLO 标签/训练/RKNN（autoresearch）；固件再改（已烧）；物理确认键（用触屏）；后端 baipu 数据表（用 /baipu/load + 本地 SGF）；非 19×19；完整任意跳转 repair 流程（只做单步引导撤回）；P5 首版不实现跨进程零拷贝帧环（共享 CameraHub 时 VisionAdapter 使用后台线程，性能数据证明需要后再升级 shared-memory worker）。
 
 ## 7. 横切：构建/测试/验证
 - **前端构建边界**：新页只在 `src/kiosk/` + 共享区；改共享文件 → `npm run lint && npm run build && npm run build:kiosk-2d`(含 verify:kiosk-2d)。建议写进 CLAUDE.md 合并清单。

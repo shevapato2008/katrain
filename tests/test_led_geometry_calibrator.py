@@ -149,3 +149,21 @@ def test_calibrator_retries_red_when_green_signal_is_missing():
     assert result.ok is True
     attempts = [rgb for coord, rgb in led.attempts if coord == (3, 15)]
     assert attempts[:2] == [(0, 96, 0), (96, 0, 0)]
+
+
+def test_calibrator_reports_each_detected_anchor():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    observed = []
+
+    result = LedGeometryCalibrator(
+        led=led,
+        capture=capture,
+        anchor_observer=lambda row, col, point, color: observed.append((row, col, point, color)),
+    ).calibrate()
+
+    assert result.ok is True
+    assert [(row, col) for row, col, _point, _color in observed] == list(CALIBRATION_ANCHORS)
+    assert all(color == "green" for _row, _col, _point, color in observed)
+    for row, col, point, _color in observed:
+        assert point == pytest.approx(_synthetic_camera_points()[(row, col)], abs=1.0)

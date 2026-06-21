@@ -38,6 +38,8 @@ class GeometryCalibrationService:
         self._lock = threading.Lock()
         self._cancel_event = threading.Event()
         self._thread = None
+        self._geometry_revision = 0
+        self._detected_anchors = []
         self._drift_monitor = None
         self._drift_stop = threading.Event()
         self._drift_thread = threading.Thread(target=self._drift_loop, daemon=True, name="geometry-drift")
@@ -60,6 +62,7 @@ class GeometryCalibrationService:
                 raise CalibrationBusy("geometry calibration already running")
             self._cancel_event = threading.Event()
             self._drift_monitor = None
+            self._detected_anchors = []
             self._status.update(
                 phase="waiting_empty",
                 progress={"current": 0, "total": 13},
@@ -96,6 +99,8 @@ class GeometryCalibrationService:
                 **self._status,
                 "progress": dict(self._status["progress"]),
                 "metrics": dict(self._status["metrics"]),
+                "detected_anchors": [dict(anchor) for anchor in self._detected_anchors],
+                "geometry_revision": self._geometry_revision,
             }
         status["ok"] = status["phase"] == "ready"
         status["locked"] = self.current_lock is not None
@@ -118,6 +123,18 @@ class GeometryCalibrationService:
             self._status["phase"] = phase
             self._status["progress"] = {"current": current, "total": total}
 
+    def _anchor_observed(self, row: int, col: int, point: tuple[float, float], color: str) -> None:
+        with self._lock:
+            self._detected_anchors.append(
+                {
+                    "row": int(row),
+                    "col": int(col),
+                    "x": float(point[0]),
+                    "y": float(point[1]),
+                    "color": color,
+                }
+            )
+
     def _run(self) -> None:
         try:
             calibrator = self.calibrator_factory(
@@ -125,6 +142,7 @@ class GeometryCalibrationService:
                 capture=self.capture,
                 cancel_event=self._cancel_event,
                 progress=self._progress,
+                anchor_observer=self._anchor_observed,
             )
             result = calibrator.calibrate()
             if self._cancel_event.is_set() or result.reason == "cancelled":
@@ -148,6 +166,7 @@ class GeometryCalibrationService:
                 "max_residual": getattr(fit, "max_residual", None),
             }
             with self._lock:
+                self._geometry_revision += 1
                 self._status.update(
                     phase="ready",
                     progress={"current": 13, "total": 13},

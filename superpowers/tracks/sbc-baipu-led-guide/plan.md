@@ -512,7 +512,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `tests/test_led_geometry_calibrator.py`
 - Test: `tests/test_geometry_calibration_service.py`
 
-- [ ] **Step 1.1: 写 RED——成功锚点观察回调**
+- [x] **Step 1.1: 写 RED——成功锚点观察回调**
 
   在 `tests/test_led_geometry_calibrator.py` 增加：
 
@@ -529,12 +529,12 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
       assert all(color == "green" for _row, _col, _point, color in observed)
   ```
 
-- [ ] **Step 1.2: 运行 RED**
+- [x] **Step 1.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_geometry_calibrator.py::test_calibrator_reports_each_detected_anchor`
   Expected: FAIL，`LedGeometryCalibrator.__init__` 不接受 `anchor_observer`。
 
-- [ ] **Step 1.3: 最小实现锚点回调**
+- [x] **Step 1.3: 最小实现锚点回调**
 
   `LedGeometryCalibrator.__init__` 增加：
 
@@ -550,7 +550,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   return result.centroid
   ```
 
-- [ ] **Step 1.4: 写 RED——服务快照清空和 revision**
+- [x] **Step 1.4: 写 RED——服务快照清空和 revision**
 
   在 `tests/test_geometry_calibration_service.py` 增加一个接受 `anchor_observer` 的 fake calibrator，并断言：
 
@@ -567,7 +567,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   assert service.status()["detected_anchors"] == []
   ```
 
-- [ ] **Step 1.5: 运行 RED 并实现服务状态**
+- [x] **Step 1.5: 运行 RED 并实现服务状态**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_geometry_calibration_service.py`
   Expected: FAIL，缺少字段或 fake factory 参数不匹配。
@@ -589,7 +589,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   `start()` 清空列表；calibrator factory 接收 `anchor_observer=self._anchor_observed`；成功提升锁后 revision 加一；`status()` 深拷贝列表并返回 revision。
 
-- [ ] **Step 1.6: 运行 GREEN 并提交**
+- [x] **Step 1.6: 运行 GREEN 并提交**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_led_geometry_calibrator.py tests/test_geometry_calibration_service.py`
   Expected: PASS。

@@ -118,3 +118,49 @@ def test_requires_explicit_empty_board_confirmation(tmp_path):
         raise AssertionError("expected ValueError")
     except ValueError as exc:
         assert "empty" in str(exc)
+
+
+def test_status_publishes_anchor_snapshot_and_resets_it_on_new_start(tmp_path):
+    lock = _synth()
+    entered_second = threading.Event()
+    release_second = threading.Event()
+    calls = 0
+
+    class ObservingCalibrator:
+        def __init__(self, anchor_observer, **_kwargs):
+            nonlocal calls
+            calls += 1
+            self.call = calls
+            self.anchor_observer = anchor_observer
+
+        def calibrate(self):
+            if self.call == 1:
+                self.anchor_observer(0, 0, (12.5, 34.5), "green")
+                return CalibrationResult(ok=True, lock=lock)
+            entered_second.set()
+            release_second.wait(timeout=2)
+            return CalibrationResult(ok=False, reason="stopped")
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=ObservingCalibrator,
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(timeout=2)
+    first = service.status()
+    assert first["detected_anchors"] == [
+        {"row": 0, "col": 0, "x": 12.5, "y": 34.5, "color": "green"}
+    ]
+    assert first["geometry_revision"] == 1
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert entered_second.wait(timeout=1)
+    second = service.status()
+    assert second["detected_anchors"] == []
+    assert second["geometry_revision"] == 1
+
+    release_second.set()
+    service.wait(timeout=2)

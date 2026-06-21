@@ -172,6 +172,7 @@ class LedGeometryCalibrator:
         settle_ms: float = 150.0,
         cancel_event: Event | None = None,
         progress: Callable[[str, int, int], None] | None = None,
+        anchor_observer: Callable[[int, int, tuple[float, float], str], None] | None = None,
     ):
         self.led = led
         self.capture = capture
@@ -179,6 +180,7 @@ class LedGeometryCalibrator:
         self.settle_ms = settle_ms
         self.cancel_event = cancel_event or Event()
         self.progress = progress or (lambda _phase, _current, _total: None)
+        self.anchor_observer = anchor_observer or (lambda _row, _col, _point, _color: None)
 
     def calibrate(self) -> CalibrationResult:
         detected = []
@@ -249,6 +251,8 @@ class LedGeometryCalibrator:
                 }
             )
             if result.ok:
+                point = (float(result.centroid[0]), float(result.centroid[1]))
+                self.anchor_observer(row, col, point, color_name)
                 return result.centroid
         return None
 

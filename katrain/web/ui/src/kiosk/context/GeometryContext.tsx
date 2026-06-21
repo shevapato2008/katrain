@@ -67,3 +67,6 @@ export const useGeometry = () => {
   if (!context) throw new Error('useGeometry must be used within GeometryProvider');
   return context;
 };
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useOptionalGeometry = () => useContext(GeometryContext);

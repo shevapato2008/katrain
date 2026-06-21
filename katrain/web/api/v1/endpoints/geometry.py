@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -56,6 +57,31 @@ async def geometry_cancel(request: Request):
         raise HTTPException(status_code=404, detail="LED geometry calibration not enabled")
     calibration.cancel()
     return calibration.status()
+
+
+@router.get("/stream")
+async def geometry_stream(request: Request):
+    capture = _get_capture(request)
+
+    async def generate():
+        import cv2
+
+        while True:
+            frame = capture.read_frame()
+            if frame is not None:
+                ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 65])
+                if ok:
+                    payload = jpeg.tobytes()
+                    yield (
+                        b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
+                        + str(len(payload)).encode()
+                        + b"\r\n\r\n"
+                        + payload
+                        + b"\r\n"
+                    )
+            await asyncio.sleep(0.2)
+
+    return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")
 
 
 def _run_lock(capture, led_cleared: bool):
@@ -135,7 +161,18 @@ async def geometry_lock(request: Request):
 async def geometry_status(request: Request):
     calibration = getattr(request.app.state, "geometry_calibration", None)
     if calibration is not None:
-        return calibration.status()
+        result = calibration.status()
+        capabilities = result.setdefault("capabilities", {})
+        vision = getattr(request.app.state, "vision", None)
+        if vision is not None:
+            vision.refresh_status()
+            capabilities.update(
+                model_ready=bool(vision._latest_status.model_ready),
+                recognition_ready=bool(vision._latest_status.recognition_ready),
+            )
+        else:
+            capabilities.update(model_ready=False, recognition_ready=False)
+        return result
     lock = getattr(request.app.state, "geometry", None)
     if lock is None:
         return {"locked": False}

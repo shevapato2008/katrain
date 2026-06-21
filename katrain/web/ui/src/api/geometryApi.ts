@@ -12,15 +12,53 @@ export interface GeometryLockResult {
   led_cleared?: boolean;
 }
 
+export type GeometryPhase =
+  | 'disabled' | 'required' | 'waiting_empty' | 'dark_reference'
+  | 'flashing_corners' | 'verifying' | 'building_baseline'
+  | 'ready' | 'degraded' | 'failed' | 'cancelled';
+
+export interface GeometryStatus {
+  phase: GeometryPhase;
+  session_calibrated: boolean;
+  last_valid: boolean;
+  progress?: { current: number; total: number };
+  error?: string | null;
+  metrics?: Record<string, number | null>;
+  capabilities: {
+    camera_ready: boolean;
+    led_ready: boolean;
+    geometry_ready: boolean;
+    recognition_ready?: boolean;
+    model_ready?: boolean;
+  };
+}
+
+const json = async <T>(res: Response): Promise<T> => {
+  if (!res.ok) throw new Error(`geometry request failed ${res.status}`);
+  return res.json();
+};
+
 export const GeometryAPI = {
   lock: async (): Promise<GeometryLockResult> => {
     const res = await fetch(`${API_BASE}/lock`, { method: 'POST' });
     if (!res.ok) throw new Error(`geometry/lock failed ${res.status}`);
     return res.json();
   },
-  status: async (): Promise<{ locked: boolean; confidence?: number; out_size?: number }> => {
+  status: async (): Promise<GeometryStatus> => {
     const res = await fetch(`${API_BASE}/status`);
-    if (!res.ok) throw new Error(`geometry/status failed ${res.status}`);
-    return res.json();
+    const data = await json<GeometryStatus & { locked?: boolean }>(res);
+    if (data.phase) return data;
+    return {
+      phase: 'disabled',
+      session_calibrated: false,
+      last_valid: Boolean(data.locked),
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+    };
   },
+  calibrate: async (trigger: 'auto' | 'manual'): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/calibrate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trigger, empty_confirmed: true }),
+  })),
+  cancel: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/cancel`, { method: 'POST' })),
 };

@@ -3,6 +3,7 @@ import { Box, Typography, IconButton, Tooltip } from '@mui/material';
 import { Videocam, GridOn } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useVision } from '../../context/VisionContext';
+import { useGeometry } from '../../context/GeometryContext';
 
 interface StatusBarProps {
   username?: string;
@@ -70,10 +71,25 @@ const VisionIndicators = () => {
  */
 const VisionIndicatorsSafe = () => {
   try {
+    // eslint-disable-next-line react-hooks/error-boundaries -- legacy provider-optional wrapper
     return <VisionIndicators />;
   } catch {
     return null;
   }
+};
+
+const GeometryIndicator = () => {
+  const navigate = useNavigate();
+  const { status } = useGeometry();
+  if (status.phase === 'disabled') return null;
+  const color = status.phase === 'ready' ? 'success.main' : status.phase === 'degraded' || status.phase === 'failed' ? 'error.main' : 'warning.main';
+  return (
+    <Tooltip title={status.phase === 'ready' ? '棋盘标定正常' : '需要标定棋盘'} arrow>
+      <IconButton size="small" onClick={() => navigate('/kiosk/vision/setup')} aria-label="棋盘标定状态" sx={{ p: 0.25 }}>
+        <GridOn sx={{ fontSize: 18, color }} />
+      </IconButton>
+    </Tooltip>
+  );
 };
 
 const StatusBar = ({ username }: StatusBarProps) => {
@@ -113,6 +129,7 @@ const StatusBar = ({ username }: StatusBarProps) => {
           sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }}
         />
         <VisionIndicatorsSafe />
+        <GeometryIndicator />
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {username && (

@@ -438,24 +438,24 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `katrain/web/ui/src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
 - Test: `katrain/web/ui/src/kiosk/__tests__/SettingsPage.test.tsx`
 
-- [ ] **Step 5.1: 写 API 与 Guard 失败测试**
+- [x] **Step 5.1: 写 API 与 Guard 失败测试**
 
   首次进入受保护路由显示“请清空棋盘”；用户确认后启动标定并显示 0–13 点进度；ready 后放行；failed/degraded 保持阻断并可重试；路由切换不重复标定。
 
-- [ ] **Step 5.2: 运行 RED**
+- [x] **Step 5.2: 运行 RED**
 
   Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
   Expected: FAIL。
 
-- [ ] **Step 5.3: 实现 GeometryContext 和 Guard**
+- [x] **Step 5.3: 实现 GeometryContext 和 Guard**
 
   标定活动期 300ms poll，空闲期 3s；包装实体功能页：AI/PVP/跨平台 game、死活 problem、研究 session、摆谱 session。列表/设置/棋谱查看/直播不阻断。
 
-- [ ] **Step 5.4: 实现手动重标定入口**
+- [x] **Step 5.4: 实现手动重标定入口**
 
   `VisionSetupPage`、设置页和 StatusBar degraded 图标统一调用同一 API；对局中点击时先提示将暂停且要求清盘。相机、几何、识别模型分别显示健康状态。
 
-- [ ] **Step 5.5: 运行 GREEN、lint 和构建**
+- [x] **Step 5.5: 运行 GREEN、lint 和构建**
 
   Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/PhysicalBoardGuard.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx`
   Run: `cd katrain/web/ui && npm run lint && npm run build && npm run build:kiosk-2d`

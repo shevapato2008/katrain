@@ -76,6 +76,9 @@ class CaptureService:
         """Return ``(frame, seq, ts)`` of a frame read after ``after_ts + settle``."""
         return self._hub.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
 
+    def read_frame(self):
+        return self._hub.read_frame()
+
     def grab_burst(self, n: int = 8, interval: float = 0.1):
         """Grab ``n`` frames (for empty-board geometry locking)."""
         if hasattr(self._hub, "grab_burst"):

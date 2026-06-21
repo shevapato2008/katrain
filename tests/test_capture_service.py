@@ -32,6 +32,9 @@ class FakeCam:
     def grab_fresh(self, after_ts=None, settle_ms=150.0):
         return self._frame.copy(), 7, 123.0
 
+    def read_frame(self):
+        return self._frame.copy()
+
 
 def _svc(camera):
     return CaptureService(CaptureServiceConfig(enabled=True, camera_device=0, out_dir="/tmp/baipu_test"), camera=camera)
@@ -65,6 +68,12 @@ class TestCaptureService:
         svc.start()
         frame, seq, ts = svc.grab_fresh(after_ts=100.0, settle_ms=10)
         assert frame.shape == (8, 8, 3) and seq == 7 and ts == 123.0
+
+    def test_read_frame_delegates_for_preview(self):
+        cam = FakeCam()
+        svc = _svc(cam)
+        svc.start()
+        assert svc.read_frame().shape == (8, 8, 3)
 
     def test_capture_to_writes_file(self, tmp_path):
         cam = FakeCam()

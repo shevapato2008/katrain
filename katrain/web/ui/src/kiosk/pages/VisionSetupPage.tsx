@@ -4,15 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { Videocam, VideocamOff, ArrowBack, Check, Refresh } from '@mui/icons-material';
 import { useVision } from '../context/VisionContext';
 import { API } from '../../api';
-import { GeometryAPI, type GeometryLockResult } from '../../api/geometryApi';
+import { useGeometry } from '../context/GeometryContext';
 import VisionBoard from '../components/vision/VisionBoard';
 
-const STREAM_URL = '/api/v1/vision/stream';
+const STREAM_URL = '/api/v1/geometry/stream';
 const BOARD_POLL_MS = 500;
 
 const VisionSetupPage = () => {
   const navigate = useNavigate();
   const { visionStatus, refreshStatus } = useVision();
+  const { status: geometryStatus, startCalibration } = useGeometry();
 
   const [streamError, setStreamError] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -20,19 +21,17 @@ const VisionSetupPage = () => {
   const [detectedBoard, setDetectedBoard] = useState<number[][] | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [geoLocking, setGeoLocking] = useState(false);
-  const [geoResult, setGeoResult] = useState<GeometryLockResult | null>(null);
 
   const handleLockGeometry = useCallback(async () => {
     setGeoLocking(true);
-    setGeoResult(null);
     try {
-      setGeoResult(await GeometryAPI.lock());
+      await startCalibration('manual');
     } catch (e) {
-      setGeoResult({ ok: false, reason: e instanceof Error ? e.message : 'error' });
+      console.error('Geometry calibration failed to start', e);
     } finally {
       setGeoLocking(false);
     }
-  }, []);
+  }, [startCalibration]);
 
   // Poll detected board state
   useEffect(() => {
@@ -267,13 +266,11 @@ const VisionSetupPage = () => {
           >
             {geoLocking ? '锁定中...' : '自动锁定几何（空盘）'}
           </Button>
-          {geoResult && (
-            <Typography variant="body2" sx={{ color: geoResult.ok ? 'success.main' : 'error.main' }}>
-              {geoResult.ok
-                ? `已锁定 · 置信度 ${geoResult.confidence ?? '?'}（匹配 ${geoResult.nmatch ?? '?'}/19）`
-                : `未锁定：${geoResult.reason ?? '失败'}`}
-            </Typography>
-          )}
+          <Typography variant="body2" sx={{ color: geometryStatus.phase === 'ready' ? 'success.main' : 'text.secondary' }}>
+            {geometryStatus.phase === 'ready'
+              ? `已锁定 · ${geometryStatus.progress?.total ?? 13} 个锚点`
+              : `标定状态：${geometryStatus.phase}`}
+          </Typography>
         </Box>
       </Box>
     </Box>

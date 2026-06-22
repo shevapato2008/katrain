@@ -54,17 +54,17 @@ test.describe('baipu session', () => {
 
     // Status bar + first guidance (black to place = red LED).
     await expect(page.getByTestId('baipu-status-bar')).toBeVisible();
-    await expect(page.getByTestId('baipu-next-chip')).toContainText('黑');
+    await expect(page.getByTestId('baipu-next-chip')).toContainText(/黑|Black/);
     await expect(page.getByTestId('baipu-player-B')).toHaveAttribute('data-active', 'true');
 
     // Confirm move 0 (no capture) → advances to white.
     await page.getByTestId('baipu-confirm').click();
-    await expect(page.getByTestId('baipu-next-chip')).toContainText('白');
+    await expect(page.getByTestId('baipu-next-chip')).toContainText(/白|White/);
     await expect(page.getByTestId('baipu-player-W')).toHaveAttribute('data-active', 'true');
 
     // Confirm move 1 → black again (the capturing move).
     await page.getByTestId('baipu-confirm').click();
-    await expect(page.getByTestId('baipu-next-chip')).toContainText('黑');
+    await expect(page.getByTestId('baipu-next-chip')).toContainText(/黑|Black/);
 
     // Confirm move 2 → capture → removal mode (independent banner).
     await page.getByTestId('baipu-confirm').click();
@@ -81,33 +81,53 @@ test.describe('baipu session', () => {
     await page.goto('/kiosk/baipu/session/test1');
 
     await page.getByTestId('baipu-confirm').click(); // now at move 1 (white)
-    await expect(page.getByTestId('baipu-next-chip')).toContainText('白');
+    await expect(page.getByTestId('baipu-next-chip')).toContainText(/白|White/);
 
     await page.getByTestId('baipu-undo').click();
     await page.getByRole('button', { name: '已撤回' }).click();
-    await expect(page.getByTestId('baipu-next-chip')).toContainText('黑');
+    await expect(page.getByTestId('baipu-next-chip')).toContainText(/黑|Black/);
   });
 
-  test('L2 QA mismatch blocks, override continues', async ({ page }) => {
+  test('operator confirmation captures once and advances without override UI', async ({ page }) => {
     await setupSession(page);
-    // Capture enabled: move 0 reports a QA mismatch unless overridden.
+    const bodies: Record<string, unknown>[] = [];
+    await page.route('**/api/v1/baipu/capture', async (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      bodies.push(body);
+      return route.fulfill({
+        json: { ok: true, qa_status: 'operator_confirmed', frame_kind: 'after_move', next_guided_move_index: 1 },
+      });
+    });
+    await page.goto('/kiosk/baipu/session/test1');
+
+    await page.getByTestId('baipu-confirm').click();
+    await expect(page.getByTestId('baipu-next-chip')).toContainText(/白|White/);
+    await expect(page.getByTestId('baipu-qa-banner')).toHaveCount(0);
+    await expect(page.getByTestId('baipu-qa-override')).toHaveCount(0);
+    expect(bodies.filter((body) => body.move_index === 0)).toEqual([
+      expect.not.objectContaining({ override: expect.anything() }),
+    ]);
+  });
+
+  test('legacy mismatch response is an error and never exposes override controls', async ({ page }) => {
+    await setupSession(page);
     await page.route('**/api/v1/baipu/capture', async (route) => {
       const body = route.request().postDataJSON();
-      if (body.move_index === 0 && !body.override) {
+      if (body.move_index === 0) {
         return route.fulfill({
           status: 409,
           json: { detail: { qa: 'mismatch', move_index: 0, diffs: [{ row: 3, col: 15, expected: 'B', actual: 'empty', reason: 'missing' }] } },
         });
       }
-      return route.fulfill({
-        json: { ok: true, qa_status: body.override ? 'operator_override' : 'ok', frame_kind: 'after_move', next_guided_move_index: 1 },
-      });
+      return route.fulfill({ json: { ok: true, qa_status: 'operator_confirmed' } });
     });
     await page.goto('/kiosk/baipu/session/test1');
 
-    await page.getByTestId('baipu-confirm').click(); // move 0 → QA mismatch
-    await expect(page.getByTestId('baipu-qa-banner')).toBeVisible();
-    await page.getByTestId('baipu-qa-override').click(); // confirm correct → continue
-    await expect(page.getByTestId('baipu-next-chip')).toContainText('白');
+    await page.getByTestId('baipu-confirm').click();
+
+    await expect(page.getByTestId('baipu-capture-error')).toBeVisible();
+    await expect(page.getByTestId('baipu-progress')).toContainText('1/3');
+    await expect(page.getByTestId('baipu-qa-banner')).toHaveCount(0);
+    await expect(page.getByTestId('baipu-qa-override')).toHaveCount(0);
   });
 });

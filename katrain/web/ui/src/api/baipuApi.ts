@@ -43,14 +43,6 @@ export interface BaipuLoadResponse {
   meta: BaipuMeta;
 }
 
-export interface QaDiff {
-  row: number;
-  col: number;
-  expected: string;
-  actual: string;
-  reason: string;
-}
-
 export interface BaipuCaptureResult {
   ok: boolean;
   idempotent?: boolean;
@@ -61,11 +53,10 @@ export interface BaipuCaptureResult {
 }
 
 // Discriminated outcome so the UI can fall back when capture isn't enabled
-// (404 = dev/screen-only mode) and block only on a real QA mismatch.
+// (404 = dev/screen-only mode). Hardware/storage failures remain blocking.
 export type BaipuCaptureOutcome =
   | { kind: 'ok'; result: BaipuCaptureResult }
   | { kind: 'disabled' } // 404: capture/geometry not available
-  | { kind: 'qa_mismatch'; moveIndex: number; diffs: QaDiff[] }
   | { kind: 'error'; message: string };
 
 export const BaipuAPI = {
@@ -86,7 +77,6 @@ export const BaipuAPI = {
     game_id: string;
     move_index: number;
     sgf: string;
-    override?: boolean;
     capture_condition?: Record<string, unknown>;
   }): Promise<BaipuCaptureOutcome> => {
     let response: Response;
@@ -103,11 +93,9 @@ export const BaipuAPI = {
     if (response.ok) return { kind: 'ok', result: await response.json() };
     if (response.status === 409) {
       const body = await response.json().catch(() => ({}));
-      const detail = body?.detail ?? {};
-      if (detail.qa === 'mismatch') {
-        return { kind: 'qa_mismatch', moveIndex: detail.move_index, diffs: detail.diffs ?? [] };
-      }
-      return { kind: 'error', message: detail.message ?? 'capture conflict' };
+      const detail = body?.detail;
+      const message = typeof detail === 'string' ? detail : detail?.message;
+      return { kind: 'error', message: message ?? 'capture conflict' };
     }
     return { kind: 'error', message: `capture failed ${response.status}` };
   },

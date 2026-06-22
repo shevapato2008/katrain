@@ -8,7 +8,7 @@ import LiveBoard from '../../components/live/LiveBoard';
 import { useTranslation } from '../../hooks/useTranslation';
 import {
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
-  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta, type QaDiff,
+  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
 
@@ -35,7 +35,7 @@ function playShutter() {
   }
 }
 
-type Phase = 'loading' | 'guiding' | 'await_removal' | 'qa_block' | 'done' | 'error';
+type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
 
 const HealthDot = ({ label, ok }: { label: string; ok: boolean | null }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -65,7 +65,7 @@ const PlayerPanel = ({ color, name, active, t }: { color: 'B' | 'W'; name: strin
  * 摆谱 session: a DUMB player of backend `steps[]` (decision ②). The frontend
  * never computes captures — it plays back what `/baipu/load` returned.
  *
- * State machine (decision ③④; QA + 带灯拍 are no-ops in P1, wired in P2/P4):
+ * State machine (P7 operator-trusted collection):
  *   guiding(k): highlight steps[k] on screen (+ LED in P2); user places the stone
  *     └ 确认 → if steps[k].removed → await_removal(k) else advance
  *   await_removal(k): flash the captured stones; user removes them physically
@@ -95,7 +95,6 @@ const BaipuSessionPage = () => {
   const [ledOk, setLedOk] = useState<boolean | null>(null); // null = unknown / not enabled
   const [capturePending, setCapturePending] = useState(false);
   const [frameCount, setFrameCount] = useState(0);
-  const [qaDiffs, setQaDiffs] = useState<QaDiff[] | null>(null);
   const initialCapturedRef = useRef(false);
   const mountedRef = useRef(true);
 
@@ -150,26 +149,25 @@ const BaipuSessionPage = () => {
     });
   }, [source, steps.length]);
 
-  // 带灯拍: capture frame for step k (QA + LED + photo on the backend). Falls back
+  // 带灯拍: trust the operator confirmation, then light-next + photo on the backend. Falls back
   // to a plain advance when capture isn't enabled (404, dev/screen-only mode).
   const doCapture = useCallback(
-    async (moveIndex: number, override = false) => {
+    async (moveIndex: number) => {
       if (!sgf) return;
       setCapturePending(true);
-      setQaDiffs(null);
-      const out = await BaipuAPI.capture({ game_id: source, move_index: moveIndex, sgf, override });
+      setError(null);
+      const out = await BaipuAPI.capture({ game_id: source, move_index: moveIndex, sgf });
       if (!mountedRef.current) return; // navigated away mid-capture
       setCapturePending(false);
-      if (out.kind === 'qa_mismatch') {
-        setQaDiffs(out.diffs);
-        setPhase('qa_block');
+      if (out.kind === 'error') {
+        setError(out.message);
         return;
       }
       if (out.kind === 'ok') {
         setFrameCount((c) => c + 1);
         playShutter(); // go-signal AFTER the frame is written
       }
-      // ok | disabled | error → advance (capture is advisory in non-hardware modes)
+      // ok | disabled → advance (capture is advisory only in non-hardware modes)
       advance();
     },
     [sgf, source, advance],
@@ -228,7 +226,7 @@ const BaipuSessionPage = () => {
 
   const handleConfirm = () => {
     if (!currentStep) return;
-    // Captures must be physically removed BEFORE QA (so the board matches expected);
+    // Captured stones must be physically removed before saving the training frame;
     // route through the independent removal mode first when this move captures.
     if (currentStep.removed.length > 0) {
       setPhase('await_removal');
@@ -254,7 +252,7 @@ const BaipuSessionPage = () => {
 
   // --- guidance overlays (convert canonical -> LiveBoard y=0 bottom) ---
   const nextMovePoint = useMemo(() => {
-    if (!['guiding', 'await_removal', 'qa_block'].includes(phase) || !currentStep) return null;
+    if (!['guiding', 'await_removal'].includes(phase) || !currentStep) return null;
     if (currentStep.kind === 'pass' || currentStep.row == null || currentStep.col == null) return null;
     return { ...canonToBoard(currentStep.row, currentStep.col, boardSize), color: (currentStep.color ?? 'B') as 'B' | 'W' };
   }, [phase, currentStep, boardSize]);
@@ -376,22 +374,6 @@ const BaipuSessionPage = () => {
               {t('Removed', '已移除')} {currentStep?.removed.length} {t('stones', '子')}
             </Button>
           )}
-          {phase === 'qa_block' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Button
-                fullWidth variant="contained" onClick={() => void doCapture(k)} disabled={capturePending} data-testid="baipu-qa-retry"
-                sx={{ minHeight: 64, borderRadius: '12px', fontWeight: 700 }}
-              >
-                {t('Corrected — retry', '改正后重试')}
-              </Button>
-              <Button
-                fullWidth variant="outlined" color="warning" onClick={() => void doCapture(k, true)} disabled={capturePending} data-testid="baipu-qa-override"
-                sx={{ minHeight: 48, borderRadius: '12px' }}
-              >
-                {t('Confirmed correct — continue', '确认无误，继续')}
-              </Button>
-            </Box>
-          )}
           {phase === 'done' && (
             <Button fullWidth variant="contained" onClick={() => navigate('/kiosk/baipu')} data-testid="baipu-done-back" sx={{ minHeight: 64, borderRadius: '12px' }}>
               {t('Done — back to list', '完成，返回列表')}
@@ -427,18 +409,16 @@ const BaipuSessionPage = () => {
         </Box>
       )}
 
-      {/* L2 QA mismatch banner (decision ③) */}
-      {phase === 'qa_block' && qaDiffs && (
+      {/* Capture failures block advancement but keep the current move available for retry. */}
+      {error && (
         <Box
-          data-testid="baipu-qa-banner"
+          data-testid="baipu-capture-error"
           sx={{ px: 3, py: 1.5, bgcolor: 'rgba(255,59,48,0.18)', borderTop: '2px solid #ff3b30', textAlign: 'center', flexShrink: 0 }}
         >
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {t('Move', '第')} {k + 1} {t('looks misplaced', '手疑似摆错')} — {qaDiffs.length} {t('diffs', '处不一致')}
+            {t('Capture failed; placement was not advanced', '采集失败，当前手未推进')}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {qaDiffs.slice(0, 3).map((d) => `${canonToGtp(d.row, d.col, boardSize)}: ${d.expected}≠${d.actual}`).join('  ·  ')}
-          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>{error}</Typography>
         </Box>
       )}
 

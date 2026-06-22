@@ -23,6 +23,17 @@ curl -X POST http://127.0.0.1:8001/api/v1/geometry/calibrate \
 
 The kiosk guard invokes the same endpoint with `trigger=auto` after the operator confirms the board is empty. During calibration, poll `/api/v1/geometry/status`; success is `phase=ready`, `session_calibrated=true`, and `capabilities.geometry_ready=true`. `recognition_ready` additionally requires a loaded stone-recognition model. The settings page and geometry status icon open the manual recalibration screen.
 
+## Kiosk calibration workflow
+
+1. Log in, open **Settings**, then choose **Recalibrate board**. The grid icon in the top status bar opens the same `/kiosk/vision/setup` page.
+2. Clear all stones from the physical board. The page shows the raw HBV camera stream and the square perspective-corrected stream side by side on a wide display, or stacked on a narrow display.
+3. Confirm the empty board to start calibration. The four corners and nine star points are flashed in sequence; detected anchors appear on the raw stream as progress advances from 0/13 to 13/13.
+4. A successful calibration shows four corner labels, 38 grid lines, and 361 intersections in green on both streams. The page also reports the RMS and maximum fit residual.
+5. Selecting **Recalibrate** from a ready state only opens the empty-board warning. LEDs do not flash until **Empty board, start automatic calibration** is selected.
+6. If camera or board drift invalidates the geometry, physical-board modules pause and show the stale grid in red. Clear the board and confirm recalibration to restore the ready state.
+
+Stone recognition is optional for the baipu capture workflow: geometry can be ready while `model_ready` and `recognition_ready` remain false. AI play, tsumego, and research flows that require recognition remain blocked until a model is loaded.
+
 Coordinates are always seated-human coordinates: `(row=0,col=0)` is upper-left and `(row=0,col=18)` is upper-right. Camera orientation is learned from the LED anchors and must not be manually rotated in the capture path. Geometry files are atomically stored at `~/.katrain/geometry_lock.npz` and `.json`; each baipu game also freezes its geometry beside the captured frames.
 
 # YOLO Training Results: go_dataset_diff_sam

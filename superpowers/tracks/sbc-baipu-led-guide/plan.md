@@ -2,7 +2,7 @@
 
 - **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-21（**v4**；P5 为真机联调后新增）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P5 已实现**；**P6 待执行**，补齐 SBC 前端双实时画面、四角/361 点可视化和位移后重标定闭环。见 §11–§12 执行记录及 P6 计划。
+- **状态**: **P1–P6 已实现并完成自动化/真机浏览器验收**；实际移动摄像头触发 degraded 留作操作者联合手动验收。见 §11–§13 执行记录。
 
 > **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement P5. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
 
@@ -831,7 +831,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`（P6 执行记录）
 - Test: P6 backend/frontend suites and in-app Browser
 
-- [ ] **Step 5.1: 后端完整相关回归**
+- [x] **Step 5.1: 后端完整相关回归**
 
   Run:
 
@@ -840,24 +840,27 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
     tests/test_camera_hub.py tests/test_capture_service.py tests/test_led_service.py \
     tests/test_led_geometry_calibrator.py tests/test_geometry_lock.py \
     tests/test_geometry_calibration_service.py tests/test_geometry_api.py \
-    tests/test_geometry_drift.py tests/test_baipu_api.py tests/test_baipu_capture.py tests/test_vision
+    tests/test_geometry_drift.py tests/test_vision_api.py \
+    tests/test_baipu_api.py tests/test_baipu_capture.py tests/test_vision
   ```
 
   Expected: 0 failures。
 
-- [ ] **Step 5.2: 前端回归、lint 和构建**
+- [x] **Step 5.2: 前端回归、lint 和构建**
 
   Run: `cd katrain/web/ui && npm test`，记录全仓结果并与 P5 基线 `78 failed / 286 passed` 比较，P6 不得新增失败。
   Run: 本次所有变更文件的 `npx eslint ...`，Expected: 0 errors。
   Run: `npm run build && npm run build:kiosk-2d`，Expected: PASS。
   Run: `npm run lint`，记录全仓既有错误数量，不把无关修复混入 P6。
 
-- [ ] **Step 5.3: 重启 P6 board mode 真机服务**
+- [x] **Step 5.3: 重启 P6 board mode 真机服务**
 
-  停止当前 8001 服务后，从本工作树启动：
+  停止当前 8001 服务后，从仓库根目录启动：
 
   ```bash
-  KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
+  cd /Users/fan/Repositories/katrain-rk3588-ui
+  KATRAIN_MODE=board KATRAIN_REMOTE_URL="https://go.sailorvoyage.top" \
+    /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
     --ui web --host 127.0.0.1 --port 8001 --disable-engine \
     --led-serial-port /dev/cu.usbmodem2101 \
     --led-lut-path /Users/fan/.katrain/led_lut.json \
@@ -867,7 +870,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   确认 HBV camera 0 和 LED connected；标定开始前棋盘必须为空。
 
-- [ ] **Step 5.4: 使用 in-app Browser 模拟 SBC 操作**
+- [x] **Step 5.4: 使用 Chrome 和 headless Chromium 模拟 SBC 操作**
 
   严格按 `browser:control-in-app-browser` 操作真实 `http://127.0.0.1:8001`：
 
@@ -880,7 +883,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   7. 通过后端测试注入不得伪造真机视觉验收；摄像头实际位移需用户物理移动时，保留 ready→degraded UI 的自动化组件测试，并在执行记录明确人工限制。
   8. 截图保存到 `/tmp`，不加入 git，不混入训练数据。
 
-- [ ] **Step 5.5: 文档、执行记录和最终提交**
+- [x] **Step 5.5: 文档、执行记录和最终提交**
 
   README 增加前端操作说明；P6 执行记录包含测试计数、浏览器视口、控制台结果、真机 metrics、截图路径和未完成的物理动作。更新 P6 状态和所有 checkbox。
 
@@ -890,6 +893,20 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   git add katrain/vision/README.md superpowers/tracks/sbc-baipu-led-guide/plan.md
   git commit -m "document live geometry preview verification"
   ```
+
+## 13. P6 执行记录（2026-06-22）
+
+**集成**：P6 的 13 个开发提交已从 `codex/led-auto-calibration` 快进集成到产品根目录分支 `feature/rk3588-ui`。产品服务从 `/Users/fan/Repositories/katrain-rk3588-ui` 根目录启动，不依赖 `.config/superpowers/worktrees`。设置页“实体棋盘 → 重新标定棋盘”和顶部棋盘状态图标均可进入 `/kiosk/vision/setup`。
+
+**验收中修复的缺口**：ready 状态的“重新标定”原本会立即启动 LED，已改为先显示清盘警告、二次确认后才扫描，并补 TDD 回归；未加载 YOLO 时 `/vision/status` 原本持续返回 404，已改为 HTTP 200 disabled 状态，干净浏览器不再产生周期性控制台错误。
+
+**自动化验证**：后端 P6/摆谱/vision 相关套件 `215 passed`。P6 受影响前端测试 `17 passed`，新增二次确认测试 `5 passed`；全仓 Vitest 保持既有基线 `72 failed / 306 passed`（P6 未新增失败）。变更 TS/TSX ESLint 通过；全仓 ESLint 仍为既有 `218 errors / 46 warnings`。`npm run build` 和 `npm run build:kiosk-2d` 均通过，后者确认无 three.js。Python Black 与 `git diff --check` 通过。
+
+**真机/浏览器**：根目录 board-mode 服务识别 `HBV HD CAMERA` camera 0（1920×1080）和 `/dev/cu.usbmodem2101` LED。Chrome 登录后验证设置入口、二次确认、扫描取消按钮、0/13 active 状态、1/13 已发现锚点、13/13 ready 状态；最终 RMS `1.742 px`、最大残差 `3.166 px`。原始流自然分辨率 1920×1080，俯视流 950×950；两个 Canvas 均为 4 角、38 线、361 点。headless Chromium 在 1920×1080 验证左右布局，在 700×1000 验证纵向堆叠；服务重启后的干净页面控制台为 `0 errors / 0 warnings`。
+
+**截图（不入库）**：`/tmp/katrain-p6-chrome-confirm-empty.png`、`/tmp/katrain-p6-chrome-active.png`、`/tmp/katrain-p6-chrome-partial-anchors.png`、`/tmp/katrain-p6-chrome-ready.png`、`/tmp/katrain-p6-headless-1920x1080.png`、`/tmp/katrain-p6-headless-700x1000.png`。
+
+**保留的人工物理动作**：实际轻移相机或棋盘，确认连续漂移触发 `ready → degraded` 且不自动闪灯；清空棋盘后从设置页重新标定恢复 ready。算法、API 和 degraded UI 已有确定性测试，物理位移由操作者联合验收。
 
 ---
 

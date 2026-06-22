@@ -1388,3 +1388,245 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 - **GREEN:** 成功响应使用后端 `path` 的 basename；初始帧和确认帧均更新最近文件名，失败、disabled 和悔棋不覆盖。
 - **自动化:** 完整 `baipu.spec.ts` 为 `5 passed`，覆盖真实路径 `frame_049.jpg` 与失败保持 `frame_000.jpg`。
 - **静态验证:** 变更文件 ESLint 通过；`npm run build` 和 `npm run build:kiosk-2d` 通过；2D 校验确认无 Three.js。
+
+---
+
+## 16. P9 服务重启后人工确认复用棋盘几何（2026-06-22）
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking。
+
+**Goal:** 服务重启后，在摄像头与棋盘未移动时允许操作者确认实时网格无误，复用上次持久化几何并继续中途摆谱，无需清空棋盘。
+
+**Architecture:** `GeometryCalibrationService` 增加只提升会话状态的 `confirm_existing()`，复用现有 lock 和空盘 baseline，不点灯、不重写持久化文件。新 API 将该动作暴露给 GeometryContext；标定工作区仅在 `required + last_valid + camera_ready` 显示复用按钮，`degraded` 仍强制清空重标定。
+
+**Tech Stack:** Python 3.11、FastAPI、React 19、TypeScript、MUI、pytest、Vitest。
+
+### Task 1：服务层 RED/GREEN——安全复用持久化几何
+
+**Files:**
+- Modify: `katrain/web/core/geometry_calibration_service.py`
+- Test: `tests/test_geometry_calibration_service.py`
+
+- [ ] **Step 1.1: 写复用成功 RED**
+
+  ```python
+  def test_confirm_existing_promotes_loaded_lock_without_recalibration(tmp_path):
+      old = _synth()
+      promoted = []
+      service = GeometryCalibrationService(
+          led=FakeLed(), capture=FreshFakeCapture(), save_path=tmp_path / "geometry.npz",
+          initial_lock=old, on_success=promoted.append,
+      )
+
+      status = service.confirm_existing()
+
+      assert status["phase"] == "ready"
+      assert status["session_calibrated"] is True
+      assert status["capabilities"]["geometry_ready"] is True
+      assert status["trigger"] == "operator_reuse"
+      assert promoted == [old]
+      assert not (tmp_path / "geometry.npz").exists()
+  ```
+
+  `FreshFakeCapture.grab_fresh()` 返回一张稳定帧，使现有 `_init_drift_monitor` 能建立本次会话监测。
+
+- [ ] **Step 1.2: 写拒绝条件 RED**
+
+  增加三个独立断言：`initial_lock=None`、摄像头 `is_connected=False`、`_status["phase"]="degraded"` 调用 `confirm_existing()` 均抛 `ValueError`，且不得变成 ready。
+
+- [ ] **Step 1.3: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py -q`
+
+  Expected: FAIL，提示 `GeometryCalibrationService` 尚无 `confirm_existing`。
+
+- [ ] **Step 1.4: 实现最小服务方法**
+
+  ```python
+  def confirm_existing(self) -> dict:
+      with self._lock:
+          if self._status["phase"] != "required":
+              raise ValueError("existing geometry can only be confirmed after restart")
+          if self.current_lock is None:
+              raise ValueError("no existing geometry to confirm")
+          if not self._is_ready(self.capture):
+              raise ValueError("camera is not ready")
+          lock = self.current_lock
+          self._init_drift_monitor(lock)
+          self._geometry_revision += 1
+          self._status.update(
+              phase="ready", session_calibrated=True, last_valid=True,
+              trigger="operator_reuse", error=None, metrics={},
+          )
+      self.on_success(lock)
+      return self.status()
+  ```
+
+- [ ] **Step 1.5: 运行 GREEN**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py -q`
+
+  Expected: 全部 PASS。
+
+- [ ] **Step 1.6: 提交服务层**
+
+  ```bash
+  git add katrain/web/core/geometry_calibration_service.py tests/test_geometry_calibration_service.py
+  git commit -m "allow confirmed geometry reuse"
+  ```
+
+### Task 2：HTTP RED/GREEN——确认历史几何接口
+
+**Files:**
+- Modify: `katrain/web/api/v1/endpoints/geometry.py`
+- Test: `tests/test_geometry_api.py`
+
+- [ ] **Step 2.1: 写 API RED**
+
+  在 FakeCalibration 中记录 `confirmed`，新增：
+
+  ```python
+  response = c.post("/geometry/confirm-existing")
+  assert response.status_code == 200
+  assert response.json()["phase"] == "ready"
+  assert calibration.confirmed is True
+  ```
+
+  再覆盖无 calibration 时 404，以及 `confirm_existing()` 抛 `ValueError` 时 409 和原始 detail。
+
+- [ ] **Step 2.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_api.py -q`
+
+  Expected: FAIL，路由返回 404。
+
+- [ ] **Step 2.3: 实现 endpoint**
+
+  ```python
+  @router.post("/confirm-existing")
+  async def geometry_confirm_existing(request: Request):
+      calibration = getattr(request.app.state, "geometry_calibration", None)
+      if calibration is None:
+          raise HTTPException(status_code=404, detail="LED geometry calibration not enabled")
+      try:
+          return calibration.confirm_existing()
+      except ValueError as exc:
+          raise HTTPException(status_code=409, detail=str(exc)) from exc
+  ```
+
+- [ ] **Step 2.4: 运行 GREEN**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_api.py tests/test_geometry_calibration_service.py -q`
+
+  Expected: 全部 PASS。
+
+- [ ] **Step 2.5: 提交 API**
+
+  ```bash
+  git add katrain/web/api/v1/endpoints/geometry.py tests/test_geometry_api.py
+  git commit -m "expose geometry reuse confirmation"
+  ```
+
+### Task 3：前端 RED/GREEN——网格无误按钮与 Guard 放行
+
+**Files:**
+- Modify: `katrain/web/ui/src/api/geometryApi.ts`
+- Modify: `katrain/web/ui/src/api/geometryApi.test.ts`
+- Modify: `katrain/web/ui/src/kiosk/context/GeometryContext.tsx`
+- Modify: `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx`
+- Modify: `katrain/web/ui/src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+
+- [ ] **Step 3.1: 写 API 和工作区 RED**
+
+  `geometryApi.test.ts` 断言 `GeometryAPI.confirmExisting()` 以 POST 调用 `/api/v1/geometry/confirm-existing`。工作区测试把状态设为：
+
+  ```typescript
+  status = {
+    phase: 'required', session_calibrated: false, last_valid: true,
+    capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
+  };
+  ```
+
+  断言显示“网格无误，使用上次标定”和“无需清空棋盘”，点击调用 `confirmExisting`；把 phase 改为 degraded 时断言按钮不存在。
+
+- [ ] **Step 3.2: 写 Guard 放行 RED**
+
+  mock `GeometryAPI.confirmExisting` 返回 `phase=ready/session_calibrated=true/geometry_ready=true`；从 required+last_valid 渲染 Guard，点击复用按钮并等待“实体棋盘内容”出现。
+
+- [ ] **Step 3.3: 运行 RED**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+
+  Expected: FAIL，缺少 `confirmExisting` 和按钮。
+
+- [ ] **Step 3.4: 实现 API、Context 和按钮**
+
+  `GeometryAPI` 增加：
+
+  ```typescript
+  confirmExisting: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/confirm-existing`, { method: 'POST' })),
+  ```
+
+  GeometryContext 暴露 `confirmExisting()`，用返回状态立即 `setStatus`。工作区计算：
+
+  ```typescript
+  const canReuse = status.phase === 'required' && status.last_valid
+    && cameraReady && !starting && !active;
+  ```
+
+  当 `canReuse` 时渲染说明和 outlined 按钮“网格无误，使用上次标定”；点击期间禁用两个启动动作，失败写入 `actionError`。不得在 degraded 显示复用按钮，也不得要求 LED ready。
+
+- [ ] **Step 3.5: 运行 GREEN**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+
+  Expected: 全部 PASS。
+
+- [ ] **Step 3.6: 提交前端**
+
+  ```bash
+  git add katrain/web/ui/src/api/geometryApi.ts \
+    katrain/web/ui/src/api/geometryApi.test.ts \
+    katrain/web/ui/src/kiosk/context/GeometryContext.tsx \
+    katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx \
+    katrain/web/ui/src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx \
+    katrain/web/ui/src/kiosk/__tests__/PhysicalBoardGuard.test.tsx
+  git commit -m "confirm persisted board geometry"
+  ```
+
+### Task 4：回归、构建与执行记录
+
+**Files:**
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/2026-06-22-geometry-session-reuse-design.md`
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`
+
+- [ ] **Step 4.1: 后端定向回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_geometry_drift.py tests/test_baipu_api.py -q`
+
+  Expected: 0 failures。
+
+- [ ] **Step 4.2: 前端定向回归、Lint 和双构建**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/geometryApi.test.ts src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+
+  Run: `cd katrain/web/ui && npx eslint src/api/geometryApi.ts src/kiosk/context/GeometryContext.tsx src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/kiosk/__tests__/PhysicalBoardGuard.test.tsx`
+
+  Run: `cd katrain/web/ui && npm run build && npm run build:kiosk-2d`
+
+  Expected: 全部退出码 0，kiosk 2D 无 Three.js。
+
+- [ ] **Step 4.3: 更新文档和提交**
+
+  将设计状态改为“已实施”，勾选 P9 全部步骤并记录 RED/GREEN 数量、回归和构建结果：
+
+  ```bash
+  git add superpowers/tracks/sbc-baipu-led-guide/plan.md \
+    superpowers/tracks/sbc-baipu-led-guide/2026-06-22-geometry-session-reuse-design.md
+  git commit -m "document geometry session reuse"
+  ```
+
+- [ ] **Step 4.4: 真机手动验收**
+
+  保持中途棋盘不动并重启服务。进入摆谱后检查原图和俯视图网格对齐，点击“网格无误，使用上次标定”，应直接返回摆谱且保留棋盘；移动摄像头触发 degraded 后不得出现复用按钮。

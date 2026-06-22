@@ -29,7 +29,7 @@ interface GeometryCalibrationWorkspaceProps {
 }
 
 const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: GeometryCalibrationWorkspaceProps) => {
-  const { status, startCalibration, cancelCalibration } = useGeometry();
+  const { status, startCalibration, confirmExisting, cancelCalibration } = useGeometry();
   const [layout, setLayout] = useState<GeometryLayout | null>(null);
   const [rawFrame, setRawFrame] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
@@ -90,9 +90,22 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
     void start();
   };
 
+  const reuseExisting = async () => {
+    setStarting(true);
+    setActionError(null);
+    try {
+      await confirmExisting();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : '无法使用上次标定');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const cameraReady = status.capabilities.camera_ready;
   const ledReady = status.capabilities.led_ready;
   const canStart = cameraReady && ledReady && !starting && !active;
+  const canReuse = status.phase === 'required' && status.last_valid && cameraReady && !starting && !active;
   const progress = status.progress;
   const metrics = status.metrics ?? {};
   const buttonLabel = status.phase === 'ready' && !confirmingManual
@@ -110,14 +123,18 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
               ? '摄像头或棋盘位置已变化'
               : status.phase === 'ready'
                 ? '棋盘定位完成'
-                : active
+                : status.phase === 'required' && status.last_valid
+                  ? '请确认棋盘定位'
+                  : active
                   ? PHASE_LABELS[status.phase]
                   : '请清空棋盘'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {status.phase === 'degraded'
               ? '红色网格是上一次定位结果。请清空棋盘并确认后重新标定。'
-              : '系统通过四角和九个星位 LED 定位，完成后显示四角、网格线和 361 个落子点。'}
+              : status.phase === 'required' && status.last_valid
+                ? '请检查实时画面中的四角、网格线和 361 个落子点是否仍与实体棋盘对齐。'
+                : '系统通过四角和九个星位 LED 定位，完成后显示四角、网格线和 361 个落子点。'}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -137,6 +154,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
       )}
       {actionError && <Alert severity="error">{actionError}</Alert>}
       {layoutError && <Alert severity="warning">几何叠加读取失败：{layoutError}</Alert>}
+      {canReuse && <Alert severity="info">网格对齐时可直接继续，<strong>无需清空棋盘</strong>。</Alert>}
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, overflow: 'auto' }}>
         <GeometryVideoPanel
@@ -179,16 +197,30 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
             取消标定
           </Button>
         ) : (
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<Refresh />}
-            disabled={!canStart}
-            onClick={handleStart}
-            sx={{ minWidth: 240, minHeight: 48 }}
-          >
-            {buttonLabel}
-          </Button>
+          <>
+            {canReuse && (
+              <Button
+                variant="outlined"
+                color="success"
+                size="large"
+                disabled={starting}
+                onClick={() => void reuseExisting()}
+                sx={{ minWidth: 240, minHeight: 48 }}
+              >
+                网格无误，使用上次标定
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<Refresh />}
+              disabled={!canStart}
+              onClick={handleStart}
+              sx={{ minWidth: 240, minHeight: 48 }}
+            >
+              {buttonLabel}
+            </Button>
+          </>
         )}
       </Box>
     </Box>

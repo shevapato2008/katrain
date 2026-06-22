@@ -11,7 +11,9 @@ vi.mock('../../api/geometryApi', () => ({
     status: vi.fn(),
     calibrate: vi.fn(),
     cancel: vi.fn(),
+    confirmExisting: vi.fn(),
     lock: vi.fn(),
+    layout: vi.fn(),
   },
 }));
 
@@ -51,6 +53,35 @@ describe('PhysicalBoardGuard', () => {
 
     renderGuard();
 
+    expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
+  });
+
+  it('allows the protected page after the operator confirms existing geometry', async () => {
+    vi.mocked(GeometryAPI.status).mockResolvedValue({
+      phase: 'required', session_calibrated: false, last_valid: true,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
+    });
+    vi.mocked(GeometryAPI.layout).mockResolvedValue({
+      revision: 0,
+      phase: 'required',
+      stale: true,
+      frame: { width: 1920, height: 1080 },
+      out_size: 950,
+      corners: [],
+      points: [],
+    });
+    const readyStatus = {
+      phase: 'ready', session_calibrated: true, last_valid: true,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: true },
+    } as const;
+    vi.mocked(GeometryAPI.confirmExisting).mockImplementation(async () => {
+      vi.mocked(GeometryAPI.status).mockResolvedValue(readyStatus);
+      return readyStatus;
+    });
+
+    renderGuard();
+
+    fireEvent.click(await screen.findByRole('button', { name: '网格无误，使用上次标定' }));
     expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
   });
 });

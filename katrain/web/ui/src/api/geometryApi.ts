@@ -87,6 +87,7 @@ export const GeometryAPI = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ trigger, empty_confirmed: true }),
   })),
+  confirmExisting: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/confirm-existing`, { method: 'POST' })),
   cancel: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/cancel`, { method: 'POST' })),
   layout: async (): Promise<GeometryLayout> => json(await fetch(`${API_BASE}/layout`)),
 };

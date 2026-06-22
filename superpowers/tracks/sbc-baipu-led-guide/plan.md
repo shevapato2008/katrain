@@ -1,10 +1,12 @@
 # 实施计划：Kiosk 摆谱 + LED 引导落子（sbc-baipu-led-guide）
 
-- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-21（**v4**；P5 为真机联调后新增）
+- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-22（**v5**；P7 为 YOLO 数据采集策略修订）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P6 已实现并完成自动化/真机浏览器验收**；实际移动摄像头触发 degraded 留作操作者联合手动验收。见 §11–§13 执行记录。
+- **状态**: **P1–P6 已实现并完成自动化/真机浏览器验收**；P7 待执行。实际移动摄像头触发 degraded 留作操作者联合手动验收。见 §11–§14 执行记录。
 
-> **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement P5. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
+> **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement the current pending phase. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
+
+> **Current-policy override (P7):** §0.3 决策③及 P4 的 L2 QA 是历史实现。当前训练集冷启动阶段以 P7 为准：**完全信任操作者、只采集不识别**；经典 CV/YOLO 均不参与放行，待初版 YOLOv11 模型可用并独立验收后，再通过显式策略版本引入机器校验。
 
 > 写给「无上下文的执行者」（人或子 agent）。执行顺序 **P0(可选) → P1 → P2 → P3 → P4 → P5**。
 > v2→v3 改了什么见 [§10](#10-修订记录v2v3)。
@@ -14,7 +16,7 @@
 ## 0. 目标、前置、决策
 
 ### 0.1 目标与范围
-kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点**引导人工摆子，**确认时做 CV 校验防摆错**，**带灯拍照**每一步，照片+manifest+SGF 落到 katrain 文件夹；交给 `autoresearch` 训练 YOLO（**SGF=ground truth**）。本 track **只建 katrain 侧**；固件已烧好；YOLO 标签/训练在 `autoresearch`。
+kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点**引导人工摆子，操作者确认后**不做棋子识别或摆错判定**，直接带灯拍照并推进；照片+manifest+SGF 按 SGF 标识落到独立文件夹，交给 `autoresearch` 训练 YOLO（**SGF=ground truth**）。本 track **只建 katrain 侧**；固件已烧好；YOLO 标签/训练在 `autoresearch`。
 
 ### 0.2 已确认前置（brainstorming + 硬件实测 2026-06-15）
 - **协议固件已烧** ESP32-S3：`SETI <idx> <r> <g> <b>` / `SHOW` / `CLEAR` / `CLEAR!` / `BRIGHT <v>` / `SCAN` / `STATUS`；`MAX_ON=20`、`MAX_BRIGHT=40`（全局亮度钳制，非单通道）；主机持 LUT。Mac 端口 `/dev/cu.usbmodem2101 @115200`，单颗点亮已实测。
@@ -500,7 +502,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
 **Goal:** 用户只通过 KaTrain SBC 前端即可同时查看 HBV 原始画面和俯视矫正画面，确认 LED 定位的四角、完整网格和 361 个落子点，并在摄像头位移后完成自动提示与手动确认重标定。
 
-**Architecture:** 继续使用唯一 `CameraHub` 和当前 `GeometryLock`。后端只扩展锚点快照、只读几何布局和按需矫正 MJPEG；前端用透明 Canvas 缩放绘制后端坐标，并让 `PhysicalBoardGuard` 与设置页复用同一个 `GeometryCalibrationWorkspace`。完整设计见 `docs/superpowers/specs/2026-06-22-geometry-live-preview-design.md`。
+**Architecture:** 继续使用唯一 `CameraHub` 和当前 `GeometryLock`。后端只扩展锚点快照、只读几何布局和按需矫正 MJPEG；前端用透明 Canvas 缩放绘制后端坐标，并让 `PhysicalBoardGuard` 与设置页复用同一个 `GeometryCalibrationWorkspace`。完整设计见 [`2026-06-22-geometry-live-preview-design.md`](./2026-06-22-geometry-live-preview-design.md)。
 
 **Tech Stack:** Python 3.11、FastAPI、OpenCV、NumPy、React 19、TypeScript、MUI、Vitest、Testing Library、in-app Browser。
 
@@ -910,6 +912,204 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
 ---
 
+## P7. 操作者确认即采集 + SGF 独立归档（2026-06-22）
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` task-by-task. Follow every RED/GREEN checkpoint, update checkboxes incrementally, and never stage the unrelated `uv.lock` worktree change.
+
+**Goal:** 在尚无 YOLOv11 棋子模型的训练集冷启动阶段，取消摆谱确认后的经典 CV/空点判定。操作者点击“确认落子”即接受该手，并按严格 LED/相机同步屏障拍照；每个 SGF 标识使用独立目录和 manifest。
+
+**Architecture:** `/baipu/load` 继续提供 SGF 权威步骤、坐标和 `board_hash`。`run_capture` 删除 `board_qa.classify_canonical`/`diff_expected` 决策路径，但保留 move index 校验、下一手 LED strict ack、`shown_at` 后新帧、原子 manifest、幂等和路径包含校验。前端删除 `qa_block` 状态、差异横幅及 override 控件；硬件、写盘和协议错误仍阻断。完整设计见 [`2026-06-22-operator-trusted-baipu-capture-design.md`](./2026-06-22-operator-trusted-baipu-capture-design.md)。实时几何预览设计见 [`2026-06-22-geometry-live-preview-design.md`](./2026-06-22-geometry-live-preview-design.md)。
+
+**Tech Stack:** Python 3.11、FastAPI、OpenCV capture barrier、React 19、TypeScript、Playwright、pytest。
+
+### Task 1：后端 RED——证明采集不依赖识别，且每谱隔离
+
+**Files:**
+- Modify: `tests/test_baipu_capture.py`
+- Modify: `tests/test_baipu_api.py`
+
+- [ ] **Step 1.1: 把旧 QA block/override 测试改为 operator-trusted 契约**
+
+  删除 `truth_board`、`QAMismatch` 和“mismatch blocks / override”断言，增加一个会在调用时直接失败的 classifier spy：
+
+  ```python
+  def test_operator_confirmation_skips_classifier(self, tmp_path, monkeypatch):
+      monkeypatch.setattr(
+          "katrain.vision.board_qa.classify_canonical",
+          lambda *_args, **_kwargs: pytest.fail("classifier must not run during collection"),
+      )
+      data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+      result = _capture(str(tmp_path), data["steps"], 19, 0, FakeLed(), FakeCapture(tmp_path))
+      assert result["qa_status"] == "operator_confirmed"
+  ```
+
+  Manifest 同时断言每个新条目均为：
+
+  ```python
+  assert {frame["qa_status"] for frame in manifest["frames"]} == {"operator_confirmed"}
+  ```
+
+- [ ] **Step 1.2: 增加不同 SGF 标识目录隔离测试**
+
+  ```python
+  def test_game_ids_use_independent_directories(self, tmp_path):
+      data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+      for game_id in ("kifu_24171", "kifu_24172"):
+          _capture(str(tmp_path), data["steps"], 19, -1, FakeLed(), FakeCapture(tmp_path), game_id=game_id)
+      assert (tmp_path / "kifu_24171" / "frame_000.jpg").exists()
+      assert (tmp_path / "kifu_24172" / "frame_000.jpg").exists()
+      assert json.loads((tmp_path / "kifu_24171" / "manifest.json").read_text())["game_id"] == "kifu_24171"
+      assert json.loads((tmp_path / "kifu_24172" / "manifest.json").read_text())["game_id"] == "kifu_24172"
+  ```
+
+- [ ] **Step 1.3: API 测试改为“物理盘未知也成功”**
+
+  `tests/test_baipu_api.py` 不再 mock 识别成功；将原 409 mismatch 测试改为 classifier 调用即失败，并断言 `POST /baipu/capture` 返回 200、`qa_status=operator_confirmed`。
+
+- [ ] **Step 1.4: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py tests/test_baipu_api.py`
+
+  Expected: FAIL，旧 `run_capture` 仍调用 classifier，且返回旧 `qa_status`。
+
+### Task 2：后端 GREEN——移除采集识别门，保持时序与存储契约
+
+**Files:**
+- Modify: `katrain/web/core/baipu_capture.py`
+- Modify: `katrain/web/api/v1/endpoints/baipu.py`
+- Test: `tests/test_baipu_capture.py`
+- Test: `tests/test_baipu_api.py`
+
+- [ ] **Step 2.1: 删除 QA grab/classify/diff 分支**
+
+  `run_capture` 在幂等检查后直接设置：
+
+  ```python
+  qa_status = "operator_confirmed"
+  next_idx = next_placement_index(steps, move_index)
+  ```
+
+  移除 `board_qa`、`expected_board_from_steps` import 和 `QAMismatch`。保留 `next_placement_index`、`board_hash` 等仍使用的 SGF 真值代码；不得添加 HSV 阈值或模型探测。
+
+- [ ] **Step 2.2: 收紧 capture API 的错误语义**
+
+  从 `BaipuCaptureRequest` 和 `run_capture` 调用移除 `override`；endpoint 不再捕获/返回 placement mismatch。仅保留 capture/geometry/LED、索引、SGF 和写盘错误。旧客户端发送多余 `override` 仍由 Pydantic 默认兼容忽略，不影响采集。
+
+- [ ] **Step 2.3: 运行 GREEN 并检查同步屏障**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py tests/test_baipu_api.py`
+
+  Expected: PASS；`test_sync_barrier_uses_shown_at` 仍证明 `capture_to(after_ts=shown_at)`。
+
+- [ ] **Step 2.4: 后端提交**
+
+  ```bash
+  git add katrain/web/core/baipu_capture.py katrain/web/api/v1/endpoints/baipu.py tests/test_baipu_capture.py tests/test_baipu_api.py
+  git commit -m "trust operator during baipu capture"
+  ```
+
+### Task 3：前端 RED/GREEN——单一确认流程，不再展示识别纠错
+
+**Files:**
+- Modify: `katrain/web/ui/src/api/baipuApi.ts`
+- Modify: `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx`
+- Modify: `katrain/web/ui/tests/baipu.spec.ts`
+- Test: `katrain/web/ui/src/api/baipuApi.test.ts`
+
+- [ ] **Step 3.1: 写 Playwright RED**
+
+  把旧“L2 QA mismatch blocks, override continues”改为捕获请求检查：
+
+  ```typescript
+  test('operator confirmation captures once and advances without override UI', async ({ page }) => {
+    const bodies: Record<string, unknown>[] = [];
+    await setupSession(page);
+    await page.route('**/api/v1/baipu/capture', async (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      bodies.push(body);
+      return route.fulfill({ json: { ok: true, qa_status: 'operator_confirmed' } });
+    });
+    await page.goto('/kiosk/baipu/session/test1');
+    await page.getByTestId('baipu-confirm').click();
+    await expect(page.getByTestId('baipu-next-chip')).toContainText('白');
+    await expect(page.getByTestId('baipu-qa-banner')).toHaveCount(0);
+    await expect(page.getByTestId('baipu-qa-override')).toHaveCount(0);
+    expect(bodies.some((body) => body.move_index === 0 && !('override' in body))).toBeTruthy();
+  });
+  ```
+
+- [ ] **Step 3.2: 简化 API outcome 和页面状态机**
+
+  从 `baipuApi.ts` 删除 `QaDiff`、`qa_mismatch` outcome 和 request `override`。`BaipuSessionPage.tsx` 删除 `qa_block` phase、`qaDiffs` state、override 参数/按钮/横幅；`doCapture(k)` 成功后直接计帧、快门、推进。
+
+  采集错误不得被当作成功推进：`out.kind === 'error'` 时显示错误并保持当前手；只有 `ok` 或明确的 screen-only `disabled` 才调用 `advance()`。
+
+- [ ] **Step 3.3: 运行前端测试与构建**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/baipuApi.test.ts`
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts`
+
+  Run: `cd katrain/web/ui && npm run build && npm run build:kiosk-2d`
+
+  Expected: PASS；产物中无 `baipu-qa-banner`、`baipu-qa-override` 和“确认无误，继续”。
+
+- [ ] **Step 3.4: 前端提交**
+
+  ```bash
+  git add katrain/web/ui/src/api/baipuApi.ts katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx katrain/web/ui/tests/baipu.spec.ts katrain/web/ui/src/api/baipuApi.test.ts katrain/web/static
+  git commit -m "simplify baipu collection confirmation"
+  ```
+
+### Task 4：全链路验证、文档状态和交付
+
+**Files:**
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/2026-06-22-operator-trusted-baipu-capture-design.md`
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`
+
+- [ ] **Step 4.1: 后端相关回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_load.py tests/test_baipu_capture.py tests/test_baipu_api.py tests/test_capture_service.py tests/test_led_service.py tests/test_geometry_api.py tests/test_geometry_calibration_service.py`
+
+  Expected: 0 failures。
+
+- [ ] **Step 4.2: 前端受影响回归和静态检查**
+
+  Run: `cd katrain/web/ui && npm test -- src/api/baipuApi.test.ts`
+
+  Run: `cd katrain/web/ui && npx eslint src/api/baipuApi.ts src/kiosk/pages/BaipuSessionPage.tsx tests/baipu.spec.ts`
+
+  Run: `git diff --check`
+
+  Expected: 0 failures。
+
+- [ ] **Step 4.3: 浏览器验收（无需伪造棋子识别）**
+
+  从产品根目录以 board mode 启动服务，登录后打开一个短 SGF。确认首帧自动生成；连续确认黑、白至少两手，页面不出现 empty/mismatch，灯切到下一手，每次确认只增加一帧。检查：
+
+  ```bash
+  find /Users/fan/.katrain/baipu_captures/kifu_24171 -maxdepth 1 -type f -print | sort
+  jq '.game_id, [.frames[] | {file, applied_move_index, next_guided_move_index, qa_status}]' \
+    /Users/fan/.katrain/baipu_captures/kifu_24171/manifest.json
+  ```
+
+  Expected: 目录名等于页面 source/SGF 标识；`frame_000.jpg` 起连续编号；新帧均为 `operator_confirmed`；图片显示已确认盘面和下一手 LED。
+
+- [ ] **Step 4.4: 更新设计状态与 P7 执行记录**
+
+  将设计状态改为 implemented，新增 §14 记录测试计数、构建、浏览器结果、真实采集目录和任何既有全仓基线失败。不得把训练照片加入 git。
+
+- [ ] **Step 4.5: 文档提交**
+
+  ```bash
+  git add superpowers/tracks/sbc-baipu-led-guide/plan.md \
+    superpowers/tracks/sbc-baipu-led-guide/2026-06-22-operator-trusted-baipu-capture-design.md \
+    superpowers/tracks/sbc-baipu-led-guide/2026-06-22-geometry-live-preview-design.md
+  git commit -m "document operator-trusted baipu collection"
+  ```
+
+---
+
 ## 6. 不在范围
 YOLO 标签/训练/RKNN（autoresearch）；固件再改（已烧）；物理确认键（用触屏）；后端 baipu 数据表（用 /baipu/load + 本地 SGF）；非 19×19；完整任意跳转 repair 流程（只做单步引导撤回）；P5 首版不实现跨进程零拷贝帧环（共享 CameraHub 时 VisionAdapter 使用后台线程，性能数据证明需要后再升级 shared-memory worker）。
 
@@ -921,7 +1121,7 @@ YOLO 标签/训练/RKNN（autoresearch）；固件再改（已烧）；物理确
 
 ## 8. 风险
 - **采集时序**（最高）：LED SHOW ack + 点灯后新帧 + 曝光锁 + 手入镜屏障，缺一会污染。
-- **QA 依赖经典 CV 可靠性**：P0 基准调阈值 + 人工 override 兜底；不可靠则降级人工复核。
+- **采集真值质量**：P7 冷启动阶段完全信任操作者，系统不做识别纠错；需通过短谱抽检图片/manifest 和操作流程降低人为误摆风险，初版 YOLOv11 验收后再以显式策略版本引入机器 QA。
 - **相机争用**：CaptureService 单一 owner + 运行时拒绝 vision+capture 同开。
 - **几何版本漂移**：geometry 随谱固化到 `{game_id}/`。
 - **坐标系**：规范 (row 顶部) 全链路；branded types + round-trip + 硬件验证。

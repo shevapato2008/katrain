@@ -1244,3 +1244,140 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 **全仓基线**：全仓 Vitest 为 `72 failed / 307 passed`，与 P6 既有 72 个失败一致且新增用例通过；失败集中在 localStorage 测试环境、旧 Provider 包装和主题断言。`CI=true` 全仓 pytest 为 `33 failed / 533 passed / 5 skipped / 10 errors`，失败位于既有 user-game、web_ui 外部服务/fixture、tsumego 502 等非 P7 区域；P7 相关 214 个测试全绿。
 
 **待操作者真机动作**：重启 8001 使 Python 后端载入新代码，在 HBV 棋盘摆放并确认至少黑白两手，然后检查 `/Users/fan/.katrain/baipu_captures/<sgf_id>/` 新帧与 manifest 均为 `operator_confirmed`。此项需要物理摆子，不能以空盘自动点击代替。
+
+---
+
+## 15. P8 摆谱右侧手数与最近图片状态（2026-06-22）
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 在摆谱右侧操作区显示当前待摆手数，并在拍摄成功后显示后端实际写入的图片文件名。
+
+**Architecture:** 当前手数从既有 `k` 派生；最近文件名从 `/baipu/capture` 成功响应的 `result.path` 提取 basename 并存入页面状态。不得根据手数或 `frameCount` 推算文件名，因此初始帧、重拍和历史 manifest 均能准确显示。
+
+**Tech Stack:** React 19、TypeScript、MUI、Playwright、Vite。
+
+**Files:**
+- Modify: `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx`
+- Modify: `katrain/web/ui/tests/baipu.spec.ts`
+- Verify: `katrain/web/ui/src/api/baipuApi.ts`
+- Document: `superpowers/tracks/sbc-baipu-led-guide/2026-06-22-baipu-capture-status-design.md`
+
+### Task 1：Playwright RED——真实文件名和待摆手数
+
+- [ ] **Step 1.1: 扩展 capture mock，返回不可由手数推算的真实路径**
+
+  在 `operator confirmation captures once...` 用例中按请求返回：
+
+  ```typescript
+  const moveIndex = Number(body.move_index);
+  const file = moveIndex === -1 ? 'frame_000.jpg' : 'frame_049.jpg';
+  return route.fulfill({
+    json: {
+      ok: true,
+      path: `/captures/test1/${file}`,
+      qa_status: 'operator_confirmed',
+      frame_kind: moveIndex === -1 ? 'initial_led' : 'after_move',
+      next_guided_move_index: moveIndex + 1,
+    },
+  });
+  ```
+
+- [ ] **Step 1.2: 写右侧状态断言**
+
+  ```typescript
+  await expect(page.getByTestId('baipu-current-move')).toContainText('第 1 手');
+  await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_000.jpg');
+  await page.getByTestId('baipu-confirm').click();
+  await expect(page.getByTestId('baipu-current-move')).toContainText('第 2 手');
+  await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_049.jpg');
+  ```
+
+- [ ] **Step 1.3: 运行 RED**
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts -g "operator confirmation captures once"`
+
+  Expected: FAIL，因为 `baipu-current-move` 和 `baipu-latest-frame` 尚不存在。
+
+### Task 2：React GREEN——右侧状态展示
+
+- [ ] **Step 2.1: 添加最近文件状态和安全 basename 提取**
+
+  在 `BaipuSessionPage` 增加：
+
+  ```typescript
+  const [latestSavedFile, setLatestSavedFile] = useState<string | null>(null);
+
+  const savedFilename = (path?: string): string | null => {
+    if (!path) return null;
+    return path.split(/[\\/]/).filter(Boolean).at(-1) ?? null;
+  };
+  ```
+
+  普通确认和初始自动采集仅在 `out.kind === 'ok'` 且存在 basename 时调用 `setLatestSavedFile`。`error`、`disabled` 和 `handleUndo` 不修改该状态。
+
+- [ ] **Step 2.2: 在右侧渲染两个可测试状态**
+
+  下一手色片内增加：
+
+  ```tsx
+  <Typography data-testid="baipu-current-move">
+    {t('Current placement', '当前待摆')}：{t('Move', '第')} {k + 1} {t('moves', '手')}
+  </Typography>
+  ```
+
+  主按钮上方增加紧凑信息块：
+
+  ```tsx
+  <Box data-testid="baipu-latest-frame">
+    <Typography variant="caption">{t('Latest saved', '最近保存')}</Typography>
+    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+      {latestSavedFile ?? t('None yet', '尚无')}
+    </Typography>
+  </Box>
+  ```
+
+- [ ] **Step 2.3: 运行 GREEN 和完整摆谱 Playwright**
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts`
+
+  Expected: 4 tests PASS。
+
+### Task 3：失败保持与静态验证
+
+- [ ] **Step 3.1: 增加失败不覆盖最近文件的 Playwright 断言**
+
+  让初始 `move_index=-1` 返回 `/captures/test1/frame_000.jpg`，`move_index=0` 返回 500。点击确认后断言错误横幅出现、当前仍为第 1 手且最近保存仍为 `frame_000.jpg`。
+
+- [ ] **Step 3.2: 运行定向测试、Lint 和构建**
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts`
+
+  Run: `cd katrain/web/ui && npx eslint src/kiosk/pages/BaipuSessionPage.tsx tests/baipu.spec.ts`
+
+  Run: `cd katrain/web/ui && npm run build && npm run build:kiosk-2d`
+
+  Expected: 全部退出码 0；kiosk 2D 校验无 Three.js 越界依赖。
+
+- [ ] **Step 3.3: 检查变更边界**
+
+  Run: `git diff --check && git status --short`
+
+  Expected: 无 whitespace error；不修改后端采集协议，不覆盖既有 `uv.lock` 用户变更。
+
+### Task 4：执行记录
+
+- [ ] **Step 4.1: 更新 P8 状态**
+
+  在本节下追加实际 RED/GREEN、Playwright、ESLint、双构建结果，并将设计文档状态改为“已实施”。
+
+- [ ] **Step 4.2: 提交本次前端与文档**
+
+  ```bash
+  git add katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx \
+    katrain/web/ui/tests/baipu.spec.ts \
+    katrain/web/static \
+    superpowers/tracks/sbc-baipu-led-guide/plan.md \
+    superpowers/tracks/sbc-baipu-led-guide/2026-06-22-baipu-capture-status-design.md
+  git commit -m "show baipu capture status"
+  ```

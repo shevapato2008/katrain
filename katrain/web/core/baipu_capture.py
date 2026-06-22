@@ -111,17 +111,23 @@ def run_capture(
         }
         frames = manifest["frames"]
 
-        # Idempotency: a frame for this move_index already exists → return it unchanged.
-        for fr in frames:
+        # Idempotency requires both the manifest entry and its captured file. If
+        # an operator removes a bad frame, re-capture that slot in place.
+        repair_index = None
+        for index, fr in enumerate(frames):
             if fr["applied_move_index"] == move_index:
-                return {
-                    "ok": True,
-                    "idempotent": True,
-                    "path": str(game_dir / fr["file"]),
-                    "qa_status": fr["qa_status"],
-                    "frame_kind": fr["frame_kind"],
-                    "next_guided_move_index": fr["next_guided_move_index"],
-                }
+                existing_path = game_dir / fr["file"]
+                if existing_path.is_file() and existing_path.stat().st_size > 0:
+                    return {
+                        "ok": True,
+                        "idempotent": True,
+                        "path": str(existing_path),
+                        "qa_status": fr["qa_status"],
+                        "frame_kind": fr["frame_kind"],
+                        "next_guided_move_index": fr["next_guided_move_index"],
+                    }
+                repair_index = index
+                break
 
         # Collection bootstrap: the explicit operator confirmation is ground truth.
         # Machine recognition is deliberately outside this capture decision path.
@@ -148,8 +154,8 @@ def run_capture(
             frame_kind = "final_no_led"
 
         # 3. Sync barrier: grab the frame captured after the LED settled, then write it.
-        ordinal = len(frames)
-        frame_file = f"frame_{ordinal:03d}.jpg"
+        ordinal = repair_index if repair_index is not None else len(frames)
+        frame_file = frames[repair_index]["file"] if repair_index is not None else f"frame_{ordinal:03d}.jpg"
         frame_path = game_dir / frame_file
         path, fseq, _fts = capture.capture_to(str(frame_path), after_ts=show_at, settle_ms=settle_ms)
 
@@ -175,12 +181,16 @@ def run_capture(
         }
         if capture_condition:
             entry["capture_condition"] = capture_condition
-        frames.append(entry)
+        if repair_index is None:
+            frames.append(entry)
+        else:
+            frames[repair_index] = entry
         _write_manifest_atomic(manifest_path, manifest)
 
         return {
             "ok": True,
             "idempotent": False,
+            "repaired": repair_index is not None,
             "path": path,
             "qa_status": qa_status,
             "frame_kind": frame_kind,

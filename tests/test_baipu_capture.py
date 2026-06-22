@@ -157,6 +157,28 @@ class TestRobustness:
         assert r2["idempotent"] is True
         assert len(cap.capture_calls) == n_calls  # no new capture
 
+    def test_missing_frame_is_recaptured_in_place(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        _capture(str(tmp_path), steps, bs, -1, led, cap)
+        first = _capture(str(tmp_path), steps, bs, 0, led, cap)
+        missing_path = Path(first["path"])
+        missing_path.unlink()
+        n_calls = len(cap.capture_calls)
+
+        repaired = _capture(str(tmp_path), steps, bs, 0, led, cap)
+
+        assert repaired["idempotent"] is False
+        assert repaired["repaired"] is True
+        assert Path(repaired["path"]) == missing_path
+        assert missing_path.read_bytes() == b"jpgdata"
+        assert len(cap.capture_calls) == n_calls + 1
+        manifest = json.loads((tmp_path / "g1" / "manifest.json").read_text())
+        assert len(manifest["frames"]) == 2
+        assert manifest["frames"][1]["file"] == "frame_001.jpg"
+        assert manifest["frames"][1]["applied_move_index"] == 0
+
     def test_game_ids_use_independent_directories(self, tmp_path):
         data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
         steps, bs = data["steps"], data["board_size"]

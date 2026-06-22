@@ -1,5 +1,12 @@
 """Grid calibration via Hough line detection.
 
+.. deprecated::
+    Superseded by the ported autocal pipeline
+    (``katrain.vision.geometry_autocal`` / ``geometry_calibrate`` /
+    ``geometry_detect``) and ``geometry_lock``, which lock empty-board geometry
+    zero-touch. This module has no functional callers and is kept for one release
+    cycle before removal (track sbc-baipu-led-guide, Codex D7). Do not add new uses.
+
 Detects the 19x19 grid lines on a perspective-corrected (warped) board image
 and computes precise pixel offsets and spacing.  Run once at game start when
 the board has few/no stones for best results.  The calibration is cached and

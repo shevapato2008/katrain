@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Box, Typography, Divider, Card, CardActionArea, CardContent, FormControlLabel, Switch } from '@mui/material';
+import { Box, Typography, Divider, Card, CardActionArea, CardContent, FormControlLabel, Switch, Button } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation, type Rotation } from '../context/OrientationContext';
@@ -7,6 +8,7 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { rotation, setRotation } = useOrientation();
   const [language, setLanguage] = useState('zh');
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
@@ -27,6 +29,11 @@ const SettingsPage = () => {
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>{t('Settings', '设置')}</Typography>
       <Divider sx={{ mb: 3 }} />
+
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{t('Physical board', '实体棋盘')}</Typography>
+        <Button variant="outlined" onClick={() => navigate('/kiosk/vision/setup')}>{t('Recalibrate board', '重新标定棋盘')}</Button>
+      </Box>
 
       <OptionChips
         label={t('Screen Rotation', '屏幕旋转')}

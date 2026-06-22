@@ -26,6 +26,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/语言/)).toBeInTheDocument();
     expect(screen.getByText(/外部平台/)).toBeInTheDocument();
     expect(screen.getByText(/野狐围棋/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重新标定棋盘' })).toBeInTheDocument();
   });
 
   it('renders rotation chips with all 4 options', () => {

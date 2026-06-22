@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Tooltip } from '@mui/material';
 import { Videocam, GridOn } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { useVision } from '../../context/VisionContext';
+import { useOptionalVision } from '../../context/VisionContext';
+import { useOptionalGeometry } from '../../context/GeometryContext';
 
 interface StatusBarProps {
   username?: string;
@@ -26,12 +26,9 @@ const syncStateColor = (syncState: string): string => {
 
 /** Vision status icons — only rendered when the VisionProvider is available */
 const VisionIndicators = () => {
-  const navigate = useNavigate();
-
-  // If VisionProvider is not in the tree, useVision will throw.
-  // We catch this at the call-site (VisionIndicatorsSafe) so the
-  // StatusBar still renders in non-vision builds.
-  const { visionStatus } = useVision();
+  const vision = useOptionalVision();
+  if (!vision) return null;
+  const { visionStatus } = vision;
 
   if (!visionStatus.enabled) return null;
 
@@ -43,8 +40,9 @@ const VisionIndicators = () => {
       {/* Camera status — click to open vision setup */}
       <Tooltip title={cameraLabel} arrow>
         <IconButton
+          component="a"
+          href="/kiosk/vision/setup"
           size="small"
-          onClick={() => navigate('/kiosk/vision/setup')}
           sx={{ p: 0.25 }}
           aria-label={cameraLabel}
         >
@@ -64,16 +62,19 @@ const VisionIndicators = () => {
   );
 };
 
-/**
- * Safe wrapper: if VisionProvider is absent (non-vision builds),
- * silently render nothing instead of crashing.
- */
-const VisionIndicatorsSafe = () => {
-  try {
-    return <VisionIndicators />;
-  } catch {
-    return null;
-  }
+const GeometryIndicator = () => {
+  const geometry = useOptionalGeometry();
+  if (!geometry) return null;
+  const { status } = geometry;
+  if (status.phase === 'disabled') return null;
+  const color = status.phase === 'ready' ? 'success.main' : status.phase === 'degraded' || status.phase === 'failed' ? 'error.main' : 'warning.main';
+  return (
+    <Tooltip title={status.phase === 'ready' ? '棋盘标定正常' : '需要标定棋盘'} arrow>
+      <IconButton component="a" href="/kiosk/vision/setup" size="small" aria-label="棋盘标定状态" sx={{ p: 0.25 }}>
+        <GridOn sx={{ fontSize: 18, color }} />
+      </IconButton>
+    </Tooltip>
+  );
 };
 
 const StatusBar = ({ username }: StatusBarProps) => {
@@ -112,7 +113,8 @@ const StatusBar = ({ username }: StatusBarProps) => {
           data-testid="engine-status"
           sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }}
         />
-        <VisionIndicatorsSafe />
+        <VisionIndicators />
+        <GeometryIndicator />
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {username && (

@@ -41,7 +41,19 @@ def _get_vision(request: Request):
 @router.get("/status")
 async def vision_status(request: Request):
     """Return vision service status."""
-    vision = _get_vision(request)
+    vision = getattr(request.app.state, "vision", None)
+    if vision is None:
+        return {
+            "enabled": False,
+            "camera_connected": False,
+            "pose_locked": False,
+            "sync_state": "idle",
+            "bound_session_id": None,
+            "camera_ready": False,
+            "geometry_ready": False,
+            "model_ready": False,
+            "recognition_ready": False,
+        }
     vision.refresh_status()
     return {
         "enabled": vision.enabled,
@@ -49,6 +61,10 @@ async def vision_status(request: Request):
         "pose_locked": vision.pose_lock_status == "locked",
         "sync_state": vision.sync_state,
         "bound_session_id": vision.bound_session_id,
+        "camera_ready": vision._latest_status.camera_ready,
+        "geometry_ready": vision._latest_status.geometry_ready,
+        "model_ready": vision._latest_status.model_ready,
+        "recognition_ready": vision._latest_status.recognition_ready,
     }
 
 
@@ -66,9 +82,7 @@ async def vision_stream(request: Request):
                     yield (
                         b"--frame\r\n"
                         b"Content-Type: image/jpeg\r\n"
-                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n"
-                        + jpeg
-                        + b"\r\n"
+                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" + jpeg + b"\r\n"
                     )
                 await asyncio.sleep(0.05)  # ~20 fps polling
         finally:

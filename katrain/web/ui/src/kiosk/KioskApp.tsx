@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
+import { GeometryProvider } from './context/GeometryContext';
+import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
@@ -21,6 +23,8 @@ import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
+import BaipuListPage from './pages/BaipuListPage';
+import BaipuSessionPage from './pages/BaipuSessionPage';
 import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
@@ -40,9 +44,9 @@ const KioskRoutes = () => {
       {/* Auth-protected */}
       <Route element={<KioskAuthGuard />}>
         {/* Fullscreen — no nav rail */}
-        <Route path="play/ai/game/:sessionId" element={<GamePage />} />
-        <Route path="play/pvp/local/game/:sessionId" element={<GamePage />} />
-        <Route path="play/pvp/room/:sessionId" element={<GamePage />} />
+        <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+        <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+        <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
 
         {/* Standard — with nav rail */}
         <Route element={<KioskLayout username={user?.username} />}>
@@ -55,15 +59,17 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard requireRecognition><TsumegoProblemPage /></PhysicalBoardGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           <Route path="research" element={<ResearchPage />} />
-          <Route path="research/session/:sessionId" element={<GamePage />} />
+          <Route path="research/session/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
+          <Route path="baipu" element={<BaipuListPage />} />
+          <Route path="baipu/session/:source" element={<PhysicalBoardGuard><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
@@ -80,11 +86,13 @@ const KioskApp = () => (
     <CssBaseline />
     <OrientationProvider>
       <VisionProvider>
-        <TsumegoProgressProvider>
-          <RotationWrapper>
-            <KioskRoutes />
-          </RotationWrapper>
-        </TsumegoProgressProvider>
+        <GeometryProvider>
+          <TsumegoProgressProvider>
+            <RotationWrapper>
+              <KioskRoutes />
+            </RotationWrapper>
+          </TsumegoProgressProvider>
+        </GeometryProvider>
       </VisionProvider>
     </OrientationProvider>
   </ThemeProvider>

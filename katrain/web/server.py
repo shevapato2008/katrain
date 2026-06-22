@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, List, Optional, Union, Dict
 
@@ -30,6 +31,10 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
+    geometry_calibration = getattr(app.state, "geometry_calibration", None)
+    if geometry_calibration:
+        geometry_calibration.stop()
+
     # Vision service shutdown (board mode)
     vision = getattr(app.state, "vision", None)
     if vision:
@@ -37,6 +42,22 @@ async def lifespan(app: FastAPI):
     vision_poller = getattr(app.state, "vision_poller_task", None)
     if vision_poller:
         vision_poller.cancel()
+
+    # LED service shutdown (board mode) — stop() does a final CLEAR! blackout.
+    led_failsafe = getattr(app.state, "led_failsafe_task", None)
+    if led_failsafe:
+        led_failsafe.cancel()
+    led = getattr(app.state, "led", None)
+    if led:
+        led.stop()
+
+    # Capture service shutdown (board mode)
+    capture = getattr(app.state, "capture", None)
+    if capture:
+        capture.stop()
+    camera_hub = getattr(app.state, "camera_hub", None)
+    if camera_hub:
+        camera_hub.stop()
 
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
@@ -316,18 +337,108 @@ async def _lifespan_board(app: FastAPI, log):
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
 
-    # Vision service (optional — enabled when --vision-model is provided)
     vision_config = getattr(settings, "_vision_config", None)
+    capture_config = getattr(settings, "_capture_config", None)
+
+    # One physical camera owner shared by capture, calibration, and recognition.
+    camera_hub = None
+    if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
+        from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+        if vision_config and vision_config.enabled and capture_config and capture_config.enabled:
+            vision_camera = (vision_config.camera_device, vision_config.camera_width, vision_config.camera_height)
+            capture_camera = (capture_config.camera_device, capture_config.width, capture_config.height)
+            if vision_camera != capture_camera:
+                raise RuntimeError(
+                    "Vision and capture must use the same camera device and resolution when sharing CameraHub: "
+                    f"vision={vision_camera}, capture={capture_camera}"
+                )
+        if capture_config and capture_config.enabled:
+            hub_config = CameraHubConfig(
+                device_id=capture_config.camera_device,
+                width=capture_config.width,
+                height=capture_config.height,
+                lock_exposure=capture_config.lock_exposure,
+                exposure=capture_config.exposure,
+                lock_awb=capture_config.lock_awb,
+            )
+        else:
+            hub_config = CameraHubConfig(
+                device_id=vision_config.camera_device,
+                width=vision_config.camera_width,
+                height=vision_config.camera_height,
+                lock_exposure=False,
+                lock_awb=False,
+            )
+        camera_hub = CameraHub(hub_config)
+        camera_hub.start()
+    app.state.camera_hub = camera_hub
+
+    # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled:
         from katrain.vision.service import VisionService
 
-        vision = VisionService(vision_config)
+        vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
         app.state.vision = vision
         app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
         log.info("Vision service started (backend=%s)", vision_config.backend)
     else:
         app.state.vision = None
+
+    # LED service (optional — enabled when --led-serial-port is provided)
+    led_config = getattr(settings, "_led_config", None)
+    if led_config and led_config.enabled:
+        from katrain.web.core.led_service import LedService
+
+        led = LedService(led_config)
+        led.start()
+        app.state.led = led
+        app.state.led_last_activity = time.monotonic()
+        app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+        log.info("LED service started (port=%s)", led_config.serial_port)
+    else:
+        app.state.led = None
+
+    # Capture service consumes the shared CameraHub and only owns file output.
+    if capture_config and capture_config.enabled:
+        from katrain.web.core.capture_service import CaptureService
+
+        capture = CaptureService(capture_config, hub=camera_hub)
+        capture.start()
+        app.state.capture = capture
+        # Load an existing geometry lock if present (so capture/QA can run immediately).
+        try:
+            from katrain.vision.geometry_lock import load_geometry_lock
+
+            geo_path = Path("~/.katrain/geometry_lock.npz").expanduser()
+            app.state.geometry = load_geometry_lock(geo_path) if geo_path.exists() else None
+        except Exception as e:
+            log.warning("Failed to load geometry lock: %s", e)
+            app.state.geometry = None
+        log.info("Capture service started (camera=%s)", capture_config.camera_device)
+    else:
+        app.state.capture = None
+        app.state.geometry = None
+
+    if app.state.capture is not None and app.state.led is not None:
+        from katrain.web.core.geometry_calibration_service import GeometryCalibrationService
+
+        def promote_geometry(lock):
+            app.state.geometry = lock
+            vision_service = getattr(app.state, "vision", None)
+            if vision_service is not None and hasattr(vision_service, "set_geometry"):
+                vision_service.set_geometry(lock)
+
+        app.state.geometry_calibration = GeometryCalibrationService(
+            led=app.state.led,
+            capture=app.state.capture,
+            save_path=Path("~/.katrain/geometry_lock.npz").expanduser(),
+            initial_lock=app.state.geometry,
+            on_success=promote_geometry,
+        )
+    else:
+        app.state.geometry_calibration = None
 
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
@@ -1651,6 +1762,34 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
+    """Blackout the LED board after >5 min of inactivity (plan §2.1 Gemini 新#2).
+
+    Prevents a Kiosk from leaving the LED lit all day if the operator walks off
+    without exiting. Activity is stamped by the /led/* endpoints. (A WebSocket
+    on-disconnect hook is a future refinement; the idle timer is the floor.)
+    """
+    log = logging.getLogger("katrain_web.led")
+    cleared = False
+    while True:
+        try:
+            await asyncio.sleep(30)
+            led = getattr(app.state, "led", None)
+            if not led:
+                continue
+            idle = time.monotonic() - getattr(app.state, "led_last_activity", time.monotonic())
+            if idle > idle_timeout and not cleared:
+                led.clear(strict=False)
+                cleared = True
+                log.info("LED idle >%.0fs — failsafe clear", idle_timeout)
+            elif idle <= idle_timeout:
+                cleared = False
+        except asyncio.CancelledError:
+            break
+        except Exception as e:  # pragma: no cover - defensive
+            log.debug("LED failsafe loop error: %s", e)
+
+
 async def _vision_move_poller(app: FastAPI):
     """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
     from katrain.vision.ipc import ConfirmedMove
@@ -1783,6 +1922,30 @@ def run_web():
     parser.add_argument(
         "--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)"
     )
+    parser.add_argument(
+        "--led-serial-port",
+        default=None,
+        help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
+    )
+    parser.add_argument("--led-baud-rate", type=int, default=115200, help="LED serial baud rate. Default: 115200.")
+    parser.add_argument(
+        "--led-lut-path", default=None, help="Optional JSON (row,col)->index LUT; defaults to the built-in formula."
+    )
+    parser.add_argument(
+        "--capture-camera",
+        default=None,
+        help="Camera device for physical-board capture/calibration (int or /dev/videoN). Shared with VisionService.",
+    )
+    parser.add_argument(
+        "--capture-dir", default="~/.katrain/baipu_captures", help="Output dir for captured frames + manifests."
+    )
+    parser.add_argument("--capture-resolution", default="1280x720", help="Capture camera resolution WxH.")
+    parser.add_argument(
+        "--capture-exposure",
+        type=float,
+        default=None,
+        help="Manual exposure value (camera-specific; tuned on the box).",
+    )
     args, _unknown = parser.parse_known_args()
 
     # Configure vision service if model path provided
@@ -1799,6 +1962,32 @@ def run_web():
             camera_width=res_w,
             camera_height=res_h,
             process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess",
+        )
+
+    # Configure LED service if a serial port was provided
+    if args.led_serial_port:
+        from katrain.web.core.led_service import LedServiceConfig
+
+        settings._led_config = LedServiceConfig(
+            enabled=True,
+            serial_port=args.led_serial_port,
+            baud_rate=args.led_baud_rate,
+            lut_path=args.led_lut_path,
+        )
+
+    # Configure capture service if a capture camera was provided
+    if args.capture_camera is not None:
+        from katrain.web.core.capture_service import CaptureServiceConfig
+
+        cap_dev = int(args.capture_camera) if str(args.capture_camera).isdigit() else args.capture_camera
+        cap_w, cap_h = (int(x) for x in args.capture_resolution.split("x"))
+        settings._capture_config = CaptureServiceConfig(
+            enabled=True,
+            camera_device=cap_dev,
+            width=cap_w,
+            height=cap_h,
+            out_dir=args.capture_dir,
+            exposure=args.capture_exposure,
         )
 
     # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)

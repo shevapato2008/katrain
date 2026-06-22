@@ -38,7 +38,7 @@ class InProcessAdapter:
     Mimics the VisionWorkerProcess API so VisionService can use either.
     """
 
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any], camera=None):
         self._config = config
         self._thread: threading.Thread | None = None
         self._running = False
@@ -52,7 +52,9 @@ class InProcessAdapter:
 
         # Components
         board_config = BoardConfig()
-        self._camera = CameraManager(device_id=config.get("camera_device", 0))
+        self._owns_camera = camera is None
+        self._require_geometry = camera is not None
+        self._camera = camera or CameraManager(device_id=config.get("camera_device", 0))
         self._motion_filter = MotionFilter()
         self._board_finder = BoardFinder(camera_config=CameraConfig())
         self._detector = StoneDetector(
@@ -67,6 +69,24 @@ class InProcessAdapter:
         self._viewer_active = False
         self._bound = False
         self._last_preview_time = 0.0
+        self._geometry = None
+
+    def set_geometry(self, geometry) -> None:
+        self._geometry = geometry
+
+    def _warp_frame(self, frame):
+        if self._geometry is not None:
+            warped = cv2.warpPerspective(
+                frame,
+                self._geometry.M,
+                (self._geometry.out_size, self._geometry.out_size),
+            )
+            return warped, True
+        if self._require_geometry:
+            return None, False
+        return self._board_finder.find_focus(
+            frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False)
+        )
 
     def start(self) -> None:
         self._running = True
@@ -78,7 +98,8 @@ class InProcessAdapter:
         self._running = False
         if self._thread:
             self._thread.join(timeout=5)
-        self._camera.close()
+        if self._owns_camera:
+            self._camera.close()
 
     def send_command(self, cmd: WorkerCommand) -> None:
         self._cmd_queue.put(cmd)
@@ -103,7 +124,7 @@ class InProcessAdapter:
         return self._thread is not None and self._thread.is_alive()
 
     def _loop(self) -> None:
-        if not self._camera.open():
+        if self._owns_camera and not self._camera.open():
             logger.error("Failed to open camera")
 
         target_interval = 1.0 / self._config.get("capture_fps", 8)
@@ -118,9 +139,7 @@ class InProcessAdapter:
             mean_confidence = 0.0
 
             if frame is not None and self._motion_filter.is_stable(frame):
-                warped, found = self._board_finder.find_focus(
-                    frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False)
-                )
+                warped, found = self._warp_frame(frame)
                 if found and warped is not None:
                     board_detected = True
                     h, w = warped.shape[:2]
@@ -151,6 +170,11 @@ class InProcessAdapter:
                 camera_status="connected" if self._camera.is_connected else "disconnected",
                 pose_lock_status="locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked",
                 sync_state=self._sync.state.value,
+                detected_board=observed_board.tolist() if observed_board is not None else None,
+                camera_ready=bool(self._camera.is_connected),
+                geometry_ready=self._geometry is not None or not self._require_geometry,
+                model_ready=True,
+                recognition_ready=bool(self._camera.is_connected and (self._geometry is not None or not self._require_geometry)),
             )
 
             elapsed = time.monotonic() - loop_start
@@ -158,7 +182,8 @@ class InProcessAdapter:
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
-        self._camera.close()
+        if self._owns_camera:
+            self._camera.close()
 
     def _drain_commands(self) -> None:
         while True:
@@ -188,6 +213,8 @@ class InProcessAdapter:
                 self._sync.reset()
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
+            elif cmd.action == CommandType.SET_GEOMETRY:
+                self.set_geometry(cmd.data.get("geometry"))
 
     def _maybe_send_preview(self, warped: np.ndarray) -> None:
         if not self._viewer_active:

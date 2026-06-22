@@ -1,5 +1,24 @@
 from fastapi import APIRouter
-from katrain.web.api.v1.endpoints import health, auth, analysis, games, users, live, tsumego, kifu, user_games, board, vision, tutorials, platforms, reports, billing
+from katrain.web.api.v1.endpoints import (
+    health,
+    auth,
+    analysis,
+    games,
+    users,
+    live,
+    tsumego,
+    kifu,
+    user_games,
+    board,
+    vision,
+    tutorials,
+    platforms,
+    reports,
+    billing,
+    baipu,
+    led,
+    geometry,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
@@ -17,3 +36,6 @@ api_router.include_router(tutorials.router, prefix="/tutorials", tags=["tutorial
 api_router.include_router(platforms.router, prefix="/platforms", tags=["platforms"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
+api_router.include_router(baipu.router, prefix="/baipu", tags=["baipu"])
+api_router.include_router(led.router, prefix="/led", tags=["led"])
+api_router.include_router(geometry.router, prefix="/geometry", tags=["geometry"])

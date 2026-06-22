@@ -1,10 +1,9 @@
-"""带灯拍 capture orchestration (plan §4): QA → strict LED → barrier grab → manifest.
+"""带灯拍 capture orchestration: operator confirm → strict LED → barrier grab → manifest.
 
 One ``run_capture`` call corresponds to "the operator just placed move ``move_index``"
 (``move_index == -1`` is the forced initial empty+LED frame). The sequence:
 
-  1. L2 QA (decision ③): blackout LED, grab a no-LED frame, classify, diff vs the
-     expected board (steps[0..move_index]). Mismatch + not override → QAMismatch.
+  1. Trust the operator confirmation as the placement ground truth.
   2. Light the NEXT physical move (strict, skipping passes) → ``shown_at``; or, if
      there is none, blackout (final, no-LED frame).
   3. Sync barrier: grab the frame read *after* ``shown_at + settle`` (timestamp
@@ -25,21 +24,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from katrain.core.baipu import expected_board_from_steps, next_placement_index
-from katrain.vision import board_qa
+from katrain.core.baipu import next_placement_index
 
 log = logging.getLogger("katrain_web")
 
 _GAME_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,128}")
 _locks_guard = threading.Lock()
 _game_locks: Dict[str, threading.Lock] = {}
-
-
-class QAMismatch(Exception):
-    def __init__(self, move_index: int, diffs: List[dict]):
-        super().__init__("QA mismatch")
-        self.move_index = move_index
-        self.diffs = diffs
 
 
 class LedUnavailable(Exception):
@@ -95,13 +86,14 @@ def run_capture(
     game_id: str,
     move_index: int,
     sgf: str,
-    override: bool = False,
     capture_condition: Optional[dict] = None,
     settle_ms: float = 150.0,
 ) -> dict:
-    """Run one capture step. Returns a result dict; raises QAMismatch / LedUnavailable /
-    ValueError. Geometry must be locked (caller checks). LED is required (the frame must
-    show the guidance LED unless it's the final frame)."""
+    """Run one operator-confirmed capture step.
+
+    Raises LedUnavailable / ValueError. Geometry must be locked (caller checks).
+    LED is required when the saved frame must show the next guidance point.
+    """
     if not (-1 <= move_index < len(steps)):
         raise ValueError(f"move_index {move_index} out of range [-1, {len(steps) - 1}]")
     game_dir = _resolve_game_dir(out_dir, game_id)
@@ -131,18 +123,9 @@ def run_capture(
                     "next_guided_move_index": fr["next_guided_move_index"],
                 }
 
-        # 1. L2 QA against the expected board after move_index.
-        expected = expected_board_from_steps(steps, move_index, board_size)
-        if led is not None:
-            led.clear(strict=True)
-        qa_frame, _qseq, _qts = capture.grab_fresh(settle_ms=settle_ms)
-        if qa_frame is None:
-            raise LedUnavailable("no QA frame")
-        classified = board_qa.classify_canonical(qa_frame, geometry)
-        diffs = board_qa.diff_expected(expected, classified)
-        if diffs and not override:
-            raise QAMismatch(move_index, diffs)
-        qa_status = "operator_override" if diffs else "ok"
+        # Collection bootstrap: the explicit operator confirmation is ground truth.
+        # Machine recognition is deliberately outside this capture decision path.
+        qa_status = "operator_confirmed"
 
         # 2. Light the next physical move (strict) or blackout for the final frame.
         next_idx = next_placement_index(steps, move_index)

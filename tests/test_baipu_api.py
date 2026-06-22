@@ -111,25 +111,24 @@ class TestBaipuCaptureEndpoint:
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": -1, "sgf": "(;SZ[19];B[pd])"})
         assert r.status_code == 409
 
-    def test_happy_initial_frame(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("katrain.vision.board_qa.classify_canonical", lambda f, g: [[None] * 19 for _ in range(19)])
+    def test_happy_initial_frame(self, tmp_path):
         c = self._client(tmp_path)
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": -1, "sgf": "(;SZ[19];B[pd];W[dp])"})
         assert r.status_code == 200
         assert r.json()["frame_kind"] == "initial_led"
 
-    def test_move_index_out_of_range_returns_400(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("katrain.vision.board_qa.classify_canonical", lambda f, g: [[None] * 19 for _ in range(19)])
+    def test_move_index_out_of_range_returns_400(self, tmp_path):
         c = self._client(tmp_path)
         # SGF has 2 steps (indices 0,1); move_index 99 is out of range → 400, not 500.
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": 99, "sgf": "(;SZ[19];B[pd];W[dp])"})
         assert r.status_code == 400
 
-    def test_qa_mismatch_returns_409_with_diffs(self, tmp_path, monkeypatch):
-        # physical board reads empty, but move_index 0 claims a stone is placed
-        monkeypatch.setattr("katrain.vision.board_qa.classify_canonical", lambda f, g: [[None] * 19 for _ in range(19)])
+    def test_operator_confirmation_does_not_invoke_classifier(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(
+            "katrain.vision.board_qa.classify_canonical",
+            lambda *_args, **_kwargs: pytest.fail("classifier must not run during collection"),
+        )
         c = self._client(tmp_path)
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": 0, "sgf": "(;SZ[19];B[pd];W[dp])"})
-        assert r.status_code == 409
-        assert r.json()["detail"]["qa"] == "mismatch"
-        assert r.json()["detail"]["diffs"]
+        assert r.status_code == 200
+        assert r.json()["qa_status"] == "operator_confirmed"

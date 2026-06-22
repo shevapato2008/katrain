@@ -95,7 +95,6 @@ class BaipuCaptureRequest(BaseModel):
     game_id: str
     move_index: int  # the step just placed; -1 = forced initial empty+LED frame
     sgf: str
-    override: bool = False
     capture_condition: Optional[Dict[str, Any]] = None
 
 
@@ -114,7 +113,7 @@ async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Failed to parse SGF: {exc}") from exc
 
-    from katrain.web.core.baipu_capture import run_capture, QAMismatch, LedUnavailable
+    from katrain.web.core.baipu_capture import LedUnavailable, run_capture
 
     try:
         return await asyncio.to_thread(
@@ -128,11 +127,8 @@ async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str
             game_id=body.game_id,
             move_index=body.move_index,
             sgf=body.sgf,
-            override=body.override,
             capture_condition=body.capture_condition,
         )
-    except QAMismatch as qa:
-        raise HTTPException(status_code=409, detail={"qa": "mismatch", "move_index": qa.move_index, "diffs": qa.diffs})
     except LedUnavailable as exc:
         raise HTTPException(status_code=409, detail={"error": "led_unavailable", "message": str(exc)})
     except ValueError as exc:

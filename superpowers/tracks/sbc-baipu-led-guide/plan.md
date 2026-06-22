@@ -1265,7 +1265,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 
 ### Task 1：Playwright RED——真实文件名和待摆手数
 
-- [ ] **Step 1.1: 扩展 capture mock，返回不可由手数推算的真实路径**
+- [x] **Step 1.1: 扩展 capture mock，返回不可由手数推算的真实路径**
 
   在 `operator confirmation captures once...` 用例中按请求返回：
 
@@ -1283,7 +1283,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
   });
   ```
 
-- [ ] **Step 1.2: 写右侧状态断言**
+- [x] **Step 1.2: 写右侧状态断言**
 
   ```typescript
   await expect(page.getByTestId('baipu-current-move')).toContainText('第 1 手');
@@ -1293,7 +1293,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
   await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_049.jpg');
   ```
 
-- [ ] **Step 1.3: 运行 RED**
+- [x] **Step 1.3: 运行 RED**
 
   Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts -g "operator confirmation captures once"`
 
@@ -1301,7 +1301,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 
 ### Task 2：React GREEN——右侧状态展示
 
-- [ ] **Step 2.1: 添加最近文件状态和安全 basename 提取**
+- [x] **Step 2.1: 添加最近文件状态和安全 basename 提取**
 
   在 `BaipuSessionPage` 增加：
 
@@ -1316,7 +1316,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 
   普通确认和初始自动采集仅在 `out.kind === 'ok'` 且存在 basename 时调用 `setLatestSavedFile`。`error`、`disabled` 和 `handleUndo` 不修改该状态。
 
-- [ ] **Step 2.2: 在右侧渲染两个可测试状态**
+- [x] **Step 2.2: 在右侧渲染两个可测试状态**
 
   下一手色片内增加：
 
@@ -1337,7 +1337,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
   </Box>
   ```
 
-- [ ] **Step 2.3: 运行 GREEN 和完整摆谱 Playwright**
+- [x] **Step 2.3: 运行 GREEN 和完整摆谱 Playwright**
 
   Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts`
 
@@ -1345,11 +1345,11 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 
 ### Task 3：失败保持与静态验证
 
-- [ ] **Step 3.1: 增加失败不覆盖最近文件的 Playwright 断言**
+- [x] **Step 3.1: 增加失败不覆盖最近文件的 Playwright 断言**
 
   让初始 `move_index=-1` 返回 `/captures/test1/frame_000.jpg`，`move_index=0` 返回 500。点击确认后断言错误横幅出现、当前仍为第 1 手且最近保存仍为 `frame_000.jpg`。
 
-- [ ] **Step 3.2: 运行定向测试、Lint 和构建**
+- [x] **Step 3.2: 运行定向测试、Lint 和构建**
 
   Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts`
 
@@ -1359,7 +1359,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 
   Expected: 全部退出码 0；kiosk 2D 校验无 Three.js 越界依赖。
 
-- [ ] **Step 3.3: 检查变更边界**
+- [x] **Step 3.3: 检查变更边界**
 
   Run: `git diff --check && git status --short`
 
@@ -1367,11 +1367,11 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 
 ### Task 4：执行记录
 
-- [ ] **Step 4.1: 更新 P8 状态**
+- [x] **Step 4.1: 更新 P8 状态**
 
   在本节下追加实际 RED/GREEN、Playwright、ESLint、双构建结果，并将设计文档状态改为“已实施”。
 
-- [ ] **Step 4.2: 提交本次前端与文档**
+- [x] **Step 4.2: 提交本次前端与文档**
 
   ```bash
   git add katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx \
@@ -1381,3 +1381,10 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
     superpowers/tracks/sbc-baipu-led-guide/2026-06-22-baipu-capture-status-design.md
   git commit -m "show baipu capture status"
   ```
+
+### P8 执行记录
+
+- **RED:** 定向 Playwright 按预期失败，`baipu-current-move` 元素不存在。
+- **GREEN:** 成功响应使用后端 `path` 的 basename；初始帧和确认帧均更新最近文件名，失败、disabled 和悔棋不覆盖。
+- **自动化:** 完整 `baipu.spec.ts` 为 `5 passed`，覆盖真实路径 `frame_049.jpg` 与失败保持 `frame_000.jpg`。
+- **静态验证:** 变更文件 ESLint 通过；`npm run build` 和 `npm run build:kiosk-2d` 通过；2D 校验确认无 Three.js。

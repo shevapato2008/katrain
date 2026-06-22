@@ -14,6 +14,11 @@ import { LedAPI, type LedColor } from '../../api/ledApi';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
+const savedFilename = (path?: string): string | null => {
+  if (!path) return null;
+  return path.split(/[\\/]/).filter(Boolean).at(-1) ?? null;
+};
+
 // Short shutter "click" via WebAudio (no asset). Plays AFTER the frame is written
 // (the "you may place the next stone" go-signal). Best-effort; ignored if blocked.
 function playShutter() {
@@ -95,6 +100,7 @@ const BaipuSessionPage = () => {
   const [ledOk, setLedOk] = useState<boolean | null>(null); // null = unknown / not enabled
   const [capturePending, setCapturePending] = useState(false);
   const [frameCount, setFrameCount] = useState(0);
+  const [latestSavedFile, setLatestSavedFile] = useState<string | null>(null);
   const initialCapturedRef = useRef(false);
   const mountedRef = useRef(true);
 
@@ -164,6 +170,8 @@ const BaipuSessionPage = () => {
         return;
       }
       if (out.kind === 'ok') {
+        const filename = savedFilename(out.result.path);
+        if (filename) setLatestSavedFile(filename);
         setFrameCount((c) => c + 1);
         playShutter(); // go-signal AFTER the frame is written
       }
@@ -178,7 +186,12 @@ const BaipuSessionPage = () => {
     if (phase === 'guiding' && k === 0 && !initialCapturedRef.current && sgf && steps.length > 0) {
       initialCapturedRef.current = true;
       BaipuAPI.capture({ game_id: source, move_index: -1, sgf })
-        .then((out) => { if (out.kind === 'ok' && mountedRef.current) setFrameCount((c) => c + 1); })
+        .then((out) => {
+          if (out.kind !== 'ok' || !mountedRef.current) return;
+          const filename = savedFilename(out.result.path);
+          if (filename) setLatestSavedFile(filename);
+          setFrameCount((c) => c + 1);
+        })
         .catch(() => undefined);
     }
   }, [phase, k, sgf, source, steps.length]);
@@ -347,10 +360,23 @@ const BaipuSessionPage = () => {
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Next stone', '下一手')}</Typography>
               <Typography variant="h5" sx={{ fontWeight: 800 }}>{nextColorLabel}</Typography>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>{ledColorLabel}</Typography>
+              <Typography data-testid="baipu-current-move" variant="body2" sx={{ mt: 1, fontWeight: 700 }}>
+                {t('Current placement', '当前待摆')}：{t('Move', '第')} {k + 1} {t('moves', '手')}
+              </Typography>
             </Box>
           )}
 
           <Box sx={{ flex: 1 }} />
+
+          <Box
+            data-testid="baipu-latest-frame"
+            sx={{ px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Latest saved', '最近保存')}</Typography>
+            <Typography sx={{ mt: 0.25, fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}>
+              {latestSavedFile ?? t('None yet', '尚无')}
+            </Typography>
+          </Box>
 
           {/* Primary action */}
           {phase === 'guiding' && isPlaceable && (

@@ -94,13 +94,25 @@ test.describe('baipu session', () => {
     await page.route('**/api/v1/baipu/capture', async (route) => {
       const body = route.request().postDataJSON() as Record<string, unknown>;
       bodies.push(body);
+      const moveIndex = Number(body.move_index);
+      const file = moveIndex === -1 ? 'frame_000.jpg' : 'frame_049.jpg';
       return route.fulfill({
-        json: { ok: true, qa_status: 'operator_confirmed', frame_kind: 'after_move', next_guided_move_index: 1 },
+        json: {
+          ok: true,
+          path: `/captures/test1/${file}`,
+          qa_status: 'operator_confirmed',
+          frame_kind: moveIndex === -1 ? 'initial_led' : 'after_move',
+          next_guided_move_index: moveIndex + 1,
+        },
       });
     });
     await page.goto('/kiosk/baipu/session/test1');
 
+    await expect(page.getByTestId('baipu-current-move')).toContainText('第 1 手');
+    await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_000.jpg');
     await page.getByTestId('baipu-confirm').click();
+    await expect(page.getByTestId('baipu-current-move')).toContainText('第 2 手');
+    await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_049.jpg');
     await expect(page.getByTestId('baipu-next-chip')).toContainText(/白|White/);
     await expect(page.getByTestId('baipu-qa-banner')).toHaveCount(0);
     await expect(page.getByTestId('baipu-qa-override')).toHaveCount(0);
@@ -129,5 +141,26 @@ test.describe('baipu session', () => {
     await expect(page.getByTestId('baipu-progress')).toContainText('1/3');
     await expect(page.getByTestId('baipu-qa-banner')).toHaveCount(0);
     await expect(page.getByTestId('baipu-qa-override')).toHaveCount(0);
+  });
+
+  test('capture failure keeps the current move and latest successful filename', async ({ page }) => {
+    await setupSession(page);
+    await page.route('**/api/v1/baipu/capture', async (route) => {
+      const body = route.request().postDataJSON();
+      if (body.move_index === -1) {
+        return route.fulfill({
+          json: { ok: true, path: '/captures/test1/frame_000.jpg', qa_status: 'operator_confirmed' },
+        });
+      }
+      return route.fulfill({ status: 500, json: { detail: 'camera unavailable' } });
+    });
+    await page.goto('/kiosk/baipu/session/test1');
+
+    await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_000.jpg');
+    await page.getByTestId('baipu-confirm').click();
+
+    await expect(page.getByTestId('baipu-capture-error')).toBeVisible();
+    await expect(page.getByTestId('baipu-current-move')).toContainText('第 1 手');
+    await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_000.jpg');
   });
 });

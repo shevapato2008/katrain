@@ -2,7 +2,7 @@
 
 - **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-22（**v5**；P7 为 YOLO 数据采集策略修订）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P6 已实现并完成自动化/真机浏览器验收**；P7 待执行。实际移动摄像头触发 degraded 留作操作者联合手动验收。见 §11–§14 执行记录。
+- **状态**: **P1–P7 已实现并完成自动化/浏览器验收**；P7 真机摆两手检查训练照片、实际移动摄像头触发 degraded 留作操作者联合手动验收。见 §11–§14 执行记录。
 
 > **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement the current pending phase. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
 
@@ -928,7 +928,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `tests/test_baipu_capture.py`
 - Modify: `tests/test_baipu_api.py`
 
-- [ ] **Step 1.1: 把旧 QA block/override 测试改为 operator-trusted 契约**
+- [x] **Step 1.1: 把旧 QA block/override 测试改为 operator-trusted 契约**
 
   删除 `truth_board`、`QAMismatch` 和“mismatch blocks / override”断言，增加一个会在调用时直接失败的 classifier spy：
 
@@ -949,7 +949,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   assert {frame["qa_status"] for frame in manifest["frames"]} == {"operator_confirmed"}
   ```
 
-- [ ] **Step 1.2: 增加不同 SGF 标识目录隔离测试**
+- [x] **Step 1.2: 增加不同 SGF 标识目录隔离测试**
 
   ```python
   def test_game_ids_use_independent_directories(self, tmp_path):
@@ -962,11 +962,11 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
       assert json.loads((tmp_path / "kifu_24172" / "manifest.json").read_text())["game_id"] == "kifu_24172"
   ```
 
-- [ ] **Step 1.3: API 测试改为“物理盘未知也成功”**
+- [x] **Step 1.3: API 测试改为“物理盘未知也成功”**
 
   `tests/test_baipu_api.py` 不再 mock 识别成功；将原 409 mismatch 测试改为 classifier 调用即失败，并断言 `POST /baipu/capture` 返回 200、`qa_status=operator_confirmed`。
 
-- [ ] **Step 1.4: 运行 RED**
+- [x] **Step 1.4: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py tests/test_baipu_api.py`
 
@@ -980,7 +980,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Test: `tests/test_baipu_capture.py`
 - Test: `tests/test_baipu_api.py`
 
-- [ ] **Step 2.1: 删除 QA grab/classify/diff 分支**
+- [x] **Step 2.1: 删除 QA grab/classify/diff 分支**
 
   `run_capture` 在幂等检查后直接设置：
 
@@ -991,17 +991,17 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   移除 `board_qa`、`expected_board_from_steps` import 和 `QAMismatch`。保留 `next_placement_index`、`board_hash` 等仍使用的 SGF 真值代码；不得添加 HSV 阈值或模型探测。
 
-- [ ] **Step 2.2: 收紧 capture API 的错误语义**
+- [x] **Step 2.2: 收紧 capture API 的错误语义**
 
   从 `BaipuCaptureRequest` 和 `run_capture` 调用移除 `override`；endpoint 不再捕获/返回 placement mismatch。仅保留 capture/geometry/LED、索引、SGF 和写盘错误。旧客户端发送多余 `override` 仍由 Pydantic 默认兼容忽略，不影响采集。
 
-- [ ] **Step 2.3: 运行 GREEN 并检查同步屏障**
+- [x] **Step 2.3: 运行 GREEN 并检查同步屏障**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py tests/test_baipu_api.py`
 
   Expected: PASS；`test_sync_barrier_uses_shown_at` 仍证明 `capture_to(after_ts=shown_at)`。
 
-- [ ] **Step 2.4: 后端提交**
+- [x] **Step 2.4: 后端提交**
 
   ```bash
   git add katrain/web/core/baipu_capture.py katrain/web/api/v1/endpoints/baipu.py tests/test_baipu_capture.py tests/test_baipu_api.py
@@ -1016,7 +1016,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `katrain/web/ui/tests/baipu.spec.ts`
 - Test: `katrain/web/ui/src/api/baipuApi.test.ts`
 
-- [ ] **Step 3.1: 写 Playwright RED**
+- [x] **Step 3.1: 写 Playwright RED**
 
   把旧“L2 QA mismatch blocks, override continues”改为捕获请求检查：
 
@@ -1038,13 +1038,13 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
   });
   ```
 
-- [ ] **Step 3.2: 简化 API outcome 和页面状态机**
+- [x] **Step 3.2: 简化 API outcome 和页面状态机**
 
   从 `baipuApi.ts` 删除 `QaDiff`、`qa_mismatch` outcome 和 request `override`。`BaipuSessionPage.tsx` 删除 `qa_block` phase、`qaDiffs` state、override 参数/按钮/横幅；`doCapture(k)` 成功后直接计帧、快门、推进。
 
   采集错误不得被当作成功推进：`out.kind === 'error'` 时显示错误并保持当前手；只有 `ok` 或明确的 screen-only `disabled` 才调用 `advance()`。
 
-- [ ] **Step 3.3: 运行前端测试与构建**
+- [x] **Step 3.3: 运行前端测试与构建**
 
   Run: `cd katrain/web/ui && npm test -- src/api/baipuApi.test.ts`
 
@@ -1054,7 +1054,7 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   Expected: PASS；产物中无 `baipu-qa-banner`、`baipu-qa-override` 和“确认无误，继续”。
 
-- [ ] **Step 3.4: 前端提交**
+- [x] **Step 3.4: 前端提交**
 
   ```bash
   git add katrain/web/ui/src/api/baipuApi.ts katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx katrain/web/ui/tests/baipu.spec.ts katrain/web/ui/src/api/baipuApi.test.ts katrain/web/static
@@ -1067,13 +1067,13 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 - Modify: `superpowers/tracks/sbc-baipu-led-guide/2026-06-22-operator-trusted-baipu-capture-design.md`
 - Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`
 
-- [ ] **Step 4.1: 后端相关回归**
+- [x] **Step 4.1: 后端相关回归**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_load.py tests/test_baipu_capture.py tests/test_baipu_api.py tests/test_capture_service.py tests/test_led_service.py tests/test_geometry_api.py tests/test_geometry_calibration_service.py`
 
   Expected: 0 failures。
 
-- [ ] **Step 4.2: 前端受影响回归和静态检查**
+- [x] **Step 4.2: 前端受影响回归和静态检查**
 
   Run: `cd katrain/web/ui && npm test -- src/api/baipuApi.test.ts`
 
@@ -1083,9 +1083,13 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   Expected: 0 failures。
 
-- [ ] **Step 4.3: 浏览器验收（无需伪造棋子识别）**
+- [x] **Step 4.3: 浏览器自动验收（无需伪造棋子识别）**
 
-  从产品根目录以 board mode 启动服务，登录后打开一个短 SGF。确认首帧自动生成；连续确认黑、白至少两手，页面不出现 empty/mismatch，灯切到下一手，每次确认只增加一帧。检查：
+  使用 `py311_katago` 在 8002 启动根目录服务；应用内浏览器登录 `fan` 后进入 `kifu_24171`。确认页面从第 1 手 Black 直接推进到第 2 手 White，`baipu-qa-banner/override` 数量为 0，控制台 0 error。Playwright 同时验证成功采集、legacy mismatch 普通错误阻断和不发送 override。
+
+- [ ] **Step 4.4: 真机操作者验收**
+
+  从产品根目录重启 board mode 服务，登录后打开一个短 SGF。操作者在 HBV 实体棋盘连续摆放并确认黑、白至少两手，页面不得出现 empty/mismatch，灯切到下一手，每次确认只增加一帧。检查：
 
   ```bash
   find /Users/fan/.katrain/baipu_captures/kifu_24171 -maxdepth 1 -type f -print | sort
@@ -1095,11 +1099,11 @@ kiosk「摆谱」模式：按已知 SGF **逐手用 LED 点亮下一手落子点
 
   Expected: 目录名等于页面 source/SGF 标识；`frame_000.jpg` 起连续编号；新帧均为 `operator_confirmed`；图片显示已确认盘面和下一手 LED。
 
-- [ ] **Step 4.4: 更新设计状态与 P7 执行记录**
+- [x] **Step 4.5: 更新设计状态与 P7 执行记录**
 
   将设计状态改为 implemented，新增 §14 记录测试计数、构建、浏览器结果、真实采集目录和任何既有全仓基线失败。不得把训练照片加入 git。
 
-- [ ] **Step 4.5: 文档提交**
+- [x] **Step 4.6: 文档提交**
 
   ```bash
   git add superpowers/tracks/sbc-baipu-led-guide/plan.md \
@@ -1224,3 +1228,19 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 ```
 
 **剩余人工验收**：实际轻移相机，确认连续 3 帧超过阈值后进入 degraded，且不闪标定灯；清盘后从设置页重标定恢复 ready。算法路径已有确定性单测，Codex 无法代替操作者移动实体相机。
+
+---
+
+## 14. P7 执行记录（2026-06-22）
+
+**提交**：`5baf9734` 归档设计并补 P7 计划 · `44d71f13` 后端操作者确认即采集 · `fde65ec9` 前端单一确认流程。
+
+**实现**：`run_capture` 不再抓 QA 帧、调用经典 HSV classifier 或抛出 `QAMismatch`；操作者确认直接生成 `qa_status=operator_confirmed`，随后严格点亮下一手并只保存 `shown_at` 之后的新帧。`game_id` 继续作为 SGF 稳定标识，`kifu_24171`、`kifu_24172` 等各自持有独立的 `game.sgf`、`geometry.npz/json`、`manifest.json` 和连续图片。前端删除 `qa_block`、diff 横幅、重试/override 控件及请求字段；相机、LED、协议或写盘错误改为显示采集失败并保持当前手，不再错误推进。
+
+**TDD 与定向回归**：后端 RED 为 `4 failed / 12 passed`，GREEN 为 `16 passed`；摆谱/采集/LED/几何定向套件 `72 passed`，扩大 vision/CameraHub 回归 `214 passed`。Baipu API Vitest `5 passed`，Playwright `4 passed`，变更文件 ESLint 通过；`npm run build` 与 `npm run build:kiosk-2d` 均通过，后者确认无 three.js。Python Black 和 `git diff --check` 通过。
+
+**浏览器验收**：隔离根目录服务使用 `/opt/miniconda3/envs/py311_katago/bin/python` 启动在 8002。应用内浏览器登录后进入 `kifu_24171`，第 1 手 Black 点击确认后直接进入第 2 手 White；页面 QA/override 控件为 0，控制台 0 error。测试完成后已关闭浏览器测试页和 8002 服务，不影响 8001 真机服务。
+
+**全仓基线**：全仓 Vitest 为 `72 failed / 307 passed`，与 P6 既有 72 个失败一致且新增用例通过；失败集中在 localStorage 测试环境、旧 Provider 包装和主题断言。`CI=true` 全仓 pytest 为 `33 failed / 533 passed / 5 skipped / 10 errors`，失败位于既有 user-game、web_ui 外部服务/fixture、tsumego 502 等非 P7 区域；P7 相关 214 个测试全绿。
+
+**待操作者真机动作**：重启 8001 使 Python 后端载入新代码，在 HBV 棋盘摆放并确认至少黑白两手，然后检查 `/Users/fan/.katrain/baipu_captures/<sgf_id>/` 新帧与 manifest 均为 `operator_confirmed`。此项需要物理摆子，不能以空盘自动点击代替。

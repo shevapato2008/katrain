@@ -1,7 +1,7 @@
 # Operator-Trusted Baipu Capture Design
 
 **Date:** 2026-06-22  
-**Status:** Approved direction; implementation pending  
+**Status:** Implemented; physical two-move photo inspection pending
 **Track:** `sbc-baipu-led-guide`
 
 ## 1. Goal
@@ -128,4 +128,3 @@ Frontend tests must prove:
 3. Hardware/storage failures remain visible and do not advance.
 
 Manual hardware verification uses a short SGF: place and confirm at least three moves, then verify sequential images and manifest entries in that SGF's directory. The saved images must show the board after the confirmed move and the LED for the next guided move.
-

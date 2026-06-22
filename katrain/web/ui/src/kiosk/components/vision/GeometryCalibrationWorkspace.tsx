@@ -33,6 +33,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
   const [layout, setLayout] = useState<GeometryLayout | null>(null);
   const [rawFrame, setRawFrame] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
+  const [confirmingManual, setConfirmingManual] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const active = ACTIVE.has(status.phase);
@@ -73,6 +74,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
     setActionError(null);
     try {
       await startCalibration(status.phase === 'required' ? 'auto' : 'manual');
+      setConfirmingManual(false);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : '无法启动标定');
     } finally {
@@ -80,12 +82,20 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
     }
   };
 
+  const handleStart = () => {
+    if (status.phase === 'ready' && !confirmingManual) {
+      setConfirmingManual(true);
+      return;
+    }
+    void start();
+  };
+
   const cameraReady = status.capabilities.camera_ready;
   const ledReady = status.capabilities.led_ready;
   const canStart = cameraReady && ledReady && !starting && !active;
   const progress = status.progress;
   const metrics = status.metrics ?? {};
-  const buttonLabel = status.phase === 'ready'
+  const buttonLabel = status.phase === 'ready' && !confirmingManual
     ? '重新标定'
     : status.phase === 'degraded'
       ? '已清空，重新标定'
@@ -121,6 +131,9 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
       )}
       {requireRecognition && status.phase === 'ready' && !status.capabilities.recognition_ready && (
         <Alert severity="warning">棋盘已标定，但识别模型尚未就绪</Alert>
+      )}
+      {confirmingManual && (
+        <Alert severity="warning">请先清空实体棋盘，再启动 LED 自动标定。</Alert>
       )}
       {actionError && <Alert severity="error">{actionError}</Alert>}
       {layoutError && <Alert severity="warning">几何叠加读取失败：{layoutError}</Alert>}
@@ -171,7 +184,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
             size="large"
             startIcon={<Refresh />}
             disabled={!canStart}
-            onClick={() => void start()}
+            onClick={handleStart}
             sx={{ minWidth: 240, minHeight: 48 }}
           >
             {buttonLabel}

@@ -91,7 +91,7 @@ describe('GeometryCalibrationWorkspace', () => {
     expect(screen.getByText('摄像头未连接')).toBeInTheDocument();
   });
 
-  it('shows fit metrics and offers manual recalibration when ready', () => {
+  it('requires a second empty-board confirmation before manual recalibration', async () => {
     status = {
       ...status,
       phase: 'ready',
@@ -105,6 +105,13 @@ describe('GeometryCalibrationWorkspace', () => {
 
     expect(screen.getByText(/13\/13/)).toBeInTheDocument();
     expect(screen.getByText(/RMS 1.385 px/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '重新标定' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '重新标定' }));
+
+    expect(startCalibration).not.toHaveBeenCalled();
+    expect(screen.getByText('请先清空实体棋盘，再启动 LED 自动标定。')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '已清空，开始自动标定' }));
+    await waitFor(() => expect(startCalibration).toHaveBeenCalledWith('manual'));
+    await waitFor(() => expect(screen.getByRole('button', { name: '重新标定' })).toBeEnabled());
   });
 });

@@ -7,7 +7,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from '../../../hooks/useTranslation';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface PlaybackBarProps {
   currentMove: number;

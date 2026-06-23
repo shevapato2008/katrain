@@ -1,11 +1,11 @@
 import { Box, Typography, Card, CardContent, Skeleton, Link } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { LiveAPI } from '../../../api/live';
-import type { UpcomingMatch, UpcomingSource } from '../../../types/live';
+import { LiveAPI } from '../../api/live';
+import type { UpcomingMatch, UpcomingSource } from '../../types/live';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { i18n } from '../../../i18n';
-import { useTranslation } from '../../../hooks/useTranslation';
+import { i18n } from '../../i18n';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const UPCOMING_SOURCE_LABELS: Record<UpcomingSource, { label: string; color: string }> = {
   foxwq: { label: '野狐', color: '#2e7d32' },

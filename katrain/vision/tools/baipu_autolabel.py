@@ -15,6 +15,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from katrain.vision.config import LedAnchorConfig
+
 # NOTE: katrain.core.baipu is imported LAZILY inside load_capture / reconstruct_board.
 # Importing it at module top would pull in katrain.core.game -> katrain.core.lang, which
 # instantiates gettext at import and raises FileNotFoundError when the i18n .mo files are
@@ -70,3 +72,110 @@ def reconstruct_board(steps: list[dict], applied_move_index: int) -> list[list[s
 
 def mean_grid_spacing(xs: np.ndarray, ys: np.ndarray) -> float:
     return float(np.mean([np.mean(np.diff(xs)), np.mean(np.diff(ys))]))
+
+
+def detect_led_centroid(warped_bgr, gx, gy, search_px, color, cfg: LedAnchorConfig | None = None):
+    """Brightest saturated red/green blob within search_px of (gx,gy). None if not found.
+
+    Thresholds come from cfg (parameterized so a new light/camera is a config edit).
+    """
+    cfg = cfg or LedAnchorConfig()
+    h, w = warped_bgr.shape[:2]
+    x0, y0 = max(0, int(gx - search_px)), max(0, int(gy - search_px))
+    x1, y1 = min(w, int(gx + search_px)), min(h, int(gy + search_px))
+    roi = warped_bgr[y0:y1, x0:x1]
+    if roi.size == 0:
+        return None
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    s, v = hsv[:, :, 1], hsv[:, :, 2]
+    hue = hsv[:, :, 0]
+    bright = (s > cfg.s_min) & (v > cfg.v_min)
+    if color == "black":  # red LED: hue wraps around 0/180
+        mask = bright & ((hue < cfg.red_hue_hi) | (hue > cfg.red_hue_lo))
+    else:  # white move -> green LED
+        mask = bright & (hue > cfg.green_hue_lo) & (hue < cfg.green_hue_hi)
+    if mask.sum() < 4:
+        return None
+    ys_, xs_ = np.nonzero(mask)
+    weights = v[ys_, xs_].astype(np.float64)
+    cx = float(np.average(xs_, weights=weights)) + x0
+    cy = float(np.average(ys_, weights=weights)) + y0
+    return cx, cy
+
+
+def _has_occupied_neighbor(board, r, c):
+    for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        rr, cc = r + dr, c + dc
+        if 0 <= rr < 19 and 0 <= cc < 19 and board[rr][cc] is not None:
+            return True
+    return False
+
+
+def detect_isolated_stone_centroids(warped_bgr, board, xs, ys, spacing):
+    """Hough-circle centroid for stones with no occupied 4-neighbor (avoids cluster drag)."""
+    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
+    r = max(6, int(0.45 * spacing))
+    out = []
+    half = int(0.7 * spacing)
+    for rr in range(19):
+        for cc in range(19):
+            if board[rr][cc] is None or _has_occupied_neighbor(board, rr, cc):
+                continue
+            gx, gy = grid_point(rr, cc, xs, ys)
+            x0, y0 = max(0, int(gx - half)), max(0, int(gy - half))
+            x1, y1 = min(gray.shape[1], int(gx + half)), min(gray.shape[0], int(gy + half))
+            patch = gray[y0:y1, x0:x1]
+            if patch.size == 0:
+                continue
+            circles = cv2.HoughCircles(
+                patch,
+                cv2.HOUGH_GRADIENT,
+                dp=1.2,
+                minDist=2 * r,
+                param1=120,
+                param2=18,
+                minRadius=int(0.6 * r),
+                maxRadius=int(1.4 * r),
+            )
+            if circles is None:
+                continue
+            c0 = circles[0][0]
+            out.append(((gx, gy), (float(c0[0]) + x0, float(c0[1]) + y0)))
+    return out
+
+
+@dataclass
+class ShiftReport:
+    dx: float
+    dy: float
+    anchor_count: int
+    led_found: bool
+    residual_px: float  # MAD of anchor deltas about the median (anchor agreement)
+    fallback_used: bool  # True when no anchors -> prev_shift was carried forward
+
+
+def estimate_global_shift(warped_bgr, board, led_point, xs, ys, spacing, prev_shift=(0.0, 0.0), cfg=None):
+    """Robust per-frame drift = median(detected_centroid - grid_point) over anchors.
+
+    On zero anchors, carry forward prev_shift (NOT (0,0)) so a single anchor-less frame
+    mid-game (e.g. the full-board final frame) inherits the correct ~16px offset instead
+    of snapping back to the un-drifted grid. Returns a ShiftReport.
+    """
+    deltas = []
+    led_found = False
+    if led_point is not None:
+        gx, gy = grid_point(led_point["row"], led_point["col"], xs, ys)
+        led = detect_led_centroid(warped_bgr, gx, gy, int(0.7 * spacing), led_point["color"], cfg)
+        if led is not None:
+            deltas.append((led[0] - gx, led[1] - gy))
+            led_found = True
+    for (gx, gy), (cx, cy) in detect_isolated_stone_centroids(warped_bgr, board, xs, ys, spacing):
+        deltas.append((cx - gx, cy - gy))
+    if not deltas:
+        return ShiftReport(float(prev_shift[0]), float(prev_shift[1]), 0, led_found, 0.0, True)
+    arr = np.asarray(deltas, dtype=np.float64)
+    dx, dy = float(np.median(arr[:, 0])), float(np.median(arr[:, 1]))
+    residual = float(np.median(np.abs(arr - np.array([dx, dy]))))  # MAD
+    lim = 0.6 * spacing
+    dx, dy = float(np.clip(dx, -lim, lim)), float(np.clip(dy, -lim, lim))
+    return ShiftReport(dx, dy, len(deltas), led_found, residual, False)

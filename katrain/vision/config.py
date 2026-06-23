@@ -43,3 +43,17 @@ class CameraConfig:
     @property
     def is_calibrated(self) -> bool:
         return self.camera_matrix is not None and self.dist_coeffs is not None
+
+
+@dataclass
+class LedAnchorConfig:
+    """HSV thresholds for locating the guide LED as a drift anchor (NOT for labeling —
+    the LED's class/position come from manifest ground truth). Parameterized so a new
+    board/light is a config edit, not a code change. Red hue wraps 0/180."""
+
+    red_hue_hi: int = 12
+    red_hue_lo: int = 168
+    green_hue_lo: int = 40
+    green_hue_hi: int = 90
+    s_min: int = 80
+    v_min: int = 120

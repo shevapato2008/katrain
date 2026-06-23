@@ -61,3 +61,56 @@ def test_reconstruct_board_handles_captures_by_final_move():
     board = bal.reconstruct_board(cap.steps, 210)  # final position of a 211-move game
     total = sum(c is not None for row in board for c in row)
     assert total == 205  # 211 placements - 6 captured (verified)
+
+
+# ---------- pure-CV unit tests (CI: no fixture, no .mo) ----------
+
+
+def test_detect_led_centroid_finds_green_blob():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    img = np.zeros((950, 950, 3), dtype=np.uint8)
+    gx, gy = bal.grid_point(9, 9, SYNTH_XS, SYNTH_YS)
+    cv2.circle(img, (int(gx) + 4, int(gy) - 3), 6, (0, 255, 0), -1)  # green (BGR) blob
+    c = bal.detect_led_centroid(img, gx, gy, int(0.7 * spacing), "white")  # white move -> green LED
+    assert c is not None
+    assert abs(c[0] - (gx + 4)) < 3 and abs(c[1] - (gy - 3)) < 3
+
+
+def test_estimate_global_shift_recovers_known_translation():
+    # LED-only anchor: deterministic (HSV centroid), no Hough flakiness.
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    img = np.zeros((950, 950, 3), dtype=np.uint8)
+    led = {"row": 9, "col": 9, "color": "white"}  # green LED
+    gx, gy = bal.grid_point(9, 9, SYNTH_XS, SYNTH_YS)
+    tx, ty = 8.0, -5.0
+    cv2.circle(img, (int(gx + tx), int(gy + ty)), 6, (0, 255, 0), -1)
+    empty = [[None] * 19 for _ in range(19)]
+    rep = bal.estimate_global_shift(img, empty, led, SYNTH_XS, SYNTH_YS, spacing)
+    assert abs(rep.dx - tx) < 0.1 * spacing and abs(rep.dy - ty) < 0.1 * spacing
+    assert rep.led_found and rep.anchor_count >= 1 and not rep.fallback_used
+
+
+def test_estimate_global_shift_carry_forward_on_no_anchor():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    blank = np.zeros((950, 950, 3), dtype=np.uint8)
+    empty = [[None] * 19 for _ in range(19)]
+    rep = bal.estimate_global_shift(blank, empty, None, SYNTH_XS, SYNTH_YS, spacing, prev_shift=(5.0, -3.0))
+    assert (rep.dx, rep.dy) == (5.0, -3.0) and rep.fallback_used and rep.anchor_count == 0
+    rep0 = bal.estimate_global_shift(blank, empty, None, SYNTH_XS, SYNTH_YS, spacing)
+    assert (rep0.dx, rep0.dy) == (0.0, 0.0)  # first frame: default prev_shift
+
+
+# ---------- real-data integration test (skip without fixture; need .mo) ----------
+
+
+@requires_capture
+def test_estimate_global_shift_is_small_and_clamped():
+    cap = bal.load_capture(GAME)
+    spacing = bal.mean_grid_spacing(cap.xs, cap.ys)
+    fr = next(f for f in cap.manifest["frames"] if f["file"] == "frame_040.jpg")
+    img = cv2.imread(str(GAME / fr["file"]))
+    warped = bal.warp_frame(img, cap.M, cap.out_size)
+    board = bal.reconstruct_board(cap.steps, fr["applied_move_index"])
+    rep = bal.estimate_global_shift(warped, board, fr["led_point"], cap.xs, cap.ys, spacing)
+    assert abs(rep.dx) <= 0.6 * spacing and abs(rep.dy) <= 0.6 * spacing
+    assert rep.anchor_count >= 1  # frame_040 has the guide LED + isolated stones

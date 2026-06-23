@@ -270,6 +270,7 @@ async def _lifespan_board(app: FastAPI, log):
     remote_client = RemoteAPIClient(
         base_url=settings.REMOTE_API_URL,
         device_id=settings.DEVICE_ID,
+        health_timeout=float(os.getenv("KATRAIN_HEALTH_CHECK_TIMEOUT", "10.0")),
     )
     app.state.remote_client = remote_client
 

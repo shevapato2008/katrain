@@ -26,9 +26,15 @@ class RemoteAPIClient:
         base_url: str,
         device_id: str,
         timeout: float = 30.0,
+        health_timeout: float = 10.0,
     ):
         self.base_url = base_url.rstrip("/")
         self.device_id = device_id
+        # Health probes get their own (shorter) timeout. Defaults to 10s — long
+        # enough to absorb a slow TLS handshake or a momentarily starved event
+        # loop at startup, but bounded so the 10s health loop stays responsive.
+        # Override via KATRAIN_HEALTH_CHECK_TIMEOUT (wired in server.py).
+        self._health_timeout = health_timeout
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._auth_required: bool = False  # True when refresh also fails
@@ -284,7 +290,7 @@ class RemoteAPIClient:
         """Check remote server health. Returns {ok: bool, rtt_ms: int}."""
         start = time.monotonic()
         try:
-            resp = await self._client.get("/health", timeout=5.0)
+            resp = await self._client.get("/health", timeout=self._health_timeout)
             rtt_ms = int((time.monotonic() - start) * 1000)
             return {"ok": resp.status_code == 200, "rtt_ms": rtt_ms}
         except Exception:

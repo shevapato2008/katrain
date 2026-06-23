@@ -115,6 +115,9 @@ class LedService:
         self._serial = None
         self._connected = False
         self._last_reconnect = 0.0
+        # Set once pyserial itself is missing — a permanent condition, so we stop
+        # retrying (and stop logging) instead of hammering every reconnect_interval.
+        self._serial_unavailable = False
 
     # -- LUT --------------------------------------------------------------- #
     def _load_lut(self, lut_path: Optional[str]) -> Callable[[int, int], int]:
@@ -307,12 +310,24 @@ class LedService:
                 if line.startswith("OK") or line.startswith("ERR"):
                     break
             log.info("LED serial opened on %s", self.config.serial_port)
+        except ImportError as e:
+            # pyserial not installed — permanent, not a transient device hiccup.
+            # Log once and disable reconnect so we don't spam the log every cycle.
+            self._serial = None
+            self._connected = False
+            self._serial_unavailable = True
+            log.warning(
+                "LED disabled: pyserial not installed (%s). Run `pip install pyserial` to enable LED guidance.",
+                e,
+            )
         except Exception as e:
             self._serial = None
             self._connected = False
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self) -> None:
+        if self._serial_unavailable:
+            return  # pyserial missing — never recoverable by retrying
         now = self._clock()
         if now - self._last_reconnect < self._reconnect_interval:
             return

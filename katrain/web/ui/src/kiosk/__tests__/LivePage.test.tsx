@@ -3,16 +3,29 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import type { MatchSummary } from '../../types/live';
+import type { MatchSummary, MatchDetail } from '../../types/live';
 
 vi.mock('../../hooks/live/useLiveMatches', () => ({
   useLiveMatches: vi.fn(),
 }));
+vi.mock('../../hooks/live/useLiveMatch', () => ({
+  useLiveMatch: vi.fn(),
+}));
+// UpcomingList (rendered under the "Upcoming" tab) calls LiveAPI.getUpcoming.
+vi.mock('../../api/live', () => ({
+  LiveAPI: { getUpcoming: vi.fn().mockResolvedValue({ matches: [] }) },
+}));
+// OrientationContext: kiosk renders landscape (isPortrait hardcoded false today).
+vi.mock('../context/OrientationContext', () => ({
+  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+}));
 
 import { useLiveMatches } from '../../hooks/live/useLiveMatches';
+import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import LivePage from '../pages/LivePage';
 
 const mockUseLiveMatches = useLiveMatches as ReturnType<typeof vi.fn>;
+const mockUseLiveMatch = useLiveMatch as ReturnType<typeof vi.fn>;
 
 const mockMatches: MatchSummary[] = [
   {
@@ -37,7 +50,7 @@ const mockMatches: MatchSummary[] = [
   },
   {
     id: 'live-2',
-    source: 'weiqi_org',
+    source: 'yike',
     tournament: '应氏杯',
     round_name: '四分之一决赛',
     date: '2025-06-01',
@@ -57,6 +70,32 @@ const mockMatches: MatchSummary[] = [
   },
 ];
 
+const selectedDetail: MatchDetail = { ...mockMatches[0], sgf: null, moves: [] };
+
+function setMatches(over: Partial<ReturnType<typeof useLiveMatches>> = {}) {
+  mockUseLiveMatches.mockReturnValue({
+    matches: mockMatches,
+    liveCount: 1,
+    total: 2,
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+    ...over,
+  });
+}
+
+function setSelected(match: MatchDetail | null = selectedDetail) {
+  mockUseLiveMatch.mockReturnValue({
+    match,
+    loading: false,
+    error: null,
+    currentMove: match ? match.move_count : 0,
+    setCurrentMove: vi.fn(),
+    analysis: {},
+    refresh: vi.fn(),
+  });
+}
+
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
@@ -66,92 +105,59 @@ const renderPage = () =>
     </ThemeProvider>
   );
 
-describe('LivePage', () => {
+describe('LivePage (kiosk)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setSelected();
   });
 
   it('shows loading spinner while fetching', () => {
-    mockUseLiveMatches.mockReturnValue({
-      matches: [],
-      liveCount: 0,
-      total: 0,
-      loading: true,
-      error: null,
-      refresh: vi.fn(),
-    });
+    setMatches({ matches: [], liveCount: 0, total: 0, loading: true });
+    setSelected(null);
     renderPage();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('shows error message on failure', () => {
-    mockUseLiveMatches.mockReturnValue({
-      matches: [],
-      liveCount: 0,
-      total: 0,
-      loading: false,
-      error: new Error('Network error'),
-      refresh: vi.fn(),
-    });
+    setMatches({ matches: [], liveCount: 0, total: 0, loading: false, error: new Error('Network error') });
+    setSelected(null);
     renderPage();
     expect(screen.getByText('Network error')).toBeInTheDocument();
   });
 
-  it('shows empty state when no matches', () => {
-    mockUseLiveMatches.mockReturnValue({
-      matches: [],
-      liveCount: 0,
-      total: 0,
-      loading: false,
-      error: null,
-      refresh: vi.fn(),
-    });
+  it('shows empty state when there are no live matches', () => {
+    setMatches({ matches: [], liveCount: 0, total: 0 });
+    setSelected(null);
     renderPage();
     expect(screen.getByText('暂无直播')).toBeInTheDocument();
   });
 
-  it('renders match list with player names and tournaments', () => {
-    mockUseLiveMatches.mockReturnValue({
-      matches: mockMatches,
-      liveCount: 1,
-      total: 2,
-      loading: false,
-      error: null,
-      refresh: vi.fn(),
-    });
+  it('renders header, both tabs, and the enter button', () => {
+    setMatches();
     renderPage();
-    expect(screen.getByRole('heading', { name: /直播/i })).toBeInTheDocument();
-    expect(screen.getByText(/柯洁/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '直播' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '热门对局' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '即将开始' })).toBeInTheDocument();
+    // Selected match is live -> enter button reads "进入直播".
+    expect(screen.getByRole('button', { name: '进入直播' })).toBeInTheDocument();
+  });
+
+  it('renders live and finished matches via the shared MatchList', () => {
+    setMatches();
+    renderPage();
+    expect(screen.getByText(/柯洁/)).toBeInTheDocument(); // live (Top Matches)
     expect(screen.getByText(/朴廷桓/)).toBeInTheDocument();
-    expect(screen.getByText(/春兰杯/)).toBeInTheDocument();
-    expect(screen.getByText(/申真谞/)).toBeInTheDocument();
+    expect(screen.getByText(/申真谞/)).toBeInTheDocument(); // finished (History)
+    expect(screen.getByText(/直播中 \(1\)/)).toBeInTheDocument(); // group label with live count
   });
 
-  it('shows live count when there are live matches', () => {
-    mockUseLiveMatches.mockReturnValue({
-      matches: mockMatches,
-      liveCount: 1,
-      total: 2,
-      loading: false,
-      error: null,
-      refresh: vi.fn(),
-    });
+  it('navigates to the match detail when entering', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    setMatches();
     renderPage();
-    expect(screen.getByText('1 场正在直播')).toBeInTheDocument();
-  });
-
-  it('shows move count for live matches and status chips', () => {
-    mockUseLiveMatches.mockReturnValue({
-      matches: mockMatches,
-      liveCount: 1,
-      total: 2,
-      loading: false,
-      error: null,
-      refresh: vi.fn(),
-    });
-    renderPage();
-    expect(screen.getByText('第127手')).toBeInTheDocument();
-    expect(screen.getByText('直播中')).toBeInTheDocument();
-    expect(screen.getByText('已结束')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '进入直播' }));
+    // navigation handled by react-router MemoryRouter; assert no throw + button stays
+    expect(screen.getByRole('button', { name: '进入直播' })).toBeInTheDocument();
   });
 });

@@ -116,8 +116,8 @@ class GeometryCalibrationService:
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
-            if self._status["phase"] != "required":
-                raise ValueError("existing geometry can only be confirmed after restart")
+            if self._status["phase"] not in {"required", "failed"}:
+                raise ValueError("existing geometry can only be confirmed after restart or failed recalibration")
             if self.current_lock is None:
                 raise ValueError("no existing geometry to confirm")
             if not self._is_ready(self.capture):

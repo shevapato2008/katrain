@@ -96,6 +96,7 @@ class BaipuCaptureRequest(BaseModel):
     move_index: int  # the step just placed; -1 = forced initial empty+LED frame
     sgf: str
     capture_condition: Optional[Dict[str, Any]] = None
+    overwrite_existing: bool = False
 
 
 @router.post("/capture")
@@ -128,6 +129,7 @@ async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str
             move_index=body.move_index,
             sgf=body.sgf,
             capture_condition=body.capture_condition,
+            overwrite_existing=body.overwrite_existing,
         )
     except LedUnavailable as exc:
         raise HTTPException(status_code=409, detail={"error": "led_unavailable", "message": str(exc)})

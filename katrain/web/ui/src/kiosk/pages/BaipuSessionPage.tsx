@@ -101,6 +101,7 @@ const BaipuSessionPage = () => {
   const [capturePending, setCapturePending] = useState(false);
   const [frameCount, setFrameCount] = useState(0);
   const [latestSavedFile, setLatestSavedFile] = useState<string | null>(null);
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
   const initialCapturedRef = useRef(false);
   const mountedRef = useRef(true);
 
@@ -162,7 +163,12 @@ const BaipuSessionPage = () => {
       if (!sgf) return;
       setCapturePending(true);
       setError(null);
-      const out = await BaipuAPI.capture({ game_id: source, move_index: moveIndex, sgf });
+      const out = await BaipuAPI.capture({
+        game_id: source,
+        move_index: moveIndex,
+        sgf,
+        overwrite_existing: overwriteExisting || undefined,
+      });
       if (!mountedRef.current) return; // navigated away mid-capture
       setCapturePending(false);
       if (out.kind === 'error') {
@@ -178,14 +184,19 @@ const BaipuSessionPage = () => {
       // ok | disabled → advance (capture is advisory only in non-hardware modes)
       advance();
     },
-    [sgf, source, advance],
+    [sgf, source, overwriteExisting, advance],
   );
 
   // Forced initial empty+LED frame (default ON) — best-effort, before the first move.
   useEffect(() => {
-    if (phase === 'guiding' && k === 0 && !initialCapturedRef.current && sgf && steps.length > 0) {
+    if (phase === 'guiding' && k === 0 && resumePrompt === null && !initialCapturedRef.current && sgf && steps.length > 0) {
       initialCapturedRef.current = true;
-      BaipuAPI.capture({ game_id: source, move_index: -1, sgf })
+      BaipuAPI.capture({
+        game_id: source,
+        move_index: -1,
+        sgf,
+        overwrite_existing: overwriteExisting || undefined,
+      })
         .then((out) => {
           if (out.kind !== 'ok' || !mountedRef.current) return;
           const filename = savedFilename(out.result.path);
@@ -194,7 +205,7 @@ const BaipuSessionPage = () => {
         })
         .catch(() => undefined);
     }
-  }, [phase, k, sgf, source, steps.length]);
+  }, [phase, k, resumePrompt, sgf, source, steps.length, overwriteExisting]);
 
   // Steps with no physical placement (pass, AE-clear) auto-advance (plan §1.3).
   useEffect(() => {
@@ -472,8 +483,17 @@ const BaipuSessionPage = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { clearProgress(source); setK(0); setResumePrompt(null); }}>{t('Restart', '重新开始')}</Button>
-          <Button variant="contained" onClick={() => { if (resumePrompt != null) setK(resumePrompt); setResumePrompt(null); }} data-testid="baipu-resume-continue">
+          <Button onClick={() => {
+            clearProgress(source);
+            setOverwriteExisting(true);
+            setFrameCount(0);
+            setLatestSavedFile(null);
+            setError(null);
+            initialCapturedRef.current = false;
+            setK(0);
+            setResumePrompt(null);
+          }}>{t('Restart', '重新开始')}</Button>
+          <Button variant="contained" onClick={() => { if (resumePrompt != null) setK(resumePrompt); setOverwriteExisting(false); setResumePrompt(null); }} data-testid="baipu-resume-continue">
             {t('Continue', '继续上次')}
           </Button>
         </DialogActions>

@@ -162,6 +162,30 @@ def test_confirm_existing_promotes_loaded_lock_without_recalibration(tmp_path):
     assert not save_path.exists()
 
 
+def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tmp_path):
+    old = _synth()
+    promoted = []
+    capture = FreshFakeCapture()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=old,
+        on_success=promoted.append,
+    )
+    service._status["phase"] = "failed"
+    service._status["error"] = "anchor_not_found:15,15"
+
+    status = service.confirm_existing()
+
+    assert status["phase"] == "ready"
+    assert status["session_calibrated"] is True
+    assert status["trigger"] == "operator_reuse"
+    assert status["error"] is None
+    assert promoted == [old]
+    assert capture.grab_calls == 1
+
+
 def test_confirm_existing_rejects_missing_lock(tmp_path):
     service = GeometryCalibrationService(led=FakeLed(), capture=FreshFakeCapture(), save_path=tmp_path / "geometry.npz")
 

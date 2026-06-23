@@ -46,6 +46,7 @@ export interface BaipuLoadResponse {
 export interface BaipuCaptureResult {
   ok: boolean;
   idempotent?: boolean;
+  overwritten?: boolean;
   path?: string;
   qa_status?: string;
   frame_kind?: string;
@@ -78,6 +79,7 @@ export const BaipuAPI = {
     move_index: number;
     sgf: string;
     capture_condition?: Record<string, unknown>;
+    overwrite_existing?: boolean;
   }): Promise<BaipuCaptureOutcome> => {
     let response: Response;
     try {

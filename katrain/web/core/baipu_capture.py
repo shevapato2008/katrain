@@ -75,6 +75,19 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _unlink_manifest_frame(game_dir: Path, frame: dict) -> None:
+    file_name = frame.get("file")
+    if not isinstance(file_name, str):
+        return
+    path = (game_dir / file_name).resolve()
+    if game_dir not in path.parents and path != game_dir:
+        return
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
 def run_capture(
     *,
     led,
@@ -88,6 +101,7 @@ def run_capture(
     sgf: str,
     capture_condition: Optional[dict] = None,
     settle_ms: float = 150.0,
+    overwrite_existing: bool = False,
 ) -> dict:
     """Run one operator-confirmed capture step.
 
@@ -117,7 +131,7 @@ def run_capture(
         for index, fr in enumerate(frames):
             if fr["applied_move_index"] == move_index:
                 existing_path = game_dir / fr["file"]
-                if existing_path.is_file() and existing_path.stat().st_size > 0:
+                if existing_path.is_file() and existing_path.stat().st_size > 0 and not overwrite_existing:
                     return {
                         "ok": True,
                         "idempotent": True,
@@ -127,6 +141,10 @@ def run_capture(
                         "next_guided_move_index": fr["next_guided_move_index"],
                     }
                 repair_index = index
+                if overwrite_existing:
+                    for stale in frames[index + 1 :]:
+                        _unlink_manifest_frame(game_dir, stale)
+                    del frames[index + 1 :]
                 break
 
         # Collection bootstrap: the explicit operator confirmation is ground truth.
@@ -191,6 +209,7 @@ def run_capture(
             "ok": True,
             "idempotent": False,
             "repaired": repair_index is not None,
+            "overwritten": bool(overwrite_existing and repair_index is not None),
             "path": path,
             "qa_status": qa_status,
             "frame_kind": frame_kind,

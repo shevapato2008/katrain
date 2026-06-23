@@ -1,8 +1,8 @@
 # 实施计划：Kiosk 摆谱 + LED 引导落子（sbc-baipu-led-guide）
 
-- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-22（**v5**；P7 为 YOLO 数据采集策略修订）
+- **Track**: `sbc-baipu-led-guide`  ·  **分支**: `feature/rk3588-ui`  ·  **日期**: 2026-06-23（**v6**；P10 为标定诊断卡片与同目录覆盖重启修订）
 - **依据**: `prd.md` · `led-calibration-and-protocol.md` · `review-feedback-{codex,gemini,gstack}.md` · 4 项决策（见 §0.3）
-- **状态**: **P1–P7 已实现并完成自动化/浏览器验收**；P7 真机摆两手检查训练照片、实际移动摄像头触发 degraded 留作操作者联合手动验收。见 §11–§14 执行记录。
+- **状态**: **P1–P10 已实现并完成自动化/浏览器验收**；真机摆谱、实际移动摄像头触发 degraded、同目录覆盖旧帧的物理采集效果留作操作者联合手动验收。见 §11–§14 与 P8–P10 执行记录。
 
 > **For agentic workers:** REQUIRED: Use `superpowers:executing-plans` to implement the current pending phase. Steps use checkbox (`- [ ]`) syntax for tracking and follow TDD red/green verification.
 
@@ -1639,3 +1639,223 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 - **扩大回归:** 几何服务/API、漂移和摆谱 API 共 `35 passed`；变更文件 ESLint 通过。
 - **构建:** `npm run build` 和 `npm run build:kiosk-2d` 通过，2D 产物确认无 Three.js。
 - **安全边界:** 复用不点灯、不写持久化 lock/baseline；只允许 required+last_valid+camera ready，degraded 继续强制清空重标定。
+
+---
+
+## P10. 标定诊断卡片 + 摆谱同目录覆盖重启（2026-06-23）
+
+**状态**: 已完成。
+
+**Goal:** 把标定失败从内部错误码改为操作者可理解的诊断卡片，并让摆谱“重新开始”在同一 SGF 目录内显式覆盖旧帧，避免旧训练图片被静默复用。
+
+**Architecture:** 标定错误翻译保留在前端展示层，后端服务只放宽 `failed + last_valid` 的旧几何确认入口；`degraded` 仍禁止复用。摆谱采集新增 `overwrite_existing` 显式字段，默认幂等行为不变，只有重启会话传入该字段时才覆盖同名旧帧并裁掉旧 manifest 尾部。
+
+**Tech Stack:** FastAPI/Pydantic、pytest、React/Vite/MUI、Vitest、Playwright。
+
+**设计文档:** `superpowers/tracks/sbc-baipu-led-guide/2026-06-23-error-diagnostics-and-overwrite-restart-design.md`
+
+### Task 1：服务层 RED/GREEN——failed 状态可确认历史几何
+
+**Files:**
+- Modify: `katrain/web/core/geometry_calibration_service.py`
+- Test: `tests/test_geometry_calibration_service.py`
+
+- [x] **Step 1.1: 写 RED 测试**
+
+  在 `tests/test_geometry_calibration_service.py` 增加：
+
+  ```python
+  def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tmp_path):
+      old = _synth()
+      promoted = []
+      capture = FreshFakeCapture()
+      service = GeometryCalibrationService(
+          led=FakeLed(),
+          capture=capture,
+          save_path=tmp_path / "geometry.npz",
+          initial_lock=old,
+          on_success=promoted.append,
+      )
+      service._status["phase"] = "failed"
+      service._status["error"] = "anchor_not_found:15,15"
+
+      status = service.confirm_existing()
+
+      assert status["phase"] == "ready"
+      assert status["session_calibrated"] is True
+      assert status["trigger"] == "operator_reuse"
+      assert status["error"] is None
+      assert promoted == [old]
+      assert capture.grab_calls == 1
+  ```
+
+- [x] **Step 1.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py::test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid -q`
+
+  Expected: FAIL，错误信息包含 `only be confirmed after restart`。
+
+- [x] **Step 1.3: 实现最小服务变更**
+
+  把 `confirm_existing()` 的 phase 判断从仅 `required` 改为允许 `{"required", "failed"}`，错误消息改为 `"existing geometry can only be confirmed after restart or failed recalibration"`。保留 `degraded` 拒绝。
+
+- [x] **Step 1.4: 运行 GREEN**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py -q`
+
+  Expected: 全部 PASS。
+
+### Task 2：后端采集 RED/GREEN——同目录覆盖旧帧
+
+**Files:**
+- Modify: `katrain/web/core/baipu_capture.py`
+- Modify: `katrain/web/api/v1/endpoints/baipu.py`
+- Test: `tests/test_baipu_capture.py`
+- Test: `tests/test_baipu_api.py`
+
+- [x] **Step 2.1: 写 RED 测试**
+
+  在 `tests/test_baipu_capture.py` 增加：
+
+  ```python
+  class VersionedCapture(FakeCapture):
+      def __init__(self, out_dir):
+          super().__init__(out_dir)
+          self.version = 0
+
+      def capture_to(self, path, after_ts=None, settle_ms=150.0):
+          self.version += 1
+          self.capture_calls.append({"path": path, "after_ts": after_ts})
+          Path(path).parent.mkdir(parents=True, exist_ok=True)
+          Path(path).write_bytes(f"jpg-{self.version}".encode("ascii"))
+          return path, self.version, 223.0
+
+  def test_overwrite_existing_restarts_same_directory_and_prunes_stale_tail(tmp_path):
+      data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+      steps, bs = data["steps"], data["board_size"]
+      led, cap = FakeLed(), VersionedCapture(tmp_path)
+      _capture(str(tmp_path), steps, bs, -1, led, cap)
+      _capture(str(tmp_path), steps, bs, 0, led, cap)
+      _capture(str(tmp_path), steps, bs, 1, led, cap)
+
+      restarted = _capture(str(tmp_path), steps, bs, -1, led, cap, overwrite_existing=True)
+
+      assert restarted["idempotent"] is False
+      assert restarted["overwritten"] is True
+      assert (tmp_path / "g1" / "frame_000.jpg").read_bytes() == b"jpg-4"
+      assert not (tmp_path / "g1" / "frame_001.jpg").exists()
+      manifest = json.loads((tmp_path / "g1" / "manifest.json").read_text())
+      assert [f["file"] for f in manifest["frames"]] == ["frame_000.jpg"]
+  ```
+
+  在 `tests/test_baipu_api.py` 增加一个请求 `overwrite_existing=True` 的 200 覆盖，证明 Pydantic 字段被 endpoint 传入。
+
+- [x] **Step 2.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_baipu_capture.py::TestRobustness::test_overwrite_existing_restarts_same_directory_and_prunes_stale_tail -q`
+
+  Expected: FAIL，`run_capture()` 不接受 `overwrite_existing`。
+
+- [x] **Step 2.3: 实现最小后端变更**
+
+  `run_capture()` 增加 `overwrite_existing: bool = False`。命中已有 `applied_move_index` 时：
+
+  - 默认 `False` 且图片存在：保持原幂等返回。
+  - `True`：设置 `repair_index=index`，删除 `frames[index + 1:]` 对应图片并裁掉 manifest 尾部，然后覆盖当前 `frame_file`。
+  - 缺帧修复仍不裁剪后续帧。
+
+  `BaipuCaptureRequest` 增加 `overwrite_existing: bool = False`，endpoint 传给 `run_capture()`。
+
+- [x] **Step 2.4: 运行 GREEN**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_baipu_capture.py tests/test_baipu_api.py -q`
+
+  Expected: 全部 PASS。
+
+### Task 3：前端 RED/GREEN——诊断卡片与重启覆盖模式
+
+**Files:**
+- Modify: `katrain/web/ui/src/api/baipuApi.ts`
+- Modify: `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx`
+- Modify: `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx`
+- Test: `katrain/web/ui/src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+- Test: `katrain/web/ui/tests/baipu.spec.ts`
+
+- [x] **Step 3.1: 写诊断卡片 RED**
+
+  在 `GeometryCalibrationWorkspace.test.tsx` 增加 failed+last_valid 场景，断言：
+
+  ```typescript
+  expect(screen.getByTestId('geometry-diagnostic-card')).toBeInTheDocument();
+  expect(screen.getByText('无法定位 Q4 的定位灯')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '网格无误，使用上次标定' }));
+  await waitFor(() => expect(confirmExisting).toHaveBeenCalledTimes(1));
+  ```
+
+- [x] **Step 3.2: 写重启覆盖 RED**
+
+  在 `baipu.spec.ts` 增加 resume prompt 场景，localStorage 写入 `baipu:progress:test1`，进入页面后先断言没有抢拍 `/baipu/capture`，点击“重新开始”后断言第一次 capture 请求包含：
+
+  ```typescript
+  expect(bodies[0]).toEqual(expect.objectContaining({
+    move_index: -1,
+    overwrite_existing: true,
+  }));
+  ```
+
+- [x] **Step 3.3: 运行 RED**
+
+  Run: `cd katrain/web/ui && npm test -- src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts --grep "restart"`
+
+  Expected: 两个新测试失败。
+
+- [x] **Step 3.4: 实现前端变更**
+
+  `GeometryCalibrationWorkspace` 新增诊断卡片组件，`canReuse` 改为 `required|failed` 且 `last_valid`。`BaipuSessionPage` 新增 `overwriteExisting` 状态；resume 对话框的“重新开始”设置该状态、重置首帧 ref、帧计数和最近保存文件。初始帧 effect 在 `resumePrompt === null` 后才运行，capture 请求携带 `overwrite_existing`。
+
+- [x] **Step 3.5: 运行 GREEN**
+
+  Run: `cd katrain/web/ui && npm test -- src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx`
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts --grep "restart"`
+
+  Expected: 全部 PASS。
+
+### Task 4：回归、构建与执行记录
+
+**Files:**
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/2026-06-23-error-diagnostics-and-overwrite-restart-design.md`
+
+- [x] **Step 4.1: 后端定向回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_baipu_capture.py tests/test_baipu_api.py -q`
+
+  Expected: 全部 PASS。
+
+- [x] **Step 4.2: 前端定向回归与构建**
+
+  Run: `cd katrain/web/ui && npm test -- src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/api/baipuApi.test.ts`
+
+  Run: `cd katrain/web/ui && npx playwright test tests/baipu.spec.ts`
+
+  Run: `cd katrain/web/ui && npm run build`
+
+  Expected: 全部退出码 0。
+
+- [x] **Step 4.3: 更新执行记录**
+
+  勾选 P10 步骤，记录 RED/GREEN、回归和构建结果。
+
+### P10 执行记录
+
+- **服务层 RED:** `test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid` 先失败，错误为 `existing geometry can only be confirmed after restart`。
+- **采集层 RED:** `overwrite_existing=True` 先触发 `run_capture() got an unexpected keyword argument 'overwrite_existing'`。
+- **API RED:** `/baipu/capture` 先未把 `overwrite_existing` 转发到 `run_capture`。
+- **前端 RED:** 诊断卡片测试先找不到 `geometry-diagnostic-card`；Playwright 初次因静态包未更新看到旧 bundle，重建后验证新行为。
+- **GREEN:** 后端定向回归 `/opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_geometry_calibration_service.py tests/test_geometry_api.py tests/test_baipu_capture.py tests/test_baipu_api.py -q` → `44 passed`。
+- **前端组件/API:** `npm test -- src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/api/baipuApi.test.ts` → `12 passed`。
+- **浏览器验证:** `PATH=/opt/miniconda3/envs/py311_katago/bin:$PATH npx playwright test tests/baipu.spec.ts` → `6 passed`；覆盖“重新开始”不会抢拍，点击后首帧请求带 `overwrite_existing:true`。
+- **构建:** `npm run build` 通过，静态包已更新到 `katrain/web/static`。

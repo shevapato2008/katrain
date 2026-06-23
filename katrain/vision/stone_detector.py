@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-CLASS_NAMES = {0: "black", 1: "white"}
+from katrain.vision.classes import ID_TO_NAME as CLASS_NAMES  # {0:'black',1:'white',2:'led_red',3:'led_green'}
 
 
 @dataclass

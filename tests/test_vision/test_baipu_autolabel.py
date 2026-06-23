@@ -176,3 +176,27 @@ def test_final_frame_has_no_led_box():
     board = bal.reconstruct_board(cap.steps, fr["applied_move_index"])
     boxes = bal.frame_boxes(board, fr["led_point"], cap.xs, cap.ys, (0.0, 0.0), spacing)
     assert all(b.class_id in (0, 1) for b in boxes)  # final_no_led frame
+
+
+@requires_capture
+def test_process_game_writes_matching_labels(tmp_path):
+    imgs = tmp_path / "images"
+    lbls = tmp_path / "labels"
+    verify = tmp_path / "verify"
+    stats = bal.process_game(GAME, imgs, lbls, verify_dir=verify, dedup_per_move=True)
+    assert stats["written"] == 212  # all frames distinct applied_move_index -> dedup is a no-op here
+    # every image has a label file
+    img_stems = {p.stem for p in imgs.glob("*.jpg")}
+    lbl_stems = {p.stem for p in lbls.glob("*.txt")}
+    assert img_stems == lbl_stems
+    # 211 frames carry a guide LED, but frame_143's LED is on row 0 and the board drifted ~25px
+    # off the top edge, so that LED is genuinely outside the rectified image and is correctly
+    # dropped (labeling an off-frame point would be a phantom). 210-211 tolerates the sub-pixel boundary.
+    assert 210 <= stats["led_red"] + stats["led_green"] <= 211
+    assert (verify / "shifts.csv").exists()  # per-frame drift diagnostics for the QA gate
+    # every label line is well-formed with class in 0..3
+    for txt in lbls.glob("*.txt"):
+        for line in txt.read_text().splitlines():
+            parts = line.split()
+            assert len(parts) == 5 and 0 <= int(parts[0]) <= 3
+            assert all(0.0 <= float(x) <= 1.0 for x in parts[1:])

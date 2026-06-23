@@ -8,9 +8,16 @@ worker.py feeds the detector. See superpowers/tracks/yolo-train/plan.md
 
 from __future__ import annotations
 
+import argparse
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
+
+# load_capture/reconstruct_board lazily import katrain.core.baipu, which pulls in Kivy.
+# Kivy parses sys.argv on import and would hijack this tool's --game-dir/--out-* flags;
+# KIVY_NO_ARGS=1 disables that (same pattern as katrain/__main__.py).
+os.environ.setdefault("KIVY_NO_ARGS", "1")
 
 import cv2
 import numpy as np
@@ -195,9 +202,15 @@ class Box:
 
 
 def _clip_box(cx, cy, w, h, img_w, img_h):
-    """Clip a center box to [0,img_w]x[0,img_h] and return the re-centered (cx,cy,w,h)."""
-    x1, y1 = max(0.0, cx - w / 2), max(0.0, cy - h / 2)
-    x2, y2 = min(float(img_w), cx + w / 2), min(float(img_h), cy + h / 2)
+    """Clip a center box to [0,img_w]x[0,img_h] and return the re-centered (cx,cy,w,h).
+
+    Both endpoints are clamped into bounds, so a box that drifts entirely off an edge
+    collapses to zero width/height (caller drops it) rather than producing negative coords.
+    """
+    x1 = min(max(0.0, cx - w / 2), float(img_w))
+    x2 = min(max(0.0, cx + w / 2), float(img_w))
+    y1 = min(max(0.0, cy - h / 2), float(img_h))
+    y2 = min(max(0.0, cy + h / 2), float(img_h))
     return (x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1
 
 
@@ -227,11 +240,13 @@ def frame_boxes(
             gx, gy = grid_point(r, c, xs, ys)
             cid = NAME_TO_ID["black"] if v == "B" else NAME_TO_ID["white"]
             cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
-            boxes.append(Box(cid, cx, cy, w, h))
+            if w > 0 and h > 0:  # drop stones that drifted entirely off-frame (not visible -> no label)
+                boxes.append(Box(cid, cx, cy, w, h))
     if led_point is not None:
         gx, gy = grid_point(led_point["row"], led_point["col"], xs, ys)
         cx, cy, w, h = _clip_box(gx + dx, gy + dy, led_side, led_side, img_w, img_h)
-        boxes.append(Box(LED_COLOR_TO_CLASS[led_point["color"]], cx, cy, w, h))
+        if w > 0 and h > 0:
+            boxes.append(Box(LED_COLOR_TO_CLASS[led_point["color"]], cx, cy, w, h))
     return boxes
 
 
@@ -249,3 +264,113 @@ def draw_overlay(warped_bgr, boxes):
         x2, y2 = int(b.cx + b.w / 2), int(b.cy + b.h / 2)
         cv2.rectangle(vis, (x1, y1), (x2, y2), _DRAW[b.class_id], 2)
     return vis
+
+
+def process_game(
+    game_dir, out_images, out_labels, verify_dir=None, dedup_per_move=True, stone_frac=1.05, led_frac=0.45
+):
+    game_dir = Path(game_dir)
+    out_images, out_labels = Path(out_images), Path(out_labels)
+    out_images.mkdir(parents=True, exist_ok=True)
+    out_labels.mkdir(parents=True, exist_ok=True)
+    csv_rows = []
+    if verify_dir:
+        verify_dir = Path(verify_dir)
+        verify_dir.mkdir(parents=True, exist_ok=True)
+
+    cap = load_capture(game_dir)
+    spacing = mean_grid_spacing(cap.xs, cap.ys)
+    stats = {
+        "frames": 0,
+        "written": 0,
+        "black": 0,
+        "white": 0,
+        "led_red": 0,
+        "led_green": 0,
+        "skipped": 0,
+        "shift_fallback": 0,
+    }
+    seen_move_idx = set()
+    gid = cap.manifest.get("game_id", game_dir.name)
+    last_shift = (0.0, 0.0)  # carry-forward seed: (0,0) is correct for the pre-drift first frame
+
+    for fr in cap.manifest["frames"]:
+        stats["frames"] += 1
+        ami = fr["applied_move_index"]
+        if dedup_per_move and ami in seen_move_idx:
+            stats["skipped"] += 1
+            continue
+        seen_move_idx.add(ami)
+        img = cv2.imread(str(game_dir / fr["file"]))
+        if img is None:
+            stats["skipped"] += 1
+            continue
+        warped = warp_frame(img, cap.M, cap.out_size)
+        board = reconstruct_board(cap.steps, ami)
+        rep = estimate_global_shift(warped, board, fr.get("led_point"), cap.xs, cap.ys, spacing, prev_shift=last_shift)
+        last_shift = (rep.dx, rep.dy)  # next frame inherits this if it has no anchors
+        if rep.fallback_used:
+            stats["shift_fallback"] += 1
+        boxes = frame_boxes(
+            board,
+            fr.get("led_point"),
+            cap.xs,
+            cap.ys,
+            (rep.dx, rep.dy),
+            spacing,
+            stone_frac=stone_frac,
+            led_frac=led_frac,
+            img_w=cap.out_size,
+            img_h=cap.out_size,
+        )
+
+        stem = f"{gid}_{Path(fr['file']).stem}"
+        cv2.imwrite(str(out_images / f"{stem}.jpg"), warped)
+        lines = boxes_to_yolo_lines(boxes, cap.out_size, cap.out_size)
+        (out_labels / f"{stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
+        if verify_dir:
+            cv2.imwrite(str(verify_dir / f"{stem}.jpg"), draw_overlay(warped, boxes))
+            csv_rows.append(
+                f"{fr['file']},{rep.dx:.2f},{rep.dy:.2f},{rep.anchor_count},"
+                f"{int(rep.led_found)},{rep.residual_px:.2f},{int(rep.fallback_used)}"
+            )
+
+        for b in boxes:
+            stats[ID_TO_NAME[b.class_id]] += 1
+        stats["written"] += 1
+
+    if verify_dir:
+        header = "frame,dx,dy,anchor_count,led_found,residual_px,fallback_used"
+        (verify_dir / "shifts.csv").write_text(header + "\n" + "\n".join(csv_rows) + "\n")
+    return stats
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Auto-label baipu captures for 4-class YOLO (warped space)")
+    ap.add_argument("--game-dir", action="append", required=True, help="baipu capture dir (repeatable)")
+    ap.add_argument("--out-images", required=True)
+    ap.add_argument("--out-labels", required=True)
+    ap.add_argument("--verify-dir", default=None)
+    ap.add_argument("--no-dedup", action="store_true", help="keep all frames (default: one per move)")
+    ap.add_argument("--stone-frac", type=float, default=1.05, help="stone box side as a fraction of grid spacing")
+    ap.add_argument("--led-frac", type=float, default=0.45, help="LED box side as a fraction of grid spacing (tight)")
+    args = ap.parse_args()
+    total = {}
+    for gd in args.game_dir:
+        s = process_game(
+            gd,
+            args.out_images,
+            args.out_labels,
+            args.verify_dir,
+            dedup_per_move=not args.no_dedup,
+            stone_frac=args.stone_frac,
+            led_frac=args.led_frac,
+        )
+        print(f"{gd}: {s}")
+        for k, v in s.items():
+            total[k] = total.get(k, 0) + v
+    print(f"TOTAL: {total}")
+
+
+if __name__ == "__main__":
+    main()

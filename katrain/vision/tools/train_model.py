@@ -26,6 +26,48 @@ MODEL_SIZES = {
 
 DEFAULT_MODEL = "yolo11x.pt"
 
+# LED-safe augmentation for the 4-class baipu model. hsv_h=0 is load-bearing:
+# hue separates led_red from led_green, so jittering it corrupts the label.
+# copy_paste is pinned to 0.0 ON PURPOSE: Ultralytics CopyPaste no-ops on bbox-only
+# labels (it needs segmentation polygons) and is class-agnostic anyway, so it cannot
+# oversample the LED class. hsv_s/hsv_v give mild illumination robustness; hsv_h stays 0.
+LED_SAFE_AUG = {
+    "hsv_h": 0.0,
+    "hsv_s": 0.2,
+    "hsv_v": 0.4,
+    "degrees": 0.0,
+    "shear": 0.0,
+    "perspective": 0.0,
+    "flipud": 0.0,
+    "fliplr": 0.5,
+    "translate": 0.1,
+    "scale": 0.5,
+    "mosaic": 1.0,
+    "close_mosaic": 15,
+    "mixup": 0.0,
+    "copy_paste": 0.0,
+    "erasing": 0.0,
+}
+
+
+def build_train_kwargs(args) -> dict:
+    """Assemble the model.train() kwargs, injecting LED_SAFE_AUG when --augment led-safe."""
+    kwargs = dict(
+        data=args.data,
+        epochs=args.epochs,
+        imgsz=args.imgsz,
+        batch=args.batch,
+        name=args.name,
+        patience=args.patience,
+        device=args.device,
+        save=True,
+        plots=True,
+        cache=getattr(args, "cache", False),
+    )
+    if getattr(args, "augment", "default") == "led-safe":
+        kwargs.update(LED_SAFE_AUG)
+    return kwargs
+
 
 def resolve_model(args) -> str:
     """Resolve the model path from --model and --model-size arguments.
@@ -58,17 +100,7 @@ def cmd_train(args):
     model_path = resolve_model(args)
     print(f"Loading model: {model_path}")
     model = YOLO(model_path)
-    model.train(
-        data=args.data,
-        epochs=args.epochs,
-        imgsz=args.imgsz,
-        batch=args.batch,
-        name=args.name,
-        patience=args.patience,
-        device=args.device,
-        save=True,
-        plots=True,
-    )
+    model.train(**build_train_kwargs(args))
     print(f"\nTraining complete. Best weights: runs/detect/{args.name}/weights/best.pt")
 
 
@@ -105,6 +137,13 @@ def main():
     train_p.add_argument("--name", type=str, default="go_stones")
     train_p.add_argument("--patience", type=int, default=20)
     train_p.add_argument("--device", type=str, default="mps", help="Device: mps (Mac GPU), cpu, 0 (CUDA GPU 0)")
+    train_p.add_argument(
+        "--augment",
+        choices=["default", "led-safe"],
+        default="default",
+        help="led-safe: hsv_h=0 + LED-friendly aug for the 4-class model",
+    )
+    train_p.add_argument("--cache", action="store_true", help="cache images in RAM (small datasets)")
 
     val_p = sub.add_parser("val", help="Validate a trained model")
     val_p.add_argument("--data", type=str, required=True)

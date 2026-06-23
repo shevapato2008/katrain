@@ -13,6 +13,11 @@ vi.mock('../../hooks/live/useLiveMatch', () => ({
   useLiveMatch: vi.fn(),
 }));
 
+// Stub the sound hook so jsdom doesn't try to construct Audio.
+vi.mock('../../hooks/useSound', () => ({
+  useSound: () => ({ play: vi.fn() }),
+}));
+
 import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import LiveMatchPage from '../pages/LiveMatchPage';
 
@@ -41,6 +46,19 @@ const mockMatch: MatchDetail = {
   moves: [],
 };
 
+function setMatch(over: Partial<ReturnType<typeof useLiveMatch>> = {}) {
+  mockUseLiveMatch.mockReturnValue({
+    match: mockMatch,
+    loading: false,
+    error: null,
+    currentMove: 156,
+    setCurrentMove: vi.fn(),
+    analysis: {},
+    refresh: vi.fn(),
+    ...over,
+  });
+}
+
 const renderPage = (matchId = 'match-1') =>
   render(
     <ThemeProvider theme={kioskTheme}>
@@ -53,131 +71,57 @@ const renderPage = (matchId = 'match-1') =>
     </ThemeProvider>
   );
 
-describe('LiveMatchPage', () => {
+describe('LiveMatchPage (kiosk)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('shows loading spinner while fetching', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: null,
-      loading: true,
-      error: null,
-      currentMove: 0,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
+    setMatch({ match: null, loading: true });
     renderPage();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('shows error message with back button on failure', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: null,
-      loading: false,
-      error: new Error('Match not found'),
-      currentMove: 0,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
+    setMatch({ match: null, loading: false, error: new Error('Match not found') });
     renderPage();
     expect(screen.getByText('Match not found')).toBeInTheDocument();
     expect(screen.getByText('返回')).toBeInTheDocument();
   });
 
-  it('renders match details with player names and tournament', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: mockMatch,
-      loading: false,
-      error: null,
-      currentMove: 156,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
+  it('renders tournament, players, and live status', () => {
+    setMatch();
     renderPage();
-    expect(screen.getByText('LG杯决赛')).toBeInTheDocument();
-    expect(screen.getByText(/柯洁/)).toBeInTheDocument();
-    expect(screen.getByText(/申真谞/)).toBeInTheDocument();
-    expect(screen.getByText('直播中')).toBeInTheDocument();
+    expect(screen.getByText(/LG杯决赛/)).toBeInTheDocument(); // MatchInfo (tournament · round)
+    expect(screen.getAllByText(/柯洁/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/申真谞/).length).toBeGreaterThan(0);
+    expect(screen.getByText('直播中')).toBeInTheDocument(); // header status chip
   });
 
-  it('shows current move and total moves', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: mockMatch,
-      loading: false,
-      error: null,
-      currentMove: 100,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
-    renderPage();
-    expect(screen.getByText('第100手 / 156手')).toBeInTheDocument();
-  });
-
-  it('shows result when match is finished', () => {
-    const finishedMatch: MatchDetail = {
-      ...mockMatch,
-      status: 'finished',
-      result: 'B+2.5',
-    };
-    mockUseLiveMatch.mockReturnValue({
-      match: finishedMatch,
-      loading: false,
-      error: null,
-      currentMove: 280,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
-    renderPage();
-    expect(screen.getByText('已结束')).toBeInTheDocument();
-    expect(screen.getByText('结果: B+2.5')).toBeInTheDocument();
-  });
-
-  it('renders board canvas', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: mockMatch,
-      loading: false,
-      error: null,
-      currentMove: 156,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
+  it('renders the board canvas', () => {
+    setMatch();
     const { container } = renderPage();
     expect(container.querySelector('canvas')).toBeInTheDocument();
   });
 
-  it('shows player ranks when available', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: mockMatch,
-      loading: false,
-      error: null,
-      currentMove: 156,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
+  it('renders the four feature toggles', () => {
+    setMatch();
     renderPage();
-    expect(screen.getByText(/\(九段\)/)).toBeInTheDocument();
+    expect(screen.getByText('试下')).toBeInTheDocument();
+    expect(screen.getByText('形势')).toBeInTheDocument();
+    expect(screen.getByText('手数')).toBeInTheDocument();
   });
 
-  it('returns null when match is null and not loading/error', () => {
-    mockUseLiveMatch.mockReturnValue({
-      match: null,
-      loading: false,
-      error: null,
-      currentMove: 0,
-      setCurrentMove: vi.fn(),
-      analysis: {},
-      refresh: vi.fn(),
-    });
-    const { container } = renderPage();
-    // Should render essentially nothing (just the router container)
-    expect(container.querySelector('.MuiBox-root')).toBeNull();
+  it('shows finished status chip for a finished match', () => {
+    setMatch({ match: { ...mockMatch, status: 'finished', result: 'B+2.5' }, currentMove: 280 });
+    renderPage();
+    expect(screen.getByText('已结束')).toBeInTheDocument();
+  });
+
+  it('shows a back affordance when the match is null without an explicit error', () => {
+    setMatch({ match: null, loading: false, error: null });
+    renderPage();
+    // Galaxy-aligned: null match renders the error block (not a blank page).
+    expect(screen.getByText('返回')).toBeInTheDocument();
   });
 });

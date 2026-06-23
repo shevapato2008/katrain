@@ -9,6 +9,11 @@ interface AiAnalysisProps {
   analysis: Record<number, MoveAnalysis>;
   onMoveHover?: (pv: string[] | null) => void;
   topN?: number;  // Number of top moves to display (default 3)
+  // Touch (kiosk) variant: tap a row to toggle its variation. The parent owns
+  // the active move (and derives the PV) so navigation auto-resets it. Galaxy
+  // uses onMoveHover (mouse) instead and leaves these undefined.
+  onMoveSelect?: (moveKey: string | null) => void;
+  activeMove?: string | null;
 }
 
 // Stone color indicator component
@@ -32,6 +37,8 @@ export default function AiAnalysis({
   analysis,
   onMoveHover,
   topN = 3,  // Show top 3 + actual move if not in top 3
+  onMoveSelect,
+  activeMove = null,
 }: AiAnalysisProps) {
   const { t } = useTranslation();
   const currentAnalysis = analysis[currentMove];
@@ -173,6 +180,8 @@ export default function AiAnalysis({
                 onMoveHover(hovering ? move.pv : null);
               }
             }}
+            isSelected={move.move === activeMove}
+            onSelect={onMoveSelect ? () => onMoveSelect(move.move === activeMove ? null : move.move) : undefined}
           />
         ))}
       </Box>
@@ -187,9 +196,11 @@ interface MoveRowProps {
   isActualMove: boolean;
   nextPlayer: 'B' | 'W';
   onHover?: (hovering: boolean) => void;
+  isSelected?: boolean;       // touch variant: this row's variation is active
+  onSelect?: () => void;      // touch variant: tap to toggle the variation
 }
 
-function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: MoveRowProps) {
+function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, isSelected = false, onSelect }: MoveRowProps) {
   const { t } = useTranslation();
   // Score lead from next player's perspective (who these recommendations are for)
   // KataGo reports score_lead from Black's perspective (positive = Black ahead)
@@ -214,13 +225,14 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover }: 
         borderRadius: 1,
         cursor: 'pointer',
         transition: 'background-color 0.15s',
-        bgcolor: isActualMove ? 'rgba(76, 175, 80, 0.15)' : 'transparent',
-        border: isActualMove ? '1px solid' : '1px solid transparent',
-        borderColor: isActualMove ? 'success.main' : 'transparent',
+        bgcolor: isSelected ? 'action.selected' : isActualMove ? 'rgba(76, 175, 80, 0.15)' : 'transparent',
+        border: isSelected || isActualMove ? '1px solid' : '1px solid transparent',
+        borderColor: isSelected ? 'primary.main' : isActualMove ? 'success.main' : 'transparent',
         '&:hover': { bgcolor: 'action.hover' },
       }}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
+      onClick={onSelect}
     >
       {/* Move position with stone color indicator */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

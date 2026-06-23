@@ -114,3 +114,65 @@ def test_estimate_global_shift_is_small_and_clamped():
     rep = bal.estimate_global_shift(warped, board, fr["led_point"], cap.xs, cap.ys, spacing)
     assert abs(rep.dx) <= 0.6 * spacing and abs(rep.dy) <= 0.6 * spacing
     assert rep.anchor_count >= 1  # frame_040 has the guide LED + isolated stones
+
+
+# ---------- pure-CV unit tests (CI: no fixture, no .mo) ----------
+
+from katrain.vision.classes import NAME_TO_ID
+
+
+def test_frame_boxes_stone_and_led_sizes():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    board = [[None] * 19 for _ in range(19)]
+    board[9][9] = "W"
+    led = {"row": 3, "col": 3, "color": "black"}  # -> led_red
+    boxes = bal.frame_boxes(board, led, SYNTH_XS, SYNTH_YS, (0.0, 0.0), spacing)
+    stone = next(b for b in boxes if b.class_id in (0, 1))
+    led_box = next(b for b in boxes if b.class_id in (2, 3))
+    assert 40 <= stone.w <= 70 and stone.class_id == NAME_TO_ID["white"]
+    assert led_box.class_id == NAME_TO_ID["led_red"]
+    assert led_box.w <= 36 and led_box.w < stone.w  # LED box is tight, smaller than a stone
+
+
+def test_corner_box_is_clipped_into_image():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    board = [[None] * 19 for _ in range(19)]
+    board[0][0] = "B"  # grid (0,0) -> pixel (0,0); an unclipped box would hang off-frame
+    boxes = bal.frame_boxes(board, None, SYNTH_XS, SYNTH_YS, (0.0, 0.0), spacing)
+    b = boxes[0]
+    assert b.cx - b.w / 2 >= -0.01 and b.cy - b.h / 2 >= -0.01  # fully inside image
+    stone_side = min(max(1.05 * spacing, 40.0), 70.0)
+    assert abs(b.w - stone_side / 2) < 1.0  # exactly the off-image half was clipped
+
+
+def test_boxes_to_yolo_lines_format_and_range():
+    boxes = [bal.Box(class_id=3, cx=475.0, cy=475.0, w=90.0, h=90.0)]
+    lines = bal.boxes_to_yolo_lines(boxes, 950, 950)
+    assert lines == ["3 0.500000 0.500000 0.094737 0.094737"]
+
+
+# ---------- real-data integration tests (skip without fixture; need .mo) ----------
+
+
+@requires_capture
+def test_frame_boxes_counts_and_led_class():
+    cap = bal.load_capture(GAME)
+    spacing = bal.mean_grid_spacing(cap.xs, cap.ys)
+    fr = next(f for f in cap.manifest["frames"] if f["file"] == "frame_040.jpg")
+    board = bal.reconstruct_board(cap.steps, fr["applied_move_index"])
+    boxes = bal.frame_boxes(board, fr["led_point"], cap.xs, cap.ys, (0.0, 0.0), spacing)
+    stones = [b for b in boxes if b.class_id in (0, 1)]
+    leds = [b for b in boxes if b.class_id in (2, 3)]
+    assert len(stones) == 40
+    # frame_040 led_point.color == "black" -> led_red (2)
+    assert len(leds) == 1 and leds[0].class_id == NAME_TO_ID["led_red"]
+
+
+@requires_capture
+def test_final_frame_has_no_led_box():
+    cap = bal.load_capture(GAME)
+    spacing = bal.mean_grid_spacing(cap.xs, cap.ys)
+    fr = next(f for f in cap.manifest["frames"] if f["file"] == "frame_211.jpg")
+    board = bal.reconstruct_board(cap.steps, fr["applied_move_index"])
+    boxes = bal.frame_boxes(board, fr["led_point"], cap.xs, cap.ys, (0.0, 0.0), spacing)
+    assert all(b.class_id in (0, 1) for b in boxes)  # final_no_led frame

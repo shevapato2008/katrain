@@ -15,6 +15,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from katrain.vision.classes import ID_TO_NAME, LED_COLOR_TO_CLASS, NAME_TO_ID
 from katrain.vision.config import LedAnchorConfig
 
 # NOTE: katrain.core.baipu is imported LAZILY inside load_capture / reconstruct_board.
@@ -179,3 +180,72 @@ def estimate_global_shift(warped_bgr, board, led_point, xs, ys, spacing, prev_sh
     lim = 0.6 * spacing
     dx, dy = float(np.clip(dx, -lim, lim)), float(np.clip(dy, -lim, lim))
     return ShiftReport(dx, dy, len(deltas), led_found, residual, False)
+
+
+_DRAW = {0: (0, 0, 255), 1: (0, 255, 0), 2: (0, 140, 255), 3: (255, 200, 0)}
+
+
+@dataclass
+class Box:
+    class_id: int
+    cx: float
+    cy: float
+    w: float
+    h: float
+
+
+def _clip_box(cx, cy, w, h, img_w, img_h):
+    """Clip a center box to [0,img_w]x[0,img_h] and return the re-centered (cx,cy,w,h)."""
+    x1, y1 = max(0.0, cx - w / 2), max(0.0, cy - h / 2)
+    x2, y2 = min(float(img_w), cx + w / 2), min(float(img_h), cy + h / 2)
+    return (x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1
+
+
+def frame_boxes(
+    board,
+    led_point,
+    xs,
+    ys,
+    shift,
+    spacing,
+    stone_frac: float = 1.05,
+    led_frac: float = 0.45,
+    img_w: int = 950,
+    img_h: int = 950,
+):
+    # Stones ~object-tight (deploy snaps on center; box extent is training-localization only).
+    # LEDs tight: a background-dominated box destroys small-target recall (the success metric).
+    stone_side = float(np.clip(stone_frac * spacing, 40.0, 70.0))
+    led_side = float(np.clip(led_frac * spacing, 16.0, 36.0))
+    dx, dy = shift
+    boxes: list[Box] = []
+    for r in range(19):
+        for c in range(19):
+            v = board[r][c]
+            if v is None:
+                continue
+            gx, gy = grid_point(r, c, xs, ys)
+            cid = NAME_TO_ID["black"] if v == "B" else NAME_TO_ID["white"]
+            cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
+            boxes.append(Box(cid, cx, cy, w, h))
+    if led_point is not None:
+        gx, gy = grid_point(led_point["row"], led_point["col"], xs, ys)
+        cx, cy, w, h = _clip_box(gx + dx, gy + dy, led_side, led_side, img_w, img_h)
+        boxes.append(Box(LED_COLOR_TO_CLASS[led_point["color"]], cx, cy, w, h))
+    return boxes
+
+
+def boxes_to_yolo_lines(boxes, img_w, img_h):
+    lines = []
+    for b in boxes:
+        lines.append(f"{b.class_id} {b.cx / img_w:.6f} {b.cy / img_h:.6f} {b.w / img_w:.6f} {b.h / img_h:.6f}")
+    return lines
+
+
+def draw_overlay(warped_bgr, boxes):
+    vis = warped_bgr.copy()
+    for b in boxes:
+        x1, y1 = int(b.cx - b.w / 2), int(b.cy - b.h / 2)
+        x2, y2 = int(b.cx + b.w / 2), int(b.cy + b.h / 2)
+        cv2.rectangle(vis, (x1, y1), (x2, y2), _DRAW[b.class_id], 2)
+    return vis

@@ -36,7 +36,116 @@ Stone recognition is optional for the baipu capture workflow: geometry can be re
 
 Coordinates are always seated-human coordinates: `(row=0,col=0)` is upper-left and `(row=0,col=18)` is upper-right. Camera orientation is learned from the LED anchors and must not be manually rotated in the capture path. Geometry files are atomically stored at `~/.katrain/geometry_lock.npz` and `.json`; each baipu game also freezes its geometry beside the captured frames.
 
-# YOLO Training Results: go_dataset_diff_sam
+# 4-Class Detector (black / white / led_red / led_green)
+
+The current board-recognition model detects **4 classes**: `black=0, white=1, led_red=2, led_green=3`.
+The two LED classes let the detector recognise the guidance LED as its own object (so it is never
+misread as a stone — see the `board_state` guard) and enable future LED-aware features. The class
+list is a single source of truth in `katrain/vision/classes.py`; `data.yaml` writers, the detector,
+and the exporters all derive from it.
+
+**LED colour → class:** the manifest's `led_point.color` is the colour *about to be played* —
+`"black"` (Black's move next) → **`led_red`**, `"white"` → **`led_green`**. Red guides Black, green guides White.
+
+## Auto-labeling baipu captures (zero manual annotation)
+
+`katrain/vision/tools/baipu_autolabel.py` generates exact 4-class YOLO labels from baipu capture
+ground truth — **no hand-drawn boxes**. For each captured frame it:
+
+1. Warps the raw frame to the deployment's rectified **950×950** board space using the frozen
+   `geometry.npz` homography (the same space `worker.py` feeds the detector — avoids train/serve skew).
+2. Reconstructs the exact board state from the SGF via `katrain.core.baipu` (capture-aware: handles
+   captures, setup stones, passes).
+3. Looks up each stone/LED at its calibrated grid intersection.
+4. Corrects a **per-frame global board-drift translation** (the frozen grid drifts from the real board
+   — in `kifu_24171` it jumps ~16–25 px once mid-game when the board was bumped). The shift is the
+   robust median of `(detected centroid − grid point)` over the guide LED + isolated stones, clamped to
+   `0.6·spacing`; on an anchor-less frame it **carries forward** the previous frame's shift rather than
+   snapping back to the un-drifted grid. LED-anchor HSV thresholds live in `config.LedAnchorConfig`
+   (a config edit for a new light/camera, not a code change).
+5. Writes 4-class YOLO boxes: stones ≈`1.05·spacing` (object-tight; deployment snaps on box centre),
+   LEDs a tight ≈`0.45·spacing` (a background-dominated box wrecks small-target recall). Boxes are
+   clipped to the image; a stone/LED that drifts entirely off-frame is dropped (not visible → no label).
+
+Per-frame drift diagnostics are written to `verify/shifts.csv`
+(`frame,dx,dy,anchor_count,led_found,residual_px,fallback_used`) and colour overlays to `verify/`.
+
+## Runbook
+
+```bash
+# 0. one-time setup
+uv sync --extra vision --extra vision-train     # opencv + ultralytics/torch
+uv run python i18n.py                           # compile .mo (core.baipu needs it for the SGF parse)
+
+# 1. auto-label one or more capture dirs -> warped images + 4-class labels + verify overlays
+uv run python -m katrain.vision.tools.baipu_autolabel \
+  --game-dir ~/.katrain/baipu_captures/kifu_24171 \
+  --out-images /tmp/go4/images_raw --out-labels /tmp/go4/labels_raw --verify-dir /tmp/go4/verify
+# eyeball 8-10 overlays in /tmp/go4/verify/ and check /tmp/go4/verify/shifts.csv
+
+# 2. temporal (leakage-free) train/val split + 4-class data.yaml  (NOT random — consecutive frames are near-dupes)
+uv run python -m katrain.vision.tools.prepare_dataset \
+  --images /tmp/go4/images_raw --labels /tmp/go4/labels_raw --output /tmp/go4/dataset \
+  --split 0.8 --split-mode temporal --gap 3 --validate
+
+# 3. train yolo11n, COCO-pretrained, LED-safe augmentation (hsv_h=0)
+uv run python -m katrain.vision.tools.train_model train \
+  --data /tmp/go4/dataset/data.yaml --model-size n --imgsz 640 --epochs 200 \
+  --patience 40 --batch 16 --name go4_n --augment led-safe --cache --device mps
+
+# 4. validate AT THE SAME imgsz (val defaults to 960 -> non-comparable otherwise)
+uv run python -m katrain.vision.tools.train_model val \
+  --data /tmp/go4/dataset/data.yaml --model <runs_dir>/detect/go4_n/weights/best.pt --imgsz 640
+
+# 5. export (class-generic; meta.json carries the 4-class list)
+uv run python -m katrain.vision.tools.export_onnx --model <runs_dir>/detect/go4_n/weights/best.pt --imgsz 640
+uv run python -m katrain.vision.tools.export_rknn --onnx <runs_dir>/detect/go4_n/weights/best.onnx --target rk3588
+# RKNN export is x86-only (rknn-toolkit2) — run it off the Mac. Deploy best_rk3588.rknn + best_rk3588.meta.json as a pair.
+```
+
+> `<runs_dir>` is Ultralytics' configured `runs_dir` (see `yolo settings`); on this machine it is
+> `~/Repositories/katrain-visual-recognition/runs`, not `./runs`.
+
+## Experiment log (4-class baipu model)
+
+Dataset `kifu_24171`: 212 frames → 166 train / 43 val (temporal split, gap 3). Black/white ≈ 21k box
+instances; LEDs are per-object rare (~210 instances) but appear in 211/212 frames.
+
+**Run `go4_n`** (yolo11n, COCO-pretrained, imgsz 640, `--augment led-safe`, batch 16, MPS; early-stopped
+at epoch 47, best epoch 7). Val (imgsz 640):
+
+| class | P | R | mAP50 | mAP50-95 | val instances |
+|---|---|---|---|---|---|
+| black | 0.607 | 0.175 | 0.418 | 0.240 | 3924 |
+| white | 0.544 | 0.173 | 0.381 | 0.212 | 4004 |
+| led_red | 0.0 | 0.0 | 0.0 | 0.0 | 21 |
+| led_green | 0.0 | 0.0 | 0.0 | 0.0 | 21 |
+
+**Interpreting these numbers (this is a single-game smoke run — pipeline validation, not a production model):**
+
+- **LEDs at 0** is expected here: ~21k stone instances vs ~165 LED instances (≈127:1 per-object imbalance),
+  and `mosaic=1.0` shrinks the 16 px LED to ~8 px during the early epochs that drove early-stopping. The LED
+  is bright and distinctive (verified in the overlays) — the blocker is purely instance imbalance. Fix by
+  adding LED-rich capture sessions and/or offline LED-ROI oversampling, then retrain.
+- **Modest black/white recall (~0.17)** is mostly a **temporal-split distribution gap**, not under-training
+  (val mAP plateaued by epoch 7; 40 more epochs gave nothing). The leakage-free split trains on the *sparse
+  early* board and validates on the *dense late* board (~185 stones/frame) — frames the model rarely saw.
+  Annotation quality is good (overlays track stones through the mid-game ~16–25 px drift jump); the levers
+  are more games (density variety), larger `imgsz`, and lighter mosaic — collected/validated via the
+  multi-session production gate above.
+
+## Data caveats
+
+- **One game, one board, one light.** Val is optimistic (train/val share board + camera + lighting +
+  stone set). The model is **specific to this board+lighting**; a different device/environment requires
+  **re-collecting data and retraining**. Validate generalisation with a *second capture session*
+  (session holdout: train game A, validate game B) before field trust.
+- **LED class balance:** the LED is ubiquitous per-image (211/212 frames) but rare per-object. Ultralytics
+  `copy_paste` is **not** used — it no-ops on bbox-only labels (needs segmentation polygons) and is
+  class-agnostic. If LED recall is weak, oversample **offline** (duplicate LED-bearing images / paste LED
+  ROIs onto warp backgrounds) or bump `imgsz`/model size.
+
+# YOLO Training Results: go_dataset_diff_sam (historical, 2-class synthetic)
 
 **Date**: 2026-02-19
 **Dataset**: `go_dataset_diff_sam` (SAM-generated synthetic diff images)

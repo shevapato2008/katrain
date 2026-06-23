@@ -113,6 +113,29 @@ class GeometryCalibrationService:
         }
         return status
 
+    def confirm_existing(self) -> dict:
+        """Promote a persisted lock for this process after operator inspection."""
+        with self._lock:
+            if self._status["phase"] not in {"required", "failed"}:
+                raise ValueError("existing geometry can only be confirmed after restart or failed recalibration")
+            if self.current_lock is None:
+                raise ValueError("no existing geometry to confirm")
+            if not self._is_ready(self.capture):
+                raise ValueError("camera is not ready")
+            lock = self.current_lock
+            self._init_drift_monitor(lock)
+            self._geometry_revision += 1
+            self._status.update(
+                phase="ready",
+                session_calibrated=True,
+                last_valid=True,
+                trigger="operator_reuse",
+                error=None,
+                metrics={},
+            )
+        self.on_success(lock)
+        return self.status()
+
     @staticmethod
     def _is_ready(service) -> bool:
         value = getattr(service, "is_connected", False)

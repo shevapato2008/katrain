@@ -81,6 +81,45 @@ class TestGeometryEndpoint:
         assert calibration.started == ("auto", True)
         assert c.get("/geometry/status").json()["phase"] == "flashing_corners"
 
+    def test_confirm_existing_geometry(self):
+        class FakeCalibration:
+            def __init__(self):
+                self.confirmed = False
+
+            def confirm_existing(self):
+                self.confirmed = True
+                return {"phase": "ready", "session_calibrated": True}
+
+        app, c = _client()
+        calibration = FakeCalibration()
+        app.state.geometry_calibration = calibration
+
+        response = c.post("/geometry/confirm-existing")
+
+        assert response.status_code == 200
+        assert response.json()["phase"] == "ready"
+        assert calibration.confirmed is True
+
+    def test_confirm_existing_returns_404_without_calibration_service(self):
+        _, c = _client()
+
+        response = c.post("/geometry/confirm-existing")
+
+        assert response.status_code == 404
+
+    def test_confirm_existing_maps_rejection_to_conflict(self):
+        class RejectingCalibration:
+            def confirm_existing(self):
+                raise ValueError("existing geometry can only be confirmed after restart")
+
+        app, c = _client()
+        app.state.geometry_calibration = RejectingCalibration()
+
+        response = c.post("/geometry/confirm-existing")
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "existing geometry can only be confirmed after restart"
+
     def test_404_without_capture(self):
         _, c = _client()
         assert c.post("/geometry/lock").status_code == 404

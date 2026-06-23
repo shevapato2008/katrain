@@ -163,4 +163,37 @@ test.describe('baipu session', () => {
     await expect(page.getByTestId('baipu-current-move')).toContainText('第 1 手');
     await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_000.jpg');
   });
+
+  test('restart uses same directory overwrite mode and waits for operator choice before initial capture', async ({ page }) => {
+    await setupSession(page);
+    await page.addInitScript(() => {
+      localStorage.setItem('baipu:progress:test1', JSON.stringify({ k: 2, frames: 3, updatedAt: 2 }));
+    });
+    const bodies: Record<string, unknown>[] = [];
+    await page.route('**/api/v1/baipu/capture', async (route) => {
+      bodies.push(route.request().postDataJSON() as Record<string, unknown>);
+      return route.fulfill({
+        json: {
+          ok: true,
+          path: '/captures/test1/frame_000.jpg',
+          qa_status: 'operator_confirmed',
+          frame_kind: 'initial_led',
+          next_guided_move_index: 0,
+        },
+      });
+    });
+
+    await page.goto('/kiosk/baipu/session/test1');
+
+    await expect(page.getByRole('dialog')).toContainText('继续上次会话？');
+    expect(bodies).toHaveLength(0);
+
+    await page.getByRole('button', { name: '重新开始' }).click();
+    await expect.poll(() => bodies.length).toBe(1);
+    expect(bodies[0]).toEqual(expect.objectContaining({
+      move_index: -1,
+      overwrite_existing: true,
+    }));
+    await expect(page.getByTestId('baipu-latest-frame')).toContainText('frame_000.jpg');
+  });
 });

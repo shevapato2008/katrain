@@ -8,10 +8,11 @@ import GeometryCalibrationWorkspace from '../components/vision/GeometryCalibrati
 
 const startCalibration = vi.fn();
 const cancelCalibration = vi.fn();
+const confirmExisting = vi.fn();
 let status: GeometryStatus;
 
 vi.mock('../context/GeometryContext', () => ({
-  useGeometry: () => ({ status, startCalibration, cancelCalibration, refresh: vi.fn() }),
+  useGeometry: () => ({ status, startCalibration, cancelCalibration, confirmExisting, refresh: vi.fn() }),
 }));
 
 vi.mock('../../api/geometryApi', async (importOriginal) => {
@@ -77,6 +78,39 @@ describe('GeometryCalibrationWorkspace', () => {
 
     expect(screen.getByText('摄像头或棋盘位置已变化')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '已清空，重新标定' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '网格无误，使用上次标定' })).not.toBeInTheDocument();
+  });
+
+  it('offers existing geometry reuse after restart without requiring an empty board', async () => {
+    status = {
+      ...status,
+      last_valid: true,
+      capabilities: { camera_ready: true, led_ready: false, geometry_ready: false },
+    };
+
+    renderWorkspace();
+
+    expect(screen.getByText('无需清空棋盘')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '网格无误，使用上次标定' }));
+    await waitFor(() => expect(confirmExisting).toHaveBeenCalledTimes(1));
+  });
+
+  it('renders user-readable diagnostic card for failed anchor calibration and allows valid-grid reuse', async () => {
+    status = {
+      ...status,
+      phase: 'failed',
+      last_valid: true,
+      error: 'anchor_not_found:15,15',
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
+    };
+
+    renderWorkspace();
+
+    expect(screen.getByTestId('geometry-diagnostic-card')).toBeInTheDocument();
+    expect(screen.getByText('无法定位 Q4 的定位灯')).toBeInTheDocument();
+    expect(screen.getByText(/通常是棋子遮挡/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '网格无误，使用上次标定' }));
+    await waitFor(() => expect(confirmExisting).toHaveBeenCalledTimes(1));
   });
 
   it('disables calibration when camera or LED is unavailable', () => {

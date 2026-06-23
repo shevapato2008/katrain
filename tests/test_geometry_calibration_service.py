@@ -1,5 +1,8 @@
 import threading
 
+import numpy as np
+import pytest
+
 from katrain.vision.led_geometry_calibrator import CalibrationResult
 from katrain.web.core.geometry_calibration_service import CalibrationBusy, GeometryCalibrationService
 from tests.test_geometry_lock import _synth
@@ -20,6 +23,19 @@ class FakeLed:
 class FakeCapture:
     def is_connected(self):
         return True
+
+
+class FreshFakeCapture(FakeCapture):
+    def __init__(self, connected=True):
+        self.connected = connected
+        self.grab_calls = 0
+
+    def is_connected(self):
+        return self.connected
+
+    def grab_fresh(self, settle_ms=0.0):
+        self.grab_calls += 1
+        return np.zeros((32, 32, 3), np.uint8), self.grab_calls, 1.0
 
 
 class ResultCalibrator:
@@ -120,6 +136,86 @@ def test_requires_explicit_empty_board_confirmation(tmp_path):
         assert "empty" in str(exc)
 
 
+def test_confirm_existing_promotes_loaded_lock_without_recalibration(tmp_path):
+    old = _synth()
+    promoted = []
+    capture = FreshFakeCapture()
+    save_path = tmp_path / "geometry.npz"
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=save_path,
+        initial_lock=old,
+        on_success=promoted.append,
+    )
+
+    status = service.confirm_existing()
+
+    assert status["phase"] == "ready"
+    assert status["session_calibrated"] is True
+    assert status["capabilities"]["geometry_ready"] is True
+    assert status["trigger"] == "operator_reuse"
+    assert status["geometry_revision"] == 1
+    assert promoted == [old]
+    assert capture.grab_calls == 1
+    assert service._drift_monitor is not None
+    assert not save_path.exists()
+
+
+def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tmp_path):
+    old = _synth()
+    promoted = []
+    capture = FreshFakeCapture()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=old,
+        on_success=promoted.append,
+    )
+    service._status["phase"] = "failed"
+    service._status["error"] = "anchor_not_found:15,15"
+
+    status = service.confirm_existing()
+
+    assert status["phase"] == "ready"
+    assert status["session_calibrated"] is True
+    assert status["trigger"] == "operator_reuse"
+    assert status["error"] is None
+    assert promoted == [old]
+    assert capture.grab_calls == 1
+
+
+def test_confirm_existing_rejects_missing_lock(tmp_path):
+    service = GeometryCalibrationService(led=FakeLed(), capture=FreshFakeCapture(), save_path=tmp_path / "geometry.npz")
+
+    with pytest.raises(ValueError, match="no existing geometry"):
+        service.confirm_existing()
+
+
+def test_confirm_existing_rejects_disconnected_camera(tmp_path):
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FreshFakeCapture(connected=False),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+    )
+
+    with pytest.raises(ValueError, match="camera is not ready"):
+        service.confirm_existing()
+
+
+def test_confirm_existing_cannot_override_degraded_state(tmp_path):
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FreshFakeCapture(), save_path=tmp_path / "geometry.npz", initial_lock=_synth()
+    )
+    service._status["phase"] = "degraded"
+
+    with pytest.raises(ValueError, match="only be confirmed after restart"):
+        service.confirm_existing()
+    assert service.status()["phase"] == "degraded"
+
+
 def test_status_publishes_anchor_snapshot_and_resets_it_on_new_start(tmp_path):
     lock = _synth()
     entered_second = threading.Event()
@@ -151,9 +247,7 @@ def test_status_publishes_anchor_snapshot_and_resets_it_on_new_start(tmp_path):
     service.start(trigger="manual", empty_confirmed=True)
     service.wait(timeout=2)
     first = service.status()
-    assert first["detected_anchors"] == [
-        {"row": 0, "col": 0, "x": 12.5, "y": 34.5, "color": "green"}
-    ]
+    assert first["detected_anchors"] == [{"row": 0, "col": 0, "x": 12.5, "y": 34.5, "color": "green"}]
     assert first["geometry_revision"] == 1
 
     service.start(trigger="manual", empty_confirmed=True)

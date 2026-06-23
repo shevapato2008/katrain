@@ -132,3 +132,26 @@ class TestBaipuCaptureEndpoint:
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": 0, "sgf": "(;SZ[19];B[pd];W[dp])"})
         assert r.status_code == 200
         assert r.json()["qa_status"] == "operator_confirmed"
+
+    def test_capture_forwards_explicit_overwrite_existing(self, tmp_path, monkeypatch):
+        captured = {}
+
+        def fake_run_capture(**kwargs):
+            captured.update(kwargs)
+            return {"ok": True, "idempotent": False}
+
+        monkeypatch.setattr("katrain.web.core.baipu_capture.run_capture", fake_run_capture)
+        c = self._client(tmp_path)
+
+        r = c.post(
+            "/baipu/capture",
+            json={
+                "game_id": "g",
+                "move_index": -1,
+                "sgf": "(;SZ[19];B[pd];W[dp])",
+                "overwrite_existing": True,
+            },
+        )
+
+        assert r.status_code == 200
+        assert captured["overwrite_existing"] is True

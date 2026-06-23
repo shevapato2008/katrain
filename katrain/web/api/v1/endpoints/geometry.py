@@ -92,6 +92,17 @@ async def geometry_cancel(request: Request):
     return calibration.status()
 
 
+@router.post("/confirm-existing")
+async def geometry_confirm_existing(request: Request):
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="LED geometry calibration not enabled")
+    try:
+        return calibration.confirm_existing()
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
 @router.get("/stream")
 async def geometry_stream(request: Request):
     capture = _get_capture(request)

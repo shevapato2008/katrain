@@ -61,6 +61,19 @@ class FakeCapture:
         return path, 42, 223.0
 
 
+class VersionedCapture(FakeCapture):
+    def __init__(self, out_dir):
+        super().__init__(out_dir)
+        self.version = 0
+
+    def capture_to(self, path, after_ts=None, settle_ms=150.0):
+        self.version += 1
+        self.capture_calls.append({"path": path, "after_ts": after_ts})
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_bytes(f"jpg-{self.version}".encode("ascii"))
+        return path, self.version, 223.0
+
+
 def _capture(out_dir, steps, board_size, k, led, cap, **kw):
     return run_capture(
         led=led,
@@ -178,6 +191,24 @@ class TestRobustness:
         assert len(manifest["frames"]) == 2
         assert manifest["frames"][1]["file"] == "frame_001.jpg"
         assert manifest["frames"][1]["applied_move_index"] == 0
+
+    def test_overwrite_existing_restarts_same_directory_and_prunes_stale_tail(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), VersionedCapture(tmp_path)
+        _capture(str(tmp_path), steps, bs, -1, led, cap)
+        _capture(str(tmp_path), steps, bs, 0, led, cap)
+        _capture(str(tmp_path), steps, bs, 1, led, cap)
+
+        restarted = _capture(str(tmp_path), steps, bs, -1, led, cap, overwrite_existing=True)
+
+        assert restarted["idempotent"] is False
+        assert restarted["overwritten"] is True
+        assert (tmp_path / "g1" / "frame_000.jpg").read_bytes() == b"jpg-4"
+        assert not (tmp_path / "g1" / "frame_001.jpg").exists()
+        assert not (tmp_path / "g1" / "frame_002.jpg").exists()
+        manifest = json.loads((tmp_path / "g1" / "manifest.json").read_text())
+        assert [f["file"] for f in manifest["frames"]] == ["frame_000.jpg"]
 
     def test_game_ids_use_independent_directories(self, tmp_path):
         data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")

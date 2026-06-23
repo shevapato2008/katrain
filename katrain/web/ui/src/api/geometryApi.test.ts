@@ -34,4 +34,19 @@ describe('GeometryAPI', () => {
     await expect(GeometryAPI.layout()).resolves.toEqual(layout);
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/geometry/layout');
   });
+
+  it('confirms reuse of the existing geometry for this session', async () => {
+    const ready = {
+      phase: 'ready',
+      session_calibrated: true,
+      last_valid: true,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: true },
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(ready), { status: 200 }),
+    );
+
+    await expect(GeometryAPI.confirmExisting()).resolves.toEqual(ready);
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/geometry/confirm-existing', { method: 'POST' });
+  });
 });

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Box, Button, Chip, CircularProgress, LinearProgress, Typography } from '@mui/material';
-import { Cancel, Refresh } from '@mui/icons-material';
+import { Cancel, CheckCircle, ErrorOutline, Refresh } from '@mui/icons-material';
 import { GeometryAPI, type GeometryLayout } from '../../../api/geometryApi';
 import { useGeometry } from '../../context/GeometryContext';
 import CameraGeometryOverlay from './CameraGeometryOverlay';
@@ -23,13 +23,56 @@ const PHASE_LABELS: Record<string, string> = {
   cancelled: '标定已取消',
 };
 
+const GTP_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
+
+function gtpPoint(row: number, col: number): string {
+  return `${GTP_LETTERS[col] ?? '?'}${19 - row}`;
+}
+
+function buildDiagnostic(error?: string | null) {
+  const raw = error ?? '';
+  const anchor = raw.match(/^anchor_not_found:(\d+),(\d+)$/);
+  if (anchor) {
+    const row = Number(anchor[1]);
+    const col = Number(anchor[2]);
+    return {
+      title: `无法定位 ${gtpPoint(row, col)} 的定位灯`,
+      body: '通常是棋子遮挡星位、LED 没亮或太暗、摄像头画面偏移，导致系统看不到这一个定位点。',
+      action: '如果右侧俯视网格仍然对齐实体棋盘，可以直接使用上次标定；否则请清空棋盘后重新标定。',
+      detail: raw,
+    };
+  }
+  if (raw === 'board_moved') {
+    return {
+      title: '摄像头或棋盘位置发生变化',
+      body: '系统检测到实时画面和上次标定结果不再对齐，实体棋盘功能已暂停。',
+      action: '请固定摄像头和棋盘，清空棋盘后重新标定。',
+      detail: raw,
+    };
+  }
+  if (raw === 'non_empty_baseline' || raw.includes('empty baseline')) {
+    return {
+      title: '棋盘没有清空，无法建立空盘基线',
+      body: '自动标定需要先记录没有棋子的棋盘画面。当前画面里仍可能有棋子或明显遮挡。',
+      action: '请清空棋盘，确认所有定位灯可见后再重试。',
+      detail: raw,
+    };
+  }
+  return {
+    title: '自动标定失败',
+    body: '系统没有完成这次棋盘定位。通常需要检查摄像头、LED 连接和棋盘是否清空。',
+    action: '如果网格仍然对齐，可以使用上次标定；否则请清空棋盘后重试。',
+    detail: raw || 'calibration_failed',
+  };
+}
+
 interface GeometryCalibrationWorkspaceProps {
   mode: 'guard' | 'settings';
   requireRecognition?: boolean;
 }
 
 const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: GeometryCalibrationWorkspaceProps) => {
-  const { status, startCalibration, cancelCalibration } = useGeometry();
+  const { status, startCalibration, confirmExisting, cancelCalibration } = useGeometry();
   const [layout, setLayout] = useState<GeometryLayout | null>(null);
   const [rawFrame, setRawFrame] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
@@ -90,11 +133,25 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
     void start();
   };
 
+  const reuseExisting = async () => {
+    setStarting(true);
+    setActionError(null);
+    try {
+      await confirmExisting();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : '无法使用上次标定');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const cameraReady = status.capabilities.camera_ready;
   const ledReady = status.capabilities.led_ready;
   const canStart = cameraReady && ledReady && !starting && !active;
+  const canReuse = (status.phase === 'required' || status.phase === 'failed') && status.last_valid && cameraReady && !starting && !active;
   const progress = status.progress;
   const metrics = status.metrics ?? {};
+  const diagnostic = status.phase === 'failed' ? buildDiagnostic(status.error) : null;
   const buttonLabel = status.phase === 'ready' && !confirmingManual
     ? '重新标定'
     : status.phase === 'degraded'
@@ -110,14 +167,22 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
               ? '摄像头或棋盘位置已变化'
               : status.phase === 'ready'
                 ? '棋盘定位完成'
-                : active
+                : status.phase === 'failed'
+                  ? '自动标定失败'
+                : status.phase === 'required' && status.last_valid
+                  ? '请确认棋盘定位'
+                  : active
                   ? PHASE_LABELS[status.phase]
                   : '请清空棋盘'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {status.phase === 'degraded'
               ? '红色网格是上一次定位结果。请清空棋盘并确认后重新标定。'
-              : '系统通过四角和九个星位 LED 定位，完成后显示四角、网格线和 361 个落子点。'}
+              : status.phase === 'failed'
+                ? '请根据诊断信息选择继续使用上次标定，或清空棋盘后重试。'
+              : status.phase === 'required' && status.last_valid
+                ? '请检查实时画面中的四角、网格线和 361 个落子点是否仍与实体棋盘对齐。'
+                : '系统通过四角和九个星位 LED 定位，完成后显示四角、网格线和 361 个落子点。'}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -126,8 +191,35 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
         </Box>
       </Box>
 
-      {(status.phase === 'degraded' || status.phase === 'failed') && (
-        <Alert severity="error">{status.phase === 'degraded' ? '当前定位已失效，实体棋盘功能已暂停。' : status.error ?? '标定失败'}</Alert>
+      {status.phase === 'degraded' && (
+        <Alert severity="error">当前定位已失效，实体棋盘功能已暂停。</Alert>
+      )}
+      {diagnostic && (
+        <Box
+          data-testid="geometry-diagnostic-card"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'auto 1fr',
+            gap: 1.5,
+            p: 2,
+            borderRadius: 2,
+            bgcolor: 'rgba(255, 149, 0, 0.10)',
+            border: '1px solid rgba(255, 149, 0, 0.45)',
+          }}
+        >
+          <ErrorOutline sx={{ color: '#ff9f0a', mt: 0.25 }} />
+          <Box>
+            <Typography sx={{ fontWeight: 800 }}>{diagnostic.title}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{diagnostic.body}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 1 }}>
+              <CheckCircle sx={{ fontSize: 18, color: 'success.main' }} />
+              <Typography variant="body2">{diagnostic.action}</Typography>
+            </Box>
+            <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', mt: 1 }}>
+              技术细节：{diagnostic.detail}
+            </Typography>
+          </Box>
+        </Box>
       )}
       {requireRecognition && status.phase === 'ready' && !status.capabilities.recognition_ready && (
         <Alert severity="warning">棋盘已标定，但识别模型尚未就绪</Alert>
@@ -137,6 +229,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
       )}
       {actionError && <Alert severity="error">{actionError}</Alert>}
       {layoutError && <Alert severity="warning">几何叠加读取失败：{layoutError}</Alert>}
+      {canReuse && <Alert severity="info">网格对齐时可直接继续，<strong>无需清空棋盘</strong>。</Alert>}
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, overflow: 'auto' }}>
         <GeometryVideoPanel
@@ -179,16 +272,30 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
             取消标定
           </Button>
         ) : (
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<Refresh />}
-            disabled={!canStart}
-            onClick={handleStart}
-            sx={{ minWidth: 240, minHeight: 48 }}
-          >
-            {buttonLabel}
-          </Button>
+          <>
+            {canReuse && (
+              <Button
+                variant="outlined"
+                color="success"
+                size="large"
+                disabled={starting}
+                onClick={() => void reuseExisting()}
+                sx={{ minWidth: 240, minHeight: 48 }}
+              >
+                网格无误，使用上次标定
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<Refresh />}
+              disabled={!canStart}
+              onClick={handleStart}
+              sx={{ minWidth: 240, minHeight: 48 }}
+            >
+              {buttonLabel}
+            </Button>
+          </>
         )}
       </Box>
     </Box>

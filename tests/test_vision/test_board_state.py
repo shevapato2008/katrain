@@ -71,3 +71,24 @@ class TestBoardToString:
         lines = result.strip().split("\n")
         assert "B" in lines[3]
         assert "W" in lines[15]
+
+
+class TestLedGuard:
+    def _det(self, x, y, class_id, conf=0.9):
+        return Detection(x_center=x, y_center=y, class_id=class_id, confidence=conf)
+
+    def test_led_detections_are_ignored(self):
+        ex = BoardStateExtractor()
+        img = 950
+        # a black stone at grid (0,0) -> pixel ~ (0,0); a red LED (class 2) at grid (1,1)
+        dets = [self._det(2, 2, 0), self._det(int(1 / 18 * img), int(1 / 18 * img), 2)]
+        board = ex.detections_to_board(dets, img_w=img, img_h=img)
+        assert board[0][0] == BLACK
+        # LED (class_id=2) must NOT have written anything (would have been 3 with the +1 bug)
+        assert set(int(v) for v in np.unique(board)) <= {0, BLACK, WHITE}
+        assert board[1][1] == 0
+
+    def test_white_still_maps_to_white(self):
+        ex = BoardStateExtractor()
+        board = ex.detections_to_board([self._det(2, 2, 1)], img_w=950, img_h=950)
+        assert board[0][0] == WHITE

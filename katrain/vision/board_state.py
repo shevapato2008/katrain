@@ -5,6 +5,7 @@ Uses confidence-based conflict resolution when multiple detections map to the sa
 
 import numpy as np
 
+from katrain.vision.classes import STONE_CLASS_IDS
 from katrain.vision.config import BoardConfig
 from katrain.vision.coordinates import pixel_to_physical, physical_to_grid
 from katrain.vision.stone_detector import Detection
@@ -27,6 +28,8 @@ class BoardStateExtractor:
         confidence = np.zeros((gs, gs), dtype=float)
 
         for det in detections:
+            if det.class_id not in STONE_CLASS_IDS:
+                continue  # LED guidance classes (led_red/led_green) are not board stones
             x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
             pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
             if det.confidence > confidence[pos_y][pos_x]:

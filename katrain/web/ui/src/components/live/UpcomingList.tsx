@@ -32,7 +32,7 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
         setUpcoming(response.matches);
         setError(null);
       } catch (err) {
-        setError('Failed to load upcoming events');
+        setError(i18n.t('live:upcoming_load_error', 'Failed to load upcoming events'));
         console.error('Failed to fetch upcoming:', err);
       } finally {
         setLoading(false);

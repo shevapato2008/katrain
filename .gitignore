@@ -187,6 +187,9 @@ dmypy.json
 # Database
 .postgres_data/
 
+# YOLO pretrained checkpoints (auto-downloaded by ultralytics)
+*.pt
+
 # Local data
 /data/
 !/data/verified_board_payloads/

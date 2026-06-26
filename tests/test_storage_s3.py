@@ -70,7 +70,7 @@ class TestS3StorageBackend:
         s3_backend.put(KEY, DATA, content_type="video/mp4")
         head = s3_backend._client.head_object(Bucket=BUCKET, Key=KEY)
         assert head["ContentType"] == "video/mp4"
-        assert "immutable" in head["CacheControl"]
+        assert "max-age" in head["CacheControl"]
 
     def test_content_type_inferred_from_key(self, s3_backend):
         s3_backend.put("tutorial_assets/book/audio/fig_1.mp3", DATA)

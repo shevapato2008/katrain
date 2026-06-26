@@ -58,6 +58,7 @@ async def test_local_full_get_200(app_local):
     r = await _get(app_local, KEY)
     assert r.status_code == 200
     assert r.headers["accept-ranges"] == "bytes"
+    assert "max-age" in r.headers.get("cache-control", "")
     assert len(r.content) == 256
 
 

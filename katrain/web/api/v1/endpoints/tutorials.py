@@ -16,6 +16,7 @@ from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
 from katrain.web.core.storage import get_storage_backend, normalize_key
+from katrain.web.core.storage.base import MEDIA_CACHE_CONTROL
 from katrain.web.tutorials import db_queries
 from katrain.web.tutorials.services import generate_figure_audio
 from katrain.web.tutorials.models import (
@@ -291,7 +292,11 @@ async def get_asset(asset_path: str, request: Request):
                 "Accept-Ranges": "bytes",
                 "Content-Length": str(length),
                 "Content-Type": content_type,
+                "Cache-Control": MEDIA_CACHE_CONTROL,
             },
         )
 
-    return FileResponse(backend.fspath(key), headers={"Accept-Ranges": "bytes"})
+    return FileResponse(
+        backend.fspath(key),
+        headers={"Accept-Ranges": "bytes", "Cache-Control": MEDIA_CACHE_CONTROL},
+    )

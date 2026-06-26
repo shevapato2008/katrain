@@ -50,5 +50,10 @@ async def generate_figure_audio(db: Session, figure: TutorialFigure, text: str =
     db.add(figure)
     db.commit()
     db.refresh(figure)
-    
+
+    # Write-through to object store (no-op for local backend). D8: local copy stays.
+    from katrain.web.core.storage import upload_file
+
+    upload_file(figure.audio_asset, abs_path)
+
     return figure

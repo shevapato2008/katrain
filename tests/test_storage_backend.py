@@ -122,3 +122,40 @@ class TestFactory:
 
     def test_factory_returns_singleton(self):
         assert get_storage_backend() is get_storage_backend()
+
+
+# ── upload_file (write-through helper, Task 6) ────────────────────────────────
+
+class _RemoteLocal(LocalStorageBackend):
+    """Local on disk but advertises is_remote=True (stands in for S3)."""
+
+    is_remote = True
+
+
+class TestUploadFile:
+    def test_noop_for_local_backend(self, tmp_path, monkeypatch):
+        from katrain.web.core import storage as storage_mod
+
+        monkeypatch.setattr(storage_mod, "_backend", LocalStorageBackend(base_dir=tmp_path / "store"))
+        src = tmp_path / "fig_1.mp4"
+        src.write_bytes(b"abc")
+        # Local backend = the disk store already; nothing to upload.
+        assert storage_mod.upload_file("tutorial_assets/b/video/fig_1.mp4", src) is False
+
+    def test_uploads_for_remote_backend(self, tmp_path, monkeypatch):
+        from katrain.web.core import storage as storage_mod
+
+        backend = _RemoteLocal(base_dir=tmp_path / "store")
+        monkeypatch.setattr(storage_mod, "_backend", backend)
+        src = tmp_path / "fig_1.mp4"
+        src.write_bytes(b"abc")
+        key = "tutorial_assets/b/video/fig_1.mp4"
+        assert storage_mod.upload_file(key, src) is True
+        assert backend.read(key) == b"abc"
+
+    def test_swallows_missing_source(self, tmp_path, monkeypatch):
+        from katrain.web.core import storage as storage_mod
+
+        monkeypatch.setattr(storage_mod, "_backend", _RemoteLocal(base_dir=tmp_path / "store"))
+        # Missing local file must not raise — returns False, logs a warning.
+        assert storage_mod.upload_file("k.mp4", tmp_path / "nope.mp4") is False

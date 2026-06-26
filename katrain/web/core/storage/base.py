@@ -24,6 +24,14 @@ PutData = Union[bytes, bytearray, BinaryIO]
 # The on-disk / in-bucket root prefix that callers may redundantly include.
 ASSET_ROOT_PREFIX = "data/"
 
+# Cache-Control applied to media on upload (S3) and when serving locally.
+# 1 day balances smooth web/SBC playback against the fact that content is still
+# being regenerated under stable keys (fig_<id>.mp4) during the build-out phase —
+# a stale clip self-heals within a day. For the static post-launch library you can
+# raise this to ``public, max-age=31536000, immutable`` once keys stop changing
+# (or switch to versioned keys / CDN purge on regen). See plan.md Task 7.
+MEDIA_CACHE_CONTROL = "public, max-age=86400"
+
 
 def normalize_key(key: str) -> str:
     """Canonicalise an object key and reject path traversal.

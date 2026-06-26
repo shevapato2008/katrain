@@ -171,30 +171,35 @@ S3_PRESIGN_TTL_SEC: int = 3600
 - [ ] **端到端验收（待 MinIO 起来）**：前端 `assetUrl()` 不改，galaxy + kiosk 播放/seek 正常。
 
 ### Task 4：MinIO 服务上线
-- [ ] `docker-compose.yml` 加 `minio/minio` 服务（`9000` API / `9001` console，命名卷 `minio-data`，root 账号走 env）。
-- [ ] `deploy/minio/bootstrap.sh`：用 `mc` 建桶 `tutorial-assets`，设**匿名只读** `mc anonymous set download minio/tutorial-assets`（D7）。
-- [ ] **nginx 反代**（D6）：`https://media.<domain>` 反代到 `minio:9000`，加 Referer/域名白名单防盗链；**不对外暴露 :9000/:9001**（console 仅内网/SSH 隧道）。
-- [ ] 设 app env：`KATRAIN_STORAGE_BACKEND=s3`、`KATRAIN_S3_ENDPOINT_URL=http://minio:9000`、`KATRAIN_S3_BUCKET=tutorial-assets`、keys、`KATRAIN_S3_PUBLIC_BASE_URL=https://media.<domain>/tutorial-assets`、`KATRAIN_S3_USE_PRESIGNED=false`。
+- [x] `docker-compose.yml` 加 `minio` 服务（9000/9001 **仅绑 127.0.0.1**，命名卷 `minio-data`，healthcheck）+ `minio-setup` 一次性服务跑 bootstrap；`katrain-web` 加 `STORAGE_*` env 并 `depends_on minio`。
+- [x] `deploy/minio/bootstrap.sh`：`mc` 建桶 + `mc anonymous set download`（D7），幂等。**实测**：本地起 MinIO 跑通，bucket 创建 + 匿名只读生效。
+- [x] `deploy/minio/nginx-media.conf`：`https://media.<domain>` 反代 `127.0.0.1:9000`，Referer/域名白名单防盗链，Range 透传，TLS 占位（D6）。
+- [x] app env 模板就位（compose 内 `KATRAIN_STORAGE_BACKEND=s3` 等，phase2 改值即切 OSS）。
+- [ ] **服务器部署（待跳板机连接信息）**：`docker compose up -d minio minio-setup`、配 `media.<domain>` 证书+nginx、设生产 env。`docker compose config` 已校验通过。
 
 ### Task 5：历史数据迁移
-- [ ] `scripts/migrate_assets_to_minio.py`：遍历 `data/tutorial_assets/**`，`backend.put()` 上传，key = 相对 `data/` 路径；**幂等**（已存在且 size 一致则跳过）。亦可直接 `mc mirror ./data/tutorial_assets minio/tutorial-assets/tutorial_assets`。
-- [ ] **计数校验**：上传后对象数 == 本地文件数（651 视频 / 1902 音频 / 24893 图片）。
-- [ ] 抽样从 `S3_PUBLIC_BASE_URL` 播放校验。**校验通过前不删本地文件。**
+- [x] `scripts/migrate_assets_to_minio.py`：遍历 `data/tutorial_assets/**`，幂等上传（exists+size 匹配则跳过）+ 结尾计数校验；`--book/--force/--dry-run`；拒绝对 local 后端运行；**非破坏（D8）只读本地**。
+- [x] **实测**（本地 MinIO，7 文件真实样本）：dry-run ✓、真实迁移 7 上传+校验通过 ✓、重跑 7 全 skip（幂等）✓。
+- [x] **抽样播放校验**（curl 匿名）：mp4 200 + Range 206 + `video/mp4` + `Cache-Control: max-age=86400`，mp3 `audio/mpeg`，缺失 404。
+- [ ] **服务器全量迁移（待 MinIO 部署）**：`python scripts/migrate_assets_to_minio.py`（预期 651 视频 / 1902 音频 / 24893 图片）。或 `mc mirror`。校验通过前不删本地。
 
 ### Task 6：生成即上传 (write-through)
-- [ ] `generate_video.py` / `generate_voice.py` 生成 MP4/MP3 后调 `backend.put()`（local 后端原地、no-op）。
-- [ ] **本地永久保留**（D8）：生成始终写本地 `data/tutorial_assets/`（权威镜像），再上传对象存储（分发层）；**任何环节都不删本地**。迁移脚本同理可安全重跑。
+- [x] `storage/__init__.py` 加 `upload_file(key, path)`：**仅 remote 后端上传**（local 后端是磁盘本身→no-op），失败仅告警不中断批量（可由迁移脚本补齐）。
+- [x] 接入 4 个产出点：`generate_video.py`（figure 视频+poster、section 视频+poster）、`generate_voice.py`（音频）、`services.generate_figure_audio`（API 路径音频）。
+- [x] **本地永久保留**（D8）：生成始终写本地（权威镜像），再上传分发层；不删本地。
+- [x] 测试：`upload_file` 三例（local no-op / remote 上传 / 缺失源吞错），全套 46 passed。
 
 ### Task 7：播放流畅度 & 缓存
-- [ ] 确认所有最终视频带 `+faststart`（主合成已有 :731；**核查 section 拼接视频**亦带）。
-- [ ] 上传对象设 `Cache-Control: public, max-age=31536000, immutable`；key 用内容/版本区分（已按 `fig_{id}` / `section_{id}`，更新内容时建议加 `?v=` 或改 key 以避免脏缓存）。
-- [ ] 前端可选：kiosk 翻页预取下一 figure 视频进浏览器缓存（SBC 始终在线，无需离线包）。
+- [x] faststart 核查：主合成（:731）+ section 拼接（:1060）均已带 `+faststart`。
+- [x] 缓存：抽出共享常量 `MEDIA_CACHE_CONTROL = "public, max-age=86400"`，**一致**应用于 S3 上传 + local 端点（206/FileResponse）。**未用 immutable**——内容仍在按稳定 key 重生成，1 天 TTL 可自愈脏缓存；静态化后可上调 immutable + 版本化 key（见注）。
+- [x] **实测**缓存头随对象返回（curl 验证）。
+- [ ] 前端预取（可选，未做）：kiosk 翻页预取下一 figure 视频；SBC 始终在线，无需离线包。
 
 ### 阶段 1 验收标准
-- [ ] `STORAGE_BACKEND=s3`（指向 MinIO）下，galaxy web + SBC kiosk 教程视频/音频/页面图均正常加载、可 seek。
-- [ ] 资产字节不再穿过 FastAPI（s3 路径为 302）。
-- [ ] 全量历史数据已在 MinIO 且计数一致；本地副本仍在（未删）。
-- [ ] 新生成资产自动落 MinIO。
+- [x] **代码层**：`STORAGE_BACKEND=s3` 切换、s3 后端 put/get/range/public_url、端点 302/Range、写入即上传——全部单测 + 真实 MinIO 集成验证通过。
+- [x] 资产字节不再穿过 FastAPI（s3 路径为 302）。
+- [x] 迁移脚本幂等 + 计数校验 + 匿名 Range 播放——真实样本跑通。
+- [ ] **服务器端到端（待跳板机）**：生产 MinIO 部署 + 全量迁移 + galaxy web/SBC kiosk 实机播放/seek 验收。
 
 ---
 

@@ -15,9 +15,8 @@ from __future__ import annotations
 
 import mimetypes
 
-from katrain.web.core.storage.base import PutData, StorageBackend, normalize_key
+from katrain.web.core.storage.base import MEDIA_CACHE_CONTROL, PutData, StorageBackend, normalize_key
 
-CACHE_CONTROL = "public, max-age=31536000, immutable"
 DEFAULT_CONTENT_TYPE = "application/octet-stream"
 
 
@@ -91,7 +90,7 @@ class S3StorageBackend(StorageBackend):
             Key=key,
             Body=body,
             ContentType=self._content_type(key, content_type),
-            CacheControl=CACHE_CONTROL,
+            CacheControl=MEDIA_CACHE_CONTROL,
         )
 
     def exists(self, key: str) -> bool:

@@ -223,6 +223,11 @@ async def process_section(
                     if ok:
                         audio_asset = audio_asset_rel
                         print(f"  [{fig.figure_label}] ✓ Audio saved")
+                        # Write-through to object store (no-op for local backend). D8: local copy stays.
+                        from katrain.web.core.storage import upload_file
+
+                        if upload_file(audio_asset_rel, audio_path):
+                            print(f"  [{fig.figure_label}] ↑ Uploaded to object store")
                     else:
                         print(f"  [{fig.figure_label}] ✗ Audio failed")
 

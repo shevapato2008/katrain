@@ -33,7 +33,7 @@ import {
   type UserGameSummary,
 } from '../../api/userGamesApi';
 import { ReportsAPI, type ReportQueueSummary, type ReportTaskSummary } from '../../api/reportApi';
-import PlaybackBar from '../../components/live/PlaybackBar';
+import PlaybackBar from '../../../components/live/PlaybackBar';
 import ReportGameCard, { type ReportGameStatus } from '../../components/report/ReportGameCard';
 import ReportImportMenu from '../../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../../components/report/ReportLibraryImportDialog';

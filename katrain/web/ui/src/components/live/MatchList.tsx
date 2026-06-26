@@ -1,7 +1,8 @@
 import { Box, Typography, CircularProgress, Alert, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 import MatchCard from './MatchCard';
-import type { MatchSummary } from '../../../types/live';
+import type { MatchSummary } from '../../types/live';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface MatchListProps {
   matches: MatchSummary[];
@@ -25,6 +26,7 @@ export default function MatchList({
   onSelect,
 }: MatchListProps) {
   const [tab, setTab] = useState(0);
+  const { t } = useTranslation();
 
   if (loading) {
     return (
@@ -37,7 +39,7 @@ export default function MatchList({
   if (error) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>
-        加载失败: {error.message}
+        {t('Load failed', '加载失败')}: {error.message}
       </Alert>
     );
   }
@@ -66,14 +68,14 @@ export default function MatchList({
           onChange={(_, v) => setTab(v)}
           sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab label={`正在直播 (${liveMatches.length})`} />
-          <Tab label={`历史直播 (${finishedMatches.length})`} />
+          <Tab label={`${t('Live Now', '正在直播')} (${liveMatches.length})`} />
+          <Tab label={`${t('History', '历史直播')} (${finishedMatches.length})`} />
         </Tabs>
       )}
 
       {displayMatches.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-          <Typography>暂无比赛</Typography>
+          <Typography>{t('No matches', '暂无比赛')}</Typography>
         </Box>
       ) : (
         <Box>

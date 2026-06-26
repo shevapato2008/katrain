@@ -1927,7 +1927,7 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
   - `solve_frame_homography(detected: list[tuple[tuple[int,int], tuple[float,float]]], *, out_size: int = 950, min_inliers: int = 6) -> GeometryFitResult`
   - `drift_from_homography(M_f: np.ndarray, M_0: np.ndarray, *, out_size: int = 950) -> Drift`（`Drift(dx, dy, deg, scale, median_px)`；`median_cells = median_px/spacing`）
 
-- [ ] **Step 1.1: 写纯 CV 失败测试**
+- [x] **Step 1.1: 写纯 CV 失败测试**
 
 ```python
 # tests/test_vision/test_fiducial_recalibrate.py
@@ -2024,12 +2024,12 @@ def test_drift_from_homography_recovers_components():
     assert abs(d.deg - 3.0) < 0.5 and abs(d.scale - 1.0) < 0.02
 ```
 
-- [ ] **Step 1.2: 运行 RED**
+- [x] **Step 1.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_vision/test_fiducial_recalibrate.py`
   Expected: FAIL（模块不存在）。
 
-- [ ] **Step 1.3: 实现 `katrain/vision/fiducial_recalibrate.py`**
+- [x] **Step 1.3: 实现 `katrain/vision/fiducial_recalibrate.py`**
 
 ```python
 """SGF-aware fiducial selection + per-frame absolute homography recovery.
@@ -2176,12 +2176,12 @@ def drift_from_homography(M_f, M_0, *, out_size: int = 950) -> Drift:
     return Drift(dx=float(T[0, 2]), dy=float(T[1, 2]), deg=deg, scale=scale, median_px=float(np.median(res)))
 ```
 
-- [ ] **Step 1.4: 运行 GREEN**
+- [x] **Step 1.4: 运行 GREEN**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_vision/test_fiducial_recalibrate.py`
   Expected: PASS。
 
-- [ ] **Step 1.5: Commit**
+- [x] **Step 1.5: Commit**
 
 ```bash
 git add katrain/vision/fiducial_recalibrate.py tests/test_vision/test_fiducial_recalibrate.py
@@ -2205,7 +2205,7 @@ git commit -m "feat(vision): fiducial recalibrate core (warped-target M_f, ROI m
 > 5. **实时 artifact**：用 `M_f` warp 训练帧 → `warped/`；原图 + `M_f` 投影网格 + fiducial 标记 → `grid_overlay/`。
 > 6. **manifest 扩展**（Step 2.5）。`fiducial_mode=="off"` → 短路，完全走 P10、不产 artifact。
 
-- [ ] **Step 2.1: 写 RED 测试**
+- [x] **Step 2.1: 写 RED 测试**
 
 ```python
 # tests/test_baipu_capture.py  (APPEND — reuse existing fakes; add fiducial fakes below)
@@ -2282,12 +2282,12 @@ def test_off_mode_is_p10_no_artifacts(tmp_path, _steps_fixture):
 
   （`_steps_fixture` 复用 `tests/test_baipu_capture.py` 既有 steps 构造；若无则按现有用例同款构造一个含 ≥1 非 pass 落子的 `steps`。）
 
-- [ ] **Step 2.2: 运行 RED**
+- [x] **Step 2.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py`
   Expected: FAIL（`run_capture()` 不接受 `fiducial_mode` / manifest 无新字段）。
 
-- [ ] **Step 2.3: 实现最小后端变更**
+- [x] **Step 2.3: 实现最小后端变更**
 
   在 `run_capture` 签名加 `fiducial_mode: str = "off"`、`drift_threshold_cells: float = 0.15`；维护跨手 `last_good_M_f`（用 manifest 内最近一条 `status=="corrected"` 的 `geometry_correction.M` 作为复算来源——重入安全）。在「确认 ground truth」后、「点制导灯」前插入标定子流程（上方时序），失败回退 last-good/`M_0`；点灯+训练帧后用 `M_f` 写 `warped/` 与 `grid_overlay/`，写 `fiducial/`；扩展 manifest 条目（Step 2.5）。`off` 短路（不动 P10 路径）。所有 `cv2.imwrite` 前 `mkdir(parents=True, exist_ok=True)`，路径经 `_resolve_game_dir` 包含校验。
 
@@ -2307,12 +2307,12 @@ def _draw_grid_overlay(raw_bgr, M_f, xs, ys, fiducials):
     return vis
 ```
 
-- [ ] **Step 2.4: 运行 GREEN**
+- [x] **Step 2.4: 运行 GREEN**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py tests/test_baipu_api.py`
   Expected: 全部 PASS。
 
-- [ ] **Step 2.5: manifest 每帧新增字段（向后兼容；旧帧无此字段消费方回退）**
+- [x] **Step 2.5: manifest 每帧新增字段（向后兼容；旧帧无此字段消费方回退）**
 
 ```json
 "geometry_correction": {
@@ -2328,7 +2328,7 @@ def _draw_grid_overlay(raw_bgr, M_f, xs, ys, fiducials):
 "artifacts": {"warped": "warped/frame_000.jpg", "grid_overlay": "grid_overlay/frame_000.jpg", "fiducial": "fiducial/frame_000.jpg"}
 ```
 
-- [ ] **Step 2.6: Commit**
+- [x] **Step 2.6: Commit**
 
 ```bash
 git add katrain/web/core/baipu_capture.py tests/test_baipu_capture.py
@@ -2346,7 +2346,7 @@ git commit -m "feat(baipu): per-move dark/lit fiducial calibration frame, per-fr
 - Consumes: Task 2 `run_capture(..., fiducial_mode, drift_threshold_cells)`。
 - Produces: `POST /api/v1/baipu/capture` 响应增 `{"geometry_correction": {"status","drift":{"median_cells","over_threshold"}}}`；不阻断。
 
-- [ ] **Step 3.1: 写 RED**
+- [x] **Step 3.1: 写 RED**
 
 ```python
 # tests/test_baipu_capture.py (APPEND)
@@ -2383,21 +2383,21 @@ async def test_capture_response_carries_correction(async_client, baipu_mocks):
     assert "median_cells" in body["geometry_correction"]["drift"]
 ```
 
-- [ ] **Step 3.2: 运行 RED**
+- [x] **Step 3.2: 运行 RED**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_api.py tests/test_baipu_capture.py`
   Expected: FAIL。
 
-- [ ] **Step 3.3: 实现**
+- [x] **Step 3.3: 实现**
 
   扩展 `_unlink_manifest_frame(game_dir, frame)`：除 `frame["file"]` 外，遍历 `frame.get("artifacts", {}).values()` 逐个 `_resolve` 后 `unlink(missing_ok=True)`。overwrite 裁尾（`baipu_capture.py:144-147`）对被删 `frames[index+1:]` 调用同一清理。repair 同 ordinal 覆盖前先清旧 artifact。endpoint 把 `run_capture` 返回的 `geometry_correction`（取 `status` + `drift.median_cells`/`over_threshold`）放入响应。`server.py` 把 CLI 值经 `BaipuCaptureRequest`/依赖透传给 `run_capture`。
 
-- [ ] **Step 3.4: 运行 GREEN**
+- [x] **Step 3.4: 运行 GREEN**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_api.py tests/test_baipu_capture.py`
   Expected: PASS。
 
-- [ ] **Step 3.5: Commit**
+- [x] **Step 3.5: Commit**
 
 ```bash
 git add katrain/web/core/baipu_capture.py katrain/web/api/v1/endpoints/baipu.py katrain/web/server.py tests/test_baipu_api.py tests/test_baipu_capture.py
@@ -2413,7 +2413,7 @@ git commit -m "feat(baipu): online drift status in capture response, artifact-aw
 - Consumes: manifest 每帧 `geometry_correction`（Task 2 schema）。
 - Produces: `process_game(..., allow_legacy_drift: bool = False)`；`label_quality` 写入 `shifts.csv` 行尾；`main()` 增 `--allow-legacy-drift`。
 
-- [ ] **Step 4.1: 写 RED**
+- [x] **Step 4.1: 写 RED**
 
 ```python
 # tests/test_vision/test_baipu_autolabel.py (APPEND)
@@ -2440,12 +2440,12 @@ def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
 
   （三个 helper 复用本文件既有的「合成 game dir」夹具；若缺则按既有 `process_game` 测试同款构造 `manifest.json`+`geometry.npz`+`game.sgf`+一张合成 warped 帧。）
 
-- [ ] **Step 4.2: 运行 RED**
+- [x] **Step 4.2: 运行 RED**
 
   Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -q`
   Expected: FAIL。
 
-- [ ] **Step 4.3: 实现**
+- [x] **Step 4.3: 实现**
 
   `load_capture` 读每帧 `geometry_correction`（保留在 `Capture.manifest`，无需改 dataclass）。`process_game`：对每帧——
   - `status=="corrected"`：`M_f=np.array(fr["geometry_correction"]["M"])`；`warped=warp_frame(img, M_f, out_size)`；`boxes=frame_boxes(board, led_point, xs, ys, shift=(0,0), spacing, ...)`；`label_quality="corrected"`。
@@ -2455,12 +2455,12 @@ def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
   - `shifts.csv` 行尾追加 `label_quality` 列；header 增 `label_quality`。
   `main()` 增 `ap.add_argument("--allow-legacy-drift", action="store_true")` 并透传。
 
-- [ ] **Step 4.4: 运行 GREEN**
+- [x] **Step 4.4: 运行 GREEN**
 
   Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -q`
   Expected: PASS。
 
-- [ ] **Step 4.5: Commit**
+- [x] **Step 4.5: Commit**
 
 ```bash
 git add katrain/vision/tools/baipu_autolabel.py tests/test_vision/test_baipu_autolabel.py
@@ -2476,18 +2476,18 @@ git commit -m "feat(vision): baipu_autolabel consumes per-frame M_f, isolates dr
 **Interfaces:**
 - Consumes: Task 3 capture 响应 `geometry_correction:{status, drift:{median_cells, over_threshold}}`。
 
-- [ ] **Step 5.1: RED**
+- [x] **Step 5.1: RED**
   - `status="corrected"` 且 `drift.over_threshold` → 轻提示「检测到棋盘移动，已自动校正」。
   - `status="stale"` → 警示「本手未能重新校正，沿用上次几何，请确认基准点未被棋子/手遮挡」。
   - `status="frozen"` → 警示「几何未校正，请检查棋盘是否被大幅移动」。
   - `status="corrected"` 且未过阈 → 不显横幅。复用既有 banner 模式。组件测试断言四态渲染。
 
-- [ ] **Step 5.2: GREEN + 构建**
+- [x] **Step 5.2: GREEN + 构建**
 
   Run: `cd katrain/web/ui && npm test -- src/kiosk/__tests__ && npm run lint && npm run build && npm run build:kiosk-2d`
   Expected: 退出码 0。（共享区未改，但按 SBC 契约双构建。）**不**做实时双画面（用户选「全套存盘」；实时看图走 P6 / 事后看 artifact）。
 
-- [ ] **Step 5.3: Commit**
+- [x] **Step 5.3: Commit**
 
 ```bash
 git add katrain/web/ui/src/api/baipuApi.ts katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx katrain/web/ui/src/kiosk/__tests__/ katrain/web/ui/tests/baipu.spec.ts
@@ -2499,12 +2499,12 @@ git commit -m "feat(baipu-ui): drift status banner (corrected/stale/frozen)"
 - Create: `superpowers/tracks/sbc-baipu-led-guide/2026-06-26-drift-fiducial-recalibration-design.md`（执行记录/设计落地；可在收尾时补）
 - Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`（P11 执行记录）
 
-- [ ] **Step 6.1: 后端回归**
+- [x] **Step 6.1: 后端回归**
 
   Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_vision/test_fiducial_recalibrate.py tests/test_baipu_capture.py tests/test_baipu_api.py tests/test_geometry_drift.py` + `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -q`
   Expected: 0 failures。
 
-- [ ] **Step 6.2: 前端回归与构建** Run: `cd katrain/web/ui && npm test && npm run build && npm run build:kiosk-2d` Expected: 退出码 0。
+- [x] **Step 6.2: 前端回归与构建** Run: `cd katrain/web/ui && npm test && npm run build && npm run build:kiosk-2d` Expected: 退出码 0。
 
 - [ ] **Step 6.3: SBC 延迟基准 gate（决策点）** 在 RK35xx 上 `--baipu-fiducial-mode every-move` 跑 ≥20 手，记录每手新增阻塞：`clear+SHOW ACK`×3、`grab_fresh`(dark/lit)×2、`detect+solve`、`imwrite`×3、合计 ms。
   - **判据**：每手新增阻塞 ≤ 800ms → 保持 `every-move` 默认 + 同步写 artifact。
@@ -2513,9 +2513,9 @@ git commit -m "feat(baipu-ui): drift status banner (corrected/stale/frozen)"
 
 - [ ] **Step 6.4: 真机重采 + 离线复核** `--baipu-fiducial-mode every-move` 重摆一局（或重采 `kifu_24171`）→ `baipu_autolabel --verify-dir ...` → 断言 `shifts.csv` 全程 `corrected` 帧 `residual<5px`（对照现状 56% 帧 >10px），`--verify-dir` 的 warped_boxes 叠框中后盘对齐；训练帧目录无 fiducial 污染。中途**故意碰移棋盘**验证在线 `corrected`/横幅；摆到中后盘空点不足处验证 `stale` 告警不崩。
 
-- [ ] **Step 6.5: 更新 P11 执行记录** 记录测试计数、真机残差分布、SBC 延迟实测、known limits（中后盘 `stale` 退化、`drift-gated` 未实现）、启动命令。
+- [x] **Step 6.5: 更新 P11 执行记录** 记录测试计数、真机残差分布、SBC 延迟实测、known limits（中后盘 `stale` 退化、`drift-gated` 未实现）、启动命令。
 
-- [ ] **Step 6.6: Commit**
+- [x] **Step 6.6: Commit**
 
 ```bash
 git add superpowers/tracks/sbc-baipu-led-guide/
@@ -2528,3 +2528,20 @@ git commit -m "docs(baipu): P11 drift/fiducial recalibration design + execution 
 3. 离线 `baipu_autolabel`：`corrected` 帧用逐帧 `M_f` 零位移产出**全程对齐**标注（`residual<5px`）；`stale` 标质量；盘动过的 `frozen`/legacy 帧默认隔离，`--allow-legacy-drift` 才导出。
 4. 每手实时落盘原图 / 网格定位图 / warped；warped_boxes 由离线 `--verify-dir` 产。
 5. 测试（阻断）：Task1–4 后端 + Task5 前端全绿，含负例（坐标空间正确性、4 点+1 外点应失败、9 点+2 外点通过、暗/亮多 blob 分配、last-good 回退、artifact 覆盖清理、legacy 默认隔离）；真机 `corrected` 残差达标 + SBC 延迟实测入档。
+
+### P11 执行记录（2026-06-27）
+
+**状态**：Task 1–5 已实现并全绿；Task 6 软件回归完成，**真机步骤 6.3/6.4 待硬件**。设计落地详见 `2026-06-26-drift-fiducial-recalibration-design.md`。
+
+- **Task 1**（`fiducial_recalibrate.py`，commit `03563399`）：`select_fiducials`/`predict_camera_positions`/`detect_led_centroids`/`solve_frame_homography`（复用 `fit_geometry_from_anchors`，warped 目标修对坐标）/`drift_from_homography`。测试 **9 passed**（含坐标空间正确性、旋转恢复、4 点+1 外点应失败、9 点+2 外点通过）。
+- **Task 2**（`baipu_capture.py`，commit `25be9fa0`）：每手暗/亮标定帧、逐帧 `M_f`、`corrected/stale/frozen` 状态、隔离 artifact、富 manifest。`test_baipu_capture.py` **12 passed**（含 off 回退 P10、stale 沿用 last-good）。
+- **Task 3**（API/状态/清理/配置，commit `be8e3aaf`）：capture 响应携带 `geometry_correction`；`_unlink_manifest_frame` 清 artifact、overwrite 无孤儿；`app.state.baipu_fiducial_mode`（默认 `every-move`）/`baipu_drift_threshold_cells`（0.15）。`test_baipu_api.py + test_baipu_capture.py` **24 passed**。
+- **Task 4**（`baipu_autolabel.py`，commit `e18eaea4`）：`process_game` 消费逐帧 `M_f`（corrected/stale 零位移）、`frozen`/legacy 漂移帧默认隔离（`--allow-legacy-drift` 导出）、`label_quality` 列。`test_baipu_autolabel.py` **18 passed**。
+- **Task 5**（`baipuApi.ts` + `BaipuSessionPage.tsx`，commit `ec521f26`）：`DriftBanner`（corrected/stale/frozen）。`DriftBanner.test.tsx` 6 + `baipuApi.test.ts` 5 = **11 passed**；`npm run build` 与 `npm run build:kiosk-2d`（含 `verify:kiosk-2d`）退出 0。
+- **Task 6（软件部分）**：后端定向回归 **53 passed**（`fiducial_recalibrate+baipu_capture+baipu_api+geometry_drift`=35；autolabel CI=18）。前端全量 vitest 有 19 个失败，均在 `GamePage/theme/Orientation/Auth/TeachingSettingsDialog/ResearchPage` 等**与 baipu 无关**子系统，经 `HEAD~1` 复核为**既有技术债**（非本期引入）。
+
+**待硬件（RK35xx + 相机 + LED 板）：**
+- [ ] Step 6.3 SBC 延迟基准 gate（决策点；判据 ≤800ms 同步写，超则 artifact 异步/降频）。
+- [ ] Step 6.4 真机重采 + 离线复核（`corrected` 帧 `residual<5px`、故意碰盘验 `corrected`/`stale` 横幅、`baipu.spec.ts` 横幅 e2e）。
+
+**Known limits**：中后盘满盘可能长期 `stale`（沿用 last-good，已诚实暴露）；`drift-gated` 未实现（需旋转感知预检）；旧 `kifu_24171` 无 fiducial 帧、盘动过 → 默认隔离，需重采。

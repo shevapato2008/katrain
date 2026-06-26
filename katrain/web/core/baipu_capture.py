@@ -88,6 +88,157 @@ def _unlink_manifest_frame(game_dir: Path, frame: dict) -> None:
         pass
 
 
+_FIDUCIAL_RGB = (0, 96, 0)  # low-brightness green; detected on channel 1
+_FIDUCIAL_CHANNEL = 1
+
+
+def _last_good_mf(frames: List[dict]):
+    """Most recent successfully-corrected M_f from the manifest, or None.
+
+    Carried forward when the current frame cannot re-solve (so we never silently
+    fall back to the frozen M_0, which is the wrong geometry after a bump)."""
+    import numpy as np
+
+    for fr in reversed(frames):
+        gc = fr.get("geometry_correction")
+        if gc and gc.get("status") == "corrected" and gc.get("M") is not None:
+            return np.asarray(gc["M"], dtype=np.float64)
+    return None
+
+
+def _draw_grid_overlay(raw_bgr, M_f, xs, ys, fiducials):
+    import cv2
+    import numpy as np
+
+    Minv = np.linalg.inv(np.asarray(M_f, np.float64))
+    vis = raw_bgr.copy()
+    canon = np.array([[float(xs[c]), float(ys[r])] for r in range(19) for c in range(19)], np.float64).reshape(-1, 1, 2)
+    cam = cv2.perspectiveTransform(canon, Minv).reshape(19, 19, 2)
+    for r in range(19):
+        cv2.polylines(vis, [cam[r].astype(np.int32)], False, (60, 60, 60), 1)
+        cv2.polylines(vis, [cam[:, r].astype(np.int32)], False, (60, 60, 60), 1)
+    for f in fiducials:
+        det = f.get("detected")
+        if det:
+            cv2.circle(vis, (int(det[0]), int(det[1])), 5, (0, 0, 255), 2)
+    return vis
+
+
+def _run_fiducial_calibration(
+    *, led, capture, geometry, board, guidance_point, last_good_M, settle_ms, drift_threshold_cells, game_dir, frame_file
+):
+    """Light known empty intersections, re-solve the camera->canonical homography
+    M_f for THIS frame. Returns (correction_dict, fiducials_meta, fiducial_rel, M_used).
+    Falls back to last_good_M ('stale') or frozen M_0 ('frozen'); never blocks."""
+    import cv2
+    import numpy as np
+
+    from katrain.vision.fiducial_recalibrate import (
+        detect_led_centroids,
+        drift_from_homography,
+        predict_camera_positions,
+        select_fiducials,
+        solve_frame_homography,
+    )
+
+    out_size = int(geometry.out_size)
+    spacing = (out_size - 1) / 18.0
+    M0 = np.asarray(geometry.M, np.float64)
+
+    fiducials_meta: list[dict] = []
+    fiducial_rel = None
+    status = source = None
+    reason = None
+    inlier_count = 0
+    rms_cells = None
+    M_used = None
+
+    F = select_fiducials(board, guidance_point, target=13, min_count=8)
+    if len(F) >= 8:
+        expected = predict_camera_positions(F, geometry.points)
+        led.clear(strict=True)
+        dark, _seq, _ts = capture.grab_fresh(settle_ms=settle_ms)
+        show = led.set_rgb_points([{"row": r, "col": c, "rgb": list(_FIDUCIAL_RGB)} for (r, c) in F], strict=True)
+        lit, _seq, _ts = capture.grab_fresh(after_ts=show.get("shown_at"), settle_ms=settle_ms)
+        led.clear(strict=True)
+        det = detect_led_centroids(dark, lit, expected, channel=_FIDUCIAL_CHANNEL, search_px=0.7 * spacing)
+        ok_pts = []
+        for (r, c) in F:
+            res = det[(r, c)]
+            fiducials_meta.append(
+                {
+                    "row": r,
+                    "col": c,
+                    "rgb": list(_FIDUCIAL_RGB),
+                    "detected": [float(res.centroid[0]), float(res.centroid[1])] if res.ok else None,
+                    "ok": bool(res.ok),
+                }
+            )
+            if res.ok:
+                ok_pts.append(((r, c), res.centroid))
+        fiducial_rel = f"fiducial/{Path(frame_file).stem}.jpg"
+        (game_dir / "fiducial").mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(game_dir / fiducial_rel), lit)
+        if len(ok_pts) >= 8:
+            fit = solve_frame_homography(ok_pts, out_size=out_size, min_inliers=6)
+            if fit.ok:
+                M_used = np.asarray(fit.M, np.float64)
+                status, source = "corrected", "fiducial"
+                inlier_count = int(fit.inlier_count)
+                rms_cells = float(fit.rms_residual) / spacing if fit.rms_residual else 0.0
+            else:
+                reason = fit.reason
+        else:
+            reason = "insufficient_detections"
+    else:
+        reason = "insufficient_fiducials"
+
+    if M_used is None:
+        if last_good_M is not None:
+            M_used, status, source = np.asarray(last_good_M, np.float64), "stale", "last_good"
+        else:
+            M_used, status, source = M0, "frozen", "frozen"
+
+    drift = drift_from_homography(M_used, M0, out_size=out_size)
+    median_cells = drift.median_px / spacing
+    correction = {
+        "status": status,
+        "source": source,
+        "reason": reason,
+        "M": M_used.tolist(),
+        "inlier_count": inlier_count,
+        "rms_residual_cells": rms_cells,
+        "drift": {
+            "dx": drift.dx,
+            "dy": drift.dy,
+            "deg": drift.deg,
+            "scale": drift.scale,
+            "median_cells": median_cells,
+            "over_threshold": bool(median_cells > drift_threshold_cells),
+        },
+    }
+    return correction, fiducials_meta, fiducial_rel, M_used
+
+
+def _write_warp_artifacts(game_dir: Path, frame_file: str, M_used, geometry, fiducials_meta) -> dict:
+    """Warp the (clean) training frame with M_f and write isolated diagnostic
+    artifacts. Returns the artifact path map (relative to game_dir)."""
+    import cv2
+    import numpy as np
+
+    raw = cv2.imread(str(game_dir / frame_file))
+    if raw is None:
+        return {}
+    stem = Path(frame_file).stem
+    out_size = int(geometry.out_size)
+    warped = cv2.warpPerspective(raw, np.asarray(M_used, np.float64), (out_size, out_size))
+    (game_dir / "warped").mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(game_dir / f"warped/{stem}.jpg"), warped)
+    (game_dir / "grid_overlay").mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(game_dir / f"grid_overlay/{stem}.jpg"), _draw_grid_overlay(raw, M_used, geometry.xs, geometry.ys, fiducials_meta))
+    return {"warped": f"warped/{stem}.jpg", "grid_overlay": f"grid_overlay/{stem}.jpg"}
+
+
 def run_capture(
     *,
     led,
@@ -102,6 +253,8 @@ def run_capture(
     capture_condition: Optional[dict] = None,
     settle_ms: float = 150.0,
     overwrite_existing: bool = False,
+    fiducial_mode: str = "off",
+    drift_threshold_cells: float = 0.15,
 ) -> dict:
     """Run one operator-confirmed capture step.
 
@@ -151,8 +304,37 @@ def run_capture(
         # Machine recognition is deliberately outside this capture decision path.
         qa_status = "operator_confirmed"
 
-        # 2. Light the next physical move (strict) or blackout for the final frame.
         next_idx = next_placement_index(steps, move_index)
+        guidance_point = (
+            {"row": steps[next_idx]["row"], "col": steps[next_idx]["col"]} if next_idx is not None else None
+        )
+
+        # 1b. Fiducial recalibration (every-move): light known empty intersections and
+        # re-solve THIS frame's camera->canonical homography BEFORE the guidance LED, so
+        # the training frame stays clean. Failures fall back to last-good/M_0, never block.
+        correction = fiducials_meta = fiducial_rel = None
+        M_used = None
+        if fiducial_mode == "every-move":
+            from katrain.core.baipu import expected_board_from_steps
+
+            board = expected_board_from_steps(steps, move_index, 19)
+            frame_file_pred = (
+                frames[repair_index]["file"] if repair_index is not None else f"frame_{len(frames):03d}.jpg"
+            )
+            correction, fiducials_meta, fiducial_rel, M_used = _run_fiducial_calibration(
+                led=led,
+                capture=capture,
+                geometry=geometry,
+                board=board,
+                guidance_point=guidance_point,
+                last_good_M=_last_good_mf(frames),
+                settle_ms=settle_ms,
+                drift_threshold_cells=drift_threshold_cells,
+                game_dir=game_dir,
+                frame_file=frame_file_pred,
+            )
+
+        # 2. Light the next physical move (strict) or blackout for the final frame.
         if next_idx is not None:
             ns = steps[next_idx]
             color = "black" if ns["color"] == "B" else "white"
@@ -199,13 +381,20 @@ def run_capture(
         }
         if capture_condition:
             entry["capture_condition"] = capture_condition
+        if correction is not None:
+            artifacts = _write_warp_artifacts(game_dir, frame_file, M_used, geometry, fiducials_meta)
+            if fiducial_rel:
+                artifacts["fiducial"] = fiducial_rel
+            entry["geometry_correction"] = correction
+            entry["fiducials"] = fiducials_meta
+            entry["artifacts"] = artifacts
         if repair_index is None:
             frames.append(entry)
         else:
             frames[repair_index] = entry
         _write_manifest_atomic(manifest_path, manifest)
 
-        return {
+        result = {
             "ok": True,
             "idempotent": False,
             "repaired": repair_index is not None,
@@ -215,3 +404,6 @@ def run_capture(
             "frame_kind": frame_kind,
             "next_guided_move_index": next_idx,
         }
+        if correction is not None:
+            result["geometry_correction"] = correction
+        return result

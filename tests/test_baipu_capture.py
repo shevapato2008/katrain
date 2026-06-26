@@ -229,3 +229,127 @@ class TestRobustness:
         steps, bs = data["steps"], data["board_size"]
         with pytest.raises(ValueError):
             _capture(str(tmp_path), steps, bs, -1, FakeLed(), FakeCapture(tmp_path), game_id="../escape")
+
+
+# --- P11: every-move fiducial recalibration -------------------------------- #
+
+import cv2  # noqa: E402
+
+
+def _ident_geometry():
+    """Identity geometry (camera == canonical): points[r][c] = (xs[c], ys[r])."""
+    xs = np.linspace(0, 949, 19).astype(np.float32)
+    ys = xs.copy()
+    pts = np.zeros((19, 19, 2), np.float32)
+    for r in range(19):
+        for c in range(19):
+            pts[r][c] = (xs[c], ys[r])
+    return GeometryLock(
+        corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=ys,
+        M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+    )
+
+
+class FiducialLed:
+    def __init__(self):
+        self.calls = []
+
+    def clear(self, *, strict=False):
+        self.calls.append(("clear", None))
+        return {"ok": True, "connected": True, "shown_at": None, "errors": []}
+
+    def set_rgb_points(self, points, *, strict=False):
+        self.calls.append(("rgb", [(p["row"], p["col"]) for p in points]))
+        return {"ok": True, "connected": True, "shown_at": 100.0, "errors": []}
+
+    def set_points(self, points, *, strict=False):
+        self.calls.append(("guide", [(p["row"], p["col"]) for p in points]))
+        return {"ok": True, "connected": True, "shown_at": 111.0, "errors": []}
+
+
+class FiducialCapture:
+    """grab_fresh alternates dark/lit (lit has green blobs at canonical corners+star);
+    capture_to writes a real black training frame so warp artifacts can be read back."""
+
+    def __init__(self, geometry):
+        self.points = geometry.points
+        self.out = int(geometry.out_size)
+        self.n = 0
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        self.n += 1
+        img = np.zeros((self.out, self.out, 3), np.uint8)
+        if self.n % 2 == 0:  # even call = lit frame
+            for r in (0, 18):
+                for c in (0, 18):
+                    cv2.circle(img, (int(self.points[r][c][0]), int(self.points[r][c][1])), 6, (0, 200, 0), -1)
+            for r in (3, 9, 15):
+                for c in (3, 9, 15):
+                    cv2.circle(img, (int(self.points[r][c][0]), int(self.points[r][c][1])), 6, (0, 200, 0), -1)
+        return img, self.n, float(self.n)
+
+    def capture_to(self, path, after_ts=None, settle_ms=150.0):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(path, np.zeros((self.out, self.out, 3), np.uint8))
+        return path, 99, 223.0
+
+
+def _capture_fid(tmp_path, steps, bs, k, led, cap, geom, **kw):
+    return run_capture(
+        led=led, capture=cap, geometry=geom, steps=steps, board_size=bs,
+        out_dir=str(tmp_path), game_id=kw.pop("game_id", "gf"), move_index=k,
+        sgf="(;SZ[19];B[pd];W[dp])", fiducial_mode=kw.pop("fiducial_mode", "every-move"), **kw,
+    )
+
+
+class TestFiducialEveryMove:
+    def test_corrected_status_isolated_artifacts_clean_training_frame(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom)
+
+        assert res["geometry_correction"]["status"] == "corrected"
+        gd = tmp_path / "gf"
+        man = json.loads((gd / "manifest.json").read_text())
+        fr = man["frames"][-1]
+        assert fr["geometry_correction"]["source"] == "fiducial"
+        assert fr["geometry_correction"]["inlier_count"] >= 6
+        assert (gd / fr["artifacts"]["fiducial"]).is_file()
+        assert (gd / fr["artifacts"]["warped"]).is_file()
+        assert (gd / fr["artifacts"]["grid_overlay"]).is_file()
+        # set_rgb_points was issued, guidance point (3,15) excluded from fiducials
+        rgb_calls = [c[1] for c in led.calls if c[0] == "rgb"]
+        assert rgb_calls and (3, 15) not in rgb_calls[0]
+        # training frame is the clean black capture_to image (no fiducial green)
+        train = cv2.imread(str(gd / fr["file"]))
+        assert int(train[..., 1].max()) < 20
+
+    def test_off_mode_is_p10_no_artifacts(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="goff", fiducial_mode="off")
+        gd = tmp_path / "goff"
+        man = json.loads((gd / "manifest.json").read_text())
+        assert "geometry_correction" not in man["frames"][-1]
+        assert "geometry_correction" not in res
+        assert not (gd / "fiducial").exists() and not (gd / "warped").exists()
+
+    def test_stale_falls_back_to_last_good_not_M0(self, tmp_path):
+        # First move corrects; then make detection fail -> must reuse last_good (stale), not frozen.
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gs")
+
+        class DarkOnly(FiducialCapture):
+            def grab_fresh(self, after_ts=None, settle_ms=150.0):
+                return np.zeros((self.out, self.out, 3), np.uint8), 1, 1.0  # never lit -> no detections
+
+        res = _capture_fid(tmp_path, steps, bs, 0, led, DarkOnly(geom), geom, game_id="gs")
+        assert res["geometry_correction"]["status"] == "stale"
+        assert res["geometry_correction"]["source"] == "last_good"

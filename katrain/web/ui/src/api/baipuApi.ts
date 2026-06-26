@@ -43,6 +43,12 @@ export interface BaipuLoadResponse {
   meta: BaipuMeta;
 }
 
+export interface BaipuGeometryCorrection {
+  status: 'corrected' | 'stale' | 'frozen' | 'off';
+  source?: string;
+  drift?: { median_cells?: number; over_threshold?: boolean };
+}
+
 export interface BaipuCaptureResult {
   ok: boolean;
   idempotent?: boolean;
@@ -51,6 +57,7 @@ export interface BaipuCaptureResult {
   qa_status?: string;
   frame_kind?: string;
   next_guided_move_index?: number | null;
+  geometry_correction?: BaipuGeometryCorrection;
 }
 
 // Discriminated outcome so the UI can fall back when capture isn't enabled

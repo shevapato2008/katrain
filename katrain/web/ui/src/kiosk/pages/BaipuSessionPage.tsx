@@ -8,11 +8,57 @@ import LiveBoard from '../../components/live/LiveBoard';
 import { useTranslation } from '../../hooks/useTranslation';
 import {
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
-  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta,
+  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
+
+// P11: per-move board-drift status. corrected+over-threshold = informational;
+// stale/frozen = the operator should check the board/reference points. corrected
+// (no drift) and off render nothing.
+export const DriftBanner = ({ correction }: { correction: BaipuGeometryCorrection | null }) => {
+  const { t } = useTranslation();
+  if (!correction) return null;
+  const { status, drift } = correction;
+  const warn = { px: 3, py: 1.5, bgcolor: 'rgba(255,149,0,0.20)', borderTop: '2px solid #ff9500', textAlign: 'center' as const, flexShrink: 0 };
+  if (status === 'corrected') {
+    if (!drift?.over_threshold) return null;
+    return (
+      <Box
+        data-testid="baipu-drift-banner"
+        data-drift-status="corrected"
+        sx={{ px: 3, py: 1.5, bgcolor: 'rgba(47,111,255,0.18)', borderTop: '2px solid #2f6fff', textAlign: 'center', flexShrink: 0 }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {t('Board movement detected; auto-corrected', '检测到棋盘移动，已自动校正')}
+        </Typography>
+      </Box>
+    );
+  }
+  if (status === 'stale') {
+    return (
+      <Box data-testid="baipu-drift-banner" data-drift-status="stale" sx={warn}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {t(
+            'Could not recalibrate this move; reusing last geometry — check the reference points are not covered',
+            '本手未能重新校正，沿用上次几何，请确认基准点未被遮挡',
+          )}
+        </Typography>
+      </Box>
+    );
+  }
+  if (status === 'frozen') {
+    return (
+      <Box data-testid="baipu-drift-banner" data-drift-status="frozen" sx={warn}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {t('Geometry not calibrated; check the board has not moved significantly', '几何未校正，请检查棋盘是否被大幅移动')}
+        </Typography>
+      </Box>
+    );
+  }
+  return null; // 'off'
+};
 
 const savedFilename = (path?: string): string | null => {
   if (!path) return null;
@@ -90,6 +136,7 @@ const BaipuSessionPage = () => {
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [error, setError] = useState<string | null>(null);
+  const [driftStatus, setDriftStatus] = useState<BaipuGeometryCorrection | null>(null);
   const [steps, setSteps] = useState<BaipuStep[]>([]);
   const [boardSize, setBoardSize] = useState(19);
   const [meta, setMeta] = useState<BaipuMeta | null>(null);
@@ -178,6 +225,7 @@ const BaipuSessionPage = () => {
       if (out.kind === 'ok') {
         const filename = savedFilename(out.result.path);
         if (filename) setLatestSavedFile(filename);
+        setDriftStatus(out.result.geometry_correction ?? null);
         setFrameCount((c) => c + 1);
         playShutter(); // go-signal AFTER the frame is written
       }
@@ -445,6 +493,9 @@ const BaipuSessionPage = () => {
           </Typography>
         </Box>
       )}
+
+      {/* P11: board-drift status for the just-captured frame. */}
+      <DriftBanner correction={driftStatus} />
 
       {/* Capture failures block advancement but keep the current move available for retry. */}
       {error && (

@@ -1859,3 +1859,165 @@ KATRAIN_MODE=board /opt/miniconda3/envs/py311_katago/bin/python -m katrain \
 - **前端组件/API:** `npm test -- src/kiosk/__tests__/GeometryCalibrationWorkspace.test.tsx src/api/baipuApi.test.ts` → `12 passed`。
 - **浏览器验证:** `PATH=/opt/miniconda3/envs/py311_katago/bin:$PATH npx playwright test tests/baipu.spec.ts` → `6 passed`；覆盖“重新开始”不会抢拍，点击后首帧请求带 `overwrite_existing:true`。
 - **构建:** `npm run build` 通过，静态包已更新到 `katrain/web/static`。
+
+---
+
+## P11. 棋盘位移在线检测 + 基准灯自动校正 + 实时采集中间图（2026-06-26）
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Follow every RED/GREEN checkpoint and update checkboxes after each task.
+
+**状态**: 计划中（待执行）。
+
+**背景（实测，2026-06-26）：** 重摆 `kifu_24171`（212 帧）后离线标注复盘发现：**冻结几何 + 摆谱过程中棋盘被碰移** → warped 网格自 `frame_031` 起整体偏移；`baipu_autolabel` 现用的「全局平移 + 密集棋子 Hough 锚点」漂移修复在拥挤盘面失效（LED 锚点命中仅 **37%**，`residual>10px` 占 **56%**，平移有 `±0.6 cell` 硬上限），中后盘标注框偏约半格~一格，**不可直接训练**。根因：单一平移修不了「碰后平移+旋转」，且密集盘上 Hough 锚点噪声大。下棋时用户难免碰盘，需要在线**检测 + 自动修复**机制（无需清盘）。
+
+**Goal:** 摆谱采集**每手**用盘面上**未被棋子覆盖的空交叉点**点亮 LED 作为已知基准点(fiducial)，**重新解算该帧单应矩阵 `M_f`**（平移+旋转+缩放，绝对、不累积）；在线检测位移并当场提示/自动校正（不强制清盘），把逐帧校正几何写进 manifest；离线 `baipu_autolabel` 直接消费 `M_f` 产出对齐标注。同时每手**实时**生成并存盘原图 / 网格定位叠加图 / warped 图 / warped+框图，便于边摆边查与事后排查。（对应 brainstorming 三决策：①修复时机=**两者都要**（在线+离线）；②基准灯=**独立标定帧**（训练帧保持干净）；③实时中间图=**全套存盘**。）
+
+**Architecture（复用既有件，最小新增）：**
+- 复用 `LedGeometryCalibrator` 的 raw-RGB 点灯 + 帧差光斑中心检测 + `cv2.findHomography(RANSAC)`；复用 `GeometryDriftMonitor`（P5 Task4）做**廉价位移预检/交叉校验**（featureless 木纹/网格匹配）；复用 `geometry_lock`(M/xs/ys/points) 作为**冻结参考 `M_0`**。
+- **新增能力**：① **SGF 感知 fiducial 选点**——对局中从已知盘面(`board_through_index`)挑空交叉点（而非 P5 那套要求**空盘**的 13 点）；② **逐帧重解 `M_f`** 与漂移分解；③ manifest 扩展逐帧几何/fiducial/drift/artifacts；④ 实时 artifact 落盘；⑤ 离线 `baipu_autolabel` 消费 `M_f`。
+- **绝对 fiducial 重解** 取代用户初提的「帧间比对」：帧间差会累积、只修平移；fiducial 绝对法**每帧独立、修全单应**。`GeometryDriftMonitor` 仅作 DETECT 预检（是否需重解 / 交叉校验），CORRECT 走 fiducial。
+- **训练帧保持干净 + 交付契约不变（§4.4）**：fiducial 灯只出现在**独立标定帧**（`fiducial/` 子目录，不进训练集）；训练帧 `frame_NNN.jpg` 仍只含盘面 + 单个制导灯。训练样本仍只有 `frame_NNN.jpg`+`game.sgf`+`geometry.npz`+`manifest.json`；`warped/`、`grid_overlay/`、`warped_boxes/`、`fiducial/` 均为**诊断 artifact**，目录隔离，**绝不混入训练帧**（呼应 P5「不得把诊断采集目录混入训练数据」）。
+
+**Tech Stack:** Python 3.11、OpenCV、NumPy、FastAPI/Pydantic、pytest；React 19/TypeScript/MUI、Vitest（仅漂移状态横幅）。
+
+**设计文档:** `superpowers/tracks/sbc-baipu-led-guide/2026-06-26-drift-fiducial-recalibration-design.md`（落地前补全；关键设计已内联本节）。
+
+### P11 范围和硬约束
+- 规范坐标仍为人坐视角 `row=0` 顶、`col=0` 左；fiducial 的 canonical 目标点 = `geometry.npz["points"][row][col]`（直接，无翻转，见附录 A / 既有索引约定）。
+- 每帧 fiducial 集 F：从 `board_through_index` 已知**空**交叉点中选 **≥4 个非共线、跨盘分散**的点；优先 4 角 + 9 星位中为空者，不足则补空点；**排除制导灯点**与四邻有子的点（避免邻子遮挡/反光）。可用 <4 → 标 `drift_status="uncorrected"`、回退 `M_0`、**不阻断采集**。
+- fiducial 用明确 `rgb`（低亮度绿优先，低置信重试红/蓝），不复用业务配色；任何失败/取消都在 `finally` 中 `led.clear(strict=True)`；标定帧与训练帧用**同一锁定曝光**（贯穿会话）。
+- 默认**每手**一次 fiducial 标定帧（训练数据质量优先）；提供配置 `--baipu-fiducial-mode {every-move,drift-gated,off}`：`drift-gated` 用 `GeometryDriftMonitor` 预检命中才重解（SBC 省一次拍照），`off` 完全回退 P10 行为。
+- 在线只**检测 + 自动校正 + 提示**，对局中**不强制清盘重标定**（与 P5 `degraded` 区分：那是相机/整体失锁；这里是盘内可 fiducial 救回的位移）。
+- artifact 与 fiducial 帧目录隔离；训练交付契约不变。SBC 性能：每手多一次拍照 + 一次 warp/叠图（廉价），`drift-gated` 可进一步省。
+
+### Task 1：SGF 感知 fiducial 选点 + 逐帧单应重解（纯 CV 核心）
+**Files:**
+- Create: `katrain/vision/fiducial_recalibrate.py`
+- Test: `tests/test_vision/test_fiducial_recalibrate.py`
+
+- [ ] **Step 1.1: 写纯 CV 失败测试**
+
+  覆盖：`select_fiducials(board, candidates, next_point)` 排除占用点/制导点/四邻有子点、返回 ≥4 分散点；合成「透视+旋转+平移」下 `solve_frame_homography(detected, canonical)` 用 RANSAC 恢复 `M_f`（含 1~2 离群点仍 inlier≥4）；`drift_from_homography(M_f, M_0)` 输出 `dx,dy,deg,scale,median_px`；<4 点或残差超阈 → 结构化失败。合成网格 `np.linspace(0,949,19)` 对齐 `kifu_24171` 的 `xs/ys`，**不触 i18n / 相机**（与 `baipu_autolabel` 纯 CV 测试同款，CI 可跑）。
+
+- [ ] **Step 1.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_vision/test_fiducial_recalibrate.py`
+  Expected: FAIL（模块不存在）。
+
+- [ ] **Step 1.3: 实现**
+
+  复用 `led_geometry_calibrator` 的光斑检测（亮度加权主连通域中心）；`select_fiducials` 取 4 角 + 9 星空点优先、空缺补跨盘分散空点；`solve_frame_homography = cv2.findHomography(detected, canonical, RANSAC)`；`drift_from_homography` 分解 `M_f` 相对 `M_0` 的相似变换分量（平移/旋转/缩放 + 锚点中位残差）。
+
+- [ ] **Step 1.4: 运行 GREEN**
+
+  Run: 同 1.2 Expected: PASS。
+
+### Task 2：采集编排——独立标定帧 + 逐帧几何 + 实时 artifact + manifest 扩展
+**Files:**
+- Modify: `katrain/web/core/baipu_capture.py`
+- Modify: `katrain/web/core/capture_service.py`（fiducial grab 复用 `grab_fresh`）
+- Modify: `katrain/web/core/led_service.py`（复用 `set_rgb_points`）
+- Modify: `katrain/web/server.py`（`--baipu-fiducial-mode` gate）
+- Test: `tests/test_baipu_capture.py`
+
+  每手 k 时序（扩展 §4.1，插在「确认」后、制导点灯前）：
+  1. **标定帧**：`select_fiducials(board[0..k])` → `led.set_rgb_points(F, strict)` → `grab_fresh` 标定帧 → 检测 K 中心 → `solve_frame_homography` → `M_f`/inlier/residual → `led.clear(strict)`；存 `fiducial/frame_NNN.jpg`。失败回退 `M_0` 且 `drift_status="uncorrected"`。
+  2. **制导灯 + 训练帧**：维持原 §4.1（点亮 k+1 制导灯 strict → `show_at` → `capture_to` 干净训练帧）。
+  3. **实时 artifact（全套存盘）**：用 `M_f` warp 训练帧 → 存 `warped/`、`grid_overlay/`（原图 + `M_f` 投影网格 + fiducial 标记）、`warped_boxes/`（warped + SGF 推导框，即 verify 叠框）。
+  4. **manifest 扩展**（见下）。
+
+- [ ] **Step 2.1: 写 RED 测试**
+
+  fake led/camera：标定帧被拍并随后 `clear`；manifest 每帧含 `geometry_corrected/fiducials/drift/artifacts`；三类 artifact 落盘；**训练帧仍只含制导灯**（fiducial 不入 `frame_NNN.jpg`）；`fiducial-mode=off` 时回退 P10 行为且不产 artifact（back-compat）。
+
+- [ ] **Step 2.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py`
+  Expected: FAIL（`run_capture()` 不接受 fiducial 参数 / manifest 无新字段）。
+
+- [ ] **Step 2.3: 实现最小后端变更**
+
+  `run_capture()` 新增 `fiducial_mode`；按上述时序插标定帧、写 artifact、扩展 manifest 条目；目录隔离；`off` 短路回退。`BaipuCaptureRequest` + endpoint 透传。
+
+- [ ] **Step 2.4: 运行 GREEN**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_capture.py tests/test_baipu_api.py`
+  Expected: 全部 PASS。
+
+  **manifest 每帧新增字段**（扩展 §4.2 schema，向后兼容；旧帧无此字段时消费方回退）：
+  ```json
+  "geometry_corrected": {"M": [[/*3x3*/]], "source": "fiducial|frozen"},
+  "fiducials": [{"row":0,"col":0,"rgb":[0,96,0],"detected":[x,y],"residual_px":1.2}],
+  "drift": {"dx":0.0,"dy":0.0,"deg":0.0,"scale":1.0,"median_px":2.1,"inlier_ratio":1.0,"status":"ok|corrected|uncorrected"},
+  "artifacts": {"warped":"warped/frame_000.jpg","grid_overlay":"grid_overlay/frame_000.jpg","warped_boxes":"warped_boxes/frame_000.jpg","fiducial":"fiducial/frame_000.jpg"}
+  ```
+
+### Task 3：在线漂移检测 + API/状态上报
+**Files:**
+- Modify: `katrain/web/core/baipu_capture.py`（漂移阈值 → status）
+- Modify: `katrain/web/api/v1/endpoints/baipu.py`（capture 响应含 `drift`）
+- Reuse: `katrain/vision/geometry_drift.py`（featureless 预检/交叉校验）
+- Test: `tests/test_baipu_api.py`
+
+- [ ] **Step 3.1: 写 RED** `/baipu/capture` 返回 `drift:{status,median_px,...}`；`median_px>阈值` 标 `corrected`（fiducial 成功）或 `uncorrected`（fiducial 失败）；两路均**不阻断**采集。
+
+- [ ] **Step 3.2: 运行 RED**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_baipu_api.py`
+  Expected: FAIL。
+
+- [ ] **Step 3.3: 实现** 阈值默认 `0.15 cell`；`corrected` 用 fiducial `M_f`，`uncorrected` 回退 `M_0` 并在响应里给提示码；`GeometryDriftMonitor` 作 `drift-gated` 模式的预检。
+
+- [ ] **Step 3.4: 运行 GREEN** Run: 同 3.2 Expected: PASS。
+
+### Task 4：离线 `baipu_autolabel` 消费逐帧几何
+**Files:**
+- Modify: `katrain/vision/tools/baipu_autolabel.py`
+- Test: `tests/test_vision/test_baipu_autolabel.py`（追加）
+
+- [ ] **Step 4.1: 写 RED** manifest 含 `geometry_corrected` 时，`process_game` 用逐帧 `M_f` warp + 放框（替代 `estimate_global_shift`），合成「已位移盘面」标注对齐；无该字段时回退旧估计（兼容旧 `kifu_24171`）。
+
+- [ ] **Step 4.2: 运行 RED**
+
+  Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -q`
+  Expected: FAIL。
+
+- [ ] **Step 4.3: 实现** `load_capture` 读逐帧 `M`；`process_game` 优先 `M_f`、回退 `estimate_global_shift`；verify 叠框沿用 `draw_overlay`。
+
+- [ ] **Step 4.4: 运行 GREEN** Run: 同 4.2 Expected: PASS。
+
+### Task 5：前端——漂移状态横幅（最小；artifact 已落盘）
+**Files:**
+- Modify: `katrain/web/ui/src/api/baipuApi.ts`（capture 响应 `drift` 类型）
+- Modify: `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx`（横幅）
+- Test: `katrain/web/ui/src/kiosk/__tests__/` 组件测试 + `katrain/web/ui/tests/baipu.spec.ts`
+
+- [ ] **Step 5.1: RED** `corrected` → 轻提示「检测到棋盘移动，已自动校正」；`uncorrected` → 警示「校正失败，请确认基准点未被遮挡/棋盘未大幅移动」。复用既有 banner 模式。
+
+- [ ] **Step 5.2: GREEN + 构建**
+
+  Run: `cd katrain/web/ui && npm test -- src/kiosk/__tests__ && npm run lint && npm run build && npm run build:kiosk-2d`
+  Expected: 退出码 0。**不**做实时双画面（用户选「全套存盘」而非「现场可见」；实时看图走 P6 / 事后看 artifact）。
+
+### Task 6：全链路验证、真机重采与执行记录
+**Files:**
+- Create: `superpowers/tracks/sbc-baipu-led-guide/2026-06-26-drift-fiducial-recalibration-design.md`
+- Modify: `superpowers/tracks/sbc-baipu-led-guide/plan.md`（P11 执行记录）
+
+- [ ] **Step 6.1: 后端回归**
+
+  Run: `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/test_vision/test_fiducial_recalibrate.py tests/test_baipu_capture.py tests/test_baipu_api.py tests/test_geometry_drift.py` + `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -q`
+  Expected: 0 failures。
+
+- [ ] **Step 6.2: 前端回归与构建** Run: `cd katrain/web/ui && npm test && npm run build && npm run build:kiosk-2d` Expected: 退出码 0。
+
+- [ ] **Step 6.3: 真机重采 + 离线复核** `--baipu-fiducial-mode every-move` 重摆一局（或重采 `kifu_24171`）→ `baipu_autolabel` → 断言 `shifts.csv` 全程 `residual<5px`（对照现状 56% 帧 >10px），verify 叠框中后盘对齐；训练帧目录无 fiducial 污染。中途**故意碰移棋盘**验证在线 `corrected`。
+
+- [ ] **Step 6.4: 更新 P11 执行记录** 记录测试计数、真机残差分布、known limits、启动命令。
+
+### P11 验收
+1. 故意中途碰移棋盘 → 在线 `drift.status=corrected`、横幅提示、后续帧 warped 网格仍贴合；fiducial 不可解时 `uncorrected` 提示且不崩、不阻断。
+2. 训练帧 `frame_NNN.jpg` 仅含盘面 + 制导灯（无 fiducial）；artifact 在隔离子目录；交付契约不变。
+3. 离线 `baipu_autolabel` 用逐帧 `M_f` 产出**全程对齐**标注（residual<5px）；旧无 fiducial 数据仍走回退。
+4. 每手实时落盘原图 / 网格定位图 / warped / warped+框。
+5. 测试（阻断）：Task1–4 后端 + Task5 前端全绿；真机残差达标。

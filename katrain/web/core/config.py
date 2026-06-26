@@ -21,6 +21,18 @@ class Settings(BaseModel):
     DATABASE_PATH: str = "db.sqlite3"
     DATABASE_URL: str = "sqlite:///./db.sqlite3"
 
+    # Media storage (tutorial video/audio/page images). See
+    # superpowers/tracks/tutorial-database/plan.md.
+    STORAGE_BACKEND: str = "local"          # local | s3
+    S3_ENDPOINT_URL: str = ""               # MinIO: http://minio:9000 ; OSS: https://oss-cn-<region>.aliyuncs.com
+    S3_REGION: str = ""                     # OSS: cn-hangzhou ...; MinIO can be blank
+    S3_BUCKET: str = "tutorial-assets"
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_PUBLIC_BASE_URL: str = ""            # client-reachable prefix: phase1 nginx domain; phase2 CDN domain
+    S3_USE_PRESIGNED: bool = False          # private bucket -> public_url() returns a signed URL
+    S3_PRESIGN_TTL_SEC: int = 3600
+
     # Security
     SECRET_KEY: str = "katrain-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
@@ -88,6 +100,16 @@ class Settings(BaseModel):
                 print(f"Warning: Failed to read config.json: {e}")
                 # Fallback to sqlite using the DATABASE_PATH
                 data.setdefault("DATABASE_URL", f"sqlite:///./{data.get('DATABASE_PATH', 'db.sqlite3')}")
+
+        # Media storage settings
+        data.setdefault("STORAGE_BACKEND", os.getenv("KATRAIN_STORAGE_BACKEND", "local"))
+        data.setdefault("S3_ENDPOINT_URL", os.getenv("KATRAIN_S3_ENDPOINT_URL", ""))
+        data.setdefault("S3_REGION", os.getenv("KATRAIN_S3_REGION", ""))
+        data.setdefault("S3_BUCKET", os.getenv("KATRAIN_S3_BUCKET", "tutorial-assets"))
+        data.setdefault("S3_ACCESS_KEY", os.getenv("KATRAIN_S3_ACCESS_KEY", ""))
+        data.setdefault("S3_SECRET_KEY", os.getenv("KATRAIN_S3_SECRET_KEY", ""))
+        data.setdefault("S3_PUBLIC_BASE_URL", os.getenv("KATRAIN_S3_PUBLIC_BASE_URL", ""))
+        data.setdefault("S3_USE_PRESIGNED", os.getenv("KATRAIN_S3_USE_PRESIGNED", "false").lower() in ("1", "true", "yes"))
 
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))

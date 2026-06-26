@@ -4,17 +4,18 @@ Replaces the old JSON-file-based endpoints with DB queries.
 """
 
 import logging
+import mimetypes
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
+from katrain.web.core.storage import get_storage_backend, normalize_key
 from katrain.web.tutorials import db_queries
 from katrain.web.tutorials.services import generate_figure_audio
 from katrain.web.tutorials.models import (
@@ -34,16 +35,8 @@ from katrain.web.tutorials.viewport import compute_viewport
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-ASSET_BASE = Path("data")
-
-
-def _safe_asset_path(relative_path: str) -> Path:
-    """Resolve asset path and reject any path traversal attempts."""
-    resolved = (ASSET_BASE / relative_path).resolve()
-    base = ASSET_BASE.resolve()
-    if not resolved.is_relative_to(base):
-        raise HTTPException(status_code=400, detail="Invalid asset path")
-    return resolved
+# Asset paths are resolved via the storage backend (katrain.web.core.storage),
+# which owns key normalization + path-traversal protection (normalize_key).
 
 
 # ── Categories (hardcoded) ────────────────────────────────────────────────────
@@ -110,13 +103,13 @@ async def get_sections(chapter_id: int, db: Session = Depends(get_db)):
         chapter = sections[0].chapter
         if chapter and chapter.book:
             book_slug = chapter.book.slug
+    backend = get_storage_backend()
     result = []
     for sec in sections:
         out = TutorialSectionOut.model_validate(sec)
         out.figure_count = len(sec.figures) if sec.figures else 0
         if book_slug:
-            video_path = ASSET_BASE / "tutorial_assets" / book_slug / "video" / f"section_{sec.id}.mp4"
-            out.has_video = video_path.exists()
+            out.has_video = backend.exists(f"tutorial_assets/{book_slug}/video/section_{sec.id}.mp4")
         result.append(out)
     return result
 
@@ -257,13 +250,29 @@ async def verify_figure(
 
 @router.get("/assets/{asset_path:path}")
 async def get_asset(asset_path: str, request: Request):
-    """Serve a tutorial asset with HTTP Range support for video seeking."""
-    file_path = _safe_asset_path(asset_path)
-    if not file_path.exists() or not file_path.is_file():
+    """Serve a tutorial asset through the configured storage backend.
+
+    * Remote (S3 / MinIO / OSS) backend → 302 redirect to the object's public
+      URL so video bytes never traverse FastAPI (offloaded to CDN / reverse proxy).
+    * Local backend → serve bytes with HTTP Range support for video seeking.
+    """
+    backend = get_storage_backend()
+    try:
+        key = normalize_key(asset_path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid asset path")
+
+    if not backend.exists(key):
         raise HTTPException(status_code=404, detail="Asset not found")
 
-    file_size = file_path.stat().st_size
+    # Remote object store: redirect; the store / CDN handles Range natively.
+    if backend.is_remote:
+        return RedirectResponse(backend.public_url(key), status_code=302)
+
+    # Local disk: serve bytes ourselves with Range support.
+    file_size = backend.size(key)
     range_header = request.headers.get("range")
+    content_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
 
     if range_header and range_header.startswith("bytes="):
         range_spec = range_header[6:]
@@ -273,13 +282,7 @@ async def get_asset(asset_path: str, request: Request):
         end = min(end, file_size - 1)
         length = end - start + 1
 
-        with open(file_path, "rb") as f:
-            f.seek(start)
-            data = f.read(length)
-
-        import mimetypes
-
-        content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+        data = backend.read_range(key, start, length)
         return Response(
             content=data,
             status_code=206,
@@ -291,4 +294,4 @@ async def get_asset(asset_path: str, request: Request):
             },
         )
 
-    return FileResponse(file_path, headers={"Accept-Ranges": "bytes"})
+    return FileResponse(backend.fspath(key), headers={"Accept-Ranges": "bytes"})

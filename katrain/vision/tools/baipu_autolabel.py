@@ -267,7 +267,14 @@ def draw_overlay(warped_bgr, boxes):
 
 
 def process_game(
-    game_dir, out_images, out_labels, verify_dir=None, dedup_per_move=True, stone_frac=1.05, led_frac=0.45
+    game_dir,
+    out_images,
+    out_labels,
+    verify_dir=None,
+    dedup_per_move=True,
+    stone_frac=1.05,
+    led_frac=0.45,
+    allow_legacy_drift=False,
 ):
     game_dir = Path(game_dir)
     out_images, out_labels = Path(out_images), Path(out_labels)
@@ -289,12 +296,20 @@ def process_game(
         "led_green": 0,
         "skipped": 0,
         "shift_fallback": 0,
+        "skipped_drift": 0,
     }
     seen_move_idx = set()
     gid = cap.manifest.get("game_id", game_dir.name)
     last_shift = (0.0, 0.0)  # carry-forward seed: (0,0) is correct for the pre-drift first frame
 
-    for fr in cap.manifest["frames"]:
+    frames_meta = cap.manifest["frames"]
+    # If the board moved during this game, frames that fall back to the frozen M_0
+    # (frozen / legacy-no-field) carry misaligned labels — the exact failure P11 fixes.
+    game_drifted = any(
+        (f.get("geometry_correction") or {}).get("drift", {}).get("over_threshold") for f in frames_meta
+    )
+
+    for fr in frames_meta:
         stats["frames"] += 1
         ami = fr["applied_move_index"]
         if dedup_per_move and ami in seen_move_idx:
@@ -305,18 +320,46 @@ def process_game(
         if img is None:
             stats["skipped"] += 1
             continue
-        warped = warp_frame(img, cap.M, cap.out_size)
+
+        gc = fr.get("geometry_correction")
+        if gc and gc.get("status") in ("corrected", "stale"):
+            M_use = np.asarray(gc["M"], dtype=np.float64)  # per-frame absolute homography
+            use_fiducial = True
+            label_quality = gc["status"]
+        else:
+            M_use = cap.M  # frozen M_0
+            use_fiducial = False
+            label_quality = "frozen" if gc else "legacy_estimate"
+
+        if not use_fiducial and game_drifted and not allow_legacy_drift:
+            stats["skipped_drift"] += 1
+            continue
+
         board = reconstruct_board(cap.steps, ami)
-        rep = estimate_global_shift(warped, board, fr.get("led_point"), cap.xs, cap.ys, spacing, prev_shift=last_shift)
-        last_shift = (rep.dx, rep.dy)  # next frame inherits this if it has no anchors
-        if rep.fallback_used:
-            stats["shift_fallback"] += 1
+        warped = warp_frame(img, M_use, cap.out_size)
+        if use_fiducial:
+            # M_f already maps stones/LEDs onto the canonical grid -> zero residual shift.
+            shift = (0.0, 0.0)
+            dx = dy = residual = 0.0
+            anchor_count = 0
+            led_found = fallback = False
+        else:
+            rep = estimate_global_shift(
+                warped, board, fr.get("led_point"), cap.xs, cap.ys, spacing, prev_shift=last_shift
+            )
+            last_shift = (rep.dx, rep.dy)  # next legacy frame inherits this if it has no anchors
+            shift = (rep.dx, rep.dy)
+            dx, dy, residual = rep.dx, rep.dy, rep.residual_px
+            anchor_count, led_found, fallback = rep.anchor_count, rep.led_found, rep.fallback_used
+            if fallback:
+                stats["shift_fallback"] += 1
+
         boxes = frame_boxes(
             board,
             fr.get("led_point"),
             cap.xs,
             cap.ys,
-            (rep.dx, rep.dy),
+            shift,
             spacing,
             stone_frac=stone_frac,
             led_frac=led_frac,
@@ -331,8 +374,8 @@ def process_game(
         if verify_dir:
             cv2.imwrite(str(verify_dir / f"{stem}.jpg"), draw_overlay(warped, boxes))
             csv_rows.append(
-                f"{fr['file']},{rep.dx:.2f},{rep.dy:.2f},{rep.anchor_count},"
-                f"{int(rep.led_found)},{rep.residual_px:.2f},{int(rep.fallback_used)}"
+                f"{fr['file']},{dx:.2f},{dy:.2f},{anchor_count},"
+                f"{int(led_found)},{residual:.2f},{int(fallback)},{label_quality}"
             )
 
         for b in boxes:
@@ -340,7 +383,7 @@ def process_game(
         stats["written"] += 1
 
     if verify_dir:
-        header = "frame,dx,dy,anchor_count,led_found,residual_px,fallback_used"
+        header = "frame,dx,dy,anchor_count,led_found,residual_px,fallback_used,label_quality"
         (verify_dir / "shifts.csv").write_text(header + "\n" + "\n".join(csv_rows) + "\n")
     return stats
 
@@ -354,6 +397,11 @@ def main():
     ap.add_argument("--no-dedup", action="store_true", help="keep all frames (default: one per move)")
     ap.add_argument("--stone-frac", type=float, default=1.05, help="stone box side as a fraction of grid spacing")
     ap.add_argument("--led-frac", type=float, default=0.45, help="LED box side as a fraction of grid spacing (tight)")
+    ap.add_argument(
+        "--allow-legacy-drift",
+        action="store_true",
+        help="export frozen/legacy frames even when the game drifted (default: isolate them)",
+    )
     args = ap.parse_args()
     total = {}
     for gd in args.game_dir:
@@ -365,6 +413,7 @@ def main():
             dedup_per_move=not args.no_dedup,
             stone_frac=args.stone_frac,
             led_frac=args.led_frac,
+            allow_legacy_drift=args.allow_legacy_drift,
         )
         print(f"{gd}: {s}")
         for k, v in s.items():

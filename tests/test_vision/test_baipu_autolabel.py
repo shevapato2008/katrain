@@ -178,6 +178,87 @@ def test_final_frame_has_no_led_box():
     assert all(b.class_id in (0, 1) for b in boxes)  # final_no_led frame
 
 
+# ---------- P11: per-frame M_f consumption + quality gate (synthetic, CI-safe) ----------
+
+import json  # noqa: E402
+
+
+def _make_game(tmp_path, gid, frames, sgf="(;SZ[19];B[pd];W[dp];B[pp])"):
+    """Tiny self-contained capture dir (manifest + identity geometry.npz + sgf + blank frames)."""
+    from katrain.vision.geometry_lock import GeometryLock, save_geometry_lock
+
+    gd = tmp_path / gid
+    gd.mkdir(parents=True, exist_ok=True)
+    (gd / "game.sgf").write_text(sgf)
+    xs = np.linspace(0, 949, 19).astype(np.float32)
+    pts = np.zeros((19, 19, 2), np.float32)
+    for r in range(19):
+        for c in range(19):
+            pts[r][c] = (xs[c], xs[r])
+    lock = GeometryLock(
+        corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=xs,
+        M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+    )
+    save_geometry_lock(lock, gd / "geometry.npz")
+    for fr in frames:
+        cv2.imwrite(str(gd / fr["file"]), np.zeros((950, 950, 3), np.uint8))
+    manifest = {
+        "game_id": gid, "board_size": 19, "sgf_path": "game.sgf", "geometry_path": "geometry.npz",
+        "total_moves": 2, "frames": frames,
+    }
+    (gd / "manifest.json").write_text(json.dumps(manifest))
+    return gd
+
+
+def _corrected(median_cells=0.02, over=False):
+    return {"status": "corrected", "source": "fiducial", "M": np.eye(3).tolist(),
+            "drift": {"median_cells": median_cells, "over_threshold": over}}
+
+
+def test_corrected_uses_Mf_and_skips_estimate(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        bal, "estimate_global_shift",
+        lambda *a, **k: pytest.fail("estimate_global_shift must not run for corrected frames"),
+    )
+    gd = _make_game(tmp_path, "gc", [
+        {"file": "frame_000.jpg", "applied_move_index": 0,
+         "led_point": {"row": 3, "col": 3, "color": "black"}, "geometry_correction": _corrected()},
+    ])
+    stats = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", verify_dir=tmp_path / "v")
+    assert stats["written"] == 1
+    assert (tmp_path / "lbl" / "gc_frame_000.txt").exists()
+    csv = (tmp_path / "v" / "shifts.csv").read_text()
+    assert "label_quality" in csv.splitlines()[0]
+    assert "corrected" in csv
+
+
+def test_frozen_with_drift_isolated_unless_flag(tmp_path):
+    frames = [
+        {"file": "frame_000.jpg", "applied_move_index": 0, "led_point": None,
+         "geometry_correction": _corrected(median_cells=0.5, over=True)},   # game drifted
+        {"file": "frame_001.jpg", "applied_move_index": 1, "led_point": None,
+         "geometry_correction": {"status": "frozen", "source": "frozen", "M": np.eye(3).tolist(),
+                                 "drift": {"median_cells": 0.0, "over_threshold": False}}},
+    ]
+    gd = _make_game(tmp_path, "gd", frames)
+    stats = bal.process_game(gd, tmp_path / "i1", tmp_path / "l1")
+    assert stats["skipped_drift"] >= 1
+    assert not (tmp_path / "l1" / "gd_frame_001.txt").exists()
+    assert (tmp_path / "l1" / "gd_frame_000.txt").exists()  # corrected frame still exported
+
+    stats2 = bal.process_game(gd, tmp_path / "i2", tmp_path / "l2", allow_legacy_drift=True)
+    assert (tmp_path / "l2" / "gd_frame_001.txt").exists()
+    assert stats2["skipped_drift"] == 0
+
+
+def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
+    frames = [{"file": "frame_000.jpg", "applied_move_index": 0, "led_point": None}]  # no geometry_correction
+    gd = _make_game(tmp_path, "gl", frames)
+    bal.process_game(gd, tmp_path / "i", tmp_path / "l", verify_dir=tmp_path / "v")
+    assert (tmp_path / "l" / "gl_frame_000.txt").exists()
+    assert "legacy_estimate" in (tmp_path / "v" / "shifts.csv").read_text()
+
+
 @requires_capture
 def test_process_game_writes_matching_labels(tmp_path):
     imgs = tmp_path / "images"

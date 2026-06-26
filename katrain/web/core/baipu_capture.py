@@ -75,17 +75,26 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _unlink_manifest_frame(game_dir: Path, frame: dict) -> None:
-    file_name = frame.get("file")
-    if not isinstance(file_name, str):
+def _safe_unlink(game_dir: Path, rel: str) -> None:
+    if not isinstance(rel, str):
         return
-    path = (game_dir / file_name).resolve()
-    if game_dir not in path.parents and path != game_dir:
+    path = (game_dir / rel).resolve()
+    if game_dir not in path.parents:
         return
     try:
         path.unlink()
     except FileNotFoundError:
         pass
+
+
+def _unlink_manifest_frame(game_dir: Path, frame: dict) -> None:
+    """Remove a frame's training image AND its isolated diagnostic artifacts
+    (warped/grid_overlay/fiducial), so overwrite/repair leaves no orphans."""
+    file_name = frame.get("file")
+    if isinstance(file_name, str):
+        _safe_unlink(game_dir, file_name)
+    for rel in (frame.get("artifacts") or {}).values():
+        _safe_unlink(game_dir, rel)
 
 
 _FIDUCIAL_RGB = (0, 96, 0)  # low-brightness green; detected on channel 1

@@ -353,3 +353,29 @@ class TestFiducialEveryMove:
         res = _capture_fid(tmp_path, steps, bs, 0, led, DarkOnly(geom), geom, game_id="gs")
         assert res["geometry_correction"]["status"] == "stale"
         assert res["geometry_correction"]["source"] == "last_good"
+
+    def test_overwrite_cleans_artifacts_no_orphans(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gov")
+        _capture_fid(tmp_path, steps, bs, 0, led, cap, geom, game_id="gov")  # 2 frames + artifacts
+        gd = tmp_path / "gov"
+        assert (gd / "fiducial" / "frame_001.jpg").is_file()
+
+        _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gov", overwrite_existing=True)
+        man = json.loads((gd / "manifest.json").read_text())
+        # tail (frame_001) pruned, including its artifacts:
+        assert [f["file"] for f in man["frames"]] == ["frame_000.jpg"]
+        assert not (gd / "fiducial" / "frame_001.jpg").exists()
+        assert not (gd / "warped" / "frame_001.jpg").exists()
+        assert not (gd / "grid_overlay" / "frame_001.jpg").exists()
+        # every referenced artifact still exists; no orphan files beyond referenced:
+        referenced = {p for fr in man["frames"] for p in fr.get("artifacts", {}).values()}
+        for fr in man["frames"]:
+            for p in fr.get("artifacts", {}).values():
+                assert (gd / p).is_file()
+        for sub in ("fiducial", "warped", "grid_overlay"):
+            for f in (gd / sub).glob("*.jpg"):
+                assert str(f.relative_to(gd)) in referenced

@@ -407,6 +407,10 @@ async def _lifespan_board(app: FastAPI, log):
         capture = CaptureService(capture_config, hub=camera_hub)
         capture.start()
         app.state.capture = capture
+        # P11: per-move fiducial recalibration (quality default). Override via
+        # settings.baipu_fiducial_mode ("every-move"|"off") / baipu_drift_threshold_cells.
+        app.state.baipu_fiducial_mode = getattr(settings, "baipu_fiducial_mode", "every-move")
+        app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
         # Load an existing geometry lock if present (so capture/QA can run immediately).
         try:
             from katrain.vision.geometry_lock import load_geometry_lock

@@ -23,11 +23,22 @@ const renderWithProviders = (ui: React.ReactElement, route = '/kiosk/play') =>
   );
 
 describe('NavigationRail', () => {
-  it('renders all 6 navigation labels', () => {
+  it('renders all primary nav labels plus settings', () => {
     renderWithProviders(<NavigationRail />);
-    ['对弈', '死活', '研究', '棋谱', '直播', '设置'].forEach((label) => {
+    ['对弈', '死活', '研究', '棋谱', '摆谱', '直播', '教程', '设置'].forEach((label) => {
       expect(screen.getByText(label)).toBeInTheDocument();
     });
+  });
+
+  it('highlights 教程 on a tutorial section deep-link route', () => {
+    renderWithProviders(<NavigationRail />, '/kiosk/tutorial/section/123');
+    expect(screen.getByText('教程').closest('button')).toHaveAttribute('data-active', 'true');
+  });
+
+  it('navigates to /kiosk/tutorial on 教程 click', () => {
+    renderWithProviders(<NavigationRail />);
+    fireEvent.click(screen.getByText('教程'));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial');
   });
 
   it('highlights active item based on current route using matchPath', () => {

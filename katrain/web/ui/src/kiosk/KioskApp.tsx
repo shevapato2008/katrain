@@ -32,6 +32,10 @@ import SettingsPage from './pages/SettingsPage';
 import VisionSetupPage from './pages/VisionSetupPage';
 import PlatformConnectPage from './pages/PlatformConnectPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
+import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
+import TutorialBooksPage from './pages/TutorialBooksPage';
+import TutorialBookDetailPage from './pages/TutorialBookDetailPage';
+import TutorialSectionPage from './pages/TutorialSectionPage';
 
 const KioskRoutes = () => {
   const { user } = useAuth();
@@ -72,6 +76,11 @@ const KioskRoutes = () => {
           <Route path="baipu/session/:source" element={<PhysicalBoardGuard><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
+          {/* Tutorial (read-only mirror) — static `book`/`section` win over dynamic `:category` in v6 best-match */}
+          <Route path="tutorial" element={<TutorialCategoriesPage />} />
+          <Route path="tutorial/:category" element={<TutorialBooksPage />} />
+          <Route path="tutorial/book/:bookId" element={<TutorialBookDetailPage />} />
+          <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="play" replace />} />

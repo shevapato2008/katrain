@@ -6,6 +6,7 @@ import {
   MenuBook as KifuIcon,
   LiveTv as LiveIcon,
   GridOn as BaipuIcon,
+  School as SchoolIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 
@@ -23,6 +24,7 @@ export const primaryTabs: NavTab[] = [
   { label: '棋谱', icon: <KifuIcon />, path: '/kiosk/kifu', pattern: '/kiosk/kifu/*' },
   { label: '摆谱', icon: <BaipuIcon />, path: '/kiosk/baipu', pattern: '/kiosk/baipu/*' },
   { label: '直播', icon: <LiveIcon />, path: '/kiosk/live', pattern: '/kiosk/live/*' },
+  { label: '教程', icon: <SchoolIcon />, path: '/kiosk/tutorial', pattern: '/kiosk/tutorial/*' },
 ];
 
 export const settingsTab: NavTab = {

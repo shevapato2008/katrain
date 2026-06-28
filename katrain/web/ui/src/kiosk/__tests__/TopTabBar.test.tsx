@@ -23,11 +23,16 @@ const renderBar = (route = '/kiosk/play') =>
   );
 
 describe('TopTabBar', () => {
-  it('renders all 6 nav labels', () => {
+  it('renders all primary nav labels plus settings', () => {
     renderBar();
-    ['对弈', '死活', '研究', '棋谱', '直播', '设置'].forEach((l) =>
+    ['对弈', '死活', '研究', '棋谱', '摆谱', '直播', '教程', '设置'].forEach((l) =>
       expect(screen.getByText(l)).toBeInTheDocument()
     );
+  });
+
+  it('highlights 教程 on a tutorial deep-link route', () => {
+    renderBar('/kiosk/tutorial/section/123');
+    expect(screen.getByText('教程').closest('button')).toHaveAttribute('data-active', 'true');
   });
 
   it('highlights active route', () => {

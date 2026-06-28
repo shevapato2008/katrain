@@ -2756,6 +2756,62 @@ def test_blank_frame_returns_not_ok(): ...
 7. 测试（阻断）：Task1–8 全绿，含负例（空白帧失败、LED 硬门、停稳门控、auto 不亮 fiducial 灯、every-move 回归）。
 8. 与产品规则一致：开机标定仍 LED（用户发起）；运行中零自动亮灯；LED 几何兜底仅手动。
 
+### P12 设计图：类图 + 调用图（as-built）
+
+**模式总览**：Strategy（统一 5 套算法）+ Factory/Builder（`build_default_selector`）+ 场景优先级选择器（`CalibrationSelector`，类 Chain-of-Responsibility 派发）+ State（`DriftStateMachine`）。`Scenario` 枚举把"运行中绝不自动亮灯"做成结构性保证。
+
+**类图（文件:符号）：**
+```
+                «Protocol» CalibrationStrategy            ── calibration_strategy.py
+                  name · requires_led · works_on_crowded_board
+                  is_applicable(ctx) -> bool
+                  calibrate(ctx, *, allow_led) -> CalibrationOutcome
+                  ▲          ▲              ▲                ▲          实现于 calibration_strategies.py
+   ┌──────────────┘          │              │                └──────────────┐
+ OuterCornerStrategy  EmptyBoardAutocalStrategy   LedAnchorStrategy     LedFiducialStrategy
+ 无灯·抗满盘           无灯·空盘·产全锁            LED·开机黄金锁         LED·逐手 M_f
+  └geometry_detect      └geometry_lock              └led_geometry_         └fiducial_recalibrate
+   .detect_board_raw     .lock_geometry_from_frames   calibrator             .select/detect/solve
+   (无状态 _detect_raw)  (autocal)                   .LedGeometryCalibrator
+
+ Scenario(enum)            CalibrationContext              CalibrationOutcome
+  allows_led():            frames·board·geometry·led·      ok·M·Minv·corners·confidence·
+   INITIAL_SETUP   = True  capture·next_point·last_good_M· strategy·reason·[points·xs·ys·baseline]
+   MANUAL_FALLBACK = True  out_size                        (M/Minv ⟺ ok=True)
+   RUNTIME_RECAL   = False
+
+ build_default_selector()  ──factory──►  CalibrationSelector(strategies, policy)   ── calibration_registry.py
+   policy[INITIAL_SETUP]        = [led_anchor, empty_board_autocal]
+   policy[RUNTIME_RECALIBRATION]= [outer_corner]                 # 仅无灯
+   policy[MANUAL_FALLBACK]      = [outer_corner, led_fiducial]
+
+ DriftStateMachine ── drift_state_machine.py        RotationAwareDrift（同文件）
+   STABLE →(drift)→ MOVING →(停稳)→ recalibrate →    phaseCorrelate(平移) + 绝对位姿(旋转/缩放)
+   STABLE / NEEDS_ATTENTION                          → 解决 phaseCorrelate 旋转盲区
+   (持 selector via recalibrate_fn；失败保 last-good、暂停采集)
+```
+
+**调用图（谁以什么场景调用选择器）：**
+```
+run_capture(auto)      ─► _run_auto_geometry ─► selector.calibrate(RUNTIME_RECALIBRATION)   [无灯]
+run_capture(every-move)─► _run_fiducial_calibration  [P11 直连 LED 路径，不经 selector*]
+run_capture(off)       ─► 跳过几何校正
+p11_live_overlay  'r'  ─► decide_scenario→MANUAL_FALLBACK ─► selector …                       [许灯]
+p11_live_overlay auto  ─► decide_scenario→RUNTIME_RECALIBRATION ─► selector …                 [无灯]
+DriftStateMachine.RECALIBRATE ─► recalibrate_fn ─► selector.calibrate(RUNTIME_RECALIBRATION)  [无灯]
+
+CalibrationSelector.calibrate(scenario, ctx):
+    allow_led = scenario.allows_led()                 # ← 由场景派生，调用方不能传矛盾值
+    for name in policy[scenario]:
+        s = by_name[name]
+        if s.requires_led and not allow_led:  continue   # 结构性禁灯（且不调用其 calibrate）
+        if not s.is_applicable(ctx):          continue   # 早否决
+        out = s.calibrate(ctx, allow_led=allow_led)      # LED 策略内再自卫一次
+        if out.ok:  return out
+    return CalibrationOutcome(ok=False, reason=聚合)
+```
+*注：`every-move`（高质量训练采集）仍走 P11 的 `_run_fiducial_calibration` 直连路径；`LedFiducialStrategy` 是同一组原语的 selector 适配器，供 `MANUAL_FALLBACK` 用。模式选择经 `--baipu-fiducial-mode` / `$KATRAIN_BAIPU_FIDUCIAL_MODE`（`resolve_fiducial_mode`，CLI>env>默认 auto）。
+
 ### P12 执行记录（2026-06-28）
 
 **状态**：**T1–T9 全部完成并全绿**（软件部分）。P12 定向回归 **267 passed**（基线 225 + 新增 42）。真机精度复核（T9 绝对精度 / SBC 延迟）列「待硬件」。测试命令：`CI=true PYTHONPATH=$PWD /opt/miniconda3/envs/py311_katago/bin/python -m pytest`（非 `uv run`，后者缺 fastapi）。121 文件 working-tree 差异为 `black` 重排（行为无关），未扫入 P12 提交（仅 P12 改的文件随带其重排）。

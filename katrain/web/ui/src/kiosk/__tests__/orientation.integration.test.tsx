@@ -67,11 +67,11 @@ describe('Orientation integration', () => {
     expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
-  it('persisted 90 reads as portrait', () => {
+  it('persisted 90 still reads as landscape (kiosk is fixed-landscape)', () => {
     localStorageMock.setItem(STORAGE_KEY, '90');
     renderWithOrientation();
     expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('true');
+    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
   it('persisted 180 reads as landscape (inverted)', () => {
@@ -81,11 +81,11 @@ describe('Orientation integration', () => {
     expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
-  it('persisted 270 reads as portrait (inverted)', () => {
+  it('persisted 270 still reads as landscape (kiosk is fixed-landscape)', () => {
     localStorageMock.setItem(STORAGE_KEY, '270');
     renderWithOrientation();
     expect(screen.getByTestId('rotation').textContent).toBe('270');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('true');
+    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
   it('setRotation updates state and persists to localStorage', () => {
@@ -94,7 +94,7 @@ describe('Orientation integration', () => {
 
     act(() => { screen.getByText('set-90').click(); });
     expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('true');
+    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
     expect(localStorageMock.getItem(STORAGE_KEY)).toBe('90');
 
     act(() => { screen.getByText('set-180').click(); });
@@ -103,7 +103,7 @@ describe('Orientation integration', () => {
 
     act(() => { screen.getByText('set-270').click(); });
     expect(screen.getByTestId('rotation').textContent).toBe('270');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('true');
+    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
 
     act(() => { screen.getByText('set-0').click(); });
     expect(screen.getByTestId('rotation').textContent).toBe('0');

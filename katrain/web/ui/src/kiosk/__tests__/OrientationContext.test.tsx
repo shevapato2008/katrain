@@ -38,11 +38,11 @@ describe('OrientationContext', () => {
     expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
-  it('reads saved rotation from localStorage', () => {
+  it('reads saved rotation from localStorage (still landscape — kiosk is fixed-landscape)', () => {
     localStorage.setItem(STORAGE_KEY, '90');
     render(<OrientationProvider><TestConsumer /></OrientationProvider>);
     expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('true');
+    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
   it('setRotation updates state and persists', () => {

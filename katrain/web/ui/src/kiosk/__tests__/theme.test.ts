@@ -11,9 +11,8 @@ describe('kioskTheme', () => {
     expect(kioskTheme.typography.fontFamily).toContain('Noto Sans SC');
   });
 
-  it('uses Noto Serif SC only for h1', () => {
-    expect((kioskTheme.typography.h1 as any).fontFamily).toContain('Noto Serif SC');
-    // h3+ should use Sans, not Serif
+  it('uses Noto Sans SC for headings (Noto Serif SC removed — unavailable on npmmirror)', () => {
+    expect((kioskTheme.typography.h1 as any).fontFamily).toContain('Noto Sans SC');
     expect((kioskTheme.typography.h3 as any).fontFamily).toContain('Noto Sans SC');
   });
 

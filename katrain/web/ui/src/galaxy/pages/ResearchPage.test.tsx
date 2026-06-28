@@ -4,7 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { vi, describe, it, expect, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock useAuth
+// Mock useAuth so authentication state can be toggled per test.
+// NOTE: ResearchPage only reads `token` from useAuth (for cloud-save); it does NOT
+// gate rendering on auth — the board is available logged-out by design.
 vi.mock('../../context/AuthContext', async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -13,66 +15,60 @@ vi.mock('../../context/AuthContext', async (importOriginal) => {
   };
 });
 
-// Mock Board component as it's complex and legacy
+// ResearchPage calls useGameNavigation() and reads registerActiveGame/unregisterActiveGame.
+// Without a provider the hook throws, so stub it (matches the file's vi.mock style).
+vi.mock('../context/GameNavigationContext', () => ({
+  useGameNavigation: () => ({
+    registerActiveGame: vi.fn(),
+    unregisterActiveGame: vi.fn(),
+  }),
+}));
+
+// LiveBoard paints to a <canvas>, which jsdom cannot render — stub it to a testid div.
+// This is the board shown on the default (edit) path, regardless of auth.
+vi.mock('../../components/live/LiveBoard', () => ({
+  default: () => <div data-testid="mock-live-board">Live Board</div>,
+}));
+
+// ResearchSetupPanel is the right-hand setup sidebar on the default (edit) path — stub it.
+vi.mock('../components/research/ResearchSetupPanel', () => ({
+  default: () => <div data-testid="mock-setup-panel">Research Setup Panel</div>,
+}));
+
+// Legacy Board (canvas) is only used in the L2 analysis-complete branch, not the default
+// path exercised here. Stub it as harmless insurance so it never tries to paint a canvas.
 vi.mock('../../components/Board', () => ({
-  default: () => <div data-testid="mock-board">Board Component</div>
+  default: () => <div data-testid="mock-board">Board Component</div>,
 }));
 
-// Mock Board component as it's complex and legacy
-vi.mock('../../components/Board', () => ({
-  default: () => <div data-testid="mock-board">Board Component</div>
-}));
-
-// Mock AnalysisPanel
-vi.mock('../../components/AnalysisPanel', () => ({
-  default: () => <div data-testid="mock-analysis">Analysis Panel</div>
-}));
-
-// Mock ScoreGraph
-vi.mock('../../components/ScoreGraph', () => ({
-  default: () => <div data-testid="mock-graph">Score Graph</div>
-}));
-
-// Mock useGameSession
-vi.mock('../../hooks/useGameSession', () => ({
-  useGameSession: () => ({
-    gameState: { 
-        board_size: 19, 
-        stones: [], 
-        player_to_move: 'B',
-        history: [],
-        current_node_id: 0,
-        game_id: 'test'
-    },
-    onMove: vi.fn(),
-    onNavigate: vi.fn()
-  })
-}));
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <ResearchPage />
+    </MemoryRouter>
+  );
 
 describe('ResearchPage', () => {
-  it('renders login reminder when not authenticated', () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: false });
-    
-    render(
-      <MemoryRouter>
-        <ResearchPage />
-      </MemoryRouter>
-    );
+  // Test A — research is intentionally available without login (no auth gate).
+  it('renders the board and setup panel without requiring login', () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, token: null });
 
-    expect(screen.getByText(/Login Required/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('mock-board')).not.toBeInTheDocument();
+    renderPage();
+
+    // The default edit-mode path renders the board + setup panel for everyone.
+    expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-setup-panel')).toBeInTheDocument();
+    // There is no login gate — proves research is un-gated by design.
+    expect(screen.queryByText(/Login Required/i)).not.toBeInTheDocument();
   });
 
-  it('renders board and analysis when authenticated', () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true });
-    
-    render(
-      <MemoryRouter>
-        <ResearchPage />
-      </MemoryRouter>
-    );
+  // Test B — authenticated render still shows the same edit-mode board + setup panel.
+  it('renders the board and setup panel when authenticated', () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
 
-    expect(screen.getByTestId('mock-board')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-analysis')).toBeInTheDocument();
+    renderPage();
+
+    expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-setup-panel')).toBeInTheDocument();
   });
 });

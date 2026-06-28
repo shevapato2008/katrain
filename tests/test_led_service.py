@@ -246,3 +246,34 @@ class TestQueueAndConnection:
             assert svc.is_connected() is True
         finally:
             svc.stop()
+
+    def test_missing_pyserial_disables_permanently_without_retry(self):
+        # pyserial not installed -> ImportError is permanent (unlike a transient
+        # OSError device hiccup): open once, then never retry / re-log.
+        clock = FakeClock()
+        state = {"attempts": 0}
+        fake = FakeSerial()
+
+        def factory():
+            state["attempts"] += 1
+            if state["attempts"] == 1:
+                raise ImportError("No module named 'serial'")
+            return fake  # would "recover" if wrongly retried — it must not
+
+        svc = LedService(
+            LedServiceConfig(enabled=True, serial_port="fake"),
+            serial_factory=factory,
+            clock=clock,
+            reconnect_interval=5.0,
+        )
+        svc.start()
+        try:
+            assert svc.is_connected() is False
+            assert svc._serial_unavailable is True
+            clock.t += 100  # well past any reconnect interval
+            for _ in range(20):
+                threading.Event().wait(0.02)
+            assert svc.is_connected() is False
+            assert state["attempts"] == 1  # never retried
+        finally:
+            svc.stop()

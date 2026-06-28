@@ -37,13 +37,13 @@ vi.mock('../../../components/live/LiveBoard', () => ({
   default: () => <div data-testid="mock-live-board">Live Board</div>,
 }));
 
-vi.mock('../../components/live/PlaybackBar', () => ({
+vi.mock('../../../components/live/PlaybackBar', () => ({
   default: ({ currentMove, totalMoves }: { currentMove: number; totalMoves: number }) => (
     <div data-testid="mock-playback-bar">{currentMove}/{totalMoves}</div>
   ),
 }));
 
-vi.mock('../../components/live/TrendChart', () => ({
+vi.mock('../../../components/live/TrendChart', () => ({
   default: () => <div data-testid="mock-trend-chart">Trend Chart</div>,
 }));
 

@@ -51,6 +51,11 @@ vision = [
     "opencv-python>=4.8.0",
     "numpy>=1.24.0",
 ]
+# Board/kiosk hardware (RK35xx SBCs): serial link to the LED guidance board.
+# Optional — without it the LED service logs once and stays disabled (graceful).
+board = [
+    "pyserial>=3.5",
+]
 vision-train = [
     "ultralytics>=8.3.0",
     "opencv-python>=4.8.0",

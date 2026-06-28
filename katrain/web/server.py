@@ -270,6 +270,7 @@ async def _lifespan_board(app: FastAPI, log):
     remote_client = RemoteAPIClient(
         base_url=settings.REMOTE_API_URL,
         device_id=settings.DEVICE_ID,
+        health_timeout=float(os.getenv("KATRAIN_HEALTH_CHECK_TIMEOUT", "10.0")),
     )
     app.state.remote_client = remote_client
 
@@ -458,7 +459,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app = FastAPI(lifespan=lifespan)
     app.include_router(api_router, prefix="/api/v1")
-    static_root = Path(__file__).resolve().parent / "static"
+    # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
+    # the full server serves the complete build. Both emit index.html + /assets,
+    # so we point the SPA routes + root mount at the matching directory.
+    static_dirname = "static-kiosk-2d" if settings.KATRAIN_MODE == "board" else "static"
+    static_root = Path(__file__).resolve().parent / static_dirname
     assets_root = Path(__file__).resolve().parent.parent
 
     # Specific asset mounts first
@@ -1858,7 +1863,14 @@ def build_frontend(force: bool = False):
         logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
         return
 
-    static_index = ui_path.parent / "static" / "index.html"
+    # Board/kiosk terminals serve the lean kiosk-2d bundle (no three.js, board-proxy
+    # API base); the full server serves the complete build. Build/check the matching
+    # output so board mode never falls back to the full bundle (which calls
+    # /api/v1/live and 503s in board mode).
+    is_board = settings.KATRAIN_MODE == "board"
+    build_cmd = ["npm", "run", "build:kiosk-2d"] if is_board else ["npm", "run", "build"]
+    out_dirname = "static-kiosk-2d" if is_board else "static"
+    static_index = ui_path.parent / out_dirname / "index.html"
     if static_index.exists() and not force:
         logging.getLogger("katrain_web").info(
             "Frontend already built at %s, skipping (use --force-build to rebuild).",
@@ -1866,7 +1878,7 @@ def build_frontend(force: bool = False):
         )
         return
 
-    print("Building frontend...", flush=True)
+    print(f"Building frontend ({out_dirname})...", flush=True)
     try:
         # Check dependencies
         if not (ui_path / "node_modules").exists():
@@ -1874,7 +1886,7 @@ def build_frontend(force: bool = False):
             subprocess.run(["npm", "install"], cwd=ui_path, check=True, capture_output=False)
 
         # Build
-        subprocess.run(["npm", "run", "build"], cwd=ui_path, check=True, capture_output=False)
+        subprocess.run(build_cmd, cwd=ui_path, check=True, capture_output=False)
         print("Frontend build successful.", flush=True)
     except subprocess.CalledProcessError as e:
         print(f"Frontend build failed with exit code {e.returncode}.", file=sys.stderr)

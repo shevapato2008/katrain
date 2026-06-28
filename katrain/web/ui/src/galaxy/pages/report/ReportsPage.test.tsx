@@ -52,7 +52,7 @@ vi.mock('../../../components/live/LiveBoard', () => ({
   default: () => <div data-testid="mock-live-board">Live Board</div>,
 }));
 
-vi.mock('../../components/live/PlaybackBar', () => ({
+vi.mock('../../../components/live/PlaybackBar', () => ({
   default: () => <div data-testid="mock-playback-bar">Playback Bar</div>,
 }));
 

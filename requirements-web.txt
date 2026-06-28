@@ -38,3 +38,9 @@ edge-tts>=6.1.0
 
 # S3-compatible object storage for tutorial media (MinIO / Aliyun OSS)
 boto3>=1.34.0
+
+# Board/kiosk hardware (RK35xx SBC): serial link to the LED guidance board.
+# Optional at runtime — without it the LED service logs once and stays disabled
+# (graceful), so LED 摆谱 guidance silently won't work on the board. Mirrors the
+# pyproject `board` extra so the SBC venv-katrain (installed from this file) gets it.
+pyserial>=3.5

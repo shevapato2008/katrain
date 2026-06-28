@@ -986,6 +986,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+board = [
+    { name = "pyserial" },
+]
 classifier = [
     { name = "easyocr" },
     { name = "numpy" },
@@ -1068,6 +1071,7 @@ requires-dist = [
     { name = "psycopg2-binary", marker = "extra == 'web'", specifier = ">=2.9.0" },
     { name = "pydantic", marker = "extra == 'web'", specifier = ">=2.6.1" },
     { name = "pygame", marker = "sys_platform == 'darwin'", specifier = "~=2.0" },
+    { name = "pyserial", marker = "extra == 'board'", specifier = ">=3.5" },
     { name = "pytesseract", marker = "extra == 'classifier'", specifier = ">=0.3.10" },
     { name = "python-jose", extras = ["cryptography"], marker = "extra == 'web'", specifier = ">=3.3.0" },
     { name = "requests", specifier = ">=2.32.0" },
@@ -1081,7 +1085,7 @@ requires-dist = [
     { name = "urllib3", specifier = ">=2.2.2" },
     { name = "uvicorn", marker = "extra == 'web'", specifier = ">=0.27.1" },
 ]
-provides-extras = ["web", "vision", "vision-train", "vision-onnx", "vision-rknn", "classifier"]
+provides-extras = ["web", "vision", "board", "vision-train", "vision-onnx", "vision-rknn", "classifier"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2370,6 +2374,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/13/e8/4f38eb30c4dae36634a53c5b2cd73b517ea3607e10d00f61f2494449cec0/pypiwin32-223.tar.gz", hash = "sha256:71be40c1fbd28594214ecaecb58e7aa8b708eabfa0125c8a109ebd51edbd776a", size = 622, upload-time = "2018-02-26T00:43:23.994Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/1b/2f292bbd742e369a100c91faa0483172cd91a1a422a6692055ac920946c5/pypiwin32-223-py3-none-any.whl", hash = "sha256:67adf399debc1d5d14dffc1ab5acacb800da569754fafdc576b2a039485aa775", size = 1674, upload-time = "2018-02-26T00:43:23.108Z" },
+]
+
+[[package]]
+name = "pyserial"
+version = "3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/7d/ae3f0a63f41e4d2f6cb66a5b57197850f919f59e558159a4dd3a818f5082/pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb", size = 159125, upload-time = "2020-11-23T03:59:15.045Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0", size = 90585, upload-time = "2020-11-23T03:59:13.41Z" },
 ]
 
 [[package]]

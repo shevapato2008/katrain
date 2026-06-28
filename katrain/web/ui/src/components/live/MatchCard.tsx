@@ -1,9 +1,9 @@
 import { Box, Card, CardActionArea, Typography, Chip, LinearProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import type { MatchSummary } from '../../../types/live';
-import { i18n } from '../../../i18n';
-import { useTranslation } from '../../../hooks/useTranslation';
+import type { MatchSummary } from '../../types/live';
+import { i18n } from '../../i18n';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface MatchCardProps {
   match: MatchSummary;
@@ -39,7 +39,10 @@ export default function MatchCard({ match, compact = false, selected = false, on
   const handleClick = () => {
     if (onSelect) {
       onSelect(match);
-    } else {
+    } else if (!__KIOSK_2D_ONLY__) {
+      // Galaxy default: navigate to the match page. Kiosk callers always pass
+      // onSelect, so this branch (and the /galaxy/ route literal) is DCE'd out of
+      // the kiosk build — keeping the board boundary clean (verify:kiosk-2d).
       navigate(`/galaxy/live/${match.id}`);
     }
   };

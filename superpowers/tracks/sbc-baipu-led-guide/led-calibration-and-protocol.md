@@ -279,3 +279,35 @@ D. 独立诊断工具（不经 UI / API，你手动跑）                       
 ### 测试
 
 `tests/test_led_service.py`：`:60-67` 断言 8 个角/边界映射值；`:70` 验证双射；`:100` 断言最终 `SETI` 行用 `rc2idx` 算出的 idx；`:136` 用 `rc2idx` 校验 `set_points` 输出。
+
+---
+
+## F. 几何标定算法的统一抽象（P12，精简版）
+
+> §E 是「点哪颗灯」的链路（`rc2idx`）；本节是「用哪套算法定出棋盘几何 `M`」的链路。两者正交：标定先确定 `M`（相机→规范棋盘），制导/采集再用 `rc2idx` 点灯。详图见 `plan.md` P12「设计图」。
+
+**模式**：Strategy（统一 5 套算法）+ Factory（`build_default_selector`）+ 场景优先级选择器 + State（`DriftStateMachine`）。**核心规则**：`Scenario` 派生 `allow_led`，**运行中（RUNTIME）绝不自动亮灯**。
+
+**五套算法 → 收编为 Strategy**（`calibration_strategies.py`，仅适配不改本体）：
+
+| Strategy | 灯 | 场景 | 底层（file） |
+|---|---|---|---|
+| `OuterCornerStrategy` | 无 | 运行中重定位（首选）| `geometry_detect.detect_board_raw`（无状态）|
+| `EmptyBoardAutocalStrategy` | 无 | 开机·空盘（无灯兜底）| `geometry_lock.lock_geometry_from_frames` |
+| `LedAnchorStrategy` | **有** | 开机黄金标定 | `led_geometry_calibrator.LedGeometryCalibrator` → `set_rgb_points`→`rc2idx` |
+| `LedFiducialStrategy` | **有** | 手动兜底 | `fiducial_recalibrate.*` → `set_rgb_points`→`rc2idx` |
+
+**与 §E 的接点**：只有两条 **LED** 策略（`LedAnchor`/`LedFiducial`，以及 `every-move` 直连路径）会经 `set_rgb_points → rc2idx` 点灯——即 §E 表中「几何标定 / P11 重定位」两行；两条**无灯**策略不碰 `rc2idx`。
+
+**选择器派发**（`CalibrationSelector.calibrate(scenario, ctx)`，`calibration_registry.py` 工厂装配）：
+```
+allow_led = scenario.allows_led()            # INITIAL/MANUAL=True, RUNTIME=False
+for name in policy[scenario]:                # INITIAL=[led_anchor,empty_autocal]
+    if requires_led and not allow_led: skip  # RUNTIME=[outer_corner]
+    if not is_applicable(ctx): skip          # MANUAL=[outer_corner,led_fiducial]
+    if (out := strat.calibrate(...)).ok: return out
+```
+
+**模式选择**：`--baipu-fiducial-mode` / `$KATRAIN_BAIPU_FIDUCIAL_MODE`（`resolve_fiducial_mode`，CLI>env>默认 `auto`）。实时对弈 `auto`（无灯）；**采训练数据用 `every-move`**（LED 亚像素）。
+
+**测试**：`tests/test_vision/test_calibration_strategy.py` · `test_outer_corner_strategy.py` · `test_calibration_strategies_adapters.py` · `test_calibration_registry.py`（含「RUNTIME 全程 0 次 `set_rgb_points`」的真策略 spy）· `test_drift_state_machine.py` · `test_outer_corner_accuracy.py`。

@@ -379,3 +379,45 @@ class TestFiducialEveryMove:
         for sub in ("fiducial", "warped", "grid_overlay"):
             for f in (gd / sub).glob("*.jpg"):
                 assert str(f.relative_to(gd)) in referenced
+
+
+class TestFiducialAuto:
+    """P12 'auto' mode: no-LED outer-corner per-move geometry. Guidance LED unchanged."""
+
+    def test_auto_mode_lights_no_geometry_led(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gauto", fiducial_mode="auto")
+        # geometry path NEVER lights an LED (no set_rgb_points); guidance LED still used.
+        assert not any(c[0] == "rgb" for c in led.calls)
+        assert any(c[0] == "guide" for c in led.calls)
+        gc = res["geometry_correction"]
+        assert gc["source"] in ("outer_corner", "frozen")  # blank synth → OuterCorner fails → frozen
+        man = json.loads((tmp_path / "gauto" / "manifest.json").read_text())
+        assert man["frames"][-1]["geometry_correction"]["source"] == gc["source"]
+
+    def test_auto_corrected_path_writes_outer_corner_source(self, tmp_path, monkeypatch):
+        import katrain.vision.calibration_registry as reg
+        from katrain.vision.calibration_strategy import CalibrationOutcome
+
+        M = np.eye(3)
+
+        class _OkSel:
+            def calibrate(self, scenario, ctx):
+                return CalibrationOutcome(ok=True, M=M, Minv=M, confidence=0.9, strategy="outer_corner")
+
+        monkeypatch.setattr(reg, "build_default_selector", lambda: _OkSel())
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gac", fiducial_mode="auto")
+        gc = res["geometry_correction"]
+        assert gc["status"] == "corrected" and gc["source"] == "outer_corner"
+        assert not any(c[0] == "rgb" for c in led.calls)
+        gd = tmp_path / "gac"
+        fr = json.loads((gd / "manifest.json").read_text())["frames"][-1]
+        assert (gd / fr["artifacts"]["warped"]).is_file()
+        assert "fiducial" not in fr["artifacts"]  # no fiducial image in auto mode

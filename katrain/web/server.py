@@ -407,9 +407,11 @@ async def _lifespan_board(app: FastAPI, log):
         capture = CaptureService(capture_config, hub=camera_hub)
         capture.start()
         app.state.capture = capture
-        # P11: per-move fiducial recalibration (quality default). Override via
-        # settings.baipu_fiducial_mode ("every-move"|"off") / baipu_drift_threshold_cells.
-        app.state.baipu_fiducial_mode = getattr(settings, "baipu_fiducial_mode", "every-move")
+        # P12: default "auto" = no-LED outer-corner per-move geometry (passive, zero LED for
+        # geometry). "every-move" (LED fiducial, sub-pixel) remains opt-in for high-quality
+        # training capture; "off" disables. Override via settings.baipu_fiducial_mode.
+        # NOTE: real-hardware crowded-board accuracy of "auto" is gated by P12 Task 9 (待硬件).
+        app.state.baipu_fiducial_mode = getattr(settings, "baipu_fiducial_mode", "auto")
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
         # Load an existing geometry lock if present (so capture/QA can run immediately).
         try:

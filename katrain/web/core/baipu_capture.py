@@ -229,6 +229,54 @@ def _run_fiducial_calibration(
     return correction, fiducials_meta, fiducial_rel, M_used
 
 
+def _run_auto_geometry(*, geometry, capture, board, last_good_M, drift_threshold_cells, settle_ms):
+    """No-LED per-move geometry check (P12 'auto' mode): grab a frame and run the RUNTIME
+    scenario through the calibration selector (OuterCorner only — never lights an LED).
+    Falls back to last_good ('stale') or frozen M_0 ('frozen'). Returns (correction, M_used)."""
+    import numpy as np
+
+    from katrain.vision.calibration_registry import build_default_selector
+    from katrain.vision.calibration_strategy import CalibrationContext, Scenario
+    from katrain.vision.fiducial_recalibrate import drift_from_homography
+
+    out_size = int(geometry.out_size)
+    spacing = (out_size - 1) / 18.0
+    M0 = np.asarray(geometry.M, np.float64)
+
+    frame, _seq, _ts = capture.grab_fresh(settle_ms=settle_ms)
+    ctx = CalibrationContext(
+        frames=[frame], board=board, geometry=geometry, led=None, capture=capture, out_size=out_size
+    )
+    out = build_default_selector().calibrate(Scenario.RUNTIME_RECALIBRATION, ctx)
+
+    if out.ok and out.M is not None:
+        M_used, status, source, reason = np.asarray(out.M, np.float64), "corrected", "outer_corner", None
+    elif last_good_M is not None:
+        M_used, status, source, reason = np.asarray(last_good_M, np.float64), "stale", "last_good", out.reason
+    else:
+        M_used, status, source, reason = M0, "frozen", "frozen", out.reason
+
+    drift = drift_from_homography(M_used, M0, out_size=out_size)
+    median_cells = drift.median_px / spacing
+    correction = {
+        "status": status,
+        "source": source,
+        "reason": reason,
+        "M": M_used.tolist(),
+        "inlier_count": 0,
+        "rms_residual_cells": None,
+        "drift": {
+            "dx": drift.dx,
+            "dy": drift.dy,
+            "deg": drift.deg,
+            "scale": drift.scale,
+            "median_cells": median_cells,
+            "over_threshold": bool(median_cells > drift_threshold_cells),
+        },
+    }
+    return correction, M_used
+
+
 def _write_warp_artifacts(game_dir: Path, frame_file: str, M_used, geometry, fiducials_meta) -> dict:
     """Warp the (clean) training frame with M_f and write isolated diagnostic
     artifacts. Returns the artifact path map (relative to game_dir)."""
@@ -342,6 +390,19 @@ def run_capture(
                 game_dir=game_dir,
                 frame_file=frame_file_pred,
             )
+        elif fiducial_mode == "auto":
+            from katrain.core.baipu import expected_board_from_steps
+
+            board = expected_board_from_steps(steps, move_index, 19)
+            correction, M_used = _run_auto_geometry(
+                geometry=geometry,
+                capture=capture,
+                board=board,
+                last_good_M=_last_good_mf(frames),
+                drift_threshold_cells=drift_threshold_cells,
+                settle_ms=settle_ms,
+            )
+            fiducials_meta, fiducial_rel = [], None
 
         # 2. Light the next physical move (strict) or blackout for the final frame.
         if next_idx is not None:

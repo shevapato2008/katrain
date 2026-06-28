@@ -22,9 +22,10 @@ services:
     container_name: katrain-minio
     command: server /data --console-address ":9001"
     restart: unless-stopped
-    # Bind to localhost only — public access is via nginx reverse proxy (D6), never raw :9000/:9001.
+    # :9000 binds to MINIO_BIND_IP (default 127.0.0.1; prod sets the WireGuard IP so the nginx
+    # gateway can reach it over wg — still off the public internet, D6). Console :9001 stays loopback.
     ports:
-      - "127.0.0.1:9000:9000"
+      - "${MINIO_BIND_IP:-127.0.0.1}:9000:9000"
       - "127.0.0.1:9001:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-katrain_minio_admin}

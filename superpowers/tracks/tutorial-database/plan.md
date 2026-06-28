@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL — 用 `superpowers:subagent-driven-development` 或 `superpowers:executing-plans` 逐任务实施。步骤使用 `- [ ]` 复选框追踪。本文件先作为**设计文档 / 调研结论**；实施前请确认 §决策记录 中的待定项。
 
-**状态:** 阶段 1 (Stage A) 已部署于生产服务器 home-ubuntu (2026-06-28) · 存储抽象 + S3/MinIO 代码合并入 `develop`，MinIO 上线、全量迁移 27452 对象、galaxy(local 后端) 实机验收通过。应用仍走 `local` 后端（零用户影响）。**Stage B（跳板机暴露 MinIO + 翻 `s3`）与阶段 2（阿里云 OSS+CDN）待办。**
+**状态:** 阶段 1 完成并上线生产 home-ubuntu (2026-06-28) · 存储抽象 + S3/MinIO 合并入 `develop`；MinIO 上线 + 全量迁移 27452 对象；**应用已切 `s3` 后端**——`/assets` 经 302 跳到 `https://go.sailorvoyage.top/media/`（nginx → MinIO over WireGuard `10.8.0.2:9000`，匿名只读 + Referer 防盗链）。HTTP 链路全验证（302 + 206 Range + 字节一致 854796 + 外站 Referer 403）。浏览器实机播放待人工眼检（本服务器无头 chromium 沙箱受限）。**阶段 2（阿里云 OSS+CDN）待办。**
 
 ---
 
@@ -168,7 +168,7 @@ S3_PRESIGN_TTL_SEC: int = 3600
 - [x] 删除 dead `_safe_asset_path` / `ASSET_BASE` / 未用 `Path` 导入（防穿越收敛到 `normalize_key`）。
 - [x] `base.py` 加 `fspath()` 钩子（local 返回 Path，remote 返回 None）。
 - [x] **测试**：`tests/test_tutorial_assets_endpoint.py`（httpx AsyncClient，local 200/206/404/防穿越 + remote 302/404）；**43 passed**（全套）。
-- [x] **galaxy 端到端（local 后端）**：前端 `assetUrl()` 不改，生产 galaxy web 播放/seek 正常（go.sailorvoyage.top/galaxy 200）。SBC kiosk + `s3` 302 端到端留待 Stage B。
+- [x] **galaxy 端到端**：前端 `assetUrl()` 不改；`s3` 后端下 `/assets` → 302 → `…/media/…` → 206（HTTP 全验证）。浏览器/SBC kiosk 实机眼检待人工（服务器无头 chromium 受限）。
 
 ### Task 4：MinIO 服务上线
 - [x] `docker-compose.yml` 加 `minio` 服务（9000/9001 **仅绑 127.0.0.1**，命名卷 `minio-data`，healthcheck）+ `minio-setup` 一次性服务跑 bootstrap；`katrain-web` 加 `STORAGE_*` env 并 `depends_on minio`。
@@ -199,7 +199,7 @@ S3_PRESIGN_TTL_SEC: int = 3600
 - [x] **代码层**：`STORAGE_BACKEND=s3` 切换、s3 后端 put/get/range/public_url、端点 302/Range、写入即上传——全部单测 + 真实 MinIO 集成验证通过。
 - [x] 资产字节不再穿过 FastAPI（s3 路径为 302）。
 - [x] 迁移脚本幂等 + 计数校验 + 匿名 Range 播放——真实样本跑通。
-- [x] **服务器端到端（Stage A 部分）**：生产 MinIO 部署 + 全量迁移（27452）+ galaxy web（local 后端）实机播放/seek 验收通过。SBC kiosk + `s3` 302 翻转的实机验收留待 Stage B（需跳板机 :9000 反代 + `media.<domain>`）。
+- [x] **服务器端到端**：生产 MinIO 部署 + 全量迁移（27452）+ 翻 `s3` 后端；走 WireGuard 路径 `nginx /media/ → 10.8.0.2:9000`（非 `media.<domain>` 子域名，复用现有证书，零 DNS）。HTTP 链路全验证通过。浏览器/kiosk 实机眼检待人工。
 
 ---
 

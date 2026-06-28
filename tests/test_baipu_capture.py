@@ -381,6 +381,16 @@ class TestFiducialEveryMove:
                 assert str(f.relative_to(gd)) in referenced
 
 
+def test_resolve_fiducial_mode_precedence():
+    from katrain.web.core.baipu_capture import resolve_fiducial_mode
+
+    assert resolve_fiducial_mode("every-move", "off") == "every-move"  # CLI wins
+    assert resolve_fiducial_mode(None, "every-move") == "every-move"  # env
+    assert resolve_fiducial_mode(None, None) == "auto"  # default
+    assert resolve_fiducial_mode("bogus", None) == "auto"  # invalid ignored
+    assert resolve_fiducial_mode(None, "off") == "off"
+
+
 class TestFiducialAuto:
     """P12 'auto' mode: no-LED outer-corner per-move geometry. Guidance LED unchanged."""
 

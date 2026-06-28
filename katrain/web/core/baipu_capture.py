@@ -296,6 +296,17 @@ def _write_warp_artifacts(game_dir: Path, frame_file: str, M_used, geometry, fid
     return {"warped": f"warped/{stem}.jpg", "grid_overlay": f"grid_overlay/{stem}.jpg"}
 
 
+def resolve_fiducial_mode(cli=None, env=None, *, default="auto"):
+    """Pick the baipu geometry mode: CLI flag > env var > default. Invalid values fall through.
+    Modes: 'auto' (no-LED OuterCorner, live play) | 'every-move' (LED fiducial, best for
+    TRAINING capture) | 'off'."""
+    valid = ("auto", "every-move", "off")
+    for value in (cli, env):
+        if value in valid:
+            return value
+    return default
+
+
 def run_capture(
     *,
     led,

@@ -408,10 +408,14 @@ async def _lifespan_board(app: FastAPI, log):
         capture.start()
         app.state.capture = capture
         # P12: default "auto" = no-LED outer-corner per-move geometry (passive, zero LED for
-        # geometry). "every-move" (LED fiducial, sub-pixel) remains opt-in for high-quality
-        # training capture; "off" disables. Override via settings.baipu_fiducial_mode.
+        # geometry). "every-move" (LED fiducial, sub-pixel) is opt-in for high-quality TRAINING
+        # capture; "off" disables. Select via --baipu-fiducial-mode or $KATRAIN_BAIPU_FIDUCIAL_MODE.
         # NOTE: real-hardware crowded-board accuracy of "auto" is gated by P12 Task 9 (待硬件).
-        app.state.baipu_fiducial_mode = getattr(settings, "baipu_fiducial_mode", "auto")
+        from katrain.web.core.baipu_capture import resolve_fiducial_mode
+
+        app.state.baipu_fiducial_mode = resolve_fiducial_mode(
+            getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
+        )
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
         # Load an existing geometry lock if present (so capture/QA can run immediately).
         try:
@@ -1952,7 +1956,17 @@ def run_web():
         default=None,
         help="Manual exposure value (camera-specific; tuned on the box).",
     )
+    parser.add_argument(
+        "--baipu-fiducial-mode",
+        default=None,
+        choices=["auto", "every-move", "off"],
+        help="Geometry mode during baipu capture: auto (no-LED, default, live play) | "
+        "every-move (LED fiducial, sub-pixel — use for TRAINING data capture) | off. "
+        "Also settable via $KATRAIN_BAIPU_FIDUCIAL_MODE.",
+    )
     args, _unknown = parser.parse_known_args()
+    if args.baipu_fiducial_mode:
+        settings._baipu_fiducial_mode = args.baipu_fiducial_mode
 
     # Configure vision service if model path provided
     if args.vision_model:

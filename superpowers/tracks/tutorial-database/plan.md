@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL — 用 `superpowers:subagent-driven-development` 或 `superpowers:executing-plans` 逐任务实施。步骤使用 `- [ ]` 复选框追踪。本文件先作为**设计文档 / 调研结论**；实施前请确认 §决策记录 中的待定项。
 
-**状态:** 设计稿 (2026-06-27) · 调研 + 架构已定，未开始实施。
+**状态:** 阶段 1 (Stage A) 已部署于生产服务器 home-ubuntu (2026-06-28) · 存储抽象 + S3/MinIO 代码合并入 `develop`，MinIO 上线、全量迁移 27452 对象、galaxy(local 后端) 实机验收通过。应用仍走 `local` 后端（零用户影响）。**Stage B（跳板机暴露 MinIO + 翻 `s3`）与阶段 2（阿里云 OSS+CDN）待办。**
 
 ---
 
@@ -152,7 +152,7 @@ S3_PRESIGN_TTL_SEC: int = 3600
 - [x] `__init__.py`：`get_storage_backend()` 按 `settings.STORAGE_BACKEND` 返回 memoized 单例；s3 后端 lazy import（boto3 仅 s3 时需要）。
 - [x] `config.py`：加 `STORAGE_*` 配置 + env 覆盖（提前于 Task 2 落地，集中管理）。
 - [x] **测试**：22 passed（契约 + 工厂 + 防穿越）。`STORAGE_BACKEND=local` 行为与现状一致。
-- [ ] **验收（待 Task 3 后）**：端点接入后手动播一个视频确认逐字节一致。
+- [x] **验收**：生产服务器端点接入后手动验证逐字节一致（live local 206 + MinIO 匿名 206，同为 854796 字节，content-type/cache-control 一致）。
 
 ### Task 2：S3 实现（boto3）
 - [x] `s3.py`：boto3 client（path-style + s3v4，兼容 MinIO/OSS）；`is_remote=True`。
@@ -168,20 +168,20 @@ S3_PRESIGN_TTL_SEC: int = 3600
 - [x] 删除 dead `_safe_asset_path` / `ASSET_BASE` / 未用 `Path` 导入（防穿越收敛到 `normalize_key`）。
 - [x] `base.py` 加 `fspath()` 钩子（local 返回 Path，remote 返回 None）。
 - [x] **测试**：`tests/test_tutorial_assets_endpoint.py`（httpx AsyncClient，local 200/206/404/防穿越 + remote 302/404）；**43 passed**（全套）。
-- [ ] **端到端验收（待 MinIO 起来）**：前端 `assetUrl()` 不改，galaxy + kiosk 播放/seek 正常。
+- [x] **galaxy 端到端（local 后端）**：前端 `assetUrl()` 不改，生产 galaxy web 播放/seek 正常（go.sailorvoyage.top/galaxy 200）。SBC kiosk + `s3` 302 端到端留待 Stage B。
 
 ### Task 4：MinIO 服务上线
 - [x] `docker-compose.yml` 加 `minio` 服务（9000/9001 **仅绑 127.0.0.1**，命名卷 `minio-data`，healthcheck）+ `minio-setup` 一次性服务跑 bootstrap；`katrain-web` 加 `STORAGE_*` env 并 `depends_on minio`。
 - [x] `deploy/minio/bootstrap.sh`：`mc` 建桶 + `mc anonymous set download`（D7），幂等。**实测**：本地起 MinIO 跑通，bucket 创建 + 匿名只读生效。
 - [x] `deploy/minio/nginx-media.conf`：`https://media.<domain>` 反代 `127.0.0.1:9000`，Referer/域名白名单防盗链，Range 透传，TLS 占位（D6）。
 - [x] app env 模板就位（compose 内 `KATRAIN_STORAGE_BACKEND=s3` 等，phase2 改值即切 OSS）。
-- [ ] **服务器部署（待跳板机连接信息）**：`docker compose up -d minio minio-setup`、配 `media.<domain>` 证书+nginx、设生产 env。`docker compose config` 已校验通过。
+- [x] **生产 MinIO 部署完成**：`docker compose up -d minio minio-setup` 跑通（minio healthy + 桶 `tutorial-assets` + 匿名只读），生产 `.env` 就位（`KATRAIN_STORAGE_BACKEND=local` + 强 MinIO 凭据）。`media.<domain>` 证书+nginx + 跳板机 :9000 反代留待 Stage B。
 
 ### Task 5：历史数据迁移
 - [x] `scripts/migrate_assets_to_minio.py`：遍历 `data/tutorial_assets/**`，幂等上传（exists+size 匹配则跳过）+ 结尾计数校验；`--book/--force/--dry-run`；拒绝对 local 后端运行；**非破坏（D8）只读本地**。
 - [x] **实测**（本地 MinIO，7 文件真实样本）：dry-run ✓、真实迁移 7 上传+校验通过 ✓、重跑 7 全 skip（幂等）✓。
 - [x] **抽样播放校验**（curl 匿名）：mp4 200 + Range 206 + `video/mp4` + `Cache-Control: max-age=86400`，mp3 `audio/mpeg`，缺失 404。
-- [ ] **服务器全量迁移（待 MinIO 部署）**：`python scripts/migrate_assets_to_minio.py`（预期 651 视频 / 1902 音频 / 24893 图片）。或 `mc mirror`。校验通过前不删本地。
+- [x] **服务器全量迁移完成**：27452 对象（651 视频 / 1902 音频 / 24893 图片）经 `migrate_assets_to_minio.py` 上传，计数校验通过（bucket==local==27452，0 失败）；本地未删（D8）。
 
 ### Task 6：生成即上传 (write-through)
 - [x] `storage/__init__.py` 加 `upload_file(key, path)`：**仅 remote 后端上传**（local 后端是磁盘本身→no-op），失败仅告警不中断批量（可由迁移脚本补齐）。
@@ -199,7 +199,7 @@ S3_PRESIGN_TTL_SEC: int = 3600
 - [x] **代码层**：`STORAGE_BACKEND=s3` 切换、s3 后端 put/get/range/public_url、端点 302/Range、写入即上传——全部单测 + 真实 MinIO 集成验证通过。
 - [x] 资产字节不再穿过 FastAPI（s3 路径为 302）。
 - [x] 迁移脚本幂等 + 计数校验 + 匿名 Range 播放——真实样本跑通。
-- [ ] **服务器端到端（待跳板机）**：生产 MinIO 部署 + 全量迁移 + galaxy web/SBC kiosk 实机播放/seek 验收。
+- [x] **服务器端到端（Stage A 部分）**：生产 MinIO 部署 + 全量迁移（27452）+ galaxy web（local 后端）实机播放/seek 验收通过。SBC kiosk + `s3` 302 翻转的实机验收留待 Stage B（需跳板机 :9000 反代 + `media.<domain>`）。
 
 ---
 

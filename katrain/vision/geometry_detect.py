@@ -104,6 +104,17 @@ def reset_state():
     _acq_buf = []
 
 
+def detect_board_raw(image):
+    """Stateless per-frame outer-quad detection (NO lock-and-hold globals).
+
+    Returns this frame's (4,2) TL/TR/BR/BL outer-grid corners, or None on failure.
+    Unlike detect_board(), it never returns a held/stale quad and never mutates module
+    state — callers needing a true per-frame answer for absolute recalibration (e.g.
+    OuterCornerStrategy, P12) must use this, not the lock-and-hold detect_board().
+    """
+    return _detect_raw(image)
+
+
 def _max_corner_dist(a, b):
     return float(np.sqrt(((a - b) ** 2).sum(axis=1)).max())
 

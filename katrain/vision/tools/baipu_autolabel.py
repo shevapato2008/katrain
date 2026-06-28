@@ -325,7 +325,12 @@ def process_game(
         if gc and gc.get("status") in ("corrected", "stale"):
             M_use = np.asarray(gc["M"], dtype=np.float64)  # per-frame absolute homography
             use_fiducial = True
-            label_quality = gc["status"]
+            # P12: outer-corner geometry (no-LED) is coarser than LED-fiducial sub-pixel;
+            # flag it distinctly so label consumers can weight/audit it.
+            if gc.get("status") == "corrected" and gc.get("source") == "outer_corner":
+                label_quality = "corrected_outer_corner"
+            else:
+                label_quality = gc["status"]
         else:
             M_use = cap.M  # frozen M_0
             use_fiducial = False

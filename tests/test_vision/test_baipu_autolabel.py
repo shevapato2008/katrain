@@ -259,6 +259,40 @@ def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
     assert "legacy_estimate" in (tmp_path / "v" / "shifts.csv").read_text()
 
 
+def test_outer_corner_source_uses_M_and_flags_quality(tmp_path, monkeypatch):
+    # P12 Task 7: source="outer_corner" (no-LED auto mode) consumes its per-frame M directly
+    # (no estimate_global_shift) and is tagged distinctly to reflect coarser precision.
+    monkeypatch.setattr(
+        bal, "estimate_global_shift",
+        lambda *a, **k: pytest.fail("estimate_global_shift must not run for corrected outer_corner"),
+    )
+    gc = {
+        "status": "corrected", "source": "outer_corner", "M": np.eye(3).tolist(),
+        "drift": {"median_cells": 0.05, "over_threshold": False},
+    }
+    gd = _make_game(tmp_path, "goc", [
+        {"file": "frame_000.jpg", "applied_move_index": 0,
+         "led_point": {"row": 3, "col": 3, "color": "black"}, "geometry_correction": gc},
+    ])
+    bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", verify_dir=tmp_path / "v")
+    assert (tmp_path / "lbl" / "goc_frame_000.txt").exists()
+    assert "corrected_outer_corner" in (tmp_path / "v" / "shifts.csv").read_text()
+
+
+def test_mixed_legacy_and_outer_corner_manifest_does_not_break(tmp_path):
+    # Backward-compat: a manifest mixing legacy (no gc) + new outer_corner frames processes cleanly.
+    frames = [
+        {"file": "frame_000.jpg", "applied_move_index": 0, "led_point": None},  # legacy, no gc
+        {"file": "frame_001.jpg", "applied_move_index": 1, "led_point": None,
+         "geometry_correction": {"status": "corrected", "source": "outer_corner", "M": np.eye(3).tolist(),
+                                 "drift": {"median_cells": 0.04, "over_threshold": False}}},
+    ]
+    gd = _make_game(tmp_path, "gm", frames)
+    bal.process_game(gd, tmp_path / "i", tmp_path / "l", verify_dir=tmp_path / "v")
+    csv = (tmp_path / "v" / "shifts.csv").read_text()
+    assert "legacy_estimate" in csv and "corrected_outer_corner" in csv
+
+
 @requires_capture
 def test_process_game_writes_matching_labels(tmp_path):
     imgs = tmp_path / "images"

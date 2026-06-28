@@ -50,5 +50,5 @@ async def generate_figure_audio(db: Session, figure: TutorialFigure, text: str =
     db.add(figure)
     db.commit()
     db.refresh(figure)
-    
+
     return figure

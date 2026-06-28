@@ -84,9 +84,7 @@ class InProcessAdapter:
             return warped, True
         if self._require_geometry:
             return None, False
-        return self._board_finder.find_focus(
-            frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False)
-        )
+        return self._board_finder.find_focus(frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False))
 
     def start(self) -> None:
         self._running = True
@@ -168,13 +166,17 @@ class InProcessAdapter:
 
             self._status = WorkerStatus(
                 camera_status="connected" if self._camera.is_connected else "disconnected",
-                pose_lock_status="locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked",
+                pose_lock_status=(
+                    "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
+                ),
                 sync_state=self._sync.state.value,
                 detected_board=observed_board.tolist() if observed_board is not None else None,
                 camera_ready=bool(self._camera.is_connected),
                 geometry_ready=self._geometry is not None or not self._require_geometry,
                 model_ready=True,
-                recognition_ready=bool(self._camera.is_connected and (self._geometry is not None or not self._require_geometry)),
+                recognition_ready=bool(
+                    self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
+                ),
             )
 
             elapsed = time.monotonic() - loop_start

@@ -155,8 +155,5 @@ class TestTsumegoProgress:
 
     def test_update_progress_requires_auth(self):
         """Update progress endpoint should require authentication."""
-        resp = requests.post(
-            f"{BASE_URL}/api/v1/tsumego/progress/1014",
-            json={"completed": True, "attempts": 1}
-        )
+        resp = requests.post(f"{BASE_URL}/api/v1/tsumego/progress/1014", json={"completed": True, "attempts": 1})
         assert resp.status_code in [401, 403, 422]

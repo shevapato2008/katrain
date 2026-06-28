@@ -76,11 +76,13 @@ class TutorialFigureOut(BaseModel):
 
 class TutorialSectionDetailOut(TutorialSectionOut):
     """Section with all its figures included."""
+
     figures: List[TutorialFigureOut] = []
 
 
 class TutorialBookDetailOut(TutorialBookOut):
     """Book with chapters and their sections."""
+
     chapters: List[TutorialChapterOut] = []
 
 
@@ -89,6 +91,7 @@ VALID_BOARD_SIZES = {9, 13, 19}
 
 class StrictBoardPayload(BaseModel):
     """Validated board_payload — rejects malformed or oversized data."""
+
     size: int = 19
     stones: Dict[str, List[List[int]]]  # {"B": [[col,row]], "W": [[col,row]]}
     labels: Optional[Dict[str, str]] = None
@@ -138,17 +141,20 @@ class StrictBoardPayload(BaseModel):
 
 class BoardPayloadUpdate(BaseModel):
     """Request body for updating a figure's board_payload."""
+
     board_payload: StrictBoardPayload
     expected_updated_at: Optional[str] = None  # ISO timestamp for optimistic locking
 
 
 class NarrationUpdate(BaseModel):
     """Request body for updating a figure's narration text and audio asset."""
+
     narration: str
     audio_asset: Optional[str] = None
     video_asset: Optional[str] = None
     video_duration_ms: Optional[int] = None
     video_size_bytes: Optional[int] = None
+
 
 class NarrationUpdateRequest(BaseModel):
     narration: str

@@ -1,4 +1,5 @@
 """Repository for user_games and user_game_analysis CRUD operations."""
+
 import hashlib
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -10,7 +11,9 @@ class UserGameRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
 
-    def create(self, user_id: int, sgf_content: str, source: str, game_id: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+    def create(
+        self, user_id: int, sgf_content: str, source: str, game_id: Optional[str] = None, **kwargs
+    ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
             # Idempotent creation: if client provides an id that already exists, return existing record
@@ -23,10 +26,14 @@ class UserGameRepository:
 
             # Dedup: if same user already has a game with identical SGF content, return existing
             if sgf_hash:
-                existing = session.query(models_db.UserGame).filter(
-                    models_db.UserGame.user_id == user_id,
-                    models_db.UserGame.sgf_hash == sgf_hash,
-                ).first()
+                existing = (
+                    session.query(models_db.UserGame)
+                    .filter(
+                        models_db.UserGame.user_id == user_id,
+                        models_db.UserGame.sgf_hash == sgf_hash,
+                    )
+                    .first()
+                )
                 if existing:
                     return self._to_dict(existing, include_sgf=True)
 
@@ -65,10 +72,14 @@ class UserGameRepository:
     def get(self, game_id: str, user_id: int) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:
-            game = session.query(models_db.UserGame).filter(
-                models_db.UserGame.id == game_id,
-                models_db.UserGame.user_id == user_id,
-            ).first()
+            game = (
+                session.query(models_db.UserGame)
+                .filter(
+                    models_db.UserGame.id == game_id,
+                    models_db.UserGame.user_id == user_id,
+                )
+                .first()
+            )
             if game:
                 return self._to_dict(game, include_sgf=True)
             return None
@@ -87,9 +98,7 @@ class UserGameRepository:
     ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
-            query = session.query(models_db.UserGame).filter(
-                models_db.UserGame.user_id == user_id
-            )
+            query = session.query(models_db.UserGame).filter(models_db.UserGame.user_id == user_id)
             if category:
                 query = query.filter(models_db.UserGame.category == category)
             if source:
@@ -124,13 +133,19 @@ class UserGameRepository:
         finally:
             session.close()
 
-    def update(self, game_id: str, user_id: int, updated_at: Optional[str] = None, **kwargs) -> Optional[Dict[str, Any]]:
+    def update(
+        self, game_id: str, user_id: int, updated_at: Optional[str] = None, **kwargs
+    ) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:
-            game = session.query(models_db.UserGame).filter(
-                models_db.UserGame.id == game_id,
-                models_db.UserGame.user_id == user_id,
-            ).first()
+            game = (
+                session.query(models_db.UserGame)
+                .filter(
+                    models_db.UserGame.id == game_id,
+                    models_db.UserGame.user_id == user_id,
+                )
+                .first()
+            )
             if not game:
                 return None
 
@@ -154,10 +169,14 @@ class UserGameRepository:
     def delete(self, game_id: str, user_id: int) -> bool:
         session = self.session_factory()
         try:
-            game = session.query(models_db.UserGame).filter(
-                models_db.UserGame.id == game_id,
-                models_db.UserGame.user_id == user_id,
-            ).first()
+            game = (
+                session.query(models_db.UserGame)
+                .filter(
+                    models_db.UserGame.id == game_id,
+                    models_db.UserGame.user_id == user_id,
+                )
+                .first()
+            )
             if not game:
                 return False
             session.delete(game)
@@ -201,10 +220,16 @@ class UserGameAnalysisRepository:
     def get_analysis(self, game_id: str, start_move: int = 0, limit: int = 400) -> List[Dict[str, Any]]:
         session = self.session_factory()
         try:
-            records = session.query(models_db.UserGameAnalysis).filter(
-                models_db.UserGameAnalysis.game_id == game_id,
-                models_db.UserGameAnalysis.move_number >= start_move,
-            ).order_by(models_db.UserGameAnalysis.move_number).limit(limit).all()
+            records = (
+                session.query(models_db.UserGameAnalysis)
+                .filter(
+                    models_db.UserGameAnalysis.game_id == game_id,
+                    models_db.UserGameAnalysis.move_number >= start_move,
+                )
+                .order_by(models_db.UserGameAnalysis.move_number)
+                .limit(limit)
+                .all()
+            )
             return [self._to_dict(r) for r in records]
         finally:
             session.close()
@@ -212,10 +237,14 @@ class UserGameAnalysisRepository:
     def get_move_analysis(self, game_id: str, move_number: int) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:
-            record = session.query(models_db.UserGameAnalysis).filter(
-                models_db.UserGameAnalysis.game_id == game_id,
-                models_db.UserGameAnalysis.move_number == move_number,
-            ).first()
+            record = (
+                session.query(models_db.UserGameAnalysis)
+                .filter(
+                    models_db.UserGameAnalysis.game_id == game_id,
+                    models_db.UserGameAnalysis.move_number == move_number,
+                )
+                .first()
+            )
             if record:
                 return self._to_dict(record)
             return None
@@ -225,10 +254,14 @@ class UserGameAnalysisRepository:
     def upsert(self, game_id: str, move_number: int, **kwargs) -> Dict[str, Any]:
         session = self.session_factory()
         try:
-            record = session.query(models_db.UserGameAnalysis).filter(
-                models_db.UserGameAnalysis.game_id == game_id,
-                models_db.UserGameAnalysis.move_number == move_number,
-            ).first()
+            record = (
+                session.query(models_db.UserGameAnalysis)
+                .filter(
+                    models_db.UserGameAnalysis.game_id == game_id,
+                    models_db.UserGameAnalysis.move_number == move_number,
+                )
+                .first()
+            )
 
             if record:
                 for key, value in kwargs.items():
@@ -238,7 +271,7 @@ class UserGameAnalysisRepository:
                 record = models_db.UserGameAnalysis(
                     game_id=game_id,
                     move_number=move_number,
-                    **{k: v for k, v in kwargs.items() if hasattr(models_db.UserGameAnalysis, k)}
+                    **{k: v for k, v in kwargs.items() if hasattr(models_db.UserGameAnalysis, k)},
                 )
                 session.add(record)
 

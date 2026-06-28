@@ -3,9 +3,10 @@ import logging
 
 logger = logging.getLogger("katrain_web")
 
+
 class KataGoClient:
     def __init__(self, url: str, timeout: float = 30.0):
-        self.url = url.rstrip('/')
+        self.url = url.rstrip("/")
         self.timeout = timeout
 
     async def analyze(self, payload: dict) -> dict:

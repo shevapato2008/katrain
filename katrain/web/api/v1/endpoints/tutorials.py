@@ -48,6 +48,7 @@ def _safe_asset_path(relative_path: str) -> Path:
 
 # ── Categories (hardcoded) ────────────────────────────────────────────────────
 
+
 @router.get("/categories", response_model=List[TutorialCategoryOut])
 async def get_categories(db: Session = Depends(get_db)):
     cats = [dict(c) for c in db_queries.get_categories()]
@@ -58,6 +59,7 @@ async def get_categories(db: Session = Depends(get_db)):
 
 
 # ── Books ─────────────────────────────────────────────────────────────────────
+
 
 @router.get("/categories/{category}/books", response_model=List[TutorialBookOut])
 async def get_books(category: str, db: Session = Depends(get_db)):
@@ -88,6 +90,7 @@ async def get_book(book_id: int, db: Session = Depends(get_db)):
 
 # ── Chapters ──────────────────────────────────────────────────────────────────
 
+
 @router.get("/books/{book_id}/chapters", response_model=List[TutorialChapterOut])
 async def get_chapters(book_id: int, db: Session = Depends(get_db)):
     chapters = db_queries.get_chapters_by_book(db, book_id)
@@ -100,6 +103,7 @@ async def get_chapters(book_id: int, db: Session = Depends(get_db)):
 
 
 # ── Sections ──────────────────────────────────────────────────────────────────
+
 
 @router.get("/chapters/{chapter_id}/sections", response_model=List[TutorialSectionOut])
 async def get_sections(chapter_id: int, db: Session = Depends(get_db)):
@@ -133,6 +137,7 @@ async def get_section(section_id: int, db: Session = Depends(get_db)):
 
 
 # ── Figures ───────────────────────────────────────────────────────────────────
+
 
 @router.get("/figures/{figure_id}", response_model=TutorialFigureOut)
 async def get_figure(figure_id: int, db: Session = Depends(get_db)):
@@ -172,7 +177,9 @@ async def update_figure_board(
     payload_dict["viewport"] = viewport
     figure = db_queries.update_figure_board(db, figure, payload_dict)
     db_queries.record_payload_history(
-        db, figure.id, payload_dict,
+        db,
+        figure.id,
+        payload_dict,
         changed_by=current_user.username if current_user else "anonymous",
         change_type="edit",
     )
@@ -181,6 +188,7 @@ async def update_figure_board(
 
 
 # ── Narration ────────────────────────────────────────────────────────────────
+
 
 @router.post("/figures/{figure_id}/generate-audio", response_model=TutorialFigureOut)
 async def generate_audio_for_figure(
@@ -222,6 +230,7 @@ async def verify_figure(
 ):
     """Mark a figure as human-verified. The current board_payload becomes ground truth."""
     import json as _json
+
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -232,7 +241,9 @@ async def verify_figure(
     db_queries.update_figure_recognition_debug(db, figure, debug)
     if figure.board_payload:
         db_queries.record_payload_history(
-            db, figure.id, figure.board_payload,
+            db,
+            figure.id,
+            figure.board_payload,
             changed_by=current_user.username if current_user else "anonymous",
             change_type="verify",
         )
@@ -241,19 +252,17 @@ async def verify_figure(
     # Auto-export training samples from the verified figure
     try:
         from katrain.web.tutorials.training_export import export_figure_training_samples
+
         count = export_figure_training_samples(db, figure)
-        logging.getLogger("katrain_web").info(
-            "Exported %d training samples for figure %d", count, figure.id
-        )
+        logging.getLogger("katrain_web").info("Exported %d training samples for figure %d", count, figure.id)
     except Exception as e:
-        logging.getLogger("katrain_web").warning(
-            "Training export failed for figure %d: %s", figure.id, e
-        )
+        logging.getLogger("katrain_web").warning("Training export failed for figure %d: %s", figure.id, e)
 
     return TutorialFigureOut.model_validate(figure)
 
 
 # ── Assets ────────────────────────────────────────────────────────────────────
+
 
 @router.get("/assets/{asset_path:path}")
 async def get_asset(asset_path: str, request: Request):

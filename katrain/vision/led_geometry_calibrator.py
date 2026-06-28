@@ -123,7 +123,9 @@ def fit_geometry_from_anchors(
     inliers = mask.reshape(-1).astype(bool)
     inlier_count = int(inliers.sum())
     if inlier_count < min_inliers:
-        return GeometryFitResult(ok=False, M=M, inlier_mask=inliers, inlier_count=inlier_count, reason="not_enough_inliers")
+        return GeometryFitResult(
+            ok=False, M=M, inlier_mask=inliers, inlier_count=inlier_count, reason="not_enough_inliers"
+        )
 
     projected = cv2.perspectiveTransform(camera_points.reshape(-1, 1, 2), M).reshape(-1, 2)
     residuals = np.linalg.norm(projected - canonical_points, axis=1)[inliers]
@@ -194,9 +196,7 @@ class LedGeometryCalibrator:
                 self.progress(phase, index - 1, total)
                 centroid = self._locate_anchor(row, col, attempts)
                 if centroid is None:
-                    return CalibrationResult(
-                        ok=False, reason=f"anchor_not_found:{row},{col}", attempts=tuple(attempts)
-                    )
+                    return CalibrationResult(ok=False, reason=f"anchor_not_found:{row},{col}", attempts=tuple(attempts))
                 detected.append(((row, col), centroid))
 
             fit = fit_geometry_from_anchors(detected, out_size=self.out_size)
@@ -226,9 +226,7 @@ class LedGeometryCalibrator:
             if not cleared.get("ok"):
                 attempts.append({"row": row, "col": col, "color": color_name, "reason": "clear_failed"})
                 continue
-            dark, _seq, _ts = self.capture.grab_fresh(
-                after_ts=cleared.get("shown_at"), settle_ms=self.settle_ms
-            )
+            dark, _seq, _ts = self.capture.grab_fresh(after_ts=cleared.get("shown_at"), settle_ms=self.settle_ms)
             shown = self.led.set_rgb_points([{"row": row, "col": col, "rgb": rgb}], strict=True)
             if not shown.get("ok"):
                 attempts.append({"row": row, "col": col, "color": color_name, "reason": "show_failed"})
@@ -265,9 +263,7 @@ class LedGeometryCalibrator:
         gx, gy = np.meshgrid(xs, ys)
         canonical_grid = np.stack([gx, gy], axis=-1).astype(np.float32)
         points = cv2.perspectiveTransform(canonical_grid.reshape(-1, 1, 2), Minv).reshape(19, 19, 2)
-        canonical_corners = np.array(
-            [[[0, 0]], [[size - 1, 0]], [[size - 1, size - 1]], [[0, size - 1]]], np.float32
-        )
+        canonical_corners = np.array([[[0, 0]], [[size - 1, 0]], [[size - 1, size - 1]], [[0, size - 1]]], np.float32)
         corners = cv2.perspectiveTransform(canonical_corners, Minv).reshape(4, 2)
         warps = [cv2.warpPerspective(frame, M, (size, size)) for frame in frames]
         held_out_baseline = stone_classifier.build_baseline(warps[:7], xs, ys)

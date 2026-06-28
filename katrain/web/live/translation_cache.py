@@ -74,16 +74,12 @@ class TranslationCache:
                 # Players
                 players: dict[str, dict[str, Optional[str]]] = {}
                 for row in db.query(PlayerTranslationDB).all():
-                    players[row.canonical_name] = {
-                        lang: getattr(row, lang, None) for lang in LANGUAGES
-                    }
+                    players[row.canonical_name] = {lang: getattr(row, lang, None) for lang in LANGUAGES}
 
                 # Tournaments
                 tournaments: dict[str, dict[str, Optional[str]]] = {}
                 for row in db.query(TournamentTranslationDB).all():
-                    tournaments[row.original] = {
-                        lang: getattr(row, lang, None) for lang in LANGUAGES
-                    }
+                    tournaments[row.original] = {lang: getattr(row, lang, None) for lang in LANGUAGES}
 
             # Swap atomically
             self._players = players

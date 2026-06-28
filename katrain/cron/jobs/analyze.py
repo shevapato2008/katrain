@@ -169,6 +169,7 @@ class AnalyzeJob(BaseJob):
 
             # Compute delta classification
             from katrain.cron.models import LiveAnalysisDB
+
             analysis = db.query(LiveAnalysisDB).get(record_id)
             if analysis:
                 repo.compute_and_store_delta(analysis)

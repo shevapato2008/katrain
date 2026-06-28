@@ -3,11 +3,13 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from katrain.web.server import create_app
 
+
 @pytest_asyncio.fixture
 async def client():
     app = create_app(enable_engine=False)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
         yield ac
+
 
 @pytest.mark.asyncio
 async def test_health_check(client):
@@ -16,6 +18,7 @@ async def test_health_check(client):
     data = response.json()
     assert data["status"] == "ok"
     assert "engines" in data
+
 
 @pytest.mark.asyncio
 async def test_versioned_health_check(client):
@@ -27,35 +30,40 @@ async def test_versioned_health_check(client):
     assert "local" in data["engines"]
     assert "cloud" in data["engines"]
 
+
 def test_settings_override(monkeypatch):
     monkeypatch.setenv("KATRAIN_PORT", "9000")
     # We need to reload the module to see the change if it's evaluated at import time
     # Or we can test if we can create a new Settings instance
     from katrain.web.core.config import Settings
+
     new_settings = Settings()
     assert new_settings.KATRAIN_PORT == 9000
+
 
 def test_models_validation():
     from katrain.web.models import MoveRequest
     import pytest
     from pydantic import ValidationError
-    
+
     # Valid
     req = MoveRequest(session_id="test", coords=[1, 2])
     assert req.session_id == "test"
-    
+
     # Invalid coords length
     with pytest.raises(ValidationError):
         MoveRequest(session_id="test", coords=[1])
-    
+
     # Invalid type
     with pytest.raises(ValidationError):
         MoveRequest(session_id="test", coords="invalid")
+
 
 @pytest.mark.asyncio
 async def test_static_mounts(client):
     # Check routes in app
     from fastapi import FastAPI
+
     app = create_app(enable_engine=False)
     routes = [route.path for route in app.routes]
     assert "/assets/img" in routes

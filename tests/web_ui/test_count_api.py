@@ -1,4 +1,5 @@
 """Tests for the counting (数子) feature."""
+
 import pytest
 import time
 from unittest.mock import MagicMock, patch
@@ -56,10 +57,7 @@ class TestWebSessionCountFields:
         # Create a mock katrain
         mock_katrain = MagicMock()
 
-        session = WebSession(
-            session_id="test-123",
-            katrain=mock_katrain
-        )
+        session = WebSession(session_id="test-123", katrain=mock_katrain)
 
         assert session.pending_count_request is None
         assert session.pending_count_timestamp is None
@@ -74,10 +72,7 @@ class TestCountRequestTimeout:
 
         # Create a mock session with expired count request
         mock_katrain = MagicMock()
-        session = WebSession(
-            session_id="test-123",
-            katrain=mock_katrain
-        )
+        session = WebSession(session_id="test-123", katrain=mock_katrain)
         session.pending_count_request = 1
         session.pending_count_timestamp = time.time() - 61  # 61 seconds ago
 
@@ -96,10 +91,7 @@ class TestCountRequestTimeout:
         manager = SessionManager(enable_engine=False)
 
         mock_katrain = MagicMock()
-        session = WebSession(
-            session_id="test-123",
-            katrain=mock_katrain
-        )
+        session = WebSession(session_id="test-123", katrain=mock_katrain)
         session.pending_count_request = 1
         session.pending_count_timestamp = time.time() - 30  # 30 seconds ago
 
@@ -118,10 +110,7 @@ class TestCountRequestTimeout:
         manager = SessionManager(enable_engine=False)
 
         mock_katrain = MagicMock()
-        session = WebSession(
-            session_id="test-123",
-            katrain=mock_katrain
-        )
+        session = WebSession(session_id="test-123", katrain=mock_katrain)
         # No pending request
         assert session.pending_count_request is None
         assert session.pending_count_timestamp is None
@@ -198,10 +187,7 @@ class TestCountRequestFlow:
         current_user_id = 2  # Player 2 requesting
 
         # If pending request exists and is from different user, treat as accept
-        should_complete = (
-            pending_count_request is not None and
-            pending_count_request != current_user_id
-        )
+        should_complete = pending_count_request is not None and pending_count_request != current_user_id
         assert should_complete is True
 
     def test_same_user_request_ignored(self):
@@ -209,10 +195,7 @@ class TestCountRequestFlow:
         pending_count_request = 1
         current_user_id = 1  # Same user
 
-        should_ignore = (
-            pending_count_request is not None and
-            pending_count_request == current_user_id
-        )
+        should_ignore = pending_count_request is not None and pending_count_request == current_user_id
         assert should_ignore is True
 
 

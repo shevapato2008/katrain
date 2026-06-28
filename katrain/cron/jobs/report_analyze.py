@@ -130,11 +130,7 @@ class ReportAnalyzerJob(BaseJob):
         _get_resume_move_number will skip already-analyzed moves.
         """
         with SessionLocal() as db:
-            running_tasks = (
-                db.query(ReportTaskDB)
-                .filter(ReportTaskDB.status == "running")
-                .all()
-            )
+            running_tasks = db.query(ReportTaskDB).filter(ReportTaskDB.status == "running").all()
             if not running_tasks:
                 return
             for task in running_tasks:

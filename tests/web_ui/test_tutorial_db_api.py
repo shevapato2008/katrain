@@ -24,8 +24,12 @@ def client():
     # Seed test data
     session = TestSession()
     book = models_db.TutorialBook(
-        category="布局", subcategory="棋书", title="测试布局书",
-        author="作者", slug="test-buju", asset_dir="tutorial_assets/test-buju/pages",
+        category="布局",
+        subcategory="棋书",
+        title="测试布局书",
+        author="作者",
+        slug="test-buju",
+        asset_dir="tutorial_assets/test-buju/pages",
     )
     session.add(book)
     session.flush()
@@ -37,8 +41,11 @@ def client():
     session.flush()
     for i in range(3):
         fig = models_db.TutorialFigure(
-            section_id=section.id, page=11 + i, figure_label=f"图{i + 1}",
-            book_text=f"测试文字{i + 1}", page_image_path=f"tutorial_assets/test-buju/pages/page_{11 + i:03d}.png",
+            section_id=section.id,
+            page=11 + i,
+            figure_label=f"图{i + 1}",
+            book_text=f"测试文字{i + 1}",
+            page_image_path=f"tutorial_assets/test-buju/pages/page_{11 + i:03d}.png",
             board_payload={"size": 19, "stones": {"B": [[3, 3]], "W": []}, "labels": {"3,3": "1"}} if i == 0 else None,
             order=i + 1,
         )
@@ -117,15 +124,15 @@ def test_get_figure(client):
 
 def test_update_board_requires_auth(client):
     """Edit endpoint must require authentication."""
-    resp = client.put("/api/v1/tutorials/figures/1/board",
-                      json={"board_payload": {"size": 19, "stones": {"B": [], "W": []}}})
+    resp = client.put(
+        "/api/v1/tutorials/figures/1/board", json={"board_payload": {"size": 19, "stones": {"B": [], "W": []}}}
+    )
     assert resp.status_code == 401
 
 
 def test_update_board_rejects_invalid_payload(client):
     """Malformed board_payload should be rejected by validation."""
-    resp = client.put("/api/v1/tutorials/figures/1/board",
-                      json={"board_payload": {"bad": "data"}})
+    resp = client.put("/api/v1/tutorials/figures/1/board", json={"board_payload": {"bad": "data"}})
     assert resp.status_code in (401, 422)
 
 
@@ -216,8 +223,12 @@ def client_with_auth():
     # Seed test data
     session = TestSession()
     book = models_db.TutorialBook(
-        category="布局", subcategory="棋书", title="测试布局书",
-        author="作者", slug="test-buju", asset_dir="tutorial_assets/test-buju/pages",
+        category="布局",
+        subcategory="棋书",
+        title="测试布局书",
+        author="作者",
+        slug="test-buju",
+        asset_dir="tutorial_assets/test-buju/pages",
     )
     session.add(book)
     session.flush()
@@ -229,8 +240,11 @@ def client_with_auth():
     session.flush()
     for i in range(3):
         fig = models_db.TutorialFigure(
-            section_id=section.id, page=11 + i, figure_label=f"图{i + 1}",
-            book_text=f"测试文字{i + 1}", page_image_path=f"tutorial_assets/test-buju/pages/page_{11 + i:03d}.png",
+            section_id=section.id,
+            page=11 + i,
+            figure_label=f"图{i + 1}",
+            book_text=f"测试文字{i + 1}",
+            page_image_path=f"tutorial_assets/test-buju/pages/page_{11 + i:03d}.png",
             board_payload={"size": 19, "stones": {"B": [[3, 3]], "W": []}, "labels": {"3,3": "1"}} if i == 0 else None,
             order=i + 1,
         )

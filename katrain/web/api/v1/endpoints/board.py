@@ -50,9 +50,7 @@ async def device_heartbeat(
     now = datetime.utcnow()
 
     # Upsert device heartbeat record
-    record = db.query(DeviceHeartbeatDB).filter(
-        DeviceHeartbeatDB.device_id == body.device_id
-    ).first()
+    record = db.query(DeviceHeartbeatDB).filter(DeviceHeartbeatDB.device_id == body.device_id).first()
 
     if record:
         record.last_seen = now
@@ -87,9 +85,7 @@ async def list_devices(
     db: Session = Depends(get_db),
 ):
     """List all registered board devices (admin monitoring)."""
-    devices = db.query(DeviceHeartbeatDB).order_by(
-        DeviceHeartbeatDB.last_seen.desc()
-    ).all()
+    devices = db.query(DeviceHeartbeatDB).order_by(DeviceHeartbeatDB.last_seen.desc()).all()
 
     return [
         {

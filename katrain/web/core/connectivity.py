@@ -103,16 +103,12 @@ class ConnectivityManager:
         if self._is_online and self._consecutive_failures >= FAILURES_TO_OFFLINE:
             # Online → Offline
             self._is_online = False
-            logger.warning(
-                f"Switching to OFFLINE (consecutive failures: {self._consecutive_failures})"
-            )
+            logger.warning(f"Switching to OFFLINE (consecutive failures: {self._consecutive_failures})")
 
         elif not self._is_online and self._consecutive_successes >= SUCCESSES_TO_ONLINE:
             # Offline → Online
             self._is_online = True
-            logger.info(
-                f"Switching to ONLINE (consecutive successes: {self._consecutive_successes})"
-            )
+            logger.info(f"Switching to ONLINE (consecutive successes: {self._consecutive_successes})")
 
             # Trigger sync on reconnection
             if self._sync_worker:

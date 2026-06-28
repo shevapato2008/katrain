@@ -16,6 +16,7 @@ router = APIRouter()
 
 class MatchSummary(BaseModel):
     """Summary response for match listing."""
+
     id: str
     source: str
     tournament: str
@@ -39,12 +40,14 @@ class MatchSummary(BaseModel):
 
 class MatchDetail(MatchSummary):
     """Detailed match response."""
+
     sgf: Optional[str]
     moves: list[str]
 
 
 class MatchListResponse(BaseModel):
     """Response for match list endpoint."""
+
     matches: list[MatchSummary]
     total: int
     live_count: int
@@ -52,6 +55,7 @@ class MatchListResponse(BaseModel):
 
 class UpcomingMatchResponse(BaseModel):
     """Response for upcoming match."""
+
     id: str
     tournament: str
     round_name: Optional[str]
@@ -64,11 +68,13 @@ class UpcomingMatchResponse(BaseModel):
 
 class UpcomingListResponse(BaseModel):
     """Response for upcoming matches list."""
+
     matches: list[UpcomingMatchResponse]
 
 
 class CacheStatsResponse(BaseModel):
     """Response for cache statistics."""
+
     live_count: int
     finished_count: int
     upcoming_count: int
@@ -79,6 +85,7 @@ class CacheStatsResponse(BaseModel):
 
 class CommentResponse(BaseModel):
     """Response for a single comment."""
+
     id: int
     match_id: str
     user_id: int
@@ -89,17 +96,20 @@ class CommentResponse(BaseModel):
 
 class CommentListResponse(BaseModel):
     """Response for comment list."""
+
     comments: list[CommentResponse]
     total: int
 
 
 class CreateCommentRequest(BaseModel):
     """Request to create a comment."""
+
     content: str
 
 
 class LiveTranslationsResponse(BaseModel):
     """Response for live translations."""
+
     lang: str
     players: dict[str, str]
     tournaments: dict[str, str]
@@ -109,6 +119,7 @@ class LiveTranslationsResponse(BaseModel):
 
 class PlayerTranslationResponse(BaseModel):
     """Response for a single player translation."""
+
     original: str
     translated: str
     lang: str
@@ -127,8 +138,7 @@ def get_live_service(request: Request):
         dispatcher = getattr(request.app.state, "repository_dispatcher", None)
         if dispatcher is not None:
             raise HTTPException(
-                status_code=503,
-                detail="Live service unavailable in board mode — use /api/v1/board/live proxy"
+                status_code=503, detail="Live service unavailable in board mode — use /api/v1/board/live proxy"
             )
         raise HTTPException(status_code=503, detail="Live service not initialized")
     return live_service
@@ -178,26 +188,28 @@ async def get_matches(
             if m.round_name:
                 round_name = translator.translate_round(m.round_name, lang)
 
-        summaries.append(MatchSummary(
-            id=m.id,
-            source=m.source.value,
-            tournament=tournament,
-            round_name=round_name,
-            date=m.date.isoformat(),
-            player_black=player_black,
-            player_white=player_white,
-            black_rank=m.black_rank,
-            white_rank=m.white_rank,
-            status=m.status.value,
-            result=m.result,
-            move_count=m.move_count,
-            current_winrate=m.current_winrate,
-            current_score=m.current_score,
-            last_updated=m.last_updated.isoformat(),
-            board_size=getattr(m, 'board_size', 19) or 19,
-            komi=getattr(m, 'komi', 7.5) or 7.5,
-            rules=getattr(m, 'rules', 'chinese') or 'chinese',
-        ))
+        summaries.append(
+            MatchSummary(
+                id=m.id,
+                source=m.source.value,
+                tournament=tournament,
+                round_name=round_name,
+                date=m.date.isoformat(),
+                player_black=player_black,
+                player_white=player_white,
+                black_rank=m.black_rank,
+                white_rank=m.white_rank,
+                status=m.status.value,
+                result=m.result,
+                move_count=m.move_count,
+                current_winrate=m.current_winrate,
+                current_score=m.current_score,
+                last_updated=m.last_updated.isoformat(),
+                board_size=getattr(m, "board_size", 19) or 19,
+                komi=getattr(m, "komi", 7.5) or 7.5,
+                rules=getattr(m, "rules", "chinese") or "chinese",
+            )
+        )
 
     live_matches = await cache.get_live_matches()
     return MatchListResponse(
@@ -254,9 +266,9 @@ async def get_featured_match(
             current_winrate=match.current_winrate,
             current_score=match.current_score,
             last_updated=match.last_updated.isoformat(),
-            board_size=getattr(match, 'board_size', 19) or 19,
-            komi=getattr(match, 'komi', 7.5) or 7.5,
-            rules=getattr(match, 'rules', 'chinese') or 'chinese',
+            board_size=getattr(match, "board_size", 19) or 19,
+            komi=getattr(match, "komi", 7.5) or 7.5,
+            rules=getattr(match, "rules", "chinese") or "chinese",
         )
     }
 
@@ -291,9 +303,9 @@ async def get_match(
         last_updated=match.last_updated.isoformat(),
         sgf=match.sgf,
         moves=match.moves,
-        board_size=getattr(match, 'board_size', 19) or 19,
-        komi=getattr(match, 'komi', 7.5) or 7.5,
-        rules=getattr(match, 'rules', 'chinese') or 'chinese',
+        board_size=getattr(match, "board_size", 19) or 19,
+        komi=getattr(match, "komi", 7.5) or 7.5,
+        rules=getattr(match, "rules", "chinese") or "chinese",
     )
 
 
@@ -399,16 +411,18 @@ async def get_upcoming_matches(
             if m.player_white:
                 player_white = translator.translate_player(m.player_white, lang)
 
-        matches.append(UpcomingMatchResponse(
-            id=m.event_id,
-            tournament=tournament,
-            round_name=round_name,
-            scheduled_time=m.scheduled_time.isoformat(),
-            player_black=player_black,
-            player_white=player_white,
-            source=m.source,
-            source_url=m.source_url,
-        ))
+        matches.append(
+            UpcomingMatchResponse(
+                id=m.event_id,
+                tournament=tournament,
+                round_name=round_name,
+                scheduled_time=m.scheduled_time.isoformat(),
+                player_black=player_black,
+                player_white=player_white,
+                source=m.source,
+                source_url=m.source_url,
+            )
+        )
 
     return UpcomingListResponse(matches=matches)
 
@@ -556,14 +570,16 @@ async def get_comments(
         # Build response with username
         comment_responses = []
         for c in comments:
-            comment_responses.append(CommentResponse(
-                id=c.id,
-                match_id=c.match_id,
-                user_id=c.user_id,
-                username=c.user.username if c.user else "Unknown",
-                content=c.content,
-                created_at=c.created_at.isoformat() if c.created_at else "",
-            ))
+            comment_responses.append(
+                CommentResponse(
+                    id=c.id,
+                    match_id=c.match_id,
+                    user_id=c.user_id,
+                    username=c.user.username if c.user else "Unknown",
+                    content=c.content,
+                    created_at=c.created_at.isoformat() if c.created_at else "",
+                )
+            )
 
     return CommentListResponse(comments=comment_responses, total=total)
 
@@ -635,10 +651,7 @@ async def delete_comment(
         success = repo.delete_comment(comment_id, current_user.id)
 
         if not success:
-            raise HTTPException(
-                status_code=404,
-                detail="Comment not found or you don't have permission to delete it"
-            )
+            raise HTTPException(status_code=404, detail="Comment not found or you don't have permission to delete it")
 
     return {"status": "ok", "message": "Comment deleted"}
 
@@ -668,14 +681,16 @@ async def poll_comments(
 
         comment_responses = []
         for c in comments:
-            comment_responses.append(CommentResponse(
-                id=c.id,
-                match_id=c.match_id,
-                user_id=c.user_id,
-                username=c.user.username if c.user else "Unknown",
-                content=c.content,
-                created_at=c.created_at.isoformat() if c.created_at else "",
-            ))
+            comment_responses.append(
+                CommentResponse(
+                    id=c.id,
+                    match_id=c.match_id,
+                    user_id=c.user_id,
+                    username=c.user.username if c.user else "Unknown",
+                    content=c.content,
+                    created_at=c.created_at.isoformat() if c.created_at else "",
+                )
+            )
 
     return {"comments": comment_responses, "count": len(comment_responses)}
 
@@ -685,6 +700,7 @@ async def poll_comments(
 
 class TranslationRequest(BaseModel):
     """Request body for learning a translation."""
+
     name: str
     name_type: str  # "player" or "tournament"
     translations: dict  # {"en": "...", "jp": "...", etc.}
@@ -694,6 +710,7 @@ class TranslationRequest(BaseModel):
 
 class MissingTranslationsResponse(BaseModel):
     """Response for missing translations query."""
+
     missing_players: list[str]
     missing_tournaments: list[str]
 

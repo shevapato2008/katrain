@@ -195,7 +195,7 @@ class Translator:
             f"{full_context}\n\n"
             f"IMPORTANT: For Japanese (jp), if the Wikipedia langlinks show the actual characters "
             f"(like 唐韋星), use those characters, NOT a phonetic transliteration (like トウ・ウェイシン).\n\n"
-            f"Return format: {{\"en\": \"...\", \"cn\": \"...\", \"tw\": \"...\", \"jp\": \"...\", \"ko\": \"...\"}}\n"
+            f'Return format: {{"en": "...", "cn": "...", "tw": "...", "jp": "...", "ko": "..."}}\n'
             f"If you cannot determine a language, set it to null."
         )
         return await self._call_llm(prompt)
@@ -206,7 +206,7 @@ class Translator:
         prompt = (
             f"Translate the Go/Baduk/Weiqi player name '{name}'{country_hint} "
             f"into the following languages. Return ONLY valid JSON.\n\n"
-            f"Return format: {{\"en\": \"...\", \"cn\": \"...\", \"tw\": \"...\", \"jp\": \"...\", \"ko\": \"...\"}}\n"
+            f'Return format: {{"en": "...", "cn": "...", "tw": "...", "jp": "...", "ko": "..."}}\n'
             f"If you cannot determine a language, set it to null."
         )
         result = await self._call_llm(prompt)
@@ -223,7 +223,7 @@ class Translator:
             prompt = (
                 f"Translate the Go/Baduk/Weiqi tournament name '{name}' "
                 f"into the following languages. Return ONLY valid JSON.\n\n"
-                f"Return format: {{\"en\": \"...\", \"cn\": \"...\", \"tw\": \"...\", \"jp\": \"...\", \"ko\": \"...\"}}\n"
+                f'Return format: {{"en": "...", "cn": "...", "tw": "...", "jp": "...", "ko": "..."}}\n'
                 f"If you cannot determine a language, set it to null."
             )
             result = await self._call_llm(prompt)
@@ -248,7 +248,10 @@ class Translator:
         payload = {
             "model": config.LLM_MODEL,
             "messages": [
-                {"role": "system", "content": "You are a Go/Baduk/Weiqi translation assistant. Always return valid JSON only."},
+                {
+                    "role": "system",
+                    "content": "You are a Go/Baduk/Weiqi translation assistant. Always return valid JSON only.",
+                },
                 {"role": "user", "content": prompt},
             ],
             "temperature": 0.1,

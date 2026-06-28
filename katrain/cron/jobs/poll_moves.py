@@ -67,9 +67,11 @@ class PollMovesJob(BaseJob):
         registry = SourceRegistry()
         if config.YIKE_ENABLED:
             from katrain.cron.clients.yike import YikeWeiQiClient
+
             registry.register("yike", YikeWeiQiClient())
         if config.XINGZHEN_ENABLED:
             from katrain.cron.clients.xingzhen import XingZhenClient
+
             registry.register("xingzhen", XingZhenClient())
         return registry
 
@@ -165,7 +167,11 @@ class PollMovesJob(BaseJob):
             repo.create_pending(match.match_id, new_move_nums, priority, new_moves)
             self.logger.info(
                 "New moves for %s: %d -> %d (created %d tasks, priority=%d)",
-                match.match_id, old_count, new_count, len(new_move_nums), priority,
+                match.match_id,
+                old_count,
+                new_count,
+                len(new_move_nums),
+                priority,
             )
 
         # When match transitions to finished, backfill any missing analysis

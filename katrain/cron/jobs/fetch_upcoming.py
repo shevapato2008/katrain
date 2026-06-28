@@ -105,10 +105,7 @@ class FetchUpcomingJob(BaseJob):
                 db.add(UpcomingMatchDB(**event))
 
             db.commit()
-            self.logger.info(
-                "FetchUpcomingJob: replaced %d with %d upcoming events",
-                deleted, len(unique_events)
-            )
+            self.logger.info("FetchUpcomingJob: replaced %d with %d upcoming events", deleted, len(unique_events))
         except Exception:
             db.rollback()
             self.logger.exception("FetchUpcomingJob failed to save events")
@@ -176,16 +173,18 @@ class FetchUpcomingJob(BaseJob):
                         continue
 
                     event_id = f"foxwq_{tournament}_{scheduled_time.strftime('%Y%m%d%H%M')}"
-                    events.append({
-                        "event_id": event_id,
-                        "tournament": tournament,
-                        "round_name": None,
-                        "scheduled_time": scheduled_time,
-                        "player_black": player_black,
-                        "player_white": player_white,
-                        "source": "foxwq",
-                        "source_url": url,
-                    })
+                    events.append(
+                        {
+                            "event_id": event_id,
+                            "tournament": tournament,
+                            "round_name": None,
+                            "scheduled_time": scheduled_time,
+                            "player_black": player_black,
+                            "player_white": player_white,
+                            "source": "foxwq",
+                            "source_url": url,
+                        }
+                    )
                 except (ValueError, TypeError):
                     continue
 
@@ -205,6 +204,7 @@ class FetchUpcomingJob(BaseJob):
         These are matches that have been scheduled but haven't started yet.
         """
         from katrain.cron import config
+
         if not config.YIKE_ENABLED:
             return []
 
@@ -215,9 +215,16 @@ class FetchUpcomingJob(BaseJob):
 
         try:
             # status=1 means "preparing" (准备中), type=0 means professional
-            data = await client._request("GET", "/v1/golives", params={
-                "status": 1, "type": 0, "page": 1, "page_size": 50,
-            })
+            data = await client._request(
+                "GET",
+                "/v1/golives",
+                params={
+                    "status": 1,
+                    "type": 0,
+                    "page": 1,
+                    "page_size": 50,
+                },
+            )
             items = client._extract_data(data)
 
             for raw in items:
@@ -264,16 +271,18 @@ class FetchUpcomingJob(BaseJob):
                         continue
 
                     event_id = f"yike_{game_id}"
-                    events.append({
-                        "event_id": event_id,
-                        "tournament": tournament,
-                        "round_name": None,
-                        "scheduled_time": scheduled_time,
-                        "player_black": player_black,
-                        "player_white": player_white,
-                        "source": "yike",
-                        "source_url": f"https://www.yikeweiqi.com/golive/{game_id}",
-                    })
+                    events.append(
+                        {
+                            "event_id": event_id,
+                            "tournament": tournament,
+                            "round_name": None,
+                            "scheduled_time": scheduled_time,
+                            "player_black": player_black,
+                            "player_white": player_white,
+                            "source": "yike",
+                            "source_url": f"https://www.yikeweiqi.com/golive/{game_id}",
+                        }
+                    )
                 except (ValueError, TypeError, KeyError):
                     continue
 
@@ -362,16 +371,18 @@ class FetchUpcomingJob(BaseJob):
                 player_white = _RANK_RE.sub("", player_white_raw).strip() or None
 
                 event_id = f"yugen_{tournament}_{scheduled_time.strftime('%Y%m%d')}_{player_black_raw}"
-                events.append({
-                    "event_id": event_id,
-                    "tournament": tournament,
-                    "round_name": None,
-                    "scheduled_time": scheduled_time,
-                    "player_black": player_black,
-                    "player_white": player_white,
-                    "source": "yugen",
-                    "source_url": url,
-                })
+                events.append(
+                    {
+                        "event_id": event_id,
+                        "tournament": tournament,
+                        "round_name": None,
+                        "scheduled_time": scheduled_time,
+                        "player_black": player_black,
+                        "player_white": player_white,
+                        "source": "yugen",
+                        "source_url": url,
+                    }
+                )
 
             self.logger.info("Fetched %d upcoming events from Yugen (幽玄の間)", len(events))
 
@@ -438,16 +449,18 @@ class FetchUpcomingJob(BaseJob):
                         player_black, player_white = self._parse_players(players_text)
 
                         event_id = f"nihonkiin_{tournament}_{current_date.strftime('%Y%m%d')}"
-                        events.append({
-                            "event_id": event_id,
-                            "tournament": tournament,
-                            "round_name": None,
-                            "scheduled_time": current_date,
-                            "player_black": player_black,
-                            "player_white": player_white,
-                            "source": "nihonkiin",
-                            "source_url": url,
-                        })
+                        events.append(
+                            {
+                                "event_id": event_id,
+                                "tournament": tournament,
+                                "round_name": None,
+                                "scheduled_time": current_date,
+                                "player_black": player_black,
+                                "player_white": player_white,
+                                "source": "nihonkiin",
+                                "source_url": url,
+                            }
+                        )
 
             self.logger.info("Fetched %d upcoming events from Japan Go Association", len(events))
 

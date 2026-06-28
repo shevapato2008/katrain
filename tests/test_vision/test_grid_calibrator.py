@@ -41,18 +41,18 @@ class TestGridCalibrator:
         img, expected_border, expected_sx, expected_sy = make_grid_image()
         cal = GridCalibrator().calibrate(img)
         assert cal is not None, "Calibration returned None on a clean synthetic grid"
-        assert abs(cal.v_offset - expected_border) < expected_sx * 0.2, (
-            f"v_offset {cal.v_offset:.1f} too far from expected {expected_border:.1f}"
-        )
-        assert abs(cal.h_offset - expected_border) < expected_sy * 0.2, (
-            f"h_offset {cal.h_offset:.1f} too far from expected {expected_border:.1f}"
-        )
-        assert abs(cal.v_spacing - expected_sx) < expected_sx * 0.1, (
-            f"v_spacing {cal.v_spacing:.2f} too far from expected {expected_sx:.2f}"
-        )
-        assert abs(cal.h_spacing - expected_sy) < expected_sy * 0.1, (
-            f"h_spacing {cal.h_spacing:.2f} too far from expected {expected_sy:.2f}"
-        )
+        assert (
+            abs(cal.v_offset - expected_border) < expected_sx * 0.2
+        ), f"v_offset {cal.v_offset:.1f} too far from expected {expected_border:.1f}"
+        assert (
+            abs(cal.h_offset - expected_border) < expected_sy * 0.2
+        ), f"h_offset {cal.h_offset:.1f} too far from expected {expected_border:.1f}"
+        assert (
+            abs(cal.v_spacing - expected_sx) < expected_sx * 0.1
+        ), f"v_spacing {cal.v_spacing:.2f} too far from expected {expected_sx:.2f}"
+        assert (
+            abs(cal.h_spacing - expected_sy) < expected_sy * 0.1
+        ), f"h_spacing {cal.h_spacing:.2f} too far from expected {expected_sy:.2f}"
         assert cal.confidence > 0.5
 
     def test_synthetic_grid_larger_image(self):
@@ -102,9 +102,7 @@ class TestPixelToGridCalibrated:
 
     @pytest.fixture()
     def cal(self) -> GridCalibration:
-        return GridCalibration(
-            h_offset=30.0, h_spacing=32.0, v_offset=30.0, v_spacing=32.0, confidence=0.9
-        )
+        return GridCalibration(h_offset=30.0, h_spacing=32.0, v_offset=30.0, v_spacing=32.0, confidence=0.9)
 
     def test_origin(self, cal: GridCalibration):
         assert pixel_to_grid_calibrated(30, 30, cal) == (0, 0)

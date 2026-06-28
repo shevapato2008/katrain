@@ -52,7 +52,9 @@ class AutomatchRequest(BaseModel):
 
 
 @router.post("/{platform}/login")
-async def platform_login(platform: str, req: PlatformLoginRequest, request: Request, user: User = Depends(get_current_user)):
+async def platform_login(
+    platform: str, req: PlatformLoginRequest, request: Request, user: User = Depends(get_current_user)
+):
     """Login to a Go platform. Tries saved JWT first, then password."""
     from katrain.web.platforms.models import PlatformCredentials
 
@@ -102,7 +104,13 @@ async def platform_status(request: Request, user: User = Depends(get_current_use
 
 
 @router.get("/{platform}/users")
-async def platform_users(platform: str, q: Optional[str] = None, room: Optional[str] = None, request: Request = None, user: User = Depends(get_current_user)):
+async def platform_users(
+    platform: str,
+    q: Optional[str] = None,
+    room: Optional[str] = None,
+    request: Request = None,
+    user: User = Depends(get_current_user),
+):
     """List online users on a platform.
 
     Without `q`: returns seek graph / open challenge users (actively looking for games).
@@ -128,7 +136,9 @@ async def platform_users(platform: str, q: Optional[str] = None, room: Optional[
                 seen.add(key)
                 c.from_user.status = "seeking"
                 users.append(c.from_user)
-    return {"users": [{"user_id": u.user_id, "username": u.username, "rank": u.rank, "status": u.status} for u in users]}
+    return {
+        "users": [{"user_id": u.user_id, "username": u.username, "rank": u.rank, "status": u.status} for u in users]
+    }
 
 
 @router.get("/{platform}/rooms")
@@ -159,7 +169,9 @@ async def platform_challenges(platform: str, request: Request, user: User = Depe
 
 
 @router.post("/{platform}/challenge")
-async def send_challenge(platform: str, req: PlatformChallengeRequest, request: Request, user: User = Depends(get_current_user)):
+async def send_challenge(
+    platform: str, req: PlatformChallengeRequest, request: Request, user: User = Depends(get_current_user)
+):
     """Send a challenge to a user on a platform."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -170,7 +182,9 @@ async def send_challenge(platform: str, req: PlatformChallengeRequest, request: 
 
 
 @router.post("/{platform}/challenge/accept")
-async def accept_challenge(platform: str, req: AcceptChallengeRequest, request: Request, user: User = Depends(get_current_user)):
+async def accept_challenge(
+    platform: str, req: AcceptChallengeRequest, request: Request, user: User = Depends(get_current_user)
+):
     """Accept an incoming challenge."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -182,7 +196,9 @@ async def accept_challenge(platform: str, req: AcceptChallengeRequest, request: 
 
 
 @router.post("/{platform}/challenge/decline")
-async def decline_challenge(platform: str, req: DeclineChallengeRequest, request: Request, user: User = Depends(get_current_user)):
+async def decline_challenge(
+    platform: str, req: DeclineChallengeRequest, request: Request, user: User = Depends(get_current_user)
+):
     """Decline an incoming challenge."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -196,7 +212,9 @@ async def decline_challenge(platform: str, req: DeclineChallengeRequest, request
 
 
 @router.post("/{platform}/automatch/start")
-async def start_automatch(platform: str, req: AutomatchRequest, request: Request, user: User = Depends(get_current_user)):
+async def start_automatch(
+    platform: str, req: AutomatchRequest, request: Request, user: User = Depends(get_current_user)
+):
     """Start automatch on a platform."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)

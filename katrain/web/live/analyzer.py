@@ -82,9 +82,7 @@ class LiveAnalyzer:
         # Cache for match data (to avoid DB lookups for move data)
         self._match_cache: dict[str, LiveMatch] = {}
 
-    def set_on_analysis_complete(
-        self, callback: Callable[[str, int, MoveAnalysis], None]
-    ) -> None:
+    def set_on_analysis_complete(self, callback: Callable[[str, int, MoveAnalysis], None]) -> None:
         """Set callback for when analysis completes.
 
         Args:
@@ -118,11 +116,11 @@ class LiveAnalyzer:
             with SessionLocal() as db:
                 from katrain.web.core.models_db import LiveAnalysisDB, AnalysisStatusEnum
 
-                updated = db.query(LiveAnalysisDB).filter(
-                    LiveAnalysisDB.status == AnalysisStatusEnum.RUNNING.value
-                ).update({
-                    LiveAnalysisDB.status: AnalysisStatusEnum.PENDING.value
-                })
+                updated = (
+                    db.query(LiveAnalysisDB)
+                    .filter(LiveAnalysisDB.status == AnalysisStatusEnum.RUNNING.value)
+                    .update({LiveAnalysisDB.status: AnalysisStatusEnum.PENDING.value})
+                )
 
                 if updated > 0:
                     db.commit()
@@ -259,6 +257,7 @@ class LiveAnalyzer:
                         if db_match and db_match.moves:
                             # Reconstruct minimal match object for analysis
                             from katrain.web.live.models import MatchSource, MatchStatus
+
                             match = LiveMatch(
                                 id=db_match.match_id,
                                 source=MatchSource(db_match.source),
@@ -379,9 +378,9 @@ class LiveAnalyzer:
             return None
 
         # Get game parameters from match data
-        board_size = getattr(match, 'board_size', 19) or 19
-        komi = getattr(match, 'komi', 7.5) or 7.5
-        rules = getattr(match, 'rules', 'chinese') or 'chinese'
+        board_size = getattr(match, "board_size", 19) or 19
+        komi = getattr(match, "komi", 7.5) or 7.5
+        rules = getattr(match, "rules", "chinese") or "chinese"
 
         # Build moves list up to the position
         moves_played = match.moves[:move_number] if match.moves else []
@@ -462,15 +461,17 @@ class LiveAnalyzer:
         top_moves = []
         for mi in move_infos[:10]:  # Top 10 moves
             gtp_move = mi.get("move", "")
-            top_moves.append(TopMove(
-                move=gtp_to_display(gtp_move, board_size),
-                visits=mi.get("visits", 0),
-                winrate=mi.get("winrate", 0.5),
-                score_lead=mi.get("scoreLead", 0.0),
-                prior=mi.get("prior", 0.0),
-                pv=[gtp_to_display(m, board_size) for m in mi.get("pv", [])],
-                psv=mi.get("playSelectionValue", 0.0),  # KataGo's composite ranking metric
-            ))
+            top_moves.append(
+                TopMove(
+                    move=gtp_to_display(gtp_move, board_size),
+                    visits=mi.get("visits", 0),
+                    winrate=mi.get("winrate", 0.5),
+                    score_lead=mi.get("scoreLead", 0.0),
+                    prior=mi.get("prior", 0.0),
+                    pv=[gtp_to_display(m, board_size) for m in mi.get("pv", [])],
+                    psv=mi.get("playSelectionValue", 0.0),  # KataGo's composite ranking metric
+                )
+            )
 
         # Get the actual move played (if this isn't the latest position)
         actual_move = None

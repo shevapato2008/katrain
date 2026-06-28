@@ -71,8 +71,7 @@ class RknnBackend:
             from rknnlite.api import RKNNLite
         except ImportError as exc:
             raise ImportError(
-                "rknn-toolkit-lite2 is required for the RKNN backend. "
-                "Install with: pip install rknn-toolkit-lite2"
+                "rknn-toolkit-lite2 is required for the RKNN backend. " "Install with: pip install rknn-toolkit-lite2"
             ) from exc
 
         logger.info("Loading RKNN model %s (source=%s, imgsz=%d)", model.name, self._meta.get("source"), self.imgsz)

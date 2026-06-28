@@ -2,6 +2,7 @@
 
 Uses the UserGame model (previously used the now-removed Game model).
 """
+
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -32,6 +33,7 @@ class GameRepository:
         session = self.session_factory()
         try:
             import hashlib
+
             sgf_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
             source = "play_human"
 
@@ -104,11 +106,15 @@ class GameRepository:
         """Count completed rated games for a user (for matchmaking prerequisite)."""
         session = self.session_factory()
         try:
-            count = session.query(models_db.UserGame).filter(
-                models_db.UserGame.user_id == user_id,
-                models_db.UserGame.game_type == "rated",
-                models_db.UserGame.result.isnot(None),
-            ).count()
+            count = (
+                session.query(models_db.UserGame)
+                .filter(
+                    models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.game_type == "rated",
+                    models_db.UserGame.result.isnot(None),
+                )
+                .count()
+            )
             return count
         finally:
             session.close()

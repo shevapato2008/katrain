@@ -451,9 +451,9 @@ class Game(BaseGame):
         self.engines = engine
 
         for eng in self.engines.values():
-            if hasattr(eng, 'set_game_id'):
+            if hasattr(eng, "set_game_id"):
                 eng.set_game_id(self.game_id)
-            if user_id and hasattr(eng, 'set_user_id'):
+            if user_id and hasattr(eng, "set_user_id"):
                 eng.set_user_id(user_id)
 
         self.insert_mode = False

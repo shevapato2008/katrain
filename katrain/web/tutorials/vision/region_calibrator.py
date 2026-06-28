@@ -119,8 +119,7 @@ def _detect_borders(gray, h_positions, v_positions, spacing):
     return {"left": left, "right": right, "top": top, "bottom": bottom}
 
 
-def _count_star_matches(gray, h_positions, v_positions, spacing, occupied_set,
-                        col_off, row_off, known_stars):
+def _count_star_matches(gray, h_positions, v_positions, spacing, occupied_set, col_off, row_off, known_stars):
     """Count how many unoccupied intersections match expected star point positions.
 
     Star points appear as small dots (~3-5px) at specific intersections.
@@ -240,8 +239,7 @@ def calibrate_region(gray, h_positions, v_positions, spacing, occupied=None):
 
             # Evidence 2: star point matching
             star_matches = _count_star_matches(
-                gray, h_positions, v_positions, spacing,
-                occupied_set, col_off, row_off, KNOWN_STARS_19
+                gray, h_positions, v_positions, spacing, occupied_set, col_off, row_off, KNOWN_STARS_19
             )
             score += star_matches * 1.5
             if star_matches > 0:
@@ -274,7 +272,12 @@ def calibrate_region(gray, h_positions, v_positions, spacing, occupied=None):
     else:
         confidence = 1.0
 
-    log.info("Region calibration: col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
-             best[0], best[1], confidence, best[3])
+    log.info(
+        "Region calibration: col_start=%d, row_start=%d, confidence=%.2f, evidence=%s",
+        best[0],
+        best[1],
+        confidence,
+        best[3],
+    )
 
     return best[0], best[1], confidence, best[3]

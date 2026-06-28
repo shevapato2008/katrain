@@ -132,9 +132,7 @@ class VisionService:
     def set_viewer_active(self, active: bool) -> None:
         """Tell worker whether MJPEG viewers are connected."""
         if self._worker:
-            self._worker.send_command(
-                WorkerCommand(action=CommandType.SET_VIEWER_ACTIVE, data={"active": active})
-            )
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_VIEWER_ACTIVE, data={"active": active}))
 
     def set_geometry(self, geometry) -> None:
         if self._worker:

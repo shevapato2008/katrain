@@ -115,7 +115,9 @@ def main():
 
             # Layer 2: YOLO bboxes directly on camera frame
             if raw_detections:
-                cam_display = draw_detections_overlay(cam_display, raw_detections, pipeline.config, font_scale=font_scale)
+                cam_display = draw_detections_overlay(
+                    cam_display, raw_detections, pipeline.config, font_scale=font_scale
+                )
 
             if active_result is not None and active_result.confirmed_move:
                 move_text = f"Move: {active_result.confirmed_move.gtp()} ({active_result.confirmed_move.player})"

@@ -68,13 +68,13 @@ def compute_viewport(payload: Dict) -> Optional[Dict]:
     # Half board: two adjacent quadrants — use rectangular viewport
     if quadrant_count == 2:
         if has_tl and has_tr and not has_bl and not has_br:
-            return {"col": 0, "row": 0, "cols": 19, "rows": 10}   # top half
+            return {"col": 0, "row": 0, "cols": 19, "rows": 10}  # top half
         if has_bl and has_br and not has_tl and not has_tr:
-            return {"col": 0, "row": 9, "cols": 19, "rows": 10}   # bottom half
+            return {"col": 0, "row": 9, "cols": 19, "rows": 10}  # bottom half
         if has_tl and has_bl and not has_tr and not has_br:
-            return {"col": 0, "row": 0, "cols": 10, "rows": 19}   # left half
+            return {"col": 0, "row": 0, "cols": 10, "rows": 19}  # left half
         if has_tr and has_br and not has_tl and not has_bl:
-            return {"col": 9, "row": 0, "cols": 10, "rows": 19}   # right half
+            return {"col": 9, "row": 0, "cols": 10, "rows": 19}  # right half
 
     # 3 or 4 quadrants, or diagonal: full board
     return None

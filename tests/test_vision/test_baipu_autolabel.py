@@ -259,6 +259,20 @@ def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
     assert "legacy_estimate" in (tmp_path / "v" / "shifts.csv").read_text()
 
 
+def test_process_game_idempotent_rerun(tmp_path):
+    # --watch re-runs process_game each tick; it must be idempotent (no dups, no errors) so
+    # labels can be regenerated incrementally as 摆谱 adds frames.
+    frames = [
+        {"file": f"frame_00{i}.jpg", "applied_move_index": i, "led_point": None, "geometry_correction": _corrected()}
+        for i in range(2)
+    ]
+    gd = _make_game(tmp_path, "gi", frames)
+    s1 = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl")
+    s2 = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl")  # one watch tick later
+    assert s1 == s2
+    assert sorted(p.name for p in (tmp_path / "lbl").glob("*.txt")) == ["gi_frame_000.txt", "gi_frame_001.txt"]
+
+
 def test_outer_corner_source_uses_M_and_flags_quality(tmp_path, monkeypatch):
     # P12 Task 7: source="outer_corner" (no-LED auto mode) consumes its per-frame M directly
     # (no estimate_global_shift) and is tagged distinctly to reflect coarser precision.

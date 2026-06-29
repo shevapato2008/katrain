@@ -407,23 +407,53 @@ def main():
         action="store_true",
         help="export frozen/legacy frames even when the game drifted (default: isolate them)",
     )
+    ap.add_argument(
+        "--watch",
+        type=float,
+        nargs="?",
+        const=3.0,
+        default=None,
+        help="Incremental mode: re-label every N seconds (default 3) as new frames appear during "
+        "摆谱 — run in a 2nd terminal alongside the capture server. Ctrl-C to stop. process_game "
+        "is idempotent, so each tick re-labels every frame captured so far.",
+    )
     args = ap.parse_args()
-    total = {}
-    for gd in args.game_dir:
-        s = process_game(
-            gd,
-            args.out_images,
-            args.out_labels,
-            args.verify_dir,
-            dedup_per_move=not args.no_dedup,
-            stone_frac=args.stone_frac,
-            led_frac=args.led_frac,
-            allow_legacy_drift=args.allow_legacy_drift,
-        )
-        print(f"{gd}: {s}")
-        for k, v in s.items():
-            total[k] = total.get(k, 0) + v
-    print(f"TOTAL: {total}")
+
+    def _label_all():
+        total = {}
+        for gd in args.game_dir:
+            try:
+                s = process_game(
+                    gd,
+                    args.out_images,
+                    args.out_labels,
+                    args.verify_dir,
+                    dedup_per_move=not args.no_dedup,
+                    stone_frac=args.stone_frac,
+                    led_frac=args.led_frac,
+                    allow_legacy_drift=args.allow_legacy_drift,
+                )
+            except FileNotFoundError as exc:
+                print(f"{gd}: waiting for capture ({exc})")  # game dir/manifest not written yet
+                continue
+            print(f"{gd}: {s}")
+            for k, v in s.items():
+                total[k] = total.get(k, 0) + v
+        print(f"TOTAL: {total}")
+        return total
+
+    if args.watch:
+        import time
+
+        print(f"[watch] re-labeling every {args.watch:.0f}s — Ctrl-C to stop")
+        try:
+            while True:
+                _label_all()
+                time.sleep(args.watch)
+        except KeyboardInterrupt:
+            print("\n[watch] stopped")
+    else:
+        _label_all()
 
 
 if __name__ == "__main__":

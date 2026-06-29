@@ -168,6 +168,7 @@ def refine_stone_box(
     max_off_frac: float = 0.45,
     pad_frac: float = 1.10,
     size_clip: tuple[float, float] = (0.6, 1.2),
+    gray=None,
 ):
     """Find the actual stone disc near the expected point (gx, gy) and return a tight
     absolute ``(cx, cy, w, h)`` on the stone's TRUE center, or ``None``.
@@ -178,9 +179,11 @@ def refine_stone_box(
     ``None`` (caller keeps the intersection-centered box) when no disc is confidently found
     within ``max_off_frac*spacing`` of (gx, gy) — this rejects a neighbour's disc. ``color``
     ('B'/'W') filters by interior polarity vs the patch median, so a black box can't lock
-    onto a white neighbour and vice-versa.
+    onto a white neighbour and vice-versa. Pass ``gray`` (precomputed once per frame) to avoid
+    re-converting the whole image on every stone.
     """
-    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
+    if gray is None:
+        gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
     r = max(6, int(0.45 * spacing))
     half = int(0.7 * spacing)
     h_img, w_img = gray.shape[:2]
@@ -310,6 +313,8 @@ def frame_boxes(
     stone_side = float(np.clip(stone_frac * spacing, 40.0, 70.0))
     led_side = float(np.clip(led_frac * spacing, 16.0, 36.0))
     dx, dy = shift
+    # Convert to gray ONCE per frame (not once per stone) — refine_stone_box reuses it.
+    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY) if (refine and warped_bgr is not None) else None
     boxes: list[Box] = []
     for r in range(19):
         for c in range(19):
@@ -321,7 +326,7 @@ def frame_boxes(
             refined = None
             if refine and warped_bgr is not None:
                 # search around the drift-corrected expected point; lock onto the TRUE disc.
-                refined = refine_stone_box(warped_bgr, gx + dx, gy + dy, v, spacing)
+                refined = refine_stone_box(warped_bgr, gx + dx, gy + dy, v, spacing, gray=gray)
             if refined is not None:
                 cx, cy, w, h = _clip_box(*refined, img_w, img_h)
             else:
@@ -362,7 +367,8 @@ def process_game(
     led_frac=0.45,
     allow_legacy_drift=False,
     margin_cells=1.0,
-    refine_boxes=False,
+    refine_boxes=False,  # NOTE: the CLI (--refine-boxes) defaults this to True; the function default
+    # stays False so programmatic callers / existing golden tests keep intersection-centered labels.
 ):
     game_dir = Path(game_dir)
     out_images, out_labels = Path(out_images), Path(out_labels)

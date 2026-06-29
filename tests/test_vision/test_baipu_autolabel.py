@@ -512,3 +512,16 @@ def test_process_game_refine_boxes_runs(tmp_path):
     )
     stats = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", refine_boxes=True)
     assert stats["written"] >= 1
+
+
+def test_refine_stone_box_accepts_precomputed_gray():
+    # Review #3: gray is hoisted to once per frame and passed in; result must match computing it
+    # internally (and not error on the new kwarg).
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx + 14), int(gy - 9)), int(0.45 * spacing), (20, 20, 20), -1)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    out_g = bal.refine_stone_box(img, gx, gy, "B", spacing, gray=gray)
+    out_n = bal.refine_stone_box(img, gx, gy, "B", spacing)
+    assert out_g is not None and out_g == out_n

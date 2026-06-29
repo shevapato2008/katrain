@@ -393,9 +393,24 @@ def process_game(
     return stats
 
 
+def _latest_game_dir(root):
+    """Most-recently-updated ``<root>/*/`` that contains a manifest.json, or None."""
+    root = Path(root).expanduser()
+    cands = [p.parent for p in root.glob("*/manifest.json")] if root.exists() else []
+    if not cands:
+        return None
+    return max(cands, key=lambda d: (d / "manifest.json").stat().st_mtime)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Auto-label baipu captures for 4-class YOLO (warped space)")
-    ap.add_argument("--game-dir", action="append", required=True, help="baipu capture dir (repeatable)")
+    ap.add_argument("--game-dir", action="append", help="baipu capture dir (repeatable)")
+    ap.add_argument(
+        "--latest",
+        default=None,
+        help="Watch the most-recently-updated game dir under this captures ROOT instead of "
+        "--game-dir; re-resolved each tick so it follows the active 摆谱 session (no game_id needed).",
+    )
     ap.add_argument("--out-images", required=True)
     ap.add_argument("--out-labels", required=True)
     ap.add_argument("--verify-dir", default=None)
@@ -418,10 +433,22 @@ def main():
         "is idempotent, so each tick re-labels every frame captured so far.",
     )
     args = ap.parse_args()
+    if not args.game_dir and not args.latest:
+        ap.error("provide --game-dir or --latest")
+
+    def _resolve_dirs():
+        if args.latest:
+            d = _latest_game_dir(args.latest)
+            return [str(d)] if d else []
+        return args.game_dir
 
     def _label_all():
+        dirs = _resolve_dirs()
+        if not dirs:
+            print(f"[waiting] no game dir with a manifest yet under {args.latest}")
+            return {}
         total = {}
-        for gd in args.game_dir:
+        for gd in dirs:
             try:
                 s = process_game(
                     gd,

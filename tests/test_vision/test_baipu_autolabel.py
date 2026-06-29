@@ -259,6 +259,22 @@ def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
     assert "legacy_estimate" in (tmp_path / "v" / "shifts.csv").read_text()
 
 
+def test_latest_game_dir_picks_newest(tmp_path):
+    import os as _os
+
+    from katrain.vision.tools.baipu_autolabel import _latest_game_dir
+
+    root = tmp_path / "caps"
+    for gid, mtime in (("g1", 1000), ("g2", 2000)):
+        (root / gid).mkdir(parents=True)
+        man = root / gid / "manifest.json"
+        man.write_text("{}")
+        _os.utime(man, (mtime, mtime))
+    assert _latest_game_dir(root).name == "g2"
+    assert _latest_game_dir(tmp_path / "nonexistent") is None
+    assert _latest_game_dir(tmp_path / "caps_empty") is None  # missing root -> None
+
+
 def test_process_game_idempotent_rerun(tmp_path):
     # --watch re-runs process_game each tick; it must be idempotent (no dups, no errors) so
     # labels can be regenerated incrementally as 摆谱 adds frames.

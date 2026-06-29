@@ -302,8 +302,10 @@ def frame_boxes(
     led_frac: float = 0.45,
     img_w: int = 950,
     img_h: int = 950,
+    warped_bgr=None,
+    refine: bool = False,
 ):
-    # Stones ~object-tight (deploy snaps on center; box extent is training-localization only).
+    # Stones ~object-tight (deploy assigns on center; box extent is training-localization only).
     # LEDs tight: a background-dominated box destroys small-target recall (the success metric).
     stone_side = float(np.clip(stone_frac * spacing, 40.0, 70.0))
     led_side = float(np.clip(led_frac * spacing, 16.0, 36.0))
@@ -316,7 +318,14 @@ def frame_boxes(
                 continue
             gx, gy = grid_point(r, c, xs, ys)
             cid = NAME_TO_ID["black"] if v == "B" else NAME_TO_ID["white"]
-            cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
+            refined = None
+            if refine and warped_bgr is not None:
+                # search around the drift-corrected expected point; lock onto the TRUE disc.
+                refined = refine_stone_box(warped_bgr, gx + dx, gy + dy, v, spacing)
+            if refined is not None:
+                cx, cy, w, h = _clip_box(*refined, img_w, img_h)
+            else:
+                cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
             if w > 0 and h > 0:  # drop stones that drifted entirely off-frame (not visible -> no label)
                 boxes.append(Box(cid, cx, cy, w, h))
     if led_point is not None:
@@ -353,6 +362,7 @@ def process_game(
     led_frac=0.45,
     allow_legacy_drift=False,
     margin_cells=1.0,
+    refine_boxes=False,
 ):
     game_dir = Path(game_dir)
     out_images, out_labels = Path(out_images), Path(out_labels)
@@ -448,6 +458,8 @@ def process_game(
             led_frac=led_frac,
             img_w=canvas,
             img_h=canvas,
+            warped_bgr=warped,
+            refine=refine_boxes,
         )
 
         stem = f"{gid}_{Path(fr['file']).stem}"
@@ -503,6 +515,13 @@ def main():
         "aren't clipped in half. Default 1.0; 0 = no margin (old behaviour).",
     )
     ap.add_argument(
+        "--refine-boxes",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="blob-refine each stone box onto the TRUE detected disc (two-step labeling). "
+        "Falls back to the grid intersection when no disc is found. --no-refine-boxes to disable.",
+    )
+    ap.add_argument(
         "--allow-legacy-drift",
         action="store_true",
         help="export frozen/legacy frames even when the game drifted (default: isolate them)",
@@ -545,6 +564,7 @@ def main():
                     led_frac=args.led_frac,
                     allow_legacy_drift=args.allow_legacy_drift,
                     margin_cells=args.margin_cells,
+                    refine_boxes=args.refine_boxes,
                 )
             except FileNotFoundError as exc:
                 print(f"{gd}: waiting for capture ({exc})")  # game dir/manifest not written yet

@@ -470,3 +470,45 @@ def test_refine_stone_box_rejects_color_mismatch():
     img = _board_bg(128)
     cv2.circle(img, (int(gx), int(gy)), int(0.45 * spacing), (240, 240, 240), -1)  # WHITE disc
     assert bal.refine_stone_box(img, gx, gy, "B", spacing) is None  # asked for BLACK -> polarity reject
+
+
+def test_frame_boxes_refine_moves_stone_to_true_center():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx + 14), int(gy - 9)), int(0.45 * spacing), (20, 20, 20), -1)
+    board = [[None] * 19 for _ in range(19)]
+    board[5][5] = "B"
+    boxes = bal.frame_boxes(board, None, SYNTH_XS, SYNTH_YS, (0.0, 0.0), spacing, warped_bgr=img, refine=True)
+    stone = [b for b in boxes if b.class_id == bal.NAME_TO_ID["black"]][0]
+    assert abs(stone.cx - (gx + 14)) <= 5 and abs(stone.cy - (gy - 9)) <= 5  # true center, not (gx,gy)
+
+
+def test_frame_boxes_refine_falls_back_to_intersection_when_no_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    board = [[None] * 19 for _ in range(19)]
+    board[5][5] = "B"
+    boxes = bal.frame_boxes(
+        board, None, SYNTH_XS, SYNTH_YS, (0.0, 0.0), spacing, warped_bgr=_board_bg(128), refine=True
+    )
+    stone = [b for b in boxes if b.class_id == bal.NAME_TO_ID["black"]][0]
+    assert abs(stone.cx - gx) <= 1 and abs(stone.cy - gy) <= 1  # fell back to the grid intersection
+
+
+def test_process_game_refine_boxes_runs(tmp_path):
+    # blank frames -> refine finds no disc -> falls back, no crash. Corrected frame so it isn't skipped.
+    gd = _make_game(
+        tmp_path,
+        "gr",
+        [
+            {
+                "file": "frame_000.jpg",
+                "applied_move_index": 0,
+                "led_point": {"row": 3, "col": 3, "color": "black"},
+                "geometry_correction": _corrected(),
+            }
+        ],
+    )
+    stats = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", refine_boxes=True)
+    assert stats["written"] >= 1

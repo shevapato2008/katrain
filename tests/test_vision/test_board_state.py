@@ -92,3 +92,39 @@ class TestLedGuard:
         ex = BoardStateExtractor()
         board = ex.detections_to_board([self._det(2, 2, 1)], img_w=950, img_h=950)
         assert board[0][0] == WHITE
+
+
+class TestOccupancyAwareAssignment:
+    def _det_at_cell(self, row, col, class_id, img, cfg, conf=0.9, off_px=(0.0, 0.0)):
+        from katrain.vision.coordinates import grid_to_pixel
+
+        px, py = grid_to_pixel(col, row, img, img, cfg)  # grid_to_pixel takes (pos_x=col, pos_y=row)
+        return Detection(x_center=px + off_px[0], y_center=py + off_px[1], class_id=class_id, confidence=conf)
+
+    def test_collision_reassigns_to_neighbor_not_dropped(self, cfg):
+        ex = BoardStateExtractor()
+        img = 950
+        spacing_px = img / 18.0
+        a = self._det_at_cell(5, 5, 0, img, cfg)  # exactly on (5,5)
+        b = self._det_at_cell(5, 5, 0, img, cfg, off_px=(0.42 * spacing_px, 0.0))  # rounds to (5,5), leans to col6
+        board = ex.detections_to_board([a, b], img_w=img, img_h=img, occupancy_aware=True)
+        assert board[5][5] == BLACK
+        assert board[5][6] == BLACK  # loser reassigned to nearest empty neighbor, not silently dropped
+        assert int((board != EMPTY).sum()) == 2
+
+    def test_backward_compat_default_drops_collision(self, cfg):
+        ex = BoardStateExtractor()
+        img = 950
+        spacing_px = img / 18.0
+        a = self._det_at_cell(5, 5, 0, img, cfg)
+        b = self._det_at_cell(5, 5, 0, img, cfg, off_px=(0.42 * spacing_px, 0.0))
+        board = ex.detections_to_board([a, b], img_w=img, img_h=img)  # default occupancy_aware=False
+        assert int((board != EMPTY).sum()) == 1  # legacy: one wins, the other is dropped
+
+    def test_occupancy_ignores_led(self, cfg):
+        ex = BoardStateExtractor()
+        img = 950
+        dets = [self._det_at_cell(5, 5, 0, img, cfg), self._det_at_cell(7, 7, 2, img, cfg)]  # class 2 = led_red
+        board = ex.detections_to_board(dets, img_w=img, img_h=img, occupancy_aware=True)
+        assert board[5][5] == BLACK
+        assert int((board != EMPTY).sum()) == 1  # LED not placed

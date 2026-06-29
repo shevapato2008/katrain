@@ -1,18 +1,46 @@
 """
 Combines stone detection results with coordinate mapping to produce a 19x19 board state.
-Uses confidence-based conflict resolution when multiple detections map to the same grid point.
+
+Two assignment modes:
+- legacy (occupancy_aware=False): each detection independently round()s to the nearest
+  intersection; same-cell collisions resolved by highest confidence (loser dropped).
+- occupancy-aware (occupancy_aware=True): detections are assigned greedily to the nearest
+  EMPTY intersection (by sub-cell distance), so a collided detection is reassigned to its
+  nearest empty neighbor instead of being silently lost. This is the two-step design's
+  step 2; the temporal "one new stone on an empty point" constraint lives in MoveDetector.
 """
+
+import math
 
 import numpy as np
 
 from katrain.vision.classes import STONE_CLASS_IDS
 from katrain.vision.config import BoardConfig
-from katrain.vision.coordinates import pixel_to_physical, physical_to_grid
+from katrain.vision.coordinates import continuous_grid_pos, physical_to_grid, pixel_to_physical
 from katrain.vision.stone_detector import Detection
 
 EMPTY = 0
 BLACK = 1
 WHITE = 2
+
+
+def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
+    """Empty cell nearest the continuous position (fy=row, fx=col), searching a
+    (2*max_r+1)^2 box around the rounded cell. None if every candidate is occupied."""
+    gs = board.shape[0]
+    cy = max(0, min(gs - 1, int(round(fy))))
+    cx = max(0, min(gs - 1, int(round(fx))))
+    best = None
+    best_d = None
+    for dy in range(-max_r, max_r + 1):
+        for dx in range(-max_r, max_r + 1):
+            ny, nx = cy + dy, cx + dx
+            if 0 <= ny < gs and 0 <= nx < gs and board[ny][nx] == EMPTY:
+                d = (ny - fy) ** 2 + (nx - fx) ** 2
+                if best is None or d < best_d:
+                    best_d = d
+                    best = (ny, nx)
+    return best
 
 
 class BoardStateExtractor:
@@ -21,12 +49,16 @@ class BoardStateExtractor:
     def __init__(self, config: BoardConfig | None = None):
         self.config = config or BoardConfig()
 
-    def detections_to_board(self, detections: list[Detection], img_w: int, img_h: int) -> np.ndarray:
+    def detections_to_board(
+        self, detections: list[Detection], img_w: int, img_h: int, occupancy_aware: bool = False
+    ) -> np.ndarray:
         """Convert detected stones to a grid_size x grid_size board matrix."""
         gs = self.config.grid_size
         board = np.zeros((gs, gs), dtype=int)
-        confidence = np.zeros((gs, gs), dtype=float)
+        if occupancy_aware:
+            return self._assign_occupancy_aware(board, detections, img_w, img_h)
 
+        confidence = np.zeros((gs, gs), dtype=float)
         for det in detections:
             if det.class_id not in STONE_CLASS_IDS:
                 continue  # LED guidance classes (led_red/led_green) are not board stones
@@ -35,6 +67,28 @@ class BoardStateExtractor:
             if det.confidence > confidence[pos_y][pos_x]:
                 board[pos_y][pos_x] = det.class_id + 1  # 0→BLACK(1), 1→WHITE(2)
                 confidence[pos_y][pos_x] = det.confidence
+        return board
+
+    def _assign_occupancy_aware(
+        self, board: np.ndarray, detections: list[Detection], img_w: int, img_h: int
+    ) -> np.ndarray:
+        items = []
+        for det in detections:
+            if det.class_id not in STONE_CLASS_IDS:
+                continue
+            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+            fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
+            residual = math.hypot(fx - round(fx), fy - round(fy))
+            items.append((residual, -det.confidence, det, fx, fy))
+        # cleanest-on-a-cell first, then highest confidence: they claim their intersections before
+        # ambiguous/colliding detections, which then spill to the nearest empty neighbor.
+        items.sort(key=lambda t: (t[0], t[1]))
+        for _, _, det, fx, fy in items:
+            cell = _nearest_empty_cell(board, fy, fx, max_r=1)
+            if cell is None:
+                continue  # no empty cell within 1 ring -> cannot place a second stone on one point
+            ny, nx = cell
+            board[ny][nx] = det.class_id + 1
         return board
 
     @staticmethod

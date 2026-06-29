@@ -28,6 +28,15 @@ def physical_to_grid(x_mm: float, y_mm: float, config: BoardConfig) -> tuple[int
     return pos_x, pos_y
 
 
+def continuous_grid_pos(x_mm: float, y_mm: float, config: BoardConfig) -> tuple[float, float]:
+    """Unrounded grid coordinates (fx, fy). ``physical_to_grid`` is ``round()`` + clamp of this.
+    Used by occupancy-aware assignment, which needs the sub-cell position, not just the cell."""
+    gs = config.grid_size - 1
+    fx = (x_mm - config.border_width_mm) / config.board_width_mm * gs
+    fy = (y_mm - config.border_length_mm) / config.board_length_mm * gs
+    return fx, fy
+
+
 def grid_to_physical(pos_x: int, pos_y: int, config: BoardConfig) -> tuple[float, float]:
     """Convert grid position to physical coordinates (mm). Used for robot arm targeting."""
     gs = config.grid_size - 1

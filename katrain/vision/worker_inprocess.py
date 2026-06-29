@@ -142,7 +142,9 @@ class InProcessAdapter:
                     board_detected = True
                     h, w = warped.shape[:2]
                     detections = self._detector.detect(warped)
-                    observed_board = self._state_extractor.detections_to_board(detections, img_w=w, img_h=h)
+                    observed_board = self._state_extractor.detections_to_board(
+                        detections, img_w=w, img_h=h, occupancy_aware=True
+                    )
 
                     if detections:
                         mean_confidence = sum(d.confidence for d in detections) / len(detections)

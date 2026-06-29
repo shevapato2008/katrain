@@ -375,3 +375,18 @@ uv run python -m katrain.vision.tools.live_demo \
 3. **Reduce epochs to 6-8** with patience=3 to avoid overfitting on small datasets
 4. **Consider yolo11m as a middle ground** - 20M params may offer better balance between generalization and inference speed
 5. **Increase data augmentation** - perspective transforms, lighting variation, and background diversity to better match real conditions
+
+## Two-step recognition: true-position detection → occupancy-aware assignment
+
+The detector reports each stone's **true visible position** (boxes hug the real stone, via
+`baipu_autolabel --refine-boxes`, on by default). Deployment then maps detections to the board
+in a **separate** step: `BoardStateExtractor.detections_to_board(..., occupancy_aware=True)`
+assigns each detection to the nearest **empty** intersection by sub-cell distance, reassigning a
+collided detection to its nearest empty neighbour instead of silently dropping it. The temporal
+"one new stone, on a previously-empty point" rule lives in `MoveDetector.detect_new_move`.
+
+**Train/serve margin caveat (reconcile before production training):** `baipu_autolabel` warps
+training images with a 1-cell margin (`--margin-cells 1.0`), but `BoardConfig.border_*_mm == 0`
+and the live warp currently uses no margin. The CNN detects the stone wherever it appears, so this
+is not fatal, but for best train/serve match keep the live warp's margin and `border_*_mm`
+consistent with the training margin. Tracked as a residual risk, not fixed in this addendum.

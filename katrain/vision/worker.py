@@ -226,7 +226,9 @@ class _VisionWorkerLoop:
                         }
 
                     # Board state + move detection
-                    observed_board = self._state_extractor.detections_to_board(detections, img_w=w, img_h=h)
+                    observed_board = self._state_extractor.detections_to_board(
+                        detections, img_w=w, img_h=h, occupancy_aware=True
+                    )
 
                     # Temporal smoothing: require 2-frame agreement per grid position
                     if self._prev_observed_board is not None and self._last_stable_board is not None:

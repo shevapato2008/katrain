@@ -83,7 +83,7 @@ class DetectionPipeline:
         detections = self.detector.detect(warped)
 
         # Step 4: Convert to board state (with conflict resolution)
-        board = self.state_extractor.detections_to_board(detections, img_w=w, img_h=h)
+        board = self.state_extractor.detections_to_board(detections, img_w=w, img_h=h, occupancy_aware=True)
 
         # Step 5: Check for confirmed new move
         confirmed_move = None

@@ -259,6 +259,25 @@ def test_legacy_no_field_falls_back_with_quality_flag(tmp_path):
     assert "legacy_estimate" in (tmp_path / "v" / "shifts.csv").read_text()
 
 
+def test_margin_prevents_corner_stone_clipping(tmp_path):
+    # A black stone at corner (0,0): with no margin its box is clipped to ~half width; with a
+    # 1-cell margin the warped canvas grows and the box is full (edge-recall fix).
+    sgf = "(;SZ[19];B[aa])"  # SGF 'aa' = row 0, col 0
+    fr = {"file": "frame_000.jpg", "applied_move_index": 0, "led_point": None, "geometry_correction": _corrected()}
+    gd0 = _make_game(tmp_path, "g0", [fr], sgf=sgf)
+    bal.process_game(gd0, tmp_path / "i0", tmp_path / "l0", margin_cells=0.0)
+    img0 = cv2.imread(str(tmp_path / "i0" / "g0_frame_000.jpg"))
+    w0 = float((tmp_path / "l0" / "g0_frame_000.txt").read_text().split()[3]) * img0.shape[1]
+
+    gd1 = _make_game(tmp_path, "g1", [fr], sgf=sgf)
+    bal.process_game(gd1, tmp_path / "i1", tmp_path / "l1", margin_cells=1.0)
+    img1 = cv2.imread(str(tmp_path / "i1" / "g1_frame_000.jpg"))
+    w1 = float((tmp_path / "l1" / "g1_frame_000.txt").read_text().split()[3]) * img1.shape[1]
+
+    assert img1.shape[0] > img0.shape[0]  # canvas grew by 2*pad
+    assert w1 > 1.7 * w0  # corner box went from half (clipped) to full
+
+
 def test_latest_game_dir_picks_newest(tmp_path):
     import os as _os
 

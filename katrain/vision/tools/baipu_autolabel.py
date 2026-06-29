@@ -61,8 +61,15 @@ def load_capture(game_dir: Path) -> Capture:
     )
 
 
-def warp_frame(frame_bgr: np.ndarray, M: np.ndarray, out_size: int) -> np.ndarray:
-    """Rectify a raw camera frame to the out_size square board (deployment space)."""
+def warp_frame(frame_bgr: np.ndarray, M: np.ndarray, out_size: int, margin_px: int = 0) -> np.ndarray:
+    """Rectify a raw camera frame to the out_size square board. ``margin_px`` adds a border
+    AROUND the 19x19 grid so edge/corner stones (centered on the outermost lines) stay fully
+    inside the frame instead of being clipped in half — canvas = out_size + 2*margin_px."""
+    M = np.asarray(M, np.float64)
+    if margin_px:
+        T = np.array([[1.0, 0.0, margin_px], [0.0, 1.0, margin_px], [0.0, 0.0, 1.0]], np.float64)
+        size = out_size + 2 * margin_px
+        return cv2.warpPerspective(frame_bgr, T @ M, (size, size))
     return cv2.warpPerspective(frame_bgr, M, (out_size, out_size))
 
 
@@ -275,6 +282,7 @@ def process_game(
     stone_frac=1.05,
     led_frac=0.45,
     allow_legacy_drift=False,
+    margin_cells=1.0,
 ):
     game_dir = Path(game_dir)
     out_images, out_labels = Path(out_images), Path(out_labels)
@@ -287,6 +295,10 @@ def process_game(
 
     cap = load_capture(game_dir)
     spacing = mean_grid_spacing(cap.xs, cap.ys)
+    # Margin AROUND the grid so edge/corner stones are not clipped in half (see Q: edge recall).
+    pad = int(round(margin_cells * spacing))
+    canvas = cap.out_size + 2 * pad
+    xs_p, ys_p = cap.xs + pad, cap.ys + pad
     stats = {
         "frames": 0,
         "written": 0,
@@ -341,7 +353,7 @@ def process_game(
             continue
 
         board = reconstruct_board(cap.steps, ami)
-        warped = warp_frame(img, M_use, cap.out_size)
+        warped = warp_frame(img, M_use, cap.out_size, margin_px=pad)
         if use_fiducial:
             # M_f already maps stones/LEDs onto the canonical grid -> zero residual shift.
             shift = (0.0, 0.0)
@@ -350,7 +362,7 @@ def process_game(
             led_found = fallback = False
         else:
             rep = estimate_global_shift(
-                warped, board, fr.get("led_point"), cap.xs, cap.ys, spacing, prev_shift=last_shift
+                warped, board, fr.get("led_point"), xs_p, ys_p, spacing, prev_shift=last_shift
             )
             last_shift = (rep.dx, rep.dy)  # next legacy frame inherits this if it has no anchors
             shift = (rep.dx, rep.dy)
@@ -362,19 +374,19 @@ def process_game(
         boxes = frame_boxes(
             board,
             fr.get("led_point"),
-            cap.xs,
-            cap.ys,
+            xs_p,
+            ys_p,
             shift,
             spacing,
             stone_frac=stone_frac,
             led_frac=led_frac,
-            img_w=cap.out_size,
-            img_h=cap.out_size,
+            img_w=canvas,
+            img_h=canvas,
         )
 
         stem = f"{gid}_{Path(fr['file']).stem}"
         cv2.imwrite(str(out_images / f"{stem}.jpg"), warped)
-        lines = boxes_to_yolo_lines(boxes, cap.out_size, cap.out_size)
+        lines = boxes_to_yolo_lines(boxes, canvas, canvas)
         (out_labels / f"{stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
         if verify_dir:
             cv2.imwrite(str(verify_dir / f"{stem}.jpg"), draw_overlay(warped, boxes))
@@ -418,6 +430,13 @@ def main():
     ap.add_argument("--stone-frac", type=float, default=1.05, help="stone box side as a fraction of grid spacing")
     ap.add_argument("--led-frac", type=float, default=0.45, help="LED box side as a fraction of grid spacing (tight)")
     ap.add_argument(
+        "--margin-cells",
+        type=float,
+        default=1.0,
+        help="blank border around the grid (in cells) in the warped image so edge/corner stones "
+        "aren't clipped in half. Default 1.0; 0 = no margin (old behaviour).",
+    )
+    ap.add_argument(
         "--allow-legacy-drift",
         action="store_true",
         help="export frozen/legacy frames even when the game drifted (default: isolate them)",
@@ -459,6 +478,7 @@ def main():
                     stone_frac=args.stone_frac,
                     led_frac=args.led_frac,
                     allow_legacy_drift=args.allow_legacy_drift,
+                    margin_cells=args.margin_cells,
                 )
             except FileNotFoundError as exc:
                 print(f"{gd}: waiting for capture ({exc})")  # game dir/manifest not written yet

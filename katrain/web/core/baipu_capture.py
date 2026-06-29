@@ -288,7 +288,11 @@ def _write_warp_artifacts(game_dir: Path, frame_file: str, M_used, geometry, fid
         return {}
     stem = Path(frame_file).stem
     out_size = int(geometry.out_size)
-    warped = cv2.warpPerspective(raw, np.asarray(M_used, np.float64), (out_size, out_size))
+    # 1-cell margin around the grid so edge/corner stones aren't clipped — matches the training
+    # warp in baipu_autolabel (--margin-cells default 1.0). Live preview = what training sees.
+    pad = int(round((out_size - 1) / 18.0))
+    T = np.array([[1.0, 0.0, pad], [0.0, 1.0, pad], [0.0, 0.0, 1.0]], np.float64)
+    warped = cv2.warpPerspective(raw, T @ np.asarray(M_used, np.float64), (out_size + 2 * pad, out_size + 2 * pad))
     (game_dir / "warped").mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(game_dir / f"warped/{stem}.jpg"), warped)
     (game_dir / "grid_overlay").mkdir(parents=True, exist_ok=True)

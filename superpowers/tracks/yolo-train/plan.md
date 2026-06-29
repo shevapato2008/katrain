@@ -1380,3 +1380,703 @@ git commit -m "docs(vision): document 4-class model, baipu auto-labeling, and tr
 - Single game → val optimistic. Plan recommends a second capture session before production trust (out of this plan's scope: "first game runs through end-to-end").
 - **Runtime LED/stone co-location (defense-in-depth, not implemented):** the Task 2 guard drops `led_red`/`led_green` detections so they never write phantom stones, which is sufficient for the stated goal. A *separate* failure — the model emitting a spurious `black`/`white` box at the lit LED's intersection — is mitigated by the 4-class training itself (the model learns LEDs are their own class), by class-agnostic NMS collapsing co-located boxes, and by the fact that the lit LED sits on the **next** move's currently-**empty** intersection. Active "suppress stones near an LED grid point" logic was deliberately **not** added: it risks dropping a genuine stone if a future capture ever lights an LED adjacent to a played stone. Revisit only if field data shows phantom stones at LED sites.
 - **Multi-game splitting:** `temporal_split_dataset` sorts by filename and is **single-game only**; pooling several games needs session-aware holdout (train on game A, val on game B) — flagged in Task 7/Task 9, not built here.
+
+---
+
+# Addendum P-TwoStep: True-Position Labels (blob refine) + Occupancy-Aware Assignment
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement Tasks 11–14 task-by-task. Steps use checkbox (`- [ ]`) syntax. This addendum EXTENDS the plan above; all Global Constraints still apply.
+
+**Goal:** Implement the two-step recognition design the user asked for — (1) the detector reports each stone's TRUE visible position (labels hug the real stone, not the grid intersection), and (2) deployment maps each detection to the nearest **empty** intersection with an occupancy-aware assignment instead of an independent `round()` that silently drops collisions.
+
+**Why this reverses earlier guidance:** the original plan kept stone boxes centered on the grid intersection because deployment did a naive per-detection `round()` snap (so off-center labels could only hurt). The investigation (Fe-Fool + industry survey, recorded below) showed the *correct* architecture is **detect-true-position THEN assign-to-grid as two decoupled steps** — exactly the user's intuition. A CNN detector predicts the visible stone center regardless of label convention, so intersection-centered labels are merely *noisier* labels of the same target; blob-refine produces cleaner, tighter boxes. The honest two-step only pays off if step-2 is upgraded to be occupancy-aware — hence Tasks 11–12 (labels) and 13–14 (assignment) ship together.
+
+**Architecture:**
+- **Step 1 (training data):** a new `refine_stone_box` finds each stone's actual disc near its expected (drift-corrected) intersection via `HoughCircles` + color-polarity filtering, returns a tight box on the TRUE center, or `None` (caller keeps the intersection box) when no disc is confidently found near the expected point (neighbors rejected by a max-offset gate). Wired into `frame_boxes`/`process_game` behind a flag.
+- **Step 2 (deployment):** `BoardStateExtractor.detections_to_board(..., occupancy_aware=True)` computes each detection's *continuous* grid position, sorts detections by how cleanly they fall on a cell, and greedily assigns each to the nearest **empty** cell (reassigning a collided detection to the nearest empty neighbor instead of dropping it). The temporal "one new stone, on a previously-empty point" constraint already lives in `MoveDetector.detect_new_move` — occupancy-aware single-frame assignment + that existing detector together realize the user's requirement "新子只能算到空的落子点上".
+
+**Findings that shaped this addendum (from the parallel investigation workflow):**
+1. **Fe-Fool labels are blob/edge-hugging, NOT grid-snapped** — `to_yolo()` writes the paste-rectangle (true cutout) center; its Go plan doc explicitly says "标注框尽量贴合棋子边缘". Validates Step-1.
+2. **Fe-Fool inference IS two-step but its assign is naive** — `robot_master.py:330-339` independent `round()`, **not occupancy-aware**, **no move-order**, collisions silently `set()`-deduped (a stone is lost). Our Step-2 is an improvement over it.
+3. **Our current deploy** (`board_state.py:30-37`) = independent `round()` + highest-confidence-wins, loser silently dropped, not occupancy-aware. `Detection` already carries continuous `x_center/y_center` (and `bbox`), so true positions are available — no model/format change needed.
+4. **Industry:** detect-then-assign is the standard family for per-piece detectors (watchGo: homography→`perspectiveTransform`→round). Occupancy-aware / global (column-shift or Hungarian) is the recognized **upgrade** applied once collisions appear; move-order/temporal is a "strong, underused lever" used by live systems (VideoKifu). Almost nobody does "true-pos → nearest **empty**" as a deliberate reconciliation — but we uniquely know move order (LED guide), so it fits.
+
+**Scope guards (YAGNI):**
+- `occupancy_aware` defaults **False** on `detections_to_board` so every existing test keeps its current behavior; Task 14 flips the three runtime call sites to `True`.
+- `refine` defaults **False** on `frame_boxes`/`process_game` (existing golden tests unaffected); the CLI enables it by default (`--refine-boxes/--no-refine-boxes`, default on) so the training runbook gets honest labels.
+- **NOT building** an `expected_board`-biased assignment (move-order fed into snapping). `MoveDetector` already enforces the temporal constraint; biasing is a documented optional extension, not a task.
+
+**File Structure (addendum):**
+
+| File | Action | Responsibility |
+|---|---|---|
+| `katrain/vision/tools/baipu_autolabel.py` | Modify | Add `refine_stone_box`; add `warped_bgr=None, refine=False` to `frame_boxes`; add `refine_boxes=False` to `process_game`; `--refine-boxes/--no-refine-boxes` CLI (default on). |
+| `katrain/vision/coordinates.py` | Modify | Add `continuous_grid_pos(x_mm, y_mm, config) -> (fx, fy)` (the unrounded grid coords `physical_to_grid` rounds). |
+| `katrain/vision/board_state.py` | Modify | Add module fn `_nearest_empty_cell`; add `occupancy_aware=False` param + `_assign_occupancy_aware` to `detections_to_board`. |
+| `katrain/vision/worker.py:229`, `worker_inprocess.py:145`, `pipeline.py:86` | Modify | Pass `occupancy_aware=True` at the three runtime call sites. |
+| `katrain/vision/README.md` | Modify | Document the two-step design + `--refine-boxes` + occupancy-aware assignment + the train/serve margin caveat. |
+| `tests/test_vision/test_baipu_autolabel.py` | Modify (append) | `refine_stone_box` blob/neighbor/polarity tests + `frame_boxes(refine=True)` + `process_game(refine_boxes=True)` smoke. |
+| `tests/test_vision/test_coordinates.py` | Modify (append) | `continuous_grid_pos` value + roundtrip-with-`physical_to_grid` tests. |
+| `tests/test_vision/test_board_state.py` | Modify (append) | Occupancy-aware collision/neighbor/LED/backward-compat tests. |
+
+---
+
+## Task 11: `refine_stone_box` — per-stone blob refinement (pure CV)
+
+**Files:**
+- Modify: `katrain/vision/tools/baipu_autolabel.py` (add function after `detect_isolated_stone_centroids`, ~line 159)
+- Test: `tests/test_vision/test_baipu_autolabel.py` (append in the pure-CV section)
+
+**Interfaces:**
+- Produces: `refine_stone_box(warped_bgr, gx, gy, color, spacing, max_off_frac=0.45, pad_frac=1.10, size_clip=(0.6, 1.2)) -> tuple[float,float,float,float] | None` — returns absolute warped-image `(cx, cy, w, h)` on the TRUE disc, or `None` (no confident disc near the expected point). `gx,gy` are the already-shift-corrected expected pixel coords; `color` is `"B"`/`"W"`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+# --- append to the pure-CV section of tests/test_vision/test_baipu_autolabel.py ---
+
+def _board_bg(val=128):
+    return np.full((950, 950, 3), val, dtype=np.uint8)
+
+
+def test_refine_stone_box_locks_onto_offset_black_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    # black disc offset +14px in x, -9px in y from the intersection (parallax/sloppy placement)
+    cv2.circle(img, (int(gx + 14), int(gy - 9)), int(0.45 * spacing), (20, 20, 20), -1)
+    out = bal.refine_stone_box(img, gx, gy, "B", spacing)
+    assert out is not None
+    cx, cy, w, h = out
+    assert abs(cx - (gx + 14)) <= 5 and abs(cy - (gy - 9)) <= 5  # locked on TRUE center, not the grid
+    assert 0.6 * spacing <= w <= 1.2 * spacing
+
+
+def test_refine_stone_box_locks_onto_white_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(9, 9, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx), int(gy)), int(0.45 * spacing), (240, 240, 240), -1)
+    out = bal.refine_stone_box(img, gx, gy, "W", spacing)
+    assert out is not None
+
+
+def test_refine_stone_box_returns_none_without_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    assert bal.refine_stone_box(_board_bg(128), gx, gy, "B", spacing) is None
+
+
+def test_refine_stone_box_rejects_neighbor_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    # disc one full cell away (at the NEIGHBOR (5,6)); none at (5,5) -> must not snap to neighbor
+    cv2.circle(img, (int(gx + spacing), int(gy)), int(0.45 * spacing), (20, 20, 20), -1)
+    assert bal.refine_stone_box(img, gx, gy, "B", spacing) is None
+
+
+def test_refine_stone_box_rejects_color_mismatch():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx), int(gy)), int(0.45 * spacing), (240, 240, 240), -1)  # WHITE disc
+    assert bal.refine_stone_box(img, gx, gy, "B", spacing) is None  # asked for BLACK -> polarity reject
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -k refine -v`
+Expected: FAIL — `AttributeError: module 'katrain.vision.tools.baipu_autolabel' has no attribute 'refine_stone_box'`
+
+- [ ] **Step 3: Write the implementation**
+
+Add to `katrain/vision/tools/baipu_autolabel.py` immediately after `detect_isolated_stone_centroids` (~line 159):
+
+```python
+def refine_stone_box(
+    warped_bgr,
+    gx,
+    gy,
+    color,
+    spacing,
+    max_off_frac: float = 0.45,
+    pad_frac: float = 1.10,
+    size_clip: tuple[float, float] = (0.6, 1.2),
+):
+    """Find the actual stone disc near the expected point (gx, gy) and return a tight
+    absolute ``(cx, cy, w, h)`` on the stone's TRUE center, or ``None``.
+
+    Two-step labeling: the box is centered on the stone's real visible position (not the
+    grid intersection), so the trained detector reports true positions and the deploy-time
+    occupancy-aware assignment (board_state) maps each to the nearest empty intersection.
+    ``None`` (caller keeps the intersection-centered box) when no disc is confidently found
+    within ``max_off_frac*spacing`` of (gx, gy) — this rejects a neighbour's disc. ``color``
+    ('B'/'W') filters by interior polarity vs the patch median, so a black box can't lock
+    onto a white neighbour and vice-versa.
+    """
+    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
+    r = max(6, int(0.45 * spacing))
+    half = int(0.7 * spacing)
+    h_img, w_img = gray.shape[:2]
+    x0, y0 = max(0, int(gx - half)), max(0, int(gy - half))
+    x1, y1 = min(w_img, int(gx + half)), min(h_img, int(gy + half))
+    patch = gray[y0:y1, x0:x1]
+    if patch.size == 0:
+        return None
+    circles = cv2.HoughCircles(
+        patch,
+        cv2.HOUGH_GRADIENT,
+        dp=1.2,
+        minDist=2 * r,
+        param1=120,
+        param2=18,
+        minRadius=int(0.6 * r),
+        maxRadius=int(1.4 * r),
+    )
+    if circles is None:
+        return None
+    med = float(np.median(patch))
+    max_off = max_off_frac * spacing
+    best = None
+    best_d = max_off
+    for c0 in circles[0]:
+        cx, cy, rad = float(c0[0]) + x0, float(c0[1]) + y0, float(c0[2])
+        d = float(np.hypot(cx - gx, cy - gy))
+        if d > best_d:
+            continue
+        s = max(1, int(0.4 * rad))
+        iy0, iy1 = max(0, int(cy - s)), min(h_img, int(cy + s))
+        ix0, ix1 = max(0, int(cx - s)), min(w_img, int(cx + s))
+        interior = gray[iy0:iy1, ix0:ix1]
+        if interior.size == 0:
+            continue
+        inner = float(interior.mean())
+        if color == "B" and inner >= med:  # black disc must be darker than the patch median
+            continue
+        if color == "W" and inner <= med:  # white disc must be brighter
+            continue
+        best_d, best = d, (cx, cy, rad)
+    if best is None:
+        return None
+    cx, cy, rad = best
+    side = float(np.clip(2.0 * rad * pad_frac, size_clip[0] * spacing, size_clip[1] * spacing))
+    return cx, cy, side, side
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -k refine -v`
+Expected: PASS (5 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+uv run black -l 120 katrain/vision/tools/baipu_autolabel.py tests/test_vision/test_baipu_autolabel.py
+git add katrain/vision/tools/baipu_autolabel.py tests/test_vision/test_baipu_autolabel.py
+git commit -m "feat(vision): refine_stone_box — blob-refine training boxes onto true stone center (two-step step 1)"
+```
+
+---
+
+## Task 12: Wire blob-refine into `frame_boxes` / `process_game` + CLI
+
+**Files:**
+- Modify: `katrain/vision/tools/baipu_autolabel.py` (`frame_boxes` ~224-257; `process_game` ~276-405; `main` argparse ~417-454)
+- Test: `tests/test_vision/test_baipu_autolabel.py` (append)
+
+**Interfaces:**
+- Consumes: `refine_stone_box` (Task 11).
+- Produces: `frame_boxes(board, led_point, xs, ys, shift, spacing, stone_frac=1.05, led_frac=0.45, img_w=950, img_h=950, warped_bgr=None, refine=False)`; `process_game(..., refine_boxes=False)`; CLI `--refine-boxes/--no-refine-boxes` (default on). LED boxes are unchanged by refine; refine applies to stones only.
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+# --- append to tests/test_vision/test_baipu_autolabel.py (pure-CV section) ---
+
+def test_frame_boxes_refine_moves_stone_to_true_center():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx + 14), int(gy - 9)), int(0.45 * spacing), (20, 20, 20), -1)
+    board = [[None] * 19 for _ in range(19)]
+    board[5][5] = "B"
+    boxes = bal.frame_boxes(board, None, SYNTH_XS, SYNTH_YS, (0.0, 0.0), spacing, warped_bgr=img, refine=True)
+    stone = [b for b in boxes if b.class_id == bal.NAME_TO_ID["black"]][0]
+    assert abs(stone.cx - (gx + 14)) <= 5 and abs(stone.cy - (gy - 9)) <= 5  # true center, not (gx,gy)
+
+
+def test_frame_boxes_refine_falls_back_to_intersection_when_no_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    board = [[None] * 19 for _ in range(19)]
+    board[5][5] = "B"
+    boxes = bal.frame_boxes(
+        board, None, SYNTH_XS, SYNTH_YS, (0.0, 0.0), spacing, warped_bgr=_board_bg(128), refine=True
+    )
+    stone = [b for b in boxes if b.class_id == bal.NAME_TO_ID["black"]][0]
+    assert abs(stone.cx - gx) <= 1 and abs(stone.cy - gy) <= 1  # fell back to the grid intersection
+
+
+def test_process_game_refine_boxes_runs(tmp_path):
+    # blank frames -> refine finds no disc -> falls back, no crash. Corrected frame so it isn't skipped.
+    gd = _make_game(
+        tmp_path,
+        "gr",
+        [
+            {
+                "file": "frame_000.jpg",
+                "applied_move_index": 0,
+                "led_point": {"row": 3, "col": 3, "color": "black"},
+                "geometry_correction": _corrected(),
+            }
+        ],
+    )
+    stats = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", refine_boxes=True)
+    assert stats["written"] >= 1
+```
+
+> **Note:** `_make_game(tmp_path, gid, frames, sgf=...)` and `_corrected()` are the existing helpers in this file (used by `test_corrected_uses_Mf_and_skips_estimate` etc., ~line 186). Reuse them — do not redefine them.
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -k "refine_moves or refine_falls or refine_boxes_runs" -v`
+Expected: FAIL — `frame_boxes() got an unexpected keyword argument 'warped_bgr'`
+
+- [ ] **Step 3: Write the implementation**
+
+(a) Replace the `frame_boxes` signature and the stone loop body in `katrain/vision/tools/baipu_autolabel.py`:
+
+```python
+def frame_boxes(
+    board,
+    led_point,
+    xs,
+    ys,
+    shift,
+    spacing,
+    stone_frac: float = 1.05,
+    led_frac: float = 0.45,
+    img_w: int = 950,
+    img_h: int = 950,
+    warped_bgr=None,
+    refine: bool = False,
+):
+    # Stones ~object-tight (deploy assigns on center; box extent is training-localization only).
+    # LEDs tight: a background-dominated box destroys small-target recall (the success metric).
+    stone_side = float(np.clip(stone_frac * spacing, 40.0, 70.0))
+    led_side = float(np.clip(led_frac * spacing, 16.0, 36.0))
+    dx, dy = shift
+    boxes: list[Box] = []
+    for r in range(19):
+        for c in range(19):
+            v = board[r][c]
+            if v is None:
+                continue
+            gx, gy = grid_point(r, c, xs, ys)
+            cid = NAME_TO_ID["black"] if v == "B" else NAME_TO_ID["white"]
+            refined = None
+            if refine and warped_bgr is not None:
+                # search around the drift-corrected expected point; lock onto the TRUE disc.
+                refined = refine_stone_box(warped_bgr, gx + dx, gy + dy, v, spacing)
+            if refined is not None:
+                cx, cy, w, h = _clip_box(*refined, img_w, img_h)
+            else:
+                cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
+            if w > 0 and h > 0:  # drop stones that drifted entirely off-frame (not visible -> no label)
+                boxes.append(Box(cid, cx, cy, w, h))
+    if led_point is not None:
+        gx, gy = grid_point(led_point["row"], led_point["col"], xs, ys)
+        cx, cy, w, h = _clip_box(gx + dx, gy + dy, led_side, led_side, img_w, img_h)
+        if w > 0 and h > 0:
+            boxes.append(Box(LED_COLOR_TO_CLASS[led_point["color"]], cx, cy, w, h))
+    return boxes
+```
+
+> `_clip_box(*refined, img_w, img_h)` expands `refined=(cx,cy,w,h)` then the two size args — matching `_clip_box(cx, cy, w, h, img_w, img_h)`.
+
+(b) In `process_game`, add the `refine_boxes=False` parameter (in the signature, after `margin_cells=1.0`) and pass it through to `frame_boxes`. Change the signature line:
+
+```python
+def process_game(
+    game_dir,
+    out_images,
+    out_labels,
+    verify_dir=None,
+    dedup_per_move=True,
+    stone_frac=1.05,
+    led_frac=0.45,
+    allow_legacy_drift=False,
+    margin_cells=1.0,
+    refine_boxes=False,
+):
+```
+
+and the `frame_boxes(...)` call inside it:
+
+```python
+        boxes = frame_boxes(
+            board,
+            fr.get("led_point"),
+            xs_p,
+            ys_p,
+            shift,
+            spacing,
+            stone_frac=stone_frac,
+            led_frac=led_frac,
+            img_w=canvas,
+            img_h=canvas,
+            warped_bgr=warped,
+            refine=refine_boxes,
+        )
+```
+
+(c) In `main()`, add the CLI flag (after `--margin-cells`, ~line 438) and thread it into the `process_game(...)` call inside `_label_all` (after `margin_cells=args.margin_cells,`):
+
+```python
+    ap.add_argument(
+        "--refine-boxes",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="blob-refine each stone box onto the TRUE detected disc (two-step labeling). "
+        "Falls back to the grid intersection when no disc is found. --no-refine-boxes to disable.",
+    )
+```
+
+```python
+                    margin_cells=args.margin_cells,
+                    refine_boxes=args.refine_boxes,
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `CI=true uv run pytest tests/test_vision/test_baipu_autolabel.py -v`
+Expected: PASS (all — the 3 new tests plus the existing suite unchanged, since `refine` defaults False)
+
+- [ ] **Step 5: Commit**
+
+```bash
+uv run black -l 120 katrain/vision/tools/baipu_autolabel.py tests/test_vision/test_baipu_autolabel.py
+git add katrain/vision/tools/baipu_autolabel.py tests/test_vision/test_baipu_autolabel.py
+git commit -m "feat(vision): wire blob-refine into frame_boxes/process_game + --refine-boxes (default on)"
+```
+
+---
+
+## Task 13: Occupancy-aware `detections_to_board` (deployment step 2)
+
+**Files:**
+- Modify: `katrain/vision/coordinates.py` (add `continuous_grid_pos` after `physical_to_grid`, ~line 28)
+- Modify: `katrain/vision/board_state.py` (add `_nearest_empty_cell`; add `occupancy_aware` param + `_assign_occupancy_aware`)
+- Test: `tests/test_vision/test_coordinates.py` (append), `tests/test_vision/test_board_state.py` (append)
+
+**Interfaces:**
+- Produces: `continuous_grid_pos(x_mm, y_mm, config) -> tuple[float, float]` (unrounded `(fx, fy)`; `physical_to_grid` is `round()`+clamp of this). `_nearest_empty_cell(board, fy, fx, max_r=1) -> tuple[int,int] | None`. `BoardStateExtractor.detections_to_board(detections, img_w, img_h, occupancy_aware=False)`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+# --- append to tests/test_vision/test_coordinates.py ---
+from katrain.vision.coordinates import continuous_grid_pos
+from katrain.vision.config import BoardConfig as _BC
+
+
+class TestContinuousGridPos:
+    def test_center_is_nine(self):
+        cfg = _BC()
+        fx, fy = continuous_grid_pos(cfg.board_width_mm / 2, cfg.board_length_mm / 2, cfg)
+        assert abs(fx - 9.0) < 1e-6 and abs(fy - 9.0) < 1e-6
+
+    def test_origin_is_zero(self):
+        cfg = _BC()
+        fx, fy = continuous_grid_pos(0.0, 0.0, cfg)
+        assert fx == 0.0 and fy == 0.0
+
+    def test_round_matches_physical_to_grid(self):
+        from katrain.vision.coordinates import physical_to_grid
+
+        cfg = _BC()
+        x_mm, y_mm = cfg.board_width_mm * 0.31, cfg.board_length_mm * 0.77
+        fx, fy = continuous_grid_pos(x_mm, y_mm, cfg)
+        px, py = physical_to_grid(x_mm, y_mm, cfg)
+        assert (round(fx), round(fy)) == (px, py)
+```
+
+```python
+# --- append to tests/test_vision/test_board_state.py ---
+
+class TestOccupancyAwareAssignment:
+    def _det_at_cell(self, row, col, class_id, img, cfg, conf=0.9, off_px=(0.0, 0.0)):
+        from katrain.vision.coordinates import grid_to_pixel
+
+        px, py = grid_to_pixel(col, row, img, img, cfg)  # grid_to_pixel takes (pos_x=col, pos_y=row)
+        return Detection(x_center=px + off_px[0], y_center=py + off_px[1], class_id=class_id, confidence=conf)
+
+    def test_collision_reassigns_to_neighbor_not_dropped(self, cfg):
+        ex = BoardStateExtractor()
+        img = 950
+        spacing_px = img / 18.0
+        a = self._det_at_cell(5, 5, 0, img, cfg)  # exactly on (5,5)
+        b = self._det_at_cell(5, 5, 0, img, cfg, off_px=(0.42 * spacing_px, 0.0))  # rounds to (5,5), leans to col6
+        board = ex.detections_to_board([a, b], img_w=img, img_h=img, occupancy_aware=True)
+        assert board[5][5] == BLACK
+        assert board[5][6] == BLACK  # loser reassigned to nearest empty neighbor, not silently dropped
+        assert int((board != EMPTY).sum()) == 2
+
+    def test_backward_compat_default_drops_collision(self, cfg):
+        ex = BoardStateExtractor()
+        img = 950
+        spacing_px = img / 18.0
+        a = self._det_at_cell(5, 5, 0, img, cfg)
+        b = self._det_at_cell(5, 5, 0, img, cfg, off_px=(0.42 * spacing_px, 0.0))
+        board = ex.detections_to_board([a, b], img_w=img, img_h=img)  # default occupancy_aware=False
+        assert int((board != EMPTY).sum()) == 1  # legacy: one wins, the other is dropped
+
+    def test_occupancy_ignores_led(self, cfg):
+        ex = BoardStateExtractor()
+        img = 950
+        dets = [self._det_at_cell(5, 5, 0, img, cfg), self._det_at_cell(7, 7, 2, img, cfg)]  # class 2 = led_red
+        board = ex.detections_to_board(dets, img_w=img, img_h=img, occupancy_aware=True)
+        assert board[5][5] == BLACK
+        assert int((board != EMPTY).sum()) == 1  # LED not placed
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `CI=true uv run pytest tests/test_vision/test_coordinates.py::TestContinuousGridPos tests/test_vision/test_board_state.py::TestOccupancyAwareAssignment -v`
+Expected: FAIL — `ImportError: cannot import name 'continuous_grid_pos'` and `detections_to_board() got an unexpected keyword argument 'occupancy_aware'`
+
+- [ ] **Step 3: Write the implementation**
+
+(a) Add to `katrain/vision/coordinates.py` after `physical_to_grid` (~line 28):
+
+```python
+def continuous_grid_pos(x_mm: float, y_mm: float, config: BoardConfig) -> tuple[float, float]:
+    """Unrounded grid coordinates (fx, fy). ``physical_to_grid`` is ``round()`` + clamp of this.
+    Used by occupancy-aware assignment, which needs the sub-cell position, not just the cell."""
+    gs = config.grid_size - 1
+    fx = (x_mm - config.border_width_mm) / config.board_width_mm * gs
+    fy = (y_mm - config.border_length_mm) / config.board_length_mm * gs
+    return fx, fy
+```
+
+(b) Rewrite `katrain/vision/board_state.py` (imports + class):
+
+```python
+"""
+Combines stone detection results with coordinate mapping to produce a 19x19 board state.
+
+Two assignment modes:
+- legacy (occupancy_aware=False): each detection independently round()s to the nearest
+  intersection; same-cell collisions resolved by highest confidence (loser dropped).
+- occupancy-aware (occupancy_aware=True): detections are assigned greedily to the nearest
+  EMPTY intersection (by sub-cell distance), so a collided detection is reassigned to its
+  nearest empty neighbor instead of being silently lost. This is the two-step design's
+  step 2; the temporal "one new stone on an empty point" constraint lives in MoveDetector.
+"""
+
+import math
+
+import numpy as np
+
+from katrain.vision.classes import STONE_CLASS_IDS
+from katrain.vision.config import BoardConfig
+from katrain.vision.coordinates import continuous_grid_pos, physical_to_grid, pixel_to_physical
+from katrain.vision.stone_detector import Detection
+
+EMPTY = 0
+BLACK = 1
+WHITE = 2
+
+
+def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
+    """Empty cell nearest the continuous position (fy=row, fx=col), searching a
+    (2*max_r+1)^2 box around the rounded cell. None if every candidate is occupied."""
+    gs = board.shape[0]
+    cy = max(0, min(gs - 1, int(round(fy))))
+    cx = max(0, min(gs - 1, int(round(fx))))
+    best = None
+    best_d = None
+    for dy in range(-max_r, max_r + 1):
+        for dx in range(-max_r, max_r + 1):
+            ny, nx = cy + dy, cx + dx
+            if 0 <= ny < gs and 0 <= nx < gs and board[ny][nx] == EMPTY:
+                d = (ny - fy) ** 2 + (nx - fx) ** 2
+                if best is None or d < best_d:
+                    best_d = d
+                    best = (ny, nx)
+    return best
+
+
+class BoardStateExtractor:
+    """Converts a list of stone detections into a board state matrix."""
+
+    def __init__(self, config: BoardConfig | None = None):
+        self.config = config or BoardConfig()
+
+    def detections_to_board(
+        self, detections: list[Detection], img_w: int, img_h: int, occupancy_aware: bool = False
+    ) -> np.ndarray:
+        """Convert detected stones to a grid_size x grid_size board matrix."""
+        gs = self.config.grid_size
+        board = np.zeros((gs, gs), dtype=int)
+        if occupancy_aware:
+            return self._assign_occupancy_aware(board, detections, img_w, img_h)
+
+        confidence = np.zeros((gs, gs), dtype=float)
+        for det in detections:
+            if det.class_id not in STONE_CLASS_IDS:
+                continue  # LED guidance classes (led_red/led_green) are not board stones
+            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+            pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
+            if det.confidence > confidence[pos_y][pos_x]:
+                board[pos_y][pos_x] = det.class_id + 1  # 0→BLACK(1), 1→WHITE(2)
+                confidence[pos_y][pos_x] = det.confidence
+        return board
+
+    def _assign_occupancy_aware(
+        self, board: np.ndarray, detections: list[Detection], img_w: int, img_h: int
+    ) -> np.ndarray:
+        items = []
+        for det in detections:
+            if det.class_id not in STONE_CLASS_IDS:
+                continue
+            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+            fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
+            residual = math.hypot(fx - round(fx), fy - round(fy))
+            items.append((residual, -det.confidence, det, fx, fy))
+        # cleanest-on-a-cell first, then highest confidence: they claim their intersections before
+        # ambiguous/colliding detections, which then spill to the nearest empty neighbor.
+        items.sort(key=lambda t: (t[0], t[1]))
+        for _, _, det, fx, fy in items:
+            cell = _nearest_empty_cell(board, fy, fx, max_r=1)
+            if cell is None:
+                continue  # no empty cell within 1 ring -> cannot place a second stone on one point
+            ny, nx = cell
+            board[ny][nx] = det.class_id + 1
+        return board
+
+    @staticmethod
+    def board_to_string(board: np.ndarray) -> str:
+        symbols = {EMPTY: ".", BLACK: "B", WHITE: "W"}
+        lines = []
+        for row in board:
+            lines.append(" ".join(symbols[int(v)] for v in row))
+        return "\n".join(lines)
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `CI=true uv run pytest tests/test_vision/test_coordinates.py tests/test_vision/test_board_state.py -v`
+Expected: PASS (new tests + all existing board_state/coordinates tests still green — legacy path untouched)
+
+- [ ] **Step 5: Commit**
+
+```bash
+uv run black -l 120 katrain/vision/board_state.py katrain/vision/coordinates.py tests/test_vision/test_board_state.py tests/test_vision/test_coordinates.py
+git add katrain/vision/board_state.py katrain/vision/coordinates.py tests/test_vision/test_board_state.py tests/test_vision/test_coordinates.py
+git commit -m "feat(vision): occupancy-aware detections_to_board — nearest-empty assignment, no silent collision drop (two-step step 2)"
+```
+
+---
+
+## Task 14: Enable occupancy-aware assignment at the runtime call sites + docs
+
+**Files:**
+- Modify: `katrain/vision/worker.py:229`, `katrain/vision/worker_inprocess.py:145`, `katrain/vision/pipeline.py:86`
+- Modify: `katrain/vision/README.md`
+
+**Interfaces:**
+- Consumes: `detections_to_board(..., occupancy_aware=True)` (Task 13).
+
+- [ ] **Step 1: Flip the three runtime call sites**
+
+In each file, change the call to pass `occupancy_aware=True`:
+
+`katrain/vision/worker.py:229`:
+```python
+                    observed_board = self._state_extractor.detections_to_board(
+                        detections, img_w=w, img_h=h, occupancy_aware=True
+                    )
+```
+
+`katrain/vision/worker_inprocess.py:145`:
+```python
+                    observed_board = self._state_extractor.detections_to_board(
+                        detections, img_w=w, img_h=h, occupancy_aware=True
+                    )
+```
+
+`katrain/vision/pipeline.py:86`:
+```python
+        board = self.state_extractor.detections_to_board(detections, img_w=w, img_h=h, occupancy_aware=True)
+```
+
+- [ ] **Step 2: Verify the flag is wired and nothing regressed**
+
+Run: `grep -n "occupancy_aware=True" katrain/vision/worker.py katrain/vision/worker_inprocess.py katrain/vision/pipeline.py`
+Expected: one match per file (3 total).
+
+Run: `CI=true uv run pytest tests/test_vision -q`
+Expected: PASS (full vision suite — single-stone frames are unaffected by occupancy-aware assignment, so existing pipeline/worker tests stay green).
+
+- [ ] **Step 3: Document the two-step design in the vision README**
+
+Append a section to `katrain/vision/README.md`:
+
+```markdown
+## Two-step recognition: true-position detection → occupancy-aware assignment
+
+The detector reports each stone's **true visible position** (boxes hug the real stone, via
+`baipu_autolabel --refine-boxes`, on by default). Deployment then maps detections to the board
+in a **separate** step: `BoardStateExtractor.detections_to_board(..., occupancy_aware=True)`
+assigns each detection to the nearest **empty** intersection by sub-cell distance, reassigning a
+collided detection to its nearest empty neighbour instead of silently dropping it. The temporal
+"one new stone, on a previously-empty point" rule lives in `MoveDetector.detect_new_move`.
+
+**Train/serve margin caveat (reconcile before production training):** `baipu_autolabel` warps
+training images with a 1-cell margin (`--margin-cells 1.0`), but `BoardConfig.border_*_mm == 0`
+and the live warp currently uses no margin. The CNN detects the stone wherever it appears, so this
+is not fatal, but for best train/serve match keep the live warp's margin and `border_*_mm`
+consistent with the training margin. Tracked as a residual risk, not fixed in this addendum.
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+uv run black -l 120 katrain/vision/worker.py katrain/vision/worker_inprocess.py katrain/vision/pipeline.py
+git add katrain/vision/worker.py katrain/vision/worker_inprocess.py katrain/vision/pipeline.py katrain/vision/README.md
+git commit -m "feat(vision): enable occupancy-aware board assignment at runtime call sites + document two-step design"
+```
+
+---
+
+## Addendum Self-Review
+
+**Spec coverage:**
+- User Step 1 "YOLO outputs true position; don't force to intersection center" → Tasks 11–12 (`refine_stone_box` + `frame_boxes(refine=True)`, default on in CLI). ✓
+- User Step 2 "assign by distance to nearest intersection, considering occupied points; new stone only to an empty point" → Task 13 (`_assign_occupancy_aware` nearest-empty) + existing `MoveDetector` (temporal one-new-stone-on-empty). ✓
+- "blob 精修是有必要的" → Task 11/12. ✓
+- Make it actually take effect in deployment → Task 14 wiring. ✓
+
+**Placeholder scan:** No TBD / "handle edge cases" / "similar to Task N". Every code step shows full code. ✓
+
+**Type consistency:** `refine_stone_box(warped_bgr, gx, gy, color, spacing, ...) -> (cx,cy,w,h)|None`; `frame_boxes(..., warped_bgr=None, refine=False)`; `process_game(..., refine_boxes=False)`; `continuous_grid_pos(x_mm,y_mm,config)->(fx,fy)`; `_nearest_empty_cell(board, fy, fx, max_r=1)->(ny,nx)|None`; `detections_to_board(..., occupancy_aware=False)`. `_clip_box(cx,cy,w,h,img_w,img_h)` called as `_clip_box(*refined, img_w, img_h)`. `grid_to_pixel(pos_x=col, pos_y=row, ...)` order respected in the test helper. `color` passed as `"B"`/`"W"` (board cell value), matching `frame_boxes`' `v`. ✓
+
+**Backward-compat:** `refine` and `occupancy_aware` both default to the OLD behavior, so every existing test in `test_baipu_autolabel.py` / `test_board_state.py` / `test_coordinates.py` passes unchanged; only the runtime call sites (Task 14) and the CLI default (Task 12) opt into the new behavior. ✓
+
+**Known residual risks (addendum):**
+- **Train/serve warp margin mismatch** (training has a 1-cell margin; live warp + `border_*_mm` do not). Documented in Task 14 README; the CNN's translation-tolerance makes it non-fatal, but align before production training. Not fixed here (orthogonal to the two-step work).
+- **Occupancy reassignment can create a phantom** if a spurious high-confidence duplicate survives NMS next to a real stone (it would spill to a neighbour instead of being dropped). Mitigated by the confidence threshold + class-agnostic NMS upstream and by `MoveDetector` requiring exactly one new stone on an empty point with 3-frame consistency. Revisit if field data shows phantoms.
+- **`refine_stone_box` on heavily-clustered stones** may fail to isolate a disc (overlapping edges) and fall back to the intersection box — acceptable (no worse than today's intersection-only labels). `max_off` gate prevents locking onto a neighbour.
+- **`expected_board`-biased assignment NOT built** (YAGNI) — move-order priors could further harden step-2, but `MoveDetector` already enforces the temporal constraint. Optional future extension.
+
+## Addendum Execution Record (executed 2026-06-29, branch `feature/yolo-train`)
+
+All four tasks implemented TDD (test→red→impl→green→commit), each its own commit:
+- **Task 11** `350886ba` — `refine_stone_box` + 5 pure-CV tests (offset black/white lock, no-disc None, neighbour reject, colour-polarity reject).
+- **Task 12** `52625e3c` — `frame_boxes(warped_bgr=, refine=)` + `process_game(refine_boxes=)` + `--refine-boxes/--no-refine-boxes` (default on) + 3 tests. (Used the existing `_make_game`/`_corrected` helpers, not the planned `_make_fake_capture`.)
+- **Task 13** `141cc81a` — `continuous_grid_pos` + `_nearest_empty_cell` + `detections_to_board(occupancy_aware=)` + `_assign_occupancy_aware` + 6 tests (collision-reassign, backward-compat drop, LED-ignored, continuous-pos values/roundtrip).
+- **Task 14** `aa63df93` — `occupancy_aware=True` at the three runtime call sites (`worker.py`, `worker_inprocess.py`, `pipeline.py`) + README two-step section + margin caveat.
+
+**Verification:** full vision suite **235 passed** under `CI=true PYTHONPATH=$PWD /opt/miniconda3/envs/py311_katago/bin/python -m pytest tests/test_vision` (the `uv` env lacks `fastapi`, so one web-importing vision test errors at collection there only — pre-existing env limitation, not a regression). Backward-compat confirmed: both new flags default to the old behaviour; all pre-existing tests unchanged and green.

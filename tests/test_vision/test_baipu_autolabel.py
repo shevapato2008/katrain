@@ -196,34 +196,57 @@ def _make_game(tmp_path, gid, frames, sgf="(;SZ[19];B[pd];W[dp];B[pp])"):
         for c in range(19):
             pts[r][c] = (xs[c], xs[r])
     lock = GeometryLock(
-        corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=xs,
-        M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+        corners=np.zeros((4, 2), np.float32),
+        points=pts,
+        xs=xs,
+        ys=xs,
+        M=np.eye(3),
+        Minv=np.eye(3),
+        out_size=950,
+        baseline=np.zeros((19, 19, 3), np.float32),
     )
     save_geometry_lock(lock, gd / "geometry.npz")
     for fr in frames:
         cv2.imwrite(str(gd / fr["file"]), np.zeros((950, 950, 3), np.uint8))
     manifest = {
-        "game_id": gid, "board_size": 19, "sgf_path": "game.sgf", "geometry_path": "geometry.npz",
-        "total_moves": 2, "frames": frames,
+        "game_id": gid,
+        "board_size": 19,
+        "sgf_path": "game.sgf",
+        "geometry_path": "geometry.npz",
+        "total_moves": 2,
+        "frames": frames,
     }
     (gd / "manifest.json").write_text(json.dumps(manifest))
     return gd
 
 
 def _corrected(median_cells=0.02, over=False):
-    return {"status": "corrected", "source": "fiducial", "M": np.eye(3).tolist(),
-            "drift": {"median_cells": median_cells, "over_threshold": over}}
+    return {
+        "status": "corrected",
+        "source": "fiducial",
+        "M": np.eye(3).tolist(),
+        "drift": {"median_cells": median_cells, "over_threshold": over},
+    }
 
 
 def test_corrected_uses_Mf_and_skips_estimate(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        bal, "estimate_global_shift",
+        bal,
+        "estimate_global_shift",
         lambda *a, **k: pytest.fail("estimate_global_shift must not run for corrected frames"),
     )
-    gd = _make_game(tmp_path, "gc", [
-        {"file": "frame_000.jpg", "applied_move_index": 0,
-         "led_point": {"row": 3, "col": 3, "color": "black"}, "geometry_correction": _corrected()},
-    ])
+    gd = _make_game(
+        tmp_path,
+        "gc",
+        [
+            {
+                "file": "frame_000.jpg",
+                "applied_move_index": 0,
+                "led_point": {"row": 3, "col": 3, "color": "black"},
+                "geometry_correction": _corrected(),
+            },
+        ],
+    )
     stats = bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", verify_dir=tmp_path / "v")
     assert stats["written"] == 1
     assert (tmp_path / "lbl" / "gc_frame_000.txt").exists()
@@ -234,11 +257,23 @@ def test_corrected_uses_Mf_and_skips_estimate(tmp_path, monkeypatch):
 
 def test_frozen_with_drift_isolated_unless_flag(tmp_path):
     frames = [
-        {"file": "frame_000.jpg", "applied_move_index": 0, "led_point": None,
-         "geometry_correction": _corrected(median_cells=0.5, over=True)},   # game drifted
-        {"file": "frame_001.jpg", "applied_move_index": 1, "led_point": None,
-         "geometry_correction": {"status": "frozen", "source": "frozen", "M": np.eye(3).tolist(),
-                                 "drift": {"median_cells": 0.0, "over_threshold": False}}},
+        {
+            "file": "frame_000.jpg",
+            "applied_move_index": 0,
+            "led_point": None,
+            "geometry_correction": _corrected(median_cells=0.5, over=True),
+        },  # game drifted
+        {
+            "file": "frame_001.jpg",
+            "applied_move_index": 1,
+            "led_point": None,
+            "geometry_correction": {
+                "status": "frozen",
+                "source": "frozen",
+                "M": np.eye(3).tolist(),
+                "drift": {"median_cells": 0.0, "over_threshold": False},
+            },
+        },
     ]
     gd = _make_game(tmp_path, "gd", frames)
     stats = bal.process_game(gd, tmp_path / "i1", tmp_path / "l1")
@@ -312,17 +347,28 @@ def test_outer_corner_source_uses_M_and_flags_quality(tmp_path, monkeypatch):
     # P12 Task 7: source="outer_corner" (no-LED auto mode) consumes its per-frame M directly
     # (no estimate_global_shift) and is tagged distinctly to reflect coarser precision.
     monkeypatch.setattr(
-        bal, "estimate_global_shift",
+        bal,
+        "estimate_global_shift",
         lambda *a, **k: pytest.fail("estimate_global_shift must not run for corrected outer_corner"),
     )
     gc = {
-        "status": "corrected", "source": "outer_corner", "M": np.eye(3).tolist(),
+        "status": "corrected",
+        "source": "outer_corner",
+        "M": np.eye(3).tolist(),
         "drift": {"median_cells": 0.05, "over_threshold": False},
     }
-    gd = _make_game(tmp_path, "goc", [
-        {"file": "frame_000.jpg", "applied_move_index": 0,
-         "led_point": {"row": 3, "col": 3, "color": "black"}, "geometry_correction": gc},
-    ])
+    gd = _make_game(
+        tmp_path,
+        "goc",
+        [
+            {
+                "file": "frame_000.jpg",
+                "applied_move_index": 0,
+                "led_point": {"row": 3, "col": 3, "color": "black"},
+                "geometry_correction": gc,
+            },
+        ],
+    )
     bal.process_game(gd, tmp_path / "img", tmp_path / "lbl", verify_dir=tmp_path / "v")
     assert (tmp_path / "lbl" / "goc_frame_000.txt").exists()
     assert "corrected_outer_corner" in (tmp_path / "v" / "shifts.csv").read_text()
@@ -332,9 +378,17 @@ def test_mixed_legacy_and_outer_corner_manifest_does_not_break(tmp_path):
     # Backward-compat: a manifest mixing legacy (no gc) + new outer_corner frames processes cleanly.
     frames = [
         {"file": "frame_000.jpg", "applied_move_index": 0, "led_point": None},  # legacy, no gc
-        {"file": "frame_001.jpg", "applied_move_index": 1, "led_point": None,
-         "geometry_correction": {"status": "corrected", "source": "outer_corner", "M": np.eye(3).tolist(),
-                                 "drift": {"median_cells": 0.04, "over_threshold": False}}},
+        {
+            "file": "frame_001.jpg",
+            "applied_move_index": 1,
+            "led_point": None,
+            "geometry_correction": {
+                "status": "corrected",
+                "source": "outer_corner",
+                "M": np.eye(3).tolist(),
+                "drift": {"median_cells": 0.04, "over_threshold": False},
+            },
+        },
     ]
     gd = _make_game(tmp_path, "gm", frames)
     bal.process_game(gd, tmp_path / "i", tmp_path / "l", verify_dir=tmp_path / "v")
@@ -364,3 +418,55 @@ def test_process_game_writes_matching_labels(tmp_path):
             parts = line.split()
             assert len(parts) == 5 and 0 <= int(parts[0]) <= 3
             assert all(0.0 <= float(x) <= 1.0 for x in parts[1:])
+
+
+# ---------- Task 11/12: blob-refine (two-step labeling) — pure-CV ----------
+
+
+def _board_bg(val=128):
+    return np.full((950, 950, 3), val, dtype=np.uint8)
+
+
+def test_refine_stone_box_locks_onto_offset_black_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    # black disc offset +14px in x, -9px in y from the intersection (parallax/sloppy placement)
+    cv2.circle(img, (int(gx + 14), int(gy - 9)), int(0.45 * spacing), (20, 20, 20), -1)
+    out = bal.refine_stone_box(img, gx, gy, "B", spacing)
+    assert out is not None
+    cx, cy, w, h = out
+    assert abs(cx - (gx + 14)) <= 5 and abs(cy - (gy - 9)) <= 5  # locked on TRUE center, not the grid
+    assert 0.6 * spacing <= w <= 1.2 * spacing
+
+
+def test_refine_stone_box_locks_onto_white_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(9, 9, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx), int(gy)), int(0.45 * spacing), (240, 240, 240), -1)
+    out = bal.refine_stone_box(img, gx, gy, "W", spacing)
+    assert out is not None
+
+
+def test_refine_stone_box_returns_none_without_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    assert bal.refine_stone_box(_board_bg(128), gx, gy, "B", spacing) is None
+
+
+def test_refine_stone_box_rejects_neighbor_disc():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    # disc one full cell away (at the NEIGHBOR (5,6)); none at (5,5) -> must not snap to neighbor
+    cv2.circle(img, (int(gx + spacing), int(gy)), int(0.45 * spacing), (20, 20, 20), -1)
+    assert bal.refine_stone_box(img, gx, gy, "B", spacing) is None
+
+
+def test_refine_stone_box_rejects_color_mismatch():
+    spacing = bal.mean_grid_spacing(SYNTH_XS, SYNTH_YS)
+    gx, gy = bal.grid_point(5, 5, SYNTH_XS, SYNTH_YS)
+    img = _board_bg(128)
+    cv2.circle(img, (int(gx), int(gy)), int(0.45 * spacing), (240, 240, 240), -1)  # WHITE disc
+    assert bal.refine_stone_box(img, gx, gy, "B", spacing) is None  # asked for BLACK -> polarity reject

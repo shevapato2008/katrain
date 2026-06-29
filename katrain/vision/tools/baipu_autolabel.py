@@ -159,6 +159,76 @@ def detect_isolated_stone_centroids(warped_bgr, board, xs, ys, spacing):
     return out
 
 
+def refine_stone_box(
+    warped_bgr,
+    gx,
+    gy,
+    color,
+    spacing,
+    max_off_frac: float = 0.45,
+    pad_frac: float = 1.10,
+    size_clip: tuple[float, float] = (0.6, 1.2),
+):
+    """Find the actual stone disc near the expected point (gx, gy) and return a tight
+    absolute ``(cx, cy, w, h)`` on the stone's TRUE center, or ``None``.
+
+    Two-step labeling: the box is centered on the stone's real visible position (not the
+    grid intersection), so the trained detector reports true positions and the deploy-time
+    occupancy-aware assignment (board_state) maps each to the nearest empty intersection.
+    ``None`` (caller keeps the intersection-centered box) when no disc is confidently found
+    within ``max_off_frac*spacing`` of (gx, gy) — this rejects a neighbour's disc. ``color``
+    ('B'/'W') filters by interior polarity vs the patch median, so a black box can't lock
+    onto a white neighbour and vice-versa.
+    """
+    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
+    r = max(6, int(0.45 * spacing))
+    half = int(0.7 * spacing)
+    h_img, w_img = gray.shape[:2]
+    x0, y0 = max(0, int(gx - half)), max(0, int(gy - half))
+    x1, y1 = min(w_img, int(gx + half)), min(h_img, int(gy + half))
+    patch = gray[y0:y1, x0:x1]
+    if patch.size == 0:
+        return None
+    circles = cv2.HoughCircles(
+        patch,
+        cv2.HOUGH_GRADIENT,
+        dp=1.2,
+        minDist=2 * r,
+        param1=120,
+        param2=18,
+        minRadius=int(0.6 * r),
+        maxRadius=int(1.4 * r),
+    )
+    if circles is None:
+        return None
+    med = float(np.median(patch))
+    max_off = max_off_frac * spacing
+    best = None
+    best_d = max_off
+    for c0 in circles[0]:
+        cx, cy, rad = float(c0[0]) + x0, float(c0[1]) + y0, float(c0[2])
+        d = float(np.hypot(cx - gx, cy - gy))
+        if d > best_d:
+            continue
+        s = max(1, int(0.4 * rad))
+        iy0, iy1 = max(0, int(cy - s)), min(h_img, int(cy + s))
+        ix0, ix1 = max(0, int(cx - s)), min(w_img, int(cx + s))
+        interior = gray[iy0:iy1, ix0:ix1]
+        if interior.size == 0:
+            continue
+        inner = float(interior.mean())
+        if color == "B" and inner >= med:  # black disc must be darker than the patch median
+            continue
+        if color == "W" and inner <= med:  # white disc must be brighter
+            continue
+        best_d, best = d, (cx, cy, rad)
+    if best is None:
+        return None
+    cx, cy, rad = best
+    side = float(np.clip(2.0 * rad * pad_frac, size_clip[0] * spacing, size_clip[1] * spacing))
+    return cx, cy, side, side
+
+
 @dataclass
 class ShiftReport:
     dx: float
@@ -317,9 +387,7 @@ def process_game(
     frames_meta = cap.manifest["frames"]
     # If the board moved during this game, frames that fall back to the frozen M_0
     # (frozen / legacy-no-field) carry misaligned labels — the exact failure P11 fixes.
-    game_drifted = any(
-        (f.get("geometry_correction") or {}).get("drift", {}).get("over_threshold") for f in frames_meta
-    )
+    game_drifted = any((f.get("geometry_correction") or {}).get("drift", {}).get("over_threshold") for f in frames_meta)
 
     for fr in frames_meta:
         stats["frames"] += 1
@@ -361,9 +429,7 @@ def process_game(
             anchor_count = 0
             led_found = fallback = False
         else:
-            rep = estimate_global_shift(
-                warped, board, fr.get("led_point"), xs_p, ys_p, spacing, prev_shift=last_shift
-            )
+            rep = estimate_global_shift(warped, board, fr.get("led_point"), xs_p, ys_p, spacing, prev_shift=last_shift)
             last_shift = (rep.dx, rep.dy)  # next legacy frame inherits this if it has no anchors
             shift = (rep.dx, rep.dy)
             dx, dy, residual = rep.dx, rep.dy, rep.residual_px

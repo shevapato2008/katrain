@@ -128,3 +128,27 @@ class TestOccupancyAwareAssignment:
         board = ex.detections_to_board(dets, img_w=img, img_h=img, occupancy_aware=True)
         assert board[5][5] == BLACK
         assert int((board != EMPTY).sum()) == 1  # LED not placed
+
+    def test_high_confidence_keeps_cell_over_centered_low_confidence(self, cfg):
+        # Review #1: a high-confidence real stone (slightly off-center) must keep the contested
+        # cell over a dead-centered low-confidence false positive — confidence beats residual.
+        ex = BoardStateExtractor()
+        img = 950
+        spacing_px = img / 18.0
+        a = self._det_at_cell(5, 5, 0, img, cfg, conf=0.95, off_px=(0.30 * spacing_px, 0.0))  # real, off-center
+        b = self._det_at_cell(5, 5, 1, img, cfg, conf=0.55)  # centered low-confidence FP (white)
+        board = ex.detections_to_board([a, b], img_w=img, img_h=img, occupancy_aware=True)
+        assert board[5][5] == BLACK  # high-confidence A keeps the cell, not centered FP B
+
+    def test_low_confidence_collider_dropped_not_spilled(self, cfg):
+        # Review #2: a low-confidence detection colliding on an occupied point is treated as a
+        # duplicate/false positive and DROPPED, not spilled to an empty neighbor (no phantom).
+        ex = BoardStateExtractor()
+        img = 950
+        spacing_px = img / 18.0
+        a = self._det_at_cell(5, 5, 0, img, cfg, conf=0.9)  # real stone on (5,5)
+        b = self._det_at_cell(5, 5, 0, img, cfg, conf=0.55, off_px=(0.42 * spacing_px, 0.0))  # weak collider
+        board = ex.detections_to_board([a, b], img_w=img, img_h=img, occupancy_aware=True)
+        assert board[5][5] == BLACK
+        assert board[5][6] == EMPTY  # dropped, not spilled
+        assert int((board != EMPTY).sum()) == 1

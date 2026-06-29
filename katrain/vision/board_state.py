@@ -23,6 +23,11 @@ EMPTY = 0
 BLACK = 1
 WHITE = 2
 
+# Detections that collide on an already-claimed intersection are spilled to the nearest empty
+# neighbour only if at least this confident (a sloppily-placed real stone); a weaker collider is
+# treated as a duplicate/false positive and dropped, so it can't manufacture a phantom stone.
+SPILL_MIN_CONFIDENCE = 0.6
+
 
 def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
     """Empty cell nearest the continuous position (fy=row, fx=col), searching a
@@ -72,6 +77,7 @@ class BoardStateExtractor:
     def _assign_occupancy_aware(
         self, board: np.ndarray, detections: list[Detection], img_w: int, img_h: int
     ) -> np.ndarray:
+        gs = board.shape[0]
         items = []
         for det in detections:
             if det.class_id not in STONE_CLASS_IDS:
@@ -79,11 +85,21 @@ class BoardStateExtractor:
             x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
             fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
             residual = math.hypot(fx - round(fx), fy - round(fy))
-            items.append((residual, -det.confidence, det, fx, fy))
-        # cleanest-on-a-cell first, then highest confidence: they claim their intersections before
-        # ambiguous/colliding detections, which then spill to the nearest empty neighbor.
-        items.sort(key=lambda t: (t[0], t[1]))
-        for _, _, det, fx, fy in items:
+            items.append((residual, det, fx, fy))
+        # Highest confidence claims its intersection first (matches the legacy "highest-confidence
+        # wins" semantics); residual only breaks ties between equally confident detections. A
+        # lower-confidence detection that then lands on an occupied point is either a sloppily
+        # placed real stone (spill it to the nearest empty neighbour) or a duplicate/false positive
+        # (drop it) — decided by SPILL_MIN_CONFIDENCE, so a weak FP can't spawn a phantom.
+        items.sort(key=lambda t: (-t[1].confidence, t[0]))
+        for _, det, fx, fy in items:
+            cy = max(0, min(gs - 1, int(round(fy))))
+            cx = max(0, min(gs - 1, int(round(fx))))
+            if board[cy][cx] == EMPTY:
+                board[cy][cx] = det.class_id + 1
+                continue
+            if det.confidence < SPILL_MIN_CONFIDENCE:
+                continue  # weak collider on an occupied point -> drop (don't manufacture a phantom)
             cell = _nearest_empty_cell(board, fy, fx, max_r=1)
             if cell is None:
                 continue  # no empty cell within 1 ring -> cannot place a second stone on one point

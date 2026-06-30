@@ -1,25 +1,43 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, CircularProgress, Alert, Button, Grid } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  Button,
+  IconButton,
+  Slider,
+} from '@mui/material';
+import { ArrowBack, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialSectionDetail, TutorialFigure } from '../../types/tutorial';
-import { bookSlugFromFigures, sectionVideoUrl, sectionPosterUrl } from '../../utils/tutorialAssets';
+import SGFBoard, { type SGFPayload } from '../../components/tutorials/SGFBoard';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
 import FigureThumb from '../components/tutorial/FigureThumb';
-import FigureDialog from '../components/tutorial/FigureDialog';
 import { useOrientation } from '../context/OrientationContext';
 import type { SectionNavState } from '../types/tutorialNav';
 
+/** Highest numeric move label on a figure's board (0 when there are none). */
+function maxMoveOf(fig: TutorialFigure | null): number {
+  return Math.max(
+    0,
+    ...Object.values(fig?.board_payload?.labels ?? {})
+      .map(Number)
+      .filter((n) => !Number.isNaN(n)),
+  );
+}
+
 /**
- * Route: /kiosk/tutorial/section/:sectionId — the core "study" page (Option B).
+ * Route: /kiosk/tutorial/section/:sectionId — the "study" page.
  *
- * Video-first + board-diagram panel. KEY (P0-1): we do NOT gate the video on the
- * section-detail `has_video` flag (that endpoint never computes it — it is always
- * false). Instead, if a book slug can be resolved (from router state on the normal
- * click path, or parsed from a figure asset path on deep-link/refresh), we TRY to
- * play the section video and degrade to "no video" only on a media error.
+ * Mirrors the galaxy figure view (read-only): step through the section's figures
+ * (图 X / N), each showing its board with a 手数 replay slider plus that figure's
+ * own video (figure.video_asset), narration and audio. We use the per-figure
+ * `video_asset` field directly (no constructed section-level URL), and media is
+ * loaded with `referrerPolicy="no-referrer"` so the hotlink-protected gateway
+ * (which 403s a non-origin Referer) serves it to the board origin.
  *
  * READ-ONLY: consumes only TutorialReadAPI; no editing/admin UI.
  */
@@ -35,18 +53,19 @@ const TutorialSectionPage = () => {
   const [section, setSection] = useState<TutorialSectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [videoFailed, setVideoFailed] = useState(false);
-  const [openFigure, setOpenFigure] = useState<TutorialFigure | null>(null);
+  const [index, setIndex] = useState(0);
+  const [step, setStep] = useState<number | null>(null); // null → show all moves
+  const [showFull, setShowFull] = useState(false);
 
   const loadSection = useCallback((id: number, isCancelled: () => boolean) => {
     setLoading(true);
     setError(null);
-    setVideoFailed(false);
 
     TutorialReadAPI.getSection(id)
       .then((data) => {
         if (isCancelled()) return;
         setSection(data);
+        setIndex(0);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -64,6 +83,17 @@ const TutorialSectionPage = () => {
       cancelled = true;
     };
   }, [sectionId, loadSection]);
+
+  // Figures that can be displayed (have a board). Stepping/nav is over these.
+  const figures = useMemo(() => (section?.figures ?? []).filter((f) => f.board_payload), [section]);
+  const current = figures[index] ?? null;
+  const maxStep = useMemo(() => maxMoveOf(current), [current]);
+
+  // Reset replay state whenever the active figure (or section) changes.
+  useEffect(() => {
+    setStep(null);
+    setShowFull(false);
+  }, [index, sectionId]);
 
   if (loading) {
     return (
@@ -84,33 +114,101 @@ const TutorialSectionPage = () => {
     );
   }
 
-  // Resolve book slug: prefer router state (normal click path), fall back to
-  // parsing it from a figure asset path (deep-link / refresh).
-  const slug = navState?.bookSlug ?? bookSlugFromFigures(section.figures);
-  const numericId = Number(sectionId);
-  const tryVideo = Boolean(slug) && !videoFailed; // NOT section.has_video
-
-  // Breadcrumb — never render `undefined`. Use full crumb when state is present,
-  // otherwise a short crumb rooted at "教程".
+  // Breadcrumb — never render `undefined`.
   const crumbParts = navState
     ? [navState.bookTitle, navState.chapterTitle, `${section.section_number}. ${section.title}`]
     : [t('tutorial:title', '教程'), `${section.section_number}. ${section.title}`];
   const breadcrumb = crumbParts.filter(Boolean).join(' ▸ ');
-
-  const renderableFigures = section.figures.filter((f) => f.board_payload);
 
   const onBack = () =>
     navState?.bookId
       ? navigate('/kiosk/tutorial/book/' + navState.bookId)
       : navigate('/kiosk/tutorial');
 
-  const videoArea = (
-    <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-      {tryVideo && slug ? (
+  const goPrev = () => setIndex((i) => Math.max(0, i - 1));
+  const goNext = () => setIndex((i) => Math.min(figures.length - 1, i + 1));
+  const effStep = step ?? maxStep;
+
+  if (figures.length === 0 || !current) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
+          <Button onClick={onBack} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
+          <Typography variant="subtitle1" sx={{ color: 'text.secondary' }} noWrap>
+            {breadcrumb}
+          </Typography>
+        </Box>
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography color="text.secondary">{t('tutorial:noFigures', '本节暂无棋谱')}</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  // ── Board column: diagram + 手数 replay slider + 全盘/局部 toggle ──
+  // The board fits its box by height (width auto, via CSS overriding SGFBoard's
+  // width="100%"), so tall corner/side diagrams scale down instead of clipping.
+  const boardArea = (
+    <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        <SGFBoard
+          payload={current.board_payload as SGFPayload}
+          maxMoveStep={maxStep > 0 ? effStep : undefined}
+          showFullBoard={showFull}
+          style={{ height: '100%', width: 'auto', maxWidth: '100%' }}
+        />
+      </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          width: '100%',
+          maxWidth: 560,
+          alignSelf: 'center',
+          px: 1,
+          flexShrink: 0,
+        }}
+      >
+        <Button size="small" variant="outlined" onClick={() => setShowFull((v) => !v)} sx={{ flexShrink: 0 }}>
+          {showFull ? t('tutorial:partial', '局部') : t('tutorial:fullBoard', '全盘')}
+        </Button>
+        {maxStep > 0 && (
+          <>
+            <Slider
+              min={0}
+              max={maxStep}
+              value={effStep}
+              onChange={(_, v) => setStep(v as number)}
+              aria-label="move-step"
+              sx={{ flex: 1 }}
+            />
+            <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 64, textAlign: 'right' }}>
+              {t('tutorial:moves', '手数')} {effStep}/{maxStep}
+            </Typography>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+
+  // ── Media column: this figure's video + narration + audio ──
+  const mediaArea = (
+    <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1.5, overflow: 'auto' }}>
+      {current.video_asset ? (
         <TutorialVideoPlayer
-          src={sectionVideoUrl(slug, numericId)}
-          poster={sectionPosterUrl(slug, numericId)}
-          onError={() => setVideoFailed(true)}
+          src={TutorialReadAPI.assetUrl(current.video_asset)}
+          poster={TutorialReadAPI.assetUrl(current.video_asset.replace(/\.mp4$/, '.jpg'))}
+          maxHeight={isPortrait ? '34vh' : '46vh'}
         />
       ) : (
         <Box
@@ -118,47 +216,57 @@ const TutorialSectionPage = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: 160,
+            minHeight: 140,
             bgcolor: 'rgba(0,0,0,0.25)',
             borderRadius: 2,
           }}
         >
-          <Typography color="text.secondary">{t('tutorial:noVideo', '本节暂无视频')}</Typography>
+          <Typography color="text.secondary">{t('tutorial:noVideo', '本图暂无视频')}</Typography>
         </Box>
       )}
-    </Box>
-  );
 
-  const figuresArea = (
-    <Box sx={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
-        {t('tutorial:figures', '本节棋谱')}
-      </Typography>
-      {renderableFigures.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('tutorial:noFigures', '本节暂无棋谱')}
+      {current.narration && (
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: 'text.secondary' }}>
+          {current.narration}
         </Typography>
-      ) : (
-        <Grid container spacing={1}>
-          {renderableFigures.map((fig) => (
-            <Grid key={fig.id} size={{ xs: 6, sm: 4, md: 3 }}>
-              <FigureThumb figure={fig} onClick={() => setOpenFigure(fig)} />
-            </Grid>
-          ))}
-        </Grid>
+      )}
+
+      {current.audio_asset && (
+        <audio
+          key={current.audio_asset}
+          src={TutorialReadAPI.assetUrl(current.audio_asset)}
+          controls
+          preload="none"
+          style={{ width: '100%' }}
+        />
       )}
     </Box>
   );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
+      {/* Header: back + breadcrumb */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 0.5 }}>
         <Button onClick={onBack} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
         <Typography variant="subtitle1" sx={{ color: 'text.secondary' }} noWrap>
           {breadcrumb}
         </Typography>
       </Box>
 
+      {/* Figure navigation: ◀ 图X (i / N) ▶ */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.5 }}>
+        <IconButton onClick={goPrev} disabled={index === 0} aria-label="上一图">
+          <NavigateBefore />
+        </IconButton>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, minWidth: 140, textAlign: 'center' }}>
+          {current.figure_label} ({index + 1} / {figures.length})
+        </Typography>
+        <IconButton onClick={goNext} disabled={index === figures.length - 1} aria-label="下一图">
+          <NavigateNext />
+        </IconButton>
+      </Box>
+
+      {/* Main: board | media */}
       <Box
         sx={{
           flex: 1,
@@ -166,15 +274,41 @@ const TutorialSectionPage = () => {
           display: 'flex',
           flexDirection: isPortrait ? 'column' : 'row',
           gap: 2,
-          p: 2,
-          pt: 1,
+          px: 2,
+          py: 1,
         }}
       >
-        {videoArea}
-        {figuresArea}
+        {boardArea}
+        {mediaArea}
       </Box>
 
-      <FigureDialog figure={openFigure} open={!!openFigure} onClose={() => setOpenFigure(null)} />
+      {/* Thumbnail strip — tap to jump to a figure */}
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 0.5,
+          px: 2,
+          py: 1,
+          overflowX: 'auto',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          flexShrink: 0,
+        }}
+      >
+        {figures.map((fig, i) => (
+          <Box
+            key={fig.id}
+            sx={{
+              flex: '0 0 auto',
+              border: '2px solid',
+              borderColor: i === index ? 'primary.main' : 'transparent',
+              borderRadius: 2,
+            }}
+          >
+            <FigureThumb figure={fig} onClick={() => setIndex(i)} />
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 };

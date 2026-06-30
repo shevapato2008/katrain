@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 
 interface Props {
@@ -12,14 +12,23 @@ interface Props {
 /**
  * Shared HTML5 teaching-video player with graceful degradation. On a media
  * error it swaps to a "video unavailable" placeholder and notifies `onError`
- * so the host page can fall back (e.g. show only the board diagrams).
+ * so the host page can fall back.
  *
- * Note: kiosk intentionally does NOT gate playback on the section-detail
- * `has_video` flag (that endpoint does not compute it). Callers try to play
- * whenever a slug is known and rely on `onError` to degrade.
+ * Kiosk note: media is served from a hotlink-protected gateway that 403s on a
+ * non-origin `Referer`. The kiosk runs on the board origin (not the media
+ * domain). `<video>`/`<audio>` do not honor a `referrerpolicy` attribute, so the
+ * kiosk build strips the Referer document-wide via `<meta name="referrer"
+ * content="no-referrer">` (injected in vite.config.ts) — the gateway's
+ * "no Referer → allow" path then serves the bytes (and the poster).
  */
 export default function TutorialVideoPlayer({ src, poster, onError, maxHeight = '60vh' }: Props) {
   const [failed, setFailed] = useState(false);
+
+  // Reset the failed state when the source changes (e.g. stepping to another figure),
+  // so a previously-broken video doesn't keep the placeholder for a new, valid one.
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   if (failed) {
     return (
@@ -41,6 +50,7 @@ export default function TutorialVideoPlayer({ src, poster, onError, maxHeight = 
 
   return (
     <video
+      key={src}
       src={src}
       poster={poster}
       controls

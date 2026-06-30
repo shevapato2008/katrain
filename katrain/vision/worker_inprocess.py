@@ -18,11 +18,12 @@ import numpy as np
 from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
-from katrain.vision.config import BoardConfig, CameraConfig
+from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
 from katrain.vision.stone_detector import StoneDetector
+from katrain.vision.warp import warp_with_margin
 from katrain.vision.sync import SyncState, SyncStateMachine
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,16 @@ class InProcessAdapter:
             confidence_threshold=config.get("confidence_threshold", 0.5),
         )
         self._state_extractor = BoardStateExtractor(board_config)
+        # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
+        # mapping for that path needs the matching border. BoardFinder fallback keeps border 0.
+        self._state_extractor_locked = BoardStateExtractor(
+            BoardConfig(
+                grid_size=board_config.grid_size,
+                board_width_mm=board_config.board_width_mm,
+                board_length_mm=board_config.board_length_mm,
+                margin_cells=DEFAULT_MARGIN_CELLS,
+            )
+        )
         self._move_detector = MoveDetector()
         self._sync = SyncStateMachine()
 
@@ -76,15 +87,18 @@ class InProcessAdapter:
 
     def _warp_frame(self, frame):
         if self._geometry is not None:
-            warped = cv2.warpPerspective(
-                frame,
-                self._geometry.M,
-                (self._geometry.out_size, self._geometry.out_size),
+            # Add the same 1-cell margin the training labeler uses, so serve geometry == train.
+            warped = warp_with_margin(
+                frame, self._geometry.M, int(self._geometry.out_size), margin_cells=DEFAULT_MARGIN_CELLS
             )
             return warped, True
         if self._require_geometry:
             return None, False
         return self._board_finder.find_focus(frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False))
+
+    def _active_extractor(self) -> BoardStateExtractor:
+        """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
+        return self._state_extractor_locked if self._geometry is not None else self._state_extractor
 
     def start(self) -> None:
         self._running = True
@@ -142,7 +156,7 @@ class InProcessAdapter:
                     board_detected = True
                     h, w = warped.shape[:2]
                     detections = self._detector.detect(warped)
-                    observed_board = self._state_extractor.detections_to_board(
+                    observed_board = self._active_extractor().detections_to_board(
                         detections, img_w=w, img_h=h, occupancy_aware=True
                     )
 

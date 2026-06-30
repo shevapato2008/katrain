@@ -23,7 +23,7 @@ import cv2
 import numpy as np
 
 from katrain.vision.classes import ID_TO_NAME, LED_COLOR_TO_CLASS, NAME_TO_ID
-from katrain.vision.config import LedAnchorConfig
+from katrain.vision.config import DEFAULT_MARGIN_CELLS, LedAnchorConfig
 
 # NOTE: katrain.core.baipu is imported LAZILY inside load_capture / reconstruct_board.
 # Importing it at module top would pull in katrain.core.game -> katrain.core.lang, which
@@ -373,7 +373,7 @@ def process_game(
     stone_frac=1.05,
     led_frac=0.45,
     allow_legacy_drift=False,
-    margin_cells=1.0,
+    margin_cells=DEFAULT_MARGIN_CELLS,
     refine_boxes=False,  # NOTE: the CLI (--refine-boxes) defaults this to True; the function default
     # stays False so programmatic callers / existing golden tests keep intersection-centered labels.
 ):
@@ -523,7 +523,7 @@ def main():
     ap.add_argument(
         "--margin-cells",
         type=float,
-        default=1.0,
+        default=DEFAULT_MARGIN_CELLS,
         help="blank border around the grid (in cells) in the warped image so edge/corner stones "
         "aren't clipped in half. Default 1.0; 0 = no margin (old behaviour).",
     )

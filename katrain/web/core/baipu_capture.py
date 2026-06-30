@@ -134,7 +134,17 @@ def _draw_grid_overlay(raw_bgr, M_f, xs, ys, fiducials):
 
 
 def _run_fiducial_calibration(
-    *, led, capture, geometry, board, guidance_point, last_good_M, settle_ms, drift_threshold_cells, game_dir, frame_file
+    *,
+    led,
+    capture,
+    geometry,
+    board,
+    guidance_point,
+    last_good_M,
+    settle_ms,
+    drift_threshold_cells,
+    game_dir,
+    frame_file,
 ):
     """Light known empty intersections, re-solve the camera->canonical homography
     M_f for THIS frame. Returns (correction_dict, fiducials_meta, fiducial_rel, M_used).
@@ -172,7 +182,7 @@ def _run_fiducial_calibration(
         led.clear(strict=True)
         det = detect_led_centroids(dark, lit, expected, channel=_FIDUCIAL_CHANNEL, search_px=0.7 * spacing)
         ok_pts = []
-        for (r, c) in F:
+        for r, c in F:
             res = det[(r, c)]
             fiducials_meta.append(
                 {
@@ -281,22 +291,25 @@ def _write_warp_artifacts(game_dir: Path, frame_file: str, M_used, geometry, fid
     """Warp the (clean) training frame with M_f and write isolated diagnostic
     artifacts. Returns the artifact path map (relative to game_dir)."""
     import cv2
-    import numpy as np
+
+    from katrain.vision.config import DEFAULT_MARGIN_CELLS
+    from katrain.vision.warp import warp_with_margin
 
     raw = cv2.imread(str(game_dir / frame_file))
     if raw is None:
         return {}
     stem = Path(frame_file).stem
     out_size = int(geometry.out_size)
-    # 1-cell margin around the grid so edge/corner stones aren't clipped — matches the training
-    # warp in baipu_autolabel (--margin-cells default 1.0). Live preview = what training sees.
-    pad = int(round((out_size - 1) / 18.0))
-    T = np.array([[1.0, 0.0, pad], [0.0, 1.0, pad], [0.0, 0.0, 1.0]], np.float64)
-    warped = cv2.warpPerspective(raw, T @ np.asarray(M_used, np.float64), (out_size + 2 * pad, out_size + 2 * pad))
+    # 1-cell margin around the grid so edge/corner stones aren't clipped — same shared warp the
+    # training labeler and the geometry-lock inference path use (train == serve == this preview).
+    warped = warp_with_margin(raw, M_used, out_size, margin_cells=DEFAULT_MARGIN_CELLS)
     (game_dir / "warped").mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(game_dir / f"warped/{stem}.jpg"), warped)
     (game_dir / "grid_overlay").mkdir(parents=True, exist_ok=True)
-    cv2.imwrite(str(game_dir / f"grid_overlay/{stem}.jpg"), _draw_grid_overlay(raw, M_used, geometry.xs, geometry.ys, fiducials_meta))
+    cv2.imwrite(
+        str(game_dir / f"grid_overlay/{stem}.jpg"),
+        _draw_grid_overlay(raw, M_used, geometry.xs, geometry.ys, fiducials_meta),
+    )
     return {"warped": f"warped/{stem}.jpg", "grid_overlay": f"grid_overlay/{stem}.jpg"}
 
 

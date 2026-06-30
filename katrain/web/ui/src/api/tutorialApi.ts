@@ -8,7 +8,10 @@ import type {
   BoardPayload,
 } from '../types/tutorial';
 
-const BASE = '/api/v1/tutorials';
+// kiosk/board builds talk to the board-mode read-only proxy (/board/tutorials/*,
+// which forwards to the remote catalog + 302s assets to the public media gateway);
+// the full/galaxy build hits the tutorial service directly. Mirrors live.ts:17.
+const BASE = __KIOSK_2D_ONLY__ ? '/api/v1/board/tutorials' : '/api/v1/tutorials';
 
 async function apiGet<T>(path: string): Promise<T> {
   const resp = await fetch(`${BASE}${path}`);

@@ -108,6 +108,19 @@ class TestLocalStorageBackend:
         with pytest.raises(ValueError):
             local_backend.put("../escape.mp4", self.DATA)
 
+    def test_list_keys_under_prefix(self, local_backend):
+        # One lookup resolves many existence checks (e.g. has_video per section).
+        local_backend.put("tutorial_assets/book/video/section_1.mp4", self.DATA)
+        local_backend.put("tutorial_assets/book/video/section_2.mp4", self.DATA)
+        local_backend.put("tutorial_assets/book/audio/fig_1.mp3", self.DATA)
+        assert local_backend.list_keys("tutorial_assets/book/video/") == {
+            "tutorial_assets/book/video/section_1.mp4",
+            "tutorial_assets/book/video/section_2.mp4",
+        }
+
+    def test_list_keys_missing_prefix_is_empty(self, local_backend):
+        assert local_backend.list_keys("tutorial_assets/nope/video/") == set()
+
 
 # ── factory ───────────────────────────────────────────────────────────────────
 

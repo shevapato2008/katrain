@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from katrain.web.api.v1.api import api_router
+from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
@@ -459,6 +460,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app = FastAPI(lifespan=lifespan)
     app.include_router(api_router, prefix="/api/v1")
+    add_catalog_cache_middleware(app)
     # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
     # the full server serves the complete build. Both emit index.html + /assets,
     # so we point the SPA routes + root mount at the matching directory.

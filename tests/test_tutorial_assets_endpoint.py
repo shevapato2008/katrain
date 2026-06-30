@@ -77,6 +77,31 @@ async def test_local_missing_404(app_local):
 
 
 @pytest.mark.asyncio
+async def test_local_malformed_range_serves_full_200(app_local):
+    # A syntactically invalid Range must not 500; the header is ignored.
+    r = await _get(app_local, KEY, headers={"Range": "bytes=abc-def"})
+    assert r.status_code == 200
+    assert len(r.content) == 256
+
+
+@pytest.mark.asyncio
+async def test_local_suffix_range_returns_last_bytes(app_local):
+    # bytes=-10 means the LAST 10 bytes, not the first 11.
+    r = await _get(app_local, KEY, headers={"Range": "bytes=-10"})
+    assert r.status_code == 206
+    assert r.headers["content-range"] == "bytes 246-255/256"
+    assert r.content == PAYLOAD[-10:]
+
+
+@pytest.mark.asyncio
+async def test_local_unsatisfiable_range_416(app_local):
+    # Start past EOF is unsatisfiable -> 416, never a 206 with a negative length.
+    r = await _get(app_local, KEY, headers={"Range": "bytes=99999-"})
+    assert r.status_code == 416
+    assert r.headers["content-range"] == "bytes */256"
+
+
+@pytest.mark.asyncio
 async def test_local_traversal_rejected(app_local):
     r = await _get(app_local, "..%2f..%2fetc%2fpasswd")
     assert r.status_code in (400, 404)
@@ -91,6 +116,10 @@ async def test_remote_redirects_302(app_remote):
 
 
 @pytest.mark.asyncio
-async def test_remote_missing_404(app_remote):
+async def test_remote_missing_still_redirects(app_remote):
+    # Fix #3: the remote backend 302s without a blocking existence probe — the
+    # public-read object store / CDN returns 404 itself on a real miss. This
+    # avoids a head_object round-trip (and event-loop block) on every request.
     r = await _get(app_remote, "tutorial_assets/book/video/nope.mp4", follow_redirects=False)
-    assert r.status_code == 404
+    assert r.status_code == 302
+    assert r.headers["location"] == "https://cdn.example.com/tutorial_assets/book/video/nope.mp4"

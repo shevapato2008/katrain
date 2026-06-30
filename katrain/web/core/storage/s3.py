@@ -122,6 +122,15 @@ class S3StorageBackend(StorageBackend):
         )
         return obj["Body"].read()
 
+    def list_keys(self, prefix: str) -> set[str]:
+        prefix = normalize_key(prefix)
+        keys: set[str] = set()
+        paginator = self._client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                keys.add(obj["Key"])
+        return keys
+
     def public_url(self, key: str) -> str:
         key = normalize_key(key)
         if self._use_presigned:

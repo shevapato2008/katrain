@@ -261,6 +261,45 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    # ── Tutorial (read-only, public) ──
+
+    async def get_tutorial_categories(self) -> Any:
+        resp = await self._request("GET", "/api/v1/tutorials/categories", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_books(self, category: str) -> Any:
+        from urllib.parse import quote
+
+        resp = await self._request("GET", f"/api/v1/tutorials/categories/{quote(category)}/books", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_book(self, book_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/books/{book_id}", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_chapters(self, book_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/books/{book_id}/chapters", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_sections(self, chapter_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/chapters/{chapter_id}/sections", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_section(self, section_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/sections/{section_id}", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_figure(self, figure_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/figures/{figure_id}", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Board (device management) ──
 
     async def heartbeat(

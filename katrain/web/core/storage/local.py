@@ -48,6 +48,12 @@ class LocalStorageBackend(StorageBackend):
             f.seek(start)
             return f.read(length)
 
+    def list_keys(self, prefix: str) -> set[str]:
+        root = self._path(prefix)
+        if not root.is_dir():
+            return set()
+        return {p.relative_to(self._base).as_posix() for p in root.rglob("*") if p.is_file()}
+
     def public_url(self, key: str) -> str:
         return f"{ASSETS_URL_PREFIX}/{normalize_key(key)}"
 

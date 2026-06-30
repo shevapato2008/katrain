@@ -104,13 +104,18 @@ async def get_sections(chapter_id: int, db: Session = Depends(get_db)):
         chapter = sections[0].chapter
         if chapter and chapter.book:
             book_slug = chapter.book.slug
-    backend = get_storage_backend()
+    # Resolve which sections have a video in ONE storage lookup instead of a probe
+    # per section: for the remote backend that turns N blocking head_object round
+    # trips (on the event loop) into a single list_keys call.
+    video_keys: set[str] = set()
+    if book_slug:
+        video_keys = get_storage_backend().list_keys(f"tutorial_assets/{book_slug}/video/")
     result = []
     for sec in sections:
         out = TutorialSectionOut.model_validate(sec)
         out.figure_count = len(sec.figures) if sec.figures else 0
         if book_slug:
-            out.has_video = backend.exists(f"tutorial_assets/{book_slug}/video/section_{sec.id}.mp4")
+            out.has_video = f"tutorial_assets/{book_slug}/video/section_{sec.id}.mp4" in video_keys
         result.append(out)
     return result
 
@@ -263,26 +268,46 @@ async def get_asset(asset_path: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid asset path")
 
-    if not backend.exists(key):
-        raise HTTPException(status_code=404, detail="Asset not found")
-
-    # Remote object store: redirect; the store / CDN handles Range natively.
+    # Remote object store: redirect straight to the public URL. We deliberately do
+    # NOT probe existence first — that would add a blocking head_object round-trip
+    # on the event loop to every media request and surface transient store errors
+    # as 500s. The public-read store / CDN returns 404 itself on a real miss.
     if backend.is_remote:
         return RedirectResponse(backend.public_url(key), status_code=302)
 
     # Local disk: serve bytes ourselves with Range support.
+    if not backend.exists(key):
+        raise HTTPException(status_code=404, detail="Asset not found")
     file_size = backend.size(key)
-    range_header = request.headers.get("range")
     content_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
 
+    # Parse a single byte range. Tolerate malformed headers (serve the full body)
+    # and reject unsatisfiable ones with 416 rather than crashing or mis-serving.
+    start = end = None
+    range_header = request.headers.get("range")
     if range_header and range_header.startswith("bytes="):
-        range_spec = range_header[6:]
-        parts = range_spec.split("-", 1)
-        start = int(parts[0]) if parts[0] else 0
-        end = int(parts[1]) if parts[1] else file_size - 1
-        end = min(end, file_size - 1)
-        length = end - start + 1
+        spec = range_header[6:].split(",", 1)[0].strip()  # first range only
+        if "-" in spec:
+            lo, hi = spec.split("-", 1)
+            try:
+                if lo == "":
+                    # Suffix range: the LAST `n` bytes.
+                    n = int(hi)
+                    if n > 0:
+                        start, end = max(0, file_size - n), file_size - 1
+                else:
+                    start = int(lo)
+                    end = min(int(hi), file_size - 1) if hi else file_size - 1
+            except ValueError:
+                start = end = None  # malformed -> ignore the header, serve full body
 
+    if start is not None:
+        if start >= file_size or start > end:
+            return Response(
+                status_code=416,
+                headers={"Content-Range": f"bytes */{file_size}", "Accept-Ranges": "bytes"},
+            )
+        length = end - start + 1
         data = backend.read_range(key, start, length)
         return Response(
             content=data,

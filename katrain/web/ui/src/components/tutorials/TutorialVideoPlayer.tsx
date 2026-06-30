@@ -6,6 +6,8 @@ interface Props {
   poster?: string;
   /** Fired once when the <video> element errors (e.g. media missing / 404). */
   onError?: () => void;
+  /** When true, fill the parent box (height 100%, object-fit contain) instead of sizing by width. */
+  fill?: boolean;
   maxHeight?: number | string;
 }
 
@@ -21,7 +23,7 @@ interface Props {
  * content="no-referrer">` (injected in vite.config.ts) — the gateway's
  * "no Referer → allow" path then serves the bytes (and the poster).
  */
-export default function TutorialVideoPlayer({ src, poster, onError, maxHeight = '60vh' }: Props) {
+export default function TutorialVideoPlayer({ src, poster, onError, fill = false, maxHeight = '60vh' }: Props) {
   const [failed, setFailed] = useState(false);
 
   // Reset the failed state when the source changes (e.g. stepping to another figure),
@@ -38,6 +40,7 @@ export default function TutorialVideoPlayer({ src, poster, onError, maxHeight = 
           alignItems: 'center',
           justifyContent: 'center',
           p: 4,
+          height: fill ? '100%' : 'auto',
           minHeight: 160,
           bgcolor: 'rgba(0,0,0,0.25)',
           borderRadius: 2,
@@ -47,6 +50,9 @@ export default function TutorialVideoPlayer({ src, poster, onError, maxHeight = 
       </Box>
     );
   }
+
+  const fillStyle = { width: '100%', height: '100%', objectFit: 'contain' as const };
+  const sizeStyle = { width: '100%', maxHeight };
 
   return (
     <video
@@ -59,7 +65,7 @@ export default function TutorialVideoPlayer({ src, poster, onError, maxHeight = 
         setFailed(true);
         onError?.();
       }}
-      style={{ width: '100%', maxHeight, background: '#000', borderRadius: 8, display: 'block' }}
+      style={{ ...(fill ? fillStyle : sizeStyle), background: '#000', borderRadius: 8, display: 'block' }}
     />
   );
 }

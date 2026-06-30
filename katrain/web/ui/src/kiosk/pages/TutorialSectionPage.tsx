@@ -15,7 +15,6 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialSectionDetail, TutorialFigure } from '../../types/tutorial';
 import SGFBoard, { type SGFPayload } from '../../components/tutorials/SGFBoard';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
-import FigureThumb from '../components/tutorial/FigureThumb';
 import { useOrientation } from '../context/OrientationContext';
 import type { SectionNavState } from '../types/tutorialNav';
 
@@ -201,44 +200,47 @@ const TutorialSectionPage = () => {
     </Box>
   );
 
-  // ── Media column: this figure's video + narration + audio ──
+  // ── Media column: this figure's video, filling its half. The teaching video
+  // already carries the narration audio, so for video figures we give it all the
+  // space; only figures WITHOUT a video fall back to the narration text + audio. ──
   const mediaArea = (
-    <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1.5, overflow: 'auto' }}>
+    <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {current.video_asset ? (
         <TutorialVideoPlayer
+          fill
           src={TutorialReadAPI.assetUrl(current.video_asset)}
           poster={TutorialReadAPI.assetUrl(current.video_asset.replace(/\.mp4$/, '.jpg'))}
-          maxHeight={isPortrait ? '34vh' : '46vh'}
         />
       ) : (
         <Box
           sx={{
+            flex: 1,
+            minHeight: 0,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 140,
-            bgcolor: 'rgba(0,0,0,0.25)',
+            flexDirection: 'column',
+            gap: 1.5,
+            overflow: 'auto',
+            bgcolor: 'rgba(0,0,0,0.18)',
             borderRadius: 2,
+            p: 2,
           }}
         >
           <Typography color="text.secondary">{t('tutorial:noVideo', '本图暂无视频')}</Typography>
+          {current.narration && (
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: 'text.secondary' }}>
+              {current.narration}
+            </Typography>
+          )}
+          {current.audio_asset && (
+            <audio
+              key={current.audio_asset}
+              src={TutorialReadAPI.assetUrl(current.audio_asset)}
+              controls
+              preload="none"
+              style={{ width: '100%' }}
+            />
+          )}
         </Box>
-      )}
-
-      {current.narration && (
-        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: 'text.secondary' }}>
-          {current.narration}
-        </Typography>
-      )}
-
-      {current.audio_asset && (
-        <audio
-          key={current.audio_asset}
-          src={TutorialReadAPI.assetUrl(current.audio_asset)}
-          controls
-          preload="none"
-          style={{ width: '100%' }}
-        />
       )}
     </Box>
   );
@@ -280,34 +282,6 @@ const TutorialSectionPage = () => {
       >
         {boardArea}
         {mediaArea}
-      </Box>
-
-      {/* Thumbnail strip — tap to jump to a figure */}
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 0.5,
-          px: 2,
-          py: 1,
-          overflowX: 'auto',
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          flexShrink: 0,
-        }}
-      >
-        {figures.map((fig, i) => (
-          <Box
-            key={fig.id}
-            sx={{
-              flex: '0 0 auto',
-              border: '2px solid',
-              borderColor: i === index ? 'primary.main' : 'transparent',
-              borderRadius: 2,
-            }}
-          >
-            <FigureThumb figure={fig} onClick={() => setIndex(i)} />
-          </Box>
-        ))}
       </Box>
     </Box>
   );

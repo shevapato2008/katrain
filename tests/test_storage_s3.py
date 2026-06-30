@@ -91,6 +91,19 @@ class TestS3StorageBackend:
         with pytest.raises(ValueError):
             s3_backend.put("../escape.mp4", DATA)
 
+    def test_list_keys_under_prefix(self, s3_backend):
+        # Single list_objects call replaces N per-section head_object probes.
+        s3_backend.put("tutorial_assets/book/video/section_1.mp4", DATA)
+        s3_backend.put("tutorial_assets/book/video/section_2.mp4", DATA)
+        s3_backend.put("tutorial_assets/book/audio/fig_1.mp3", DATA)
+        assert s3_backend.list_keys("tutorial_assets/book/video/") == {
+            "tutorial_assets/book/video/section_1.mp4",
+            "tutorial_assets/book/video/section_2.mp4",
+        }
+
+    def test_list_keys_missing_prefix_is_empty(self, s3_backend):
+        assert s3_backend.list_keys("tutorial_assets/nope/video/") == set()
+
 
 class TestS3PresignedUrls:
     @pytest.fixture

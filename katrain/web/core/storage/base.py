@@ -90,6 +90,13 @@ class StorageBackend(ABC):
         """Return ``length`` bytes starting at offset ``start`` (for HTTP 206)."""
 
     @abstractmethod
+    def list_keys(self, prefix: str) -> set[str]:
+        """Return the set of object keys under ``prefix`` (recursive), or an empty
+        set if none. Lets callers resolve many existence checks with a single
+        backend round-trip instead of N — e.g. computing ``has_video`` for every
+        section in a chapter without one ``head_object`` per section."""
+
+    @abstractmethod
     def public_url(self, key: str) -> str:
         """A URL the client can fetch the object from. For local this is the
         app-relative ``/assets`` path; for S3 it is the CDN / reverse-proxy URL."""

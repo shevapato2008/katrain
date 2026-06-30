@@ -81,3 +81,26 @@ class TestWorkerInprocessWiring:
         assert locked._active_extractor().config.border_width_mm > 0
         unlocked = self._adapter(None)
         assert unlocked._active_extractor().config.border_width_mm == 0.0
+
+
+from katrain.vision.warp import adjust_M_for_resolution
+
+
+class TestAdjustMForResolution:
+    def test_identity_when_source_none(self):
+        M = np.array([[2.0, 0.0, 1.0], [0.0, 3.0, 4.0], [0.0, 0.0, 1.0]])
+        assert np.allclose(adjust_M_for_resolution(M, None, (640, 480)), M)
+
+    def test_identity_when_resolution_matches(self):
+        M = np.array([[2.0, 0.0, 1.0], [0.0, 3.0, 4.0], [0.0, 0.0, 1.0]])
+        assert np.allclose(adjust_M_for_resolution(M, (1280, 720), (1280, 720)), M)
+
+    def test_scales_half_resolution_frame_to_same_canonical(self):
+        # M calibrated at 1280x720; a live frame at 640x360 (half) — pixel (px,py) there
+        # corresponds to source (2px,2py). M_eff(frame_pt) must equal M(source_pt).
+        M = np.array([[1.3, 0.1, 5.0], [0.05, 1.2, 7.0], [0.0, 0.0, 1.0]])
+        M_eff = adjust_M_for_resolution(M, (1280, 720), (640, 360))
+        for px, py in [(0, 0), (100, 50), (639, 359)]:
+            src = M @ np.array([2 * px, 2 * py, 1.0])
+            frm = M_eff @ np.array([px, py, 1.0])
+            assert np.allclose(src / src[2], frm / frm[2])

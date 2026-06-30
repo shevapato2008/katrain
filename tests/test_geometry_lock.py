@@ -108,3 +108,34 @@ class TestAutoresearchCompat:
         assert lock.corners.shape == (4, 2)
         assert lock.points.shape == (19, 19, 2)
         assert lock.baseline.shape == (19, 19, 3)
+
+
+class TestSourceResolution:
+    def test_round_trip_via_sidecar_not_npz(self, tmp_path):
+        path = tmp_path / "geometry_lock.npz"
+        lock = _synth()
+        lock.source_width, lock.source_height = 1920, 1080
+        save_geometry_lock(lock, path)
+        with np.load(path) as d:  # 8-array npz contract preserved (source res is sidecar-only)
+            assert set(d.files) == set(NPZ_FIELDS)
+        loaded = load_geometry_lock(path)
+        assert loaded.source_width == 1920 and loaded.source_height == 1080
+
+    def test_default_lock_has_none_source_resolution(self, tmp_path):
+        path = tmp_path / "geometry_lock.npz"
+        save_geometry_lock(_synth(), path)  # _synth does not set source res
+        loaded = load_geometry_lock(path)
+        assert loaded.source_width is None and loaded.source_height is None
+
+    def test_old_sidecar_without_keys_loads_none(self, tmp_path):
+        import json
+
+        path = tmp_path / "geometry_lock.npz"
+        save_geometry_lock(_synth(), path)
+        sc = path.with_suffix(".json")  # simulate an OLD sidecar predating source_width/height
+        meta = json.loads(sc.read_text())
+        meta.pop("source_width", None)
+        meta.pop("source_height", None)
+        sc.write_text(json.dumps(meta))
+        loaded = load_geometry_lock(path)
+        assert loaded.source_width is None and loaded.source_height is None

@@ -23,7 +23,7 @@ from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, Worker
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
 from katrain.vision.stone_detector import StoneDetector
-from katrain.vision.warp import warp_with_margin
+from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
 from katrain.vision.sync import SyncState, SyncStateMachine
 
 logger = logging.getLogger(__name__)
@@ -87,10 +87,15 @@ class InProcessAdapter:
 
     def _warp_frame(self, frame):
         if self._geometry is not None:
-            # Add the same 1-cell margin the training labeler uses, so serve geometry == train.
-            warped = warp_with_margin(
-                frame, self._geometry.M, int(self._geometry.out_size), margin_cells=DEFAULT_MARGIN_CELLS
+            # Reconcile the live frame to the resolution M was calibrated at (no-op when they match
+            # or the lock predates source_width/height), then add the same 1-cell margin the training
+            # labeler uses, so serve geometry == train.
+            M = adjust_M_for_resolution(
+                self._geometry.M,
+                (getattr(self._geometry, "source_width", None), getattr(self._geometry, "source_height", None)),
+                (frame.shape[1], frame.shape[0]),
             )
+            warped = warp_with_margin(frame, M, int(self._geometry.out_size), margin_cells=DEFAULT_MARGIN_CELLS)
             return warped, True
         if self._require_geometry:
             return None, False

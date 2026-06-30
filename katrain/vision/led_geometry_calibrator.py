@@ -301,4 +301,6 @@ class LedGeometryCalibrator:
                 "max_residual": fit.max_residual,
                 "attempts": attempts,
             },
+            source_height=int(frames[-1].shape[0]),
+            source_width=int(frames[-1].shape[1]),
         )

@@ -54,7 +54,7 @@ const TutorialSectionPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [step, setStep] = useState<number | null>(null); // null → show all moves
-  const [showFull, setShowFull] = useState(false);
+  const [showFull, setShowFull] = useState(true); // default to the complete board (toggle to 局部 to zoom)
 
   const loadSection = useCallback((id: number, isCancelled: () => boolean) => {
     setLoading(true);
@@ -91,7 +91,7 @@ const TutorialSectionPage = () => {
   // Reset replay state whenever the active figure (or section) changes.
   useEffect(() => {
     setStep(null);
-    setShowFull(false);
+    setShowFull(true);
   }, [index, sectionId]);
 
   if (loading) {

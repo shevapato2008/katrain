@@ -43,6 +43,10 @@ class GeometryLock:
     empty_black: int = 0
     empty_white: int = 0
     diag: dict = field(default_factory=dict)
+    # source camera-frame resolution M was calibrated against (sidecar json; None for old locks).
+    # Consumers reconcile the live frame to this via warp.adjust_M_for_resolution.
+    source_width: Optional[int] = None
+    source_height: Optional[int] = None
 
     @property
     def empty_self_check_ok(self) -> bool:
@@ -91,6 +95,8 @@ def lock_geometry_from_frames(
         empty_black=nb,
         empty_white=nw,
         diag={k: res.get(k) for k in ("confidence", "nmatch_x", "nmatch_y", "moved_px", "diag_px")},
+        source_height=int(frames[-1].shape[0]),
+        source_width=int(frames[-1].shape[1]),
     )
 
 
@@ -109,6 +115,8 @@ def save_geometry_lock(lock: GeometryLock, npz_path) -> None:
         "empty_black": lock.empty_black,
         "empty_white": lock.empty_white,
         "diag": lock.diag,
+        "source_width": lock.source_width,
+        "source_height": lock.source_height,
     }
     sidecar_json = json.dumps(
         sidecar,
@@ -177,6 +185,8 @@ def load_geometry_lock(npz_path) -> GeometryLock:
             lock.empty_black = meta.get("empty_black", 0)
             lock.empty_white = meta.get("empty_white", 0)
             lock.diag = meta.get("diag", {})
+            lock.source_width = meta.get("source_width")
+            lock.source_height = meta.get("source_height")
         except Exception:
             pass
     return lock

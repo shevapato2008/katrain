@@ -48,9 +48,7 @@ def test_fit_geometry_uses_human_orientation_and_ransac_outliers():
     assert fit.ok is True
     assert fit.inlier_count >= 11
     for row, col in ((0, 0), (0, 18), (3, 16)):
-        camera_point = cv2.perspectiveTransform(
-            np.array([[[col * 40.0, row * 40.0]]], np.float32), H
-        )
+        camera_point = cv2.perspectiveTransform(np.array([[[col * 40.0, row * 40.0]]], np.float32), H)
         recovered = cv2.perspectiveTransform(camera_point, fit.M)[0, 0]
         assert recovered == pytest.approx((col * 40.0, row * 40.0), abs=2.0)
 

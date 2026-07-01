@@ -83,11 +83,17 @@ async def main():
 
     # Step 5: Authenticate
     print("\n[5] Sending authenticate ...")
-    auth_msg = json.dumps(["authenticate", {
-        "jwt": user_jwt,
-        "client": "KaTrain-SmartBoard-Spike",
-        "client_version": "0.1",
-    }, 1])
+    auth_msg = json.dumps(
+        [
+            "authenticate",
+            {
+                "jwt": user_jwt,
+                "client": "KaTrain-SmartBoard-Spike",
+                "client_version": "0.1",
+            },
+            1,
+        ]
+    )
     await ws.send(auth_msg)
     print(f"    Sent: {auth_msg[:80]}...")
 
@@ -118,11 +124,16 @@ async def main():
 
     # Step 6: Send ping
     print("\n[7] Sending net/ping ...")
-    ping_msg = json.dumps(["net/ping", {
-        "client": int(time.time() * 1000),
-        "drift": 0,
-        "latency": 0,
-    }])
+    ping_msg = json.dumps(
+        [
+            "net/ping",
+            {
+                "client": int(time.time() * 1000),
+                "drift": 0,
+                "latency": 0,
+            },
+        ]
+    )
     await ws.send(ping_msg)
 
     try:

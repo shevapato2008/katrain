@@ -196,13 +196,15 @@ class KGSJsonClient:
 
     async def challenge_create(self, room_channel_id: int, proposal: dict, global_challenge: bool = True) -> None:
         """Create a challenge in a room."""
-        await self._send({
-            "type": "CHALLENGE_CREATE",
-            "channelId": room_channel_id,
-            "callbackKey": 0,
-            "global": global_challenge,
-            "proposal": proposal,
-        })
+        await self._send(
+            {
+                "type": "CHALLENGE_CREATE",
+                "channelId": room_channel_id,
+                "callbackKey": 0,
+                "global": global_challenge,
+                "proposal": proposal,
+            }
+        )
 
     async def challenge_accept(self, channel_id: int, proposal: dict) -> None:
         await self._send({"type": "CHALLENGE_ACCEPT", "channelId": channel_id, "proposal": proposal})

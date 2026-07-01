@@ -311,11 +311,7 @@ class SyncStateMachine:
 
         if self._state == SyncState.CAPTURE_PENDING:
             # Check if captures have been cleared
-            still_pending = [
-                (r, c, clr)
-                for r, c, clr in self._pending_captures
-                if int(observed_board[r, c]) != EMPTY
-            ]
+            still_pending = [(r, c, clr) for r, c, clr in self._pending_captures if int(observed_board[r, c]) != EMPTY]
             if not still_pending:
                 self._pending_captures = []
                 self._state = SyncState.SYNCED

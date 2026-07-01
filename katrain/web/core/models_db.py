@@ -1,4 +1,18 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text, Enum, CheckConstraint, Boolean, UniqueConstraint, Index, JSON
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Float,
+    ForeignKey,
+    Text,
+    Enum,
+    CheckConstraint,
+    Boolean,
+    UniqueConstraint,
+    Index,
+    JSON,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from katrain.web.core.db import Base
@@ -8,6 +22,7 @@ import uuid as uuid_module
 
 class MatchSourceEnum(str, enum.Enum):
     """Data source for live matches."""
+
     XINGZHEN = "xingzhen"
     YIKE = "yike"
     PANDANET = "pandanet"
@@ -15,28 +30,35 @@ class MatchSourceEnum(str, enum.Enum):
 
 class MatchStatusEnum(str, enum.Enum):
     """Status of a live match."""
+
     LIVE = "live"
     FINISHED = "finished"
 
 
 class AnalysisStatusEnum(str, enum.Enum):
     """Status of analysis task."""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
 
+
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    uuid = Column(String, unique=True, index=True, default=lambda: uuid_module.uuid4().hex)  # Unique UUID assigned at registration
+    uuid = Column(
+        String, unique=True, index=True, default=lambda: uuid_module.uuid4().hex
+    )  # Unique UUID assigned at registration
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     rank = Column(String, default="20k")
     net_wins = Column(Integer, default=0)
     elo_points = Column(Integer, default=0)
-    credits = Column(Integer, default=10000, nullable=False)  # integer credit balance (single pool); server-authoritative
+    credits = Column(
+        Integer, default=10000, nullable=False
+    )  # integer credit balance (single pool); server-authoritative
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -45,6 +67,7 @@ class User(Base):
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
+
 
 class Relationship(Base):
     __tablename__ = "relationships"
@@ -55,6 +78,7 @@ class Relationship(Base):
 
     follower = relationship("User", foreign_keys=[follower_id], back_populates="following")
     following = relationship("User", foreign_keys=[following_id], back_populates="followers")
+
 
 class RatingHistory(Base):
     __tablename__ = "rating_history"
@@ -73,6 +97,7 @@ class RatingHistory(Base):
 
 class LiveMatchDB(Base):
     """Database model for live/historical matches from external sources."""
+
     __tablename__ = "live_matches"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -92,9 +117,9 @@ class LiveMatchDB(Base):
     sgf_content = Column(Text, nullable=True)
     moves = Column(JSON, nullable=True)  # ["Q16", "D4", ...]
     current_winrate = Column(Float, default=0.5)  # From XingZhen API
-    current_score = Column(Float, default=0.0)    # From XingZhen API
+    current_score = Column(Float, default=0.0)  # From XingZhen API
     katago_winrate = Column(Float, nullable=True)  # From local KataGo (latest move)
-    katago_score = Column(Float, nullable=True)    # From local KataGo (latest move)
+    katago_score = Column(Float, nullable=True)  # From local KataGo (latest move)
     # Game rules and komi
     board_size = Column(Integer, default=19)  # Board size (9, 13, 19)
     komi = Column(Float, default=7.5)  # Komi (compensation points for white)
@@ -108,6 +133,7 @@ class LiveMatchDB(Base):
 
 class LiveAnalysisDB(Base):
     """Database model for move-by-move analysis data."""
+
     __tablename__ = "live_analysis"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -140,9 +166,7 @@ class LiveAnalysisDB(Base):
     analyzed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Unique constraint for (match_id, move_number)
-    __table_args__ = (
-        UniqueConstraint('match_id', 'move_number', name='uq_match_move'),
-    )
+    __table_args__ = (UniqueConstraint("match_id", "move_number", name="uq_match_move"),)
 
     # Relationship to match
     match = relationship("LiveMatchDB", back_populates="analysis_records")
@@ -150,6 +174,7 @@ class LiveAnalysisDB(Base):
 
 class LiveCommentDB(Base):
     """Database model for comments on live matches."""
+
     __tablename__ = "live_comments"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -166,14 +191,16 @@ class LiveCommentDB(Base):
 
 class TranslationSourceEnum(str, enum.Enum):
     """Source of translation data."""
-    STATIC = "static"      # From JSON files
-    MANUAL = "manual"      # Manually entered by user
-    LLM = "llm"            # Generated by LLM
+
+    STATIC = "static"  # From JSON files
+    MANUAL = "manual"  # Manually entered by user
+    LLM = "llm"  # Generated by LLM
     WIKIPEDIA = "wikipedia"  # From Wikipedia lookup
 
 
 class PlayerTranslationDB(Base):
     """Database model for player name translations."""
+
     __tablename__ = "player_translations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -192,6 +219,7 @@ class PlayerTranslationDB(Base):
 
 class TournamentTranslationDB(Base):
     """Database model for tournament name translations."""
+
     __tablename__ = "tournament_translations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -212,6 +240,7 @@ class SystemConfigDB(Base):
     Stores runtime-configurable settings. Sensitive values like API keys
     should still be stored in environment variables for security.
     """
+
     __tablename__ = "system_config"
 
     key = Column(String(64), primary_key=True, index=True)
@@ -222,8 +251,10 @@ class SystemConfigDB(Base):
 
 # ============ Tsumego Models ============
 
+
 class TsumegoProblem(Base):
     """Individual tsumego problem."""
+
     __tablename__ = "tsumego_problems"
 
     id = Column(String(32), primary_key=True)  # Problem number, e.g. "1014"
@@ -238,13 +269,12 @@ class TsumegoProblem(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (
-        Index("ix_tsumego_level_category", "level", "category"),
-    )
+    __table_args__ = (Index("ix_tsumego_level_category", "level", "category"),)
 
 
 class UserTsumegoProgress(Base):
     """User's progress on a specific problem."""
+
     __tablename__ = "user_tsumego_progress"
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
@@ -260,6 +290,7 @@ class UserTsumegoProgress(Base):
 
 
 # ============ Tutorial Models ============
+
 
 class UserTutorialProgress(Base):
     # DEPRECATED in V2 — kept for data preservation. Will be replaced in Phase 3.
@@ -278,12 +309,14 @@ class UserTutorialProgress(Base):
 
 # ============ Tutorial V2 Models ============
 
+
 class TutorialBook(Base):
     """A Go tutorial book imported from book.json."""
+
     __tablename__ = "tutorial_books"
 
     id = Column(Integer, primary_key=True, index=True)
-    category = Column(String(32), nullable=False, index=True)      # 入门/布局/中盘/官子
+    category = Column(String(32), nullable=False, index=True)  # 入门/布局/中盘/官子
     subcategory = Column(String(64), nullable=False, default="棋书")
     title = Column(String(256), nullable=False)
     author = Column(String(128), nullable=True)
@@ -293,16 +326,16 @@ class TutorialBook(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    chapters = relationship("TutorialChapter", back_populates="book", cascade="all, delete-orphan",
-                            order_by="TutorialChapter.order")
-
-    __table_args__ = (
-        CheckConstraint("category IN ('入门', '布局', '中盘', '官子')", name="ck_book_category"),
+    chapters = relationship(
+        "TutorialChapter", back_populates="book", cascade="all, delete-orphan", order_by="TutorialChapter.order"
     )
+
+    __table_args__ = (CheckConstraint("category IN ('入门', '布局', '中盘', '官子')", name="ck_book_category"),)
 
 
 class TutorialChapter(Base):
     """A chapter within a tutorial book."""
+
     __tablename__ = "tutorial_chapters"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -312,16 +345,16 @@ class TutorialChapter(Base):
     order = Column(Integer, nullable=False)
 
     book = relationship("TutorialBook", back_populates="chapters")
-    sections = relationship("TutorialSection", back_populates="chapter", cascade="all, delete-orphan",
-                            order_by="TutorialSection.order")
-
-    __table_args__ = (
-        UniqueConstraint("book_id", "order", name="uq_chapter_book_order"),
+    sections = relationship(
+        "TutorialSection", back_populates="chapter", cascade="all, delete-orphan", order_by="TutorialSection.order"
     )
+
+    __table_args__ = (UniqueConstraint("book_id", "order", name="uq_chapter_book_order"),)
 
 
 class TutorialSection(Base):
     """A section within a chapter (= one Example in the UI)."""
+
     __tablename__ = "tutorial_sections"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -331,16 +364,16 @@ class TutorialSection(Base):
     order = Column(Integer, nullable=False)
 
     chapter = relationship("TutorialChapter", back_populates="sections")
-    figures = relationship("TutorialFigure", back_populates="section", cascade="all, delete-orphan",
-                           order_by="TutorialFigure.order")
-
-    __table_args__ = (
-        UniqueConstraint("chapter_id", "order", name="uq_section_chapter_order"),
+    figures = relationship(
+        "TutorialFigure", back_populates="section", cascade="all, delete-orphan", order_by="TutorialFigure.order"
     )
+
+    __table_args__ = (UniqueConstraint("chapter_id", "order", name="uq_section_chapter_order"),)
 
 
 class TutorialFigure(Base):
     """A single board diagram (= one Variation in the UI). Core content unit."""
+
     __tablename__ = "tutorial_figures"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -364,13 +397,12 @@ class TutorialFigure(Base):
 
     section = relationship("TutorialSection", back_populates="figures")
 
-    __table_args__ = (
-        UniqueConstraint("section_id", "order", name="uq_figure_section_order"),
-    )
+    __table_args__ = (UniqueConstraint("section_id", "order", name="uq_figure_section_order"),)
 
 
 class BoardPayloadHistory(Base):
     """Audit trail for board_payload changes (edits and verifications)."""
+
     __tablename__ = "board_payload_history"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -389,20 +421,21 @@ class TrainingSample(Base):
     Populated from human-verified figures via scripts/export_training_data.py.
     Each row = one CV-cropped intersection patch with ground-truth label.
     """
+
     __tablename__ = "training_samples"
 
     id = Column(Integer, primary_key=True, index=True)
     figure_id = Column(Integer, ForeignKey("tutorial_figures.id", ondelete="CASCADE"), nullable=False, index=True)
-    patch_label = Column(String(4), nullable=False)       # "A", "B", "AA"
+    patch_label = Column(String(4), nullable=False)  # "A", "B", "AA"
     local_col = Column(Integer, nullable=False)
     local_row = Column(Integer, nullable=False)
     global_col = Column(Integer, nullable=False)
     global_row = Column(Integer, nullable=False)
     patch_image_path = Column(String(512), nullable=False)  # relative to data/
-    base_type = Column(String(16), nullable=False)          # black/white/empty
-    move_number = Column(Integer, nullable=True)            # 1-99 or null
-    shape = Column(String(16), nullable=True)               # triangle/square/circle or null
-    letter = Column(String(4), nullable=True)               # A/B/C or null
+    base_type = Column(String(16), nullable=False)  # black/white/empty
+    move_number = Column(Integer, nullable=True)  # 1-99 or null
+    shape = Column(String(16), nullable=True)  # triangle/square/circle or null
+    letter = Column(String(4), nullable=True)  # A/B/C or null
     source = Column(String(16), nullable=False, server_default="human")
     book_slug = Column(String(256), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -412,6 +445,7 @@ class TrainingSample(Base):
 
 class KifuAlbum(Base):
     """Database model for tournament game records (大赛棋谱)."""
+
     __tablename__ = "kifu_albums"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -422,7 +456,9 @@ class KifuAlbum(Base):
     event = Column(String(256), nullable=True, index=True)
     result = Column(String(64), nullable=True)
     date_played = Column(String(32), nullable=True)  # Raw SGF date string for display ("1926", "1928-09-04,05")
-    date_sort = Column(String(10), nullable=True, index=True)  # Normalized ISO prefix for sorting ("1926-00-00", "1928-09-04")
+    date_sort = Column(
+        String(10), nullable=True, index=True
+    )  # Normalized ISO prefix for sorting ("1926-00-00", "1928-09-04")
     place = Column(String(256), nullable=True)
     komi = Column(Float, nullable=True)
     handicap = Column(Integer, default=0)
@@ -439,6 +475,7 @@ class KifuAlbum(Base):
 
 class UserGame(Base):
     """Personal game library: play records, imported SGFs, research positions."""
+
     __tablename__ = "user_games"
 
     id = Column(String(32), primary_key=True, default=lambda: uuid_module.uuid4().hex)
@@ -477,6 +514,7 @@ class UserGame(Base):
 
 class UserGameAnalysis(Base):
     """Move-by-move analysis data for user games (research module)."""
+
     __tablename__ = "user_game_analysis"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -503,13 +541,14 @@ class UserGameAnalysis(Base):
     game = relationship("UserGame", back_populates="analysis_records")
 
     __table_args__ = (
-        UniqueConstraint('game_id', 'move_number', name='uq_user_game_analysis_move'),
+        UniqueConstraint("game_id", "move_number", name="uq_user_game_analysis_move"),
         Index("ix_user_game_analysis_status", "status", "priority"),
     )
 
 
 class ReportTask(Base):
     """Persistent report-generation task for a user-owned game."""
+
     __tablename__ = "report_tasks"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -539,6 +578,7 @@ class ReportTask(Base):
 
 class ReportTaskMove(Base):
     """Stored move-by-move analysis snapshot for a report task."""
+
     __tablename__ = "report_task_moves"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -558,13 +598,12 @@ class ReportTaskMove(Base):
 
     task = relationship("ReportTask", back_populates="moves")
 
-    __table_args__ = (
-        UniqueConstraint('task_id', 'move_number', name='uq_report_task_move'),
-    )
+    __table_args__ = (UniqueConstraint("task_id", "move_number", name="uq_report_task_move"),)
 
 
 class SyncQueueEntry(Base):
     """Offline sync queue for board mode. See design.md Section 4.5.1."""
+
     __tablename__ = "sync_queue"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -586,13 +625,12 @@ class SyncQueueEntry(Base):
     user_id = Column(String(64), nullable=True)
     device_id = Column(String(64), nullable=True)
 
-    __table_args__ = (
-        Index("ix_sync_queue_status_retry", "status", "next_retry_at"),
-    )
+    __table_args__ = (Index("ix_sync_queue_status_retry", "status", "next_retry_at"),)
 
 
 class DeviceHeartbeatDB(Base):
     """Server-side device tracking. See design.md Section 4.15.2."""
+
     __tablename__ = "device_heartbeats"
 
     device_id = Column(String(64), primary_key=True)
@@ -607,6 +645,7 @@ class DeviceHeartbeatDB(Base):
 
 class UpcomingMatchDB(Base):
     """Upcoming/scheduled matches from various sources (populated by katrain-cron)."""
+
     __tablename__ = "live_upcoming"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -676,9 +715,7 @@ class CreditTransaction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (
-        Index("ix_credit_tx_user_status", "user_id", "status"),
-    )
+    __table_args__ = (Index("ix_credit_tx_user_status", "user_id", "status"),)
 
 
 class RedeemCode(Base):

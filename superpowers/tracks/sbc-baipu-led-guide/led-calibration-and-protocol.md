@@ -206,3 +206,108 @@ if __name__ == "__main__":
 5. **重布线/换板**:只需重跑第 3 步刷新 `led_lut.json`,固件与上层代码零改动。
 
 > 兜底(无相机时):用固件 `SCAN` 逐颗点亮,人工记录每个 `IDX i` 的物理 (row,col),手填 `led_lut.json`。
+
+---
+
+## E. 完整调用图：从 UI 按钮到 `rc2idx`（as-built, 2026-06-28）
+
+> 实测代码现状（与 A–D 的早期骨架略有出入）：默认 LUT 是 `led_service.rc2idx` 公式（经验证双射，
+> 可用 `--led-lut-path` JSON 覆盖）；几何锁定走 `geometry_lock` + `GeometryCalibrationService`，
+> P11 漂移在线重定位走 `fiducial_recalibrate`。设计原则不变：**固件只认原始链索引 `SETI`，
+> (row,col)→idx 的映射全部在主机端 `rc2idx`。**
+
+### 全景（4 层 + 两个入口）
+
+```
+[前端 kiosk UI]                         [FastAPI 端点]                        [服务/核心层]                                 [LED 驱动]              [映射]
+─────────────────                       ───────────────                       ────────────────                              ──────────             ──────
+
+A. 摆谱（每手落子 / 提子）
+ BaipuSessionPage.tsx
+   baipu-confirm 按钮  (:443) ─┐
+   baipu-removed 按钮  (:456) ─┼─► doCapture() (:208)
+                               │     └► BaipuAPI.capture()                  POST /baipu/capture
+                               │        (baipuApi.ts:93) ───────────────►   baipu_capture() (baipu.py:103)
+                               │                                              └► run_capture() (baipu_capture.py)
+                               │                                                   ├─ 制导灯       ─► led.set_points()      (:352) ─► led_service.set_points()      (:188) ─► self._lut(r,c) ─┐
+                               │                                                   └─ P11 基准灯    ─► led.set_rgb_points()  (:170) ─► led_service.set_rgb_points()  (:205) ─► self._lut(r,c) ─┤
+                                                                                      (_run_fiducial_calibration)                                                                              │
+B. 几何标定 / 开机锁定棋盘                                                                                                                                                                     │
+ VisionSetupPage.tsx ─┐                                                                                                                                                                      │
+ PhysicalBoardGuard.tsx┼─► useGeometry()  (GeometryContext.tsx)                                                                                                                              │
+                       │     ├► GeometryAPI.calibrate()  (geometryApi.ts:85) ─►  POST /geometry/calibrate                                                                                     │
+                       │     │                                                     geometry_calibrate() (geometry.py:69)                                                                      │
+                       │     │                                                      └► GeometryCalibrationService.start()                                                                     │
+                       │     │                                                          └► LedGeometryCalibrator (led_geometry_calibrator.py)                                                 │
+                       │     │                                                              └► led.set_rgb_points() (:230) ─► led_service.set_rgb_points() (:205) ─► self._lut(r,c) ──────────┤
+                       │     └► GeometryAPI.lock()       (geometryApi.ts:70) ─►  POST /geometry/lock → _run_lock() (geometry.py:178)                                                          │
+                       │                                                          [仅 led.clear() 熄灯做空盘自检，不经 rc2idx]                                                                  │
+                       │                                                                                                                                                                      ▼
+C. 手动 / 调试直连                                                                                                                                          self._lut = _load_lut() (:111)
+ (前端调试面板 / curl) ──► POST /led/point(s) (led.py:43,50) ─► led.set_points() ─► led_service.set_points() (:188) ─► self._lut(r,c) ────────────────────►  默认 return rc2idx (:143)
+                                                                                                                                                            └─► rc2idx() (led_service.py:40)
+D. 独立诊断工具（不经 UI / API，你手动跑）                                                                                                                       └─ serp() (:36) 子板蛇形
+ p11_live_overlay.py  按 'r' 重锁 ─► relock() (:74) ─► led.set_rgb_points() ─► led_service.set_rgb_points() (:205) ─► self._lut(r,c) ─► rc2idx
+```
+
+### 真正触发 `rc2idx` 的运行时端点（汇总）
+
+| 入口 | 触发路径 | 经过的 LedService 方法 |
+|---|---|---|
+| 摆谱制导灯 | `BaipuSessionPage` → `/baipu/capture` → `run_capture` → `baipu_capture.py:352` | `set_points` |
+| P11 在线漂移重定位 | 同上 → `run_capture` → `_run_fiducial_calibration` → `baipu_capture.py:170` | `set_rgb_points` |
+| 开机/几何标定锁盘 | `VisionSetupPage`/`PhysicalBoardGuard` → `/geometry/calibrate` → `GeometryCalibrationService` → `LedGeometryCalibrator` → `led_geometry_calibrator.py:230` | `set_rgb_points` |
+| 手动/调试点灯 | `/led/point(s)` → `led.py:43,50` | `set_points` |
+| 独立诊断（实时叠加工具） | `p11_live_overlay.py:74` `relock()` | `set_rgb_points` |
+
+**不经过 `rc2idx` 的路径**（只发 `CLEAR/SHOW`，无 (row,col) 映射，却是调用最频繁的）：
+`led.clear()` —— `server.py:1786`（failsafe）、`baipu_capture.py:168/172/360`、`geometry_calibration_service.py:79/207`、
+`geometry.py:237`（lock 熄灯）、`led_geometry_calibrator.py:207/217/225`、`p11_live_overlay.py:72/76/104/160`。
+
+### 依赖装配（`server.py` lifespan）
+
+`app.state.led`（:396，`LedService` 实例，持 `self._lut`）· `app.state.capture`（:409）· `app.state.geometry`（:419，已锁几何）·
+`app.state.geometry_calibration`（:437，`GeometryCalibrationService`）· `app.state.baipu_fiducial_mode`（:412，默认 `every-move`）。
+端点全部通过 `request.app.state.*` 取这些单例，故"谁调用 LED"最终都收敛到同一个 `LedService.self._lut → rc2idx`。
+
+### 设备端固件（链路另一端，不参与 (row,col) 映射）
+
+`smartbox-hardware-design/debug/led_bring_up_pio/src/main.cpp`：`loop()` 拼行 → `handleLine()` 分发
+`SETI/SHOW/CLEAR/CLEAR!/BRIGHT/SCAN/AUTO/STOP/STATUS`，只写 `leds[idx]`（原始链索引）。固件**零** (row,col) 概念。
+（旧的 `saiboard/software/esp32s3/main/main.c` 曾有设备端映射 `_row_col_to_nr`，是已弃用的 WiFi-JSON 固件，不在此链路。）
+
+### 测试
+
+`tests/test_led_service.py`：`:60-67` 断言 8 个角/边界映射值；`:70` 验证双射；`:100` 断言最终 `SETI` 行用 `rc2idx` 算出的 idx；`:136` 用 `rc2idx` 校验 `set_points` 输出。
+
+---
+
+## F. 几何标定算法的统一抽象（P12，精简版）
+
+> §E 是「点哪颗灯」的链路（`rc2idx`）；本节是「用哪套算法定出棋盘几何 `M`」的链路。两者正交：标定先确定 `M`（相机→规范棋盘），制导/采集再用 `rc2idx` 点灯。详图见 `plan.md` P12「设计图」。
+
+**模式**：Strategy（统一 5 套算法）+ Factory（`build_default_selector`）+ 场景优先级选择器 + State（`DriftStateMachine`）。**核心规则**：`Scenario` 派生 `allow_led`，**运行中（RUNTIME）绝不自动亮灯**。
+
+**五套算法 → 收编为 Strategy**（`calibration_strategies.py`，仅适配不改本体）：
+
+| Strategy | 灯 | 场景 | 底层（file） |
+|---|---|---|---|
+| `OuterCornerStrategy` | 无 | 运行中重定位（首选）| `geometry_detect.detect_board_raw`（无状态）|
+| `EmptyBoardAutocalStrategy` | 无 | 开机·空盘（无灯兜底）| `geometry_lock.lock_geometry_from_frames` |
+| `LedAnchorStrategy` | **有** | 开机黄金标定 | `led_geometry_calibrator.LedGeometryCalibrator` → `set_rgb_points`→`rc2idx` |
+| `LedFiducialStrategy` | **有** | 手动兜底 | `fiducial_recalibrate.*` → `set_rgb_points`→`rc2idx` |
+
+**与 §E 的接点**：只有两条 **LED** 策略（`LedAnchor`/`LedFiducial`，以及 `every-move` 直连路径）会经 `set_rgb_points → rc2idx` 点灯——即 §E 表中「几何标定 / P11 重定位」两行；两条**无灯**策略不碰 `rc2idx`。
+
+**选择器派发**（`CalibrationSelector.calibrate(scenario, ctx)`，`calibration_registry.py` 工厂装配）：
+```
+allow_led = scenario.allows_led()            # INITIAL/MANUAL=True, RUNTIME=False
+for name in policy[scenario]:                # INITIAL=[led_anchor,empty_autocal]
+    if requires_led and not allow_led: skip  # RUNTIME=[outer_corner]
+    if not is_applicable(ctx): skip          # MANUAL=[outer_corner,led_fiducial]
+    if (out := strat.calibrate(...)).ok: return out
+```
+
+**模式选择**：`--baipu-fiducial-mode` / `$KATRAIN_BAIPU_FIDUCIAL_MODE`（`resolve_fiducial_mode`，CLI>env>默认 `auto`）。实时对弈 `auto`（无灯）；**采训练数据用 `every-move`**（LED 亚像素）。
+
+**测试**：`tests/test_vision/test_calibration_strategy.py` · `test_outer_corner_strategy.py` · `test_calibration_strategies_adapters.py` · `test_calibration_registry.py`（含「RUNTIME 全程 0 次 `set_rgb_points`」的真策略 spy）· `test_drift_state_machine.py` · `test_outer_corner_accuracy.py`。

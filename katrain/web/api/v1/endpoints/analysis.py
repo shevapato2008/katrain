@@ -6,6 +6,7 @@ from katrain.web.models import User, AnalyzeRequest
 
 router = APIRouter()
 
+
 @router.post("/analyze")
 async def analyze(request: Request, data: AnalyzeRequest, current_user: User = Depends(get_current_user)) -> Any:
     router_instance = getattr(request.app.state, "router", None)
@@ -21,7 +22,7 @@ async def analyze(request: Request, data: AnalyzeRequest, current_user: User = D
     try:
         result = await router_instance.route(data.payload)
         session.katrain.last_engine = result.get("engine")
-        session.katrain.update_state() # Broadcast new state with engine info
+        session.katrain.update_state()  # Broadcast new state with engine info
         return result
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))

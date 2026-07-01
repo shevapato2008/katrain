@@ -96,16 +96,18 @@ class TranslateJob(BaseJob):
                     existing.source = result.get("source", existing.source)
                     existing.llm_model = result.get("llm_model")
                 else:
-                    db.add(PlayerTranslationDB(
-                        canonical_name=name,
-                        en=result.get("en"),
-                        cn=result.get("cn"),
-                        tw=result.get("tw"),
-                        jp=result.get("jp"),
-                        ko=result.get("ko"),
-                        source=result.get("source", "llm"),
-                        llm_model=result.get("llm_model"),
-                    ))
+                    db.add(
+                        PlayerTranslationDB(
+                            canonical_name=name,
+                            en=result.get("en"),
+                            cn=result.get("cn"),
+                            tw=result.get("tw"),
+                            jp=result.get("jp"),
+                            ko=result.get("ko"),
+                            source=result.get("source", "llm"),
+                            llm_model=result.get("llm_model"),
+                        )
+                    )
                 db.commit()
             except IntegrityError:
                 db.rollback()
@@ -148,16 +150,18 @@ class TranslateJob(BaseJob):
                     existing.source = result.get("source", existing.source)
                     existing.llm_model = result.get("llm_model")
                 else:
-                    db.add(TournamentTranslationDB(
-                        original=name,
-                        en=result.get("en"),
-                        cn=result.get("cn"),
-                        tw=result.get("tw"),
-                        jp=result.get("jp"),
-                        ko=result.get("ko"),
-                        source=result.get("source", "llm"),
-                        llm_model=result.get("llm_model"),
-                    ))
+                    db.add(
+                        TournamentTranslationDB(
+                            original=name,
+                            en=result.get("en"),
+                            cn=result.get("cn"),
+                            tw=result.get("tw"),
+                            jp=result.get("jp"),
+                            ko=result.get("ko"),
+                            source=result.get("source", "llm"),
+                            llm_model=result.get("llm_model"),
+                        )
+                    )
                 db.commit()
             except IntegrityError:
                 db.rollback()

@@ -50,5 +50,11 @@ def test_shared_camera_adapter_requires_geometry_and_uses_locked_transform():
     warped, found = adapter._warp_frame(frame)
 
     assert found is True
-    assert warped.shape == (20, 20, 3)
+    # The geometry-lock warp now adds the same 1-cell margin the training labeler uses
+    # (train/serve consistency), so the canvas is out_size + 2*pad, not out_size.
+    from katrain.vision.config import DEFAULT_MARGIN_CELLS
+    from katrain.vision.warp import margin_px_for
+
+    pad = margin_px_for(20, DEFAULT_MARGIN_CELLS, 19)
+    assert warped.shape == (20 + 2 * pad, 20 + 2 * pad, 3)
     adapter._board_finder.find_focus.assert_not_called()

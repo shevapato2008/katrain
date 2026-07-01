@@ -155,3 +155,66 @@ class TestBaipuCaptureEndpoint:
 
         assert r.status_code == 200
         assert captured["overwrite_existing"] is True
+
+    def test_capture_response_carries_geometry_correction(self, tmp_path):
+        import cv2
+
+        xs = np.linspace(0, 949, 19).astype(np.float32)
+        pts = np.zeros((19, 19, 2), np.float32)
+        for r in range(19):
+            for c in range(19):
+                pts[r][c] = (xs[c], xs[r])
+
+        class _FidGeo(GeometryLock):
+            pass
+
+        geo = GeometryLock(
+            corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=xs,
+            M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+        )
+
+        class _FidLed:
+            def clear(self, *, strict=False):
+                return {"ok": True, "shown_at": None}
+
+            def set_rgb_points(self, points, *, strict=False):
+                return {"ok": True, "shown_at": 5.0}
+
+            def set_points(self, points, *, strict=False):
+                return {"ok": True, "shown_at": 6.0}
+
+        class _FidCap:
+            def __init__(self, out_dir):
+                self.out_dir = Path(out_dir)
+                self.n = 0
+
+            def grab_fresh(self, after_ts=None, settle_ms=150.0):
+                self.n += 1
+                img = np.zeros((950, 950, 3), np.uint8)
+                if self.n % 2 == 0:
+                    for r in (0, 18):
+                        for c in (0, 18):
+                            cv2.circle(img, (int(pts[r][c][0]), int(pts[r][c][1])), 6, (0, 200, 0), -1)
+                    for r in (3, 9, 15):
+                        for c in (3, 9, 15):
+                            cv2.circle(img, (int(pts[r][c][0]), int(pts[r][c][1])), 6, (0, 200, 0), -1)
+                return img, self.n, float(self.n)
+
+            def capture_to(self, path, after_ts=None, settle_ms=150.0):
+                Path(path).parent.mkdir(parents=True, exist_ok=True)
+                cv2.imwrite(path, np.zeros((950, 950, 3), np.uint8))
+                return path, 7, 3.0
+
+        app = FastAPI()
+        app.include_router(baipu.router, prefix="/baipu")
+        app.state.capture = _FidCap(tmp_path)
+        app.state.geometry = geo
+        app.state.led = _FidLed()
+        app.state.baipu_fiducial_mode = "every-move"
+        c = TestClient(app)
+
+        r = c.post("/baipu/capture", json={"game_id": "g", "move_index": -1, "sgf": "(;SZ[19];B[pd];W[dp])"})
+        assert r.status_code == 200
+        gc = r.json()["geometry_correction"]
+        assert gc["status"] in ("corrected", "stale", "frozen", "off")
+        assert "median_cells" in gc["drift"]

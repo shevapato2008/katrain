@@ -26,8 +26,7 @@ def test_all_quadrants_returns_none():
 
 
 def test_includes_letters_and_shapes():
-    payload = {"size": 19, "stones": {"B": [[3, 3]], "W": []},
-               "letters": {"5,5": "A"}, "shapes": {"4,4": "triangle"}}
+    payload = {"size": 19, "stones": {"B": [[3, 3]], "W": []}, "letters": {"5,5": "A"}, "shapes": {"4,4": "triangle"}}
     vp = compute_viewport(payload)
     assert vp is not None
     assert vp["col"] == 0 and vp["row"] == 0  # all in TL

@@ -30,7 +30,7 @@ kivy_modules = [
     "kivymd",
     "kivymd.app",
     "kivymd.uix",
-    "kivymd.uix.floatlayout"
+    "kivymd.uix.floatlayout",
 ]
 
 for mod in kivy_modules:
@@ -39,13 +39,17 @@ for mod in kivy_modules:
 # Specific mocks for values and classes
 sys.modules["kivy.utils"].platform = "linux"
 
+
 class MockObservable:
     pass
+
+
 sys.modules["kivy._event"].Observable = MockObservable
 
 # Mock JsonStore to behave like a dict for simple tests
 import json
 import os
+
 
 class MockJsonStore(dict):
     def __init__(self, filename, **kwargs):
@@ -59,11 +63,13 @@ class MockJsonStore(dict):
                     self.update(json.load(f))
             except Exception:
                 pass
-        
+
     def put(self, key, **kwargs):
         self[key] = kwargs
+
     def get(self, key):
         return self[key]
+
 
 sys.modules["kivy.storage.jsonstore"].JsonStore = MockJsonStore
 

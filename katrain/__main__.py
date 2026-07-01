@@ -2,6 +2,7 @@ import os
 import sys
 import json
 
+
 def _determine_start_mode(argv):
     # 1. CLI args
     for i, arg in enumerate(argv):
@@ -20,7 +21,7 @@ def _determine_start_mode(argv):
         user_config_file = os.path.abspath(os.path.expanduser("~/.katrain/config.json"))
         if os.path.exists(user_config_file):
             config_file = user_config_file
-    
+
     if config_file:
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -33,6 +34,7 @@ def _determine_start_mode(argv):
 
     # 3. Default to web
     return "web"
+
 
 start_mode = _determine_start_mode(sys.argv)
 
@@ -62,9 +64,11 @@ if start_mode == "web":
 from katrain.core.constants import DATA_FOLDER
 from katrain.core.utils import find_package_resource
 
+
 def _compile_translations():
     """Compile .po translation files to .mo binary format before imports."""
     from pathlib import Path
+
     try:
         import polib
     except ImportError:
@@ -233,6 +237,7 @@ class KaTrainGui(Screen, KaTrainBase):
 
     def log(self, message, level=OUTPUT_INFO):
         super().log(message, level)
+
         def _update_ui(_dt):
             if not getattr(self, "controls", None):
                 return
@@ -248,11 +253,11 @@ class KaTrainGui(Screen, KaTrainBase):
                     return
                 elif "ready" in message.lower():
                     self.controls.set_status("KataGo engine ready.", STATUS_INFO)
-            if (
-                level == OUTPUT_ERROR
-                or (level == OUTPUT_KATAGO_STDERR and "error" in message.lower() and "tuning" not in message.lower())
+            if level == OUTPUT_ERROR or (
+                level == OUTPUT_KATAGO_STDERR and "error" in message.lower() and "tuning" not in message.lower()
             ):
                 self.controls.set_status(f"ERROR: {message}", STATUS_ERROR)
+
         Clock.schedule_once(_update_ui, 0)
 
     def handle_animations(self, *_args):
@@ -947,14 +952,19 @@ class KaTrainApp(MDApp):
     def is_valid_window_position(self, left, top, width, height):
         try:
             from screeninfo import get_monitors
+
             monitors = get_monitors()
             for monitor in monitors:
-                if (left >= monitor.x and left + width <= monitor.x + monitor.width and
-                    top >= monitor.y and top + height <= monitor.y + monitor.height):
+                if (
+                    left >= monitor.x
+                    and left + width <= monitor.x + monitor.width
+                    and top >= monitor.y
+                    and top + height <= monitor.y + monitor.height
+                ):
                     return True
             return False
         except Exception as e:
-            return True # yolo
+            return True  # yolo
 
     def build(self):
         self.icon = ICON  # how you're supposed to set an icon
@@ -1007,7 +1017,11 @@ class KaTrainApp(MDApp):
             win_size = [1300 * window_scale_fac, 1000 * window_scale_fac]
         self.gui.log(f"Setting window size to {win_size} and position to {[win_left, win_top]}", OUTPUT_DEBUG)
         Window.size = (win_size[0], win_size[1])
-        if win_left is not None and win_top is not None and self.is_valid_window_position(win_left, win_top, win_size[0], win_size[1]):
+        if (
+            win_left is not None
+            and win_top is not None
+            and self.is_valid_window_position(win_left, win_top, win_size[0], win_size[1])
+        ):
             try:
                 Window.left = win_left
                 Window.top = win_top

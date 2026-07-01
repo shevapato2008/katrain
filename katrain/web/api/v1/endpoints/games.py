@@ -20,11 +20,13 @@ async def list_active_multiplayer_games(request: Request):
     results = []
     for s in sessions:
         state = s.last_state or s.katrain.get_state()
-        results.append({
-            "session_id": s.session_id,
-            "player_b": users_by_id.get(s.player_b_id, "Unknown"),
-            "player_w": users_by_id.get(s.player_w_id, "Unknown"),
-            "spectator_count": len(s.sockets) - 2 if len(s.sockets) > 2 else 0,
-            "move_count": len(state.get("history", []))
-        })
+        results.append(
+            {
+                "session_id": s.session_id,
+                "player_b": users_by_id.get(s.player_b_id, "Unknown"),
+                "player_w": users_by_id.get(s.player_w_id, "Unknown"),
+                "spectator_count": len(s.sockets) - 2 if len(s.sockets) > 2 else 0,
+                "move_count": len(state.get("history", [])),
+            }
+        )
     return results

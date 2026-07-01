@@ -176,12 +176,13 @@ class SyncWorker:
         try:
             from sqlalchemy import func as sa_func
 
-            pending = db.query(sa_func.count(SyncQueueEntry.id)).filter(
-                SyncQueueEntry.status.in_(["pending", "in_progress"])
-            ).scalar() or 0
-            failed = db.query(sa_func.count(SyncQueueEntry.id)).filter(
-                SyncQueueEntry.status == "failed"
-            ).scalar() or 0
+            pending = (
+                db.query(sa_func.count(SyncQueueEntry.id))
+                .filter(SyncQueueEntry.status.in_(["pending", "in_progress"]))
+                .scalar()
+                or 0
+            )
+            failed = db.query(sa_func.count(SyncQueueEntry.id)).filter(SyncQueueEntry.status == "failed").scalar() or 0
 
             oldest = (
                 db.query(SyncQueueEntry.created_at)

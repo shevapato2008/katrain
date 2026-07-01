@@ -59,7 +59,9 @@ class TutorialBackupJob(BaseJob):
 
             # Count verified figures
             result = db.execute(
-                text("SELECT COUNT(*) FROM tutorial_figures WHERE recognition_debug::text LIKE '%\"human_verified\": true%'")
+                text(
+                    "SELECT COUNT(*) FROM tutorial_figures WHERE recognition_debug::text LIKE '%\"human_verified\": true%'"
+                )
             )
             data["verified_figure_count"] = result.scalar() or 0
 

@@ -188,12 +188,15 @@ class OGSRestClient:
                 "komi": settings.get("komi"),
                 "disable_analysis": True,
                 "time_control": settings.get("time_control", "byoyomi"),
-                "time_control_parameters": settings.get("time_control_parameters", {
-                    "system": "byoyomi",
-                    "main_time": 600,
-                    "period_time": 30,
-                    "periods": 5,
-                }),
+                "time_control_parameters": settings.get(
+                    "time_control_parameters",
+                    {
+                        "system": "byoyomi",
+                        "main_time": 600,
+                        "period_time": 30,
+                        "periods": 5,
+                    },
+                ),
             },
         }
         resp = await client.post(f"/api/v1/players/{player_id}/challenge/", json=payload)

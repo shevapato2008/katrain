@@ -18,7 +18,9 @@ class DriftResult:
 
 
 class GeometryDriftMonitor:
-    def __init__(self, reference, *, cell_spacing_px: float, threshold_cells: float = 0.10, consecutive_frames: int = 3):
+    def __init__(
+        self, reference, *, cell_spacing_px: float, threshold_cells: float = 0.10, consecutive_frames: int = 3
+    ):
         self.reference = self._features(reference)
         self.cell_spacing_px = float(cell_spacing_px)
         self.threshold_cells = float(threshold_cells)

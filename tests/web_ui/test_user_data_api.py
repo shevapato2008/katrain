@@ -9,6 +9,7 @@ import os
 # Override setting for test
 settings.DATABASE_URL = "sqlite:///./test_user_data.db"
 
+
 @pytest.fixture
 def app():
     # Setup test DB
@@ -16,6 +17,7 @@ def app():
         os.remove("./test_user_data.db")
 
     from sqlalchemy import create_engine
+
     test_engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=test_engine)
 
@@ -25,6 +27,7 @@ def app():
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from sqlalchemy.orm import sessionmaker
+
     TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
     repo = SQLAlchemyUserRepository(TestSessionLocal)
@@ -42,21 +45,20 @@ def app():
     if os.path.exists("./test_user_data.db"):
         os.remove("./test_user_data.db")
 
+
 @pytest.mark.asyncio
 async def test_user_profile_data(app):
     # 1. Create User
     repo = app.state.user_repo
     from passlib.context import CryptContext
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed = pwd_context.hash("password")
     repo.create_user("testplayer", hashed)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 2. Login
-        login_resp = await ac.post("/api/v1/auth/login", json={
-            "username": "testplayer",
-            "password": "password"
-        })
+        login_resp = await ac.post("/api/v1/auth/login", json={"username": "testplayer", "password": "password"})
         assert login_resp.status_code == 200
         token = login_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
@@ -69,20 +71,19 @@ async def test_user_profile_data(app):
         assert data["rank"] == "20k"
         assert data["credits"] == 10000.0
 
+
 @pytest.mark.asyncio
 async def test_user_games_crud(app):
     # 1. Create User
     repo = app.state.user_repo
     from passlib.context import CryptContext
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed = pwd_context.hash("password")
     repo.create_user("testplayer", hashed)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        login_resp = await ac.post("/api/v1/auth/login", json={
-            "username": "testplayer",
-            "password": "password"
-        })
+        login_resp = await ac.post("/api/v1/auth/login", json={"username": "testplayer", "password": "password"})
         token = login_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
@@ -94,14 +95,18 @@ async def test_user_games_crud(app):
         assert len(data["items"]) == 0
 
         # 3. Create User Game
-        resp = await ac.post("/api/v1/user-games/", headers=headers, json={
-            "sgf_content": "(;GM[1]FF[4]CA[UTF-8]AP[KaTrain:1.17.1];B[dp];W[pd])",
-            "source": "research",
-            "title": "Test Research Game",
-            "player_black": "Alice",
-            "player_white": "Bob",
-            "move_count": 2,
-        })
+        resp = await ac.post(
+            "/api/v1/user-games/",
+            headers=headers,
+            json={
+                "sgf_content": "(;GM[1]FF[4]CA[UTF-8]AP[KaTrain:1.17.1];B[dp];W[pd])",
+                "source": "research",
+                "title": "Test Research Game",
+                "player_black": "Alice",
+                "player_white": "Bob",
+                "move_count": 2,
+            },
+        )
         assert resp.status_code == 200
         game = resp.json()
         assert game["title"] == "Test Research Game"
@@ -121,9 +126,13 @@ async def test_user_games_crud(app):
         assert detail["sgf_content"] == "(;GM[1]FF[4]CA[UTF-8]AP[KaTrain:1.17.1];B[dp];W[pd])"
 
         # 6. Update Game
-        resp = await ac.put(f"/api/v1/user-games/{game_id}", headers=headers, json={
-            "title": "Updated Title",
-        })
+        resp = await ac.put(
+            f"/api/v1/user-games/{game_id}",
+            headers=headers,
+            json={
+                "title": "Updated Title",
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["title"] == "Updated Title"
 
@@ -135,34 +144,39 @@ async def test_user_games_crud(app):
         resp = await ac.get(f"/api/v1/user-games/{game_id}", headers=headers)
         assert resp.status_code == 404
 
+
 @pytest.mark.asyncio
 async def test_user_game_analysis_api(app):
     """Test analysis data endpoints."""
     repo = app.state.user_repo
     from passlib.context import CryptContext
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed = pwd_context.hash("password")
     repo.create_user("testplayer", hashed)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        login_resp = await ac.post("/api/v1/auth/login", json={
-            "username": "testplayer",
-            "password": "password"
-        })
+        login_resp = await ac.post("/api/v1/auth/login", json={"username": "testplayer", "password": "password"})
         token = login_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
         # Create a game
-        resp = await ac.post("/api/v1/user-games/", headers=headers, json={
-            "sgf_content": "(;FF[4]SZ[19];B[pd];W[dp])",
-            "source": "research",
-        })
+        resp = await ac.post(
+            "/api/v1/user-games/",
+            headers=headers,
+            json={
+                "sgf_content": "(;FF[4]SZ[19];B[pd];W[dp])",
+                "source": "research",
+            },
+        )
         game_id = resp.json()["id"]
 
         # Insert analysis data directly via repo
         analysis_repo = app.state.user_game_analysis_repo
         analysis_repo.upsert(game_id=game_id, move_number=0, winrate=0.5, score_lead=0.0, visits=500)
-        analysis_repo.upsert(game_id=game_id, move_number=1, winrate=0.52, score_lead=1.2, visits=500, move="Q16", actual_player="B")
+        analysis_repo.upsert(
+            game_id=game_id, move_number=1, winrate=0.52, score_lead=1.2, visits=500, move="Q16", actual_player="B"
+        )
 
         # Get all analysis
         resp = await ac.get(f"/api/v1/user-games/{game_id}/analysis", headers=headers)

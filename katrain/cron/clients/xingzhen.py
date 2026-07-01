@@ -141,15 +141,23 @@ class XingZhenClient:
                 dp = start_time.get("date", {})
                 tp = start_time.get("time", {})
                 match_date = datetime(
-                    dp.get("year", 2026), dp.get("month", 1), dp.get("day", 1),
-                    tp.get("hour", 0), tp.get("minute", 0), tp.get("second", 0),
+                    dp.get("year", 2026),
+                    dp.get("month", 1),
+                    dp.get("day", 1),
+                    tp.get("hour", 0),
+                    tp.get("minute", 0),
+                    tp.get("second", 0),
                 )
             except (TypeError, ValueError):
                 pass
         elif isinstance(start_time, str):
             for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S"):
                 try:
-                    match_date = datetime.fromisoformat(start_time.replace("Z", "+00:00")) if "T" in start_time else datetime.strptime(start_time, fmt)
+                    match_date = (
+                        datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                        if "T" in start_time
+                        else datetime.strptime(start_time, fmt)
+                    )
                     break
                 except ValueError:
                     continue
@@ -226,6 +234,7 @@ def _parse_moves_string(moves_str: str) -> list[str]:
     # SGF notation: ;B[pd];W[dd]
     if "[" in moves_str and "]" in moves_str:
         import re
+
         coords = re.findall(r"[BW]\[([a-s]{2})\]", moves_str, re.IGNORECASE)
         return [_sgf_to_gtp(c) for c in coords]
 

@@ -14,10 +14,10 @@ logger = logging.getLogger("katrain_web")
 
 
 # Priority constants
-PRIORITY_LIVE_NEW = 1000       # Live match new move (highest)
-PRIORITY_USER_VIEW = 500       # User is currently viewing this position
-PRIORITY_LIVE_BACKFILL = 100   # Backfill historical moves in live match
-PRIORITY_FINISHED = 10         # Finished match analysis
+PRIORITY_LIVE_NEW = 1000  # Live match new move (highest)
+PRIORITY_USER_VIEW = 500  # User is currently viewing this position
+PRIORITY_LIVE_BACKFILL = 100  # Backfill historical moves in live match
+PRIORITY_FINISHED = 10  # Finished match analysis
 
 
 class LiveAnalysisRepo:
@@ -30,9 +30,7 @@ class LiveAnalysisRepo:
 
     def get_or_create_match(self, match: LiveMatch) -> LiveMatchDB:
         """Get existing match record or create a new one."""
-        db_match = self.db.query(LiveMatchDB).filter(
-            LiveMatchDB.match_id == match.id
-        ).first()
+        db_match = self.db.query(LiveMatchDB).filter(LiveMatchDB.match_id == match.id).first()
 
         if db_match:
             # Update existing match with latest data
@@ -67,9 +65,9 @@ class LiveAnalysisRepo:
             current_winrate=match.current_winrate,
             current_score=match.current_score,
             sgf_content=match.sgf,
-            board_size=getattr(match, 'board_size', 19) or 19,
-            komi=getattr(match, 'komi', 7.5) or 7.5,
-            rules=getattr(match, 'rules', 'chinese') or 'chinese',
+            board_size=getattr(match, "board_size", 19) or 19,
+            komi=getattr(match, "komi", 7.5) or 7.5,
+            rules=getattr(match, "rules", "chinese") or "chinese",
         )
         self.db.add(db_match)
         self.db.commit()
@@ -89,9 +87,7 @@ class LiveAnalysisRepo:
         Returns:
             Updated match record or None if not found
         """
-        db_match = self.db.query(LiveMatchDB).filter(
-            LiveMatchDB.match_id == match_id
-        ).first()
+        db_match = self.db.query(LiveMatchDB).filter(LiveMatchDB.match_id == match_id).first()
 
         if db_match:
             db_match.katago_winrate = winrate
@@ -103,35 +99,36 @@ class LiveAnalysisRepo:
 
     def get_match(self, match_id: str) -> Optional[LiveMatchDB]:
         """Get match by ID."""
-        return self.db.query(LiveMatchDB).filter(
-            LiveMatchDB.match_id == match_id
-        ).first()
+        return self.db.query(LiveMatchDB).filter(LiveMatchDB.match_id == match_id).first()
 
     # ==================== Analysis Operations ====================
 
     def get_analysis(self, match_id: str, move_number: int) -> Optional[LiveAnalysisDB]:
         """Get analysis for a specific move."""
-        return self.db.query(LiveAnalysisDB).filter(
-            and_(
-                LiveAnalysisDB.match_id == match_id,
-                LiveAnalysisDB.move_number == move_number
-            )
-        ).first()
+        return (
+            self.db.query(LiveAnalysisDB)
+            .filter(and_(LiveAnalysisDB.match_id == match_id, LiveAnalysisDB.move_number == move_number))
+            .first()
+        )
 
     def get_all_analysis(self, match_id: str) -> list[LiveAnalysisDB]:
         """Get all analysis records for a match."""
-        return self.db.query(LiveAnalysisDB).filter(
-            LiveAnalysisDB.match_id == match_id
-        ).order_by(LiveAnalysisDB.move_number).all()
+        return (
+            self.db.query(LiveAnalysisDB)
+            .filter(LiveAnalysisDB.match_id == match_id)
+            .order_by(LiveAnalysisDB.move_number)
+            .all()
+        )
 
     def get_successful_analysis(self, match_id: str) -> dict[int, MoveAnalysis]:
         """Get all successful analysis as a dict keyed by move number."""
-        records = self.db.query(LiveAnalysisDB).filter(
-            and_(
-                LiveAnalysisDB.match_id == match_id,
-                LiveAnalysisDB.status == AnalysisStatusEnum.SUCCESS.value
+        records = (
+            self.db.query(LiveAnalysisDB)
+            .filter(
+                and_(LiveAnalysisDB.match_id == match_id, LiveAnalysisDB.status == AnalysisStatusEnum.SUCCESS.value)
             )
-        ).all()
+            .all()
+        )
 
         result = {}
         for record in records:
@@ -143,7 +140,7 @@ class LiveAnalysisRepo:
         match_id: str,
         move_numbers: list[int],
         priority: int = PRIORITY_FINISHED,
-        moves: Optional[list[str]] = None
+        moves: Optional[list[str]] = None,
     ) -> list[LiveAnalysisDB]:
         """Create pending analysis records for multiple moves.
 
@@ -201,7 +198,7 @@ class LiveAnalysisRepo:
         delta_winrate: Optional[float] = None,
         is_brilliant: bool = False,
         is_mistake: bool = False,
-        is_questionable: bool = False
+        is_questionable: bool = False,
     ) -> Optional[LiveAnalysisDB]:
         """Update analysis record with results."""
         record = self.get_analysis(match_id, move_number)
@@ -235,11 +232,7 @@ class LiveAnalysisRepo:
         return record
 
     def mark_failed(
-        self,
-        match_id: str,
-        move_number: int,
-        error: str,
-        max_retries: int = 3
+        self, match_id: str, move_number: int, error: str, max_retries: int = 3
     ) -> Optional[LiveAnalysisDB]:
         """Mark analysis as failed and optionally reset to pending for retry."""
         record = self.get_analysis(match_id, move_number)
@@ -263,18 +256,17 @@ class LiveAnalysisRepo:
 
     def get_pending_analysis(self, limit: int = 10) -> list[LiveAnalysisDB]:
         """Get pending analysis tasks ordered by priority (highest first)."""
-        return self.db.query(LiveAnalysisDB).filter(
-            LiveAnalysisDB.status == AnalysisStatusEnum.PENDING.value
-        ).order_by(
-            LiveAnalysisDB.priority.desc(),
-            LiveAnalysisDB.created_at.asc()
-        ).limit(limit).all()
+        return (
+            self.db.query(LiveAnalysisDB)
+            .filter(LiveAnalysisDB.status == AnalysisStatusEnum.PENDING.value)
+            .order_by(LiveAnalysisDB.priority.desc(), LiveAnalysisDB.created_at.asc())
+            .limit(limit)
+            .all()
+        )
 
     def get_unanalyzed_moves(self, match_id: str, max_move: int) -> list[int]:
         """Get list of move numbers that haven't been analyzed yet."""
-        analyzed = self.db.query(LiveAnalysisDB.move_number).filter(
-            LiveAnalysisDB.match_id == match_id
-        ).all()
+        analyzed = self.db.query(LiveAnalysisDB.move_number).filter(LiveAnalysisDB.match_id == match_id).all()
         analyzed_set = {r[0] for r in analyzed}
 
         # Return moves from 0 to max_move that haven't been analyzed
@@ -282,9 +274,7 @@ class LiveAnalysisRepo:
 
     def get_queue_size(self) -> int:
         """Get number of pending analysis tasks."""
-        return self.db.query(LiveAnalysisDB).filter(
-            LiveAnalysisDB.status == AnalysisStatusEnum.PENDING.value
-        ).count()
+        return self.db.query(LiveAnalysisDB).filter(LiveAnalysisDB.status == AnalysisStatusEnum.PENDING.value).count()
 
     def boost_priority(self, match_id: str, move_numbers: list[int], priority: int) -> int:
         """Boost priority for specific moves (e.g., user is viewing these positions)."""
@@ -310,14 +300,10 @@ class LiveAnalysisRepo:
             True if match was deleted, False if not found
         """
         # Delete analysis records first (due to foreign key)
-        self.db.query(LiveAnalysisDB).filter(
-            LiveAnalysisDB.match_id == match_id
-        ).delete()
+        self.db.query(LiveAnalysisDB).filter(LiveAnalysisDB.match_id == match_id).delete()
 
         # Delete match record
-        deleted = self.db.query(LiveMatchDB).filter(
-            LiveMatchDB.match_id == match_id
-        ).delete()
+        deleted = self.db.query(LiveMatchDB).filter(LiveMatchDB.match_id == match_id).delete()
 
         self.db.commit()
         return deleted > 0
@@ -329,12 +315,11 @@ class LiveAnalysisRepo:
             Number of records deleted
         """
         # Find matches with no moves
-        matches_without_moves = self.db.query(LiveMatchDB.match_id).filter(
-            or_(
-                LiveMatchDB.moves.is_(None),
-                LiveMatchDB.move_count == 0
-            )
-        ).all()
+        matches_without_moves = (
+            self.db.query(LiveMatchDB.match_id)
+            .filter(or_(LiveMatchDB.moves.is_(None), LiveMatchDB.move_count == 0))
+            .all()
+        )
 
         match_ids = [m[0] for m in matches_without_moves]
 
@@ -342,12 +327,13 @@ class LiveAnalysisRepo:
             return 0
 
         # Delete failed analyses for these matches
-        deleted = self.db.query(LiveAnalysisDB).filter(
-            and_(
-                LiveAnalysisDB.match_id.in_(match_ids),
-                LiveAnalysisDB.status == AnalysisStatusEnum.FAILED.value
+        deleted = (
+            self.db.query(LiveAnalysisDB)
+            .filter(
+                and_(LiveAnalysisDB.match_id.in_(match_ids), LiveAnalysisDB.status == AnalysisStatusEnum.FAILED.value)
             )
-        ).delete(synchronize_session=False)
+            .delete(synchronize_session=False)
+        )
 
         self.db.commit()
         logger.info(f"Cleaned up {deleted} failed analyses for matches without moves")
@@ -361,10 +347,9 @@ class LiveAnalysisRepo:
         """
         from sqlalchemy import func
 
-        stats = self.db.query(
-            LiveAnalysisDB.status,
-            func.count(LiveAnalysisDB.id)
-        ).group_by(LiveAnalysisDB.status).all()
+        stats = (
+            self.db.query(LiveAnalysisDB.status, func.count(LiveAnalysisDB.id)).group_by(LiveAnalysisDB.status).all()
+        )
 
         return {status: count for status, count in stats}
 
@@ -379,12 +364,11 @@ class LiveAnalysisRepo:
         Returns:
             Number of records reset
         """
-        records = self.db.query(LiveAnalysisDB).filter(
-            and_(
-                LiveAnalysisDB.match_id == match_id,
-                LiveAnalysisDB.status == AnalysisStatusEnum.FAILED.value
-            )
-        ).all()
+        records = (
+            self.db.query(LiveAnalysisDB)
+            .filter(and_(LiveAnalysisDB.match_id == match_id, LiveAnalysisDB.status == AnalysisStatusEnum.FAILED.value))
+            .all()
+        )
 
         count = 0
         for record in records:
@@ -410,19 +394,17 @@ class LiveAnalysisRepo:
 
         if engine.dialect.name == "postgresql":
             # Cast to jsonb to handle both json and jsonb column types
-            return self.db.query(LiveMatchDB).filter(
-                or_(
-                    LiveMatchDB.moves.is_(None),
-                    text("jsonb_array_length(live_matches.moves::jsonb) = 0")
-                )
-            ).all()
+            return (
+                self.db.query(LiveMatchDB)
+                .filter(or_(LiveMatchDB.moves.is_(None), text("jsonb_array_length(live_matches.moves::jsonb) = 0")))
+                .all()
+            )
         else:
-            return self.db.query(LiveMatchDB).filter(
-                or_(
-                    LiveMatchDB.moves.is_(None),
-                    func.json_array_length(LiveMatchDB.moves) == 0
-                )
-            ).all()
+            return (
+                self.db.query(LiveMatchDB)
+                .filter(or_(LiveMatchDB.moves.is_(None), func.json_array_length(LiveMatchDB.moves) == 0))
+                .all()
+            )
 
     # ==================== Helper Methods ====================
 
@@ -431,15 +413,17 @@ class LiveAnalysisRepo:
         top_moves = []
         if record.top_moves:
             for tm in record.top_moves:
-                top_moves.append(TopMove(
-                    move=tm.get("move", ""),
-                    visits=tm.get("visits", 0),
-                    winrate=tm.get("winrate", 0.5),
-                    score_lead=tm.get("score_lead", 0.0),
-                    prior=tm.get("prior", 0.0),
-                    pv=tm.get("pv", []),
-                    psv=tm.get("psv", 0.0),  # playSelectionValue for ranking
-                ))
+                top_moves.append(
+                    TopMove(
+                        move=tm.get("move", ""),
+                        visits=tm.get("visits", 0),
+                        winrate=tm.get("winrate", 0.5),
+                        score_lead=tm.get("score_lead", 0.0),
+                        prior=tm.get("prior", 0.0),
+                        pv=tm.get("pv", []),
+                        psv=tm.get("psv", 0.0),  # playSelectionValue for ranking
+                    )
+                )
 
         return MoveAnalysis(
             match_id=match_id,

@@ -179,7 +179,9 @@ class _VisionWorkerLoop:
                 if not stable_ok and self._frame_count % 30 == 0:
                     logger.info(
                         "motion filter rejected frame #%d (changed_ratio=%.3f, threshold=%.3f)",
-                        self._frame_count, motion_ratio, self._motion_filter.change_ratio_threshold,
+                        self._frame_count,
+                        motion_ratio,
+                        self._motion_filter.change_ratio_threshold,
                     )
 
             if stable_ok:
@@ -224,7 +226,9 @@ class _VisionWorkerLoop:
                         }
 
                     # Board state + move detection
-                    observed_board = self._state_extractor.detections_to_board(detections, img_w=w, img_h=h)
+                    observed_board = self._state_extractor.detections_to_board(
+                        detections, img_w=w, img_h=h, occupancy_aware=True
+                    )
 
                     # Temporal smoothing: require 2-frame agreement per grid position
                     if self._prev_observed_board is not None and self._last_stable_board is not None:
@@ -244,7 +248,10 @@ class _VisionWorkerLoop:
                     if self._frame_count % 30 == 0:
                         logger.info(
                             "detection ok: %d stones, mean_conf=%.2f, board=%.0fms + yolo=%.0fms",
-                            len(detections), mean_confidence, board_finder_ms, yolo_ms,
+                            len(detections),
+                            mean_confidence,
+                            board_finder_ms,
+                            yolo_ms,
                         )
                     if self._bound:
                         move_result = self._move_detector.detect_new_move(self._last_stable_board)
@@ -257,7 +264,9 @@ class _VisionWorkerLoop:
                     if self._frame_count % 30 == 0:
                         logger.info(
                             "board finder failed (frame #%d, board_finder_ms=%.0f, consecutive_failures=%d)",
-                            self._frame_count, board_finder_ms, self._consecutive_failures,
+                            self._frame_count,
+                            board_finder_ms,
+                            self._consecutive_failures,
                         )
 
                     # Auto-unlock if locked but detection fails 10+ times
@@ -349,9 +358,14 @@ class _VisionWorkerLoop:
                     cv2.circle(frame, (ox, oy), 8, (0, 255, 0), 1)
                     label = f"{det.confidence:.2f}"
                     cv2.putText(
-                        frame, label, (ox + 10, oy - 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.4,
-                        (0, 255, 0), 1, cv2.LINE_AA,
+                        frame,
+                        label,
+                        (ox + 10, oy - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.4,
+                        (0, 255, 0),
+                        1,
+                        cv2.LINE_AA,
                     )
 
         # 3. Timing info (bottom-left with black background)
@@ -423,7 +437,9 @@ class _VisionWorkerLoop:
 
         status = WorkerStatus(
             camera_status="connected" if self._camera.is_connected else "disconnected",
-            pose_lock_status="locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked",
+            pose_lock_status=(
+                "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
+            ),
             sync_state=self._sync.state.value,
             detected_board=self._last_detected_board,
             camera_ready=bool(self._camera.is_connected),

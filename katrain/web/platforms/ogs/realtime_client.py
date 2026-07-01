@@ -93,11 +93,14 @@ class OGSRealtimeClient:
         self._receive_task = asyncio.create_task(self._receive_loop())
 
         # Authenticate with request_id to get response
-        auth_response = await self._send_with_response("authenticate", {
-            "jwt": jwt,
-            "client": "KaTrain-SmartBoard",
-            "client_version": "0.1",
-        })
+        auth_response = await self._send_with_response(
+            "authenticate",
+            {
+                "jwt": jwt,
+                "client": "KaTrain-SmartBoard",
+                "client_version": "0.1",
+            },
+        )
         logger.debug(f"Auth response: {auth_response}")
         self._authenticated.set()
 
@@ -250,19 +253,25 @@ class OGSRealtimeClient:
 
     async def game_removed_stones_set(self, game_id: int, stones: str, removed: bool = True) -> None:
         """Mark/unmark stones as dead during scoring phase."""
-        await self._send("game/removed_stones/set", {
-            "game_id": game_id,
-            "removed": removed,
-            "stones": stones,
-        })
+        await self._send(
+            "game/removed_stones/set",
+            {
+                "game_id": game_id,
+                "removed": removed,
+                "stones": stones,
+            },
+        )
 
     async def game_removed_stones_accept(self, game_id: int, stones: str) -> None:
         """Accept the current dead stone selection during scoring phase."""
-        await self._send("game/removed_stones/accept", {
-            "game_id": game_id,
-            "stones": stones,
-            "strict_seki_mode": False,
-        })
+        await self._send(
+            "game/removed_stones/accept",
+            {
+                "game_id": game_id,
+                "stones": stones,
+                "strict_seki_mode": False,
+            },
+        )
 
     async def game_removed_stones_reject(self, game_id: int) -> None:
         """Reject dead stone selection and resume play."""
@@ -282,16 +291,22 @@ class OGSRealtimeClient:
     async def automatch_find(self, preferences: dict) -> str:
         """Start automatch. Returns the automatch UUID."""
         match_uuid = str(uuid.uuid4())
-        await self._send("automatch/find_match", {
-            "uuid": match_uuid,
-            "size_speed_options": preferences.get("size_speed_options", [
-                {"size": "19x19", "speed": "live"},
-            ]),
-            "lower_rank_diff": preferences.get("lower_rank_diff", 3),
-            "upper_rank_diff": preferences.get("upper_rank_diff", 3),
-            "rules": {"condition": "no-preference", "value": "chinese"},
-            "handicap": {"condition": "no-preference", "value": "enabled"},
-        })
+        await self._send(
+            "automatch/find_match",
+            {
+                "uuid": match_uuid,
+                "size_speed_options": preferences.get(
+                    "size_speed_options",
+                    [
+                        {"size": "19x19", "speed": "live"},
+                    ],
+                ),
+                "lower_rank_diff": preferences.get("lower_rank_diff", 3),
+                "upper_rank_diff": preferences.get("upper_rank_diff", 3),
+                "rules": {"condition": "no-preference", "value": "chinese"},
+                "handicap": {"condition": "no-preference", "value": "enabled"},
+            },
+        )
         return match_uuid
 
     async def automatch_cancel(self, match_uuid: str) -> None:
@@ -303,7 +318,7 @@ class OGSRealtimeClient:
         """Auto-reconnect with exponential backoff. Re-joins games and seek graph."""
         while not self._intentional_disconnect and self._reconnect_attempts < self._max_reconnect_attempts:
             self._reconnect_attempts += 1
-            delay = min(2 ** self._reconnect_attempts, 60)  # 2s, 4s, 8s, ..., max 60s
+            delay = min(2**self._reconnect_attempts, 60)  # 2s, 4s, 8s, ..., max 60s
             logger.info(f"OGS reconnect attempt {self._reconnect_attempts} in {delay}s")
             await asyncio.sleep(delay)
 
@@ -363,11 +378,14 @@ class OGSRealtimeClient:
         """Application-level ping for latency/clock sync (10s interval)."""
         while self._connected:
             try:
-                await self._send("net/ping", {
-                    "client": int(time.time() * 1000),
-                    "drift": self._drift,
-                    "latency": self._latency,
-                })
+                await self._send(
+                    "net/ping",
+                    {
+                        "client": int(time.time() * 1000),
+                        "drift": self._drift,
+                        "latency": self._latency,
+                    },
+                )
                 await asyncio.sleep(10)
             except (asyncio.CancelledError, Exception):
                 break

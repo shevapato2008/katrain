@@ -107,12 +107,14 @@ class TestOGSSpecific:
     def test_ogs_time_control_parsing(self):
         from katrain.web.platforms.ogs.adapter import _parse_time_control
 
-        tc = _parse_time_control({
-            "system": "byoyomi",
-            "main_time": 600,
-            "period_time": 30,
-            "periods": 5,
-        })
+        tc = _parse_time_control(
+            {
+                "system": "byoyomi",
+                "main_time": 600,
+                "period_time": 30,
+                "periods": 5,
+            }
+        )
         assert tc.system == "byoyomi"
         assert tc.main_time == 600
         assert tc.period_time == 30

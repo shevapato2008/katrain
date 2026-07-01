@@ -44,9 +44,7 @@ class TestCaptureService:
     def test_shared_hub_is_not_opened_or_closed_by_capture_service(self):
         hub = FakeCam()
         hub.is_started = True
-        svc = CaptureService(
-            CaptureServiceConfig(enabled=True, camera_device=0, out_dir="/tmp/baipu_test"), hub=hub
-        )
+        svc = CaptureService(CaptureServiceConfig(enabled=True, camera_device=0, out_dir="/tmp/baipu_test"), hub=hub)
 
         svc.start()
         svc.stop()

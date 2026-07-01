@@ -116,6 +116,9 @@ async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str
 
     from katrain.web.core.baipu_capture import LedUnavailable, run_capture
 
+    fiducial_mode = getattr(request.app.state, "baipu_fiducial_mode", "off")
+    drift_threshold_cells = getattr(request.app.state, "baipu_drift_threshold_cells", 0.15)
+
     try:
         return await asyncio.to_thread(
             run_capture,
@@ -130,6 +133,8 @@ async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str
             sgf=body.sgf,
             capture_condition=body.capture_condition,
             overwrite_existing=body.overwrite_existing,
+            fiducial_mode=fiducial_mode,
+            drift_threshold_cells=drift_threshold_cells,
         )
     except LedUnavailable as exc:
         raise HTTPException(status_code=409, detail={"error": "led_unavailable", "message": str(exc)})

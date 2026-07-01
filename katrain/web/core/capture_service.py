@@ -67,8 +67,10 @@ class CaptureService:
             self._hub.stop()
 
     def is_connected(self) -> bool:
-        return self._hub.is_connected() if callable(getattr(self._hub, "is_connected", None)) else bool(
-            getattr(self._hub, "is_connected", False)
+        return (
+            self._hub.is_connected()
+            if callable(getattr(self._hub, "is_connected", None))
+            else bool(getattr(self._hub, "is_connected", False))
         )
 
     # -- frame access ------------------------------------------------------ #

@@ -489,7 +489,7 @@ class BaseConfigPopup(QuickConfigGui):
         "linux": {
             "OpenCL v1.16.0": "https://github.com/lightvector/KataGo/releases/download/v1.16.0/katago-v1.16.0-opencl-linux-x64.zip",
             "Eigen AVX2 (Modern CPUs) v1.16.0": "https://github.com/lightvector/KataGo/releases/download/v1.16.0/katago-v1.16.0-eigenavx2-linux-x64.zip",
-            "Eigen (CPU, Non-optimized) v1.16.0": "https://github.com/lightvector/KataGo/releases/download/v1.16.0/katago-v1.16.0-eigen-linux-x64.zip",            
+            "Eigen (CPU, Non-optimized) v1.16.0": "https://github.com/lightvector/KataGo/releases/download/v1.16.0/katago-v1.16.0-eigen-linux-x64.zip",
             "OpenCL v1.16.0 (bigger boards)": "https://github.com/lightvector/KataGo/releases/download/v1.16.0/katago-v1.16.0-opencl-linux-x64+bs50.zip",
         },
         "just-descriptions": {},
@@ -497,7 +497,12 @@ class BaseConfigPopup(QuickConfigGui):
 
     def __init__(self, katrain):
         super().__init__(katrain)
-        self.paths = [self.katrain.config("engine/model"), self.katrain.config("engine/humanlike_model"), "katrain/models", DATA_FOLDER]
+        self.paths = [
+            self.katrain.config("engine/model"),
+            self.katrain.config("engine/humanlike_model"),
+            "katrain/models",
+            DATA_FOLDER,
+        ]
         self.katago_paths = [self.katrain.config("engine/katago"), DATA_FOLDER]
         self.last_clicked_download_models = 0
 
@@ -561,7 +566,9 @@ class BaseConfigPopup(QuickConfigGui):
             key=lambda descpath: ("Recommended" not in descpath[0], "  -  " not in descpath[0], descpath[0]),
         )
         humanlike_models_available_msg = i18n._("models available").format(num=len(humanlike_model_files))
-        self.humanlike_model_files.values = [humanlike_models_available_msg] + [desc for desc, path in humanlike_model_files]
+        self.humanlike_model_files.values = [humanlike_models_available_msg] + [
+            desc for desc, path in humanlike_model_files
+        ]
         self.humanlike_model_files.value_keys = [""] + [path for desc, path in humanlike_model_files]
         self.humanlike_model_files.text = humanlike_models_available_msg
 
@@ -650,7 +657,9 @@ class BaseConfigPopup(QuickConfigGui):
 
         for name, url in {**self.MODELS, **dist_models}.items():
             filename = os.path.split(url)[1]
-            if not any(os.path.split(f)[1] == filename for f in self.model_files.values + self.humanlike_model_files.values):
+            if not any(
+                os.path.split(f)[1] == filename for f in self.model_files.values + self.humanlike_model_files.values
+            ):
                 savepath = os.path.expanduser(os.path.join(DATA_FOLDER, filename))
                 savepath_tmp = savepath + ".part"
                 self.katrain.log(f"Downloading {name} from {url} to {savepath_tmp}", OUTPUT_INFO)

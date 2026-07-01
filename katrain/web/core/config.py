@@ -2,6 +2,7 @@ import os
 import uuid as uuid_module
 from pydantic import BaseModel
 
+
 class Settings(BaseModel):
     PROJECT_NAME: str = "KaTrain Web UI"
     VERSION: str = "1.17.1"
@@ -66,7 +67,7 @@ class Settings(BaseModel):
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
-        
+
         # New DATABASE_URL support
         env_db_url = os.getenv("KATRAIN_DATABASE_URL")
         if env_db_url:
@@ -75,12 +76,10 @@ class Settings(BaseModel):
             # Try to load from config.json
             import json
             from pathlib import Path
+
             try:
                 # Check standard locations: ~/.katrain/config.json or ./katrain/config.json
-                config_paths = [
-                    Path.home() / ".katrain" / "config.json",
-                    Path("katrain/config.json")
-                ]
+                config_paths = [Path.home() / ".katrain" / "config.json", Path("katrain/config.json")]
                 json_db_url = None
                 for path in config_paths:
                     if path.exists():
@@ -90,7 +89,7 @@ class Settings(BaseModel):
                             if "server" in config_data and "database_url" in config_data["server"]:
                                 json_db_url = config_data["server"]["database_url"]
                                 break
-                
+
                 if json_db_url:
                     data["DATABASE_URL"] = json_db_url
                 else:
@@ -129,5 +128,6 @@ class Settings(BaseModel):
             data["DATABASE_URL"] = f"sqlite:///./{db_path}"
 
         super().__init__(**data)
+
 
 settings = Settings()

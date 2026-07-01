@@ -39,7 +39,8 @@ class AnalysisRepo:
 
         if engine.dialect.name == "postgresql":
             # Raw SQL for FOR UPDATE SKIP LOCKED (not expressible via ORM)
-            sql = text("""
+            sql = text(
+                """
                 UPDATE live_analysis
                 SET status = 'running'
                 WHERE id IN (
@@ -50,7 +51,8 @@ class AnalysisRepo:
                     FOR UPDATE SKIP LOCKED
                 )
                 RETURNING id, match_id, move_number, priority, status
-            """)
+            """
+            )
             rows = self.db.execute(sql, {"lim": limit}).fetchall()
             self.db.commit()
             if not rows:
@@ -84,11 +86,7 @@ class AnalysisRepo:
 
     def reset_stale_running(self) -> int:
         """Reset all 'running' tasks back to 'pending' (crash recovery)."""
-        count = (
-            self.db.query(LiveAnalysisDB)
-            .filter(LiveAnalysisDB.status == "running")
-            .update({"status": "pending"})
-        )
+        count = self.db.query(LiveAnalysisDB).filter(LiveAnalysisDB.status == "running").update({"status": "pending"})
         self.db.commit()
         if count:
             logger.info("Reset %d stale running tasks to pending", count)

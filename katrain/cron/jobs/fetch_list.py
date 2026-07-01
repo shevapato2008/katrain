@@ -72,7 +72,9 @@ class FetchListJob(BaseJob):
             db.commit()
             self.logger.info(
                 "FetchListJob: upserted %d, skipped %d dups (sources: %s)",
-                upserted, skipped, ", ".join(registry.sources),
+                upserted,
+                skipped,
+                ", ".join(registry.sources),
             )
         except Exception:
             db.rollback()
@@ -85,9 +87,11 @@ class FetchListJob(BaseJob):
         registry = SourceRegistry()
         if config.YIKE_ENABLED:
             from katrain.cron.clients.yike import YikeWeiQiClient
+
             registry.register("yike", YikeWeiQiClient())
         if config.XINGZHEN_ENABLED:
             from katrain.cron.clients.xingzhen import XingZhenClient
+
             registry.register("xingzhen", XingZhenClient())
         return registry
 

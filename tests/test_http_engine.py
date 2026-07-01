@@ -25,9 +25,7 @@ def test_http_engine_request_payload():
             board_squares = payload["boardXSize"] * payload["boardYSize"]
             return {
                 "id": payload["id"],
-                "moveInfos": [
-                    {"move": "D4", "order": 0, "visits": 10, "winrate": 0.5, "scoreLead": 0.0, "pv": ["D4"]}
-                ],
+                "moveInfos": [{"move": "D4", "order": 0, "visits": 10, "winrate": 0.5, "scoreLead": 0.0, "pv": ["D4"]}],
                 "rootInfo": {"visits": 10, "winrate": 0.5, "scoreLead": 0.0},
                 "ownership": [0.0] * board_squares,
                 "policy": [1.0 / (board_squares + 1)] * (board_squares + 1),

@@ -39,7 +39,7 @@ class TestStoneDetectorWithMockBackend:
             results = det.detect(img)
 
         mock_backend.load.assert_called_once_with("dummy.pt")
-        mock_backend.detect.assert_called_once_with(img, 0.5)
+        mock_backend.detect.assert_called_once_with(img, 0.5, None)  # iou_threshold defaults to None
         assert results == expected_detections
 
     def test_backend_factory_called_with_name(self):

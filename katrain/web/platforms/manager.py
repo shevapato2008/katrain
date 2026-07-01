@@ -150,7 +150,12 @@ class PlatformManager:
                     ctx.last_confirmed_move = move.move_number
                     self._session_manager.broadcast_to_session(
                         ctx.session_id,
-                        {"type": "platform_move_confirmed", "col": move.col, "row": move.row, "move_number": move.move_number},
+                        {
+                            "type": "platform_move_confirmed",
+                            "col": move.col,
+                            "row": move.row,
+                            "move_number": move.move_number,
+                        },
                     )
                 except KeyError:
                     logger.warning(f"Session {ctx.session_id} not found for opponent move")

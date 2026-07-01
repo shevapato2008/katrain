@@ -68,10 +68,12 @@ class CleanupJob(BaseJob):
 
             # 2. Delete orphaned analysis (match_id not in live_matches)
             # This handles edge cases where matches were deleted manually
-            orphan_sql = text("""
+            orphan_sql = text(
+                """
                 DELETE FROM live_analysis
                 WHERE match_id NOT IN (SELECT match_id FROM live_matches)
-            """)
+            """
+            )
             result = db.execute(orphan_sql)
             orphan_count = result.rowcount
             if orphan_count > 0:

@@ -107,12 +107,11 @@ def generate_id(prefix: str) -> str:
     # Using UUID4 for pure randomness (Standard for Users)
     if prefix == "user":
         return f"user_{uuid.uuid4()}"
-    
+
     # Keeping your timestamp preference for Games
     if prefix == "game":
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         random_suffix = uuid.uuid4().hex[:8]
         return f"game_{timestamp}_{random_suffix}"
-        
-    return f"{prefix}_{uuid.uuid4()}"
 
+    return f"{prefix}_{uuid.uuid4()}"

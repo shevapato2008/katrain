@@ -1,4 +1,5 @@
 """Tests for auto-saving AI (single-player) games to user_games on game completion."""
+
 import os
 import uuid
 from unittest.mock import MagicMock, patch
@@ -104,6 +105,7 @@ async def _create_user_and_login(app, username="testuser"):
     """Create a user and return (headers, user_id, username)."""
     unique_name = f"{username}-{uuid.uuid4().hex[:8]}"
     from passlib.context import CryptContext
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed = pwd_context.hash("password")
     user = app.state.user_repo.create_user(unique_name, hashed)

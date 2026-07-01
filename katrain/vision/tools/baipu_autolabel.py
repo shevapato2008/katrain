@@ -23,7 +23,7 @@ import cv2
 import numpy as np
 
 from katrain.vision.classes import ID_TO_NAME, LED_COLOR_TO_CLASS, NAME_TO_ID
-from katrain.vision.config import LedAnchorConfig
+from katrain.vision.config import DEFAULT_MARGIN_CELLS, LedAnchorConfig
 
 # NOTE: katrain.core.baipu is imported LAZILY inside load_capture / reconstruct_board.
 # Importing it at module top would pull in katrain.core.game -> katrain.core.lang, which
@@ -61,8 +61,15 @@ def load_capture(game_dir: Path) -> Capture:
     )
 
 
-def warp_frame(frame_bgr: np.ndarray, M: np.ndarray, out_size: int) -> np.ndarray:
-    """Rectify a raw camera frame to the out_size square board (deployment space)."""
+def warp_frame(frame_bgr: np.ndarray, M: np.ndarray, out_size: int, margin_px: int = 0) -> np.ndarray:
+    """Rectify a raw camera frame to the out_size square board. ``margin_px`` adds a border
+    AROUND the 19x19 grid so edge/corner stones (centered on the outermost lines) stay fully
+    inside the frame instead of being clipped in half — canvas = out_size + 2*margin_px."""
+    M = np.asarray(M, np.float64)
+    if margin_px:
+        T = np.array([[1.0, 0.0, margin_px], [0.0, 1.0, margin_px], [0.0, 0.0, 1.0]], np.float64)
+        size = out_size + 2 * margin_px
+        return cv2.warpPerspective(frame_bgr, T @ M, (size, size))
     return cv2.warpPerspective(frame_bgr, M, (out_size, out_size))
 
 
@@ -152,6 +159,86 @@ def detect_isolated_stone_centroids(warped_bgr, board, xs, ys, spacing):
     return out
 
 
+def refine_stone_box(
+    warped_bgr,
+    gx,
+    gy,
+    color,
+    spacing,
+    max_off_frac: float = 0.45,
+    pad_frac: float = 1.10,
+    size_clip: tuple[float, float] = (0.6, 1.2),
+    gray=None,
+):
+    """Find the actual stone disc near the expected point (gx, gy) and return a tight
+    absolute ``(cx, cy, w, h)`` on the stone's TRUE center, or ``None``.
+
+    Two-step labeling: the box is centered on the stone's real visible position (not the
+    grid intersection), so the trained detector reports true positions and the deploy-time
+    occupancy-aware assignment (board_state) maps each to the nearest empty intersection.
+    ``None`` (caller keeps the intersection-centered box) when no disc is confidently found
+    within ``max_off_frac*spacing`` of (gx, gy) — this rejects a neighbour's disc. ``color``
+    ('B'/'W') filters by interior polarity vs the patch median, so a black box can't lock
+    onto a white neighbour and vice-versa. Pass ``gray`` (precomputed once per frame) to avoid
+    re-converting the whole image on every stone.
+    """
+    if gray is None:
+        gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
+    r = max(6, int(0.45 * spacing))
+    half = int(0.7 * spacing)
+    h_img, w_img = gray.shape[:2]
+    x0, y0 = max(0, int(gx - half)), max(0, int(gy - half))
+    x1, y1 = min(w_img, int(gx + half)), min(h_img, int(gy + half))
+    patch = gray[y0:y1, x0:x1]
+    if patch.size == 0:
+        return None
+    circles = cv2.HoughCircles(
+        patch,
+        cv2.HOUGH_GRADIENT,
+        dp=1.2,
+        minDist=2 * r,
+        param1=120,
+        param2=18,
+        minRadius=int(0.6 * r),
+        maxRadius=int(1.4 * r),
+    )
+    if circles is None:
+        return None
+    med = float(np.median(patch))
+    # Reject a candidate only when its interior is CLEARLY the opposite colour (interior past the
+    # patch median by a margin scaled to the patch's own contrast). Using a bare `>= median` made a
+    # black stone inside a dense black cluster self-reject (median ≈ the stone's own interior); the
+    # margin lets same-colour clusters through while still catching a genuinely wrong-colour disc.
+    # (real-data: refine success 23.6% -> 31.9% on kifu_24171; the mismatch guard still holds.)
+    lo, hi = np.percentile(patch, [10, 90])
+    margin = 0.25 * float(hi - lo)
+    max_off = max_off_frac * spacing
+    best = None
+    best_d = max_off
+    for c0 in circles[0]:
+        cx, cy, rad = float(c0[0]) + x0, float(c0[1]) + y0, float(c0[2])
+        d = float(np.hypot(cx - gx, cy - gy))
+        if d > best_d:
+            continue
+        s = max(1, int(0.4 * rad))
+        iy0, iy1 = max(0, int(cy - s)), min(h_img, int(cy + s))
+        ix0, ix1 = max(0, int(cx - s)), min(w_img, int(cx + s))
+        interior = gray[iy0:iy1, ix0:ix1]
+        if interior.size == 0:
+            continue
+        inner = float(interior.mean())
+        if color == "B" and inner > med + margin:  # clearly brighter than surroundings -> not black
+            continue
+        if color == "W" and inner < med - margin:  # clearly darker than surroundings -> not white
+            continue
+        best_d, best = d, (cx, cy, rad)
+    if best is None:
+        return None
+    cx, cy, rad = best
+    side = float(np.clip(2.0 * rad * pad_frac, size_clip[0] * spacing, size_clip[1] * spacing))
+    return cx, cy, side, side
+
+
 @dataclass
 class ShiftReport:
     dx: float
@@ -225,12 +312,16 @@ def frame_boxes(
     led_frac: float = 0.45,
     img_w: int = 950,
     img_h: int = 950,
+    warped_bgr=None,
+    refine: bool = False,
 ):
-    # Stones ~object-tight (deploy snaps on center; box extent is training-localization only).
+    # Stones ~object-tight (deploy assigns on center; box extent is training-localization only).
     # LEDs tight: a background-dominated box destroys small-target recall (the success metric).
     stone_side = float(np.clip(stone_frac * spacing, 40.0, 70.0))
     led_side = float(np.clip(led_frac * spacing, 16.0, 36.0))
     dx, dy = shift
+    # Convert to gray ONCE per frame (not once per stone) — refine_stone_box reuses it.
+    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY) if (refine and warped_bgr is not None) else None
     boxes: list[Box] = []
     for r in range(19):
         for c in range(19):
@@ -239,7 +330,14 @@ def frame_boxes(
                 continue
             gx, gy = grid_point(r, c, xs, ys)
             cid = NAME_TO_ID["black"] if v == "B" else NAME_TO_ID["white"]
-            cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
+            refined = None
+            if refine and warped_bgr is not None:
+                # search around the drift-corrected expected point; lock onto the TRUE disc.
+                refined = refine_stone_box(warped_bgr, gx + dx, gy + dy, v, spacing, gray=gray)
+            if refined is not None:
+                cx, cy, w, h = _clip_box(*refined, img_w, img_h)
+            else:
+                cx, cy, w, h = _clip_box(gx + dx, gy + dy, stone_side, stone_side, img_w, img_h)
             if w > 0 and h > 0:  # drop stones that drifted entirely off-frame (not visible -> no label)
                 boxes.append(Box(cid, cx, cy, w, h))
     if led_point is not None:
@@ -267,7 +365,17 @@ def draw_overlay(warped_bgr, boxes):
 
 
 def process_game(
-    game_dir, out_images, out_labels, verify_dir=None, dedup_per_move=True, stone_frac=1.05, led_frac=0.45
+    game_dir,
+    out_images,
+    out_labels,
+    verify_dir=None,
+    dedup_per_move=True,
+    stone_frac=1.05,
+    led_frac=0.45,
+    allow_legacy_drift=False,
+    margin_cells=DEFAULT_MARGIN_CELLS,
+    refine_boxes=False,  # NOTE: the CLI (--refine-boxes) defaults this to True; the function default
+    # stays False so programmatic callers / existing golden tests keep intersection-centered labels.
 ):
     game_dir = Path(game_dir)
     out_images, out_labels = Path(out_images), Path(out_labels)
@@ -280,6 +388,10 @@ def process_game(
 
     cap = load_capture(game_dir)
     spacing = mean_grid_spacing(cap.xs, cap.ys)
+    # Margin AROUND the grid so edge/corner stones are not clipped in half (see Q: edge recall).
+    pad = int(round(margin_cells * spacing))
+    canvas = cap.out_size + 2 * pad
+    xs_p, ys_p = cap.xs + pad, cap.ys + pad
     stats = {
         "frames": 0,
         "written": 0,
@@ -289,12 +401,18 @@ def process_game(
         "led_green": 0,
         "skipped": 0,
         "shift_fallback": 0,
+        "skipped_drift": 0,
     }
     seen_move_idx = set()
     gid = cap.manifest.get("game_id", game_dir.name)
     last_shift = (0.0, 0.0)  # carry-forward seed: (0,0) is correct for the pre-drift first frame
 
-    for fr in cap.manifest["frames"]:
+    frames_meta = cap.manifest["frames"]
+    # If the board moved during this game, frames that fall back to the frozen M_0
+    # (frozen / legacy-no-field) carry misaligned labels — the exact failure P11 fixes.
+    game_drifted = any((f.get("geometry_correction") or {}).get("drift", {}).get("over_threshold") for f in frames_meta)
+
+    for fr in frames_meta:
         stats["frames"] += 1
         ami = fr["applied_move_index"]
         if dedup_per_move and ami in seen_move_idx:
@@ -305,34 +423,67 @@ def process_game(
         if img is None:
             stats["skipped"] += 1
             continue
-        warped = warp_frame(img, cap.M, cap.out_size)
+
+        gc = fr.get("geometry_correction")
+        if gc and gc.get("status") in ("corrected", "stale"):
+            M_use = np.asarray(gc["M"], dtype=np.float64)  # per-frame absolute homography
+            use_fiducial = True
+            # P12: outer-corner geometry (no-LED) is coarser than LED-fiducial sub-pixel;
+            # flag it distinctly so label consumers can weight/audit it.
+            if gc.get("status") == "corrected" and gc.get("source") == "outer_corner":
+                label_quality = "corrected_outer_corner"
+            else:
+                label_quality = gc["status"]
+        else:
+            M_use = cap.M  # frozen M_0
+            use_fiducial = False
+            label_quality = "frozen" if gc else "legacy_estimate"
+
+        if not use_fiducial and game_drifted and not allow_legacy_drift:
+            stats["skipped_drift"] += 1
+            continue
+
         board = reconstruct_board(cap.steps, ami)
-        rep = estimate_global_shift(warped, board, fr.get("led_point"), cap.xs, cap.ys, spacing, prev_shift=last_shift)
-        last_shift = (rep.dx, rep.dy)  # next frame inherits this if it has no anchors
-        if rep.fallback_used:
-            stats["shift_fallback"] += 1
+        warped = warp_frame(img, M_use, cap.out_size, margin_px=pad)
+        if use_fiducial:
+            # M_f already maps stones/LEDs onto the canonical grid -> zero residual shift.
+            shift = (0.0, 0.0)
+            dx = dy = residual = 0.0
+            anchor_count = 0
+            led_found = fallback = False
+        else:
+            rep = estimate_global_shift(warped, board, fr.get("led_point"), xs_p, ys_p, spacing, prev_shift=last_shift)
+            last_shift = (rep.dx, rep.dy)  # next legacy frame inherits this if it has no anchors
+            shift = (rep.dx, rep.dy)
+            dx, dy, residual = rep.dx, rep.dy, rep.residual_px
+            anchor_count, led_found, fallback = rep.anchor_count, rep.led_found, rep.fallback_used
+            if fallback:
+                stats["shift_fallback"] += 1
+
         boxes = frame_boxes(
             board,
             fr.get("led_point"),
-            cap.xs,
-            cap.ys,
-            (rep.dx, rep.dy),
+            xs_p,
+            ys_p,
+            shift,
             spacing,
             stone_frac=stone_frac,
             led_frac=led_frac,
-            img_w=cap.out_size,
-            img_h=cap.out_size,
+            img_w=canvas,
+            img_h=canvas,
+            warped_bgr=warped,
+            refine=refine_boxes,
         )
 
         stem = f"{gid}_{Path(fr['file']).stem}"
         cv2.imwrite(str(out_images / f"{stem}.jpg"), warped)
-        lines = boxes_to_yolo_lines(boxes, cap.out_size, cap.out_size)
+        lines = boxes_to_yolo_lines(boxes, canvas, canvas)
         (out_labels / f"{stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
         if verify_dir:
             cv2.imwrite(str(verify_dir / f"{stem}.jpg"), draw_overlay(warped, boxes))
             csv_rows.append(
-                f"{fr['file']},{rep.dx:.2f},{rep.dy:.2f},{rep.anchor_count},"
-                f"{int(rep.led_found)},{rep.residual_px:.2f},{int(rep.fallback_used)}"
+                f"{fr['file']},{dx:.2f},{dy:.2f},{anchor_count},"
+                f"{int(led_found)},{residual:.2f},{int(fallback)},{label_quality}"
             )
 
         for b in boxes:
@@ -340,36 +491,115 @@ def process_game(
         stats["written"] += 1
 
     if verify_dir:
-        header = "frame,dx,dy,anchor_count,led_found,residual_px,fallback_used"
+        header = "frame,dx,dy,anchor_count,led_found,residual_px,fallback_used,label_quality"
         (verify_dir / "shifts.csv").write_text(header + "\n" + "\n".join(csv_rows) + "\n")
     return stats
 
 
+def _latest_game_dir(root):
+    """Most-recently-updated ``<root>/*/`` that contains a manifest.json, or None."""
+    root = Path(root).expanduser()
+    cands = [p.parent for p in root.glob("*/manifest.json")] if root.exists() else []
+    if not cands:
+        return None
+    return max(cands, key=lambda d: (d / "manifest.json").stat().st_mtime)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Auto-label baipu captures for 4-class YOLO (warped space)")
-    ap.add_argument("--game-dir", action="append", required=True, help="baipu capture dir (repeatable)")
+    ap.add_argument("--game-dir", action="append", help="baipu capture dir (repeatable)")
+    ap.add_argument(
+        "--latest",
+        default=None,
+        help="Watch the most-recently-updated game dir under this captures ROOT instead of "
+        "--game-dir; re-resolved each tick so it follows the active 摆谱 session (no game_id needed).",
+    )
     ap.add_argument("--out-images", required=True)
     ap.add_argument("--out-labels", required=True)
     ap.add_argument("--verify-dir", default=None)
     ap.add_argument("--no-dedup", action="store_true", help="keep all frames (default: one per move)")
     ap.add_argument("--stone-frac", type=float, default=1.05, help="stone box side as a fraction of grid spacing")
     ap.add_argument("--led-frac", type=float, default=0.45, help="LED box side as a fraction of grid spacing (tight)")
+    ap.add_argument(
+        "--margin-cells",
+        type=float,
+        default=DEFAULT_MARGIN_CELLS,
+        help="blank border around the grid (in cells) in the warped image so edge/corner stones "
+        "aren't clipped in half. Default 1.0; 0 = no margin (old behaviour).",
+    )
+    ap.add_argument(
+        "--refine-boxes",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="blob-refine each stone box onto the TRUE detected disc (two-step labeling). "
+        "Falls back to the grid intersection when no disc is found. --no-refine-boxes to disable.",
+    )
+    ap.add_argument(
+        "--allow-legacy-drift",
+        action="store_true",
+        help="export frozen/legacy frames even when the game drifted (default: isolate them)",
+    )
+    ap.add_argument(
+        "--watch",
+        type=float,
+        nargs="?",
+        const=3.0,
+        default=None,
+        help="Incremental mode: re-label every N seconds (default 3) as new frames appear during "
+        "摆谱 — run in a 2nd terminal alongside the capture server. Ctrl-C to stop. process_game "
+        "is idempotent, so each tick re-labels every frame captured so far.",
+    )
     args = ap.parse_args()
-    total = {}
-    for gd in args.game_dir:
-        s = process_game(
-            gd,
-            args.out_images,
-            args.out_labels,
-            args.verify_dir,
-            dedup_per_move=not args.no_dedup,
-            stone_frac=args.stone_frac,
-            led_frac=args.led_frac,
-        )
-        print(f"{gd}: {s}")
-        for k, v in s.items():
-            total[k] = total.get(k, 0) + v
-    print(f"TOTAL: {total}")
+    if not args.game_dir and not args.latest:
+        ap.error("provide --game-dir or --latest")
+
+    def _resolve_dirs():
+        if args.latest:
+            d = _latest_game_dir(args.latest)
+            return [str(d)] if d else []
+        return args.game_dir
+
+    def _label_all():
+        dirs = _resolve_dirs()
+        if not dirs:
+            print(f"[waiting] no game dir with a manifest yet under {args.latest}")
+            return {}
+        total = {}
+        for gd in dirs:
+            try:
+                s = process_game(
+                    gd,
+                    args.out_images,
+                    args.out_labels,
+                    args.verify_dir,
+                    dedup_per_move=not args.no_dedup,
+                    stone_frac=args.stone_frac,
+                    led_frac=args.led_frac,
+                    allow_legacy_drift=args.allow_legacy_drift,
+                    margin_cells=args.margin_cells,
+                    refine_boxes=args.refine_boxes,
+                )
+            except FileNotFoundError as exc:
+                print(f"{gd}: waiting for capture ({exc})")  # game dir/manifest not written yet
+                continue
+            print(f"{gd}: {s}")
+            for k, v in s.items():
+                total[k] = total.get(k, 0) + v
+        print(f"TOTAL: {total}")
+        return total
+
+    if args.watch:
+        import time
+
+        print(f"[watch] re-labeling every {args.watch:.0f}s — Ctrl-C to stop")
+        try:
+            while True:
+                _label_all()
+                time.sleep(args.watch)
+        except KeyboardInterrupt:
+            print("\n[watch] stopped")
+    else:
+        _label_all()
 
 
 if __name__ == "__main__":

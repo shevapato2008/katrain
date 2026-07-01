@@ -117,9 +117,14 @@ class GolaxyRestClient:
     async def request_sms_code(self, phone: str) -> bool:
         """Request SMS verification code."""
         client = await self._ensure_client()
-        resp = await client.get("/api/auth/sms/code", params={"username": phone, "login": "true", "area": "0086"},
-                                headers={"Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}",
-                                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"})
+        resp = await client.get(
+            "/api/auth/sms/code",
+            params={"username": phone, "login": "true", "area": "0086"},
+            headers={
+                "Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
+        )
         return resp.status_code == 200
 
     async def refresh_access_token(self) -> dict:

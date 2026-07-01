@@ -16,27 +16,40 @@ def db():
 
 def test_create_book_with_full_hierarchy(db):
     book = models_db.TutorialBook(
-        category="布局", subcategory="棋书", title="测试书", author="作者",
-        slug="test-book", asset_dir="tutorial_assets/test-book/pages",
+        category="布局",
+        subcategory="棋书",
+        title="测试书",
+        author="作者",
+        slug="test-book",
+        asset_dir="tutorial_assets/test-book/pages",
     )
     db.add(book)
     db.commit()
 
     chapter = models_db.TutorialChapter(
-        book_id=book.id, chapter_number="第一章", title="布局入门", order=1,
+        book_id=book.id,
+        chapter_number="第一章",
+        title="布局入门",
+        order=1,
     )
     db.add(chapter)
     db.commit()
 
     section = models_db.TutorialSection(
-        chapter_id=chapter.id, section_number="1", title="外势和实地", order=1,
+        chapter_id=chapter.id,
+        section_number="1",
+        title="外势和实地",
+        order=1,
     )
     db.add(section)
     db.commit()
 
     figure = models_db.TutorialFigure(
-        section_id=section.id, page=11, figure_label="图1",
-        book_text="测试文字", page_image_path="tutorial_assets/test-book/pages/page_011.png",
+        section_id=section.id,
+        page=11,
+        figure_label="图1",
+        book_text="测试文字",
+        page_image_path="tutorial_assets/test-book/pages/page_011.png",
         board_payload={"size": 19, "stones": {"B": [[2, 16]], "W": [[3, 3]]}, "labels": {"2,16": "1", "3,3": "2"}},
         order=1,
     )
@@ -52,8 +65,11 @@ def test_create_book_with_full_hierarchy(db):
 
 def test_cascade_delete(db):
     book = models_db.TutorialBook(
-        category="入门", subcategory="棋书", title="删除测试",
-        slug="delete-test", asset_dir="tutorial_assets/delete-test/pages",
+        category="入门",
+        subcategory="棋书",
+        title="删除测试",
+        slug="delete-test",
+        asset_dir="tutorial_assets/delete-test/pages",
     )
     db.add(book)
     db.commit()
@@ -65,7 +81,10 @@ def test_cascade_delete(db):
     db.add(section)
     db.commit()
     figure = models_db.TutorialFigure(
-        section_id=section.id, page=1, figure_label="图1", order=1,
+        section_id=section.id,
+        page=1,
+        figure_label="图1",
+        order=1,
     )
     db.add(figure)
     db.commit()
@@ -99,7 +118,10 @@ def test_update_board_payload(db):
     db.add(sec)
     db.commit()
     fig = models_db.TutorialFigure(
-        section_id=sec.id, page=1, figure_label="图1", order=1,
+        section_id=sec.id,
+        page=1,
+        figure_label="图1",
+        order=1,
         board_payload={"size": 19, "stones": {"B": [], "W": []}, "labels": {}},
     )
     db.add(fig)

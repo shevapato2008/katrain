@@ -80,12 +80,15 @@ class OnnxBackend:
             providers=["CPUExecutionProvider"],
         )
 
-    def detect(self, image: np.ndarray, confidence_threshold: float) -> list[Detection]:
+    def detect(
+        self, image: np.ndarray, confidence_threshold: float, iou_threshold: float | None = None
+    ) -> list[Detection]:
         """Run detection on a BGR image and return filtered detections.
 
         Args:
             image: Input image in BGR channel order (OpenCV default).
             confidence_threshold: Minimum class score to keep a detection.
+            iou_threshold: Agnostic-NMS IoU override; defaults to NMS_IOU_THRESHOLD when None.
 
         Returns:
             List of :class:`Detection` objects in the original image coordinate space.
@@ -104,7 +107,7 @@ class OnnxBackend:
         (raw_output,) = self._session.run([output_name], {input_name: tensor})
 
         # --- post-process ---
-        return self._postprocess(raw_output, orig_w, orig_h, confidence_threshold)
+        return self._postprocess(raw_output, orig_w, orig_h, confidence_threshold, iou_threshold)
 
     def unload(self) -> None:
         """Release the ONNX Runtime session."""
@@ -152,6 +155,7 @@ class OnnxBackend:
         orig_w: int,
         orig_h: int,
         confidence_threshold: float,
+        iou_threshold: float | None = None,
     ) -> list[Detection]:
         """Decode YOLO v8/v11 raw output tensor into :class:`Detection` objects.
 
@@ -192,7 +196,7 @@ class OnnxBackend:
             bboxes=tl_boxes.tolist(),
             scores=confidences.tolist(),
             score_threshold=confidence_threshold,
-            nms_threshold=self.NMS_IOU_THRESHOLD,
+            nms_threshold=(iou_threshold if iou_threshold is not None else self.NMS_IOU_THRESHOLD),
         )
 
         if len(indices) == 0:

@@ -31,6 +31,7 @@ import cv2
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS
 from katrain.vision.geometry_lock import load_geometry_lock
+from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.stone_detector import StoneDetector
 from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
 
@@ -43,10 +44,29 @@ def main():
     ap.add_argument("--model", required=True, help="Path to trained YOLO weights (.pt/.onnx)")
     ap.add_argument("--geometry", required=True, help="geometry.npz from a capture (provides M + out_size)")
     ap.add_argument("--camera", type=int, default=0)
-    ap.add_argument("--conf", type=float, default=0.4)
+    ap.add_argument(
+        "--conf",
+        type=float,
+        default=0.25,
+        help="Confidence threshold. 0.25 default: far-side (perspective-blurred) stones score lower, "
+        "and occupancy-aware assignment + board priors filter spurious low-conf boxes downstream.",
+    )
     ap.add_argument("--imgsz", type=int, default=1024, help="Detector input size (640 = faster, less accurate)")
+    ap.add_argument(
+        "--iou",
+        type=float,
+        default=0.5,
+        help="Agnostic-NMS IoU threshold. 0.5 default merges size-variant duplicate boxes on "
+        "blurry far-side stones (their mutual IoU ~0.69 survives the ultralytics 0.7 default).",
+    )
     ap.add_argument("--margin-cells", type=float, default=DEFAULT_MARGIN_CELLS)
     ap.add_argument("--backend", default="ultralytics", choices=["ultralytics", "onnx", "rknn"])
+    ap.add_argument(
+        "--no-motion-gate",
+        action="store_true",
+        help="Detect on EVERY frame (default: only on motion-stable frames, like the production "
+        "worker). Detecting on blurred/moving frames produces flickering duplicate boxes.",
+    )
     ap.add_argument(
         "--capture-resolution",
         default="1280x720",
@@ -66,15 +86,19 @@ def main():
         req_w, req_h = (int(x) for x in args.capture_resolution.split("x"))
         print(f"lock has no source resolution; requesting {req_w}x{req_h} (--capture-resolution)")
 
-    detector = StoneDetector(args.model, backend=args.backend, confidence_threshold=args.conf, imgsz=args.imgsz)
+    detector = StoneDetector(
+        args.model, backend=args.backend, confidence_threshold=args.conf, imgsz=args.imgsz, iou_threshold=args.iou
+    )
 
     camera = CameraManager(device_id=args.camera, width=req_w, height=req_h)
     if not camera.open():
         print(f"Error: cannot open camera {args.camera}")
         return
     print("Q = quit")
+    motion = None if args.no_motion_gate else MotionFilter()
     try:
         warned = False
+        dets = []
         while True:
             frame = camera.read_frame()
             if frame is None:
@@ -85,7 +109,13 @@ def main():
                 warned = True
             M = adjust_M_for_resolution(lock.M, src_wh, frame_wh)
             warped = warp_with_margin(frame, M, out_size, margin_cells=args.margin_cells)
-            dets = detector.detect(warped)
+            # Only run detection on motion-STABLE frames — matches the production worker
+            # (worker_inprocess gates on MotionFilter.is_stable). Detecting on blurred/moving
+            # frames is what makes one stone flicker between several offset boxes. On unstable
+            # frames we keep the last stable detections instead of re-running the model.
+            stable = motion.is_stable(frame) if motion is not None else True
+            if stable:
+                dets = detector.detect(warped)
             counts = {0: 0, 1: 0, 2: 0, 3: 0}
             for d in dets:
                 counts[d.class_id] = counts.get(d.class_id, 0) + 1
@@ -110,6 +140,16 @@ def main():
                 (255, 255, 255),
                 2,
             )
+            if motion is not None:
+                cv2.putText(
+                    warped,
+                    "STABLE" if stable else "MOVING - hold still (boxes frozen)",
+                    (10, 56),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 255, 0) if stable else (0, 165, 255),
+                    2,
+                )
             cv2.imshow("Live geometry-locked detection (Q=quit)", warped)
             if (cv2.waitKey(1) & 0xFF) == ord("q"):
                 break

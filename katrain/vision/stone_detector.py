@@ -35,6 +35,8 @@ class StoneDetector:
         backend: Backend name — "ultralytics", "onnx", or "rknn".
         confidence_threshold: Minimum detection confidence.
         imgsz: Input image size (used by ultralytics backend; ONNX reads from meta.json).
+        iou_threshold: Agnostic-NMS IoU override. None uses the backend default (0.5). Lower
+            (e.g. 0.5) merges size-variant duplicate boxes on blurry far-side stones.
     """
 
     def __init__(
@@ -43,14 +45,16 @@ class StoneDetector:
         backend: str = "ultralytics",
         confidence_threshold: float = 0.5,
         imgsz: int = 960,
+        iou_threshold: float | None = None,
     ):
         from katrain.vision.inference import create_backend
 
         self.confidence_threshold = confidence_threshold
         self.imgsz = imgsz
+        self.iou_threshold = iou_threshold
         self.backend_impl = create_backend(backend)
         self.backend_impl.load(model_path)
 
     def detect(self, image: np.ndarray) -> list[Detection]:
         """Run inference on a perspective-corrected board image."""
-        return self.backend_impl.detect(image, self.confidence_threshold)
+        return self.backend_impl.detect(image, self.confidence_threshold, self.iou_threshold)

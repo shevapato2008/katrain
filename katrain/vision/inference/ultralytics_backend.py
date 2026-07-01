@@ -15,6 +15,11 @@ logger = logging.getLogger(__name__)
 class UltralyticsBackend:
     """Wraps the ultralytics YOLO library.  Implements the InferenceBackend protocol."""
 
+    # Agnostic-NMS IoU threshold. 0.5 matches the onnx/rknn deployment backends (dev/deploy
+    # parity). The ultralytics *default* is 0.7, which leaves size-variant duplicate boxes on
+    # blurry far-side stones (their mutual IoU sits ~0.69, just under 0.7); 0.5 merges them.
+    NMS_IOU_THRESHOLD = 0.5
+
     def __init__(self) -> None:
         self._model = None
         self._imgsz: int = 960
@@ -47,12 +52,15 @@ class UltralyticsBackend:
         self._model = YOLO(model_path)
         logger.info("UltralyticsBackend loaded model %s (imgsz=%d)", model_path, self._imgsz)
 
-    def detect(self, image: np.ndarray, confidence_threshold: float) -> list[Detection]:
+    def detect(
+        self, image: np.ndarray, confidence_threshold: float, iou_threshold: float | None = None
+    ) -> list[Detection]:
         """Run YOLO inference and return detections above *confidence_threshold*."""
         if self._model is None:
             raise RuntimeError("Model not loaded – call load() first")
 
-        results = self._model(image, verbose=False, imgsz=self._imgsz, agnostic_nms=True)
+        iou = iou_threshold if iou_threshold is not None else self.NMS_IOU_THRESHOLD
+        results = self._model(image, verbose=False, imgsz=self._imgsz, agnostic_nms=True, iou=iou)
         detections: list[Detection] = []
         for r in results:
             for box in r.boxes:

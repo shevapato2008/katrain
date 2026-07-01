@@ -89,12 +89,15 @@ class RknnBackend:
         self._rknn = rknn
         logger.info("RKNN model loaded successfully")
 
-    def detect(self, image: np.ndarray, confidence_threshold: float) -> list[Detection]:
+    def detect(
+        self, image: np.ndarray, confidence_threshold: float, iou_threshold: float | None = None
+    ) -> list[Detection]:
         """Run detection on a BGR image and return filtered detections.
 
         Args:
             image: Input image in BGR channel order (OpenCV default).
             confidence_threshold: Minimum class score to keep a detection.
+            iou_threshold: Agnostic-NMS IoU override; defaults to NMS_IOU_THRESHOLD when None.
 
         Returns:
             List of :class:`Detection` objects in the original image coordinate space.
@@ -114,7 +117,7 @@ class RknnBackend:
             return []
 
         # --- post-process ---
-        return self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold)
+        return self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold, iou_threshold)
 
     def unload(self) -> None:
         """Release the RKNN runtime."""
@@ -172,6 +175,7 @@ class RknnBackend:
         orig_w: int,
         orig_h: int,
         confidence_threshold: float,
+        iou_threshold: float | None = None,
     ) -> list[Detection]:
         """Decode YOLO v8/v11 raw output tensor into :class:`Detection` objects.
 
@@ -218,7 +222,7 @@ class RknnBackend:
             bboxes=tl_boxes.tolist(),
             scores=confidences.tolist(),
             score_threshold=confidence_threshold,
-            nms_threshold=self.NMS_IOU_THRESHOLD,
+            nms_threshold=(iou_threshold if iou_threshold is not None else self.NMS_IOU_THRESHOLD),
         )
 
         if len(indices) == 0:

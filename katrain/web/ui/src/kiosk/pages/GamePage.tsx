@@ -11,6 +11,8 @@ import { useVision } from '../context/VisionContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation } from '../context/OrientationContext';
+import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
+import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 
 const GamePage = () => {
   const navigate = useNavigate();
@@ -30,9 +32,17 @@ const GamePage = () => {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [aiMoveToast, setAiMoveToast] = useState<string | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [escalationOpen, setEscalationOpen] = useState(false);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
+
+  useEffect(() => {
+    if (!session.physicalReminder) return;
+    if (session.physicalReminder.kind === 'escalation') setEscalationOpen(true);
+    else setReminderOpen(true);
+  }, [session.physicalReminder]);
 
   useEffect(() => {
     if (sessionId) session.setSessionId(sessionId);
@@ -112,6 +122,13 @@ const GamePage = () => {
         </Box>
       )}
 
+      {isVisionEnabled && (
+        <PhysicalPlayStatusChip
+          latestEvent={visionSync.latestEvent}
+          currentNodeId={session.gameState?.current_node_id ?? null}
+        />
+      )}
+
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
@@ -183,6 +200,23 @@ const GamePage = () => {
           {t('Camera disconnected, switched to touch mode', '摄像头断开，已切换为触屏模式')}
         </Alert>
       </Snackbar>
+
+      {/* Physical catch-up reminder toast */}
+      <Snackbar
+        open={reminderOpen}
+        autoHideDuration={8000}
+        onClose={() => setReminderOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        message={t('Please place the AI stone at the lit point first', '请先将 AI 棋子摆到棋盘亮灯处')}
+      />
+
+      {/* Physical desync escape hatch */}
+      <PhysicalSyncEscalationDialog
+        open={escalationOpen}
+        toPlace={session.physicalReminder?.to_place ?? []}
+        toRemove={session.physicalReminder?.to_remove ?? []}
+        onClose={() => setEscalationOpen(false)}
+      />
     </Box>
   );
 };

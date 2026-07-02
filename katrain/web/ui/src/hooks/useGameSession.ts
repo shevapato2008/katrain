@@ -29,6 +29,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [lastLog, setLastLog] = useState<string | null>(null);
     const [chatMessages, setChatMessages] = useState<{sender: string, text: string, time: number}[]>([]);
     const [gameEndData, setGameEndData] = useState<GameEndData | null>(null);
+    const [physicalReminder, setPhysicalReminder] = useState<{
+        kind: 'reminder' | 'escalation';
+        to_place: number[][];
+        to_remove: number[][];
+    } | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
@@ -91,6 +96,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             if (onCountTimeout) {
                                 onCountTimeout();
                             }
+                        } else if (msg.type === 'physical_reminder') {
+                            setPhysicalReminder(msg.data);
                         }
                     };
                 } catch (err) {
@@ -159,5 +166,5 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         }
     }, []);
 
-    return { sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData };
+    return { sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder };
 };

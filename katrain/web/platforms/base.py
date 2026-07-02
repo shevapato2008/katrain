@@ -33,6 +33,7 @@ class PlatformAdapter(ABC):
     supports_automatch: bool = False
     supports_rooms: bool = False
     supports_seek_graph: bool = False
+    supports_engine_play: bool = False  # human-vs-AI (stateless genmove tunnel)
 
     def __init__(self):
         self._connected = False
@@ -114,6 +115,25 @@ class PlatformAdapter(ABC):
     async def submit_scoring_action(self, game_id: str, action: dict) -> bool:
         """Platform-specific scoring phase actions (mark dead stones, accept score, etc.)."""
         raise NotImplementedError(f"{self.platform_name} does not support scoring")
+
+    # --- Engine play (human-vs-AI, stateless genmove tunnel) ---
+    #
+    # Optional defaults (NotImplementedError pattern, like send_challenge above):
+    # only adapters with supports_engine_play=True override these. Concrete
+    # config/return types live in the platform module (e.g. golaxy.adapter);
+    # annotations are kept loose here to avoid a base->platform import cycle.
+
+    async def start_engine_game(self, config) -> "EngineGameStart":
+        raise NotImplementedError(f"{self.platform_name} does not support engine play")
+
+    async def submit_engine_move(self, game_id: str, col: int, row: int) -> PlatformMove:
+        raise NotImplementedError(f"{self.platform_name} does not support engine play")
+
+    async def resign_engine_game(self, game_id: str) -> None:
+        raise NotImplementedError(f"{self.platform_name} does not support engine play")
+
+    def get_engine_levels(self) -> list[dict]:
+        raise NotImplementedError(f"{self.platform_name} does not support engine play")
 
     # --- Event stream (callbacks) ---
 

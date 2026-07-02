@@ -185,7 +185,14 @@ const GamePage = () => {
       </Dialog>
 
       {/* Vision sync overlay */}
-      {isVisionEnabled && <VisionSyncOverlay syncEvents={visionSync.syncEvents} />}
+      {isVisionEnabled && (
+        <VisionSyncOverlay
+          syncEvents={visionSync.syncEvents}
+          sessionId={sessionId ?? null}
+          boardSize={session.gameState?.board_size?.[0] ?? 19}
+          playerToMove={session.gameState?.player_to_move ?? null}
+        />
+      )}
 
       {/* AI move toast */}
       <Snackbar open={!!aiMoveToast} autoHideDuration={8000} onClose={() => setAiMoveToast(null)}

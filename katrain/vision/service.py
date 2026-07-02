@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import deque
 from typing import Any, Callable
 
 import numpy as np
@@ -29,6 +30,8 @@ class VisionService:
         self._bound_session_id: str | None = None
         self._event_callbacks: list[Callable] = []
         self._latest_status: WorkerStatus = WorkerStatus()
+        self._pending_events: deque = deque()
+        self._pending_moves: deque = deque()
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -150,38 +153,34 @@ class VisionService:
             return self._worker.get_preview_jpeg()
         return None
 
-    def poll_events(self) -> list[Any]:
-        """Read all pending events from worker."""
-        events = []
+    def _drain_worker(self) -> None:
+        """Single drain point: route ConfirmedMove and dict events to separate queues
+        so the /ws/vision loop and the move poller no longer race on one queue."""
         if not self._worker:
-            return events
+            return
         while True:
             evt = self._worker.get_event()
             if evt is None:
                 break
-            events.append(evt)
+            if isinstance(evt, ConfirmedMove):
+                self._pending_moves.append(evt)
+            else:
+                self._pending_events.append(evt)
+
+    def poll_events(self) -> list[Any]:
+        """Read all pending dict events from worker (never consumes moves)."""
+        self._drain_worker()
+        events = list(self._pending_events)
+        self._pending_events.clear()
         return events
 
     def get_confirmed_move(self) -> ConfirmedMove | None:
-        """Read and consume the latest confirmed move from events.
-
-        Scans pending events for ConfirmedMove instances. Non-move events
-        are re-queued (they'll be picked up by poll_events).
-        """
-        events = self.poll_events()
-        move = None
-        others = []
-        for evt in events:
-            if isinstance(evt, ConfirmedMove):
-                move = evt  # Keep the latest
-            else:
-                others.append(evt)
-        # Re-queue non-move events — not ideal but keeps the interface simple.
-        # A proper implementation would use separate queues.
-        if self._worker:
-            for evt in others:
-                self._worker._event_queue.put(evt)
-        return move
+        """Read and consume the OLDEST pending confirmed move (FIFO — a stalled
+        poller no longer silently drops intermediate moves)."""
+        self._drain_worker()
+        if self._pending_moves:
+            return self._pending_moves.popleft()
+        return None
 
     @property
     def is_alive(self) -> bool:

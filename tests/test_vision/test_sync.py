@@ -105,32 +105,41 @@ class TestSyncStateMachineNormalPlayFlow:
 
 
 class TestSyncStateMachineCaptureFlow:
-    """Test 7: Capture pending -> cleared -> SYNCED."""
+    """Test 7: Capture pending -> cleared -> SYNCED.
+
+    Migrated to the digital-authority pattern (Codex Blocker 2 / Task 5): under the
+    new four-way diff, "expected stone the player hasn't placed yet" is
+    placement_pending, not capture_pending (see TestDigitalAuthorityDiff). Now
+    CAPTURE_PENDING is reserved for an actual digital capture — expected goes from
+    "has stone" to EMPTY while the physical stone is still on the board
+    (prev == observed). This test drives that sequence explicitly instead of relying
+    on a single set_expected_board() call.
+    """
 
     def test_capture_pending_and_cleared(self):
         sm = SyncStateMachine(board_size=19)
         sm.bind()
         sm.confirm_pose_lock()
 
-        # Expected: stone at (5, 5)
-        expected = board_with({(5, 5): BLACK})
-        sm.set_expected_board(expected)
+        # Stone at (5, 5) is placed both digitally and physically -> synced.
+        with_stone = board_with({(5, 5): BLACK})
+        sm.set_expected_board(with_stone)
+        sm.update(with_stone.copy(), mean_confidence=0.9, timestamp=999.0)
+        assert sm.state == SyncState.SYNCED
 
-        # Observed: stone missing at (5, 5)
-        observed_missing = empty_board()
-        events = sm.update(observed_missing, mean_confidence=0.9, timestamp=1000.0)
+        # Digital side captures the stone (engine says it's gone), but the physical
+        # stone is still sitting on the board -> CAPTURE_PENDING.
+        without_stone = empty_board()
+        sm.set_expected_board(without_stone)
+        events = sm.update(with_stone.copy(), mean_confidence=0.9, timestamp=1000.0)
 
         assert sm.state == SyncState.CAPTURE_PENDING
         capture_events = [e for e in events if e.type == SyncEventType.CAPTURE_PENDING]
         assert len(capture_events) == 1
         assert capture_events[0].data["positions"] == [(5, 5, BLACK)]
 
-        # Now the stone is removed (observed is empty, which matches "captured" state).
-        # The expected board still has the stone, but observed is empty => still pending
-        # because the user hasn't physically removed it yet... Actually, the capture IS
-        # that the stone is already gone. The pending captures check if observed[r,c] != EMPTY.
-        # Since observed[5,5] == EMPTY, still_pending is empty => CAPTURES_CLEARED.
-        events2 = sm.update(observed_missing, mean_confidence=0.9, timestamp=1001.0)
+        # Now the stone is physically removed (observed matches the new expected).
+        events2 = sm.update(without_stone.copy(), mean_confidence=0.9, timestamp=1001.0)
         cleared_events = [e for e in events2 if e.type == SyncEventType.CAPTURES_CLEARED]
         assert len(cleared_events) == 1
         assert sm.state == SyncState.SYNCED
@@ -336,37 +345,41 @@ class TestSyncStateMachineDegradedMode:
 
 
 class TestSyncStateMachineCaptureStickyBehavior:
-    """Test 14: CAPTURE_PENDING persists until stones are physically removed."""
+    """Test 14: CAPTURE_PENDING persists until stones are physically removed.
+
+    Migrated to the digital-authority pattern (Codex Blocker 2 / Task 5) — see the
+    docstring on TestSyncStateMachineCaptureFlow. Both stones are placed digitally
+    and physically first, then digitally captured, so the physical stones remain
+    and removal_needed classifies them as CAPTURE_PENDING (prev == observed at both
+    points), exercising the same sticky still_pending behavior as before.
+    """
 
     def test_capture_pending_persists_across_frames(self):
         sm = SyncStateMachine(board_size=19)
         sm.bind()
         sm.confirm_pose_lock()
 
-        expected = board_with({(5, 5): BLACK, (5, 6): BLACK})
-        sm.set_expected_board(expected)
+        # Both stones placed digitally and physically -> synced.
+        with_stones = board_with({(5, 5): BLACK, (5, 6): BLACK})
+        sm.set_expected_board(with_stones)
+        sm.update(with_stones.copy(), mean_confidence=0.9, timestamp=999.0)
+        assert sm.state == SyncState.SYNCED
 
-        # Observed: both stones missing (captured by opponent)
-        observed_empty = empty_board()
-        events = sm.update(observed_empty, mean_confidence=0.9, timestamp=1000.0)
+        # Digital side captures both stones; physically they're still on the board.
+        without_stones = empty_board()
+        sm.set_expected_board(without_stones)
+        events = sm.update(with_stones.copy(), mean_confidence=0.9, timestamp=1000.0)
         assert sm.state == SyncState.CAPTURE_PENDING
 
-        # One stone removed, but the other still on the board (expected has both, observed has one)
+        # One stone physically removed, but the other still on the board.
+        # pending_captures = [(5, 5, BLACK), (5, 6, BLACK)] from the initial pass.
+        # On this frame: observed[5,5]=EMPTY (not still pending), observed[5,6]=BLACK (still pending).
         observed_one_remaining = board_with({(5, 6): BLACK})
         events = sm.update(observed_one_remaining, mean_confidence=0.9, timestamp=1001.0)
-        # Still pending because (5, 6) is present but should be gone to clear captures.
-        # Wait -- the pending captures are stones where expected != EMPTY but observed == EMPTY.
-        # (5,5) was expected=BLACK, observed=EMPTY => pending capture.
-        # (5,6) was expected=BLACK, observed=BLACK => not a capture.
-        # So pending_captures = [(5, 5, BLACK)].
-        # still_pending checks if observed[5,5] != EMPTY -> observed[5,5] == EMPTY -> not pending.
-        # Actually, the re-check: still_pending filters pending_captures where observed != EMPTY.
-        # pending_captures = [(5, 5, BLACK), (5, 6, BLACK)] from initial pass.
-        # On next frame with observed_one_remaining: observed[5,5]=EMPTY (not pending), observed[5,6]=BLACK (still pending).
         assert sm.state == SyncState.CAPTURE_PENDING
 
-        # Both stones now absent
-        events = sm.update(observed_empty, mean_confidence=0.9, timestamp=1002.0)
+        # Both stones now physically absent -> matches new expected -> cleared.
+        events = sm.update(without_stones.copy(), mean_confidence=0.9, timestamp=1002.0)
         cleared = [e for e in events if e.type == SyncEventType.CAPTURES_CLEARED]
         assert len(cleared) == 1
         assert sm.state == SyncState.SYNCED
@@ -405,3 +418,68 @@ class TestSyncStateMachineUnbound:
         events = sm.update(observed, mean_confidence=0.9, timestamp=1000.0)
         assert events == []
         assert sm.state == SyncState.UNBOUND
+
+
+class TestDigitalAuthorityDiff:
+    """After the orchestrator pushes expected on every game_update (digital authority)."""
+
+    def _synced_machine(self, expected):
+        sm = SyncStateMachine()
+        sm.bind()
+        sm.confirm_pose_lock()
+        sm.set_expected_board(expected)
+        return sm
+
+    def test_newly_expected_stone_is_placement_pending_not_capture(self):
+        sm = self._synced_machine(empty_board())
+        with_ai = board_with({(3, 3): 1})
+        sm.set_expected_board(with_ai)  # AI 数字落子
+        events = sm.update(observed_board=empty_board())  # 用户还没摆
+        types = [e.type for e in events]
+        assert SyncEventType.CAPTURE_PENDING not in types
+        assert SyncEventType.ILLEGAL_CHANGE not in types
+        assert sm.state == SyncState.SYNCED  # 待摆放不是异常
+
+    def test_digital_capture_emits_capture_pending_until_removed(self):
+        before = board_with({(5, 5): 2, (3, 3): 1})
+        sm = self._synced_machine(before)
+        sm.update(observed_board=before)
+        after = board_with({(3, 3): 1})  # 数字盘提掉 (5,5)
+        sm.set_expected_board(after)
+        events = sm.update(observed_board=before)  # 物理盘白子还在
+        pend = [e for e in events if e.type == SyncEventType.CAPTURE_PENDING]
+        assert pend and (5, 5, 2) in [tuple(p) for p in pend[0].data["positions"]]
+        events = sm.update(observed_board=after)  # 拿掉
+        assert SyncEventType.CAPTURES_CLEARED in [e.type for e in events]
+
+    def test_truly_unexpected_stone_still_illegal_change_with_missing(self):
+        # 场景刻意不含「待拿除」差异（removal 会先走 sticky CAPTURE_PENDING 分支）：
+        # 期望新增 (9,9) 白（待摆放），观测却在 (15,15) 乱放一子。
+        sm = self._synced_machine(empty_board())
+        sm.set_expected_board(board_with({(9, 9): 2}))
+        bad = board_with({(15, 15): 1})
+        events = []
+        for _ in range(5):  # illegal_change_frames 默认 5
+            events = sm.update(observed_board=bad)
+        illegal = [e for e in events if e.type == SyncEventType.ILLEGAL_CHANGE]
+        assert illegal
+        assert (15, 15, 1) in [tuple(p) for p in illegal[0].data["positions"]]
+        # missing = 待摆放清单（供恢复对话框），且它自己不构成异常
+        assert (9, 9, 2) in [tuple(p) for p in illegal[0].data["missing"]]
+
+    def test_stolen_live_stone_is_anomaly_not_capture(self):
+        # 评审 Codex Blocker 2 回归：盘上活子被误拿走（数字盘没提它）——绝不能走
+        # CAPTURE_PENDING→秒清除把异常吞掉；必须进 mismatch 防抖流并列入 missing。
+        live = board_with({(3, 3): 1, (5, 5): 2})
+        sm = self._synced_machine(live)
+        sm.update(observed_board=live)
+        sm.set_expected_board(live)  # prev = live（无数字侧变化）
+        gone = board_with({(3, 3): 1})  # (5,5) 白子被拿走
+        all_events = []
+        for _ in range(5):  # illegal_change_frames 默认 5
+            all_events += sm.update(observed_board=gone)
+        types = [e.type for e in all_events]
+        assert SyncEventType.CAPTURE_PENDING not in types
+        illegal = [e for e in all_events if e.type == SyncEventType.ILLEGAL_CHANGE]
+        assert illegal
+        assert (5, 5, 2) in [tuple(p) for p in illegal[0].data["missing"]]

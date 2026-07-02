@@ -544,8 +544,10 @@ describe('physicalTsumegoMachine', () => {
     expect(restoringState.phase).toBe('restoring');
     expect(restoringState.targetBoard).toBe(screenBoard);
     expect(restoringState.pendingReply).toBeNull();
-    expect(kinds(restoringCommands)).toEqual(['setupMode']);
-    expect(restoringCommands[0]).toEqual({ kind: 'setupMode', board: screenBoard });
+    // Disarm move detection FIRST (two-mode invariant enforced by construction), then setupMode.
+    expect(kinds(restoringCommands)).toEqual(['armMoves', 'setupMode']);
+    expect(findCommand(restoringCommands, 'armMoves')).toEqual({ kind: 'armMoves', armed: false });
+    expect(findCommand(restoringCommands, 'setupMode')).toEqual({ kind: 'setupMode', board: screenBoard });
 
     const { state: backToReady, commands: readyCommands } = step(restoringState, {
       type: 'SETUP_COMPLETE',
@@ -572,7 +574,7 @@ describe('physicalTsumegoMachine', () => {
 
     expect(state.phase).toBe('restoring');
     expect(state.targetBoard).toBe(screenBoard);
-    expect(kinds(commands)).toEqual(['setupMode']);
+    expect(kinds(commands)).toEqual(['armMoves', 'setupMode']);
   });
 
   it('removing/restoring/replying SETUP_PROGRESS uses convergenceLeds: missing→target color, extra→blue', () => {

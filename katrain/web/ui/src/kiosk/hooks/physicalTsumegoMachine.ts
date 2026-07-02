@@ -249,7 +249,7 @@ export function reduce(state: MachineState, evt: MachineEvent): { state: Machine
       if (state.phase === 'off') return { state, commands: [] };
       return {
         state: { ...state, phase: 'restoring', targetBoard: evt.board, pendingReply: null },
-        commands: [{ kind: 'setupMode', board: evt.board }],
+        commands: [{ kind: 'armMoves', armed: false }, { kind: 'setupMode', board: evt.board }],
       };
 
     default:

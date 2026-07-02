@@ -32,6 +32,7 @@ class PlatformManager:
         self._adapters: dict[str, PlatformAdapter] = {}
         self._active_games: dict[str, PlatformGameContext] = {}  # game_id -> context
         self._session_to_game: dict[str, str] = {}  # session_id -> game_id
+        self._platform_user_ids: dict[str, int] = {}  # platform -> owning user_id
 
     # --- Adapter registry ---
 
@@ -66,6 +67,7 @@ class PlatformManager:
         success = await adapter.connect(credentials)
         if success:
             self._credential_store.save_credentials(user_id, credentials)
+            self._platform_user_ids[platform] = user_id
             self._setup_callbacks(adapter)
             logger.info(f"Connected to {platform} as {credentials.username}")
         return success
@@ -136,7 +138,7 @@ class PlatformManager:
         adapter.on_connection_lost(self._on_connection_lost)
         adapter.on_reconnected(self._on_reconnected)
         adapter.on_auth_expired(self._on_auth_expired)
-        adapter.on_token_refreshed(self._on_token_refreshed)
+        adapter.on_token_refreshed(lambda data, _p=adapter.platform_name: self._on_token_refreshed(_p, data))
 
     async def _on_opponent_move(self, move: PlatformMove) -> None:
         """Platform opponent played a move -> inject into the correct KaTrain game."""
@@ -211,5 +213,16 @@ class PlatformManager:
     async def _on_auth_expired(self) -> None:
         logger.warning("Platform auth expired")
 
-    async def _on_token_refreshed(self, new_auth_data: dict) -> None:
-        logger.debug("Platform tokens refreshed — persistence handled by adapter-specific logic")
+    async def _on_token_refreshed(self, platform: str, new_auth_data: dict) -> None:
+        user_id = self._platform_user_ids.get(platform)
+        if user_id is None:
+            logger.debug(f"token_refreshed for {platform} but no known user; skipping persist")
+            return
+        existing = self._credential_store.load_credentials(user_id, platform)
+        username = existing.username if existing else ""
+        merged = dict(existing.auth_data) if existing else {}
+        merged.update({k: v for k, v in new_auth_data.items() if v})
+        self._credential_store.save_credentials(
+            user_id, PlatformCredentials(platform=platform, username=username, auth_data=merged)
+        )
+        logger.debug(f"Persisted refreshed token for user {user_id} on {platform}")

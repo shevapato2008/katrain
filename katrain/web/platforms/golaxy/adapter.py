@@ -366,6 +366,14 @@ class GolaxyAdapter(PlatformAdapter):
                         except Exception:
                             pass
 
+            sms_code = auth_data.get("sms_code")
+            if sms_code:
+                await self._rest.login_sms(credentials.username, sms_code)
+                self._connected = True
+                await self._emit("token_refreshed", self._rest.get_auth_data())
+                logger.info(f"Golaxy connected via SMS as {credentials.username}")
+                return True
+
             # Fall through to password login
             password = auth_data.get("password", "")
             if password:

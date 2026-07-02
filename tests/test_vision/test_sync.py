@@ -405,3 +405,50 @@ class TestSyncStateMachineUnbound:
         events = sm.update(observed, mean_confidence=0.9, timestamp=1000.0)
         assert events == []
         assert sm.state == SyncState.UNBOUND
+
+
+class TestSetupModeExtraStones:
+    def _machine_in_setup(self, target):
+        m = SyncStateMachine()
+        m.bind()
+        m.confirm_pose_lock()
+        m.enter_setup_mode(target)
+        return m
+
+    def test_extra_stone_reported_and_blocks_complete(self):
+        target = board_with({(3, 3): BLACK})
+        m = self._machine_in_setup(target)
+        observed = board_with({(3, 3): BLACK, (5, 5): BLACK})  # 目标满足但多一颗
+        events = m.update(observed)
+        progress = [e for e in events if e.type == SyncEventType.SETUP_PROGRESS]
+        assert progress and progress[0].data["extra"] == [[5, 5, BLACK]]
+        assert progress[0].data["matched"] == 1
+        assert not [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
+        assert m.state == SyncState.SETUP_IN_PROGRESS
+
+    def test_wrong_color_on_target_in_both_lists(self):
+        """target 黑点上摆了白子：missing（缺黑）+ extra（多白）同时上报。"""
+        target = board_with({(3, 3): BLACK})
+        m = self._machine_in_setup(target)
+        events = m.update(board_with({(3, 3): WHITE}))
+        progress = [e for e in events if e.type == SyncEventType.SETUP_PROGRESS][0]
+        assert progress.data["missing"] == [[3, 3]]
+        assert progress.data["extra"] == [[3, 3, WHITE]]
+        assert not [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
+
+    def test_complete_requires_exact_equality(self):
+        target = board_with({(3, 3): BLACK, (4, 4): WHITE})
+        m = self._machine_in_setup(target)
+        events = m.update(board_with({(3, 3): BLACK, (4, 4): WHITE}))
+        assert [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
+        assert m.state == SyncState.SYNCED
+
+    def test_empty_target_clearing_flow(self):
+        """清盘引导：target=空盘，盘上残子全部作为 extra 上报。"""
+        m = self._machine_in_setup(empty_board())
+        events = m.update(board_with({(0, 0): WHITE}))
+        progress = [e for e in events if e.type == SyncEventType.SETUP_PROGRESS]
+        assert progress[0].data == {"matched": 0, "total": 0, "missing": [], "extra": [[0, 0, WHITE]]}
+        assert not [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
+        events = m.update(empty_board())
+        assert [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]

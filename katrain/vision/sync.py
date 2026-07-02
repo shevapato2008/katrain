@@ -234,29 +234,35 @@ class SyncStateMachine:
         return events
 
     def _check_setup(self, observed_board: np.ndarray) -> list[SyncEvent]:
-        """Compare observed board against the tsumego target board."""
+        """Compare observed board against the tsumego target board.
+
+        missing = target points whose observed content differs (empty OR wrong color).
+        extra   = observed stones that differ from target (on empty target points OR
+                  wrong color on a target point — such points appear in BOTH lists).
+        SETUP_COMPLETE requires exact equality: missing AND extra both empty.
+        """
         assert self._target_board is not None
         events: list[SyncEvent] = []
 
-        target_positions = list(zip(*np.where(self._target_board != EMPTY)))
-        total = len(target_positions)
-        matched = 0
-        missing: list[list[int]] = []
-
-        for r, c in target_positions:
-            if observed_board[r, c] == self._target_board[r, c]:
-                matched += 1
-            else:
-                missing.append([r, c])
+        total = int(np.count_nonzero(self._target_board != EMPTY))
+        missing = [
+            [int(r), int(c)]
+            for r, c in zip(*np.where((self._target_board != EMPTY) & (observed_board != self._target_board)))
+        ]
+        extra = [
+            [int(r), int(c), int(observed_board[r, c])]
+            for r, c in zip(*np.where((observed_board != EMPTY) & (observed_board != self._target_board)))
+        ]
+        matched = total - len(missing)
 
         events.append(
             SyncEvent(
                 SyncEventType.SETUP_PROGRESS,
-                data={"matched": matched, "total": total, "missing": missing},
+                data={"matched": matched, "total": total, "missing": missing, "extra": extra},
             )
         )
 
-        if matched == total:
+        if not missing and not extra:
             events.append(SyncEvent(SyncEventType.SETUP_COMPLETE))
             self._target_board = None
             self._expected_board = observed_board.copy()

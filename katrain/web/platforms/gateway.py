@@ -46,6 +46,9 @@ class PlatformCommandGateway:
         if ctx.is_pending:
             raise PlatformMoveRejectedError("Previous move still pending")
 
+        if ctx.is_engine:
+            return await self._play_engine_move(session_id, ctx, col, row)
+
         # Platform game — remote first
         ctx.set_pending("move")
         self._broadcast_pending(session_id, col, row)
@@ -70,10 +73,42 @@ class PlatformCommandGateway:
             self._broadcast_rejected(session_id, "move_rejected")
             raise PlatformMoveRejectedError("Platform rejected the move")
 
+    async def _play_engine_move(self, session_id: str, ctx, col: int, row: int) -> dict:
+        ctx.set_pending("move")
+        self._broadcast_pending(session_id, col, row)
+        adapter = self._pm.get_adapter(ctx.platform)
+        from katrain.web.platforms.golaxy.adapter import GolaxyEngineTerminal
+
+        try:
+            ai_move = await adapter.submit_engine_move(ctx.remote_game_id, col, row)
+        except GolaxyEngineTerminal as e:
+            ctx.clear_pending()
+            # Game ended (AI pass/resign/special). Adapter already emitted game_ended.
+            self._broadcast_rejected(session_id, "game_ended")
+            raise PlatformMoveRejectedError(str(e))
+        except Exception as e:
+            logger.error(f"Engine move failed: {e}")
+            ctx.clear_pending()
+            self._broadcast_rejected(session_id, "engine_error")
+            raise PlatformMoveRejectedError(str(e))
+
+        # Success: human move first, then AI move — this ordering is the whole point.
+        self._local_play(session_id, col, row)
+        human_move_number = ai_move.move_number - 1
+        self._broadcast_confirmed(session_id, col, row, human_move_number)
+        self._local_play(session_id, ai_move.col, ai_move.row)
+        ctx.clear_pending()
+        ctx.last_confirmed_move = ai_move.move_number
+        self._broadcast_confirmed(session_id, ai_move.col, ai_move.row, ai_move.move_number)
+        return {"status": "ok", "ai_move": {"col": ai_move.col, "row": ai_move.row, "move_number": ai_move.move_number}}
+
     async def pass_move(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
             return self._local_pass(session_id)
+
+        if ctx.is_engine:
+            raise PlatformMoveRejectedError("pass_not_supported")
 
         if ctx.is_pending:
             raise PlatformMoveRejectedError("Previous action still pending")
@@ -96,6 +131,11 @@ class PlatformCommandGateway:
     async def resign(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            return self._local_resign(session_id)
+
+        if ctx.is_engine:
+            adapter = self._pm.get_adapter(ctx.platform)
+            await adapter.resign_engine_game(ctx.remote_game_id)
             return self._local_resign(session_id)
 
         ctx.set_pending("resign")

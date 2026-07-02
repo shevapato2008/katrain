@@ -119,6 +119,56 @@ class PlatformManager:
         logger.info(f"Platform game started: {platform} game {game_session.game_id} -> session {session.session_id}")
         return session.session_id
 
+    async def start_engine_game(self, platform: str, config, user_id: int) -> str:
+        """Start a human-vs-engine game. Returns the local session_id.
+
+        `config` is opaque here (an adapter-specific EngineGameConfig); the manager
+        reads game parameters off the returned PlatformGameSession, not off config.
+        """
+        adapter = self._adapters.get(platform)
+        if adapter is None:
+            raise ValueError(f"Unknown platform: {platform}")
+        if not getattr(adapter, "supports_engine_play", False):
+            raise ValueError(f"{platform} does not support engine play")
+
+        start = await adapter.start_engine_game(config)
+        gs = start.session
+        bot_name = f"[{platform}] {gs.opponent.username}"
+        if gs.my_color == "B":
+            session = self._session_manager.create_multiplayer_session(
+                player_b_id=user_id, player_w_id=-1, b_name="Me", w_name=bot_name
+            )
+        else:
+            session = self._session_manager.create_multiplayer_session(
+                player_b_id=-1, player_w_id=user_id, b_name=bot_name, w_name="Me"
+            )
+
+        # Explicitly configure the local game to match the engine game parameters.
+        session.katrain("edit_game", size=gs.board_size, handicap=gs.handicap, komi=gs.komi, rules=gs.rules)
+
+        ctx = PlatformGameContext(
+            session_id=session.session_id,
+            platform=platform,
+            remote_game_id=gs.game_id,
+            my_color=gs.my_color,
+            is_engine=True,
+        )
+        self._active_games[gs.game_id] = ctx
+        self._session_to_game[session.session_id] = gs.game_id
+
+        # Human plays White => AI (Black) has already opened; play its first move locally.
+        if start.first_ai_move is not None:
+            m = start.first_ai_move
+            session.katrain("play", coords=(m.col, m.row))
+            ctx.last_confirmed_move = m.move_number
+            self._session_manager.broadcast_to_session(
+                session.session_id,
+                {"type": "platform_move_confirmed", "col": m.col, "row": m.row, "move_number": m.move_number},
+            )
+
+        logger.info(f"Engine game started: {platform} {gs.game_id} -> session {session.session_id}")
+        return session.session_id
+
     async def end_platform_game(self, game_id: str, result: str) -> None:
         """Clean up after a platform game ends."""
         ctx = self._active_games.pop(game_id, None)

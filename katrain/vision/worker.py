@@ -29,10 +29,11 @@ import numpy as np
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import BoardConfig, CameraConfig
-from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
+from katrain.vision.gating import move_event, should_detect_moves, should_feed_sync
+from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
-from katrain.vision.sync import SyncState, SyncStateMachine
+from katrain.vision.sync import SyncEventType, SyncState, SyncStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,9 @@ class _VisionWorkerLoop:
         self._running = False
         self._viewer_active = False
         self._bound = False
+        self._monitor = False
+        self._paused = False
+        self._move_armed = False
 
         # Initialise components
         board_config = BoardConfig()
@@ -253,11 +257,13 @@ class _VisionWorkerLoop:
                             board_finder_ms,
                             yolo_ms,
                         )
-                    if self._bound:
+                    if should_detect_moves(
+                        self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                    ):
                         move_result = self._move_detector.detect_new_move(self._last_stable_board)
                         if move_result is not None:
                             row, col, color = move_result
-                            self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                            self._event_queue.put(move_event(self._bound, row, col, color))
                 else:
                     # Board not found
                     self._consecutive_failures += 1
@@ -287,12 +293,16 @@ class _VisionWorkerLoop:
                         }
 
             # Sync state machine update
-            if self._bound:
+            if should_feed_sync(self._bound, self._monitor, self._paused):
                 events = self._sync.update(
                     observed_board=observed_board,
                     mean_confidence=mean_confidence,
                     board_detected=board_detected,
                 )
+                if any(evt.type == SyncEventType.SETUP_COMPLETE for evt in events):
+                    # Rebase move detection on the freshly converged board so a later
+                    # arm doesn't diff against a stale baseline.
+                    self._move_detector.force_sync(observed_board)
                 for evt in events:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
@@ -332,6 +342,15 @@ class _VisionWorkerLoop:
                 self._sync.reset()
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
+            elif cmd.action == CommandType.SET_MONITOR:
+                self._monitor = cmd.data.get("active", False)
+                if not self._monitor and not self._bound:
+                    self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
+                    self._move_armed = False
+            elif cmd.action == CommandType.SET_PAUSED:
+                self._paused = cmd.data.get("paused", False)
+            elif cmd.action == CommandType.SET_MOVE_ARMED:
+                self._move_armed = cmd.data.get("armed", False)
 
     def _draw_overlays(self, frame: np.ndarray, overlay: ProcessingOverlay) -> None:
         """Draw detection results and timing info on the raw camera frame."""

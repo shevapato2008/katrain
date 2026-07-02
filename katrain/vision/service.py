@@ -129,6 +129,21 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.UNBIND))
 
+    def set_monitor(self, active: bool) -> None:
+        """Enable/disable monitor mode (tsumego physical board — no game session)."""
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_MONITOR, data={"active": active}))
+
+    def set_paused(self, paused: bool) -> None:
+        """Pause/resume recognition (hint display, try mode). Single-owner aggregate bool."""
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": paused}))
+
+    def set_move_armed(self, armed: bool) -> None:
+        """Arm/disarm monitor-mode move detection (frontend arms only in the 'ready' phase)."""
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_MOVE_ARMED, data={"armed": armed}))
+
     def set_viewer_active(self, active: bool) -> None:
         """Tell worker whether MJPEG viewers are connected."""
         if self._worker:

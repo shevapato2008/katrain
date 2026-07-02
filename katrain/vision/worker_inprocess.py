@@ -19,12 +19,13 @@ from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
-from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
+from katrain.vision.gating import move_event, should_detect_moves, should_feed_sync
+from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
 from katrain.vision.stone_detector import StoneDetector
 from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
-from katrain.vision.sync import SyncState, SyncStateMachine
+from katrain.vision.sync import SyncEventType, SyncState, SyncStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,9 @@ class InProcessAdapter:
 
         self._viewer_active = False
         self._bound = False
+        self._monitor = False
+        self._paused = False
+        self._move_armed = False
         self._last_preview_time = 0.0
         self._geometry = None
 
@@ -168,20 +172,26 @@ class InProcessAdapter:
                     if detections:
                         mean_confidence = sum(d.confidence for d in detections) / len(detections)
 
-                    if self._bound:
+                    if should_detect_moves(
+                        self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                    ):
                         move_result = self._move_detector.detect_new_move(observed_board)
                         if move_result is not None:
                             row, col, color = move_result
-                            self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                            self._event_queue.put(move_event(self._bound, row, col, color))
 
                     self._maybe_send_preview(warped)
 
-            if self._bound:
+            if should_feed_sync(self._bound, self._monitor, self._paused):
                 events = self._sync.update(
                     observed_board=observed_board,
                     mean_confidence=mean_confidence,
                     board_detected=board_detected,
                 )
+                if any(evt.type == SyncEventType.SETUP_COMPLETE for evt in events):
+                    # Rebase move detection on the freshly converged board so a later
+                    # arm doesn't diff against a stale baseline.
+                    self._move_detector.force_sync(observed_board)
                 for evt in events:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
@@ -238,6 +248,15 @@ class InProcessAdapter:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
                 self.set_geometry(cmd.data.get("geometry"))
+            elif cmd.action == CommandType.SET_MONITOR:
+                self._monitor = cmd.data.get("active", False)
+                if not self._monitor and not self._bound:
+                    self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
+                    self._move_armed = False
+            elif cmd.action == CommandType.SET_PAUSED:
+                self._paused = cmd.data.get("paused", False)
+            elif cmd.action == CommandType.SET_MOVE_ARMED:
+                self._move_armed = cmd.data.get("armed", False)
 
     def _maybe_send_preview(self, warped: np.ndarray) -> None:
         if not self._viewer_active:

@@ -273,6 +273,7 @@ class SyncStateMachine:
             events.append(SyncEvent(SyncEventType.SETUP_COMPLETE))
             self._target_board = None
             self._expected_board = observed_board.copy()
+            self._prev_expected_board = None
             self._state = SyncState.SYNCED
 
         return events

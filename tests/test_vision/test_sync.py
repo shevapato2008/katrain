@@ -483,3 +483,27 @@ class TestDigitalAuthorityDiff:
         illegal = [e for e in all_events if e.type == SyncEventType.ILLEGAL_CHANGE]
         assert illegal
         assert (5, 5, 2) in [tuple(p) for p in illegal[0].data["missing"]]
+
+    def test_setup_complete_resets_prev_so_vanished_stone_is_anomaly(self):
+        # Regression: SETUP_COMPLETE must reset prev-expected, else an orphaned prev
+        # can silently swallow a vanished live stone into placement_pending.
+        sm = SyncStateMachine(board_size=19)
+        sm.bind()
+        sm.confirm_pose_lock()
+        # Prior digital-authority play leaves an orphaned prev, EMPTY at the tsumego spots.
+        sm.set_expected_board(board_with({(0, 0): 1}))
+        sm.set_expected_board(board_with({(0, 0): 1}))  # prev now = {(0,0):BLACK}
+        # Enter and complete a tsumego at different locations.
+        target = board_with({(5, 5): 1, (5, 6): 2})
+        sm.enter_setup_mode(target)
+        sm.update(observed_board=target.copy())  # -> SETUP_COMPLETE, state SYNCED
+        # A live stone now vanishes before any new set_expected_board push.
+        gone = board_with({(5, 5): 1})  # (5,6) white removed
+        all_events = []
+        for _ in range(5):  # illegal_change_frames default 5
+            all_events += sm.update(observed_board=gone)
+        # With prev reset (None), (5,6) -> missing_anomaly -> illegal_change. Without the fix,
+        # stale prev[(5,6)]==EMPTY would (wrongly) make it placement_pending (silent).
+        illegal = [e for e in all_events if e.type == SyncEventType.ILLEGAL_CHANGE]
+        assert illegal, "vanished live stone after SETUP_COMPLETE must raise an anomaly, not be swallowed"
+        assert (5, 6, 2) in [tuple(p) for p in illegal[0].data["missing"]]

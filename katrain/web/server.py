@@ -605,6 +605,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/undo")
     def undo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
+            raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
         with session.lock:
             session.katrain("undo", request.n_times)
             state = session.katrain.get_state()

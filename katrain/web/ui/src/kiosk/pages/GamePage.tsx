@@ -96,6 +96,8 @@ const GamePage = () => {
   const gameState = session.gameState;
   const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
   const isGameOver = !!gameState.end_result;
+  // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
+  const isRanked = gameState.game_type === 'ranked' || gameState.game_type === 'rated';
 
   // Determine which color the human plays (for turn enforcement)
   const humanColor: 'B' | 'W' | null =
@@ -104,6 +106,7 @@ const GamePage = () => {
     : null;
 
   const handleAction = (action: string) => {
+    if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
     if (action === 'resign') {
       setShowResignConfirm(true);
     } else {
@@ -198,6 +201,7 @@ const GamePage = () => {
             analysisToggles={analysisToggles}
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
             isGameOver={isGameOver}
+            disableUndo={isRanked}
           />
         </Box>
       </Box>

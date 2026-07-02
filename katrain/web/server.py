@@ -1851,7 +1851,7 @@ async def _vision_move_poller(app: FastAPI):
                             )
 
                         # Update expected board from new game state
-                        game_state = session.get_game_state()
+                        game_state = session.katrain.get_state()
                         if game_state and "stones" in game_state:
                             vision.set_expected_from_stones(game_state["stones"])
         except asyncio.CancelledError:

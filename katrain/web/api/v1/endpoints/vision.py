@@ -152,3 +152,57 @@ async def enter_setup_mode(request: Request, body: SetupModeRequest):
     target = np.array(body.target_board, dtype=int)
     vision.enter_setup_mode(target)
     return {"ok": True}
+
+
+class MonitorRequest(BaseModel):
+    active: bool
+
+
+class PauseRequest(BaseModel):
+    paused: bool
+
+
+class MoveDetectionRequest(BaseModel):
+    armed: bool
+
+
+class ExpectedBoardRequest(BaseModel):
+    board: list[list[int]]  # vision coords, row 0 = top
+
+
+@router.post("/monitor")
+async def set_monitor(request: Request, body: MonitorRequest):
+    """Enable/disable sessionless monitor mode (physical tsumego)."""
+    vision = _get_vision(request)
+    vision.set_monitor(body.active)
+    return {"ok": True, "active": body.active}
+
+
+@router.post("/pause")
+async def set_paused(request: Request, body: PauseRequest):
+    """Pause/resume recognition (hint display, try mode).
+
+    Single-owner aggregate boolean: the one page owning monitor mode sends
+    `showHint || isTryMode` — do NOT add independent callers (no ref-counting in v1).
+    """
+    vision = _get_vision(request)
+    vision.set_paused(body.paused)
+    return {"ok": True, "paused": body.paused}
+
+
+@router.post("/move-detection")
+async def set_move_detection(request: Request, body: MoveDetectionRequest):
+    """Arm/disarm monitor-mode move detection (frontend arms only in 'ready' phase)."""
+    vision = _get_vision(request)
+    vision.set_move_armed(body.armed)
+    return {"ok": True, "armed": body.armed}
+
+
+@router.post("/expected-board")
+async def set_expected_board(request: Request, body: ExpectedBoardRequest):
+    """Set expected board + rebase move detector (SET_EXPECTED_BOARD does force_sync)."""
+    vision = _get_vision(request)
+    import numpy as np
+
+    vision.set_expected_board(np.array(body.board, dtype=int))
+    return {"ok": True}

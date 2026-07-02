@@ -32,6 +32,7 @@ import SettingsPage from './pages/SettingsPage';
 import VisionSetupPage from './pages/VisionSetupPage';
 import PlatformConnectPage from './pages/PlatformConnectPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
+import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
 import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
 import TutorialBooksPage from './pages/TutorialBooksPage';
 import TutorialBookDetailPage from './pages/TutorialBookDetailPage';
@@ -51,6 +52,7 @@ const KioskRoutes = () => {
         <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
         <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
         <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+        <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
 
         {/* Standard — with nav rail */}
         <Route element={<KioskLayout username={user?.username} />}>
@@ -61,6 +63,7 @@ const KioskRoutes = () => {
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
+          <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
           <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard requireRecognition><TsumegoProblemPage /></PhysicalBoardGuard>} />

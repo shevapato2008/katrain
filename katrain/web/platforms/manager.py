@@ -139,27 +139,29 @@ class PlatformManager:
         adapter.on_token_refreshed(self._on_token_refreshed)
 
     async def _on_opponent_move(self, move: PlatformMove) -> None:
-        """Platform opponent played a move -> inject into KaTrain game."""
-        # Find the game context by scanning active games
-        # In practice, the adapter should tag moves with game_id; for now find by active game
-        for game_id, ctx in self._active_games.items():
-            if ctx.game_phase == GamePhase.PLAYING:
-                try:
-                    session = self._session_manager.get_session(ctx.session_id)
-                    session.katrain("play", coords=(move.col, move.row))
-                    ctx.last_confirmed_move = move.move_number
-                    self._session_manager.broadcast_to_session(
-                        ctx.session_id,
-                        {
-                            "type": "platform_move_confirmed",
-                            "col": move.col,
-                            "row": move.row,
-                            "move_number": move.move_number,
-                        },
-                    )
-                except KeyError:
-                    logger.warning(f"Session {ctx.session_id} not found for opponent move")
-                break
+        """Platform opponent played a move -> inject into the correct KaTrain game."""
+        ctx = self._active_games.get(move.game_id)
+        if ctx is None:
+            logger.warning(f"Opponent move for unknown game_id={move.game_id!r}; dropping")
+            return
+        if ctx.game_phase != GamePhase.PLAYING:
+            logger.warning(f"Opponent move for game {move.game_id} not in PLAYING phase; dropping")
+            return
+        try:
+            session = self._session_manager.get_session(ctx.session_id)
+            session.katrain("play", coords=(move.col, move.row))
+            ctx.last_confirmed_move = move.move_number
+            self._session_manager.broadcast_to_session(
+                ctx.session_id,
+                {
+                    "type": "platform_move_confirmed",
+                    "col": move.col,
+                    "row": move.row,
+                    "move_number": move.move_number,
+                },
+            )
+        except KeyError:
+            logger.warning(f"Session {ctx.session_id} not found for opponent move")
 
     async def _on_clock_update(self, clock: ClockState) -> None:
         for game_id, ctx in self._active_games.items():

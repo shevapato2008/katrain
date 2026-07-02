@@ -421,6 +421,10 @@ async def _lifespan_board(app: FastAPI, log):
             session_manager=manager,
             touch_led_activity=lambda: setattr(app.state, "led_last_activity", time.monotonic()),
         )
+
+        from katrain.web.core.hint_gate import DefaultHintGate
+
+        app.state.hint_gate = DefaultHintGate(pp_config.hint_engine)
         log.info("Physical-play orchestrator ready (hint_engine=%s)", pp_config.hint_engine)
     else:
         app.state.physical_play = None

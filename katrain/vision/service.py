@@ -13,7 +13,7 @@ from typing import Any, Callable
 import numpy as np
 
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
+from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
 from katrain.vision.sync import game_state_stones_to_board
 
 logger = logging.getLogger(__name__)
@@ -176,27 +176,6 @@ class VisionService:
                 break
             events.append(evt)
         return events
-
-    def get_confirmed_move(self) -> ConfirmedMove | None:
-        """Read and consume the latest confirmed move from events.
-
-        Scans pending events for ConfirmedMove instances. Non-move events
-        are re-queued (they'll be picked up by poll_events).
-        """
-        events = self.poll_events()
-        move = None
-        others = []
-        for evt in events:
-            if isinstance(evt, ConfirmedMove):
-                move = evt  # Keep the latest
-            else:
-                others.append(evt)
-        # Re-queue non-move events — not ideal but keeps the interface simple.
-        # A proper implementation would use separate queues.
-        if self._worker:
-            for evt in others:
-                self._worker._event_queue.put(evt)
-        return move
 
     @property
     def is_alive(self) -> bool:

@@ -43,6 +43,9 @@ async def lifespan(app: FastAPI):
     vision_poller = getattr(app.state, "vision_poller_task", None)
     if vision_poller:
         vision_poller.cancel()
+    vision_pump = getattr(app.state, "vision_pump_task", None)
+    if vision_pump:
+        vision_pump.cancel()
 
     # LED service shutdown (board mode) — stop() does a final CLEAR! blackout.
     led_failsafe = getattr(app.state, "led_failsafe_task", None)
@@ -383,6 +386,9 @@ async def _lifespan_board(app: FastAPI, log):
         vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
         app.state.vision = vision
+        app.state.vision_ws_clients = {}
+        app.state.vision_move_queue = asyncio.Queue()
+        app.state.vision_pump_task = asyncio.create_task(_vision_event_pump(app))
         app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
         log.info("Vision service started (backend=%s)", vision_config.backend)
     else:
@@ -1706,22 +1712,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.websocket("/ws/vision")
     async def vision_websocket(websocket: WebSocket):
-        """Vision event WebSocket — pushes sync events and status changes to the frontend."""
+        """Vision event WebSocket — events arrive via the pump's per-connection queue."""
         await websocket.accept()
         vision = getattr(app.state, "vision", None)
         if vision is None:
             await websocket.close(code=1008, reason="Vision service not enabled")
             return
+        queue: asyncio.Queue = asyncio.Queue()
+        app.state.vision_ws_clients[websocket] = queue
         try:
             while True:
-                # Poll for events and send them
-                vision.refresh_status()
-                events = vision.poll_events()
-                for evt in events:
-                    if isinstance(evt, dict):
-                        await websocket.send_json(evt)
+                while not queue.empty():
+                    await websocket.send_json(queue.get_nowait())
 
-                # Send status update periodically
+                vision.refresh_status()
                 await websocket.send_json(
                     {
                         "type": "vision_status",
@@ -1733,7 +1737,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     }
                 )
 
-                # Check for client messages (ping)
                 try:
                     message = await asyncio.wait_for(websocket.receive_json(), timeout=0.5)
                     if message.get("type") == "ping":
@@ -1742,6 +1745,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     pass
         except WebSocketDisconnect:
             pass
+        finally:
+            app.state.vision_ws_clients.pop(websocket, None)
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
@@ -1807,6 +1812,30 @@ async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
             log.debug("LED failsafe loop error: %s", e)
 
 
+async def _vision_event_pump(app: FastAPI):
+    """Sole consumer of the vision worker event queue — see vision_pump docstring."""
+    from katrain.web.core.vision_pump import route_vision_event
+
+    log = logging.getLogger("katrain_web.vision")
+    while True:
+        try:
+            vision = getattr(app.state, "vision", None)
+            if vision:
+                for evt in vision.poll_events():
+                    route_vision_event(
+                        evt,
+                        list(app.state.vision_ws_clients.values()),
+                        app.state.vision_move_queue,
+                        bound=bool(vision.bound_session_id),
+                    )
+            await asyncio.sleep(0.1)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("vision event pump error")
+            await asyncio.sleep(1.0)
+
+
 async def _vision_move_poller(app: FastAPI):
     """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
     from katrain.vision.ipc import ConfirmedMove
@@ -1818,7 +1847,10 @@ async def _vision_move_poller(app: FastAPI):
         try:
             vision = getattr(app.state, "vision", None)
             if vision and vision.bound_session_id:
-                move_data = vision.get_confirmed_move()
+                move_data = None
+                q = app.state.vision_move_queue
+                while not q.empty():
+                    move_data = q.get_nowait()
                 if move_data and isinstance(move_data, ConfirmedMove):
                     session_id = vision.bound_session_id
                     manager = app.state.session_manager

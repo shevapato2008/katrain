@@ -141,6 +141,28 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_GEOMETRY, data={"geometry": geometry}))
 
+    def pause_detection(self) -> None:
+        """Suspend MoveDetector move confirmation only (hint display; PRD R4.3).
+
+        Narrowed scope after review: SyncStateMachine.update keeps running while paused —
+        capture_pending/illegal_change flows must stay live during a catch-up wait (guide
+        stone removal, report anomalies). During an LED hint, lit-and-expected-empty
+        intersections are protected from feeding sync via set_lit_points() masking instead.
+        """
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.PAUSE_DETECTION))
+
+    def resume_detection(self) -> None:
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.RESUME_DETECTION))
+
+    def set_lit_points(self, points: list[tuple[int, int]]) -> None:
+        """Intersections currently lit by the LED board (R7.1 masking)."""
+        if self._worker:
+            self._worker.send_command(
+                WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[r, c] for r, c in points]})
+            )
+
     # -- data retrieval ------------------------------------------------------
 
     def get_detected_board(self) -> list[list[int]] | None:

@@ -23,6 +23,9 @@ class CommandType(Enum):
     UNBIND = "unbind"
     SET_VIEWER_ACTIVE = "set_viewer_active"
     SET_GEOMETRY = "set_geometry"
+    PAUSE_DETECTION = "pause_detection"
+    RESUME_DETECTION = "resume_detection"
+    SET_LIT_POINTS = "set_lit_points"
     SHUTDOWN = "shutdown"
 
 

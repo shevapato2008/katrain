@@ -55,13 +55,23 @@ class BoardStateExtractor:
         self.config = config or BoardConfig()
 
     def detections_to_board(
-        self, detections: list[Detection], img_w: int, img_h: int, occupancy_aware: bool = False
+        self,
+        detections: list[Detection],
+        img_w: int,
+        img_h: int,
+        occupancy_aware: bool = False,
+        masked_cells: set | None = None,
     ) -> np.ndarray:
-        """Convert detected stones to a grid_size x grid_size board matrix."""
+        """Convert detected stones to a grid_size x grid_size board matrix.
+
+        ``masked_cells`` (row, col) intersections are dropped from assignment — used to
+        ignore detections landing on lit-and-expected-empty intersections during LED hint
+        display, where a lit LED can be misdetected as a stone (R7.1).
+        """
         gs = self.config.grid_size
         board = np.zeros((gs, gs), dtype=int)
         if occupancy_aware:
-            return self._assign_occupancy_aware(board, detections, img_w, img_h)
+            return self._assign_occupancy_aware(board, detections, img_w, img_h, masked_cells)
 
         confidence = np.zeros((gs, gs), dtype=float)
         for det in detections:
@@ -69,13 +79,20 @@ class BoardStateExtractor:
                 continue  # LED guidance classes (led_red/led_green) are not board stones
             x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
             pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
+            if masked_cells and (pos_y, pos_x) in masked_cells:
+                continue  # lit-and-expected-empty intersection: presume LED glare, not a stone
             if det.confidence > confidence[pos_y][pos_x]:
                 board[pos_y][pos_x] = det.class_id + 1  # 0→BLACK(1), 1→WHITE(2)
                 confidence[pos_y][pos_x] = det.confidence
         return board
 
     def _assign_occupancy_aware(
-        self, board: np.ndarray, detections: list[Detection], img_w: int, img_h: int
+        self,
+        board: np.ndarray,
+        detections: list[Detection],
+        img_w: int,
+        img_h: int,
+        masked_cells: set | None = None,
     ) -> np.ndarray:
         gs = board.shape[0]
         items = []
@@ -95,6 +112,8 @@ class BoardStateExtractor:
         for _, det, fx, fy in items:
             cy = max(0, min(gs - 1, int(round(fy))))
             cx = max(0, min(gs - 1, int(round(fx))))
+            if masked_cells and (cy, cx) in masked_cells:
+                continue
             if board[cy][cx] == EMPTY:
                 board[cy][cx] = det.class_id + 1
                 continue
@@ -106,6 +125,19 @@ class BoardStateExtractor:
             ny, nx = cell
             board[ny][nx] = det.class_id + 1
         return board
+
+    def cell_confidences(self, detections: list[Detection], img_w: int, img_h: int) -> dict:
+        """Max detection confidence per rounded intersection — used to classify a
+        pending move as confirmed vs ambiguous (PRD §3.4 ambiguous_stone)."""
+        out: dict[tuple[int, int], float] = {}
+        for det in detections:
+            if det.class_id not in STONE_CLASS_IDS:
+                continue
+            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+            pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
+            key = (pos_y, pos_x)
+            out[key] = max(out.get(key, 0.0), det.confidence)
+        return out
 
     @staticmethod
     def board_to_string(board: np.ndarray) -> str:

@@ -102,6 +102,11 @@ class _VisionWorkerLoop:
         self._move_detector = MoveDetector()
         self._sync = SyncStateMachine()
 
+        self._paused = False
+        self._lit_points: set[tuple[int, int]] = set()
+        self._expected_np: np.ndarray | None = None
+        self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+
         # Inference backend — lazy import so the heavy deps only load in the worker process
         self._detector = None
         self._board_finder = None
@@ -226,8 +231,12 @@ class _VisionWorkerLoop:
                         }
 
                     # Board state + move detection
+                    masked = None
+                    if self._lit_points:
+                        exp = self._expected_np
+                        masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._state_extractor.detections_to_board(
-                        detections, img_w=w, img_h=h, occupancy_aware=True
+                        detections, img_w=w, img_h=h, occupancy_aware=True, masked_cells=masked
                     )
 
                     # Temporal smoothing: require 2-frame agreement per grid position
@@ -253,11 +262,39 @@ class _VisionWorkerLoop:
                             board_finder_ms,
                             yolo_ms,
                         )
-                    if self._bound:
+                    if self._bound and not self._paused:
+                        conf_map = self._state_extractor.cell_confidences(detections, img_w=w, img_h=h)
+                        pending_before = self._move_detector.pending_move
                         move_result = self._move_detector.detect_new_move(self._last_stable_board)
                         if move_result is not None:
                             row, col, color = move_result
-                            self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                            conf = conf_map.get((row, col), 1.0)
+                            if conf < self._ambiguous_confidence:
+                                # PRD §3.4 row 1: low-confidence "move" asks the user instead
+                                self._event_queue.put(
+                                    {
+                                        "type": "ambiguous_stone",
+                                        "data": {
+                                            "row": int(row),
+                                            "col": int(col),
+                                            "color": int(color),
+                                            "confidence": round(float(conf), 3),
+                                        },
+                                    }
+                                )
+                            else:
+                                self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                        else:
+                            pending_after = self._move_detector.pending_move
+                            if pending_after is not None and pending_after != pending_before:
+                                r, c, clr = pending_after
+                                # "确认中" chip (PRD §3.2/Q3): first frame of the 3-frame window
+                                self._event_queue.put(
+                                    {
+                                        "type": "move_pending",
+                                        "data": {"row": int(r), "col": int(c), "color": int(clr)},
+                                    }
+                                )
                 else:
                     # Board not found
                     self._consecutive_failures += 1
@@ -311,6 +348,7 @@ class _VisionWorkerLoop:
                 self._running = False
             elif cmd.action == CommandType.BIND:
                 self._bound = True
+                self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
@@ -323,6 +361,7 @@ class _VisionWorkerLoop:
                 board = np.array(cmd.data["board"], dtype=int)
                 self._sync.set_expected_board(board)
                 self._move_detector.force_sync(board)
+                self._expected_np = board
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
@@ -332,6 +371,12 @@ class _VisionWorkerLoop:
                 self._sync.reset()
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
+            elif cmd.action == CommandType.PAUSE_DETECTION:
+                self._paused = True
+            elif cmd.action == CommandType.RESUME_DETECTION:
+                self._paused = False
+            elif cmd.action == CommandType.SET_LIT_POINTS:
+                self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
 
     def _draw_overlays(self, frame: np.ndarray, overlay: ProcessingOverlay) -> None:
         """Draw detection results and timing info on the raw camera frame."""

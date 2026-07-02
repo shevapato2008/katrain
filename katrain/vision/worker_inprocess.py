@@ -77,6 +77,11 @@ class InProcessAdapter:
         self._move_detector = MoveDetector()
         self._sync = SyncStateMachine()
 
+        self._paused = False
+        self._lit_points: set[tuple[int, int]] = set()
+        self._expected_np: np.ndarray | None = None
+        self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+
         self._viewer_active = False
         self._bound = False
         self._last_preview_time = 0.0
@@ -161,18 +166,50 @@ class InProcessAdapter:
                     board_detected = True
                     h, w = warped.shape[:2]
                     detections = self._detector.detect(warped)
+                    masked = None
+                    if self._lit_points:
+                        exp = self._expected_np
+                        masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._active_extractor().detections_to_board(
-                        detections, img_w=w, img_h=h, occupancy_aware=True
+                        detections, img_w=w, img_h=h, occupancy_aware=True, masked_cells=masked
                     )
 
                     if detections:
                         mean_confidence = sum(d.confidence for d in detections) / len(detections)
 
-                    if self._bound:
+                    if self._bound and not self._paused:
+                        conf_map = self._active_extractor().cell_confidences(detections, img_w=w, img_h=h)
+                        pending_before = self._move_detector.pending_move
                         move_result = self._move_detector.detect_new_move(observed_board)
                         if move_result is not None:
                             row, col, color = move_result
-                            self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                            conf = conf_map.get((row, col), 1.0)
+                            if conf < self._ambiguous_confidence:
+                                # PRD §3.4 row 1: low-confidence "move" asks the user instead
+                                self._event_queue.put(
+                                    {
+                                        "type": "ambiguous_stone",
+                                        "data": {
+                                            "row": int(row),
+                                            "col": int(col),
+                                            "color": int(color),
+                                            "confidence": round(float(conf), 3),
+                                        },
+                                    }
+                                )
+                            else:
+                                self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                        else:
+                            pending_after = self._move_detector.pending_move
+                            if pending_after is not None and pending_after != pending_before:
+                                r, c, clr = pending_after
+                                # "确认中" chip (PRD §3.2/Q3): first frame of the 3-frame window
+                                self._event_queue.put(
+                                    {
+                                        "type": "move_pending",
+                                        "data": {"row": int(r), "col": int(c), "color": int(clr)},
+                                    }
+                                )
 
                     self._maybe_send_preview(warped)
 
@@ -219,6 +256,7 @@ class InProcessAdapter:
                 self._running = False
             elif cmd.action == CommandType.BIND:
                 self._bound = True
+                self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
@@ -229,6 +267,7 @@ class InProcessAdapter:
                 board = np.array(cmd.data["board"], dtype=int)
                 self._sync.set_expected_board(board)
                 self._move_detector.force_sync(board)
+                self._expected_np = board
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
@@ -238,6 +277,12 @@ class InProcessAdapter:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
                 self.set_geometry(cmd.data.get("geometry"))
+            elif cmd.action == CommandType.PAUSE_DETECTION:
+                self._paused = True
+            elif cmd.action == CommandType.RESUME_DETECTION:
+                self._paused = False
+            elif cmd.action == CommandType.SET_LIT_POINTS:
+                self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
 
     def _maybe_send_preview(self, warped: np.ndarray) -> None:
         if not self._viewer_active:

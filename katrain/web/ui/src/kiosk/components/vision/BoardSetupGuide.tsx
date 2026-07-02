@@ -13,6 +13,8 @@ interface BoardSetupGuideProps {
   matched: number;
   total: number;
   missing: Array<[number, number]>; // [row, col] positions
+  extra?: Array<[number, number, number]>;
+  stage?: 'black' | 'white' | null;
   isComplete: boolean;
   onStartProblem: () => void;
   onSkip: () => void;
@@ -26,6 +28,8 @@ const BoardSetupGuide = ({
   matched,
   total,
   missing: _missing,
+  extra = [],
+  stage = null,
   isComplete,
   onStartProblem,
   onSkip,
@@ -47,8 +51,15 @@ const BoardSetupGuide = ({
     >
       {/* Progress label */}
       <Typography variant="body1" sx={{ fontWeight: 500 }}>
+        {stage === 'black' && '请摆放黑棋 · '}
+        {stage === 'white' && '请摆放白棋 · '}
         已匹配 {matched}/{total} 颗子
       </Typography>
+      {extra && extra.length > 0 && (
+        <Typography variant="body2" color="warning.main">
+          盘上有 {extra.length} 颗多余/错色棋子，请先取走（蓝灯指示）
+        </Typography>
+      )}
 
       {/* Progress bar */}
       <LinearProgress

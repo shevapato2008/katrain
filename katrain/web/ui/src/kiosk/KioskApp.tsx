@@ -63,7 +63,7 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard requireRecognition><TsumegoProblemPage /></PhysicalBoardGuard>} />
+          <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />

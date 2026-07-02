@@ -23,7 +23,14 @@ vi.mock('../context/OrientationContext', () => ({
 // Vision disabled — keeps the vision-setup branch (BoardSetupGuide / API.visionSetupMode) inert.
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    visionStatus: { enabled: false, cameraConnected: false, poseLocked: false, syncState: 'idle', boundSessionId: null },
+    visionStatus: {
+      enabled: false,
+      cameraConnected: false,
+      poseLocked: false,
+      syncState: 'idle',
+      boundSessionId: null,
+      recognitionReady: false,
+    },
     isVisionEnabled: false,
     refreshStatus: vi.fn(),
   }),

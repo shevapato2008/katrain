@@ -11,17 +11,18 @@ import {
   NavigateBefore,
   NavigateNext,
   FormatListBulleted,
+  SmartToy,
 } from '@mui/icons-material';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import { API } from '../../api';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
 import { useVisionSync } from '../hooks/useVisionSync';
+import { usePhysicalTsumego, stonesToVisionBoard } from '../hooks/usePhysicalTsumego';
 import { useOrientation } from '../context/OrientationContext';
 import { sequenceKey, readAutoAdvance } from './tsumegoUnits';
 
@@ -66,10 +67,23 @@ const TsumegoProblemPage = () => {
     flushProgress,
   } = useTsumegoProblem(problemId || '');
 
-  const { isVisionEnabled } = useVision();
-  const visionSync = useVisionSync(null); // No session bind for tsumego — uses setup mode
-  const [setupSkipped, setSetupSkipped] = useState(false);
-  const [setupDone, setSetupDone] = useState(!isVisionEnabled);
+  const { visionStatus } = useVision();
+  const visionSync = useVisionSync(null); // No session bind for tsumego — physical mode drives vision setup mode
+  const [physicalMode, setPhysicalMode] = useState(
+    () => localStorage.getItem('kiosk-tsumego-physical') === '1',
+  );
+  const togglePhysical = useCallback(() => {
+    setPhysicalMode((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('kiosk-tsumego-physical', next ? '1' : '0'); } catch { /* best-effort */ }
+      return next;
+    });
+  }, []);
+  // recognition_ready = 相机+模型+几何全就绪；物理盘固定 19 路（PRD Q1：非 19 路题隐藏物理模式）
+  const physicalAvailable = visionStatus.enabled && visionStatus.recognitionReady && boardSize === 19;
+  // problem 数据必须与当前路由匹配，防止题目切换途中用旧 stones 启动新题流程
+  const physicalProblemReady = !!problem && problem.id === problemId;
+  const physicalEnabled = physicalMode && physicalAvailable && physicalProblemReady;
 
   // ---- Prev/Next sequence (4.1) ----
   // Sequence of problem ids for the whole category, sourced from sessionStorage (written by
@@ -81,12 +95,11 @@ const TsumegoProblemPage = () => {
   // won't fire between problems — we must flush manually here. flushProgress is idempotent
   // (guarded inside the hook), so calling it before navigate is always safe.
 
-  // R6 vision-cleanup finding: setup mode is entered imperatively via API.visionSetupMode;
-  // there is NO explicit server teardown endpoint for setup mode. useVisionSync(null) here
-  // never binds a session (its WS/unbind cleanup only runs for a non-null sessionId), so it
-  // leaves nothing dangling. The only per-navigation/unmount concerns are the JS timers, and
-  // those live inside SuccessOverlay (cleaned up on hide/unmount) — there are no page-level
-  // timers to leak. We reset the vision setup UI flags per problem (the load effect below).
+  // useVisionSync(null) here never binds a session (its WS/unbind cleanup only runs for a
+  // non-null sessionId), so it leaves nothing dangling on its own. Physical-mode lifecycle
+  // (setup mode, move detection arming, LED, pause) is owned by usePhysicalTsumego, which
+  // tears itself down explicitly (visionMoveDetection/visionPause/visionMonitor/LedAPI.clear)
+  // whenever `enabled` flips false or `problemKey` changes — see its enable-effect cleanup.
 
   useEffect(() => {
     if (!problem) return;
@@ -178,11 +191,11 @@ const TsumegoProblemPage = () => {
   // prev/next + auto-advance, so React does NOT remount it — we must reset manually).
   useEffect(() => {
     autoAdvancedRef.current = false;
-    setSetupDone(!isVisionEnabled);
-    setSetupSkipped(false);
-  }, [problemId, isVisionEnabled]);
+  }, [problemId]);
 
-  const autoAdvanceEnabled = isSolved && !isLast && !!nextId && readAutoAdvance();
+  // Physical mode owns the clearing_next → advance handoff (PRD TR7); the timer-based
+  // auto-advance below stays screen-only.
+  const autoAdvanceEnabled = isSolved && !isLast && !!nextId && readAutoAdvance() && !physicalEnabled;
 
   const handleAutoComplete = useCallback(() => {
     if (autoAdvancedRef.current) return;
@@ -191,27 +204,22 @@ const TsumegoProblemPage = () => {
     navigateToProblem(nextId);
   }, [nextId, navigateToProblem]);
 
-  // Enter vision setup mode when problem loads with initial stones
-  useEffect(() => {
-    if (!isVisionEnabled || setupSkipped || !stones.length || !boardSize) return;
-    // Convert stones to board matrix for vision setup
-    const board: number[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
-    for (const s of stones) {
-      const [col, row] = s.coords;
-      if (col >= 0 && col < boardSize && row >= 0 && row < boardSize) {
-        board[boardSize - 1 - row][col] = s.player === 'B' ? 1 : 2; // Y-flip for vision
-      }
-    }
-    API.visionSetupMode(board);
-    setSetupDone(false);
-  }, [isVisionEnabled, setupSkipped, stones.length, boardSize, problemId]);
-
-  // Watch for setup complete
-  useEffect(() => {
-    if (!isVisionEnabled) return;
-    const completeEvent = visionSync.syncEvents.find((e) => e.type === 'setup_complete');
-    if (completeEvent) setSetupDone(true);
-  }, [visionSync.syncEvents, isVisionEnabled]);
+  const physical = usePhysicalTsumego({
+    enabled: physicalEnabled,
+    problemKey: problem?.id ?? null,
+    boardSize,
+    stones,
+    isSolved,
+    showHint,
+    hintCoords,
+    isTryMode,
+    autoAdvance: readAutoAdvance() && !isLast && !!nextId,
+    syncEvents: visionSync.syncEvents,
+    placeStone,
+    undo,
+    playMoveSound: playSound,
+    onAdvance: handleAutoComplete, // 与既有 auto-advance 同一导航路径
+  });
 
   if (loading) {
     return (
@@ -250,8 +258,13 @@ const TsumegoProblemPage = () => {
           disabled={isSolved || (isFailed && !isTryMode)}
           moveHistory={moveHistory}
           onPlaceStone={(x, y) => {
+            // Physical mode: screen clicks only while it's the user's turn (guides own the
+            // board in other phases); the machine then guides the physical board to follow.
+            if (physicalEnabled && physical.phase !== 'ready') return;
+            const preBoard = physicalEnabled ? stonesToVisionBoard(stones, boardSize) : null;
             const result = placeStone(x, y);
             if (result?.sound) playSound(result.sound);
+            if (physicalEnabled && preBoard) physical.onScreenMove(result, preBoard);
           }}
         />
         {/* Success overlay + auto-advance (4.2). onComplete only wired when auto-advance is
@@ -311,14 +324,35 @@ const TsumegoProblemPage = () => {
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Button variant="outlined" startIcon={<Undo />} onClick={undo}>{t('Undo', '悔棋')}</Button>
           <Button variant="outlined" startIcon={<Replay />} onClick={reset}>{t('Reset', '重置')}</Button>
-          <Button variant="outlined" startIcon={<Lightbulb />} onClick={toggleHint}>
+          <Button
+            variant="outlined"
+            startIcon={<Lightbulb />}
+            onClick={toggleHint}
+            disabled={physicalEnabled && physical.phase !== 'ready'}
+          >
             {showHint ? t('Hide Hint', '隐藏提示') : t('Hint', '提示')}
           </Button>
           {!isTryMode ? (
-            <Button variant="outlined" startIcon={<Explore />} onClick={enterTryMode}>{t('Try', '试下')}</Button>
+            <Button
+              variant="outlined"
+              startIcon={<Explore />}
+              onClick={enterTryMode}
+              disabled={physicalEnabled && physical.phase !== 'ready'}
+            >
+              {t('Try', '试下')}
+            </Button>
           ) : (
             <Button variant="outlined" startIcon={<ExploreOff />} onClick={exitTryMode}>{t('Exit Try', '退出试下')}</Button>
           )}
+          <Button
+            variant={physicalMode ? 'contained' : 'outlined'}
+            color={physicalMode ? 'success' : 'inherit'}
+            startIcon={<SmartToy />}
+            disabled={!physicalAvailable}
+            onClick={togglePhysical}
+          >
+            {physicalMode ? t('tsumego:physicalOn', '退出物理棋盘') : t('tsumego:physicalOff', '使用物理棋盘')}
+          </Button>
         </Box>
 
         {/* Prev / Next navigation (4.1) — prominent touch buttons. */}
@@ -362,17 +396,39 @@ const TsumegoProblemPage = () => {
           )}
         </Box>
 
-        {/* Vision setup guide for initial position */}
-        {isVisionEnabled && !setupDone && !setupSkipped && stones.length > 0 && (
+        {/* Physical-board phase guidance */}
+        {physicalEnabled && !['off', 'ready', 'solved'].includes(physical.phase) && (
           <Box sx={{ mt: 2 }}>
-            <BoardSetupGuide
-              matched={visionSync.setupProgress?.matched ?? 0}
-              total={visionSync.setupProgress?.total ?? stones.length}
-              missing={visionSync.setupProgress?.missing ?? []}
-              isComplete={visionSync.isSetupComplete}
-              onStartProblem={() => setSetupDone(true)}
-              onSkip={() => { setSetupSkipped(true); setSetupDone(true); }}
-            />
+            {(physical.phase === 'clearing' || physical.phase === 'clearing_next') && (
+              <Alert severity="info">
+                请清空棋盘{physical.extra.length > 0 ? `（剩 ${physical.extra.length} 颗）` : ''}
+              </Alert>
+            )}
+            {physical.phase === 'setup' && (
+              <BoardSetupGuide
+                matched={physical.stageMatched}
+                total={physical.stageTotal}
+                missing={physical.missing}
+                extra={physical.extra}
+                stage={physical.stage}
+                isComplete={false}
+                onStartProblem={() => {}}
+                onSkip={togglePhysical}
+              />
+            )}
+            {physical.phase === 'replying' && (
+              <Alert severity="info">请按棋盘灯光摆放棋子（应手/提子），使棋盘与屏幕一致</Alert>
+            )}
+            {physical.phase === 'removing' && (
+              <Alert severity="warning">
+                答错了：请取回 {physical.extra.length} 颗棋子（蓝灯）
+                {physical.missing.length > 0 ? `，并放回被提的 ${physical.missing.length} 颗棋子（红/绿灯）` : ''}
+              </Alert>
+            )}
+            {physical.phase === 'restoring' && (
+              <Alert severity="info">正在校验棋盘与题面一致，请按灯光调整棋子</Alert>
+            )}
+            {!physical.ledOk && <Alert severity="warning" sx={{ mt: 1 }}>LED 未连接，请按屏幕提示操作</Alert>}
           </Box>
         )}
       </Box>

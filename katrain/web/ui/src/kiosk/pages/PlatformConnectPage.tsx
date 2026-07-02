@@ -70,6 +70,7 @@ const PlatformConnectPage = () => {
     setLoginForm({ username: '', password: '' });
     setLoginError('');
     setSmsCountdown(0);
+    setSmsLoading(false);
   };
 
   const handleSendSms = async () => {

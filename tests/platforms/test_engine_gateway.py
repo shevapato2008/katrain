@@ -141,6 +141,31 @@ class TestEnginePlayMove:
         assert ("play", {"coords": None}) not in session.katrain_calls
 
     @pytest.mark.asyncio
+    async def test_local_play_failure_after_ai_move_clears_pending(self, setup):
+        """FIX 2 regression: if a local play raises AFTER the adapter already
+        returned the AI move, pending must still be cleared (not wedged in
+        "pending" forever) and the exception must still propagate."""
+        gateway, pm, sm, adapter, ctx, session = setup
+        adapter.submit_engine_move.return_value = PlatformMove(col=15, row=3, color="W", move_number=2, game_id="g")
+
+        original_katrain = session.katrain
+        call_count = {"n": 0}
+
+        def flaky_katrain(command, coords=None, **kwargs):
+            if command == "play":
+                call_count["n"] += 1
+                if call_count["n"] == 2:
+                    raise RuntimeError("boom")
+            return original_katrain(command, coords=coords, **kwargs)
+
+        session.katrain = flaky_katrain
+
+        with pytest.raises(RuntimeError, match="boom"):
+            await gateway.play_move("s", 3, 3, user_id=1)
+
+        assert ctx.pending_action is None
+
+    @pytest.mark.asyncio
     async def test_engine_resign(self, setup):
         gateway, pm, sm, adapter, ctx, session = setup
         result = await gateway.resign("s", user_id=1)

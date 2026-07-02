@@ -99,7 +99,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const handleBoardMove = async (x: number, y: number) => {
     try {
       await session.onMove(x, y);
-    } catch {
+    } catch (e) {
+      console.error(e);
       if (engineMode) setEngineErrorToast(true);
     }
   };

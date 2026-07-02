@@ -12,6 +12,7 @@ import httpx
 import pytest
 
 from katrain.web.platforms.golaxy.engine_client import (
+    GENMOVE_TIMEOUT_SECONDS,
     GOLAXY_AI_LEVELS,
     AuthExpired,
     Fatal,
@@ -112,6 +113,14 @@ class TestRequestShaping:
         client = make_client(handler)
         await engine_genmove(client, moves=[72, 300, 288], level=1100, access_token=TOKEN)
         assert seen["params"]["moves"] == "72,300,288"
+
+
+class TestGenmoveTimeout:
+    def test_genmove_timeout_is_long_enough_for_strong_bots(self):
+        # Strong bots think well past the RestClient's shared 30s default --
+        # genmove needs its own long read timeout. Phase 5 calibrates the
+        # exact value; this just documents the intent.
+        assert GENMOVE_TIMEOUT_SECONDS >= 120
 
 
 class TestSuccessParse:

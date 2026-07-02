@@ -135,8 +135,8 @@ class TestOutOfRangeEncode:
             katrain_to_golaxy(col, row, 19)
 
     def test_error_message_names_bad_value(self):
-        with pytest.raises(ValueError, match="19"):
-            katrain_to_golaxy(19, 0, 19)
+        with pytest.raises(ValueError, match="25"):
+            katrain_to_golaxy(25, 0, 19)
 
 
 class TestResultTypes:

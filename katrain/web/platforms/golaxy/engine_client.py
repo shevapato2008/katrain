@@ -30,6 +30,7 @@ from typing import Optional
 import httpx
 
 GOLAXY_GENMOVE_URL = "https://api.19x19.com/api/engine/dcnn/tunnel/genmove"
+GENMOVE_TIMEOUT_SECONDS = 180.0  # strong bots think well past the default 30s client timeout
 
 # Fixed/observed values from the live capture -- see golaxy-protocol.md
 # Section 2. Not configurable; pass through verbatim.
@@ -137,12 +138,17 @@ async def engine_genmove(
     headers = {"Auth_token": access_token}
 
     try:
-        response = await client.get(GOLAXY_GENMOVE_URL, params=params, headers=headers)
+        response = await client.get(
+            GOLAXY_GENMOVE_URL,
+            params=params,
+            headers=headers,
+            timeout=httpx.Timeout(GENMOVE_TIMEOUT_SECONDS, connect=10.0),
+        )
     except (httpx.TimeoutException, httpx.TransportError) as exc:
         raise Retryable(f"Golaxy genmove network error: {exc}") from exc
 
     if response.status_code == 401:
-        raise AuthExpired(f"Golaxy genmove: HTTP 401 (token expired or invalid)")
+        raise AuthExpired("Golaxy genmove: HTTP 401 (token expired or invalid)")
     if response.status_code == 429:
         raise Retryable("Golaxy genmove: HTTP 429 (rate limited)")
     if not (200 <= response.status_code < 300):

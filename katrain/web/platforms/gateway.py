@@ -93,13 +93,15 @@ class PlatformCommandGateway:
             raise PlatformMoveRejectedError(str(e))
 
         # Success: human move first, then AI move — this ordering is the whole point.
-        self._local_play(session_id, col, row)
-        human_move_number = ai_move.move_number - 1
-        self._broadcast_confirmed(session_id, col, row, human_move_number)
-        self._local_play(session_id, ai_move.col, ai_move.row)
-        ctx.clear_pending()
-        ctx.last_confirmed_move = ai_move.move_number
-        self._broadcast_confirmed(session_id, ai_move.col, ai_move.row, ai_move.move_number)
+        try:
+            self._local_play(session_id, col, row)
+            human_move_number = ai_move.move_number - 1
+            self._broadcast_confirmed(session_id, col, row, human_move_number)
+            self._local_play(session_id, ai_move.col, ai_move.row)
+            ctx.last_confirmed_move = ai_move.move_number
+            self._broadcast_confirmed(session_id, ai_move.col, ai_move.row, ai_move.move_number)
+        finally:
+            ctx.clear_pending()
         return {"status": "ok", "ai_move": {"col": ai_move.col, "row": ai_move.row, "move_number": ai_move.move_number}}
 
     async def pass_move(self, session_id: str, user_id: int) -> dict:

@@ -26,4 +26,5 @@ def test_status_reports_disabled_when_vision_service_is_not_configured():
         "geometry_ready": False,
         "model_ready": False,
         "recognition_ready": False,
+        "led_connected": False,
     }

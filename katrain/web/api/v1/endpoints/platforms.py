@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.models import User
@@ -21,7 +21,33 @@ router = APIRouter()
 
 class PlatformLoginRequest(BaseModel):
     username: str
-    password: str
+    password: str = ""  # optional — the SMS path does not use it
+    sms_code: str = ""
+
+
+class SmsRequest(BaseModel):
+    phone: str
+
+
+class EngineStartRequest(BaseModel):
+    """Human-vs-AI engine game request.
+
+    Deliberately locked down: `extra="forbid"` means any field beyond level +
+    human_color is a 422. This is how the "no non-default game config" constraint
+    is enforced at the API boundary — komi/rule/handicap/board_size are fixed
+    server-side defaults and can never be set by the client.
+    """
+
+    model_config = {"extra": "forbid"}
+    level: int
+    human_color: str = "B"
+
+    @field_validator("human_color")
+    @classmethod
+    def _color(cls, v):
+        if v not in ("B", "W"):
+            raise ValueError("human_color must be 'B' or 'W'")
+        return v
 
 
 class PlatformChallengeRequest(BaseModel):
@@ -71,8 +97,12 @@ async def platform_login(
         if success:
             return {"status": "connected", "platform": platform, "username": saved.username}
 
-    # Fresh login with password
-    credentials = PlatformCredentials(platform=platform, username=req.username, auth_data={"password": req.password})
+    # Fresh login: SMS code (Golaxy) or password (OGS/Fox/KGS).
+    if req.sms_code:
+        auth_data = {"sms_code": req.sms_code}
+    else:
+        auth_data = {"password": req.password}
+    credentials = PlatformCredentials(platform=platform, username=req.username, auth_data=auth_data)
     success = await pm.connect_platform(platform, credentials, user.id)
     if not success:
         raise HTTPException(status_code=401, detail="Login failed")
@@ -98,6 +128,63 @@ async def platform_status(request: Request, user: User = Depends(get_current_use
     for p in platforms:
         p["saved_username"] = saved.get(p["platform"])
     return {"platforms": platforms}
+
+
+# --- SMS login (Golaxy: phone + verification code) ---
+
+
+@router.post("/{platform}/sms/request")
+async def request_sms(platform: str, req: SmsRequest, request: Request, user: User = Depends(get_current_user)):
+    """Request an SMS verification code for phone-based login (Golaxy)."""
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None:
+        raise HTTPException(status_code=404, detail=f"Unknown platform: {platform}")
+    fn = getattr(adapter, "request_sms_code", None)
+    if fn is None:
+        raise HTTPException(status_code=400, detail=f"{platform} does not support SMS login")
+    ok = await fn(req.phone)
+    if not ok:
+        raise HTTPException(status_code=502, detail="SMS request failed")
+    return {"status": "sent"}
+
+
+# --- Engine play (human-vs-AI) ---
+
+
+@router.post("/{platform}/engine/start")
+async def start_engine(
+    platform: str, req: EngineStartRequest, request: Request, user: User = Depends(get_current_user)
+):
+    """Start a human-vs-AI engine game. Only level + human_color are accepted;
+    komi/rule/handicap/board_size are fixed server-side defaults."""
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    if not getattr(adapter, "supports_engine_play", False):
+        raise HTTPException(status_code=400, detail=f"{platform} does not support engine play")
+    # Validate the requested level against the adapter's level table.
+    levels = adapter.get_engine_levels()
+    if not any(l["elo_score"] == req.level for l in levels):
+        raise HTTPException(status_code=422, detail=f"Unknown level {req.level}")
+    from katrain.web.platforms.golaxy.adapter import EngineGameConfig
+
+    config = EngineGameConfig(level=req.level, human_color=req.human_color)  # komi/rule/handicap/board_size fixed
+    session_id = await pm.start_engine_game(platform, config, user.id)
+    return {"session_id": session_id}
+
+
+@router.get("/{platform}/engine/levels")
+async def engine_levels(platform: str, request: Request, user: User = Depends(get_current_user)):
+    """Return the AI level table for an engine-play platform."""
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None:
+        raise HTTPException(status_code=404, detail=f"Unknown platform: {platform}")
+    if not getattr(adapter, "supports_engine_play", False):
+        raise HTTPException(status_code=400, detail=f"{platform} does not support engine play")
+    return {"levels": adapter.get_engine_levels()}
 
 
 # --- Lobby ---

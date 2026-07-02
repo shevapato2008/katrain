@@ -53,6 +53,7 @@ class PlatformManager:
                 "supports_automatch": adapter.supports_automatch,
                 "supports_rooms": adapter.supports_rooms,
                 "supports_seek_graph": adapter.supports_seek_graph,
+                "supports_engine_play": adapter.supports_engine_play,
             }
             for name, adapter in self._adapters.items()
         ]

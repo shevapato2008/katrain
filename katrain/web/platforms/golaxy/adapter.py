@@ -393,6 +393,14 @@ class GolaxyAdapter(PlatformAdapter):
         self._connected = False
         self._active_game_id = None
 
+    async def request_sms_code(self, phone: str) -> bool:
+        """Request an SMS verification code for phone-based login.
+
+        Thin delegate to the REST client so the API layer never reaches into
+        private client state. Returns True on success.
+        """
+        return await self._rest.request_sms_code(phone)
+
     async def get_rooms(self) -> list[dict]:
         # Golaxy rooms are created on-demand; no global room list
         return []

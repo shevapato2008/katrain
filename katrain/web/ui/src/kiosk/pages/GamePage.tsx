@@ -13,6 +13,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation } from '../context/OrientationContext';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
+import PoseLostBanner from '../components/physical/PoseLostBanner';
 import HintPanel from '../components/physical/HintPanel';
 import { API, type HintResponse } from '../../api';
 
@@ -165,6 +166,10 @@ const GamePage = () => {
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
         />
+      )}
+
+      {isVisionEnabled && (
+        <PoseLostBanner visible={!visionStatus.poseLocked && !!session.gameState && !session.gameState.end_result} />
       )}
 
       {/* Header */}

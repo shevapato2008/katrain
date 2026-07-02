@@ -124,6 +124,10 @@ async def bind_session(request: Request, body: BindRequest):
     if game_state and "stones" in game_state:
         vision.set_expected_from_stones(game_state["stones"])
 
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.on_bind(body.session_id, session)
+
     return {"ok": True, "session_id": body.session_id}
 
 
@@ -131,6 +135,9 @@ async def bind_session(request: Request, body: BindRequest):
 async def unbind_session(request: Request):
     """Unbind from current session."""
     vision = _get_vision(request)
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.on_unbind()
     vision.unbind_session()
     return {"ok": True}
 

@@ -191,3 +191,53 @@ class TestHint:
             assert vision.paused is False
 
         asyncio.run(run())
+
+
+class FakeKatrainForBind:
+    def __init__(self, state):
+        self.update_state_callback = None
+        self._state = state
+
+    def get_state(self):
+        return self._state
+
+
+class FakeSessionForBind:
+    def __init__(self, state):
+        self.katrain = FakeKatrainForBind(state)
+
+
+class TestBindLifecycle:
+    def test_on_bind_wraps_chains_seeds_starts_then_unbind_restores_and_shutdown(self):
+        led, vision, mgr = FakeLed(), FakeVision(), FakeManager()
+        orch = PhysicalPlayOrchestrator(
+            config=PhysicalPlayConfig(),
+            led=led,
+            vision=vision,
+            session_manager=mgr,
+            touch_led_activity=lambda: None,
+            clock=lambda: 0.0,
+        )
+        orig_calls = []
+        st = state([["B", [3, 15], None, 1]])
+
+        async def run():
+            sess = FakeSessionForBind(st)
+            sess.katrain.update_state_callback = lambda s: orig_calls.append(s)
+            orch.on_bind("s1", sess)
+            wrapped = sess.katrain.update_state_callback
+            assert wrapped is not None
+            assert len(vision.expected_pushes) == 1  # on_bind seeded expected board
+            assert orch._task is not None and not orch._task.done()  # tick loop started
+            new_st = state([["B", [3, 15], None, 1], ["W", [4, 15], None, 2]])
+            wrapped(new_st)
+            assert orig_calls[-1] is new_st  # original callback chained first
+            assert len(vision.expected_pushes) == 2  # orchestrator.on_game_state pushed
+            orch.on_bind("s1", sess)  # idempotent for same session
+            assert sess.katrain.update_state_callback is wrapped
+            orch.on_unbind()  # restores original callback
+            assert sess.katrain.update_state_callback is not wrapped
+            await orch.shutdown()
+            assert orch._task is None
+
+        asyncio.run(run())

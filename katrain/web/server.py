@@ -44,6 +44,10 @@ async def lifespan(app: FastAPI):
     if vision_poller:
         vision_poller.cancel()
 
+    physical_play = getattr(app.state, "physical_play", None)
+    if physical_play:
+        await physical_play.shutdown()
+
     # LED service shutdown (board mode) — stop() does a final CLEAR! blackout.
     led_failsafe = getattr(app.state, "led_failsafe_task", None)
     if led_failsafe:
@@ -401,6 +405,26 @@ async def _lifespan_board(app: FastAPI, log):
         log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
+
+    # Physical-play orchestrator: drives game LEDs from authoritative state
+    # (track kiosk-physical-play; requires vision, LED optional/degraded-tolerant)
+    if app.state.vision is not None:
+        from katrain.web.core.physical_play import PhysicalPlayConfig
+        from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
+
+        pp_config = getattr(settings, "_physical_play_config", None) or PhysicalPlayConfig()
+        app.state.physical_play_config = pp_config
+        app.state.physical_play = PhysicalPlayOrchestrator(
+            config=pp_config,
+            led=app.state.led,
+            vision=app.state.vision,
+            session_manager=manager,
+            touch_led_activity=lambda: setattr(app.state, "led_last_activity", time.monotonic()),
+        )
+        log.info("Physical-play orchestrator ready (hint_engine=%s)", pp_config.hint_engine)
+    else:
+        app.state.physical_play = None
+        app.state.physical_play_config = None
 
     # Capture service consumes the shared CameraHub and only owns file output.
     if capture_config and capture_config.enabled:
@@ -1808,52 +1832,63 @@ async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
 
 
 async def _vision_move_poller(app: FastAPI):
-    """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
+    """Poll vision worker for confirmed moves and inject them into the bound session.
+
+    Q4 blocking happens WORKER-SIDE: while the physical board owes a placement or
+    removal, the orchestrator pauses move detection, so no ConfirmedMove is produced
+    at all. Holding confirmed moves here was rejected — MoveDetector advances its
+    baseline at confirm time, so held moves can go stale and corrupt the game.
+    Expected-board pushes now happen in the orchestrator's update_state_callback
+    wrapper (single authority); a fallback remains for vision-without-orchestrator.
+    """
     from katrain.vision.ipc import ConfirmedMove
     from katrain.vision.katrain_bridge import vision_move_to_katrain
-    from katrain.vision.sync import game_state_stones_to_board
 
     log = logging.getLogger("katrain_web.vision")
     while True:
         try:
             vision = getattr(app.state, "vision", None)
             if vision and vision.bound_session_id:
+                orchestrator = getattr(app.state, "physical_play", None)
                 move_data = vision.get_confirmed_move()
                 if move_data and isinstance(move_data, ConfirmedMove):
                     session_id = vision.bound_session_id
                     manager = app.state.session_manager
                     session = manager.get_session(session_id)
                     if session:
-                        # Convert to KaTrain move and submit
+                        # R1.3: only the side to move may inject (color check).
+                        expected_player = (session.last_state or {}).get("player_to_move")
+                        move_player = "B" if move_data.color == 1 else "W"
+                        if expected_player and move_player != expected_player:
+                            log.info(
+                                "Vision move %s out of turn (expects %s) — ignored",
+                                move_player,
+                                expected_player,
+                            )
+                            await asyncio.sleep(0.1)
+                            continue
                         move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
-
-                        # Route through platform gateway for cross-platform games
                         gateway = getattr(app.state, "platform_gateway", None)
                         if gateway and gateway.is_platform_game(session_id):
                             try:
                                 await gateway.play_move(session_id, move.coords[0], move.coords[1], user_id=0)
-                                log.info(
-                                    "Vision move submitted via platform gateway: col=%d row=%d",
-                                    move_data.col,
-                                    move_data.row,
-                                )
                             except Exception as gw_err:
                                 log.warning("Platform gateway rejected vision move: %s", gw_err)
                                 await asyncio.sleep(0.5)
                                 continue
                         else:
-                            session.katrain("play", move.coords)
-                            log.info(
-                                "Vision move submitted: col=%d row=%d color=%d",
-                                move_data.col,
-                                move_data.row,
-                                move_data.color,
-                            )
-
-                        # Update expected board from new game state
-                        game_state = session.katrain.get_state()
-                        if game_state and "stones" in game_state:
-                            vision.set_expected_from_stones(game_state["stones"])
+                            with session.lock:
+                                session.katrain("play", move.coords)
+                        log.info(
+                            "Vision move submitted: col=%d row=%d color=%d",
+                            move_data.col,
+                            move_data.row,
+                            move_data.color,
+                        )
+                        if orchestrator is None:
+                            game_state = session.katrain.get_state()
+                            if game_state and "stones" in game_state:
+                                vision.set_expected_from_stones(game_state["stones"])
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -1956,6 +1991,13 @@ def run_web():
         "--led-lut-path", default=None, help="Optional JSON (row,col)->index LUT; defaults to the built-in formula."
     )
     parser.add_argument(
+        "--hint-engine",
+        choices=["local", "cloud", "off"],
+        default=None,
+        help="AI hint engine routing for physical play (default: local)",
+    )
+    parser.add_argument("--hint-top-n", type=int, default=None, help="AI hint top-N points (default: 3)")
+    parser.add_argument(
         "--capture-camera",
         default=None,
         help="Camera device for physical-board capture/calibration (int or /dev/videoN). Shared with VisionService.",
@@ -2007,6 +2049,15 @@ def run_web():
             serial_port=args.led_serial_port,
             baud_rate=args.led_baud_rate,
             lut_path=args.led_lut_path,
+        )
+
+    # Configure physical-play orchestrator overrides if provided
+    if args.hint_engine is not None or args.hint_top_n is not None:
+        from katrain.web.core.physical_play import PhysicalPlayConfig
+
+        settings._physical_play_config = PhysicalPlayConfig(
+            hint_engine=args.hint_engine or "local",
+            hint_top_n=args.hint_top_n or 3,
         )
 
     # Configure capture service if a capture camera was provided

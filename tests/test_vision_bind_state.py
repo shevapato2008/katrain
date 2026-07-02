@@ -55,3 +55,26 @@ class TestVisionBind:
         assert r.status_code == 200
         assert fake.bound == "s1"
         assert fake.expected_stones == [["B", [3, 15], None, 1]]
+
+
+class FakeOrchestrator:
+    def __init__(self):
+        self.bound = None
+        self.unbound = False
+
+    def on_bind(self, session_id, session):
+        self.bound = session_id
+
+    def on_unbind(self):
+        self.unbound = True
+
+
+class TestOrchestratorHooks:
+    def test_bind_and_unbind_notify_orchestrator(self):
+        fake_vision, orch = FakeVision(), FakeOrchestrator()
+        c = _client(fake_vision, FakeManager())
+        c.app.state.physical_play = orch
+        assert c.post("/vision/bind", json={"session_id": "s1"}).status_code == 200
+        assert orch.bound == "s1"
+        assert c.post("/vision/unbind").status_code == 200
+        assert orch.unbound is True

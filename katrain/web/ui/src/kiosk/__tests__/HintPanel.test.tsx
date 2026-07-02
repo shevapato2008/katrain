@@ -11,3 +11,16 @@ it('renders winrate/score and closes', () => {
   fireEvent.click(screen.getByText('关闭'));
   expect(onClose).toHaveBeenCalled();
 });
+
+it('auto-closes after timeoutS with a stable onClose', () => {
+  vi.useFakeTimers();
+  try {
+    const onClose = vi.fn();
+    render(<HintPanel moves={moves} timeoutS={30} onClose={onClose} />);
+    expect(onClose).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(30000);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});

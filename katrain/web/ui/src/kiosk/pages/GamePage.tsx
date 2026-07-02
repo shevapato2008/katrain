@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
 import { ExitToApp, Videocam, Lightbulb, TipsAndUpdates } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -80,6 +80,11 @@ const GamePage = () => {
     }
   }, [isVisionEnabled, visionStatus.cameraConnected]);
 
+  const closeHint = useCallback(() => {
+    setHint(null);
+    API.hintDismiss().catch(() => undefined);
+  }, []);
+
   if (!session.gameState) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -132,11 +137,6 @@ const GamePage = () => {
         : t('Hint failed', '支招失败，请稍后再试')
       );
     }
-  };
-
-  const closeHint = () => {
-    setHint(null);
-    API.hintDismiss().catch(() => undefined);
   };
 
   return (

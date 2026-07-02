@@ -141,6 +141,9 @@ export interface MoveResult {
   message?: string;
   sound?: 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved';
   captured?: number;
+  /** Set on 'correct' when an AI reply is scheduled (~300ms). Read-only metadata for
+   *  physical-board orchestration — judging logic is unchanged. */
+  scheduledReply?: { player: 'B' | 'W'; coords: [number, number] };
 }
 
 export interface TsumegoProblemState {
@@ -240,6 +243,15 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     isFailed: boolean;
   } | null>(null);
 
+  // Full pre-failure snapshot so undo() can restore stones captured by a wrong move.
+  const failedRecoveryRef = useRef<{
+    stones: Stone[];
+    lastMove: [number, number] | null;
+    moveHistory: Stone[];
+    currentNode: SGFNode | null;
+    nextPlayer: 'B' | 'W';
+  } | null>(null);
+
   // Timer effect
   useEffect(() => {
     if (!startTime || isSolved || isFailed) return;
@@ -303,6 +315,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     setIsFailed(false);
     setShowHint(false);
     setHintCoords(null);
+    failedRecoveryRef.current = null;
 
     // Parse SGF if available
     if (data.sgfContent) {
@@ -386,6 +399,13 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
     if (!matchingChild) {
       // Move not in tree - wrong move
+      failedRecoveryRef.current = {
+        stones: [...stones],
+        lastMove,
+        moveHistory: [...moveHistory],
+        currentNode,
+        nextPlayer,
+      };
       setIsFailed(true);
       setAttempts(prev => prev + 1);
       setStones(prev => {
@@ -401,6 +421,13 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
     if (!isOnCorrectPath) {
       // Explicitly marked as wrong
+      failedRecoveryRef.current = {
+        stones: [...stones],
+        lastMove,
+        moveHistory: [...moveHistory],
+        currentNode,
+        nextPlayer,
+      };
       setIsFailed(true);
       setAttempts(prev => prev + 1);
       setStones(prev => {
@@ -472,9 +499,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     return {
       type: 'correct',
       sound: capturedCount > 0 ? 'capture' : 'stone',
-      captured: capturedCount
+      captured: capturedCount,
+      ...(aiResponse ? { scheduledReply: aiResponse } : {}),
     };
-  }, [stones, nextPlayer, currentNode, isSolved, isFailed, boardSize, isTryMode]);
+  }, [stones, nextPlayer, currentNode, isSolved, isFailed, boardSize, isTryMode, lastMove]);
 
   // Undo last move
   const undo = useCallback(() => {
@@ -506,18 +534,21 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       return;
     }
 
-    // If failed, just reset to last good state
+    // If failed, restore the full pre-failure snapshot (a wrong move may have
+    // captured stones — slice(0,-1) cannot bring those back).
     if (isFailed) {
-      // Remove all moves made after last AI response
-      const lastAIIndex = moveHistory.length - 1;
-      const newHistory = moveHistory.slice(0, lastAIIndex);
-      const newStones = stones.slice(0, -1);
-
-      setStones(newStones);
-      setMoveHistory(newHistory);
+      const snap = failedRecoveryRef.current;
+      if (snap) {
+        setStones(snap.stones);
+        setMoveHistory(snap.moveHistory);
+        setLastMove(snap.lastMove);
+        setCurrentNode(snap.currentNode);
+        setNextPlayer(snap.nextPlayer);
+        failedRecoveryRef.current = null;
+      } else {
+        setStones(stones.slice(0, -1));  // fallback (no snapshot recorded)
+      }
       setIsFailed(false);
-      setLastMove(newHistory.length > 0 ? newHistory[newHistory.length - 1].coords : null);
-
       return;
     }
 
@@ -584,6 +615,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       moveHistory: [...moveHistory],
       isFailed
     };
+    failedRecoveryRef.current = null;
 
     setIsTryMode(true);
     setIsFailed(false); // Clear failed state in try mode

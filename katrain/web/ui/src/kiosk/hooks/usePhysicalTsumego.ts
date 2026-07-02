@@ -88,6 +88,7 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   const runIdRef = useRef(0); // bumps on lifecycle changes → aborts in-flight celebrate
   const lastLedKeyRef = useRef('');
   const processedSeqRef = useRef(-1);
+  const prevTryRef = useRef(false); // last-seen isTryMode; drives try-exit edge detection
 
   const ledPoints = useCallback((pts: LedPoint[]) => {
     const key = JSON.stringify(pts);
@@ -175,6 +176,7 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
     return () => {
       runIdRef.current += 1; // abort celebrate
       machineRef.current = initialState;
+      prevTryRef.current = false; // clear stale try-mode edge so re-enable can't fire a stray TRY_EXIT
       setUi(initialState);
       API.visionMoveDetection(false).catch(() => {});
       API.visionPause(false).catch(() => {});
@@ -241,7 +243,6 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   }, [enabled, showHint, isTryMode, hintCoords, boardSize, ledPoints, ledClear]);
 
   // ---- try-mode exit → restore/verify physical board --------------------------
-  const prevTryRef = useRef(false);
   useEffect(() => {
     if (!enabled) {
       prevTryRef.current = isTryMode;

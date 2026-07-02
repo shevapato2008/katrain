@@ -152,23 +152,44 @@ describe('usePhysicalTsumego', () => {
     expect(result.current.phase).toBe('replying');
   });
 
-  it('pauses recognition and shows the hint LED while showHint is active, gating physical moves', async () => {
-    const opts = makeOpts({ showHint: true, hintCoords: [7, 11] });
-    const placeStone = vi.mocked(opts.placeStone);
+  it('pauses recognition and shows the hint LED while showHint is active, gating physical moves in the ready phase', async () => {
+    // Isolate the pause gate from the phase gate: reach 'ready' FIRST (unpaused, exactly
+    // like the physical-move test), THEN pause. This way the only thing that can stop the
+    // move_confirmed from reaching placeStone is the `if (pausedRef.current) continue;`
+    // gate — the phase IS 'ready', so the assertion is no longer vacuous.
+    const baseOpts = makeOpts();
+    const placeStone = vi.mocked(baseOpts.placeStone);
+    placeStone.mockReturnValue({ type: 'correct', sound: 'stone' });
 
-    const { rerender } = renderHook((props: PhysicalTsumegoOptions) => usePhysicalTsumego(props), {
-      initialProps: opts,
+    const { result, rerender } = renderHook((props: PhysicalTsumegoOptions) => usePhysicalTsumego(props), {
+      initialProps: baseOpts,
     });
     await flush();
 
-    expect(API.visionPause).toHaveBeenCalledWith(true);
-    // hintCoords=[x=7,y=11] -> row=boardSize-1-y=7, col=x=7
-    expect(LedAPI.points).toHaveBeenCalledWith([{ row: 7, col: 7, color: 'hint' }]);
+    // clearing -> setup -> ready (still unpaused: showHint=false)
+    const readyEvents = [setupCompleteEvent(0), setupCompleteEvent(1)];
+    rerender({ ...baseOpts, syncEvents: readyEvents });
+    await flush();
+    expect(result.current.phase).toBe('ready');
 
-    rerender({ ...opts, syncEvents: [moveConfirmedEvent(0, 3, 3)] });
+    // Now pause via showHint while still in 'ready'.
+    const pausedOpts = { ...baseOpts, showHint: true, hintCoords: [7, 11] as [number, number], syncEvents: readyEvents };
+    rerender(pausedOpts);
+    await flush();
+
+    expect(API.visionPause).toHaveBeenLastCalledWith(true);
+    // hintCoords=[x=7,y=11] -> row=boardSize-1-y=18-11=7, col=x=7
+    expect(LedAPI.points).toHaveBeenCalledWith([{ row: 7, col: 7, color: 'hint' }]);
+    // Phase is genuinely 'ready' — pause is IO-only and does not touch the machine.
+    expect(result.current.phase).toBe('ready');
+
+    // Feed a move while paused; the pause gate must swallow it before placeStone.
+    rerender({ ...pausedOpts, syncEvents: [...readyEvents, moveConfirmedEvent(2, 3, 3)] });
     await flush();
 
     expect(placeStone).not.toHaveBeenCalled();
+    expect(baseOpts.playMoveSound).not.toHaveBeenCalled();
+    expect(result.current.phase).toBe('ready'); // still ready — move never applied
   });
 
   it('tears down vision/LED state on unmount', async () => {

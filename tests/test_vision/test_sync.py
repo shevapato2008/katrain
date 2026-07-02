@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 
@@ -507,3 +509,53 @@ class TestDigitalAuthorityDiff:
         illegal = [e for e in all_events if e.type == SyncEventType.ILLEGAL_CHANGE]
         assert illegal, "vanished live stone after SETUP_COMPLETE must raise an anomaly, not be swallowed"
         assert (5, 6, 2) in [tuple(p) for p in illegal[0].data["missing"]]
+
+
+class TestEventPayloadsAreJsonSerializable:
+    """Regression: sync events flow to the frontend via websocket.send_json (/ws/vision),
+    which uses json.dumps — numpy.int64 positions from np.where would crash the socket and
+    silently kill the on-screen confirmation UX. Positions/missing must be plain python ints."""
+
+    def _synced(self, expected):
+        sm = SyncStateMachine(board_size=19)
+        sm.bind()
+        sm.confirm_pose_lock()
+        sm.set_expected_board(expected)
+        return sm
+
+    def test_capture_pending_positions_json_serializable(self):
+        before = board_with({(5, 5): WHITE, (3, 3): BLACK})
+        sm = self._synced(before)
+        sm.update(observed_board=before)
+        sm.set_expected_board(board_with({(3, 3): BLACK}))  # digital capture of (5,5)
+        events = sm.update(observed_board=before)  # physical stone still there
+        pend = [e for e in events if e.type == SyncEventType.CAPTURE_PENDING]
+        assert pend
+        for r, c, clr in pend[0].data["positions"]:
+            assert type(r) is int and type(c) is int  # not numpy.int64
+        json.dumps({"type": pend[0].type.value, "data": pend[0].data})  # must not raise
+
+    def test_illegal_change_positions_and_missing_json_serializable(self):
+        sm = self._synced(empty_board())
+        sm.set_expected_board(board_with({(9, 9): WHITE}))  # placement_pending target
+        bad = board_with({(15, 15): BLACK})  # unexpected extra
+        events = []
+        for _ in range(5):
+            events = sm.update(observed_board=bad)
+        illegal = [e for e in events if e.type == SyncEventType.ILLEGAL_CHANGE]
+        assert illegal
+        for r, c, clr in illegal[0].data["positions"] + illegal[0].data["missing"]:
+            assert type(r) is int and type(c) is int
+        json.dumps({"type": illegal[0].type.value, "data": illegal[0].data})  # must not raise
+
+    def test_setup_progress_missing_json_serializable(self):
+        sm = SyncStateMachine(board_size=19)
+        sm.bind()
+        sm.confirm_pose_lock()
+        sm.enter_setup_mode(board_with({(3, 3): BLACK, (5, 5): WHITE}))
+        events = sm.update(observed_board=board_with({(3, 3): BLACK}))  # partial → SETUP_PROGRESS
+        prog = [e for e in events if e.type == SyncEventType.SETUP_PROGRESS]
+        assert prog
+        for r, c in prog[0].data["missing"]:
+            assert type(r) is int and type(c) is int
+        json.dumps({"type": prog[0].type.value, "data": prog[0].data})  # must not raise

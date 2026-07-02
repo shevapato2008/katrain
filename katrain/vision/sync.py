@@ -260,7 +260,7 @@ class SyncStateMachine:
             if observed_board[r, c] == self._target_board[r, c]:
                 matched += 1
             else:
-                missing.append([r, c])
+                missing.append([int(r), int(c)])  # numpy.int64 → JSON-serializable (/ws/vision setup_progress)
 
         events.append(
             SyncEvent(
@@ -307,6 +307,9 @@ class SyncStateMachine:
         unexpected: list[tuple[int, int, int]] = []
 
         for r, c in diff_positions:
+            r, c = int(r), int(
+                c
+            )  # np.where yields numpy.int64 → cast so event payloads are JSON-serializable (/ws/vision)
             expected_val = int(self._expected_board[r, c])
             observed_val = int(observed_board[r, c])
             if expected_val != EMPTY and observed_val == EMPTY:

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
-import { ExitToApp, Videocam, Lightbulb } from '@mui/icons-material';
+import { ExitToApp, Videocam, Lightbulb, TipsAndUpdates } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation } from '../context/OrientationContext';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
+import HintPanel from '../components/physical/HintPanel';
+import { API, type HintResponse } from '../../api';
 
 const GamePage = () => {
   const navigate = useNavigate();
@@ -34,6 +36,8 @@ const GamePage = () => {
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [escalationOpen, setEscalationOpen] = useState(false);
+  const [hint, setHint] = useState<HintResponse | null>(null);
+  const [hintError, setHintError] = useState<string | null>(null);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
@@ -43,6 +47,12 @@ const GamePage = () => {
     if (session.physicalReminder.kind === 'escalation') setEscalationOpen(true);
     else setReminderOpen(true);
   }, [session.physicalReminder]);
+
+  // Dedicated hint-dismiss unmount cleanup. NOTE: this does NOT own vision bind/unbind —
+  // useVisionSync is the sole owner of that (Task 9 M1 fix removed GamePage's old
+  // visionBind/unbind effect to avoid a double-bind bug). Keep this effect scoped to
+  // the hint lifecycle only.
+  useEffect(() => () => { API.hintDismiss().catch(() => undefined); }, []);
 
   useEffect(() => {
     if (sessionId) session.setSessionId(sessionId);
@@ -104,6 +114,31 @@ const GamePage = () => {
     }
   };
 
+  const hintVisible =
+    isVisionEnabled &&
+    gameState.game_type === 'free' &&
+    gameState.analysis_allowed !== false;
+
+  const handleHint = async () => {
+    if (!sessionId) return;
+    try {
+      setHint(await API.hint(sessionId));
+    } catch (e) {
+      const msg = String(e);
+      setHintError(
+        msg.includes('ranked_forbidden') ? t('Not available in ranked games', '升降级对局不可用')
+        : msg.includes('disabled') ? t('Hint is not enabled', '支招功能未开放')
+        : msg.includes('insufficient') ? t('Insufficient balance', '余额不足')
+        : t('Hint failed', '支招失败，请稍后再试')
+      );
+    }
+  };
+
+  const closeHint = () => {
+    setHint(null);
+    API.hintDismiss().catch(() => undefined);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       {/* Error display */}
@@ -133,6 +168,11 @@ const GamePage = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {hintVisible && (
+            <Button variant="outlined" size="small" startIcon={<TipsAndUpdates />} onClick={handleHint}>
+              {t('AI Hint', 'AI 支招')}
+            </Button>
+          )}
           <Button variant="outlined" size="small" startIcon={<ExitToApp />}
             onClick={handleExit}>
             {t('Exit', '退出')}
@@ -193,6 +233,11 @@ const GamePage = () => {
           playerToMove={session.gameState?.player_to_move ?? null}
         />
       )}
+
+      {/* AI hint panel + error */}
+      {hint && <HintPanel moves={hint.moves} timeoutS={hint.timeout_s} onClose={closeHint} />}
+      <Snackbar open={!!hintError} autoHideDuration={5000} onClose={() => setHintError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={hintError} />
 
       {/* AI move toast */}
       <Snackbar open={!!aiMoveToast} autoHideDuration={8000} onClose={() => setAiMoveToast(null)}

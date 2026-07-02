@@ -117,6 +117,16 @@ export interface VisionStatusResponse {
   led_connected?: boolean;
 }
 
+export interface HintMove {
+  gtp: string;
+  coords: [number, number];
+  vision_rc: [number, number];
+  winrate: number | null;
+  score_lead: number | null;
+  visits: number | null;
+}
+export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: number; }
+
 export async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) {
@@ -319,6 +329,12 @@ export const API = {
     apiPost("/api/v1/vision/sync/reset", {}),
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
+
+  // AI Hint API (free games only)
+  hint: (sessionId: string, topN?: number): Promise<HintResponse> =>
+    apiPost("/api/v1/hint", { session_id: sessionId, top_n: topN ?? null }) as Promise<HintResponse>,
+  hintDismiss: (): Promise<{ ok: boolean }> =>
+    apiPost("/api/v1/hint/dismiss", {}) as Promise<{ ok: boolean }>,
 
   logout: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/logout", {

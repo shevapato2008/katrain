@@ -272,7 +272,7 @@ const TsumegoProblemPage = () => {
             unmount / when show flips false, so it cannot leak or mis-fire (R5). */}
         <SuccessOverlay
           show={isSolved}
-          message={t('tsumego:solved', '恭喜答对！')}
+          message={t('tsumego:solved', '正确！')}
           onComplete={autoAdvanceEnabled ? handleAutoComplete : undefined}
           delayMs={1500}
         />
@@ -295,9 +295,6 @@ const TsumegoProblemPage = () => {
         )}
 
         {/* Status indicators */}
-        {isSolved && (
-          <Alert severity="success" sx={{ mb: 2 }}>{t('Correct!', '正确!')}</Alert>
-        )}
         {isFailed && !isTryMode && (
           <Alert severity="error" sx={{ mb: 2 }}>{t('Incorrect, try again', '不正确，请重试')}</Alert>
         )}

@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
+import { EmojiEvents } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 
 interface SuccessOverlayProps {
@@ -65,7 +66,7 @@ interface ConfettiParticle {
 
 const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
   show,
-  message = '恭喜答对！',
+  message = '正确！',
   onComplete
 }) => {
   const [particles, setParticles] = useState<ConfettiParticle[]>([]);
@@ -134,17 +135,7 @@ const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
           animation: `${textPulse} 0.5s ease-out`,
         }}
       >
-        <Typography
-          variant="h3"
-          sx={{
-            color: '#4caf50',
-            fontWeight: 'bold',
-            textShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
-            mb: 1
-          }}
-        >
-          🎉
-        </Typography>
+        <EmojiEvents sx={{ fontSize: 72, color: '#4caf50', mb: 1, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }} />
         <Typography
           variant="h4"
           sx={{

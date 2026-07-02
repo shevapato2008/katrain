@@ -187,10 +187,10 @@ describe('TsumegoProblemPage', () => {
     expect(mockEnterTryMode).toHaveBeenCalled();
   });
 
-  it('shows success alert when solved', () => {
+  it('shows success overlay message when solved', () => {
     hookReturn = { ...defaultHookReturn, isSolved: true };
     renderPage();
-    expect(screen.getByText('正确!')).toBeInTheDocument();
+    expect(screen.getByText('正确！')).toBeInTheDocument();
   });
 
   it('shows error alert when failed', () => {
@@ -324,7 +324,7 @@ describe('TsumegoProblemPage', () => {
     it('shows the success overlay message when solved', () => {
       hookReturn = { ...defaultHookReturn, isSolved: true };
       renderPage('p1');
-      expect(screen.getByText('恭喜答对！')).toBeInTheDocument();
+      expect(screen.getByText('正确！')).toBeInTheDocument();
     });
 
     it('auto-advances to the next problem ~1.5s after solving (default ON)', () => {

@@ -78,3 +78,19 @@ class TestOrchestratorHooks:
         assert orch.bound == "s1"
         assert c.post("/vision/unbind").status_code == 200
         assert orch.unbound is True
+
+
+class FakeLed:
+    def is_connected(self):
+        return True
+
+
+class TestStatusLed:
+    def test_status_reports_led_connected(self):
+        c = _client(FakeVision(), FakeManager())
+        c.app.state.led = FakeLed()
+        # FakeVision 缺 status 属性时按 vision=None 分支断言：
+        c.app.state.vision = None
+        r = c.get("/vision/status")
+        assert r.status_code == 200
+        assert r.json()["led_connected"] is True

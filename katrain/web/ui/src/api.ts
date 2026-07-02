@@ -69,6 +69,8 @@ export interface GameState {
     fast_visits?: number;
     max_visits?: number;
   };
+  game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
+  analysis_allowed?: boolean;
 }
 
 export interface SessionResponse {
@@ -112,6 +114,7 @@ export interface VisionStatusResponse {
   pose_locked: boolean;
   sync_state: string;
   bound_session_id: string | null;
+  led_connected?: boolean;
 }
 
 export async function apiPost(path: string, payload: any, token?: string) {

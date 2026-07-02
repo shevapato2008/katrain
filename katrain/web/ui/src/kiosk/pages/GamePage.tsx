@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
-import { ExitToApp, Videocam } from '@mui/icons-material';
+import { ExitToApp, Videocam, Lightbulb } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
-import { API } from '../../api';
 import Board from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
@@ -38,14 +37,6 @@ const GamePage = () => {
   useEffect(() => {
     if (sessionId) session.setSessionId(sessionId);
   }, [sessionId]);
-
-  // Bind vision on mount, unbind on unmount
-  useEffect(() => {
-    if (isVisionEnabled && sessionId) {
-      API.visionBind(sessionId);
-      return () => { API.visionUnbind(); };
-    }
-  }, [isVisionEnabled, sessionId]);
 
   // Show toast when AI makes a move (vision mode: physical board player needs coordinate hint)
   useEffect(() => {
@@ -112,6 +103,12 @@ const GamePage = () => {
       {isVisionEnabled && (
         <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5, opacity: 0.8, zIndex: 10 }}>
           <Videocam sx={{ color: visionStatus.cameraConnected ? 'success.main' : 'error.main', fontSize: 20 }} />
+          <Lightbulb
+            sx={{
+              color: visionStatus.ledConnected === false ? 'error.main'
+                : visionStatus.ledConnected ? 'success.main' : 'text.disabled',
+            }}
+          />
         </Box>
       )}
 

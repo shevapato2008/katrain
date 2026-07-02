@@ -53,6 +53,7 @@ async def vision_status(request: Request):
             "geometry_ready": False,
             "model_ready": False,
             "recognition_ready": False,
+            "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
         }
     vision.refresh_status()
     return {
@@ -65,6 +66,7 @@ async def vision_status(request: Request):
         "geometry_ready": vision._latest_status.geometry_ready,
         "model_ready": vision._latest_status.model_ready,
         "recognition_ready": vision._latest_status.recognition_ready,
+        "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
     }
 
 

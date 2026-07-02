@@ -52,7 +52,7 @@ const KioskRoutes = () => {
         <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
         <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
         <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+        <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage engineMode /></PhysicalBoardGuard>} />
 
         {/* Standard — with nav rail */}
         <Route element={<KioskLayout username={user?.username} />}>

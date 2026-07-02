@@ -17,9 +17,10 @@ interface Props {
   analysisToggles: Record<string, boolean>;
   onToggleAnalysis: (key: string) => void;
   isGameOver?: boolean;
+  disableSpecialActions?: boolean;
 }
 
-const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false }: Props) => {
+const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false, disableSpecialActions = false }: Props) => {
   const { t } = useTranslation();
   const showScore = !!analysisToggles.score;
 
@@ -60,9 +61,9 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
           <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.hints} onClick={() => onToggleAnalysis('hints')} />
           <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
           <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} disabled={isGameOver} />
-          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver} />
+          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver || disableSpecialActions} />
           <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive disabled={isGameOver} />
-          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={isGameOver} />
+          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={isGameOver || disableSpecialActions} />
         </Box>
 
         <Divider />

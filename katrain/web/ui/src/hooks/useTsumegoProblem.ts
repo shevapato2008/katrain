@@ -502,6 +502,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       captured: capturedCount,
       ...(aiResponse ? { scheduledReply: aiResponse } : {}),
     };
+    // NOTE: moveHistory is intentionally omitted from deps — every code path that mutates
+    // moveHistory also calls setStones in the same batch (and `stones` IS a dep), so the
+    // memoized closure stays fresh. If a future change decouples a setStones/setMoveHistory
+    // pair, revisit this and add moveHistory here.
   }, [stones, nextPlayer, currentNode, isSolved, isFailed, boardSize, isTryMode, lastMove]);
 
   // Undo last move
@@ -546,7 +550,11 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         setNextPlayer(snap.nextPlayer);
         failedRecoveryRef.current = null;
       } else {
-        setStones(stones.slice(0, -1));  // fallback (no snapshot recorded)
+        // Fallback (no snapshot recorded): slices `stones` only — does NOT restore
+        // moveHistory/lastMove/currentNode/nextPlayer. The normal failed path always
+        // records a snapshot (both incorrect branches in placeStone), so callers must
+        // ensure one exists; this branch is a defensive last resort.
+        setStones(stones.slice(0, -1));
       }
       setIsFailed(false);
       return;
@@ -615,7 +623,12 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       moveHistory: [...moveHistory],
       isFailed
     };
-    failedRecoveryRef.current = null;
+    // Only drop the failed snapshot when NOT currently failed. Entering try mode WHILE
+    // failed is supported (setIsFailed(false) below); exitTryMode restores isFailed from
+    // its snapshot, so the failed snapshot must survive the fail→try→exit round trip for
+    // a later undo() to still restore fully. Cross-problem staleness is prevented by
+    // initializeProblem/reset clearing unconditionally.
+    if (!isFailed) failedRecoveryRef.current = null;
 
     setIsTryMode(true);
     setIsFailed(false); // Clear failed state in try mode

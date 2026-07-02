@@ -77,6 +77,54 @@ describe('failed-state snapshot restore', () => {
     expect(result.current.isFailed).toBe(false);
     expect(result.current.nextPlayer).toBe('B');
   });
+
+  it('preserves the failed snapshot across a try-mode excursion (fail → try → exit → undo)', async () => {
+    const { result } = await setup();
+
+    // Correct move + wait for its AI reply to land (same setup as the test above).
+    const correct = sgfToCoords('cc', 9)!;
+    act(() => {
+      result.current.placeStone(correct[0], correct[1]);
+    });
+    await waitFor(() => expect(result.current.stones.length).toBe(4)); // ba, aa, cc, dd
+
+    const beforeWrong = result.current.stones;
+    const beforeWrongHistory = result.current.moveHistory;
+    expect(result.current.nextPlayer).toBe('B');
+    expect(beforeWrongHistory.length).toBe(2);
+
+    // Off-tree capturing move → failed, white aa removed.
+    const wrong = sgfToCoords('ab', 9)!;
+    act(() => {
+      result.current.placeStone(wrong[0], wrong[1]);
+    });
+    expect(result.current.isFailed).toBe(true);
+
+    // Take a try-mode excursion WHILE failed: enter, place a free stone, then exit.
+    act(() => {
+      result.current.enterTryMode();
+    });
+    expect(result.current.isFailed).toBe(false); // try mode clears failed
+    act(() => {
+      const free = sgfToCoords('gg', 9)!;
+      result.current.placeStone(free[0], free[1]);
+    });
+    act(() => {
+      result.current.exitTryMode();
+    });
+    // exitTryMode restores the failed state it snapshotted.
+    expect(result.current.isFailed).toBe(true);
+
+    // undo() must STILL fully restore the pre-failure snapshot — the failed snapshot
+    // must have survived the try-mode round trip (regression: enterTryMode used to null it).
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.stones).toEqual(beforeWrong);
+    expect(result.current.moveHistory).toEqual(beforeWrongHistory);
+    expect(result.current.isFailed).toBe(false);
+    expect(result.current.nextPlayer).toBe('B');
+  });
 });
 
 describe('scheduledReply metadata', () => {

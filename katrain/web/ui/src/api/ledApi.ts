@@ -5,7 +5,7 @@
 
 const API_BASE = '/api/v1/led';
 
-export type LedColor = 'black' | 'white' | 'remove';
+export type LedColor = 'black' | 'white' | 'remove' | 'hint';
 
 export interface LedResult {
   ok: boolean;

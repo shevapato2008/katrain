@@ -112,6 +112,7 @@ export interface VisionStatusResponse {
   pose_locked: boolean;
   sync_state: string;
   bound_session_id: string | null;
+  recognition_ready?: boolean;
 }
 
 export async function apiPost(path: string, payload: any, token?: string) {
@@ -316,6 +317,14 @@ export const API = {
     apiPost("/api/v1/vision/sync/reset", {}),
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
+  visionMonitor: (active: boolean): Promise<void> =>
+    apiPost("/api/v1/vision/monitor", { active }),
+  visionPause: (paused: boolean): Promise<void> =>
+    apiPost("/api/v1/vision/pause", { paused }),
+  visionMoveDetection: (armed: boolean): Promise<void> =>
+    apiPost("/api/v1/vision/move-detection", { armed }),
+  visionExpectedBoard: (board: number[][]): Promise<void> =>
+    apiPost("/api/v1/vision/expected-board", { board }),
 
   logout: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/logout", {

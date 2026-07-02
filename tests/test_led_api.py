@@ -62,3 +62,10 @@ class TestLedEndpoints:
     def test_422_out_of_range(self):
         c = _client(FakeLed())
         assert c.post("/led/point", json={"row": 19, "col": 0, "color": "black"}).status_code == 422
+
+    def test_hint_color_accepted(self):
+        fake = FakeLed()
+        c = _client(fake)
+        r = c.post("/led/point", json={"row": 9, "col": 9, "color": "hint"})
+        assert r.status_code == 200
+        assert fake.calls[0] == ("set_points", [{"row": 9, "col": 9, "color": "hint"}], False)

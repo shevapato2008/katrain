@@ -136,6 +136,15 @@ class TestColorsAndProtocol:
         idx = rc2idx(5, 5)
         assert f"SETI {idx} 0 0 255" in fake.seti_lines()
 
+    def test_hint_color_maps_to_white(self):
+        svc, fake = _make_service()
+        svc.start()
+        try:
+            svc.set_points([{"row": 0, "col": 0, "color": "hint"}], strict=True)
+        finally:
+            svc.stop()
+        assert fake.seti_lines() == ["SETI 0 255 255 255"]  # rc2idx(0,0)=0
+
     def test_out_of_range_points_skipped(self):
         svc, fake = _make_service()
         svc.start()

@@ -53,6 +53,7 @@ COLOR_RGB: Dict[str, tuple] = {
     "black": (255, 0, 0),  # black stone -> red LED
     "white": (0, 255, 0),  # white stone -> green LED
     "remove": (0, 0, 255),  # capture/removal -> blue LED
+    "hint": (255, 255, 255),  # AI hint / celebration -> white LED
     "red": (255, 0, 0),
     "green": (0, 255, 0),
     "blue": (0, 0, 255),

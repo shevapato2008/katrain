@@ -12,10 +12,10 @@ import { useAuth } from '../../context/AuthContext';
 
 type Translate = (en: string, zh: string) => string;
 
-// 让子 (handicap) options — mirrors Golaxy's 自由对弈: 分先(0), 让先(-1), 让2子..让9子 (no 1).
+// 让子 (handicap) options — mirrors Golaxy's 自由对弈 labels: 分先, 让先, 让2子..让9子 (no 1).
 const handicapOptions = (t: Translate): { value: number; label: string }[] => [
-  { value: 0, label: t('Even (0)', '分先(0)') },
-  { value: -1, label: t('Black gets 1st move (-1)', '让先(-1)') },
+  { value: 0, label: t('Even', '分先') },
+  { value: -1, label: t('Black first', '让先') },
   { value: 2, label: t('2 stones', '让2子') },
   { value: 3, label: t('3 stones', '让3子') },
   { value: 4, label: t('4 stones', '让4子') },
@@ -27,10 +27,12 @@ const handicapOptions = (t: Translate): { value: number; label: string }[] => [
 ];
 
 // Derived komi label shown next to 让子 (display-only; server derives the actual komi).
+// Golaxy chinese-rule derivation (app.js): 分先→7.5, 让先→0, 让N子→N. Shown in 目 (points)
+// to be unambiguous — the raw komi value sent to the engine, no 子/目 conversion guessing.
 const komiLabel = (handicap: number, t: Translate): string => {
-  if (handicap === 0) return t('Black komi 7.5', '黑贴 7.5');
+  if (handicap === 0) return t('Black komi 7.5', '黑贴 7.5 目');
   if (handicap === -1) return t('Komi 0', '贴 0');
-  return t(`Black komi ${handicap} stones`, `黑贴 ${handicap} 子`);
+  return t(`Black komi ${handicap}`, `黑贴 ${handicap} 目`);
 };
 
 const PlatformEngineSetupPage = () => {

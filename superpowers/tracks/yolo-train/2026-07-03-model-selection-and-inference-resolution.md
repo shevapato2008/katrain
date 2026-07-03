@@ -12,6 +12,7 @@
 - **Most cost-effective model → `yolo11s`** (safe pick, cross-game generalization *proven* equal to `yolo11x`), with **`yolo11n`** as an even-cheaper candidate that needs one clean cross-game confirmation before shipping.
 - **Resolution → capture at `1920×1080`, run inference at `imgsz 640`.** These are two different resolutions in a three-stage pipeline (capture → perspective-warp → model input), not a single downsample.
 - **Why bigger models don't help:** `mAP50` is saturated (~0.99) across every model size. The only metric that keeps climbing with size is `mAP50-95` (tight-box IoU) — which the deployment **discards**, because `board_state.detections_to_board` snaps on the **box center** to the nearest grid intersection (the "two-step" recognition design). You pay 3–30× the NPU compute for accuracy the pipeline throws away.
+- **Blur augmentation (`led-safe-blur`) — direction confirmed, effect small (§3).** A 2-arm × 3-seed A/B (yolo11s) shows blur training raises **far-side (perspective-blurred) stone confidence +3.3%** and shrinks the near→far confidence gap ~18%, at unchanged near-side confidence — the intended "harden the soft far region" effect, consistent across seeds. But on this clean 1080p held-out it did **not** raise recall (already saturated at 1.0), so the gain is *confidence margin / stability*, **not** detection rate.
 
 ---
 
@@ -110,6 +111,48 @@ Align the dev/Ultralytics path to **640** so validation matches the deployed SBC
 
 ---
 
+## 3. Blur augmentation A/B — robustness of the far-side (perspective-blur) region
+
+**Question:** does training on *degraded* (blurred/low-res) crops make the detector more robust?
+
+### 3a. Design (controlled, 2 arms × 3 seeds = 6 runs)
+
+Identical everything except the augmentation and seed — yolo11s, imgsz 640, epochs 200, single-GPU (`train_ab.sh`):
+
+| arm | augmentation | train pool | held-out test |
+|-----|--------------|-----------|---------------|
+| baseline | `led-safe` (hsv_s/v only, hsv_h=0) | `go4_ab` = kifu_24167+24168+24171 | `kifu_24138` (205 frames) |
+| **blur** | `led-safe-blur` = led-safe **+** `_BlurDownscale` | same | same |
+
+`_BlurDownscale` (`katrain/vision/tools/train_model.py:53`) applies **hue-safe** degradation to each train image: random down-then-up resample (p=0.20), Gaussian blur k∈{3,5} (p=0.15), JPEG q30–70 (p=0.10). No ToGray/CLAHE/channel ops, so `led_red` vs `led_green` stay separable. Rationale: the geometry warp upsamples the far board region (few source pixels) to near-region size → far-side stones are soft and score lower; blur aug simulates that so the model learns to trust them. (Note: installed in-process by `cmd_train`, so these runs are **single-GPU** — DDP worker subprocesses would silently skip the aug.)
+
+Evaluation (`eval_ab_one.py`) reports overall held-out metrics **plus** far(left 1/3) vs near(right 1/3) stone recall & mean confidence @ deploy conf 0.25 — the far third is exactly where blur should help.
+
+### 3b. Results — held-out `kifu_24138`, per-arm mean of 3 seeds
+
+(6925 far stones, 6410 near stones; raw per-model JSON: `2026-07-03-blur-ab-eval-heldout-24138.jsonl`)
+
+| metric | baseline `led-safe` | blur `led-safe-blur` | Δ |
+|--------|--------------------:|---------------------:|---:|
+| mAP50 | 0.9847 | 0.9843 | −0.0003 |
+| **mAP50-95** | 0.6853 | **0.6953** | **+0.0100** |
+| Recall | 0.984 | 0.985 | +0.001 |
+| far-side recall @conf0.25 | **1.000** | **1.000** | 0 (both saturated) |
+| **far-side mean confidence** | 0.694 ±0.025 | **0.717 ±0.008** | **+0.023 (+3.3%)** |
+| near-side mean confidence | 0.862 | 0.855 | −0.007 |
+| **near→far confidence gap** | **+0.168** | **+0.138** | **−18%** |
+
+### 3c. Honest reading
+
+- ✅ **Direction confirmed, consistent across 3 seeds:** far-side (blurred) confidence ↑3.3% while near-side is flat → the aug specifically hardens the soft far region. The near→far penalty shrinks ~18%, blur's far-conf variance is *lower* (0.008 vs 0.025 → more stable), and mAP50-95 gains +1 pt (tighter boxes).
+- ⚠️ **But no recall/mAP50 gain:** this held-out is clean 1080p, so baseline far-side recall is already **1.0** — no headroom. The benefit is **confidence margin & stability, not detection rate**.
+- ⚠️ **Scope:** the held-out doesn't cover the harsh conditions (motion blur, low-end camera, steeper angle) that would actually stress recall. So this is evidence blur is *safe and directionally helpful*, not proof it lifts field accuracy.
+- 🔎 This is why `go4_s_ab_blur_s0.pt` (blur arm, seed 0) was the one pulled to the repo root and used as the cross-game `s` representative in §1b — blur wins on margin at equal detection rate.
+
+**Next step to actually pressure-test robustness:** build a *degraded* held-out (synthetic motion blur / downscale / JPEG on `kifu_24138`, or a genuinely lower-quality capture) and re-run the same A/B — that's where a recall gap, if real, would show.
+
+---
+
 ## Appendix — reproduce
 
 Model-size sweep (temporal val, both imgsz), one model per fresh process to avoid MPS state leak:
@@ -127,6 +170,16 @@ Clean cross-game held-out (kifu_24138):
 #   s -> go4_s_ab_blur_s0.pt   (trained 24167+24168+24171)
 #   x -> go4_x_2game_1080p.pt  (trained 24168+24171)
 for t in s x; do "$PY" eval_crossgame.py "$t"; done
+```
+
+Blur A/B (§3) — 6 runs on the remote GPU box (`fan@home-ubuntu`), then held-out eval per model:
+
+```bash
+# train_ab.sh: 2 arms × 3 seeds, yolo11s imgsz 640, --device 0 (single-GPU keeps blur aug active)
+#   --augment led-safe       -> go4_s_ab_ledsafe_s{0,1,2}
+#   --augment led-safe-blur  -> go4_s_ab_blur_s{0,1,2}   (train pool go4_ab, held-out kifu_24138)
+# eval_ab_one.py: overall + far/near stone recall & mean-conf @ conf 0.25 on go4_ab_heldout
+for n in go4_s_ab_ledsafe_s{0,1,2} go4_s_ab_blur_s{0,1,2}; do python eval_ab_one.py "$n"; done
 ```
 
 Dataset game composition (verify no leakage before trusting a cross-game number):

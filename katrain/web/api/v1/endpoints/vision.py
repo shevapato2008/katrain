@@ -115,7 +115,12 @@ async def bind_session(request: Request, body: BindRequest):
     """Bind vision to a game session."""
     vision = _get_vision(request)
     manager = request.app.state.session_manager
-    session = manager.get_session(body.session_id)
+    try:
+        session = manager.get_session(body.session_id)
+    except KeyError:
+        # A stale tab re-binding a session lost to a server restart must get a clean
+        # 404, not a KeyError 500 (SessionManager.get_session raises, not returns None).
+        session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
 

@@ -87,7 +87,8 @@ async def test_engine_start_ok():
     async with _client(app) as ac:
         r = await ac.post("/api/v1/platforms/golaxy/engine/start", json={"level": 1100, "human_color": "B"})
     assert r.status_code == 200, r.text
-    assert r.json() == {"session_id": "sess-1"}
+    # Response echoes the resolved human_color (Task A) alongside session_id.
+    assert r.json() == {"session_id": "sess-1", "human_color": "B"}
     # Manager awaited with a config carrying the level + human_color.
     mgr.start_engine_game.assert_awaited_once()
     args, kwargs = mgr.start_engine_game.call_args

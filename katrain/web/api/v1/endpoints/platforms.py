@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import random
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -29,24 +30,61 @@ class SmsRequest(BaseModel):
     phone: str
 
 
+_VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值 (handicap); no 1
+
+
+def _komi_for_handicap(h: int) -> float:
+    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules)."""
+    if h == 0:
+        return 7.5  # 分先 (even game)
+    if h == -1:
+        return 0.0  # 让先 (reverse komi, no stones)
+    return float(h)  # 让N子 (N-stone handicap) -> komi N
+
+
+def _handicap_stone_count(h: int) -> int:
+    """Derive the genmove handicap (stone count) param. 分先/让先 place no stones."""
+    return h if h >= 2 else 0
+
+
+def _resolve_color(c: str) -> str:
+    """Resolve the human's color, rolling nigiri (coin flip) if requested."""
+    return random.choice(["B", "W"]) if c == "nigiri" else c
+
+
 class EngineStartRequest(BaseModel):
     """Human-vs-AI engine game request.
 
-    Deliberately locked down: `extra="forbid"` means any field beyond level +
-    human_color is a 422. This is how the "no non-default game config" constraint
-    is enforced at the API boundary — komi/rule/handicap/board_size are fixed
-    server-side defaults and can never be set by the client.
+    Client sends exactly `level` + `human_color` + `handicap`; everything else
+    (rule, board_size, komi) is derived/fixed server-side. `extra="forbid"`
+    means any other field is a 422 — this is how the "no non-default game
+    config" constraint is enforced at the API boundary.
+
+    - `human_color`: "B" | "W" | "nigiri" (nigiri = server coin-flips B/W at
+      request time; the resolved color is returned in the response).
+    - `handicap` (让子值): `0` = 分先 (even, komi 7.5), `-1` = 让先 (reverse
+      komi 0.0, no stones placed), `2..9` = 让N子 (N-stone handicap, komi N).
+      `1` is not a valid handicap value.
+    - `rule` is always "chinese", `board_size` is always `19`.
     """
 
     model_config = {"extra": "forbid"}
     level: int
     human_color: str = "B"
+    handicap: int = 0
 
     @field_validator("human_color")
     @classmethod
     def _color(cls, v):
-        if v not in ("B", "W"):
-            raise ValueError("human_color must be 'B' or 'W'")
+        if v not in ("B", "W", "nigiri"):
+            raise ValueError("human_color must be 'B', 'W', or 'nigiri'")
+        return v
+
+    @field_validator("handicap")
+    @classmethod
+    def _handicap(cls, v):
+        if v not in _VALID_HANDICAP:
+            raise ValueError(f"handicap must be one of {sorted(_VALID_HANDICAP)}")
         return v
 
 
@@ -156,8 +194,9 @@ async def request_sms(platform: str, req: SmsRequest, request: Request, user: Us
 async def start_engine(
     platform: str, req: EngineStartRequest, request: Request, user: User = Depends(get_current_user)
 ):
-    """Start a human-vs-AI engine game. Only level + human_color are accepted;
-    komi/rule/handicap/board_size are fixed server-side defaults."""
+    """Start a human-vs-AI engine game. Client sends level + human_color +
+    handicap; komi/rule/board_size are derived/fixed server-side (see
+    EngineStartRequest)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -170,9 +209,17 @@ async def start_engine(
         raise HTTPException(status_code=422, detail=f"Unknown level {req.level}")
     from katrain.web.platforms.golaxy.adapter import EngineGameConfig
 
-    config = EngineGameConfig(level=req.level, human_color=req.human_color)  # komi/rule/handicap/board_size fixed
+    color = _resolve_color(req.human_color)  # rolls nigiri if requested
+    config = EngineGameConfig(
+        level=req.level,
+        human_color=color,
+        komi=_komi_for_handicap(req.handicap),
+        rule="chinese",
+        handicap=_handicap_stone_count(req.handicap),
+        board_size=19,
+    )
     session_id = await pm.start_engine_game(platform, config, user.id)
-    return {"session_id": session_id}
+    return {"session_id": session_id, "human_color": color}
 
 
 @router.get("/{platform}/engine/levels")

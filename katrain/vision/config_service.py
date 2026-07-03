@@ -32,6 +32,10 @@ class VisionServiceConfig:
     # reset on motion). Measured 4.7x temporal-noise reduction at 8 in weak light, which
     # stabilizes confidence and box centers. 0/1 disables.
     frame_average: int = 8
+    # Consecutive frames a sub-add-confidence detection must persist on an empty cell
+    # before it is promoted to an ambiguous_stone confirmation prompt (a real stone
+    # stuck below the add threshold otherwise has NO path onto the board).
+    ambiguous_promote_frames: int = 12
     # Software AE ("software" | "off"): drive the board-region median brightness into
     # ae_target ("LO-HI", calibrated: known-good scenes meter 146-160) by adjusting
     # exposure at runtime. Advisory-only where exposure controls are inert (macOS);
@@ -64,6 +68,7 @@ class VisionServiceConfig:
             "enhance": self.enhance,
             "move_confirm_frames": self.move_confirm_frames,
             "frame_average": self.frame_average,
+            "ambiguous_promote_frames": self.ambiguous_promote_frames,
             "auto_exposure": self.auto_exposure,
             "ae_target_lo": ae_lo,
             "ae_target_hi": ae_hi,

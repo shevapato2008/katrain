@@ -63,3 +63,49 @@ class MoveDetector:
         self.prev_board = board.copy()
         self.count = 0
         self.pending_move = None
+
+
+class AmbiguousPromoter:
+    """Promotes a persistently sub-add-confidence stone to a user confirmation prompt.
+
+    Confidence hysteresis gives a real stone that never crosses the ADD threshold no
+    path onto the board: keep-tier detections may only sustain existing stones. A real
+    stone persists frame after frame, while glare/noise flickers — so a cell whose
+    sub-add detection survives ``promote_frames`` CONSECUTIVE frames is worth asking
+    the user about (ambiguous_stone -> AmbiguousMoveCard -> confirm plays the move).
+
+    ``step()`` is fed the per-frame candidate cells (already filtered by the worker to
+    sub-add confidence, empty in the stable and expected boards, unmasked). It returns
+    at most one ``(row, col, class_id, confidence)`` per call; an emitted cell enters a
+    ``cooldown_frames`` cooldown so a declined prompt doesn't immediately re-fire.
+    """
+
+    def __init__(self, promote_frames: int = 12, cooldown_frames: int = 120):
+        self.promote_frames = promote_frames
+        self.cooldown_frames = cooldown_frames
+        self._streaks: dict[tuple[int, int], int] = {}
+        self._cooldowns: dict[tuple[int, int], int] = {}
+
+    def step(self, candidates: dict) -> tuple[int, int, int, float] | None:
+        """Feed one frame's candidate cells {(r,c): (confidence, class_id)}."""
+        for cell in list(self._cooldowns):
+            self._cooldowns[cell] -= 1
+            if self._cooldowns[cell] <= 0:
+                del self._cooldowns[cell]
+
+        self._streaks = {cell: self._streaks.get(cell, 0) + 1 for cell in candidates}
+
+        ready = [c for c, n in self._streaks.items() if n >= self.promote_frames and c not in self._cooldowns]
+        if not ready:
+            return None
+        # One prompt at a time: longest streak wins, confidence breaks ties.
+        cell = max(ready, key=lambda c: (self._streaks[c], candidates[c][0]))
+        conf, class_id = candidates[cell]
+        self._cooldowns[cell] = self.cooldown_frames
+        self._streaks.pop(cell, None)
+        return (cell[0], cell[1], class_id, conf)
+
+    def reset(self) -> None:
+        """Clear all state (session unbind / sync reset — a declined prompt resets sync)."""
+        self._streaks.clear()
+        self._cooldowns.clear()

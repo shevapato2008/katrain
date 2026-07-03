@@ -17,13 +17,13 @@ import numpy as np
 
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
-from katrain.vision.board_state import BoardStateExtractor
+from katrain.vision.board_state import EMPTY, BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
-from katrain.vision.move_detector import MoveDetector
+from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector
 from katrain.vision.stone_detector import StoneDetector
 from katrain.vision.temporal import FrameAverager
 from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
@@ -31,9 +31,12 @@ from katrain.vision.sync import SyncState, SyncStateMachine
 
 logger = logging.getLogger(__name__)
 
-PREVIEW_SIZE = 480
+# 960px @ q75: the browser displays the debug preview at ~1000px wide, so a 480px/q60
+# stream upscales into visible mush — including the overlay boxes/labels drawn on it.
+# Mac dev path only (the SBC worker.py preview keeps its own smaller settings).
+PREVIEW_SIZE = 960
 PREVIEW_FPS = 3
-JPEG_QUALITY = 60
+JPEG_QUALITY = 75
 
 
 class InProcessAdapter:
@@ -96,6 +99,10 @@ class InProcessAdapter:
             )
         )
         self._move_detector = MoveDetector(consistency_frames=config.get("move_confirm_frames", 3))
+        # Sub-add promotion: a real stone stuck below the add threshold (hysteresis gives
+        # it no path onto the board) persists frame after frame — promote it to an
+        # ambiguous_stone confirmation prompt instead of silently ignoring it forever.
+        self._promoter = AmbiguousPromoter(promote_frames=config.get("ambiguous_promote_frames", 12))
         self._sync = SyncStateMachine()
 
         self._paused = False
@@ -136,6 +143,33 @@ class InProcessAdapter:
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
         return self._state_extractor_locked if self._geometry is not None else self._state_extractor
+
+    def _promote_stuck_stone(self, detections, w: int, h: int, stable_board, masked) -> None:
+        """Feed sub-add candidates to the promoter; emit ambiguous_stone on a hit.
+
+        Candidates: highest detection per cell that is below the add threshold, on a
+        cell empty in BOTH the stable and expected boards, and not an LED-masked cell."""
+        top = self._active_extractor().cell_top(detections, img_w=w, img_h=h)
+        exp = self._expected_np
+        candidates = {
+            cell: v
+            for cell, v in top.items()
+            if v[0] < self._add_threshold
+            and int(stable_board[cell[0]][cell[1]]) == EMPTY
+            and (exp is None or int(exp[cell[0]][cell[1]]) == EMPTY)
+            and not (masked and cell in masked)
+        }
+        hit = self._promoter.step(candidates)
+        if hit is None:
+            return
+        r, c, class_id, conf = hit
+        self._event_queue.put(
+            {
+                "type": "ambiguous_stone",
+                "data": {"row": int(r), "col": int(c), "color": int(class_id) + 1, "confidence": round(float(conf), 3)},
+            }
+        )
+        logger.info("ambiguous promotion: sustained sub-add stone at (%d,%d) conf=%.2f", r, c, conf)
 
     def _brightness_log(self) -> str:
         if self._last_bstats is None or self._ae is None:
@@ -317,6 +351,9 @@ class InProcessAdapter:
                                 )
                         self._prev_conf_map = conf_map
 
+                        if move_result is None and self._move_detector.pending_move is None:
+                            self._promote_stuck_stone(detections, w, h, observed_board, masked)
+
                     self._maybe_send_preview(warped, detections)
 
             else:
@@ -376,6 +413,7 @@ class InProcessAdapter:
                 self._last_stable_board = None
                 self._prev_conf_map = {}
                 self._averager.reset()
+                self._promoter.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
@@ -392,6 +430,7 @@ class InProcessAdapter:
                 self._last_stable_board = None
                 self._prev_conf_map = {}
                 self._averager.reset()
+                self._promoter.reset()  # declined ambiguous prompt resets sync — don't re-fire
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
@@ -429,9 +468,9 @@ class InProcessAdapter:
             cv2.putText(
                 preview,
                 f"{label.get(d.class_id, '?')}{d.confidence:.2f}",
-                (p1[0], max(p1[1] - 4, 12)),
+                (p1[0], max(p1[1] - 4, 14)),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.45,
+                0.55,
                 color,
                 1,
                 cv2.LINE_AA,

@@ -95,3 +95,54 @@ class TestConfigurableConsistencyFrames:
         cfg = VisionServiceConfig(move_confirm_frames=7)
         assert cfg.to_worker_config()["move_confirm_frames"] == 7
         assert VisionServiceConfig().to_worker_config()["move_confirm_frames"] == 5  # raised default
+
+
+class TestAmbiguousPromoter:
+    """Sub-add promotion: a persistent below-add-threshold stone becomes a user prompt."""
+
+    def _promoter(self, frames=3, cooldown=10):
+        from katrain.vision.move_detector import AmbiguousPromoter
+
+        return AmbiguousPromoter(promote_frames=frames, cooldown_frames=cooldown)
+
+    def test_fires_after_consecutive_frames(self):
+        p = self._promoter(frames=3)
+        cand = {(2, 3): (0.42, 0)}
+        assert p.step(cand) is None
+        assert p.step(cand) is None
+        assert p.step(cand) == (2, 3, 0, 0.42)
+
+    def test_absence_resets_streak(self):
+        p = self._promoter(frames=3)
+        cand = {(2, 3): (0.42, 0)}
+        p.step(cand)
+        p.step(cand)
+        p.step({})  # flickered out — streak lost
+        assert p.step(cand) is None
+        assert p.step(cand) is None
+        assert p.step(cand) is not None
+
+    def test_cooldown_blocks_refire(self):
+        p = self._promoter(frames=2, cooldown=5)
+        cand = {(2, 3): (0.42, 0)}
+        p.step(cand)
+        assert p.step(cand) is not None  # fired, cooldown starts
+        for _ in range(4):
+            assert p.step(cand) is None  # streak rebuilds but cooldown holds
+        # cooldown expired after 5 steps; streak is already >= promote_frames
+        assert p.step(cand) is not None
+
+    def test_one_prompt_at_a_time_longest_streak_wins(self):
+        p = self._promoter(frames=2)
+        p.step({(2, 3): (0.42, 0)})
+        hit = p.step({(2, 3): (0.42, 0), (5, 5): (0.44, 1)})
+        assert hit == (2, 3, 0, 0.42)  # (5,5) only has streak 1
+
+    def test_reset_clears_everything(self):
+        p = self._promoter(frames=2, cooldown=100)
+        cand = {(2, 3): (0.42, 0)}
+        p.step(cand)
+        assert p.step(cand) is not None
+        p.reset()  # e.g. user tapped Ignore -> RESET_SYNC
+        p.step(cand)
+        assert p.step(cand) is not None  # cooldown gone too — fresh session semantics

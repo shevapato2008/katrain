@@ -274,3 +274,35 @@ class TestOffBoardDetections:
         ex = self._margined_extractor()
         phantom = self._det_at_grid(fx=18.9, fy=-0.9, conf=0.8)
         assert ex.cell_confidences([phantom], img_w=self.IMG, img_h=self.IMG) == {}
+
+
+class TestCellTop:
+    IMG = 640
+
+    def _det_at_grid(self, fx, fy, class_id=0, conf=0.9):
+        cfg = BoardConfig(margin_cells=1.0)
+        x_px = (1 + fx) / 20 * self.IMG
+        y_px = (1 + fy) / 20 * self.IMG
+        return Detection(x_center=x_px, y_center=y_px, class_id=class_id, confidence=conf)
+
+    def _extractor(self):
+        return BoardStateExtractor(BoardConfig(margin_cells=1.0))
+
+    def test_highest_confidence_with_class(self):
+        ex = self._extractor()
+        dets = [
+            self._det_at_grid(3, 3, class_id=0, conf=0.42),
+            self._det_at_grid(3.1, 3, class_id=1, conf=0.38),  # same cell, weaker white
+            self._det_at_grid(5, 5, class_id=1, conf=0.7),
+        ]
+        top = ex.cell_top(dets, img_w=self.IMG, img_h=self.IMG)
+        assert top[(3, 3)] == (0.42, 0)
+        assert top[(5, 5)] == (0.7, 1)
+
+    def test_off_board_and_led_classes_excluded(self):
+        ex = self._extractor()
+        dets = [
+            self._det_at_grid(18.9, -0.9, class_id=0, conf=0.9),  # warp margin
+            self._det_at_grid(3, 3, class_id=2, conf=0.9),  # led_red
+        ]
+        assert ex.cell_top(dets, img_w=self.IMG, img_h=self.IMG) == {}

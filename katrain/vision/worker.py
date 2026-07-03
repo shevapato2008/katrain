@@ -27,13 +27,13 @@ import cv2
 import numpy as np
 
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
-from katrain.vision.board_state import BoardStateExtractor
+from katrain.vision.board_state import EMPTY, BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
-from katrain.vision.move_detector import MoveDetector
+from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector
 from katrain.vision.sync import SyncState, SyncStateMachine
 from katrain.vision.temporal import FrameAverager
 
@@ -115,6 +115,10 @@ class _VisionWorkerLoop:
         self._ae_advisory = False
         self._last_bstats = None
         self._move_detector = MoveDetector(consistency_frames=config.get("move_confirm_frames", 3))
+        # Sub-add promotion: a real stone stuck below the add threshold (hysteresis gives
+        # it no path onto the board) persists frame after frame — promote it to an
+        # ambiguous_stone confirmation prompt instead of silently ignoring it forever.
+        self._promoter = AmbiguousPromoter(promote_frames=config.get("ambiguous_promote_frames", 12))
         self._sync = SyncStateMachine()
 
         self._paused = False
@@ -339,6 +343,9 @@ class _VisionWorkerLoop:
                                     }
                                 )
                         self._prev_conf_map = conf_map
+
+                        if move_result is None and self._move_detector.pending_move is None:
+                            self._promote_stuck_stone(detections, w, h, self._last_stable_board, masked)
                 else:
                     # Board not found
                     self._consecutive_failures += 1
@@ -380,6 +387,33 @@ class _VisionWorkerLoop:
 
             self._maybe_publish_status()
             # No throttle — processing runs as fast as inference allows
+
+    def _promote_stuck_stone(self, detections, w: int, h: int, stable_board, masked) -> None:
+        """Feed sub-add candidates to the promoter; emit ambiguous_stone on a hit.
+
+        Candidates: highest detection per cell that is below the add threshold, on a
+        cell empty in BOTH the stable and expected boards, and not an LED-masked cell."""
+        top = self._state_extractor.cell_top(detections, img_w=w, img_h=h)
+        exp = self._expected_np
+        candidates = {
+            cell: v
+            for cell, v in top.items()
+            if v[0] < self._add_threshold
+            and int(stable_board[cell[0]][cell[1]]) == EMPTY
+            and (exp is None or int(exp[cell[0]][cell[1]]) == EMPTY)
+            and not (masked and cell in masked)
+        }
+        hit = self._promoter.step(candidates)
+        if hit is None:
+            return
+        r, c, class_id, conf = hit
+        self._event_queue.put(
+            {
+                "type": "ambiguous_stone",
+                "data": {"row": int(r), "col": int(c), "color": int(class_id) + 1, "confidence": round(float(conf), 3)},
+            }
+        )
+        logger.info("ambiguous promotion: sustained sub-add stone at (%d,%d) conf=%.2f", r, c, conf)
 
     def _brightness_log(self) -> str:
         if self._last_bstats is None or self._ae is None:
@@ -430,6 +464,7 @@ class _VisionWorkerLoop:
                 self._sync = SyncStateMachine()  # Reset
                 self._prev_conf_map = {}
                 self._averager.reset()
+                self._promoter.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._board_locked = True
                 logger.info("Board pose locked — reusing transform for subsequent frames")
@@ -449,6 +484,7 @@ class _VisionWorkerLoop:
                 self._sync.reset()
                 self._prev_conf_map = {}
                 self._averager.reset()
+                self._promoter.reset()  # declined ambiguous prompt resets sync — don't re-fire
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.PAUSE_DETECTION:

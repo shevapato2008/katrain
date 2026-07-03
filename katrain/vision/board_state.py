@@ -168,6 +168,21 @@ class BoardStateExtractor:
             board[ny][nx] = det.class_id + 1
         return board
 
+    def cell_top(self, detections: list[Detection], img_w: int, img_h: int) -> dict:
+        """Highest-confidence stone detection per rounded intersection, WITH its class:
+        {(row, col): (confidence, class_id)}. Used by the sub-add ambiguous promotion
+        (a stone stuck below the add threshold needs its color for the prompt)."""
+        out: dict[tuple[int, int], tuple[float, int]] = {}
+        for det in detections:
+            if det.class_id not in STONE_CLASS_IDS:
+                continue
+            key = self._grid_cell(det, img_w, img_h)
+            if key is None:
+                continue
+            if key not in out or det.confidence > out[key][0]:
+                out[key] = (det.confidence, det.class_id)
+        return out
+
     def cell_confidences(self, detections: list[Detection], img_w: int, img_h: int) -> dict:
         """Max detection confidence per rounded intersection — used to classify a
         pending move as confirmed vs ambiguous (PRD §3.4 ambiguous_stone)."""

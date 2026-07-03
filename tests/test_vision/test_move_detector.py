@@ -112,13 +112,38 @@ class TestAmbiguousPromoter:
         assert p.step(cand) is None
         assert p.step(cand) == (2, 3, 0, 0.42)
 
-    def test_absence_resets_streak(self):
+    def test_brief_absence_keeps_streak(self):
+        # miss grace: a marginal stone blinking out for 1-2 frames must not restart
+        # the streak — the frozen count resumes when the detection reappears.
+        p = self._promoter(frames=3)
+        cand = {(2, 3): (0.42, 0)}
+        p.step(cand)  # streak 1
+        p.step(cand)  # streak 2
+        assert p.step({}) is None  # blink (miss 1) — streak frozen, nothing fires
+        assert p.step(cand) == (2, 3, 0, 0.42)  # streak 3 on reappearance
+
+    def test_absent_cell_never_fires_while_graced(self):
+        p = self._promoter(frames=2)
+        cand = {(2, 3): (0.42, 0)}
+        p.step(cand)
+        p.step(cand)  # fires? streak 2 >= 2 -> yes, consume it
+        p.reset()
+        p.step(cand)
+        p.step(cand)  # streak 2 -> fires
+        # rebuild to streak just below, then go absent: absent frames must not fire
+        p.reset()
+        p.step(cand)
+        assert p.step({}) is None  # graced absence, streak frozen at 1
+
+    def test_sustained_absence_resets_streak(self):
         p = self._promoter(frames=3)
         cand = {(2, 3): (0.42, 0)}
         p.step(cand)
         p.step(cand)
-        p.step({})  # flickered out — streak lost
-        assert p.step(cand) is None
+        p.step({})  # miss 1 (frozen)
+        p.step({})  # miss 2 (frozen)
+        p.step({})  # miss 3 > grace 2 — streak dropped
+        assert p.step(cand) is None  # restart: streak 1
         assert p.step(cand) is None
         assert p.step(cand) is not None
 
@@ -146,3 +171,60 @@ class TestAmbiguousPromoter:
         p.reset()  # e.g. user tapped Ignore -> RESET_SYNC
         p.step(cand)
         assert p.step(cand) is not None  # cooldown gone too — fresh session semantics
+
+
+class TestMoveDetectorMissGrace:
+    """A pending move survives brief detection dropouts (marginal-confidence flicker)."""
+
+    def _boards(self):
+        empty = np.zeros((19, 19), dtype=int)
+        with_stone = empty.copy()
+        with_stone[3][3] = BLACK
+        return empty, with_stone
+
+    def test_blink_freezes_count_then_confirms(self):
+        d = MoveDetector(consistency_frames=5, miss_grace=2)
+        empty, with_stone = self._boards()
+        d.detect_new_move(empty)
+        for _ in range(3):
+            assert d.detect_new_move(with_stone) is None  # count 1..3
+        assert d.detect_new_move(empty) is None  # blink (miss 1) — count frozen
+        assert d.detect_new_move(empty) is None  # blink (miss 2) — still within grace
+        assert d.detect_new_move(with_stone) is None  # count 4
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)  # count 5 -> confirmed
+
+    def test_sustained_absence_abandons_pending(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, with_stone = self._boards()
+        d.detect_new_move(empty)
+        d.detect_new_move(with_stone)
+        d.detect_new_move(with_stone)  # count 2
+        for _ in range(3):  # 3 consecutive misses > grace 2 -> abandoned
+            d.detect_new_move(empty)
+        assert d.detect_new_move(with_stone) is None  # restarts at count 1
+        assert d.detect_new_move(with_stone) is None
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)
+
+    def test_multi_stone_change_still_hard_resets(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, with_stone = self._boards()
+        two = with_stone.copy()
+        two[5][5] = WHITE
+        d.detect_new_move(empty)
+        d.detect_new_move(with_stone)
+        d.detect_new_move(with_stone)  # count 2
+        d.detect_new_move(two)  # scene disruption -> hard reset (no grace)
+        assert d.detect_new_move(with_stone) is None  # count 1 again
+        assert d.detect_new_move(with_stone) is None
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)
+
+    def test_zero_grace_matches_legacy_behavior(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=0)
+        empty, with_stone = self._boards()
+        d.detect_new_move(empty)
+        d.detect_new_move(with_stone)
+        d.detect_new_move(with_stone)
+        d.detect_new_move(empty)  # single miss > grace 0 -> abandoned
+        assert d.detect_new_move(with_stone) is None
+        assert d.detect_new_move(with_stone) is None
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)

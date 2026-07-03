@@ -114,7 +114,10 @@ class _VisionWorkerLoop:
             )
         self._ae_advisory = False
         self._last_bstats = None
-        self._move_detector = MoveDetector(consistency_frames=config.get("move_confirm_frames", 3))
+        self._move_detector = MoveDetector(
+            consistency_frames=config.get("move_confirm_frames", 3),
+            miss_grace=config.get("move_miss_grace", 2),
+        )
         # Sub-add promotion: a real stone stuck below the add threshold (hysteresis gives
         # it no path onto the board) persists frame after frame — promote it to an
         # ambiguous_stone confirmation prompt instead of silently ignoring it forever.

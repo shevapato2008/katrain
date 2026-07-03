@@ -11,13 +11,24 @@ from katrain.vision.board_state import EMPTY
 
 
 class MoveDetector:
-    """Detects new moves by comparing board states across frames."""
+    """Detects new moves by comparing board states across frames.
 
-    def __init__(self, consistency_frames: int = 3):
+    ``miss_grace``: a marginal-confidence stone can blink out of the observed board for
+    a frame or two (a confidence dip or a cell-rounding wobble absorbed by voting); a
+    zero-tolerance counter would reset on every blink and NEVER accumulate
+    ``consistency_frames``, leaving the stone permanently unconfirmable. A pending move
+    therefore survives up to ``miss_grace`` consecutive absent frames with its count
+    frozen; only a longer absence (stone actually removed / noise gone) abandons it.
+    Multi-stone changes still hard-reset — that is scene disruption, not flicker.
+    """
+
+    def __init__(self, consistency_frames: int = 3, miss_grace: int = 2):
         self.consistency_frames = consistency_frames
+        self.miss_grace = miss_grace
         self.prev_board: np.ndarray | None = None
         self.pending_move: tuple[int, int, int] | None = None
         self.count = 0
+        self.misses = 0
 
     def detect_new_move(self, board: np.ndarray) -> tuple[int, int, int] | None:
         """
@@ -38,22 +49,35 @@ class MoveDetector:
                 if self.prev_board[r][c] == EMPTY and board[r][c] != EMPTY:
                     diff_positions.append((r, c, int(board[r][c])))
 
-        if len(diff_positions) != 1:
+        if len(diff_positions) == 0:
+            if self.pending_move is not None:
+                self.misses += 1
+                if self.misses > self.miss_grace:
+                    self.count = 0
+                    self.pending_move = None
+                    self.misses = 0
+            return None
+
+        if len(diff_positions) > 1:
             self.count = 0
             self.pending_move = None
+            self.misses = 0
             return None
 
         move = diff_positions[0]
         if move == self.pending_move:
             self.count += 1
+            self.misses = 0
         else:
             self.pending_move = move
             self.count = 1
+            self.misses = 0
 
         if self.count >= self.consistency_frames:
             self.prev_board = board.copy()
             self.count = 0
             self.pending_move = None
+            self.misses = 0
             return move
 
         return None
@@ -63,6 +87,7 @@ class MoveDetector:
         self.prev_board = board.copy()
         self.count = 0
         self.pending_move = None
+        self.misses = 0
 
 
 class AmbiguousPromoter:
@@ -78,12 +103,17 @@ class AmbiguousPromoter:
     sub-add confidence, empty in the stable and expected boards, unmasked). It returns
     at most one ``(row, col, class_id, confidence)`` per call; an emitted cell enters a
     ``cooldown_frames`` cooldown so a declined prompt doesn't immediately re-fire.
+
+    ``miss_grace``: like MoveDetector, a marginal stone blinks — a cell absent for up to
+    this many consecutive frames keeps its streak frozen instead of restarting from 0.
     """
 
-    def __init__(self, promote_frames: int = 12, cooldown_frames: int = 120):
+    def __init__(self, promote_frames: int = 12, cooldown_frames: int = 120, miss_grace: int = 2):
         self.promote_frames = promote_frames
         self.cooldown_frames = cooldown_frames
+        self.miss_grace = miss_grace
         self._streaks: dict[tuple[int, int], int] = {}
+        self._misses: dict[tuple[int, int], int] = {}
         self._cooldowns: dict[tuple[int, int], int] = {}
 
     def step(self, candidates: dict) -> tuple[int, int, int, float] | None:
@@ -93,9 +123,22 @@ class AmbiguousPromoter:
             if self._cooldowns[cell] <= 0:
                 del self._cooldowns[cell]
 
-        self._streaks = {cell: self._streaks.get(cell, 0) + 1 for cell in candidates}
+        for cell in list(self._streaks):
+            if cell in candidates:
+                continue
+            self._misses[cell] = self._misses.get(cell, 0) + 1
+            if self._misses[cell] > self.miss_grace:
+                del self._streaks[cell]
+                del self._misses[cell]
+        for cell in candidates:
+            self._streaks[cell] = self._streaks.get(cell, 0) + 1
+            self._misses.pop(cell, None)
 
-        ready = [c for c, n in self._streaks.items() if n >= self.promote_frames and c not in self._cooldowns]
+        # Only cells PRESENT this frame may fire (a graced-absent cell must reappear
+        # first — never prompt for something not currently detected).
+        ready = [
+            c for c in candidates if self._streaks.get(c, 0) >= self.promote_frames and c not in self._cooldowns
+        ]
         if not ready:
             return None
         # One prompt at a time: longest streak wins, confidence breaks ties.
@@ -103,9 +146,11 @@ class AmbiguousPromoter:
         conf, class_id = candidates[cell]
         self._cooldowns[cell] = self.cooldown_frames
         self._streaks.pop(cell, None)
+        self._misses.pop(cell, None)
         return (cell[0], cell[1], class_id, conf)
 
     def reset(self) -> None:
         """Clear all state (session unbind / sync reset — a declined prompt resets sync)."""
         self._streaks.clear()
+        self._misses.clear()
         self._cooldowns.clear()

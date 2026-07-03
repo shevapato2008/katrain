@@ -35,6 +35,10 @@ class VisionServiceConfig:
     # reset on motion). Measured 4.7x temporal-noise reduction at 8 in weak light, which
     # stabilizes confidence and box centers. 0/1 disables.
     frame_average: int = 8
+    # A confirmed move below this confidence is routed to the on-screen confirmation
+    # card instead of auto-playing. Far-side stones on the Mac rig meter ~0.36-0.45,
+    # so a strict gate turns every far move into a manual confirmation — tune per rig.
+    ambiguous_confidence: float = 0.55
     # Consecutive frames a sub-add-confidence detection must persist on an empty cell
     # before it is promoted to an ambiguous_stone confirmation prompt (a real stone
     # stuck below the add threshold otherwise has NO path onto the board).
@@ -71,6 +75,7 @@ class VisionServiceConfig:
             "enhance": self.enhance,
             "move_confirm_frames": self.move_confirm_frames,
             "move_miss_grace": self.move_miss_grace,
+            "ambiguous_confidence": self.ambiguous_confidence,
             "frame_average": self.frame_average,
             "ambiguous_promote_frames": self.ambiguous_promote_frames,
             "auto_exposure": self.auto_exposure,

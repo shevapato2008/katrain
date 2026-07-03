@@ -1709,38 +1709,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}
             )
 
-    @app.websocket("/ws/{session_id}")
-    async def websocket_endpoint(websocket: WebSocket, session_id: str):
-        try:
-            session = manager.get_session(session_id)
-        except KeyError:
-            await websocket.accept()
-            await websocket.close(code=1008, reason="Session not found")
-            return
-
-        await websocket.accept()
-        session.sockets.add(websocket)
-        try:
-            state = session.last_state or session.katrain.get_state()
-            state["sockets_count"] = len(session.sockets)
-            # Send initial state to this client
-            await websocket.send_json({"type": "game_update", "state": state})
-            # Broadcast updated spectator count to all other clients (lightweight update)
-            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
-            while True:
-                message = await websocket.receive_json()
-                if message.get("type") == "ping":
-                    await websocket.send_json({"type": "pong"})
-                elif message.get("type") == "chat":
-                    manager.broadcast_to_session(session_id, message)
-        except WebSocketDisconnect:
-            pass
-        finally:
-            session.sockets.discard(websocket)
-            # Broadcast updated spectator count when someone leaves
-            if session.sockets:  # Only if there are still connected clients
-                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
-
+    # NOTE: registered BEFORE /ws/{session_id} — Starlette matches websocket routes
+    # in registration order, so the catch-all session route would otherwise swallow
+    # /ws/vision as session_id="vision" and close it 1008 "Session not found". That
+    # shadowing silently killed EVERY vision event to the frontend (ambiguous-move
+    # cards, move-pending chips, mismatch dialogs) since the endpoint was added.
     @app.websocket("/ws/vision")
     async def vision_websocket(websocket: WebSocket):
         """Vision event WebSocket — pushes sync events and status changes to the frontend."""
@@ -1779,6 +1752,38 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     pass
         except WebSocketDisconnect:
             pass
+
+    @app.websocket("/ws/{session_id}")
+    async def websocket_endpoint(websocket: WebSocket, session_id: str):
+        try:
+            session = manager.get_session(session_id)
+        except KeyError:
+            await websocket.accept()
+            await websocket.close(code=1008, reason="Session not found")
+            return
+
+        await websocket.accept()
+        session.sockets.add(websocket)
+        try:
+            state = session.last_state or session.katrain.get_state()
+            state["sockets_count"] = len(session.sockets)
+            # Send initial state to this client
+            await websocket.send_json({"type": "game_update", "state": state})
+            # Broadcast updated spectator count to all other clients (lightweight update)
+            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
+            while True:
+                message = await websocket.receive_json()
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                elif message.get("type") == "chat":
+                    manager.broadcast_to_session(session_id, message)
+        except WebSocketDisconnect:
+            pass
+        finally:
+            session.sockets.discard(websocket)
+            # Broadcast updated spectator count when someone leaves
+            if session.sockets:  # Only if there are still connected clients
+                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
@@ -2044,6 +2049,14 @@ def run_web():
         "disables). Cuts weak-light sensor noise ~sqrt(N); auto-resets on motion.",
     )
     parser.add_argument(
+        "--vision-ambiguous-confidence",
+        type=float,
+        default=None,
+        help="Confirmed moves below this confidence go to the on-screen confirmation card "
+        "instead of auto-playing (default: 0.55). Far-side stones meter ~0.36-0.45 on the "
+        "Mac rig — lower this to auto-play them.",
+    )
+    parser.add_argument(
         "--vision-auto-exposure",
         choices=["software", "off"],
         default=None,
@@ -2123,6 +2136,8 @@ def run_web():
             vision_kwargs["move_confirm_frames"] = args.vision_move_frames
         if args.vision_frame_average is not None:
             vision_kwargs["frame_average"] = args.vision_frame_average
+        if args.vision_ambiguous_confidence is not None:
+            vision_kwargs["ambiguous_confidence"] = args.vision_ambiguous_confidence
         if args.vision_auto_exposure is not None:
             vision_kwargs["auto_exposure"] = args.vision_auto_exposure
         if args.vision_ae_target is not None:

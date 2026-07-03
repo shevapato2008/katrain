@@ -262,3 +262,10 @@ class TestCallerOwnedBaseline:
         d.force_sync(with_stone)  # caller accepted the move
         for _ in range(6):
             assert d.detect_new_move(with_stone) is None
+
+
+def test_worker_config_carries_ambiguous_confidence():
+    from katrain.vision.config_service import VisionServiceConfig
+
+    assert VisionServiceConfig().to_worker_config()["ambiguous_confidence"] == 0.55
+    assert VisionServiceConfig(ambiguous_confidence=0.42).to_worker_config()["ambiguous_confidence"] == 0.42

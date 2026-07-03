@@ -33,7 +33,7 @@ from katrain.vision.config import BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
-from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector
+from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
 from katrain.vision.sync import SyncState, SyncStateMachine
 from katrain.vision.temporal import FrameAverager
 
@@ -132,6 +132,7 @@ class _VisionWorkerLoop:
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
         self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
+        self._conf_peak = PendingConfidencePeak()  # ambiguous gate uses the window peak, not one frame
         self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
 
         # Inference backend — lazy import so the heavy deps only load in the worker process
@@ -317,6 +318,7 @@ class _VisionWorkerLoop:
                     if self._bound and not self._paused:
                         conf_map = self._state_extractor.cell_confidences(detections, img_w=w, img_h=h)
                         pending_before = self._move_detector.pending_move
+                        self._conf_peak.observe(pending_before, conf_map)
                         move_result = self._move_detector.detect_new_move(self._last_stable_board)
                         if move_result is not None:
                             row, col, color = move_result
@@ -325,7 +327,11 @@ class _VisionWorkerLoop:
                             # confidence. A confirmed cell with NO backing detection in either
                             # frame (spill-assigned or otherwise unbacked) falls to 0.0 and is
                             # routed to the ambiguous dialog — never silently injected.
+                            # The gate compares the WINDOW PEAK (a marginal stone's per-frame
+                            # conf oscillates around the gate; the confirm-frame value alone
+                            # made card-vs-autoplay a coin flip).
                             conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
+                            conf = self._conf_peak.gate_confidence(row, col, conf)
                             if conf < self._ambiguous_confidence:
                                 # PRD §3.4 row 1: low-confidence "move" asks the user instead.
                                 # Baseline NOT advanced: an unanswered prompt re-fires after
@@ -336,7 +342,7 @@ class _VisionWorkerLoop:
                                 ):
                                     self._ambig_last_emit[(row, col)] = self._frame_count
                                     logger.info(
-                                        "move at (%d,%d) confirmed but conf %.2f < %.2f — ambiguous prompt",
+                                        "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt",
                                         row,
                                         col,
                                         conf,
@@ -354,9 +360,7 @@ class _VisionWorkerLoop:
                                         }
                                     )
                             else:
-                                logger.info(
-                                    "move confirmed: (%d,%d) color=%d conf=%.2f", row, col, color, conf
-                                )
+                                logger.info("move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf)
                                 self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
                                 # Advance the baseline HERE (the detector no longer does):
                                 # prevents duplicate emissions until the game-update
@@ -439,7 +443,9 @@ class _VisionWorkerLoop:
             return f"{names.get(best[1], '?')}{best[2]:.2f}@{best[0]:.2f}"
 
         sym = {1: "B", 2: "W"}
-        added = [f"({r},{c}){sym.get(int(after[r][c]), '?')}" for r, c in zip(*np.where((before != after) & (after != 0)))]
+        added = [
+            f"({r},{c}){sym.get(int(after[r][c]), '?')}" for r, c in zip(*np.where((before != after) & (after != 0)))
+        ]
         removed = [
             f"({r},{c}){sym.get(int(before[r][c]), '?')}~{near(int(r), int(c))}"
             for r, c in zip(*np.where((before != after) & (after == 0)))

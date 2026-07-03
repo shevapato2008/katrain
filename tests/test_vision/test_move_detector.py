@@ -269,3 +269,62 @@ def test_worker_config_carries_ambiguous_confidence():
 
     assert VisionServiceConfig().to_worker_config()["ambiguous_confidence"] == 0.55
     assert VisionServiceConfig(ambiguous_confidence=0.42).to_worker_config()["ambiguous_confidence"] == 0.42
+
+
+class TestPendingConfidencePeak:
+    """Ambiguous gate uses the confirmation-window PEAK confidence, not one frame.
+
+    Far-side stones oscillate 0.32-0.53 instantaneous around the gate; the
+    confirm-frame value alone made card-vs-autoplay a coin flip.
+    """
+
+    def _peak(self):
+        from katrain.vision.move_detector import PendingConfidencePeak
+
+        return PendingConfidencePeak()
+
+    def test_peak_accumulates_over_window(self):
+        p = self._peak()
+        pending = (15, 3, BLACK)
+        for conf in (0.38, 0.47, 0.36):  # oscillating around a 0.42 gate
+            p.observe(pending, {(15, 3): conf})
+        # Confirm-frame instant conf is 0.36 but the window peaked at 0.47.
+        assert p.gate_confidence(15, 3, 0.36) == pytest.approx(0.47)
+
+    def test_other_cell_gets_instant_conf_only(self):
+        p = self._peak()
+        p.observe((15, 3, BLACK), {(15, 3): 0.50})
+        assert p.gate_confidence(2, 2, 0.30) == pytest.approx(0.30)
+
+    def test_pending_change_resets_peak(self):
+        p = self._peak()
+        p.observe((15, 3, BLACK), {(15, 3): 0.50})
+        p.observe((4, 4, WHITE), {(4, 4): 0.33})  # different cell goes pending
+        assert p.gate_confidence(15, 3, 0.30) == pytest.approx(0.30)
+        assert p.gate_confidence(4, 4, 0.30) == pytest.approx(0.33)
+
+    def test_pending_cleared_resets_peak(self):
+        p = self._peak()
+        p.observe((15, 3, BLACK), {(15, 3): 0.50})
+        p.observe(None, {})  # confirm/force_sync cleared pending — window over
+        assert p.gate_confidence(15, 3, 0.30) == pytest.approx(0.30)
+
+    def test_miss_grace_frame_preserves_peak(self):
+        p = self._peak()
+        pending = (15, 3, BLACK)
+        p.observe(pending, {(15, 3): 0.47})
+        p.observe(pending, {})  # detection blinked out; pending survives via miss_grace
+        assert p.gate_confidence(15, 3, 0.30) == pytest.approx(0.47)
+
+    def test_unbacked_cell_stays_zero(self):
+        p = self._peak()
+        pending = (15, 3, BLACK)
+        for _ in range(5):
+            p.observe(pending, {(9, 9): 0.9})  # conf_map never backs the pending cell
+        assert p.gate_confidence(15, 3, 0.0) == pytest.approx(0.0)
+
+    def test_instant_above_peak_wins(self):
+        p = self._peak()
+        pending = (15, 3, BLACK)
+        p.observe(pending, {(15, 3): 0.40})
+        assert p.gate_confidence(15, 3, 0.52) == pytest.approx(0.52)

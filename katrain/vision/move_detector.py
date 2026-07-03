@@ -100,6 +100,47 @@ class MoveDetector:
         self.misses = 0
 
 
+class PendingConfidencePeak:
+    """Peak cell-confidence of the current pending move across its confirmation window.
+
+    A marginal stone's per-frame confidence oscillates around the ambiguous gate
+    (far-side stones on the Mac rig confirm at 0.32-0.53 instantaneous), so gating
+    card-vs-autoplay on the single confirm-frame value is a coin flip. The peak over
+    the whole multi-frame window is the best view the detector ever had of the stone
+    and is far more stable — gate on that instead.
+
+    Scoped to ONE window: the peak resets whenever the pending cell changes or clears,
+    so state never goes stale across moves. Cross-cell leaks are impossible — a confirm
+    requires the same cell pending for the entire window, and ``gate_confidence`` only
+    applies the peak to that cell. An unbacked (spill-assigned) cell never appears in
+    conf_map, so its peak stays 0.0 and it still routes to the ambiguous dialog.
+    """
+
+    def __init__(self) -> None:
+        self._cell: tuple[int, int] | None = None
+        self._peak: float = 0.0
+
+    def observe(self, pending: tuple | None, conf_map: dict) -> None:
+        """Feed one frame: the current pending move (before detect_new_move) + cell confidences."""
+        if pending is None:
+            self._cell = None
+            self._peak = 0.0
+            return
+        cell = (pending[0], pending[1])
+        if cell != self._cell:
+            self._cell = cell
+            self._peak = 0.0
+        conf = conf_map.get(cell, 0.0)
+        if conf > self._peak:
+            self._peak = conf
+
+    def gate_confidence(self, row: int, col: int, instant_conf: float) -> float:
+        """Confidence to compare against the ambiguous gate: max(instant, window peak)."""
+        if self._cell == (row, col):
+            return max(instant_conf, self._peak)
+        return instant_conf
+
+
 class AmbiguousPromoter:
     """Promotes a persistently sub-add-confidence stone to a user confirmation prompt.
 
@@ -146,9 +187,7 @@ class AmbiguousPromoter:
 
         # Only cells PRESENT this frame may fire (a graced-absent cell must reappear
         # first — never prompt for something not currently detected).
-        ready = [
-            c for c in candidates if self._streaks.get(c, 0) >= self.promote_frames and c not in self._cooldowns
-        ]
+        ready = [c for c in candidates if self._streaks.get(c, 0) >= self.promote_frames and c not in self._cooldowns]
         if not ready:
             return None
         # One prompt at a time: longest streak wins, confidence breaks ties.

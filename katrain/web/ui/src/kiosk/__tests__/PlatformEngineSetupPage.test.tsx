@@ -53,17 +53,18 @@ describe('PlatformEngineSetupPage', () => {
     });
   });
 
-  it('renders the fixed rules info line (read-only)', async () => {
+  it('renders the fixed params in the summary foot (中国规则 · 不计时)', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/棋盘 19 路 · 中国规则 · 不计时/)).toBeInTheDocument();
+      expect(screen.getByText(/中国规则.*19 路.*不计时/)).toBeInTheDocument();
     });
   });
 
   it('renders the derived komi label for the default handicap (分先)', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/黑贴 7\.5/)).toBeInTheDocument();
+      // Appears in both the 贴目 chip and the summary foot.
+      expect(screen.getAllByText(/黑贴 7\.5/).length).toBeGreaterThan(0);
     });
   });
 
@@ -114,9 +115,9 @@ describe('PlatformEngineSetupPage', () => {
     const user = userEvent.setup();
     await user.click(screen.getByText('执黑'));
 
-    // Open the handicap select and choose 让4子.
-    await user.click(screen.getByLabelText('让子'));
-    await user.click(await screen.findByRole('option', { name: '让4子' }));
+    // Open the handicap dropdown (aria-label 选择让子) and choose 让4子.
+    await user.click(screen.getByRole('button', { name: '选择让子' }));
+    await user.click(await screen.findByRole('menuitem', { name: '让4子' }));
 
     await user.click(screen.getByRole('button', { name: /开始对弈/i }));
 

@@ -47,7 +47,9 @@ class TestRequestShaping:
         await engine_genmove(client, moves=[72, 300, 288], level=1100, access_token=TOKEN)
         assert str(seen["url"]).startswith("https://api.19x19.com/api/engine/dcnn/tunnel/genmove")
 
-    async def test_auth_token_header_present_and_correct(self):
+    async def test_authorization_bearer_header_present(self):
+        # Live-confirmed 2026-07-03: the tunnel requires `Authorization: bearer
+        # <token>` (the previously-documented `Auth_token` header is rejected).
         seen = {}
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -56,9 +58,9 @@ class TestRequestShaping:
 
         client = make_client(handler)
         await engine_genmove(client, moves=[], level=1100, access_token=TOKEN)
-        assert seen["headers"]["Auth_token"] == TOKEN
+        assert seen["headers"]["Authorization"] == f"bearer {TOKEN}"
 
-    async def test_no_standard_authorization_header(self):
+    async def test_legacy_auth_token_header_not_sent(self):
         seen = {}
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -67,7 +69,21 @@ class TestRequestShaping:
 
         client = make_client(handler)
         await engine_genmove(client, moves=[], level=1100, access_token=TOKEN)
-        assert "Authorization" not in seen["headers"]
+        assert "Auth_token" not in seen["headers"]
+
+    async def test_browser_like_headers_present(self):
+        # Origin/Referer/UA are part of the proven-working request shape (variant F).
+        seen = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen["headers"] = request.headers
+            return success_handler(request)
+
+        client = make_client(handler)
+        await engine_genmove(client, moves=[], level=1100, access_token=TOKEN)
+        assert seen["headers"]["Origin"] == "https://19x19.com"
+        assert "19x19.com" in seen["headers"]["Referer"]
+        assert "Mozilla/5.0" in seen["headers"]["User-Agent"]
 
     async def test_query_params_all_present(self):
         seen = {}
@@ -159,6 +175,24 @@ class TestErrorTaxonomy:
 
         client = make_client(handler)
         with pytest.raises(Fatal):
+            await engine_genmove(client, moves=[], level=1100, access_token=TOKEN)
+
+    async def test_code_6003_is_auth_expired(self):
+        # Golaxy returns HTTP 200 with code=6003 for an expired/invalid token,
+        # NOT a 401 -- must map to AuthExpired so the adapter refreshes+retries.
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"code": "6003", "msg": "invalid token", "data": None})
+
+        client = make_client(handler)
+        with pytest.raises(AuthExpired):
+            await engine_genmove(client, moves=[], level=1100, access_token=TOKEN)
+
+    async def test_invalid_token_msg_is_auth_expired(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"code": "9999", "msg": "Invalid Token", "data": None})
+
+        client = make_client(handler)
+        with pytest.raises(AuthExpired):
             await engine_genmove(client, moves=[], level=1100, access_token=TOKEN)
 
     async def test_http_401_is_auth_expired(self):

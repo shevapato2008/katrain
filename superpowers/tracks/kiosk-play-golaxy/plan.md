@@ -37,7 +37,7 @@
 1. **人机对弈是无状态 REST 隧道**，不是 WebSocket、没有服务器端 gameId、不需要星阵授权：
    ```
    GET https://api.19x19.com/api/engine/dcnn/tunnel/genmove
-     Header: Auth_token: <bearer access_token>
+     Header: Authorization: bearer <access_token>   # 2026-07-03 真机更正（旧记录的 Auth_token 会被拒 6003）；另需浏览器 Origin/Referer/UA
      Query: moves=<CSV of coord ints>&board_size=19&boardSize=19&komi=7.5
             &rule=chinese&handicap=0&level=<eloScore>&style=555559&elodiff=0
             &resign=6&org=golaxy_web&context_name=ai_game_player
@@ -117,8 +117,8 @@
   - 解码返回 **typed result**（`Move(col,row) | Pass | Resign | UnknownSpecial(raw)`），越界/负数/361+ 不抛裸坐标给上层——**绝不**把未验证值直接交给 `session.katrain("play")`。PASS/RESIGN 特殊值本期按 UnknownSpecial 处理→对局进入 error/finished 并广播（Phase 5 实测后再细化）。
   - 单测金标准：实盘 9 手对照（Q16→72, Q4→300, D4→288, D16→60, Q10→186, R6→263, D10→174, C6→249, K4→294）+ 反解 249→C6, 286→B4 + 边界（A19=0, T19=18, A1=342, T1=360, K10=180）+ 越界抛明确异常。
 - [ ] `katrain/web/platforms/golaxy/engine_client.py`（新，协议常量/级别表/错误分类与 gameroom 逻辑分离）：`engine_genmove(moves: list[int], *, level, komi, rule, handicap, board_size) -> GenmoveResult`。
-  - 组 query（含 `style=555559, elodiff=0, org=golaxy_web, context_name=ai_game_player, resign=6, boardSize/board_size`），带 `Auth_token` header，GET 隧道。
-  - **错误分类**（typed exceptions）：`AuthExpired`（401/token 失效 → 上层触发 refresh 后重试一次）/ `Retryable`（网络错误、超时、疑似限流）/ `Fatal`（`code != "0"` 且非 auth、响应结构异常）。不吞异常。
+  - 组 query（含 `style=555559, elodiff=0, org=golaxy_web, context_name=ai_game_player, resign=6, boardSize/board_size`），带 `Authorization: bearer <token>` header + 浏览器 Origin/Referer/UA（2026-07-03 真机更正），GET 隧道。
+  - **错误分类**（typed exceptions）：`AuthExpired`（HTTP 401，**或 200-body `code=6003 msg="invalid token"`** → 上层触发 refresh 后重试一次）/ `Retryable`（网络错误、超时、疑似限流）/ `Fatal`（其它 `code != "0"`、响应结构异常）。不吞异常。
   - 39 级表作为模块常量（`eloScore/levelName/name/goalDifference/timing`），供 levels 端点使用。
 - **Verification**: `uv run pytest tests/platforms/…golaxy…` 全绿；respx/httpx mock 断言拼出的 URL 与实盘一致（参数名、值正确，顺序无关）；错误分类各分支有测试。
 - **Review checkpoint**: 展示编解码对照表、typed result 设计与 mock 出的请求。

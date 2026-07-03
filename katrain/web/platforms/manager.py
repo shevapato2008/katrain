@@ -67,9 +67,22 @@ class PlatformManager:
             raise ValueError(f"Unknown platform: {platform}")
         success = await adapter.connect(credentials)
         if success:
-            self._credential_store.save_credentials(user_id, credentials)
             self._platform_user_ids[platform] = user_id
             self._setup_callbacks(adapter)
+            # Persist the RESULTING tokens, not the transient login secret. SMS/OAuth
+            # login exchanges a one-time sms_code for access/refresh tokens that live
+            # only in the adapter; saving the raw input credentials would store just the
+            # (now-consumed) sms_code, forcing a fresh SMS login on every restart.
+            # Adapters that expose get_auth_data() (Golaxy) get their tokens merged in;
+            # others (OGS) fall back to the input credentials unchanged.
+            auth_to_save = dict(credentials.auth_data)
+            get_auth = getattr(adapter, "get_auth_data", None)
+            if callable(get_auth):
+                auth_to_save.update({k: v for k, v in (get_auth() or {}).items() if v})
+            self._credential_store.save_credentials(
+                user_id,
+                PlatformCredentials(platform=platform, username=credentials.username, auth_data=auth_to_save),
+            )
             logger.info(f"Connected to {platform} as {credentials.username}")
         return success
 

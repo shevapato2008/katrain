@@ -29,7 +29,8 @@ GET https://api.19x19.com/api/engine/dcnn/tunnel/genmove
 - 短信登录 body: `username=0086-<PHONE>&password=null&grant_type=sms_code&client_id=golaxy_web&sms_code=<CODE>&scope=any`
 - 返回 `{access_token, refresh_token, token_type:"bearer", expires_in}`
 - **`access_token` 是不透明 UUID（非 JWT）**，存在 web 客户端 localStorage（`access_token` / `refresh_token` / `usercode`）。
-- 认证请求头：人机隧道用 **`Auth_token: <access_token>`**（注意 header 名是 `Auth_token`，不是标准 `Authorization`；其它社交接口用 `authorization: bearer <token>`）。
+- 认证请求头（**2026-07-03 真机复测更正**）：人机隧道用 **`Authorization: bearer <access_token>`** + 浏览器风格的 `Origin` / `Referer` / `User-Agent`。
+  - ⚠️ 早前（2026-07-02）记录的 `Auth_token: <access_token>` **是错的**（或端点已改版）：即使用一个刚拿到的有效 token，该 header 也会被拒，返回 HTTP 200 `code=6003 msg="invalid token"`。实测矩阵证明隧道要的是与社交接口**同一套** `Authorization: bearer <token>` 方案，且需要浏览器风格请求头（见下 §2 与 `engine_client.py`）。
 
 ---
 
@@ -38,8 +39,11 @@ GET https://api.19x19.com/api/engine/dcnn/tunnel/genmove
 ### Request
 ```
 GET https://api.19x19.com/api/engine/dcnn/tunnel/genmove
-Header:
-  Auth_token: <bearer access_token>
+Header (2026-07-03 真机复测确认):
+  Authorization: bearer <access_token>
+  Origin:  https://19x19.com
+  Referer: https://19x19.com/engine/play/normal/game
+  User-Agent: <浏览器 UA>            # 见 engine_client._BROWSER_UA
 Query params (实盘抓取，全部):
   moves         = <CSV of coord ints>   # 完整着手历史，见 §3 坐标编码。开局为空
   board_size    = 19
@@ -158,7 +162,7 @@ colIndex      = coord % 19
 
 ## 5. 用到 / 没用到的东西
 
-- ✅ **用到**：`GET /api/engine/dcnn/tunnel/genmove` + `Auth_token` header。仅此一个接口即可完成整局人机对弈。
+- ✅ **用到**：`GET /api/engine/dcnn/tunnel/genmove` + `Authorization: bearer <token>` header（+ 浏览器 Origin/Referer/UA，见 §1）。仅此一个接口即可完成整局人机对弈。
 - ❌ **没用到**：
   - 社交 WebSocket `wss://ws.19x19.com/api/social/channel/WS_STOMP_ENDPOINT_GOLAXY`（STOMP over SockJS，位于前端组件 `gameLinkGlobal.stompClient`）**只承载在线状态/心跳**（`/channel/wsuser/{usercode}` 的 `MSG_WSUSER_HEARTBEAT`、`SEND /channel/wsuser/heartbeat`），**与人机着手无关**。
   - `/api/social/wsgame/*`（那是人人对弈 gameroom 路径）。

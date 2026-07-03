@@ -401,6 +401,15 @@ class GolaxyAdapter(PlatformAdapter):
         """
         return await self._rest.request_sms_code(phone)
 
+    def get_auth_data(self) -> dict:
+        """Return the current auth tokens (access/refresh/user_code).
+
+        Thin delegate to the REST client. Used by PlatformManager.connect_platform
+        to persist the resulting tokens (not the transient sms_code) so a restart
+        can reconnect without a fresh SMS login.
+        """
+        return self._rest.get_auth_data()
+
     async def get_rooms(self) -> list[dict]:
         # Golaxy rooms are created on-demand; no global room list
         return []

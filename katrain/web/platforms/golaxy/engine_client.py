@@ -11,12 +11,18 @@ the human-vs-human gameroom REST/STOMP path -- an entirely different flow
 that must not be confused with this one (see
 `superpowers/tracks/kiosk-play-golaxy/golaxy-protocol.md` Section 7).
 
-Protocol reference (live-verified 2026-07-02):
+Protocol reference (auth header re-confirmed on real hardware 2026-07-03):
     GET https://api.19x19.com/api/engine/dcnn/tunnel/genmove
-    Header: Auth_token: <access_token>   # NOT "Authorization"
+    Header: Authorization: bearer <access_token>   # + browser Origin/Referer/UA
     Query params: moves, board_size, boardSize, komi, rule, handicap,
         level, style, elodiff, resign, org, context_name.
     Response: {"code": "0", "msg": "", "data": {"coord": 286, "prob": 0.19}}
+
+NOTE: the earlier capture (golaxy-protocol.md, 2026-07-02) documented the auth
+header as `Auth_token: <access_token>`. Live testing on 2026-07-03 proved that
+form is rejected with HTTP 200 `code=6003 msg="invalid token"` even for a valid
+fresh token; the tunnel actually requires the SAME `Authorization: bearer <token>`
+scheme as the social endpoints, plus browser-like Origin/Referer/User-Agent.
 
 See `superpowers/tracks/kiosk-play-golaxy/golaxy-protocol.md` Section 2 for
 the full capture and Section 4 for the AI level table.
@@ -39,6 +45,17 @@ _ELODIFF = 0
 _RESIGN = 6
 _ORG = "golaxy_web"
 _CONTEXT_NAME = "ai_game_player"
+
+# Browser-like request headers. Live-confirmed on real hardware 2026-07-03 (Phase 5):
+# the tunnel rejects the previously-documented `Auth_token: <token>` header with
+# `code=6003 msg="invalid token"` (even for a valid fresh token) and requires the
+# standard `Authorization: bearer <token>` scheme plus a browser-shaped request.
+_ORIGIN = "https://19x19.com"
+_REFERER = "https://19x19.com/engine/play/normal/game"
+_BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
 
 
 @dataclass(frozen=True)
@@ -68,12 +85,10 @@ class GolaxyEngineError(Exception):
 class AuthExpired(GolaxyEngineError):
     """The access token is no longer valid.
 
-    Raised on HTTP 401. The exact `code` string returned on a *200* auth
-    failure was not captured during the live protocol dump (see
-    golaxy-protocol.md Section 2) -- HTTP 401 is the only signal currently
-    treated as authoritative for this. See `_classify_response_code` below
-    for the single place to extend this once a real auth-failure `code` is
-    observed on the wire.
+    Raised on HTTP 401, and on the 200-response auth failure the tunnel
+    actually returns: `code="6003" msg="invalid token"` (live-confirmed
+    2026-07-03). The adapter catches this to refresh the token and retry once.
+    See `_classify_response_code` for the single mapping point.
     """
 
 
@@ -90,12 +105,13 @@ class Fatal(GolaxyEngineError):
 def _classify_response_code(code: str, msg: str) -> GolaxyEngineError:
     """Single place where a 200-response `code` maps to an error category.
 
-    Today we have no verified auth-failure `code` string (only HTTP 401 is
-    authoritative for AuthExpired -- see AuthExpired's docstring), so any
-    non-"0" code on a 200 response is classified Fatal. When a real
-    auth-failure `code` is captured, add it here rather than scattering the
-    check elsewhere.
+    Golaxy signals an expired/invalid token as an HTTP-200 body with
+    `code="6003" msg="invalid token"` (NOT an HTTP 401) -- live-confirmed
+    2026-07-03. Map that to AuthExpired so the adapter refreshes-and-retries;
+    every other non-"0" code is a genuine Fatal.
     """
+    if code == "6003" or "invalid token" in (msg or "").lower():
+        return AuthExpired(f"Golaxy genmove auth failure: code={code!r} msg={msg!r}")
     return Fatal(f"Golaxy genmove failed: code={code!r} msg={msg!r}")
 
 
@@ -135,7 +151,12 @@ async def engine_genmove(
         "org": _ORG,
         "context_name": _CONTEXT_NAME,
     }
-    headers = {"Auth_token": access_token}
+    headers = {
+        "Authorization": f"bearer {access_token}",
+        "Origin": _ORIGIN,
+        "Referer": _REFERER,
+        "User-Agent": _BROWSER_UA,
+    }
 
     try:
         response = await client.get(

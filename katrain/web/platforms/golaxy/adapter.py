@@ -30,6 +30,28 @@ from katrain.web.platforms.models import (
 
 logger = logging.getLogger("katrain_web")
 
+
+def _handicap_stones(n: int, board_size: int = 19) -> list[int]:
+    """Golaxy coords of the N standard handicap stones (black).
+
+    Replicates KaTrain's ``SGFNode.place_handicap_stones`` (sgf_parser.py, non-tygem,
+    n<=9 branch) so the stateless Golaxy genmove tunnel is seeded with the SAME stones
+    the manager auto-places on the local board. Returns [] for n < 2. Do NOT apply the
+    tygem corner swap — manager/game use the default non-tygem placement.
+    """
+    if n < 2:
+        return []
+    near = 3 if board_size >= 13 else min(2, board_size - 1)
+    far = board_size - 1 - near
+    middle = board_size // 2
+    stones = [(far, far), (near, near), (far, near), (near, far)]
+    if n % 2 == 1:
+        stones.append((middle, middle))
+    stones += [(near, middle), (far, middle), (middle, near), (middle, far)]
+    stones = stones[:n]
+    return [katrain_to_golaxy(x, y, board_size) for (x, y) in stones]
+
+
 GOLAXY_API_BASE = "https://api.19x19.com"
 GOLAXY_WEB_BASE = "https://www.19x19.com"
 GOLAXY_WS = "wss://ws.19x19.com/api/social/channel/WS_STOMP_ENDPOINT_GOLAXY"
@@ -452,14 +474,22 @@ class GolaxyAdapter(PlatformAdapter):
         return engine_client.list_levels()
 
     async def start_engine_game(self, config: EngineGameConfig) -> EngineGameStart:
-        """Create a new engine game. If the human plays White, the AI (Black)
-        opens immediately and its move is returned as `first_ai_move`."""
+        """Create a new engine game, seeding any handicap stones and letting the AI
+        open when it is the side-to-move.
+
+        For a handicap game (config.handicap >= 2) the N black handicap stones are
+        seeded into ctx.moves and White is to move; for 分先 (handicap 0) Black is to
+        move. The AI opens (returning its move as `first_ai_move`) exactly when the
+        side-to-move equals the AI's color."""
         if not self._rest.is_authenticated:
             raise RuntimeError("not connected")
 
         self._engine_seq += 1
         game_id = f"golaxy-engine-{self._engine_seq}"
-        ctx = EngineGameContext(game_id=game_id, config=config, moves=[], status="playing")
+        # Seed the N standard handicap stones (black) so the stateless tunnel and the
+        # local board agree on the opening position. config.handicap is a stone count.
+        seeded = _handicap_stones(config.handicap, config.board_size)
+        ctx = EngineGameContext(game_id=game_id, config=config, moves=list(seeded), status="playing")
         self._engine_games[game_id] = ctx
 
         level_row = engine_client.get_level(config.level)
@@ -490,9 +520,14 @@ class GolaxyAdapter(PlatformAdapter):
         )
 
         first_ai_move: Optional[PlatformMove] = None
-        if config.human_color == "W":
-            # AI opens as Black: genmove on an empty move list.
-            first_ai_move = await self._genmove_committing(ctx, proposed_moves=[])
+        # After N black handicap stones the side-to-move is White; with no handicap it
+        # is Black. The AI opens exactly when the side-to-move equals the AI's color.
+        # This preserves the existing 分先 behavior: human W + handicap 0 -> AI(black)
+        # opens on an empty move list; human B + handicap 0 -> human(black) plays first.
+        side_to_move = "W" if config.handicap >= 2 else "B"
+        ai_color = "W" if config.human_color == "B" else "B"
+        if side_to_move == ai_color:
+            first_ai_move = await self._genmove_committing(ctx, proposed_moves=list(ctx.moves))
 
         return EngineGameStart(session=session, first_ai_move=first_ai_move)
 

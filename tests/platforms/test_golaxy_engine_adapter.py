@@ -355,7 +355,9 @@ async def test_start_engine_game_requires_authentication():
 
 async def test_start_engine_game_session_fields_from_level_table():
     adapter = make_adapter()
-    adapter._rest.engine_genmove = AsyncMock()
+    # human Black + handicap 2 => White (the AI) is to move and opens, so the genmove
+    # mock must return a valid GenmoveResult (Task B seeds handicap stones + turn logic).
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=AI_COORD, prob=0.19))
     cfg = EngineGameConfig(level=1100, human_color="B", komi=6.5, rule="japanese", handicap=2)
     start = await adapter.start_engine_game(cfg)
     s = start.session

@@ -10,6 +10,29 @@ import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 
+type Translate = (en: string, zh: string) => string;
+
+// 让子 (handicap) options — mirrors Golaxy's 自由对弈: 分先(0), 让先(-1), 让2子..让9子 (no 1).
+const handicapOptions = (t: Translate): { value: number; label: string }[] => [
+  { value: 0, label: t('Even (0)', '分先(0)') },
+  { value: -1, label: t('Black gets 1st move (-1)', '让先(-1)') },
+  { value: 2, label: t('2 stones', '让2子') },
+  { value: 3, label: t('3 stones', '让3子') },
+  { value: 4, label: t('4 stones', '让4子') },
+  { value: 5, label: t('5 stones', '让5子') },
+  { value: 6, label: t('6 stones', '让6子') },
+  { value: 7, label: t('7 stones', '让7子') },
+  { value: 8, label: t('8 stones', '让8子') },
+  { value: 9, label: t('9 stones', '让9子') },
+];
+
+// Derived komi label shown next to 让子 (display-only; server derives the actual komi).
+const komiLabel = (handicap: number, t: Translate): string => {
+  if (handicap === 0) return t('Black komi 7.5', '黑贴 7.5');
+  if (handicap === -1) return t('Komi 0', '贴 0');
+  return t(`Black komi ${handicap} stones`, `黑贴 ${handicap} 子`);
+};
+
 const PlatformEngineSetupPage = () => {
   const { platform } = useParams<{ platform: string }>();
   const navigate = useNavigate();
@@ -21,7 +44,8 @@ const PlatformEngineSetupPage = () => {
   const [levelsError, setLevelsError] = useState('');
 
   const [level, setLevel] = useState<number | null>(null);
-  const [humanColor, setHumanColor] = useState<'B' | 'W'>('B');
+  const [handicap, setHandicap] = useState<number>(0);
+  const [humanColor, setHumanColor] = useState<'B' | 'W' | 'nigiri'>('nigiri');
 
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState('');
@@ -53,12 +77,20 @@ const PlatformEngineSetupPage = () => {
     setLevel(Number(e.target.value));
   };
 
+  const handleHandicapChange = (e: SelectChangeEvent<number>) => {
+    setHandicap(Number(e.target.value));
+  };
+
   const handleStart = async () => {
     if (!platform || !token || level === null) return;
     setStartError('');
     setStarting(true);
     try {
-      const { session_id } = await API.platformEngineStart(platform, { level, human_color: humanColor }, token);
+      const { session_id } = await API.platformEngineStart(
+        platform,
+        { level, human_color: humanColor, handicap },
+        token,
+      );
       navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`);
     } catch (e: any) {
       setStartError(e.message || t('Failed to start game', '创建对局失败'));
@@ -110,12 +142,39 @@ const PlatformEngineSetupPage = () => {
               </FormControl>
             </Box>
 
-            {/* Color */}
+            {/* Handicap (让子) */}
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                {t('Handicap', '让子')}
+              </Typography>
+              <FormControl fullWidth>
+                <InputLabel id="engine-handicap-label">{t('Handicap', '让子')}</InputLabel>
+                <Select
+                  labelId="engine-handicap-label"
+                  label={t('Handicap', '让子')}
+                  value={handicap}
+                  onChange={handleHandicapChange}
+                  sx={{ minHeight: 56 }}
+                >
+                  {handicapOptions(t).map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                {t('Komi', '贴目')}: {komiLabel(handicap, t)}
+              </Typography>
+            </Box>
+
+            {/* Color / first move (先手) */}
             <OptionChips
-              label={t('My Color', '我执')}
+              label={t('First Move', '先手')}
               options={[
-                { value: 'B' as const, label: t('Black Stone', '● 黑') },
-                { value: 'W' as const, label: t('White Stone', '○ 白') },
+                { value: 'nigiri' as const, label: t('Nigiri', '猜先') },
+                { value: 'B' as const, label: t('Black', '执黑') },
+                { value: 'W' as const, label: t('White', '执白') },
               ]}
               value={humanColor}
               onChange={setHumanColor}
@@ -123,7 +182,7 @@ const PlatformEngineSetupPage = () => {
 
             {/* Fixed rules info (display only, not editable) */}
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
-              {t('Rules: Chinese · Komi 7.5 · 19x19 · Untimed', '规则: 中国 · 贴目 7.5 · 19路 · 不计时')}
+              {t('Board 19 · Chinese · Untimed', '棋盘 19 路 · 中国规则 · 不计时')}
             </Typography>
 
             <Box sx={{ mt: 'auto', pt: 2 }}>

@@ -56,15 +56,23 @@ describe('PlatformEngineSetupPage', () => {
   it('renders the fixed rules info line (read-only)', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/中国 · 贴目 7\.5 · 19路 · 不计时/)).toBeInTheDocument();
+      expect(screen.getByText(/棋盘 19 路 · 中国规则 · 不计时/)).toBeInTheDocument();
     });
   });
 
-  it('renders color chips', async () => {
+  it('renders the derived komi label for the default handicap (分先)', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/黑/)).toBeInTheDocument();
-      expect(screen.getByText(/白/)).toBeInTheDocument();
+      expect(screen.getByText(/黑贴 7\.5/)).toBeInTheDocument();
+    });
+  });
+
+  it('renders first-move chips (猜先/执黑/执白)', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('猜先')).toBeInTheDocument();
+      expect(screen.getByText('执黑')).toBeInTheDocument();
+      expect(screen.getByText('执白')).toBeInTheDocument();
     });
   });
 
@@ -77,7 +85,7 @@ describe('PlatformEngineSetupPage', () => {
     });
   });
 
-  it('calls API.platformEngineStart with the selected level/color and navigates to the game route', async () => {
+  it('calls API.platformEngineStart with the selected level/handicap/color (defaults) and navigates to the game route', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/星铠虾/)).toBeInTheDocument();
@@ -90,10 +98,35 @@ describe('PlatformEngineSetupPage', () => {
     await waitFor(() => {
       expect(API.platformEngineStart).toHaveBeenCalledWith(
         'golaxy',
-        { level: 1100, human_color: 'B' },
+        { level: 1100, human_color: 'nigiri', handicap: 0 },
         'test-token'
       );
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/game/s1');
+    });
+  });
+
+  it('includes the selected handicap and color in the start payload', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/星铠虾/)).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('执黑'));
+
+    // Open the handicap select and choose 让4子.
+    await user.click(screen.getByLabelText('让子'));
+    await user.click(await screen.findByRole('option', { name: '让4子' }));
+
+    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+
+    const { API } = await import('../../api');
+    await waitFor(() => {
+      expect(API.platformEngineStart).toHaveBeenCalledWith(
+        'golaxy',
+        { level: 1100, human_color: 'B', handicap: 4 },
+        'test-token'
+      );
     });
   });
 

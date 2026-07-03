@@ -355,9 +355,9 @@ export const API = {
   },
   platformEngineStart: (
     platform: string,
-    body: { level: number; human_color: "B" | "W" },
+    body: { level: number; human_color: "B" | "W" | "nigiri"; handicap: number },
     token: string,
-  ): Promise<{ session_id: string }> =>
+  ): Promise<{ session_id: string; human_color?: "B" | "W" }> =>
     apiPost(`/api/v1/platforms/${platform}/engine/start`, body, token),
   platformLogout: async (platform: string, token: string) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {

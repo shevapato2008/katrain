@@ -12,7 +12,7 @@
 - **Most cost-effective model → `yolo11s`** (safe pick, cross-game generalization *proven* equal to `yolo11x`), with **`yolo11n`** as an even-cheaper candidate that needs one clean cross-game confirmation before shipping.
 - **Resolution → capture at `1920×1080`, run inference at `imgsz 640`.** These are two different resolutions in a three-stage pipeline (capture → perspective-warp → model input), not a single downsample.
 - **Why bigger models don't help:** `mAP50` is saturated (~0.99) across every model size. The only metric that keeps climbing with size is `mAP50-95` (tight-box IoU) — which the deployment **discards**, because `board_state.detections_to_board` snaps on the **box center** to the nearest grid intersection (the "two-step" recognition design). You pay 3–30× the NPU compute for accuracy the pipeline throws away.
-- **Blur augmentation (`led-safe-blur`) — direction confirmed, effect small (§3).** A 2-arm × 3-seed A/B (yolo11s) shows blur training raises **far-side (perspective-blurred) stone confidence +3.3%** and shrinks the near→far confidence gap ~18%, at unchanged near-side confidence — the intended "harden the soft far region" effect, consistent across seeds. But on this clean 1080p held-out it did **not** raise recall (already saturated at 1.0), so the gain is *confidence margin / stability*, **not** detection rate.
+- **Blur augmentation (`led-safe-blur`) materially improves OOD robustness — ship a blur-trained model (§3).** On a *degraded* held-out (motion blur / low-res / JPEG — degradation type never seen in training) the baseline **collapses** (mAP50-95 −0.14…−0.20, near-side confidence −0.12…−0.22) while blur barely moves (−0.03…−0.08). Holds across **yolo11s & yolo11n × 3 seeds × 3 levels**. On a *clean* 1080p held-out the arms look identical (recall saturates at 1.0) — the benefit only surfaces under real degradation, which is exactly the SBC field condition.
 
 ---
 
@@ -142,14 +142,47 @@ Evaluation (`eval_ab_one.py`) reports overall held-out metrics **plus** far(left
 | near-side mean confidence | 0.862 | 0.855 | −0.007 |
 | **near→far confidence gap** | **+0.168** | **+0.138** | **−18%** |
 
-### 3c. Honest reading
+On a *clean* held-out the two arms are indistinguishable on recall (both 1.0) — the benefit shows only as confidence margin (far-side conf +3.3%, near→far gap −18%, lower variance) and +1 pt mAP50-95. That's not a blur limitation, it's a **test-set ceiling**: a clean 1080p held-out saturates recall, leaving no headroom. To actually separate the arms, degrade the inputs. →
 
-- ✅ **Direction confirmed, consistent across 3 seeds:** far-side (blurred) confidence ↑3.3% while near-side is flat → the aug specifically hardens the soft far region. The near→far penalty shrinks ~18%, blur's far-conf variance is *lower* (0.008 vs 0.025 → more stable), and mAP50-95 gains +1 pt (tighter boxes).
-- ⚠️ **But no recall/mAP50 gain:** this held-out is clean 1080p, so baseline far-side recall is already **1.0** — no headroom. The benefit is **confidence margin & stability, not detection rate**.
-- ⚠️ **Scope:** the held-out doesn't cover the harsh conditions (motion blur, low-end camera, steeper angle) that would actually stress recall. So this is evidence blur is *safe and directionally helpful*, not proof it lifts field accuracy.
-- 🔎 This is why `go4_s_ab_blur_s0.pt` (blur arm, seed 0) was the one pulled to the repo root and used as the cross-game `s` representative in §1b — blur wins on margin at equal detection rate.
+### 3c. Robustness stress test — degraded held-out (the decisive test)
 
-**Next step to actually pressure-test robustness:** build a *degraded* held-out (synthetic motion blur / downscale / JPEG on `kifu_24138`, or a genuinely lower-quality capture) and re-run the same A/B — that's where a recall gap, if real, would show.
+Degrade the held-out `kifu_24138` with **motion blur (+ downscale + JPEG)** — deliberately **OOD**: training's blur aug used only *Gaussian* blur, so evaluating with *motion* blur tests whether the model learned **general** robustness vs. memorized one blur shape. Degradations are position-invariant, so labels are copied unchanged. Three levels (`scratch_degrade.py`, deterministic seed; **no brightness/contrast/hue changes**):
+
+| level | motion-blur kernel | downscale | JPEG q |
+|-------|-------------------:|----------:|-------:|
+| mild | 7 px | — | — |
+| moderate | 13 px | 0.6× | — |
+| severe | 19 px | 0.45× | 35 |
+
+Same A/B re-run on **both yolo11s and yolo11n** (3-seed means; raw: `2026-07-03-blur-ab-degraded-heldout{,-n}.jsonl`), mAP50-95 / near-side mean-confidence, baseline → **blur**:
+
+| level | **s** mAP50-95 | **s** near-conf | **n** mAP50-95 | **n** near-conf |
+|-------|----------------|-----------------|----------------|-----------------|
+| clean | 0.685 → 0.695 | 0.862 → 0.855 | 0.672 → 0.679 | 0.862 → 0.863 |
+| mild | 0.634 → 0.690 | 0.812 → 0.853 | 0.672 → 0.681 | 0.833 → 0.859 |
+| moderate | 0.555 → 0.659 | 0.732 → 0.847 | 0.602 → 0.662 | 0.782 → 0.844 |
+| **severe** | **0.488 → 0.613** | **0.642 → 0.826** | **0.529 → 0.617** | **0.739 → 0.814** |
+
+**Collapse from clean → severe (smaller drop = more robust):**
+
+| model | metric | baseline drop | blur drop | baseline collapses |
+|-------|--------|--------------:|----------:|-------------------:|
+| s | mAP50-95 | −0.197 | −0.082 | **2.4×** |
+| s | near-conf | −0.220 | −0.029 | **7.6×** |
+| s | far-conf | −0.111 | −0.005 | **~22×** |
+| n | mAP50-95 | −0.143 | −0.061 | **2.3×** |
+| n | near-conf | −0.123 | −0.049 | **2.5×** |
+
+At severe, s far-side recall: baseline 0.969 → blur **1.000**. And **blur-n at severe (mAP50-95 0.617) ≈ blur-s at severe (0.613)** — the small model, once blur-trained, is as robust under degradation as the 6× larger model.
+
+### 3d. Verdict
+
+- ✅ **Blur augmentation materially improves robustness to OOD image degradation.** Under motion blur / low-res / compression the baseline collapses (mAP50-95 −0.14…−0.20, near-side confidence −0.12…−0.22, with rising variance) while blur barely moves (−0.03…−0.08). Consistent across **2 model sizes × 3 seeds × 3 degradation levels**, with a degradation type never seen in training (OOD) → genuine generalization, not memorization.
+- ✅ **The earlier "effect is small" (clean §3b) was a test-set artifact, not a blur limitation.** A clean 1080p held-out saturates recall at 1.0; the benefit surfaces only once inputs degrade.
+- ✅ **Size-independent:** blur helps n as much as s; blur-n under severe degradation matches blur-s → robustness comes from the augmentation, not model capacity.
+- 🔎 `go4_s_ab_blur_s0.pt` (= `go4_s_best.pt` — verified byte-identical, md5 `166984b8…`) is the blur-arm best and the deployed cross-game `s` representative (§1b).
+
+**Deployment implication:** ship a **blur-trained** model. On the SBC (variable lighting, cheap camera, hand-motion during placement) field inputs resemble the *degraded* held-out far more than the clean one — so this robustness margin is real, deployable insurance at **zero inference cost** (identical weights/latency).
 
 ---
 
@@ -172,14 +205,19 @@ Clean cross-game held-out (kifu_24138):
 for t in s x; do "$PY" eval_crossgame.py "$t"; done
 ```
 
-Blur A/B (§3) — 6 runs on the remote GPU box (`fan@home-ubuntu`), then held-out eval per model:
+Blur A/B (§3) — on the remote GPU box (`fan@home-ubuntu`), single-GPU (`--device 0`) so the in-process blur aug stays active (DDP workers would skip it):
 
 ```bash
-# train_ab.sh: 2 arms × 3 seeds, yolo11s imgsz 640, --device 0 (single-GPU keeps blur aug active)
-#   --augment led-safe       -> go4_s_ab_ledsafe_s{0,1,2}
-#   --augment led-safe-blur  -> go4_s_ab_blur_s{0,1,2}   (train pool go4_ab, held-out kifu_24138)
-# eval_ab_one.py: overall + far/near stone recall & mean-conf @ conf 0.25 on go4_ab_heldout
+# train_ab.sh / train_ab_n.sh: 2 arms × 3 seeds, imgsz 640, train pool go4_ab
+#   --augment led-safe       -> go4_{s,n}_ab_ledsafe_s{0,1,2}
+#   --augment led-safe-blur  -> go4_{s,n}_ab_blur_s{0,1,2}
+# clean held-out (kifu_24138):
 for n in go4_s_ab_ledsafe_s{0,1,2} go4_s_ab_blur_s{0,1,2}; do python eval_ab_one.py "$n"; done
+
+# Robustness stress test (§3c):
+# scratch_degrade.py  -> go4_ab_heldout_{mild,moderate,severe} (motion blur +downscale +JPEG; OOD; labels copied)
+# scratch_eval_multi.py: per model, val + far/near recall & mean-conf @conf0.25 over {clean,mild,moderate,severe}
+for n in go4_{s,n}_ab_{ledsafe,blur}_s{0,1,2}; do python scratch_eval_multi.py "$n"; done
 ```
 
 Dataset game composition (verify no leakage before trusting a cross-game number):

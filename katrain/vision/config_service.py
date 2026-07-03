@@ -32,6 +32,12 @@ class VisionServiceConfig:
     # reset on motion). Measured 4.7x temporal-noise reduction at 8 in weak light, which
     # stabilizes confidence and box centers. 0/1 disables.
     frame_average: int = 8
+    # Software AE ("software" | "off"): drive the board-region median brightness into
+    # ae_target ("LO-HI", calibrated: known-good scenes meter 146-160) by adjusting
+    # exposure at runtime. Advisory-only where exposure controls are inert (macOS);
+    # actuates on SBC/V4L2 where lock_exposure disables the camera's own AE.
+    auto_exposure: str = "software"
+    ae_target: str = "120-170"
     imgsz: int = 960
     use_clahe: bool = False
     intrinsics_file: str | None = None  # persistent camera calibration .npz
@@ -46,6 +52,7 @@ class VisionServiceConfig:
 
     def to_worker_config(self) -> dict:
         """Convert to dict for passing to worker process."""
+        ae_lo, ae_hi = (float(x) for x in self.ae_target.split("-"))
         return {
             "backend": self.backend,
             "model_path": self.model_path,
@@ -57,6 +64,9 @@ class VisionServiceConfig:
             "enhance": self.enhance,
             "move_confirm_frames": self.move_confirm_frames,
             "frame_average": self.frame_average,
+            "auto_exposure": self.auto_exposure,
+            "ae_target_lo": ae_lo,
+            "ae_target_hi": ae_hi,
             "use_clahe": self.use_clahe,
             "capture_fps": self.capture_fps,
         }

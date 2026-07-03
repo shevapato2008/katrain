@@ -15,6 +15,7 @@ from typing import Any
 import cv2
 import numpy as np
 
+from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
@@ -69,6 +70,15 @@ class InProcessAdapter:
         # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
         # motion / geometry change / session reset so scene changes never ghost.
         self._averager = FrameAverager(config.get("frame_average", 8))
+        # Software AE: board-median brightness -> target band via exposure steps.
+        # Advisory-only where camera controls are inert (macOS).
+        self._ae: ExposureController | None = None
+        if config.get("auto_exposure", "software") == "software":
+            self._ae = ExposureController(
+                target_lo=config.get("ae_target_lo", 120.0), target_hi=config.get("ae_target_hi", 170.0)
+            )
+        self._ae_advisory = False  # set once camera controls prove ineffective
+        self._last_bstats = None  # latest BrightnessStats (for the periodic log line)
         self._detector = StoneDetector(
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
@@ -127,6 +137,36 @@ class InProcessAdapter:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
         return self._state_extractor_locked if self._geometry is not None else self._state_extractor
 
+    def _brightness_log(self) -> str:
+        if self._last_bstats is None or self._ae is None:
+            return ""
+        return f"bright={self._last_bstats.median:.0f}({self._ae.band_position(self._last_bstats)})"
+
+    def _run_ae(self, stats) -> None:
+        """One software-AE step: seed, actuate, or fall back to advisory mode."""
+        self._last_bstats = stats
+        if self._ae_advisory:
+            return  # actuation proven inert (macOS) — brightness keeps flowing to the log
+        if getattr(self._camera, "controls_effective", None) is False:
+            self._ae_advisory = True
+            logger.info("AE: exposure controls ineffective on this platform — advisory mode only")
+            return
+        if self._move_detector.pending_move is not None:
+            return  # never shift exposure mid move-confirmation
+        if self._ae.current_exposure is None:
+            self._ae.seed(getattr(self._camera, "initial_exposure", None))
+        new_exp = self._ae.update(stats, time.monotonic())
+        if new_exp is None:
+            return
+        request = getattr(self._camera, "request_controls", None)
+        if request is None:
+            self._ae_advisory = True
+            logger.info("AE: camera has no runtime controls — advisory mode only")
+            return
+        request(exposure=new_exp, auto_exposure=0.25)
+        self._averager.reset()  # the brightness step must not blend into the average
+        logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
+
     def start(self) -> None:
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="vision-inprocess")
@@ -182,6 +222,10 @@ class InProcessAdapter:
                 if found and warped is not None:
                     board_detected = True
                     h, w = warped.shape[:2]
+                    if self._ae is not None:
+                        # Meter the raw warped frame (pre-average, pre-CLAHE) — the reading
+                        # must reflect the actual sensor exposure, not our processing.
+                        self._run_ae(meter_brightness(warped))
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
                     warped = enhance_for_inference(warped, self._enhance_mode)
@@ -193,9 +237,10 @@ class InProcessAdapter:
                     if self._frame_count % 30 == 0:
                         _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
                         logger.info(
-                            "vision: %d stones, mean_conf=%.2f, enh=%.0fms infer=%.0fms, bound=%s paused=%s geom=%s",
+                            "vision: %d stones, mean_conf=%.2f, %s enh=%.0fms infer=%.0fms, bound=%s paused=%s geom=%s",
                             len(detections),
                             _mc,
+                            self._brightness_log(),
                             _enh_ms,
                             _infer_ms,
                             self._bound,

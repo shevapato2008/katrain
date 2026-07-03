@@ -2031,6 +2031,18 @@ def run_web():
         "disables). Cuts weak-light sensor noise ~sqrt(N); auto-resets on motion.",
     )
     parser.add_argument(
+        "--vision-auto-exposure",
+        choices=["software", "off"],
+        default=None,
+        help="Software AE: drive board-region median brightness into the target band by "
+        "adjusting exposure at runtime (default: software; advisory-only on macOS).",
+    )
+    parser.add_argument(
+        "--vision-ae-target",
+        default=None,
+        help="Software-AE target brightness band as LO-HI gray levels (default: 120-170).",
+    )
+    parser.add_argument(
         "--led-serial-port",
         default=None,
         help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
@@ -2098,6 +2110,10 @@ def run_web():
             vision_kwargs["move_confirm_frames"] = args.vision_move_frames
         if args.vision_frame_average is not None:
             vision_kwargs["frame_average"] = args.vision_frame_average
+        if args.vision_auto_exposure is not None:
+            vision_kwargs["auto_exposure"] = args.vision_auto_exposure
+        if args.vision_ae_target is not None:
+            vision_kwargs["ae_target"] = args.vision_ae_target
         settings._vision_config = VisionServiceConfig(**vision_kwargs)
 
     # Configure LED service if a serial port was provided

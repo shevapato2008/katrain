@@ -43,6 +43,9 @@ logger = logging.getLogger(__name__)
 PREVIEW_SIZE = 480
 PREVIEW_FPS = 15
 JPEG_QUALITY = 60
+# An unanswered low-confidence move prompt re-fires (MoveDetector no longer advances its
+# baseline at confirm time), so re-emission of the ambiguous_stone event is rate-limited.
+AMBIG_REPROMPT_FRAMES = 40
 
 
 @dataclass
@@ -129,6 +132,7 @@ class _VisionWorkerLoop:
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
         self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
+        self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
 
         # Inference backend — lazy import so the heavy deps only load in the worker process
         self._detector = None
@@ -323,20 +327,44 @@ class _VisionWorkerLoop:
                             # routed to the ambiguous dialog — never silently injected.
                             conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
                             if conf < self._ambiguous_confidence:
-                                # PRD §3.4 row 1: low-confidence "move" asks the user instead
-                                self._event_queue.put(
-                                    {
-                                        "type": "ambiguous_stone",
-                                        "data": {
-                                            "row": int(row),
-                                            "col": int(col),
-                                            "color": int(color),
-                                            "confidence": round(float(conf), 3),
-                                        },
-                                    }
-                                )
+                                # PRD §3.4 row 1: low-confidence "move" asks the user instead.
+                                # Baseline NOT advanced: an unanswered prompt re-fires after
+                                # the cooldown instead of silencing detection forever.
+                                if (
+                                    self._frame_count - self._ambig_last_emit.get((row, col), -(10**9))
+                                    >= AMBIG_REPROMPT_FRAMES
+                                ):
+                                    self._ambig_last_emit[(row, col)] = self._frame_count
+                                    logger.info(
+                                        "move at (%d,%d) confirmed but conf %.2f < %.2f — ambiguous prompt",
+                                        row,
+                                        col,
+                                        conf,
+                                        self._ambiguous_confidence,
+                                    )
+                                    self._event_queue.put(
+                                        {
+                                            "type": "ambiguous_stone",
+                                            "data": {
+                                                "row": int(row),
+                                                "col": int(col),
+                                                "color": int(color),
+                                                "confidence": round(float(conf), 3),
+                                            },
+                                        }
+                                    )
                             else:
+                                logger.info(
+                                    "move confirmed: (%d,%d) color=%d conf=%.2f", row, col, color, conf
+                                )
                                 self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                                # Advance the baseline HERE (the detector no longer does):
+                                # prevents duplicate emissions until the game-update
+                                # round-trip force_syncs the new expected board. If the
+                                # poller rejects the move (out of turn / gateway), it
+                                # re-pushes the expected board, which re-arms detection
+                                # via the SET_EXPECTED_BOARD handler.
+                                self._move_detector.force_sync(self._last_stable_board)
                         else:
                             pending_after = self._move_detector.pending_move
                             if pending_after is not None and pending_after != pending_before:
@@ -493,6 +521,7 @@ class _VisionWorkerLoop:
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
                 self._prev_conf_map = {}
+                self._ambig_last_emit = {}
                 self._averager.reset()
                 self._promoter.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
@@ -502,9 +531,20 @@ class _VisionWorkerLoop:
                 self._averager.reset()  # warp switches to the frozen transform
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
                 board = np.array(cmd.data["board"], dtype=int)
-                self._sync.set_expected_board(board)
-                self._move_detector.force_sync(board)
-                self._expected_np = board
+                unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
+                baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
+                    self._move_detector.prev_board, board
+                )
+                if not (unchanged and baseline_ok):
+                    self._sync.set_expected_board(board)
+                    self._move_detector.force_sync(board)
+                    self._expected_np = board
+                # else: analysis-stream repeat (game_updates arrive every ~0.25s while the
+                # engine streams) with a clean baseline. force_syncing on every repeat reset
+                # the confirmation counter faster than it could ever reach
+                # move_confirm_frames — the "first move never registers" killer. A repeat
+                # with a POLLUTED baseline (prev_board != expected: a confirmed move was
+                # rejected downstream) still force_syncs — that is the poller's re-arm.
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
@@ -512,7 +552,12 @@ class _VisionWorkerLoop:
                 self._board_locked = False
                 self._board_finder.is_first = True  # Reset corner baseline
                 self._sync.reset()
+                if self._last_stable_board is not None:
+                    # "Ignore/reset = accept the physical board as baseline": adopt it in
+                    # the move detector too, or the ignored stone re-confirms immediately.
+                    self._move_detector.force_sync(self._last_stable_board)
                 self._prev_conf_map = {}
+                self._ambig_last_emit = {}
                 self._averager.reset()
                 self._promoter.reset()  # declined ambiguous prompt resets sync — don't re-fire
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:

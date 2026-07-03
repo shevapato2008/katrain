@@ -1878,7 +1878,16 @@ async def _vision_move_poller(app: FastAPI):
                                 move_player,
                                 expected_player,
                             )
-                            await asyncio.sleep(0.1)
+                            # Re-arm detection: the worker advanced its baseline when it
+                            # emitted this move; a rejection produces no game update, so
+                            # nothing would ever force_sync the baseline back and detection
+                            # would stay silenced forever. Re-pushing the (unchanged)
+                            # expected board triggers the worker's polluted-baseline
+                            # re-sync, so the stone retries once the turn comes around.
+                            game_state = session.katrain.get_state()
+                            if game_state and "stones" in game_state:
+                                vision.set_expected_from_stones(game_state["stones"])
+                            await asyncio.sleep(0.5)
                             continue
                         move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
                         gateway = getattr(app.state, "platform_gateway", None)
@@ -1887,6 +1896,10 @@ async def _vision_move_poller(app: FastAPI):
                                 await gateway.play_move(session_id, move.coords[0], move.coords[1], user_id=0)
                             except Exception as gw_err:
                                 log.warning("Platform gateway rejected vision move: %s", gw_err)
+                                # Re-arm detection (see out-of-turn comment above).
+                                game_state = session.katrain.get_state()
+                                if game_state and "stones" in game_state:
+                                    vision.set_expected_from_stones(game_state["stones"])
                                 await asyncio.sleep(0.5)
                                 continue
                         else:

@@ -20,6 +20,15 @@ class MoveDetector:
     therefore survives up to ``miss_grace`` consecutive absent frames with its count
     frozen; only a longer absence (stone actually removed / noise gone) abandons it.
     Multi-stone changes still hard-reset — that is scene disruption, not flicker.
+
+    THE CALLER OWNS THE BASELINE: ``detect_new_move`` does NOT advance ``prev_board``
+    when it confirms — call ``force_sync()`` once the move has actually been accepted
+    downstream. Advancing at confirm time silenced detection permanently whenever the
+    confirmed move was then diverted (low-confidence prompt the user never answered,
+    out-of-turn rejection, gateway rejection): the baseline already contained the
+    stone, no game update ever arrived to re-sync it, and no move could fire again.
+    An unactioned confirm therefore re-fires every ``consistency_frames`` frames;
+    callers gate re-emission (cooldowns) rather than losing the move forever.
     """
 
     def __init__(self, consistency_frames: int = 3, miss_grace: int = 2):
@@ -74,7 +83,8 @@ class MoveDetector:
             self.misses = 0
 
         if self.count >= self.consistency_frames:
-            self.prev_board = board.copy()
+            # Baseline deliberately NOT advanced (see class docstring): the caller
+            # force_syncs once the move is actually accepted downstream.
             self.count = 0
             self.pending_move = None
             self.misses = 0

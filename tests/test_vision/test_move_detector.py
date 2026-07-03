@@ -228,3 +228,37 @@ class TestMoveDetectorMissGrace:
         assert d.detect_new_move(with_stone) is None
         assert d.detect_new_move(with_stone) is None
         assert d.detect_new_move(with_stone) == (3, 3, BLACK)
+
+
+class TestCallerOwnedBaseline:
+    """回归（一次性沉默）：确认时不再推进基线——被下游丢弃的确认会重试，
+    只有调用方 force_sync（真正被接受 / 采纳物理盘）才停。"""
+
+    def _boards(self):
+        empty = np.zeros((19, 19), dtype=int)
+        with_stone = empty.copy()
+        with_stone[3][3] = BLACK
+        return empty, with_stone
+
+    def test_unactioned_confirm_refires(self):
+        d = MoveDetector(consistency_frames=3)
+        empty, with_stone = self._boards()
+        d.detect_new_move(empty)
+        d.detect_new_move(with_stone)
+        d.detect_new_move(with_stone)
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)  # confirmed, NOT actioned
+        # baseline untouched -> the same move confirms again after another window
+        d.detect_new_move(with_stone)
+        d.detect_new_move(with_stone)
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)
+
+    def test_force_sync_after_acceptance_stops_refire(self):
+        d = MoveDetector(consistency_frames=3)
+        empty, with_stone = self._boards()
+        d.detect_new_move(empty)
+        d.detect_new_move(with_stone)
+        d.detect_new_move(with_stone)
+        assert d.detect_new_move(with_stone) == (3, 3, BLACK)
+        d.force_sync(with_stone)  # caller accepted the move
+        for _ in range(6):
+            assert d.detect_new_move(with_stone) is None

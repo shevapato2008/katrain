@@ -77,6 +77,14 @@
 - 左侧“智能棋盘台”：19×19 实时盘面 + 三个状态格（摄像头 已连接 / 标定 需校准 / LED 就绪）。
 - Dock：8 项等宽大靶，选中项抬升为 jade 实底。
 
+### 4.5 对弈 hub 交互规范（Phase 1，见 `artifacts/play-hub-states.html`）
+- **交互五态**（主卡/次卡/chip/Dock/继续条）：默认 → 悬停（卡上移 `-1px` + border 提亮；chip 换 `--raise2`）→ 按压（`scale .97`，大卡 `.985`，亮度 `.94`）→ 聚焦（`0 0 0 2px 底, 0 0 0 4px rgba(88,181,122,.75)`，`:focus-visible`，供键盘/遥控）→ 禁用（透明度 `.4` + `grayscale(.5)`，`pointer-events:none`）。
+- **动效**：`130ms` · `cubic-bezier(.2,.7,.3,1)`；`prefers-reduced-motion` 时去位移只留色变。
+- **触控靶**：Dock 格 ≈ `120×70`；主卡 ≥ `64` 高；chip ≥ `48` 高（≥44 基线）。
+- **异步/数据态**：等级 加载中（skeleton `1.4s` + spinner `1s`）/ 失败（错误条 + 重试，主卡置禁用）/ 空（提示查引擎）；「继续上一局」无数据时整条隐藏、hub 上移；开始中主卡转 spinner「创建对局中…」。
+- **强调色语义**：jade 主/选中 · amber 进行中/待校准 · error(`#e2685c`) 失败。
+- **竖屏**：`OrientationContext.isPortrait` 走 600×1024 排布 —— 棋盘台压顶部横卡（小盘 118 + 状态竖排）、hub 单列堆叠、Dock 底部 8 项、仅内容区滚动。
+
 ## 5. 各模块内容映射（设计意图，逐个细化）
 
 | Dock 项 | 右侧内容（意图） | 状态 |
@@ -113,6 +121,7 @@
 
 本地文件（`artifacts/`，用 `@import ./fonts.css` 共享字体，浏览器直接打开）：
 - `d3-board-console.html` — **选中方案（已修正为对弈 hub）**
+- `play-hub-states.html` — **对弈 hub 完整规范**（交互五态 + 异步/数据态 + 竖屏 + 动效数值，Phase 1）
 - `d1-ink-goban.html` — 备选①（保留左栏）
 - `d2-paper-launcher.html` — 备选②（启动台）
 

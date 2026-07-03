@@ -23,6 +23,7 @@ kiosk 直接沿用网页外壳（`KioskLayout` → 72px 左 `NavigationRail`，�
 - [x] 修正 ③：**Dock 选中项驱动内容**；「对弈」→ 对弈 hub（人机/人人），非主页仪表盘。
 - [x] 写 `design.md`（设计系统 + 内容映射 + 落地映射）。
 - [x] 建 `superpowers/tracks/kiosk-ui-redesign/`（design.md + plan.md + artifacts/）。
+- [x] 出「对弈 hub 完整规范」artifact（`artifacts/play-hub-states.html`）— 交互五态 + 异步/数据态 + 竖屏 + 动效数值（待用户确认，见 Phase 1）。
 
 ## 4. 决策记录
 
@@ -36,14 +37,14 @@ kiosk 直接沿用网页外壳（`KioskLayout` → 72px 左 `NavigationRail`，�
 
 ## 5. 分阶段任务
 
-### Phase 1 — 对弈 hub 完整细节（**当前**）
-把已定稿的对弈 hub 补齐到“可实现”的颗粒度。
-- [ ] **全状态**：卡片/按钮的 默认 · hover · 按压(active) · 聚焦(键盘/遥控) · 禁用 · 加载中 · 错误。
-- [ ] **数据态**：继续上一局 有/无；等级列表 加载中/失败/空。
-- [ ] **触控反馈**：按压缩放/高亮的具体数值（尺度、时长、缓动）。
-- [ ] **竖屏变体**：7″ 竖用时 Dock/棋盘台/hub 的排布。
-- [ ] 产出：对弈 hub「状态总览 + 竖屏」artifact；`design.md` 增补对弈 hub 规范小节。
-- 验收：所有状态可视、数值标注齐全、竖屏成立；用户确认。
+### Phase 1 — 对弈 hub 完整细节（**出稿完成，待用户确认**）
+把已定稿的对弈 hub 补齐到“可实现”的颗粒度。产出：`artifacts/play-hub-states.html`（在线 https://claude.ai/code/artifact/5e13c101-0942-46dc-ac65-d184793d08b6）。
+- [x] **全状态**：主卡/次卡/chip/Dock/继续条 的 默认 · 悬停 · 按压 · 聚焦 · 禁用。
+- [x] **数据态**：继续上一局 有/无；等级列表 加载中/失败/空；创建对局中。
+- [x] **触控反馈**：按压缩放/时长/缓动/聚焦环/触控靶 数值表（spec §5）。
+- [x] **竖屏变体**：600×1024（棋盘台压顶部横卡、hub 单列、Dock 底部不变）。
+- [x] `design.md` 增补「对弈 hub 交互规范」小节（§4.5）。
+- [ ] **待用户确认** → 确认后本阶段关闭，进 Phase 2。
 
 ### Phase 2 — 逐模块出稿
 按 `design.md` §5 依次：死活 → 研究 → 棋谱 → 摆谱 → 直播 → 教程 → 设置。每模块一版 artifact + 规范小节，用户逐个确认。
@@ -76,6 +77,6 @@ kiosk 直接沿用网页外壳（`KioskLayout` → 72px 左 `NavigationRail`，�
 ## 8. 参考
 
 - 设计规范：`design.md`
-- Artifacts：`artifacts/d3-board-console.html`（选定）· `d1-ink-goban.html` · `d2-paper-launcher.html` · `fonts.css`
-- 在线：③ https://claude.ai/code/artifact/a9ef18ea-6272-48a7-92ef-bafaa8447eea
+- Artifacts：`artifacts/d3-board-console.html`（选定）· `play-hub-states.html`（对弈 hub 规范）· `d1-ink-goban.html` · `d2-paper-launcher.html` · `fonts.css`
+- 在线：③ https://claude.ai/code/artifact/a9ef18ea-6272-48a7-92ef-bafaa8447eea · 对弈 hub 规范 https://claude.ai/code/artifact/5e13c101-0942-46dc-ac65-d184793d08b6
 - 现有代码：`katrain/web/ui/src/kiosk/components/layout/{KioskLayout,NavigationRail,StatusBar,navTabs,TopTabBar}.tsx`、`pages/PlayPage.tsx`

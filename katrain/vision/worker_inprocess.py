@@ -19,6 +19,7 @@ from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
+from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
@@ -58,10 +59,16 @@ class InProcessAdapter:
         self._camera = camera or CameraManager(device_id=config.get("camera_device", 0))
         self._motion_filter = MotionFilter()
         self._board_finder = BoardFinder(camera_config=CameraConfig())
+        # Hysteresis (weak-light flicker fix): the detector runs at the lower "keep"
+        # threshold; board assignment requires the full "add" threshold for cells that
+        # were empty in the last stable board (see BoardStateExtractor._passes_hysteresis).
+        self._add_threshold = config.get("confidence_threshold", 0.5)
+        self._keep_threshold = config.get("confidence_keep") or max(0.25, self._add_threshold - 0.15)
+        self._enhance_mode = config.get("enhance", "clahe")
         self._detector = StoneDetector(
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
-            confidence_threshold=config.get("confidence_threshold", 0.5),
+            confidence_threshold=self._keep_threshold,
         )
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
@@ -86,6 +93,11 @@ class InProcessAdapter:
         self._bound = False
         self._last_preview_time = 0.0
         self._geometry = None
+        self._frame_count = 0
+        # 2-frame per-cell voting (ported from worker.py): a cell only updates when two
+        # consecutive frames agree; otherwise it holds the last stable value.
+        self._prev_observed_board: np.ndarray | None = None
+        self._last_stable_board: np.ndarray | None = None
 
     def set_geometry(self, geometry) -> None:
         self._geometry = geometry
@@ -165,14 +177,51 @@ class InProcessAdapter:
                 if found and warped is not None:
                     board_detected = True
                     h, w = warped.shape[:2]
+                    _t_enh = time.monotonic()
+                    warped = enhance_for_inference(warped, self._enhance_mode)
+                    _enh_ms = (time.monotonic() - _t_enh) * 1000
+                    _t_inf = time.monotonic()
                     detections = self._detector.detect(warped)
+                    _infer_ms = (time.monotonic() - _t_inf) * 1000
+                    self._frame_count += 1
+                    if self._frame_count % 30 == 0:
+                        _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
+                        logger.info(
+                            "vision: %d stones, mean_conf=%.2f, enh=%.0fms infer=%.0fms, bound=%s paused=%s geom=%s",
+                            len(detections),
+                            _mc,
+                            _enh_ms,
+                            _infer_ms,
+                            self._bound,
+                            self._paused,
+                            self._geometry is not None,
+                        )
                     masked = None
                     if self._lit_points:
                         exp = self._expected_np
                         masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._active_extractor().detections_to_board(
-                        detections, img_w=w, img_h=h, occupancy_aware=True, masked_cells=masked
+                        detections,
+                        img_w=w,
+                        img_h=h,
+                        occupancy_aware=True,
+                        masked_cells=masked,
+                        prev_board=self._last_stable_board,
+                        add_threshold=self._add_threshold,
                     )
+
+                    # 2-frame per-cell voting (ported from worker.py): a cell may only
+                    # change when two consecutive frames agree; disagreement holds the
+                    # last stable value, absorbing single-frame flicker.
+                    if self._prev_observed_board is not None and self._last_stable_board is not None:
+                        stable_board = np.where(
+                            observed_board == self._prev_observed_board, observed_board, self._last_stable_board
+                        )
+                    else:
+                        stable_board = observed_board
+                    self._prev_observed_board = observed_board
+                    self._last_stable_board = stable_board
+                    observed_board = stable_board
 
                     if detections:
                         mean_confidence = sum(d.confidence for d in detections) / len(detections)
@@ -211,7 +260,7 @@ class InProcessAdapter:
                                     }
                                 )
 
-                    self._maybe_send_preview(warped)
+                    self._maybe_send_preview(warped, detections)
 
             if self._bound:
                 events = self._sync.update(
@@ -261,6 +310,8 @@ class InProcessAdapter:
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()
+                self._prev_observed_board = None  # drop voting state across sessions
+                self._last_stable_board = None
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
@@ -273,6 +324,8 @@ class InProcessAdapter:
                 self._sync.enter_setup_mode(target)
             elif cmd.action == CommandType.RESET_SYNC:
                 self._sync.reset()
+                self._prev_observed_board = None  # rebuild voting baseline after recovery
+                self._last_stable_board = None
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
@@ -284,13 +337,41 @@ class InProcessAdapter:
             elif cmd.action == CommandType.SET_LIT_POINTS:
                 self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
 
-    def _maybe_send_preview(self, warped: np.ndarray) -> None:
+    def _maybe_send_preview(self, warped: np.ndarray, detections: list | None = None) -> None:
         if not self._viewer_active:
             return
         now = time.monotonic()
         if now - self._last_preview_time < 1.0 / PREVIEW_FPS:
             return
+        h, w = warped.shape[:2]
         preview = cv2.resize(warped, (PREVIEW_SIZE, PREVIEW_SIZE), interpolation=cv2.INTER_LINEAR)
+        sx, sy = PREVIEW_SIZE / w, PREVIEW_SIZE / h
+        # Debug overlay: re-detect at a low threshold so below-accept near-misses are visible.
+        # Green box = would ADD a new stone (>= add threshold); red = below it (only
+        # sustains an existing stone via the keep threshold, or is rejected outright).
+        thr = self._add_threshold
+        try:
+            overlay_dets = self._detector.backend_impl.detect(
+                warped, 0.15, getattr(self._detector, "iou_threshold", None)
+            )
+        except Exception:
+            overlay_dets = detections or []
+        label = {0: "B", 1: "W", 2: "R", 3: "G"}
+        for d in overlay_dets:
+            x1, y1, x2, y2 = d.bbox
+            p1, p2 = (int(x1 * sx), int(y1 * sy)), (int(x2 * sx), int(y2 * sy))
+            color = (0, 200, 0) if d.confidence >= thr else (0, 0, 235)  # BGR: green accepted, red rejected
+            cv2.rectangle(preview, p1, p2, color, 2)
+            cv2.putText(
+                preview,
+                f"{label.get(d.class_id, '?')}{d.confidence:.2f}",
+                (p1[0], max(p1[1] - 4, 12)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.45,
+                color,
+                1,
+                cv2.LINE_AA,
+            )
         _, jpeg = cv2.imencode(".jpg", preview, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
         with self._preview_lock:
             self._preview_jpeg = jpeg.tobytes()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 
 import numpy as np
 
@@ -23,6 +24,29 @@ class UltralyticsBackend:
     def __init__(self) -> None:
         self._model = None
         self._imgsz: int = 960
+        self._device: str | None = None
+
+    @staticmethod
+    def _resolve_device() -> str:
+        """Pick the fastest available torch device. Override with $KATRAIN_VISION_DEVICE.
+
+        On Apple Silicon MPS is ~8x faster than CPU for this model (85ms vs 650ms),
+        which is what keeps live recognition fast enough for stable move confirmation.
+        The SBC uses the rknn backend, so this only affects dev/Mac runs.
+        """
+        override = os.getenv("KATRAIN_VISION_DEVICE")
+        if override:
+            return override
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                return "cuda"
+            if torch.backends.mps.is_available():
+                return "mps"
+        except Exception:  # pragma: no cover - torch always present with ultralytics
+            pass
+        return "cpu"
 
     # -- InferenceBackend protocol ------------------------------------------------
 
@@ -50,7 +74,10 @@ class UltralyticsBackend:
                 logger.warning("Failed to read meta file %s: %s", meta_path, exc)
 
         self._model = YOLO(model_path)
-        logger.info("UltralyticsBackend loaded model %s (imgsz=%d)", model_path, self._imgsz)
+        self._device = self._resolve_device()
+        logger.info(
+            "UltralyticsBackend loaded model %s (imgsz=%d, device=%s)", model_path, self._imgsz, self._device
+        )
 
     def detect(
         self, image: np.ndarray, confidence_threshold: float, iou_threshold: float | None = None
@@ -60,7 +87,9 @@ class UltralyticsBackend:
             raise RuntimeError("Model not loaded – call load() first")
 
         iou = iou_threshold if iou_threshold is not None else self.NMS_IOU_THRESHOLD
-        results = self._model(image, verbose=False, imgsz=self._imgsz, agnostic_nms=True, iou=iou)
+        results = self._model(
+            image, verbose=False, imgsz=self._imgsz, agnostic_nms=True, iou=iou, device=self._device
+        )
         detections: list[Detection] = []
         for r in results:
             for box in r.boxes:

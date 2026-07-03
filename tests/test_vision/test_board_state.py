@@ -152,3 +152,86 @@ class TestOccupancyAwareAssignment:
         assert board[5][5] == BLACK
         assert board[5][6] == EMPTY  # dropped, not spilled
         assert int((board != EMPTY).sum()) == 1
+
+
+class TestConfidenceHysteresis:
+    """Two-tier confidence gate (weak-light flicker fix): a below-add detection may only
+    SUSTAIN a same-color stone already in prev_board — never add a new one."""
+
+    def _det_at_cell(self, row, col, class_id, img, cfg, conf=0.9):
+        from katrain.vision.coordinates import grid_to_pixel
+
+        px, py = grid_to_pixel(col, row, img, img, cfg)
+        return Detection(x_center=px, y_center=py, class_id=class_id, confidence=conf)
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_weak_detection_cannot_add_new_stone(self, cfg, occupancy_aware):
+        ex = BoardStateExtractor()
+        img = 950
+        weak = self._det_at_cell(5, 5, 0, img, cfg, conf=0.35)  # below add=0.45
+        board = ex.detections_to_board(
+            [weak],
+            img_w=img,
+            img_h=img,
+            occupancy_aware=occupancy_aware,
+            prev_board=np.zeros((19, 19), dtype=int),
+            add_threshold=0.45,
+        )
+        assert board[5][5] == EMPTY
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_weak_detection_sustains_existing_same_color_stone(self, cfg, occupancy_aware):
+        ex = BoardStateExtractor()
+        img = 950
+        prev = np.zeros((19, 19), dtype=int)
+        prev[5][5] = BLACK  # stone confirmed there in the last stable board
+        weak = self._det_at_cell(5, 5, 0, img, cfg, conf=0.35)  # same color, below add
+        board = ex.detections_to_board(
+            [weak],
+            img_w=img,
+            img_h=img,
+            occupancy_aware=occupancy_aware,
+            prev_board=prev,
+            add_threshold=0.45,
+        )
+        assert board[5][5] == BLACK  # kept: keep-tier confidence suffices for occupied cell
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_weak_detection_of_other_color_does_not_flip_stone(self, cfg, occupancy_aware):
+        ex = BoardStateExtractor()
+        img = 950
+        prev = np.zeros((19, 19), dtype=int)
+        prev[5][5] = BLACK
+        weak_white = self._det_at_cell(5, 5, 1, img, cfg, conf=0.35)  # different color
+        board = ex.detections_to_board(
+            [weak_white],
+            img_w=img,
+            img_h=img,
+            occupancy_aware=occupancy_aware,
+            prev_board=prev,
+            add_threshold=0.45,
+        )
+        assert board[5][5] == EMPTY  # weak wrong-color detection is dropped, not applied
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_strong_detection_adds_regardless_of_prev(self, cfg, occupancy_aware):
+        ex = BoardStateExtractor()
+        img = 950
+        strong = self._det_at_cell(5, 5, 0, img, cfg, conf=0.8)
+        board = ex.detections_to_board(
+            [strong],
+            img_w=img,
+            img_h=img,
+            occupancy_aware=occupancy_aware,
+            prev_board=np.zeros((19, 19), dtype=int),
+            add_threshold=0.45,
+        )
+        assert board[5][5] == BLACK
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_no_add_threshold_keeps_legacy_behavior(self, cfg, occupancy_aware):
+        ex = BoardStateExtractor()
+        img = 950
+        weak = self._det_at_cell(5, 5, 0, img, cfg, conf=0.35)
+        board = ex.detections_to_board([weak], img_w=img, img_h=img, occupancy_aware=occupancy_aware)
+        assert board[5][5] == BLACK  # hysteresis disabled -> anything past detector threshold lands

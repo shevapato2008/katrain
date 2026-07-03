@@ -1988,6 +1988,27 @@ def run_web():
         "--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)"
     )
     parser.add_argument(
+        "--vision-confidence",
+        type=float,
+        default=None,
+        help="Detection confidence threshold (default: 0.5). Lower to catch weak real stones; "
+        "raise to reject glare false positives.",
+    )
+    parser.add_argument(
+        "--vision-confidence-keep",
+        type=float,
+        default=None,
+        help="Hysteresis 'keep' threshold: a cell already holding a stone keeps it at this lower "
+        "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
+    )
+    parser.add_argument(
+        "--vision-enhance",
+        choices=["clahe", "off"],
+        default=None,
+        help="Pre-inference enhancement of the warped board image (default: clahe — "
+        "measurably lifts weak-light stone confidence).",
+    )
+    parser.add_argument(
         "--led-serial-port",
         default=None,
         help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
@@ -2036,7 +2057,7 @@ def run_web():
 
         camera_dev = int(args.vision_camera) if args.vision_camera.isdigit() else args.vision_camera
         res_w, res_h = (int(x) for x in args.vision_resolution.split("x"))
-        settings._vision_config = VisionServiceConfig(
+        vision_kwargs = dict(
             enabled=True,
             backend=args.vision_backend,
             model_path=args.vision_model,
@@ -2045,6 +2066,13 @@ def run_web():
             camera_height=res_h,
             process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess",
         )
+        if args.vision_confidence is not None:
+            vision_kwargs["confidence_threshold"] = args.vision_confidence
+        if args.vision_confidence_keep is not None:
+            vision_kwargs["confidence_keep"] = args.vision_confidence_keep
+        if args.vision_enhance is not None:
+            vision_kwargs["enhance"] = args.vision_enhance
+        settings._vision_config = VisionServiceConfig(**vision_kwargs)
 
     # Configure LED service if a serial port was provided
     if args.led_serial_port:

@@ -37,14 +37,16 @@ class TestPlacementLamps:
         assert plan.points == []
         assert plan.caught_up is True
 
-    def test_lamp_relights_when_detection_vanishes(self, planner):
-        # 眩光误检消失 → 目标点重新读空 → 灯下一 tick 回亮
+    def test_lamp_never_relights_after_observed(self, planner):
+        # 弱光抖动修复：目标点一旦观测到已摆放，之后视觉丢帧不得重亮灯——
+        # 否则红灯在黑子下点亮，红光泄漏又让模型把黑子读成 led_red，形成死循环。
+        # 真消失由 sync missing_anomaly → mismatch 对话框（独立通路）兜底。
         expected = board([(3, 3, BLACK)])
         planner.on_expected(expected)
-        assert planner.tick(expected, board([(3, 3, BLACK)])).points == []  # 检测到了（或眩光）
-        plan = planner.tick(expected, board())  # 检测消失
-        assert plan.points == [{"row": 3, "col": 3, "color": "black"}]
-        assert plan.caught_up is False
+        assert planner.tick(expected, board([(3, 3, BLACK)])).points == []  # 已观测到
+        plan = planner.tick(expected, board())  # 视觉抖动丢失该子
+        assert plan.points == []
+        assert plan.caught_up is True
 
     def test_handicap_stones_all_lit(self, planner):
         expected = board([(3, 3, BLACK), (15, 15, BLACK)])
@@ -107,3 +109,61 @@ class TestMixedBatch:
         plan = planner.tick(after, before)
         assert {"row": 3, "col": 3, "color": "black"} in plan.points
         assert {"row": 5, "col": 5, "color": "remove"} in plan.points
+
+
+class TestGuidanceScope:
+    """己方棋子 LED 零输出：placement 灯只为 AI 颜色（guided_colors）+ 让子（setup_cells）亮。"""
+
+    def test_human_stone_never_lights(self, planner):
+        # 用户执黑（AI 执白）：黑子缺失——无论从未观测还是抖动——都不亮灯。
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        expected = board([(3, 3, BLACK)])
+        planner.on_expected(expected)
+        plan = planner.tick(expected, board())
+        assert plan.points == []
+        assert plan.caught_up is True  # 己方子缺失不算「落后」→ 不触发提醒/暂停
+
+    def test_ai_stone_lights_until_placed_then_flicker_immune(self, planner):
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        expected = board([(5, 5, WHITE)])
+        planner.on_expected(expected)
+        assert planner.tick(expected, board()).points == [{"row": 5, "col": 5, "color": "white"}]
+        assert planner.tick(expected, expected).points == []  # 摆好 → 灭
+        assert planner.tick(expected, board()).points == []  # 之后抖动 → 不复亮
+
+    def test_setup_cells_guided_regardless_of_color(self, planner):
+        # 让 2 子：黑子（人类颜色）但属 root 布子 → 红灯全亮、逐摆逐灭。
+        planner.set_context(guided_colors={WHITE}, setup_cells={(3, 3), (15, 15)})
+        expected = board([(3, 3, BLACK), (15, 15, BLACK)])
+        planner.on_expected(expected)
+        plan = planner.tick(expected, board())
+        assert {(p["row"], p["col"]) for p in plan.points} == {(3, 3), (15, 15)}
+        plan = planner.tick(expected, board([(3, 3, BLACK)]))  # 摆了一颗
+        assert {(p["row"], p["col"]) for p in plan.points} == {(15, 15)}
+
+    def test_new_expected_stone_rearms_guidance_after_capture(self, planner):
+        # AI 白子被提掉又在同格重新落子：EMPTY→stone 跃迁清除观测记忆 → 重新引导。
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        b1 = board([(5, 5, WHITE)])
+        planner.on_expected(b1)
+        planner.tick(b1, b1)  # 观测到 → 记忆
+        planner.on_expected(board())  # 提掉
+        planner.tick(board(), board())  # 物理拿除完成
+        planner.on_expected(b1)  # 同格重新落子
+        plan = planner.tick(b1, board())
+        assert plan.points == [{"row": 5, "col": 5, "color": "white"}]
+
+    def test_no_context_keeps_legacy_all_color_guidance(self, planner):
+        # 未提供玩家信息（双人局识别不全等）→ 兜底：所有颜色都引导（旧行为）。
+        expected = board([(3, 3, BLACK)])
+        planner.on_expected(expected)
+        assert planner.tick(expected, board()).points == [{"row": 3, "col": 3, "color": "black"}]
+
+    def test_both_human_colors_no_lamps(self, planner):
+        # 双人本地对弈：双方都是人 → guided_colors 空集 → 全程无 placement 灯。
+        planner.set_context(guided_colors=set(), setup_cells=set())
+        expected = board([(3, 3, BLACK), (5, 5, WHITE)])
+        planner.on_expected(expected)
+        plan = planner.tick(expected, board())
+        assert plan.points == []
+        assert plan.caught_up is True

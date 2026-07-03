@@ -22,7 +22,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from katrain.vision.sync import game_state_stones_to_board
-from katrain.web.core.physical_play import LedPlanner, PhysicalPlayConfig
+from katrain.web.core.physical_play import BLACK, WHITE, LedPlanner, PhysicalPlayConfig
 
 logger = logging.getLogger("katrain_web.physical_play")
 
@@ -178,6 +178,10 @@ class PhysicalPlayOrchestrator:
             return
         board_size = state["board_size"][0]
         expected = np.asarray(game_state_stones_to_board(state["stones"], board_size))
+        self._planner.set_context(
+            guided_colors=self._guided_colors_from_state(state),
+            setup_cells=self._setup_cells_from_state(state, board_size),
+        )
         self._planner.on_expected(expected)
         plan = self._planner.tick(expected, np.asarray(observed))
         self._caught_up = plan.caught_up
@@ -193,6 +197,33 @@ class PhysicalPlayOrchestrator:
             self._last_points = None
         self._apply_points(plan.points)
         self._maybe_remind(plan)
+
+    @staticmethod
+    def _guided_colors_from_state(state: Dict) -> Optional[set]:
+        """Colors whose stones need placement lamps = the AI-played colors. Human moves
+        need no LED (vision observing them IS the move source). None (no players_info)
+        keeps the legacy guide-everything behavior."""
+        players = state.get("players_info")
+        if not players:
+            return None
+        return {
+            color
+            for bw, color in (("B", BLACK), ("W", WHITE))
+            if (players.get(bw) or {}).get("player_type") == "player:ai"
+        }
+
+    @staticmethod
+    def _setup_cells_from_state(state: Dict, board_size: int) -> set:
+        """Root-setup (handicap / AB) stones: entries with no move number. Guided
+        regardless of color — the '开局 N 红灯全亮' handicap flow. Same coordinate
+        flip as game_state_stones_to_board (gtp_row 0 = bottom -> vision row 0 = top)."""
+        cells = set()
+        for entry in state.get("stones") or []:
+            # [player, [col, gtp_row] | None, score_loss, move_number]
+            if len(entry) >= 4 and entry[3] is None and entry[1]:
+                col, gtp_row = entry[1]
+                cells.add((board_size - 1 - int(gtp_row), int(col)))
+        return cells
 
     def _apply_points(self, points: List[Dict]) -> None:
         if points == self._last_points:

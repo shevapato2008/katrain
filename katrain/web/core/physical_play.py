@@ -50,11 +50,30 @@ class LedPlanner:
         self._prev_expected: Optional[np.ndarray] = None
         self._removal_pending: Set[Tuple[int, int]] = set()
         self._extra_counts: Dict[Tuple[int, int], int] = {}
+        # Guidance scope: placement lamps light ONLY for stones the human has not yet
+        # physically placed — AI moves and root-setup (handicap) stones. A human's own
+        # move was necessarily observed by vision (that observation IS the move source),
+        # so its cell lands in _observed_once immediately and never lights. This also
+        # breaks the lamp-glare feedback loop (red lamp under a black stone reads as
+        # led_red -> stone "missing" -> lamp stays on) for human stones entirely.
+        self._observed_once: Set[Tuple[int, int]] = set()
+        self._guided_colors: Optional[Set[int]] = None  # None = no player info: guide all colors
+        self._setup_cells: Set[Tuple[int, int]] = set()
 
     def reset(self) -> None:
         self._prev_expected = None
         self._removal_pending = set()
         self._extra_counts = {}
+        self._observed_once = set()
+        self._guided_colors = None
+        self._setup_cells = set()
+
+    def set_context(self, guided_colors: Optional[Set[int]], setup_cells: Set[Tuple[int, int]]) -> None:
+        """Player context from the game state: which stone colors are AI-played (need
+        placement lamps) and which cells are root-setup stones (handicap — always guided,
+        regardless of color). guided_colors None means unknown -> guide everything."""
+        self._guided_colors = guided_colors
+        self._setup_cells = setup_cells
 
     def on_expected(self, expected: np.ndarray) -> None:
         """Record a new authoritative board. Stones that vanished from the digital
@@ -63,19 +82,36 @@ class LedPlanner:
             gone = (self._prev_expected != EMPTY) & (expected == EMPTY)
             for r, c in zip(*np.nonzero(gone)):
                 self._removal_pending.add((int(r), int(c)))
+            # A NEW digital stone re-arms guidance for its cell: forget any stale
+            # observation (e.g. the cell held a different stone earlier in the game).
+            fresh = (self._prev_expected == EMPTY) & (expected != EMPTY)
+            for r, c in zip(*np.nonzero(fresh)):
+                self._observed_once.discard((int(r), int(c)))
         self._removal_pending = {p for p in self._removal_pending if expected[p] == EMPTY}
         self._prev_expected = expected.copy()
+
+    def _needs_guidance(self, expected: np.ndarray, p: Tuple[int, int]) -> bool:
+        if p in self._setup_cells:
+            return True  # handicap / root-setup stones are guided regardless of color
+        if self._guided_colors is None:
+            return True  # no player info -> legacy behavior (guide all colors)
+        return int(expected[p]) in self._guided_colors
 
     def tick(self, expected: np.ndarray, observed: np.ndarray) -> LedPlan:
         # A pending removal is done once the stone is physically gone.
         self._removal_pending = {p for p in self._removal_pending if observed[p] != EMPTY}
 
-        # Placement guidance: digital stone on an EMPTY physical point. The lamp goes out
-        # on the FIRST stone-class detection at the target (review E, glare safety): if
-        # that detection was lamp glare and vanishes, the point reads empty again and the
-        # lamp relights next tick. A wrong-color stone also extinguishes the lamp — the
-        # sync anomaly flow (Task 5 'unexpected' bucket) surfaces it, not a standing lamp.
-        to_place = {(int(r), int(c)) for r, c in zip(*np.nonzero((expected != EMPTY) & (observed == EMPTY)))}
+        # A guidance target seen occupied (any stone class — wrong color surfaces via the
+        # sync anomaly flow, not a standing lamp) is satisfied FOREVER: a later vision
+        # flicker on that cell must not relight the lamp. Real disappearance is handled
+        # by the independent sync missing_anomaly -> mismatch-dialog path.
+        for r, c in zip(*np.nonzero((expected != EMPTY) & (observed != EMPTY))):
+            self._observed_once.add((int(r), int(c)))
+
+        # Placement guidance: digital stone on an EMPTY physical point, never yet
+        # observed placed, and within guidance scope (AI colors + setup cells).
+        missing = {(int(r), int(c)) for r, c in zip(*np.nonzero((expected != EMPTY) & (observed == EMPTY)))}
+        to_place = {p for p in missing if p not in self._observed_once and self._needs_guidance(expected, p)}
 
         # Unexpected stones (never in the digital board) debounce into blue cleanup lamps
         # — covers leftover stones at game start. Suspended entirely while a placement is

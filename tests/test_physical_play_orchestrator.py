@@ -241,3 +241,43 @@ class TestBindLifecycle:
             assert orch._task is None
 
         asyncio.run(run())
+
+
+class TestGuidanceContextExtraction:
+    """AI 颜色 + 让子格从 game_update state 中提取（改动 1 的输入侧）。"""
+
+    def test_guided_colors_human_black_vs_ai_white(self):
+        state = {
+            "players_info": {
+                "B": {"player_type": "player:human"},
+                "W": {"player_type": "player:ai"},
+            }
+        }
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {2}  # WHITE only
+
+    def test_guided_colors_both_human_empty_set(self):
+        state = {
+            "players_info": {
+                "B": {"player_type": "player:human"},
+                "W": {"player_type": "player:human"},
+            }
+        }
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == set()
+
+    def test_guided_colors_missing_players_info_returns_none(self):
+        assert PhysicalPlayOrchestrator._guided_colors_from_state({}) is None  # legacy guide-all
+
+    def test_setup_cells_from_root_stones(self):
+        # stones entry: [player, [col, gtp_row], score_loss, move_number]; move_number None = 让子/AB
+        state = {
+            "stones": [
+                ["B", [3, 15], None, None],  # handicap stone, gtp_row 15 -> vision row 3
+                ["B", [15, 3], None, None],  # handicap stone
+                ["W", [16, 16], 0.5, 1],  # played move -> excluded
+            ]
+        }
+        cells = PhysicalPlayOrchestrator._setup_cells_from_state(state, 19)
+        assert cells == {(3, 3), (15, 15)}
+
+    def test_setup_cells_empty_for_no_stones(self):
+        assert PhysicalPlayOrchestrator._setup_cells_from_state({}, 19) == set()

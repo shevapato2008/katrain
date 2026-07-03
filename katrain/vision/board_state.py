@@ -54,6 +54,16 @@ class BoardStateExtractor:
     def __init__(self, config: BoardConfig | None = None):
         self.config = config or BoardConfig()
 
+    @staticmethod
+    def _passes_hysteresis(det, cy: int, cx: int, prev_board, add_threshold) -> bool:
+        """Two-tier confidence gate (weak-light flicker fix): detections arrive filtered
+        at the lower "keep" threshold; one below ``add_threshold`` may only SUSTAIN a
+        same-color stone already present in ``prev_board`` (the last stable board) — it
+        can never add a new stone. Disabled when add_threshold is None."""
+        if add_threshold is None or det.confidence >= add_threshold:
+            return True
+        return prev_board is not None and int(prev_board[cy][cx]) == det.class_id + 1
+
     def detections_to_board(
         self,
         detections: list[Detection],
@@ -61,17 +71,24 @@ class BoardStateExtractor:
         img_h: int,
         occupancy_aware: bool = False,
         masked_cells: set | None = None,
+        prev_board: np.ndarray | None = None,
+        add_threshold: float | None = None,
     ) -> np.ndarray:
         """Convert detected stones to a grid_size x grid_size board matrix.
 
         ``masked_cells`` (row, col) intersections are dropped from assignment — used to
         ignore detections landing on lit-and-expected-empty intersections during LED hint
         display, where a lit LED can be misdetected as a stone (R7.1).
+
+        ``prev_board``/``add_threshold`` enable confidence hysteresis — see
+        ``_passes_hysteresis``.
         """
         gs = self.config.grid_size
         board = np.zeros((gs, gs), dtype=int)
         if occupancy_aware:
-            return self._assign_occupancy_aware(board, detections, img_w, img_h, masked_cells)
+            return self._assign_occupancy_aware(
+                board, detections, img_w, img_h, masked_cells, prev_board, add_threshold
+            )
 
         confidence = np.zeros((gs, gs), dtype=float)
         for det in detections:
@@ -81,6 +98,8 @@ class BoardStateExtractor:
             pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
             if masked_cells and (pos_y, pos_x) in masked_cells:
                 continue  # lit-and-expected-empty intersection: presume LED glare, not a stone
+            if not self._passes_hysteresis(det, pos_y, pos_x, prev_board, add_threshold):
+                continue
             if det.confidence > confidence[pos_y][pos_x]:
                 board[pos_y][pos_x] = det.class_id + 1  # 0→BLACK(1), 1→WHITE(2)
                 confidence[pos_y][pos_x] = det.confidence
@@ -93,6 +112,8 @@ class BoardStateExtractor:
         img_w: int,
         img_h: int,
         masked_cells: set | None = None,
+        prev_board: np.ndarray | None = None,
+        add_threshold: float | None = None,
     ) -> np.ndarray:
         gs = board.shape[0]
         items = []
@@ -113,6 +134,8 @@ class BoardStateExtractor:
             cy = max(0, min(gs - 1, int(round(fy))))
             cx = max(0, min(gs - 1, int(round(fx))))
             if masked_cells and (cy, cx) in masked_cells:
+                continue
+            if not self._passes_hysteresis(det, cy, cx, prev_board, add_threshold):
                 continue
             if board[cy][cx] == EMPTY:
                 board[cy][cx] = det.class_id + 1

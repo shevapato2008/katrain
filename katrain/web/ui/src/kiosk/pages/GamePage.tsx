@@ -199,6 +199,20 @@ const GamePage = () => {
           />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {/* TEMP DEBUG: live recognition preview. Green box = accepted (>= threshold), red = detected but below threshold. */}
+          {isVisionEnabled && (
+            <Box sx={{ p: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                实时识别（调试）· 绿框=已识别 · 红框=检测到但低于阈值
+              </Typography>
+              <Box
+                component="img"
+                src="/api/v1/vision/stream"
+                alt="live recognition"
+                sx={{ width: '100%', aspectRatio: '1', objectFit: 'contain', bgcolor: '#000', borderRadius: 1, display: 'block' }}
+              />
+            </Box>
+          )}
           <GameControlPanel
             gameState={gameState}
             onAction={handleAction}

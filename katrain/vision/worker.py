@@ -29,6 +29,7 @@ import numpy as np
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import BoardConfig, CameraConfig
+from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
@@ -126,10 +127,14 @@ class _VisionWorkerLoop:
 
         backend = self._config.get("backend", "onnx")
         model_path = self._config.get("model_path", "")
-        confidence = self._config.get("confidence_threshold", 0.5)
+        # Hysteresis (weak-light flicker fix): detector runs at the lower "keep" threshold;
+        # board assignment demands the full "add" threshold for newly-occupied cells.
+        self._add_threshold = self._config.get("confidence_threshold", 0.5)
+        keep = self._config.get("confidence_keep") or max(0.25, self._add_threshold - 0.15)
+        self._enhance_mode = self._config.get("enhance", "clahe")
 
         logger.info("Loading inference backend=%s model=%s", backend, model_path)
-        self._detector = StoneDetector(model_path, backend=backend, confidence_threshold=confidence)
+        self._detector = StoneDetector(model_path, backend=backend, confidence_threshold=keep)
         self._board_finder = BoardFinder(camera_config=CameraConfig())
         logger.info("Inference backend ready")
 
@@ -209,6 +214,8 @@ class _VisionWorkerLoop:
                 if found and warped is not None:
                     board_detected = True
                     self._consecutive_failures = 0
+                    # Pre-inference enhancement (CLAHE: validated weak-light confidence lift)
+                    warped = enhance_for_inference(warped, self._enhance_mode)
                     h, w = warped.shape[:2]
 
                     # YOLO inference
@@ -236,7 +243,13 @@ class _VisionWorkerLoop:
                         exp = self._expected_np
                         masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._state_extractor.detections_to_board(
-                        detections, img_w=w, img_h=h, occupancy_aware=True, masked_cells=masked
+                        detections,
+                        img_w=w,
+                        img_h=h,
+                        occupancy_aware=True,
+                        masked_cells=masked,
+                        prev_board=self._last_stable_board,
+                        add_threshold=self._add_threshold,
                     )
 
                     # Temporal smoothing: require 2-frame agreement per grid position

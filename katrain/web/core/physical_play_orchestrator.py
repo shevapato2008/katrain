@@ -237,7 +237,11 @@ class PhysicalPlayOrchestrator:
             self._touch()
             self._last_assert_ts = self._clock()
         # R7.1: tell vision which intersections are lit so lamp glare on empty points
-        # can't be misread as stones (VisionService method lands in Task 7 — guarded).
+        # can't be misread as stones. The mask blocks ADDITIONS only (board_state checks
+        # the last stable board): an established stone at a lit cell keeps being
+        # recognized — masking it used to blind vision to the very stone a "remove" lamp
+        # pointed at (lamp/recognition oscillation that made moves unregistrable) and to
+        # force-clear _removal_pending while the stone was still on the board.
         if hasattr(self._vision, "set_lit_points"):
             self._vision.set_lit_points([(p["row"], p["col"]) for p in points])
 

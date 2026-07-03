@@ -167,3 +167,52 @@ class TestGuidanceScope:
         plan = planner.tick(expected, board())
         assert plan.points == []
         assert plan.caught_up is True
+
+
+class TestExtrasVsPendingMove:
+    """回归（首手落子不识别）：单颗己方颜色的多余子 = 正在确认中的落子，绝不能点
+    蓝色清理灯——那盏灯的格子曾被 vision 遮蔽，形成 灯亮→识别丢失→灯灭→识别恢复 的
+    死循环，让开局第一手永远无法注册。"""
+
+    def test_single_human_extra_never_gets_cleanup_lamp(self, planner):
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())  # 用户执黑
+        empty = board()
+        planner.on_expected(empty)
+        pending_move = board([(3, 3, BLACK)])  # 用户刚落的黑子，尚未确认
+        for _ in range(10):  # 远超 debounce 阈值
+            plan = planner.tick(empty, pending_move)
+        assert plan.points == []
+
+    def test_single_ai_color_extra_still_lamps(self, planner):
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        empty = board()
+        planner.on_expected(empty)
+        stray_white = board([(9, 9, WHITE)])  # 白=AI 色，人不会替 AI 落子 -> 真残子
+        for _ in range(3):
+            plan = planner.tick(empty, stray_white)
+        assert {"row": 9, "col": 9, "color": "remove"} in plan.points
+
+    def test_multiple_human_extras_still_lamp(self, planner):
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        empty = board()
+        planner.on_expected(empty)
+        pile = board([(9, 9, BLACK), (10, 10, BLACK)])  # 一堆残子 = 真清理场景
+        for _ in range(3):
+            plan = planner.tick(empty, pile)
+        assert len(plan.points) == 2
+
+    def test_no_context_keeps_legacy_lamping(self, planner):
+        empty = board()
+        planner.on_expected(empty)
+        stray = board([(9, 9, BLACK)])
+        for _ in range(3):
+            plan = planner.tick(empty, stray)
+        assert plan.points == [{"row": 9, "col": 9, "color": "remove"}]
+
+    def test_both_human_single_extra_never_lamps(self, planner):
+        planner.set_context(guided_colors=set(), setup_cells=set())  # 双人对弈
+        empty = board()
+        planner.on_expected(empty)
+        for _ in range(10):
+            plan = planner.tick(empty, board([(9, 9, WHITE)]))
+        assert plan.points == []

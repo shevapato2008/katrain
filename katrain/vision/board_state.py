@@ -141,8 +141,12 @@ class BoardStateExtractor:
             if cell is None:
                 continue  # off-board detection (warp-margin object) — never clamp onto a border point
             pos_y, pos_x = cell
-            if masked_cells and (pos_y, pos_x) in masked_cells:
-                continue  # lit-and-expected-empty intersection: presume LED glare, not a stone
+            if (
+                masked_cells
+                and (pos_y, pos_x) in masked_cells
+                and (prev_board is None or int(prev_board[pos_y][pos_x]) == EMPTY)
+            ):
+                continue  # lit EMPTY intersection: presume LED glare, not a stone (adds only)
             if not self._passes_hysteresis(det, pos_y, pos_x, prev_board, add_threshold):
                 continue
             if det.confidence > confidence[pos_y][pos_x]:
@@ -206,7 +210,16 @@ class BoardStateExtractor:
                 cy, cx = int(round(fy)), int(round(fx))
                 if not (0 <= cy < gs and 0 <= cx < gs):
                     continue  # off-board detection (warp-margin object) — never clamp onto a border point
-            if masked_cells and (cy, cx) in masked_cells:
+            # Lit-cell mask blocks ADDITIONS only: lamp glare on an EMPTY point must not
+            # become a phantom stone (R7.1), but a stone already established at a lit
+            # cell keeps being recognized — dropping its detections blinded vision to
+            # the very stone a "remove" lamp pointed at (lamp/recognition oscillation)
+            # and force-cleared removal tracking while the stone was still on the board.
+            if (
+                masked_cells
+                and (cy, cx) in masked_cells
+                and (prev_board is None or int(prev_board[cy][cx]) == EMPTY)
+            ):
                 continue
             if not self._passes_hysteresis(det, cy, cx, prev_board, add_threshold):
                 continue
@@ -222,11 +235,11 @@ class BoardStateExtractor:
             board[ny][nx] = det.class_id + 1
 
         # Presence sustain: a stone from the last stable board stays while ANY detection
-        # (led/color misreads included) still sits on it — see SUSTAIN_RADIUS.
+        # (led/color misreads included) still sits on it — see SUSTAIN_RADIUS. The lit-cell
+        # mask deliberately does NOT apply: it exists to block phantom ADDS on empty lit
+        # points, and sustain by definition concerns cells that already hold a stone.
         if prev_board is not None and all_points:
             for r, c in zip(*np.where((prev_board != EMPTY) & (board == EMPTY))):
-                if masked_cells and (int(r), int(c)) in masked_cells:
-                    continue
                 if any(math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS for fy, fx, _, _ in all_points):
                     board[r][c] = prev_board[r][c]
         return board

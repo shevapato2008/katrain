@@ -281,3 +281,18 @@ class TestGuidanceContextExtraction:
 
     def test_setup_cells_empty_for_no_stones(self):
         assert PhysicalPlayOrchestrator._setup_cells_from_state({}, 19) == set()
+
+
+class TestLitPointsIncludeAllLamps:
+    """遮蔽语义在 board_state（只挡新增、不逐已有子）；orchestrator 上报完整点集，
+    这样拿走棋子后蓝灯裸照空格的眩光仍然被挡住，不会变成幻影子。"""
+
+    def test_all_lamp_points_sent_as_lit(self):
+        orch, led, vision, mgr = _orch()
+        orch._apply_points(
+            [
+                {"row": 3, "col": 3, "color": "black"},
+                {"row": 5, "col": 5, "color": "remove"},
+            ]
+        )
+        assert vision.lit == [(3, 3), (5, 5)]

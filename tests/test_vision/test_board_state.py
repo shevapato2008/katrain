@@ -417,3 +417,48 @@ class TestStickyAssignment:
     def test_no_sticky_board_is_legacy_behavior(self):
         board = self._run([self._det_at_grid(5, 2.55)], None)
         assert board[5][3] == BLACK
+
+
+class TestMaskBlocksAddsOnly:
+    """回归（首手落子不识别）：亮灯格遮蔽只阻止"新增"幻影（R7.1 眩光），绝不驱逐
+    已确立的子——否则"请拿走"蓝灯会让系统看不见它所指的那颗子（灯/识别死循环），
+    并使 removal_pending 在子还在盘上时误自清。"""
+
+    IMG = 950
+
+    def _det(self, row, col, class_id=0, conf=0.6):
+        cfg = BoardConfig()
+        x_mm, y_mm = grid_to_physical(col, row, config=cfg)
+        return Detection(
+            x_center=x_mm / cfg.total_width * self.IMG,
+            y_center=y_mm / cfg.total_length * self.IMG,
+            class_id=class_id,
+            confidence=conf,
+        )
+
+    def _run(self, dets, masked, prev):
+        ex = BoardStateExtractor(BoardConfig())
+        return ex.detections_to_board(
+            dets,
+            img_w=self.IMG,
+            img_h=self.IMG,
+            occupancy_aware=True,
+            masked_cells=masked,
+            prev_board=prev,
+            add_threshold=0.40,
+        )
+
+    def test_established_stone_at_lit_cell_keeps_being_recognized(self):
+        prev = np.zeros((19, 19), dtype=int)
+        prev[5][5] = BLACK
+        board = self._run([self._det(5, 5, 0, 0.6)], {(5, 5)}, prev)
+        assert board[5][5] == BLACK
+
+    def test_glare_on_empty_lit_cell_still_blocked(self):
+        prev = np.zeros((19, 19), dtype=int)  # cell empty in last stable board
+        board = self._run([self._det(5, 5, 1, 0.6)], {(5, 5)}, prev)
+        assert board[5][5] == EMPTY
+
+    def test_no_prev_board_blocks_conservatively(self):
+        board = self._run([self._det(5, 5, 0, 0.6)], {(5, 5)}, None)
+        assert board[5][5] == EMPTY

@@ -124,6 +124,17 @@ class LedPlanner:
             extras = {
                 (int(r), int(c)) for r, c in zip(*np.nonzero((expected == EMPTY) & (observed != EMPTY)))
             } - self._removal_pending
+            # A SINGLE unexpected stone of a HUMAN color is (with overwhelming likelihood)
+            # the player's own move racing through confirmation — a cleanup lamp here is
+            # not just wrong, it used to be fatal: the lamp's cell was masked from vision,
+            # the stone vanished from the observed board, stopped being an extra, the lamp
+            # went out, the stone came back... an oscillation that kept the first move of
+            # a game permanently unregistrable. AI-color extras and multi-stone piles are
+            # genuine cleanup situations and still lamp.
+            if self._guided_colors is not None and len(extras) == 1:
+                p = next(iter(extras))
+                if int(observed[p]) not in self._guided_colors:
+                    extras = set()
             self._extra_counts = {p: self._extra_counts.get(p, 0) + 1 for p in extras}
             debounced = {p for p, n in self._extra_counts.items() if n >= self.config.extra_stone_debounce_ticks}
 

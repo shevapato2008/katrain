@@ -1,0 +1,154 @@
+<title>弈航 Kiosk · ② 素纸 Paper Launcher</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --paper:#f4efe6; --card:#fffdf8; --ink:#1d1a14; --soft:#6f6759; --faint:#9a917f;
+  --line:#e5ddcd; --jade:#3f6b57; --jade-d:#2f5343; --clay:#b0603a; --wood:#c9a56e;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#d9d2c4;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ink)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
+.cap{color:#5c5647;font-size:12.5px;text-align:center}.cap b{color:#2f2a20;font-weight:600}
+.scaler{transform-origin:top center}
+
+.screen{width:1024px;height:600px;background:
+  radial-gradient(90% 70% at 88% -10%, #fbf7ef, transparent 60%),var(--paper);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #cfc6b4;box-shadow:0 30px 80px -30px rgba(60,50,30,.55)}
+
+/* top bar */
+.top{height:58px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 30px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px}
+.mark{width:28px;height:28px;border-radius:8px;background:radial-gradient(circle at 34% 30%,#5c8a74,#2f5343);
+  display:grid;place-items:center;box-shadow:0 3px 10px -2px rgba(63,107,87,.5)}
+.mark i{width:9px;height:9px;border-radius:50%;background:#141414;box-shadow:6px 0 0 -1px #fbf7ef}
+.wname{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:.2px}
+.wname small{font-family:var(--serif);font-style:italic;font-weight:500;font-size:12.5px;color:var(--faint);margin-left:7px}
+.status{display:flex;align-items:center;gap:18px}
+.st{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--soft)}
+.st b{width:7px;height:7px;border-radius:50%;background:var(--jade)}
+.st.warn b{background:var(--wood)}
+.who{display:flex;align-items:center;gap:9px;padding-left:18px;border-left:1px solid var(--line)}
+.ava{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2f5343,#5c8a74);
+  display:grid;place-items:center;font-size:12px;font-weight:700;color:#f4efe6}
+.who span{font-size:13.5px;color:var(--ink)}.who .t{color:var(--faint);font-variant-numeric:tabular-nums}
+
+.main{flex:1;min-height:0;padding:22px 30px 24px;display:flex;flex-direction:column;gap:16px}
+.hello{display:flex;align-items:flex-end;justify-content:space-between}
+.hello h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.03;letter-spacing:.2px}
+.hello h1 b{font-weight:600;font-style:italic;color:var(--jade)}
+.hello .sub{color:var(--soft);font-size:13.5px;text-align:right}
+.hello .sub .g{color:var(--jade);font-weight:600}
+
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:1.55fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;
+  cursor:pointer;transition:.16s;display:flex;flex-direction:column;box-shadow:0 1px 0 rgba(255,255,255,.6)}
+.tile:hover{border-color:#d3c8b2;transform:translateY(-2px);box-shadow:0 12px 26px -16px rgba(60,45,20,.4)}
+.tile .ic{width:44px;height:44px;border-radius:12px;background:#f2ece0;display:grid;place-items:center;margin-bottom:auto}
+.tile .ic svg{width:23px;height:23px;stroke:var(--jade);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tile h3{font-size:17px;font-weight:600;margin-top:12px}
+.tile .en{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--faint);margin-top:1px}
+
+/* hero 对弈 tile */
+.hero{grid-row:1 / span 2;background:linear-gradient(160deg,#3f6b57,#2c4c3e);border-color:var(--jade-d);
+  color:#f2efe6;padding:22px 24px;position:relative;overflow:hidden}
+.hero:hover{transform:translateY(-2px)}
+.hero .goban{position:absolute;right:-46px;bottom:-46px;width:230px;height:230px;opacity:.5}
+.hero .kick{font-family:var(--serif);font-style:italic;font-size:13px;color:#bcd3c7}
+.hero h2{font-size:30px;font-weight:600;letter-spacing:.3px;margin-top:2px}
+.hero p{font-size:13px;color:#cadbd1;margin-top:8px;max-width:230px;line-height:1.45}
+.hero .cta{margin-top:auto;display:inline-flex;align-items:center;gap:10px;align-self:flex-start;
+  background:#f2efe6;color:#204034;font-size:16px;font-weight:700;padding:12px 20px;border-radius:12px;
+  box-shadow:0 10px 22px -10px rgba(0,0,0,.5)}
+.hero .cta svg{width:17px;height:17px;stroke:#204034;stroke-width:2.6;fill:none}
+.hero .subs{display:flex;gap:8px;margin-top:12px}
+.hero .subs span{font-size:11.5px;color:#d7e4dc;border:1px solid rgba(242,239,230,.28);
+  padding:5px 10px;border-radius:20px}
+
+.tile .ic.clay{background:#f7e7dd}.tile .ic.clay svg{stroke:var(--clay)}
+
+.strip{flex-shrink:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.bar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;transition:.16s}
+.bar:hover{border-color:#d3c8b2;background:#fffefb}
+.bar svg{width:20px;height:20px;stroke:var(--soft);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.bar h4{font-size:14.5px;font-weight:600}.bar .en{font-family:var(--serif);font-style:italic;font-size:11px;color:var(--faint)}
+.bar.set{margin-left:0}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ② <b>素纸 Paper Launcher</b> — 主界面不放边栏，改为启动台；对弈为主砖 · 进入模块内才出现返回/子导航 · 7″ 1024×600</div>
+  <div class="scaler" id="sc">
+  <div class="screen">
+    <div class="top">
+      <div class="brand"><div class="mark"><i></i></div><div class="wname">弈航<small>Yìháng</small></div></div>
+      <div class="status">
+        <div class="st">引擎<b></b></div>
+        <div class="st">摄像头<b></b></div>
+        <div class="st warn">棋盘标定<b></b></div>
+        <div class="who"><div class="ava">F</div><span>fan</span><span class="t">22:40</span></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="hello">
+        <h1>晚上好，<b>fan。</b></h1>
+        <div class="sub"><span class="g">智能棋盘已就绪</span><br>摆好棋子，或从下方选择一项</div>
+      </div>
+
+      <div class="grid">
+        <!-- hero -->
+        <div class="tile hero">
+          <svg class="goban" viewBox="0 0 100 100">
+            <g stroke="#dfeae3" stroke-width=".7" opacity=".9">
+              <path d="M8 8H92M8 20H92M8 32H92M8 44H92M8 56H92M8 68H92M8 80H92M8 92H92"/>
+              <path d="M8 8V92M20 8V92M32 8V92M44 8V92M56 8V92M68 8V92M80 8V92M92 8V92"/>
+            </g>
+            <circle cx="20" cy="80" r="6.4" fill="#111"/><circle cx="32" cy="68" r="6.4" fill="#111"/>
+            <circle cx="20" cy="68" r="6.4" fill="#f4efe6"/><circle cx="32" cy="80" r="6.4" fill="#f4efe6"/>
+            <circle cx="44" cy="56" r="6.4" fill="#111"/>
+          </svg>
+          <div class="kick">Play · 对弈</div>
+          <h2>对弈</h2>
+          <p>人机、人人、跨平台，在这张智能棋盘上开始一局。</p>
+          <div class="subs"><span>自由对弈</span><span>升降级</span><span>跨平台</span></div>
+          <div class="cta">开始对弈 <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+        </div>
+
+        <div class="tile">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg></div>
+          <h3>死活</h3><div class="en">Tsumego</div>
+        </div>
+        <div class="tile">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8"/></svg></div>
+          <h3>研究</h3><div class="en">Study</div>
+        </div>
+        <div class="tile">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M8 9h6M8 13h8"/></svg></div>
+          <h3>棋谱</h3><div class="en">Kifu</div>
+        </div>
+        <div class="tile">
+          <div class="ic clay"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg></div>
+          <h3>摆谱</h3><div class="en">Replay</div>
+        </div>
+      </div>
+
+      <div class="strip">
+        <div class="bar"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="12" rx="2"/><path d="M18 10l3-2v8l-3-2"/></svg><div><h4>直播</h4><div class="en">Live</div></div></div>
+        <div class="bar"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4z"/><path d="M7 10v5c0 1 2.5 2.5 5 2.5s5-1.5 5-2.5v-5"/></svg><div><h4>教程</h4><div class="en">Tutorial</div></div></div>
+        <div class="bar set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.2-1.5l2-1.6-2-3.4-2.4 1a7 7 0 00-2.6-1.5L13.4 2h-2.8l-.4 2.5a7 7 0 00-2.6 1.5l-2.4-1-2 3.4 2 1.6A7 7 0 003 12"/></svg><div><h4>设置</h4><div class="en">Settings</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="cap">左栏取消 → 主屏更透气；对弈作主砖带真实盘角。进入任一模块后，左侧再出现窄返回栏 + 该模块子项。</div>
+</div>
+<script>
+  function fit(){var s=Math.min(1,(innerWidth-48)/1024,(innerHeight-120)/600);
+    var e=document.getElementById('sc');e.style.transform='scale('+s+')';
+    e.style.height=(600*s)+'px';e.style.width=(1024*s)+'px';}
+  addEventListener('resize',fit);fit();
+</script>

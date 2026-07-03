@@ -16,7 +16,7 @@ import numpy as np
 
 from katrain.vision.classes import STONE_CLASS_IDS
 from katrain.vision.config import BoardConfig
-from katrain.vision.coordinates import continuous_grid_pos, physical_to_grid, pixel_to_physical
+from katrain.vision.coordinates import continuous_grid_pos, pixel_to_physical
 from katrain.vision.stone_detector import Detection
 
 EMPTY = 0
@@ -53,6 +53,22 @@ class BoardStateExtractor:
 
     def __init__(self, config: BoardConfig | None = None):
         self.config = config or BoardConfig()
+
+    def _grid_cell(self, det, img_w: int, img_h: int) -> tuple[int, int] | None:
+        """Nearest intersection (row, col) for a detection, or None when it is off-board.
+
+        The geometry-lock warp includes a 1-cell blank margin; an object sitting in that
+        margin (cable, marker, glare) must be DROPPED, not clamped to the nearest border
+        intersection — clamping once turned a red object beside the top-right corner into
+        a phantom T19 move. Up to half a cell of overshoot still rounds onto the edge row,
+        so sloppily placed border stones keep working."""
+        x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+        fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
+        cy, cx = int(round(fy)), int(round(fx))
+        gs = self.config.grid_size
+        if 0 <= cy < gs and 0 <= cx < gs:
+            return cy, cx
+        return None
 
     @staticmethod
     def _passes_hysteresis(det, cy: int, cx: int, prev_board, add_threshold) -> bool:
@@ -94,8 +110,10 @@ class BoardStateExtractor:
         for det in detections:
             if det.class_id not in STONE_CLASS_IDS:
                 continue  # LED guidance classes (led_red/led_green) are not board stones
-            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
-            pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
+            cell = self._grid_cell(det, img_w, img_h)
+            if cell is None:
+                continue  # off-board detection (warp-margin object) — never clamp onto a border point
+            pos_y, pos_x = cell
             if masked_cells and (pos_y, pos_x) in masked_cells:
                 continue  # lit-and-expected-empty intersection: presume LED glare, not a stone
             if not self._passes_hysteresis(det, pos_y, pos_x, prev_board, add_threshold):
@@ -131,8 +149,9 @@ class BoardStateExtractor:
         # (drop it) — decided by SPILL_MIN_CONFIDENCE, so a weak FP can't spawn a phantom.
         items.sort(key=lambda t: (-t[1].confidence, t[0]))
         for _, det, fx, fy in items:
-            cy = max(0, min(gs - 1, int(round(fy))))
-            cx = max(0, min(gs - 1, int(round(fx))))
+            cy, cx = int(round(fy)), int(round(fx))
+            if not (0 <= cy < gs and 0 <= cx < gs):
+                continue  # off-board detection (warp-margin object) — never clamp onto a border point
             if masked_cells and (cy, cx) in masked_cells:
                 continue
             if not self._passes_hysteresis(det, cy, cx, prev_board, add_threshold):
@@ -156,9 +175,9 @@ class BoardStateExtractor:
         for det in detections:
             if det.class_id not in STONE_CLASS_IDS:
                 continue
-            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
-            pos_x, pos_y = physical_to_grid(x_mm, y_mm, self.config)
-            key = (pos_y, pos_x)
+            key = self._grid_cell(det, img_w, img_h)
+            if key is None:
+                continue  # off-board detection must not vouch for a border intersection
             out[key] = max(out.get(key, 0.0), det.confidence)
         return out
 

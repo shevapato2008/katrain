@@ -235,3 +235,42 @@ class TestConfidenceHysteresis:
         weak = self._det_at_cell(5, 5, 0, img, cfg, conf=0.35)
         board = ex.detections_to_board([weak], img_w=img, img_h=img, occupancy_aware=occupancy_aware)
         assert board[5][5] == BLACK  # hysteresis disabled -> anything past detector threshold lands
+
+
+class TestOffBoardDetections:
+    """Warp-margin objects must be DROPPED, never clamped onto a border intersection.
+
+    Regression for the phantom T19 move: a red object in the 1-cell warp margin beside
+    the top-right corner was detected as a black stone and clamped to the nearest border
+    point (row 0, col 18), then injected as a real move."""
+
+    IMG = 640
+
+    def _margined_extractor(self):
+        return BoardStateExtractor(BoardConfig(margin_cells=1.0))
+
+    def _det_at_grid(self, fx, fy, class_id=0, conf=0.9):
+        # continuous grid pos -> pixel in a 1-cell-margin warp (20 cells across the image)
+        x_px = (1 + fx) / 20 * self.IMG
+        y_px = (1 + fy) / 20 * self.IMG
+        return Detection(x_center=x_px, y_center=y_px, class_id=class_id, confidence=conf)
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_margin_object_never_becomes_border_stone(self, occupancy_aware):
+        ex = self._margined_extractor()
+        phantom = self._det_at_grid(fx=18.9, fy=-0.9)  # in the margin, beside the corner
+        board = ex.detections_to_board([phantom], img_w=self.IMG, img_h=self.IMG, occupancy_aware=occupancy_aware)
+        assert np.all(board == EMPTY)
+
+    @pytest.mark.parametrize("occupancy_aware", [False, True])
+    def test_slight_overshoot_still_maps_to_edge_row(self, occupancy_aware):
+        # A sloppily placed border stone displaced <0.5 cell outward must keep working.
+        ex = self._margined_extractor()
+        stone = self._det_at_grid(fx=18.3, fy=-0.3)
+        board = ex.detections_to_board([stone], img_w=self.IMG, img_h=self.IMG, occupancy_aware=occupancy_aware)
+        assert board[0][18] == BLACK
+
+    def test_cell_confidences_ignore_off_board_detections(self):
+        ex = self._margined_extractor()
+        phantom = self._det_at_grid(fx=18.9, fy=-0.9, conf=0.8)
+        assert ex.cell_confidences([phantom], img_w=self.IMG, img_h=self.IMG) == {}

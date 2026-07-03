@@ -81,13 +81,14 @@ class InProcessAdapter:
                 margin_cells=DEFAULT_MARGIN_CELLS,
             )
         )
-        self._move_detector = MoveDetector()
+        self._move_detector = MoveDetector(consistency_frames=config.get("move_confirm_frames", 3))
         self._sync = SyncStateMachine()
 
         self._paused = False
         self._lit_points: set[tuple[int, int]] = set()
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+        self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
 
         self._viewer_active = False
         self._bound = False
@@ -232,7 +233,12 @@ class InProcessAdapter:
                         move_result = self._move_detector.detect_new_move(observed_board)
                         if move_result is not None:
                             row, col, color = move_result
-                            conf = conf_map.get((row, col), 1.0)
+                            # A real stone that survived voting was detected in this frame or
+                            # the previous one, so the two-frame lookup always finds its
+                            # confidence. A confirmed cell with NO backing detection in either
+                            # frame (spill-assigned or otherwise unbacked) falls to 0.0 and is
+                            # routed to the ambiguous dialog — never silently injected.
+                            conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
                             if conf < self._ambiguous_confidence:
                                 # PRD §3.4 row 1: low-confidence "move" asks the user instead
                                 self._event_queue.put(
@@ -259,6 +265,7 @@ class InProcessAdapter:
                                         "data": {"row": int(r), "col": int(c), "color": int(clr)},
                                     }
                                 )
+                        self._prev_conf_map = conf_map
 
                     self._maybe_send_preview(warped, detections)
 
@@ -312,6 +319,7 @@ class InProcessAdapter:
                 self._sync = SyncStateMachine()
                 self._prev_observed_board = None  # drop voting state across sessions
                 self._last_stable_board = None
+                self._prev_conf_map = {}
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
@@ -326,6 +334,7 @@ class InProcessAdapter:
                 self._sync.reset()
                 self._prev_observed_board = None  # rebuild voting baseline after recovery
                 self._last_stable_board = None
+                self._prev_conf_map = {}
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
@@ -346,16 +355,13 @@ class InProcessAdapter:
         h, w = warped.shape[:2]
         preview = cv2.resize(warped, (PREVIEW_SIZE, PREVIEW_SIZE), interpolation=cv2.INTER_LINEAR)
         sx, sy = PREVIEW_SIZE / w, PREVIEW_SIZE / h
-        # Debug overlay: re-detect at a low threshold so below-accept near-misses are visible.
-        # Green box = would ADD a new stone (>= add threshold); red = below it (only
-        # sustains an existing stone via the keep threshold, or is rejected outright).
+        # Debug overlay draws exactly what the pipeline ingests: the keep-threshold,
+        # deduplicated detections. Green box = would ADD a new stone (>= add threshold);
+        # red = keep-only (sustains an existing stone, can never add one). Re-detecting
+        # at a lower threshold here previously drew boxes the pipeline never saw —
+        # pure confusion, plus a wasted inference per preview frame.
         thr = self._add_threshold
-        try:
-            overlay_dets = self._detector.backend_impl.detect(
-                warped, 0.15, getattr(self._detector, "iou_threshold", None)
-            )
-        except Exception:
-            overlay_dets = detections or []
+        overlay_dets = detections or []
         label = {0: "B", 1: "W", 2: "R", 3: "G"}
         for d in overlay_dets:
             x1, y1, x2, y2 = d.bbox

@@ -23,6 +23,11 @@ class VisionServiceConfig:
     confidence_keep: float | None = None
     # Pre-inference enhancement of the warped frame: "clahe" (validated weak-light win) | "off"
     enhance: str = "clahe"
+    # Consecutive stable-board frames a single new stone must persist before MoveDetector
+    # confirms it as a move (on top of the 2-frame per-cell voting). Raised from the
+    # MoveDetector default of 3 after a warp-margin object briefly crossing the add
+    # threshold was injected as a phantom corner move.
+    move_confirm_frames: int = 5
     imgsz: int = 960
     use_clahe: bool = False
     intrinsics_file: str | None = None  # persistent camera calibration .npz
@@ -46,6 +51,7 @@ class VisionServiceConfig:
             "confidence_threshold": self.confidence_threshold,
             "confidence_keep": self.effective_confidence_keep,
             "enhance": self.enhance,
+            "move_confirm_frames": self.move_confirm_frames,
             "use_clahe": self.use_clahe,
             "capture_fps": self.capture_fps,
         }

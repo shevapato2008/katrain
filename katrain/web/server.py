@@ -480,6 +480,13 @@ async def _lifespan_board(app: FastAPI, log):
     else:
         app.state.geometry_calibration = None
 
+    # Push a persisted geometry lock into the vision worker at startup. Without this,
+    # recognition silently lacks geometry after every server restart (the calibration
+    # service already reports locked=true from the same file) until the user manually
+    # recalibrates on the setup page.
+    if app.state.geometry is not None and app.state.vision is not None:
+        app.state.vision.set_geometry(app.state.geometry)
+
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
 
@@ -2009,6 +2016,14 @@ def run_web():
         "measurably lifts weak-light stone confidence).",
     )
     parser.add_argument(
+        "--vision-move-frames",
+        type=int,
+        default=None,
+        help="Consecutive stable frames a single new stone must persist before it is accepted "
+        "as a move (default: 5). Raise to reject transient false positives; lower for snappier "
+        "move registration.",
+    )
+    parser.add_argument(
         "--led-serial-port",
         default=None,
         help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
@@ -2072,6 +2087,8 @@ def run_web():
             vision_kwargs["confidence_keep"] = args.vision_confidence_keep
         if args.vision_enhance is not None:
             vision_kwargs["enhance"] = args.vision_enhance
+        if args.vision_move_frames is not None:
+            vision_kwargs["move_confirm_frames"] = args.vision_move_frames
         settings._vision_config = VisionServiceConfig(**vision_kwargs)
 
     # Configure LED service if a serial port was provided

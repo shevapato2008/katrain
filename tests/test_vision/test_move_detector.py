@@ -75,3 +75,23 @@ class TestMoveDetector:
         board2 = np.zeros((19, 19), dtype=int)  # stone removed (undo)
         detector.force_sync(board2)
         assert np.array_equal(detector.prev_board, board2)
+
+
+class TestConfigurableConsistencyFrames:
+    def test_five_frame_confirmation(self):
+        detector = MoveDetector(consistency_frames=5)
+        empty = np.zeros((19, 19), dtype=int)
+        detector.detect_new_move(empty)
+
+        with_stone = empty.copy()
+        with_stone[3][3] = BLACK
+        for _ in range(4):
+            assert detector.detect_new_move(with_stone) is None
+        assert detector.detect_new_move(with_stone) == (3, 3, BLACK)
+
+    def test_service_config_carries_move_confirm_frames(self):
+        from katrain.vision.config_service import VisionServiceConfig
+
+        cfg = VisionServiceConfig(move_confirm_frames=7)
+        assert cfg.to_worker_config()["move_confirm_frames"] == 7
+        assert VisionServiceConfig().to_worker_config()["move_confirm_frames"] == 5  # raised default

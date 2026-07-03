@@ -100,13 +100,14 @@ class _VisionWorkerLoop:
         )
         self._motion_filter = MotionFilter()
         self._state_extractor = BoardStateExtractor(board_config)
-        self._move_detector = MoveDetector()
+        self._move_detector = MoveDetector(consistency_frames=config.get("move_confirm_frames", 3))
         self._sync = SyncStateMachine()
 
         self._paused = False
         self._lit_points: set[tuple[int, int]] = set()
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+        self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
 
         # Inference backend — lazy import so the heavy deps only load in the worker process
         self._detector = None
@@ -281,7 +282,12 @@ class _VisionWorkerLoop:
                         move_result = self._move_detector.detect_new_move(self._last_stable_board)
                         if move_result is not None:
                             row, col, color = move_result
-                            conf = conf_map.get((row, col), 1.0)
+                            # A real stone that survived voting was detected in this frame or
+                            # the previous one, so the two-frame lookup always finds its
+                            # confidence. A confirmed cell with NO backing detection in either
+                            # frame (spill-assigned or otherwise unbacked) falls to 0.0 and is
+                            # routed to the ambiguous dialog — never silently injected.
+                            conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
                             if conf < self._ambiguous_confidence:
                                 # PRD §3.4 row 1: low-confidence "move" asks the user instead
                                 self._event_queue.put(
@@ -308,6 +314,7 @@ class _VisionWorkerLoop:
                                         "data": {"row": int(r), "col": int(c), "color": int(clr)},
                                     }
                                 )
+                        self._prev_conf_map = conf_map
                 else:
                     # Board not found
                     self._consecutive_failures += 1
@@ -366,6 +373,7 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
+                self._prev_conf_map = {}
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._board_locked = True
                 logger.info("Board pose locked — reusing transform for subsequent frames")
@@ -382,6 +390,7 @@ class _VisionWorkerLoop:
                 self._board_locked = False
                 self._board_finder.is_first = True  # Reset corner baseline
                 self._sync.reset()
+                self._prev_conf_map = {}
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.PAUSE_DETECTION:

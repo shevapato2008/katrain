@@ -462,3 +462,48 @@ class TestMaskBlocksAddsOnly:
     def test_no_prev_board_blocks_conservatively(self):
         board = self._run([self._det(5, 5, 0, 0.6)], {(5, 5)}, None)
         assert board[5][5] == EMPTY
+
+
+class TestSustainAtLitCells:
+    """提子死锁回归：亮灯格（remove 蓝灯）上的存在性维持只认棋子类检测——用户拿走
+    棋子后灯光眩光读成 led 类不得把刚拿走的子"维持"回盘上（removal_pending 永不清）。"""
+
+    IMG = 950
+
+    def _det(self, row, col, class_id, conf=0.6):
+        cfg = BoardConfig()
+        x_mm, y_mm = grid_to_physical(col, row, config=cfg)
+        return Detection(
+            x_center=x_mm / cfg.total_width * self.IMG,
+            y_center=y_mm / cfg.total_length * self.IMG,
+            class_id=class_id,
+            confidence=conf,
+        )
+
+    def _run(self, dets, masked, prev):
+        ex = BoardStateExtractor(BoardConfig())
+        return ex.detections_to_board(
+            dets, img_w=self.IMG, img_h=self.IMG, occupancy_aware=True,
+            masked_cells=masked, prev_board=prev, add_threshold=0.40,
+        )
+
+    def _prev_white(self):
+        prev = np.zeros((19, 19), dtype=int)
+        prev[5][5] = WHITE
+        return prev
+
+    def test_led_glare_at_lit_cell_does_not_sustain_removed_stone(self):
+        dets = [self._det(5, 5, 2, 0.6)]  # lamp glare read as led_red, stone removed
+        board = self._run(dets, {(5, 5)}, self._prev_white())
+        assert board[5][5] == EMPTY  # removal completes
+
+    def test_stone_class_at_lit_cell_still_sustains(self):
+        # the stone is STILL physically there (user slow to remove) — keep tracking it
+        dets = [self._det(5, 5, 1, 0.35)]  # weak white detection at the lit cell
+        board = self._run(dets, {(5, 5)}, self._prev_white())
+        assert board[5][5] == WHITE
+
+    def test_led_misread_at_unlit_cell_still_sustains(self):
+        dets = [self._det(5, 5, 2, 0.6)]  # no lamp here: this is a model misread
+        board = self._run(dets, set(), self._prev_white())
+        assert board[5][5] == WHITE

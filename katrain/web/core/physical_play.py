@@ -130,10 +130,16 @@ class LedPlanner:
             # the stone vanished from the observed board, stopped being an extra, the lamp
             # went out, the stone came back... an oscillation that kept the first move of
             # a game permanently unregistrable. AI-color extras and multi-stone piles are
-            # genuine cleanup situations and still lamp.
+            # genuine cleanup situations and still lamp. The exemption only applies to a
+            # stone that has NOT already crossed the debounce as part of a cleanup pile:
+            # when the user clears a multi-stone pile down to one, the survivor keeps its
+            # lamp instead of suddenly being reinterpreted as a "move".
             if self._guided_colors is not None and len(extras) == 1:
                 p = next(iter(extras))
-                if int(observed[p]) not in self._guided_colors:
+                if (
+                    int(observed[p]) not in self._guided_colors
+                    and self._extra_counts.get(p, 0) < self.config.extra_stone_debounce_ticks
+                ):
                     extras = set()
             self._extra_counts = {p: self._extra_counts.get(p, 0) + 1 for p in extras}
             debounced = {p for p, n in self._extra_counts.items() if n >= self.config.extra_stone_debounce_ticks}

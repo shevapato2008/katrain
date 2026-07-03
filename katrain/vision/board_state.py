@@ -234,13 +234,20 @@ class BoardStateExtractor:
             ny, nx = cell
             board[ny][nx] = det.class_id + 1
 
-        # Presence sustain: a stone from the last stable board stays while ANY detection
-        # (led/color misreads included) still sits on it — see SUSTAIN_RADIUS. The lit-cell
-        # mask deliberately does NOT apply: it exists to block phantom ADDS on empty lit
-        # points, and sustain by definition concerns cells that already hold a stone.
+        # Presence sustain: a stone from the last stable board stays while a detection
+        # still sits on it — see SUSTAIN_RADIUS. At UNLIT cells any class counts (the
+        # model misreads a dark stone as led_red / flips its color for a few frames);
+        # at LIT cells (masked = a remove lamp is burning there) only STONE classes
+        # count — after the user removes the stone the lamp's own glare reads as an
+        # led class, and counting it would keep the just-removed stone alive forever
+        # (removal deadlock: removal_pending never clears, the game stays paused).
         if prev_board is not None and all_points:
             for r, c in zip(*np.where((prev_board != EMPTY) & (board == EMPTY))):
-                if any(math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS for fy, fx, _, _ in all_points):
+                lit = bool(masked_cells) and (int(r), int(c)) in masked_cells
+                if any(
+                    math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS and (not lit or cls in STONE_CLASS_IDS)
+                    for fy, fx, cls, _ in all_points
+                ):
                     board[r][c] = prev_board[r][c]
         return board
 

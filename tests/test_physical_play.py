@@ -216,3 +216,28 @@ class TestExtrasVsPendingMove:
         for _ in range(10):
             plan = planner.tick(empty, board([(9, 9, WHITE)]))
         assert plan.points == []
+
+
+class TestExtrasExclusionDecay:
+    """裁决 REAL 的边界：清理堆缩到一颗时，幸存残子已过防抖计数——保持点灯，
+    不得突然被豁免（灯灭 + 被当成落子注入）。"""
+
+    def test_pile_survivor_keeps_its_lamp(self, planner):
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        empty = board()
+        planner.on_expected(empty)
+        pile = board([(9, 9, BLACK), (10, 10, BLACK)])
+        for _ in range(3):  # both cross the 2-tick debounce
+            plan = planner.tick(empty, pile)
+        assert len(plan.points) == 2
+        survivor = board([(9, 9, BLACK)])  # user removed one
+        plan = planner.tick(empty, survivor)
+        assert plan.points == [{"row": 9, "col": 9, "color": "remove"}]  # lamp stays
+
+    def test_fresh_single_stone_still_exempt(self, planner):
+        planner.set_context(guided_colors={WHITE}, setup_cells=set())
+        empty = board()
+        planner.on_expected(empty)
+        for _ in range(10):
+            plan = planner.tick(empty, board([(3, 3, BLACK)]))  # never lamped before
+        assert plan.points == []

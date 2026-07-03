@@ -520,6 +520,8 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
+                self._prev_observed_board = None  # drop voting state across sessions (parity
+                self._last_stable_board = None  # with worker_inprocess — review M2)
                 self._prev_conf_map = {}
                 self._ambig_last_emit = {}
                 self._averager.reset()

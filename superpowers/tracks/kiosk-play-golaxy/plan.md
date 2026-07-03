@@ -2,8 +2,9 @@
 
 > Branch: `feature/kiosk-play-golaxy` · Worktree: `/Users/fan/Repositories/katrain-kiosk-play-golaxy`
 > Protocol reference: [`golaxy-protocol.md`](./golaxy-protocol.md) (same folder — read it first)
-> Status: ready to execute · Written 2026-07-02 after full live protocol capture
+> Status: **人机对弈闭环已上线并真机验证 (2026-07-03)** · 原计划 Phase 0–5 已实现 · Written 2026-07-02 after full live protocol capture
 > **Revised 2026-07-02** after external plan review (Codex + Gemini, see [`review-feedback-codex.md`](./review-feedback-codex.md) / [`review-feedback-gemini.md`](./review-feedback-gemini.md)); 采纳记录见 §10。
+> **2026-07-03 补记**：落子鉴权/记谱/凭证 5 项修复已完成并推送 → §11；下一步「补全自由对弈设置面板(开放贴目/规则/让子)」计划 → §12。
 
 ---
 
@@ -247,3 +248,168 @@
 | Codex ❓1 | 部署拓扑二选一 | 已答：本期全本地（§3.3） |
 | Codex ❓3 | 服务重启恢复是否 DoD | 已答：non-goal，明确写入 §1/§3.2 |
 | Codex ❓4 | token 按用户还是按设备持久化 | 已答：沿用既有 credential store 按 KaTrain user_id 存储，board 模式即设备本地用户（§3.3） |
+
+---
+
+## 11. 2026-07-03 修复记录（已完成并推送 `feature/kiosk-play-golaxy`）
+
+原计划 Phase 0–5 实现后，真机对弈暴露出「每手落子报 AI 连接出错」等一串问题。经真机变体矩阵定位并端到端验证，以下 5 项已修复、测试、提交、推送：
+
+1. **genmove 鉴权 header（核心落子修复）**：隧道要 **`Authorization: bearer <access_token>` + 浏览器 `Origin`/`Referer`/`User-Agent`**。原计划/协议文档写的 `Auth_token: <token>`（raw/bearer、±浏览器头）实测**一律** HTTP 200 `code=6003 msg="invalid token"`，即便 token 全新有效。已改 `engine_client.py`；`golaxy-protocol.md` §1/§2 与本 plan §2 同步更正。
+2. **`6003` / "invalid token" → `AuthExpired`**：星阵对失效/无效 token 返回 **HTTP 200 + body `code=6003`**（非 401），故 `_classify_response_code` 把 `code=="6003"` 或 msg 含 "invalid token" 归为 `AuthExpired`，触发 refresh 后重试一次（原来会误判 `Fatal`）。
+3. **`record_multiplayer_game` 跳过合成对手 id（≤0）**：引擎 AI 记为 player `-1`，`users` 表无此行 → `ForeignKeyViolation` 回滚整个事务（连人类那行也丢）。改用 `_make_game(user_id)` 助手，`black_game/white_game` 仅在 id>0 时建，`canonical = black_game or white_game`。一次性覆盖全部 4 条记谱路径（`game_repo.py`）。
+4. **`auth.py` 登出中途记谱**：原调用不存在的 `GameRepository.record_game()` → 每次登出必抛 `AttributeError`，记谱失败且跳过 session 清理。改走带守卫的 `record_multiplayer_game(...)`，并包 best-effort try/except，记谱失败不阻断 `remove_session`。
+5. **Finding A — 连接时持久化真 token（kiosk 重启痛点）**：`connect_platform` 成功分支先设 `_platform_user_ids` + `_setup_callbacks`，再持久化「输入 auth_data merge 上 `adapter.get_auth_data()` 的真 access/refresh token」而非只存一次性 `sms_code`。新增 `GolaxyAdapter.get_auth_data`（薄委托 `GolaxyRestClient.get_auth_data`）；OGS 无此法 → 行为不变。服务重启后可用持久 token 自动重连，免重扫短信。
+
+**测试**：`tests/platforms/test_golaxy_engine_client.py`（鉴权 header + `6003`→AuthExpired）、`test_engine_game_record.py`（SQLite `PRAGMA foreign_keys=ON` 的 FK 守卫，已验证判别性）、`test_manager_token_persist.py`（初次连接持久化真 token / 无 get_auth_data 时行为不变）。`CI=true uv run pytest tests/platforms` 全绿。
+
+**真机实锤**：一局 19 手每手 genmove `HTTP 200` 无 6003；认输无 `ForeignKeyViolation`；面板贴目 7.5。
+
+> 已知 4 个 `test_ai_game_autosave.py` 失败经 `git stash` 核验为**基线既有**（单人 AI autosave 路径，与本次改动无关），未修，另议。
+
+---
+
+## 12. 后续计划：补全「自由对弈」设置面板（开放 贴目/规则/让子）
+
+> **REQUIRED SUB-SKILL**：用 `superpowers:subagent-driven-development` 逐任务执行，每任务后 spec+质量双评，末尾整支 review。Phase 0 是硬前提，先跑。
+
+**Goal**：让 kiosk 人机（=星阵**自由对弈**）设置面板**对齐星阵真实配置**。**棋盘固定 19 路**。
+
+> **SCOPE 更正（2026-07-03，依 `golaxy-protocol.md` §8.4 从星阵 app.js 提取的权威配置；v2 mockup 已发 Artifact 待批）**：星阵自由对弈在 19 路**唯一可调的是「让子」+「先手/颜色」+「对手等级」**；棋盘/规则/贴目/计时全固定。故本期 = **① 加「让子」下拉**（分先/让先/让2子…让9子；**komi 自动推导**：chinese 分先 7.5、让先 0、让N子 N）+ **② 颜色扩为 猜先/执黑/执白**。**删除**原计划的独立 komi 选择器与中/日规则选择器（19 路星阵只给中国规则，日本规则仅 13/9 路）。下方 Task 2a/2b/2d 按此口径执行（komi 不再是自由字段，而是 handicap 的函数）。
+
+**背景/与 §1 的关系**：§1 曾把「非默认棋局配置」列为 non-goal（固定 19/chinese/7.5/0），当时为最小化未验证协议面。本节**有意开放**其中 komi/rule/handicap —— 因隧道本就接受这些参数（见下），且用户需要更完整的设置。棋盘 9/13 路仍 non-goal（物理 kiosk 是 19 路：361-LED、摄像头标定、`coords.py` 均按 19 写死）。升降级/联棋/高水平三个大类模式亦本期不做（§12 末）。
+
+**为什么可行（已探明，勿重查）**：
+- 隧道客户端 `engine_genmove(..., komi, rule, handicap, board_size)` **已是函数参数**并一路透传：`engine_client.py:118-128` → 适配器 `_call_genmove` 传 `ctx.config.*`（`adapter.py:562-570`）。只有 `style/elodiff/resign/org/context_name` 是写死常量。**隧道客户端与 `EngineGameConfig` dataclass 无需改动。**
+- 收窄只在两处：前端只发 `{level, human_color}`（`PlatformEngineSetupPage.tsx:61`；类型 `api.ts:356-361`）；后端 `EngineStartRequest`（`platforms.py:32-50`）`extra="forbid"` 只放行 `level`+`human_color`。
+
+### Global Constraints（每个任务都隐含遵守）
+- **只暴露隧道确实接受的能力**：rule=japanese/korean、handicap 只在 chinese/分先 下验证过 → Phase 0 未验证通过的项**不上 UI**。
+- **SBC 双构建**（根 CLAUDE.md §构建边界）：`api.ts` 属 shared territory，改后 `npm run build` **和** `npm run build:kiosk-2d`（含 `verify:kiosk-2d`）都要绿。前端只用 shared + `src/kiosk/`，禁 three/galaxy/Board3D。
+- **i18n**：新文案一律走 `t("en","中文")`（`useTranslation`）。默认中文，禁日文。
+- **凭证安全**：Phase 0 抓包务必 redact `Authorization`/`refresh_token`，勿写仓库或日志。
+- **19 路固定**：棋盘在 UI 上是只读展示项，不发 `board_size`（沿用默认 19）。
+- **勿回归**：§11 的 FK 守卫、token 持久化、6003 分类不能破。
+
+### Phase 0 — 实测「自由对弈」真实可调面 ✅ 已完成（2026-07-03，真机 token 直打隧道，详见 `golaxy-protocol.md` §8）
+**结论**：komi 完全生效；rule 中国✅/日本✅/**韩国❌(8008 拒绝)**；handicap = **塞 N 颗标准星位(黑)进 `moves` 开头 + 发 `handicap=N`**（空 moves 时 handicap 被忽略，不自动摆子），塞完轮白。让子局 komi 惯例 0.5。→ 三项全可实现，仅排除韩国规则。下方原始探查步骤保留作记录。
+
+<details><summary>原始 Phase 0 探查步骤（已执行）</summary>
+- [ ] 用**已持久化的 access token**（§11 Finding A 后凭证库已有真 token）写一个一次性探针脚本（放 scratchpad，勿入仓库），对 `genmove` 隧道逐一试：`rule=japanese`、`rule=korean`、`handicap=2..9`（chinese）各发一次，记录 `code`/`data.coord`/是否报错。**判定各项是否被隧道接受。**
+- [ ] **让子语义**（最关键）：`handicap=4 & moves=[]` 发一次 → 看返回 coord 是否是「白对 4 子让子局的合理第一手」。据此判定：服务端**自动摆星位**（我们 `moves=[]` 即可、白先），还是需要**我们把 N 个让子点当黑开局塞进 `moves`**。若判不准，用 `/browse`（gstack，禁 `mcp__claude-in-chrome__*`）登录 19x19.com 自由对弈开一局让子，抓首个 genmove 请求的 `moves`/`handicap` 实值佐证。
+- [ ] **komi 联动**：确认让子局 komi 取值（通常 0.5）、日/韩规则默认 komi（6.5）。
+- **产出**：把结论写成一段「自由对弈参数对照」追加进 `golaxy-protocol.md`（新 §「自由对弈」）。
+- **决策点**：某项无法干净支持（尤其让子需大改开局流）→ **就地回报请用户定夺，不硬塞**。**komi 是保底必成项**（低风险）。Phase 1+ 的 UI/校验集合以 Phase 0 结论为准。
+
+</details>
+
+### Phase 1 — 设计稿（mockup-first）✅ 已完成（v2 mockup 用户已确认 2026-07-03）
+- [x] 自由对弈设置面板 mockup v2（仿星阵真实布局：规则行 棋盘·让子·贴目；棋手行 先手·计时；对手=等级），Artifact 已发、用户确认「v2可以」。删除了臆造的 komi 预设选择器。
+
+### Phase 2 — 实现（确认口径；TDD，逐 Task）
+
+> **口径（对齐星阵 app.js，见 §8.4）**：客户端只发 `level` + `human_color`(`"B"|"W"|"nigiri"`) + `handicap`(让子值：`0`=分先, `-1`=让先, `2..9`=让N子)。**komi/rule/board 服务端派生固定**：rule=chinese、board=19；komi = f(handicap)：分先→7.5、让先→0、让N子→N。让子实现 = 塞 N 颗标准星位(黑) + genmove 带 `handicap=N`（N=让子值≥2，否则 0）。`nigiri` 服务端随机定黑白。**不引入 komi/规则 选择器。**
+
+**Interfaces（供各 Task 对齐；exact 值以此为准）**
+- 让子值 → (stones, komi, name)：`0→(0,7.5,"分先")`, `-1→(0,0.0,"让先")`, `2→(2,2.0,"让2子")`, `3→(3,3.0)`, `4→(4,4.0)`, `5→(5,5.0)`, `6→(6,6.0)`, `7→(7,7.0)`, `8→(8,8.0)`, `9→(9,9.0,"让9子")`。合法集合 = `{-1,0,2,3,4,5,6,7,8,9}`（**无 1**）。
+- 先手 `human_color`：`"B"`(执黑) / `"W"`(执白) / `"nigiri"`(猜先，服务端 `random.choice(["B","W"])`)。
+- 19 路标准让子星位（Golaxy coord，供塞子）：
+  ```
+  D4=288 Q4=300 D16=60 Q16=72 D10=174 Q10=186 K4=294 K16=66 K10(天元)=180
+  2子=[288,72]  3子=[288,72,300]  4子=[288,300,60,72]
+  5子=[288,300,60,72,180]  6子=[288,300,60,72,174,186]
+  7子=[288,300,60,72,174,186,180]  8子=[288,300,60,72,174,186,294,66]
+  9子=[288,300,60,72,174,186,294,66,180]
+  ```
+- 塞子后**轮白**（Phase 0 §8.3 实测）；空手（分先/让先）轮黑。AI 开局条件统一：`side_to_move == ai_color`，其中 `side_to_move = "W" if stones>=2 else "B"`，`ai_color = "W" if human=="B" else "B"`。
+
+**Task A — 后端请求模型 + komi/nigiri 派生**
+- Files: Modify `katrain/web/api/v1/endpoints/platforms.py`（`EngineStartRequest` :32-50、`start_engine` 构造 config :173，import `random`）；Test `tests/platforms/test_platforms_engine_start.py`（新，现有 FastAPI TestClient 风格）。
+- [ ] **写失败测试**：`EngineStartRequest` 接受 `{level, human_color, handicap}`；`handicap∈{-1,0,2..9}` 合法、`1/10/99` → 422；`human_color∈{"B","W","nigiri"}` 合法、其它 → 422。派生：`_komi_for_handicap(0)==7.5`、`(-1)==0.0`、`(4)==4.0`；`_resolve_color("B")=="B"`、`("nigiri")∈{"B","W"}`。端点构造出的 `EngineGameConfig`：`rule=="chinese"`、`board_size==19`、`handicap==stones`(让4子→4，分先/让先→0)、`komi==派生值`、`human_color==解析后`(nigiri 落到 B/W)。
+- [ ] 跑测试确认失败。
+- [ ] **实现**（保留 `extra="forbid"`）：
+  ```python
+  _VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值；无 1
+
+  def _komi_for_handicap(h: int) -> float:
+      if h == 0:  return 7.5   # 分先 (chinese)
+      if h == -1: return 0.0   # 让先
+      return float(h)          # 让N子 -> komi N
+
+  def _handicap_stone_count(h: int) -> int:
+      return h if h >= 2 else 0  # 分先/让先无子
+
+  class EngineStartRequest(BaseModel):
+      """Human-vs-AI engine game request (Golaxy 自由对弈, 19-board, chinese).
+      Client picks: level, 先手/颜色 (human_color), 让子 (handicap value).
+      komi/rule/board_size are derived/fixed server-side (see §8.4)."""
+      model_config = {"extra": "forbid"}
+      level: int
+      human_color: str = "B"   # "B" | "W" | "nigiri"
+      handicap: int = 0        # 让子值: 0=分先, -1=让先, 2..9=让N子
+
+      @field_validator("human_color")
+      @classmethod
+      def _color(cls, v):
+          if v not in ("B", "W", "nigiri"):
+              raise ValueError("human_color must be 'B', 'W', or 'nigiri'")
+          return v
+
+      @field_validator("handicap")
+      @classmethod
+      def _handicap(cls, v):
+          if v not in _VALID_HANDICAP:
+              raise ValueError(f"handicap must be one of {sorted(_VALID_HANDICAP)}")
+          return v
+  ```
+  端点 `start_engine`（:173）：
+  ```python
+  import random  # module top
+  color = random.choice(["B", "W"]) if req.human_color == "nigiri" else req.human_color
+  config = EngineGameConfig(
+      level=req.level, human_color=color,
+      komi=_komi_for_handicap(req.handicap),
+      rule="chinese", handicap=_handicap_stone_count(req.handicap), board_size=19,
+  )
+  ```
+  响应体加入解析后的 `human_color`（供 nigiri 时前端渲染，若响应已含初始盘/颜色则复用）。更新 docstring。
+- [ ] 跑测试通过；commit。
+
+**Task B — 适配器让子塞子 + 开局着手方**
+- Files: Modify `katrain/web/platforms/golaxy/adapter.py`（新增 `_handicap_stones`；`start_engine_game` :454）；Test `tests/platforms/test_engine_handicap.py`（新，mock `engine_genmove`）。
+- [ ] **写失败测试**：`_handicap_stones(2)==[288,72]`、`(4)==[288,300,60,72]`、`(9)==[288,300,60,72,174,186,294,66,180]`、`(0)==[]`；人执黑让 4 子：`start_engine_game` 后 `ctx.moves` 前 4 手 == 让4子星位且**紧接一手 AI 白棋**（第 5 手），genmove 调用带 `handicap=4`+完整 moves；人执白让 4 子：塞 4 黑子后**不**自动 genmove（等人白落）；分先人执黑：`ctx.moves==[]` 且不自动 genmove；分先人执白：AI(黑)先手一手（现有行为不回归）。
+- [ ] 跑测试确认失败。
+- [ ] **实现**：模块内 `_HANDICAP_STONES: dict[int,list[int]]` 按上表；`_handicap_stones(n)=_HANDICAP_STONES.get(n, [])`。`start_engine_game`：
+  ```python
+  stones = config.handicap  # 已是 stone count (0/2..9)
+  ctx.moves = list(_handicap_stones(stones))
+  side_to_move = "W" if stones >= 2 else "B"
+  ai_color = "W" if config.human_color == "B" else "B"
+  if side_to_move == ai_color:
+      # AI 先落一手（复用现有 _genmove_committing / 首手分支，:493-495 的统一化）
+      <genmove once, append AI move>
+  ```
+  `_call_genmove` 已传 `ctx.config.handicap`+`ctx.config.komi`（:562-570），无需改。
+- [ ] 跑测试通过；commit。
+
+**Task C — 前端 api.ts + 设置面板（⚠️ api.ts 属 shared，双构建）**
+- Files: Modify `katrain/web/ui/src/api.ts`（`platformEngineStart` body 类型）、`katrain/web/ui/src/kiosk/pages/PlatformEngineSetupPage.tsx`（:114-127 的颜色 chip + 只读规则行）。
+- [ ] `api.ts`：body 类型改为 `{ level: number; human_color: "B" | "W" | "nigiri"; handicap: number }`。
+- [ ] `PlatformEngineSetupPage.tsx`：
+  - state：`handicap`(默认 0)、`humanColor`(默认 `"nigiri"` 或 `"B"`)。
+  - **让子**：MUI `Select`，选项 `分先(0)/让先(-1)/让2子(2)…让9子(9)`，label 走 `t(...)`；旁显派生贴目（分先=黑贴7.5、让N子=黑贴N、让先=0）。
+  - **先手**：`OptionChips` 三选 `猜先(nigiri)/执黑(B)/执白(W)`（替换现 :114-122 的黑/白二选）。
+  - **固定只读展示**（替换 :124-127）：`棋盘 19 路 · 规则 中国 · 不计时`。
+  - start 载荷（:61）：`API.platformEngineStart(platform, { level, human_color: humanColor, handicap }, token)`。
+- [ ] `npm run build` **和** `npm run build:kiosk-2d` 都绿。commit。
+
+### Phase 3 — 测试 + 双构建 + 格式化 + 推送
+- [ ] `CI=true uv run pytest tests/platforms -q` 全绿；`uv run black -l 120 katrain tests`。
+- [ ] `npm run build` **和** `npm run build:kiosk-2d` 都绿。
+- [ ] 提交推送 `feature/kiosk-play-golaxy`（用户既定：直接推送、不开 PR）。
+- **端到端验证**（用户自己终端起服务 `... --port 8002 --disable-engine`）：新面板可选 贴目/让子/(规则)；起一局让子看日志 genmove `HTTP 200`、`handicap`/`moves` 与 Phase 0 一致、AI 正常回手；认输无 `ForeignKeyViolation`。
+
+### 本节明确不做（后续）
+- 升降级对弈（规则固定+定级 `elodiff≠0`+计时）、联棋对弈（人+AI 配对流程）、高水平对弈（疑似自由对弈锁最强档子集）。
+- 棋盘 9/13 路（需重做 coords/LED/摄像头）。
+- 引擎对局内存态跨服务重启续局。

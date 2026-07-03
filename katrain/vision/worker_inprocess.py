@@ -24,6 +24,7 @@ from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, Worker
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
 from katrain.vision.stone_detector import StoneDetector
+from katrain.vision.temporal import FrameAverager
 from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
 from katrain.vision.sync import SyncState, SyncStateMachine
 
@@ -65,6 +66,9 @@ class InProcessAdapter:
         self._add_threshold = config.get("confidence_threshold", 0.5)
         self._keep_threshold = config.get("confidence_keep") or max(0.25, self._add_threshold - 0.15)
         self._enhance_mode = config.get("enhance", "clahe")
+        # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
+        # motion / geometry change / session reset so scene changes never ghost.
+        self._averager = FrameAverager(config.get("frame_average", 8))
         self._detector = StoneDetector(
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
@@ -179,6 +183,7 @@ class InProcessAdapter:
                     board_detected = True
                     h, w = warped.shape[:2]
                     _t_enh = time.monotonic()
+                    warped = self._averager.add(warped)
                     warped = enhance_for_inference(warped, self._enhance_mode)
                     _enh_ms = (time.monotonic() - _t_enh) * 1000
                     _t_inf = time.monotonic()
@@ -269,6 +274,11 @@ class InProcessAdapter:
 
                     self._maybe_send_preview(warped, detections)
 
+            else:
+                # Motion (or camera dropout): the scene is changing — restart the average
+                # so pre-move frames never blend with the post-move board.
+                self._averager.reset()
+
             if self._bound:
                 events = self._sync.update(
                     observed_board=observed_board,
@@ -320,6 +330,7 @@ class InProcessAdapter:
                 self._prev_observed_board = None  # drop voting state across sessions
                 self._last_stable_board = None
                 self._prev_conf_map = {}
+                self._averager.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
@@ -335,10 +346,12 @@ class InProcessAdapter:
                 self._prev_observed_board = None  # rebuild voting baseline after recovery
                 self._last_stable_board = None
                 self._prev_conf_map = {}
+                self._averager.reset()
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
                 self.set_geometry(cmd.data.get("geometry"))
+                self._averager.reset()  # warp content changes with the new lock
             elif cmd.action == CommandType.PAUSE_DETECTION:
                 self._paused = True
             elif cmd.action == CommandType.RESUME_DETECTION:

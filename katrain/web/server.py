@@ -2024,6 +2024,13 @@ def run_web():
         "move registration.",
     )
     parser.add_argument(
+        "--vision-frame-average",
+        type=int,
+        default=None,
+        help="Rolling average of the last N warped frames before inference (default: 8; 0/1 "
+        "disables). Cuts weak-light sensor noise ~sqrt(N); auto-resets on motion.",
+    )
+    parser.add_argument(
         "--led-serial-port",
         default=None,
         help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
@@ -2089,6 +2096,8 @@ def run_web():
             vision_kwargs["enhance"] = args.vision_enhance
         if args.vision_move_frames is not None:
             vision_kwargs["move_confirm_frames"] = args.vision_move_frames
+        if args.vision_frame_average is not None:
+            vision_kwargs["frame_average"] = args.vision_frame_average
         settings._vision_config = VisionServiceConfig(**vision_kwargs)
 
     # Configure LED service if a serial port was provided

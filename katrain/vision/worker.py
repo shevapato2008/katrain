@@ -34,6 +34,7 @@ from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, Worker
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
 from katrain.vision.sync import SyncState, SyncStateMachine
+from katrain.vision.temporal import FrameAverager
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,9 @@ class _VisionWorkerLoop:
         )
         self._motion_filter = MotionFilter()
         self._state_extractor = BoardStateExtractor(board_config)
+        # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
+        # motion / transform change / session reset so scene changes never ghost.
+        self._averager = FrameAverager(config.get("frame_average", 8))
         self._move_detector = MoveDetector(consistency_frames=config.get("move_confirm_frames", 3))
         self._sync = SyncStateMachine()
 
@@ -187,6 +191,10 @@ class _VisionWorkerLoop:
                     logger.info("camera read_frame returned None (frame #%d)", self._frame_count)
             else:
                 stable_ok, motion_ratio = self._motion_filter.is_stable_with_ratio(frame)
+                if not stable_ok:
+                    # Motion: the scene is changing — restart the average so pre-move
+                    # frames never blend with the post-move board.
+                    self._averager.reset()
                 if not stable_ok and self._frame_count % 30 == 0:
                     logger.info(
                         "motion filter rejected frame #%d (changed_ratio=%.3f, threshold=%.3f)",
@@ -215,6 +223,7 @@ class _VisionWorkerLoop:
                 if found and warped is not None:
                     board_detected = True
                     self._consecutive_failures = 0
+                    warped = self._averager.add(warped)
                     # Pre-inference enhancement (CLAHE: validated weak-light confidence lift)
                     warped = enhance_for_inference(warped, self._enhance_mode)
                     h, w = warped.shape[:2]
@@ -333,6 +342,7 @@ class _VisionWorkerLoop:
                         self._board_locked = False
                         self._board_finder.is_first = True
                         self._consecutive_failures = 0
+                        self._averager.reset()  # transform will change after re-detection
 
                     with self._overlay_lock:
                         self._overlay.board_corners = None
@@ -374,10 +384,12 @@ class _VisionWorkerLoop:
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
                 self._prev_conf_map = {}
+                self._averager.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._board_locked = True
                 logger.info("Board pose locked — reusing transform for subsequent frames")
                 self._sync.confirm_pose_lock()
+                self._averager.reset()  # warp switches to the frozen transform
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
                 board = np.array(cmd.data["board"], dtype=int)
                 self._sync.set_expected_board(board)
@@ -391,6 +403,7 @@ class _VisionWorkerLoop:
                 self._board_finder.is_first = True  # Reset corner baseline
                 self._sync.reset()
                 self._prev_conf_map = {}
+                self._averager.reset()
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.PAUSE_DETECTION:

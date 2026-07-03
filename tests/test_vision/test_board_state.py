@@ -211,7 +211,15 @@ class TestConfidenceHysteresis:
             prev_board=prev,
             add_threshold=0.45,
         )
-        assert board[5][5] == EMPTY  # weak wrong-color detection is dropped, not applied
+        # The weak wrong-color detection never becomes a WHITE stone in either mode. In the
+        # occupancy-aware (live) path, presence sustain reads it as "the black stone is
+        # still physically there, momentarily misread" and keeps BLACK; the legacy path
+        # simply drops it.
+        assert board[5][5] != WHITE
+        if occupancy_aware:
+            assert board[5][5] == BLACK
+        else:
+            assert board[5][5] == EMPTY
 
     @pytest.mark.parametrize("occupancy_aware", [False, True])
     def test_strong_detection_adds_regardless_of_prev(self, cfg, occupancy_aware):
@@ -306,3 +314,106 @@ class TestCellTop:
             self._det_at_grid(3, 3, class_id=2, conf=0.9),  # led_red
         ]
         assert ex.cell_top(dets, img_w=self.IMG, img_h=self.IMG) == {}
+
+
+class TestPresenceSustain:
+    """Stones do not vanish into thin air: an established stone survives frames where the
+    model misreads it (led_red / wrong color); it leaves only when NO detection is near."""
+
+    IMG = 950
+
+    def _det_at_cell(self, row, col, class_id, conf, cfg):
+        from katrain.vision.coordinates import grid_to_physical
+
+        x_mm, y_mm = grid_to_physical(col, row, config=cfg)
+        return Detection(
+            x_center=x_mm / cfg.total_width * self.IMG,
+            y_center=y_mm / cfg.total_length * self.IMG,
+            class_id=class_id,
+            confidence=conf,
+        )
+
+    def _run(self, dets, prev):
+        cfg = BoardConfig()
+        ex = BoardStateExtractor(cfg)
+        return ex.detections_to_board(
+            dets, img_w=self.IMG, img_h=self.IMG, occupancy_aware=True, prev_board=prev, add_threshold=0.40
+        )
+
+    def _prev_black(self):
+        prev = np.zeros((19, 19), dtype=int)
+        prev[5][5] = BLACK
+        return prev
+
+    def test_led_misread_keeps_stone(self):
+        cfg = BoardConfig()
+        dets = [self._det_at_cell(5, 5, 2, 0.6, cfg)]  # black stone read as led_red
+        board = self._run(dets, self._prev_black())
+        assert board[5][5] == BLACK
+
+    def test_color_flip_keeps_original_stone(self):
+        cfg = BoardConfig()
+        dets = [self._det_at_cell(5, 5, 1, 0.35, cfg)]  # black stone read as weak white
+        board = self._run(dets, self._prev_black())
+        assert board[5][5] == BLACK
+
+    def test_true_removal_clears_cell(self):
+        board = self._run([], self._prev_black())  # nothing detected anywhere near
+        assert board[5][5] == EMPTY
+
+    def test_distant_detection_does_not_sustain(self):
+        cfg = BoardConfig()
+        dets = [self._det_at_cell(5, 7, 2, 0.6, cfg)]  # led two cells away
+        board = self._run(dets, self._prev_black())
+        assert board[5][5] == EMPTY
+
+
+class TestStickyAssignment:
+    """A boundary-straddling detection stays on the cell it held in the previous raw board
+    instead of re-rounding every frame (bimodal wobble broke per-cell voting)."""
+
+    IMG = 950
+
+    def _det_at_grid(self, fy, fx, class_id=0, conf=0.6):
+        cfg = BoardConfig()
+        gs = cfg.grid_size - 1
+        x_px = (fx * cfg.board_width_mm / gs) / cfg.total_width * self.IMG
+        y_px = (fy * cfg.board_length_mm / gs) / cfg.total_length * self.IMG
+        return Detection(x_center=x_px, y_center=y_px, class_id=class_id, confidence=conf)
+
+    def _run(self, dets, sticky):
+        ex = BoardStateExtractor(BoardConfig())
+        return ex.detections_to_board(
+            dets, img_w=self.IMG, img_h=self.IMG, occupancy_aware=True, sticky_board=sticky
+        )
+
+    def test_snaps_to_established_cell(self):
+        sticky = np.zeros((19, 19), dtype=int)
+        sticky[5][2] = BLACK  # previous frame put the stone on col 2
+        board = self._run([self._det_at_grid(5, 2.55)], sticky)  # rounds to col 3 without sticky
+        assert board[5][2] == BLACK
+        assert board[5][3] == EMPTY
+
+    def test_out_of_radius_rounds_normally(self):
+        sticky = np.zeros((19, 19), dtype=int)
+        sticky[5][2] = BLACK
+        board = self._run([self._det_at_grid(5, 2.75)], sticky)  # 0.75 > radius
+        assert board[5][3] == BLACK
+
+    def test_other_color_does_not_attract(self):
+        sticky = np.zeros((19, 19), dtype=int)
+        sticky[5][2] = WHITE
+        board = self._run([self._det_at_grid(5, 2.55)], sticky)  # black det, white sticky
+        assert board[5][3] == BLACK
+        assert board[5][2] == EMPTY
+
+    def test_adjacent_new_stone_unaffected(self):
+        sticky = np.zeros((19, 19), dtype=int)
+        sticky[5][2] = BLACK
+        board = self._run([self._det_at_grid(5, 2.05), self._det_at_grid(5, 3.05)], sticky)
+        assert board[5][2] == BLACK  # established stone stays
+        assert board[5][3] == BLACK  # genuinely adjacent stone keeps its own cell
+
+    def test_no_sticky_board_is_legacy_behavior(self):
+        board = self._run([self._det_at_grid(5, 2.55)], None)
+        assert board[5][3] == BLACK

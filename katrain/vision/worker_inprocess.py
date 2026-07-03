@@ -147,6 +147,30 @@ class InProcessAdapter:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
         return self._state_extractor_locked if self._geometry is not None else self._state_extractor
 
+    def _log_board_delta(self, before, after, detections, w: int, h: int) -> None:
+        """One INFO line per stable-board change: which cells appeared/vanished and what the
+        detector actually saw nearby — turns 'why did my stone drop?' into reading a log line."""
+        pts = self._active_extractor().detection_points(detections, img_w=w, img_h=h)
+        names = {0: "B", 1: "W", 2: "R", 3: "G"}
+
+        def near(r, c):
+            best = None
+            for fy, fx, cls, conf in pts:
+                d = ((fy - r) ** 2 + (fx - c) ** 2) ** 0.5
+                if best is None or d < best[0]:
+                    best = (d, cls, conf)
+            if best is None or best[0] > 1.0:
+                return "none"
+            return f"{names.get(best[1], '?')}{best[2]:.2f}@{best[0]:.2f}"
+
+        sym = {1: "B", 2: "W"}
+        added = [f"({r},{c}){sym.get(int(after[r][c]), '?')}" for r, c in zip(*np.where((before != after) & (after != 0)))]
+        removed = [
+            f"({r},{c}){sym.get(int(before[r][c]), '?')}~{near(int(r), int(c))}"
+            for r, c in zip(*np.where((before != after) & (after == 0)))
+        ]
+        logger.info("board delta: +%s -%s", added or "[]", removed or "[]")
+
     def _promote_stuck_stone(self, detections, w: int, h: int, stable_board, masked) -> None:
         """Feed sub-add candidates to the promoter; emit ambiguous_stone on a hit.
 
@@ -296,6 +320,7 @@ class InProcessAdapter:
                         masked_cells=masked,
                         prev_board=self._last_stable_board,
                         add_threshold=self._add_threshold,
+                        sticky_board=self._prev_observed_board,
                     )
 
                     # 2-frame per-cell voting (ported from worker.py): a cell may only
@@ -307,6 +332,10 @@ class InProcessAdapter:
                         )
                     else:
                         stable_board = observed_board
+                    if self._last_stable_board is not None and not np.array_equal(
+                        stable_board, self._last_stable_board
+                    ):
+                        self._log_board_delta(self._last_stable_board, stable_board, detections, w, h)
                     self._prev_observed_board = observed_board
                     self._last_stable_board = stable_board
                     observed_board = stable_board

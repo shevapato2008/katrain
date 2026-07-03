@@ -28,6 +28,20 @@ WHITE = 2
 # treated as a duplicate/false positive and dropped, so it can't manufacture a phantom stone.
 SPILL_MIN_CONFIDENCE = 0.6
 
+# Sticky assignment: a detection whose continuous position sits within this many cells of a
+# same-color stone in the PREVIOUS raw observed board snaps to that cell instead of rounding.
+# A stone placed near a cell boundary otherwise alternates cells frame-to-frame (measured
+# bimodal ~0.4-cell box sway), and the per-cell 2-frame voting then never stabilizes it.
+# Genuinely adjacent stones sit >= 1.0 cells apart, safely outside this radius.
+STICKY_RADIUS = 0.65
+
+# Presence sustain: stones do not vanish into thin air. A cell holding a stone in the last
+# STABLE board keeps it as long as ANY detection (any class — the model intermittently
+# misreads a dark stone as led_red or flips its color for a few frames, and LED classes are
+# excluded from occupancy) sits within this radius. Only a true removal — no detection near
+# the cell at all — lets the stone leave the board via the normal voting flow.
+SUSTAIN_RADIUS = 0.6
+
 
 def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
     """Empty cell nearest the continuous position (fy=row, fx=col), searching a
@@ -80,6 +94,16 @@ class BoardStateExtractor:
             return True
         return prev_board is not None and int(prev_board[cy][cx]) == det.class_id + 1
 
+    def detection_points(self, detections: list[Detection], img_w: int, img_h: int) -> list:
+        """Continuous grid positions of ALL detections (any class, off-board included):
+        [(fy, fx, class_id, confidence)]. Used by presence sustain and delta diagnostics."""
+        pts = []
+        for det in detections:
+            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+            fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
+            pts.append((fy, fx, det.class_id, det.confidence))
+        return pts
+
     def detections_to_board(
         self,
         detections: list[Detection],
@@ -89,6 +113,7 @@ class BoardStateExtractor:
         masked_cells: set | None = None,
         prev_board: np.ndarray | None = None,
         add_threshold: float | None = None,
+        sticky_board: np.ndarray | None = None,
     ) -> np.ndarray:
         """Convert detected stones to a grid_size x grid_size board matrix.
 
@@ -97,13 +122,15 @@ class BoardStateExtractor:
         display, where a lit LED can be misdetected as a stone (R7.1).
 
         ``prev_board``/``add_threshold`` enable confidence hysteresis — see
-        ``_passes_hysteresis``.
+        ``_passes_hysteresis``. ``prev_board`` (the last stable board) also drives
+        presence sustain; ``sticky_board`` (the previous frame's raw observed board)
+        drives sticky assignment. Both occupancy-aware only.
         """
         gs = self.config.grid_size
         board = np.zeros((gs, gs), dtype=int)
         if occupancy_aware:
             return self._assign_occupancy_aware(
-                board, detections, img_w, img_h, masked_cells, prev_board, add_threshold
+                board, detections, img_w, img_h, masked_cells, prev_board, add_threshold, sticky_board
             )
 
         confidence = np.zeros((gs, gs), dtype=float)
@@ -123,6 +150,29 @@ class BoardStateExtractor:
                 confidence[pos_y][pos_x] = det.confidence
         return board
 
+    @staticmethod
+    def _sticky_cell(sticky_board, board, fy: float, fx: float, color: int):
+        """Same-color stone cell from the previous raw board within STICKY_RADIUS of the
+        detection's continuous position (and still unclaimed this frame), or None."""
+        if sticky_board is None:
+            return None
+        gs = sticky_board.shape[0]
+        cy = int(round(fy))
+        cx = int(round(fx))
+        best = None
+        best_d = None
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                ny, nx = cy + dy, cx + dx
+                if not (0 <= ny < gs and 0 <= nx < gs):
+                    continue
+                if int(sticky_board[ny][nx]) != color or board[ny][nx] != EMPTY:
+                    continue
+                d = math.hypot(fy - ny, fx - nx)
+                if d <= STICKY_RADIUS and (best is None or d < best_d):
+                    best, best_d = (ny, nx), d
+        return best
+
     def _assign_occupancy_aware(
         self,
         board: np.ndarray,
@@ -132,14 +182,14 @@ class BoardStateExtractor:
         masked_cells: set | None = None,
         prev_board: np.ndarray | None = None,
         add_threshold: float | None = None,
+        sticky_board: np.ndarray | None = None,
     ) -> np.ndarray:
         gs = board.shape[0]
+        all_points = self.detection_points(detections, img_w, img_h)  # any class, for sustain
         items = []
-        for det in detections:
+        for det, (fy, fx, _, _) in zip(detections, all_points):
             if det.class_id not in STONE_CLASS_IDS:
                 continue
-            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
-            fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
             residual = math.hypot(fx - round(fx), fy - round(fy))
             items.append((residual, det, fx, fy))
         # Highest confidence claims its intersection first (matches the legacy "highest-confidence
@@ -149,9 +199,13 @@ class BoardStateExtractor:
         # (drop it) — decided by SPILL_MIN_CONFIDENCE, so a weak FP can't spawn a phantom.
         items.sort(key=lambda t: (-t[1].confidence, t[0]))
         for _, det, fx, fy in items:
-            cy, cx = int(round(fy)), int(round(fx))
-            if not (0 <= cy < gs and 0 <= cx < gs):
-                continue  # off-board detection (warp-margin object) — never clamp onto a border point
+            sticky = self._sticky_cell(sticky_board, board, fy, fx, det.class_id + 1)
+            if sticky is not None:
+                cy, cx = sticky  # boundary-straddling stone stays on its established cell
+            else:
+                cy, cx = int(round(fy)), int(round(fx))
+                if not (0 <= cy < gs and 0 <= cx < gs):
+                    continue  # off-board detection (warp-margin object) — never clamp onto a border point
             if masked_cells and (cy, cx) in masked_cells:
                 continue
             if not self._passes_hysteresis(det, cy, cx, prev_board, add_threshold):
@@ -166,6 +220,15 @@ class BoardStateExtractor:
                 continue  # no empty cell within 1 ring -> cannot place a second stone on one point
             ny, nx = cell
             board[ny][nx] = det.class_id + 1
+
+        # Presence sustain: a stone from the last stable board stays while ANY detection
+        # (led/color misreads included) still sits on it — see SUSTAIN_RADIUS.
+        if prev_board is not None and all_points:
+            for r, c in zip(*np.where((prev_board != EMPTY) & (board == EMPTY))):
+                if masked_cells and (int(r), int(c)) in masked_cells:
+                    continue
+                if any(math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS for fy, fx, _, _ in all_points):
+                    board[r][c] = prev_board[r][c]
         return board
 
     def cell_top(self, detections: list[Detection], img_w: int, img_h: int) -> dict:

@@ -102,10 +102,19 @@ const LivePage = () => {
       {/* Right panel: header + tabs + lists + enter button */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
-          <Typography variant="h5">{t('Live', '直播')}</Typography>
+          <Typography variant="h5" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }}>{t('Live', '直播')}</Typography>
         </Box>
         <Box sx={{ px: 2, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-          <Tabs value={rightTab} onChange={(_, v) => setRightTab(v)}>
+          <Tabs
+            value={rightTab}
+            onChange={(_, v) => setRightTab(v)}
+            sx={{
+              minHeight: 36,
+              '& .MuiTabs-indicator': { bgcolor: 'primary.main' },
+              '& .Mui-selected': { color: 'primary.main' },
+            }}
+            textColor="inherit"
+          >
             <Tab label={t('Top Matches', '热门对局')} />
             <Tab label={t('Upcoming', '即将开始')} />
           </Tabs>
@@ -115,7 +124,8 @@ const LivePage = () => {
           {rightTab === 0 ? (
             <>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'error.main', boxShadow: '0 0 7px' }} />
                   {t('Now Live', '直播中')} ({liveCount})
                 </Typography>
                 {liveMatches.length > 0 ? (

@@ -445,13 +445,14 @@
 - 响应：
   - `variation` / `options` → `{"code":"0","data":{"winrate":0..1,"delta":<目差>,"coord":[<int>...]}}`（`coord`=手序坐标数组；`variation` 无需指定展开哪手）。
   - `judge` → `{"code":"0","data":{"belong":"<361 字符 U/B/W>","winner":"U|B|W|D","delta":<目差>}}`。
-  - `area` → **成功响应结构未抓到**（实测时 领地额度为 0，返回 `7003`）→ 见 Phase 0。
+  - `area` → `{"code":"0","data":{"winrate":<黑胜率>,"delta":<黑目差>,"area":[<722 个 float>]}}`；**前 361 = 每点归属**（下标即 coord，`>0`黑/`<0`白），**后 361 本样本≈-0.99 常量弃用**。已抓（2026-07-07 充值后实测，§9.5）。
+  - `options` → `{"code":"0","data":{"coord":[..],"prob":[..],"winrate":[..],"delta":[..]}}`（4 个等长并行数组，本次 5 候选）。已抓（§9.5）。
   - 额度不足 → `{"code":"7003","msg":"item is not sufficient","data":""}`（`area/options/variation` 各自独立计数；`judge` 本次 code 0，勿据此当无限免费）。
 
 ### Phase 0 — 补两处实测（需 领地 额度 > 0；用户 1 次操作）
-- [ ] **area 成功响应**：`领地` 额度充值后，用 §9.5 同法（浏览器自动化 or DevTools）打一次 `tunnel/area`，记录成功 `data` 结构（预计含每点 area 值 + winrate/delta），补进 `golaxy-protocol.md` §9.5。
-- [ ] **剩余次数端点**：抓星阵"我的道具/剩余次数"接口（前端 `propsMine`/`userPropsNotice` 的数据源，非 tunnel 响应）——用于 kiosk 预显角标（领地N/支招N/变化图N）。**若抓不到**：MVP 不预显次数，仅在 `7003` 时提示，角标留空/问号。
-- 决策点：area 成功结构与预期不符 → 就地回报定夺。
+- [x] **area 成功响应** ✅（2026-07-07，用户充值后浏览器直打隧道）：`data.area` 是 **722 长扁平数组**（前 361 = 每点归属，下标即 coord，`>0`黑/`<0`白，实盘校验 黑D4[288]=+0.683、白Q4[300]=-0.729；后 361 本样本≈-0.99 常量、弃用）+ 顶层 `winrate`/`delta`。同时补抓 **options 成功结构**（`coord/prob/winrate/delta` 4 等长数组）+ 复测 variation。均记入 `golaxy-protocol.md` §9.5。
+- [ ] **剩余次数端点**：抓星阵"我的道具/剩余次数"接口（前端 `propsMine`/`userPropsNotice` 的数据源，非 tunnel 响应）——用于 kiosk 预显角标（领地N/支招N/变化图N）。**未抓** → 按 MVP 兜底：不预显次数，仅在 `7003` 时提示，角标留空/问号。
+- ~~决策点：area 成功结构与预期不符~~ → 已就地回报并定案：722 数组、kiosk 用前 361 项作归属叠加。
 
 ### Phase 1 — engine_client 兄弟端点（TDD，httpx MockTransport，仿 `test_golaxy_engine_client.py`）
 - Files: Modify `katrain/web/platforms/golaxy/engine_client.py`（加 `GOLAXY_{AREA,OPTIONS,JUDGE,VARIATION}_URL` 常量 + `QuotaExhausted(GolaxyEngineError)` 类 + `engine_analysis(kind, access_token, moves, config)` 复用 `_BROWSER_UA`/headers/`_classify_response_code`）；Test `tests/platforms/test_golaxy_engine_analysis.py`（新）。

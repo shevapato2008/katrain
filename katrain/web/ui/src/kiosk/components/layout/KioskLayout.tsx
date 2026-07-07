@@ -1,36 +1,35 @@
 import { Box } from '@mui/material';
-import { Outlet } from 'react-router-dom';
-import StatusBar from './StatusBar';
-import NavigationRail from './NavigationRail';
+import { Outlet, useLocation } from 'react-router-dom';
+import { ImmersiveProvider, useImmersive } from '../../context/ImmersiveContext';
+import Header from './Header';
+import Dock from './Dock';
+import SmartBoardConsole from './SmartBoardConsole';
 
-interface KioskLayoutProps {
-  username?: string;
-}
+const CONSOLE_ROUTES = ['/kiosk/play'];
+interface KioskLayoutProps { username?: string }
 
-const KioskLayout = ({ username }: KioskLayoutProps) => {
+const KioskShell = ({ username }: KioskLayoutProps) => {
+  const { immersive } = useImmersive();
+  const location = useLocation();
+  const showConsole = !immersive && CONSOLE_ROUTES.includes(location.pathname);
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
-        bgcolor: 'background.default',
-      }}
-    >
-      <StatusBar username={username} />
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <NavigationRail />
-        <Box
-          component="main"
-          sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
-        >
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', bgcolor: 'background.default' }}>
+      {!immersive && <Header username={username} />}
+      <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {showConsole && <SmartBoardConsole />}
+        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <Outlet />
         </Box>
       </Box>
+      {!immersive && <Dock />}
     </Box>
   );
 };
+
+const KioskLayout = ({ username }: KioskLayoutProps) => (
+  <ImmersiveProvider>
+    <KioskShell username={username} />
+  </ImmersiveProvider>
+);
 
 export default KioskLayout;

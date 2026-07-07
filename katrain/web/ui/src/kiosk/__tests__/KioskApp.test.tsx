@@ -61,7 +61,7 @@ describe('KioskApp', () => {
     renderApp('/kiosk/play');
     // After auth, nav rail visible
     expect(screen.getByText('对弈')).toBeInTheDocument();
-    expect(screen.getByText('弈航')).toBeInTheDocument();
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
   });
 
   it('renders the tutorial entry on /kiosk/tutorial when authenticated', () => {

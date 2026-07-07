@@ -19,6 +19,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 
 import ProgressDots from '../components/tsumego/ProgressDots';
 import ProblemCard from '../components/tsumego/ProblemCard';
+import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 
 const FILLED = 'rgb(88, 181, 122)'; // #58b57a — the "filled dot" color
 const GREEN = 'rgb(88, 181, 122)'; // #58b57a — completed border
@@ -165,5 +166,21 @@ describe('ProblemCard border-state & last-time', () => {
   it('does NOT show last-time for an untouched problem', () => {
     renderCard('x1');
     expect(screen.queryByText(/上次用时/)).not.toBeInTheDocument();
+  });
+});
+
+// Built from a code point (not a literal glyph) so this source file itself stays free of the
+// tofu-rendering character — the whole point of the T9 fix (Gate E scans src/kiosk for these).
+const PARTY_POPPER_EMOJI = String.fromCodePoint(0x1f389); // U+1F389 — legacy "party popper" glyph
+
+describe('SuccessOverlay tofu fix (T9)', () => {
+  it('renders the EmojiEvents trophy SVG instead of the legacy party-popper emoji', () => {
+    const { container } = render(
+      <ThemeProvider theme={kioskTheme}>
+        <SuccessOverlay show message="恭喜答对！" />
+      </ThemeProvider>
+    );
+    expect(container.querySelector('[data-testid="EmojiEventsIcon"]')).toBeInTheDocument();
+    expect(container.textContent).not.toContain(PARTY_POPPER_EMOJI);
   });
 });

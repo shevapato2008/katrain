@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowBack, GridView } from '@mui/icons-material';
+import { ArrowBack, GridView, Extension, AutoAwesome, TrackChanges, Assignment } from '@mui/icons-material';
+import type { SvgIconComponent } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
@@ -17,10 +18,10 @@ interface ProblemSummary {
   id: string;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'life-death': '⚔️',
-  tesuji: '✨',
-  endgame: '🎯',
+const CATEGORY_ICONS: Record<string, SvgIconComponent> = {
+  'life-death': Extension,
+  tesuji: AutoAwesome,
+  endgame: TrackChanges,
 };
 
 /**
@@ -157,6 +158,7 @@ const TsumegoCategoriesPage = () => {
           {categories.map((cat) => {
             const ids = categoryIds[cat.category];
             const summary = ids ? categoryProgress(ids) : null;
+            const CatIcon = CATEGORY_ICONS[cat.category] ?? Assignment;
             return (
               <Grid key={cat.category} size={{ xs: 6, sm: 4, md: 3 }}>
                 <Card
@@ -173,9 +175,7 @@ const TsumegoCategoriesPage = () => {
                     sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontSize: 28, lineHeight: 1 }}>
-                        {CATEGORY_ICONS[cat.category] || '📋'}
-                      </Typography>
+                      <CatIcon sx={{ fontSize: 28, color: 'primary.main' }} />
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {t(`tsumego:${cat.category}`, cat.name)}
                       </Typography>

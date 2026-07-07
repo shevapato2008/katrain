@@ -98,6 +98,26 @@ describe('TsumegoCategoriesPage', () => {
     });
   });
 
+  it('renders category icons as MUI SVG, not emoji tofu (T9)', async () => {
+    const { container } = renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('手筋')).toBeInTheDocument();
+    });
+    // Built from code points (not literal glyphs) so this source file stays free of the
+    // tofu-rendering characters — the whole point of the T9 fix (Gate E scans src/kiosk).
+    // U+2694+FE0F crossed-swords (old life-death icon), U+2728 sparkles (old tesuji icon),
+    // U+1F3AF direct-hit (old endgame icon), U+1F4CB clipboard (old default/tofu icon).
+    const staleCategoryGlyphs = [
+      String.fromCodePoint(0x2694, 0xfe0f),
+      String.fromCodePoint(0x2728),
+      String.fromCodePoint(0x1f3af),
+      String.fromCodePoint(0x1f4cb),
+    ];
+    staleCategoryGlyphs.forEach((glyph) => {
+      expect(container.textContent).not.toContain(glyph);
+    });
+  });
+
   it('renders the "全部题目" all-problems shortcut card', async () => {
     renderPage();
     await waitFor(() => {

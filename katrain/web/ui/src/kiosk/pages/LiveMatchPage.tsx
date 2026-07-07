@@ -100,7 +100,7 @@ const LiveMatchPage = () => {
   }
   if (error || !match) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, bgcolor: 'background.default' }}>
         <Alert severity="error">{error?.message || t('Failed to load match', '加载对局失败')}</Alert>
         <Button onClick={() => navigate('/kiosk/live')} startIcon={<ArrowBackIcon />} sx={{ mt: 1 }}>
           {t('Back', '返回')}
@@ -113,7 +113,7 @@ const LiveMatchPage = () => {
     <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board */}
       <Box
-        sx={{ height: '100%', aspectRatio: '1', flexShrink: 0 }}
+        sx={{ height: '100%', aspectRatio: '1', flexShrink: 0, position: 'relative' }}
       >
         <LiveBoard
           moves={match.moves}
@@ -129,6 +129,19 @@ const LiveMatchPage = () => {
           onTryMove={tryMoveMode ? (move: string) => setTryMoves((prev) => [...prev, move]) : undefined}
           onIntersectionClick={!tryMoveMode && activeMove ? () => setActiveMove(null) : undefined}
         />
+        {activeMove !== null && (
+          <Chip
+            label={t('Variation preview · tap board to close', '变化预览 · 点击棋盘关闭')}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              zIndex: 2,
+              bgcolor: 'var(--raise2)',
+              color: 'text.secondary',
+            }}
+          />
+        )}
       </Box>
 
       {/* Right (or bottom) panel */}

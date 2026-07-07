@@ -95,7 +95,7 @@ const TutorialSectionPage = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
@@ -218,7 +218,7 @@ const TutorialSectionPage = () => {
             flexDirection: 'column',
             gap: 1.5,
             overflow: 'auto',
-            bgcolor: 'rgba(0,0,0,0.18)',
+            bgcolor: 'var(--raise2)',
             borderRadius: 2,
             p: 2,
           }}

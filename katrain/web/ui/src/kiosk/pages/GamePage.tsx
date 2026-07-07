@@ -17,7 +17,7 @@ import PoseLostBanner from '../components/physical/PoseLostBanner';
 import HintPanel from '../components/physical/HintPanel';
 import { API, type HintResponse } from '../../api';
 
-const GamePage = () => {
+const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -39,6 +39,7 @@ const GamePage = () => {
   const [escalationOpen, setEscalationOpen] = useState(false);
   const [hint, setHint] = useState<HintResponse | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
+  const [engineErrorToast, setEngineErrorToast] = useState(false);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
@@ -112,6 +113,15 @@ const GamePage = () => {
       setShowResignConfirm(true);
     } else {
       session.handleAction(action);
+    }
+  };
+
+  const handleBoardMove = async (x: number, y: number) => {
+    try {
+      await session.onMove(x, y);
+    } catch (e) {
+      console.error(e);
+      if (engineMode) setEngineErrorToast(true);
     }
   };
 
@@ -192,7 +202,7 @@ const GamePage = () => {
         <Box sx={isPortrait ? { width: '100%', maxHeight: '50%', aspectRatio: '1' } : { height: '100%', aspectRatio: '1' }}>
           <Board
             gameState={gameState}
-            onMove={session.onMove}
+            onMove={handleBoardMove}
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
             playerColor={humanColor}
@@ -221,6 +231,7 @@ const GamePage = () => {
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
             isGameOver={isGameOver}
             disableUndo={isRanked}
+            disableSpecialActions={engineMode}
           />
         </Box>
       </Box>
@@ -292,6 +303,14 @@ const GamePage = () => {
         toRemove={session.physicalReminder?.to_remove ?? []}
         onClose={() => setEscalationOpen(false)}
       />
+
+      {/* Engine error toast */}
+      <Snackbar open={engineErrorToast} autoHideDuration={6000} onClose={() => setEngineErrorToast(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setEngineErrorToast(false)}>
+          {t('AI connection error — please retry your move, or exit to abandon the game.', 'AI 连接出错，请重试落子，或退出以放弃对局。')}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

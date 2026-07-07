@@ -432,7 +432,7 @@ class OGSAdapter(PlatformAdapter):
             # Our own move echoed back — skip (already applied locally by gateway)
             return
 
-        platform_move = PlatformMove(col=col, row=row, color=color, move_number=move_number)
+        platform_move = PlatformMove(col=col, row=row, color=color, move_number=move_number, game_id=str(game_id))
         await self._emit("opponent_move", platform_move)
 
     async def _on_clock(self, game_id: int, data: dict) -> None:

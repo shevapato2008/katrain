@@ -278,15 +278,25 @@ async def logout(request: Request, current_user: User = Depends(get_current_user
                 },
             )
 
-            # Record game result
+            # Record game result (best-effort — must not block session cleanup).
+            # Route through record_multiplayer_game (the single guarded recording
+            # path); it skips synthetic opponent ids (<=0), so engine games record
+            # only the human. NOTE: GameRepository has no `record_game` method --
+            # the previous call here always raised AttributeError and recorded nothing.
             game_repo = request.app.state.game_repo
-            if game_repo and winner_id:
-                game_repo.record_game(
-                    black_id=session.player_b_id,
-                    white_id=session.player_w_id,
-                    result=f"{'W' if session.player_b_id == current_user.id else 'B'}+Forfeit",
-                    winner_id=winner_id,
-                )
+            if game_repo:
+                try:
+                    game_repo.record_multiplayer_game(
+                        sgf_content=session.katrain.get_sgf(),
+                        result=f"{'W' if session.player_b_id == current_user.id else 'B'}+Forfeit",
+                        game_type=getattr(session, "game_type", "free"),
+                        black_id=session.player_b_id,
+                        white_id=session.player_w_id,
+                    )
+                except Exception as rec_err:
+                    import logging
+
+                    logging.getLogger("katrain_web").error(f"Failed to record forfeit on logout: {rec_err}")
 
             # Remove session
             session_manager.remove_session(session_id)

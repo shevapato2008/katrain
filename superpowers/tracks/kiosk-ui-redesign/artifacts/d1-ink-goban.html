@@ -1,0 +1,211 @@
+<title>智星盒 Kiosk · ① 墨枰 Ink Goban</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --ink:#14120e; --panel:#1e1b16; --panel2:#241f19; --line:#332d24;
+  --bone:#f3ede1; --muted:#a89c88; --dim:#6f6555;
+  --jade:#6f9a83; --jade-dim:#3c5749; --wood:#c9a56e;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0908;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--bone)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
+.cap{color:#8a8478;font-size:12.5px;letter-spacing:.3px;text-align:center;font-family:var(--sans)}
+.cap b{color:#c7bfae;font-weight:600}
+.scaler{transform-origin:top center}
+
+.screen{
+  width:1024px;height:600px;background:
+    radial-gradient(120% 90% at 82% 8%, rgba(111,154,131,.10), transparent 55%),
+    linear-gradient(180deg,#16130f,#110f0b);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #2a251d;box-shadow:0 30px 80px -30px #000, inset 0 1px 0 rgba(255,255,255,.03);
+}
+/* faint goban grid on the whole screen */
+.screen::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.05;
+  background-image:linear-gradient(var(--wood) 1px,transparent 1px),linear-gradient(90deg,var(--wood) 1px,transparent 1px);
+  background-size:34px 34px;background-position:24px 24px;-webkit-mask:radial-gradient(120% 80% at 70% 30%,#000,transparent 75%)}
+
+/* status bar */
+.sb{height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;border-bottom:1px solid var(--line);position:relative;z-index:2}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:26px;height:26px;border-radius:7px;background:radial-gradient(circle at 34% 30%,#8fbaa2,#3c5749);
+  display:grid;place-items:center;box-shadow:0 2px 8px rgba(111,154,131,.35)}
+.mark i{width:9px;height:9px;border-radius:50%;background:#0c0c0c;box-shadow:6px 0 0 -1px #efe9dd}
+.wname{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:.3px;color:var(--bone)}
+.wname small{font-family:var(--serif);font-style:italic;font-weight:500;font-size:12.5px;color:var(--muted);margin-left:7px}
+.pips{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:12px}
+.pip{display:flex;align-items:center;gap:6px}
+.pip b{width:7px;height:7px;border-radius:50%;background:var(--jade);box-shadow:0 0 8px var(--jade)}
+.pip.amber b{background:var(--wood);box-shadow:0 0 8px var(--wood)}
+.sb-right{display:flex;align-items:center;gap:16px}
+.who{display:flex;align-items:center;gap:9px}
+.ava{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#3c5749,#6f9a83);
+  display:grid;place-items:center;font-size:12px;font-weight:700;color:#0c130f}
+.who span{font-size:13.5px;color:var(--bone)}
+.clock{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.body{flex:1;display:flex;min-height:0;position:relative;z-index:2}
+
+/* the reimagined rail — wide & substantial */
+.rail{width:132px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;
+  padding:12px 12px 14px;gap:4px;background:linear-gradient(180deg,rgba(0,0,0,.12),transparent)}
+.nav{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:14px 0 8px;width:100%;
+  border-radius:14px;color:var(--muted);position:relative;cursor:pointer;transition:.15s}
+.nav .ic{display:grid;place-items:center;height:26px}
+.nav svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.nav .lb{text-align:center;font-size:15px;font-weight:600;color:inherit;letter-spacing:.5px}
+.nav .en{text-align:center;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);font-family:var(--serif);font-style:italic}
+.nav:hover{color:#d8cfbd;background:rgba(255,255,255,.02)}
+.nav.on{color:var(--bone);background:linear-gradient(180deg,rgba(111,154,131,.16),rgba(111,154,131,.05))}
+.nav.on::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+  width:6px;height:34px;border-radius:0 6px 6px 0;background:var(--jade);box-shadow:0 0 14px var(--jade)}
+.nav.on .en{color:var(--jade)}
+.rail .spacer{flex:1}
+.rail .hr{height:1px;background:var(--line);margin:6px 4px}
+
+/* content */
+.content{flex:1;min-width:0;padding:26px 30px 24px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.hello h1{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.05;letter-spacing:.2px}
+.hello h1 b{font-weight:600;color:var(--jade)}
+.hello p{margin-top:7px;color:var(--muted);font-size:14px}
+.hello p .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--jade);
+  box-shadow:0 0 8px var(--jade);margin:0 8px 1px 2px}
+
+.seclabel{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+.seclabel h2{font-size:14px;font-weight:700;letter-spacing:2px;color:var(--bone)}
+.seclabel em{font-family:var(--serif);font-style:italic;font-size:12.5px;color:var(--dim)}
+.seclabel .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+.row{display:flex;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px;
+  display:flex;align-items:center;gap:16px;cursor:pointer;transition:.16s;position:relative;overflow:hidden}
+.card:hover{border-color:#4a4133;transform:translateY(-1px)}
+.card .cic{width:52px;height:52px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;
+  background:var(--panel2);border:1px solid var(--line)}
+.card .cic svg{width:26px;height:26px;stroke:var(--wood);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.card .ct h3{font-size:18px;font-weight:600;letter-spacing:.4px}
+.card .ct p{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+.card.hero{flex:1.5;background:linear-gradient(135deg,#243a30,#1b241e);border-color:var(--jade-dim);padding:20px}
+.card.hero .cic{background:rgba(111,154,131,.16);border-color:var(--jade-dim)}
+.card.hero .cic svg{stroke:var(--jade)}
+.card.hero h3{font-size:21px}
+.card.hero .go{margin-left:auto;width:38px;height:38px;border-radius:50%;background:var(--jade);
+  display:grid;place-items:center;flex-shrink:0;box-shadow:0 6px 18px -4px var(--jade)}
+.card.hero .go svg{width:18px;height:18px;stroke:#10160f;stroke-width:2.4}
+.card.flex1{flex:1}
+
+.chips{display:flex;gap:12px}
+.chip{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;transition:.16s}
+.chip:hover{border-color:#4a4133;background:var(--panel2)}
+.chip svg{width:22px;height:22px;stroke:var(--muted);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.chip h4{font-size:15px;font-weight:600}
+.chip p{font-size:11px;color:var(--dim);margin-top:2px}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ① <b>墨枰 Ink Goban</b> — 保留左栏，加宽加重的触控导航 · 漆盘夜色 · 7″ 1024×600</div>
+  <div class="scaler" id="sc">
+  <div class="screen">
+    <!-- status bar -->
+    <div class="sb">
+      <div class="brand">
+        <div class="mark"><i></i></div>
+        <div class="wname">智星盒<small>StellaBox</small></div>
+        <div class="pips" style="margin-left:14px">
+          <div class="pip"><b></b>引擎</div>
+          <div class="pip"><b></b>摄像头</div>
+          <div class="pip amber"><b></b>棋盘标定</div>
+        </div>
+      </div>
+      <div class="sb-right">
+        <div class="who"><div class="ava">F</div><span>fan</span></div>
+        <div class="clock">22:40</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <!-- rail -->
+      <nav class="rail">
+        <div class="nav on">
+          <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div>
+          <div class="lb">对弈</div><div class="en">play</div>
+        </div>
+        <div class="nav">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg></div>
+          <div class="lb">死活</div><div class="en">tsumego</div>
+        </div>
+        <div class="nav">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8"/></svg></div>
+          <div class="lb">研究</div><div class="en">study</div>
+        </div>
+        <div class="nav">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M8 9h6M8 13h8"/></svg></div>
+          <div class="lb">棋谱</div><div class="en">kifu</div>
+        </div>
+        <div class="nav">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg></div>
+          <div class="lb">摆谱</div><div class="en">replay</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="hr"></div>
+        <div class="nav">
+          <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.2-1.5l2-1.6-2-3.4-2.4 1a7 7 0 00-2.6-1.5L13.4 2h-2.8l-.4 2.5a7 7 0 00-2.6 1.5l-2.4-1-2 3.4 2 1.6A7 7 0 003 12"/></svg></div>
+          <div class="lb">设置</div><div class="en">settings</div>
+        </div>
+      </nav>
+
+      <!-- content -->
+      <div class="content">
+        <div class="hello">
+          <h1>晚上好，<b>fan</b></h1>
+          <p><span class="dot"></span>智能棋盘已就绪 · 摆好棋子即可开始</p>
+        </div>
+
+        <div>
+          <div class="seclabel"><h2>人机对弈</h2><em>vs&nbsp;AI</em><span class="rule"></span></div>
+          <div class="row">
+            <div class="card hero">
+              <div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div>
+              <div class="ct"><h3>自由对弈</h3><p>自选 AI 等级 · 让子 · 先手，星阵 39 级</p></div>
+              <div class="go"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="card flex1">
+              <div class="cic"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div>
+              <div class="ct"><h3>升降级对弈</h3><p>按实力自动匹配难度</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="seclabel"><h2>人人对弈</h2><em>vs&nbsp;Human</em><span class="rule"></span></div>
+          <div class="chips">
+            <div class="chip">
+              <svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM3 20v-1a4 4 0 014-4h2M21 20v-1a4 4 0 00-4-4h-2"/></svg>
+              <div><h4>本地对局</h4><p>面对面对弈</p></div>
+            </div>
+            <div class="chip">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
+              <div><h4>在线大厅</h4><p>匹配网络对手</p></div>
+            </div>
+            <div class="chip">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2.4"/></svg>
+              <div><h4>跨平台对弈</h4><p>星阵 · 野狐 · OGS</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="cap">导航项 = 图标 + 中文 + 英文小注，选中态如“点亮的棋子”。主操作与右侧同一量级，比例协调。</div>
+</div>
+<script>
+  function fit(){var s=Math.min(1,(innerWidth-48)/1024,(innerHeight-120)/600);
+    var e=document.getElementById('sc');e.style.transform='scale('+s+')';
+    e.style.height=(600*s)+'px';e.style.width=(1024*s)+'px';}
+  addEventListener('resize',fit);fit();
+</script>

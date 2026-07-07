@@ -138,7 +138,7 @@ const KifuPage = () => {
         {/* Header */}
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+            <Typography variant="h4" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500, letterSpacing: 0 }}>
               {t('Game Records', '棋谱库')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
@@ -161,18 +161,16 @@ const KifuPage = () => {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.025)',
+                bgcolor: 'var(--raise2)',
                 borderRadius: '10px',
                 fontSize: '0.88rem',
                 transition: 'all 200ms ease',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.05)' },
+                '& fieldset': { borderColor: 'divider' },
                 '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.04)',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.08)' },
+                  '& fieldset': { borderColor: '#3a4d45' },
                 },
                 '&.Mui-focused': {
-                  bgcolor: 'rgba(255,255,255,0.045)',
-                  '& fieldset': { borderColor: 'rgba(74,107,92,0.4)' },
+                  '& fieldset': { borderColor: 'primary.main' },
                 },
               },
             }}
@@ -201,13 +199,12 @@ const KifuPage = () => {
                     <Box>
                       <Card
                         sx={{
-                          bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)',
-                          border: selected ? 2 : 1,
-                          borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)',
-                          borderRadius: '8px',
+                          bgcolor: selected ? 'linear-gradient(135deg,#1f3a30,#18211f)' : 'background.paper',
+                          border: 1,
+                          borderColor: selected ? 'primary.main' : 'divider',
+                          borderRadius: '13px',
                           '&:hover': {
-                            borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.2)',
-                            bgcolor: selected ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.07)',
+                            borderColor: selected ? 'primary.main' : '#3a4d45',
                           },
                         }}
                       >
@@ -278,7 +275,7 @@ const KifuPage = () => {
 
         {/* Pagination (bottom of list panel) */}
         {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid rgba(255,255,255,0.04)', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
             <Pagination
               count={totalPages}
               page={page}

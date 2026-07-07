@@ -126,10 +126,9 @@ const TsumegoPage = () => {
                     position: 'relative',
                     bgcolor: 'background.paper',
                     borderRadius: '12px',
-                    border: '1px solid',
-                    borderColor: isLast ? 'primary.main' : 'transparent',
                     '&:hover': { bgcolor: 'var(--raise2)' },
                     transition: 'background-color 0.15s ease',
+                    ...(isLast ? { border: '2px solid', borderColor: 'primary.main' } : {}),
                   }}
                 >
                   {isLast && (

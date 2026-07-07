@@ -130,11 +130,12 @@ const TsumegoCategoriesPage = () => {
           <Grid size={{ xs: 6, sm: 4, md: 3 }}>
             <Card
               sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.10),
-                border: `2px solid ${alpha(theme.palette.primary.main, 0.35)}`,
+                bgcolor: alpha(theme.palette.primary.dark, 0.35),
+                border: '2px solid',
+                borderColor: 'primary.main',
                 borderRadius: '12px',
                 height: '100%',
-                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
+                '&:hover': { bgcolor: alpha(theme.palette.primary.dark, 0.5) },
                 transition: 'background-color 0.15s ease',
               }}
             >
@@ -163,10 +164,10 @@ const TsumegoCategoriesPage = () => {
               <Grid key={cat.category} size={{ xs: 6, sm: 4, md: 3 }}>
                 <Card
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.05)',
+                    bgcolor: 'background.paper',
                     borderRadius: '12px',
                     height: '100%',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                    '&:hover': { bgcolor: 'var(--raise2)' },
                     transition: 'background-color 0.15s ease',
                   }}
                 >

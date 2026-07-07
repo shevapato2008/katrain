@@ -100,7 +100,7 @@ const TsumegoLevelPage = () => {
     const entry = progress[id];
     if (entry?.completed) return theme.palette.primary.main;
     if (entry && entry.attempts > 0) return theme.palette.warning.main;
-    return 'rgba(232,228,220,0.10)';
+    return theme.palette.divider;
   };
 
   return (
@@ -118,7 +118,7 @@ const TsumegoLevelPage = () => {
         <Grid container spacing={2}>
           {problems.map((problem, idx) => (
             <Grid key={problem.id} size={{ xs: 6, sm: 4, md: 3 }}>
-              <Card sx={{ bgcolor: 'rgba(255,255,255,0.05)', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}>
+              <Card sx={{ bgcolor: 'background.paper', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', '&:hover': { bgcolor: 'var(--raise2)' } }}>
                 <CardActionArea onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)} sx={{ p: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>#{idx + 1}</Typography>
                   <Chip label={t(`tsumego:${problem.category}`, problem.category)} size="small" sx={{ mt: 0.5 }} />

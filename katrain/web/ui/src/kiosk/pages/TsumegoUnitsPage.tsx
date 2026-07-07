@@ -138,7 +138,7 @@ const TsumegoUnitsPage = () => {
                 key={unit.unitNumber}
                 sx={{
                   borderRadius: 2.5,
-                  bgcolor: 'rgba(255,255,255,0.05)',
+                  bgcolor: 'background.paper',
                   border: '2px solid',
                   borderColor: isComplete ? 'primary.main' : 'transparent',
                   transition: 'transform 0.15s ease, box-shadow 0.15s ease',

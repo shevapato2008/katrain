@@ -14,7 +14,36 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import PoseLostBanner from '../components/physical/PoseLostBanner';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse } from '../../api';
+import { API, type HintResponse, type GameState } from '../../api';
+import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
+
+export interface AiTurnState {
+  aiColor: 'B' | 'W' | null;
+  aiThinking: boolean;
+  physicalConfirming: boolean;
+  showThinking: boolean;
+}
+
+// Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
+// function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
+// Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
+// AND bare 'ai' (multiplayer session.py:80/82 + tests). Do NOT infer AI from "the non-human color".
+// Pure helper co-located here (not split into a new file) for unit testability; deliberate,
+// not a component — see GamePage.test.tsx.
+// eslint-disable-next-line react-refresh/only-export-components
+export function deriveAiTurnState(gameState: GameState, latestEventType: string | null | undefined): AiTurnState {
+  const isAI = (c: 'B' | 'W') => {
+    const pt = gameState.players_info[c].player_type;
+    return pt === 'player:ai' || pt === 'ai';
+  };
+  const aiColor = isAI('B') ? 'B' : isAI('W') ? 'W' : null;
+  const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !gameState.end_result;
+  // One owner for the AI-turn indicator: while the physical layer is confirming a
+  // move (chip shows 确认中), suppress the 思考中 banner so they never stack.
+  const physicalConfirming = latestEventType === 'move_pending';
+  const showThinking = aiThinking && !physicalConfirming;
+  return { aiColor, aiThinking, physicalConfirming, showThinking };
+}
 
 const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
@@ -31,7 +60,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   });
   const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [aiMoveToast, setAiMoveToast] = useState<string | null>(null);
+  const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [escalationOpen, setEscalationOpen] = useState(false);
@@ -58,7 +87,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (sessionId) session.setSessionId(sessionId);
   }, [sessionId]);
 
-  // Show toast when AI makes a move (vision mode: physical board player needs coordinate hint)
+  // activeSession write-on-load / clear-on-end (design.md §5.1: 继续上一局 clears on end).
+  // Covers ai/pvp/cross entry routes uniformly.
+  useEffect(() => {
+    const gs = session.gameState;
+    if (!gs || !sessionId) return;
+    if (gs.end_result) { clearActiveSession('game'); return; }
+    writeActiveSession({
+      kind: 'game',
+      label: `${gs.players_info.B.name} vs ${gs.players_info.W.name}`,
+      route: window.location.pathname,
+      ts: Date.now(),
+    });
+  }, [session.gameState?.current_node_id, session.gameState?.end_result, sessionId]);
+
+  // Persistent amber banner when AI makes a move (vision mode: physical board player
+  // needs a coordinate hint to place the matching stone). Cleared on the human's own move.
   useEffect(() => {
     if (!isVisionEnabled || !session.gameState) return;
     const gs = session.gameState;
@@ -69,7 +113,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
       const col = String.fromCharCode(65 + (gs.last_move[0] >= 8 ? gs.last_move[0] + 1 : gs.last_move[0]));
       const row = gs.board_size[0] - gs.last_move[1];
-      setAiMoveToast(`AI 落子: ${col}${row}`);
+      setAiMoveBanner(`${col}${row}`);
     }
   }, [isVisionEnabled, session.gameState?.current_node_id]);
 
@@ -105,6 +149,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
     : null;
 
+  // aiThinking/showThinking are the single-owner gate for the "AI 思考中" surface added
+  // in B1.4-A; this task only derives+exports them (no visible surface here yet — see
+  // PhysicalPlayStatusChip above for the 确认中 chip, which remains the sole owner of
+  // that indicator). Only aiColor is consumed here, to gate the persistent move banner.
+  const { aiColor } = deriveAiTurnState(gameState, visionSync.latestEvent?.type ?? null);
+
   const handleAction = (action: string) => {
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
     if (action === 'resign') {
@@ -117,6 +167,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const handleBoardMove = async (x: number, y: number) => {
     try {
       await session.onMove(x, y);
+      setAiMoveBanner(null);
     } catch (e) {
       console.error(e);
       if (engineMode) setEngineErrorToast(true);
@@ -153,6 +204,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
+      {/* Persistent AI-move banner: physical board player needs a coordinate hint.
+          Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
+      {isVisionEnabled && aiColor !== null && aiMoveBanner && (
+        <Box
+          data-testid="ai-move-banner"
+          sx={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
+            px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5,
+            bgcolor: 'var(--raise2)', borderTop: '2px solid', borderColor: 'warning.main',
+          }}
+        >
+          <Lightbulb sx={{ color: 'warning.main' }} />
+          <Typography sx={{ color: 'text.primary' }}>
+            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
+          </Typography>
+        </Box>
+      )}
+
       {/* Error display */}
       {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
 
@@ -182,15 +251,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>{gameTitle}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {hintVisible && (
-            <Button variant="outlined" size="small" startIcon={<TipsAndUpdates />} onClick={handleHint}>
+            <Button variant="outlined" size="small" startIcon={<TipsAndUpdates />} onClick={handleHint}
+              sx={{ borderColor: 'divider', color: 'text.secondary' }}>
               {t('AI Hint', 'AI 支招')}
             </Button>
           )}
           <Button variant="outlined" size="small" startIcon={<ExitToApp />}
-            onClick={handleExit}>
+            onClick={handleExit} sx={{ borderColor: 'divider', color: 'text.secondary' }}>
             {t('Exit', '退出')}
           </Button>
         </Box>
@@ -207,20 +277,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {/* TEMP DEBUG: live recognition preview. Green box = accepted (>= threshold), red = detected but below threshold. */}
-          {isVisionEnabled && (
-            <Box sx={{ p: 1 }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                实时识别（调试）· 绿框=已识别 · 红框=检测到但低于阈值
-              </Typography>
-              <Box
-                component="img"
-                src="/api/v1/vision/stream"
-                alt="live recognition"
-                sx={{ width: '100%', aspectRatio: '1', objectFit: 'contain', bgcolor: '#000', borderRadius: 1, display: 'block' }}
-              />
-            </Box>
-          )}
           <GameControlPanel
             gameState={gameState}
             onAction={handleAction}
@@ -270,12 +326,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {hint && <HintPanel moves={hint.moves} timeoutS={hint.timeout_s} onClose={closeHint} />}
       <Snackbar open={!!hintError} autoHideDuration={5000} onClose={() => setHintError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={hintError} />
-
-      {/* AI move toast */}
-      <Snackbar open={!!aiMoveToast} autoHideDuration={8000} onClose={() => setAiMoveToast(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity="info" onClose={() => setAiMoveToast(null)}>{aiMoveToast}</Alert>
-      </Snackbar>
 
       {/* Camera disconnect toast */}
       <Snackbar open={cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}

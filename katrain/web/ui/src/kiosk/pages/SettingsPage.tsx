@@ -3,6 +3,7 @@ import { Box, Typography, Divider, Card, CardActionArea, CardContent, FormContro
 import { useNavigate } from 'react-router-dom';
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSettings } from '../../context/SettingsContext';
 import { useOrientation, type Rotation } from '../context/OrientationContext';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
@@ -10,7 +11,9 @@ const SettingsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { rotation, setRotation } = useOrientation();
-  const [language, setLanguage] = useState('zh');
+  // Real, persisted language (loads the catalog + writes localStorage) — not
+  // local component state, so the selector actually switches the UI language.
+  const { language, setLanguage } = useSettings();
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
 
   const handleAutoAdvanceChange = (checked: boolean) => {
@@ -65,9 +68,9 @@ const SettingsPage = () => {
       <OptionChips
         label={t('Language', '语言')}
         options={[
-          { value: 'zh', label: '中文' },
+          { value: 'cn', label: '中文' },
           { value: 'en', label: 'English' },
-          { value: 'ja', label: '日本語' },
+          { value: 'jp', label: '日本語' },
           { value: 'ko', label: '한국어' },
         ]}
         value={language}

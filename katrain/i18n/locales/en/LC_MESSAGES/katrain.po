@@ -2571,3 +2571,9 @@ msgstr "queued"
 
 msgid "report:summary_failed"
 msgstr "failed"
+
+msgid "Suggest"
+msgstr "Suggest"
+
+msgid "Variation Line"
+msgstr "Variation"

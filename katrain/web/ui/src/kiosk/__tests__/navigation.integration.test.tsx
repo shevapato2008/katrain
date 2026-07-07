@@ -20,6 +20,10 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({ language: 'cn', setLanguage: vi.fn(), languages: [] }),
+}));
+
 import KioskApp from '../KioskApp';
 
 const renderApp = (route = '/kiosk') =>

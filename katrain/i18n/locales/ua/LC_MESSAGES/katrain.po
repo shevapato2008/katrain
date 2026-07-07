@@ -2618,3 +2618,9 @@ msgstr "в черзі"
 
 msgid "report:summary_failed"
 msgstr "помилка"
+
+msgid "Suggest"
+msgstr "Підказка"
+
+msgid "Variation Line"
+msgstr "Варіант"

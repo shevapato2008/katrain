@@ -2638,3 +2638,9 @@ msgstr "sırada"
 
 msgid "report:summary_failed"
 msgstr "başarısız"
+
+msgid "Suggest"
+msgstr "Öner"
+
+msgid "Variation Line"
+msgstr "Varyant"

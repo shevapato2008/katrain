@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
@@ -93,7 +95,19 @@ const KioskRoutes = () => {
   );
 };
 
-const KioskApp = () => (
+const KioskApp = () => {
+  const { setLanguage } = useSettings();
+  useEffect(() => {
+    // The kiosk is a Chinese-market terminal: default to Simplified Chinese
+    // unless the user has explicitly picked a language before (persisted in
+    // localStorage by useSettings). Runs once on mount; a later user choice
+    // in Settings wins because it writes the same localStorage key.
+    if (!localStorage.getItem('katrain_language')) {
+      setLanguage('cn');
+    }
+  }, [setLanguage]);
+
+  return (
   <ThemeProvider theme={kioskTheme}>
     <CssBaseline />
     <OrientationProvider>
@@ -108,6 +122,7 @@ const KioskApp = () => (
       </VisionProvider>
     </OrientationProvider>
   </ThemeProvider>
-);
+  );
+};
 
 export default KioskApp;

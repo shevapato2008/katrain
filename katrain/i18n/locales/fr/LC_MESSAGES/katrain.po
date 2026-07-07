@@ -2578,3 +2578,9 @@ msgstr "en attente"
 
 msgid "report:summary_failed"
 msgstr "échoué"
+
+msgid "Suggest"
+msgstr "Suggérer"
+
+msgid "Variation Line"
+msgstr "Variante"

@@ -16,6 +16,11 @@ vi.mock('../components/layout/RotationWrapper', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+const mockSetLanguage = vi.fn();
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({ language: 'cn', setLanguage: mockSetLanguage, languages: [] }),
+}));
+
 // Keep the tutorial landing page deterministic (no real network) when we render
 // the /kiosk/tutorial route.
 vi.mock('../../api/tutorialApi', () => ({
@@ -48,6 +53,23 @@ describe('KioskApp', () => {
     renderApp('/kiosk/play');
     // Auth guard redirects to login
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+  });
+
+  it('defaults the kiosk language to Chinese when no preference is saved', () => {
+    localStorage.removeItem('katrain_language');
+    mockSetLanguage.mockClear();
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn(), logout: vi.fn(), token: null });
+    renderApp('/kiosk/play');
+    expect(mockSetLanguage).toHaveBeenCalledWith('cn');
+  });
+
+  it('respects an explicitly saved language and does not override it', () => {
+    localStorage.setItem('katrain_language', 'en');
+    mockSetLanguage.mockClear();
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn(), logout: vi.fn(), token: null });
+    renderApp('/kiosk/play');
+    expect(mockSetLanguage).not.toHaveBeenCalled();
+    localStorage.removeItem('katrain_language');
   });
 
   it('renders nav rail on authenticated route', () => {

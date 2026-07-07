@@ -323,6 +323,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <RecalibrationModal
           key={String(visionStatus.poseLocked)}
           open={recalOpen && !escalationOpen}
+          // Intentionally inert: RecalibrationModal is not fully controlled — it owns its
+          // own dismissal (local `dismissed` state set by 仍要继续/Escape/backdrop) and
+          // relies on the `key` above to remount (and thus reset `dismissed`) on a fresh
+          // pose-loss. GamePage has no state of its own to clear here.
           onClose={() => undefined}
         />
       )}

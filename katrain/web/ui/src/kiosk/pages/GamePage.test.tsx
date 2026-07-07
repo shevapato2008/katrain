@@ -116,17 +116,21 @@ const makeGameState = (overrides: Partial<GameState> & { players_info: GameState
   ...overrides,
 });
 
-const renderPage = () =>
-  render(
-    <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={['/kiosk/play/ai/game/test-session']}>
-        <Routes>
-          <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
-          <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
+// Factored out (not just inlined in renderPage) so the dismiss→reopen cycle test below can
+// call `rerender(pageTree())` with the identical element tree after mutating a mock value —
+// same container, same component identity, only the mocked hook return values change.
+const pageTree = () => (
+  <ThemeProvider theme={kioskTheme}>
+    <MemoryRouter initialEntries={['/kiosk/play/ai/game/test-session']}>
+      <Routes>
+        <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
+      </Routes>
+    </MemoryRouter>
+  </ThemeProvider>
+);
+
+const renderPage = () => render(pageTree());
 
 describe('GamePage', () => {
   beforeEach(() => {
@@ -365,6 +369,41 @@ describe('GamePage', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
       renderPage();
       expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+    });
+
+    // Review follow-up: guards the dismiss→reopen safety cycle. RecalibrationModal owns a
+    // local `dismissed` flag (仍要继续 / Escape / backdrop) and GamePage remounts it via
+    // `key={String(visionStatus.poseLocked)}` so a FRESH pose-loss always re-warns the
+    // operator. Without this test, a future refactor that drops the `key` remount would
+    // silently ship a "dismiss-forever" bug: the operator would never be re-warned after
+    // the board moves again.
+    it('re-opens on a fresh pose-loss after being dismissed and the board regaining lock', async () => {
+      mockIsVisionEnabled = true;
+      mockPoseLocked = false;
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      const view = renderPage();
+
+      // 1. Initial pose-loss opens the modal.
+      expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
+
+      // 2. Operator dismisses it (仍要继续) → closes.
+      fireEvent.click(screen.getByText('仍要继续'));
+      await waitFor(() => expect(screen.queryByText('棋盘可能被移动')).toBeNull());
+
+      // 3. Board regains pose lock (poseLocked: false → true) → stays closed. This also
+      // flips the remount `key` ("false" → "true"), so RecalibrationModal is torn down
+      // and a fresh instance (dismissed=false) is mounted — but `open` is false here too,
+      // so nothing should render.
+      mockPoseLocked = true;
+      view.rerender(pageTree());
+      expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+
+      // 4. A NEW pose-loss (poseLocked: true → false) → key flips back to "false", forcing
+      // another fresh remount whose local `dismissed` starts at false again. This MUST
+      // reopen the modal — that's the safety property under test.
+      mockPoseLocked = false;
+      view.rerender(pageTree());
+      expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
     });
   });
 

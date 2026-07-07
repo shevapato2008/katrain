@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Box, Typography, Divider, Card, CardActionArea, CardContent, FormControlLabel, Switch, Button } from '@mui/material';
+import { Box, Typography, Divider, Card, CardContent, FormControlLabel, Switch, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation, type Rotation } from '../context/OrientationContext';
 import { useSettings } from '../../context/SettingsContext';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
+import AccountSection from '../components/settings/AccountSection';
+import PhysicalBoardStatus from '../components/settings/PhysicalBoardStatus';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
@@ -35,7 +37,8 @@ const SettingsPage = () => {
 
       <Box sx={{ mb: 3 }}>
         <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{t('Physical board', '实体棋盘')}</Typography>
-        <Button variant="outlined" onClick={() => navigate('/kiosk/vision/setup')}>{t('Recalibrate board', '重新标定棋盘')}</Button>
+        <PhysicalBoardStatus />
+        <Button variant="outlined" onClick={() => navigate('/kiosk/vision/setup')} sx={{ mt: 1.5 }}>{t('Recalibrate board', '重新标定棋盘')}</Button>
       </Box>
 
       <OptionChips
@@ -80,16 +83,21 @@ const SettingsPage = () => {
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
         {platforms.map((p) => (
-          <Card key={p.name} variant="outlined" sx={{ bgcolor: 'background.paper' }}>
-            <CardActionArea sx={{ p: 0 }}>
-              <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>{p.name}</Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>{p.desc}</Typography>
-              </CardContent>
-            </CardActionArea>
+          <Card
+            key={p.name}
+            variant="outlined"
+            sx={{ bgcolor: 'background.paper', opacity: 0.6, pointerEvents: 'none' }}
+          >
+            <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>{p.name}</Typography>
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>{t('Coming soon', '敬请期待')}</Typography>
+            </CardContent>
           </Card>
         ))}
       </Box>
+
+      <Divider sx={{ my: 3 }} />
+      <AccountSection />
     </Box>
   );
 };

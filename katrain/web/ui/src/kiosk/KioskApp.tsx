@@ -72,7 +72,6 @@ const KioskRoutes = () => {
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           <Route path="research" element={<ResearchPage />} />
-          <Route path="research/session/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
           <Route path="baipu" element={<BaipuListPage />} />

@@ -12,7 +12,6 @@ import LiveBoard from '../../components/live/LiveBoard';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import { KifuAPI } from '../../api/kifuApi';
-import { useResearchSession } from '../../hooks/useResearchSession';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -23,7 +22,6 @@ const PAGE_SIZE = 20;
 const KifuPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { createSession } = useResearchSession();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
@@ -37,7 +35,6 @@ const KifuPage = () => {
   const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
   const [previewSgf, setPreviewSgf] = useState<string | null>(null);
-  const [previewHandicap, setPreviewHandicap] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
@@ -84,7 +81,6 @@ const KifuPage = () => {
     setPreviewColors([]);
     setPreviewCurrentMove(0);
     setPreviewSgf(null);
-    setPreviewHandicap(0);
     setPreviewLoading(true);
 
     KifuAPI.getAlbum(selectedId)
@@ -99,7 +95,6 @@ const KifuPage = () => {
           // fixes a latent grid/coord mismatch when DB board_size disagrees with SGF.
           setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
           setPreviewSgf(detail.sgf_content);
-          setPreviewHandicap(parsed.metadata.handicap ?? detail.handicap ?? 0);
         }
       })
       .catch((err) => {
@@ -112,24 +107,15 @@ const KifuPage = () => {
     return () => { cancelled = true; };
   }, [selectedId]);
 
-  const handleOpenInResearch = async () => {
+  const handleOpenInResearch = () => {
     if (!previewSgf || opening) return;
     setOpening(true);
     setOpenError(null);
     try {
-      // previewMoves includes handicap setup stones (AB[]), but the backend redo() only
-      // walks move-nodes; subtract handicap to land on the right node. At the terminal
-      // (default) this equals the real move count → exact terminal; mid-scrub & handicap
-      // are also correct; non-handicap (handicap=0) is unchanged.
-      const initialMove = Math.max(0, previewCurrentMove - previewHandicap);
-      const sessionId = await createSession(previewSgf, { initialMove, skipAnalysis: true });
-      if (sessionId) {
-        navigate(`/kiosk/research/session/${sessionId}`);
-      } else {
-        setOpenError(t('Failed to open in research', '打开研究失败，请重试'));
-      }
+      // The research page fetches the album itself (KifuAPI.getAlbum) and auto-starts the
+      // scan from the fetched SGF — no session pre-creation needed here.
+      navigate('/kiosk/research?kifu_id=' + selectedId + '&analyze=1');
     } catch {
-      // Defensive: createSession swallows errors and returns null, so this is rarely hit.
       setOpenError(t('Failed to open in research', '打开研究失败，请重试'));
     } finally {
       setOpening(false);

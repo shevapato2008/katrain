@@ -7,17 +7,12 @@ import KifuPage from '../pages/KifuPage';
 import { translateResult } from '../../utils/resultTranslation';
 
 // Hoisted spies referenced by the mock factories below.
-const { mockCreateSession, mockNavigate } = vi.hoisted(() => ({
-  mockCreateSession: vi.fn(),
+const { mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
 }));
 
 vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
-vi.mock('../../hooks/useResearchSession', () => ({
-  useResearchSession: () => ({ createSession: mockCreateSession }),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -73,7 +68,6 @@ const installFetch = (total = 2) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockCreateSession.mockResolvedValue('sess-1');
   vi.mocked(translateResult).mockImplementation((result: string) => result);
   installFetch();
 });
@@ -171,30 +165,15 @@ describe('KifuPage', () => {
     );
   });
 
-  it('opens in research: creates a session with the SGF and navigates', async () => {
+  it('opens in research: navigates to the research deep-link for the selected kifu', async () => {
     renderPage();
     await selectFirstKifu();
 
     fireEvent.click(screen.getByRole('button', { name: /在研究中打开/ }));
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith(
-        DETAIL_SGF,
-        expect.objectContaining({ initialMove: 3, skipAnalysis: true })
-      );
-      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research/session/sess-1');
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/kiosk/research?kifu_id='));
     });
-  });
-
-  it('shows an error toast and does not navigate when session creation fails', async () => {
-    mockCreateSession.mockResolvedValue(null);
-    renderPage();
-    await selectFirstKifu();
-
-    fireEvent.click(screen.getByRole('button', { name: /在研究中打开/ }));
-
-    await waitFor(() => expect(screen.getByText('打开研究失败，请重试')).toBeInTheDocument());
-    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('navigates the preview move-by-move with correct boundary states', async () => {

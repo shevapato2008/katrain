@@ -21,6 +21,7 @@ import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
+import { useImmersive } from '../context/ImmersiveContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { sequenceKey, readAutoAdvance } from './tsumegoUnits';
 
@@ -40,6 +41,7 @@ const TsumegoProblemPage = () => {
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   const { progress } = useTsumegoProgress();
+  const { setImmersive } = useImmersive();
   const {
     problem,
     loading,
@@ -85,6 +87,12 @@ const TsumegoProblemPage = () => {
   // leaves nothing dangling. The only per-navigation/unmount concerns are the JS timers, and
   // those live inside SuccessOverlay (cleaned up on hide/unmount) — there are no page-level
   // timers to leak. We reset the vision setup UI flags per problem (the load effect below).
+
+  // Immersive solve screen — hide the Dock + left board console while a problem is open.
+  useEffect(() => {
+    setImmersive(true);
+    return () => setImmersive(false);
+  }, [setImmersive]);
 
   useEffect(() => {
     if (!problem) return;

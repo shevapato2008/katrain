@@ -138,7 +138,7 @@ const LiveMatchPage = () => {
           <IconButton onClick={() => navigate('/kiosk/live')} size="small">
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flex: 1 }} noWrap>
+          <Typography variant="h6" sx={{ flex: 1, fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }} noWrap>
             {match.player_black} vs {match.player_white}
           </Typography>
           <Chip
@@ -152,7 +152,7 @@ const LiveMatchPage = () => {
         <MatchInfo match={match} currentMove={currentMove} analysis={analysis[currentMove]} />
 
         {/* Feature toggles — persistent text labels (no hover tooltips on touch) */}
-        <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)', flexShrink: 0 }}>
+        <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0 }}>
           <ToggleButtonGroup size="small" sx={{ width: '100%', display: 'flex' }}>
             <ToggleButton value="tryMove" selected={tryMoveMode} onChange={handleToggleTry} sx={{ flex: 1, py: 0.75 }}>
               <TouchAppIcon fontSize="small" />

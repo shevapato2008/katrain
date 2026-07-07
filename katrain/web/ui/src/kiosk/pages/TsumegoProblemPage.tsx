@@ -22,7 +22,6 @@ import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
 import { useVisionSync } from '../hooks/useVisionSync';
-import { useOrientation } from '../context/OrientationContext';
 import { sequenceKey, readAutoAdvance } from './tsumegoUnits';
 
 interface ProblemSummary {
@@ -40,7 +39,6 @@ const TsumegoProblemPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
-  const { isPortrait } = useOrientation();
   const { progress } = useTsumegoProgress();
   const {
     problem,
@@ -231,14 +229,10 @@ const TsumegoProblemPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board area */}
       <Box
-        sx={
-          isPortrait
-            ? { width: '100%', maxHeight: '50%', aspectRatio: '1', position: 'relative' }
-            : { height: '100%', aspectRatio: '1', position: 'relative' }
-        }
+        sx={{ height: '100%', aspectRatio: '1', position: 'relative' }}
         data-testid="tsumego-board"
       >
         <TsumegoBoard

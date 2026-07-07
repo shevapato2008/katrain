@@ -5,9 +5,8 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KioskLayout from '../components/layout/KioskLayout';
 
-const mockUseOrientation = vi.fn();
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => mockUseOrientation(),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 const renderLayout = (route = '/kiosk/play') =>
@@ -25,23 +24,12 @@ const renderLayout = (route = '/kiosk/play') =>
 
 describe('KioskLayout', () => {
   it('renders status bar, navigation rail, and outlet in landscape', () => {
-    mockUseOrientation.mockReturnValue({ isPortrait: false });
     renderLayout();
     expect(screen.getByText('弈航')).toBeInTheDocument();
     expect(screen.getByText('对弈')).toBeInTheDocument();
     expect(screen.getByText('设置')).toBeInTheDocument();
     expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
     // NavigationRail renders as vertical nav (72px wide)
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
-  });
-
-  it('renders status bar, top tab bar, and outlet in portrait', () => {
-    mockUseOrientation.mockReturnValue({ isPortrait: true });
-    renderLayout();
-    expect(screen.getByText('弈航')).toBeInTheDocument();
-    expect(screen.getByText('对弈')).toBeInTheDocument();
-    expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
-    // TopTabBar renders as horizontal nav (48px tall)
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 });

@@ -7,7 +7,7 @@ import { kioskTheme } from '../theme';
 import ResearchPage from '../pages/ResearchPage';
 
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 vi.mock('../../hooks/useResearchSession', () => ({

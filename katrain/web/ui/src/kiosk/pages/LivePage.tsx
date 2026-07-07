@@ -9,12 +9,10 @@ import PlaybackBar from '../../components/live/PlaybackBar';
 import UpcomingList from '../../components/live/UpcomingList';
 import type { MatchSummary } from '../../types/live';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useOrientation } from '../context/OrientationContext';
 
 const LivePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
   const [rightTab, setRightTab] = useState(0);
   // null = no explicit user choice yet; we fall back to the first live match below.
   const [pickedMatchId, setPickedMatchId] = useState<string | null>(null);
@@ -62,13 +60,11 @@ const LivePage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board preview + playback */}
       <Box
         sx={{
-          ...(isPortrait
-            ? { width: '100%', maxHeight: '50%', borderBottom: '1px solid' }
-            : { height: '100%', width: '52%', flexShrink: 0, borderRight: '1px solid' }),
+          height: '100%', width: '52%', flexShrink: 0, borderRight: '1px solid',
           borderColor: 'divider',
           display: 'flex',
           flexDirection: 'column',

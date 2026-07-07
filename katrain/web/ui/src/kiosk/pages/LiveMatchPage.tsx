@@ -24,14 +24,12 @@ import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
-import { useOrientation } from '../context/OrientationContext';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
-  const { isPortrait } = useOrientation();
 
   // Board feature toggles
   const [showAiMarkers, setShowAiMarkers] = useState(true);
@@ -112,14 +110,10 @@ const LiveMatchPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board */}
       <Box
-        sx={
-          isPortrait
-            ? { width: '100%', maxHeight: '50%', aspectRatio: '1', alignSelf: 'center', flexShrink: 0 }
-            : { height: '100%', aspectRatio: '1', flexShrink: 0 }
-        }
+        sx={{ height: '100%', aspectRatio: '1', flexShrink: 0 }}
       >
         <LiveBoard
           moves={match.moves}
@@ -138,7 +132,7 @@ const LiveMatchPage = () => {
       </Box>
 
       {/* Right (or bottom) panel */}
-      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: isPortrait ? 'none' : '1px solid', borderTop: isPortrait ? '1px solid' : 'none', borderColor: 'divider' }}>
+      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid', borderTop: 'none', borderColor: 'divider' }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, flexShrink: 0 }}>
           <IconButton onClick={() => navigate('/kiosk/live')} size="small">

@@ -13,7 +13,7 @@ const { mockCreateSession, mockNavigate } = vi.hoisted(() => ({
 }));
 
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 vi.mock('../../hooks/useResearchSession', () => ({

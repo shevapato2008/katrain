@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { OrientationProvider, useOrientation } from '../context/OrientationContext';
@@ -32,15 +32,12 @@ const STORAGE_KEY = 'katrain_kiosk_rotation';
 
 /** Test consumer that reads and sets orientation */
 const OrientationDisplay = () => {
-  const { rotation, isPortrait, setRotation } = useOrientation();
+  const { rotation, setRotation } = useOrientation();
   return (
     <div>
       <span data-testid="rotation">{rotation}</span>
-      <span data-testid="is-portrait">{String(isPortrait)}</span>
       <button onClick={() => setRotation(0)}>set-0</button>
-      <button onClick={() => setRotation(90)}>set-90</button>
       <button onClick={() => setRotation(180)}>set-180</button>
-      <button onClick={() => setRotation(270)}>set-270</button>
     </div>
   );
 };
@@ -61,53 +58,40 @@ describe('Orientation integration', () => {
     localStorageMock.clear();
   });
 
-  it('defaults to rotation 0 (landscape)', () => {
+  it('defaults to rotation 0', () => {
     renderWithOrientation();
     expect(screen.getByTestId('rotation').textContent).toBe('0');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
-  it('persisted 90 still reads as landscape (kiosk is fixed-landscape)', () => {
+  it('persisted 90 migrates and reads back as 0 (kiosk is landscape-only)', () => {
     localStorageMock.setItem(STORAGE_KEY, '90');
     renderWithOrientation();
-    expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
+    expect(screen.getByTestId('rotation').textContent).toBe('0');
   });
 
-  it('persisted 180 reads as landscape (inverted)', () => {
+  it('persisted 180 reads as 180 (inverted landscape)', () => {
     localStorageMock.setItem(STORAGE_KEY, '180');
     renderWithOrientation();
     expect(screen.getByTestId('rotation').textContent).toBe('180');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
-  it('persisted 270 still reads as landscape (kiosk is fixed-landscape)', () => {
+  it('persisted 270 migrates and reads back as 0 (kiosk is landscape-only)', () => {
     localStorageMock.setItem(STORAGE_KEY, '270');
     renderWithOrientation();
-    expect(screen.getByTestId('rotation').textContent).toBe('270');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
+    expect(screen.getByTestId('rotation').textContent).toBe('0');
   });
 
-  it('setRotation updates state and persists to localStorage', () => {
+  it('setRotation updates state and persists to localStorage (0 ↔ 180 round-trip)', () => {
     renderWithOrientation();
     expect(screen.getByTestId('rotation').textContent).toBe('0');
-
-    act(() => { screen.getByText('set-90').click(); });
-    expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
-    expect(localStorageMock.getItem(STORAGE_KEY)).toBe('90');
 
     act(() => { screen.getByText('set-180').click(); });
     expect(screen.getByTestId('rotation').textContent).toBe('180');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
-
-    act(() => { screen.getByText('set-270').click(); });
-    expect(screen.getByTestId('rotation').textContent).toBe('270');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
+    expect(localStorageMock.getItem(STORAGE_KEY)).toBe('180');
 
     act(() => { screen.getByText('set-0').click(); });
     expect(screen.getByTestId('rotation').textContent).toBe('0');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
+    expect(localStorageMock.getItem(STORAGE_KEY)).toBe('0');
   });
 
   it('ignores invalid localStorage value and defaults to 0', () => {

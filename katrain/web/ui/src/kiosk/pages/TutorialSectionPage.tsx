@@ -15,7 +15,6 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialSectionDetail, TutorialFigure } from '../../types/tutorial';
 import SGFBoard, { type SGFPayload } from '../../components/tutorials/SGFBoard';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
-import { useOrientation } from '../context/OrientationContext';
 import type { SectionNavState } from '../types/tutorialNav';
 
 /** Highest numeric move label on a figure's board (0 when there are none). */
@@ -45,7 +44,6 @@ const TutorialSectionPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
 
   const navState = (location.state ?? null) as SectionNavState | null;
 
@@ -274,7 +272,7 @@ const TutorialSectionPage = () => {
           flex: 1,
           minHeight: 0,
           display: 'flex',
-          flexDirection: isPortrait ? 'column' : 'row',
+          flexDirection: 'row',
           gap: 2,
           px: 2,
           py: 1,

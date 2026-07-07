@@ -7,7 +7,7 @@ import SettingsPage from '../pages/SettingsPage';
 
 const mockSetRotation = vi.fn();
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: mockSetRotation }),
+  useOrientation: () => ({ rotation: 0, setRotation: mockSetRotation }),
 }));
 
 const renderPage = () =>
@@ -29,18 +29,16 @@ describe('SettingsPage', () => {
     expect(screen.getByRole('button', { name: '重新标定棋盘' })).toBeInTheDocument();
   });
 
-  it('renders rotation chips with all 4 options', () => {
+  it('renders rotation chips with both landscape options', () => {
     renderPage();
     expect(screen.getByText('屏幕旋转')).toBeInTheDocument();
     expect(screen.getByText('0° 横屏')).toBeInTheDocument();
-    expect(screen.getByText('90° 竖屏')).toBeInTheDocument();
     expect(screen.getByText('180° 横屏翻转')).toBeInTheDocument();
-    expect(screen.getByText('270° 竖屏翻转')).toBeInTheDocument();
   });
 
   it('calls setRotation when a rotation chip is clicked', () => {
     renderPage();
-    fireEvent.click(screen.getByText('90° 竖屏'));
-    expect(mockSetRotation).toHaveBeenCalledWith(90);
+    fireEvent.click(screen.getByText('180° 横屏翻转'));
+    expect(mockSetRotation).toHaveBeenCalledWith(180);
   });
 });

@@ -2,10 +2,8 @@ import { type ReactNode } from 'react';
 import { useOrientation, type Rotation } from '../../context/OrientationContext';
 
 const STYLES: Record<Rotation, { transform: string; width: string; height: string }> = {
-  0:   { transform: '',                                        width: '100vw', height: '100vh' },
-  90:  { transform: 'rotate(90deg) translateY(-100%)',         width: '100vh', height: '100vw' },
-  180: { transform: 'rotate(180deg) translate(-100%, -100%)',  width: '100vw', height: '100vh' },
-  270: { transform: 'rotate(270deg) translateX(-100%)',        width: '100vh', height: '100vw' },
+  0:   { transform: '',                                       width: '100vw', height: '100vh' },
+  180: { transform: 'rotate(180deg) translate(-100%, -100%)', width: '100vw', height: '100vh' },
 };
 
 const RotationWrapper = ({ children }: { children: ReactNode }) => {

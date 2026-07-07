@@ -6,7 +6,7 @@ import { kioskTheme } from '../theme';
 import type { GameState } from '../../api';
 
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 // Mock vision context — enabled with LED reported down (red badge scenario).

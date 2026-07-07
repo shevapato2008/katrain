@@ -13,7 +13,6 @@ import { KifuAPI } from '../../api/kifuApi';
 import { cacheSgf, listRecent, getCachedSgf, type BaipuRecentEntry } from '../../api/baipuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useOrientation } from '../context/OrientationContext';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -28,7 +27,6 @@ const PAGE_SIZE = 20;
 const BaipuListPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -155,9 +153,9 @@ const BaipuListPage = () => {
   const selectedKifu = visibleKifu.find((k) => k.id === selectedId);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
       {/* List panel */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...(isPortrait && { maxHeight: '50%' }) }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
@@ -293,7 +291,7 @@ const BaipuListPage = () => {
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
           bgcolor: 'background.default', overflow: 'hidden',
-          ...(isPortrait ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : { borderLeft: '1px solid rgba(255,255,255,0.06)' }),
+          borderLeft: '1px solid rgba(255,255,255,0.06)',
         }}
       >
         {selectedKifu && previewSgf ? (

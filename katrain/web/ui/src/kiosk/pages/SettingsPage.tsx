@@ -39,9 +39,7 @@ const SettingsPage = () => {
         label={t('Screen Rotation', '屏幕旋转')}
         options={[
           { value: 0 as Rotation, label: '0° 横屏' },
-          { value: 90 as Rotation, label: '90° 竖屏' },
           { value: 180 as Rotation, label: '180° 横屏翻转' },
-          { value: 270 as Rotation, label: '270° 竖屏翻转' },
         ]}
         value={rotation}
         onChange={(v) => setRotation(v as Rotation)}

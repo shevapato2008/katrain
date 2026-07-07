@@ -9,7 +9,7 @@ vi.mock('../../context/AuthContext', () => ({
 
 vi.mock('../context/OrientationContext', () => ({
   OrientationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 vi.mock('../components/layout/RotationWrapper', () => ({

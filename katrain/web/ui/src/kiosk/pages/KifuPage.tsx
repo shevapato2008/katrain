@@ -12,7 +12,6 @@ import { KifuAPI } from '../../api/kifuApi';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useOrientation } from '../context/OrientationContext';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -21,7 +20,6 @@ const PAGE_SIZE = 20;
 const KifuPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
   const { createSession } = useResearchSession();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
@@ -134,9 +132,9 @@ const KifuPage = () => {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
       {/* List panel: Title + Search + Card list + Pagination */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...(isPortrait && { maxHeight: '50%' }) }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
@@ -298,9 +296,7 @@ const KifuPage = () => {
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
           bgcolor: 'background.default', overflow: 'hidden',
-          ...(isPortrait
-            ? { borderTop: '1px solid rgba(255,255,255,0.06)' }
-            : { borderLeft: '1px solid rgba(255,255,255,0.06)' }),
+          borderLeft: '1px solid rgba(255,255,255,0.06)',
         }}
       >
         {selectedKifu ? (

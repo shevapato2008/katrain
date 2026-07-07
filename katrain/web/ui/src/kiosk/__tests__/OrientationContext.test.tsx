@@ -17,12 +17,10 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 const TestConsumer = () => {
-  const { rotation, isPortrait, setRotation } = useOrientation();
+  const { rotation, setRotation } = useOrientation();
   return (
     <div>
       <span data-testid="rotation">{rotation}</span>
-      <span data-testid="is-portrait">{String(isPortrait)}</span>
-      <button onClick={() => setRotation(90)}>set-90</button>
       <button onClick={() => setRotation(180)}>set-180</button>
       <button onClick={() => setRotation(0)}>set-0</button>
     </div>
@@ -32,36 +30,29 @@ const TestConsumer = () => {
 describe('OrientationContext', () => {
   beforeEach(() => { localStorage.clear(); });
 
-  it('defaults to rotation 0 and landscape', () => {
+  it('defaults to rotation 0', () => {
     render(<OrientationProvider><TestConsumer /></OrientationProvider>);
     expect(screen.getByTestId('rotation').textContent).toBe('0');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
   });
 
-  it('reads saved rotation from localStorage (still landscape — kiosk is fixed-landscape)', () => {
-    localStorage.setItem(STORAGE_KEY, '90');
-    render(<OrientationProvider><TestConsumer /></OrientationProvider>);
-    expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
-  });
-
-  it('setRotation updates state and persists', () => {
-    render(<OrientationProvider><TestConsumer /></OrientationProvider>);
-    act(() => { screen.getByText('set-90').click(); });
-    expect(screen.getByTestId('rotation').textContent).toBe('90');
-    expect(localStorage.getItem(STORAGE_KEY)).toBe('90');
-  });
-
-  it('isPortrait is false for 0 and 180', () => {
+  it('setRotation persists (use 180)', () => {
     render(<OrientationProvider><TestConsumer /></OrientationProvider>);
     act(() => { screen.getByText('set-180').click(); });
-    expect(screen.getByTestId('is-portrait').textContent).toBe('false');
+    expect(screen.getByTestId('rotation').textContent).toBe('180');
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('180');
   });
 
-  it('ignores invalid localStorage value', () => {
+  it('ignores invalid → 0', () => {
     localStorage.setItem(STORAGE_KEY, '45');
     render(<OrientationProvider><TestConsumer /></OrientationProvider>);
     expect(screen.getByTestId('rotation').textContent).toBe('0');
+  });
+
+  it('migrates stale 90 to 0 and rewrites storage', () => {
+    localStorage.setItem(STORAGE_KEY, '90');
+    render(<OrientationProvider><TestConsumer /></OrientationProvider>);
+    expect(screen.getByTestId('rotation').textContent).toBe('0');
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('0');
   });
 
   it('throws when used outside provider', () => {

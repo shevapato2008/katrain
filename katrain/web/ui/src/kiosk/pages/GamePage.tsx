@@ -10,7 +10,6 @@ import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useOrientation } from '../context/OrientationContext';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import PoseLostBanner from '../components/physical/PoseLostBanner';
@@ -22,7 +21,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token } = useAuth();
-  const { isPortrait } = useOrientation();
   const session = useGameSession({ token: token ?? undefined });
   const [analysisToggles, setAnalysisToggles] = useState({
     ownership: false,
@@ -198,8 +196,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Box>
       </Box>
       {/* Board + Panel */}
-      <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', flex: 1, overflow: 'hidden' }}>
-        <Box sx={isPortrait ? { width: '100%', maxHeight: '50%', aspectRatio: '1' } : { height: '100%', aspectRatio: '1' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden' }}>
+        <Box sx={{ height: '100%', aspectRatio: '1' }}>
           <Board
             gameState={gameState}
             onMove={handleBoardMove}

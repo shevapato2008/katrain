@@ -17,7 +17,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 // Vision disabled — keeps the vision-setup branch (BoardSetupGuide / API.visionSetupMode) inert.

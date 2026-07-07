@@ -12,7 +12,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 const renderBar = (route = '/kiosk/play') =>

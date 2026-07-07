@@ -16,7 +16,7 @@ vi.mock('../../api/tutorialApi', () => ({
 
 // Kiosk is fixed-landscape.
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 import TutorialSectionPage from './TutorialSectionPage';

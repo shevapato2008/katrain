@@ -50,7 +50,7 @@ const ModeCard = ({ title, subtitle, icon, to, variant = 'default' }: ModeCardPr
       }}
     >
       <Box sx={{ fontSize: 40, color: 'primary.main', display: 'flex' }}>{icon}</Box>
-      <Typography variant="h6" sx={{ color: isPrimary ? 'primary.main' : 'text.primary' }}>{title}</Typography>
+      <Typography variant="h6" sx={{ color: 'text.primary' }}>{title}</Typography>
       <Typography variant="body2" sx={{ color: isPrimary ? 'text.primary' : 'text.secondary', textAlign: 'center' }}>
         {subtitle}
       </Typography>

@@ -4,13 +4,11 @@ from katrain.web.core.config import settings
 
 router = APIRouter()
 
+
 @router.get("/health")
 async def health():
-    engines = {
-        "local": "unknown",
-        "cloud": "unknown"
-    }
-    
+    engines = {"local": "unknown", "cloud": "unknown"}
+
     # Check local
     try:
         async with httpx.AsyncClient(timeout=1.0) as client:
@@ -19,7 +17,7 @@ async def health():
             engines["local"] = "reachable" if resp.status_code == 200 else f"error_{resp.status_code}"
     except Exception:
         engines["local"] = "unreachable"
-        
+
     # Check cloud
     if not settings.CLOUD_KATAGO_URL:
         engines["cloud"] = "unconfigured"
@@ -30,5 +28,5 @@ async def health():
                 engines["cloud"] = "reachable" if resp.status_code == 200 else f"error_{resp.status_code}"
         except Exception:
             engines["cloud"] = "unreachable"
-            
+
     return {"status": "ok", "engines": engines}

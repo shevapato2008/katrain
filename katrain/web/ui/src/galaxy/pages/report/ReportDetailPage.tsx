@@ -25,9 +25,9 @@ import { sgfToMoves } from '../../../utils/sgfSerializer';
 import type { MoveAnalysis } from '../../../types/live';
 import { UserGamesAPI, type UserGameDetail } from '../../api/userGamesApi';
 import { ReportsAPI, type ReportTaskMove, type ReportTaskSummary } from '../../api/reportApi';
-import AiAnalysis from '../../components/live/AiAnalysis';
-import PlaybackBar from '../../components/live/PlaybackBar';
-import TrendChart from '../../components/live/TrendChart';
+import AiAnalysis from '../../../components/live/AiAnalysis';
+import PlaybackBar from '../../../components/live/PlaybackBar';
+import TrendChart from '../../../components/live/TrendChart';
 import ReportMetaPanel from '../../components/report/ReportMetaPanel';
 
 export default function ReportDetailPage() {

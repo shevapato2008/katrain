@@ -51,15 +51,15 @@ class TestAIResignation:
         expected_9x9 = int(configured_min * 81 / 361)
         assert expected_9x9 == 33
 
-    @pytest.mark.skipif(
-        os.environ.get("CI", "").lower() == "true",
-        reason="Requires KataGo engine with GPU"
+    @pytest.mark.skipif(os.environ.get("CI", "").lower() == "true", reason="Requires KataGo engine with GPU")
+    @pytest.mark.parametrize(
+        "board_size,max_moves",
+        [
+            ("9", 60),  # 9x9: smaller board, fewer moves needed
+            ("13", 100),  # 13x13: medium board
+            ("19", 200),  # 19x19: full board, may need more moves
+        ],
     )
-    @pytest.mark.parametrize("board_size,max_moves", [
-        ("9", 60),    # 9x9: smaller board, fewer moves needed
-        ("13", 100),  # 13x13: medium board
-        ("19", 200),  # 19x19: full board, may need more moves
-    ])
     def test_ai_resignation_triggered(self, katrain, engine, board_size, max_moves):
         """
         Test that AI resignation is triggered when a strong AI plays against
@@ -70,11 +70,7 @@ class TestAIResignation:
         consecutive turns.
         """
         # Create game with specified board size
-        game = Game(
-            katrain,
-            engine,
-            game_properties={"SZ": board_size}
-        )
+        game = Game(katrain, engine, game_properties={"SZ": board_size})
 
         # AI settings
         # Black: KataGo strongest (AI_DEFAULT)
@@ -97,8 +93,7 @@ class TestAIResignation:
         }
 
         katrain.log(
-            f"Starting {board_size}x{board_size} game: {strong_ai_mode} (B) vs {weak_ai_mode} 1D (W)",
-            OUTPUT_INFO
+            f"Starting {board_size}x{board_size} game: {strong_ai_mode} (B) vs {weak_ai_mode} 1D (W)", OUTPUT_INFO
         )
 
         resignation_triggered = False
@@ -129,10 +124,7 @@ class TestAIResignation:
                 if result is None:
                     # AI resigned
                     resignation_triggered = True
-                    katrain.log(
-                        f"AI ({current_player}) resigned at move {move_count}",
-                        OUTPUT_INFO
-                    )
+                    katrain.log(f"AI ({current_player}) resigned at move {move_count}", OUTPUT_INFO)
                     break
 
                 move, node = result
@@ -145,10 +137,7 @@ class TestAIResignation:
                     parent = game.current_node.parent
                     if parent and parent.move and parent.move.is_pass:
                         game_ended_by_passes = True
-                        katrain.log(
-                            f"Game ended by consecutive passes at move {move_count}",
-                            OUTPUT_INFO
-                        )
+                        katrain.log(f"Game ended by consecutive passes at move {move_count}", OUTPUT_INFO)
                         break
 
             except Exception as e:
@@ -159,33 +148,26 @@ class TestAIResignation:
         katrain.log(
             f"Game finished: {board_size}x{board_size}, moves={move_count}, "
             f"resignation={resignation_triggered}, passes={game_ended_by_passes}",
-            OUTPUT_INFO
+            OUTPUT_INFO,
         )
 
         # At least one of these conditions should be true
-        assert resignation_triggered or game_ended_by_passes or move_count >= max_moves, (
-            f"Game did not end properly on {board_size}x{board_size} board"
-        )
+        assert (
+            resignation_triggered or game_ended_by_passes or move_count >= max_moves
+        ), f"Game did not end properly on {board_size}x{board_size} board"
 
         # Log the winrate progression for debugging
         if game.current_node.analysis_exists:
             katrain.log(
                 f"Final position - Winrate (Black): {game.current_node.winrate:.1%}, "
                 f"Score: {game.current_node.score}",
-                OUTPUT_INFO
+                OUTPUT_INFO,
             )
 
-    @pytest.mark.skipif(
-        os.environ.get("CI", "").lower() == "true",
-        reason="Requires KataGo engine with GPU"
-    )
+    @pytest.mark.skipif(os.environ.get("CI", "").lower() == "true", reason="Requires KataGo engine with GPU")
     def test_resignation_disabled(self, katrain, engine):
         """Test that resignation can be disabled via settings."""
-        game = Game(
-            katrain,
-            engine,
-            game_properties={"SZ": "9"}
-        )
+        game = Game(katrain, engine, game_properties={"SZ": "9"})
 
         # Resignation settings with enabled=False
         resignation_settings = {
@@ -201,16 +183,13 @@ class TestAIResignation:
 
     def test_should_ai_resign_no_analysis(self, katrain):
         """Test that resignation check returns False when no analysis exists."""
+
         # Create a mock game without engine (no analysis)
         class MockEngine:
             def request_analysis(self, *args, **kwargs):
                 pass
 
-        game = Game(
-            katrain,
-            MockEngine(),
-            game_properties={"SZ": "9"}
-        )
+        game = Game(katrain, MockEngine(), game_properties={"SZ": "9"})
 
         resignation_settings = {
             "enabled": True,
@@ -221,6 +200,7 @@ class TestAIResignation:
 
         # Play some moves manually (no analysis)
         from katrain.core.game import Move
+
         for i in range(20):
             player = "B" if i % 2 == 0 else "W"
             x, y = i % 9, i // 9

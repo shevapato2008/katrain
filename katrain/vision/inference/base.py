@@ -18,8 +18,13 @@ class InferenceBackend(Protocol):
         """Load model weights and optional metadata sidecar."""
         ...
 
-    def detect(self, image: np.ndarray, confidence_threshold: float) -> list[Detection]:
-        """Run inference and return detections above confidence threshold."""
+    def detect(
+        self, image: np.ndarray, confidence_threshold: float, iou_threshold: float | None = None
+    ) -> list[Detection]:
+        """Run inference and return detections above confidence threshold.
+
+        iou_threshold overrides the backend's default agnostic-NMS IoU when not None.
+        """
         ...
 
     def unload(self) -> None:

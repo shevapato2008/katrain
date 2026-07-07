@@ -77,6 +77,6 @@ class TestConvertLabels:
         yaml_path = output / "data.yaml"
         assert yaml_path.exists()
         content = yaml_path.read_text()
-        assert "nc: 2" in content
+        assert "nc: 4" in content
         assert "black" in content
         assert "white" in content

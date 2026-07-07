@@ -851,6 +851,16 @@ async def process_figure(
         print(f"  File size: {file_size:.1f} MB")
         print(f"  DB updated: video_asset={figure.video_asset}")
 
+        # Write-through to object store (no-op for local backend). D8: local copy stays.
+        from katrain.web.core.storage import upload_file
+
+        video_key = f"tutorial_assets/{book_slug}/video/fig_{figure_id}.mp4"
+        if upload_file(video_key, video_path):
+            print(f"  Uploaded to object store: {video_key}")
+        poster_path = video_path.with_suffix(".jpg")
+        if poster_path.exists():
+            upload_file(f"tutorial_assets/{book_slug}/video/fig_{figure_id}.jpg", poster_path)
+
     finally:
         db.close()
 
@@ -1078,6 +1088,15 @@ def concat_section_video(section_id: int, force: bool = False):
 
     file_size = output_path.stat().st_size / 1024 / 1024
     print(f"  Done! Section video: {output_path} ({file_size:.1f} MB)")
+
+    # Write-through to object store (no-op for local backend). D8: local copy stays.
+    from katrain.web.core.storage import upload_file
+
+    section_key = f"tutorial_assets/{book_slug}/video/section_{section_id}.mp4"
+    if upload_file(section_key, output_path):
+        print(f"  Uploaded to object store: {section_key}")
+    if poster_path.exists():
+        upload_file(f"tutorial_assets/{book_slug}/video/section_{section_id}.jpg", poster_path)
 
 
 def main():

@@ -41,7 +41,10 @@ web = [
     "pydantic>=2.6.1",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=4.0.1",
+    # passlib 1.7.4 is incompatible with bcrypt>=4.1 (removed __about__ shim -> its
+    # import-time self-test raises "password cannot be longer than 72 bytes"). Pin to
+    # the last passlib-compatible bcrypt so login/register works.
+    "bcrypt>=4.0.1,<4.1",
     "httpx>=0.28.1",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
@@ -50,6 +53,11 @@ web = [
 vision = [
     "opencv-python>=4.8.0",
     "numpy>=1.24.0",
+]
+# Board/kiosk hardware (RK35xx SBCs): serial link to the LED guidance board.
+# Optional — without it the LED service logs once and stays disabled (graceful).
+board = [
+    "pyserial>=3.5",
 ]
 vision-train = [
     "ultralytics>=8.3.0",
@@ -89,12 +97,16 @@ dev = [
     "polib>=1.2.0,<2",
     "pyinstaller>=6.14.1",
     "pytest>=8.3.2,<9",
+    "pytest-asyncio>=0.23,<1",
 ]
 
 [tool.uv]
 default-groups = [
     "dev",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [tool.black]
 line-length = 120

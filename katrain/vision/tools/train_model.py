@@ -26,6 +26,110 @@ MODEL_SIZES = {
 
 DEFAULT_MODEL = "yolo11x.pt"
 
+# LED-safe augmentation for the 4-class baipu model. hsv_h=0 is load-bearing:
+# hue separates led_red from led_green, so jittering it corrupts the label.
+# copy_paste is pinned to 0.0 ON PURPOSE: Ultralytics CopyPaste no-ops on bbox-only
+# labels (it needs segmentation polygons) and is class-agnostic anyway, so it cannot
+# oversample the LED class. hsv_s/hsv_v give mild illumination robustness; hsv_h stays 0.
+LED_SAFE_AUG = {
+    "hsv_h": 0.0,
+    "hsv_s": 0.2,
+    "hsv_v": 0.4,
+    "degrees": 0.0,
+    "shear": 0.0,
+    "perspective": 0.0,
+    "flipud": 0.0,
+    "fliplr": 0.5,
+    "translate": 0.1,
+    "scale": 0.5,
+    "mosaic": 1.0,
+    "close_mosaic": 15,
+    "mixup": 0.0,
+    "copy_paste": 0.0,
+    "erasing": 0.0,
+}
+
+
+class _BlurDownscale:
+    """Hue-safe blur / low-res / JPEG degradation on the composed TRAIN image.
+
+    Hardens the model against the far-side perspective-blur gradient: the geometry warp
+    upsamples the far board region (few source pixels) to the same size as the near region,
+    so far-side stones are soft/low-detail and score lower. We simulate that by randomly
+    down-then-up resampling, Gaussian-blurring, and JPEG-degrading training crops. All ops
+    preserve hue (no ToGray/CLAHE/channel ops) so led_red vs led_green stay separable.
+    """
+
+    def __init__(self, p_downscale=0.20, p_blur=0.15, p_jpeg=0.10, seed=0):
+        import random
+
+        self._rand = random.Random(seed)  # deterministic but varies across calls
+        self.p_downscale, self.p_blur, self.p_jpeg = p_downscale, p_blur, p_jpeg
+
+    def __call__(self, labels):
+        import cv2
+
+        img = labels.get("img") if isinstance(labels, dict) else None
+        if img is None or img.ndim != 3:
+            return labels
+        r = self._rand
+        h, w = img.shape[:2]
+        if r.random() < self.p_downscale:  # low-res far-side simulation
+            f = r.uniform(0.3, 0.7)
+            small = cv2.resize(img, (max(1, int(w * f)), max(1, int(h * f))), interpolation=cv2.INTER_AREA)
+            img = cv2.resize(small, (w, h), interpolation=cv2.INTER_LINEAR)
+        if r.random() < self.p_blur:
+            k = r.choice([3, 5])
+            img = cv2.GaussianBlur(img, (k, k), 0)
+        if r.random() < self.p_jpeg:
+            ok, enc = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), r.randint(30, 70)])
+            if ok:
+                img = cv2.imdecode(enc, cv2.IMREAD_COLOR)
+        labels["img"] = img
+        return labels
+
+
+def _install_blur_downscale_aug() -> None:
+    """Monkeypatch YOLODataset.build_transforms to inject _BlurDownscale into the TRAIN
+    pipeline (right before Format). albumentations isn't installed in our envs, so this is
+    the dependency-free way to add blur/low-res aug. Raises if the insertion point can't be
+    found — a requested blur run must never silently train without it."""
+    from ultralytics.data import dataset as _ds
+
+    orig = _ds.YOLODataset.build_transforms
+
+    def patched(self, hyp=None):
+        compose = orig(self, hyp)
+        if getattr(self, "augment", False):  # train split only (val has augment=False)
+            tlist = getattr(compose, "transforms", None)
+            if not isinstance(tlist, list) or not tlist:
+                raise RuntimeError("led-safe-blur: unexpected Compose structure; cannot insert transform")
+            tlist.insert(len(tlist) - 1, _BlurDownscale())  # before Format (the last transform)
+            print("[led-safe-blur] BlurDownscale augmentation INSTALLED in train pipeline")
+        return compose
+
+    _ds.YOLODataset.build_transforms = patched
+
+
+def build_train_kwargs(args) -> dict:
+    """Assemble the model.train() kwargs, injecting LED_SAFE_AUG for the led-safe variants."""
+    kwargs = dict(
+        data=args.data,
+        epochs=args.epochs,
+        imgsz=args.imgsz,
+        batch=args.batch,
+        name=args.name,
+        patience=args.patience,
+        device=args.device,
+        seed=getattr(args, "seed", 0),
+        save=True,
+        plots=True,
+        cache=getattr(args, "cache", False),
+    )
+    if getattr(args, "augment", "default") in ("led-safe", "led-safe-blur"):
+        kwargs.update(LED_SAFE_AUG)
+    return kwargs
+
 
 def resolve_model(args) -> str:
     """Resolve the model path from --model and --model-size arguments.
@@ -55,20 +159,12 @@ def resolve_model(args) -> str:
 def cmd_train(args):
     from ultralytics import YOLO
 
+    if getattr(args, "augment", "default") == "led-safe-blur":
+        _install_blur_downscale_aug()
     model_path = resolve_model(args)
     print(f"Loading model: {model_path}")
     model = YOLO(model_path)
-    model.train(
-        data=args.data,
-        epochs=args.epochs,
-        imgsz=args.imgsz,
-        batch=args.batch,
-        name=args.name,
-        patience=args.patience,
-        device=args.device,
-        save=True,
-        plots=True,
-    )
+    model.train(**build_train_kwargs(args))
     print(f"\nTraining complete. Best weights: runs/detect/{args.name}/weights/best.pt")
 
 
@@ -104,7 +200,16 @@ def main():
     train_p.add_argument("--batch", type=int, default=-1, help="Batch size (-1 for auto-batch based on GPU memory)")
     train_p.add_argument("--name", type=str, default="go_stones")
     train_p.add_argument("--patience", type=int, default=20)
+    train_p.add_argument("--seed", type=int, default=0, help="RNG seed (weight init, shuffle, aug) for reproducible/multi-seed runs")
     train_p.add_argument("--device", type=str, default="mps", help="Device: mps (Mac GPU), cpu, 0 (CUDA GPU 0)")
+    train_p.add_argument(
+        "--augment",
+        choices=["default", "led-safe", "led-safe-blur"],
+        default="default",
+        help="led-safe: hsv_h=0 + LED-friendly aug. led-safe-blur: same + cv2 blur/downscale/jpeg "
+        "degradation to harden against the far-side perspective-blur gradient.",
+    )
+    train_p.add_argument("--cache", action="store_true", help="cache images in RAM (small datasets)")
 
     val_p = sub.add_parser("val", help="Validate a trained model")
     val_p.add_argument("--data", type=str, required=True)

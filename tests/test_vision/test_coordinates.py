@@ -75,3 +75,28 @@ class TestGridToPhysical:
                 rx, ry = physical_to_grid(x_mm, y_mm, config=cfg)
                 assert rx == gx
                 assert ry == gy
+
+
+from katrain.vision.coordinates import continuous_grid_pos
+from katrain.vision.config import BoardConfig as _BC
+
+
+class TestContinuousGridPos:
+    def test_center_is_nine(self):
+        cfg = _BC()
+        fx, fy = continuous_grid_pos(cfg.board_width_mm / 2, cfg.board_length_mm / 2, cfg)
+        assert abs(fx - 9.0) < 1e-6 and abs(fy - 9.0) < 1e-6
+
+    def test_origin_is_zero(self):
+        cfg = _BC()
+        fx, fy = continuous_grid_pos(0.0, 0.0, cfg)
+        assert fx == 0.0 and fy == 0.0
+
+    def test_round_matches_physical_to_grid(self):
+        from katrain.vision.coordinates import physical_to_grid
+
+        cfg = _BC()
+        x_mm, y_mm = cfg.board_width_mm * 0.31, cfg.board_length_mm * 0.77
+        fx, fy = continuous_grid_pos(x_mm, y_mm, cfg)
+        px, py = physical_to_grid(x_mm, y_mm, cfg)
+        assert (round(fx), round(fy)) == (px, py)

@@ -16,5 +16,5 @@ path: /path/to/go_dataset
 train: images/train
 val: images/val
 
-nc: 2
-names: ['black', 'white']
+nc: 4
+names: ['black', 'white', 'led_red', 'led_green']

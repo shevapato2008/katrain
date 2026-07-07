@@ -31,9 +31,9 @@ def test_create_tutorial_progress(db):
     session.commit()
     session.refresh(progress)  # flush server_default values
 
-    fetched = session.query(models_db.UserTutorialProgress).filter_by(
-        user_id=user_id, example_id="ex_opening_001"
-    ).first()
+    fetched = (
+        session.query(models_db.UserTutorialProgress).filter_by(user_id=user_id, example_id="ex_opening_001").first()
+    )
     assert fetched is not None
     assert fetched.last_step_id == "step_ex001_001"
     assert fetched.completed is False

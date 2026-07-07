@@ -79,6 +79,7 @@ class CronScheduler:
         # ReportAnalyzerJob: persistent loop for user game report analysis
         if config.REPORT_ANALYZE_ENABLED:
             from katrain.cron.jobs.report_analyze import ReportAnalyzerJob
+
             report_job = ReportAnalyzerJob()
             self._report_analyze_task = asyncio.create_task(self._run_analyze_loop(report_job))
             logger.info("ReportAnalyzerJob persistent loop started (concurrency=%d)", config.REPORT_CONCURRENCY)

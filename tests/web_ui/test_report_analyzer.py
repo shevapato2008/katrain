@@ -2,6 +2,7 @@
 
 Tests the core analysis logic by patching SessionLocal and KataGoClient.
 """
+
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
 
@@ -13,6 +14,7 @@ from katrain.web.core import models_db
 
 
 # ── Fake KataGo response ──
+
 
 def _fake_katago_response(move_number: int) -> dict:
     return {
@@ -37,6 +39,7 @@ def _fake_katago_response(move_number: int) -> dict:
 
 
 # ── Helpers ──
+
 
 def _make_session():
     engine = create_engine("sqlite:///:memory:")
@@ -115,6 +118,7 @@ def test_report_analyzer_defaults_to_three_workers():
         mock_config.REPORT_CONCURRENCY = 3
         mock_config.REPORT_POLL_INTERVAL = 2.0
         from katrain.cron.jobs.report_analyze import ReportAnalyzerJob
+
         job = ReportAnalyzerJob()
         assert job.max_concurrent_tasks == 3
 

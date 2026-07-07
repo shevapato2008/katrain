@@ -49,6 +49,11 @@ async def vision_status(request: Request):
             "pose_locked": False,
             "sync_state": "idle",
             "bound_session_id": None,
+            "camera_ready": False,
+            "geometry_ready": False,
+            "model_ready": False,
+            "recognition_ready": False,
+            "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
         }
 
     vision.refresh_status()
@@ -58,6 +63,11 @@ async def vision_status(request: Request):
         "pose_locked": vision.pose_lock_status == "locked",
         "sync_state": vision.sync_state,
         "bound_session_id": vision.bound_session_id,
+        "camera_ready": vision._latest_status.camera_ready,
+        "geometry_ready": vision._latest_status.geometry_ready,
+        "model_ready": vision._latest_status.model_ready,
+        "recognition_ready": vision._latest_status.recognition_ready,
+        "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
     }
 
 
@@ -75,9 +85,7 @@ async def vision_stream(request: Request):
                     yield (
                         b"--frame\r\n"
                         b"Content-Type: image/jpeg\r\n"
-                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n"
-                        + jpeg
-                        + b"\r\n"
+                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" + jpeg + b"\r\n"
                     )
                 await asyncio.sleep(0.05)  # ~20 fps polling
         finally:
@@ -108,16 +116,25 @@ async def bind_session(request: Request, body: BindRequest):
     """Bind vision to a game session."""
     vision = _get_vision(request)
     manager = request.app.state.session_manager
-    session = manager.get_session(body.session_id)
+    try:
+        session = manager.get_session(body.session_id)
+    except KeyError:
+        # A stale tab re-binding a session lost to a server restart must get a clean
+        # 404, not a KeyError 500 (SessionManager.get_session raises, not returns None).
+        session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
 
     vision.bind_session(body.session_id)
 
     # Set expected board from current game state
-    game_state = session.get_game_state()
+    game_state = session.katrain.get_state()
     if game_state and "stones" in game_state:
         vision.set_expected_from_stones(game_state["stones"])
+
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.on_bind(body.session_id, session)
 
     return {"ok": True, "session_id": body.session_id}
 
@@ -126,6 +143,9 @@ async def bind_session(request: Request, body: BindRequest):
 async def unbind_session(request: Request):
     """Unbind from current session."""
     vision = _get_vision(request)
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.on_unbind()
     vision.unbind_session()
     return {"ok": True}
 

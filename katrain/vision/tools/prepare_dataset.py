@@ -11,6 +11,8 @@ import random
 import shutil
 from pathlib import Path
 
+from katrain.vision.classes import CLASS_NAMES
+
 
 def split_dataset(
     image_dir: Path,
@@ -19,7 +21,10 @@ def split_dataset(
     train_ratio: float = 0.8,
     seed: int = 42,
 ) -> dict:
-    """Split images and labels into train/val sets.
+    """Split images and labels into train/val sets (RANDOM shuffle).
+
+    Do NOT use for continuous baipu game frames — consecutive frames are near-duplicates,
+    so a random split leaks them across train/val. Use ``temporal_split_dataset`` for those.
 
     Args:
         image_dir: Directory with images.
@@ -66,12 +71,46 @@ def split_dataset(
 
 
 def write_data_yaml(output_dir: Path) -> None:
-    """Write YOLO data.yaml for the dataset."""
+    """Write YOLO data.yaml for the dataset (class list from the single source of truth)."""
     output_dir = Path(output_dir)
+    names = ", ".join(f"'{n}'" for n in CLASS_NAMES)
     yaml_content = (
-        f"path: {output_dir.resolve()}\ntrain: images/train\nval: images/val\n\nnc: 2\nnames: ['black', 'white']\n"
+        f"path: {output_dir.resolve()}\ntrain: images/train\nval: images/val\n\n"
+        f"nc: {len(CLASS_NAMES)}\nnames: [{names}]\n"
     )
     (output_dir / "data.yaml").write_text(yaml_content)
+
+
+def temporal_split_dataset(image_dir, label_dir, output_dir, train_ratio: float = 0.8, gap: int = 3) -> dict:
+    """Contiguous temporal split (NOT random) with a discarded boundary gap to prevent
+    near-duplicate consecutive frames leaking across train/val.
+
+    Sorts images by filename (frame order), assigns the first ``train_ratio`` contiguous
+    block to train and the tail to val, dropping ``gap`` frames at the boundary.
+    """
+    image_dir, label_dir, output_dir = Path(image_dir), Path(label_dir), Path(output_dir)
+    exts = {".jpg", ".jpeg", ".png", ".bmp"}
+    images = sorted(f for f in image_dir.iterdir() if f.suffix.lower() in exts)
+    n = len(images)
+    split = int(n * train_ratio)
+    train_imgs = images[: max(0, split - gap)]
+    val_imgs = images[split:]
+    stats = {"train": 0, "val": 0, "dropped_gap": n - len(train_imgs) - len(val_imgs), "missing_labels": 0}
+    for name, group in (("train", train_imgs), ("val", val_imgs)):
+        img_out = output_dir / "images" / name
+        lbl_out = output_dir / "labels" / name
+        img_out.mkdir(parents=True, exist_ok=True)
+        lbl_out.mkdir(parents=True, exist_ok=True)
+        for ip in group:
+            shutil.copy2(ip, img_out / ip.name)
+            lp = label_dir / (ip.stem + ".txt")
+            if lp.exists():
+                shutil.copy2(lp, lbl_out / lp.name)
+            else:
+                stats["missing_labels"] += 1
+            stats[name] += 1
+    write_data_yaml(output_dir)
+    return stats
 
 
 def merge_datasets(base_dir: Path, merge_dir: Path, output_dir: Path) -> dict:
@@ -176,6 +215,13 @@ def main():
     parser.add_argument("--output", type=str, required=True, help="Output dataset directory")
     parser.add_argument("--split", type=float, default=0.8, help="Train/val split ratio")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for split")
+    parser.add_argument(
+        "--split-mode",
+        choices=["random", "temporal"],
+        default="random",
+        help="temporal: contiguous holdout with a boundary gap (REQUIRED for continuous baipu frames)",
+    )
+    parser.add_argument("--gap", type=int, default=3, help="frames dropped at the temporal split boundary")
     parser.add_argument("--validate", action="store_true", help="Validate dataset after creation")
     parser.add_argument("--merge-base", type=str, help="Base dataset directory for merging")
     parser.add_argument("--merge-extra", type=str, help="Extra dataset directory to merge in")
@@ -188,9 +234,12 @@ def main():
         stats = merge_datasets(Path(args.merge_base), Path(args.merge_extra), output_dir)
         print(f"Done. Base: {stats['base']} images, Merged: {stats['merged']} images")
     elif args.images and args.labels:
-        print(f"Splitting: {args.images} -> {args.output} (ratio={args.split})")
-        stats = split_dataset(Path(args.images), Path(args.labels), output_dir, args.split, args.seed)
-        write_data_yaml(output_dir)
+        print(f"Splitting ({args.split_mode}): {args.images} -> {args.output} (ratio={args.split})")
+        if args.split_mode == "temporal":
+            stats = temporal_split_dataset(Path(args.images), Path(args.labels), output_dir, args.split, args.gap)
+        else:
+            stats = split_dataset(Path(args.images), Path(args.labels), output_dir, args.split, args.seed)
+            write_data_yaml(output_dir)  # temporal_split_dataset writes its own data.yaml
         print(f"Done. Train: {stats['train']}, Val: {stats['val']}, Missing labels: {stats['missing_labels']}")
     else:
         parser.error("Provide either --images/--labels or --merge-base/--merge-extra")

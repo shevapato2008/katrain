@@ -83,7 +83,7 @@ class DetectionPipeline:
         detections = self.detector.detect(warped)
 
         # Step 4: Convert to board state (with conflict resolution)
-        board = self.state_extractor.detections_to_board(detections, img_w=w, img_h=h)
+        board = self.state_extractor.detections_to_board(detections, img_w=w, img_h=h, occupancy_aware=True)
 
         # Step 5: Check for confirmed new move
         confirmed_move = None
@@ -91,6 +91,9 @@ class DetectionPipeline:
         if move_result is not None:
             row, col, color = move_result
             confirmed_move = vision_move_to_katrain(col, row, color, self.config.grid_size)
+            # Dev pipeline has no downstream acceptance step — advance the baseline
+            # immediately (detect_new_move itself no longer does; the caller owns it).
+            self.move_detector.force_sync(board)
 
         # Populate board_finder state for camera view back-projection
         corners = list(self.board_finder.pre_corner_point)

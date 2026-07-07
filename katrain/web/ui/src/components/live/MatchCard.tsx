@@ -1,0 +1,258 @@
+import { Box, Card, CardActionArea, Typography, Chip, LinearProgress } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import type { MatchSummary } from '../../types/live';
+import { i18n } from '../../i18n';
+import { useTranslation } from '../../hooks/useTranslation';
+
+interface MatchCardProps {
+  match: MatchSummary;
+  compact?: boolean;
+  selected?: boolean;  // Whether this card is selected
+  onSelect?: (match: MatchSummary) => void;  // Callback when selected (doesn't navigate)
+}
+
+const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
+  yike: { label: '弈客', color: '#1976d2' },
+  xingzhen: { label: '星阵', color: '#7b1fa2' },
+  pandanet: { label: 'IGS', color: '#e65100' },
+};
+
+export default function MatchCard({ match, compact = false, selected = false, onSelect }: MatchCardProps) {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const isLive = match.status === 'live';
+  const sourceInfo = SOURCE_LABELS[match.source];
+
+  // Format winrate as percentage
+  const winratePercent = Math.round(match.current_winrate * 100);
+  const blackAdvantage = match.current_winrate > 0.5;
+
+  // Format date
+  const matchDate = new Date(match.date);
+  const locale = i18n.lang === 'en' ? 'en-US' : 'zh-CN';
+  const dateStr = matchDate.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+  });
+
+  const handleClick = () => {
+    if (onSelect) {
+      onSelect(match);
+    } else if (!__KIOSK_2D_ONLY__) {
+      // Galaxy default: navigate to the match page. Kiosk callers always pass
+      // onSelect, so this branch (and the /galaxy/ route literal) is DCE'd out of
+      // the kiosk build — keeping the board boundary clean (verify:kiosk-2d).
+      navigate(`/galaxy/live/${match.id}`);
+    }
+  };
+
+  if (compact) {
+    return (
+      <Card sx={{
+        mb: 1,
+        bgcolor: selected ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+        border: selected ? 2 : 1,
+        borderColor: selected ? 'primary.main' : 'rgba(255, 255, 255, 0.1)',
+      }}>
+        <CardActionArea onClick={handleClick} sx={{ p: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            {isLive && (
+              <FiberManualRecordIcon sx={{ fontSize: 10, color: 'error.main', animation: 'pulse 1.5s infinite' }} />
+            )}
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
+              {i18n.translateTournament(match.tournament)}
+            </Typography>
+            {sourceInfo && (
+              <Typography variant="caption" sx={{
+                px: 0.6, py: 0.1, borderRadius: 0.5, fontSize: '0.65rem', lineHeight: 1.2,
+                bgcolor: sourceInfo.color, color: '#fff', flexShrink: 0,
+              }}>
+                {sourceInfo.label}
+              </Typography>
+            )}
+            <Typography variant="caption" color="text.secondary">
+              {match.move_count} {t('live:moves')}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+              <Box sx={{
+                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, mr: 0.7,
+                bgcolor: '#1a1a1a',
+                border: '1px solid rgba(255,255,255,0.18)',
+                boxShadow: 'inset 0 -0.5px 1px rgba(255,255,255,0.1)',
+              }} />
+              <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} noWrap>
+                {i18n.translatePlayer(match.player_black)}
+              </Typography>
+              {match.black_rank && (
+                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
+                  {match.black_rank}
+                </Typography>
+              )}
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ px: 1, flexShrink: 0 }}>vs</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+              {match.white_rank && (
+                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
+                  {match.white_rank}
+                </Typography>
+              )}
+              <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} noWrap>
+                {i18n.translatePlayer(match.player_white)}
+              </Typography>
+              <Box sx={{
+                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
+                bgcolor: '#e8e4df',
+                border: '1px solid rgba(0,0,0,0.25)',
+                boxShadow: 'inset 0 0.5px 1px rgba(0,0,0,0.06)',
+              }} />
+            </Box>
+          </Box>
+          <Box sx={{ mt: 1 }}>
+            <LinearProgress
+              variant="determinate"
+              value={winratePercent}
+              sx={{
+                height: 4,
+                borderRadius: 2,
+                bgcolor: '#fff',  // Pure white for white player
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: '#000',  // Pure black for black player
+                },
+              }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{winratePercent}%</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{100 - winratePercent}%</Typography>
+            </Box>
+          </Box>
+        </CardActionArea>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ mb: 2, bgcolor: 'background.paper' }}>
+      <CardActionArea onClick={handleClick} sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          {isLive ? (
+            <Chip
+              icon={<FiberManualRecordIcon sx={{ fontSize: 10 }} />}
+              label={t('live:status_live')}
+              size="small"
+              color="error"
+              sx={{ '& .MuiChip-icon': { animation: 'pulse 1.5s infinite' } }}
+            />
+          ) : (
+            <Chip label={t('live:status_finished')} size="small" variant="outlined" />
+          )}
+          <Typography variant="caption" color="text.secondary">
+            {dateStr}
+          </Typography>
+          {sourceInfo && (
+            <Chip
+              label={sourceInfo.label}
+              size="small"
+              sx={{
+                height: 20, fontSize: '0.7rem',
+                bgcolor: sourceInfo.color, color: '#fff',
+                '& .MuiChip-label': { px: 0.8 },
+              }}
+            />
+          )}
+          {/* For finished games, show move count + result prominently */}
+          {!isLive && match.result && (
+            <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {match.move_count} {t('live:moves')}
+              </Typography>
+              <Typography variant="body2" fontWeight="bold" color="primary.main">
+                {match.result}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        <Typography variant="subtitle2" color="text.secondary" gutterBottom noWrap>
+          {i18n.translateTournament(match.tournament)} {match.round_name && `· ${i18n.translateRound(match.round_name)}`}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 1.5 }}>
+          <Box sx={{ flex: 1, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mb: 0.3 }}>
+              <Box sx={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                bgcolor: '#1a1a1a',
+                border: '1.5px solid rgba(255,255,255,0.18)',
+                boxShadow: 'inset 0 -1px 2px rgba(255,255,255,0.1)',
+              }} />
+              <Typography variant="h6" fontWeight={blackAdvantage ? 'bold' : 'normal'}>
+                {i18n.translatePlayer(match.player_black)}
+              </Typography>
+            </Box>
+            {match.black_rank && (
+              <Typography variant="caption" color="text.secondary">
+                {match.black_rank}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ textAlign: 'center', px: 2 }}>
+            <Typography variant="h5" fontWeight="bold" color="text.secondary">
+              VS
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mb: 0.3 }}>
+              <Typography variant="h6" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
+                {i18n.translatePlayer(match.player_white)}
+              </Typography>
+              <Box sx={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                bgcolor: '#e8e4df',
+                border: '1.5px solid rgba(0,0,0,0.25)',
+                boxShadow: 'inset 0 0.5px 2px rgba(0,0,0,0.06)',
+              }} />
+            </Box>
+            {match.white_rank && (
+              <Typography variant="caption" color="text.secondary">
+                {match.white_rank}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" fontWeight={blackAdvantage ? 'bold' : 'normal'} sx={{ color: '#000' }}>
+              {t('live:black')} {winratePercent}%
+            </Typography>
+            {/* Only show move count here for live matches (finished matches show it in header) */}
+            {isLive && (
+              <Typography variant="caption" color="text.secondary">
+                {match.move_count} {t('live:moves')}
+              </Typography>
+            )}
+            <Typography variant="caption" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>
+              {t('live:white')} {100 - winratePercent}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={winratePercent}
+            sx={{
+              height: 8,
+              borderRadius: 4,
+              bgcolor: 'grey.200',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: '#000',  // Pure black for black player
+                borderRadius: 4,
+              },
+            }}
+          />
+        </Box>
+      </CardActionArea>
+    </Card>
+  );
+}

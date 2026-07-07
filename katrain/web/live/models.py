@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class MatchSource(str, Enum):
     """Data source for live matches."""
+
     XINGZHEN = "xingzhen"
     YIKE = "yike"
     PANDANET = "pandanet"
@@ -15,12 +16,14 @@ class MatchSource(str, Enum):
 
 class MatchStatus(str, Enum):
     """Status of a live match."""
+
     LIVE = "live"
     FINISHED = "finished"
 
 
 class TopMove(BaseModel):
     """AI recommended move."""
+
     move: str  # e.g., "H3"
     visits: int
     winrate: float  # 0-1
@@ -32,6 +35,7 @@ class TopMove(BaseModel):
 
 class MoveAnalysis(BaseModel):
     """Analysis data for a single move."""
+
     match_id: str
     move_number: int
     move: Optional[str] = None  # The actual move played, e.g., "Q16"
@@ -47,8 +51,13 @@ class MoveAnalysis(BaseModel):
     delta_winrate: float = 0.0  # Winrate change from previous move
 
     @classmethod
-    def classify_move(cls, delta_score: float, brilliant_threshold: float = 2.0,
-                     mistake_threshold: float = -3.0, questionable_threshold: float = -1.5) -> dict:
+    def classify_move(
+        cls,
+        delta_score: float,
+        brilliant_threshold: float = 2.0,
+        mistake_threshold: float = -3.0,
+        questionable_threshold: float = -1.5,
+    ) -> dict:
         """Classify a move based on score change thresholds.
 
         Returns dict with is_brilliant, is_mistake, is_questionable flags.
@@ -63,6 +72,7 @@ class MoveAnalysis(BaseModel):
 
 class LiveMatch(BaseModel):
     """A live or recently finished match."""
+
     id: str  # Internal ID (format: {source}_{source_id})
     source: MatchSource
     source_id: str  # Original ID from the data source
@@ -136,6 +146,7 @@ class LiveMatch(BaseModel):
 
 class UpcomingMatch(BaseModel):
     """An upcoming match in the schedule."""
+
     id: str
     tournament: str
     round_name: Optional[str] = None
@@ -158,6 +169,7 @@ class UpcomingMatch(BaseModel):
 
 class LiveConfig(BaseModel):
     """Configuration for the live module."""
+
     # Data source settings
     xingzhen_enabled: bool = True
     xingzhen_api_base: str = "https://api.19x19.com/api/engine/golives"

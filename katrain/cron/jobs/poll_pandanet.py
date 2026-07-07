@@ -74,7 +74,10 @@ class PandanetPollJob(BaseJob):
                 repo.create_pending(existing.match_id, new_move_nums, PRIORITY_LIVE_NEW, moves)
                 self.logger.info(
                     "Pandanet %s: %d -> %d moves (%d new tasks)",
-                    existing.match_id, old_count, new_count, len(new_move_nums),
+                    existing.match_id,
+                    old_count,
+                    new_count,
+                    len(new_move_nums),
                 )
         else:
             db.add(LiveMatchDB(**row))
@@ -87,5 +90,8 @@ class PandanetPollJob(BaseJob):
 
             self.logger.info(
                 "New Pandanet match: %s (%s vs %s, %d moves)",
-                row["match_id"], row["player_black"], row["player_white"], len(moves),
+                row["match_id"],
+                row["player_black"],
+                row["player_white"],
+                len(moves),
             )

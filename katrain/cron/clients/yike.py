@@ -127,7 +127,9 @@ class YikeWeiQiClient:
     async def get_finished_matches(self, page_size: int = 20) -> list[dict]:
         """Return recently finished professional matches."""
         try:
-            data = await self._request("GET", "/v1/golives", params={"status": 3, "type": 0, "page": 1, "page_size": page_size})
+            data = await self._request(
+                "GET", "/v1/golives", params={"status": 3, "type": 0, "page": 1, "page_size": page_size}
+            )
             return self._extract_data(data)
         except Exception:
             logger.exception("Failed to get finished matches from YikeWeiQi")
@@ -180,7 +182,7 @@ class YikeWeiQiClient:
         if date_str:
             for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
                 try:
-                    match_date = datetime.strptime(date_str[:len(fmt.replace("%", ""))], fmt)
+                    match_date = datetime.strptime(date_str[: len(fmt.replace("%", ""))], fmt)
                     break
                 except (ValueError, IndexError):
                     continue

@@ -165,7 +165,9 @@ def export_rknn(
 def main():
     parser = argparse.ArgumentParser(description="Export YOLO ONNX model to RKNN format for Rockchip NPU")
     parser.add_argument("--onnx", required=True, help="Path to .onnx model file")
-    parser.add_argument("--target", default="rk3576", choices=SUPPORTED_TARGETS, help="Target platform (default: rk3576)")
+    parser.add_argument(
+        "--target", default="rk3576", choices=SUPPORTED_TARGETS, help="Target platform (default: rk3576)"
+    )
     parser.add_argument("--output-dir", default=None, help="Output directory (default: same as ONNX model)")
     parser.add_argument("--quantize", action="store_true", help="Apply INT8 quantization (requires --dataset)")
     parser.add_argument(

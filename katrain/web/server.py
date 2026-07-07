@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, List, Optional, Union, Dict
 
@@ -11,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from katrain.web.api.v1.api import api_router
+from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
@@ -30,6 +32,10 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── Shutdown ──
+    geometry_calibration = getattr(app.state, "geometry_calibration", None)
+    if geometry_calibration:
+        geometry_calibration.stop()
+
     # Vision service shutdown (board mode)
     vision = getattr(app.state, "vision", None)
     if vision:
@@ -37,6 +43,26 @@ async def lifespan(app: FastAPI):
     vision_poller = getattr(app.state, "vision_poller_task", None)
     if vision_poller:
         vision_poller.cancel()
+
+    physical_play = getattr(app.state, "physical_play", None)
+    if physical_play:
+        await physical_play.shutdown()
+
+    # LED service shutdown (board mode) — stop() does a final CLEAR! blackout.
+    led_failsafe = getattr(app.state, "led_failsafe_task", None)
+    if led_failsafe:
+        led_failsafe.cancel()
+    led = getattr(app.state, "led", None)
+    if led:
+        led.stop()
+
+    # Capture service shutdown (board mode)
+    capture = getattr(app.state, "capture", None)
+    if capture:
+        capture.stop()
+    camera_hub = getattr(app.state, "camera_hub", None)
+    if camera_hub:
+        camera_hub.stop()
 
     if settings.KATRAIN_MODE == "board":
         connectivity = getattr(app.state, "connectivity_manager", None)
@@ -249,6 +275,7 @@ async def _lifespan_board(app: FastAPI, log):
     remote_client = RemoteAPIClient(
         base_url=settings.REMOTE_API_URL,
         device_id=settings.DEVICE_ID,
+        health_timeout=float(os.getenv("KATRAIN_HEALTH_CHECK_TIMEOUT", "10.0")),
     )
     app.state.remote_client = remote_client
 
@@ -316,18 +343,149 @@ async def _lifespan_board(app: FastAPI, log):
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
 
-    # Vision service (optional — enabled when --vision-model is provided)
     vision_config = getattr(settings, "_vision_config", None)
+    capture_config = getattr(settings, "_capture_config", None)
+
+    # One physical camera owner shared by capture, calibration, and recognition.
+    camera_hub = None
+    if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
+        from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+        if vision_config and vision_config.enabled and capture_config and capture_config.enabled:
+            vision_camera = (vision_config.camera_device, vision_config.camera_width, vision_config.camera_height)
+            capture_camera = (capture_config.camera_device, capture_config.width, capture_config.height)
+            if vision_camera != capture_camera:
+                raise RuntimeError(
+                    "Vision and capture must use the same camera device and resolution when sharing CameraHub: "
+                    f"vision={vision_camera}, capture={capture_camera}"
+                )
+        if capture_config and capture_config.enabled:
+            hub_config = CameraHubConfig(
+                device_id=capture_config.camera_device,
+                width=capture_config.width,
+                height=capture_config.height,
+                lock_exposure=capture_config.lock_exposure,
+                exposure=capture_config.exposure,
+                lock_awb=capture_config.lock_awb,
+            )
+        else:
+            hub_config = CameraHubConfig(
+                device_id=vision_config.camera_device,
+                width=vision_config.camera_width,
+                height=vision_config.camera_height,
+                lock_exposure=False,
+                lock_awb=False,
+            )
+        camera_hub = CameraHub(hub_config)
+        camera_hub.start()
+    app.state.camera_hub = camera_hub
+
+    # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled:
         from katrain.vision.service import VisionService
 
-        vision = VisionService(vision_config)
+        vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
         app.state.vision = vision
         app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
         log.info("Vision service started (backend=%s)", vision_config.backend)
     else:
         app.state.vision = None
+
+    # LED service (optional — enabled when --led-serial-port is provided)
+    led_config = getattr(settings, "_led_config", None)
+    if led_config and led_config.enabled:
+        from katrain.web.core.led_service import LedService
+
+        led = LedService(led_config)
+        led.start()
+        app.state.led = led
+        app.state.led_last_activity = time.monotonic()
+        app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+        log.info("LED service started (port=%s)", led_config.serial_port)
+    else:
+        app.state.led = None
+
+    # Physical-play orchestrator: drives game LEDs from authoritative state
+    # (track kiosk-physical-play; requires vision, LED optional/degraded-tolerant)
+    if app.state.vision is not None:
+        from katrain.web.core.physical_play import PhysicalPlayConfig
+        from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
+
+        pp_config = getattr(settings, "_physical_play_config", None) or PhysicalPlayConfig()
+        app.state.physical_play_config = pp_config
+        app.state.physical_play = PhysicalPlayOrchestrator(
+            config=pp_config,
+            led=app.state.led,
+            vision=app.state.vision,
+            session_manager=manager,
+            touch_led_activity=lambda: setattr(app.state, "led_last_activity", time.monotonic()),
+        )
+
+        from katrain.web.core.hint_gate import DefaultHintGate
+
+        app.state.hint_gate = DefaultHintGate(pp_config.hint_engine)
+        log.info("Physical-play orchestrator ready (hint_engine=%s)", pp_config.hint_engine)
+    else:
+        app.state.physical_play = None
+        app.state.physical_play_config = None
+
+    # Capture service consumes the shared CameraHub and only owns file output.
+    if capture_config and capture_config.enabled:
+        from katrain.web.core.capture_service import CaptureService
+
+        capture = CaptureService(capture_config, hub=camera_hub)
+        capture.start()
+        app.state.capture = capture
+        # P12: default "auto" = no-LED outer-corner per-move geometry (passive, zero LED for
+        # geometry). "every-move" (LED fiducial, sub-pixel) is opt-in for high-quality TRAINING
+        # capture; "off" disables. Select via --baipu-fiducial-mode or $KATRAIN_BAIPU_FIDUCIAL_MODE.
+        # NOTE: real-hardware crowded-board accuracy of "auto" is gated by P12 Task 9 (待硬件).
+        from katrain.web.core.baipu_capture import resolve_fiducial_mode
+
+        app.state.baipu_fiducial_mode = resolve_fiducial_mode(
+            getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
+        )
+        app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
+        # Load an existing geometry lock if present (so capture/QA can run immediately).
+        try:
+            from katrain.vision.geometry_lock import load_geometry_lock
+
+            geo_path = Path("~/.katrain/geometry_lock.npz").expanduser()
+            app.state.geometry = load_geometry_lock(geo_path) if geo_path.exists() else None
+        except Exception as e:
+            log.warning("Failed to load geometry lock: %s", e)
+            app.state.geometry = None
+        log.info("Capture service started (camera=%s)", capture_config.camera_device)
+    else:
+        app.state.capture = None
+        app.state.geometry = None
+
+    if app.state.capture is not None and app.state.led is not None:
+        from katrain.web.core.geometry_calibration_service import GeometryCalibrationService
+
+        def promote_geometry(lock):
+            app.state.geometry = lock
+            vision_service = getattr(app.state, "vision", None)
+            if vision_service is not None and hasattr(vision_service, "set_geometry"):
+                vision_service.set_geometry(lock)
+
+        app.state.geometry_calibration = GeometryCalibrationService(
+            led=app.state.led,
+            capture=app.state.capture,
+            save_path=Path("~/.katrain/geometry_lock.npz").expanduser(),
+            initial_lock=app.state.geometry,
+            on_success=promote_geometry,
+        )
+    else:
+        app.state.geometry_calibration = None
+
+    # Push a persisted geometry lock into the vision worker at startup. Without this,
+    # recognition silently lacks geometry after every server restart (the calibration
+    # service already reports locked=true from the same file) until the user manually
+    # recalibrates on the setup page.
+    if app.state.geometry is not None and app.state.vision is not None:
+        app.state.vision.set_geometry(app.state.geometry)
 
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
@@ -347,7 +505,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app = FastAPI(lifespan=lifespan)
     app.include_router(api_router, prefix="/api/v1")
-    static_root = Path(__file__).resolve().parent / "static"
+    add_catalog_cache_middleware(app)
+    # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
+    # the full server serves the complete build. Both emit index.html + /assets,
+    # so we point the SPA routes + root mount at the matching directory.
+    static_dirname = "static-kiosk-2d" if settings.KATRAIN_MODE == "board" else "static"
+    static_root = Path(__file__).resolve().parent / static_dirname
     assets_root = Path(__file__).resolve().parent.parent
 
     # Specific asset mounts first
@@ -449,6 +612,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/undo")
     def undo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
+            raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
         with session.lock:
             session.katrain("undo", request.n_times)
             state = session.katrain.get_state()
@@ -1544,38 +1709,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}
             )
 
-    @app.websocket("/ws/{session_id}")
-    async def websocket_endpoint(websocket: WebSocket, session_id: str):
-        try:
-            session = manager.get_session(session_id)
-        except KeyError:
-            await websocket.accept()
-            await websocket.close(code=1008, reason="Session not found")
-            return
-
-        await websocket.accept()
-        session.sockets.add(websocket)
-        try:
-            state = session.last_state or session.katrain.get_state()
-            state["sockets_count"] = len(session.sockets)
-            # Send initial state to this client
-            await websocket.send_json({"type": "game_update", "state": state})
-            # Broadcast updated spectator count to all other clients (lightweight update)
-            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
-            while True:
-                message = await websocket.receive_json()
-                if message.get("type") == "ping":
-                    await websocket.send_json({"type": "pong"})
-                elif message.get("type") == "chat":
-                    manager.broadcast_to_session(session_id, message)
-        except WebSocketDisconnect:
-            pass
-        finally:
-            session.sockets.discard(websocket)
-            # Broadcast updated spectator count when someone leaves
-            if session.sockets:  # Only if there are still connected clients
-                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
-
+    # NOTE: registered BEFORE /ws/{session_id} — Starlette matches websocket routes
+    # in registration order, so the catch-all session route would otherwise swallow
+    # /ws/vision as session_id="vision" and close it 1008 "Session not found". That
+    # shadowing silently killed EVERY vision event to the frontend (ambiguous-move
+    # cards, move-pending chips, mismatch dialogs) since the endpoint was added.
     @app.websocket("/ws/vision")
     async def vision_websocket(websocket: WebSocket):
         """Vision event WebSocket — pushes sync events and status changes to the frontend."""
@@ -1615,6 +1753,38 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except WebSocketDisconnect:
             pass
 
+    @app.websocket("/ws/{session_id}")
+    async def websocket_endpoint(websocket: WebSocket, session_id: str):
+        try:
+            session = manager.get_session(session_id)
+        except KeyError:
+            await websocket.accept()
+            await websocket.close(code=1008, reason="Session not found")
+            return
+
+        await websocket.accept()
+        session.sockets.add(websocket)
+        try:
+            state = session.last_state or session.katrain.get_state()
+            state["sockets_count"] = len(session.sockets)
+            # Send initial state to this client
+            await websocket.send_json({"type": "game_update", "state": state})
+            # Broadcast updated spectator count to all other clients (lightweight update)
+            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
+            while True:
+                message = await websocket.receive_json()
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                elif message.get("type") == "chat":
+                    manager.broadcast_to_session(session_id, message)
+        except WebSocketDisconnect:
+            pass
+        finally:
+            session.sockets.discard(websocket)
+            # Broadcast updated spectator count when someone leaves
+            if session.sockets:  # Only if there are still connected clients
+                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
+
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
     @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
@@ -1651,53 +1821,105 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
+    """Blackout the LED board after >5 min of inactivity (plan §2.1 Gemini 新#2).
+
+    Prevents a Kiosk from leaving the LED lit all day if the operator walks off
+    without exiting. Activity is stamped by the /led/* endpoints. (A WebSocket
+    on-disconnect hook is a future refinement; the idle timer is the floor.)
+    """
+    log = logging.getLogger("katrain_web.led")
+    cleared = False
+    while True:
+        try:
+            await asyncio.sleep(30)
+            led = getattr(app.state, "led", None)
+            if not led:
+                continue
+            idle = time.monotonic() - getattr(app.state, "led_last_activity", time.monotonic())
+            if idle > idle_timeout and not cleared:
+                led.clear(strict=False)
+                cleared = True
+                log.info("LED idle >%.0fs — failsafe clear", idle_timeout)
+            elif idle <= idle_timeout:
+                cleared = False
+        except asyncio.CancelledError:
+            break
+        except Exception as e:  # pragma: no cover - defensive
+            log.debug("LED failsafe loop error: %s", e)
+
+
 async def _vision_move_poller(app: FastAPI):
-    """Poll vision worker for confirmed moves, submit via VisionPlayerBridge."""
+    """Poll vision worker for confirmed moves and inject them into the bound session.
+
+    Q4 blocking happens WORKER-SIDE: while the physical board owes a placement or
+    removal, the orchestrator pauses move detection, so no ConfirmedMove is produced
+    at all. Holding confirmed moves here was rejected — MoveDetector advances its
+    baseline at confirm time, so held moves can go stale and corrupt the game.
+    Expected-board pushes now happen in the orchestrator's update_state_callback
+    wrapper (single authority); a fallback remains for vision-without-orchestrator.
+    """
     from katrain.vision.ipc import ConfirmedMove
     from katrain.vision.katrain_bridge import vision_move_to_katrain
-    from katrain.vision.sync import game_state_stones_to_board
 
     log = logging.getLogger("katrain_web.vision")
     while True:
         try:
             vision = getattr(app.state, "vision", None)
             if vision and vision.bound_session_id:
+                orchestrator = getattr(app.state, "physical_play", None)
                 move_data = vision.get_confirmed_move()
                 if move_data and isinstance(move_data, ConfirmedMove):
                     session_id = vision.bound_session_id
                     manager = app.state.session_manager
                     session = manager.get_session(session_id)
                     if session:
-                        # Convert to KaTrain move and submit
+                        # R1.3: only the side to move may inject (color check).
+                        expected_player = (session.last_state or {}).get("player_to_move")
+                        move_player = "B" if move_data.color == 1 else "W"
+                        if expected_player and move_player != expected_player:
+                            log.info(
+                                "Vision move %s out of turn (expects %s) — ignored",
+                                move_player,
+                                expected_player,
+                            )
+                            # Re-arm detection: the worker advanced its baseline when it
+                            # emitted this move; a rejection produces no game update, so
+                            # nothing would ever force_sync the baseline back and detection
+                            # would stay silenced forever. Re-pushing the (unchanged)
+                            # expected board triggers the worker's polluted-baseline
+                            # re-sync, so the stone retries once the turn comes around.
+                            game_state = session.katrain.get_state()
+                            if game_state and "stones" in game_state:
+                                vision.set_expected_from_stones(game_state["stones"])
+                            await asyncio.sleep(0.5)
+                            continue
                         move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
-
-                        # Route through platform gateway for cross-platform games
                         gateway = getattr(app.state, "platform_gateway", None)
                         if gateway and gateway.is_platform_game(session_id):
                             try:
                                 await gateway.play_move(session_id, move.coords[0], move.coords[1], user_id=0)
-                                log.info(
-                                    "Vision move submitted via platform gateway: col=%d row=%d",
-                                    move_data.col,
-                                    move_data.row,
-                                )
                             except Exception as gw_err:
                                 log.warning("Platform gateway rejected vision move: %s", gw_err)
+                                # Re-arm detection (see out-of-turn comment above).
+                                game_state = session.katrain.get_state()
+                                if game_state and "stones" in game_state:
+                                    vision.set_expected_from_stones(game_state["stones"])
                                 await asyncio.sleep(0.5)
                                 continue
                         else:
-                            session.katrain("play", move.coords)
-                            log.info(
-                                "Vision move submitted: col=%d row=%d color=%d",
-                                move_data.col,
-                                move_data.row,
-                                move_data.color,
-                            )
-
-                        # Update expected board from new game state
-                        game_state = session.get_game_state()
-                        if game_state and "stones" in game_state:
-                            vision.set_expected_from_stones(game_state["stones"])
+                            with session.lock:
+                                session.katrain("play", move.coords)
+                        log.info(
+                            "Vision move submitted: col=%d row=%d color=%d",
+                            move_data.col,
+                            move_data.row,
+                            move_data.color,
+                        )
+                        if orchestrator is None:
+                            game_state = session.katrain.get_state()
+                            if game_state and "stones" in game_state:
+                                vision.set_expected_from_stones(game_state["stones"])
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -1719,7 +1941,14 @@ def build_frontend(force: bool = False):
         logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
         return
 
-    static_index = ui_path.parent / "static" / "index.html"
+    # Board/kiosk terminals serve the lean kiosk-2d bundle (no three.js, board-proxy
+    # API base); the full server serves the complete build. Build/check the matching
+    # output so board mode never falls back to the full bundle (which calls
+    # /api/v1/live and 503s in board mode).
+    is_board = settings.KATRAIN_MODE == "board"
+    build_cmd = ["npm", "run", "build:kiosk-2d"] if is_board else ["npm", "run", "build"]
+    out_dirname = "static-kiosk-2d" if is_board else "static"
+    static_index = ui_path.parent / out_dirname / "index.html"
     if static_index.exists() and not force:
         logging.getLogger("katrain_web").info(
             "Frontend already built at %s, skipping (use --force-build to rebuild).",
@@ -1727,7 +1956,7 @@ def build_frontend(force: bool = False):
         )
         return
 
-    print("Building frontend...", flush=True)
+    print(f"Building frontend ({out_dirname})...", flush=True)
     try:
         # Check dependencies
         if not (ui_path / "node_modules").exists():
@@ -1735,7 +1964,7 @@ def build_frontend(force: bool = False):
             subprocess.run(["npm", "install"], cwd=ui_path, check=True, capture_output=False)
 
         # Build
-        subprocess.run(["npm", "run", "build"], cwd=ui_path, check=True, capture_output=False)
+        subprocess.run(build_cmd, cwd=ui_path, check=True, capture_output=False)
         print("Frontend build successful.", flush=True)
     except subprocess.CalledProcessError as e:
         print(f"Frontend build failed with exit code {e.returncode}.", file=sys.stderr)
@@ -1783,7 +2012,104 @@ def run_web():
     parser.add_argument(
         "--vision-resolution", default="1280x720", help="Camera resolution WxH (e.g. 640x480, 1280x720, 2560x1440)"
     )
+    parser.add_argument(
+        "--vision-confidence",
+        type=float,
+        default=None,
+        help="Detection confidence threshold (default: 0.5). Lower to catch weak real stones; "
+        "raise to reject glare false positives.",
+    )
+    parser.add_argument(
+        "--vision-confidence-keep",
+        type=float,
+        default=None,
+        help="Hysteresis 'keep' threshold: a cell already holding a stone keeps it at this lower "
+        "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
+    )
+    parser.add_argument(
+        "--vision-enhance",
+        choices=["clahe", "off"],
+        default=None,
+        help="Pre-inference enhancement of the warped board image (default: clahe — "
+        "measurably lifts weak-light stone confidence).",
+    )
+    parser.add_argument(
+        "--vision-move-frames",
+        type=int,
+        default=None,
+        help="Consecutive stable frames a single new stone must persist before it is accepted "
+        "as a move (default: 5). Raise to reject transient false positives; lower for snappier "
+        "move registration.",
+    )
+    parser.add_argument(
+        "--vision-frame-average",
+        type=int,
+        default=None,
+        help="Rolling average of the last N warped frames before inference (default: 8; 0/1 "
+        "disables). Cuts weak-light sensor noise ~sqrt(N); auto-resets on motion.",
+    )
+    parser.add_argument(
+        "--vision-ambiguous-confidence",
+        type=float,
+        default=None,
+        help="Confirmed moves below this confidence go to the on-screen confirmation card "
+        "instead of auto-playing (default: 0.55). Far-side stones meter ~0.36-0.45 on the "
+        "Mac rig — lower this to auto-play them.",
+    )
+    parser.add_argument(
+        "--vision-auto-exposure",
+        choices=["software", "off"],
+        default=None,
+        help="Software AE: drive board-region median brightness into the target band by "
+        "adjusting exposure at runtime (default: software; advisory-only on macOS).",
+    )
+    parser.add_argument(
+        "--vision-ae-target",
+        default=None,
+        help="Software-AE target brightness band as LO-HI gray levels (default: 120-170).",
+    )
+    parser.add_argument(
+        "--led-serial-port",
+        default=None,
+        help="Serial port of the ESP32-S3 LED board (e.g. /dev/cu.usbmodem2101). Providing this enables the LED service.",
+    )
+    parser.add_argument("--led-baud-rate", type=int, default=115200, help="LED serial baud rate. Default: 115200.")
+    parser.add_argument(
+        "--led-lut-path", default=None, help="Optional JSON (row,col)->index LUT; defaults to the built-in formula."
+    )
+    parser.add_argument(
+        "--hint-engine",
+        choices=["local", "cloud", "off"],
+        default=None,
+        help="AI hint engine routing for physical play (default: local)",
+    )
+    parser.add_argument("--hint-top-n", type=int, default=None, help="AI hint top-N points (default: 3)")
+    parser.add_argument(
+        "--capture-camera",
+        default=None,
+        help="Camera device for physical-board capture/calibration (int or /dev/videoN). Shared with VisionService.",
+    )
+    parser.add_argument(
+        "--capture-dir", default="~/.katrain/baipu_captures", help="Output dir for captured frames + manifests."
+    )
+    parser.add_argument("--capture-resolution", default="1280x720", help="Capture camera resolution WxH.")
+    parser.add_argument(
+        "--capture-exposure",
+        type=float,
+        default=None,
+        help="Manual exposure value (camera-specific; tuned on the box).",
+    )
+    parser.add_argument(
+        "--baipu-fiducial-mode",
+        default=None,
+        choices=["auto", "every-move", "off"],
+        help="Geometry mode during baipu capture: auto (no-LED, default, live play) | "
+        "every-move (LED fiducial, sub-pixel — use for TRAINING data capture) | off. "
+        "Also settable via $KATRAIN_BAIPU_FIDUCIAL_MODE.",
+    )
     args, _unknown = parser.parse_known_args()
+    if args.baipu_fiducial_mode:
+        settings._baipu_fiducial_mode = args.baipu_fiducial_mode
 
     # Configure vision service if model path provided
     if args.vision_model:
@@ -1791,7 +2117,7 @@ def run_web():
 
         camera_dev = int(args.vision_camera) if args.vision_camera.isdigit() else args.vision_camera
         res_w, res_h = (int(x) for x in args.vision_resolution.split("x"))
-        settings._vision_config = VisionServiceConfig(
+        vision_kwargs = dict(
             enabled=True,
             backend=args.vision_backend,
             model_path=args.vision_model,
@@ -1799,6 +2125,58 @@ def run_web():
             camera_width=res_w,
             camera_height=res_h,
             process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess",
+        )
+        if args.vision_confidence is not None:
+            vision_kwargs["confidence_threshold"] = args.vision_confidence
+        if args.vision_confidence_keep is not None:
+            vision_kwargs["confidence_keep"] = args.vision_confidence_keep
+        if args.vision_enhance is not None:
+            vision_kwargs["enhance"] = args.vision_enhance
+        if args.vision_move_frames is not None:
+            vision_kwargs["move_confirm_frames"] = args.vision_move_frames
+        if args.vision_frame_average is not None:
+            vision_kwargs["frame_average"] = args.vision_frame_average
+        if args.vision_ambiguous_confidence is not None:
+            vision_kwargs["ambiguous_confidence"] = args.vision_ambiguous_confidence
+        if args.vision_auto_exposure is not None:
+            vision_kwargs["auto_exposure"] = args.vision_auto_exposure
+        if args.vision_ae_target is not None:
+            vision_kwargs["ae_target"] = args.vision_ae_target
+        settings._vision_config = VisionServiceConfig(**vision_kwargs)
+
+    # Configure LED service if a serial port was provided
+    if args.led_serial_port:
+        from katrain.web.core.led_service import LedServiceConfig
+
+        settings._led_config = LedServiceConfig(
+            enabled=True,
+            serial_port=args.led_serial_port,
+            baud_rate=args.led_baud_rate,
+            lut_path=args.led_lut_path,
+        )
+
+    # Configure physical-play orchestrator overrides if provided
+    if args.hint_engine is not None or args.hint_top_n is not None:
+        from katrain.web.core.physical_play import PhysicalPlayConfig
+
+        settings._physical_play_config = PhysicalPlayConfig(
+            hint_engine=args.hint_engine or "local",
+            hint_top_n=args.hint_top_n or 3,
+        )
+
+    # Configure capture service if a capture camera was provided
+    if args.capture_camera is not None:
+        from katrain.web.core.capture_service import CaptureServiceConfig
+
+        cap_dev = int(args.capture_camera) if str(args.capture_camera).isdigit() else args.capture_camera
+        cap_w, cap_h = (int(x) for x in args.capture_resolution.split("x"))
+        settings._capture_config = CaptureServiceConfig(
+            enabled=True,
+            camera_device=cap_dev,
+            width=cap_w,
+            height=cap_h,
+            out_dir=args.capture_dir,
+            exposure=args.capture_exposure,
         )
 
     # Build frontend if running in web mode and not explicitly disabled (could add flag later if needed)

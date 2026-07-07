@@ -39,6 +39,11 @@ interface LiveBoardProps {
   ownership?: number[][] | null; // 2D grid of ownership values (-1 to 1, positive=Black)
   tryMoves?: string[]; // Try moves for experimentation mode
   onTryMove?: (move: string) => void; // Callback when user places a try move
+  // 摆谱 (baipu) guidance overlays. Coordinates are in LiveBoard's native
+  // convention (x=0 left, y=0 BOTTOM) — the caller (BaipuSessionPage) converts
+  // from canonical (row=0 top) at the boundary. See plan §1.3.
+  nextMovePoint?: { x: number; y: number; color: 'B' | 'W' } | null; // pulsing ring on the next point to place (black→red, white→green)
+  capturedPositions?: { x: number; y: number }[] | null; // stones the user must physically remove (pulsing blue)
 }
 
 // Convert display coordinate (e.g., "Q16") to board indices
@@ -309,6 +314,8 @@ export default function LiveBoard({
   ownership,
   tryMoves,
   onTryMove,
+  nextMovePoint,
+  capturedPositions,
 }: LiveBoardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -504,6 +511,60 @@ export default function LiveBoard({
       drawLastMoveMarker(ctx, layout, x, y, boardSize, lastPlayer);
     }
 
+    // 摆谱: pulsing markers for stones the user must physically remove (提子).
+    if (capturedPositions && capturedPositions.length > 0) {
+      const pulse = 0.55 + 0.45 * Math.abs(Math.sin(time * 3));
+      for (const p of capturedPositions) {
+        if (p.x < 0 || p.x >= boardSize || p.y < 0 || p.y >= boardSize) continue;
+        const { x: cx, y: cy } = gridToCanvas(layout, p.x, p.y, boardSize);
+        const r = layout.gridSize * 0.5;
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#2f6fff'; // remove = blue (matches LED 提子 color)
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, layout.gridSize * 0.08);
+        ctx.strokeStyle = '#cfe0ff';
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 摆谱: pulsing ring + ghost on the next point to place (the most salient cue).
+    // Color matches the LED: black→red, white→green.
+    if (nextMovePoint) {
+      const { x, y, color } = nextMovePoint;
+      if (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
+        const { x: cx, y: cy } = gridToCanvas(layout, x, y, boardSize);
+        const pulse = 0.5 + 0.5 * Math.abs(Math.sin(time * 3));
+        const ringColor = color === 'B' ? '#ff3b30' : '#34c759';
+        const stoneSize = layout.gridSize * 0.505;
+        // ghost of the stone to be placed
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        const img = color === 'B' ? blackImg : whiteImg;
+        if (img) {
+          ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx, cy, stoneSize * 0.95, 0, Math.PI * 2);
+          ctx.fillStyle = color === 'B' ? '#000' : '#fff';
+          ctx.fill();
+        }
+        ctx.restore();
+        // pulsing ring
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.beginPath();
+        ctx.arc(cx, cy, layout.gridSize * 0.62, 0, Math.PI * 2);
+        ctx.lineWidth = Math.max(3, layout.gridSize * 0.12);
+        ctx.strokeStyle = ringColor;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // Draw AI move markers (colored circles on empty intersections)
     if (showAiMarkers && aiMarkers && aiMarkers.length > 0 && !pvMoves) {
       // Only show AI markers when not hovering on PV (PV takes precedence)
@@ -585,12 +646,15 @@ export default function LiveBoard({
     if (!imagesLoaded) return;
     renderBoard();
 
-    const needsAnimation = showAiMarkers && aiMarkers && aiMarkers.length > 0;
+    const needsAnimation =
+      (showAiMarkers && aiMarkers && aiMarkers.length > 0) ||
+      !!nextMovePoint ||
+      (!!capturedPositions && capturedPositions.length > 0);
     if (needsAnimation) {
       const interval = setInterval(renderBoard, 100); // ~10fps for pulse
       return () => clearInterval(interval);
     }
-  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor]);
+  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
   const coordsToMove = (x: number, y: number): string => {

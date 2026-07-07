@@ -69,6 +69,8 @@ export interface GameState {
     fast_visits?: number;
     max_visits?: number;
   };
+  game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
+  analysis_allowed?: boolean;
 }
 
 export interface SessionResponse {
@@ -85,7 +87,16 @@ export interface PlatformInfo {
   supports_automatch: boolean;
   supports_rooms: boolean;
   supports_seek_graph: boolean;
+  supports_engine_play: boolean;
   saved_username?: string;
+}
+
+export interface EngineLevel {
+  elo_score: number;
+  level_name: string;   // e.g. "1级"
+  name: string;         // bot name e.g. "星铠虾"
+  goal_difference: number;
+  timing: string;
 }
 
 export interface PlatformStatusResponse {
@@ -112,7 +123,18 @@ export interface VisionStatusResponse {
   pose_locked: boolean;
   sync_state: string;
   bound_session_id: string | null;
+  led_connected?: boolean;
 }
+
+export interface HintMove {
+  gtp: string;
+  coords: [number, number];
+  vision_rc: [number, number];
+  winrate: number | null;
+  score_lead: number | null;
+  visits: number | null;
+}
+export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: number; }
 
 export async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -317,6 +339,12 @@ export const API = {
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
 
+  // AI Hint API (free games only)
+  hint: (sessionId: string, topN?: number): Promise<HintResponse> =>
+    apiPost("/api/v1/hint", { session_id: sessionId, top_n: topN ?? null }) as Promise<HintResponse>,
+  hintDismiss: (): Promise<{ ok: boolean }> =>
+    apiPost("/api/v1/hint/dismiss", {}) as Promise<{ ok: boolean }>,
+
   logout: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/logout", {
       method: "POST",
@@ -330,8 +358,26 @@ export const API = {
   },
 
   // --- Cross-platform online play ---
-  platformLogin: (platform: string, credentials: { username: string; password: string }, token: string) =>
-    apiPost(`/api/v1/platforms/${platform}/login`, credentials, token),
+  platformLogin: (
+    platform: string,
+    credentials: { username: string; password?: string; sms_code?: string },
+    token: string,
+  ) => apiPost(`/api/v1/platforms/${platform}/login`, credentials, token),
+  platformSmsRequest: (platform: string, phone: string, token: string) =>
+    apiPost(`/api/v1/platforms/${platform}/sms/request`, { phone }, token),
+  platformEngineLevels: async (platform: string, token: string): Promise<{ levels: EngineLevel[] }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/engine/levels`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to get engine levels");
+    return response.json();
+  },
+  platformEngineStart: (
+    platform: string,
+    body: { level: number; human_color: "B" | "W" | "nigiri"; handicap: number },
+    token: string,
+  ): Promise<{ session_id: string; human_color?: "B" | "W" }> =>
+    apiPost(`/api/v1/platforms/${platform}/engine/start`, body, token),
   platformLogout: async (platform: string, token: string) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",

@@ -82,13 +82,31 @@ class CameraManager:
 
     RECONNECT_COOLDOWN = 5.0  # seconds between reconnect attempts
 
-    def __init__(self, device_id: int | str = 0, width: int = 1280, height: int = 720, warmup_seconds: float = 2.0) -> None:
-        """Initialize with device ID (int) or path (e.g. "/dev/video73")."""
+    def __init__(
+        self,
+        device_id: int | str = 0,
+        width: int = 1280,
+        height: int = 720,
+        warmup_seconds: float = 2.0,
+        lock_exposure: bool = False,
+        exposure: float | None = None,
+        lock_awb: bool = False,
+    ) -> None:
+        """Initialize with device ID (int) or path (e.g. "/dev/video73").
+
+        ``lock_exposure``/``lock_awb`` disable auto exposure / white balance so a
+        lit LED can't trigger global auto-darkening that crushes black stones into
+        the background (plan §3.1). ``exposure`` is the fixed manual value; it is
+        camera-specific (V4L2 has no portable scale) and is calibrated on the box.
+        """
         self._device_id = device_id
         self._capture_arg = _device_to_capture_arg(device_id)
         self._width = width
         self._height = height
         self._warmup_seconds = warmup_seconds
+        self._lock_exposure = lock_exposure
+        self._exposure = exposure
+        self._lock_awb = lock_awb
         self._cap: cv2.VideoCapture | None = None
         self._connected = False
         self._last_reconnect_attempt = 0.0
@@ -96,7 +114,15 @@ class CameraManager:
         # Background reader thread state
         self._reader_thread: threading.Thread | None = None
         self._latest_frame: np.ndarray | None = None
+        self._frame_seq = 0  # increments per frame read (under _frame_lock)
+        self._frame_ts = 0.0  # time.monotonic() when the frame was read
         self._frame_lock = threading.Lock()
+        # Runtime camera controls (software AE): requests are queued here and applied
+        # by the reader thread between reads — cv2.VideoCapture is not thread-safe.
+        self._pending_controls: dict[str, float] = {}
+        self._controls_lock = threading.Lock()
+        self._controls_effective: bool | None = None  # None = never attempted
+        self._initial_exposure: float | None = None  # readback at open()
         self._stop_event = threading.Event()
 
     @property
@@ -121,7 +147,10 @@ class CameraManager:
             fourcc_str = "".join(chr((fourcc_raw >> (8 * i)) & 0xFF) for i in range(4))
             logger.info(
                 "Camera %s opened: %dx%d format=%s (threaded reader)",
-                self._device_id, actual_w, actual_h, fourcc_str,
+                self._device_id,
+                actual_w,
+                actual_h,
+                fourcc_str,
             )
 
             # Record V4L2 device name for reconnection after device renumbering
@@ -132,6 +161,20 @@ class CameraManager:
 
             # Enable auto-focus if supported
             cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
+
+            # Optionally lock exposure / white balance for capture (plan §3.1).
+            # CAP_PROP_AUTO_EXPOSURE=0.25 is the V4L2 "manual" sentinel; the exact
+            # value is backend/camera-specific and tuned on the box.
+            if self._lock_exposure:
+                cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
+                if self._exposure is not None:
+                    cap.set(cv2.CAP_PROP_EXPOSURE, self._exposure)
+            if self._lock_awb:
+                cap.set(cv2.CAP_PROP_AUTO_WB, 0)
+            try:
+                self._initial_exposure = float(cap.get(cv2.CAP_PROP_EXPOSURE))  # AE seed value
+            except cv2.error:
+                self._initial_exposure = None
 
             # Drain frames to let auto-focus and auto-exposure settle
             if self._warmup_seconds > 0:
@@ -145,9 +188,7 @@ class CameraManager:
 
             # Start background reader thread
             self._stop_event.clear()
-            self._reader_thread = threading.Thread(
-                target=self._reader_loop, daemon=True, name="cam-reader"
-            )
+            self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True, name="cam-reader")
             self._reader_thread.start()
             return True
         cap.release()
@@ -187,6 +228,7 @@ class CameraManager:
     def _reader_loop(self) -> None:
         """Continuously read frames in background, keeping only the latest."""
         while not self._stop_event.is_set():
+            self._apply_pending_controls()
             try:
                 ret, frame = self._cap.read()  # type: ignore[union-attr]
             except cv2.error as exc:
@@ -201,6 +243,84 @@ class CameraManager:
 
             with self._frame_lock:
                 self._latest_frame = frame
+                self._frame_seq += 1
+                self._frame_ts = time.monotonic()
+
+    # ------------------------------------------------------------------
+    # Runtime camera controls (software AE)
+    # ------------------------------------------------------------------
+
+    def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
+        """Queue camera control changes; the reader thread applies them between reads."""
+        with self._controls_lock:
+            if auto_exposure is not None:
+                self._pending_controls["auto_exposure"] = float(auto_exposure)
+            if exposure is not None:
+                self._pending_controls["exposure"] = float(exposure)
+
+    @property
+    def controls_effective(self) -> bool | None:
+        """Whether the last applied control change actually took (None = never attempted).
+
+        macOS AVFoundation silently rejects UVC exposure controls — the readback check
+        catches that so software AE can fall back to advisory mode."""
+        return self._controls_effective
+
+    @property
+    def initial_exposure(self) -> float | None:
+        """Exposure readback at open() — seed value for the software-AE controller."""
+        return self._initial_exposure
+
+    def _apply_pending_controls(self) -> None:
+        with self._controls_lock:
+            if not self._pending_controls:
+                return
+            pending, self._pending_controls = self._pending_controls, {}
+        if self._cap is None:
+            return
+        try:
+            ok = True
+            if "auto_exposure" in pending:
+                ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, pending["auto_exposure"])) and ok
+            if "exposure" in pending:
+                target = pending["exposure"]
+                ok = bool(self._cap.set(cv2.CAP_PROP_EXPOSURE, target)) and ok
+                readback = float(self._cap.get(cv2.CAP_PROP_EXPOSURE))
+                ok = ok and abs(readback - target) <= max(1.0, 0.1 * abs(target))
+            self._controls_effective = ok
+        except cv2.error as exc:
+            logger.warning("Camera %s control apply failed: %s", self._device_id, exc)
+            self._controls_effective = False
+
+    # ------------------------------------------------------------------
+    # Fresh-frame grab (capture path)
+    # ------------------------------------------------------------------
+
+    def grab_fresh(
+        self, after_ts: float | None = None, settle_ms: float = 150.0, timeout: float = 2.0
+    ) -> tuple[np.ndarray | None, int, float]:
+        """Return ``(frame, seq, ts)`` for a frame read after ``after_ts + settle``.
+
+        Correctness comes from the **timestamp gate**: because the background
+        reader stamps ``time.monotonic()`` on every frame it reads, waiting for
+        ``ts > after_ts + settle`` guarantees a frame captured after the LED was
+        lit and settled — regardless of any OpenCV buffer depth (plan §3.1). On
+        timeout it returns the latest frame available (or ``(None, seq, ts)``).
+        """
+        if after_ts is None:
+            after_ts = time.monotonic()
+        target = after_ts + settle_ms / 1000.0
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with self._frame_lock:
+                frame, seq, ts = self._latest_frame, self._frame_seq, self._frame_ts
+            if frame is not None and ts > target:
+                return frame.copy(), seq, ts
+            time.sleep(0.005)
+        with self._frame_lock:
+            if self._latest_frame is not None:
+                return self._latest_frame.copy(), self._frame_seq, self._frame_ts
+            return None, self._frame_seq, self._frame_ts
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -235,7 +355,9 @@ class CameraManager:
             if new_id is not None:
                 logger.info(
                     "Camera %r found at new device /dev/video%d (was %s)",
-                    self._camera_name, new_id, self._device_id,
+                    self._camera_name,
+                    new_id,
+                    self._device_id,
                 )
                 self._device_id = new_id
                 self._capture_arg = _device_to_capture_arg(new_id)

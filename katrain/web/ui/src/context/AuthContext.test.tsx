@@ -39,15 +39,36 @@ describe('AuthContext', () => {
   });
 
   it('should login successfully', async () => {
-    // Mock login response
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ access_token: 'fake-token' }),
-    });
-    // Mock getMe response
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ username: 'testuser', rank: '1d', credits: 100 }),
+    // login() makes two fetches (POST /login then GET /me), and setToken()
+    // then triggers AuthProvider's useEffect which fires a THIRD fetch
+    // (GET /me again). A call-count-based mock only covers the first two, so
+    // the third resolves to undefined and login's effect aborts. Branch on the
+    // request URL instead so every fetch the provider makes is answered.
+    const meResponse = {
+      id: 1,
+      username: 'testuser',
+      rank: '1d',
+      credits: 100,
+    };
+    (global.fetch as any).mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/v1/auth/login')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ access_token: 'fake-token', token_type: 'bearer' }),
+        });
+      }
+      if (url.includes('/api/v1/auth/me')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => meResponse,
+        });
+      }
+      // Fallback for any other endpoint (e.g. logout) so .ok never throws.
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({}),
+      });
     });
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });

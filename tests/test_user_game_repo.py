@@ -1,4 +1,5 @@
 """Tests for UserGameRepository and UserGameAnalysisRepository."""
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -240,6 +241,7 @@ class TestUserGameAnalysisRepository:
         game_id = game["id"]
 
         import json
+
         top_moves = json.dumps([{"move": "D4", "winrate": 0.52, "visits": 300}])
         analysis_repo.upsert(
             game_id=game_id,

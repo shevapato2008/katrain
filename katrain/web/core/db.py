@@ -14,7 +14,9 @@ if settings.DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
     logger.info(f"Database: Using SQLite at {settings.DATABASE_URL}")
 else:
-    logger.info(f"Database: Using PostgreSQL/External DB at {settings.DATABASE_URL.split('@')[-1]}") # Log safe part of URL
+    logger.info(
+        f"Database: Using PostgreSQL/External DB at {settings.DATABASE_URL.split('@')[-1]}"
+    )  # Log safe part of URL
 
 _pool_kwargs = {}
 if not settings.DATABASE_URL.startswith("sqlite"):
@@ -24,8 +26,8 @@ if not settings.DATABASE_URL.startswith("sqlite"):
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    pool_pre_ping=True, # Auto-reconnect if connection is lost
-    echo=False, # Set to True to see raw SQL queries
+    pool_pre_ping=True,  # Auto-reconnect if connection is lost
+    echo=False,  # Set to True to see raw SQL queries
     **_pool_kwargs,
 )
 
@@ -38,6 +40,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # 3. Create Base Class
 # Later we will inherit from this class to create each of the database models or classes (the ORM models)
 Base = declarative_base()
+
 
 # Dependency for FastAPI
 def get_db():

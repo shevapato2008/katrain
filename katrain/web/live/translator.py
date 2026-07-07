@@ -117,6 +117,7 @@ class LiveTranslator:
                 return
 
             from katrain.web.core.models_db import PlayerTranslationDB
+
             players = session.query(PlayerTranslationDB).all()
 
             for player in players:
@@ -393,7 +394,7 @@ class LiveTranslator:
             if result.startswith(prefix):
                 prefix_trans = self._lookup_db_tournament(prefix, lang)
                 if prefix_trans:
-                    result = prefix_trans + " " + result[len(prefix):]
+                    result = prefix_trans + " " + result[len(prefix) :]
                 break
 
         return result
@@ -475,7 +476,10 @@ class LiveTranslator:
                     # Categorize by pattern
                     if any(kw in t.original for kw in ["规则", "Rules", "ルール"]):
                         rules[t.original] = trans
-                    elif any(kw in t.original for kw in ["决赛", "半决赛", "轮", "局", "强", "予選", "本戦", "リーグ", "ＦＴ", "回戦"]):
+                    elif any(
+                        kw in t.original
+                        for kw in ["决赛", "半决赛", "轮", "局", "强", "予選", "本戦", "リーグ", "ＦＴ", "回戦"]
+                    ):
                         rounds[t.original] = trans
                     else:
                         tournaments[t.original] = trans
@@ -578,9 +582,12 @@ class LiveTranslator:
                 session = self._get_db_session()
                 if session:
                     from katrain.web.core.models_db import PlayerTranslationDB
-                    record = session.query(PlayerTranslationDB).filter(
-                        PlayerTranslationDB.canonical_name == canonical
-                    ).first()
+
+                    record = (
+                        session.query(PlayerTranslationDB)
+                        .filter(PlayerTranslationDB.canonical_name == canonical)
+                        .first()
+                    )
                     if record:
                         return {
                             "canonical": canonical,
@@ -611,6 +618,7 @@ class LiveTranslator:
             return self._db_session
         try:
             from katrain.web.core.db import SessionLocal
+
             self._db_session = SessionLocal()
             return self._db_session
         except Exception as e:
@@ -633,9 +641,8 @@ class LiveTranslator:
                 return None
 
             from katrain.web.core.models_db import PlayerTranslationDB
-            record = session.query(PlayerTranslationDB).filter(
-                PlayerTranslationDB.canonical_name == name
-            ).first()
+
+            record = session.query(PlayerTranslationDB).filter(PlayerTranslationDB.canonical_name == name).first()
 
             if record:
                 return self._get_player_translation(record, lang)
@@ -660,9 +667,8 @@ class LiveTranslator:
                 return None
 
             from katrain.web.core.models_db import TournamentTranslationDB
-            record = session.query(TournamentTranslationDB).filter(
-                TournamentTranslationDB.original == name
-            ).first()
+
+            record = session.query(TournamentTranslationDB).filter(TournamentTranslationDB.original == name).first()
 
             if record:
                 return self._get_tournament_translation(record, lang)
@@ -704,9 +710,7 @@ class LiveTranslator:
             from katrain.web.core.models_db import PlayerTranslationDB
 
             # Check if record exists
-            record = session.query(PlayerTranslationDB).filter(
-                PlayerTranslationDB.canonical_name == name
-            ).first()
+            record = session.query(PlayerTranslationDB).filter(PlayerTranslationDB.canonical_name == name).first()
 
             if record:
                 # Update existing record
@@ -735,9 +739,7 @@ class LiveTranslator:
                 session.rollback()
             return False
 
-    def _store_tournament_translation(
-        self, name: str, lang: str, translation: str, source: str = "manual"
-    ) -> bool:
+    def _store_tournament_translation(self, name: str, lang: str, translation: str, source: str = "manual") -> bool:
         """Store a tournament translation in the database.
 
         Args:
@@ -757,9 +759,7 @@ class LiveTranslator:
             from katrain.web.core.models_db import TournamentTranslationDB
 
             # Check if record exists
-            record = session.query(TournamentTranslationDB).filter(
-                TournamentTranslationDB.original == name
-            ).first()
+            record = session.query(TournamentTranslationDB).filter(TournamentTranslationDB.original == name).first()
 
             if record:
                 # Update existing record
@@ -787,13 +787,7 @@ class LiveTranslator:
 
     # ========== Public Methods for Manual Translation ==========
 
-    def store_player(
-        self,
-        name: str,
-        translations: dict,
-        country: str = None,
-        source: str = "manual"
-    ) -> bool:
+    def store_player(self, name: str, translations: dict, country: str = None, source: str = "manual") -> bool:
         """Store a player translation with all languages.
 
         Args:
@@ -812,9 +806,7 @@ class LiveTranslator:
 
             from katrain.web.core.models_db import PlayerTranslationDB
 
-            record = session.query(PlayerTranslationDB).filter(
-                PlayerTranslationDB.canonical_name == name
-            ).first()
+            record = session.query(PlayerTranslationDB).filter(PlayerTranslationDB.canonical_name == name).first()
 
             if record:
                 for lang, trans in translations.items():
@@ -828,7 +820,7 @@ class LiveTranslator:
                     canonical_name=name,
                     country=country,
                     source=source,
-                    **{k: v for k, v in translations.items() if k in self.SUPPORTED_LANGS}
+                    **{k: v for k, v in translations.items() if k in self.SUPPORTED_LANGS},
                 )
                 session.add(record)
 
@@ -842,12 +834,7 @@ class LiveTranslator:
                 session.rollback()
             return False
 
-    def store_tournament(
-        self,
-        name: str,
-        translations: dict,
-        source: str = "manual"
-    ) -> bool:
+    def store_tournament(self, name: str, translations: dict, source: str = "manual") -> bool:
         """Store a tournament translation with all languages.
 
         Args:
@@ -865,9 +852,7 @@ class LiveTranslator:
 
             from katrain.web.core.models_db import TournamentTranslationDB
 
-            record = session.query(TournamentTranslationDB).filter(
-                TournamentTranslationDB.original == name
-            ).first()
+            record = session.query(TournamentTranslationDB).filter(TournamentTranslationDB.original == name).first()
 
             if record:
                 for lang, trans in translations.items():
@@ -876,9 +861,7 @@ class LiveTranslator:
                 record.source = source
             else:
                 record = TournamentTranslationDB(
-                    original=name,
-                    source=source,
-                    **{k: v for k, v in translations.items() if k in self.SUPPORTED_LANGS}
+                    original=name, source=source, **{k: v for k, v in translations.items() if k in self.SUPPORTED_LANGS}
                 )
                 session.add(record)
 

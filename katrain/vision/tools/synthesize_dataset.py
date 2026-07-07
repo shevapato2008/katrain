@@ -1086,7 +1086,9 @@ def main():
         choices=["fixed", "cv", "grabcut", "sam"],
         help="Stone patch crop method: fixed (bbox), cv (HoughCircles), grabcut, sam (Segment Anything)",
     )
-    parser.add_argument("--sam-model", type=str, default="models/mobile_sam.pt", help="SAM model path (default: models/mobile_sam.pt)")
+    parser.add_argument(
+        "--sam-model", type=str, default="models/mobile_sam.pt", help="SAM model path (default: models/mobile_sam.pt)"
+    )
     args = parser.parse_args()
 
     off_min, off_max = map(int, args.off_board_stones.split("-"))

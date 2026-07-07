@@ -11,11 +11,14 @@ logger = logging.getLogger("katrain_web")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -38,8 +41,10 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+
 from sqlalchemy.orm import Session
 from katrain.web.core import models_db
+
 
 class UserRepository(ABC):
     @abstractmethod
@@ -78,6 +83,7 @@ class UserRepository(ABC):
     def count_completed_rated_games(self, user_id: int) -> int:
         pass
 
+
 class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -88,6 +94,7 @@ class SQLAlchemyUserRepository(UserRepository):
         from katrain.web.core.db import engine
         from sqlalchemy import inspect, text
         from katrain.web.core import migrations
+
         models_db.Base.metadata.create_all(bind=engine)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
@@ -123,12 +130,14 @@ class SQLAlchemyUserRepository(UserRepository):
             rebuildable = [t for t in drift_tables if t not in migrations.BILLING_TABLES]
             if any(t in migrations.BILLING_TABLES for t in drift_tables):
                 import logging
+
                 logging.getLogger("katrain_web").error(
                     f"Schema drift in billing table(s) {set(drift_tables) & migrations.BILLING_TABLES}; "
                     "refusing to drop. Resolve manually."
                 )
             if rebuildable:
                 import logging
+
                 logging.getLogger("katrain_web").warning(
                     f"Schema drift in {rebuildable}; rebuilding those local tables."
                 )
@@ -145,9 +154,10 @@ class SQLAlchemyUserRepository(UserRepository):
             session.commit()
             session.refresh(db_user)
             return self._to_dict(db_user)
-        except Exception as e: 
+        except Exception as e:
             session.rollback()
             from sqlalchemy.exc import IntegrityError
+
             if isinstance(e, IntegrityError):
                 raise ValueError("User already exists")
             raise e
@@ -188,12 +198,14 @@ class SQLAlchemyUserRepository(UserRepository):
         session = self.session_factory()
         try:
             # Check if already following
-            existing = session.query(models_db.Relationship).filter_by(
-                follower_id=follower_id, following_id=following_id
-            ).first()
+            existing = (
+                session.query(models_db.Relationship)
+                .filter_by(follower_id=follower_id, following_id=following_id)
+                .first()
+            )
             if existing:
                 return True
-            
+
             rel = models_db.Relationship(follower_id=follower_id, following_id=following_id)
             session.add(rel)
             session.commit()
@@ -207,9 +219,11 @@ class SQLAlchemyUserRepository(UserRepository):
     def unfollow_user(self, follower_id: int, following_id: int) -> bool:
         session = self.session_factory()
         try:
-            rel = session.query(models_db.Relationship).filter_by(
-                follower_id=follower_id, following_id=following_id
-            ).first()
+            rel = (
+                session.query(models_db.Relationship)
+                .filter_by(follower_id=follower_id, following_id=following_id)
+                .first()
+            )
             if rel:
                 session.delete(rel)
                 session.commit()
@@ -224,9 +238,12 @@ class SQLAlchemyUserRepository(UserRepository):
         session = self.session_factory()
         try:
             # Users who follow this user
-            followers = session.query(models_db.User).join(
-                models_db.Relationship, models_db.User.id == models_db.Relationship.follower_id
-            ).filter(models_db.Relationship.following_id == user_id).all()
+            followers = (
+                session.query(models_db.User)
+                .join(models_db.Relationship, models_db.User.id == models_db.Relationship.follower_id)
+                .filter(models_db.Relationship.following_id == user_id)
+                .all()
+            )
             return [self._to_dict(user) for user in followers]
         finally:
             session.close()
@@ -235,9 +252,12 @@ class SQLAlchemyUserRepository(UserRepository):
         session = self.session_factory()
         try:
             # Users whom this user follows
-            following = session.query(models_db.User).join(
-                models_db.Relationship, models_db.User.id == models_db.Relationship.following_id
-            ).filter(models_db.Relationship.follower_id == user_id).all()
+            following = (
+                session.query(models_db.User)
+                .join(models_db.Relationship, models_db.User.id == models_db.Relationship.following_id)
+                .filter(models_db.Relationship.follower_id == user_id)
+                .all()
+            )
             return [self._to_dict(user) for user in following]
         finally:
             session.close()
@@ -245,11 +265,15 @@ class SQLAlchemyUserRepository(UserRepository):
     def count_completed_rated_games(self, user_id: int) -> int:
         session = self.session_factory()
         try:
-            count = session.query(models_db.UserGame).filter(
-                models_db.UserGame.user_id == user_id,
-                models_db.UserGame.game_type == "rated",
-                models_db.UserGame.result.isnot(None),
-            ).count()
+            count = (
+                session.query(models_db.UserGame)
+                .filter(
+                    models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.game_type == "rated",
+                    models_db.UserGame.result.isnot(None),
+                )
+                .count()
+            )
             return count
         finally:
             session.close()
@@ -264,5 +288,5 @@ class SQLAlchemyUserRepository(UserRepository):
             "credits": user_obj.credits,
             "is_admin": bool(user_obj.is_admin),
             "avatar_url": user_obj.avatar_url,
-            "created_at": user_obj.created_at
+            "created_at": user_obj.created_at,
         }

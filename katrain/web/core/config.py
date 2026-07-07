@@ -2,6 +2,7 @@ import os
 import uuid as uuid_module
 from pydantic import BaseModel
 
+
 class Settings(BaseModel):
     PROJECT_NAME: str = "KaTrain Web UI"
     VERSION: str = "1.17.1"
@@ -20,6 +21,18 @@ class Settings(BaseModel):
     # Persistence
     DATABASE_PATH: str = "db.sqlite3"
     DATABASE_URL: str = "sqlite:///./db.sqlite3"
+
+    # Media storage (tutorial video/audio/page images). See
+    # superpowers/tracks/tutorial-database/plan.md.
+    STORAGE_BACKEND: str = "local"          # local | s3
+    S3_ENDPOINT_URL: str = ""               # MinIO: http://minio:9000 ; OSS: https://oss-cn-<region>.aliyuncs.com
+    S3_REGION: str = ""                     # OSS: cn-hangzhou ...; MinIO can be blank
+    S3_BUCKET: str = "tutorial-assets"
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_PUBLIC_BASE_URL: str = ""            # client-reachable prefix: phase1 nginx domain; phase2 CDN domain
+    S3_USE_PRESIGNED: bool = False          # private bucket -> public_url() returns a signed URL
+    S3_PRESIGN_TTL_SEC: int = 3600
 
     # Security
     SECRET_KEY: str = "katrain-secret-key-change-this-in-production"
@@ -54,7 +67,7 @@ class Settings(BaseModel):
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
-        
+
         # New DATABASE_URL support
         env_db_url = os.getenv("KATRAIN_DATABASE_URL")
         if env_db_url:
@@ -63,12 +76,10 @@ class Settings(BaseModel):
             # Try to load from config.json
             import json
             from pathlib import Path
+
             try:
                 # Check standard locations: ~/.katrain/config.json or ./katrain/config.json
-                config_paths = [
-                    Path.home() / ".katrain" / "config.json",
-                    Path("katrain/config.json")
-                ]
+                config_paths = [Path.home() / ".katrain" / "config.json", Path("katrain/config.json")]
                 json_db_url = None
                 for path in config_paths:
                     if path.exists():
@@ -78,7 +89,7 @@ class Settings(BaseModel):
                             if "server" in config_data and "database_url" in config_data["server"]:
                                 json_db_url = config_data["server"]["database_url"]
                                 break
-                
+
                 if json_db_url:
                     data["DATABASE_URL"] = json_db_url
                 else:
@@ -88,6 +99,16 @@ class Settings(BaseModel):
                 print(f"Warning: Failed to read config.json: {e}")
                 # Fallback to sqlite using the DATABASE_PATH
                 data.setdefault("DATABASE_URL", f"sqlite:///./{data.get('DATABASE_PATH', 'db.sqlite3')}")
+
+        # Media storage settings
+        data.setdefault("STORAGE_BACKEND", os.getenv("KATRAIN_STORAGE_BACKEND", "local"))
+        data.setdefault("S3_ENDPOINT_URL", os.getenv("KATRAIN_S3_ENDPOINT_URL", ""))
+        data.setdefault("S3_REGION", os.getenv("KATRAIN_S3_REGION", ""))
+        data.setdefault("S3_BUCKET", os.getenv("KATRAIN_S3_BUCKET", "tutorial-assets"))
+        data.setdefault("S3_ACCESS_KEY", os.getenv("KATRAIN_S3_ACCESS_KEY", ""))
+        data.setdefault("S3_SECRET_KEY", os.getenv("KATRAIN_S3_SECRET_KEY", ""))
+        data.setdefault("S3_PUBLIC_BASE_URL", os.getenv("KATRAIN_S3_PUBLIC_BASE_URL", ""))
+        data.setdefault("S3_USE_PRESIGNED", os.getenv("KATRAIN_S3_USE_PRESIGNED", "false").lower() in ("1", "true", "yes"))
 
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
@@ -107,5 +128,6 @@ class Settings(BaseModel):
             data["DATABASE_URL"] = f"sqlite:///./{db_path}"
 
         super().__init__(**data)
+
 
 settings = Settings()

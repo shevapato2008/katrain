@@ -60,7 +60,9 @@ class _MockMDApp:
     @staticmethod
     def get_running_app():
         return _MockMDApp
+
     gui = None
+
 
 def _ensure_module(name):
     module = sys.modules.get(name)
@@ -84,25 +86,43 @@ def ensure_kivy():
     try:
         import kivy  # noqa: F401
         from kivy.base import EventLoop
+
         if not EventLoop.window:
-             # Prevent window creation by setting a dummy if not exists
-             class MockWindow:
-                 def __init__(self, *args, **kwargs): pass
-                 def bind(self, *args, **kwargs): pass
-                 def remove_widget(self, *args, **kwargs): pass
-                 def add_widget(self, *args, **kwargs): pass
-                 @property
-                 def size(self): return (800, 600)
-                 @property
-                 def width(self): return 800
-                 @property
-                 def height(self): return 600
-                 @property
-                 def dpi(self): return 96
-                 @property
-                 def system_size(self): return (800, 600)
-                 
-             EventLoop.window = MockWindow()
+            # Prevent window creation by setting a dummy if not exists
+            class MockWindow:
+                def __init__(self, *args, **kwargs):
+                    pass
+
+                def bind(self, *args, **kwargs):
+                    pass
+
+                def remove_widget(self, *args, **kwargs):
+                    pass
+
+                def add_widget(self, *args, **kwargs):
+                    pass
+
+                @property
+                def size(self):
+                    return (800, 600)
+
+                @property
+                def width(self):
+                    return 800
+
+                @property
+                def height(self):
+                    return 600
+
+                @property
+                def dpi(self):
+                    return 96
+
+                @property
+                def system_size(self):
+                    return (800, 600)
+
+            EventLoop.window = MockWindow()
         return False
     except Exception:
         kivy_mod = _ensure_module("kivy")

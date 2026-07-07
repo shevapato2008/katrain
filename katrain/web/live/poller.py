@@ -42,9 +42,7 @@ class LivePoller:
         self.config = config or LiveConfig()
 
         # Initialize clients
-        self.xingzhen = xingzhen_client or XingZhenClient(
-            base_url=self.config.xingzhen_api_base
-        )
+        self.xingzhen = xingzhen_client or XingZhenClient(base_url=self.config.xingzhen_api_base)
 
         # Upcoming events scraper
         self.upcoming_scraper = UpcomingScraper()
@@ -310,7 +308,9 @@ class LivePoller:
 
                 # Update match data
                 match.move_count = new_move_count
-                match.current_winrate = situation.get("winrate") or situation.get("blackWinrate") or match.current_winrate
+                match.current_winrate = (
+                    situation.get("winrate") or situation.get("blackWinrate") or match.current_winrate
+                )
                 match.current_score = situation.get("score") or situation.get("blackScore") or match.current_score
 
                 # Update moves list
@@ -381,7 +381,9 @@ class LivePoller:
                         priority=PRIORITY_LIVE_NEW,
                         moves=match.moves,
                     )
-                    logger.info(f"[LIVE] Created {len(new_moves)} analysis tasks for {match.id} (moves {old_move_count}->{new_move_count})")
+                    logger.info(
+                        f"[LIVE] Created {len(new_moves)} analysis tasks for {match.id} (moves {old_move_count}->{new_move_count})"
+                    )
 
             # Update analyzer's match cache
             if self._analyzer:
@@ -407,7 +409,11 @@ class LivePoller:
                 # Extract match info from liveMatch sub-object
                 live_match_data = situation.get("liveMatch", {})
                 match.move_count = live_match_data.get("moveNum") or match.move_count
-                match.current_winrate = live_match_data.get("winrate") if live_match_data.get("winrate") is not None else match.current_winrate
+                match.current_winrate = (
+                    live_match_data.get("winrate")
+                    if live_match_data.get("winrate") is not None
+                    else match.current_winrate
+                )
                 match.result = live_match_data.get("gameResult") or match.result
 
                 # Extract moves from top-level "moves" field

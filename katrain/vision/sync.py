@@ -94,6 +94,7 @@ class SyncStateMachine:
 
         # Board state
         self._expected_board: np.ndarray = np.zeros((board_size, board_size), dtype=int)
+        self._prev_expected_board: np.ndarray | None = None
         self._target_board: np.ndarray | None = None
 
         # Mismatch tracking
@@ -117,7 +118,18 @@ class SyncStateMachine:
     # -- public API ----------------------------------------------------------
 
     def set_expected_board(self, board: np.ndarray) -> None:
-        """Set the expected board (from game engine)."""
+        """Set the expected board (from game engine).
+
+        Keeps the previous expected board so ``_compare_boards`` can tell "digital
+        stone the player hasn't placed yet" from "stone that must come off". This is
+        called on every ``game_update`` (digital authority) and coalesced to the
+        latest state under throttling; a stale ``prev`` only ever biases points
+        toward the safe "placement pending" bucket, never fabricates the
+        ``prev == observed`` match "removal needed" requires, so no
+        sequencing/hash mechanism is needed here.
+        """
+        if self._expected_board is not None:
+            self._prev_expected_board = self._expected_board.copy()
         self._expected_board = board.copy()
 
     def enter_setup_mode(self, target_board: np.ndarray) -> None:
@@ -185,6 +197,7 @@ class SyncStateMachine:
             self._expected_board = observed_board.copy()
         else:
             self._expected_board = np.zeros((self._board_size, self._board_size), dtype=int)
+        self._prev_expected_board = None
         self._target_board = None
         self._mismatch_board = None
         self._mismatch_count = 0
@@ -247,7 +260,7 @@ class SyncStateMachine:
             if observed_board[r, c] == self._target_board[r, c]:
                 matched += 1
             else:
-                missing.append([r, c])
+                missing.append([int(r), int(c)])  # numpy.int64 → JSON-serializable (/ws/vision setup_progress)
 
         events.append(
             SyncEvent(
@@ -260,6 +273,7 @@ class SyncStateMachine:
             events.append(SyncEvent(SyncEventType.SETUP_COMPLETE))
             self._target_board = None
             self._expected_board = observed_board.copy()
+            self._prev_expected_board = None
             self._state = SyncState.SYNCED
 
         return events
@@ -280,42 +294,55 @@ class SyncStateMachine:
             self._mismatch_count = 0
             return events
 
-        # 4b. Check captures: stones expected but not observed
-        captures: list[tuple[int, int, int]] = []
+        # 4b. Classify against the previous expected board (digital authority).
+        #     Newly-expected stone the player hasn't placed yet is NOT an anomaly;
+        #     a live stone that vanished physically IS one (review Codex B2) — it must
+        #     ride the debounced mismatch flow, never the instantly-self-clearing
+        #     capture flow. removal_needed only holds points where a stone is still
+        #     physically present, so the sticky still_pending check stays meaningful.
+        prev = self._prev_expected_board
+        removal_needed: list[tuple[int, int, int]] = []  # physical stone must come OFF
+        placement_pending: list[tuple[int, int, int]] = []  # digital stone awaiting placement
+        missing_anomaly: list[tuple[int, int, int]] = []  # live stone vanished physically
         unexpected: list[tuple[int, int, int]] = []
 
         for r, c in diff_positions:
+            r, c = int(r), int(
+                c
+            )  # np.where yields numpy.int64 → cast so event payloads are JSON-serializable (/ws/vision)
             expected_val = int(self._expected_board[r, c])
             observed_val = int(observed_board[r, c])
             if expected_val != EMPTY and observed_val == EMPTY:
-                # Stone expected but missing → capture candidate
-                captures.append((r, c, expected_val))
+                if prev is not None and int(prev[r, c]) == EMPTY:
+                    placement_pending.append((r, c, expected_val))  # e.g. AI move lamp lit
+                else:
+                    missing_anomaly.append(
+                        (r, c, expected_val)
+                    )  # stolen live stone (or pre-injection capture transient)
             elif expected_val == EMPTY and observed_val != EMPTY:
-                # Stone present but not expected → unexpected placement
-                unexpected.append((r, c, observed_val))
+                if prev is not None and int(prev[r, c]) == observed_val:
+                    removal_needed.append((r, c, observed_val))  # digital capture/undo pending removal
+                else:
+                    unexpected.append((r, c, observed_val))
             elif expected_val != EMPTY and observed_val != EMPTY and expected_val != observed_val:
                 # Color changed — treat as unexpected
                 unexpected.append((r, c, observed_val))
 
         # 4c. Capture-pending logic (sticky)
-        if captures and self._state != SyncState.CAPTURE_PENDING:
-            self._pending_captures = captures
+        if removal_needed and self._state != SyncState.CAPTURE_PENDING:
+            self._pending_captures = removal_needed
             self._state = SyncState.CAPTURE_PENDING
             events.append(
                 SyncEvent(
                     SyncEventType.CAPTURE_PENDING,
-                    data={"positions": [(r, c, clr) for r, c, clr in captures]},
+                    data={"positions": [(r, c, clr) for r, c, clr in removal_needed]},
                 )
             )
             return events
 
         if self._state == SyncState.CAPTURE_PENDING:
             # Check if captures have been cleared
-            still_pending = [
-                (r, c, clr)
-                for r, c, clr in self._pending_captures
-                if int(observed_board[r, c]) != EMPTY
-            ]
+            still_pending = [(r, c, clr) for r, c, clr in self._pending_captures if int(observed_board[r, c]) != EMPTY]
             if not still_pending:
                 self._pending_captures = []
                 self._state = SyncState.SYNCED
@@ -325,12 +352,14 @@ class SyncStateMachine:
                 self._pending_captures = still_pending
                 return events
 
-        # 4d. Unexpected changes → stable mismatch tracking
-        if unexpected:
-            # Build a fingerprint of current unexpected positions for stability check
+        # 4d. Anomaly tracking: unexpected extras AND missing live stones both count.
+        if unexpected or missing_anomaly:
+            # Build a fingerprint of current anomalous positions for stability check.
             current_mismatch = np.zeros_like(self._expected_board)
             for r, c, clr in unexpected:
                 current_mismatch[r, c] = clr
+            for r, c, clr in missing_anomaly:
+                current_mismatch[r, c] = clr + 2  # distinct fingerprint values (3/4)
 
             if self._mismatch_board is not None and np.array_equal(current_mismatch, self._mismatch_board):
                 self._mismatch_count += 1
@@ -343,7 +372,10 @@ class SyncStateMachine:
                 events.append(
                     SyncEvent(
                         SyncEventType.ILLEGAL_CHANGE,
-                        data={"positions": [(r, c, clr) for r, c, clr in unexpected]},
+                        data={
+                            "positions": [(r, c, clr) for r, c, clr in unexpected],
+                            "missing": [(r, c, clr) for r, c, clr in missing_anomaly + placement_pending],
+                        },
                     )
                 )
                 self._mismatch_board = None

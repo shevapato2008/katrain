@@ -1,4 +1,5 @@
 """API endpoints for personal game library (user_games) and analysis data."""
+
 import json
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -10,6 +11,7 @@ router = APIRouter()
 
 
 # ── Request/Response Models ──
+
 
 class UserGameCreate(BaseModel):
     id: Optional[str] = None  # Client-provided UUID for idempotent creation (board sync)
@@ -44,6 +46,7 @@ class UserGameUpdate(BaseModel):
 
 # ── Endpoints ──
 
+
 @router.get("/")
 async def list_user_games(
     request: Request,
@@ -60,8 +63,12 @@ async def list_user_games(
     if dispatcher is not None:
         return await dispatcher.user_games_list(
             user_id=current_user.id,
-            page=page, page_size=page_size,
-            category=category, source=source, sort=sort, q=q,
+            page=page,
+            page_size=page_size,
+            category=category,
+            source=source,
+            sort=sort,
+            q=q,
         )
 
     repo = request.app.state.user_game_repo
@@ -176,6 +183,7 @@ async def delete_user_game(
 
 # ── Analysis Data Endpoints ──
 
+
 @router.get("/{game_id}/analysis")
 async def get_analysis(
     request: Request,
@@ -215,6 +223,7 @@ async def get_move_analysis(
 
 
 # ── Save Analysis from Session ──
+
 
 class SaveAnalysisRequest(BaseModel):
     session_id: str

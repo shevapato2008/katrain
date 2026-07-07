@@ -26,9 +26,15 @@ class RemoteAPIClient:
         base_url: str,
         device_id: str,
         timeout: float = 30.0,
+        health_timeout: float = 10.0,
     ):
         self.base_url = base_url.rstrip("/")
         self.device_id = device_id
+        # Health probes get their own (shorter) timeout. Defaults to 10s — long
+        # enough to absorb a slow TLS handshake or a momentarily starved event
+        # loop at startup, but bounded so the 10s health loop stays responsive.
+        # Override via KATRAIN_HEALTH_CHECK_TIMEOUT (wired in server.py).
+        self._health_timeout = health_timeout
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._auth_required: bool = False  # True when refresh also fails
@@ -222,6 +228,78 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_live_featured(self, lang: Optional[str] = None) -> Dict:
+        params = {k: v for k, v in {"lang": lang}.items() if v is not None}
+        resp = await self._request("GET", "/api/v1/live/matches/featured", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_live_match_analysis(self, match_id: str, move_number: Optional[int] = None) -> Dict:
+        params = {k: v for k, v in {"move_number": move_number}.items() if v is not None}
+        resp = await self._request("GET", f"/api/v1/live/matches/{match_id}/analysis", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def preload_live_analysis(self, match_id: str) -> Dict:
+        resp = await self._request("GET", f"/api/v1/live/matches/{match_id}/analysis/preload")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_live_upcoming(self, limit: int = 20, lang: Optional[str] = None) -> Dict:
+        params = {k: v for k, v in {"limit": limit, "lang": lang}.items() if v is not None}
+        resp = await self._request("GET", "/api/v1/live/upcoming", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_live_stats(self) -> Dict:
+        resp = await self._request("GET", "/api/v1/live/stats")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_live_translations(self, lang: str) -> Dict:
+        resp = await self._request("GET", "/api/v1/live/translations", params={"lang": lang})
+        resp.raise_for_status()
+        return resp.json()
+
+    # ── Tutorial (read-only, public) ──
+
+    async def get_tutorial_categories(self) -> Any:
+        resp = await self._request("GET", "/api/v1/tutorials/categories", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_books(self, category: str) -> Any:
+        from urllib.parse import quote
+
+        resp = await self._request("GET", f"/api/v1/tutorials/categories/{quote(category)}/books", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_book(self, book_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/books/{book_id}", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_chapters(self, book_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/books/{book_id}/chapters", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_sections(self, chapter_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/chapters/{chapter_id}/sections", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_section(self, section_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/sections/{section_id}", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_tutorial_figure(self, figure_id: int) -> Any:
+        resp = await self._request("GET", f"/api/v1/tutorials/figures/{figure_id}", auth=False)
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Board (device management) ──
 
     async def heartbeat(
@@ -251,7 +329,7 @@ class RemoteAPIClient:
         """Check remote server health. Returns {ok: bool, rtt_ms: int}."""
         start = time.monotonic()
         try:
-            resp = await self._client.get("/health", timeout=5.0)
+            resp = await self._client.get("/health", timeout=self._health_timeout)
             rtt_ms = int((time.monotonic() - start) * 1000)
             return {"ok": resp.status_code == 200, "rtt_ms": rtt_ms}
         except Exception:

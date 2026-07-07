@@ -271,7 +271,9 @@ class BoardFinder:
                     area_pct = cv2.contourArea(contour) / frame_area
                     logger.debug(
                         "eps=%.2f contour area=%.1f%% hull→approx gave %d pts (need 4)",
-                        eps_factor, area_pct * 100, len(approx),
+                        eps_factor,
+                        area_pct * 100,
+                        len(approx),
                     )
                 continue
 

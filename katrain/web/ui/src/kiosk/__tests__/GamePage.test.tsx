@@ -9,6 +9,22 @@ vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
 }));
 
+// Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
+// Disabled vision keeps all vision branches (overlay, toasts, useVisionSync) inert.
+vi.mock('../context/VisionContext', () => ({
+  useVision: () => ({
+    visionStatus: {
+      enabled: false,
+      cameraConnected: false,
+      poseLocked: false,
+      syncState: 'idle',
+      boundSessionId: null,
+    },
+    isVisionEnabled: false,
+    refreshStatus: vi.fn(),
+  }),
+}));
+
 // Mock auth
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),

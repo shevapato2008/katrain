@@ -1,0 +1,231 @@
+<title>智星盒 StellaBox · 对局中 — 各状态</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c; --wood:#caa66f;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:1024px}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:13px;margin-top:14px}
+.flowlabel .n{font-family:var(--serif);font-style:italic;color:var(--jade)}
+.flowlabel .rule{width:60px;height:1px;background:linear-gradient(90deg,var(--jade-d),transparent)}
+
+.screen{width:1024px;height:600px;background:linear-gradient(180deg,#111817,#0d1211);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+.gtop{height:46px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--hair)}
+.gtop .exit{display:flex;align-items:center;gap:7px;color:var(--sub);font-size:13px;cursor:pointer;padding:6px 10px;border-radius:9px;border:1px solid var(--hair)}
+.gtop .exit svg{width:15px;height:15px;fill:var(--sub)}
+.gtop .meta{font-size:12.5px;color:var(--sub)}.gtop .meta b{color:var(--ice);font-weight:600}
+.gtop .mode{margin-left:6px;font-size:11px;color:var(--jade);border:1px solid var(--jade-d);border-radius:20px;padding:3px 10px}
+.gtop .vis{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--sub)}
+.gtop .vis span{display:flex;align-items:center;gap:5px}
+.gtop .vis b{width:6px;height:6px;border-radius:50%;background:var(--jade);box-shadow:0 0 6px var(--jade)}
+.gtop .vis .warn b{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.gtop .vis .err b{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+.gmain{flex:1;min-height:0;display:flex;gap:16px;padding:14px 18px}
+.gboardwrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center}
+.gboard{height:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 10px 30px -12px #000}
+.rail{width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+
+.pcard{background:var(--raise);border:1px solid var(--hair);border-radius:13px;padding:11px 13px;display:flex;align-items:center;gap:11px}
+.pcard.turn{border-color:var(--jade);background:linear-gradient(135deg,#1f3a30,#18211f)}
+.pstone{width:26px;height:26px;border-radius:50%;flex-shrink:0}
+.pstone.b{background:radial-gradient(circle at 35% 30%,#4a4a4a,#111)}
+.pstone.w{background:radial-gradient(circle at 35% 30%,#fff,#d9d2c4)}
+.pcard .pn{flex:1;min-width:0}
+.pcard .pn h4{font-size:14px;font-weight:600}.pcard .pn p{font-size:11px;color:var(--sub);margin-top:1px}
+.pcard .pn .think{color:var(--jade);display:inline-flex;align-items:center;gap:4px}
+.dots i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--jade);margin-left:2px;animation:bl 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.pcard .clock{text-align:right}
+.pcard .clock .big{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.pcard.turn .clock .big{color:var(--jade)}
+.pcard .clock .sm{font-size:10.5px;color:var(--dim)}
+
+.railsec{background:var(--raise);border:1px solid var(--hair);border-radius:13px;padding:11px 12px}
+.railsec .st{font-size:10.5px;color:var(--dim);letter-spacing:1px;margin-bottom:9px}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tg{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:9px;background:var(--raise2);border:1px solid var(--hair);font-size:12.5px;color:var(--sub)}
+.tg.on{color:var(--ice);border-color:var(--jade-d)}
+.tg .dot{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--dim)}
+.tg.on .dot{background:var(--jade);border-color:var(--jade)}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto}
+.act{padding:11px 8px;border-radius:11px;border:1px solid var(--hair);background:var(--raise);display:flex;
+  align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--ice)}
+.act svg{width:16px;height:16px;fill:currentColor}
+.act.danger{color:var(--red);border-color:rgba(226,104,92,.35)}
+.act.disabled{opacity:.38;filter:grayscale(.5)}
+.act.primary{background:var(--jade);color:#0c130f;border-color:var(--jade)}
+
+/* score panel */
+.score{display:flex;flex-direction:column;gap:8px}
+.scoreline{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;background:var(--raise2);border:1px solid var(--hair)}
+.scoreline .ps{width:20px;height:20px;border-radius:50%}
+.scoreline .lbl{font-size:13px;font-weight:600}
+.scoreline .num{margin-left:auto;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.scoreline .sub{font-size:10.5px;color:var(--sub)}
+.result{text-align:center;padding:12px;border-radius:12px;background:linear-gradient(135deg,#1f3a30,#18211f);border:1px solid var(--jade-d)}
+.result .big{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--jade)}
+.result .sm{font-size:11.5px;color:var(--sub);margin-top:3px}
+
+/* bottom prompt */
+.gprompt{flex-shrink:0;height:44px;display:flex;align-items:center;gap:11px;padding:0 18px;border-top:1px solid var(--hair)}
+.gprompt.amber{background:linear-gradient(90deg,rgba(224,162,74,.14),transparent)}
+.gprompt.jade{background:linear-gradient(90deg,rgba(88,181,122,.13),transparent)}
+.gprompt .pl{width:7px;height:20px;border-radius:4px}
+.gprompt.amber .pl{background:var(--amber)}.gprompt.jade .pl{background:var(--jade)}
+.gprompt .msg{font-size:13px}.gprompt .msg b{font-weight:700}
+.gprompt.amber .msg b{color:var(--amber)}.gprompt.jade .msg b{color:var(--jade)}
+.gprompt .side{margin-left:auto;font-size:11.5px;display:flex;align-items:center;gap:6px;color:var(--jade)}
+.gprompt .side b{width:6px;height:6px;border-radius:50%;background:var(--jade);box-shadow:0 0 7px var(--jade)}
+.gspin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(88,181,122,.25);border-top-color:var(--jade);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* overlay + modal */
+.overlay{position:absolute;inset:0;background:rgba(6,9,9,.74);display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{width:460px;background:var(--raise);border:1px solid var(--hair);border-radius:16px;padding:26px 26px 22px;text-align:center;box-shadow:0 30px 80px -20px #000}
+.modal .mi{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;margin:0 auto 14px}
+.modal .mi svg{width:28px;height:28px}
+.modal .mi.warn{background:rgba(224,162,74,.16);border:1px solid rgba(224,162,74,.4)}.modal .mi.warn svg{fill:var(--amber)}
+.modal .mi.danger{background:rgba(226,104,92,.14);border:1px solid rgba(226,104,92,.4)}.modal .mi.danger svg{fill:var(--red)}
+.modal h2{font-family:var(--serif);font-size:22px;font-weight:600}
+.modal p{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.55}
+.modal .mbtns{display:flex;gap:12px;margin-top:22px}
+.mbtn{flex:1;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14.5px;font-weight:600;border:1px solid var(--hair);background:var(--raise2);color:var(--ice);cursor:pointer}
+.mbtn svg{width:16px;height:16px;fill:currentColor}
+.mbtn.jade{background:var(--jade);color:#0c130f;border-color:var(--jade)}
+.mbtn.danger{background:var(--red);color:#160b0a;border-color:var(--red)}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ③ <b>对局中 · 各状态</b> — 与主态同骨架,仅右栏/提示条/遮罩变化。A 轮到 AI 思考中 · B 需校准挡屏 · C 终局数子 · D 认输确认。7″ 1024×600</div>
+
+  <!-- ============ A. AI THINKING ============ -->
+  <div class="flowlabel"><span class="n">A</span> 轮到 AI · 思考中 <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="meta">自由对弈 · <b>中国规则</b> · 让 2 子 · 贴 0.5</div>
+      <div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span><span><b></b>LED</span></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_GAME--></div>
+      <div class="rail">
+        <div class="pcard turn"><div class="pstone w"></div><div class="pn"><h4>AI · 拟人</h4><p class="think">思考中<span class="dots"><i></i><i></i><i></i></span></p></div><div class="clock"><div class="big">08:29</div><div class="sm">读秒 ×3</div></div></div>
+        <div class="pcard"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p>已落子 · 黑</p></div><div class="clock"><div class="big">12:05</div><div class="sm">第 88 手 · 提 2</div></div></div>
+        <div class="railsec"><div class="st">显示</div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span><span class="tg"><span>领地</span><span class="dot"></span></span><span class="tg on"><span>建议</span><span class="dot"></span></span></div></div>
+        <div class="acts">
+          <span class="act disabled"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</span>
+          <span class="act disabled"><svg viewBox="0 0 24 24"><path d="M6 19h12v2H6zM6 3h12v2H6zm6 4a5 5 0 100 10 5 5 0 000-10"/></svg>停一手</span>
+          <span class="act disabled"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>数子</span>
+          <span class="act danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>认输</span>
+        </div>
+      </div>
+    </div>
+    <div class="gprompt jade"><div class="gspin"></div><div class="msg"><b>AI 思考中…</b> 请稍候,轮到你时会点亮落点</div><div class="side">对局进行中</div></div>
+  </div>
+
+  <!-- ============ B. CALIBRATION OVERLAY ============ -->
+  <div class="flowlabel"><span class="n">B</span> 需校准 · 挡屏（用户触发,不自动亮 LED） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="meta">自由对弈 · <b>中国规则</b> · 让 2 子 · 贴 0.5</div>
+      <div class="vis"><span><b></b>摄像头</span><span class="err"><b></b>标定偏移</span><span><b></b>LED</span></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_GAME--></div>
+      <div class="rail">
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>AI · 拟人</h4><p>白 · 已暂停</p></div><div class="clock"><div class="big">08:29</div><div class="sm">读秒 ×3</div></div></div>
+        <div class="pcard"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p>黑 · 已暂停</p></div><div class="clock"><div class="big">12:05</div><div class="sm">第 88 手</div></div></div>
+        <div class="railsec"><div class="st">显示</div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span><span class="tg"><span>领地</span><span class="dot"></span></span><span class="tg on"><span>建议</span><span class="dot"></span></span></div></div>
+        <div class="acts"><span class="act disabled">悔棋</span><span class="act disabled">停一手</span><span class="act disabled">数子</span><span class="act danger">认输</span></div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal">
+        <div class="mi warn"><svg viewBox="0 0 24 24"><path d="M1 21h22L12 2zm12-3h-2v-2h2zm0-4h-2v-4h2z"/></svg></div>
+        <h2>棋盘标定已偏移</h2>
+        <p>检测到摄像头视角变化,落点识别可能不准。<br>请对准棋盘四角重新标定后继续(无需 LED,对齐外框即可)。</p>
+        <div class="mbtns">
+          <div class="mbtn">仍要继续</div>
+          <div class="mbtn jade"><svg viewBox="0 0 24 24"><path d="M12 6v3l4-4-4-4v3a8 8 0 00-8 8c0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 016 12a6 6 0 016-6m6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8a6 6 0 01-6 6v-3l-4 4 4 4v-3a8 8 0 008-8c0-1.57-.46-3.03-1.24-4.26"/></svg>重新标定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ C. SCORING ============ -->
+  <div class="flowlabel"><span class="n">C</span> 终局 · 数子 <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="meta">自由对弈 · <b>中国规则</b> · 贴 0.5</div>
+      <div class="mode">终局数子</div>
+      <div class="vis"><span><b></b>摄像头</span><span><b></b>LED</span></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_SCORE--></div>
+      <div class="rail">
+        <div class="result"><div class="big">黑胜 4.5 子</div><div class="sm">按中国规则数子 · 含贴目 0.5</div></div>
+        <div class="score">
+          <div class="scoreline"><div class="ps pstone b"></div><div><div class="lbl">黑 · fan</div><div class="sub">实地 88 + 提 2</div></div><div class="num">90.5</div></div>
+          <div class="scoreline"><div class="ps pstone w"></div><div><div class="lbl">白 · AI 拟人</div><div class="sub">实地 82 + 提 4 + 贴 0.5</div></div><div class="num">86</div></div>
+        </div>
+        <div class="railsec" style="padding:9px 12px"><div style="font-size:11.5px;color:var(--sub);line-height:1.5">点棋子可标记<b style="color:var(--ice)">死子</b>,数目实时更新。有异议可继续对弈。</div></div>
+        <div class="acts">
+          <span class="act">继续对弈</span>
+          <span class="act primary"><svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>确认终局</span>
+        </div>
+      </div>
+    </div>
+    <div class="gprompt jade"><div class="pl"></div><div class="msg">终局 · <b>黑领地(暗) / 白领地(亮)</b> 已标出,死子以叉标记</div><div class="side"><b></b>可拖动修正死子</div></div>
+  </div>
+
+  <!-- ============ D. RESIGN CONFIRM ============ -->
+  <div class="flowlabel"><span class="n">D</span> 认输 · 确认 <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="meta">自由对弈 · <b>中国规则</b> · 让 2 子 · 贴 0.5</div>
+      <div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span><span><b></b>LED</span></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_GAME--></div>
+      <div class="rail">
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>AI · 拟人</h4><p>6 级 · 白</p></div><div class="clock"><div class="big">08:29</div><div class="sm">读秒 ×3 · 提 4</div></div></div>
+        <div class="pcard turn"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p>轮到你 · 黑</p></div><div class="clock"><div class="big">12:05</div><div class="sm">第 88 手 · 提 2</div></div></div>
+        <div class="railsec"><div class="st">显示</div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span><span class="tg"><span>领地</span><span class="dot"></span></span><span class="tg on"><span>建议</span><span class="dot"></span></span></div></div>
+        <div class="acts"><span class="act">悔棋</span><span class="act">停一手</span><span class="act">数子</span><span class="act danger">认输</span></div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal">
+        <div class="mi danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></div>
+        <h2>确认认输?</h2>
+        <p>本局将判你(黑)负。对局会保存,可在<b style="color:var(--ice)">棋谱</b>里复盘。</p>
+        <div class="mbtns">
+          <div class="mbtn">取消</div>
+          <div class="mbtn danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>确认认输</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="margin-top:8px">这些状态所有对弈模式(人机/人人/跨平台)共用。校准挡屏遵守铁律:LED 不自动亮,重新标定用无 LED 对四角为主,LED 仅手动触发。</div>
+</div>
+<script>
+  function fit(){var s=Math.min(1,(innerWidth-48)/1024);
+    document.querySelectorAll('.screen').forEach(function(e){e.style.transform='scale('+s+')';e.style.transformOrigin='top center';e.style.marginBottom=(600*s-600)+'px';});}
+  addEventListener('resize',fit);fit();
+</script>

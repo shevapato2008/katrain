@@ -1,0 +1,433 @@
+"""Tests for 带灯拍 capture orchestration + endpoint (mock led/camera/geometry).
+
+Real capture (camera and LED on a physical board) is verified on hardware day.
+Here we lock the operator-trusted orchestration: no classifier gate, the sync
+barrier (capture grabbed after the LED's shown_at), the rich manifest (schema,
+frame_kind sequence, pass skipping), per-SGF isolation, atomic/idempotent writes,
+slug/containment, and first-frame freeze.
+"""
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from katrain.core.baipu import build_steps_from_sgf
+from katrain.vision.geometry_lock import GeometryLock
+from katrain.web.core.baipu_capture import run_capture
+
+
+def _geometry():
+    return GeometryLock(
+        corners=np.zeros((4, 2), np.float32),
+        points=np.zeros((19, 19, 2), np.float32),
+        xs=np.linspace(0, 949, 19).astype(np.float32),
+        ys=np.linspace(0, 949, 19).astype(np.float32),
+        M=np.eye(3),
+        Minv=np.eye(3),
+        out_size=950,
+        baseline=np.zeros((19, 19, 3), np.float32),
+        confidence=0.9,
+    )
+
+
+class FakeLed:
+    def __init__(self):
+        self.cleared = 0
+        self.shown = []
+
+    def clear(self, *, strict=False):
+        self.cleared += 1
+        return {"ok": True, "connected": True, "shown_at": None, "errors": []}
+
+    def set_points(self, points, *, strict=False):
+        self.shown.append(points)
+        return {"ok": True, "connected": True, "shown_at": 111.0, "errors": []}
+
+
+class FakeCapture:
+    def __init__(self, out_dir):
+        self.out_dir = Path(out_dir)
+        self.capture_calls = []
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        return np.zeros((4, 4, 3), np.uint8), 1, 222.0
+
+    def capture_to(self, path, after_ts=None, settle_ms=150.0):
+        self.capture_calls.append({"path": path, "after_ts": after_ts})
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_bytes(b"jpgdata")
+        return path, 42, 223.0
+
+
+class VersionedCapture(FakeCapture):
+    def __init__(self, out_dir):
+        super().__init__(out_dir)
+        self.version = 0
+
+    def capture_to(self, path, after_ts=None, settle_ms=150.0):
+        self.version += 1
+        self.capture_calls.append({"path": path, "after_ts": after_ts})
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_bytes(f"jpg-{self.version}".encode("ascii"))
+        return path, self.version, 223.0
+
+
+def _capture(out_dir, steps, board_size, k, led, cap, **kw):
+    return run_capture(
+        led=led,
+        capture=cap,
+        geometry=_geometry(),
+        steps=steps,
+        board_size=board_size,
+        out_dir=out_dir,
+        game_id=kw.pop("game_id", "g1"),
+        move_index=k,
+        sgf="(;SZ[19];B[pd];W[dp])",
+        **kw,
+    )
+
+
+class TestCaptureSequence:
+    def test_full_sequence_manifest(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+
+        # initial_led (k=-1): board empty
+        r0 = _capture(str(tmp_path), steps, bs, -1, led, cap)
+        # after_move 0
+        r1 = _capture(str(tmp_path), steps, bs, 0, led, cap)
+        # final (k=1): no next
+        r2 = _capture(str(tmp_path), steps, bs, 1, led, cap)
+
+        assert r0["frame_kind"] == "initial_led" and r0["next_guided_move_index"] == 0
+        assert r1["frame_kind"] == "after_move" and r1["next_guided_move_index"] == 1
+        assert r2["frame_kind"] == "final_no_led" and r2["next_guided_move_index"] is None
+
+        manifest = json.loads((tmp_path / "g1" / "manifest.json").read_text())
+        assert manifest["total_moves"] == 2
+        assert [f["file"] for f in manifest["frames"]] == ["frame_000.jpg", "frame_001.jpg", "frame_002.jpg"]
+        assert manifest["frames"][0]["applied_move_index"] == -1
+        assert manifest["frames"][0]["led_point"] == {"row": 3, "col": 15, "color": "black"}
+        assert manifest["frames"][2]["led_point"] is None
+        assert {frame["qa_status"] for frame in manifest["frames"]} == {"operator_confirmed"}
+        # all frames + first-frame freeze written
+        assert (tmp_path / "g1" / "frame_002.jpg").exists()
+        assert (tmp_path / "g1" / "geometry.npz").exists()
+        assert (tmp_path / "g1" / "game.sgf").exists()
+
+    def test_sync_barrier_uses_shown_at(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        _capture(str(tmp_path), steps, bs, -1, led, cap)
+        # the lit-frame capture must wait for the LED's shown_at (111.0), not None
+        assert cap.capture_calls[-1]["after_ts"] == 111.0
+
+    def test_pass_skipped_in_next(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        r = run_capture(
+            led=led,
+            capture=cap,
+            geometry=_geometry(),
+            steps=steps,
+            board_size=bs,
+            out_dir=str(tmp_path),
+            game_id="g2",
+            move_index=0,
+            sgf="x",
+        )
+        assert r["next_guided_move_index"] == 2  # skipped the pass at index 1
+
+
+class TestOperatorTrustedCapture:
+    def test_operator_confirmation_skips_classifier(self, tmp_path, monkeypatch):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        monkeypatch.setattr(
+            "katrain.vision.board_qa.classify_canonical",
+            lambda *_args, **_kwargs: pytest.fail("classifier must not run during collection"),
+        )
+
+        result = _capture(str(tmp_path), steps, bs, 0, led, cap)
+
+        assert result["qa_status"] == "operator_confirmed"
+
+
+class TestRobustness:
+    def test_idempotent_on_duplicate_move(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        _capture(str(tmp_path), steps, bs, -1, led, cap)
+        n_calls = len(cap.capture_calls)
+        r2 = _capture(str(tmp_path), steps, bs, -1, led, cap)  # same move_index again
+        assert r2["idempotent"] is True
+        assert len(cap.capture_calls) == n_calls  # no new capture
+
+    def test_missing_frame_is_recaptured_in_place(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), FakeCapture(tmp_path)
+        _capture(str(tmp_path), steps, bs, -1, led, cap)
+        first = _capture(str(tmp_path), steps, bs, 0, led, cap)
+        missing_path = Path(first["path"])
+        missing_path.unlink()
+        n_calls = len(cap.capture_calls)
+
+        repaired = _capture(str(tmp_path), steps, bs, 0, led, cap)
+
+        assert repaired["idempotent"] is False
+        assert repaired["repaired"] is True
+        assert Path(repaired["path"]) == missing_path
+        assert missing_path.read_bytes() == b"jpgdata"
+        assert len(cap.capture_calls) == n_calls + 1
+        manifest = json.loads((tmp_path / "g1" / "manifest.json").read_text())
+        assert len(manifest["frames"]) == 2
+        assert manifest["frames"][1]["file"] == "frame_001.jpg"
+        assert manifest["frames"][1]["applied_move_index"] == 0
+
+    def test_overwrite_existing_restarts_same_directory_and_prunes_stale_tail(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        led, cap = FakeLed(), VersionedCapture(tmp_path)
+        _capture(str(tmp_path), steps, bs, -1, led, cap)
+        _capture(str(tmp_path), steps, bs, 0, led, cap)
+        _capture(str(tmp_path), steps, bs, 1, led, cap)
+
+        restarted = _capture(str(tmp_path), steps, bs, -1, led, cap, overwrite_existing=True)
+
+        assert restarted["idempotent"] is False
+        assert restarted["overwritten"] is True
+        assert (tmp_path / "g1" / "frame_000.jpg").read_bytes() == b"jpg-4"
+        assert not (tmp_path / "g1" / "frame_001.jpg").exists()
+        assert not (tmp_path / "g1" / "frame_002.jpg").exists()
+        manifest = json.loads((tmp_path / "g1" / "manifest.json").read_text())
+        assert [f["file"] for f in manifest["frames"]] == ["frame_000.jpg"]
+
+    def test_game_ids_use_independent_directories(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+
+        for game_id in ("kifu_24171", "kifu_24172"):
+            _capture(str(tmp_path), steps, bs, -1, FakeLed(), FakeCapture(tmp_path), game_id=game_id)
+
+        for game_id in ("kifu_24171", "kifu_24172"):
+            game_dir = tmp_path / game_id
+            assert (game_dir / "frame_000.jpg").exists()
+            manifest = json.loads((game_dir / "manifest.json").read_text())
+            assert manifest["game_id"] == game_id
+            assert [frame["file"] for frame in manifest["frames"]] == ["frame_000.jpg"]
+
+    def test_invalid_game_id_rejected(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        with pytest.raises(ValueError):
+            _capture(str(tmp_path), steps, bs, -1, FakeLed(), FakeCapture(tmp_path), game_id="../escape")
+
+
+# --- P11: every-move fiducial recalibration -------------------------------- #
+
+import cv2  # noqa: E402
+
+
+def _ident_geometry():
+    """Identity geometry (camera == canonical): points[r][c] = (xs[c], ys[r])."""
+    xs = np.linspace(0, 949, 19).astype(np.float32)
+    ys = xs.copy()
+    pts = np.zeros((19, 19, 2), np.float32)
+    for r in range(19):
+        for c in range(19):
+            pts[r][c] = (xs[c], ys[r])
+    return GeometryLock(
+        corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=ys,
+        M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+    )
+
+
+class FiducialLed:
+    def __init__(self):
+        self.calls = []
+
+    def clear(self, *, strict=False):
+        self.calls.append(("clear", None))
+        return {"ok": True, "connected": True, "shown_at": None, "errors": []}
+
+    def set_rgb_points(self, points, *, strict=False):
+        self.calls.append(("rgb", [(p["row"], p["col"]) for p in points]))
+        return {"ok": True, "connected": True, "shown_at": 100.0, "errors": []}
+
+    def set_points(self, points, *, strict=False):
+        self.calls.append(("guide", [(p["row"], p["col"]) for p in points]))
+        return {"ok": True, "connected": True, "shown_at": 111.0, "errors": []}
+
+
+class FiducialCapture:
+    """grab_fresh alternates dark/lit (lit has green blobs at canonical corners+star);
+    capture_to writes a real black training frame so warp artifacts can be read back."""
+
+    def __init__(self, geometry):
+        self.points = geometry.points
+        self.out = int(geometry.out_size)
+        self.n = 0
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        self.n += 1
+        img = np.zeros((self.out, self.out, 3), np.uint8)
+        if self.n % 2 == 0:  # even call = lit frame
+            for r in (0, 18):
+                for c in (0, 18):
+                    cv2.circle(img, (int(self.points[r][c][0]), int(self.points[r][c][1])), 6, (0, 200, 0), -1)
+            for r in (3, 9, 15):
+                for c in (3, 9, 15):
+                    cv2.circle(img, (int(self.points[r][c][0]), int(self.points[r][c][1])), 6, (0, 200, 0), -1)
+        return img, self.n, float(self.n)
+
+    def capture_to(self, path, after_ts=None, settle_ms=150.0):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(path, np.zeros((self.out, self.out, 3), np.uint8))
+        return path, 99, 223.0
+
+
+def _capture_fid(tmp_path, steps, bs, k, led, cap, geom, **kw):
+    return run_capture(
+        led=led, capture=cap, geometry=geom, steps=steps, board_size=bs,
+        out_dir=str(tmp_path), game_id=kw.pop("game_id", "gf"), move_index=k,
+        sgf="(;SZ[19];B[pd];W[dp])", fiducial_mode=kw.pop("fiducial_mode", "every-move"), **kw,
+    )
+
+
+class TestFiducialEveryMove:
+    def test_corrected_status_isolated_artifacts_clean_training_frame(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom)
+
+        assert res["geometry_correction"]["status"] == "corrected"
+        gd = tmp_path / "gf"
+        man = json.loads((gd / "manifest.json").read_text())
+        fr = man["frames"][-1]
+        assert fr["geometry_correction"]["source"] == "fiducial"
+        assert fr["geometry_correction"]["inlier_count"] >= 6
+        assert (gd / fr["artifacts"]["fiducial"]).is_file()
+        assert (gd / fr["artifacts"]["warped"]).is_file()
+        assert (gd / fr["artifacts"]["grid_overlay"]).is_file()
+        # set_rgb_points was issued, guidance point (3,15) excluded from fiducials
+        rgb_calls = [c[1] for c in led.calls if c[0] == "rgb"]
+        assert rgb_calls and (3, 15) not in rgb_calls[0]
+        # training frame is the clean black capture_to image (no fiducial green)
+        train = cv2.imread(str(gd / fr["file"]))
+        assert int(train[..., 1].max()) < 20
+
+    def test_off_mode_is_p10_no_artifacts(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="goff", fiducial_mode="off")
+        gd = tmp_path / "goff"
+        man = json.loads((gd / "manifest.json").read_text())
+        assert "geometry_correction" not in man["frames"][-1]
+        assert "geometry_correction" not in res
+        assert not (gd / "fiducial").exists() and not (gd / "warped").exists()
+
+    def test_stale_falls_back_to_last_good_not_M0(self, tmp_path):
+        # First move corrects; then make detection fail -> must reuse last_good (stale), not frozen.
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gs")
+
+        class DarkOnly(FiducialCapture):
+            def grab_fresh(self, after_ts=None, settle_ms=150.0):
+                return np.zeros((self.out, self.out, 3), np.uint8), 1, 1.0  # never lit -> no detections
+
+        res = _capture_fid(tmp_path, steps, bs, 0, led, DarkOnly(geom), geom, game_id="gs")
+        assert res["geometry_correction"]["status"] == "stale"
+        assert res["geometry_correction"]["source"] == "last_good"
+
+    def test_overwrite_cleans_artifacts_no_orphans(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp];B[pp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gov")
+        _capture_fid(tmp_path, steps, bs, 0, led, cap, geom, game_id="gov")  # 2 frames + artifacts
+        gd = tmp_path / "gov"
+        assert (gd / "fiducial" / "frame_001.jpg").is_file()
+
+        _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gov", overwrite_existing=True)
+        man = json.loads((gd / "manifest.json").read_text())
+        # tail (frame_001) pruned, including its artifacts:
+        assert [f["file"] for f in man["frames"]] == ["frame_000.jpg"]
+        assert not (gd / "fiducial" / "frame_001.jpg").exists()
+        assert not (gd / "warped" / "frame_001.jpg").exists()
+        assert not (gd / "grid_overlay" / "frame_001.jpg").exists()
+        # every referenced artifact still exists; no orphan files beyond referenced:
+        referenced = {p for fr in man["frames"] for p in fr.get("artifacts", {}).values()}
+        for fr in man["frames"]:
+            for p in fr.get("artifacts", {}).values():
+                assert (gd / p).is_file()
+        for sub in ("fiducial", "warped", "grid_overlay"):
+            for f in (gd / sub).glob("*.jpg"):
+                assert str(f.relative_to(gd)) in referenced
+
+
+def test_resolve_fiducial_mode_precedence():
+    from katrain.web.core.baipu_capture import resolve_fiducial_mode
+
+    assert resolve_fiducial_mode("every-move", "off") == "every-move"  # CLI wins
+    assert resolve_fiducial_mode(None, "every-move") == "every-move"  # env
+    assert resolve_fiducial_mode(None, None) == "auto"  # default
+    assert resolve_fiducial_mode("bogus", None) == "auto"  # invalid ignored
+    assert resolve_fiducial_mode(None, "off") == "off"
+
+
+class TestFiducialAuto:
+    """P12 'auto' mode: no-LED outer-corner per-move geometry. Guidance LED unchanged."""
+
+    def test_auto_mode_lights_no_geometry_led(self, tmp_path):
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gauto", fiducial_mode="auto")
+        # geometry path NEVER lights an LED (no set_rgb_points); guidance LED still used.
+        assert not any(c[0] == "rgb" for c in led.calls)
+        assert any(c[0] == "guide" for c in led.calls)
+        gc = res["geometry_correction"]
+        assert gc["source"] in ("outer_corner", "frozen")  # blank synth → OuterCorner fails → frozen
+        man = json.loads((tmp_path / "gauto" / "manifest.json").read_text())
+        assert man["frames"][-1]["geometry_correction"]["source"] == gc["source"]
+
+    def test_auto_corrected_path_writes_outer_corner_source(self, tmp_path, monkeypatch):
+        import katrain.vision.calibration_registry as reg
+        from katrain.vision.calibration_strategy import CalibrationOutcome
+
+        M = np.eye(3)
+
+        class _OkSel:
+            def calibrate(self, scenario, ctx):
+                return CalibrationOutcome(ok=True, M=M, Minv=M, confidence=0.9, strategy="outer_corner")
+
+        monkeypatch.setattr(reg, "build_default_selector", lambda: _OkSel())
+        data = build_steps_from_sgf("(;SZ[19];B[pd];W[dp])")
+        steps, bs = data["steps"], data["board_size"]
+        geom = _ident_geometry()
+        led, cap = FiducialLed(), FiducialCapture(geom)
+        res = _capture_fid(tmp_path, steps, bs, -1, led, cap, geom, game_id="gac", fiducial_mode="auto")
+        gc = res["geometry_correction"]
+        assert gc["status"] == "corrected" and gc["source"] == "outer_corner"
+        assert not any(c[0] == "rgb" for c in led.calls)
+        gd = tmp_path / "gac"
+        fr = json.loads((gd / "manifest.json").read_text())["frames"][-1]
+        assert (gd / fr["artifacts"]["warped"]).is_file()
+        assert "fiducial" not in fr["artifacts"]  # no fiducial image in auto mode

@@ -18,9 +18,12 @@ describe('TeachingSettingsDialog', () => {
   const defaultTeachingSettings = {
     showDots: [true, true, true, true, true, true],
     saveFeedback: [true, true, true, true, false, false],
+    saveMarks: [true, true, true, true, true, true],
     evalThresholds: [12, 6, 3, 1.5, 0.5, 0],
     showAI: true,
+    lockAI: false,
     topMovesShow: 'top_move_delta_score',
+    maxTopMovesOnBoard: 3,
     visits: {
       fast: 25,
       low: 100,
@@ -39,7 +42,7 @@ describe('TeachingSettingsDialog', () => {
   });
 
   it('renders correctly when open', () => {
-    render(<TeachingSettingsDialog open={true} onClose={vi.fn()} />);
+    render(<TeachingSettingsDialog open={true} sessionId={null} gameState={null} onClose={vi.fn()} />);
     
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/teacher settings/i)).toBeInTheDocument();
@@ -47,7 +50,7 @@ describe('TeachingSettingsDialog', () => {
   });
 
   it('updates showAI toggle on click', () => {
-    render(<TeachingSettingsDialog open={true} onClose={vi.fn()} />);
+    render(<TeachingSettingsDialog open={true} sessionId={null} gameState={null} onClose={vi.fn()} />);
     
     const checkbox = screen.getByLabelText(/show ai dots/i);
     fireEvent.click(checkbox);
@@ -56,7 +59,7 @@ describe('TeachingSettingsDialog', () => {
   });
 
   it('updates showDots checkbox on click', () => {
-    render(<TeachingSettingsDialog open={true} onClose={vi.fn()} />);
+    render(<TeachingSettingsDialog open={true} sessionId={null} gameState={null} onClose={vi.fn()} />);
     
     // There are multiple show dots checkboxes, let's find one by index
     const checkboxes = screen.getAllByLabelText(/show dots/i);

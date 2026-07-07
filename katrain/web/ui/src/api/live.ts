@@ -13,7 +13,16 @@ import type {
 } from '../types/live';
 import { i18n } from '../i18n';
 
-const API_BASE = '/api/v1/live';
+// kiosk/board builds talk to the board-mode read-only proxy; full build hits the live service.
+const API_BASE = __KIOSK_2D_ONLY__ ? '/api/v1/board/live' : '/api/v1/live';
+
+// Board/kiosk mode is strictly read-only (PRD D4): make write paths fail by construction
+// rather than silently hitting an unproxied board route.
+function assertWritable(): void {
+  if (__KIOSK_2D_ONLY__) {
+    throw new Error('Live write operations are disabled in board/kiosk mode');
+  }
+}
 
 async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
@@ -168,6 +177,7 @@ export const LiveAPI = {
    * Force refresh match data from sources
    */
   refresh: (): Promise<{ status: string; stats: LiveStats }> => {
+    assertWritable();
     return apiPost('/refresh');
   },
 
@@ -198,6 +208,7 @@ export const LiveAPI = {
    * Create a new comment (requires authentication)
    */
   createComment: (matchId: string, content: string, token: string): Promise<Comment> => {
+    assertWritable();
     return apiPostAuth(`/matches/${matchId}/comments`, token, { content });
   },
 
@@ -205,6 +216,7 @@ export const LiveAPI = {
    * Delete a comment (requires authentication, only owner can delete)
    */
   deleteComment: (commentId: number, token: string): Promise<{ status: string; message: string }> => {
+    assertWritable();
     return apiDeleteAuth(`/comments/${commentId}`, token);
   },
 };

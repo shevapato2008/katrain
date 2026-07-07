@@ -17,12 +17,7 @@ class LiveCommentRepo:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_comments(
-        self,
-        match_id: str,
-        limit: int = 50,
-        offset: int = 0
-    ) -> list[LiveCommentDB]:
+    def get_comments(self, match_id: str, limit: int = 50, offset: int = 0) -> list[LiveCommentDB]:
         """Get comments for a match, ordered by creation time (newest last).
 
         Args:
@@ -33,30 +28,24 @@ class LiveCommentRepo:
         Returns:
             List of comment records
         """
-        return self.db.query(LiveCommentDB).filter(
-            and_(
-                LiveCommentDB.match_id == match_id,
-                LiveCommentDB.is_deleted == False
-            )
-        ).order_by(
-            LiveCommentDB.created_at.asc()
-        ).offset(offset).limit(limit).all()
+        return (
+            self.db.query(LiveCommentDB)
+            .filter(and_(LiveCommentDB.match_id == match_id, LiveCommentDB.is_deleted == False))
+            .order_by(LiveCommentDB.created_at.asc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     def get_comment_count(self, match_id: str) -> int:
         """Get total number of non-deleted comments for a match."""
-        return self.db.query(LiveCommentDB).filter(
-            and_(
-                LiveCommentDB.match_id == match_id,
-                LiveCommentDB.is_deleted == False
-            )
-        ).count()
+        return (
+            self.db.query(LiveCommentDB)
+            .filter(and_(LiveCommentDB.match_id == match_id, LiveCommentDB.is_deleted == False))
+            .count()
+        )
 
-    def create_comment(
-        self,
-        match_id: str,
-        user_id: int,
-        content: str
-    ) -> LiveCommentDB:
+    def create_comment(self, match_id: str, user_id: int, content: str) -> LiveCommentDB:
         """Create a new comment.
 
         Args:
@@ -78,11 +67,7 @@ class LiveCommentRepo:
         logger.info(f"Created comment {comment.id} on match {match_id} by user {user_id}")
         return comment
 
-    def delete_comment(
-        self,
-        comment_id: int,
-        user_id: int
-    ) -> bool:
+    def delete_comment(self, comment_id: int, user_id: int) -> bool:
         """Soft delete a comment (only by the owner).
 
         Args:
@@ -92,9 +77,7 @@ class LiveCommentRepo:
         Returns:
             True if deleted, False if not found or not authorized
         """
-        comment = self.db.query(LiveCommentDB).filter(
-            LiveCommentDB.id == comment_id
-        ).first()
+        comment = self.db.query(LiveCommentDB).filter(LiveCommentDB.id == comment_id).first()
 
         if not comment:
             logger.warning(f"Comment {comment_id} not found for deletion")
@@ -111,16 +94,9 @@ class LiveCommentRepo:
 
     def get_comment_by_id(self, comment_id: int) -> Optional[LiveCommentDB]:
         """Get a comment by ID."""
-        return self.db.query(LiveCommentDB).filter(
-            LiveCommentDB.id == comment_id
-        ).first()
+        return self.db.query(LiveCommentDB).filter(LiveCommentDB.id == comment_id).first()
 
-    def get_recent_comments(
-        self,
-        match_id: str,
-        since_id: int = 0,
-        limit: int = 20
-    ) -> list[LiveCommentDB]:
+    def get_recent_comments(self, match_id: str, since_id: int = 0, limit: int = 20) -> list[LiveCommentDB]:
         """Get comments newer than a given ID (for polling).
 
         Args:
@@ -131,12 +107,12 @@ class LiveCommentRepo:
         Returns:
             List of new comment records
         """
-        return self.db.query(LiveCommentDB).filter(
-            and_(
-                LiveCommentDB.match_id == match_id,
-                LiveCommentDB.id > since_id,
-                LiveCommentDB.is_deleted == False
+        return (
+            self.db.query(LiveCommentDB)
+            .filter(
+                and_(LiveCommentDB.match_id == match_id, LiveCommentDB.id > since_id, LiveCommentDB.is_deleted == False)
             )
-        ).order_by(
-            LiveCommentDB.created_at.asc()
-        ).limit(limit).all()
+            .order_by(LiveCommentDB.created_at.asc())
+            .limit(limit)
+            .all()
+        )

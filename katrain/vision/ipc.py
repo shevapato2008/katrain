@@ -22,6 +22,10 @@ class CommandType(Enum):
     BIND = "bind"
     UNBIND = "unbind"
     SET_VIEWER_ACTIVE = "set_viewer_active"
+    SET_GEOMETRY = "set_geometry"
+    PAUSE_DETECTION = "pause_detection"
+    RESUME_DETECTION = "resume_detection"
+    SET_LIT_POINTS = "set_lit_points"
     SHUTDOWN = "shutdown"
 
 
@@ -42,6 +46,10 @@ class WorkerStatus:
     sync_state: str = "unbound"  # SyncState value
     mean_confidence: float = 0.0
     detected_board: list[list[int]] | None = None  # 19x19 grid (0=empty, 1=black, 2=white)
+    camera_ready: bool = False
+    geometry_ready: bool = False
+    model_ready: bool = False
+    recognition_ready: bool = False
 
 
 @dataclass

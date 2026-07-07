@@ -17,7 +17,9 @@ export type SyncEventType =
   | 'capture_pending'
   | 'captures_cleared'
   | 'illegal_change'
-  | 'board_lost';
+  | 'board_lost'
+  | 'move_pending'
+  | 'synced';
 
 export interface VisionSyncEvent {
   type: SyncEventType;

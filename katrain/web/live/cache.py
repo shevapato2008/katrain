@@ -156,10 +156,7 @@ class LiveCache:
 
         async with self._lock:
             # Remove expired finished matches
-            expired = [
-                mid for mid, match in self._finished_matches.items()
-                if match.last_updated < cutoff
-            ]
+            expired = [mid for mid, match in self._finished_matches.items() if match.last_updated < cutoff]
             for mid in expired:
                 del self._finished_matches[mid]
                 removed += 1
@@ -171,7 +168,7 @@ class LiveCache:
                     key=lambda mid: self._finished_matches[mid].date,
                     reverse=True,
                 )
-                for mid in sorted_ids[self.max_finished_matches:]:
+                for mid in sorted_ids[self.max_finished_matches :]:
                     del self._finished_matches[mid]
                     removed += 1
 
@@ -182,7 +179,7 @@ class LiveCache:
                     key=lambda mid: self._live_matches[mid].move_count,
                     reverse=True,
                 )
-                for mid in sorted_ids[self.max_live_matches:]:
+                for mid in sorted_ids[self.max_live_matches :]:
                     del self._live_matches[mid]
                     removed += 1
 
@@ -215,9 +212,7 @@ class LiveCache:
             self._last_list_update = None
             self._last_cleanup = None
 
-    async def store_analysis(
-        self, match_id: str, move_number: int, analysis: MoveAnalysis
-    ) -> None:
+    async def store_analysis(self, match_id: str, move_number: int, analysis: MoveAnalysis) -> None:
         """Store analysis data for a specific move in a match.
 
         Args:
@@ -235,9 +230,7 @@ class LiveCache:
                 match.analysis[move_number] = analysis
                 logger.debug(f"Stored analysis for {match_id} move {move_number}")
 
-    async def get_analysis(
-        self, match_id: str, move_number: Optional[int] = None
-    ) -> dict:
+    async def get_analysis(self, match_id: str, move_number: Optional[int] = None) -> dict:
         """Get analysis data for a match.
 
         Args:

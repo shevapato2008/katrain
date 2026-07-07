@@ -7,6 +7,7 @@ export interface VisionStatus {
   poseLocked: boolean;
   syncState: string;
   boundSessionId: string | null;
+  ledConnected: boolean | null;
 }
 
 interface VisionContextType {
@@ -21,6 +22,7 @@ const DEFAULT_STATUS: VisionStatus = {
   poseLocked: false,
   syncState: 'idle',
   boundSessionId: null,
+  ledConnected: null,
 };
 
 const VisionContext = createContext<VisionContextType | undefined>(undefined);
@@ -33,6 +35,7 @@ const mapResponse = (r: VisionStatusResponse): VisionStatus => ({
   poseLocked: r.pose_locked,
   syncState: r.sync_state,
   boundSessionId: r.bound_session_id,
+  ledConnected: r.led_connected ?? null,
 });
 
 export const VisionProvider = ({ children }: { children: ReactNode }) => {
@@ -50,6 +53,7 @@ export const VisionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial network poll is asynchronous
     refreshStatus();
     const interval = setInterval(refreshStatus, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -62,8 +66,12 @@ export const VisionProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useVision = () => {
   const ctx = useContext(VisionContext);
   if (!ctx) throw new Error('useVision must be used within a VisionProvider');
   return ctx;
 };
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useOptionalVision = () => useContext(VisionContext);

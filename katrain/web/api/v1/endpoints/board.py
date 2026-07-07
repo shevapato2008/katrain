@@ -8,7 +8,9 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -50,9 +52,7 @@ async def device_heartbeat(
     now = datetime.utcnow()
 
     # Upsert device heartbeat record
-    record = db.query(DeviceHeartbeatDB).filter(
-        DeviceHeartbeatDB.device_id == body.device_id
-    ).first()
+    record = db.query(DeviceHeartbeatDB).filter(DeviceHeartbeatDB.device_id == body.device_id).first()
 
     if record:
         record.last_seen = now
@@ -87,9 +87,7 @@ async def list_devices(
     db: Session = Depends(get_db),
 ):
     """List all registered board devices (admin monitoring)."""
-    devices = db.query(DeviceHeartbeatDB).order_by(
-        DeviceHeartbeatDB.last_seen.desc()
-    ).all()
+    devices = db.query(DeviceHeartbeatDB).order_by(DeviceHeartbeatDB.last_seen.desc()).all()
 
     return [
         {
@@ -118,6 +116,22 @@ def _get_remote_client(request: Request):
     return client
 
 
+async def _proxy(call, what: str):
+    """Forward a read-only upstream call.
+
+    Upstream 4xx/5xx (e.g. 404 match/move not found) pass through verbatim;
+    connection/timeout errors map to 502 so the kiosk can distinguish
+    "not found" from "upstream unreachable".
+    """
+    try:
+        return await call()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.warning(f"{what} proxy failed: {e}")
+        raise HTTPException(status_code=502, detail="Remote server unavailable")
+
+
 @router.get("/live/matches")
 async def proxy_live_matches(
     request: Request,
@@ -127,20 +141,115 @@ async def proxy_live_matches(
     limit: int = Query(50, ge=1, le=200),
 ):
     """Proxy live matches from remote server (board mode)."""
-    client = _get_remote_client(request)
-    try:
-        return await client.get_live_matches(status=status, source=source, lang=lang, limit=limit)
-    except Exception as e:
-        logger.warning(f"Live proxy failed: {e}")
-        raise HTTPException(status_code=502, detail="Remote server unavailable")
+    c = _get_remote_client(request)
+    return await _proxy(
+        lambda: c.get_live_matches(status=status, source=source, lang=lang, limit=limit),
+        "Live matches",
+    )
+
+
+# NOTE: /live/matches/featured MUST be declared before /live/matches/{match_id},
+# otherwise FastAPI matches "featured" as a match_id.
+@router.get("/live/matches/featured")
+async def proxy_live_featured(request: Request, lang: Optional[str] = Query(None)):
+    """Proxy featured match from remote server (board mode)."""
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_live_featured(lang=lang), "Live featured")
 
 
 @router.get("/live/matches/{match_id}")
 async def proxy_live_match(request: Request, match_id: str):
     """Proxy single live match from remote server (board mode)."""
-    client = _get_remote_client(request)
-    try:
-        return await client.get_live_match(match_id)
-    except Exception as e:
-        logger.warning(f"Live match proxy failed: {e}")
-        raise HTTPException(status_code=502, detail="Remote server unavailable")
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_live_match(match_id), "Live match")
+
+
+@router.get("/live/matches/{match_id}/analysis")
+async def proxy_live_analysis(request: Request, match_id: str, move_number: Optional[int] = Query(None)):
+    """Proxy KataGo analysis for a match (board mode)."""
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_live_match_analysis(match_id, move_number=move_number), "Live analysis")
+
+
+@router.get("/live/matches/{match_id}/analysis/preload")
+async def proxy_live_preload(request: Request, match_id: str):
+    """Proxy analysis preload for a match (board mode)."""
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.preload_live_analysis(match_id), "Live preload")
+
+
+@router.get("/live/upcoming")
+async def proxy_live_upcoming(
+    request: Request,
+    limit: int = Query(20, ge=1, le=100),
+    lang: Optional[str] = Query(None),
+):
+    """Proxy upcoming matches (board mode)."""
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_live_upcoming(limit=limit, lang=lang), "Live upcoming")
+
+
+@router.get("/live/stats")
+async def proxy_live_stats(request: Request):
+    """Proxy live service stats (board mode)."""
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_live_stats(), "Live stats")
+
+
+@router.get("/live/translations")
+async def proxy_live_translations(request: Request, lang: str = Query("en")):
+    """Proxy live translations table (board mode)."""
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_live_translations(lang), "Live translations")
+
+
+# ── Tutorial Proxy (board mode only) ──
+@router.get("/tutorials/categories")
+async def proxy_tutorial_categories(request: Request):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_categories(), "Tutorial categories")
+
+
+@router.get("/tutorials/categories/{category}/books")
+async def proxy_tutorial_books(request: Request, category: str):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_books(category), "Tutorial books")
+
+
+@router.get("/tutorials/books/{book_id}")
+async def proxy_tutorial_book(request: Request, book_id: int):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_book(book_id), "Tutorial book")
+
+
+@router.get("/tutorials/books/{book_id}/chapters")
+async def proxy_tutorial_chapters(request: Request, book_id: int):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_chapters(book_id), "Tutorial chapters")
+
+
+@router.get("/tutorials/chapters/{chapter_id}/sections")
+async def proxy_tutorial_sections(request: Request, chapter_id: int):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_sections(chapter_id), "Tutorial sections")
+
+
+@router.get("/tutorials/sections/{section_id}")
+async def proxy_tutorial_section(request: Request, section_id: int):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_section(section_id), "Tutorial section")
+
+
+@router.get("/tutorials/figures/{figure_id}")
+async def proxy_tutorial_figure(request: Request, figure_id: int):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_tutorial_figure(figure_id), "Tutorial figure")
+
+
+# Media: redirect to the remote asset gateway (which itself 302s to the public
+# media domain). Bytes never traverse the board katrain; the browser follows the
+# redirect chain and streams from media.<domain>.
+@router.get("/tutorials/assets/{asset_path:path}")
+async def proxy_tutorial_asset(request: Request, asset_path: str):
+    c = _get_remote_client(request)
+    return RedirectResponse(f"{c.base_url}/api/v1/tutorials/assets/{asset_path}", status_code=302)

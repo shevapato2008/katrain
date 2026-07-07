@@ -11,15 +11,34 @@ import {
 } from '@mui/material';
 import { Warning as WarningIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
 import CaptureGuide from './CaptureGuide';
+import BoardMismatchDialog from '../physical/BoardMismatchDialog';
+import AmbiguousMoveCard from '../physical/AmbiguousMoveCard';
+import { API } from '../../../api';
+import { useTranslation } from '../../../hooks/useTranslation';
 import type { VisionSyncEvent, SyncEventType } from '../../hooks/useVisionSync';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+type Pos = [number, number, number]; // [row, col, color]
+
+interface MismatchState {
+  positions: Pos[];
+  missing: Pos[];
+}
+
+interface AmbiguousState {
+  row: number;
+  col: number;
+}
+
 interface VisionSyncOverlayProps {
   syncEvents: VisionSyncEvent[];
   onDismiss?: () => void;
+  sessionId: string | null;
+  boardSize: number;
+  playerToMove: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,18 +67,15 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
     severity: 'success',
     icon: <CheckIcon />,
   },
-  ambiguous_stone: {
-    message: '无法确定落子位置，请调整棋子',
-    severity: 'warning',
-    icon: <WarningIcon />,
-  },
 };
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove }: VisionSyncOverlayProps) => {
+  const { t } = useTranslation();
+
   // -- Toast state ----------------------------------------------------------
   const [toastOpen, setToastOpen] = useState(false);
   const [toastConfig, setToastConfig] = useState<ToastConfig | null>(null);
@@ -69,8 +85,11 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss }: VisionSyncOverlayProps) =>
     Array<{ row: number; col: number; color: number }> | null
   >(null);
 
-  // -- Modal: illegal_change ------------------------------------------------
-  const [illegalChangeOpen, setIllegalChangeOpen] = useState(false);
+  // -- Dialog: illegal_change (board mismatch diff) --------------------------
+  const [mismatch, setMismatch] = useState<MismatchState | null>(null);
+
+  // -- Card: ambiguous_stone --------------------------------------------------
+  const [ambiguous, setAmbiguous] = useState<AmbiguousState | null>(null);
 
   // -- Modal: board_lost (>10s persistent) ----------------------------------
   const [boardLostOpen, setBoardLostOpen] = useState(false);
@@ -89,17 +108,36 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss }: VisionSyncOverlayProps) =>
   // -- Close helpers --------------------------------------------------------
   const closeToast = useCallback(() => setToastOpen(false), []);
 
-  const handleIllegalRestore = useCallback(() => {
-    setIllegalChangeOpen(false);
-    onDismiss?.();
-  }, [onDismiss]);
-
-  const handleIllegalIgnore = useCallback(() => {
-    setIllegalChangeOpen(false);
-  }, []);
-
   const handleCaptureDismiss = useCallback(() => {
     setCapturePositions(null);
+  }, []);
+
+  // -- Board mismatch dialog callbacks ---------------------------------------
+  const handleAdoptObserved = useCallback((x: number, y: number) => {
+    if (sessionId) API.playMove(sessionId, { x, y }).catch(() => undefined);
+    setMismatch(null);
+  }, [sessionId]);
+
+  const handleMismatchRestored = useCallback(() => {
+    API.visionResetSync().catch(() => undefined);
+    setMismatch(null);
+  }, []);
+
+  const handleMismatchDismiss = useCallback(() => {
+    setMismatch(null);
+  }, []);
+
+  // -- Ambiguous move card callbacks -----------------------------------------
+  const handleAmbiguousConfirm = useCallback((x: number, y: number) => {
+    if (sessionId) API.playMove(sessionId, { x, y }).catch(() => undefined);
+    setAmbiguous(null);
+  }, [sessionId]);
+
+  const handleAmbiguousIgnore = useCallback(() => {
+    // Ignore = accept the current physical board as the baseline, preventing
+    // a lingering pending state.
+    API.visionResetSync().catch(() => undefined);
+    setAmbiguous(null);
   }, []);
 
   // -- Process new events ---------------------------------------------------
@@ -138,9 +176,22 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss }: VisionSyncOverlayProps) =>
         setCapturePositions(null);
       }
 
-      // --- Illegal change (blocking modal) ---
+      // --- Illegal change (board mismatch diff dialog) ---
       if (eventType === 'illegal_change') {
-        setIllegalChangeOpen(true);
+        const positions = (event.data.positions as Pos[] | undefined) ?? [];
+        const missing = (event.data.missing as Pos[] | undefined) ?? [];
+        setMismatch({ positions, missing });
+      }
+
+      // --- Board restored to a synced state (auto-dismiss mismatch) ---
+      if (eventType === 'synced') {
+        setMismatch(null);
+      }
+
+      // --- Ambiguous stone (confirmation card) ---
+      if (eventType === 'ambiguous_stone') {
+        const { row, col } = event.data as { row: number; col: number };
+        setAmbiguous({ row, col });
       }
 
       // --- Board lost tracking (show modal after 10s) ---
@@ -200,23 +251,28 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss }: VisionSyncOverlayProps) =>
         <CaptureGuide positions={capturePositions} onDismiss={handleCaptureDismiss} />
       )}
 
-      {/* ---- Illegal change dialog (blocking) ---- */}
-      <Dialog open={illegalChangeOpen} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center' }}>棋盘状态异常</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ textAlign: 'center', py: 1 }}>
-            检测到棋盘发生非法变化，请选择操作。
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 2 }}>
-          <Button variant="contained" onClick={handleIllegalRestore}>
-            恢复棋局
-          </Button>
-          <Button variant="outlined" onClick={handleIllegalIgnore}>
-            忽略
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* ---- Board mismatch dialog (blocking, diff + restore checklist) ---- */}
+      <BoardMismatchDialog
+        open={!!mismatch}
+        positions={mismatch?.positions ?? []}
+        missing={mismatch?.missing ?? []}
+        boardSize={boardSize}
+        playerToMove={playerToMove}
+        onAdoptObserved={handleAdoptObserved}
+        onRestored={handleMismatchRestored}
+        onDismiss={handleMismatchDismiss}
+      />
+
+      {/* ---- Ambiguous move confirmation card ---- */}
+      {ambiguous && (
+        <AmbiguousMoveCard
+          row={ambiguous.row}
+          col={ambiguous.col}
+          boardSize={boardSize}
+          onConfirm={handleAmbiguousConfirm}
+          onIgnore={handleAmbiguousIgnore}
+        />
+      )}
 
       {/* ---- Board lost dialog (blocking, after 10s) ---- */}
       <Dialog open={boardLostOpen} maxWidth="xs" fullWidth>
@@ -226,6 +282,9 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss }: VisionSyncOverlayProps) =>
         <DialogContent>
           <Typography variant="body1" sx={{ textAlign: 'center', py: 1 }}>
             棋盘检测异常，请检查摄像头和棋盘位置
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+            {t('If the board was bumped, use Re-align in the banner', '若棋盘被碰动，请使用横幅中的「重新定位」')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>

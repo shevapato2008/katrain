@@ -117,15 +117,17 @@ class KataGoClient:
 
         top_moves = []
         for mi in move_infos[:10]:
-            top_moves.append({
-                "move": mi.get("move", ""),
-                "visits": mi.get("visits", 0),
-                "winrate": mi.get("winrate", 0.5),
-                "score_lead": mi.get("scoreLead", 0.0),
-                "prior": mi.get("prior", 0.0),
-                "pv": mi.get("pv", []),
-                "psv": mi.get("playSelectionValue", 0.0),
-            })
+            top_moves.append(
+                {
+                    "move": mi.get("move", ""),
+                    "visits": mi.get("visits", 0),
+                    "winrate": mi.get("winrate", 0.5),
+                    "score_lead": mi.get("scoreLead", 0.0),
+                    "prior": mi.get("prior", 0.0),
+                    "pv": mi.get("pv", []),
+                    "psv": mi.get("playSelectionValue", 0.0),
+                }
+            )
 
         ownership_flat = response.get("ownership")
         ownership = None

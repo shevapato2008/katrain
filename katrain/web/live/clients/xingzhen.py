@@ -310,7 +310,9 @@ class XingZhenClient:
                 moves = [str(m) for m in moves_data]
 
         # Get tournament name from 'name' field
-        tournament = match_data.get("name") or match_data.get("eventName") or match_data.get("matchName") or "Unknown Tournament"
+        tournament = (
+            match_data.get("name") or match_data.get("eventName") or match_data.get("matchName") or "Unknown Tournament"
+        )
 
         # Parse game rules and komi
         board_size = match_data.get("boardSize") or 19
@@ -383,6 +385,7 @@ class XingZhenClient:
         # Check for SGF format
         if "[" in moves_str and "]" in moves_str:
             import re
+
             # Extract moves from SGF notation: B[xx] or W[xx]
             pattern = r"[BW]\[([a-s]{2})\]"
             matches = re.findall(pattern, moves_str.lower())
@@ -426,10 +429,10 @@ class XingZhenClient:
             return None
 
         row = index // board_size  # 0 = top
-        col = index % board_size   # 0 = left (A)
+        col = index % board_size  # 0 = left (A)
 
         # Column: A=0, B=1, ..., H=7, J=8 (skip I)
-        col_char = chr(ord('A') + col + (1 if col >= 8 else 0))
+        col_char = chr(ord("A") + col + (1 if col >= 8 else 0))
 
         # Row: 0=top(19), 18=bottom(1)
         display_row = board_size - row

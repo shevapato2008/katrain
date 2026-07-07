@@ -96,7 +96,7 @@ AI_STRENGTH = {  # dan ranks, backup if model is missing. TODO: remove some?
     AI_SIMPLE_OWNERSHIP: 2,
     AI_SETTLE_STONES: 2,
     AI_HUMAN: float("nan"),
-    AI_PRO: float("nan")
+    AI_PRO: float("nan"),
 }
 
 AI_OPTION_VALUES = {
@@ -121,10 +121,10 @@ AI_OPTION_VALUES = {
     "min_visits": range(1, 10),
     "attach_penalty": [x / 10 for x in range(-10, 51)],
     "tenuki_penalty": [x / 10 for x in range(-10, 51)],
-    "human_kyu_rank": [(k, f"{k}[strength:kyu]") for k in range(20, 0, -1)] +
-                  [(k, f"{1-k}[strength:dan]") for k in range(0, -9,-1)],
+    "human_kyu_rank": [(k, f"{k}[strength:kyu]") for k in range(20, 0, -1)]
+    + [(k, f"{1-k}[strength:dan]") for k in range(0, -9, -1)],
     "modern_style": "bool",
-    "pro_year": range(1800,2024),
+    "pro_year": range(1800, 2024),
 }
 
 AI_KEY_PROPERTIES = {

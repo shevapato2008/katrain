@@ -12,6 +12,8 @@ import argparse
 import shutil
 from pathlib import Path
 
+from katrain.vision.classes import CLASS_NAMES
+
 # Roboflow "Go Positions" class mapping: original_id -> our_id (None = drop)
 ROBOFLOW_CLASS_MAP = {
     0: 0,  # blackStone -> black
@@ -124,10 +126,12 @@ def convert_labels(source_dir: Path, output_dir: Path, class_mapping: dict[int, 
 
 
 def write_data_yaml(output_dir: Path) -> None:
-    """Write YOLO data.yaml for the converted dataset."""
+    """Write YOLO data.yaml for the converted dataset (class list from the single source of truth)."""
     output_dir = Path(output_dir)
+    names = ", ".join(f"'{n}'" for n in CLASS_NAMES)
     yaml_content = (
-        f"path: {output_dir.resolve()}\ntrain: images/train\nval: images/val\n\nnc: 2\nnames: ['black', 'white']\n"
+        f"path: {output_dir.resolve()}\ntrain: images/train\nval: images/val\n\n"
+        f"nc: {len(CLASS_NAMES)}\nnames: [{names}]\n"
     )
     (output_dir / "data.yaml").write_text(yaml_content)
 

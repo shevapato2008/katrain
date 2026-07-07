@@ -3,6 +3,7 @@ from katrain.web.core.auth import SQLAlchemyUserRepository
 from katrain.web.core.db import SessionLocal
 from katrain.web.core import models_db
 
+
 @pytest.fixture
 def repo():
     # Setup in-memory DB or similar if possible, but here we likely rely on existing DB setup in tests
@@ -12,8 +13,10 @@ def repo():
     # checking conftest.py might be useful.
     return SQLAlchemyUserRepository(SessionLocal)
 
+
 def test_count_completed_rated_games_methods_exist(repo):
     assert hasattr(repo, "count_completed_rated_games")
+
 
 def test_count_logic(repo):
     # This test assumes we can mock the DB session inside repo

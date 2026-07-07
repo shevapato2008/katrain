@@ -137,8 +137,34 @@ class TestWriteDataYaml:
     def test_writes_yaml(self, tmp_path):
         write_data_yaml(tmp_path)
         content = (tmp_path / "data.yaml").read_text()
-        assert "nc: 2" in content
+        assert "nc: 4" in content
+        assert "led_red" in content and "led_green" in content
         assert "black" in content
         assert "white" in content
         assert "images/train" in content
         assert "images/val" in content
+
+
+from katrain.vision.tools.prepare_dataset import temporal_split_dataset
+
+
+def _make_frames(tmp, n):
+    img_dir, lbl_dir = tmp / "img", tmp / "lbl"
+    img_dir.mkdir()
+    lbl_dir.mkdir()
+    for i in range(n):
+        (img_dir / f"f_{i:03d}.jpg").write_bytes(b"\xff\xd8\xff\xd9")
+        (lbl_dir / f"f_{i:03d}.txt").write_text("0 0.5 0.5 0.1 0.1\n")
+    return img_dir, lbl_dir
+
+
+def test_temporal_split_has_no_boundary_leak(tmp_path):
+    img_dir, lbl_dir = _make_frames(tmp_path, 100)
+    out = tmp_path / "ds"
+    stats = temporal_split_dataset(img_dir, lbl_dir, out, train_ratio=0.8, gap=3)
+    train = sorted(p.stem for p in (out / "images" / "train").iterdir())
+    val = sorted(p.stem for p in (out / "images" / "val").iterdir())
+    max_train = max(int(s.split("_")[1]) for s in train)
+    min_val = min(int(s.split("_")[1]) for s in val)
+    assert min_val - max_train > 3  # boundary gap discarded -> no near-duplicate straddles split
+    assert stats["train"] + stats["val"] + stats["dropped_gap"] == 100

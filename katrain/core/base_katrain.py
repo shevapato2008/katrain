@@ -108,8 +108,11 @@ class KaTrainBase:
                         parent_dir = os.path.split(user_config_file)[0]
                         self.log(f"Creating parent directory if needed: {parent_dir}", OUTPUT_DEBUG)
                         os.makedirs(parent_dir, exist_ok=True)
-                        
-                        self.log(f"Copying package config {package_config_file} to user config {user_config_file}", OUTPUT_DEBUG)
+
+                        self.log(
+                            f"Copying package config {package_config_file} to user config {user_config_file}",
+                            OUTPUT_DEBUG,
+                        )
                         shutil.copyfile(package_config_file, user_config_file)
                         config_file = user_config_file
                         self.log(f"Copied package config to local file {config_file}", OUTPUT_INFO)

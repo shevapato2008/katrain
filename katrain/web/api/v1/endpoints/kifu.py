@@ -14,6 +14,7 @@ router = APIRouter()
 
 class KifuAlbumSummary(BaseModel):
     """Summary response for kifu album listing (excludes sgf_content)."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -34,6 +35,7 @@ class KifuAlbumSummary(BaseModel):
 
 class KifuAlbumDetail(KifuAlbumSummary):
     """Full response including SGF content."""
+
     place: Optional[str]
     rules: Optional[str]
     source: Optional[str]
@@ -42,6 +44,7 @@ class KifuAlbumDetail(KifuAlbumSummary):
 
 class KifuAlbumListResponse(BaseModel):
     """Paginated list response."""
+
     items: List[KifuAlbumSummary]
     total: int
     page: int

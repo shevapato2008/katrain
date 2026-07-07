@@ -1,5 +1,12 @@
 """Grid calibration via Hough line detection.
 
+.. deprecated::
+    Superseded by the ported autocal pipeline
+    (``katrain.vision.geometry_autocal`` / ``geometry_calibrate`` /
+    ``geometry_detect``) and ``geometry_lock``, which lock empty-board geometry
+    zero-touch. This module has no functional callers and is kept for one release
+    cycle before removal (track sbc-baipu-led-guide, Codex D7). Do not add new uses.
+
 Detects the 19x19 grid lines on a perspective-corrected (warped) board image
 and computes precise pixel offsets and spacing.  Run once at game start when
 the board has few/no stones for best results.  The calibration is cached and
@@ -132,9 +139,7 @@ class GridCalibrator:
         v_segments = self._filter_by_angle(v_segments, target_angle_deg=90, tolerance_deg=15)
 
         # 4. Supplementary detection on full binary
-        full_segments = self._detect_hough_segments(
-            binary, min(min_line_len_h, min_line_len_v), max_gap, threshold=50
-        )
+        full_segments = self._detect_hough_segments(binary, min(min_line_len_h, min_line_len_v), max_gap, threshold=50)
         full_h = self._filter_by_angle(full_segments, 0, 15)
         full_v = self._filter_by_angle(full_segments, 90, 15)
 
@@ -184,9 +189,7 @@ class GridCalibrator:
         return gray, binary
 
     @staticmethod
-    def _make_directional_masks(
-        binary: np.ndarray, h_img: int, w_img: int
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _make_directional_masks(binary: np.ndarray, h_img: int, w_img: int) -> tuple[np.ndarray, np.ndarray]:
         """Separate H and V features via directional morphological opening."""
         # Horizontal: keep long horizontal structures
         h_kernel_len = max(15, w_img // 30)

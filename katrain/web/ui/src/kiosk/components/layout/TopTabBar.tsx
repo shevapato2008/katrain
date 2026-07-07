@@ -1,10 +1,12 @@
-import { Box, ButtonBase, Typography } from '@mui/material';
+import { Box, ButtonBase, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import { primaryTabs, settingsTab, type NavTab } from './navTabs';
 
 const TopTabBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
 
   const isActive = (pattern: string) => !!matchPath(pattern, location.pathname);
 
@@ -23,7 +25,7 @@ const TopTabBar = () => {
           height: '100%',
           borderRadius: 1,
           color: active ? 'primary.main' : 'text.secondary',
-          bgcolor: active ? 'rgba(92, 181, 122, 0.08)' : 'transparent',
+          bgcolor: active ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
           transition: 'all 150ms ease-out',
           '&:active': { transform: 'scale(0.94)' },
         }}

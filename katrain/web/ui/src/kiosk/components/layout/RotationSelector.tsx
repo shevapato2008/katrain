@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from 'react';
-import { IconButton, Popover, Box, ButtonBase, Typography } from '@mui/material';
+import { IconButton, Popover, Box, ButtonBase, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ScreenRotation as RotationIcon } from '@mui/icons-material';
 import { useOrientation, type Rotation } from '../../context/OrientationContext';
 
@@ -18,6 +19,7 @@ interface RotationSelectorProps {
 const RotationSelector = ({ variant = 'default', showLabel }: RotationSelectorProps) => {
   const { rotation, setRotation } = useOrientation();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const theme = useTheme();
 
   const handleOpen = (e: MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
@@ -73,7 +75,7 @@ const RotationSelector = ({ variant = 'default', showLabel }: RotationSelectorPr
                   py: 1,
                   borderRadius: 1,
                   color: selected ? 'primary.main' : 'text.primary',
-                  bgcolor: selected ? 'rgba(92, 181, 122, 0.08)' : 'transparent',
+                  bgcolor: selected ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
                   '&:hover': { bgcolor: 'action.hover' },
                 }}
               >

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip } from '@mui/material';
+import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -24,6 +24,7 @@ const TsumegoLevelPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { progress } = useTsumegoProgress();
+  const theme = useTheme();
   const [problems, setProblems] = useState<ProblemItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -97,8 +98,8 @@ const TsumegoLevelPage = () => {
   // Border color by completion state (D6).
   const borderFor = (id: string): string => {
     const entry = progress[id];
-    if (entry?.completed) return '#5cb57a';
-    if (entry && entry.attempts > 0) return '#c49a3c';
+    if (entry?.completed) return theme.palette.primary.main;
+    if (entry && entry.attempts > 0) return theme.palette.warning.main;
     return 'rgba(232,228,220,0.10)';
   };
 

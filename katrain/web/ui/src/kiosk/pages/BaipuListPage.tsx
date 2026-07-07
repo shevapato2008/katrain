@@ -292,7 +292,7 @@ const BaipuListPage = () => {
       <Box
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          bgcolor: '#0f0f0f', overflow: 'hidden',
+          bgcolor: 'background.default', overflow: 'hidden',
           ...(isPortrait ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : { borderLeft: '1px solid rgba(255,255,255,0.06)' }),
         }}
       >

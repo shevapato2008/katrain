@@ -20,9 +20,9 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 import ProgressDots from '../components/tsumego/ProgressDots';
 import ProblemCard from '../components/tsumego/ProblemCard';
 
-const FILLED = 'rgb(92, 181, 122)'; // #5cb57a — the "filled dot" color
-const GREEN = 'rgb(92, 181, 122)'; // #5cb57a — completed border
-const AMBER = 'rgb(196, 154, 60)'; // #c49a3c — attempted border
+const FILLED = 'rgb(88, 181, 122)'; // #58b57a — the "filled dot" color
+const GREEN = 'rgb(88, 181, 122)'; // #58b57a — completed border
+const AMBER = 'rgb(224, 162, 74)'; // #e0a24a — attempted border
 
 const renderDots = (completed: number, total: number) =>
   render(

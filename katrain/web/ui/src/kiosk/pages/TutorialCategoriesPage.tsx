@@ -99,7 +99,7 @@ const TutorialCategoriesPage = () => {
                     onClick={() => navigate(`/kiosk/tutorial/${cat.slug}`)}
                     sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
                   >
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#5cb57a' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
                       {cat.title}
                     </Typography>
                     {cat.summary && (

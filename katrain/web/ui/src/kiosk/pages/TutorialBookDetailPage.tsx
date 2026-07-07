@@ -20,8 +20,6 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialBookDetail, TutorialSection } from '../../types/tutorial';
 import type { SectionNavState } from '../types/tutorialNav';
 
-const JADE = '#5cb57a';
-
 /**
  * Route: /kiosk/tutorial/book/:bookId — chapter/section tree for one book.
  *
@@ -188,7 +186,7 @@ const TutorialBookDetailPage = () => {
                                 <Typography variant="body2" color="text.secondary">
                                   {s.figure_count} {t('tutorial:figures', '图')}
                                 </Typography>
-                                {s.has_video && <PlayCircleOutline sx={{ color: JADE }} />}
+                                {s.has_video && <PlayCircleOutline sx={{ color: 'primary.main' }} />}
                               </Box>
                             </ListItemButton>
                           </ListItem>

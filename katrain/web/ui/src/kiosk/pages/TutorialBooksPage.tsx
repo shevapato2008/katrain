@@ -117,7 +117,7 @@ const TutorialBooksPage = () => {
                         {book.author}
                       </Typography>
                     )}
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: '#5cb57a' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'primary.main' }}>
                       {book.chapter_count} {t('tutorial:chapters', '章')}
                     </Typography>
                   </CardActionArea>

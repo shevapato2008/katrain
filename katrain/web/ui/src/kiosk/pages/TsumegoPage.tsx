@@ -80,7 +80,7 @@ const TsumegoPage = () => {
                   onClick={() => navigate(`/kiosk/tsumego/${level.level}`)}
                   sx={{ p: 2 }}
                 >
-                  <Typography variant="h4" sx={{ color: '#5cb57a', fontWeight: 600 }}>
+                  <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 600 }}>
                     {level.level.toUpperCase()}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>

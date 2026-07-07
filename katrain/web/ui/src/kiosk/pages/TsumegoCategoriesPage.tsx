@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button } from '@mui/material';
+import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowBack, GridView } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -36,6 +37,7 @@ const TsumegoCategoriesPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { categoryProgress } = useTsumegoProgress();
+  const theme = useTheme();
 
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,11 +129,11 @@ const TsumegoCategoriesPage = () => {
           <Grid size={{ xs: 6, sm: 4, md: 3 }}>
             <Card
               sx={{
-                bgcolor: 'rgba(92,181,122,0.10)',
-                border: '2px solid rgba(92,181,122,0.35)',
+                bgcolor: alpha(theme.palette.primary.main, 0.10),
+                border: `2px solid ${alpha(theme.palette.primary.main, 0.35)}`,
                 borderRadius: '12px',
                 height: '100%',
-                '&:hover': { bgcolor: 'rgba(92,181,122,0.16)' },
+                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
                 transition: 'background-color 0.15s ease',
               }}
             >
@@ -140,7 +142,7 @@ const TsumegoCategoriesPage = () => {
                 sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <GridView sx={{ color: '#5cb57a' }} />
+                  <GridView sx={{ color: 'primary.main' }} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     {t('tsumego:allProblems', '全部题目')}
                   </Typography>

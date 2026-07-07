@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box, Typography, Button, Chip, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import LiveBoard from '../../components/live/LiveBoard';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -95,22 +96,25 @@ const HealthDot = ({ label, ok }: { label: string; ok: boolean | null }) => (
   </Box>
 );
 
-const PlayerPanel = ({ color, name, active, t }: { color: 'B' | 'W'; name: string; active: boolean; t: (k: string, d?: string) => string }) => (
-  <Box
-    data-testid={`baipu-player-${color}`}
-    data-active={active ? 'true' : 'false'}
-    sx={{
-      display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, borderRadius: '10px',
-      border: active ? '2px solid' : '1px solid',
-      borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.12)',
-      bgcolor: active ? 'rgba(92,181,122,0.12)' : 'rgba(255,255,255,0.04)',
-    }}
-  >
-    <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color === 'B' ? '#1a1a1a' : '#e8e4df', border: '1px solid rgba(255,255,255,0.25)' }} />
-    <Typography variant="body2" noWrap sx={{ fontWeight: active ? 700 : 400 }}>{name || (color === 'B' ? t('Black', '黑方') : t('White', '白方'))}</Typography>
-    {active && <Chip size="small" label={t('to place', '落子中')} color="primary" sx={{ height: 20 }} />}
-  </Box>
-);
+const PlayerPanel = ({ color, name, active, t }: { color: 'B' | 'W'; name: string; active: boolean; t: (k: string, d?: string) => string }) => {
+  const theme = useTheme();
+  return (
+    <Box
+      data-testid={`baipu-player-${color}`}
+      data-active={active ? 'true' : 'false'}
+      sx={{
+        display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, borderRadius: '10px',
+        border: active ? '2px solid' : '1px solid',
+        borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.12)',
+        bgcolor: active ? alpha(theme.palette.primary.main, 0.12) : 'rgba(255,255,255,0.04)',
+      }}
+    >
+      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color === 'B' ? '#1a1a1a' : '#e8e4df', border: '1px solid rgba(255,255,255,0.25)' }} />
+      <Typography variant="body2" noWrap sx={{ fontWeight: active ? 700 : 400 }}>{name || (color === 'B' ? t('Black', '黑方') : t('White', '白方'))}</Typography>
+      {active && <Chip size="small" label={t('to place', '落子中')} color="primary" sx={{ height: 20 }} />}
+    </Box>
+  );
+};
 
 /**
  * 摆谱 session: a DUMB player of backend `steps[]` (decision ②). The frontend
@@ -389,7 +393,7 @@ const BaipuSessionPage = () => {
 
       <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* Board */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: '#0f0f0f', minHeight: 0, p: 1 }}>
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'background.default', minHeight: 0, p: 1 }}>
           <LiveBoard
             moves={moves}
             stoneColors={stoneColors}

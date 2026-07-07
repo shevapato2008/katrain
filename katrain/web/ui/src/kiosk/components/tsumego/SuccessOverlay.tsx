@@ -36,7 +36,7 @@ const confettiFall = keyframes`
   100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
 `;
 
-const CONFETTI_COLORS = ['#5cb57a', '#c49a3c', '#5b9bd5', '#c45d3e', '#7ec994'];
+const CONFETTI_COLORS = ['#58b57a', '#e0a24a', '#5b9bd5', '#e2685c', '#7ec994'];
 
 interface ConfettiParticle {
   id: number;

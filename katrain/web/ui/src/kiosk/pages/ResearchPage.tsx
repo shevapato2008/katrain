@@ -62,7 +62,7 @@ const ResearchPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
       {/* Board + Bottom Navigation */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f', ...(isPortrait && { maxHeight: '50%' }) }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'background.default', ...(isPortrait && { maxHeight: '50%' }) }}>
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <LiveBoard
             moves={[]}

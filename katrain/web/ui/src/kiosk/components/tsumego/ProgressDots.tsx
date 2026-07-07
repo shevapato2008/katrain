@@ -38,7 +38,7 @@ const ProgressDots = ({ completed, total, dotSize = 12 }: ProgressDotsProps) => 
             width: dotSize,
             height: dotSize,
             borderRadius: '50%',
-            bgcolor: i < filledDots ? '#5cb57a' : 'rgba(232,228,220,0.18)',
+            bgcolor: i < filledDots ? 'primary.main' : 'divider',
           }}
         />
       ))}

@@ -8,7 +8,9 @@ import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import LiveBoard from '../../components/live/LiveBoard';
+import { writeActiveSession } from '../utils/activeSession';
 
+// Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
@@ -58,6 +60,12 @@ const AiSetupPage = () => {
         byo_length: byoyomiTime,
         byo_periods: byoyomiPeriods,
       });
+      writeActiveSession({
+        kind: 'game',
+        label: isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈'),
+        route: `/kiosk/play/ai/game/${session_id}`,
+        ts: Date.now(),
+      });
       navigate(`/kiosk/play/ai/game/${session_id}`);
     } catch (e: any) {
       setError(e.message || t('Failed to create game', '创建对局失败'));
@@ -68,14 +76,25 @@ const AiSetupPage = () => {
 
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left: board preview */}
-      <Box sx={{ aspectRatio: '1', height: '100%', flexShrink: 0, overflow: 'hidden' }}>
-        <LiveBoard
-          moves={[]}
-          currentMove={0}
-          boardSize={boardSize}
-          showCoordinates={true}
-        />
+      {/* Left: board preview console */}
+      <Box
+        sx={{
+          aspectRatio: '1', height: '100%', flexShrink: 0, overflow: 'hidden',
+          bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
+          borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
+        }}
+      >
+        <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
+          {t('Board Preview', '盘面预览')}
+        </Typography>
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          <LiveBoard
+            moves={[]}
+            currentMove={0}
+            boardSize={boardSize}
+            showCoordinates={true}
+          />
+        </Box>
       </Box>
 
       {/* Right: settings form */}
@@ -86,7 +105,9 @@ const AiSetupPage = () => {
             startIcon={<ArrowBack />}
             sx={{ minWidth: 40, p: 0.5 }}
           />
-          <Typography variant="h5">{isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}</Typography>
+          <Typography variant="h5" sx={{ color: 'text.primary' }}>
+            {isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}
+          </Typography>
         </Box>
 
         {/* Board size */}
@@ -263,7 +284,19 @@ const AiSetupPage = () => {
 
         <Box sx={{ mt: 'auto', pt: 2 }}>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <Button variant="contained" fullWidth size="large" startIcon={<PlayArrow />} disabled={loading} onClick={handleStart} sx={{ minHeight: 56, py: 2, fontSize: '1.1rem' }}>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            startIcon={<PlayArrow />}
+            disabled={loading}
+            onClick={handleStart}
+            sx={{
+              minHeight: 56, py: 2, fontSize: '1.1rem',
+              bgcolor: 'primary.main',
+              '&:hover': { bgcolor: 'primary.dark' },
+            }}
+          >
             {loading ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
           </Button>
         </Box>

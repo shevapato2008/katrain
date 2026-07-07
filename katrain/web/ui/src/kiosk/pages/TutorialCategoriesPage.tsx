@@ -48,7 +48,7 @@ const TutorialCategoriesPage = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
@@ -88,10 +88,12 @@ const TutorialCategoriesPage = () => {
               <Grid key={cat.slug} size={{ xs: 6, sm: 4, md: 3 }}>
                 <Card
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.05)',
+                    bgcolor: 'background.paper',
                     borderRadius: '12px',
                     height: '100%',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': { bgcolor: 'var(--raise2)' },
                     transition: 'background-color 0.15s ease',
                   }}
                 >

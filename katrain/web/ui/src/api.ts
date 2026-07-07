@@ -103,6 +103,41 @@ export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
 }
 
+// --- Engine analysis (area/options/judge/variation) ---
+// Shapes are `dataclasses.asdict` of the GolaxyAdapter.engine_analysis results
+// (katrain/web/platforms/golaxy/adapter.py: AreaAnalysis/OptionsAnalysis/
+// VariationAnalysis/JudgeAnalysis).
+
+export interface OwnershipPoint {
+  col: number;
+  row: number;
+  value: number;
+}
+export interface JudgePoint {
+  col: number;
+  row: number;
+  owner: string; // "U" | "B" | "W"
+}
+export interface AnalysisCandidate {
+  col: number;
+  row: number;
+  prob: number;
+  winrate: number;
+  delta: number;
+}
+export interface AnalysisPoint {
+  col: number;
+  row: number;
+}
+export type EngineAnalysisData =
+  | { ownership: OwnershipPoint[]; winrate: number; delta: number } // area
+  | { candidates: AnalysisCandidate[] } // options
+  | { sequence: AnalysisPoint[]; winrate: number; delta: number } // variation
+  | { ownership: JudgePoint[]; winner: string; delta: number }; // judge
+export type EngineAnalysisResponse =
+  | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData }
+  | { ok: false; reason: "insufficient"; kind: string };
+
 export interface PlatformUser {
   user_id: string;
   username: string;
@@ -378,6 +413,13 @@ export const API = {
     token: string,
   ): Promise<{ session_id: string; human_color?: "B" | "W" }> =>
     apiPost(`/api/v1/platforms/${platform}/engine/start`, body, token),
+  platformEngineAnalysis: (
+    platform: string,
+    sessionId: string,
+    kind: "area" | "options" | "judge" | "variation",
+    token: string,
+  ): Promise<EngineAnalysisResponse> =>
+    apiPost(`/api/v1/platforms/${platform}/engine/analysis`, { session_id: sessionId, kind }, token),
   platformLogout: async (platform: string, token: string) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",

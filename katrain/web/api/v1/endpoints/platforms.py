@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import random
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
@@ -110,6 +110,16 @@ class AutomatchRequest(BaseModel):
     board_size: int = 19
     time_control: dict = {}
     rank_range: Optional[list[int]] = None
+
+
+class EngineAnalysisRequest(BaseModel):
+    """Request to run one analysis tunnel (area/options/judge/variation) against
+    an existing engine game, resolved from `session_id` (see PlatformManager.
+    engine_analysis). `judge` is whitelisted here even though the kiosk UI only
+    wires 3 buttons (plan §13 line 473) — do not drop it."""
+
+    session_id: str
+    kind: Literal["area", "options", "judge", "variation"]
 
 
 # --- Credential management ---
@@ -220,6 +230,34 @@ async def start_engine(
     )
     session_id = await pm.start_engine_game(platform, config, user.id)
     return {"session_id": session_id, "human_color": color}
+
+
+@router.post("/{platform}/engine/analysis")
+async def engine_analysis(
+    platform: str, req: EngineAnalysisRequest, request: Request, user: User = Depends(get_current_user)
+):
+    """Run one analysis tunnel (area/options/judge/variation) for the engine
+    game behind `req.session_id`. Insufficient quota is a normal, expected
+    outcome (not a server error) — it comes back as `{ok:false}` at HTTP 200,
+    not a 5xx. Genuine failures (AuthExpired/Retryable/Fatal) are not caught
+    here and surface as 5xx, same as other routes."""
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    if not getattr(adapter, "supports_engine_play", False):
+        raise HTTPException(status_code=400, detail=f"{platform} does not support engine play")
+    from katrain.web.platforms.golaxy.engine_client import QuotaExhausted
+
+    try:
+        result = await pm.engine_analysis(platform, req.session_id, req.kind)
+    except QuotaExhausted:
+        return {"ok": False, "reason": "insufficient", "kind": req.kind}
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
+    import dataclasses
+
+    return {"ok": True, "kind": req.kind, "data": dataclasses.asdict(result)}
 
 
 @router.get("/{platform}/engine/levels")

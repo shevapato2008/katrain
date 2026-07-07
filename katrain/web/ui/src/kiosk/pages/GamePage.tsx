@@ -49,6 +49,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
   const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
   const [insufficientKind, setInsufficientKind] = useState<EngineAnalysisKind | null>(null);
+  // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
+  // calls before the first resolves (double quota spend + last-response-wins races).
+  // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
+  const [pendingEngineKind, setPendingEngineKind] = useState<EngineAnalysisKind | null>(null);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
@@ -90,6 +94,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setCameraDisconnectToast(true);
     }
   }, [isVisionEnabled, visionStatus.cameraConnected]);
+
+  // Invalidate the 星阵 analysis overlay when the board position advances (a move
+  // played, human or AI) — otherwise stale 领地/支招/变化图 markers keep drawing over
+  // the new position and the button stays stuck "active". Keyed on position identity
+  // only, so it never fires on unrelated re-renders. Does NOT touch insufficientKind —
+  // that dialog is dismissed by the user, not by position changes.
+  useEffect(() => {
+    setEngineOverlay(null);
+    setActiveEngineKind(null);
+  }, [session.gameState?.current_node_id]);
 
   const closeHint = useCallback(() => {
     setHint(null);
@@ -165,12 +179,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 星阵隧道分析 (领地/支招/变化图) — engineMode only. Mutually exclusive: a new kind
   // replaces any prior overlay; clicking the already-active kind toggles it off.
   const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
+    if (pendingEngineKind) return; // in-flight guard: ignore double-taps until the current call settles
     if (activeEngineKind === kind) {
       setActiveEngineKind(null);
       setEngineOverlay(null);
       return;
     }
     if (!sessionId || !token) return;
+    setPendingEngineKind(kind);
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
       if (res.ok) {
@@ -186,6 +202,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     } catch (e) {
       console.error(e);
       setEngineErrorToast(true);
+    } finally {
+      setPendingEngineKind(null);
     }
   };
 

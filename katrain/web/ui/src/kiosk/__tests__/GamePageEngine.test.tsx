@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -121,22 +121,29 @@ vi.mock('../../hooks/useGameSession', () => ({
 // Import after mocks
 import GamePage from '../pages/GamePage';
 
-const renderPage = (engineMode: boolean) =>
-  render(
-    <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={['/kiosk/play/cross-platform/engine/game/test-session']}>
-        <Routes>
-          <Route path="/kiosk/play/cross-platform/engine/game/:sessionId" element={<GamePage engineMode={engineMode} />} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
+const renderTree = (engineMode: boolean) => (
+  <ThemeProvider theme={kioskTheme}>
+    <MemoryRouter initialEntries={['/kiosk/play/cross-platform/engine/game/test-session']}>
+      <Routes>
+        <Route path="/kiosk/play/cross-platform/engine/game/:sessionId" element={<GamePage engineMode={engineMode} />} />
+      </Routes>
+    </MemoryRouter>
+  </ThemeProvider>
+);
+
+const renderPage = (engineMode: boolean) => render(renderTree(engineMode));
 
 describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
     (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockReset();
+  });
+
+  afterEach(() => {
+    // Some tests mutate mockGameState.current_node_id to simulate the position
+    // advancing — restore it so it doesn't bleed into later tests.
+    mockGameState.current_node_id = 42;
   });
 
   it('disables Pass and Score when engineMode, but keeps Resign enabled', () => {
@@ -297,6 +304,75 @@ describe('GamePage engine mode', () => {
       await waitFor(() => {
         expect(screen.queryByText(/请在星阵.*充值/)).not.toBeInTheDocument();
       });
+    });
+
+    it('clears the overlay + active kind when the board position changes (stale-overlay fix)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
+      });
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      // Simulate the position advancing (a move played, human or AI) by mutating the
+      // mocked session's current_node_id and re-rendering, the way React would after
+      // useGameSession's underlying state updates.
+      mockGameState.current_node_id = 43;
+      rerender(renderTree(true));
+
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+    });
+
+    it('does NOT clear the overlay on an unrelated re-render (same current_node_id)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
+      });
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      // Re-render with the same current_node_id (unrelated re-render) — overlay must survive.
+      rerender(renderTree(true));
+
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area');
+    });
+
+    it('shows the engine error toast when platformEngineAnalysis rejects, leaving overlay/active kind unchanged', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('network fail'));
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+
+      expect(await screen.findByText(/AI 连接出错/)).toBeInTheDocument();
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', '');
+      expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+    });
+
+    it('a second click while a request is in-flight does not trigger a second platformEngineAnalysis call (quota guard)', async () => {
+      let resolveFirst: (value: unknown) => void = () => {};
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveFirst = resolve; })
+      );
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      fireEvent.click(screen.getByText('支招'));
+      fireEvent.click(screen.getByText('领地'));
+
+      expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1);
+
+      resolveFirst({ ok: true, kind: 'options', data: { candidates: [] } });
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      // Once the in-flight request resolves, the guard must release — a further click works.
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [], winrate: 0.5, delta: 0 },
+      });
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2));
     });
   });
 });

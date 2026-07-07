@@ -4,13 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import OptionChips from '../components/common/OptionChips';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation, type Rotation } from '../context/OrientationContext';
+import { useSettings } from '../../context/SettingsContext';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { rotation, setRotation } = useOrientation();
-  const [language, setLanguage] = useState('zh');
+  const { language, setLanguage } = useSettings();
+  // kiosk exposes only 中/英; map the 2 chip values to the app's language codes.
+  const langChip = language === 'en' ? 'en' : 'cn';
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
 
   const handleAutoAdvanceChange = (checked: boolean) => {
@@ -60,16 +63,16 @@ const SettingsPage = () => {
         />
       </Box>
 
+      {/* kiosk supports only 中/英; switching to 'en' may surface hardcoded 中文 copy
+          elsewhere in the kiosk UI — broader t()-wrapping is a follow-up track, out of scope here. */}
       <OptionChips
         label={t('Language', '语言')}
         options={[
-          { value: 'zh', label: '中文' },
-          { value: 'en', label: 'English' },
-          { value: 'ja', label: '日本語' },
-          { value: 'ko', label: '한국어' },
+          { value: 'cn', label: t('中', '中') },
+          { value: 'en', label: t('英', '英') },
         ]}
-        value={language}
-        onChange={setLanguage}
+        value={langChip}
+        onChange={(v) => { void setLanguage(v as string); }}
       />
 
       <Typography variant="body2" sx={{ color: 'text.secondary', mt: 3, mb: 1.5 }}>

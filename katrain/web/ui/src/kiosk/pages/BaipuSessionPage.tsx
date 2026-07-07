@@ -12,6 +12,7 @@ import {
   canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
+import { LED_HEX } from '../constants/ledColors';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
@@ -20,16 +21,22 @@ const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'whit
 // (no drift) and off render nothing.
 export const DriftBanner = ({ correction }: { correction: BaipuGeometryCorrection | null }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   if (!correction) return null;
   const { status, drift } = correction;
-  const warn = { px: 3, py: 1.5, bgcolor: 'rgba(255,149,0,0.20)', borderTop: '2px solid #ff9500', textAlign: 'center' as const, flexShrink: 0 };
+  const warn = {
+    px: 3, py: 1.5,
+    bgcolor: alpha(theme.palette.warning.main, 0.20),
+    borderTop: `2px solid ${theme.palette.warning.main}`,
+    textAlign: 'center' as const, flexShrink: 0,
+  };
   if (status === 'corrected') {
     if (!drift?.over_threshold) return null;
     return (
       <Box
         data-testid="baipu-drift-banner"
         data-drift-status="corrected"
-        sx={{ px: 3, py: 1.5, bgcolor: 'rgba(47,111,255,0.18)', borderTop: '2px solid #2f6fff', textAlign: 'center', flexShrink: 0 }}
+        sx={{ px: 3, py: 1.5, bgcolor: alpha(LED_HEX.remove, 0.18), borderTop: `2px solid ${LED_HEX.remove}`, textAlign: 'center', flexShrink: 0 }}
       >
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
           {t('Board movement detected; auto-corrected', '检测到棋盘移动，已自动校正')}
@@ -91,13 +98,12 @@ type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
 
 const HealthDot = ({ label, ok }: { label: string; ok: boolean | null }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-    <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: ok == null ? '#666' : ok ? '#34c759' : '#ff3b30' }} />
+    <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: ok == null ? 'text.disabled' : ok ? 'success.main' : 'error.main' }} />
     <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
   </Box>
 );
 
 const PlayerPanel = ({ color, name, active, t }: { color: 'B' | 'W'; name: string; active: boolean; t: (k: string, d?: string) => string }) => {
-  const theme = useTheme();
   return (
     <Box
       data-testid={`baipu-player-${color}`}
@@ -105,11 +111,11 @@ const PlayerPanel = ({ color, name, active, t }: { color: 'B' | 'W'; name: strin
       sx={{
         display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, borderRadius: '10px',
         border: active ? '2px solid' : '1px solid',
-        borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.12)',
-        bgcolor: active ? alpha(theme.palette.primary.main, 0.12) : 'rgba(255,255,255,0.04)',
+        borderColor: active ? 'primary.main' : 'divider',
+        bgcolor: active ? 'primary.dark' : 'background.paper',
       }}
     >
-      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color === 'B' ? '#1a1a1a' : '#e8e4df', border: '1px solid rgba(255,255,255,0.25)' }} />
+      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color === 'B' ? '#1a1a1a' : '#e8e4df', border: '1px solid', borderColor: 'divider' }} />
       <Typography variant="body2" noWrap sx={{ fontWeight: active ? 700 : 400 }}>{name || (color === 'B' ? t('Black', '黑方') : t('White', '白方'))}</Typography>
       {active && <Chip size="small" label={t('to place', '落子中')} color="primary" sx={{ height: 20 }} />}
     </Box>
@@ -137,6 +143,7 @@ const BaipuSessionPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -370,7 +377,7 @@ const BaipuSessionPage = () => {
         data-testid="baipu-status-bar"
         sx={{
           display: 'flex', alignItems: 'center', gap: 2, px: 3, py: 1.5,
-          bgcolor: '#1a1a1a', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+          bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0,
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -381,7 +388,7 @@ const BaipuSessionPage = () => {
         <Chip
           data-testid="baipu-progress"
           label={`${t('Move', '第')} ${Math.min(k + (phase === 'done' ? 0 : 1), steps.length)}/${steps.length} ${t('moves', '手')}`}
-          sx={{ bgcolor: 'rgba(255,255,255,0.08)', fontFamily: '"IBM Plex Mono", monospace' }}
+          sx={{ bgcolor: 'var(--raise2)', fontFamily: '"JetBrains Mono", monospace' }}
         />
         <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="baipu-frame-count">
           {t('Captured', '已采集')} {frameCount} {t('frames', '帧')}
@@ -406,7 +413,7 @@ const BaipuSessionPage = () => {
         </Box>
 
         {/* Right rail: players + next-color chip + controls */}
-        <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', gap: 2, p: 2, borderLeft: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', gap: 2, p: 2, borderLeft: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
           <PlayerPanel color="B" name={meta?.player_black ?? ''} active={nextColor === 'B' && phase !== 'done'} t={t} />
           <PlayerPanel color="W" name={meta?.player_white ?? ''} active={nextColor === 'W' && phase !== 'done'} t={t} />
 
@@ -416,8 +423,8 @@ const BaipuSessionPage = () => {
               data-testid="baipu-next-chip"
               sx={{
                 mt: 1, p: 2, borderRadius: '12px', textAlign: 'center',
-                bgcolor: nextColor === 'B' ? 'rgba(255,59,48,0.14)' : 'rgba(52,199,89,0.14)',
-                border: `2px solid ${nextColor === 'B' ? '#ff3b30' : '#34c759'}`,
+                bgcolor: nextColor === 'B' ? alpha(LED_HEX.black, 0.14) : alpha(LED_HEX.white, 0.14),
+                border: `2px solid ${nextColor === 'B' ? LED_HEX.black : LED_HEX.white}`,
               }}
             >
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Next stone', '下一手')}</Typography>
@@ -433,10 +440,10 @@ const BaipuSessionPage = () => {
 
           <Box
             data-testid="baipu-latest-frame"
-            sx={{ px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            sx={{ px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
           >
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Latest saved', '最近保存')}</Typography>
-            <Typography sx={{ mt: 0.25, fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}>
+            <Typography sx={{ mt: 0.25, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700 }}>
               {latestSavedFile ?? t('None yet', '尚无')}
             </Typography>
           </Box>
@@ -490,7 +497,7 @@ const BaipuSessionPage = () => {
       {phase === 'await_removal' && (
         <Box
           data-testid="baipu-removal-banner"
-          sx={{ px: 3, py: 1.5, bgcolor: 'rgba(47,111,255,0.18)', borderTop: '2px solid #2f6fff', textAlign: 'center', flexShrink: 0 }}
+          sx={{ px: 3, py: 1.5, bgcolor: alpha(LED_HEX.remove, 0.18), borderTop: `2px solid ${LED_HEX.remove}`, textAlign: 'center', flexShrink: 0 }}
         >
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {t('Remove the captured stones (flashing)', '请移除被提的子（闪烁处）')} — {currentStep?.removed.length}
@@ -505,7 +512,7 @@ const BaipuSessionPage = () => {
       {error && (
         <Box
           data-testid="baipu-capture-error"
-          sx={{ px: 3, py: 1.5, bgcolor: 'rgba(255,59,48,0.18)', borderTop: '2px solid #ff3b30', textAlign: 'center', flexShrink: 0 }}
+          sx={{ px: 3, py: 1.5, bgcolor: alpha(theme.palette.error.main, 0.18), borderTop: `2px solid ${theme.palette.error.main}`, textAlign: 'center', flexShrink: 0 }}
         >
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {t('Capture failed; placement was not advanced', '采集失败，当前手未推进')}

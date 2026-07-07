@@ -133,7 +133,12 @@ describe('TsumegoProblemPage', () => {
   it('renders category and level', () => {
     renderPage();
     expect(screen.getByText('手筋')).toBeInTheDocument();
-    expect(screen.getByText('15K')).toBeInTheDocument();
+    expect(screen.getByText('15 级')).toBeInTheDocument();
+  });
+
+  it('renders the physical-mode toggle', () => {
+    renderPage();
+    expect(screen.getByTestId('physical-mode-toggle')).toBeInTheDocument();
   });
 
   it('renders hint text', () => {

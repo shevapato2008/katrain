@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Chip } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowBack,
@@ -23,7 +23,9 @@ import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
 import { useImmersive } from '../context/ImmersiveContext';
 import { useVisionSync } from '../hooks/useVisionSync';
-import { sequenceKey, readAutoAdvance } from './tsumegoUnits';
+import { sequenceKey, readAutoAdvance, levelChinese, readPhysicalMode, writePhysicalMode, writeLastLevel } from './tsumegoUnits';
+import { writeActiveSession } from '../utils/activeSession';
+import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
 
 interface ProblemSummary {
   id: string;
@@ -70,6 +72,12 @@ const TsumegoProblemPage = () => {
   const visionSync = useVisionSync(null); // No session bind for tsumego — uses setup mode
   const [setupSkipped, setSetupSkipped] = useState(false);
   const [setupDone, setSetupDone] = useState(!isVisionEnabled);
+
+  // Physical-mode toggle seam (B2.5) — single declaration in the whole track. OFF (default)
+  // means screen point-select solving is unchanged; Phase D (D1.3) reads this same state to
+  // drive the 5-state PhysicalStatePanel + usePhysicalTsumego.
+  const [physicalMode, setPhysicalMode] = useState(readPhysicalMode());
+  const capable = isVisionEnabled;
 
   // ---- Prev/Next sequence (4.1) ----
   // Sequence of problem ids for the whole category, sourced from sessionStorage (written by
@@ -142,6 +150,18 @@ const TsumegoProblemPage = () => {
   const isLast = currentIndex >= 0 && currentIndex === sequence.length - 1;
   const prevId = currentIndex > 0 ? sequence[currentIndex - 1] : null;
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
+
+  // Populate the hub 继续练习 card + 上次 level highlight (B2.2/B2.4) whenever a problem loads.
+  useEffect(() => {
+    if (!problem) return;
+    writeLastLevel(problem.level);
+    writeActiveSession({
+      kind: 'practice',
+      label: `${levelChinese(problem.level)} · ${problem.category} · 第 ${currentIndex + 1} 题`,
+      route: `/kiosk/tsumego/problem/${problem.id}`,
+      ts: Date.now(),
+    });
+  }, [problem, currentIndex]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;
@@ -269,18 +289,34 @@ const TsumegoProblemPage = () => {
 
       {/* Controls panel */}
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
           <Button onClick={goToUnits} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-          <Box>
-            <Typography variant="h6">{problem?.category || t('Tsumego', '死活题')}</Typography>
-            {problem?.level && (
-              <Chip label={problem.level.toUpperCase()} size="small" sx={{ mt: 0.5 }} />
-            )}
-          </Box>
+          {problem && (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              <Box component="span">死活</Box>
+              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
+              <Box component="span">{levelChinese(problem.level)}</Box>
+              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
+              <Box component="span">{t(`tsumego:${problem.category}`, problem.category)}</Box>
+              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
+              <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>第 {currentIndex + 1} 题</Box>
+            </Typography>
+          )}
         </Box>
 
         {problem?.hint && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{problem.hint}</Typography>
+          <Box
+            sx={{
+              mb: 2,
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{problem.hint}</Typography>
+          </Box>
         )}
 
         {/* Status indicators */}
@@ -294,16 +330,29 @@ const TsumegoProblemPage = () => {
           <Alert severity="info" sx={{ mb: 2 }}>{t('Try mode - free exploration', '试下模式 - 自由探索')}</Alert>
         )}
 
-        {/* Timer and attempts */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-          <Typography variant="body2" color="text.secondary" data-testid="timer">
+        {/* Timer and attempts — .mrow pill row */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 2,
+            flexWrap: 'wrap',
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="timer">
             {t('Time', '用时')}: {formatTime(elapsedTime)}
           </Typography>
-          <Typography variant="body2" color="text.secondary" data-testid="attempts">
+          <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="attempts">
             {t('Attempts', '尝试')}: {attempts}
           </Typography>
           {lastDuration != null && (
-            <Typography variant="body2" color="text.secondary" data-testid="last-time">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="last-time">
               {t('tsumego:lastTime', '上次用时')}: {formatTime(lastDuration)}
             </Typography>
           )}
@@ -323,6 +372,14 @@ const TsumegoProblemPage = () => {
           )}
         </Box>
 
+        <Box sx={{ mt: 2 }}>
+          <PhysicalModeToggle
+            checked={physicalMode}
+            capable={capable}
+            onChange={(v) => { writePhysicalMode(v); setPhysicalMode(v); }}
+          />
+        </Box>
+
         {/* Prev / Next navigation (4.1) — prominent touch buttons. */}
         <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
           <Button
@@ -333,7 +390,14 @@ const TsumegoProblemPage = () => {
             onClick={handlePrev}
             disabled={isFirst}
             data-testid="prev-problem"
-            sx={{ flex: 1, py: 1.5, fontSize: '1.05rem' }}
+            sx={{
+              flex: 1,
+              py: 1.5,
+              fontSize: '1.05rem',
+              bgcolor: 'background.paper',
+              color: 'text.primary',
+              '&:hover': { bgcolor: 'background.paper' },
+            }}
           >
             {t('tsumego:prev', '上一题')}
           </Button>

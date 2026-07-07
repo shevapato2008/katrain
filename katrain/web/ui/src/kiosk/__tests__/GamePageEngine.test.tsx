@@ -351,6 +351,31 @@ describe('GamePage engine mode', () => {
       expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
     });
 
+    it('discards a stale ok:true response that resolves after the position has advanced (race fix)', async () => {
+      let resolveAnalysis: (value: unknown) => void = () => {};
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveAnalysis = resolve; })
+      );
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1));
+
+      // Position advances (a move played) while the request is still in flight.
+      mockGameState.current_node_id = 43;
+      rerender(renderTree(true));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      // The stale request now finally resolves ok:true, computed for the OLD position.
+      resolveAnalysis({ ok: true, kind: 'options', data: { candidates: [{ col: 3, row: 3, prob: 0.6, winrate: 0.55, delta: -1.2 }] } });
+
+      // Give the resolved promise's continuation a tick to run, then assert the stale
+      // overlay was NOT resurrected — Board still sees no active overlay.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', '');
+      expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+    });
+
     it('a second click while a request is in-flight does not trigger a second platformEngineAnalysis call (quota guard)', async () => {
       let resolveFirst: (value: unknown) => void = () => {};
       (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockImplementationOnce(

@@ -186,10 +186,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       return;
     }
     if (!sessionId || !token) return;
+    // Capture the position identity at call time — if the board advances (a move
+    // played) while this request is in flight, the response below is for a stale
+    // position and must be discarded rather than resurrecting an old overlay.
+    const requestedNodeId = session.gameState?.current_node_id;
     setPendingEngineKind(kind);
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
       if (res.ok) {
+        if (session.gameState?.current_node_id !== requestedNodeId) return; // stale position — discard
         const overlay: EngineOverlay =
           kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }

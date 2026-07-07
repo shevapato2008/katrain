@@ -7,6 +7,7 @@ Auth: phone-only (+86 Chinese mobile number).
 from __future__ import annotations
 
 import base64
+import itertools
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
@@ -215,12 +216,31 @@ def _decode_area(result: AreaResult, board_size: int) -> AreaAnalysis:
 
 
 def _decode_options(result: OptionsResult, board_size: int) -> OptionsAnalysis:
+    """Candidates are driven by `coord` -- the per-move fields (prob/winrate/
+    delta) are best-effort per §13 and may be missing or shorter than `coord`
+    (the Golaxy `options` body sometimes omits them entirely). Use
+    `zip_longest` (not `zip`) so a short/absent parallel array never silently
+    truncates the candidate list, and default a missing field to 0.0 rather
+    than block on it.
+    """
     candidates = []
-    for coord, prob, winrate, delta in zip(result.coord, result.prob, result.winrate, result.delta):
+    for coord, prob, winrate, delta in itertools.zip_longest(
+        result.coord, result.prob, result.winrate, result.delta, fillvalue=None
+    ):
+        if coord is None:
+            continue  # only coord can be authoritatively absent-driven; nothing to decode
         decoded = golaxy_to_katrain(coord, board_size)
         if not isinstance(decoded, Move):
             continue  # defensive: skip UnknownSpecial rather than emit a bogus point
-        candidates.append(Candidate(col=decoded.col, row=decoded.row, prob=prob, winrate=winrate, delta=delta))
+        candidates.append(
+            Candidate(
+                col=decoded.col,
+                row=decoded.row,
+                prob=0.0 if prob is None else prob,
+                winrate=0.0 if winrate is None else winrate,
+                delta=0.0 if delta is None else delta,
+            )
+        )
     return OptionsAnalysis(candidates=candidates)
 
 

@@ -407,3 +407,56 @@ class TestErrorTaxonomy:
         client = make_client(body_handler(VARIATION_BODY))
         with pytest.raises(ValueError):
             await engine_analysis(client, kind="bogus", moves=[], access_token=TOKEN)
+
+
+class TestMissingOptionalFieldsDoNotBlock:
+    """§13 Non-goal: options/variation per-move fields (prob/winrate/delta) are
+    best-effort -- missing them must NOT raise, only coord (or, for area/judge,
+    their own required fields) is required. See task-13-2 final review finding."""
+
+    async def test_options_missing_prob_winrate_delta_does_not_raise(self):
+        body = {"code": "0", "msg": "", "data": {"coord": [60, 59]}}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json=body)
+
+        client = make_client(handler)
+        result = await engine_analysis(client, kind="options", moves=[], access_token=TOKEN)
+        assert isinstance(result, OptionsResult)
+        assert result.coord == [60, 59]
+        assert result.prob in ([], None)
+        assert result.winrate in ([], None)
+        assert result.delta in ([], None)
+
+    async def test_options_missing_coord_is_still_fatal(self):
+        body = {"code": "0", "msg": "", "data": {"prob": [0.4], "winrate": [0.1], "delta": [0.0]}}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json=body)
+
+        client = make_client(handler)
+        with pytest.raises(Fatal):
+            await engine_analysis(client, kind="options", moves=[], access_token=TOKEN)
+
+    async def test_variation_missing_winrate_delta_defaults_to_zero(self):
+        body = {"code": "0", "msg": "", "data": {"coord": [60, 288]}}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json=body)
+
+        client = make_client(handler)
+        result = await engine_analysis(client, kind="variation", moves=[], access_token=TOKEN)
+        assert isinstance(result, VariationResult)
+        assert result.coord == [60, 288]
+        assert result.winrate == pytest.approx(0.0)
+        assert result.delta == pytest.approx(0.0)
+
+    async def test_variation_missing_coord_is_still_fatal(self):
+        body = {"code": "0", "msg": "", "data": {"winrate": 0.5, "delta": 1.0}}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json=body)
+
+        client = make_client(handler)
+        with pytest.raises(Fatal):
+            await engine_analysis(client, kind="variation", moves=[], access_token=TOKEN)

@@ -378,18 +378,24 @@ async def engine_analysis(
         coord = data.get("coord")
         if not isinstance(coord, list):
             raise Fatal(f"Golaxy options: missing or non-list data.coord: {coord!r}")
+        # coord is required (candidates are drawn from it); the parallel
+        # per-move fields (prob/winrate/delta) are best-effort per §13 --
+        # default a missing/None array to [] rather than raise, so the
+        # adapter can still draw candidate points from coord alone.
         return OptionsResult(
             coord=coord,
-            prob=data.get("prob"),
-            winrate=data.get("winrate"),
-            delta=data.get("delta"),
+            prob=data.get("prob") or [],
+            winrate=data.get("winrate") or [],
+            delta=data.get("delta") or [],
         )
 
     if kind == "variation":
         coord = data.get("coord")
         if not isinstance(coord, list):
             raise Fatal(f"Golaxy variation: missing or non-list data.coord: {coord!r}")
-        return VariationResult(coord=coord, winrate=data.get("winrate"), delta=data.get("delta"))
+        # winrate/delta are best-effort scalars per §13 -- default to 0.0
+        # when absent rather than raise; coord stays required.
+        return VariationResult(coord=coord, winrate=data.get("winrate") or 0.0, delta=data.get("delta") or 0.0)
 
     # kind == "judge"
     belong = data.get("belong")

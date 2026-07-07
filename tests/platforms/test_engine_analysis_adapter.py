@@ -358,3 +358,43 @@ async def test_malformed_judge_too_short_raises_fatal():
 
     with pytest.raises(Fatal):
         await adapter.engine_analysis(game_id, "judge")
+
+
+# --------------------------------------------------------------------------- #
+# §13 Non-goal: options per-move fields (prob/winrate/delta) are best-effort  #
+# -- missing/short arrays must draw every candidate from coord, never raise, #
+# never truncate (task-13-2 final review finding).                           #
+# --------------------------------------------------------------------------- #
+
+
+async def test_options_missing_parallel_arrays_defaults_to_zero_for_every_coord():
+    adapter = make_adapter()
+    game_id = seed_game(adapter)
+    result = OptionsResult(coord=[60, 59], prob=[], winrate=[], delta=[])
+    adapter._rest.engine_analysis = AsyncMock(return_value=result)
+
+    analysis = await adapter.engine_analysis(game_id, "options")
+
+    assert isinstance(analysis, OptionsAnalysis)
+    assert len(analysis.candidates) == 2
+    decoded = [golaxy_to_katrain(c) for c in (60, 59)]
+    for candidate, coord_decoded in zip(analysis.candidates, decoded):
+        assert (candidate.col, candidate.row) == (coord_decoded.col, coord_decoded.row)
+        assert candidate.prob == pytest.approx(0.0)
+        assert candidate.winrate == pytest.approx(0.0)
+        assert candidate.delta == pytest.approx(0.0)
+
+
+async def test_options_shorter_prob_array_does_not_truncate_candidates():
+    adapter = make_adapter()
+    game_id = seed_game(adapter)
+    # prob/winrate/delta only cover the first coord -- coord has 3 entries.
+    result = OptionsResult(coord=[60, 59, 320], prob=[0.4], winrate=[0.376], delta=[-2.1])
+    adapter._rest.engine_analysis = AsyncMock(return_value=result)
+
+    analysis = await adapter.engine_analysis(game_id, "options")
+
+    assert len(analysis.candidates) == 3  # one per in-range coord, no truncation
+    assert analysis.candidates[0].prob == pytest.approx(0.4)
+    assert analysis.candidates[1].prob == pytest.approx(0.0)
+    assert analysis.candidates[2].prob == pytest.approx(0.0)

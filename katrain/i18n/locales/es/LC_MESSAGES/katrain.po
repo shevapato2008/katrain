@@ -2448,3 +2448,6 @@ msgstr "Sugerir"
 
 msgid "Variation Line"
 msgstr "Variación"
+
+msgid "game:pass"
+msgstr "Pasar"

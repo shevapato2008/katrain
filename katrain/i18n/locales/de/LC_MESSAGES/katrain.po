@@ -2613,3 +2613,6 @@ msgstr "Zugtipp"
 
 msgid "Variation Line"
 msgstr "Variante"
+
+msgid "game:pass"
+msgstr "Passen"

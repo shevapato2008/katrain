@@ -2496,3 +2496,6 @@ msgstr "수 추천"
 
 msgid "Variation Line"
 msgstr "변화도"
+
+msgid "game:pass"
+msgstr "패스"

@@ -2569,3 +2569,6 @@ msgstr "手を提案"
 
 msgid "Variation Line"
 msgstr "変化図"
+
+msgid "game:pass"
+msgstr "パス"

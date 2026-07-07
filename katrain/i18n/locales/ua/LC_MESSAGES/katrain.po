@@ -2624,3 +2624,6 @@ msgstr "Підказка"
 
 msgid "Variation Line"
 msgstr "Варіант"
+
+msgid "game:pass"
+msgstr "Пас"

@@ -525,6 +525,21 @@ GALAXY_TRANSLATIONS = {
         "tr": "Varyant",
         "ua": "Варіант",
     },
+    # Kiosk pass button — colloquial 停一手 rather than the shared "Pass"→虚着 catalog
+    # term, without changing the app-wide "Pass" translation.
+    "game:pass": {
+        "en": "Pass",
+        "cn": "停一手",
+        "tw": "停一手",
+        "jp": "パス",
+        "ko": "패스",
+        "de": "Passen",
+        "es": "Pasar",
+        "fr": "Passer",
+        "ru": "Пас",
+        "tr": "Pas",
+        "ua": "Пас",
+    },
     "Advice": {
         "en": "Advice",
         "cn": "建议",

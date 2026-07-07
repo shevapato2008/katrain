@@ -84,7 +84,7 @@ const GameControlPanel = ({
           {!disableUndo && (
             <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} disabled={isGameOver} />
           )}
-          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver || disableSpecialActions} />
+          <ItemToggle icon={<PanToolAlt />} label={t('game:pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver || disableSpecialActions} />
           <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive disabled={isGameOver} />
           <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={isGameOver || disableSpecialActions} />
         </Box>

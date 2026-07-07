@@ -2644,3 +2644,6 @@ msgstr "Öner"
 
 msgid "Variation Line"
 msgstr "Varyant"
+
+msgid "game:pass"
+msgstr "Pas"

@@ -2551,3 +2551,6 @@ msgstr "支招"
 
 msgid "Variation Line"
 msgstr "變化圖"
+
+msgid "game:pass"
+msgstr "停一手"

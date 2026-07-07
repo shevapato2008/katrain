@@ -79,3 +79,27 @@ export function writeLastLevel(level: string): void {
     /* best-effort */
   }
 }
+
+/**
+ * localStorage key for the "use physical board" preference (Phase B / Phase D).
+ * Default is OFF (false) — opt-in for physical mode.
+ */
+export const PHYSICAL_MODE_KEY = 'kiosk_tsumego_physical';
+
+/** Read the "use physical board" preference. Defaults to FALSE (opt-in, T1). */
+export function readPhysicalMode(): boolean {
+  try {
+    return localStorage.getItem(PHYSICAL_MODE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Persist the "use physical board" preference. */
+export function writePhysicalMode(v: boolean): void {
+  try {
+    localStorage.setItem(PHYSICAL_MODE_KEY, v ? 'true' : 'false');
+  } catch {
+    /* best-effort */
+  }
+}

@@ -13,7 +13,7 @@ import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOrientation } from '../context/OrientationContext';
 
-const GamePage = () => {
+const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -31,6 +31,7 @@ const GamePage = () => {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [aiMoveToast, setAiMoveToast] = useState<string | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
+  const [engineErrorToast, setEngineErrorToast] = useState(false);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
@@ -95,6 +96,15 @@ const GamePage = () => {
     }
   };
 
+  const handleBoardMove = async (x: number, y: number) => {
+    try {
+      await session.onMove(x, y);
+    } catch (e) {
+      console.error(e);
+      if (engineMode) setEngineErrorToast(true);
+    }
+  };
+
   const handleExit = () => {
     if (!isGameOver) {
       setShowExitConfirm(true);
@@ -130,7 +140,7 @@ const GamePage = () => {
         <Box sx={isPortrait ? { width: '100%', maxHeight: '50%', aspectRatio: '1' } : { height: '100%', aspectRatio: '1' }}>
           <Board
             gameState={gameState}
-            onMove={session.onMove}
+            onMove={handleBoardMove}
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
             playerColor={humanColor}
@@ -144,6 +154,7 @@ const GamePage = () => {
             analysisToggles={analysisToggles}
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
             isGameOver={isGameOver}
+            disableSpecialActions={engineMode}
           />
         </Box>
       </Box>
@@ -184,6 +195,14 @@ const GamePage = () => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCameraDisconnectToast(false)}>
           {t('Camera disconnected, switched to touch mode', '摄像头断开，已切换为触屏模式')}
+        </Alert>
+      </Snackbar>
+
+      {/* Engine error toast */}
+      <Snackbar open={engineErrorToast} autoHideDuration={6000} onClose={() => setEngineErrorToast(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setEngineErrorToast(false)}>
+          {t('AI connection error — please retry your move, or exit to abandon the game.', 'AI 连接出错，请重试落子，或退出以放弃对局。')}
         </Alert>
       </Snackbar>
     </Box>

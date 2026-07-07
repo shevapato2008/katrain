@@ -1,0 +1,308 @@
+<title>智星盒 Kiosk · 研究子态 — 摆子/删除/领地/失败/打开棋谱</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c; --wood:#caa66f;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:940px}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:12px;width:1024px;max-width:100%;margin-top:26px}
+.flowlabel .n{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--jade)}
+.flowlabel h2{font-size:15px;font-weight:700;letter-spacing:.4px}
+.flowlabel .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
+
+.screen{width:1024px;height:600px;background:linear-gradient(180deg,#0f0f10,#0b0d0d);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+.stop{height:52px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--hair)}
+.stop .back{width:34px;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--raise);display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+.stop .back svg{width:18px;height:18px;fill:var(--sub)}
+.stop .bc{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.stop .bc b{color:var(--ice);font-weight:600}.stop .bc .sep{color:var(--dim)}
+.stop .modechip{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--jade);background:var(--jade-d);border:1px solid var(--jade-d);border-radius:20px;padding:5px 13px}
+.stop .modechip svg{width:14px;height:14px;fill:var(--jade)}
+.sbody{flex:1;min-height:0;display:flex;gap:18px;padding:16px 20px}
+.sboard-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;position:relative}
+.sboard{height:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 12px 34px -14px #000;border:1px solid #2a211a}
+.srail{width:322px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+
+.chiprow{display:flex;gap:8px;align-items:center}
+.pill{font-size:12px;font-weight:600;border-radius:20px;padding:4px 12px}
+.pill.mode{background:rgba(88,181,122,.14);color:var(--jade);border:1px solid var(--jade-d)}
+.pill.cat{background:var(--raise2);color:var(--sub);border:1px solid var(--hair)}
+.tools{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:11px 12px}
+.tools h5{font-size:11px;color:var(--dim);font-weight:600;margin-bottom:9px;letter-spacing:.3px}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.tool{background:var(--raise2);border:1px solid var(--hair);border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.13s}
+.tool svg{width:19px;height:19px;fill:var(--sub)}
+.tool span{font-size:10.5px;color:var(--sub)}
+.tool .dotb{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#4a4a4a,#0a0a0a);border:1px solid #000}
+.tool .dotw{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#cabfa9);border:1px solid #8a8272}
+.tool.on{background:var(--jade-d);border-color:var(--jade-d)}.tool.on svg{fill:var(--jade)}.tool.on span{color:var(--jade)}
+.tool.on .dotb,.tool.on .dotw{box-shadow:0 0 0 2px var(--jade)}
+.hintcard{background:linear-gradient(135deg,#22392f,#161f1d);border:1px solid var(--jade-d);border-radius:12px;padding:11px 13px;display:flex;gap:9px;align-items:flex-start}
+.hintcard.warn{background:linear-gradient(135deg,#3a2f1c,#211c16);border-color:#5a4526}
+.hintcard svg{width:17px;height:17px;flex-shrink:0;margin-top:1px;fill:var(--jade)}
+.hintcard.warn svg{fill:var(--amber)}
+.hintcard p{font-size:12px;color:var(--sub);line-height:1.45}.hintcard p b{color:var(--ice);font-weight:600}
+.hintcard.warn p b{color:var(--amber)}
+.spacer{flex:1}
+.cta{background:var(--jade);color:#0d1a13;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 12px 28px -12px var(--jade)}
+.cta svg{width:19px;height:19px;fill:#0d1a13}
+.ghostbtn{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;color:var(--ice);cursor:pointer}
+.ghostbtn svg{width:17px;height:17px;fill:var(--sub)}
+
+/* winbar (report reuse) */
+.winbar{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:12px 14px}
+.winbar .top{display:flex;justify-content:space-between;font-size:11px;color:var(--sub)}
+.winbar .nums{display:flex;justify-content:space-between;align-items:baseline;margin:4px 0 8px}
+.winbar .nums b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ice)}
+.winbar .nums b.w{color:var(--sub)}
+.winbar .nums .lead2{font-size:12.5px;color:var(--jade);font-weight:700}
+.winbar .bar{height:11px;border-radius:6px;overflow:hidden;display:flex;border:1px solid rgba(0,0,0,.35)}
+.winbar .bar .bk{background:linear-gradient(90deg,#3a3a3a,#141414)}
+.winbar .bar .wt{background:linear-gradient(90deg,#efe8db,#c9c0ad)}
+.terri{display:flex;gap:8px}
+.tcell{flex:1;background:var(--raise);border:1px solid var(--hair);border-radius:11px;padding:9px 10px;display:flex;align-items:center;gap:8px}
+.tcell .sw{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.tcell .sw.b{background:rgba(0,0,0,.55);border:1px solid #000}
+.tcell .sw.w{background:rgba(242,236,224,.6);border:1px solid #8a8272}
+.tcell .k{font-size:10.5px;color:var(--dim)}.tcell .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* error card */
+.errwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px}
+.errwrap .eico{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 42%,rgba(226,104,92,.2),transparent 70%)}
+.errwrap .eico svg{width:40px;height:40px;fill:var(--red)}
+.errwrap h1{font-family:var(--serif);font-weight:500;font-size:25px}
+.errwrap p{color:var(--sub);font-size:13px;max-width:420px;line-height:1.5}
+.errwrap .row{display:flex;gap:11px;margin-top:5px}
+.errwrap .b1{background:var(--jade);color:#0d1a13;border-radius:12px;padding:11px 22px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer}
+.errwrap .b1 svg{width:16px;height:16px;fill:#0d1a13}
+.errwrap .b2{background:var(--raise);border:1px solid var(--hair);color:var(--sub);border-radius:12px;padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer}
+
+/* modal */
+.dim{position:absolute;inset:0;background:rgba(6,9,9,.66);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center}
+.modal{width:560px;max-height:460px;background:var(--raise);border:1px solid var(--hair);border-radius:18px;box-shadow:0 30px 70px -20px #000;display:flex;flex-direction:column;overflow:hidden}
+.modal .mh{padding:15px 18px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:10px}
+.modal .mh svg{width:19px;height:19px;fill:var(--jade)}
+.modal .mh h3{font-family:var(--serif);font-weight:500;font-size:19px}
+.modal .mh .x{margin-left:auto;width:28px;height:28px;border-radius:8px;border:1px solid var(--hair);display:grid;place-items:center;cursor:pointer}
+.modal .mh .x svg{width:14px;height:14px;fill:var(--sub)}
+.modal .msearch{margin:13px 18px 4px;background:var(--raise2);border:1px solid var(--hair);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px;color:var(--dim);font-size:12.5px}
+.modal .msearch svg{width:15px;height:15px;fill:var(--dim)}
+.klist{flex:1;overflow:auto;padding:8px 12px 12px;display:flex;flex-direction:column;gap:7px}
+.krow{background:var(--raise2);border:1px solid var(--hair);border-radius:11px;padding:10px 13px;cursor:pointer;transition:.13s}
+.krow:hover{border-color:#3a4d45}
+.krow.sel{border-color:var(--jade);background:linear-gradient(135deg,#1f3a30,#1a2320)}
+.krow .kt{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:5px}
+.krow .kp{display:flex;align-items:center;gap:8px;font-size:13px}
+.krow .kp .st{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.krow .kp .st.b{background:radial-gradient(circle at 35% 30%,#4a4a4a,#0a0a0a);border:1px solid #000}
+.krow .kp .st.w{background:radial-gradient(circle at 35% 30%,#fff,#cabfa9);border:1px solid #8a8272}
+.krow .kp b{font-weight:600}
+.krow .kp .res{margin:0 4px;font-size:11px;font-weight:700;color:var(--jade);background:rgba(88,181,122,.14);border-radius:7px;padding:2px 8px}
+.krow .kp .vs{color:var(--dim)}
+.modal .mf{padding:12px 18px;border-top:1px solid var(--hair);display:flex;gap:11px;justify-content:flex-end}
+.modal .mf .c{background:var(--raise2);border:1px solid var(--hair);color:var(--sub);border-radius:11px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.modal .mf .o{background:var(--jade);color:#0d1a13;border-radius:11px;padding:10px 22px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer}
+.modal .mf .o svg{width:15px;height:15px;fill:#0d1a13}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ③ <b>棋盘台 · 研究子态</b> — 补齐 `research-flow` 三屏之外的编辑/分析细态：摆子模式 · 删除模式 · 领地叠加 · 分析失败 · 从棋谱库打开。全程 MUI 图标无 emoji。7″ 1024×600</div>
+
+  <!-- A 摆子模式 -->
+  <div class="flowlabel"><span class="n">A</span><h2>编辑 · 摆子模式（摆黑 · 落子预览）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">研究<span class="sep">›</span><b>编辑摆棋</b></div>
+      <div class="modechip"><span class="dotb" style="width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#4a4a4a,#0a0a0a)"></span>摆黑子</div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g class="wg"><use href="#sw" x="309.9" y="269.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="169.9" width="20.2" height="20.2"/><use href="#sw" x="109.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="49.9" y="189.9" width="20.2" height="20.2"/><use href="#sw" x="129.9" y="329.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="309.9" width="20.2" height="20.2"/><use href="#sw" x="69.9" y="209.9" width="20.2" height="20.2"/><use href="#sw" x="189.9" y="49.9" width="20.2" height="20.2"/></g>
+          <g class="bg"><use href="#sb" x="69.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="69.9" y="309.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="109.9" width="20.2" height="20.2"/><use href="#sb" x="49.9" y="269.9" width="20.2" height="20.2"/><use href="#sb" x="189.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="269.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="209.9" width="20.2" height="20.2"/></g>
+          <!-- 落子预览：半透明黑子 ghost -->
+          <circle cx="200" cy="200" r="9.6" fill="rgba(0,0,0,.42)" stroke="rgba(0,0,0,.55)" stroke-width="1"/>
+          <circle cx="200" cy="200" r="12.5" fill="none" stroke="var(--jade)" stroke-width="1.4" stroke-dasharray="3 3"/>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill mode">研究模式</span><span class="pill cat">摆子模式</span></div>
+        <div class="tools">
+          <h5>编辑工具</h5>
+          <div class="tgrid">
+            <div class="tool"><svg viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z"/></svg><span>交替</span></div>
+            <div class="tool on"><span class="dotb"></span><span>摆黑</span></div>
+            <div class="tool"><span class="dotw"></span><span>摆白</span></div>
+            <div class="tool"><svg viewBox="0 0 24 24"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12z"/></svg><span>删除</span></div>
+          </div>
+        </div>
+        <div class="hintcard">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+          <p><b>摆黑子</b>：连续点空点落黑，不自动换色。切「交替」可黑白轮流；「摆白」只落白。半透明子为落点预览。</p>
+        </div>
+        <div class="spacer"></div>
+        <div class="cta"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg>开始研究</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B 删除模式 -->
+  <div class="flowlabel"><span class="n">B</span><h2>编辑 · 删除模式（点选待删棋子）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">研究<span class="sep">›</span><b>编辑摆棋</b></div>
+      <div class="modechip" style="color:var(--red);background:rgba(226,104,92,.14);border-color:rgba(226,104,92,.4)"><svg viewBox="0 0 24 24" style="fill:var(--red)"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12z"/></svg>删除模式</div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g class="wg"><use href="#sw" x="309.9" y="269.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="169.9" width="20.2" height="20.2"/><use href="#sw" x="109.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="49.9" y="189.9" width="20.2" height="20.2"/><use href="#sw" x="129.9" y="329.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="309.9" width="20.2" height="20.2"/><use href="#sw" x="69.9" y="209.9" width="20.2" height="20.2"/><use href="#sw" x="189.9" y="49.9" width="20.2" height="20.2"/></g>
+          <g class="bg"><use href="#sb" x="69.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="69.9" y="309.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="109.9" width="20.2" height="20.2"/><use href="#sb" x="49.9" y="269.9" width="20.2" height="20.2"/><use href="#sb" x="189.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="269.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="209.9" width="20.2" height="20.2"/></g>
+          <!-- 待删标记：红环 + 叉 在 (13,2)=280,60 -->
+          <circle cx="280" cy="60" r="12" fill="rgba(226,104,92,.22)" stroke="var(--red)" stroke-width="1.6"/>
+          <path d="M275 55l10 10M285 55l-10 10" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill mode">研究模式</span><span class="pill cat" style="color:var(--red)">删除模式</span></div>
+        <div class="tools">
+          <h5>编辑工具</h5>
+          <div class="tgrid">
+            <div class="tool"><svg viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z"/></svg><span>交替</span></div>
+            <div class="tool"><span class="dotb"></span><span>摆黑</span></div>
+            <div class="tool"><svg viewBox="0 0 24 24"><path d="M15 16v-3h-3v3h-2l3 3 3-3zM9 8v3h3V8h2l-3-3-3 3zm7 4 3-3-3-3v2h-3v2h3zm-8 0v-2H5V8l-3 3 3 3v-2z"/></svg><span>移动</span></div>
+            <div class="tool on" style="background:rgba(226,104,92,.16);border-color:rgba(226,104,92,.4)"><svg viewBox="0 0 24 24" style="fill:var(--red)"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12z"/></svg><span style="color:var(--red)">删除</span></div>
+          </div>
+        </div>
+        <div class="hintcard warn">
+          <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2zm12-3h-2v-2h2zm0-4h-2v-4h2z"/></svg>
+          <p><b>删除模式</b>：点选任意棋子即移除（红叉为待删标记）。清空整盘用工具栏「清空」。</p>
+        </div>
+        <div class="spacer"></div>
+        <div class="ghostbtn"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>撤销上一步</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C 领地叠加 -->
+  <div class="flowlabel"><span class="n">C</span><h2>分析报告 · 领地叠加（ownership 归属）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">研究<span class="sep">›</span>分析报告<span class="sep">›</span><b>第 84 手</b></div>
+      <div class="modechip"><svg viewBox="0 0 24 24"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22z"/></svg>领地 开</div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <!-- ownership squares: 黑归属(暗) 左下 / 白归属(亮) 右上 -->
+          <g>
+            <rect x="32.5" y="292.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="52.5" y="312.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="32.5" y="332.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="72.5" y="332.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="32.5" y="352.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="52.5" y="352.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="12.5" y="332.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="12.5" y="292.5" width="15" height="15" fill="rgba(0,0,0,.5)"/><rect x="92.5" y="352.5" width="15" height="15" fill="rgba(0,0,0,.5)"/>
+            <rect x="332.5" y="32.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="312.5" y="52.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="352.5" y="52.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="352.5" y="12.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="332.5" y="12.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="292.5" y="32.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="312.5" y="12.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="352.5" y="72.5" width="15" height="15" fill="rgba(242,236,224,.55)"/><rect x="272.5" y="32.5" width="15" height="15" fill="rgba(242,236,224,.55)"/>
+          </g>
+          <g class="wg"><use href="#sw" x="309.9" y="269.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="169.9" width="20.2" height="20.2"/><use href="#sw" x="109.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="49.9" y="189.9" width="20.2" height="20.2"/><use href="#sw" x="129.9" y="309.9" width="20.2" height="20.2"/><use href="#sw" x="269.9" y="309.9" width="20.2" height="20.2"/><use href="#sw" x="69.9" y="209.9" width="20.2" height="20.2"/><use href="#sw" x="189.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="229.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="289.9" y="109.9" width="20.2" height="20.2"/><use href="#sw" x="49.9" y="69.9" width="20.2" height="20.2"/><use href="#sw" x="89.9" y="269.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="149.9" width="20.2" height="20.2"/><use href="#sw" x="189.9" y="209.9" width="20.2" height="20.2"/><use href="#sw" x="169.9" y="169.9" width="20.2" height="20.2"/></g>
+          <g class="bg"><use href="#sb" x="69.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="69.9" y="309.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="309.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="109.9" width="20.2" height="20.2"/><use href="#sb" x="49.9" y="269.9" width="20.2" height="20.2"/><use href="#sb" x="189.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="269.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="109.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="229.9" width="20.2" height="20.2"/><use href="#sb" x="229.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="149.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="49.9" y="129.9" width="20.2" height="20.2"/><use href="#sb" x="129.9" y="149.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="329.9" width="20.2" height="20.2"/><use href="#sb" x="249.9" y="209.9" width="20.2" height="20.2"/></g>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="winbar">
+          <div class="top"><span>黑 · fan</span><span>白 · KataGo</span></div>
+          <div class="nums"><b>63.2%</b><span class="lead2">黑 +3.5 目</span><b class="w">36.8%</b></div>
+          <div class="bar"><i class="bk" style="width:63.2%"></i><i class="wt" style="width:36.8%"></i></div>
+        </div>
+        <div class="terri">
+          <div class="tcell"><span class="sw b"></span><div><div class="k">黑 归属</div><div class="v">54 目</div></div></div>
+          <div class="tcell"><span class="sw w"></span><div><div class="k">白 归属</div><div class="v">50.5 目</div></div></div>
+        </div>
+        <div class="hintcard">
+          <svg viewBox="0 0 24 24"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22z"/></svg>
+          <p><b>领地叠加</b>：暗格＝黑归属，亮格＝白归属（KataGo ownership）。含贴目 7.5 后黑 <b>+3.5 目</b>。切「领地」开关关闭叠加。</p>
+        </div>
+        <div class="spacer"></div>
+        <div class="ghostbtn"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg>返回编辑</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D 分析失败 -->
+  <div class="flowlabel"><span class="n">D</span><h2>分析失败态（引擎无响应 · 可重试）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">研究<span class="sep">›</span><b>AI 分析</b></div>
+    </div>
+    <div class="errwrap">
+      <div class="eico"><svg viewBox="0 0 24 24"><path d="M12 2 1 21h22zm1 15h-2v-2h2zm0-4h-2v-4h2z"/></svg></div>
+      <h1>分析失败</h1>
+      <p>引擎在分析第 84 手时无响应，可能是分析服务器网络中断。已完成的 83 手结果已保留，可重试继续，或返回编辑修改后再试。</p>
+      <div class="row">
+        <div class="b1"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8"/></svg>重试分析</div>
+        <div class="b2">返回编辑</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E 从棋谱库打开 -->
+  <div class="flowlabel"><span class="n">E</span><h2>从棋谱库打开（载入棋谱到研究）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">研究<span class="sep">›</span><b>编辑摆棋</b></div>
+    </div>
+    <div class="sbody" style="filter:blur(.4px)">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400" style="opacity:.5">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 60H380M20 100H380M20 140H380M20 180H380M20 220H380M20 260H380M20 300H380M20 340H380M20 380H380"/><path d="M20 20V380M60 20V380M100 20V380M140 20V380M180 20V380M220 20V380M260 20V380M300 20V380M340 20V380M380 20V380"/></g>
+        </svg>
+      </div>
+      <div class="srail"></div>
+    </div>
+    <div class="dim">
+      <div class="modal">
+        <div class="mh"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg><h3>从棋谱库打开</h3><div class="x"><svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div></div>
+        <div class="msearch"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14"/></svg>搜索棋手、赛事…</div>
+        <div class="klist">
+          <div class="krow sel">
+            <div class="kt"><span>第 28 届三星杯 · 决赛</span><span>2024-11-05 · 267 手</span></div>
+            <div class="kp"><span class="st b"></span><b>申真谞</b> 九段<span class="res">黑中盘胜</span><span class="vs">柯洁</span> 九段<span class="st w"></span></div>
+          </div>
+          <div class="krow">
+            <div class="kt"><span>农心杯 · 第 12 局</span><span>2024-02-21 · 214 手</span></div>
+            <div class="kp"><span class="st b"></span>党毅飞 九段<span class="res">白胜 2.5 目</span><b>朴廷桓</b> 九段<span class="st w"></span></div>
+          </div>
+          <div class="krow">
+            <div class="kt"><span>LG 杯 · 半决赛</span><span>2023-09-18 · 189 手</span></div>
+            <div class="kp"><span class="st b"></span><b>丁浩</b> 九段<span class="res">黑胜 1.5 目</span><span class="vs">杨鼎新</span> 九段<span class="st w"></span></div>
+          </div>
+          <div class="krow">
+            <div class="kt"><span>春兰杯 · 四强</span><span>2023-05-30 · 241 手</span></div>
+            <div class="kp"><span class="st b"></span>辜梓豪 九段<span class="res">白中盘胜</span><b>李轩豪</b> 九段<span class="st w"></span></div>
+          </div>
+        </div>
+        <div class="mf"><div class="c">取消</div><div class="o"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg>在研究中打开</div></div>
+      </div>
+    </div>
+  </div>
+</div>

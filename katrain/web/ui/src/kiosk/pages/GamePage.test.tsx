@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -12,12 +12,23 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
+interface MockBoardProps { analysisToggles?: Record<string, boolean> }
+const { capturedBoardProps } = vi.hoisted(() => ({
+  capturedBoardProps: { current: null as { analysisToggles?: Record<string, boolean> } | null },
+}));
 vi.mock('../../components/Board', () => ({
-  default: () => <div data-testid="board">Board</div>,
+  default: (props: MockBoardProps) => { capturedBoardProps.current = props; return <div data-testid="board">Board</div>; },
 }));
 
+// Exposes onAction so state-D (resign) tests can drive the real GamePage resign flow
+// without a full GameControlPanel render.
+interface MockControlPanelProps { onAction: (action: string) => void }
 vi.mock('../components/game/GameControlPanel', () => ({
-  default: () => <div data-testid="game-control-panel">GameControlPanel</div>,
+  default: (props: MockControlPanelProps) => (
+    <div data-testid="game-control-panel">
+      <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
+    </div>
+  ),
 }));
 
 const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
@@ -26,18 +37,23 @@ const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
 }));
 vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession }));
 
+const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
+vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
+
 let mockIsVisionEnabled = false;
+let mockPoseLocked = true;
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    visionStatus: { enabled: mockIsVisionEnabled, cameraConnected: true, poseLocked: true, syncState: 'idle', boundSessionId: null, ledConnected: null },
+    visionStatus: { enabled: mockIsVisionEnabled, cameraConnected: true, poseLocked: mockPoseLocked, syncState: 'idle', boundSessionId: null, ledConnected: null },
     isVisionEnabled: mockIsVisionEnabled,
     refreshStatus: vi.fn(),
   }),
 }));
 
 let mockLatestEvent: { type: string; data: Record<string, unknown> } | null = null;
+let mockSyncEvents: { type: string; data: Record<string, unknown> }[] = [];
 vi.mock('../hooks/useVisionSync', () => ({
-  useVisionSync: () => ({ syncEvents: [], latestEvent: mockLatestEvent, setupProgress: null, isSetupComplete: false }),
+  useVisionSync: () => ({ syncEvents: mockSyncEvents, latestEvent: mockLatestEvent, setupProgress: null, isSetupComplete: false }),
 }));
 
 const mockSetSessionId = vi.fn();
@@ -46,6 +62,7 @@ const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
 
 let mockGameState: GameState;
+let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
   useGameSession: () => ({
@@ -62,7 +79,7 @@ vi.mock('../../hooks/useGameSession', () => ({
     chatMessages: [],
     sendChat: vi.fn(),
     gameEndData: null,
-    physicalReminder: null,
+    physicalReminder: mockPhysicalReminder,
   }),
 }));
 
@@ -116,6 +133,11 @@ describe('GamePage', () => {
     vi.clearAllMocks();
     mockIsVisionEnabled = false;
     mockLatestEvent = null;
+    mockSyncEvents = [];
+    mockPoseLocked = true;
+    mockPhysicalReminder = null;
+    capturedBoardProps.current = null;
+    mockCalibrate.mockClear().mockResolvedValue({});
   });
 
   it('never renders the TEMP DEBUG vision-stream <img>', () => {
@@ -196,7 +218,7 @@ describe('GamePage', () => {
       expect(screen.queryByTestId('ai-move-banner')).toBeNull();
     });
 
-    it('no ai-thinking surface renders for PVP either (none exists yet — B1.4 will gate its surface on the same aiColor===null)', () => {
+    it('no ai-thinking surface renders for PVP either (B1.4 gates the state-A surface on the same aiColor===null / showThinking===false)', () => {
       mockIsVisionEnabled = true;
       mockGameState = makeGameState({
         players_info: {
@@ -300,6 +322,95 @@ describe('GamePage', () => {
       renderPage();
       expect(clearActiveSession).toHaveBeenCalledWith('game');
       expect(writeActiveSession).not.toHaveBeenCalled();
+    });
+  });
+
+  // --- B1.4: four GamePage states + consolidated board-loss surfaces ---------------
+
+  const aiVsHuman = {
+    B: { ...basePlayer, player_type: 'player:human', name: '张三' },
+    W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
+  };
+
+  describe('State A — AI 思考中 (B1.4)', () => {
+    it('shows ai-thinking when it is the AI turn with no move_pending event', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, player_to_move: 'W', end_result: null });
+      renderPage();
+      expect(screen.getByTestId('ai-thinking')).toBeInTheDocument();
+    });
+
+    it('hides ai-thinking while the physical layer is confirming (move_pending), per B1.3 showThinking', () => {
+      mockLatestEvent = { type: 'move_pending', data: {} };
+      mockGameState = makeGameState({ players_info: aiVsHuman, player_to_move: 'W', end_result: null });
+      renderPage();
+      expect(screen.queryByTestId('ai-thinking')).toBeNull();
+    });
+  });
+
+  describe('State B — RecalibrationModal (B1.4)', () => {
+    it('opens when pose is lost mid-game, and 重新标定 calls GeometryAPI.calibrate("manual")', async () => {
+      mockIsVisionEnabled = true;
+      mockPoseLocked = false;
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      renderPage();
+      expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('重新标定'));
+      await waitFor(() => expect(mockCalibrate).toHaveBeenCalledWith('manual'));
+    });
+
+    it('is suppressed while the escalation dialog is open (escalation > recalibration)', () => {
+      mockIsVisionEnabled = true;
+      mockPoseLocked = false;
+      mockPhysicalReminder = { kind: 'escalation', to_place: [[3, 3]], to_remove: [] };
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      renderPage();
+      expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+    });
+  });
+
+  describe('Board-loss consolidation — escalation + board_lost never both render (B1.4)', () => {
+    it('suppresses the VisionSyncOverlay board-lost modal while the escalation dialog is up', async () => {
+      vi.useFakeTimers();
+      try {
+        mockIsVisionEnabled = true;
+        mockSyncEvents = [{ type: 'board_lost', data: {} }];
+        mockPhysicalReminder = { kind: 'escalation', to_place: [[3, 3]], to_remove: [] };
+        mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+        renderPage();
+        await act(async () => { vi.advanceTimersByTime(10_000); });
+        expect(screen.queryByText('棋盘检测异常')).toBeNull();
+        expect(screen.getByText('物理棋盘长时间未跟上对局')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('State C — 终局数子 (B1.4)', () => {
+    it('renders endgame-card + result-badge and forces Board analysisToggles.ownership=true', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
+      renderPage();
+      expect(screen.getByTestId('endgame-card')).toBeInTheDocument();
+      expect(screen.getByTestId('result-badge')).toBeInTheDocument();
+      expect(capturedBoardProps.current?.analysisToggles?.ownership).toBe(true);
+    });
+
+    it('继续对弈 hides the endgame-card locally and does NOT call session.handleAction (game stays ended)', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
+      renderPage();
+      fireEvent.click(screen.getByText('继续对弈'));
+      expect(screen.queryByTestId('endgame-card')).toBeNull();
+      expect(mockHandleAction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('State D — 认输 error-red modal (B1.4)', () => {
+    it('resign confirm button has color=error', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      const confirmBtn = screen.getByRole('button', { name: '认输' });
+      expect(confirmBtn.className).toMatch(/error/i);
     });
   });
 });

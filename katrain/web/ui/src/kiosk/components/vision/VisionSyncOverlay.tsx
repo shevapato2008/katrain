@@ -39,6 +39,11 @@ interface VisionSyncOverlayProps {
   sessionId: string | null;
   boardSize: number;
   playerToMove: string | null;
+  /** Board-loss precedence (Task B1.4, wired from GamePage.tsx): true while a
+   * higher-priority board-loss surface (the escalation dialog or the recalibration
+   * modal) is already up, so this generic "board detection abnormal" dialog never
+   * stacks on top of / behind it. Default false — unrelated call sites are unaffected. */
+  suppressBoardLost?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,7 +78,7 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
 
   // -- Toast state ----------------------------------------------------------
@@ -274,8 +279,10 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
         />
       )}
 
-      {/* ---- Board lost dialog (blocking, after 10s) ---- */}
-      <Dialog open={boardLostOpen} maxWidth="xs" fullWidth>
+      {/* ---- Board lost dialog (blocking, after 10s) ----
+          suppressBoardLost short-circuits visibility only — the 10s timer/state machine
+          above keeps running so it reflects reality once the higher-priority surface clears. */}
+      <Dialog open={boardLostOpen && !suppressBoardLost} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ textAlign: 'center', color: 'error.main' }}>
           棋盘检测异常
         </DialogTitle>

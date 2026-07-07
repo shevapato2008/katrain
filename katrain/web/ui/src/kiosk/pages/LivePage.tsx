@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Box, Typography, Tabs, Tab, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Tabs, Tab, Button, CircularProgress, Alert, Chip } from '@mui/material';
+import { LiveTv } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLiveMatches } from '../../hooks/live/useLiveMatches';
 import { useLiveMatch } from '../../hooks/live/useLiveMatch';
@@ -73,6 +74,41 @@ const LivePage = () => {
       >
         {selectedMatch ? (
           <>
+            {selectedMatch.status === 'live' && (
+              <Box sx={{ mb: 1 }}>
+                <Chip
+                  label={t('Live', '直播中')}
+                  size="small"
+                  sx={{
+                    bgcolor: 'transparent',
+                    color: 'error.main',
+                    '& .MuiChip-label': { pl: 0.5 },
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: 'error.main',
+                      boxShadow: '0 0 7px',
+                      mr: 0.75,
+                    },
+                  }}
+                />
+              </Box>
+            )}
+            {selectedMatch.status === 'finished' && (
+              <Box sx={{ mb: 1 }}>
+                <Chip
+                  label={t('Ended', '已结束')}
+                  size="small"
+                  sx={{
+                    bgcolor: 'var(--raise2)',
+                    color: 'text.secondary',
+                  }}
+                />
+              </Box>
+            )}
             <Box sx={{ flex: 1, minHeight: 0 }}>
               <LiveBoard
                 moves={selectedMatch.moves}
@@ -136,9 +172,26 @@ const LivePage = () => {
                     onSelect={handleSelectMatch}
                   />
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('No live matches', '暂无直播')}
-                  </Typography>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 1.5,
+                      p: 3,
+                      border: '1px dashed',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                    }}
+                  >
+                    <LiveTv sx={{ fontSize: 40, color: 'divider' }} />
+                    <Typography color="text.secondary">
+                      {t('No live matches', '暂无直播')}
+                    </Typography>
+                  </Box>
                 )}
               </Box>
               <Box>
@@ -155,6 +208,7 @@ const LivePage = () => {
               </Box>
             </>
           ) : (
+            // The "即将开始" empty state is owned by UpcomingList shared component (rendered internally, not duplicated here)
             <UpcomingList limit={20} />
           )}
         </Box>

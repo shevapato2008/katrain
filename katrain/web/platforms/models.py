@@ -60,6 +60,7 @@ class PlatformMove:
     row: int  # 0-indexed from top
     color: str  # "B" or "W"
     move_number: int
+    game_id: str = ""  # which platform game this move belongs to (keys manager._active_games)
 
 
 @dataclass
@@ -106,6 +107,7 @@ class PlatformGameContext:
     remote_clock_version: int = 0
     needs_resync: bool = False
     my_color: str = "B"
+    is_engine: bool = False  # True for synthetic engine-play contexts (later task)
 
     def recover_from_snapshot(self, snapshot: dict) -> None:
         """Reset local state from a full game snapshot fetched after reconnection."""

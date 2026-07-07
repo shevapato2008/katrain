@@ -1,0 +1,208 @@
+<title>智星盒 Kiosk · 死活 — 难度 hub + 解题页</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c; --wood:#caa66f;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:900px}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:12px;width:1024px;max-width:100%;margin-top:26px}
+.flowlabel .n{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--jade)}
+.flowlabel h2{font-size:15px;font-weight:700;letter-spacing:.4px}
+.flowlabel .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
+
+.screen{width:1024px;height:600px;background:
+  radial-gradient(90% 80% at 20% 0%, rgba(88,181,122,.08), transparent 55%),
+  linear-gradient(180deg,#111817,#0d1211);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+/* ── header (same as ③) ── */
+.hdr{height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--hair)}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;object-fit:contain;flex-shrink:0}
+.wname{font-family:var(--serif);font-size:20px;font-weight:600}
+.wname small{font-family:var(--serif);font-style:italic;font-weight:500;font-size:12px;color:var(--sub);margin-left:7px}
+.hdr .r{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--sub)}
+.hdr .who{display:flex;align-items:center;gap:8px;color:var(--ice)}
+.hdr .ava{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#26463a,#58b57a);display:grid;place-items:center;font-size:12px;font-weight:700;color:#0c130f}
+.hdr .t{font-variant-numeric:tabular-nums}
+
+/* ── 死活 hub (full-width browse; 无左侧棋盘台) ── */
+.tmain{flex:1;min-height:0;display:flex;flex-direction:column;padding:16px 24px 12px;gap:13px}
+.thead{display:flex;align-items:flex-end;justify-content:space-between}
+.thead .tl{display:flex;align-items:baseline;gap:12px}
+.thead h1{font-family:var(--serif);font-weight:500;font-size:25px}
+.thead .sub{color:var(--sub);font-size:12.5px}
+.thead .crumb{color:var(--dim);font-size:12px}
+.thead .cont{display:flex;align-items:center;gap:9px;background:linear-gradient(135deg,#2a5344,#1c2f28);border:1px solid var(--jade-d);border-radius:12px;padding:8px 14px;cursor:pointer}
+.thead .cont .rl{width:5px;height:24px;border-radius:4px;background:var(--jade)}
+.thead .cont h4{font-size:13px;font-weight:600}.thead .cont p{font-size:11px;color:var(--sub);margin-top:1px}
+.thead .cont .go{margin-left:6px;width:26px;height:26px;border-radius:50%;background:var(--jade);display:grid;place-items:center}
+.thead .cont .go svg{width:14px;height:14px;fill:#0d1a13}
+
+.lgrid{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:1fr;gap:11px;min-height:0}
+.lvl{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:11px 12px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:transform .13s cubic-bezier(.2,.7,.3,1),border-color .13s;position:relative;overflow:hidden}
+.lvl:hover{border-color:#3a4d45;transform:translateY(-1px)}
+.lvl .lc{font-family:var(--serif);font-weight:600;font-size:23px;line-height:1}
+.lvl .lc.dan{color:var(--jade)}
+.lvl .ln{font-size:11px;color:var(--sub)}
+.lvl .ldots{display:flex;gap:3px;margin-top:5px}
+.lvl .ldots i{width:5px;height:5px;border-radius:50%;background:var(--hair)}
+.lvl .ldots i.on{background:var(--jade)}
+.lvl.here{border-color:var(--jade-d);background:linear-gradient(150deg,#22392f,#161f1d)}
+.lvl.here .tag{position:absolute;top:8px;right:8px;font-size:9.5px;color:var(--jade);border:1px solid var(--jade-d);border-radius:10px;padding:1px 7px}
+
+/* ── dock (same as ③；死活 lit) ── */
+.dock{height:82px;flex-shrink:0;border-top:1px solid var(--hair);display:flex;align-items:stretch;padding:8px 14px;gap:4px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.22))}
+.dk{flex:1;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--sub);cursor:pointer;transition:.15s}
+.dk svg{width:24px;height:24px;fill:currentColor}
+.dk span{font-size:12.5px;font-weight:600;letter-spacing:.5px}
+.dk:hover{color:#c3d0cb;background:rgba(255,255,255,.03)}
+.dk.on{color:#0e1a13;background:var(--jade);box-shadow:0 10px 24px -10px var(--jade)}.dk.on svg{fill:#0e1a13}
+
+/* ── solving view (immersive) ── */
+.solve{background:linear-gradient(180deg,#0f0f10,#0b0d0d)}
+.stop{height:52px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--hair)}
+.stop .back{width:34px;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--raise);display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+.stop .back svg{width:18px;height:18px;fill:var(--sub)}
+.stop .bc{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.stop .bc b{color:var(--ice);font-weight:600}
+.stop .bc .sep{color:var(--dim)}
+.stop .board-tag{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--sub);background:var(--raise);border:1px solid var(--hair);border-radius:20px;padding:5px 12px}
+.stop .board-tag b{width:7px;height:7px;border-radius:50%;background:var(--jade);box-shadow:0 0 7px var(--jade)}
+.sbody{flex:1;min-height:0;display:flex;gap:18px;padding:16px 20px}
+.sboard-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center}
+.sboard{height:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 12px 34px -14px #000;border:1px solid #2a211a}
+.srail{width:298px;flex-shrink:0;display:flex;flex-direction:column;gap:11px}
+.chiprow{display:flex;gap:8px;align-items:center}
+.pill{font-size:12px;font-weight:600;border-radius:20px;padding:4px 12px}
+.pill.lvl2{background:rgba(88,181,122,.14);color:var(--jade);border:1px solid var(--jade-d)}
+.pill.cat{background:var(--raise2);color:var(--sub);border:1px solid var(--hair)}
+.prompt{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:14px 15px}
+.prompt .turn{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600}
+.prompt .turn .st{width:19px;height:19px;border-radius:50%;flex-shrink:0}
+.prompt .turn .st.b{background:radial-gradient(circle at 35% 30%,#4a4a4a,#0a0a0a);border:1px solid #000}
+.prompt .hint{font-family:var(--serif);font-size:19px;font-weight:500;margin-top:9px;line-height:1.25}
+.prompt .status{margin-top:10px;font-size:12.5px;color:var(--sub);display:flex;align-items:center;gap:7px}
+.prompt .status .dot{width:6px;height:6px;border-radius:50%;background:var(--jade)}
+.meta{display:flex;gap:8px}
+.mcell{flex:1;background:var(--raise);border:1px solid var(--hair);border-radius:11px;padding:9px 10px;text-align:center}
+.mcell .mk{font-size:10.5px;color:var(--dim)}
+.mcell .mv{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.act{background:var(--raise);border:1px solid var(--hair);border-radius:12px;padding:11px 10px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--ice);cursor:pointer;transition:.13s}
+.act:hover{border-color:#3a4d45}
+.act svg{width:18px;height:18px;fill:var(--sub)}
+.act.warnt{color:var(--amber)}.act.warnt svg{fill:var(--amber)}
+.spacer{flex:1}
+.nav2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.nb{border-radius:13px;padding:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;transition:.13s}
+.nb svg{width:19px;height:19px;fill:currentColor}
+.nb.prev{background:var(--raise);border:1px solid var(--hair);color:var(--ice)}.nb.prev:hover{border-color:#3a4d45}
+.nb.next{background:var(--jade);color:#0d1a13;box-shadow:0 10px 24px -12px var(--jade)}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ③ <b>棋盘台 · 死活模块</b> — Dock 选中「死活」→ 难度 hub（全宽浏览，无左侧棋盘台）；点入题目 → 沉浸解题页（galaxy 同款盘面）。现有 kiosk 死活已全建，本稿为视觉换皮。7″ 1024×600</div>
+
+  <!-- ① 死活 hub · 难度选择 -->
+  <div class="flowlabel"><span class="n">①</span><h2>死活 hub · 选择难度（Dock「死活」选中）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="./logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div class="t">22:40</div></div>
+    </div>
+    <div class="tmain">
+      <div class="thead">
+        <div class="tl"><h1>死活题</h1><span class="sub">选择难度级别 · 练习死活以提高计算力</span></div>
+        <div class="cont"><div class="rl"></div><div><h4>继续练习</h4><p>3 段 · 死活题 · 第 12 题</p></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="#0d1a13" stroke-width="2.6"/></svg></div></div>
+      </div>
+      <div class="lgrid">
+        <div class="lvl"><div><div class="lc">15K</div></div><div class="ln">420 题</div></div>
+        <div class="lvl"><div><div class="lc">13K</div></div><div class="ln">465 题</div></div>
+        <div class="lvl"><div><div class="lc">11K</div></div><div class="ln">510 题</div></div>
+        <div class="lvl"><div><div class="lc">9K</div></div><div class="ln">548 题</div></div>
+        <div class="lvl"><div><div class="lc">7K</div></div><div class="ln">602 题</div></div>
+        <div class="lvl"><div><div class="lc">5K</div></div><div class="ln">640 题</div></div>
+        <div class="lvl"><div><div class="lc">4K</div></div><div class="ln">618 题</div><div class="ldots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
+        <div class="lvl"><div><div class="lc">3K</div></div><div class="ln">590 题</div><div class="ldots"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div>
+        <div class="lvl"><div><div class="lc">2K</div></div><div class="ln">564 题</div></div>
+        <div class="lvl"><div><div class="lc">1K</div></div><div class="ln">532 题</div></div>
+        <div class="lvl here"><span class="tag">上次</span><div><div class="lc dan">3D</div></div><div class="ln">388 题</div><div class="ldots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div>
+        <div class="lvl"><div><div class="lc dan">1D</div></div><div class="ln">470 题</div><div class="ldots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+        <div class="lvl"><div><div class="lc dan">2D</div></div><div class="ln">432 题</div><div class="ldots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
+        <div class="lvl"><div><div class="lc dan">4D</div></div><div class="ln">356 题</div></div>
+        <div class="lvl"><div><div class="lc dan">5D</div></div><div class="ln">312 题</div></div>
+        <div class="lvl"><div><div class="lc dan">6D</div></div><div class="ln">268 题</div></div>
+        <div class="lvl"><div><div class="lc dan">7D</div></div><div class="ln">210 题</div></div>
+        <div class="lvl" style="border-style:dashed;justify-content:center;align-items:center;color:var(--dim)"><div class="ln" style="text-align:center">更多难度<br>滑动查看</div></div>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg><span>对弈</span></div>
+      <div class="dk on"><svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11"/></svg><span>死活</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg><span>研究</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg><span>棋谱</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M8 20H4v-4h4zm0-6H4v-4h4zm0-6H4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4z"/></svg><span>摆谱</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2m0 14H3V8h18zM9 10v8l7-4z"/></svg><span>直播</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1m0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5z"/></svg><span>教程</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6"/></svg><span>设置</span></div>
+    </div>
+  </div>
+
+  <!-- ② 解题页 · 沉浸 -->
+  <div class="flowlabel"><span class="n">②</span><h2>解题页 · 沉浸（点某题进入）</h2><span class="rule"></span></div>
+  <div class="screen solve">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">死活<span class="sep">›</span>3 段<span class="sep">›</span>死活题<span class="sep">›</span><b>第 12 题</b></div>
+      <div class="board-tag"><b></b>实体棋盘 已连接 · 可摆子作答</div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g>
+            <!-- 白（被杀方） -->
+            <use href="#sw" x="349.9" y="29.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="349.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="369.9" y="49.9" width="20.2" height="20.2"/>
+            <!-- 黑（进攻方） -->
+            <use href="#sb" x="329.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="349.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="369.9" y="69.9" width="20.2" height="20.2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill lvl2">3 段</span><span class="pill cat">死活题</span></div>
+        <div class="prompt">
+          <div class="turn"><span class="st b"></span>黑先</div>
+          <div class="hint">黑先杀白 —— 找出致命一手</div>
+          <div class="status"><span class="dot"></span>轮到你落子，或直接在实体棋盘摆子</div>
+        </div>
+        <div class="meta">
+          <div class="mcell"><div class="mk">用时</div><div class="mv">00:38</div></div>
+          <div class="mcell"><div class="mk">尝试</div><div class="mv">1</div></div>
+          <div class="mcell"><div class="mk">上次</div><div class="mv">01:12</div></div>
+        </div>
+        <div class="acts">
+          <div class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</div>
+          <div class="act"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8"/></svg>重置</div>
+          <div class="act"><svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7"/></svg>提示</div>
+          <div class="act warnt"><svg viewBox="0 0 24 24"><path d="m12 2 8 4.5v9L12 20l-8-4.5v-9zm0 2.31L6 7.6v6.8l6 3.37 6-3.37V7.6zM11 8h2v5h-2zm0 6h2v2h-2z"/></svg>试下</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="nav2">
+          <div class="nb prev"><svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>上一题</div>
+          <div class="nb next">下一题<svg viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

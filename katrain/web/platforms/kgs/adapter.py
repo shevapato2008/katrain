@@ -225,7 +225,13 @@ class KGSAdapter(PlatformAdapter):
                     if player_name == my_name:
                         continue  # Our own move echoed back
 
-                    move = PlatformMove(col=col, row=row, color=color[0] if color else "B", move_number=move_count)
+                    move = PlatformMove(
+                        col=col,
+                        row=row,
+                        color=color[0] if color else "B",
+                        move_number=move_count,
+                        game_id=str(channel_id),
+                    )
                     await self._emit("opponent_move", move)
                 elif loc == "PASS":
                     pass  # TODO: handle pass

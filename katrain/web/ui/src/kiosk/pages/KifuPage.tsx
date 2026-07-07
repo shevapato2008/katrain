@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
-  CircularProgress, Pagination, Snackbar, Alert,
+  CircularProgress, Pagination, Snackbar, Alert, Skeleton,
 } from '@mui/material';
-import { Search as SearchIcon, Science as ScienceIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon, Science as ScienceIcon,
+  SkipPrevious, NavigateBefore, NavigateNext, SkipNext,
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import LiveBoard from '../../components/live/LiveBoard';
 import { sgfToMoves } from '../../utils/sgfSerializer';
@@ -35,6 +38,7 @@ const KifuPage = () => {
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
   const [previewSgf, setPreviewSgf] = useState<string | null>(null);
   const [previewHandicap, setPreviewHandicap] = useState(0);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
 
@@ -81,6 +85,7 @@ const KifuPage = () => {
     setPreviewCurrentMove(0);
     setPreviewSgf(null);
     setPreviewHandicap(0);
+    setPreviewLoading(true);
 
     KifuAPI.getAlbum(selectedId)
       .then((detail) => {
@@ -99,6 +104,9 @@ const KifuPage = () => {
       })
       .catch((err) => {
         if (!cancelled) console.error('Failed to load kifu detail:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
       });
 
     return () => { cancelled = true; };
@@ -309,19 +317,26 @@ const KifuPage = () => {
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
           bgcolor: 'background.default', overflow: 'hidden',
-          borderLeft: '1px solid rgba(255,255,255,0.06)',
+          borderLeft: '1px solid', borderColor: 'divider',
         }}
       >
         {selectedKifu ? (
           <>
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: 0 }}>
-              <LiveBoard
-                moves={previewMoves}
-                stoneColors={previewColors}
-                currentMove={previewCurrentMove}
-                boardSize={previewBoardSize}
-                showCoordinates={true}
-              />
+              {previewLoading ? (
+                <Skeleton
+                  variant="rounded"
+                  sx={{ width: '88%', aspectRatio: '1', maxHeight: '100%', bgcolor: 'var(--raise2)' }}
+                />
+              ) : (
+                <LiveBoard
+                  moves={previewMoves}
+                  stoneColors={previewColors}
+                  currentMove={previewCurrentMove}
+                  boardSize={previewBoardSize}
+                  showCoordinates={true}
+                />
+              )}
             </Box>
 
             {/*
@@ -329,26 +344,28 @@ const KifuPage = () => {
               flexWrap + button-as-direct-child guarantees no clipping: on panels too
               narrow for one row, the button drops to its own row instead of clipping/
               vertically wrapping. On wide panels it stays a single row (D4).
+              Stays outside the skeleton gate above: nav must remain visible/testable
+              while the board is loading.
             */}
             <Box
               data-testid="kifu-preview-nav"
               sx={{
-                px: 3, py: 1.5, bgcolor: '#1a1a1a',
-                borderTop: '1px solid rgba(255,255,255,0.05)',
+                px: 3, py: 1.5, bgcolor: 'background.paper',
+                borderTop: '1px solid', borderColor: 'divider',
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center',
                 columnGap: 1, rowGap: 1, width: '100%', flexShrink: 0,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexGrow: 1, flexShrink: 0, justifyContent: 'center' }}>
                 <Button size="small" aria-label="first" disabled={previewCurrentMove === 0}
-                  onClick={() => setPreviewCurrentMove(0)} sx={{ minWidth: 32, color: 'text.secondary' }}>⏮</Button>
+                  onClick={() => setPreviewCurrentMove(0)} sx={{ minWidth: 32, color: 'text.secondary' }}><SkipPrevious fontSize="small" /></Button>
                 <Button size="small" aria-label="prev" disabled={previewCurrentMove === 0}
-                  onClick={() => setPreviewCurrentMove(m => Math.max(0, m - 1))} sx={{ minWidth: 32, color: 'text.secondary' }}>◀</Button>
+                  onClick={() => setPreviewCurrentMove(m => Math.max(0, m - 1))} sx={{ minWidth: 32, color: 'text.secondary' }}><NavigateBefore fontSize="small" /></Button>
                 <Typography
                   variant="body2"
                   sx={{
                     mx: 2,
-                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontFamily: '"JetBrains Mono", monospace',
                     color: 'text.secondary',
                     minWidth: 80,
                     textAlign: 'center',
@@ -357,9 +374,9 @@ const KifuPage = () => {
                   {previewCurrentMove} / {previewMoves.length} {t('moves', '手')}
                 </Typography>
                 <Button size="small" aria-label="next" disabled={previewCurrentMove >= previewMoves.length}
-                  onClick={() => setPreviewCurrentMove(m => Math.min(previewMoves.length, m + 1))} sx={{ minWidth: 32, color: 'text.secondary' }}>▶</Button>
+                  onClick={() => setPreviewCurrentMove(m => Math.min(previewMoves.length, m + 1))} sx={{ minWidth: 32, color: 'text.secondary' }}><NavigateNext fontSize="small" /></Button>
                 <Button size="small" aria-label="last" disabled={previewCurrentMove >= previewMoves.length}
-                  onClick={() => setPreviewCurrentMove(previewMoves.length)} sx={{ minWidth: 32, color: 'text.secondary' }}>⏭</Button>
+                  onClick={() => setPreviewCurrentMove(previewMoves.length)} sx={{ minWidth: 32, color: 'text.secondary' }}><SkipNext fontSize="small" /></Button>
               </Box>
 
               <Button
@@ -374,8 +391,8 @@ const KifuPage = () => {
                   textTransform: 'none',
                   minWidth: 150,
                   minHeight: 40,
-                  bgcolor: 'rgba(74,107,92,0.8)',
-                  '&:hover': { bgcolor: 'rgba(74,107,92,1)' },
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
                   borderRadius: '8px',
                   px: 3,
                 }}

@@ -10,6 +10,8 @@ export interface SmartBoardConsoleProps {
 }
 
 /** Resolve board-pose sync state to a status color (migrated from StatusBar.tsx) */
+// @ts-expect-error TS6133 — kept for future use / migration reference
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const syncStateColor = (syncState: string): string => {
   switch (syncState) {
     case 'synced':
@@ -81,10 +83,6 @@ const SmartBoardConsole = ({ moves, currentMove }: SmartBoardConsoleProps) => {
   const cameraConnected = vision?.visionStatus.cameraConnected ?? false;
   const ledConnected = vision?.visionStatus.ledConnected ?? false;
   const geometryPhase = geometry?.status.phase ?? 'required';
-  // Board-pose sync detail (secondary accent on the 摄像头 value once a pose lock exists) —
-  // richer than the plain connected/disconnected dot color.
-  const poseLocked = vision?.visionStatus.poseLocked ?? false;
-  const syncState = vision?.visionStatus.syncState ?? 'idle';
 
   const goToVisionSetup = () => navigate('/kiosk/vision/setup');
 
@@ -169,7 +167,6 @@ const SmartBoardConsole = ({ moves, currentMove }: SmartBoardConsoleProps) => {
           label="摄像头"
           value={cameraConnected ? '已连接' : '未连接'}
           dotColor={cameraConnected ? 'primary.main' : 'error.main'}
-          valueColor={poseLocked ? syncStateColor(syncState) : 'text.primary'}
           onClick={goToVisionSetup}
         />
         <StatusCell

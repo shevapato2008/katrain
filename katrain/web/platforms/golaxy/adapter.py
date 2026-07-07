@@ -16,7 +16,16 @@ import httpx
 from katrain.web.platforms.base import PlatformAdapter
 from katrain.web.platforms.golaxy import engine_client
 from katrain.web.platforms.golaxy.coords import Move, golaxy_to_katrain, katrain_to_golaxy
-from katrain.web.platforms.golaxy.engine_client import AuthExpired, GenmoveResult, Retryable
+from katrain.web.platforms.golaxy.engine_client import (
+    AreaResult,
+    AuthExpired,
+    Fatal,
+    GenmoveResult,
+    JudgeResult,
+    OptionsResult,
+    Retryable,
+    VariationResult,
+)
 from katrain.web.platforms.models import (
     ClockState,
     GamePhase,
@@ -95,6 +104,145 @@ class EngineGameStart:
 
     session: PlatformGameSession
     first_ai_move: Optional[PlatformMove]  # populated iff human plays White (AI black opens)
+
+
+# --- Engine analysis (area/options/judge/variation) result types -----------
+#
+# Typed, JSON-serializable (via dataclasses.asdict) per-kind results returned
+# by GolaxyAdapter.engine_analysis. These decode the Task-1 engine_client
+# results (raw Golaxy int coords / the 722-float area list / the 361-char
+# judge belong string) into KaTrain (col, row) structures using
+# coords.golaxy_to_katrain -- see golaxy-protocol.md Section 9.5.
+
+
+@dataclass(frozen=True)
+class OwnershipPoint:
+    """One board point's 领地 (territory) ownership value from the area tunnel.
+
+    `value` is the raw signed float from Golaxy: positive = 黑地 (black
+    territory), negative = 白地 (white territory). Not thresholded here --
+    the frontend renders intensity."""
+
+    col: int
+    row: int
+    value: float
+
+
+@dataclass(frozen=True)
+class AreaAnalysis:
+    """Decoded result of the `area` (领地) tunnel: 361 ownership points plus
+    the resulting winrate/delta (passed through verbatim)."""
+
+    ownership: list[OwnershipPoint]
+    winrate: float
+    delta: float
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """One candidate move from the `options` (支招) tunnel, decoded to
+    (col, row) with its recommendation probability and resulting
+    winrate/delta."""
+
+    col: int
+    row: int
+    prob: float
+    winrate: float
+    delta: float
+
+
+@dataclass(frozen=True)
+class OptionsAnalysis:
+    """Decoded result of the `options` (支招) tunnel: ranked candidate moves.
+    No top-level winrate/delta -- each candidate carries its own."""
+
+    candidates: list[Candidate]
+
+
+@dataclass(frozen=True)
+class Point:
+    """A bare board point, in KaTrain (col, row) convention."""
+
+    col: int
+    row: int
+
+
+@dataclass(frozen=True)
+class VariationAnalysis:
+    """Decoded result of the `variation` (变化图) tunnel: the AI's principal
+    variation as an ordered point sequence, plus the resulting winrate/delta."""
+
+    sequence: list[Point]
+    winrate: float
+    delta: float
+
+
+@dataclass(frozen=True)
+class JudgePoint:
+    """One board point's whole-board verdict from the judge tunnel.
+
+    `owner` is one of "U" (undecided) / "B" (black) / "W" (white)."""
+
+    col: int
+    row: int
+    owner: str
+
+
+@dataclass(frozen=True)
+class JudgeAnalysis:
+    """Decoded result of the `judge` (形势) tunnel: 361 verdict points plus
+    the overall winner ("U"/"B"/"W"/"D") and score delta."""
+
+    ownership: list[JudgePoint]
+    winner: str
+    delta: float
+
+
+AnalysisResult = AreaAnalysis | OptionsAnalysis | VariationAnalysis | JudgeAnalysis
+
+
+def _decode_area(result: AreaResult, board_size: int) -> AreaAnalysis:
+    """Use only the first board_size*board_size entries -- the rest (observed
+    722 = 361*2 in the live capture) is a degenerate second channel (§9.5)."""
+    n = board_size * board_size
+    if len(result.area) < n:
+        raise Fatal(f"Golaxy area: expected at least {n} entries, got {len(result.area)}")
+    ownership = []
+    for i in range(n):
+        m = golaxy_to_katrain(i, board_size)  # always a Move for i in [0, n)
+        ownership.append(OwnershipPoint(col=m.col, row=m.row, value=result.area[i]))
+    return AreaAnalysis(ownership=ownership, winrate=result.winrate, delta=result.delta)
+
+
+def _decode_options(result: OptionsResult, board_size: int) -> OptionsAnalysis:
+    candidates = []
+    for coord, prob, winrate, delta in zip(result.coord, result.prob, result.winrate, result.delta):
+        decoded = golaxy_to_katrain(coord, board_size)
+        if not isinstance(decoded, Move):
+            continue  # defensive: skip UnknownSpecial rather than emit a bogus point
+        candidates.append(Candidate(col=decoded.col, row=decoded.row, prob=prob, winrate=winrate, delta=delta))
+    return OptionsAnalysis(candidates=candidates)
+
+
+def _decode_variation(result: VariationResult, board_size: int) -> VariationAnalysis:
+    sequence = []
+    for coord in result.coord:
+        decoded = golaxy_to_katrain(coord, board_size)
+        if not isinstance(decoded, Move):
+            continue  # defensive: skip UnknownSpecial rather than emit a bogus point
+        sequence.append(Point(col=decoded.col, row=decoded.row))
+    return VariationAnalysis(sequence=sequence, winrate=result.winrate, delta=result.delta)
+
+
+def _decode_judge(result: JudgeResult, board_size: int) -> JudgeAnalysis:
+    n = board_size * board_size
+    if len(result.belong) < n:
+        raise Fatal(f"Golaxy judge: expected at least {n} chars, got {len(result.belong)}")
+    ownership = []
+    for i, ch in enumerate(result.belong[:n]):
+        m = golaxy_to_katrain(i, board_size)  # always a Move for i in [0, n)
+        ownership.append(JudgePoint(col=m.col, row=m.row, owner=ch))
+    return JudgeAnalysis(ownership=ownership, winner=result.winner, delta=result.delta)
 
 
 class GolaxyEngineTerminal(Exception):
@@ -339,6 +487,38 @@ class GolaxyRestClient:
             rule=rule,
             handicap=handicap,
             board_size=board_size,
+        )
+
+    async def engine_analysis(
+        self,
+        *,
+        kind: str,
+        moves: list[int],
+        komi: float = 7.5,
+        rule: str = "chinese",
+        handicap: int = 0,
+        board_size: int = 19,
+        level: int = 8888,
+    ) -> AreaResult | OptionsResult | VariationResult | JudgeResult:
+        """Thin wrapper over engine_client.engine_analysis.
+
+        Sibling of engine_genmove above: keeps the access token encapsulated
+        so the adapter never reaches into private client/token state. Raises
+        AuthExpired/Retryable/Fatal/QuotaExhausted.
+        """
+        from katrain.web.platforms.golaxy.engine_client import engine_analysis as _analysis
+
+        client = await self._ensure_client()
+        return await _analysis(
+            client,
+            kind=kind,
+            moves=moves,
+            access_token=self._access_token,
+            komi=komi,
+            rule=rule,
+            handicap=handicap,
+            board_size=board_size,
+            level=level,
         )
 
 
@@ -598,6 +778,70 @@ class GolaxyAdapter(PlatformAdapter):
         return await self._rest.engine_genmove(
             moves=proposed_moves,
             level=ctx.config.level,
+            komi=ctx.config.komi,
+            rule=ctx.config.rule,
+            handicap=ctx.config.handicap,
+            board_size=ctx.config.board_size,
+        )
+
+    # --- Engine analysis (read-only; area/options/judge/variation) ---------
+    #
+    # Parallel structure to _genmove_with_retry/_call_genmove above --
+    # intentionally duplicated rather than refactored in, since the genmove
+    # path is regression-forbidden. Analysis never mutates ctx.moves/status
+    # and never commits anything, so it works on the current committed
+    # ctx.moves regardless of status (reviewing a finished game is fine).
+
+    async def engine_analysis(self, game_id: str, kind: str) -> AnalysisResult:
+        """Run one of the area/options/judge/variation analysis tunnels for
+        an existing engine game and return the decoded, typed result.
+
+        Raises KeyError for an unknown game_id (mirrors submit_engine_move).
+        Propagates QuotaExhausted/Fatal from the client unretried; AuthExpired
+        triggers a refresh+retry, Retryable a plain retry (see
+        _analysis_with_retry).
+        """
+        ctx = self._engine_games.get(game_id)
+        if ctx is None:
+            raise KeyError(game_id)
+        result = await self._analysis_with_retry(ctx, kind)
+        board_size = ctx.config.board_size
+        if isinstance(result, AreaResult):
+            return _decode_area(result, board_size)
+        if isinstance(result, OptionsResult):
+            return _decode_options(result, board_size)
+        if isinstance(result, VariationResult):
+            return _decode_variation(result, board_size)
+        if isinstance(result, JudgeResult):
+            return _decode_judge(result, board_size)
+        raise Fatal(f"engine_analysis: unexpected result type {type(result)!r} for kind={kind!r}")
+
+    async def _analysis_with_retry(self, ctx: EngineGameContext, kind: str):
+        """Mirror _genmove_with_retry's auth-refresh-retry discipline for the
+        analysis tunnels. QuotaExhausted and Fatal propagate immediately (no
+        retry) — only AuthExpired (refresh + retry once) and Retryable
+        (retry once) are handled here.
+        """
+        try:
+            return await self._call_analysis(ctx, kind)
+        except AuthExpired:
+            # Refresh once, then retry the SAME request.
+            await self._rest.refresh_access_token()
+            await self._emit("token_refreshed", self._rest.get_auth_data())
+            try:
+                return await self._call_analysis(ctx, kind)
+            except AuthExpired:
+                await self._emit("auth_expired")
+                raise
+        except Retryable:
+            # Transient failure — retry the SAME request once; if it raises
+            # again, that exception propagates.
+            return await self._call_analysis(ctx, kind)
+
+    async def _call_analysis(self, ctx: EngineGameContext, kind: str):
+        return await self._rest.engine_analysis(
+            kind=kind,
+            moves=ctx.moves,
             komi=ctx.config.komi,
             rule=ctx.config.rule,
             handicap=ctx.config.handicap,

@@ -83,7 +83,7 @@ const TutorialBookDetailPage = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
@@ -137,9 +137,11 @@ const TutorialBookDetailPage = () => {
                 defaultExpanded
                 disableGutters
                 sx={{
-                  bgcolor: 'rgba(255,255,255,0.05)',
+                  bgcolor: 'background.paper',
                   borderRadius: '12px',
                   mb: 1.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
                   '&:before': { display: 'none' },
                 }}
               >

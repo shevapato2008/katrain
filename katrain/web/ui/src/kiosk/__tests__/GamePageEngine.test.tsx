@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { API } from '../../api';
 import type { GameState } from '../../api';
+
+// Mock only `platformEngineAnalysis` on the real api.ts module — everything else (incl.
+// hintDismiss, called on unmount) keeps its real (fetch-based, caught-and-ignored) impl,
+// matching this test file's pre-existing baseline behavior.
+vi.mock('../../api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api')>();
+  return { ...actual, API: { ...actual.API, platformEngineAnalysis: vi.fn() } };
+});
 
 vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
@@ -26,10 +35,16 @@ vi.mock('../../context/AuthContext', () => ({
 
 // Mock Board with a lightweight stub that exposes a button to trigger onMove(3, 3) —
 // the real Board is canvas-based and can't render in jsdom, and wiring the real thing
-// would be far heavier than exercising the onMove error path needs.
+// would be far heavier than exercising the onMove error path needs. Also surfaces the
+// `engineOverlay` prop as data attributes so tests can assert the decoded overlay
+// GamePage hands to Board without fighting jsdom canvas.
 vi.mock('../../components/Board', () => ({
   default: (props: any) => (
-    <div data-testid="board">
+    <div
+      data-testid="board"
+      data-active-kind={props.engineOverlay?.kind ?? ''}
+      data-overlay={JSON.stringify(props.engineOverlay ?? null)}
+    >
       <button onClick={() => props.onMove(3, 3)}>trigger-move</button>
     </div>
   ),
@@ -121,6 +136,7 @@ describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
+    (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockReset();
   });
 
   it('disables Pass and Score when engineMode, but keeps Resign enabled', () => {
@@ -166,5 +182,121 @@ describe('GamePage engine mode', () => {
     // Let the rejected promise's microtask settle before asserting absence.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(screen.queryByText(/AI 连接出错/)).not.toBeInTheDocument();
+  });
+
+  describe('星阵隧道分析 (领地/支招/变化图)', () => {
+    it('renders the three engine buttons and hides local 建议/图表/形势 + ScoreGraph in engineMode', () => {
+      renderPage(true);
+
+      expect(screen.getByText('领地')).toBeInTheDocument();
+      expect(screen.getByText('支招')).toBeInTheDocument();
+      expect(screen.getByText('变化图')).toBeInTheDocument();
+
+      // No local KataGo analysis controls and no winrate chart — golaxy 人机对弈 has neither.
+      expect(screen.queryByText('建议')).not.toBeInTheDocument();
+      expect(screen.queryByText('图表')).not.toBeInTheDocument();
+      expect(screen.queryByText('形势')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('score-graph')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('score-graph-component')).not.toBeInTheDocument();
+    });
+
+    it('leaves the local 领地/建议/图表 toggles in place (unchanged) without engineMode', () => {
+      renderPage(false);
+
+      expect(screen.getByText('领地')).toBeInTheDocument();
+      expect(screen.getByText('建议')).toBeInTheDocument();
+      expect(screen.getByText('图表')).toBeInTheDocument();
+    });
+
+    it('clicking 支招 calls API.platformEngineAnalysis(golaxy, sessionId, options, token)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false, reason: 'insufficient', kind: 'options',
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+
+      await waitFor(() => {
+        expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'options', 'mock-token');
+      });
+    });
+
+    it('ok:true sets activeEngineKind and passes the decoded overlay through to Board (options)', async () => {
+      const candidates = [
+        { col: 3, row: 3, prob: 0.6, winrate: 0.55, delta: -1.2 },
+        { col: 15, row: 15, prob: 0.3, winrate: 0.5, delta: -2.1 },
+      ];
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options');
+      });
+      const overlay = JSON.parse(screen.getByTestId('board').getAttribute('data-overlay')!);
+      expect(overlay).toEqual({ kind: 'options', candidates });
+    });
+
+    it('clicking the same active kind again toggles the overlay off (no re-fetch)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1);
+    });
+
+    it('clicking a DIFFERENT kind replaces the active overlay (mutual exclusion)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 } })
+        .mockResolvedValueOnce({ ok: true, kind: 'variation', data: { sequence: [{ col: 3, row: 3 }, { col: 4, row: 4 }], winrate: 0.5, delta: 0 } });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      fireEvent.click(screen.getByText('变化图'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'variation'));
+    });
+
+    it('ok:false insufficient shows the 充值 modal and leaves the current overlay untouched', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 } })
+        .mockResolvedValueOnce({ ok: false, reason: 'insufficient', kind: 'options' });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      fireEvent.click(screen.getByText('支招'));
+
+      expect(await screen.findByText(/请在星阵.*充值/)).toBeInTheDocument();
+      expect(screen.getByText(/本终端不代充/)).toBeInTheDocument();
+      // The insufficient response must not disturb the already-active 领地 overlay.
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area');
+    });
+
+    it('closes the 充值 modal on 关闭 without touching the active overlay', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false, reason: 'insufficient', kind: 'variation',
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('变化图'));
+      expect(await screen.findByText(/变化图.*已用尽/)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('关闭'));
+      await waitFor(() => {
+        expect(screen.queryByText(/请在星阵.*充值/)).not.toBeInTheDocument();
+      });
+    });
   });
 });

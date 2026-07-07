@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Snackbar } from '@mui/material';
 import { ExitToApp, Videocam, Lightbulb, TipsAndUpdates } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
-import Board from '../../components/Board';
+import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
@@ -15,7 +15,9 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import PoseLostBanner from '../components/physical/PoseLostBanner';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse } from '../../api';
+import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint } from '../../api';
+
+type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
 const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
@@ -40,6 +42,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hint, setHint] = useState<HintResponse | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
+
+  // Golaxy 人机对弈 is the only engine-play platform today (§13). Revisit if/when
+  // another platform gets engine-play analysis tunnels.
+  const platform = 'golaxy';
+  const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
+  const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
+  const [insufficientKind, setInsufficientKind] = useState<EngineAnalysisKind | null>(null);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
@@ -153,6 +162,39 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
+  // 星阵隧道分析 (领地/支招/变化图) — engineMode only. Mutually exclusive: a new kind
+  // replaces any prior overlay; clicking the already-active kind toggles it off.
+  const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
+    if (activeEngineKind === kind) {
+      setActiveEngineKind(null);
+      setEngineOverlay(null);
+      return;
+    }
+    if (!sessionId || !token) return;
+    try {
+      const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
+      if (res.ok) {
+        const overlay: EngineOverlay =
+          kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
+          : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
+          : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
+        setEngineOverlay(overlay);
+        setActiveEngineKind(kind);
+      } else {
+        setInsufficientKind(kind);
+      }
+    } catch (e) {
+      console.error(e);
+      setEngineErrorToast(true);
+    }
+  };
+
+  const ENGINE_KIND_LABEL: Record<EngineAnalysisKind, string> = {
+    area: t('Territory', '领地'),
+    options: t('Suggest', '支招'),
+    variation: t('Variation Line', '变化图'),
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       {/* Error display */}
@@ -206,6 +248,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
             playerColor={humanColor}
+            engineOverlay={engineOverlay}
           />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -232,6 +275,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             isGameOver={isGameOver}
             disableUndo={isRanked}
             disableSpecialActions={engineMode}
+            engineMode={engineMode}
+            activeEngineKind={activeEngineKind}
+            onEngineAnalysis={handleEngineAnalysis}
           />
         </Box>
       </Box>
@@ -255,6 +301,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Button color="error" onClick={() => { session.handleAction('resign'); navigate('/kiosk/play'); }}>
             {t('Exit', '退出')}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 星阵道具次数不足 (7003) — 本终端不代充，引导去星阵充值 */}
+      <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)}>
+        <DialogTitle>
+          {insufficientKind && t('{item} exhausted', '{item}道具已用尽').replace('{item}', ENGINE_KIND_LABEL[insufficientKind])}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {insufficientKind && t(
+              '{item} quota is insufficient — please recharge in the Golaxy app; this terminal cannot recharge for you.',
+              '{item}次数不足 · 请在星阵 App 充值 · 本终端不代充'
+            ).replace('{item}', ENGINE_KIND_LABEL[insufficientKind])}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInsufficientKind(null)}>{t('Close', '关闭')}</Button>
         </DialogActions>
       </Dialog>
 

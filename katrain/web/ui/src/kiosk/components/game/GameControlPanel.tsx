@@ -19,11 +19,20 @@ interface Props {
   isGameOver?: boolean;
   disableUndo?: boolean;
   disableSpecialActions?: boolean;
+  /** Golaxy 人机对弈: replace the local analysis toggles with the three star阵-tunnel buttons. */
+  engineMode?: boolean;
+  activeEngineKind?: 'area' | 'options' | 'variation' | null;
+  onEngineAnalysis?: (kind: 'area' | 'options' | 'variation') => void;
 }
 
-const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false, disableUndo = false, disableSpecialActions = false }: Props) => {
+const GameControlPanel = ({
+  gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false,
+  disableUndo = false, disableSpecialActions = false, engineMode = false, activeEngineKind = null,
+  onEngineAnalysis,
+}: Props) => {
   const { t } = useTranslation();
-  const showScore = !!analysisToggles.score;
+  // golaxy 人机对弈 has no winrate chart — never shown in engineMode, regardless of the toggle state.
+  const showScore = !engineMode && !!analysisToggles.score;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -58,9 +67,20 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
 
         {/* 4. ItemToggle grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
-          <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.ownership} onClick={() => onToggleAnalysis('ownership')} />
-          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.hints} onClick={() => onToggleAnalysis('hints')} />
-          <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
+          {engineMode ? (
+            <>
+              {/* 星阵道具 (Golaxy paid tunnel analysis) — 领地/支招/变化图, mutually exclusive. */}
+              <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={activeEngineKind === 'area'} onClick={() => onEngineAnalysis?.('area')} />
+              <ItemToggle icon={<TipsAndUpdates />} label={t('Suggest', '支招')} active={activeEngineKind === 'options'} onClick={() => onEngineAnalysis?.('options')} />
+              <ItemToggle icon={<Timeline />} label={t('Variation Line', '变化图')} active={activeEngineKind === 'variation'} onClick={() => onEngineAnalysis?.('variation')} />
+            </>
+          ) : (
+            <>
+              <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.ownership} onClick={() => onToggleAnalysis('ownership')} />
+              <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.hints} onClick={() => onToggleAnalysis('hints')} />
+              <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
+            </>
+          )}
           {!disableUndo && (
             <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} disabled={isGameOver} />
           )}

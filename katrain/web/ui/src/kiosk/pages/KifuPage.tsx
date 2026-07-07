@@ -143,6 +143,7 @@ const KifuPage = () => {
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
               {total.toLocaleString()} {t('games', '局')}
+              {query && ` · "${query}"`}
             </Typography>
           </Box>
 
@@ -186,6 +187,21 @@ const KifuPage = () => {
           ) : error ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
               <Typography variant="body2" color="error">{error}</Typography>
+            </Box>
+          ) : !loading && !error && kifuList.length === 0 ? (
+            <Box sx={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              height: '100%', gap: 2, p: 2,
+              border: '2px dashed', borderColor: 'divider', borderRadius: '12px',
+              bgcolor: 'background.paper', m: 1,
+            }}>
+              <SearchIcon sx={{ fontSize: 50, color: 'divider' }} />
+              <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                {t('No games found', '未找到棋谱')}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: 280 }}>
+                {t(`No records match "${query}"...`, `没有匹配「${query}」的记录。试试棋手名、赛事名或年份。`)}
+              </Typography>
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

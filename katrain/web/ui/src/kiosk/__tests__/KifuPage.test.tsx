@@ -263,4 +263,29 @@ describe('KifuPage', () => {
       expect(screen.getByText(/Request failed 500/)).toBeInTheDocument();
     });
   });
+
+  it('shows no-results empty state with echoed keyword when search returns zero records', async () => {
+    // Mock fetch to return empty list and total 0
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (/\/albums\/\d+/.test(url)) return Promise.resolve(detailResponse());
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ items: [], total: 0, page: 1, page_size: 20 }),
+      });
+    }) as unknown as typeof fetch;
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('0 局')).toBeInTheDocument();
+    });
+
+    const searchBox = screen.getByPlaceholderText('搜索棋手、赛事...');
+    fireEvent.change(searchBox, { target: { value: '无此棋手' } });
+
+    // Wait past the 350ms debounce for the query to commit and the fetch to resolve
+    await waitFor(() => {
+      expect(screen.getByText('未找到棋谱')).toBeInTheDocument();
+      expect(screen.getByText(/没有匹配「无此棋手」的记录/)).toBeInTheDocument();
+    }, { timeout: 1000 });
+  });
 });

@@ -22,6 +22,7 @@ from katrain.web.platforms.golaxy.engine_client import (
     AuthExpired,
     Fatal,
     GenmoveResult,
+    ItemCountsResult,
     JudgeResult,
     OptionsResult,
     Retryable,
@@ -284,6 +285,7 @@ class GolaxyRestClient:
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._user_code: Optional[str] = None
+        self._username: Optional[str] = None  # Golaxy login principal, for /items/{username}
 
     async def _ensure_client(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -394,6 +396,17 @@ class GolaxyRestClient:
     def set_tokens(self, access_token: str, refresh_token: str) -> None:
         self._access_token = access_token
         self._refresh_token = refresh_token
+
+    def set_username(self, username: Optional[str]) -> None:
+        """Record the Golaxy login principal for account-level calls like
+        `/items/{username}`. Normalizes a bare phone to the `0086-{phone}`
+        form the API expects (== store.state.username); leaves an
+        already-prefixed value untouched. No-op on falsy input, so calling it
+        on a token-only reconnect that lacks the phone doesn't clobber a value
+        set earlier."""
+        if not username:
+            return
+        self._username = username if username.startswith("0086-") else f"0086-{username}"
 
     def get_auth_data(self) -> dict:
         return {"access_token": self._access_token, "refresh_token": self._refresh_token, "user_code": self._user_code}
@@ -541,6 +554,17 @@ class GolaxyRestClient:
             level=level,
         )
 
+    async def fetch_item_counts(self) -> ItemCountsResult:
+        """Thin wrapper over engine_client.fetch_item_counts.
+
+        Keeps the access token and username encapsulated so the adapter never
+        reaches into private client state. Raises AuthExpired/Retryable/Fatal.
+        """
+        from katrain.web.platforms.golaxy.engine_client import fetch_item_counts as _fetch
+
+        client = await self._ensure_client()
+        return await _fetch(client, username=self._username, access_token=self._access_token)
+
 
 class GolaxyAdapter(PlatformAdapter):
     """PlatformAdapter implementation for Golaxy / 星阵围棋 (19x19.com).
@@ -568,6 +592,10 @@ class GolaxyAdapter(PlatformAdapter):
 
     async def connect(self, credentials: PlatformCredentials) -> bool:
         try:
+            # Record the login principal up front so account-level calls
+            # (/items/{username} for the 道具 badges) work on every auth path,
+            # including token-only reconnect after a restart.
+            self._rest.set_username(credentials.username)
             auth_data = credentials.auth_data
             if "access_token" in auth_data and auth_data["access_token"]:
                 # Try token-based reconnection
@@ -867,6 +895,29 @@ class GolaxyAdapter(PlatformAdapter):
             handicap=ctx.config.handicap,
             board_size=ctx.config.board_size,
         )
+
+    async def fetch_item_counts(self) -> ItemCountsResult:
+        """Remaining metered-道具 counts (领地/支招/变化图) for the connected
+        account — powers the button badges. Account-level: no game context,
+        so it works before/independently of any engine game.
+
+        Mirrors _analysis_with_retry's auth-refresh-retry discipline:
+        AuthExpired → refresh once + retry; Retryable → retry once; Fatal
+        propagates. Missing/malformed counts come back as None from the client
+        (never raise), so the badges degrade to "unknown" rather than block.
+        """
+        try:
+            return await self._rest.fetch_item_counts()
+        except AuthExpired:
+            await self._rest.refresh_access_token()
+            await self._emit("token_refreshed", self._rest.get_auth_data())
+            try:
+                return await self._rest.fetch_item_counts()
+            except AuthExpired:
+                await self._emit("auth_expired")
+                raise
+        except Retryable:
+            return await self._rest.fetch_item_counts()
 
     async def resign_engine_game(self, game_id: str) -> None:
         """Human resigns the engine game — the AI wins. No-op if unknown.

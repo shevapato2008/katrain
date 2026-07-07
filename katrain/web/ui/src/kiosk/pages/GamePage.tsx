@@ -15,7 +15,7 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import PoseLostBanner from '../components/physical/PoseLostBanner';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint } from '../../api';
+import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts } from '../../api';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -53,6 +53,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // calls before the first resolves (double quota spend + last-response-wins races).
   // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
   const [pendingEngineKind, setPendingEngineKind] = useState<EngineAnalysisKind | null>(null);
+  // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
+  const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
   const { visionStatus, isVisionEnabled } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
@@ -109,6 +111,23 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setHint(null);
     API.hintDismiss().catch(() => undefined);
   }, []);
+
+  // Remaining-道具 counts for the button badges. Account-level (not per-game),
+  // so it's safe to fetch once on mount and re-fetch after each analysis settles
+  // (each call consumes a use; 7003 means it hit 0). Best-effort: a failed fetch
+  // leaves the prior counts (or null → "—") and never blocks play.
+  const refreshItemCounts = useCallback(async () => {
+    if (!engineMode || !token) return;
+    try {
+      setEngineItemCounts(await API.platformEngineItems(platform, token));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [engineMode, token]);
+
+  useEffect(() => {
+    void refreshItemCounts();
+  }, [refreshItemCounts]);
 
   if (!session.gameState) {
     return (
@@ -193,6 +212,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setPendingEngineKind(kind);
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
+      // A settled call changed the balance (ok → one consumed; insufficient → it's 0);
+      // resync the badges. Fire-and-forget, and BEFORE the stale-position early return
+      // below so a discarded overlay still updates the count that was actually spent.
+      void refreshItemCounts();
       if (res.ok) {
         if (session.gameState?.current_node_id !== requestedNodeId) return; // stale position — discard
         const overlay: EngineOverlay =
@@ -301,6 +324,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
             onEngineAnalysis={handleEngineAnalysis}
+            engineItemCounts={engineItemCounts}
           />
         </Box>
       </Box>

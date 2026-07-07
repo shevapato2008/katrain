@@ -280,6 +280,21 @@ n = { moves:"", boardsize:BS, board_size:BS, level: maxLevel||8888,
 - **客户端缓存**：`setStoreData` 只缓存 `{area, options, variation}`，键为 `(type, moves)`——**同一局面重复看不重复扣次**；`judge` **不缓存**（每次实算，可能免费或另计）。对接时应**复刻按 moves 缓存**以省额度。
 - **互斥叠加**：`boardChatFun` 里 area/branch(变化图)/prop(支招)/gameJudge(形势) 互相 `off`——**同一时刻只显示一种叠加**。
 
+### 9.4a 剩余次数来源端点 `items`（源码确认 2026-07-07 · app.9dd37558.js）
+
+角标 `领地N/支招N/变化图N` 的数据源。**从公开 bundle 静态确认**（无 token、未做 live 抓取——会话已登出，且沙箱正确拦截 token 观测）：
+
+- **端点**：`GET https://api.19x19.com/api/engine/items/{username}`
+  - 源码：`userToolGet(){ n={url:"/items/"+store.state.username, timeout:2e4, method:"get"}; e.request("engine",n) }`。
+  - group `"engine"` → base `/api/engine`（与 `/dcnn/tunnel/*` 同组），故完整路径如上。
+  - **鉴权/头**：走与 genmove **同一条** `request("engine",…)` 通道 → `Authorization: bearer <token>` + 浏览器 Origin/Referer/UA（复用 `engine_client` 既有头）。
+- **`{username}`** = 星阵 `store.state.username` = localStorage `keep_login_username` = **`0086-{手机号}`**（实测非敏感值 `0086-13116158612`）。**= 我们登录时已用的 `username=f"0086-{phone}"`**（`adapter.py:315/342`），后端已持有，无需解 JWT / 另抓。
+- **响应**：`{code, data}`，`code=="0"` 成功（字符串，同其它端点）。`data` **可能是 JSON 字符串**（源码 `try{r.data=JSON.parse(r.data)}catch{}`）→ 解析后为对象，键含 `area / options / variation`（及其它道具键）。
+  - 消费处：`userPropsInit → propsMine = n.data`；`this.propsMine.area||0`、`this.propsMine.options||0`、`this.propsMine.variation||0` → **均为整数剩余次数**（`||0` 兜底）。
+  - `userToolHandle` 另把 `data`（剔除 `{code,errorMsg,username}`）存为 `tool`——同源数据，本 kiosk 只取 `area/options/variation` 三项。
+- ⚠️ **未 live 验证的残留假设**（留待 Phase 5 真机确认）：`data` 内 `area/options/variation` 为顶层整数键。实现须**防御式**：`data` 为字符串则先 parse；缺键按"未知/不显示"处理，**不阻塞对弈**（对齐 §13 非目标"缺失不阻塞"）。
+- **刷新时机**：进入对局(mount)拉一次；每次 area/options/variation 隧道**成功或 `7003` 后**重拉（golaxy 前端亦在消费后刷新 `propsMine`）——保证角标是真实剩余。judge 免费、不影响三项道具。
+
 ### 9.5 实测确认（2026-07-07 · 浏览器自动化直打隧道 · moves=`72,300`[黑Q16,白Q4] · 账号 61707593）
 
 直接以页面 `fetch` 打四个隧道（token 从 localStorage 取、仅用于 header、未落盘），真实响应：

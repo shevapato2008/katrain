@@ -272,6 +272,25 @@ async def engine_levels(platform: str, request: Request, user: User = Depends(ge
     return {"levels": adapter.get_engine_levels()}
 
 
+@router.get("/{platform}/engine/items")
+async def engine_items(platform: str, request: Request, user: User = Depends(get_current_user)):
+    """Remaining metered-道具 counts (领地/支招/变化图) for the connected
+    engine-play account — powers the analysis-button badges. Account-level, not
+    per-game. Each count is an int, or `null` when the platform didn't report
+    it (surface as "unknown", never as 0). Genuine wire failures
+    (AuthExpired/Retryable/Fatal) surface as 5xx, same as the other routes."""
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    if not getattr(adapter, "supports_engine_play", False):
+        raise HTTPException(status_code=400, detail=f"{platform} does not support engine play")
+    import dataclasses
+
+    result = await adapter.fetch_item_counts()
+    return dataclasses.asdict(result)  # {"area": int|null, "options": int|null, "variation": int|null}
+
+
 # --- Lobby ---
 
 

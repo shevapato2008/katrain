@@ -7,7 +7,7 @@ import {
 import PlayerCard from '../../../components/PlayerCard';
 import ScoreGraph from '../../../components/ScoreGraph';
 import ItemToggle from './ItemToggle';
-import type { GameState } from '../../../api';
+import type { EngineItemCounts, GameState } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface Props {
@@ -23,12 +23,14 @@ interface Props {
   engineMode?: boolean;
   activeEngineKind?: 'area' | 'options' | 'variation' | null;
   onEngineAnalysis?: (kind: 'area' | 'options' | 'variation') => void;
+  /** Remaining-uses badges for the three engine buttons; null/undefined → "—" (unknown). */
+  engineItemCounts?: EngineItemCounts | null;
 }
 
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false,
   disableUndo = false, disableSpecialActions = false, engineMode = false, activeEngineKind = null,
-  onEngineAnalysis,
+  onEngineAnalysis, engineItemCounts = null,
 }: Props) => {
   const { t } = useTranslation();
   // golaxy 人机对弈 has no winrate chart — never shown in engineMode, regardless of the toggle state.
@@ -69,10 +71,11 @@ const GameControlPanel = ({
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
           {engineMode ? (
             <>
-              {/* 星阵道具 (Golaxy paid tunnel analysis) — 领地/支招/变化图, mutually exclusive. */}
-              <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={activeEngineKind === 'area'} onClick={() => onEngineAnalysis?.('area')} />
-              <ItemToggle icon={<TipsAndUpdates />} label={t('Suggest', '支招')} active={activeEngineKind === 'options'} onClick={() => onEngineAnalysis?.('options')} />
-              <ItemToggle icon={<Timeline />} label={t('Variation Line', '变化图')} active={activeEngineKind === 'variation'} onClick={() => onEngineAnalysis?.('variation')} />
+              {/* 星阵道具 (Golaxy paid tunnel analysis) — 领地/支招/变化图, mutually exclusive.
+                  Badge = remaining uses (null while unloaded/unknown → "—"; 0 → 次数不足). */}
+              <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={activeEngineKind === 'area'} onClick={() => onEngineAnalysis?.('area')} badge={engineItemCounts ? engineItemCounts.area : null} />
+              <ItemToggle icon={<TipsAndUpdates />} label={t('Suggest', '支招')} active={activeEngineKind === 'options'} onClick={() => onEngineAnalysis?.('options')} badge={engineItemCounts ? engineItemCounts.options : null} />
+              <ItemToggle icon={<Timeline />} label={t('Variation Line', '变化图')} active={activeEngineKind === 'variation'} onClick={() => onEngineAnalysis?.('variation')} badge={engineItemCounts ? engineItemCounts.variation : null} />
             </>
           ) : (
             <>

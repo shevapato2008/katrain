@@ -11,7 +11,7 @@ import type { GameState } from '../../api';
 // matching this test file's pre-existing baseline behavior.
 vi.mock('../../api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api')>();
-  return { ...actual, API: { ...actual.API, platformEngineAnalysis: vi.fn() } };
+  return { ...actual, API: { ...actual.API, platformEngineAnalysis: vi.fn(), platformEngineItems: vi.fn() } };
 });
 
 vi.mock('../context/OrientationContext', () => ({
@@ -138,6 +138,10 @@ describe('GamePage engine mode', () => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
     (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockReset();
+    // Default: the mount-time badge fetch resolves with three counts. Individual
+    // tests override as needed.
+    (API.platformEngineItems as ReturnType<typeof vi.fn>).mockReset();
+    (API.platformEngineItems as ReturnType<typeof vi.fn>).mockResolvedValue({ area: 396, options: 398, variation: 3 });
   });
 
   afterEach(() => {
@@ -213,6 +217,36 @@ describe('GamePage engine mode', () => {
       expect(screen.getByText('领地')).toBeInTheDocument();
       expect(screen.getByText('建议')).toBeInTheDocument();
       expect(screen.getByText('图表')).toBeInTheDocument();
+    });
+
+    it('shows remaining-uses badges from the mount fetch (领地396/支招398/变化图3)', async () => {
+      renderPage(true);
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledWith('golaxy', 'mock-token'));
+      const badges = await screen.findAllByTestId('item-badge');
+      const texts = badges.map((b) => b.textContent);
+      expect(texts).toContain('396');
+      expect(texts).toContain('398');
+      expect(texts).toContain('3');
+    });
+
+    it('renders a 0 badge (次数不足) when a count is exhausted', async () => {
+      (API.platformEngineItems as ReturnType<typeof vi.fn>).mockResolvedValue({ area: 396, options: 0, variation: 3 });
+      renderPage(true);
+      await waitFor(() => {
+        const texts = screen.getAllByTestId('item-badge').map((b) => b.textContent);
+        expect(texts).toContain('0');
+      });
+    });
+
+    it('refetches the counts after an analysis settles (badge resync)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      renderPage(true);
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledTimes(1)); // mount
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledTimes(2)); // after analysis
     });
 
     it('clicking 支招 calls API.platformEngineAnalysis(golaxy, sessionId, options, token)', async () => {

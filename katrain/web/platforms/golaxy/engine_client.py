@@ -31,6 +31,7 @@ the full capture and Section 4 for the AI level table.
 from __future__ import annotations
 
 import json
+import urllib.parse
 from dataclasses import dataclass
 from typing import Optional
 
@@ -41,7 +42,13 @@ GOLAXY_AREA_URL = "https://api.19x19.com/api/engine/dcnn/tunnel/area"
 GOLAXY_OPTIONS_URL = "https://api.19x19.com/api/engine/dcnn/tunnel/options"
 GOLAXY_JUDGE_URL = "https://api.19x19.com/api/engine/dcnn/tunnel/judge"
 GOLAXY_VARIATION_URL = "https://api.19x19.com/api/engine/dcnn/tunnel/variation"
+# Remaining metered-道具 counts (领地/支招/变化图 badges). Account-level, not a
+# tunnel: GET /items/{username}. Source-derived from app.js `userToolGet`; see
+# golaxy-protocol.md Section 9.4a. Username == the Golaxy login principal
+# `0086-{phone}` (== store.state.username / keep_login_username).
+GOLAXY_ITEMS_URL = "https://api.19x19.com/api/engine/items/"
 GENMOVE_TIMEOUT_SECONDS = 180.0  # strong bots think well past the default 30s client timeout
+ITEMS_TIMEOUT_SECONDS = 20.0  # matches the web client (userToolGet timeout:2e4); a plain GET
 _ANALYSIS_LEVEL = 8888  # full-strength analysis engine, independent of the opponent bot's level
 
 # Fixed/observed values from the live capture -- see golaxy-protocol.md
@@ -133,6 +140,23 @@ class JudgeResult:
     belong: str
     winner: str
     delta: float
+
+
+@dataclass(frozen=True)
+class ItemCountsResult:
+    """Remaining metered-道具 use counts for the three in-game analysis tunnels.
+
+    Each is the per-account remaining count from `GET /items/{username}`
+    (领地=area, 支招=options, 变化图=variation) — the numbers Golaxy renders as
+    button badges. `None` means the key was absent or non-integer in the
+    response: surface it as "unknown" (no badge), NEVER as `0`, so a parse gap
+    can't masquerade as "quota exhausted". `judge` (形势) is free and has no
+    count, so it is deliberately absent here.
+    """
+
+    area: Optional[int]
+    options: Optional[int]
+    variation: Optional[int]
 
 
 # --- Error taxonomy --------------------------------------------------------
@@ -402,6 +426,87 @@ async def engine_analysis(
     if not isinstance(belong, str):
         raise Fatal(f"Golaxy judge: missing or non-str data.belong: {belong!r}")
     return JudgeResult(belong=belong, winner=data.get("winner", "U"), delta=data.get("delta"))
+
+
+# --- Remaining-道具 counts (button badges) ----------------------------------
+
+
+def _coerce_count(value) -> Optional[int]:
+    """Best-effort parse of a remaining-count field into an int, or None.
+
+    Accepts a plain int or a numeric string (the web client's `data` may
+    arrive JSON-string-encoded). `bool` is rejected (it is an int subclass but
+    never a valid count), and anything else → None ("unknown", not 0).
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError:
+            return None
+    return None
+
+
+async def fetch_item_counts(
+    client: httpx.AsyncClient,
+    *,
+    username: str,
+    access_token: str,
+) -> ItemCountsResult:
+    """Fetch remaining metered-道具 counts via Golaxy `GET /items/{username}`.
+
+    `username` is the Golaxy login principal, i.e. `0086-{phone}` (== what the
+    login form sends, == `store.state.username` / localStorage
+    `keep_login_username`). Source-derived from app.js `userToolGet`; see
+    golaxy-protocol.md Section 9.4a.
+
+    Same host/auth/browser-headers as the tunnels. Response is `{code, data}`
+    where `data` may be a JSON string (parsed via `_unwrap_data`); the counts
+    are top-level integer keys `area`/`options`/`variation`. Missing/malformed
+    keys degrade to `None` (see `_coerce_count`) rather than raise, so a shape
+    drift never blocks play. Raises `AuthExpired`/`Retryable`/`Fatal` on the
+    wire like the sibling calls; never swallows an error.
+    """
+    if not username:
+        raise Fatal("Golaxy items: no username available (cannot build /items/{username})")
+    url = GOLAXY_ITEMS_URL + urllib.parse.quote(username, safe="")
+    headers = {
+        "Authorization": f"bearer {access_token}",
+        "Origin": _ORIGIN,
+        "Referer": _REFERER,
+        "User-Agent": _BROWSER_UA,
+    }
+
+    try:
+        response = await client.get(
+            url,
+            headers=headers,
+            timeout=httpx.Timeout(ITEMS_TIMEOUT_SECONDS, connect=10.0),
+        )
+    except (httpx.TimeoutException, httpx.TransportError) as exc:
+        raise Retryable(f"Golaxy items network error: {exc}") from exc
+
+    if response.status_code == 401:
+        raise AuthExpired("Golaxy items: HTTP 401 (token expired or invalid)")
+    if response.status_code == 429:
+        raise Retryable("Golaxy items: HTTP 429 (rate limited)")
+    if not (200 <= response.status_code < 300):
+        raise Fatal(f"Golaxy items: HTTP {response.status_code}: {response.text!r}")
+
+    body = response.json()
+    code = body.get("code")
+    if code != "0":
+        raise _classify_response_code(code, body.get("msg", ""))
+
+    data = _unwrap_data(body.get("data"))
+    return ItemCountsResult(
+        area=_coerce_count(data.get("area")),
+        options=_coerce_count(data.get("options")),
+        variation=_coerce_count(data.get("variation")),
+    )
 
 
 # --- AI level table ---------------------------------------------------------

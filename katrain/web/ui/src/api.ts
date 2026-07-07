@@ -137,6 +137,14 @@ export type EngineAnalysisData =
 export type EngineAnalysisResponse =
   | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData }
   | { ok: false; reason: "insufficient"; kind: string };
+// Remaining metered-道具 counts for the analysis-button badges. Each is a
+// number, or null when the platform didn't report it (render as "unknown",
+// never as 0). judge (形势) is free and has no count.
+export interface EngineItemCounts {
+  area: number | null;
+  options: number | null;
+  variation: number | null;
+}
 
 export interface PlatformUser {
   user_id: string;
@@ -420,6 +428,13 @@ export const API = {
     token: string,
   ): Promise<EngineAnalysisResponse> =>
     apiPost(`/api/v1/platforms/${platform}/engine/analysis`, { session_id: sessionId, kind }, token),
+  platformEngineItems: async (platform: string, token: string): Promise<EngineItemCounts> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/engine/items`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to get engine item counts");
+    return response.json();
+  },
   platformLogout: async (platform: string, token: string) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",

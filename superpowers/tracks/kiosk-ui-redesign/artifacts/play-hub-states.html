@@ -1,4 +1,4 @@
-<title>弈航 Kiosk · 对弈 hub — 状态与竖屏规范</title>
+<title>智星盒 Kiosk · 对弈 hub — 状态与竖屏规范</title>
 <style>
 @import url("./fonts.css");
 :root{
@@ -24,44 +24,36 @@ section{margin-top:46px}
 .sh .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
 .note{color:var(--sub);font-size:13px;margin:-8px 0 18px 48px;max-width:760px}
 
-/* ── shared component styles (same as ③ hub) ── */
-.card{background:var(--raise);border:1px solid var(--hair);border-radius:15px;padding:14px 16px;
-  display:flex;align-items:center;gap:13px;transition:transform .13s cubic-bezier(.2,.7,.3,1),border-color .13s,box-shadow .13s}
-.card .cic{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;background:var(--raise2);border:1px solid var(--hair)}
-.card .cic svg{width:24px;height:24px;stroke:var(--sub);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.card .ct h3{font-size:16.5px;font-weight:600}
-.card .ct p{font-size:11.5px;color:var(--sub);margin-top:2px}
-.card.hero{background:linear-gradient(135deg,#2a5344,#1c2f28);border-color:var(--jade-d)}
-.card.hero .cic{background:rgba(88,181,122,.16);border-color:var(--jade-d)}
-.card.hero .cic svg{stroke:var(--jade)}
-.card.hero .ct h3{font-size:18px}
-.card .go{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--jade);display:grid;place-items:center;flex-shrink:0;box-shadow:0 6px 16px -5px var(--jade)}
-.card .go svg{width:16px;height:16px;stroke:#0d1a13;stroke-width:2.6;fill:none}
-.chip{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:11px;transition:transform .13s cubic-bezier(.2,.7,.3,1),border-color .13s,background .13s}
-.chip svg{width:21px;height:21px;stroke:var(--sub);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.chip h4{font-size:14.5px;font-weight:600}.chip p{font-size:11px;color:var(--dim);margin-top:2px}
+/* ── shared hub component (同 ③ d3：统一等大 .opt 网格) ── */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.opt{background:var(--raise);border:1px solid var(--hair);border-radius:15px;padding:13px 15px;
+  display:flex;align-items:center;gap:12px;transition:transform .13s cubic-bezier(.2,.7,.3,1),border-color .13s,box-shadow .13s,filter .13s}
+.opt .cic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;background:var(--raise2);border:1px solid var(--hair)}
+.opt .cic svg{width:24px;height:24px;fill:var(--sub)}
+.opt .ct{min-width:0}
+.opt .ct h3{font-size:16px;font-weight:600}
+.opt .ct p{font-size:11px;color:var(--sub);margin-top:2px;line-height:1.3}
+.opt.primary{background:linear-gradient(135deg,#2a5344,#1c2f28);border-color:var(--jade-d)}
+.opt.primary .cic{background:rgba(88,181,122,.16);border-color:var(--jade-d)}
+.opt.primary .cic svg{fill:var(--jade)}
 
 /* live interactivity for the reference frame */
-.live .card{cursor:pointer}.live .card:hover{border-color:#3a4d45;transform:translateY(-1px)}
-.live .card:active{transform:scale(.985)}
-.live .chip{cursor:pointer}.live .chip:hover{border-color:#3a4d45;background:var(--raise2)}
-.live .chip:active{transform:scale(.97)}
+.live .opt{cursor:pointer}
+.live .opt:hover{border-color:#3a4d45;transform:translateY(-1px)}
+.live .opt:active{transform:scale(.985);filter:brightness(.94)}
 
 /* forced states for the matrix */
-.s-hover.card{border-color:#3a4d45;transform:translateY(-1px)}
-.s-hover.chip{border-color:#3a4d45;background:var(--raise2)}
-.s-active.card,.s-active.chip{transform:scale(.97);filter:brightness(.94)}
+.s-hover{border-color:#3a4d45!important;transform:translateY(-1px)}
+.s-active{transform:scale(.97);filter:brightness(.94)}
 .s-focus{outline:none;box-shadow:0 0 0 2px var(--slate),0 0 0 4px rgba(88,181,122,.75)}
-.s-disabled{opacity:.4;filter:grayscale(.5)}
-.s-disabled .go{box-shadow:none}
+.s-disabled{opacity:.4;filter:grayscale(.5);pointer-events:none}
 
 /* the reference frame */
 .frame{width:940px;max-width:100%;height:520px;background:radial-gradient(90% 80% at 20% 0%,rgba(88,181,122,.08),transparent 55%),linear-gradient(180deg,#111817,#0d1211);
   border:1px solid #223029;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px -30px #000}
 .f-hdr{height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--hair)}
 .brand{display:flex;align-items:center;gap:10px}
-.mark{width:25px;height:25px;border-radius:7px;background:radial-gradient(circle at 34% 30%,#7fd6a0,#26463a);display:grid;place-items:center}
-.mark i{width:8px;height:8px;border-radius:50%;background:#0c0c0c;box-shadow:5px 0 0 -1px #eef3f1}
+.logo{width:28px;height:28px;object-fit:contain;flex-shrink:0}
 .wname{font-family:var(--serif);font-size:18px;font-weight:600}.wname small{font-family:var(--serif);font-style:italic;font-size:11px;color:var(--sub);margin-left:6px}
 .f-hdr .who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
 .f-hdr .ava{width:23px;height:23px;border-radius:50%;background:linear-gradient(135deg,#26463a,#58b57a);display:grid;place-items:center;font-size:11px;font-weight:700;color:#0c130f}
@@ -69,7 +61,7 @@ section{margin-top:46px}
 .console{width:290px;flex-shrink:0;background:var(--raise);border:1px solid var(--hair);border-radius:16px;padding:13px;display:flex;flex-direction:column}
 .console .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
 .console .ch h3{font-size:12px;font-weight:700;letter-spacing:1.4px}.console .ch em{font-family:var(--serif);font-style:italic;font-size:11px;color:var(--dim)}
-.board{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden}
+.board{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;box-shadow:0 8px 24px -12px #000}
 .stat{display:flex;gap:7px;margin-top:11px}
 .scell{flex:1;background:var(--raise2);border:1px solid var(--hair);border-radius:10px;padding:8px 9px}
 .scell .k{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub)}.scell .k b{width:6px;height:6px;border-radius:50%;background:var(--jade);box-shadow:0 0 6px var(--jade)}
@@ -85,13 +77,11 @@ section{margin-top:46px}
 .seclabel{display:flex;align-items:baseline;gap:9px;margin-bottom:9px}
 .seclabel h2{font-size:12.5px;font-weight:700;letter-spacing:1.4px}.seclabel em{font-family:var(--serif);font-style:italic;font-size:11px;color:var(--dim)}
 .seclabel .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
-.row{display:flex;gap:11px}.row .card{flex:1}.row .card.hero{flex:1.55}
-.chips{display:flex;gap:11px}.chips .chip{flex:1}
 .f-dock{height:78px;flex-shrink:0;border-top:1px solid var(--hair);display:flex;padding:7px 12px;gap:4px}
 .dk{flex:1;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--sub)}
-.dk svg{width:23px;height:23px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.dk svg{width:23px;height:23px;fill:currentColor}
 .dk span{font-size:12px;font-weight:600}
-.dk.on{color:#0e1a13;background:var(--jade);box-shadow:0 8px 20px -9px var(--jade)}.dk.on svg{stroke:#0e1a13}
+.dk.on{color:#0e1a13;background:var(--jade);box-shadow:0 8px 20px -9px var(--jade)}.dk.on svg{fill:#0e1a13}
 
 /* matrix grid */
 .matrix{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:16px}
@@ -119,12 +109,16 @@ section{margin-top:46px}
 .portrait{width:340px;height:580px;background:radial-gradient(90% 50% at 30% 0%,rgba(88,181,122,.08),transparent 55%),linear-gradient(180deg,#111817,#0d1211);
   border:1px solid #223029;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px -30px #000}
 .p-hdr{height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--hair)}
-.p-body{flex:1;min-height:0;padding:13px 15px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.p-body{flex:1;min-height:0;padding:13px 15px;display:flex;flex-direction:column;gap:11px;overflow:hidden}
 .p-console{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:12px;display:flex;gap:12px}
 .p-console .pb{width:118px;height:118px;flex-shrink:0;border-radius:8px;overflow:hidden}
 .p-console .pinfo{flex:1;display:flex;flex-direction:column;gap:7px;justify-content:center}
 .p-scell{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--sub)}
 .p-scell .r{display:flex;align-items:center;gap:6px}.p-scell b{width:6px;height:6px;border-radius:50%;background:var(--jade)}.p-scell.warn b{background:var(--amber)}.p-scell .v{color:var(--ice);font-weight:600}
+.p-grid1{display:flex;flex-direction:column;gap:9px}
+.p-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.p-body .opt{padding:10px 12px}.p-body .opt .cic{width:38px;height:38px}.p-body .opt .cic svg{width:21px;height:21px}
+.p-body .p-grid3 .opt{flex-direction:column;text-align:center;gap:7px;padding:11px 8px}
 .p-dock{height:70px;flex-shrink:0;border-top:1px solid var(--hair);display:flex;padding:6px 6px}
 .p-dock .dk span{font-size:10.5px}.p-dock .dk svg{width:20px;height:20px}
 .two-up{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
@@ -142,24 +136,31 @@ section{margin-top:46px}
 
 <div class="wrap">
   <div class="head">
-    <div class="kick">弈航 Kiosk · 方案 ③ 棋盘台 · Phase 1</div>
+    <div class="kick">智星盒 Kiosk · 方案 ③ 棋盘台 · Phase 1</div>
     <h1>对弈 hub — 状态与竖屏规范</h1>
-    <p>把已定稿的「对弈」界面补齐到可实现颗粒度：交互状态（默认 / 悬停 / 按压 / 聚焦 / 禁用）、异步与数据态（继续上一局 有无、等级 加载/失败/空）、动效与触控数值，以及 7″ 竖屏排布。字体为 Anthropic 风格替身（Newsreader + Hanken Grotesk）。</p>
+    <p>把已定稿的「对弈」界面补齐到可实现颗粒度：交互状态（默认 / 悬停 / 按压 / 聚焦 / 禁用）、异步与数据态（继续上一局 有无、等级 加载/失败/空）、动效与触控数值，以及 7″ 竖屏排布。组件、图标、盘面均与 ③ d3 定稿一致（统一等大 .opt 网格 · galaxy MUI 图标 · galaxy 木纹棋盘棋子）。字体为 Anthropic 风格替身（Newsreader + Hanken Grotesk）。</p>
   </div>
 
   <!-- §1 reference -->
   <section>
     <div class="sh"><span class="n">01</span><h2>基准态 · 横屏 1024×600</h2><span class="rule"></span></div>
-    <p class="note">左侧「智能棋盘台」常驻；右侧为对弈 hub：问候 + 继续上一局 + 人机对弈（自由/升降级）+ 人人对弈（本地/在线/跨平台）。下方为可交互实例，可真实 hover / 按压。</p>
+    <p class="note">左侧「智能棋盘台」常驻；右侧为对弈 hub：问候 + 继续上一局 + 人机对弈（自由/升降级/跨平台）+ 人人对弈（本地/在线/跨平台）。六按钮统一等大，仅「自由对弈」以 jade 底标为主操作。下方为可交互实例，可真实 hover / 按压。</p>
     <div class="frame live">
       <div class="f-hdr">
-        <div class="brand"><div class="mark"><i></i></div><div class="wname">弈航<small>Yìháng</small></div></div>
+        <div class="brand"><img class="logo" src="./logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
         <div class="who"><div class="ava">F</div>fan · 22:40</div>
       </div>
       <div class="f-main">
         <div class="console">
           <div class="ch"><h3>智能棋盘</h3><em>Live board</em></div>
-          <svg class="board" viewBox="0 0 200 200"><rect width="200" height="200" fill="#d8b47e"/><g stroke="#7a5c34" stroke-width="1"><path d="M14 14H186M14 33H186M14 52H186M14 71H186M14 90H186M14 109H186M14 128H186M14 147H186M14 166H186M14 186H186"/><path d="M14 14V186M33 14V186M52 14V186M71 14V186M90 14V186M109 14V186M128 14V186M147 14V186M166 14V186M186 14V186"/></g><g fill="#5a4022"><circle cx="52" cy="52" r="2.6"/><circle cx="100" cy="52" r="2.6"/><circle cx="147" cy="52" r="2.6"/><circle cx="52" cy="100" r="2.6"/><circle cx="100" cy="100" r="2.6"/><circle cx="147" cy="100" r="2.6"/><circle cx="52" cy="147" r="2.6"/><circle cx="100" cy="147" r="2.6"/><circle cx="147" cy="147" r="2.6"/></g><g><circle cx="52" cy="147" r="8" fill="#111"/><circle cx="71" cy="128" r="8" fill="#111"/><circle cx="90" cy="147" r="8" fill="#111"/><circle cx="71" cy="147" r="8" fill="#f2ece0"/><circle cx="90" cy="128" r="8" fill="#f2ece0"/><circle cx="109" cy="147" r="8" fill="#f2ece0"/><circle cx="147" cy="52" r="8" fill="#111" stroke="#58b57a" stroke-width="2"/></g></svg>
+          <svg class="board" viewBox="0 0 200 200">
+            <image href="./board.png" x="0" y="0" width="200" height="200" preserveAspectRatio="none"/>
+            <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H180M20 40H180M20 60H180M20 80H180M20 100H180M20 120H180M20 140H180M20 160H180M20 180H180"/><path d="M20 20V180M40 20V180M60 20V180M80 20V180M100 20V180M120 20V180M140 20V180M160 20V180M180 20V180"/></g>
+            <g fill="rgba(0,0,0,.85)"><circle cx="60" cy="60" r="2.2"/><circle cx="140" cy="60" r="2.2"/><circle cx="60" cy="140" r="2.2"/><circle cx="140" cy="140" r="2.2"/><circle cx="100" cy="100" r="2.2"/></g>
+            <g><use href="#sb" x="49.9" y="129.9" width="20.2" height="20.2"/><use href="#sb" x="69.9" y="109.9" width="20.2" height="20.2"/><use href="#sb" x="89.9" y="129.9" width="20.2" height="20.2"/>
+               <use href="#sw" x="69.9" y="129.9" width="20.2" height="20.2"/><use href="#sw" x="89.9" y="109.9" width="20.2" height="20.2"/><use href="#sw" x="109.9" y="129.9" width="20.2" height="20.2"/>
+               <use href="#sb" x="129.9" y="49.9" width="20.2" height="20.2"/><circle cx="140" cy="60" r="6" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.6"/></g>
+          </svg>
           <div class="stat">
             <div class="scell"><div class="k"><b></b>摄像头</div><div class="v">已连接</div></div>
             <div class="scell warn"><div class="k"><b></b>标定</div><div class="v">需校准</div></div>
@@ -171,30 +172,31 @@ section{margin-top:46px}
           <div class="resume"><div class="rl"></div><div><h4>继续上一局</h4><p>星铠虾 1 级 · 让 4 子 · 第 87 手</p></div><div class="badge">恢复</div></div>
           <div>
             <div class="seclabel"><h2>人机对弈</h2><em>vs&nbsp;AI</em><span class="rule"></span></div>
-            <div class="row">
-              <div class="card hero"><div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div><div class="ct"><h3>自由对弈</h3><p>自选 AI 等级 · 让子 · 先手</p></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div></div>
-              <div class="card"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div><div class="ct"><h3>升降级</h3><p>自动匹配难度</p></div></div>
+            <div class="grid3">
+              <div class="opt primary"><div class="cic"><svg viewBox="0 0 24 24"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3M7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5M16 17H8v-2h8zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13"/></svg></div><div class="ct"><h3>自由对弈</h3><p>AI 等级 · 让子 · 先手</p></div></div>
+              <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg></div><div class="ct"><h3>升降级</h3><p>自动匹配难度</p></div></div>
+              <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M8.4 18.2c.38.5.6 1.12.6 1.8 0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.44 0 .85.09 1.23.26l1.41-1.77c-.92-1.03-1.29-2.39-1.09-3.69l-2.03-.68c-.54.83-1.46 1.38-2.52 1.38-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3c0 .07 0 .14-.01.21l2.03.68c.64-1.21 1.82-2.09 3.22-2.32V5.91C9.96 5.57 9 4.4 9 3c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.4-.96 2.57-2.25 2.91v2.16c1.4.23 2.58 1.11 3.22 2.32L18 9.71V9.5c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3c-1.06 0-1.98-.55-2.52-1.37l-2.03.68c.2 1.29-.16 2.65-1.09 3.69l1.41 1.77Q17.34 17 18 17c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3c0-.68.22-1.3.6-1.8l-1.41-1.77c-1.35.75-3.01.76-4.37 0z"/></svg></div><div class="ct"><h3>跨平台</h3><p>星阵 · 野狐 AI</p></div></div>
             </div>
           </div>
           <div>
             <div class="seclabel"><h2>人人对弈</h2><em>vs&nbsp;Human</em><span class="rule"></span></div>
-            <div class="chips">
-              <div class="chip"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM3 20v-1a4 4 0 014-4h2M21 20v-1a4 4 0 00-4-4h-2"/></svg><div><h4>本地对局</h4><p>面对面</p></div></div>
-              <div class="chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg><div><h4>在线大厅</h4><p>网络对手</p></div></div>
-              <div class="chip"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2.4"/></svg><div><h4>跨平台</h4><p>星阵·野狐·OGS</p></div></div>
+            <div class="grid3">
+              <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91M4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58C.48 14.9 0 15.62 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29M20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m4 3.43c0-.81-.48-1.53-1.22-1.85-.85-.37-1.79-.58-2.78-.58-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3"/></svg></div><div class="ct"><h3>本地对局</h3><p>面对面对弈</p></div></div>
+              <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39"/></svg></div><div class="ct"><h3>在线大厅</h3><p>匹配网络对手</p></div></div>
+              <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M8.4 18.2c.38.5.6 1.12.6 1.8 0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.44 0 .85.09 1.23.26l1.41-1.77c-.92-1.03-1.29-2.39-1.09-3.69l-2.03-.68c-.54.83-1.46 1.38-2.52 1.38-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3c0 .07 0 .14-.01.21l2.03.68c.64-1.21 1.82-2.09 3.22-2.32V5.91C9.96 5.57 9 4.4 9 3c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.4-.96 2.57-2.25 2.91v2.16c1.4.23 2.58 1.11 3.22 2.32L18 9.71V9.5c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3c-1.06 0-1.98-.55-2.52-1.37l-2.03.68c.2 1.29-.16 2.65-1.09 3.69l1.41 1.77Q17.34 17 18 17c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3c0-.68.22-1.3.6-1.8l-1.41-1.77c-1.35.75-3.01.76-4.37 0z"/></svg></div><div class="ct"><h3>跨平台</h3><p>星阵 · 野狐 · OGS</p></div></div>
             </div>
           </div>
         </div>
       </div>
       <div class="f-dock">
-        <div class="dk on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg><span>对弈</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg><span>死活</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><path d="M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8"/></svg><span>研究</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M8 9h6M8 13h8"/></svg><span>棋谱</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg><span>摆谱</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="12" rx="2"/><path d="M18 10l3-2v8l-3-2"/></svg><span>直播</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4z"/><path d="M7 10v5c0 1 2.5 2.5 5 2.5s5-1.5 5-2.5v-5"/></svg><span>教程</span></div>
-        <div class="dk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.2-1.5l2-1.6-2-3.4-2.4 1a7 7 0 00-2.6-1.5L13.4 2h-2.8l-.4 2.5a7 7 0 00-2.6 1.5l-2.4-1-2 3.4 2 1.6A7 7 0 003 12"/></svg><span>设置</span></div>
+        <div class="dk on"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg><span>对弈</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11"/></svg><span>死活</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg><span>研究</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg><span>棋谱</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M8 20H4v-4h4zm0-6H4v-4h4zm0-6H4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4z"/></svg><span>摆谱</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2m0 14H3V8h18zM9 10v8l7-4z"/></svg><span>直播</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1m0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5z"/></svg><span>教程</span></div>
+        <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6"/></svg><span>设置</span></div>
       </div>
     </div>
   </section>
@@ -202,21 +204,21 @@ section{margin-top:46px}
   <!-- §2 interaction states -->
   <section>
     <div class="sh"><span class="n">02</span><h2>交互状态</h2><span class="rule"></span></div>
-    <p class="note">同一控件的五态。触控设备无真实 hover，但保留给鼠标/触控笔与遥控焦点；按压是主要反馈。聚焦环用于键盘/遥控导航。</p>
+    <p class="note">同一 .opt 控件的五态。触控设备无真实 hover，但保留给鼠标/触控笔与遥控焦点；按压是主要反馈。聚焦环用于键盘/遥控导航。</p>
     <div class="matrix">
-      <div class="cell"><div class="demo"><div class="card hero" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div><div class="ct"><h3>自由对弈</h3></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div></div></div><div class="lab"><b>主卡 · 默认</b><span class="tag">default</span></div><div class="val">jade 渐变 · border <code>--jade-d</code></div></div>
-      <div class="cell"><div class="demo"><div class="card hero s-hover" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div><div class="ct"><h3>自由对弈</h3></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div></div></div><div class="lab"><b>主卡 · 悬停</b><span class="tag">hover</span></div><div class="val">上移 <code>-1px</code> · border 提亮</div></div>
-      <div class="cell"><div class="demo"><div class="card hero s-active" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div><div class="ct"><h3>自由对弈</h3></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div></div></div><div class="lab"><b>主卡 · 按压</b><span class="tag">active</span></div><div class="val">缩放 <code>.97</code> · 亮度 <code>.94</code></div></div>
-      <div class="cell"><div class="demo"><div class="card hero s-focus" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div><div class="ct"><h3>自由对弈</h3></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div></div></div><div class="lab"><b>主卡 · 聚焦</b><span class="tag">focus</span></div><div class="val">2px jade 环 + 2px 底隔</div></div>
+      <div class="cell"><div class="demo"><div class="opt primary" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3M7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5M16 17H8v-2h8zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13"/></svg></div><div class="ct"><h3>自由对弈</h3></div></div></div><div class="lab"><b>主操作 · 默认</b><span class="tag">default</span></div><div class="val">jade 渐变 · border <code>--jade-d</code></div></div>
+      <div class="cell"><div class="demo"><div class="opt primary s-hover" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3M7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5M16 17H8v-2h8zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13"/></svg></div><div class="ct"><h3>自由对弈</h3></div></div></div><div class="lab"><b>主操作 · 悬停</b><span class="tag">hover</span></div><div class="val">上移 <code>-1px</code> · border 提亮</div></div>
+      <div class="cell"><div class="demo"><div class="opt primary s-active" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3M7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5M16 17H8v-2h8zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13"/></svg></div><div class="ct"><h3>自由对弈</h3></div></div></div><div class="lab"><b>主操作 · 按压</b><span class="tag">active</span></div><div class="val">缩放 <code>.985</code> · 亮度 <code>.94</code></div></div>
+      <div class="cell"><div class="demo"><div class="opt primary s-focus" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3M7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5M16 17H8v-2h8zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13"/></svg></div><div class="ct"><h3>自由对弈</h3></div></div></div><div class="lab"><b>主操作 · 聚焦</b><span class="tag">focus</span></div><div class="val">2px jade 环 + 2px 底隔</div></div>
 
-      <div class="cell"><div class="demo"><div class="chip" style="width:100%"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM3 20v-1a4 4 0 014-4h2M21 20v-1a4 4 0 00-4-4h-2"/></svg><div><h4>本地对局</h4></div></div></div><div class="lab"><b>次卡/chip · 默认</b><span class="tag">default</span></div><div class="val">raise 面 · hair 边</div></div>
-      <div class="cell"><div class="demo"><div class="chip s-hover" style="width:100%"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM3 20v-1a4 4 0 014-4h2M21 20v-1a4 4 0 00-4-4h-2"/></svg><div><h4>本地对局</h4></div></div></div><div class="lab"><b>chip · 悬停</b><span class="tag">hover</span></div><div class="val">底 <code>--raise2</code> · border 提亮</div></div>
-      <div class="cell"><div class="demo"><div class="chip s-active" style="width:100%"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM3 20v-1a4 4 0 014-4h2M21 20v-1a4 4 0 00-4-4h-2"/></svg><div><h4>本地对局</h4></div></div></div><div class="lab"><b>chip · 按压</b><span class="tag">active</span></div><div class="val">缩放 <code>.97</code></div></div>
-      <div class="cell"><div class="demo"><div class="chip s-disabled" style="width:100%"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg><div><h4>在线大厅</h4><p>未连接</p></div></div></div><div class="lab"><b>chip · 禁用</b><span class="tag">disabled</span></div><div class="val">透明度 <code>.4</code> · 不可点</div></div>
+      <div class="cell"><div class="demo"><div class="opt" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91M4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58C.48 14.9 0 15.62 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29M20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m4 3.43c0-.81-.48-1.53-1.22-1.85-.85-.37-1.79-.58-2.78-.58-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3"/></svg></div><div class="ct"><h3>本地对局</h3></div></div></div><div class="lab"><b>次操作 · 默认</b><span class="tag">default</span></div><div class="val">raise 面 · hair 边</div></div>
+      <div class="cell"><div class="demo"><div class="opt s-hover" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91M4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58C.48 14.9 0 15.62 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29M20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m4 3.43c0-.81-.48-1.53-1.22-1.85-.85-.37-1.79-.58-2.78-.58-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3"/></svg></div><div class="ct"><h3>本地对局</h3></div></div></div><div class="lab"><b>次操作 · 悬停</b><span class="tag">hover</span></div><div class="val">上移 <code>-1px</code> · border 提亮</div></div>
+      <div class="cell"><div class="demo"><div class="opt s-active" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91M4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58C.48 14.9 0 15.62 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29M20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m4 3.43c0-.81-.48-1.53-1.22-1.85-.85-.37-1.79-.58-2.78-.58-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3"/></svg></div><div class="ct"><h3>本地对局</h3></div></div></div><div class="lab"><b>次操作 · 按压</b><span class="tag">active</span></div><div class="val">缩放 <code>.97</code></div></div>
+      <div class="cell"><div class="demo"><div class="opt s-disabled" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39"/></svg></div><div class="ct"><h3>在线大厅</h3><p>未连接</p></div></div></div><div class="lab"><b>次操作 · 禁用</b><span class="tag">disabled</span></div><div class="val">透明度 <code>.4</code> · 不可点</div></div>
 
-      <div class="cell"><div class="demo"><div class="dk on" style="width:88px;height:56px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke-width:1.7;fill:none;stroke-linecap:round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg><span style="font-size:12px;font-weight:600">对弈</span></div></div><div class="lab"><b>Dock · 选中</b><span class="tag">selected</span></div><div class="val">jade 实底 · 深字 · 抬升阴影</div></div>
-      <div class="cell"><div class="demo"><div class="dk" style="width:88px;height:56px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--sub)"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke-width:1.7;fill:none;stroke-linecap:round"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg><span style="font-size:12px;font-weight:600">死活</span></div></div><div class="lab"><b>Dock · 默认</b><span class="tag">idle</span></div><div class="val">sub 灰 · 透明底</div></div>
-      <div class="cell"><div class="demo"><div class="dk s-hover" style="width:88px;height:56px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#c3d0cb;background:rgba(255,255,255,.03)"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke-width:1.7;fill:none;stroke-linecap:round"><path d="M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8"/></svg><span style="font-size:12px;font-weight:600">研究</span></div></div><div class="lab"><b>Dock · 悬停</b><span class="tag">hover</span></div><div class="val">字提亮 · 极淡底</div></div>
+      <div class="cell"><div class="demo"><div class="dk on" style="width:88px;height:56px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:#0e1a13"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg><span>对弈</span></div></div><div class="lab"><b>Dock · 选中</b><span class="tag">selected</span></div><div class="val">jade 实底 · 深字 · 抬升阴影</div></div>
+      <div class="cell"><div class="demo"><div class="dk" style="width:88px;height:56px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:var(--sub)"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11"/></svg><span>死活</span></div></div><div class="lab"><b>Dock · 默认</b><span class="tag">idle</span></div><div class="val">sub 灰 · 透明底</div></div>
+      <div class="cell"><div class="demo"><div class="dk" style="width:88px;height:56px;color:#c3d0cb;background:rgba(255,255,255,.03)"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:currentColor"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg><span>研究</span></div></div><div class="lab"><b>Dock · 悬停</b><span class="tag">hover</span></div><div class="val">字提亮 · 极淡底</div></div>
       <div class="cell"><div class="demo"><div class="resume" style="width:100%"><div class="rl"></div><div><h4>继续上一局</h4><p>第 87 手</p></div></div></div><div class="lab"><b>继续条 · 默认</b><span class="tag">resume</span></div><div class="val">amber 竖条 · 可点整条</div></div>
     </div>
   </section>
@@ -228,24 +230,29 @@ section{margin-top:46px}
     <div class="async">
       <div class="abox"><div class="t">继续上一局 · 有<em>resume</em></div><div class="resume" style="width:100%"><div class="rl"></div><div><h4>继续上一局</h4><p>星铠虾 1 级 · 让 4 子 · 第 87 手</p></div><div class="badge">恢复</div></div></div>
       <div class="abox"><div class="t">继续上一局 · 无<em>empty</em></div><div class="empty">无进行中的对局<br>—— 该条整条隐藏，hub 上移填补</div></div>
-      <div class="abox"><div class="t">等级 · 加载中<em>loading</em></div><div class="card" style="pointer-events:none"><div class="spin"></div><div class="ct"><div class="skeleton" style="width:96px;height:13px"></div><div class="skeleton" style="width:60px;height:10px;margin-top:6px"></div></div></div></div>
-      <div class="abox"><div class="t">等级 · 失败<em>error</em></div><div class="errline"><span>⚠</span>棋力等级加载失败<span class="retry">重试</span></div><div class="val" style="font-size:11px">主卡置禁用态，重试成功后恢复。</div></div>
+      <div class="abox"><div class="t">等级 · 加载中<em>loading</em></div><div class="opt" style="pointer-events:none"><div class="cic"><div class="spin" style="width:22px;height:22px"></div></div><div class="ct" style="flex:1"><div class="skeleton" style="width:96px;height:13px"></div><div class="skeleton" style="width:60px;height:10px;margin-top:6px"></div></div></div></div>
+      <div class="abox"><div class="t">等级 · 失败<em>error</em></div><div class="errline"><span>⚠</span>棋力等级加载失败<span class="retry">重试</span></div><div class="val" style="font-size:11px">主操作置禁用态，重试成功后恢复。</div></div>
       <div class="abox"><div class="t">等级 · 空<em>empty</em></div><div class="empty">暂无可用等级<br>请检查引擎连接（左侧棋盘台）</div></div>
-      <div class="abox"><div class="t">开始中<em>starting</em></div><div class="card hero" style="width:100%;pointer-events:none"><div class="cic"><div class="spin" style="width:22px;height:22px;border-top-color:#0d1a13"></div></div><div class="ct"><h3>创建对局中…</h3></div></div></div>
+      <div class="abox"><div class="t">开始中<em>starting</em></div><div class="opt primary" style="width:100%;pointer-events:none"><div class="cic"><div class="spin" style="width:22px;height:22px;border-top-color:#0d1a13"></div></div><div class="ct"><h3>创建对局中…</h3></div></div></div>
     </div>
   </section>
 
   <!-- §4 portrait -->
   <section>
     <div class="sh"><span class="n">04</span><h2>竖屏变体 · 600×1024</h2><span class="rule"></span></div>
-    <p class="note">7″ 竖用时：棋盘台压成横条（小盘 + 状态并排），hub 竖向堆叠，Dock 仍在底部（8 项等分）。</p>
+    <p class="note">7″ 竖用时：棋盘台压成横条（小盘 + 状态并排），hub 竖向堆叠（人机三项单列、人人三项一行），Dock 仍在底部（8 项等分）。</p>
     <div class="two-up">
       <div class="portrait">
-        <div class="p-hdr"><div class="brand"><div class="mark"><i></i></div><div class="wname" style="font-size:16px">弈航<small style="font-size:10px">Yìháng</small></div></div><div class="who" style="font-size:11px;color:var(--sub)">fan · 22:40</div></div>
+        <div class="p-hdr"><div class="brand"><img class="logo" src="./logo-white.png" alt="" style="width:24px;height:24px"/><div class="wname" style="font-size:16px">智星盒<small style="font-size:10px">StellaBox</small></div></div><div class="who" style="font-size:11px;color:var(--sub)">fan · 22:40</div></div>
         <div class="p-body">
           <div class="greet"><h1 style="font-size:20px">晚上好，<b>fan</b></h1></div>
           <div class="p-console">
-            <div class="pb"><svg class="board" viewBox="0 0 200 200"><rect width="200" height="200" fill="#d8b47e"/><g stroke="#7a5c34" stroke-width="1.4"><path d="M14 14H186M14 52H186M14 90H186M14 128H186M14 166H186M14 186H186M14 33H186M14 71H186M14 109H186M14 147H186"/><path d="M14 14V186M52 14V186M90 14V186M128 14V186M166 14V186M186 14V186M33 14V186M71 14V186M109 14V186M147 14V186"/></g><g><circle cx="52" cy="147" r="9" fill="#111"/><circle cx="71" cy="128" r="9" fill="#111"/><circle cx="71" cy="147" r="9" fill="#f2ece0"/><circle cx="147" cy="52" r="9" fill="#111" stroke="#58b57a" stroke-width="2.4"/></g></svg></div>
+            <div class="pb"><svg class="board" viewBox="0 0 200 200">
+              <image href="./board.png" x="0" y="0" width="200" height="200" preserveAspectRatio="none"/>
+              <g stroke="rgba(0,0,0,.7)" stroke-width="1.4"><path d="M20 20H180M20 40H180M20 60H180M20 80H180M20 100H180M20 120H180M20 140H180M20 160H180M20 180H180"/><path d="M20 20V180M40 20V180M60 20V180M80 20V180M100 20V180M120 20V180M140 20V180M160 20V180M180 20V180"/></g>
+              <g fill="rgba(0,0,0,.85)"><circle cx="60" cy="60" r="2.4"/><circle cx="140" cy="60" r="2.4"/><circle cx="60" cy="140" r="2.4"/><circle cx="140" cy="140" r="2.4"/><circle cx="100" cy="100" r="2.4"/></g>
+              <g><use href="#sb" x="49.9" y="129.9" width="20.2" height="20.2"/><use href="#sb" x="69.9" y="109.9" width="20.2" height="20.2"/><use href="#sw" x="69.9" y="129.9" width="20.2" height="20.2"/><use href="#sb" x="129.9" y="49.9" width="20.2" height="20.2"/><circle cx="140" cy="60" r="6" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.6"/></g>
+            </svg></div>
             <div class="pinfo">
               <div class="p-scell"><div class="r"><b></b>摄像头</div><div class="v">已连接</div></div>
               <div class="p-scell warn"><div class="r"><b></b>标定</div><div class="v">需校准</div></div>
@@ -254,25 +261,32 @@ section{margin-top:46px}
           </div>
           <div class="resume" style="padding:9px 13px"><div class="rl"></div><div><h4 style="font-size:13px">继续上一局</h4><p>第 87 手</p></div><div class="badge">恢复</div></div>
           <div class="seclabel" style="margin-bottom:0"><h2>人机对弈</h2><span class="rule"></span></div>
-          <div class="card hero" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div><div class="ct"><h3>自由对弈</h3><p>自选等级 · 让子</p></div><div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div></div>
-          <div class="card" style="width:100%"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div><div class="ct"><h3>升降级</h3><p>自动匹配</p></div></div>
+          <div class="p-grid1">
+            <div class="opt primary"><div class="cic"><svg viewBox="0 0 24 24"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3M7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5M16 17H8v-2h8zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13"/></svg></div><div class="ct"><h3>自由对弈</h3><p>自选等级 · 让子</p></div></div>
+            <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg></div><div class="ct"><h3>升降级</h3><p>自动匹配</p></div></div>
+            <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M8.4 18.2c.38.5.6 1.12.6 1.8 0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.44 0 .85.09 1.23.26l1.41-1.77c-.92-1.03-1.29-2.39-1.09-3.69l-2.03-.68c-.54.83-1.46 1.38-2.52 1.38-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3c0 .07 0 .14-.01.21l2.03.68c.64-1.21 1.82-2.09 3.22-2.32V5.91C9.96 5.57 9 4.4 9 3c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.4-.96 2.57-2.25 2.91v2.16c1.4.23 2.58 1.11 3.22 2.32L18 9.71V9.5c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3c-1.06 0-1.98-.55-2.52-1.37l-2.03.68c.2 1.29-.16 2.65-1.09 3.69l1.41 1.77Q17.34 17 18 17c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3c0-.68.22-1.3.6-1.8l-1.41-1.77c-1.35.75-3.01.76-4.37 0z"/></svg></div><div class="ct"><h3>跨平台</h3><p>星阵·野狐 AI</p></div></div>
+          </div>
           <div class="seclabel" style="margin-bottom:0"><h2>人人对弈</h2><span class="rule"></span></div>
-          <div class="chips" style="gap:9px"><div class="chip" style="flex:1;padding:10px"><div><h4 style="font-size:13px">本地</h4></div></div><div class="chip" style="flex:1;padding:10px"><div><h4 style="font-size:13px">在线</h4></div></div><div class="chip" style="flex:1;padding:10px"><div><h4 style="font-size:13px">跨平台</h4></div></div></div>
+          <div class="p-grid3">
+            <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91M4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58C.48 14.9 0 15.62 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29M20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m4 3.43c0-.81-.48-1.53-1.22-1.85-.85-.37-1.79-.58-2.78-.58-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3"/></svg></div><div class="ct"><h3 style="font-size:13px">本地</h3></div></div>
+            <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39"/></svg></div><div class="ct"><h3 style="font-size:13px">在线</h3></div></div>
+            <div class="opt"><div class="cic"><svg viewBox="0 0 24 24"><path d="M8.4 18.2c.38.5.6 1.12.6 1.8 0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.44 0 .85.09 1.23.26l1.41-1.77c-.92-1.03-1.29-2.39-1.09-3.69l-2.03-.68c-.54.83-1.46 1.38-2.52 1.38-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3c0 .07 0 .14-.01.21l2.03.68c.64-1.21 1.82-2.09 3.22-2.32V5.91C9.96 5.57 9 4.4 9 3c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.4-.96 2.57-2.25 2.91v2.16c1.4.23 2.58 1.11 3.22 2.32L18 9.71V9.5c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3c-1.06 0-1.98-.55-2.52-1.37l-2.03.68c.2 1.29-.16 2.65-1.09 3.69l1.41 1.77Q17.34 17 18 17c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3c0-.68.22-1.3.6-1.8l-1.41-1.77c-1.35.75-3.01.76-4.37 0z"/></svg></div><div class="ct"><h3 style="font-size:13px">跨平台</h3></div></div>
+          </div>
         </div>
         <div class="p-dock f-dock" style="height:64px">
-          <div class="dk on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg><span>对弈</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg><span>死活</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><path d="M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8"/></svg><span>研究</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg><span>棋谱</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg><span>摆谱</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="12" rx="2"/><path d="M18 10l3-2v8l-3-2"/></svg><span>直播</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4z"/><path d="M7 10v5c0 1 2.5 2.5 5 2.5s5-1.5 5-2.5v-5"/></svg><span>教程</span></div>
-          <div class="dk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.2-1.5l2-1.6-2-3.4-2.4 1a7 7 0 00-2.6-1.5L13.4 2h-2.8l-.4 2.5a7 7 0 00-2.6 1.5l-2.4-1-2 3.4 2 1.6A7 7 0 003 12"/></svg><span>设置</span></div>
+          <div class="dk on"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg><span>对弈</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11"/></svg><span>死活</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg><span>研究</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg><span>棋谱</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M8 20H4v-4h4zm0-6H4v-4h4zm0-6H4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4z"/></svg><span>摆谱</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2m0 14H3V8h18zM9 10v8l7-4z"/></svg><span>直播</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1m0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5z"/></svg><span>教程</span></div>
+          <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6"/></svg><span>设置</span></div>
         </div>
       </div>
       <ul class="pnote">
         <li>棋盘台由左侧竖栏 → 顶部横卡（小盘 118px + 状态竖排），省竖向空间。</li>
-        <li>hub 从两分栏 → 单列堆叠：人机（自由/升降级上下）+ 人人（三 chip 一行）。</li>
+        <li>hub 从两分栏 → 单列堆叠：人机（自由/升降级/跨平台 单列）+ 人人（三项一行 compact .opt）。</li>
         <li>Dock 不变，仍 8 项底部等分；标签字号降到 10.5px。</li>
         <li>竖屏内容超一屏时，仅**内容区**滚动，Header 与 Dock 固定。</li>
         <li>触发：`OrientationContext.isPortrait`（现有），走这套排布。</li>
@@ -286,12 +300,12 @@ section{margin-top:46px}
     <table class="spec">
       <thead><tr><th>项</th><th>数值</th><th>说明</th></tr></thead>
       <tbody>
-        <tr><td>按压缩放</td><td><code>scale .97</code>（chip/dock）· <code>.985</code>（大卡）</td><td>触控主反馈；<code>transform-origin:center</code></td></tr>
+        <tr><td>按压缩放</td><td><code>scale .97</code>（次操作/dock）· <code>.985</code>（主操作大卡）</td><td>触控主反馈；<code>transform-origin:center</code></td></tr>
         <tr><td>时长 / 缓动</td><td><code>130ms</code> · <code>cubic-bezier(.2,.7,.3,1)</code></td><td>入快出稳；`prefers-reduced-motion` 时关位移，仅留色变</td></tr>
-        <tr><td>悬停</td><td>卡 <code>translateY(-1px)</code> + border 提亮；chip 换 <code>--raise2</code></td><td>鼠标/笔用；触控无 hover</td></tr>
+        <tr><td>悬停</td><td>.opt <code>translateY(-1px)</code> + border 提亮</td><td>鼠标/笔用；触控无 hover</td></tr>
         <tr><td>聚焦环</td><td><code>0 0 0 2px 底 , 0 0 0 4px rgba(88,181,122,.75)</code></td><td>键盘/遥控导航可见；`:focus-visible`</td></tr>
-        <tr><td>禁用</td><td>透明度 <code>.4</code> + <code>grayscale(.5)</code>，`pointer-events:none`</td><td>如未连接的在线大厅、加载失败的主卡</td></tr>
-        <tr><td>触控靶</td><td>Dock 格 ≈ <code>120×70</code>；主卡 ≥ <code>64</code> 高；chip ≥ <code>48</code> 高</td><td>≥ 44px 可触基线</td></tr>
+        <tr><td>禁用</td><td>透明度 <code>.4</code> + <code>grayscale(.5)</code>，`pointer-events:none`</td><td>如未连接的在线大厅、加载失败的主操作</td></tr>
+        <tr><td>触控靶</td><td>Dock 格 ≈ <code>120×70</code>；.opt ≥ <code>64</code> 高</td><td>≥ 44px 可触基线</td></tr>
         <tr><td>骨架/加载</td><td>skeleton 位移 <code>1.4s</code>；spinner <code>1s</code> 线性</td><td>等级加载 / 创建对局中</td></tr>
         <tr><td>强调色</td><td><span class="sw" style="background:#58b57a"></span><code>jade #58b57a</code> · <span class="sw" style="background:#e0a24a"></span><code>amber #e0a24a</code> · <span class="sw" style="background:#e2685c"></span><code>error #e2685c</code></td><td>jade=主/选中；amber=进行中/待校准；error=失败</td></tr>
       </tbody>

@@ -1,0 +1,292 @@
+<title>智星盒 Kiosk · 教程 — 分类目录 · 章节树 · 学习页</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c; --wood:#caa66f;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:940px}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:12px;width:1024px;max-width:100%;margin-top:26px}
+.flowlabel .n{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--jade)}
+.flowlabel h2{font-size:15px;font-weight:700;letter-spacing:.4px}
+.flowlabel .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
+
+.screen{width:1024px;height:600px;background:
+  radial-gradient(90% 80% at 20% 0%, rgba(88,181,122,.08), transparent 55%),
+  linear-gradient(180deg,#111817,#0d1211);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+.hdr{height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--hair)}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;object-fit:contain;flex-shrink:0}
+.wname{font-family:var(--serif);font-size:20px;font-weight:600}
+.wname small{font-family:var(--serif);font-style:italic;font-weight:500;font-size:12px;color:var(--sub);margin-left:7px}
+.hdr .r{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--sub)}
+.hdr .who{display:flex;align-items:center;gap:8px;color:var(--ice)}
+.hdr .ava{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#26463a,#58b57a);display:grid;place-items:center;font-size:12px;font-weight:700;color:#0c130f}
+
+/* ① 分类目录 */
+.tmain{flex:1;min-height:0;display:flex;flex-direction:column;padding:16px 24px 12px;gap:13px}
+.thead{display:flex;align-items:baseline;gap:12px}
+.thead h1{font-family:var(--serif);font-weight:500;font-size:25px}
+.thead .sub{color:var(--sub);font-size:12.5px}
+.tcgrid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:12px;min-height:0}
+.tcat{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;cursor:pointer;transition:transform .13s cubic-bezier(.2,.7,.3,1),border-color .13s;position:relative;overflow:hidden}
+.tcat:hover{border-color:#3a4d45;transform:translateY(-1px)}
+.tcat .ic{width:38px;height:38px;border-radius:11px;background:var(--jade-d);display:grid;place-items:center;margin-bottom:11px}
+.tcat .ic svg{width:21px;height:21px;fill:var(--jade)}
+.tcat h3{font-family:var(--serif);font-weight:600;font-size:19px;color:#8fd3a6}
+.tcat p{font-size:11.5px;color:var(--sub);line-height:1.45;margin-top:6px;flex:1}
+.tcat .cnt{font-size:11px;color:var(--dim);margin-top:8px}
+
+/* dock */
+.dock{height:82px;flex-shrink:0;border-top:1px solid var(--hair);display:flex;align-items:stretch;padding:8px 14px;gap:4px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.22))}
+.dk{flex:1;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--sub);cursor:pointer}
+.dk svg{width:24px;height:24px;fill:currentColor}.dk span{font-size:12.5px;font-weight:600;letter-spacing:.5px}
+.dk.on{color:#0e1a13;background:var(--jade);box-shadow:0 10px 24px -10px var(--jade)}.dk.on svg{fill:#0e1a13}
+
+/* ② 书目 + 章节树 */
+.bmain{flex:1;min-height:0;display:flex;gap:16px;padding:14px 20px}
+.blist{width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;min-height:0}
+.bcrumb{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:7px}
+.bcrumb .back{width:28px;height:28px;border-radius:8px;border:1px solid var(--hair);background:var(--raise);display:grid;place-items:center;cursor:pointer}
+.bcrumb .back svg{width:15px;height:15px;fill:var(--sub)}
+.bcrumb b{color:var(--ice)}
+.bl-title{font-family:var(--serif);font-weight:500;font-size:18px}
+.bcards{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.bcard{background:var(--raise);border:1px solid var(--hair);border-radius:12px;padding:11px 13px;cursor:pointer;transition:.13s}
+.bcard:hover{border-color:#3a4d45}
+.bcard.sel{border-color:var(--jade);background:linear-gradient(135deg,#1f3a30,#18211f)}
+.bcard h4{font-size:13.5px;font-weight:600}
+.bcard p{font-size:11px;color:var(--sub);margin-top:3px}
+.btree{flex:1;min-width:0;background:var(--raise);border:1px solid var(--hair);border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
+.bthd{padding:14px 18px;border-bottom:1px solid var(--hair)}
+.bthd h2{font-family:var(--serif);font-weight:500;font-size:20px}
+.bthd p{font-size:11.5px;color:var(--sub);margin-top:2px}
+.btbody{flex:1;overflow:auto;padding:6px 0}
+.chap{border-bottom:1px solid var(--hair)}
+.chap .ch{display:flex;align-items:center;gap:9px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.chap .ch .cx{width:16px;height:16px;fill:var(--jade)}
+.chap .ch .cn{color:var(--dim);font-size:11px;margin-left:auto}
+.sec{display:flex;align-items:center;gap:11px;padding:9px 18px 9px 43px;font-size:12.5px;color:var(--sub);cursor:pointer;transition:.1s}
+.sec:hover{background:var(--raise2);color:var(--ice)}
+.sec.sel{background:linear-gradient(90deg,rgba(88,181,122,.12),transparent);color:var(--ice)}
+.sec .snum{color:var(--dim);font-variant-numeric:tabular-nums;min-width:24px}
+.sec .stt{flex:1}
+.sec .fig{font-size:10.5px;color:var(--dim)}
+.sec .vid{width:16px;height:16px;fill:var(--jade);flex-shrink:0}
+
+/* ③ 学习页 immersive */
+.study{background:linear-gradient(180deg,#0f0f10,#0b0d0d)}
+.stop{height:50px;flex-shrink:0;display:flex;align-items:center;gap:13px;padding:0 18px;border-bottom:1px solid var(--hair)}
+.stop .back{width:32px;height:32px;border-radius:9px;border:1px solid var(--hair);background:var(--raise);display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+.stop .back svg{width:17px;height:17px;fill:var(--sub)}
+.stop .bc{font-size:12.5px;color:var(--sub);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stop .bc b{color:var(--ice);font-weight:600}.stop .bc .sep{color:var(--dim)}
+.stop .fignav{margin-left:auto;display:flex;align-items:center;gap:10px}
+.stop .fignav .nb{width:30px;height:30px;border-radius:8px;border:1px solid var(--hair);background:var(--raise);display:grid;place-items:center;cursor:pointer}
+.stop .fignav .nb svg{width:16px;height:16px;fill:var(--sub)}
+.stop .fignav .fl{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.stop .fignav .fl small{color:var(--sub);font-weight:400}
+.stbody{flex:1;min-height:0;display:flex;gap:18px;padding:16px 20px}
+.stleft{flex:1;min-width:0;display:flex;flex-direction:column;gap:11px}
+.stboard-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.stboard{height:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 12px 34px -14px #000;border:1px solid #2a211a}
+.stctrl{display:flex;align-items:center;gap:11px}
+.stctrl .mvtrack{flex:1;height:5px;border-radius:3px;background:var(--raise2);position:relative}
+.stctrl .mvtrack .fill{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--jade);border-radius:3px}
+.stctrl .mvtrack .knob{position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:var(--ice)}
+.stctrl .lbl{font-size:11.5px;color:var(--sub);min-width:64px}.stctrl .lbl b{color:var(--ice);font-variant-numeric:tabular-nums}
+.stctrl .tgl{font-size:11.5px;color:var(--sub);border:1px solid var(--hair);border-radius:9px;padding:6px 11px;cursor:pointer}
+.stctrl .tgl.on{background:var(--jade-d);color:var(--jade);border-color:var(--jade-d);font-weight:600}
+.stright{width:352px;flex-shrink:0;display:flex;flex-direction:column;gap:11px}
+.video{background:#000;border:1px solid var(--hair);border-radius:14px;aspect-ratio:16/10;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.video .poster{position:absolute;inset:0;background:radial-gradient(70% 90% at 50% 30%,#1c2a26,#0a0f0e)}
+.video .play{position:relative;width:58px;height:58px;border-radius:50%;background:rgba(88,181,122,.92);display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(0,0,0,.7)}
+.video .play svg{width:26px;height:26px;fill:#07120c;margin-left:3px}
+.video .vt{position:absolute;left:0;right:0;bottom:0;padding:9px 12px;background:linear-gradient(0deg,rgba(0,0,0,.8),transparent);display:flex;align-items:center;gap:9px}
+.video .vt .pline{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2);position:relative}
+.video .vt .pline i{position:absolute;left:0;top:0;bottom:0;width:34%;background:var(--jade);border-radius:2px}
+.video .vt .dur{font-size:10.5px;color:#cdd6d2;font-variant-numeric:tabular-nums}
+.vcard{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:13px 15px}
+.vcard h3{font-family:var(--serif);font-weight:500;font-size:17px}
+.vcard .meta{font-size:11px;color:var(--sub);margin-top:3px;display:flex;align-items:center;gap:7px}
+.vcard .meta .pip{width:5px;height:5px;border-radius:50%;background:var(--jade)}
+.vcard p{font-size:12.5px;color:var(--sub);line-height:1.55;margin-top:10px}
+.audio{background:var(--raise);border:1px solid var(--hair);border-radius:12px;padding:10px 13px;display:flex;align-items:center;gap:11px}
+.audio .pb{width:34px;height:34px;border-radius:50%;background:var(--jade-d);display:grid;place-items:center;flex-shrink:0;cursor:pointer}
+.audio .pb svg{width:15px;height:15px;fill:var(--jade)}
+.audio .aline{flex:1;height:4px;border-radius:2px;background:var(--raise2);position:relative}
+.audio .aline i{position:absolute;left:0;top:0;bottom:0;width:20%;background:var(--jade);border-radius:2px}
+.audio .at{font-size:11px;color:var(--sub)}
+.spacer{flex:1}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ③ <b>棋盘台 · 教程模块</b> — Dock「教程」→ <b>只读 4 级目录</b>（分类 → 书目 → 章节/小节树 → 图解学习页）。学习页 <b>视频优先</b>：棋盘图解(手数滑块 + 全盘/局部) + 该图教学视频 / 讲解+音频。数字化围棋教科书，非交互做题。对齐真实 `Tutorial*Page`。7″ 1024×600</div>
+
+  <!-- ① 分类目录 -->
+  <div class="flowlabel"><span class="n">①</span><h2>分类目录（Dock「教程」选中）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="./logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:48</div></div>
+    </div>
+    <div class="tmain">
+      <div class="thead"><h1>围棋教程</h1><span class="sub">分类学习 · 从入门到官子的系统教科书</span></div>
+      <div class="tcgrid">
+        <div class="tcat">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3 1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9zm6.82 6L12 12.72 5.18 9 12 5.28zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73z"/></svg></div>
+          <h3>入门</h3><p>规则、气、提子、禁着点、打劫——零基础第一步。</p><span class="cnt">6 本 · 84 节</span>
+        </div>
+        <div class="tcat">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 0 0-5 0V5H4a2 2 0 0 0-2 2v3.8h1.5a2.7 2.7 0 0 1 0 5.4H2V20a2 2 0 0 0 2 2h3.8v-1.5a2.7 2.7 0 0 1 5.4 0V22H17a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 0 0 0-5"/></svg></div>
+          <h3>死活基础</h3><p>做眼、破眼、双活、常见死活型的判断与手筋。</p><span class="cnt">8 本 · 132 节</span>
+        </div>
+        <div class="tcat">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg></div>
+          <h3>布局</h3><p>星、小目定式，大场与急所，全局配置的思路。</p><span class="cnt">7 本 · 96 节</span>
+        </div>
+        <div class="tcat">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3m-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8z"/></svg></div>
+          <h3>中盘战斗</h3><p>攻防、腾挪、弃子、厚薄，实战力的核心。</p><span class="cnt">9 本 · 148 节</span>
+        </div>
+        <div class="tcat">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg></div>
+          <h3>官子</h3><p>先手后手、目数计算、收官次序，胜负手前的功夫。</p><span class="cnt">5 本 · 72 节</span>
+        </div>
+        <div class="tcat">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M9 4h2v5l-1-.75L9 9zm9 16H6V4h1v9l3-2.25L13 13V4h5z"/></svg></div>
+          <h3>定式大全</h3><p>常用定式与其后续变化、现代 AI 定式选择。</p><span class="cnt">6 本 · 110 节</span>
+        </div>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg><span>对弈</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11"/></svg><span>死活</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg><span>研究</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg><span>棋谱</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M8 20H4v-4h4zm0-6H4v-4h4zm0-6H4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4z"/></svg><span>摆谱</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2m0 14H3V8h18zM9 10v8l7-4z"/></svg><span>直播</span></div>
+      <div class="dk on"><svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M6 4h5v8l-2.5-1.5L6 12zm12 16H6v-6h5.5l2.5 1.5L16.5 14H18zm0-8h-5V4h5z"/></svg><span>教程</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6"/></svg><span>设置</span></div>
+    </div>
+  </div>
+
+  <!-- ② 书目 + 章节树 -->
+  <div class="flowlabel"><span class="n">②</span><h2>书目 + 章节树（点分类进入）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="./logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:49</div></div>
+    </div>
+    <div class="bmain">
+      <div class="blist">
+        <div class="bcrumb"><div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>教程<span style="color:var(--dim)">›</span><b>入门</b></div>
+        <div class="bl-title">入门 · 6 本</div>
+        <div class="bcards">
+          <div class="bcard sel"><h4>围棋入门一本通</h4><p>吴清源 监修 · 12 章</p></div>
+          <div class="bcard"><h4>从零开始学围棋</h4><p>王元 著 · 9 章</p></div>
+          <div class="bcard"><h4>围棋基础 · 少儿版</h4><p>邱百瑞 编 · 8 章</p></div>
+          <div class="bcard"><h4>21 天围棋入门</h4><p>聂卫平 监修 · 21 章</p></div>
+          <div class="bcard"><h4>围棋规则与礼仪</h4><p>中国棋院 编 · 6 章</p></div>
+        </div>
+      </div>
+      <div class="btree">
+        <div class="bthd"><h2>围棋入门一本通</h2><p>吴清源 监修 · 12 章 · 148 节 · 共 1,024 图</p></div>
+        <div class="btbody">
+          <div class="chap">
+            <div class="ch"><svg class="cx" viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>第一章 · 基本规则<span class="cn">6 节</span></div>
+            <div class="sec"><span class="snum">1</span><span class="stt">棋盘与棋子</span><span class="fig">8 图</span><svg class="vid" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+            <div class="sec sel"><span class="snum">2</span><span class="stt">气与提子</span><span class="fig">12 图</span><svg class="vid" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+            <div class="sec"><span class="snum">3</span><span class="stt">禁着点</span><span class="fig">9 图</span><svg class="vid" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+            <div class="sec"><span class="snum">4</span><span class="stt">打劫</span><span class="fig">14 图</span><svg class="vid" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          </div>
+          <div class="chap">
+            <div class="ch"><svg class="cx" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>第二章 · 吃子技巧<span class="cn">7 节</span></div>
+          </div>
+          <div class="chap">
+            <div class="ch"><svg class="cx" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>第三章 · 连接与切断<span class="cn">5 节</span></div>
+          </div>
+          <div class="chap">
+            <div class="ch"><svg class="cx" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>第四章 · 做眼与死活<span class="cn">9 节</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="m21.58 16.09-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91M11 11H9v2H8v-2H6v-1h2V8h1v2h2zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg><span>对弈</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11"/></svg><span>死活</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6"/></svg><span>研究</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg><span>棋谱</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M8 20H4v-4h4zm0-6H4v-4h4zm0-6H4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4z"/></svg><span>摆谱</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2m0 14H3V8h18zM9 10v8l7-4z"/></svg><span>直播</span></div>
+      <div class="dk on"><svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M6 4h5v8l-2.5-1.5L6 12zm12 16H6v-6h5.5l2.5 1.5L16.5 14H18zm0-8h-5V4h5z"/></svg><span>教程</span></div>
+      <div class="dk"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6"/></svg><span>设置</span></div>
+    </div>
+  </div>
+
+  <!-- ③ 学习页 -->
+  <div class="flowlabel"><span class="n">③</span><h2>学习页 · 图解 + 视频（点小节进入）</h2><span class="rule"></span></div>
+  <div class="screen study">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">入门<span class="sep">›</span>围棋入门一本通<span class="sep">›</span>第一章<span class="sep">›</span><b>气与提子</b></div>
+      <div class="fignav">
+        <div class="nb"><svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>
+        <div class="fl">图 3 <small>/ 12</small></div>
+        <div class="nb"><svg viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+      </div>
+    </div>
+    <div class="stbody">
+      <div class="stleft">
+        <div class="stboard-wrap">
+          <svg class="stboard" viewBox="0 0 400 400">
+            <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+            <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+            <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+            <!-- 教学图解：白子被黑包围 · 手数标注 -->
+            <g>
+              <use href="#sw" x="189.9" y="189.9" width="20.2" height="20.2"/>
+              <use href="#sb" x="189.9" y="169.9" width="20.2" height="20.2"/><text x="200" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#eef3f1">1</text>
+              <use href="#sb" x="169.9" y="189.9" width="20.2" height="20.2"/><text x="180" y="204" text-anchor="middle" font-size="11" font-weight="700" fill="#eef3f1">3</text>
+              <use href="#sb" x="209.9" y="189.9" width="20.2" height="20.2"/><text x="220" y="204" text-anchor="middle" font-size="11" font-weight="700" fill="#eef3f1">2</text>
+              <use href="#sb" x="189.9" y="209.9" width="20.2" height="20.2"/><text x="200" y="224" text-anchor="middle" font-size="11" font-weight="700" fill="#eef3f1">4</text>
+              <circle cx="200" cy="200" r="9" fill="none" stroke="var(--jade)" stroke-width="1.8" stroke-dasharray="3 2"/>
+            </g>
+          </svg>
+        </div>
+        <div class="stctrl">
+          <span class="lbl">手数 <b>4 / 4</b></span>
+          <div class="mvtrack"><div class="fill"></div><div class="knob"></div></div>
+          <span class="tgl on">全盘</span><span class="tgl">局部</span>
+        </div>
+      </div>
+      <div class="stright">
+        <div class="video">
+          <div class="poster"></div>
+          <div class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          <div class="vt"><div class="pline"><i></i></div><span class="dur">01:12 / 03:28</span></div>
+        </div>
+        <div class="vcard">
+          <h3>气与提子</h3>
+          <div class="meta"><span class="pip"></span>第一章 · 第 2 节 · 图 3 / 12</div>
+          <p>白子四气被黑逐一收紧，第 4 手落下时白子无气，被提出棋盘。这是围棋最基本的吃子原理——没有气的棋子必须拿掉。</p>
+        </div>
+        <div class="audio">
+          <div class="pb"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          <div class="aline"><i></i></div>
+          <span class="at">讲解语音 0:14</span>
+        </div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,335 @@
+<title>智星盒 Kiosk · 死活 · 物理解题各状态</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c; --wood:#caa66f;
+  --ledR:#ff453a; --ledG:#32d74b; --ledB:#4a90ff; --ledW:#f4f7ff;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:920px}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:12px;width:1024px;max-width:100%;margin-top:24px}
+.flowlabel .n{font-family:var(--serif);font-weight:700;font-size:14px;color:#0e1a13;background:var(--jade);width:26px;height:26px;border-radius:8px;display:grid;place-items:center}
+.flowlabel h2{font-size:15px;font-weight:700;letter-spacing:.3px}
+.flowlabel .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
+
+.screen{width:1024px;height:600px;background:linear-gradient(180deg,#0f0f10,#0b0d0d);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+/* top bar */
+.stop{height:52px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--hair)}
+.stop .back{width:34px;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--raise);display:grid;place-items:center;flex-shrink:0}
+.stop .back svg{width:18px;height:18px;fill:var(--sub)}
+.stop .bc{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:7px}
+.stop .bc b{color:var(--ice);font-weight:600}.stop .bc .sep{color:var(--dim)}
+/* 使用物理棋盘 toggle */
+.ptoggle{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ice);background:linear-gradient(135deg,#2a5344,#1c2f28);border:1px solid var(--jade-d);border-radius:20px;padding:5px 7px 5px 13px}
+.ptoggle svg{width:16px;height:16px;fill:var(--jade)}
+.ptoggle .sw{width:34px;height:19px;border-radius:11px;background:var(--jade);position:relative}
+.ptoggle .sw i{position:absolute;top:2px;right:2px;width:15px;height:15px;border-radius:50%;background:#0d1a13}
+.ptoggle.off{background:var(--raise);border-color:var(--hair);color:var(--sub)}
+.ptoggle.off svg{fill:var(--dim)}
+.ptoggle.off .sw{background:var(--hair)}.ptoggle.off .sw i{right:auto;left:2px;background:var(--sub)}
+
+.sbody{flex:1;min-height:0;display:flex;gap:18px;padding:16px 20px;position:relative}
+.sboard-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;position:relative}
+.sboard{height:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 12px 34px -14px #000;border:1px solid #2a211a}
+.srail{width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:11px}
+.chiprow{display:flex;gap:8px;align-items:center}
+.pill{font-size:12px;font-weight:600;border-radius:20px;padding:4px 12px}
+.pill.lvl2{background:rgba(88,181,122,.14);color:var(--jade);border:1px solid var(--jade-d)}
+.pill.cat{background:var(--raise2);color:var(--sub);border:1px solid var(--hair)}
+
+/* voice chip (MUI volume icon — NO emoji, SBC 无 emoji 字体) */
+.voice{display:flex;align-items:center;gap:9px;background:var(--raise2);border:1px solid var(--hair);border-radius:11px;padding:9px 12px;font-size:12.5px;color:var(--sub)}
+.voice svg{width:17px;height:17px;fill:var(--jade);flex-shrink:0}
+.voice .wave{display:flex;gap:2px;margin-left:auto}
+.voice .wave i{width:3px;height:10px;border-radius:2px;background:var(--jade);opacity:.5}
+.voice .wave i:nth-child(2){height:15px}.voice .wave i:nth-child(3){height:8px}
+
+/* guide panel (state-colored) */
+.guide{border-radius:14px;padding:14px 15px;border:1px solid}
+.guide .gh{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600}
+.guide .gh svg{width:20px;height:20px;flex-shrink:0}
+.guide .gt{font-family:var(--serif);font-size:17px;font-weight:500;margin-top:8px;line-height:1.3}
+.guide .gd{font-size:12px;margin-top:7px;line-height:1.45}
+.guide.setup{background:linear-gradient(135deg,#3a2418,#1c1613);border-color:#5a3a22}
+.guide.setup .gh,.guide.setup .gh svg{color:var(--ledR);fill:var(--ledR)}
+.guide.reply{background:linear-gradient(135deg,#153320,#0f1f16);border-color:var(--jade-d)}
+.guide.reply .gh,.guide.reply .gh svg{color:var(--ledG);fill:var(--ledG)}
+.guide.remove{background:linear-gradient(135deg,#1a2740,#12161f);border-color:#2b3f66}
+.guide.remove .gh,.guide.remove .gh svg{color:var(--ledB);fill:var(--ledB)}
+.guide .gd{color:var(--sub)}
+/* setup progress */
+.setbar{margin-top:11px}
+.setbar .row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--sub);margin-bottom:5px}
+.setbar .row b{color:var(--ice);font-variant-numeric:tabular-nums}
+.setbar .track{height:7px;border-radius:4px;background:var(--raise2);overflow:hidden}
+.setbar .track i{display:block;height:100%;border-radius:4px;background:var(--ledR)}
+.stagepips{display:flex;gap:7px;margin-top:9px}
+.stagepips .sp{flex:1;text-align:center;font-size:11px;padding:6px;border-radius:8px;border:1px solid var(--hair);color:var(--dim)}
+.stagepips .sp.on{border-color:#5a3a22;color:var(--ledR);background:rgba(255,69,58,.08)}
+.stagepips .sp.done{border-color:var(--jade-d);color:var(--jade);background:rgba(88,181,122,.08)}
+/* removal list */
+.rmlist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.rmlist .ri{display:flex;align-items:center;gap:9px;font-size:12.5px;background:rgba(74,144,255,.08);border:1px solid #2b3f66;border-radius:9px;padding:7px 10px}
+.rmlist .ri .co{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.rmlist .ri .co.w{background:radial-gradient(circle at 35% 30%,#fff,#c7ccc9)}
+.rmlist .ri .co.b{background:radial-gradient(circle at 35% 30%,#4a4a4a,#0a0a0a)}
+.rmlist .ri b{font-variant-numeric:tabular-nums}
+/* status line + meta reused */
+.prompt{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:13px 15px}
+.prompt .turn{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600}
+.prompt .turn .st{width:18px;height:18px;border-radius:50%;flex-shrink:0}
+.prompt .turn .st.b{background:radial-gradient(circle at 35% 30%,#4a4a4a,#0a0a0a);border:1px solid #000}
+.prompt .hint{font-family:var(--serif);font-size:17px;font-weight:500;margin-top:8px}
+.prompt .status{margin-top:9px;font-size:12.5px;color:var(--jade);display:flex;align-items:center;gap:7px}
+.prompt .status .dot{width:7px;height:7px;border-radius:50%;background:var(--jade);box-shadow:0 0 7px var(--jade)}
+.meta{display:flex;gap:8px}
+.mcell{flex:1;background:var(--raise);border:1px solid var(--hair);border-radius:11px;padding:8px 10px;text-align:center}
+.mcell .mk{font-size:10.5px;color:var(--dim)}.mcell .mv{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.spacer{flex:1}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.act{background:var(--raise);border:1px solid var(--hair);border-radius:11px;padding:10px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:var(--ice)}
+.act svg{width:17px;height:17px;fill:var(--sub)}
+.act.dis{opacity:.4}
+.nav2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.nb{border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:600}
+.nb svg{width:18px;height:18px;fill:currentColor}
+.nb.prev{background:var(--raise);border:1px solid var(--hair);color:var(--ice)}
+.nb.next{background:var(--jade);color:#0d1a13}
+.nb.dis{opacity:.4}
+
+/* success overlay (MUI trophy — NO emoji) */
+.ovl{position:absolute;inset:0;background:rgba(8,11,11,.72);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.scard{background:linear-gradient(150deg,#1f3a30,#141d1a);border:1px solid var(--jade-d);border-radius:20px;padding:28px 40px;text-align:center;box-shadow:0 30px 70px -20px #000}
+.scard .tr{width:66px;height:66px;border-radius:50%;background:rgba(88,181,122,.16);border:1px solid var(--jade-d);display:grid;place-items:center;margin:0 auto 14px}
+.scard .tr svg{width:38px;height:38px;fill:var(--jade)}
+.scard h2{font-family:var(--serif);font-size:30px;font-weight:600;color:var(--jade)}
+.scard p{color:var(--sub);font-size:13px;margin-top:6px}
+.scard .flash{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ledW);background:rgba(244,247,255,.06);border:1px solid #3a4250;border-radius:20px;padding:5px 13px}
+.scard .flash b{width:8px;height:8px;border-radius:50%;background:var(--ledW);box-shadow:0 0 9px var(--ledW)}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ③ <b>死活 · 物理解题状态</b> — 屏点 + 实体摆子<b>双输入并存</b>；LED 三通道（黑→红/白→绿/拿除→蓝/提示·庆祝→白）+ 界面 + 语音。<b>kiosk 无 emoji 字体 → 全部用 MUI 图标</b>（庆祝用奖杯图标，非彩色 emoji）。据 kiosk-physical-tsumego PRD/相位机。7″ 1024×600</div>
+
+  <!-- A 摆放初始局面 · 黑棋阶段 -->
+  <div class="flowlabel"><span class="n">A</span><h2>摆放初始局面 · 黑棋阶段（setup / clearing 之后）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">死活<span class="sep">›</span>3 段<span class="sep">›</span>死活题<span class="sep">›</span><b>第 12 题</b></div>
+      <div class="ptoggle"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m0 16H4V5h16zM6.5 8a1.5 1.5 0 100 3 1.5 1.5 0 000-3m5 5a1.5 1.5 0 100 3 1.5 1.5 0 000-3m0-5a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/></svg>使用物理棋盘<span class="sw"><i></i></span></div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <!-- 已摆黑子（3） -->
+          <g><use href="#sb" x="329.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="49.9" width="20.2" height="20.2"/></g>
+          <!-- 待摆黑子红灯（3，未摆一颗亮一颗） -->
+          <g><circle cx="340" cy="80" r="8.5" fill="rgba(255,69,58,.28)"/><circle cx="340" cy="80" r="5" fill="#ff453a"/>
+             <circle cx="360" cy="80" r="8.5" fill="rgba(255,69,58,.28)"/><circle cx="360" cy="80" r="5" fill="#ff453a"/>
+             <circle cx="380" cy="80" r="8.5" fill="rgba(255,69,58,.28)"/><circle cx="380" cy="80" r="5" fill="#ff453a"/></g>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill lvl2">3 段</span><span class="pill cat">死活题</span></div>
+        <div class="voice"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77"/></svg>语音：请摆放黑棋<span class="wave"><i></i><i></i><i></i></span></div>
+        <div class="guide setup">
+          <div class="gh"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>请在红灯处摆黑子</div>
+          <div class="gd">先摆全部黑棋，再摆白棋。<b style="color:var(--ice)">摆一颗、灭一颗灯</b>；摄像头逐子确认。</div>
+          <div class="setbar">
+            <div class="row"><span>黑棋进度</span><b>3 / 6</b></div>
+            <div class="track"><i style="width:50%"></i></div>
+          </div>
+          <div class="stagepips"><div class="sp on">黑棋 红灯</div><div class="sp">白棋 绿灯</div></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="prompt" style="opacity:.55"><div class="status" style="color:var(--sub)"><span class="dot" style="background:var(--sub);box-shadow:none"></span>摆放完成后自动进入解题</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B 做题中 · 物理模式（ready） -->
+  <div class="flowlabel"><span class="n">B</span><h2>做题中 · 物理模式（ready，move 已 arm · 屏点/摆子双输入）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">死活<span class="sep">›</span>3 段<span class="sep">›</span>死活题<span class="sep">›</span><b>第 12 题</b></div>
+      <div class="ptoggle"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m0 16H4V5h16zM6.5 8a1.5 1.5 0 100 3 1.5 1.5 0 000-3m5 5a1.5 1.5 0 100 3 1.5 1.5 0 000-3m0-5a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/></svg>使用物理棋盘<span class="sw"><i></i></span></div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g>
+            <use href="#sw" x="349.9" y="29.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="349.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="369.9" y="49.9" width="20.2" height="20.2"/>
+            <use href="#sb" x="329.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="349.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="369.9" y="69.9" width="20.2" height="20.2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill lvl2">3 段</span><span class="pill cat">死活题</span></div>
+        <div class="prompt">
+          <div class="turn"><span class="st b"></span>黑先</div>
+          <div class="hint">黑先杀白 —— 找出致命一手</div>
+          <div class="status"><span class="dot"></span>轮到你落子 · 屏幕点选或实体棋盘摆子</div>
+        </div>
+        <div class="meta">
+          <div class="mcell"><div class="mk">用时</div><div class="mv">00:38</div></div>
+          <div class="mcell"><div class="mk">尝试</div><div class="mv">1</div></div>
+          <div class="mcell"><div class="mk">上次</div><div class="mv">01:12</div></div>
+        </div>
+        <div class="acts">
+          <div class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</div>
+          <div class="act"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8"/></svg>重置</div>
+          <div class="act"><svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7"/></svg>提示</div>
+          <div class="act"><svg viewBox="0 0 24 24"><path d="m12 2 8 4.5v9L12 20l-8-4.5v-9zm0 2.31L6 7.6v6.8l6 3.37 6-3.37V7.6zM11 8h2v5h-2zm0 6h2v2h-2z"/></svg>试下</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="nav2">
+          <div class="nb prev"><svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>上一题</div>
+          <div class="nb next">下一题<svg viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C 答对未完 · 请替对方摆子（replying） -->
+  <div class="flowlabel"><span class="n">C</span><h2>答对未完 · 应手点灯，请替对方摆子（replying）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">死活<span class="sep">›</span>3 段<span class="sep">›</span>死活题<span class="sep">›</span><b>第 12 题</b></div>
+      <div class="ptoggle"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m0 16H4V5h16zM6.5 8a1.5 1.5 0 100 3 1.5 1.5 0 000-3m5 5a1.5 1.5 0 100 3 1.5 1.5 0 000-3m0-5a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/></svg>使用物理棋盘<span class="sw"><i></i></span></div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g>
+            <use href="#sw" x="349.9" y="29.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="349.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="369.9" y="49.9" width="20.2" height="20.2"/>
+            <use href="#sb" x="329.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="349.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="369.9" y="69.9" width="20.2" height="20.2"/>
+            <!-- 用户正解黑子 R18 -->
+            <use href="#sb" x="369.9" y="29.9" width="20.2" height="20.2"/><circle cx="380" cy="40" r="6" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.6"/>
+            <!-- 屏上已落 AI 应手白子 + 绿灯（请替对方摆此白子） -->
+            <use href="#sw" x="289.9" y="49.9" width="20.2" height="20.2"/><circle cx="300" cy="60" r="10" fill="rgba(50,215,75,.30)"/><circle cx="300" cy="60" r="6" fill="none" stroke="#32d74b" stroke-width="2.4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill lvl2">3 段</span><span class="pill cat">死活题</span></div>
+        <div class="guide reply">
+          <div class="gh"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>请替对方摆一子</div>
+          <div class="gt">对方应手：白 <b>C6</b>（绿灯处）</div>
+          <div class="gd">在绿灯位置放一颗白子，摄像头确认后灯灭、继续你的下一手。</div>
+        </div>
+        <div class="prompt">
+          <div class="status"><span class="dot"></span>正解！继续求解 —— 还差 1 手</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="acts"><div class="act dis"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</div><div class="act dis"><svg viewBox="0 0 24 24"><path d="m12 2 8 4.5v9L12 20l-8-4.5v-9zm0 2.31L6 7.6v6.8l6 3.37 6-3.37V7.6zM11 8h2v5h-2zm0 6h2v2h-2z"/></svg>试下</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D 答错 · 请取回棋子（removing） -->
+  <div class="flowlabel"><span class="n">D</span><h2>答错 · 蓝灯拿除 + 界面列出待取子（removing）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">死活<span class="sep">›</span>3 段<span class="sep">›</span>死活题<span class="sep">›</span><b>第 12 题</b></div>
+      <div class="ptoggle"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m0 16H4V5h16zM6.5 8a1.5 1.5 0 100 3 1.5 1.5 0 000-3m5 5a1.5 1.5 0 100 3 1.5 1.5 0 000-3m0-5a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/></svg>使用物理棋盘<span class="sw"><i></i></span></div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g>
+            <use href="#sw" x="349.9" y="29.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="349.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="369.9" y="49.9" width="20.2" height="20.2"/>
+            <use href="#sb" x="329.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="349.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="369.9" y="69.9" width="20.2" height="20.2"/>
+            <!-- 错着黑子 + 蓝灯闪（请取回） -->
+            <use href="#sb" x="289.9" y="69.9" width="20.2" height="20.2"/><circle cx="300" cy="80" r="11" fill="rgba(74,144,255,.30)"/><circle cx="300" cy="80" r="6.5" fill="none" stroke="#4a90ff" stroke-width="2.6"/>
+          </g>
+        </svg>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill lvl2">3 段</span><span class="pill cat">死活题</span></div>
+        <div class="voice"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77"/></svg>语音：答错了，请取回棋子<span class="wave"><i></i><i></i><i></i></span></div>
+        <div class="guide remove">
+          <div class="gh"><svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14z"/></svg>请取回这颗棋子</div>
+          <div class="gd">这一手不成立。棋子会压住蓝灯，<b style="color:var(--ice)">以界面为准</b>——取回下列子，回到落子前继续重试。</div>
+          <div class="rmlist"><div class="ri"><span class="co b"></span>黑 <b>C7</b>（蓝灯闪烁处）</div></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="acts"><div class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>撤销此手</div><div class="act"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8"/></svg>重置</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E 答对完成（solved · SuccessOverlay 无 emoji + 空点白灯双闪） -->
+  <div class="flowlabel"><span class="n">E</span><h2>答对完成 · 庆祝（solved · MUI 奖杯 + 空点白灯双闪，无 emoji）</h2><span class="rule"></span></div>
+  <div class="screen">
+    <div class="stop">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <div class="bc">死活<span class="sep">›</span>3 段<span class="sep">›</span>死活题<span class="sep">›</span><b>第 12 题</b></div>
+      <div class="ptoggle"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m0 16H4V5h16zM6.5 8a1.5 1.5 0 100 3 1.5 1.5 0 000-3m5 5a1.5 1.5 0 100 3 1.5 1.5 0 000-3m0-5a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/></svg>使用物理棋盘<span class="sw"><i></i></span></div>
+    </div>
+    <div class="sbody">
+      <div class="sboard-wrap">
+        <svg class="sboard" viewBox="0 0 400 400">
+          <image href="./board.png" x="0" y="0" width="400" height="400" preserveAspectRatio="none"/>
+          <g stroke="rgba(0,0,0,.7)" stroke-width="1"><path d="M20 20H380M20 40H380M20 60H380M20 80H380M20 100H380M20 120H380M20 140H380M20 160H380M20 180H380M20 200H380M20 220H380M20 240H380M20 260H380M20 280H380M20 300H380M20 320H380M20 340H380M20 360H380M20 380H380"/><path d="M20 20V380M40 20V380M60 20V380M80 20V380M100 20V380M120 20V380M140 20V380M160 20V380M180 20V380M200 20V380M220 20V380M240 20V380M260 20V380M280 20V380M300 20V380M320 20V380M340 20V380M360 20V380M380 20V380"/></g>
+          <g fill="rgba(0,0,0,.85)"><circle cx="80" cy="80" r="2.2"/><circle cx="200" cy="80" r="2.2"/><circle cx="320" cy="80" r="2.2"/><circle cx="80" cy="200" r="2.2"/><circle cx="200" cy="200" r="2.2"/><circle cx="320" cy="200" r="2.2"/><circle cx="80" cy="320" r="2.2"/><circle cx="200" cy="320" r="2.2"/><circle cx="320" cy="320" r="2.2"/></g>
+          <g>
+            <use href="#sw" x="349.9" y="29.9" width="20.2" height="20.2"/><use href="#sw" x="329.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="349.9" y="49.9" width="20.2" height="20.2"/><use href="#sw" x="369.9" y="49.9" width="20.2" height="20.2"/>
+            <use href="#sb" x="329.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="29.9" width="20.2" height="20.2"/><use href="#sb" x="309.9" y="49.9" width="20.2" height="20.2"/><use href="#sb" x="329.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="349.9" y="69.9" width="20.2" height="20.2"/><use href="#sb" x="369.9" y="69.9" width="20.2" height="20.2"/>
+            <use href="#sb" x="369.9" y="29.9" width="20.2" height="20.2"/>
+            <!-- 空点白灯双闪（星位空点） -->
+            <g><circle cx="200" cy="200" r="10" fill="rgba(244,247,255,.28)"/><circle cx="200" cy="200" r="5.5" fill="#f4f7ff"/>
+               <circle cx="80" cy="320" r="10" fill="rgba(244,247,255,.28)"/><circle cx="80" cy="320" r="5.5" fill="#f4f7ff"/>
+               <circle cx="320" cy="320" r="10" fill="rgba(244,247,255,.28)"/><circle cx="320" cy="320" r="5.5" fill="#f4f7ff"/></g>
+          </g>
+        </svg>
+        <div class="ovl">
+          <div class="scard">
+            <div class="tr"><svg viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2M5 8V7h2v3.82C5.84 10.4 5 9.3 5 8m14 0c0 1.3-.84 2.4-2 2.82V7h2z"/></svg></div>
+            <h2>正确！</h2>
+            <p>3 段 · 第 12 题 · 用时 01:04</p>
+            <div class="flash"><b></b>空点白灯双闪 · 语音「答对了」</div>
+          </div>
+        </div>
+      </div>
+      <div class="srail">
+        <div class="chiprow"><span class="pill lvl2">3 段</span><span class="pill cat">死活题</span></div>
+        <div class="prompt"><div class="status"><span class="dot"></span>已解出 · 物理模式下清盘后进入下一题</div></div>
+        <div class="meta">
+          <div class="mcell"><div class="mk">用时</div><div class="mv">01:04</div></div>
+          <div class="mcell"><div class="mk">尝试</div><div class="mv">2</div></div>
+          <div class="mcell"><div class="mk">最佳</div><div class="mv">01:04</div></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="nav2">
+          <div class="nb prev"><svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>重做</div>
+          <div class="nb next">下一题<svg viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

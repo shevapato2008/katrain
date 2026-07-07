@@ -413,3 +413,85 @@
 - 升降级对弈（规则固定+定级 `elodiff≠0`+计时）、联棋对弈（人+AI 配对流程）、高水平对弈（疑似自由对弈锁最强档子集）。
 - 棋盘 9/13 路（需重做 coords/LED/摄像头）。
 - 引擎对局内存态跨服务重启续局。
+
+---
+
+## 13. 后续计划：局内分析道具对接（领地 / 支招 / 变化图）—— 对齐 Golaxy 付费道具
+
+### Context（为什么）
+对局态右栏现有的 领地/建议/图表 走的是**本地 KataGo 分析**（`GameControlPanel.tsx:61-63` → `GamePage.tsx:231` 的 `onToggleAnalysis`）。跨平台星阵人机对弈用 `--disable-engine` 起、隧道只回 genmove，**这三个按钮无数据即失效**；且用本地引擎给星阵局助战 = 挂第二引擎作弊。本期把它们改为**调星阵自己的分析隧道**（§9），严格对齐 Golaxy 人机对弈的三个**付费限次道具**：领地 / 支招 / 变化图。
+
+### 现状（已完成的前置）
+- ✅ 协议逆向 + **实测定稿**：四端点 `area/options/judge/variation` 的参数与响应，见 `golaxy-protocol.md` §9 + **§9.5（2026-07-07 浏览器自动化直打隧道实测）**。
+- ✅ 视觉稿（严格对齐、用户待确认）：`kiosk-ui-redesign/artifacts/game-golaxy-engine.html`（Artifact `5f03d019…`）。5 屏：默认/支招/变化图/领地/**7003 道具用尽**。
+
+### Non-goals（本期明确不做）
+- **不**在 engineMode 启用任何本地 KataGo 分析（禁作弊）。**不**自造"免费"分析（本地弱网不准 + 助战问题）。
+- **不**在 kiosk 内代充/兑换（`7003` 仅引导去星阵 App 充值）。
+- **不**加"形势"按钮、**不**加胜率走势图（星阵人机对弈本就没有）。
+- `options`/`variation` 除 `coord` 外的每手子字段（`winrate`/`prob`/`visits`）本期尽力解析、缺失不阻塞（只画候选点/变化序列即可）。
+
+### Global Constraints（每个任务都隐含遵守）
+- **engineMode 下禁用本地分析**：`GamePage.tsx` 的 `analysisToggles`（ownership/hints/score，:27-29）与 `API.hint`（:144）在 engineMode **不得走本地引擎**；改为调星阵隧道或隐藏。
+- **SBC 双构建**：`api.ts` 属 shared territory，改后 `npm run build` **和** `npm run build:kiosk-2d`（含 `verify:kiosk-2d`）都要绿。前端只用 shared + `src/kiosk/`。
+- **坐标**：`variation`/`options` 响应的 `coord` 是**整数数组**，逐个走 `golaxy/coords.py` 已验证 codec 反解（`row=19-floor(c/19)`, `col=c%19`）画到盘上。
+- **凭证安全**：复用引擎对局 ctx 已持有的 token/鉴权（同 `_call_genmove` `adapter.py:597`）；不新增 token 处理、不写日志。
+- **计费诚实**：`7003 "item is not sufficient"` → 归一化为 typed error → UI 显"次数不足·请在星阵充值"。
+- **勿回归**：genmove 隧道、§11 FK 守卫 / token 持久化 / 6003 分类不能破。
+
+### Interfaces（exact，全部取自 `golaxy-protocol.md` §9.5 实测）
+- 端点：`GET https://api.19x19.com/api/engine/dcnn/tunnel/{area|options|judge|variation}`，`serve:engine`，鉴权同 genmove（`Authorization: bearer <token>` + 浏览器 Origin/Referer/UA）。
+- 参数（不发 `type`）：`moves`(完整历史 CSV) · `board_size=19` · `boardsize=19` · `komi` · `rule` · `handicap` · `level=8888`(满血分析) · `style` · `org=golaxy_web` · `context_name=ai_game_player`。
+- 响应：
+  - `variation` / `options` → `{"code":"0","data":{"winrate":0..1,"delta":<目差>,"coord":[<int>...]}}`（`coord`=手序坐标数组；`variation` 无需指定展开哪手）。
+  - `judge` → `{"code":"0","data":{"belong":"<361 字符 U/B/W>","winner":"U|B|W|D","delta":<目差>}}`。
+  - `area` → **成功响应结构未抓到**（实测时 领地额度为 0，返回 `7003`）→ 见 Phase 0。
+  - 额度不足 → `{"code":"7003","msg":"item is not sufficient","data":""}`（`area/options/variation` 各自独立计数；`judge` 本次 code 0，勿据此当无限免费）。
+
+### Phase 0 — 补两处实测（需 领地 额度 > 0；用户 1 次操作）
+- [ ] **area 成功响应**：`领地` 额度充值后，用 §9.5 同法（浏览器自动化 or DevTools）打一次 `tunnel/area`，记录成功 `data` 结构（预计含每点 area 值 + winrate/delta），补进 `golaxy-protocol.md` §9.5。
+- [ ] **剩余次数端点**：抓星阵"我的道具/剩余次数"接口（前端 `propsMine`/`userPropsNotice` 的数据源，非 tunnel 响应）——用于 kiosk 预显角标（领地N/支招N/变化图N）。**若抓不到**：MVP 不预显次数，仅在 `7003` 时提示，角标留空/问号。
+- 决策点：area 成功结构与预期不符 → 就地回报定夺。
+
+### Phase 1 — engine_client 兄弟端点（TDD，httpx MockTransport，仿 `test_golaxy_engine_client.py`）
+- Files: Modify `katrain/web/platforms/golaxy/engine_client.py`（加 `GOLAXY_{AREA,OPTIONS,JUDGE,VARIATION}_URL` 常量 + `QuotaExhausted(GolaxyEngineError)` 类 + `engine_analysis(kind, access_token, moves, config)` 复用 `_BROWSER_UA`/headers/`_classify_response_code`）；Test `tests/platforms/test_golaxy_engine_analysis.py`（新）。
+- [ ] **写失败测试**：mock 返回 §9.5 的三种真实体 →
+  - `variation`/`options` 解析出 `{winrate, delta, coord:[...]}`（`coord` 为 int list）。
+  - `judge` 解析出 `{belong(str len 361), winner, delta}`。
+  - `code=="7003"` → 抛 `QuotaExhausted`（不作为 network/auth 错误）；`6003` 仍 → `AuthExpired`（不回归 `_classify_response_code`）。
+- [ ] 实现：一个 `engine_analysis(kind, ...)` 内部按 kind 选 URL、构造 §Interfaces 参数（`level=8888`）、GET、`_classify` 后 `json.loads` data、按 kind 返回 dataclass（`VariationResult`/`JudgeResult`/`AreaResult`）。
+- [ ] 跑测试通过；commit。
+
+### Phase 2 — adapter 分析方法（用引擎对局 ctx；TDD，mock client）
+- Files: Modify `katrain/web/platforms/golaxy/adapter.py`（加 `async def engine_analysis(self, game_id, kind) -> AnalysisResult`，读 `ctx.moves`+`ctx.config`，调 client，`coord` 数组经 `coords.py` 反解为 `(col,row)` 列表；`judge.belong` 转 361 长 ownership 网格）；Test `tests/platforms/test_engine_analysis_adapter.py`（新，mock `engine_client.engine_analysis`）。
+- [ ] **写失败测试**：`ctx.moves=[72,300]`、kind=variation → 返回结构含反解后的 `(col,row)` 序列（首个 `coord=60` → `(col=3,row=3)`=D16 等，用 §3 金标准校验）；kind=judge → `belong` 361 项映射为每点 `B/W/U`；`QuotaExhausted` 透传为 typed。未知 `game_id` → 现有 `not found` 行为。
+- [ ] 实现；`_call_genmove` 一带的鉴权/UA 复用，不改 genmove 路径。
+- [ ] 跑测试通过；commit。
+
+### Phase 3 — endpoint + manager + api.ts（api.ts 双构建）
+- Files: Modify `katrain/web/api/v1/endpoints/platforms.py`（加 `POST /{platform}/engine/analysis`，仿 `start_engine` :193-221 的 `pm` 委派）、`katrain/web/platforms/manager.py`（加 `engine_analysis(platform, session_id, kind, user_id)` 仿 :136-148）、`katrain/web/ui/src/api.ts`（加 `platformEngineAnalysis(platform, sessionId, kind, token)` + 返回类型）；Test `tests/platforms/test_engine_analysis_endpoint.py`（新，TestClient）。
+- [ ] 后端：请求 `{session_id, kind∈{"area","options","judge","variation"}}`；`QuotaExhausted` → 返回 `{"ok":false,"reason":"insufficient","kind":kind}`（HTTP 200，前端据此弹充值提示，不当 500）；成功 → `{"ok":true,"kind":kind,"data":<反解结构>}`。校验 kind 白名单 → 非法 422。
+- [ ] `api.ts`：`platformEngineAnalysis` body 类型 + 响应 union（success/insufficient）。
+- [ ] `npm run build` **和** `build:kiosk-2d` 都绿；后端测试通过；commit。
+
+### Phase 4 — 前端 GamePage engineMode 右栏（对齐 game-golaxy-engine.html 稿）
+- Files: Modify `katrain/web/ui/src/kiosk/pages/GamePage.tsx`、`katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx`、盘面叠加层（复用 `Board` 的标记层）。
+- [ ] `GameControlPanel`：`engineMode` 时把 领地/建议/图表 三 toggle（:61-63）换成 **领地/支招/变化图** 三按钮 → 调 `API.platformEngineAnalysis`；互斥（同时只亮一个叠加）；角标显剩余次数（Phase 0 拿到则真值，否则留空）。
+- [ ] `GamePage`：engineMode 下 `analysisToggles`/`API.hint`（:144）**不走本地引擎**；分析结果存 state，按 kind 渲染盘面叠加：
+  - 支招/变化图 → `coord` 序列画候选点 / 编号变化序列（稿 B/C）。
+  - 领地 → area/ `judge.belong` 画归属叠加（稿 D）。
+  - `{ok:false,reason:"insufficient"}` → 弹"次数不足·请在星阵充值"（稿 E，不代充）。
+- [ ] 确认 engineMode **不渲染**胜率图/形势按钮。
+- [ ] `npm run build` **和** `build:kiosk-2d` 都绿；commit。
+
+### Phase 5 — 端到端真机验证（用户，1 次，需道具额度）
+- [ ] 起 `--disable-engine` 服务，星阵人机对局中：变化图/支招显候选与序列（坐标正确）；领地显归属；额度用尽走 `7003` 充值提示；genmove/认输不回归。
+- [ ] `CI=true uv run pytest tests/platforms -q` 全绿；`uv run black -l 120 katrain tests`；推送 `feature/kiosk-play-golaxy`。
+
+### Definition of Done（本期）
+领地/支招/变化图 三道具在 engineMode 走星阵隧道、坐标正确叠加、互斥、`7003` 引导充值；本地 KataGo 分析在 engineMode 全关；双构建绿；协议 §9.5 补齐 area 成功结构。
+
+### Open questions
+- `area` 成功响应结构（Phase 0 待抓）。
+- 剩余次数端点（Phase 0；抓不到则 MVP 不预显角标）。
+- `winrate`/`delta` 视角（轮走方 vs 固定黑）——落地时对一眼；本期 UI 主要用 `coord`，视角影响小。

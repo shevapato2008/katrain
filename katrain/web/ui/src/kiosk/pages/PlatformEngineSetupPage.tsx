@@ -382,7 +382,7 @@ const PlatformEngineSetupPage = () => {
                   mt: 2, py: 2, borderRadius: 3.25, fontSize: 18, fontWeight: 650, letterSpacing: '2px', color: '#fff',
                   background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
                   '&:hover': { background: `linear-gradient(180deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})` },
-                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.5)', background: 'var(--raise2)' },
+                  '&.Mui-disabled': { color: 'text.disabled', background: 'var(--raise2)' },
                 }}
               >
                 {starting ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Button, Avatar, Chip, Stack, CircularProgress, Alert,
   Divider, Dialog, DialogTitle, DialogContent, DialogActions, Card,
-  CardContent, Snackbar
+  CardContent, Snackbar, alpha, useTheme
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
@@ -30,6 +30,7 @@ interface ActiveGame {
 
 const LobbyPage = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const { user, token } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
@@ -203,7 +204,7 @@ const LobbyPage = () => {
       {/* Content: two-column layout */}
       <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', gap: 2, p: 2, pt: 1 }}>
         {/* Online Players */}
-        <Card sx={{ width: '40%', minWidth: 200, flexShrink: 0, bgcolor: 'rgba(255,255,255,0.05)' }}>
+        <Card sx={{ width: '40%', minWidth: 200, flexShrink: 0, bgcolor: 'background.paper' }}>
           <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
               <PeopleIcon color="primary" fontSize="small" />
@@ -219,9 +220,9 @@ const LobbyPage = () => {
               <Stack spacing={1}>
                 {onlineUsers.map((u) => (
                   <Box key={u.id} sx={{
-                    p: 1, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.03)',
+                    p: 1, borderRadius: 1.5, bgcolor: 'var(--raise2)',
                     display: 'flex', alignItems: 'center', gap: 1,
-                    border: u.id === user?.id ? '1px solid rgba(74, 107, 92, 0.5)' : 'none'
+                    border: u.id === user?.id ? `1px solid ${alpha(theme.palette.primary.main, 0.5)}` : 'none'
                   }}>
                     <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: u.id === user?.id ? 'secondary.main' : 'primary.main' }}>
                       {u.username?.[0]?.toUpperCase() || '?'}
@@ -253,7 +254,7 @@ const LobbyPage = () => {
         </Card>
 
         {/* Active Games */}
-        <Card sx={{ flex: 1, bgcolor: 'rgba(255,255,255,0.05)' }}>
+        <Card sx={{ flex: 1, bgcolor: 'background.paper' }}>
           <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
               <SportsEsportsIcon color="secondary" fontSize="small" />
@@ -268,7 +269,7 @@ const LobbyPage = () => {
             ) : (
               <Stack spacing={1}>
                 {activeGames.map((game) => (
-                  <Card key={game.session_id} variant="outlined" sx={{ bgcolor: 'rgba(255,255,255,0.03)' }}>
+                  <Card key={game.session_id} variant="outlined" sx={{ bgcolor: 'var(--raise2)' }}>
                     <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Box>

@@ -24,6 +24,24 @@ const syncStateColor = (syncState: string): string => {
   }
 };
 
+/** Resolve board-pose sync state to a Chinese label */
+const syncStateLabel = (syncState: string): string => {
+  switch (syncState) {
+    case 'synced':
+      return '已同步';
+    case 'calibrating':
+      return '标定中';
+    case 'setup':
+      return '待设置';
+    case 'mismatch':
+      return '不匹配';
+    case 'lost':
+      return '已丢失';
+    default:
+      return '未知';
+  }
+};
+
 /** Vision status icons — only rendered when the VisionProvider is available */
 const VisionIndicators = () => {
   const vision = useOptionalVision();
@@ -52,7 +70,7 @@ const VisionIndicators = () => {
 
       {/* Board pose status — only shown after pose lock */}
       {visionStatus.poseLocked && (
-        <Tooltip title={`棋盘状态: ${visionStatus.syncState}`} arrow>
+        <Tooltip title={`棋盘状态: ${syncStateLabel(visionStatus.syncState)}`} arrow>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <GridOn sx={{ fontSize: 18, color: syncStateColor(visionStatus.syncState) }} />
           </Box>

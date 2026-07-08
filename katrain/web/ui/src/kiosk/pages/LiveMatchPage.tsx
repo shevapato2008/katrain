@@ -24,12 +24,21 @@ import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
+import { useImmersive } from '../context/ImmersiveContext';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
+  const { setImmersive } = useImmersive();
+
+  // Full-screen session/observing view — hide the kiosk Header + Dock like
+  // ResearchPage; this page already has its own back button (below).
+  useEffect(() => {
+    setImmersive(true);
+    return () => setImmersive(false);
+  }, [setImmersive]);
 
   // Board feature toggles
   const [showAiMarkers, setShowAiMarkers] = useState(true);

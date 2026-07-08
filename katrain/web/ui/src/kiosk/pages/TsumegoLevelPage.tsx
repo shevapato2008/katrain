@@ -118,13 +118,18 @@ const TsumegoLevelPage = () => {
         <Grid container spacing={2}>
           {problems.map((problem, idx) => (
             <Grid key={problem.id} size={{ xs: 6, sm: 4, md: 3 }}>
-              <Card sx={{ bgcolor: 'background.paper', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', '&:hover': { bgcolor: 'var(--raise2)' } }}>
-                <CardActionArea onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)} sx={{ p: 2 }}>
+              <Card sx={{ bgcolor: 'background.paper', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', height: '100%', '&:hover': { bgcolor: 'var(--raise2)' } }}>
+                <CardActionArea
+                  onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)}
+                  sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+                >
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>#{idx + 1}</Typography>
                   <Chip label={t(`tsumego:${problem.category}`, problem.category)} size="small" sx={{ mt: 0.5 }} />
-                  {problem.hint && (
-                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>{problem.hint}</Typography>
-                  )}
+                  {/* Always reserve one line for the hint (nbsp when absent), clamped to a
+                      single line, so hinted and hint-less cards stay the same height. */}
+                  <Typography variant="caption" noWrap sx={{ display: 'block', mt: 0.5, maxWidth: '100%', color: 'text.secondary' }}>
+                    {problem.hint || ' '}
+                  </Typography>
                 </CardActionArea>
               </Card>
             </Grid>

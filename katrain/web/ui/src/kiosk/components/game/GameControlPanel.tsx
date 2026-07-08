@@ -50,7 +50,7 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
 
         {/* 2. Game info bar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'var(--raise2)' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{gameState.ruleset} {t('Rules', '规则')}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t(gameState.ruleset, gameState.ruleset)} {t('Rules', '规则')}</Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Komi', '贴目')}: {gameState.komi}</Typography>
         </Box>
 

@@ -159,10 +159,11 @@ const TsumegoProblemPage = () => {
     writeLastLevel(problem.level);
     writeActiveSession({
       kind: 'practice',
-      label: `${levelChinese(problem.level)} · ${problem.category} · 第 ${currentIndex + 1} 题`,
+      label: `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)} · 第 ${currentIndex + 1} 题`,
       route: `/kiosk/tsumego/problem/${problem.id}`,
       ts: Date.now(),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
   }, [problem, currentIndex]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.

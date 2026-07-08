@@ -1,6 +1,7 @@
 import { Box, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { PlatformClockState } from '../../../api';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface PlatformTimerProps {
   clock: PlatformClockState | null;
@@ -91,6 +92,7 @@ const TimerSide = ({ label, time, isActive, isLow }: {
 };
 
 const PlatformTimer = ({ clock }: PlatformTimerProps) => {
+  const { t } = useTranslation();
   if (!clock) return null;
 
   const blackTime = parseThinkingTime(clock.black_time);
@@ -99,13 +101,13 @@ const PlatformTimer = ({ clock }: PlatformTimerProps) => {
   return (
     <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
       <TimerSide
-        label="Black"
+        label={t('Black', '黑棋')}
         time={clock.black_time}
         isActive={clock.current_player === 'B'}
         isLow={blackTime < 30}
       />
       <TimerSide
-        label="White"
+        label={t('White', '白棋')}
         time={clock.white_time}
         isActive={clock.current_player === 'W'}
         isLow={whiteTime < 30}

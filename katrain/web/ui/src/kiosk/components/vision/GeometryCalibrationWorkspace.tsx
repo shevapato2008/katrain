@@ -240,7 +240,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
       {layoutError && <Alert severity="warning">几何叠加读取失败：{layoutError}</Alert>}
       {canReuse && <Alert severity="info">网格对齐时可直接继续，<strong>无需清空棋盘</strong>。</Alert>}
 
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, overflow: 'auto' }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, overflow: 'auto' }}>
         <GeometryVideoPanel
           title="摄像头原始画面"
           src="/api/v1/geometry/stream"

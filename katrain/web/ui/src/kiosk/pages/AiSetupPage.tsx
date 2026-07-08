@@ -76,10 +76,11 @@ const AiSetupPage = () => {
 
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left: board preview console */}
+      {/* Left: board preview console — fixed 322px width (matches artifact .console).
+          Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
       <Box
         sx={{
-          aspectRatio: '1', height: '100%', flexShrink: 0, overflow: 'hidden',
+          width: 322, height: '100%', flexShrink: 0, overflow: 'hidden',
           bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
           borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
         }}

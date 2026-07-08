@@ -47,7 +47,9 @@ function rulesDisplayName(rules: string, t: (key: string, fallback: string) => s
     case 'chinese': return t('research:rules_chinese', '中国规则');
     case 'japanese': return t('research:rules_japanese', '日本规则');
     case 'korean': return t('research:rules_korean', '韩国规则');
-    default: return rules;
+    // Reuse any existing PO key for less common rulesets (e.g. aga→AGA, new_zealand→新西兰),
+    // falling back to the raw identifier only when nothing matches.
+    default: return t(rules, rules);
   }
 }
 

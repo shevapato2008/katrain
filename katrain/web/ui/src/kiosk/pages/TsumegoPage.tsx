@@ -12,6 +12,17 @@ interface LevelInfo {
   total: number;
 }
 
+// Chinese fallbacks for the tsumego category keys (mirror the cn PO `tsumego:*` msgstr) so the
+// grid reads correctly even before the translation table finishes loading (and in tests).
+const CATEGORY_ZH: Record<string, string> = {
+  'life-death': '死活',
+  tesuji: '手筋',
+  semeai: '对杀',
+  capturing: '吃子',
+  endgame: '官子',
+  opening: '布局',
+};
+
 /**
  * Route: tsumego — difficulty-level grid (entry point for the 5-level navigation).
  *
@@ -126,6 +137,7 @@ const TsumegoPage = () => {
                     position: 'relative',
                     bgcolor: 'background.paper',
                     borderRadius: '12px',
+                    height: '100%',
                     '&:hover': { bgcolor: 'var(--raise2)' },
                     transition: 'background-color 0.15s ease',
                     ...(isLast ? { border: '2px solid', borderColor: 'primary.main' } : {}),
@@ -151,7 +163,7 @@ const TsumegoPage = () => {
                   )}
                   <CardActionArea
                     onClick={() => navigate(`/kiosk/tsumego/${level.level}`)}
-                    sx={{ p: 2 }}
+                    sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
                   >
                     <Typography
                       variant="h4"
@@ -160,12 +172,30 @@ const TsumegoPage = () => {
                       {level.level.toUpperCase()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {level.total} {t('problems', '题')}
+                      {level.total} {t('tsumego:problems', '题')}
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {/* Fixed-height region (NOT minHeight): the per-category breakdown wraps
+                        to a variable number of lines — up to 3 on the narrow 7" kiosk for a
+                        7-category level like 6D. A fixed 2-line box with overflow:hidden keeps
+                        every card identical across the whole grid regardless of category count;
+                        a rare 3rd line clips (this is a weak summary — the full per-category
+                        breakdown lives one level down on the categories page). 46px sits
+                        between 2 lines (≈44) and the 3rd line (≈48) so nothing clips mid-line. */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 0.5,
+                        mt: 1,
+                        width: '100%',
+                        height: 46,
+                        overflow: 'hidden',
+                        alignContent: 'flex-start',
+                      }}
+                    >
                       {Object.entries(level.categories).map(([name, count]) => (
                         <Typography key={name} variant="caption" sx={{ color: 'text.secondary' }}>
-                          {name}: {count}
+                          {t(`tsumego:${name}`, CATEGORY_ZH[name] ?? name)}: {count}
                         </Typography>
                       ))}
                     </Box>

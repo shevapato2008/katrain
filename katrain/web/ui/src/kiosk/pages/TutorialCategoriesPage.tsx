@@ -56,7 +56,7 @@ const TutorialCategoriesPage = () => {
   if (error) {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error">{t('tutorial:loadFailed', '加载失败，请稍后重试')}</Alert>
         <Button variant="outlined" onClick={() => loadCategories()}>
           {t('Retry', '重试')}
         </Button>
@@ -104,21 +104,26 @@ const TutorialCategoriesPage = () => {
                     <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
                       {cat.title}
                     </Typography>
-                    {cat.summary && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          mt: 0.5,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {cat.summary}
-                      </Typography>
-                    )}
+                    {/* Fixed-height region (NOT minHeight): summary is optional and clamped
+                        to 2 lines. Reserving that height whether or not a summary is present
+                        keeps every card identical across the whole grid, not just within a
+                        flex-wrap row (height:100% on the Card only equalizes within a row). */}
+                    <Box sx={{ mt: 0.5, width: '100%', height: 40, overflow: 'hidden' }}>
+                      {cat.summary && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {cat.summary}
+                        </Typography>
+                      )}
+                    </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                       {cat.book_count} {t('tutorial:booksUnit', '本')}
                     </Typography>

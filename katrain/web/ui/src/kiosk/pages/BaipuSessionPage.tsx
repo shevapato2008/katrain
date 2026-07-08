@@ -13,6 +13,7 @@ import {
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
 import { LED_HEX } from '../constants/ledColors';
+import { useImmersive } from '../context/ImmersiveContext';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
@@ -144,6 +145,14 @@ const BaipuSessionPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const theme = useTheme();
+  const { setImmersive } = useImmersive();
+
+  // Full-screen session view — hide the kiosk Header + Dock like ResearchPage;
+  // this page already has its own 退出 button + confirm dialog (below).
+  useEffect(() => {
+    setImmersive(true);
+    return () => setImmersive(false);
+  }, [setImmersive]);
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [error, setError] = useState<string | null>(null);

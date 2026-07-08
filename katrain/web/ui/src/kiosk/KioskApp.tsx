@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
@@ -92,21 +93,28 @@ const KioskRoutes = () => {
   );
 };
 
-const KioskApp = () => (
-  <ThemeProvider theme={kioskTheme}>
-    <CssBaseline />
-    <OrientationProvider>
-      <VisionProvider>
-        <GeometryProvider>
-          <TsumegoProgressProvider>
-            <RotationWrapper>
-              <KioskRoutes />
-            </RotationWrapper>
-          </TsumegoProgressProvider>
-        </GeometryProvider>
-      </VisionProvider>
-    </OrientationProvider>
-  </ThemeProvider>
-);
+const KioskApp = () => {
+  // Kiosk tab title — scoped to kiosk routes so galaxy's shared index.html title is untouched.
+  useEffect(() => {
+    document.title = '智星盒 StellaBox';
+  }, []);
+
+  return (
+    <ThemeProvider theme={kioskTheme}>
+      <CssBaseline />
+      <OrientationProvider>
+        <VisionProvider>
+          <GeometryProvider>
+            <TsumegoProgressProvider>
+              <RotationWrapper>
+                <KioskRoutes />
+              </RotationWrapper>
+            </TsumegoProgressProvider>
+          </GeometryProvider>
+        </VisionProvider>
+      </OrientationProvider>
+    </ThemeProvider>
+  );
+};
 
 export default KioskApp;

@@ -103,7 +103,7 @@ const TutorialSectionPage = () => {
   if (error || !section) {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
-        <Alert severity="error">{error ?? t('tutorial:sectionNotFound', '未找到该小节')}</Alert>
+        <Alert severity="error">{error ? t('tutorial:loadFailed', '加载失败，请稍后重试') : t('tutorial:sectionNotFound', '未找到该小节')}</Alert>
         <Button variant="outlined" onClick={() => navigate('/kiosk/tutorial')} startIcon={<ArrowBack />}>
           {t('Back', '返回')}
         </Button>

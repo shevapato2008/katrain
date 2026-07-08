@@ -47,15 +47,17 @@ const detectBrowserLanguage = (): string => {
   if (langCode.startsWith('ru')) return 'ru';
   if (langCode.startsWith('tr')) return 'tr';
   if (langCode.startsWith('uk')) return 'ua';
-  if (langCode.startsWith('en')) return 'en';
 
-  return 'en'; // Default to English
+  // China-first product: English and unrecognized locales default to Chinese.
+  // The kiosk relies on this default; the root app overrides it with the server
+  // session language (ZenModeApp) so non-Chinese config users are unaffected.
+  return 'cn';
 };
 
 const LANGUAGE_STORAGE_KEY = 'katrain_language';
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState('en');
+  const [language, setLanguageState] = useState('cn');
   const [, setTick] = useState(0); // For forcing re-render on translation change
 
   const updateLanguage = useCallback(async (lang: string) => {

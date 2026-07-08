@@ -39,9 +39,17 @@ class MoveDetector:
         self.count = 0
         self.misses = 0
 
-    def detect_new_move(self, board: np.ndarray) -> tuple[int, int, int] | None:
+    def detect_new_move(self, board: np.ndarray, ignore_cells: set | None = None) -> tuple[int, int, int] | None:
         """
         Compare current board with previous accepted state.
+
+        ``ignore_cells``: (row, col) intersections that can never be a new move — the
+        frame's removal-lit ∩ expected-empty mask. A stone physically sitting on a
+        just-captured / removal-lit point is a leftover the system is asking the user to
+        REMOVE, not a placement; treating it as an addition re-injects a phantom move onto
+        the captured point. The mask is re-derived every frame, so it protects durably even
+        after the streaming SET_EXPECTED_BOARD force-syncs ``prev_board`` back to the bare
+        digital board (which would otherwise resurrect the leftover as an EMPTY→stone diff).
 
         Returns:
             (row, col, color) if a single new stone is confirmed, None otherwise.
@@ -55,6 +63,8 @@ class MoveDetector:
         diff_positions = []
         for r in range(board.shape[0]):
             for c in range(board.shape[1]):
+                if ignore_cells and (r, c) in ignore_cells:
+                    continue
                 if self.prev_board[r][c] == EMPTY and board[r][c] != EMPTY:
                     diff_positions.append((r, c, int(board[r][c])))
 

@@ -115,10 +115,14 @@ class VisionService:
                 WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": target_board.tolist()})
             )
 
-    def reset_sync(self) -> None:
-        """Accept current physical board as new baseline."""
+    def reset_sync(self, expected: np.ndarray | None = None) -> None:
+        """Reset sync. With `expected` (digital board) = trust-digital recovery: sync
+        re-baselines to the digital board and the move detector to the digital∪physical
+        UNION (so a still-present leftover / glare-washed stone doesn't re-fire as a move).
+        Without it = legacy physical-adopt (ambiguous-ignore / research reset)."""
         if self._worker:
-            self._worker.send_command(WorkerCommand(action=CommandType.RESET_SYNC))
+            data = {"expected": expected.tolist()} if expected is not None else None
+            self._worker.send_command(WorkerCommand(action=CommandType.RESET_SYNC, data=data))
 
     def bind_session(self, session_id: str) -> None:
         """Bind vision to a game session."""

@@ -132,6 +132,52 @@ class PhysicalPlayOrchestrator:
         """False while the physical board still owes a placement/removal (Q4 gate)."""
         return self._caught_up
 
+    def resync(self) -> None:
+        """User-triggered recovery from a stuck removal / mismatch_warning (kiosk
+        "重置识别", escalation "已按指示恢复"). Re-baselines vision to the CURRENT
+        digital board — discarding a camera phantom that latched a missing_anomaly /
+        MISMATCH_WARNING — and drops the planner's stuck removal so an un-clearable
+        removal stops gating move injection. Detection resumes immediately, with no
+        30s/120s escalation wait.
+
+        Safe without a bound session (research mode): degrades to a plain sync reset."""
+        state = self._latest_state
+        if state is None:
+            # No bound game yet: degrade to a plain physical-adopt reset.
+            try:
+                self._vision.reset_sync()
+            except Exception as e:  # never let a recovery tap raise
+                logger.debug("resync: reset_sync failed: %s", e)
+            return
+
+        board_size = state["board_size"][0]
+        expected = np.asarray(game_state_stones_to_board(state["stones"], board_size))
+        try:
+            # ONE atomic command: sync re-baselines to the digital board (mismatch clears
+            # against digital) while the MoveDetector baselines to the digital∪physical
+            # UNION — so a still-present leftover / glare-washed stone is not re-injected as
+            # a move when detection resumes. (A separate expected-push would re-baseline the
+            # detector to bare digital and re-inject the leftover.)
+            self._vision.reset_sync(expected=expected)
+        except Exception as e:
+            logger.debug("resync: reset_sync failed: %s", e)
+
+        # Drop the planner's stuck removal so an un-clearable removal stops gating moves;
+        # a still-present stone re-surfaces as a non-gating blue cleanup lamp next tick.
+        self._planner.reconcile(expected)
+
+        # Release the move-detection pause NOW and reset the lag timers so the
+        # reminder/escalation flow re-arms cleanly on the next genuine lag.
+        self._caught_up = True
+        self._behind_since = None
+        self._reminded = False
+        self._escalated = False
+        self._sync_pause_state()
+
+        # Force the next tick to re-emit lamps (the dedupe would otherwise suppress the
+        # now-changed plan) so a stale blue lamp clears.
+        self._last_points = None
+
     def _sync_pause_state(self) -> None:
         """Single owner of the worker's move-detection pause (Q4 redesign + hint).
         While paused, the worker produces NO ConfirmedMove — this replaces the unsound

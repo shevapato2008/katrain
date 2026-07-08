@@ -24,6 +24,14 @@ class SetupModeRequest(BaseModel):
     target_board: list[list[int]]  # (board_size x board_size) matrix
 
 
+class ResetSyncRequest(BaseModel):
+    # "digital" = trust-digital recovery (kiosk 重置识别 / escalation restored): re-baseline
+    # to the game, clear the stuck removal/pause. "physical" = accept the camera board as-is
+    # (ambiguous-stone 忽略): keep the ignored stone in the detector baseline so it doesn't
+    # re-fire.
+    adopt: str = "digital"
+
+
 # -- Helpers -----------------------------------------------------------------
 
 
@@ -150,10 +158,20 @@ async def unbind_session(request: Request):
 
 
 @router.post("/sync/reset")
-async def reset_sync(request: Request):
-    """Reset sync — accept current physical board as new baseline. Research mode only."""
+async def reset_sync(request: Request, body: ResetSyncRequest | None = None):
+    """Reset vision sync. adopt='digital' (default; kiosk 重置识别 / escalation '已按指示恢复')
+    delegates to the physical-play orchestrator — re-baseline to the DIGITAL game, discard
+    camera phantoms, and release any stuck removal/pause so play continues. adopt='physical'
+    (ambiguous-stone 忽略) accepts the current camera board as baseline so the ignored stone
+    doesn't re-fire. Falls back to a plain physical-adopt reset with no orchestrator
+    (research mode)."""
     vision = _get_vision(request)
-    vision.reset_sync()
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    adopt = body.adopt if body else "digital"
+    if orchestrator is not None and adopt != "physical":
+        orchestrator.resync()
+    else:
+        vision.reset_sync()
     return {"ok": True}
 
 

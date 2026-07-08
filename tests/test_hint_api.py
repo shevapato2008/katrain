@@ -123,6 +123,18 @@ class TestHintEndpoint:
         assert c.app.state.physical_play.shown == [(3, 15), (15, 3), (16, 2)]
         assert body["timeout_s"] == 30.0
 
+    def test_cloud_engine_marks_payload_is_analysis(self):
+        # hint_engine='cloud' => is_analysis=True => RequestRouter prefers the cloud GPU
+        # (Wave B #4: 支招 is an analysis query). Router degrades to local if no cloud client.
+        c = _client(FakeSession("free"), engine="cloud")
+        assert c.post("/hint", json={"session_id": "s1"}).status_code == 200
+        assert c.app.state.router.payloads[0]["is_analysis"] is True
+
+    def test_local_engine_keeps_payload_local(self):
+        c = _client(FakeSession("free"), engine="local")
+        assert c.post("/hint", json={"session_id": "s1"}).status_code == 200
+        assert c.app.state.router.payloads[0]["is_analysis"] is False
+
     def test_ranked_rejected_server_side(self):
         c = _client(FakeSession("ranked"))
         r = c.post("/hint", json={"session_id": "s1"})

@@ -141,16 +141,10 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
 
-    # Initialize Engine Clients and Router
-    from katrain.web.core.engine_client import KataGoClient
-    from katrain.web.core.router import RequestRouter
+    # Initialize Engine Clients and Router (cloud client attached iff CLOUD_KATAGO_URL set)
+    from katrain.web.core.router import build_router
 
-    local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
-    cloud_client = None
-    if settings.CLOUD_KATAGO_URL:
-        cloud_client = KataGoClient(url=settings.CLOUD_KATAGO_URL)
-
-    app.state.router = RequestRouter(local_client=local_client, cloud_client=cloud_client)
+    app.state.router = build_router(settings.LOCAL_KATAGO_URL, settings.CLOUD_KATAGO_URL)
 
     manager = app.state.session_manager
     try:
@@ -312,12 +306,11 @@ async def _lifespan_board(app: FastAPI, log):
     )
     app.state.repository_dispatcher = dispatcher
 
-    # Engine (local KataGo for offline play)
-    from katrain.web.core.engine_client import KataGoClient
-    from katrain.web.core.router import RequestRouter
+    # Engine: local KataGo for fast offline play; cloud attached iff CLOUD_KATAGO_URL is set
+    # so AI 支招 (is_analysis) reaches the strong cloud GPU while play/领地/图表 stay local (Wave B #4).
+    from katrain.web.core.router import build_router
 
-    local_client = KataGoClient(url=settings.LOCAL_KATAGO_URL)
-    app.state.router = RequestRouter(local_client=local_client, cloud_client=None)
+    app.state.router = build_router(settings.LOCAL_KATAGO_URL, settings.CLOUD_KATAGO_URL)
 
     # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
     app.state.lobby_manager = LobbyManager()
@@ -846,6 +839,19 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state, "pondering": session.katrain.pondering}
+
+    @app.post("/api/analysis/current")
+    def analyze_current(request: ToggleAnalysisRequest):
+        """On-demand analysis of the current position (kiosk 领地/图表). Free games only —
+        the interface chokepoint (ANALYSIS_ACTIONS) makes this a no-op in rated/ranked. The
+        analysis itself streams back asynchronously over the game WebSocket, so this returns
+        the current (possibly not-yet-analyzed) state immediately."""
+        session = _get_session_or_404(manager, request.session_id)
+        with session.lock:
+            session.katrain("analyze_current")
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/analysis/extra")
     def analyze_extra(request: AnalyzeExtraRequest):
@@ -2081,7 +2087,7 @@ def run_web():
         "--hint-engine",
         choices=["local", "cloud", "off"],
         default=None,
-        help="AI hint engine routing for physical play (default: local)",
+        help="AI hint engine routing for physical play (default: cloud, needs CLOUD_KATAGO_URL; falls back to local)",
     )
     parser.add_argument("--hint-top-n", type=int, default=None, help="AI hint top-N points (default: 3)")
     parser.add_argument(
@@ -2160,7 +2166,7 @@ def run_web():
         from katrain.web.core.physical_play import PhysicalPlayConfig
 
         settings._physical_play_config = PhysicalPlayConfig(
-            hint_engine=args.hint_engine or "local",
+            hint_engine=args.hint_engine or PhysicalPlayConfig.hint_engine,
             hint_top_n=args.hint_top_n or 3,
         )
 

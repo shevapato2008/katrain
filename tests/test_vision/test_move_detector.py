@@ -264,6 +264,64 @@ class TestCallerOwnedBaseline:
             assert d.detect_new_move(with_stone) is None
 
 
+class TestIgnoreCells:
+    """A removal-lit / cleanup cell (the system is asking the user to REMOVE a stone, not
+    place one) must never become a 'new move' — even after the streaming SET_EXPECTED_BOARD
+    force-syncs the baseline back to the bare digital board (leftover cell EMPTY).
+
+    Regression for the resync leftover re-injection (workflow wzceinjdc, lens C/A): FIX C's
+    RESET_SYNC union baseline was transient — it lived only in ``prev_board`` and the next
+    ~0.25s analysis-stream push clobbered it, so the un-lifted physical stone re-confirmed
+    as a phantom move onto the just-captured point. ``ignore_cells`` (fed the frame's
+    removal-lit ∩ expected-empty mask) closes that window durably: it is re-derived every
+    frame, so no baseline overwrite can defeat it."""
+
+    def _empty(self):
+        return np.zeros((19, 19), dtype=int)
+
+    def test_ignored_cell_never_confirms_even_with_empty_baseline(self):
+        d = MoveDetector(consistency_frames=3)
+        empty = self._empty()
+        d.force_sync(empty)  # baseline empty at (3,3) — the post-clobber state
+        leftover = empty.copy()
+        leftover[3][3] = BLACK  # physical stone still on the captured / removal-lit point
+        for _ in range(8):
+            assert d.detect_new_move(leftover, ignore_cells={(3, 3)}) is None
+
+    def test_control_without_ignore_reinjects(self):
+        # Proves the defect is real: the SAME clobbered baseline WITHOUT the mask re-fires.
+        d = MoveDetector(consistency_frames=3)
+        empty = self._empty()
+        d.force_sync(empty)
+        leftover = empty.copy()
+        leftover[3][3] = BLACK
+        d.detect_new_move(leftover)
+        d.detect_new_move(leftover)
+        assert d.detect_new_move(leftover) == (3, 3, BLACK)  # re-injection
+
+    def test_ignore_does_not_suppress_a_real_move_elsewhere(self):
+        # A genuine new move at an UNlit cell still confirms while a leftover cell is ignored.
+        # (Skipping the leftover also rescues the real move from the multi-stone hard-reset.)
+        d = MoveDetector(consistency_frames=3)
+        empty = self._empty()
+        d.force_sync(empty)
+        b = empty.copy()
+        b[3][3] = BLACK  # ignored leftover
+        b[9][9] = WHITE  # real new move
+        assert d.detect_new_move(b, ignore_cells={(3, 3)}) is None  # count 1 (only 9,9 diffs)
+        assert d.detect_new_move(b, ignore_cells={(3, 3)}) is None  # count 2
+        assert d.detect_new_move(b, ignore_cells={(3, 3)}) == (9, 9, WHITE)
+
+    def test_none_ignore_is_backward_compatible(self):
+        d = MoveDetector(consistency_frames=2)
+        empty = self._empty()
+        d.detect_new_move(empty)
+        s = empty.copy()
+        s[3][3] = BLACK
+        d.detect_new_move(s)
+        assert d.detect_new_move(s) == (3, 3, BLACK)  # ignore_cells default (None) unchanged
+
+
 def test_worker_config_carries_ambiguous_confidence():
     from katrain.vision.config_service import VisionServiceConfig
 

@@ -207,13 +207,23 @@ class WebKaTrain(KaTrainBase):
         return getattr(self, "analysis_engine_instance", None) or self.engine
 
     def _init_analysis_engine(self):
-        """Create a second engine for analysis if engine/remote_url is configured.
+        """Create a second engine for analysis (领地/图表/支招) if a remote URL is configured.
 
-        Health-gated by create_engine; on any failure we fall back to the play engine
-        (never silently route paid analysis to a dead remote without the caller knowing —
-        the paid handler checks remote health separately)."""
+        The URL comes from engine/remote_url (config.json) or, failing that, the
+        CLOUD_KATAGO_URL env (settings) — so setting CLOUD_KATAGO_URL alone routes analysis
+        to the strong cloud GPU while play/genmove stays on the local engine (Wave B #4). No
+        billing/gating here — routing is purely by URL presence + health.
+
+        Health-gated: create_engine silently falls back to a LOCAL engine when the remote is
+        unreachable (engine.py — flips backend to 'local', returns a KataGoEngine). We keep
+        the result ONLY if it is actually the HTTP (remote) engine; otherwise we discard it so
+        analysis_engine() returns the working local PLAY engine, never a second/dead subprocess
+        on the SBC."""
+        from katrain.core.engine import KataGoHttpEngine
+        from katrain.web.core.config import settings
+
         self.analysis_engine_instance = None
-        remote_url = self.config("engine/remote_url")
+        remote_url = self.config("engine/remote_url") or settings.CLOUD_KATAGO_URL
         if not remote_url:
             return
         try:
@@ -230,8 +240,21 @@ class WebKaTrain(KaTrainBase):
                     "engine/remote_has_human_model", engine_cfg.get("http_has_human_model", False)
                 ),
             }
-            self.analysis_engine_instance = create_engine(self, remote_cfg)
-            self.log(f"Analysis engine configured: {remote_url}", OUTPUT_INFO)
+            engine = create_engine(self, remote_cfg)
+            if isinstance(engine, KataGoHttpEngine):
+                self.analysis_engine_instance = engine
+                self.log(f"Analysis engine configured: {remote_url}", OUTPUT_INFO)
+            else:
+                # Health check failed and create_engine fell back to a local engine — discard
+                # it (shut down any subprocess) so analysis_engine() uses the local PLAY engine.
+                try:
+                    engine.shutdown(finish=False)
+                except Exception:
+                    pass
+                self.log(
+                    f"Cloud analysis engine unreachable ({remote_url}); analysis uses local play engine",
+                    OUTPUT_ERROR,
+                )
         except Exception as exc:
             self.log(f"Remote analysis engine unavailable ({exc}); using local for analysis", OUTPUT_ERROR)
             self.analysis_engine_instance = None
@@ -721,6 +744,7 @@ class WebKaTrain(KaTrainBase):
         {
             "analyze_extra",
             "analyze_all",
+            "analyze_current",
             "analysis_scan",
             "continuous_analysis",
             "toggle_continuous_analysis",
@@ -1051,6 +1075,42 @@ class WebKaTrain(KaTrainBase):
 
     def _do_analyze_extra(self, mode, **kwargs):
         self.game.analyze_extra(mode, **kwargs)
+
+    def _do_analyze_current(self):
+        """On-demand analysis of the current node for the kiosk 领地/图表 toggles.
+
+        Board mode suppresses per-move auto-eval (the single local engine is reserved for
+        genmove), so the displayed position normally carries no analysis. When the user opens
+        领地 (ownership) or 图表 (winrate/score), the frontend calls this. It requests a fast
+        analysis (ownership is included via engine `_enable_ownership`) and — because the web
+        interface has no GUI redraw loop — spawns a short-lived watcher that re-broadcasts the
+        normalized get_state() as partial/final results arrive, so Board/ScoreGraph populate.
+        Gated by analysis_allowed through the __call__ chokepoint (ANALYSIS_ACTIONS) → a no-op
+        in rated/ranked games."""
+        if not self.game or not self.engine:
+            return
+        cn = self.game.current_node
+        if cn.analysis_exists:
+            self.update_state()  # already analyzed → make sure the client has it
+            return
+        # 领地/图表 go to the CLOUD analysis engine when configured (accuracy), while 对局
+        # (genmove, via game.engines[player]) stays on the local engine. analysis_engine()
+        # falls back to the local play engine when no cloud URL is set → no behavior change.
+        try:
+            engine = self.analysis_engine()
+        except Exception:
+            engine = self.engine
+        cn.analyze(engine, analyze_fast=True)
+
+        def _broadcast_when_ready(node=cn):
+            for _ in range(40):  # ~10s ceiling
+                time.sleep(0.25)
+                if node.analysis_exists:
+                    self.update_state()
+                if node.analysis_complete or not self.game or node is not self.game.current_node:
+                    break
+
+        threading.Thread(target=_broadcast_when_ready, daemon=True).start()
 
     def _do_insert_mode(self, mode="toggle"):
         self.game.set_insert_mode(mode)

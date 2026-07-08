@@ -210,9 +210,10 @@ python -m katrain --ui web
 **katrain-board** (RK3588/RK3576 smart board):
 ```bash
 export KATRAIN_MODE=board
-export KATRAIN_REMOTE_URL="https://go.sailorvoyage.top"
+export KATRAIN_REMOTE_URL="https://go.sailorvoyage.top"       # app server (auth/sync), port 8001
 export KATRAIN_DEVICE_ID="rk3588-001"
-export LOCAL_KATAGO_URL="http://127.0.0.1:8000"
+export LOCAL_KATAGO_URL="http://127.0.0.1:8000"              # local KataGo — fast/weak — for gameplay
+export CLOUD_KATAGO_URL="https://api-go.sailorvoyage.top"    # strong cloud KataGo — for analysis (支招/领地/图表); note the "api-go" hyphen, port 8000
 
 # Basic startup (no camera)
 python -m katrain --ui web
@@ -279,6 +280,7 @@ python -m katrain --ui web --force-build --vision-model katrain/vision/models/yo
 > - `KATRAIN_REMOTE_URL` should point to the actual entry point (e.g. nginx reverse proxy on HTTPS 443), not the KaTrain process port directly.
 > - `KATRAIN_DEVICE_ID` should be a stable identifier for this board. If omitted, a random UUID is generated on each startup.
 > - Board mode connects to the remote server for auth, tsumego, kifu, and user game sync, while using local KataGo for gameplay. When offline, games are saved locally and synced automatically on reconnection.
+> - **Dual-engine routing:** gameplay (AI move generation) always runs on the fast local `LOCAL_KATAGO_URL`. Analysis — AI hints (支招), territory (领地), and win-rate/score (图表) — routes to the strong `CLOUD_KATAGO_URL` when set, falling back to local otherwise. This is a hard split: `api-go.` = the KataGo **engine** (`/analyze`), `go.` = the **app** server. Getting the two URLs mixed up is the most common misconfiguration.
 
 **Upgrading RKNN runtime (RK3576/RK3588):**
 
@@ -367,6 +369,7 @@ docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
 |----------|---------|-------------|
 | `KATRAIN_DATABASE_URL` | `sqlite:///./db.sqlite3` | Database connection URL |
 | `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | KataGo server for gameplay |
+| `CLOUD_KATAGO_URL` | *(empty)* | Strong cloud/GPU KataGo for **analysis** (AI hints, territory/score). When set, `is_analysis` queries route here while gameplay stays on `LOCAL_KATAGO_URL`; unset = analysis falls back to local. |
 | `KATRAIN_HOST` | `0.0.0.0` | Bind host |
 | `KATRAIN_PORT` | `8001` | Bind port |
 
@@ -375,10 +378,11 @@ docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix katrain
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `KATRAIN_MODE` | `server` | Set to `board` to enable board mode |
-| `KATRAIN_REMOTE_URL` | - | Remote server entry URL, e.g. `https://go.sailorvoyage.top` |
+| `KATRAIN_REMOTE_URL` | - | Remote **app** server entry URL (auth/tsumego/kifu/sync), e.g. `https://go.sailorvoyage.top` — the KaTrain web app, port 8001 |
 | `KATRAIN_DATABASE_URL` | `sqlite:///./db.sqlite3` | Auto-set to SQLite in board mode; override only if custom path needed |
 | `KATRAIN_DEVICE_ID` | *(auto-generated UUID)* | Stable device identifier (recommended to set explicitly) |
-| `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | Local KataGo for offline gameplay |
+| `LOCAL_KATAGO_URL` | `http://127.0.0.1:8000` | Local KataGo for offline gameplay (fast/weak) |
+| `CLOUD_KATAGO_URL` | *(empty)* | Strong cloud **KataGo engine** for analysis (支招/领地/图表), e.g. `https://api-go.sailorvoyage.top` — note the **`api-go`** hyphen, port 8000. **Distinct from `KATRAIN_REMOTE_URL`** (`go.` = app server; `api-go.` = engine). Unset = analysis stays local. |
 
 **katrain-cron:**
 

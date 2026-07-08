@@ -354,7 +354,11 @@ class InProcessAdapter:
                         conf_map = self._active_extractor().cell_confidences(detections, img_w=w, img_h=h)
                         pending_before = self._move_detector.pending_move
                         self._conf_peak.observe(pending_before, conf_map)
-                        move_result = self._move_detector.detect_new_move(observed_board)
+                        # `masked` (removal-lit ∩ expected-empty) can never be a new move —
+                        # a leftover on a captured point is a "remove this", not a placement.
+                        # Passing it here makes that protection survive the SET_EXPECTED_BOARD
+                        # baseline clobber (the resync re-injection window — review wzceinjdc).
+                        move_result = self._move_detector.detect_new_move(observed_board, ignore_cells=masked)
                         if move_result is not None:
                             row, col, color = move_result
                             # A real stone that survived voting was detected in this frame or
@@ -503,13 +507,31 @@ class InProcessAdapter:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
             elif cmd.action == CommandType.RESET_SYNC:
-                self._sync.reset()
-                if self._last_stable_board is not None:
-                    # "Ignore/reset = accept the physical board as baseline": adopt it in
-                    # the move detector too, or the ignored stone re-confirms immediately.
-                    self._move_detector.force_sync(self._last_stable_board)
-                self._prev_observed_board = None  # rebuild voting baseline after recovery
-                self._last_stable_board = None
+                expected = cmd.data.get("expected") if cmd.data else None
+                if expected is not None:
+                    # Trust-digital recovery (resync): sync compares against the digital
+                    # board again, while the move detector baselines to the UNION of digital
+                    # and the last physical read — so a leftover (undo/capture not lifted) or
+                    # a glare-washed digital stone is already in the baseline and does NOT
+                    # re-fire as a "new move" when detection resumes.
+                    exp = np.array(expected, dtype=int)
+                    self._sync.reset(exp)
+                    base = exp
+                    if self._last_stable_board is not None:
+                        base = np.where(exp != EMPTY, exp, self._last_stable_board)
+                    self._move_detector.force_sync(base)
+                    self._expected_np = exp
+                else:
+                    self._sync.reset()
+                    if self._last_stable_board is not None:
+                        # "Ignore/reset = accept the physical board as baseline": adopt it in
+                        # the move detector too, or the ignored stone re-confirms immediately.
+                        self._move_detector.force_sync(self._last_stable_board)
+                # Parity with worker.py RESET_SYNC (the SBC path): do NOT null the observed /
+                # stable boards here. Keeping them means a leftover on a captured point stays
+                # visible so the LED planner keeps its "remove" lamp burning (removal guidance
+                # survives recovery); the durable `masked` skip in detect_new_move — not a
+                # transient baseline — is what stops it re-injecting as a move (review wzceinjdc).
                 self._prev_conf_map = {}
                 self._ambig_last_emit = {}
                 self._averager.reset()

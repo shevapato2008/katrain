@@ -124,7 +124,12 @@ def test_analysis_engine_uses_remote_when_configured(monkeypatch):
     wk = _wk()
     wk._do_new_game(size=9)
 
-    sentinel = object()
+    # Must be a real HTTP engine: _init_analysis_engine keeps the result only when it is a
+    # KataGoHttpEngine (create_engine silently falls back to a LOCAL engine on health-check
+    # failure, which we discard so analysis never runs on a dead/second subprocess).
+    from katrain.core.engine import KataGoHttpEngine
+
+    sentinel = object.__new__(KataGoHttpEngine)
     captured = {}
 
     def fake_create_engine(katrain, cfg):

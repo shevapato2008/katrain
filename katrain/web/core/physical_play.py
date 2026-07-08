@@ -28,7 +28,8 @@ class PhysicalPlayConfig:
     hint_blink_period_s: float = 0.8
     hint_timeout_s: float = 30.0
     hint_max_visits: int = 100
-    hint_engine: str = "local"  # "local" | "cloud" | "off"
+    hint_engine: str = "cloud"  # "local" | "cloud" | "off" — 支招 is an analysis query, so
+    # prefer the strong cloud GPU; RequestRouter degrades to local when CLOUD_KATAGO_URL is unset.
 
 
 @dataclass
@@ -67,6 +68,30 @@ class LedPlanner:
         self._observed_once = set()
         self._guided_colors = None
         self._setup_cells = set()
+
+    def reconcile(self, expected: np.ndarray) -> None:
+        """Manual recovery (resync): drop stuck removal / extra-debounce state and
+        re-baseline to the CURRENT digital board, WITHOUT wiping placement tracking.
+
+        An un-clearable removal — a physical stone the camera keeps seeing at a
+        captured/undone point (LED glare or a white false-negative) — otherwise keeps
+        `_removal_pending` non-empty forever, so `caught_up` never returns True and the
+        orchestrator leaves move detection paused (the kiosk "确认中" deadlock). After
+        reconcile the still-present stone degrades to a non-blocking cleanup extra
+        (debounced blue lamp, excluded from the caught_up gate).
+
+        `_observed_once` / `_guided_colors` / `_setup_cells` are preserved so
+        already-placed stones don't spuriously re-light as placement targets."""
+        self._prev_expected = expected.copy()
+        # Carry each still-pending removal PAST the debounce so it re-surfaces as a blue
+        # cleanup extra on the very next tick. Otherwise it re-enters tick() as a raw extra
+        # with count 0, and a lone HUMAN-color survivor (the common "AI captured my single
+        # stone" case) is swallowed by the single-human-color "move-in-flight" exemption —
+        # whose guard `count < debounce` stays True forever because the count is rebuilt
+        # from the emptied `extras` every tick — so its removal lamp would be suppressed
+        # permanently instead of "degraded to a debounced blue lamp" as promised above.
+        self._extra_counts = {p: self.config.extra_stone_debounce_ticks for p in self._removal_pending}
+        self._removal_pending = set()
 
     def set_context(self, guided_colors: Optional[Set[int]], setup_cells: Set[Tuple[int, int]]) -> None:
         """Player context from the game state: which stone colors are AI-played (need

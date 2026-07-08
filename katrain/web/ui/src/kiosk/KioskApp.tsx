@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
@@ -66,13 +68,12 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard><TsumegoProblemPage /></PhysicalBoardGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           <Route path="research" element={<ResearchPage />} />
-          <Route path="research/session/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
@@ -93,21 +94,39 @@ const KioskRoutes = () => {
   );
 };
 
-const KioskApp = () => (
-  <ThemeProvider theme={kioskTheme}>
-    <CssBaseline />
-    <OrientationProvider>
-      <VisionProvider>
-        <GeometryProvider>
-          <TsumegoProgressProvider>
-            <RotationWrapper>
-              <KioskRoutes />
-            </RotationWrapper>
-          </TsumegoProgressProvider>
-        </GeometryProvider>
-      </VisionProvider>
-    </OrientationProvider>
-  </ThemeProvider>
-);
+const KioskApp = () => {
+  const { setLanguage } = useSettings();
+  useEffect(() => {
+    // The kiosk is a Chinese-market terminal: default to Simplified Chinese
+    // unless the user has explicitly picked a language before (persisted in
+    // localStorage by useSettings). Runs once on mount; a later user choice
+    // in Settings wins because it writes the same localStorage key.
+    if (!localStorage.getItem('katrain_language')) {
+      setLanguage('cn');
+    }
+  }, [setLanguage]);
+
+  // Kiosk tab title — scoped to kiosk routes so galaxy's shared index.html title is untouched.
+  useEffect(() => {
+    document.title = '智星盒 StellaBox';
+  }, []);
+
+  return (
+    <ThemeProvider theme={kioskTheme}>
+      <CssBaseline />
+      <OrientationProvider>
+        <VisionProvider>
+          <GeometryProvider>
+            <TsumegoProgressProvider>
+              <RotationWrapper>
+                <KioskRoutes />
+              </RotationWrapper>
+            </TsumegoProgressProvider>
+          </GeometryProvider>
+        </VisionProvider>
+      </OrientationProvider>
+    </ThemeProvider>
+  );
+};
 
 export default KioskApp;

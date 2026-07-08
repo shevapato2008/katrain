@@ -25,10 +25,10 @@ const KioskResultBadge = ({ result, rules }: KioskResultBadgeProps) => {
         py: 0.3,
         borderRadius: '4px',
         fontFamily: "'IBM Plex Mono', monospace",
-        bgcolor: isBlack ? 'rgba(10,10,10,0.9)' : 'rgba(255,255,255,0.1)',
-        color: isBlack ? '#ccc' : '#f5f3f0',
+        bgcolor: isBlack ? '#0a0a0a' : 'var(--raise2)',
+        color: 'text.primary',
         border: '1px solid',
-        borderColor: isBlack ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)',
+        borderColor: 'divider',
         whiteSpace: 'nowrap',
       }}
     >

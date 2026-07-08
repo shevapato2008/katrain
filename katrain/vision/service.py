@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import deque
 from typing import Any, Callable
 
 import numpy as np
 
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
+from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.sync import game_state_stones_to_board
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ class VisionService:
         self._bound_session_id: str | None = None
         self._event_callbacks: list[Callable] = []
         self._latest_status: WorkerStatus = WorkerStatus()
+        self._pending_events: deque = deque()
+        self._pending_moves: deque = deque()
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -112,10 +115,14 @@ class VisionService:
                 WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": target_board.tolist()})
             )
 
-    def reset_sync(self) -> None:
-        """Accept current physical board as new baseline."""
+    def reset_sync(self, expected: np.ndarray | None = None) -> None:
+        """Reset sync. With `expected` (digital board) = trust-digital recovery: sync
+        re-baselines to the digital board and the move detector to the digital∪physical
+        UNION (so a still-present leftover / glare-washed stone doesn't re-fire as a move).
+        Without it = legacy physical-adopt (ambiguous-ignore / research reset)."""
         if self._worker:
-            self._worker.send_command(WorkerCommand(action=CommandType.RESET_SYNC))
+            data = {"expected": expected.tolist()} if expected is not None else None
+            self._worker.send_command(WorkerCommand(action=CommandType.RESET_SYNC, data=data))
 
     def bind_session(self, session_id: str) -> None:
         """Bind vision to a game session."""
@@ -153,6 +160,28 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_GEOMETRY, data={"geometry": geometry}))
 
+    def pause_detection(self) -> None:
+        """Suspend MoveDetector move confirmation only (hint display; PRD R4.3).
+
+        Narrowed scope after review: SyncStateMachine.update keeps running while paused —
+        capture_pending/illegal_change flows must stay live during a catch-up wait (guide
+        stone removal, report anomalies). During an LED hint, lit-and-expected-empty
+        intersections are protected from feeding sync via set_lit_points() masking instead.
+        """
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.PAUSE_DETECTION))
+
+    def resume_detection(self) -> None:
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.RESUME_DETECTION))
+
+    def set_lit_points(self, points: list[tuple[int, int]]) -> None:
+        """Intersections currently lit by the LED board (R7.1 masking)."""
+        if self._worker:
+            self._worker.send_command(
+                WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[r, c] for r, c in points]})
+            )
+
     # -- data retrieval ------------------------------------------------------
 
     def get_detected_board(self) -> list[list[int]] | None:
@@ -165,17 +194,34 @@ class VisionService:
             return self._worker.get_preview_jpeg()
         return None
 
-    def poll_events(self) -> list[Any]:
-        """Read all pending events from worker."""
-        events = []
+    def _drain_worker(self) -> None:
+        """Single drain point: route ConfirmedMove and dict events to separate queues
+        so the /ws/vision loop and the move poller no longer race on one queue."""
         if not self._worker:
-            return events
+            return
         while True:
             evt = self._worker.get_event()
             if evt is None:
                 break
-            events.append(evt)
+            if isinstance(evt, ConfirmedMove):
+                self._pending_moves.append(evt)
+            else:
+                self._pending_events.append(evt)
+
+    def poll_events(self) -> list[Any]:
+        """Read all pending dict events from worker (never consumes moves)."""
+        self._drain_worker()
+        events = list(self._pending_events)
+        self._pending_events.clear()
         return events
+
+    def get_confirmed_move(self) -> ConfirmedMove | None:
+        """Read and consume the OLDEST pending confirmed move (FIFO — a stalled
+        poller no longer silently drops intermediate moves)."""
+        self._drain_worker()
+        if self._pending_moves:
+            return self._pending_moves.popleft()
+        return None
 
     @property
     def is_alive(self) -> bool:

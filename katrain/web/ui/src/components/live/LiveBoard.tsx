@@ -44,6 +44,11 @@ interface LiveBoardProps {
   // from canonical (row=0 top) at the boundary. See plan §1.3.
   nextMovePoint?: { x: number; y: number; color: 'B' | 'W' } | null; // pulsing ring on the next point to place (black→red, white→green)
   capturedPositions?: { x: number; y: number }[] | null; // stones the user must physically remove (pulsing blue)
+  // Minimum height (px) of the board's flex container. Defaults to 400 (the original
+  // floor for full-size boards). Small embeds — e.g. the kiosk 智能棋盘 console preview,
+  // ~292px square — must pass a smaller value, otherwise the 400px floor overflows the
+  // parent and the board gets clipped.
+  minContainerHeight?: number;
 }
 
 // Convert display coordinate (e.g., "Q16") to board indices
@@ -316,6 +321,7 @@ export default function LiveBoard({
   onTryMove,
   nextMovePoint,
   capturedPositions,
+  minContainerHeight = 400,
 }: LiveBoardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -729,7 +735,7 @@ export default function LiveBoard({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 400,
+        minHeight: minContainerHeight,
         padding: '4px',
       }}
     >

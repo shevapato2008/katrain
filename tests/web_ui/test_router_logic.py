@@ -1,5 +1,5 @@
 import pytest
-from katrain.web.core.router import RequestRouter
+from katrain.web.core.router import RequestRouter, build_router
 
 
 class MockClient:
@@ -42,3 +42,23 @@ async def test_router_fallback_if_cloud_unconfigured():
     payload = {"is_analysis": True}
     result = await router.route(payload)
     assert result["engine"] == "local"  # Fallback to local
+
+
+# -- build_router: the single knob shared by server AND board modes (Wave B #4) --------
+
+
+def test_build_router_attaches_cloud_iff_url_set():
+    # CLOUD_KATAGO_URL set -> cloud client present (analysis reaches the strong GPU).
+    r = build_router("http://local:8000", "http://cloud:8000")
+    assert r.cloud_client is not None
+    assert r.local_client is not None
+
+
+def test_build_router_local_only_when_cloud_url_blank():
+    # Board mode used to hard-wire cloud_client=None regardless of the URL; now an empty
+    # CLOUD_KATAGO_URL (the default) yields local-only, a set URL yields cloud — same wiring
+    # for both modes, so is_analysis degrades to local exactly when no cloud engine exists.
+    for blank in ("", None):
+        r = build_router("http://local:8000", blank)
+        assert r.cloud_client is None
+        assert r.local_client is not None

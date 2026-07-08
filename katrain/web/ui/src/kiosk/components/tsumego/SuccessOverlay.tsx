@@ -37,7 +37,7 @@ const confettiFall = keyframes`
   100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
 `;
 
-const CONFETTI_COLORS = ['#5cb57a', '#c49a3c', '#5b9bd5', '#c45d3e', '#7ec994'];
+const CONFETTI_COLORS = ['#58b57a', '#e0a24a', '#e2685c', '#7ec994', '#26463a'];
 
 interface ConfettiParticle {
   id: number;
@@ -51,7 +51,7 @@ interface ConfettiParticle {
 
 const SuccessOverlay = ({
   show,
-  message = '正确！',
+  message = '恭喜答对！',
   onComplete,
   delayMs = 1500,
 }: SuccessOverlayProps) => {
@@ -116,11 +116,13 @@ const SuccessOverlay = ({
       ))}
 
       <Box sx={{ textAlign: 'center', animation: `${pop} 0.5s ease-out` }}>
-        <EmojiEvents sx={{ fontSize: 72, color: '#e6b93d', mb: 1, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.5))' }} />
+        <EmojiEvents
+          sx={{ fontSize: 72, color: 'primary.main', mb: 1, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.5))' }}
+        />
         <Typography
           variant="h4"
           sx={{
-            color: '#e8e4dc',
+            color: 'text.primary',
             fontWeight: 700,
             textShadow: '0 2px 8px rgba(0,0,0,0.5)',
           }}

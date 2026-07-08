@@ -25,6 +25,14 @@ const renderGuard = () => render(
   </ThemeProvider>,
 );
 
+const renderGuardRequireRecognition = () => render(
+  <ThemeProvider theme={kioskTheme}>
+    <GeometryProvider>
+      <PhysicalBoardGuard requireRecognition><div>实体棋盘内容</div></PhysicalBoardGuard>
+    </GeometryProvider>
+  </ThemeProvider>,
+);
+
 describe('PhysicalBoardGuard', () => {
   it('blocks entry until the user confirms an empty board and starts calibration', async () => {
     vi.mocked(GeometryAPI.status).mockResolvedValue({
@@ -82,6 +90,31 @@ describe('PhysicalBoardGuard', () => {
     renderGuard();
 
     fireEvent.click(await screen.findByRole('button', { name: '网格无误，使用上次标定' }));
+    expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
+  });
+
+  // B2.5: screen-solve pass-through cases for the tsumego/problem route, which now mounts
+  // <PhysicalBoardGuard> WITHOUT requireRecognition (physical mode owns recognition only when
+  // its toggle is ON — see TsumegoProblemPage's PhysicalModeToggle).
+  it('phase "disabled" short-circuits to ready even with requireRecognition (kiosk has no vision hardware)', async () => {
+    vi.mocked(GeometryAPI.status).mockResolvedValue({
+      phase: 'disabled', session_calibrated: false, last_valid: false,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+    });
+
+    renderGuardRequireRecognition();
+
+    expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
+  });
+
+  it('a ready camera kiosk lacking recognition_ready still solves on screen once the route drops requireRecognition', async () => {
+    vi.mocked(GeometryAPI.status).mockResolvedValue({
+      phase: 'ready', session_calibrated: true, last_valid: true,
+      capabilities: { camera_ready: true, led_ready: false, geometry_ready: true, recognition_ready: false },
+    });
+
+    renderGuard();
+
     expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
   });
 });

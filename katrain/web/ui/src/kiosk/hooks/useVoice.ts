@@ -23,9 +23,14 @@ export function useVoice() {
     }
     const audio = new Audio(`/assets/sounds/voice/${name}.mp3`);
     currentRef.current = audio;
-    audio.play().catch(() => {
-      /* advisory only */
-    });
+    // HTMLMediaElement.play() returns a Promise in modern browsers, but the spec allows
+    // undefined (older engines, jsdom) — guard before .catch so a missing Promise can't throw.
+    const played = audio.play();
+    if (played && typeof played.catch === 'function') {
+      played.catch(() => {
+        /* advisory only */
+      });
+    }
   }, []);
 
   return { speak };

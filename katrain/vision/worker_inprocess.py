@@ -15,23 +15,32 @@ from typing import Any
 import cv2
 import numpy as np
 
+from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
-from katrain.vision.board_state import BoardStateExtractor
+from katrain.vision.board_state import EMPTY, BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
+from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
-from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
+from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
-from katrain.vision.move_detector import MoveDetector
+from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
 from katrain.vision.stone_detector import StoneDetector
+from katrain.vision.temporal import FrameAverager
 from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
 from katrain.vision.sync import SyncEventType, SyncState, SyncStateMachine
 
 logger = logging.getLogger(__name__)
 
-PREVIEW_SIZE = 480
+# 960px @ q75: the browser displays the debug preview at ~1000px wide, so a 480px/q60
+# stream upscales into visible mush — including the overlay boxes/labels drawn on it.
+# Mac dev path only (the SBC worker.py preview keeps its own smaller settings).
+PREVIEW_SIZE = 960
 PREVIEW_FPS = 3
-JPEG_QUALITY = 60
+JPEG_QUALITY = 75
+# An unanswered low-confidence move prompt re-fires (MoveDetector no longer advances its
+# baseline at confirm time), so re-emission of the ambiguous_stone event is rate-limited.
+AMBIG_REPROMPT_FRAMES = 40  # ~4s at ~10fps
 
 
 class InProcessAdapter:
@@ -59,10 +68,28 @@ class InProcessAdapter:
         self._camera = camera or CameraManager(device_id=config.get("camera_device", 0))
         self._motion_filter = MotionFilter()
         self._board_finder = BoardFinder(camera_config=CameraConfig())
+        # Hysteresis (weak-light flicker fix): the detector runs at the lower "keep"
+        # threshold; board assignment requires the full "add" threshold for cells that
+        # were empty in the last stable board (see BoardStateExtractor._passes_hysteresis).
+        self._add_threshold = config.get("confidence_threshold", 0.5)
+        self._keep_threshold = config.get("confidence_keep") or max(0.25, self._add_threshold - 0.15)
+        self._enhance_mode = config.get("enhance", "clahe")
+        # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
+        # motion / geometry change / session reset so scene changes never ghost.
+        self._averager = FrameAverager(config.get("frame_average", 8))
+        # Software AE: board-median brightness -> target band via exposure steps.
+        # Advisory-only where camera controls are inert (macOS).
+        self._ae: ExposureController | None = None
+        if config.get("auto_exposure", "software") == "software":
+            self._ae = ExposureController(
+                target_lo=config.get("ae_target_lo", 120.0), target_hi=config.get("ae_target_hi", 170.0)
+            )
+        self._ae_advisory = False  # set once camera controls prove ineffective
+        self._last_bstats = None  # latest BrightnessStats (for the periodic log line)
         self._detector = StoneDetector(
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
-            confidence_threshold=config.get("confidence_threshold", 0.5),
+            confidence_threshold=self._keep_threshold,
         )
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
@@ -75,8 +102,23 @@ class InProcessAdapter:
                 margin_cells=DEFAULT_MARGIN_CELLS,
             )
         )
-        self._move_detector = MoveDetector()
+        self._move_detector = MoveDetector(
+            consistency_frames=config.get("move_confirm_frames", 3),
+            miss_grace=config.get("move_miss_grace", 2),
+        )
+        # Sub-add promotion: a real stone stuck below the add threshold (hysteresis gives
+        # it no path onto the board) persists frame after frame — promote it to an
+        # ambiguous_stone confirmation prompt instead of silently ignoring it forever.
+        self._promoter = AmbiguousPromoter(promote_frames=config.get("ambiguous_promote_frames", 12))
         self._sync = SyncStateMachine()
+
+        self._paused = False
+        self._lit_points: set[tuple[int, int]] = set()
+        self._expected_np: np.ndarray | None = None
+        self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+        self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
+        self._conf_peak = PendingConfidencePeak()  # ambiguous gate uses the window peak, not one frame
+        self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
 
         self._viewer_active = False
         self._bound = False
@@ -85,6 +127,11 @@ class InProcessAdapter:
         self._move_armed = False
         self._last_preview_time = 0.0
         self._geometry = None
+        self._frame_count = 0
+        # 2-frame per-cell voting (ported from worker.py): a cell only updates when two
+        # consecutive frames agree; otherwise it holds the last stable value.
+        self._prev_observed_board: np.ndarray | None = None
+        self._last_stable_board: np.ndarray | None = None
 
     def set_geometry(self, geometry) -> None:
         self._geometry = geometry
@@ -108,6 +155,89 @@ class InProcessAdapter:
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
         return self._state_extractor_locked if self._geometry is not None else self._state_extractor
+
+    def _log_board_delta(self, before, after, detections, w: int, h: int) -> None:
+        """One INFO line per stable-board change: which cells appeared/vanished and what the
+        detector actually saw nearby — turns 'why did my stone drop?' into reading a log line."""
+        pts = self._active_extractor().detection_points(detections, img_w=w, img_h=h)
+        names = {0: "B", 1: "W", 2: "R", 3: "G"}
+
+        def near(r, c):
+            best = None
+            for fy, fx, cls, conf in pts:
+                d = ((fy - r) ** 2 + (fx - c) ** 2) ** 0.5
+                if best is None or d < best[0]:
+                    best = (d, cls, conf)
+            if best is None or best[0] > 1.0:
+                return "none"
+            return f"{names.get(best[1], '?')}{best[2]:.2f}@{best[0]:.2f}"
+
+        sym = {1: "B", 2: "W"}
+        added = [
+            f"({r},{c}){sym.get(int(after[r][c]), '?')}" for r, c in zip(*np.where((before != after) & (after != 0)))
+        ]
+        removed = [
+            f"({r},{c}){sym.get(int(before[r][c]), '?')}~{near(int(r), int(c))}"
+            for r, c in zip(*np.where((before != after) & (after == 0)))
+        ]
+        logger.info("board delta: +%s -%s", added or "[]", removed or "[]")
+
+    def _promote_stuck_stone(self, detections, w: int, h: int, stable_board, masked) -> None:
+        """Feed sub-add candidates to the promoter; emit ambiguous_stone on a hit.
+
+        Candidates: highest detection per cell that is below the add threshold, on a
+        cell empty in BOTH the stable and expected boards, and not an LED-masked cell."""
+        top = self._active_extractor().cell_top(detections, img_w=w, img_h=h)
+        exp = self._expected_np
+        candidates = {
+            cell: v
+            for cell, v in top.items()
+            if v[0] < self._add_threshold
+            and int(stable_board[cell[0]][cell[1]]) == EMPTY
+            and (exp is None or int(exp[cell[0]][cell[1]]) == EMPTY)
+            and not (masked and cell in masked)
+        }
+        hit = self._promoter.step(candidates)
+        if hit is None:
+            return
+        r, c, class_id, conf = hit
+        self._event_queue.put(
+            {
+                "type": "ambiguous_stone",
+                "data": {"row": int(r), "col": int(c), "color": int(class_id) + 1, "confidence": round(float(conf), 3)},
+            }
+        )
+        logger.info("ambiguous promotion: sustained sub-add stone at (%d,%d) conf=%.2f", r, c, conf)
+
+    def _brightness_log(self) -> str:
+        if self._last_bstats is None or self._ae is None:
+            return ""
+        return f"bright={self._last_bstats.median:.0f}({self._ae.band_position(self._last_bstats)})"
+
+    def _run_ae(self, stats) -> None:
+        """One software-AE step: seed, actuate, or fall back to advisory mode."""
+        self._last_bstats = stats
+        if self._ae_advisory:
+            return  # actuation proven inert (macOS) — brightness keeps flowing to the log
+        if getattr(self._camera, "controls_effective", None) is False:
+            self._ae_advisory = True
+            logger.info("AE: exposure controls ineffective on this platform — advisory mode only")
+            return
+        if self._move_detector.pending_move is not None:
+            return  # never shift exposure mid move-confirmation
+        if self._ae.current_exposure is None:
+            self._ae.seed(getattr(self._camera, "initial_exposure", None))
+        new_exp = self._ae.update(stats, time.monotonic())
+        if new_exp is None:
+            return
+        request = getattr(self._camera, "request_controls", None)
+        if request is None:
+            self._ae_advisory = True
+            logger.info("AE: camera has no runtime controls — advisory mode only")
+            return
+        request(exposure=new_exp, auto_exposure=0.25)
+        self._averager.reset()  # the brightness step must not blend into the average
+        logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
 
     def start(self) -> None:
         self._running = True
@@ -164,22 +294,161 @@ class InProcessAdapter:
                 if found and warped is not None:
                     board_detected = True
                     h, w = warped.shape[:2]
+                    if self._ae is not None:
+                        # Meter the raw warped frame (pre-average, pre-CLAHE) — the reading
+                        # must reflect the actual sensor exposure, not our processing.
+                        self._run_ae(meter_brightness(warped))
+                    _t_enh = time.monotonic()
+                    warped = self._averager.add(warped)
+                    warped = enhance_for_inference(warped, self._enhance_mode)
+                    _enh_ms = (time.monotonic() - _t_enh) * 1000
+                    _t_inf = time.monotonic()
                     detections = self._detector.detect(warped)
+                    _infer_ms = (time.monotonic() - _t_inf) * 1000
+                    self._frame_count += 1
+                    if self._frame_count % 30 == 0:
+                        _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
+                        logger.info(
+                            "vision: %d stones, mean_conf=%.2f, %s enh=%.0fms infer=%.0fms, bound=%s paused=%s geom=%s",
+                            len(detections),
+                            _mc,
+                            self._brightness_log(),
+                            _enh_ms,
+                            _infer_ms,
+                            self._bound,
+                            self._paused,
+                            self._geometry is not None,
+                        )
+                    masked = None
+                    if self._lit_points:
+                        exp = self._expected_np
+                        masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._active_extractor().detections_to_board(
-                        detections, img_w=w, img_h=h, occupancy_aware=True
+                        detections,
+                        img_w=w,
+                        img_h=h,
+                        occupancy_aware=True,
+                        masked_cells=masked,
+                        prev_board=self._last_stable_board,
+                        add_threshold=self._add_threshold,
+                        sticky_board=self._prev_observed_board,
                     )
 
+                    # 2-frame per-cell voting (ported from worker.py): a cell may only
+                    # change when two consecutive frames agree; disagreement holds the
+                    # last stable value, absorbing single-frame flicker.
+                    if self._prev_observed_board is not None and self._last_stable_board is not None:
+                        stable_board = np.where(
+                            observed_board == self._prev_observed_board, observed_board, self._last_stable_board
+                        )
+                    else:
+                        stable_board = observed_board
+                    if self._last_stable_board is not None and not np.array_equal(
+                        stable_board, self._last_stable_board
+                    ):
+                        self._log_board_delta(self._last_stable_board, stable_board, detections, w, h)
+                    self._prev_observed_board = observed_board
+                    self._last_stable_board = stable_board
+                    observed_board = stable_board
+
+                    # Confident-empty reads score 1.0 (our helper), so the tsumego "clear board" step
+                    # doesn't rot into DEGRADED (which would skip the setup check and wedge clearing).
                     mean_confidence = mean_detection_confidence(detections)
 
+                    # Outer gate = our monitor/armed/paused gate (subsumes develop's `not self._paused`).
+                    # bound → develop's confidence-gated game pipeline (ambiguous dialog / ConfirmedMove);
+                    # monitor (physical tsumego) → our move_event dict, no ambiguous dialog (the tsumego
+                    # frontend consumes move_confirmed).
                     if should_detect_moves(
                         self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
                     ):
-                        move_result = self._move_detector.detect_new_move(observed_board)
+                        conf_map = self._active_extractor().cell_confidences(detections, img_w=w, img_h=h)
+                        pending_before = self._move_detector.pending_move
+                        self._conf_peak.observe(pending_before, conf_map)
+                        # `masked` (removal-lit ∩ expected-empty) can never be a new move —
+                        # a leftover on a captured point is a "remove this", not a placement.
+                        # Passing it here makes that protection survive the SET_EXPECTED_BOARD
+                        # baseline clobber (the resync re-injection window — review wzceinjdc).
+                        move_result = self._move_detector.detect_new_move(observed_board, ignore_cells=masked)
                         if move_result is not None:
                             row, col, color = move_result
-                            self._event_queue.put(move_event(self._bound, row, col, color))
+                            if not self._bound:
+                                # Monitor (physical tsumego): emit the confirmed move as a dict for
+                                # /ws/vision and advance the baseline (develop's MoveDetector no longer
+                                # self-advances) so the placed stone isn't re-detected every frame.
+                                logger.info("monitor move confirmed: (%d,%d) color=%d", row, col, color)
+                                self._event_queue.put(move_event(self._bound, row, col, color))
+                                self._move_detector.force_sync(observed_board)
+                            else:
+                                # A real stone that survived voting was detected in this frame or
+                                # the previous one, so the two-frame lookup always finds its
+                                # confidence. A confirmed cell with NO backing detection in either
+                                # frame (spill-assigned or otherwise unbacked) falls to 0.0 and is
+                                # routed to the ambiguous dialog — never silently injected.
+                                # The gate compares the WINDOW PEAK (a marginal stone's per-frame
+                                # conf oscillates around the gate; the confirm-frame value alone
+                                # made card-vs-autoplay a coin flip).
+                                conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
+                                conf = self._conf_peak.gate_confidence(row, col, conf)
+                                if conf < self._ambiguous_confidence:
+                                    # PRD §3.4 row 1: low-confidence "move" asks the user instead.
+                                    # Baseline NOT advanced: an unanswered prompt re-fires after
+                                    # the cooldown instead of silencing detection forever.
+                                    if (
+                                        self._frame_count - self._ambig_last_emit.get((row, col), -(10**9))
+                                        >= AMBIG_REPROMPT_FRAMES
+                                    ):
+                                        self._ambig_last_emit[(row, col)] = self._frame_count
+                                        logger.info(
+                                            "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt",
+                                            row,
+                                            col,
+                                            conf,
+                                            self._ambiguous_confidence,
+                                        )
+                                        self._event_queue.put(
+                                            {
+                                                "type": "ambiguous_stone",
+                                                "data": {
+                                                    "row": int(row),
+                                                    "col": int(col),
+                                                    "color": int(color),
+                                                    "confidence": round(float(conf), 3),
+                                                },
+                                            }
+                                        )
+                                else:
+                                    logger.info("move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf)
+                                    self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                                    # Advance the baseline HERE (the detector no longer does):
+                                    # prevents duplicate emissions until the game-update
+                                    # round-trip force_syncs the new expected board. If the
+                                    # poller rejects the move (out of turn / gateway), it
+                                    # re-pushes the expected board, which re-arms detection
+                                    # via the SET_EXPECTED_BOARD handler.
+                                    self._move_detector.force_sync(observed_board)
+                        else:
+                            pending_after = self._move_detector.pending_move
+                            if pending_after is not None and pending_after != pending_before:
+                                r, c, clr = pending_after
+                                # "确认中" chip (PRD §3.2/Q3): first frame of the 3-frame window
+                                self._event_queue.put(
+                                    {
+                                        "type": "move_pending",
+                                        "data": {"row": int(r), "col": int(c), "color": int(clr)},
+                                    }
+                                )
+                        self._prev_conf_map = conf_map
 
-                    self._maybe_send_preview(warped)
+                        if move_result is None and self._move_detector.pending_move is None:
+                            self._promote_stuck_stone(detections, w, h, observed_board, masked)
+
+                    self._maybe_send_preview(warped, detections)
+
+            else:
+                # Motion (or camera dropout): the scene is changing — restart the average
+                # so pre-move frames never blend with the post-move board.
+                self._averager.reset()
 
             if should_feed_sync(self._bound, self._monitor, self._paused):
                 events = self._sync.update(
@@ -228,25 +497,73 @@ class InProcessAdapter:
                 self._running = False
             elif cmd.action == CommandType.BIND:
                 self._bound = True
+                self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()
+                self._prev_observed_board = None  # drop voting state across sessions
+                self._last_stable_board = None
+                self._prev_conf_map = {}
+                self._ambig_last_emit = {}
+                self._averager.reset()
+                self._promoter.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
                 board = np.array(cmd.data["board"], dtype=int)
-                self._sync.set_expected_board(board)
-                self._move_detector.force_sync(board)
+                unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
+                baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
+                    self._move_detector.prev_board, board
+                )
+                if not (unchanged and baseline_ok):
+                    self._sync.set_expected_board(board)
+                    self._move_detector.force_sync(board)
+                    self._expected_np = board
+                # else: analysis-stream repeat (game_updates arrive every ~0.25s while the
+                # engine streams) with a clean baseline. force_syncing on every repeat reset
+                # the confirmation counter faster than it could ever reach
+                # move_confirm_frames — the "first move never registers" killer. A repeat
+                # with a POLLUTED baseline (prev_board != expected: a confirmed move was
+                # rejected downstream) still force_syncs — that is the poller's re-arm.
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
             elif cmd.action == CommandType.RESET_SYNC:
-                self._sync.reset()
+                expected = cmd.data.get("expected") if cmd.data else None
+                if expected is not None:
+                    # Trust-digital recovery (resync): sync compares against the digital
+                    # board again, while the move detector baselines to the UNION of digital
+                    # and the last physical read — so a leftover (undo/capture not lifted) or
+                    # a glare-washed digital stone is already in the baseline and does NOT
+                    # re-fire as a "new move" when detection resumes.
+                    exp = np.array(expected, dtype=int)
+                    self._sync.reset(exp)
+                    base = exp
+                    if self._last_stable_board is not None:
+                        base = np.where(exp != EMPTY, exp, self._last_stable_board)
+                    self._move_detector.force_sync(base)
+                    self._expected_np = exp
+                else:
+                    self._sync.reset()
+                    if self._last_stable_board is not None:
+                        # "Ignore/reset = accept the physical board as baseline": adopt it in
+                        # the move detector too, or the ignored stone re-confirms immediately.
+                        self._move_detector.force_sync(self._last_stable_board)
+                # Parity with worker.py RESET_SYNC (the SBC path): do NOT null the observed /
+                # stable boards here. Keeping them means a leftover on a captured point stays
+                # visible so the LED planner keeps its "remove" lamp burning (removal guidance
+                # survives recovery); the durable `masked` skip in detect_new_move — not a
+                # transient baseline — is what stops it re-injecting as a move (review wzceinjdc).
+                self._prev_conf_map = {}
+                self._ambig_last_emit = {}
+                self._averager.reset()
+                self._promoter.reset()  # declined ambiguous prompt resets sync — don't re-fire
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
                 self.set_geometry(cmd.data.get("geometry"))
+                self._averager.reset()  # warp content changes with the new lock
             elif cmd.action == CommandType.SET_MONITOR:
                 self._monitor = cmd.data.get("active", False)
                 if not self._monitor and not self._bound:
@@ -256,14 +573,45 @@ class InProcessAdapter:
                 self._paused = cmd.data.get("paused", False)
             elif cmd.action == CommandType.SET_MOVE_ARMED:
                 self._move_armed = cmd.data.get("armed", False)
+            elif cmd.action == CommandType.PAUSE_DETECTION:
+                self._paused = True
+            elif cmd.action == CommandType.RESUME_DETECTION:
+                self._paused = False
+            elif cmd.action == CommandType.SET_LIT_POINTS:
+                self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
 
-    def _maybe_send_preview(self, warped: np.ndarray) -> None:
+    def _maybe_send_preview(self, warped: np.ndarray, detections: list | None = None) -> None:
         if not self._viewer_active:
             return
         now = time.monotonic()
         if now - self._last_preview_time < 1.0 / PREVIEW_FPS:
             return
+        h, w = warped.shape[:2]
         preview = cv2.resize(warped, (PREVIEW_SIZE, PREVIEW_SIZE), interpolation=cv2.INTER_LINEAR)
+        sx, sy = PREVIEW_SIZE / w, PREVIEW_SIZE / h
+        # Debug overlay draws exactly what the pipeline ingests: the keep-threshold,
+        # deduplicated detections. Green box = would ADD a new stone (>= add threshold);
+        # red = keep-only (sustains an existing stone, can never add one). Re-detecting
+        # at a lower threshold here previously drew boxes the pipeline never saw —
+        # pure confusion, plus a wasted inference per preview frame.
+        thr = self._add_threshold
+        overlay_dets = detections or []
+        label = {0: "B", 1: "W", 2: "R", 3: "G"}
+        for d in overlay_dets:
+            x1, y1, x2, y2 = d.bbox
+            p1, p2 = (int(x1 * sx), int(y1 * sy)), (int(x2 * sx), int(y2 * sy))
+            color = (0, 200, 0) if d.confidence >= thr else (0, 0, 235)  # BGR: green accepted, red rejected
+            cv2.rectangle(preview, p1, p2, color, 2)
+            cv2.putText(
+                preview,
+                f"{label.get(d.class_id, '?')}{d.confidence:.2f}",
+                (p1[0], max(p1[1] - 4, 14)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                color,
+                1,
+                cv2.LINE_AA,
+            )
         _, jpeg = cv2.imencode(".jpg", preview, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
         with self._preview_lock:
             self._preview_jpeg = jpeg.tobytes()

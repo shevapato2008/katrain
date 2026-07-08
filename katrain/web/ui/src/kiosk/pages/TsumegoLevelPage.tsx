@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip } from '@mui/material';
+import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -24,6 +24,7 @@ const TsumegoLevelPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { progress } = useTsumegoProgress();
+  const theme = useTheme();
   const [problems, setProblems] = useState<ProblemItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -97,9 +98,9 @@ const TsumegoLevelPage = () => {
   // Border color by completion state (D6).
   const borderFor = (id: string): string => {
     const entry = progress[id];
-    if (entry?.completed) return '#5cb57a';
-    if (entry && entry.attempts > 0) return '#c49a3c';
-    return 'rgba(232,228,220,0.10)';
+    if (entry?.completed) return theme.palette.primary.main;
+    if (entry && entry.attempts > 0) return theme.palette.warning.main;
+    return theme.palette.divider;
   };
 
   return (
@@ -117,13 +118,18 @@ const TsumegoLevelPage = () => {
         <Grid container spacing={2}>
           {problems.map((problem, idx) => (
             <Grid key={problem.id} size={{ xs: 6, sm: 4, md: 3 }}>
-              <Card sx={{ bgcolor: 'rgba(255,255,255,0.05)', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}>
-                <CardActionArea onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)} sx={{ p: 2 }}>
+              <Card sx={{ bgcolor: 'background.paper', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', height: '100%', '&:hover': { bgcolor: 'var(--raise2)' } }}>
+                <CardActionArea
+                  onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)}
+                  sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+                >
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>#{idx + 1}</Typography>
                   <Chip label={t(`tsumego:${problem.category}`, problem.category)} size="small" sx={{ mt: 0.5 }} />
-                  {problem.hint && (
-                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>{problem.hint}</Typography>
-                  )}
+                  {/* Always reserve one line for the hint (nbsp when absent), clamped to a
+                      single line, so hinted and hint-less cards stay the same height. */}
+                  <Typography variant="caption" noWrap sx={{ display: 'block', mt: 0.5, maxWidth: '100%', color: 'text.secondary' }}>
+                    {problem.hint || ' '}
+                  </Typography>
                 </CardActionArea>
               </Card>
             </Grid>

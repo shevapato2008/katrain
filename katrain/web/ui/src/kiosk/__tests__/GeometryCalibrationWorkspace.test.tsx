@@ -44,6 +44,7 @@ describe('GeometryCalibrationWorkspace', () => {
     expect(screen.getByText('摄像头原始画面')).toBeInTheDocument();
     expect(screen.getByText('俯视矫正画面')).toBeInTheDocument();
     expect(screen.getByAltText('摄像头原始画面')).toHaveAttribute('src', '/api/v1/geometry/stream');
+    expect(screen.getByTestId('geometry-led-advisory')).toHaveTextContent('不会自动点亮 LED');
     expect(startCalibration).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: '已清空，开始自动标定' }));

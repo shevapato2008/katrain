@@ -8,6 +8,7 @@ export interface VisionStatus {
   syncState: string;
   boundSessionId: string | null;
   recognitionReady: boolean;
+  ledConnected: boolean | null;
 }
 
 interface VisionContextType {
@@ -23,6 +24,7 @@ const DEFAULT_STATUS: VisionStatus = {
   syncState: 'idle',
   boundSessionId: null,
   recognitionReady: false,
+  ledConnected: null,
 };
 
 const VisionContext = createContext<VisionContextType | undefined>(undefined);
@@ -36,6 +38,7 @@ const mapResponse = (r: VisionStatusResponse): VisionStatus => ({
   syncState: r.sync_state,
   boundSessionId: r.bound_session_id,
   recognitionReady: r.recognition_ready ?? false,
+  ledConnected: r.led_connected ?? null,
 });
 
 export const VisionProvider = ({ children }: { children: ReactNode }) => {

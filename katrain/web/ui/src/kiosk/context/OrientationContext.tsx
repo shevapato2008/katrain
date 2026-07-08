@@ -1,34 +1,33 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
-export type Rotation = 0 | 90 | 180 | 270;
+export type Rotation = 0 | 180;
 
 interface OrientationContextType {
   rotation: Rotation;
-  isPortrait: boolean;
   setRotation: (rotation: Rotation) => void;
 }
 
 const OrientationContext = createContext<OrientationContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'katrain_kiosk_rotation';
-const VALID: Rotation[] = [0, 90, 180, 270];
+const VALID: Rotation[] = [0, 180];
 
+// Clamp: stale 90/270 (portrait, removed 2026-07-06) or garbage → 0, and rewrite storage.
 const readStored = (): Rotation => {
   const v = Number(localStorage.getItem(STORAGE_KEY));
-  return VALID.includes(v as Rotation) ? (v as Rotation) : 0;
+  if (VALID.includes(v as Rotation)) return v as Rotation;
+  localStorage.setItem(STORAGE_KEY, '0');
+  return 0;
 };
 
 export const OrientationProvider = ({ children }: { children: ReactNode }) => {
   const [rotation, setRotationState] = useState<Rotation>(readStored);
-
   const setRotation = useCallback((r: Rotation) => {
     setRotationState(r);
     localStorage.setItem(STORAGE_KEY, String(r));
   }, []);
-
-  // 棋智盒外壳屏幕为固定横屏(60° 倾斜立式),kiosk 一律按横屏布局,不再做竖屏/旋转判断。
   return (
-    <OrientationContext.Provider value={{ rotation, isPortrait: false, setRotation }}>
+    <OrientationContext.Provider value={{ rotation, setRotation }}>
       {children}
     </OrientationContext.Provider>
   );

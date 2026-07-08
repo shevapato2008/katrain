@@ -43,3 +43,63 @@ export function writeAutoAdvance(enabled: boolean): void {
     /* best-effort */
   }
 }
+
+/** True when `level` (e.g. '3d') is a dan level, as opposed to a kyu level (e.g. '15k'). */
+export function isDanLevel(level: string): boolean {
+  return level.trim().toLowerCase().endsWith('d');
+}
+
+/** Chinese label for a level string, e.g. '15k' → '15 级', '3d' → '3 段'. */
+export function levelChinese(level: string): string {
+  const n = level.replace(/[^0-9]/g, '');
+  return isDanLevel(level) ? `${n} 段` : `${n} 级`;
+}
+
+/**
+ * localStorage key for the last difficulty level the user browsed into (hub 上次 highlight).
+ * Single string, cheap to store — does NOT reintroduce the deliberately-omitted per-level
+ * completion stat (R2 / §3.5): it's just a pointer, not progress data.
+ */
+export const LAST_LEVEL_KEY = 'kiosk_tsumego_last_level';
+
+/** Read the last-practiced level, or null if never set / unavailable. */
+export function readLastLevel(): string | null {
+  try {
+    return localStorage.getItem(LAST_LEVEL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Persist the last-practiced level. */
+export function writeLastLevel(level: string): void {
+  try {
+    localStorage.setItem(LAST_LEVEL_KEY, level);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * localStorage key for the "use physical board" preference (Phase B / Phase D).
+ * Default is OFF (false) — opt-in for physical mode.
+ */
+export const PHYSICAL_MODE_KEY = 'kiosk_tsumego_physical';
+
+/** Read the "use physical board" preference. Defaults to FALSE (opt-in, T1). */
+export function readPhysicalMode(): boolean {
+  try {
+    return localStorage.getItem(PHYSICAL_MODE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Persist the "use physical board" preference. */
+export function writePhysicalMode(v: boolean): void {
+  try {
+    localStorage.setItem(PHYSICAL_MODE_KEY, v ? 'true' : 'false');
+  } catch {
+    /* best-effort */
+  }
+}

@@ -2563,3 +2563,12 @@ msgstr "キュー待ち"
 
 msgid "report:summary_failed"
 msgstr "失敗"
+
+msgid "Suggest"
+msgstr "手を提案"
+
+msgid "Variation Line"
+msgstr "変化図"
+
+msgid "game:pass"
+msgstr "パス"

@@ -138,8 +138,9 @@ const TsumegoUnitsPage = () => {
                 key={unit.unitNumber}
                 sx={{
                   borderRadius: 2.5,
-                  bgcolor: 'rgba(255,255,255,0.05)',
-                  border: isComplete ? '2px solid #5cb57a' : '2px solid transparent',
+                  bgcolor: 'background.paper',
+                  border: '2px solid',
+                  borderColor: isComplete ? 'primary.main' : 'transparent',
                   transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
                 }}
@@ -160,7 +161,7 @@ const TsumegoUnitsPage = () => {
                     <ProgressDots completed={unit.completed} total={unit.total} />
                     <Typography
                       variant="body2"
-                      sx={{ color: isComplete ? '#5cb57a' : 'text.secondary', fontWeight: 500 }}
+                      sx={{ color: isComplete ? 'primary.main' : 'text.secondary', fontWeight: 500 }}
                     >
                       {unit.completed}/{unit.total}
                     </Typography>

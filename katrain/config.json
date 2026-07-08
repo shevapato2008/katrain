@@ -13,9 +13,9 @@
         "model": "katrain/models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz",
         "humanlike_model": "",
         "config": "katrain/KataGo/analysis_config.cfg",
-        "max_visits": 500,
-        "fast_visits": 25,
-        "max_time": 8.0,
+        "max_visits": 50,
+        "fast_visits": 10,
+        "max_time": 2.0,
         "wide_root_noise": 0.04,
         "_enable_ownership": true,
         "http_has_human_model": false
@@ -59,7 +59,7 @@
     },
     "game": {
         "size": 19,
-        "komi": 6.5,
+        "komi": 7.5,
         "handicap": 0,
         "rules": "japanese",
         "clear_cache": false,

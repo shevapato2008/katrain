@@ -26,6 +26,9 @@ class CommandType(Enum):
     SET_MONITOR = "set_monitor"
     SET_PAUSED = "set_paused"
     SET_MOVE_ARMED = "set_move_armed"
+    PAUSE_DETECTION = "pause_detection"
+    RESUME_DETECTION = "resume_detection"
+    SET_LIT_POINTS = "set_lit_points"
     SHUTDOWN = "shutdown"
 
 

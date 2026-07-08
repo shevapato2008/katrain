@@ -69,6 +69,8 @@ export interface GameState {
     fast_visits?: number;
     max_visits?: number;
   };
+  game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
+  analysis_allowed?: boolean;
 }
 
 export interface SessionResponse {
@@ -101,6 +103,49 @@ export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
 }
 
+// --- Engine analysis (area/options/judge/variation) ---
+// Shapes are `dataclasses.asdict` of the GolaxyAdapter.engine_analysis results
+// (katrain/web/platforms/golaxy/adapter.py: AreaAnalysis/OptionsAnalysis/
+// VariationAnalysis/JudgeAnalysis).
+
+export interface OwnershipPoint {
+  col: number;
+  row: number;
+  value: number;
+}
+export interface JudgePoint {
+  col: number;
+  row: number;
+  owner: string; // "U" | "B" | "W"
+}
+export interface AnalysisCandidate {
+  col: number;
+  row: number;
+  prob: number;
+  winrate: number;
+  delta: number;
+}
+export interface AnalysisPoint {
+  col: number;
+  row: number;
+}
+export type EngineAnalysisData =
+  | { ownership: OwnershipPoint[]; winrate: number; delta: number } // area
+  | { candidates: AnalysisCandidate[] } // options
+  | { sequence: AnalysisPoint[]; winrate: number; delta: number } // variation
+  | { ownership: JudgePoint[]; winner: string; delta: number }; // judge
+export type EngineAnalysisResponse =
+  | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData }
+  | { ok: false; reason: "insufficient"; kind: string };
+// Remaining metered-道具 counts for the analysis-button badges. Each is a
+// number, or null when the platform didn't report it (render as "unknown",
+// never as 0). judge (形势) is free and has no count.
+export interface EngineItemCounts {
+  area: number | null;
+  options: number | null;
+  variation: number | null;
+}
+
 export interface PlatformUser {
   user_id: string;
   username: string;
@@ -122,7 +167,18 @@ export interface VisionStatusResponse {
   sync_state: string;
   bound_session_id: string | null;
   recognition_ready?: boolean;
+  led_connected?: boolean;
 }
+
+export interface HintMove {
+  gtp: string;
+  coords: [number, number];
+  vision_rc: [number, number];
+  winrate: number | null;
+  score_lead: number | null;
+  visits: number | null;
+}
+export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: number; }
 
 export async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -229,6 +285,10 @@ export const API = {
     moves: string[][]; initial_stones?: string[][]; board_size?: number; komi?: number; rules?: string; max_visits?: number;
   }): Promise<any> =>
     apiPost("/api/v1/analysis/quick-analyze", params),
+  // On-demand analysis of the current position (kiosk 领地/图表 in board mode, where per-move
+  // auto-eval is suppressed). Result streams back over the game WebSocket, not this response.
+  analyzeCurrent: (sessionId: string): Promise<any> =>
+    apiPost("/api/analysis/current", { session_id: sessionId }),
   analysisProgress: async (sessionId: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
     const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`);
     if (!response.ok) throw new Error("Failed to fetch analysis progress");
@@ -322,8 +382,11 @@ export const API = {
     apiPost("/api/v1/vision/bind", { session_id: sessionId }),
   visionUnbind: (): Promise<void> =>
     apiPost("/api/v1/vision/unbind", {}),
-  visionResetSync: (): Promise<void> =>
-    apiPost("/api/v1/vision/sync/reset", {}),
+  // adopt='digital' (default): trust-digital recovery — re-baseline to the game, clear the
+  // stuck removal/pause. adopt='physical': accept the camera board as-is (ambiguous 忽略) so
+  // the ignored stone isn't re-detected.
+  visionResetSync: (adopt: 'digital' | 'physical' = 'digital'): Promise<void> =>
+    apiPost("/api/v1/vision/sync/reset", { adopt }),
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
   visionMonitor: (active: boolean): Promise<void> =>
@@ -334,6 +397,12 @@ export const API = {
     apiPost("/api/v1/vision/move-detection", { armed }),
   visionExpectedBoard: (board: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/expected-board", { board }),
+
+  // AI Hint API (free games only)
+  hint: (sessionId: string, topN?: number): Promise<HintResponse> =>
+    apiPost("/api/v1/hint", { session_id: sessionId, top_n: topN ?? null }) as Promise<HintResponse>,
+  hintDismiss: (): Promise<{ ok: boolean }> =>
+    apiPost("/api/v1/hint/dismiss", {}) as Promise<{ ok: boolean }>,
 
   logout: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/logout", {
@@ -368,6 +437,20 @@ export const API = {
     token: string,
   ): Promise<{ session_id: string; human_color?: "B" | "W" }> =>
     apiPost(`/api/v1/platforms/${platform}/engine/start`, body, token),
+  platformEngineAnalysis: (
+    platform: string,
+    sessionId: string,
+    kind: "area" | "options" | "judge" | "variation",
+    token: string,
+  ): Promise<EngineAnalysisResponse> =>
+    apiPost(`/api/v1/platforms/${platform}/engine/analysis`, { session_id: sessionId, kind }, token),
+  platformEngineItems: async (platform: string, token: string): Promise<EngineItemCounts> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/engine/items`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to get engine item counts");
+    return response.json();
+  },
   platformLogout: async (platform: string, token: string) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",

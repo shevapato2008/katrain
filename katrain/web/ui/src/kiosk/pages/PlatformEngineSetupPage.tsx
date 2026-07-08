@@ -1,19 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Typography, Button, Alert, CircularProgress, ButtonBase, Menu, MenuItem } from '@mui/material';
+import { Box, Typography, Button, Alert, CircularProgress, ButtonBase, Menu, MenuItem, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayArrow, ArrowBack, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { PlayArrow, ArrowBack, ChevronLeft, ChevronRight, SmartToy } from '@mui/icons-material';
 import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 
 type Translate = (en: string, zh: string) => string;
 
-// Mockup v2 palette (aligns with kioskTheme; a few tokens the theme doesn't expose).
-const C = {
-  panel: '#1a1a1a', surface: '#252525', surface2: '#2e2e2e', line: '#333230',
-  jade: '#4a6b5c', jadeLight: '#5d8270', jadeBright: '#6f9a83',
-  txt: '#f5f3f0', txt2: '#b8b5b0', txt3: '#6f6c68', wood: '#d8b47e', neu: '#e89639',
-};
+// Board wood — the goban surface, not a UI chrome color, so it stays a local literal
+// (not a theme token) even after the const-C palette reconcile below.
+const WOOD = '#d8b47e';
 
 // 让子 (handicap) options — mirrors Golaxy's 自由对弈 labels: 分先, 让先, 让2子..让9子 (no 1).
 const handicapOptions = (t: Translate): { value: number; label: string }[] => [
@@ -54,18 +51,6 @@ const handicapPoints = (n: number): [number, number][] => {
   return pts.slice(0, n);
 };
 
-// Small character emoji for the opponent bot, by a keyword in its name (falls back to 🤖).
-const avatarFor = (name: string): string => {
-  const map: [string, string][] = [
-    ['熊', '🐻'], ['虾', '🦐'], ['鹰', '🦅'], ['雕', '🦅'], ['龙', '🐉'], ['虎', '🐯'],
-    ['豹', '🐆'], ['狼', '🐺'], ['鱼', '🐟'], ['鸟', '🐦'], ['凤', '🐦'], ['马', '🐎'],
-    ['牛', '🐂'], ['兔', '🐰'], ['猫', '🐱'], ['狗', '🐕'], ['象', '🐘'], ['鹿', '🦌'],
-    ['蛇', '🐍'], ['麟', '🦄'], ['龟', '🐢'], ['蟹', '🦀'], ['狮', '🦁'], ['猴', '🐵'],
-  ];
-  for (const [k, e] of map) if (name.includes(k)) return e;
-  return '🤖';
-};
-
 const PREVIEW = 300;
 
 const BoardPreview = ({ handicap }: { handicap: number }) => {
@@ -81,7 +66,7 @@ const BoardPreview = ({ handicap }: { handicap: number }) => {
     <Box
       component="svg"
       viewBox={`0 0 ${S} ${S}`}
-      sx={{ width: '100%', height: 'auto', display: 'block', borderRadius: 1, bgcolor: C.wood }}
+      sx={{ width: '100%', height: 'auto', display: 'block', borderRadius: 1, bgcolor: WOOD }}
       role="img"
       aria-label="19 路棋盘预览"
     >
@@ -109,6 +94,7 @@ const PlatformEngineSetupPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { token } = useAuth();
+  const theme = useTheme();
 
   const [levels, setLevels] = useState<EngineLevel[]>([]);
   const [levelsLoading, setLevelsLoading] = useState(true);
@@ -196,15 +182,15 @@ const PlatformEngineSetupPage = () => {
   const fixedDd = (cap: string, val: string) => (
     <Box sx={{
       display: 'inline-flex', alignItems: 'center', gap: 1.25, minHeight: 46, px: 1.75,
-      borderRadius: 2.5, border: `1px dashed ${C.line}`, bgcolor: '#161616',
+      borderRadius: 2.5, border: '1px dashed', borderColor: 'divider', bgcolor: 'var(--raise2)',
     }}>
-      <Typography sx={{ color: C.txt3, fontSize: 13 }}>{cap}</Typography>
-      <Typography sx={{ color: C.txt2, fontSize: 15, fontWeight: 500 }}>{val}</Typography>
+      <Typography sx={{ color: 'text.disabled', fontSize: 13 }}>{cap}</Typography>
+      <Typography sx={{ color: 'text.secondary', fontSize: 15, fontWeight: 500 }}>{val}</Typography>
     </Box>
   );
 
   const hint = (text: string) => (
-    <Typography sx={{ color: C.txt3, fontSize: 12, mt: 1, width: '100%' }}>{text}</Typography>
+    <Typography sx={{ color: 'text.disabled', fontSize: 12, mt: 1, width: '100%' }}>{text}</Typography>
   );
 
   return (
@@ -216,18 +202,18 @@ const PlatformEngineSetupPage = () => {
             aria-label={t('Back', '返回')}
             onClick={() => navigate('/kiosk/play/cross-platform')}
             sx={{
-              width: 40, height: 40, borderRadius: 2.5, border: `1px solid ${C.line}`,
-              bgcolor: C.surface, color: C.txt2,
+              width: 40, height: 40, borderRadius: 2.5, border: '1px solid', borderColor: 'divider',
+              bgcolor: 'background.paper', color: 'text.secondary',
             }}
           >
             <ArrowBack fontSize="small" />
           </ButtonBase>
-          <Typography sx={{ fontSize: 26, fontWeight: 650, color: C.txt }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 650, color: 'text.primary' }}>
             {t('Play vs AI', '人机对弈')}
           </Typography>
         </Box>
-        <Typography sx={{ color: C.txt3, fontSize: 13.5, mb: 2.5, ml: '54px' }}>
-          {t('Golaxy', '星阵围棋')} · <Box component="span" sx={{ color: C.jadeBright, fontWeight: 600 }}>{t('Free game', '自由对弈')}</Box>
+        <Typography sx={{ color: 'text.disabled', fontSize: 13.5, mb: 2.5, ml: '54px' }}>
+          {t('Golaxy', '星阵围棋')} · <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>{t('Free game', '自由对弈')}</Box>
           {' · '}{t('Strictly aligned with Golaxy config (from its app.js)', '严格对齐星阵真实配置（取自其 app.js）')}
         </Typography>
 
@@ -238,13 +224,13 @@ const PlatformEngineSetupPage = () => {
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '340px 1fr' }, gap: 3, alignItems: 'start' }}>
             {/* Board preview card */}
-            <Box sx={{ bgcolor: C.panel, border: `1px solid ${C.line}`, borderRadius: 4, p: 2.25 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: C.txt2, textTransform: 'uppercase', letterSpacing: '1.2px', mb: 0.5 }}>
+            <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 2.25 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '1.2px', mb: 0.5 }}>
                 {t('Board preview', '盘面预览')}
               </Typography>
-              <Typography sx={{ color: C.txt3, fontSize: 12.5, mb: 1.5 }}>{boardNote}</Typography>
+              <Typography sx={{ color: 'text.disabled', fontSize: 12.5, mb: 1.5 }}>{boardNote}</Typography>
               <BoardPreview handicap={handicap} />
-              <Box sx={{ display: 'flex', gap: 2, mt: 1.5, fontSize: 12.5, color: C.txt2 }}>
+              <Box sx={{ display: 'flex', gap: 2, mt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
                 <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#141414', boxShadow: '0 0 0 1px #000' }} />
                   {t('Handicap (black)', '让子(黑)')}
@@ -257,10 +243,10 @@ const PlatformEngineSetupPage = () => {
             </Box>
 
             {/* Settings panel */}
-            <Box sx={{ bgcolor: C.panel, border: `1px solid ${C.line}`, borderRadius: 4, px: 2.75, pb: 2.5, pt: 0.5 }}>
+            <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 4, px: 2.75, pb: 2.5, pt: 0.5 }}>
               {/* 规则: 棋盘 · 让子 · 贴目 */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25, borderBottom: `1px solid ${C.line}` }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: C.txt, pt: 1.25 }}>{t('Ruleset', '规则')}</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', pt: 1.25 }}>{t('Ruleset', '规则')}</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
                   {fixedDd(t('Board', '棋盘'), t('19 lines', '19 路'))}
                   <ButtonBase
@@ -268,16 +254,16 @@ const PlatformEngineSetupPage = () => {
                     onClick={(e) => setHcAnchor(e.currentTarget)}
                     sx={{
                       display: 'inline-flex', alignItems: 'center', gap: 1.25, minHeight: 46, px: 1.75,
-                      borderRadius: 2.5, border: `1px solid ${C.jadeLight}`, bgcolor: C.surface,
+                      borderRadius: 2.5, border: '1px solid', borderColor: 'primary.main', bgcolor: 'background.paper',
                       boxShadow: '0 0 0 1px rgba(93,130,112,.3)',
                     }}
                   >
-                    <Typography sx={{ color: C.txt3, fontSize: 13 }}>{t('Handicap', '让子')}</Typography>
-                    <Typography sx={{ color: C.txt, fontSize: 15, fontWeight: 600 }}>{currentHandicapLabel}</Typography>
-                    <Typography sx={{ color: C.txt3, fontSize: 12 }}>▾</Typography>
+                    <Typography sx={{ color: 'text.disabled', fontSize: 13 }}>{t('Handicap', '让子')}</Typography>
+                    <Typography sx={{ color: 'text.primary', fontSize: 15, fontWeight: 600 }}>{currentHandicapLabel}</Typography>
+                    <Typography sx={{ color: 'text.disabled', fontSize: 12 }}>▾</Typography>
                     <Box component="span" sx={{
-                      ml: 0.5, fontSize: 10, fontWeight: 700, letterSpacing: '.5px', color: C.neu,
-                      border: `1px solid ${C.neu}`, borderRadius: '5px', px: 0.6, py: '1px',
+                      ml: 0.5, fontSize: 10, fontWeight: 700, letterSpacing: '.5px', color: 'warning.main',
+                      border: '1px solid', borderColor: 'warning.main', borderRadius: '5px', px: 0.6, py: '1px',
                     }}>
                       {t('New', '可选')}
                     </Box>
@@ -302,8 +288,8 @@ const PlatformEngineSetupPage = () => {
               </Box>
 
               {/* 棋手: 先手 · 计时 */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25, borderBottom: `1px solid ${C.line}` }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: C.txt, pt: 1.25 }}>{t('Players', '棋手')}</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', pt: 1.25 }}>{t('Players', '棋手')}</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25, alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     {colorOptions.map((o) => {
@@ -314,8 +300,8 @@ const PlatformEngineSetupPage = () => {
                           onClick={() => setHumanColor(o.value)}
                           sx={{
                             minWidth: 60, py: 1.25, px: 1.75, borderRadius: 2.5, fontSize: 15,
-                            border: '1px solid', borderColor: sel ? C.jadeLight : C.line,
-                            bgcolor: sel ? C.jade : C.surface, color: sel ? '#fff' : C.txt2,
+                            border: '1px solid', borderColor: sel ? 'primary.main' : 'divider',
+                            bgcolor: sel ? 'primary.dark' : 'background.paper', color: sel ? '#fff' : 'text.secondary',
                             fontWeight: sel ? 600 : 400, transition: 'all 100ms ease-out',
                             '&:active': { transform: 'scale(0.96)' },
                           }}
@@ -332,17 +318,17 @@ const PlatformEngineSetupPage = () => {
 
               {/* 对手: 等级 */}
               <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: C.txt, pt: 1.25 }}>{t('Opponent', '对手')}</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', pt: 1.25 }}>{t('Opponent', '对手')}</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
                   <Box sx={{
-                    display: 'flex', alignItems: 'center', gap: 1.75, bgcolor: C.surface,
-                    border: `1px solid ${C.line}`, borderRadius: 3, p: '10px 14px', width: '100%', maxWidth: 420,
+                    display: 'flex', alignItems: 'center', gap: 1.75, bgcolor: 'background.paper',
+                    border: '1px solid', borderColor: 'divider', borderRadius: 3, p: '10px 14px', width: '100%', maxWidth: 420,
                   }}>
                     <ButtonBase
                       aria-label={t('Weaker level', '降低等级')}
                       disabled={currentIdx <= 0}
                       onClick={() => stepLevel(-1)}
-                      sx={{ color: C.txt2, borderRadius: 1.5, p: 0.5, '&.Mui-disabled': { color: C.txt3, opacity: 0.4 } }}
+                      sx={{ color: 'text.secondary', borderRadius: 1.5, p: 0.5, '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 } }}
                     >
                       <ChevronLeft />
                     </ButtonBase>
@@ -351,12 +337,12 @@ const PlatformEngineSetupPage = () => {
                       onClick={(e) => setLvAnchor(e.currentTarget)}
                       sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, justifyContent: 'flex-start', borderRadius: 2, py: 0.5 }}
                     >
-                      <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: C.surface2, display: 'grid', placeItems: 'center', fontSize: 23 }}>
-                        {avatarFor(currentLevel?.name ?? '')}
+                      <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: 'var(--raise2)', display: 'grid', placeItems: 'center', color: 'text.secondary' }}>
+                        <SmartToy fontSize="small" />
                       </Box>
                       <Box sx={{ textAlign: 'left' }}>
-                        <Typography sx={{ fontSize: 16, fontWeight: 600, color: C.txt }}>{currentLevel?.name ?? '—'}</Typography>
-                        <Typography sx={{ fontSize: 12.5, color: C.txt2 }}>
+                        <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'text.primary' }}>{currentLevel?.name ?? '—'}</Typography>
+                        <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
                           {currentLevel ? `${currentLevel.level_name} · elo ${currentLevel.elo_score}` : ''}
                         </Typography>
                       </Box>
@@ -365,7 +351,7 @@ const PlatformEngineSetupPage = () => {
                       aria-label={t('Stronger level', '提高等级')}
                       disabled={currentIdx < 0 || currentIdx >= sortedLevels.length - 1}
                       onClick={() => stepLevel(1)}
-                      sx={{ color: C.txt2, borderRadius: 1.5, p: 0.5, '&.Mui-disabled': { color: C.txt3, opacity: 0.4 } }}
+                      sx={{ color: 'text.secondary', borderRadius: 1.5, p: 0.5, '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 } }}
                     >
                       <ChevronRight />
                     </ButtonBase>
@@ -377,7 +363,7 @@ const PlatformEngineSetupPage = () => {
                         selected={l.elo_score === level}
                         onClick={() => { setLevel(l.elo_score); setLvAnchor(null); }}
                       >
-                        {`${avatarFor(l.name)}  ${l.name} · ${l.level_name} · elo ${l.elo_score}`}
+                        {`${l.name} · ${l.level_name} · elo ${l.elo_score}`}
                       </MenuItem>
                     ))}
                   </Menu>
@@ -394,14 +380,14 @@ const PlatformEngineSetupPage = () => {
                 onClick={handleStart}
                 sx={{
                   mt: 2, py: 2, borderRadius: 3.25, fontSize: 18, fontWeight: 650, letterSpacing: '2px', color: '#fff',
-                  background: `linear-gradient(180deg, ${C.jadeLight}, ${C.jade})`,
-                  '&:hover': { background: `linear-gradient(180deg, ${C.jadeBright}, ${C.jadeLight})` },
-                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.5)', background: C.surface2 },
+                  background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  '&:hover': { background: `linear-gradient(180deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})` },
+                  '&.Mui-disabled': { color: 'text.disabled', background: 'var(--raise2)' },
                 }}
               >
                 {starting ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
               </Button>
-              <Typography sx={{ color: C.txt3, fontSize: 12.5, textAlign: 'center', mt: 1.5 }}>
+              <Typography sx={{ color: 'text.disabled', fontSize: 12.5, textAlign: 'center', mt: 1.5 }}>
                 {`${t('Chinese rules', '中国规则')} · ${handicapShort(handicap, t)} · ${komiLabel(handicap, t)} · ${t('19 lines', '19 路')} · ${t('Untimed', '不计时')} · ${colorShort}`}
               </Typography>
             </Box>

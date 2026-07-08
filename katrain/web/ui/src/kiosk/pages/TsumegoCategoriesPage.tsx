@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button } from '@mui/material';
-import { ArrowBack, GridView } from '@mui/icons-material';
+import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { ArrowBack, GridView, Extension, AutoAwesome, TrackChanges, Assignment } from '@mui/icons-material';
+import type { SvgIconComponent } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
@@ -16,10 +18,10 @@ interface ProblemSummary {
   id: string;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'life-death': '⚔️',
-  tesuji: '✨',
-  endgame: '🎯',
+const CATEGORY_ICONS: Record<string, SvgIconComponent> = {
+  'life-death': Extension,
+  tesuji: AutoAwesome,
+  endgame: TrackChanges,
 };
 
 /**
@@ -36,6 +38,7 @@ const TsumegoCategoriesPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { categoryProgress } = useTsumegoProgress();
+  const theme = useTheme();
 
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,11 +130,12 @@ const TsumegoCategoriesPage = () => {
           <Grid size={{ xs: 6, sm: 4, md: 3 }}>
             <Card
               sx={{
-                bgcolor: 'rgba(92,181,122,0.10)',
-                border: '2px solid rgba(92,181,122,0.35)',
+                bgcolor: alpha(theme.palette.primary.dark, 0.35),
+                border: '2px solid',
+                borderColor: 'primary.main',
                 borderRadius: '12px',
                 height: '100%',
-                '&:hover': { bgcolor: 'rgba(92,181,122,0.16)' },
+                '&:hover': { bgcolor: alpha(theme.palette.primary.dark, 0.5) },
                 transition: 'background-color 0.15s ease',
               }}
             >
@@ -140,7 +144,7 @@ const TsumegoCategoriesPage = () => {
                 sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <GridView sx={{ color: '#5cb57a' }} />
+                  <GridView sx={{ color: 'primary.main' }} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     {t('tsumego:allProblems', '全部题目')}
                   </Typography>
@@ -155,14 +159,15 @@ const TsumegoCategoriesPage = () => {
           {categories.map((cat) => {
             const ids = categoryIds[cat.category];
             const summary = ids ? categoryProgress(ids) : null;
+            const CatIcon = CATEGORY_ICONS[cat.category] ?? Assignment;
             return (
               <Grid key={cat.category} size={{ xs: 6, sm: 4, md: 3 }}>
                 <Card
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.05)',
+                    bgcolor: 'background.paper',
                     borderRadius: '12px',
                     height: '100%',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                    '&:hover': { bgcolor: 'var(--raise2)' },
                     transition: 'background-color 0.15s ease',
                   }}
                 >
@@ -171,9 +176,7 @@ const TsumegoCategoriesPage = () => {
                     sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontSize: 28, lineHeight: 1 }}>
-                        {CATEGORY_ICONS[cat.category] || '📋'}
-                      </Typography>
+                      <CatIcon sx={{ fontSize: 28, color: 'primary.main' }} />
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {t(`tsumego:${cat.category}`, cat.name)}
                       </Typography>

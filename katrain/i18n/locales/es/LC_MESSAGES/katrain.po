@@ -2442,3 +2442,12 @@ msgstr "en cola"
 
 msgid "report:summary_failed"
 msgstr "fallido"
+
+msgid "Suggest"
+msgstr "Sugerir"
+
+msgid "Variation Line"
+msgstr "Variación"
+
+msgid "game:pass"
+msgstr "Pasar"

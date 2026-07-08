@@ -55,11 +55,19 @@ class TestVisionEventJsonSafety:
         assert _all_ints(illegal[0].data["positions"])
 
     def test_capture_pending_positions_are_json_serializable(self):
+        # Digital-authority semantics (post-develop merge): CAPTURE_PENDING is an ACTUAL
+        # digital capture — a synced stone that the engine removes while the physical
+        # stone is still on the board. (A newly-expected-but-unplaced stone is
+        # placement_pending, not capture.) col 17 is the np.int64 that crashed json.dumps.
         m = _synced_machine()
-        m.set_expected_board(board_with({(6, 17): BLACK}))
-        events = m.update(empty_board())  # expected stone gone → capture
+        with_stone = board_with({(6, 17): BLACK})
+        m.set_expected_board(with_stone)
+        m.update(with_stone.copy())  # placed digitally + physically → SYNCED
+        m.set_expected_board(empty_board())  # engine captures it…
+        events = m.update(with_stone.copy())  # …but the physical stone lingers → capture
         captures = [e for e in events if e.type == SyncEventType.CAPTURE_PENDING]
-        assert captures, "expected CAPTURE_PENDING when an expected stone disappears"
+        assert captures, "expected CAPTURE_PENDING when a synced stone is digitally captured"
+        # THE regression: numpy int64 in positions crashes json.dumps → kills /ws/vision.
         json.dumps(captures[0].data)
         assert _all_ints(captures[0].data["positions"])
 

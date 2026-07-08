@@ -9,11 +9,16 @@ vi.mock('../../context/AuthContext', () => ({
 
 vi.mock('../context/OrientationContext', () => ({
   OrientationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 vi.mock('../components/layout/RotationWrapper', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+const mockSetLanguage = vi.fn();
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({ language: 'cn', setLanguage: mockSetLanguage, languages: [] }),
 }));
 
 // Keep the tutorial landing page deterministic (no real network) when we render
@@ -50,6 +55,23 @@ describe('KioskApp', () => {
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
   });
 
+  it('defaults the kiosk language to Chinese when no preference is saved', () => {
+    localStorage.removeItem('katrain_language');
+    mockSetLanguage.mockClear();
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn(), logout: vi.fn(), token: null });
+    renderApp('/kiosk/play');
+    expect(mockSetLanguage).toHaveBeenCalledWith('cn');
+  });
+
+  it('respects an explicitly saved language and does not override it', () => {
+    localStorage.setItem('katrain_language', 'en');
+    mockSetLanguage.mockClear();
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn(), logout: vi.fn(), token: null });
+    renderApp('/kiosk/play');
+    expect(mockSetLanguage).not.toHaveBeenCalled();
+    localStorage.removeItem('katrain_language');
+  });
+
   it('renders nav rail on authenticated route', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
@@ -61,7 +83,7 @@ describe('KioskApp', () => {
     renderApp('/kiosk/play');
     // After auth, nav rail visible
     expect(screen.getByText('对弈')).toBeInTheDocument();
-    expect(screen.getByText('弈航')).toBeInTheDocument();
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
   });
 
   it('renders the tutorial entry on /kiosk/tutorial when authenticated', () => {

@@ -49,7 +49,7 @@ const TutorialBooksPage = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
@@ -98,10 +98,12 @@ const TutorialBooksPage = () => {
               <Grid key={book.id} size={{ xs: 6, sm: 4, md: 3 }}>
                 <Card
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.05)',
+                    bgcolor: 'background.paper',
                     borderRadius: '12px',
                     height: '100%',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': { bgcolor: 'var(--raise2)' },
                     transition: 'background-color 0.15s ease',
                   }}
                 >
@@ -112,12 +114,22 @@ const TutorialBooksPage = () => {
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       {book.title}
                     </Typography>
-                    {book.author && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        {book.author}
-                      </Typography>
-                    )}
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: '#5cb57a' }}>
+                    {/* Fixed-height region (NOT minHeight): author is optional. Reserving a
+                        single line of height whether or not it's present keeps every card
+                        identical across the whole grid, not just within a flex-wrap row
+                        (height:100% on the Card only equalizes within a row). */}
+                    <Box sx={{ mt: 0.5, width: '100%', height: 20, overflow: 'hidden' }}>
+                      {book.author && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+                        >
+                          {book.author}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'primary.main' }}>
                       {book.chapter_count} {t('tutorial:chapters', '章')}
                     </Typography>
                   </CardActionArea>

@@ -117,6 +117,12 @@ class CameraManager:
         self._frame_seq = 0  # increments per frame read (under _frame_lock)
         self._frame_ts = 0.0  # time.monotonic() when the frame was read
         self._frame_lock = threading.Lock()
+        # Runtime camera controls (software AE): requests are queued here and applied
+        # by the reader thread between reads — cv2.VideoCapture is not thread-safe.
+        self._pending_controls: dict[str, float] = {}
+        self._controls_lock = threading.Lock()
+        self._controls_effective: bool | None = None  # None = never attempted
+        self._initial_exposure: float | None = None  # readback at open()
         self._stop_event = threading.Event()
 
     @property
@@ -165,6 +171,10 @@ class CameraManager:
                     cap.set(cv2.CAP_PROP_EXPOSURE, self._exposure)
             if self._lock_awb:
                 cap.set(cv2.CAP_PROP_AUTO_WB, 0)
+            try:
+                self._initial_exposure = float(cap.get(cv2.CAP_PROP_EXPOSURE))  # AE seed value
+            except cv2.error:
+                self._initial_exposure = None
 
             # Drain frames to let auto-focus and auto-exposure settle
             if self._warmup_seconds > 0:
@@ -218,6 +228,7 @@ class CameraManager:
     def _reader_loop(self) -> None:
         """Continuously read frames in background, keeping only the latest."""
         while not self._stop_event.is_set():
+            self._apply_pending_controls()
             try:
                 ret, frame = self._cap.read()  # type: ignore[union-attr]
             except cv2.error as exc:
@@ -234,6 +245,52 @@ class CameraManager:
                 self._latest_frame = frame
                 self._frame_seq += 1
                 self._frame_ts = time.monotonic()
+
+    # ------------------------------------------------------------------
+    # Runtime camera controls (software AE)
+    # ------------------------------------------------------------------
+
+    def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
+        """Queue camera control changes; the reader thread applies them between reads."""
+        with self._controls_lock:
+            if auto_exposure is not None:
+                self._pending_controls["auto_exposure"] = float(auto_exposure)
+            if exposure is not None:
+                self._pending_controls["exposure"] = float(exposure)
+
+    @property
+    def controls_effective(self) -> bool | None:
+        """Whether the last applied control change actually took (None = never attempted).
+
+        macOS AVFoundation silently rejects UVC exposure controls — the readback check
+        catches that so software AE can fall back to advisory mode."""
+        return self._controls_effective
+
+    @property
+    def initial_exposure(self) -> float | None:
+        """Exposure readback at open() — seed value for the software-AE controller."""
+        return self._initial_exposure
+
+    def _apply_pending_controls(self) -> None:
+        with self._controls_lock:
+            if not self._pending_controls:
+                return
+            pending, self._pending_controls = self._pending_controls, {}
+        if self._cap is None:
+            return
+        try:
+            ok = True
+            if "auto_exposure" in pending:
+                ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, pending["auto_exposure"])) and ok
+            if "exposure" in pending:
+                target = pending["exposure"]
+                ok = bool(self._cap.set(cv2.CAP_PROP_EXPOSURE, target)) and ok
+                readback = float(self._cap.get(cv2.CAP_PROP_EXPOSURE))
+                ok = ok and abs(readback - target) <= max(1.0, 0.1 * abs(target))
+            self._controls_effective = ok
+        except cv2.error as exc:
+            logger.warning("Camera %s control apply failed: %s", self._device_id, exc)
+            self._controls_effective = False
 
     # ------------------------------------------------------------------
     # Fresh-frame grab (capture path)

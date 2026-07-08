@@ -15,7 +15,6 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialSectionDetail, TutorialFigure } from '../../types/tutorial';
 import SGFBoard, { type SGFPayload } from '../../components/tutorials/SGFBoard';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
-import { useOrientation } from '../context/OrientationContext';
 import type { SectionNavState } from '../types/tutorialNav';
 
 /** Highest numeric move label on a figure's board (0 when there are none). */
@@ -45,7 +44,6 @@ const TutorialSectionPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
 
   const navState = (location.state ?? null) as SectionNavState | null;
 
@@ -97,7 +95,7 @@ const TutorialSectionPage = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
@@ -105,7 +103,7 @@ const TutorialSectionPage = () => {
   if (error || !section) {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
-        <Alert severity="error">{error ?? t('tutorial:sectionNotFound', '未找到该小节')}</Alert>
+        <Alert severity="error">{error ? t('tutorial:loadFailed', '加载失败，请稍后重试') : t('tutorial:sectionNotFound', '未找到该小节')}</Alert>
         <Button variant="outlined" onClick={() => navigate('/kiosk/tutorial')} startIcon={<ArrowBack />}>
           {t('Back', '返回')}
         </Button>
@@ -220,7 +218,7 @@ const TutorialSectionPage = () => {
             flexDirection: 'column',
             gap: 1.5,
             overflow: 'auto',
-            bgcolor: 'rgba(0,0,0,0.18)',
+            bgcolor: 'var(--raise2)',
             borderRadius: 2,
             p: 2,
           }}
@@ -274,7 +272,7 @@ const TutorialSectionPage = () => {
           flex: 1,
           minHeight: 0,
           display: 'flex',
-          flexDirection: isPortrait ? 'column' : 'row',
+          flexDirection: 'row',
           gap: 2,
           px: 2,
           py: 1,

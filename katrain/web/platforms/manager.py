@@ -183,6 +183,29 @@ class PlatformManager:
         logger.info(f"Engine game started: {platform} {gs.game_id} -> session {session.session_id}")
         return session.session_id
 
+    async def engine_analysis(self, platform: str, session_id: str, kind: str):
+        """Resolve the engine game behind session_id and run one analysis pull.
+
+        Returns the adapter's AnalysisResult; QuotaExhausted/AuthExpired/etc.
+        propagate to the caller unhandled (the endpoint layer decides how to
+        map them to HTTP responses).
+
+        No `user_id`/ownership check: analysis is read-only and creates no
+        session, and the caller is already authenticated at the endpoint layer
+        (Depends(get_current_user)) — consistent with the other read-only
+        platform routes, which also don't cross-check session ownership.
+        """
+        game_id = self._session_to_game.get(session_id)
+        if game_id is None:
+            raise KeyError(session_id)
+        ctx = self._active_games.get(game_id)
+        if ctx is None or not getattr(ctx, "is_engine", False):
+            raise KeyError(session_id)
+        adapter = self._adapters.get(platform)
+        if adapter is None:
+            raise ValueError(f"Unknown platform: {platform}")
+        return await adapter.engine_analysis(game_id, kind)
+
     async def end_platform_game(self, game_id: str, result: str) -> None:
         """Clean up after a platform game ends."""
         ctx = self._active_games.pop(game_id, None)

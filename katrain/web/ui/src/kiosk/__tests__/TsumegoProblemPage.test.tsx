@@ -4,11 +4,13 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey } from '../pages/tsumegoUnits';
+import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
 
 // ---- Hoisted spies referenced by the mock factories below ----
-const { mockNavigate, mockFlush } = vi.hoisted(() => ({
+const { mockNavigate, mockFlush, mockReadPhysicalMode } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFlush: vi.fn(),
+  mockReadPhysicalMode: vi.fn(() => false),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -16,8 +18,16 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// Only `readPhysicalMode` is mocked (D1.3) — every other export (sequenceKey,
+// AUTO_ADVANCE_KEY, PHYSICAL_MODE_KEY, readAutoAdvance, levelChinese, ...) passes through
+// unmocked so the rest of the test file's existing behavior is unaffected.
+vi.mock('../pages/tsumegoUnits', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../pages/tsumegoUnits')>();
+  return { ...actual, readPhysicalMode: () => mockReadPhysicalMode() };
+});
+
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 // Vision disabled — keeps the vision-setup branch (BoardSetupGuide / API.visionSetupMode) inert.
@@ -34,6 +44,10 @@ vi.mock('../context/VisionContext', () => ({
     isVisionEnabled: false,
     refreshStatus: vi.fn(),
   }),
+}));
+
+vi.mock('../context/ImmersiveContext', () => ({
+  useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
 }));
 
 vi.mock('../hooks/useVisionSync', () => ({
@@ -105,6 +119,28 @@ vi.mock('../../hooks/useTsumegoProblem', () => ({
   useTsumegoProblem: () => hookReturn,
 }));
 
+// usePhysicalTsumego is the REAL IO hook (its own 38-test suite covers the phase machine +
+// vision/LED/voice effects). Here it's mocked to a controllable state so the D1.3 page-wiring
+// tests assert the panel mount/hide + prop passthrough in isolation — without driving vision IO,
+// and without depending on the real hook's clearing→setup lifecycle (which needs a live vision WS).
+// stonesToVisionBoard passes through (the page imports it for screen-click passthrough).
+const defaultPhysicalReturn: PhysicalTsumegoState = {
+  phase: 'off',
+  stage: 'black',
+  missing: [],
+  extra: [],
+  stageMatched: 0,
+  stageTotal: 0,
+  ledOk: true,
+  onScreenMove: vi.fn(),
+};
+let physicalReturn: PhysicalTsumegoState = { ...defaultPhysicalReturn };
+
+vi.mock('../hooks/usePhysicalTsumego', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/usePhysicalTsumego')>();
+  return { ...actual, usePhysicalTsumego: () => physicalReturn };
+});
+
 import TsumegoProblemPage from '../pages/TsumegoProblemPage';
 
 // The category sequence used for prev/next. The mocked problem id is 'p1'.
@@ -124,9 +160,13 @@ const renderPage = (problemId = 'p1') =>
 beforeEach(() => {
   vi.clearAllMocks();
   hookReturn = { ...defaultHookReturn };
+  physicalReturn = { ...defaultPhysicalReturn };
   for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   sessionStorage.clear();
   localStorage.clear();
+  // vi.clearAllMocks() clears call history but not a prior mockReturnValue override —
+  // reset explicitly so physical mode defaults OFF for every test unless a case opts in.
+  mockReadPhysicalMode.mockReturnValue(false);
   // Seed the prev/next sequence the units page would have written.
   sessionStorage.setItem(sequenceKey('15k', '手筋'), JSON.stringify(SEQUENCE));
 });
@@ -136,7 +176,12 @@ describe('TsumegoProblemPage', () => {
   it('renders category and level', () => {
     renderPage();
     expect(screen.getByText('手筋')).toBeInTheDocument();
-    expect(screen.getByText('15K')).toBeInTheDocument();
+    expect(screen.getByText('15 级')).toBeInTheDocument();
+  });
+
+  it('renders the physical-mode toggle', () => {
+    renderPage();
+    expect(screen.getByTestId('physical-mode-toggle')).toBeInTheDocument();
   });
 
   it('renders hint text', () => {
@@ -371,6 +416,29 @@ describe('TsumegoProblemPage', () => {
         vi.advanceTimersByTime(3000);
       });
       expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---- Phase D: PhysicalStatePanel wiring behind readPhysicalMode (D1.3) ----
+  describe('physical-state panel (D1.3)', () => {
+    it('mounts PhysicalStatePanel starting at phase "setup" when physical mode is on', () => {
+      mockReadPhysicalMode.mockReturnValue(true);
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'setup', stageMatched: 2, stageTotal: 5 };
+      renderPage('p1');
+      const panel = screen.getByTestId('physical-state-panel');
+      expect(panel).toBeInTheDocument();
+      expect(panel).toHaveAttribute('data-phase', 'setup');
+    });
+
+    it('renders no PhysicalStatePanel when physical mode is off (default) and preserves existing testids', () => {
+      renderPage('p1');
+      expect(screen.queryByTestId('physical-state-panel')).not.toBeInTheDocument();
+      // Existing surfaces must be unaffected by the D1.3 wiring.
+      expect(screen.getByTestId('tsumego-board')).toBeInTheDocument();
+      expect(screen.getByTestId('timer')).toBeInTheDocument();
+      expect(screen.getByTestId('attempts')).toBeInTheDocument();
+      expect(screen.getByTestId('prev-problem')).toBeInTheDocument();
+      expect(screen.getByTestId('next-problem')).toBeInTheDocument();
     });
   });
 });

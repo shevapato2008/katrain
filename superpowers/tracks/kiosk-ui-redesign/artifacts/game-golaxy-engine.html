@@ -1,0 +1,302 @@
+<title>智星盒 StellaBox · 对局态 · 星阵引擎模式（按钮对齐 Golaxy）</title>
+<style>
+@import url("./fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c; --wood:#caa66f;
+  --blue:#4a90ff;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:1024px;line-height:1.6}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:13px;margin-top:14px}
+.flowlabel .n{font-family:var(--serif);font-style:italic;color:var(--jade)}
+.flowlabel .rule{width:60px;height:1px;background:linear-gradient(90deg,var(--jade-d),transparent)}
+
+.screen{width:1024px;height:600px;background:linear-gradient(180deg,#111817,#0d1211);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+.gtop{height:46px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--hair)}
+.gtop .exit{display:flex;align-items:center;gap:7px;color:var(--sub);font-size:13px;padding:6px 10px;border-radius:9px;border:1px solid var(--hair)}
+.gtop .exit svg{width:15px;height:15px;fill:var(--sub)}
+.gtop .plat{display:flex;align-items:center;gap:6px;font-size:11px;color:#bcd0ff;border:1px solid #2d3d63;background:rgba(74,144,255,.1);border-radius:20px;padding:3px 10px}
+.gtop .plat b{width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px var(--blue)}
+.gtop .meta{font-size:12.5px;color:var(--sub)}.gtop .meta b{color:var(--ice);font-weight:600}
+.gtop .bal{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--sub);align-items:center}
+.gtop .bal .coin{color:var(--amber)}
+.gtop .vis{display:flex;gap:10px}
+.gtop .vis span{display:flex;align-items:center;gap:5px}
+.gtop .vis b{width:6px;height:6px;border-radius:50%;background:var(--jade);box-shadow:0 0 6px var(--jade)}
+.gtop .vis .warn b{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+
+.gmain{flex:1;min-height:0;display:flex;gap:16px;padding:14px 18px}
+.gboardwrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;position:relative}
+.gboard{height:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 10px 30px -12px #000}
+.rail{width:288px;flex-shrink:0;display:flex;flex-direction:column;gap:9px}
+
+.pcard{background:var(--raise);border:1px solid var(--hair);border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:10px}
+.pcard.turn{border-color:var(--jade);background:linear-gradient(135deg,#1f3a30,#18211f)}
+.pstone{width:24px;height:24px;border-radius:50%;flex-shrink:0}
+.pstone.b{background:radial-gradient(circle at 35% 30%,#4a4a4a,#111)}
+.pstone.w{background:radial-gradient(circle at 35% 30%,#fff,#d9d2c4)}
+.pcard .pn{flex:1;min-width:0}
+.pcard .pn h4{font-size:13.5px;font-weight:600}.pcard .pn p{font-size:11px;color:var(--sub);margin-top:1px}
+.pcard .pn .think{color:var(--jade);display:inline-flex;align-items:center;gap:4px}
+.dots i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--jade);margin-left:2px;animation:bl 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.pcard .clock{text-align:right}
+.pcard .clock .big{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.4px}
+.pcard.turn .clock .big{color:var(--jade)}
+.pcard .clock .sm{font-size:10px;color:var(--dim)}
+
+.sect{background:var(--raise);border:1px solid var(--hair);border-radius:12px;padding:10px 12px}
+.sect .st{font-size:10.5px;color:var(--dim);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.sect .st .hint{letter-spacing:0;color:var(--sub);text-transform:none;font-size:10px}
+
+/* free view toggles */
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tg{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:9px;background:var(--raise2);border:1px solid var(--hair);font-size:12.5px;color:var(--sub)}
+.tg.on{color:var(--ice);border-color:var(--jade-d)}
+.tg .dot{width:13px;height:13px;border-radius:4px;border:1.5px solid var(--dim)}
+.tg.on .dot{background:var(--jade);border-color:var(--jade)}
+
+/* 星阵道具 metered overlays — 领地/支招/变化图 (align Golaxy, all paid) */
+.aidgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.aidbtn{position:relative;padding:9px 6px;border-radius:11px;border:1px solid var(--hair);background:var(--raise2);
+  display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--sub)}
+.aidbtn svg{width:17px;height:17px;fill:currentColor}
+.aidbtn.on{color:#0c130f;background:var(--jade);border-color:var(--jade)}
+.aidbtn.off{opacity:.5}
+.aidbtn.spent{opacity:.42;filter:grayscale(.5)}
+.qbadge{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--amber);
+  color:#160f03;font-size:10.5px;font-weight:700;display:grid;place-items:center;border:1.5px solid #12191a;font-variant-numeric:tabular-nums}
+.qbadge.zero{background:var(--red);color:#160b0a}
+
+/* actions */
+.acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:auto}
+.act{padding:9px 4px;border-radius:10px;border:1px solid var(--hair);background:var(--raise);display:flex;
+  flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ice)}
+.act svg{width:16px;height:16px;fill:currentColor}
+.act.danger{color:var(--red);border-color:rgba(226,104,92,.35)}
+
+.gprompt{flex-shrink:0;height:42px;display:flex;align-items:center;gap:11px;padding:0 18px;border-top:1px solid var(--hair)}
+.gprompt.jade{background:linear-gradient(90deg,rgba(88,181,122,.13),transparent)}
+.gprompt.blue{background:linear-gradient(90deg,rgba(74,144,255,.13),transparent)}
+.gprompt.red{background:linear-gradient(90deg,rgba(226,104,92,.13),transparent)}
+.gprompt .pl{width:7px;height:18px;border-radius:4px}
+.gprompt.jade .pl{background:var(--jade)}.gprompt.blue .pl{background:var(--blue)}.gprompt.red .pl{background:var(--red)}
+.gprompt .msg{font-size:12.5px}.gprompt .msg b{font-weight:700;color:var(--jade)}
+.gprompt.blue .msg b{color:#7db0ff}.gprompt.red .msg b{color:var(--red)}
+.gprompt .side{margin-left:auto;font-size:11px;display:flex;align-items:center;gap:6px;color:var(--sub)}
+.gspin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(88,181,122,.25);border-top-color:var(--jade);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* 7003 道具用尽 modal */
+.overlay{position:absolute;inset:0;background:rgba(6,9,9,.74);display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{width:430px;background:var(--raise);border:1px solid var(--hair);border-radius:16px;padding:24px;text-align:center;box-shadow:0 30px 80px -20px #000}
+.modal .mi{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;margin:0 auto 14px;background:rgba(226,104,92,.14);border:1px solid rgba(226,104,92,.4)}
+.modal .mi svg{width:26px;height:26px;fill:var(--red)}
+.modal h2{font-family:var(--serif);font-size:21px;font-weight:600}
+.modal p{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.55}
+.modal p b{color:var(--ice)}
+.modal .mbtns{display:flex;gap:12px;margin-top:20px}
+.mbtn{flex:1;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;border:1px solid var(--hair);background:var(--raise2);color:var(--ice)}
+.mbtn.jade{background:var(--jade);color:#0c130f;border-color:var(--jade)}
+</style>
+
+<div class="stage">
+  <div class="cap">方案 ③ · <b>对局态 · 星阵引擎模式</b> —— 跨平台人机对弈时右栏<b>严格对齐 Golaxy</b>：三个分析道具 <b>领地 · 支招 · 变化图</b>（均为星阵<b>付费限次道具</b>，走隧道、消耗记在你自己的星阵账号），加 悔棋 · 数子 · 放弃 · 停一手 · 保存。<b>无"形势"按钮、无胜率图</b>（星阵人机对弈本就没有）。角标=你星阵账号的剩余次数；用尽=<code>7003</code>→提示去星阵充值。分析全在<b>星阵服务器</b>算，本地不启用 KataGo（避免挂自家引擎）。7″ 1024×600</div>
+
+  <!-- ============ A. 默认 · 轮到你 ============ -->
+  <div class="flowlabel"><span class="n">A</span> 默认 · 轮到你落子（三道具显剩余次数） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="plat"><b></b>星阵 Golaxy</div>
+      <div class="meta">自由对弈 · <b>星铠虾 1级</b> · 中国规则 · 贴 7.5</div>
+      <div class="bal"><span class="coin">星币 14.0</span><div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span></div></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_MAIN--></div>
+      <div class="rail">
+        <div class="pcard turn"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p class="think">轮到你落子</p></div><div class="clock"><div class="big">第 88 手</div><div class="sm">提 2 · 黑</div></div></div>
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>星铠虾 · 1级</h4><p>星阵 AI · 白</p></div><div class="clock"><div class="big">不计时</div><div class="sm">提 4</div></div></div>
+        <div class="sect"><div class="st">显示 <span class="hint">本地免费</span></div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span></div></div>
+        <div class="sect"><div class="st">星阵道具 <span class="hint">走星阵引擎 · 扣你账号次数</span></div>
+          <div class="aidgrid">
+            <span class="aidbtn off"><span class="qbadge">5</span><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>领地</span>
+            <span class="aidbtn off"><span class="qbadge">3</span><svg viewBox="0 0 24 24"><path d="M9 21h6v-1H9zm3-19a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>支招</span>
+            <span class="aidbtn off"><span class="qbadge">7</span><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8v4h2V3h-8v2h4l-6 6-4-4-8 8z"/></svg>变化图</span>
+          </div>
+        </div>
+        <div class="acts">
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M6 19h12v2H6zM6 3h12v2H6zm6 4a5 5 0 100 10 5 5 0 000-10"/></svg>停一手</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>数子</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7zm-5 16a3 3 0 110-6 3 3 0 010 6m3-10H5V5h10z"/></svg>保存</span>
+          <span class="act danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>放弃</span>
+        </div>
+      </div>
+    </div>
+    <div class="gprompt jade"><div class="pl"></div><div class="msg"><b>轮到你</b>，落子后星阵回手。领地/支招/变化图是星阵付费道具，点一次扣你账号一次</div><div class="side">对局进行中</div></div>
+  </div>
+
+  <!-- ============ B. 支招 激活 ============ -->
+  <div class="flowlabel"><span class="n">B</span> 支招 · 候选着（星阵 <code>tunnel/options</code> · 扣 1 次） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="plat"><b></b>星阵 Golaxy</div>
+      <div class="meta">自由对弈 · <b>星铠虾 1级</b> · 中国规则 · 贴 7.5</div>
+      <div class="bal"><span class="coin">星币 14.0</span><div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span></div></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_OPTIONS--></div>
+      <div class="rail">
+        <div class="pcard turn"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p class="think">轮到你落子</p></div><div class="clock"><div class="big">第 88 手</div><div class="sm">提 2 · 黑</div></div></div>
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>星铠虾 · 1级</h4><p>星阵 AI · 白</p></div><div class="clock"><div class="big">不计时</div><div class="sm">提 4</div></div></div>
+        <div class="sect"><div class="st">显示 <span class="hint">本地免费</span></div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span></div></div>
+        <div class="sect"><div class="st">星阵道具 <span class="hint">支招已开 · 其余暂隐</span></div>
+          <div class="aidgrid">
+            <span class="aidbtn off"><span class="qbadge">5</span><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>领地</span>
+            <span class="aidbtn on"><span class="qbadge">2</span><svg viewBox="0 0 24 24"><path d="M9 21h6v-1H9zm3-19a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>支招</span>
+            <span class="aidbtn off"><span class="qbadge">7</span><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8v4h2V3h-8v2h4l-6 6-4-4-8 8z"/></svg>变化图</span>
+          </div>
+        </div>
+        <div class="acts">
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M6 19h12v2H6zM6 3h12v2H6zm6 4a5 5 0 100 10 5 5 0 000-10"/></svg>停一手</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>数子</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7zm-5 16a3 3 0 110-6 3 3 0 010 6m3-10H5V5h10z"/></svg>保存</span>
+          <span class="act danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>放弃</span>
+        </div>
+      </div>
+    </div>
+    <div class="gprompt jade"><div class="pl"></div><div class="msg"><b>星阵支招</b> · 3 个候选，颜色=推荐度，标签为胜率。已扣 1 次，剩 2 次</div><div class="side">tunnel/options</div></div>
+  </div>
+
+  <!-- ============ C. 变化图 激活 ============ -->
+  <div class="flowlabel"><span class="n">C</span> 变化图 · AI 变化手序（星阵 <code>tunnel/variation</code> · 扣 1 次） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="plat"><b></b>星阵 Golaxy</div>
+      <div class="meta">自由对弈 · <b>星铠虾 1级</b> · 中国规则 · 贴 7.5</div>
+      <div class="bal"><span class="coin">星币 14.0</span><div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span></div></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_VARIATION--></div>
+      <div class="rail">
+        <div class="pcard turn"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p class="think">轮到你落子</p></div><div class="clock"><div class="big">第 88 手</div><div class="sm">提 2 · 黑</div></div></div>
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>星铠虾 · 1级</h4><p>星阵 AI · 白</p></div><div class="clock"><div class="big">不计时</div><div class="sm">提 4</div></div></div>
+        <div class="sect"><div class="st">显示 <span class="hint">本地免费</span></div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span></div></div>
+        <div class="sect"><div class="st">星阵道具 <span class="hint">变化图已开 · 其余暂隐</span></div>
+          <div class="aidgrid">
+            <span class="aidbtn off"><span class="qbadge">5</span><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>领地</span>
+            <span class="aidbtn off"><span class="qbadge">3</span><svg viewBox="0 0 24 24"><path d="M9 21h6v-1H9zm3-19a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>支招</span>
+            <span class="aidbtn on"><span class="qbadge">6</span><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8v4h2V3h-8v2h4l-6 6-4-4-8 8z"/></svg>变化图</span>
+          </div>
+        </div>
+        <div class="acts">
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M6 19h12v2H6zM6 3h12v2H6zm6 4a5 5 0 100 10 5 5 0 000-10"/></svg>停一手</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>数子</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7zm-5 16a3 3 0 110-6 3 3 0 010 6m3-10H5V5h10z"/></svg>保存</span>
+          <span class="act danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>放弃</span>
+        </div>
+      </div>
+    </div>
+    <div class="gprompt jade"><div class="pl"></div><div class="msg"><b>星阵变化图</b> · 数字为 AI 建议的后续手顺。已扣 1 次，剩 6 次</div><div class="side">tunnel/variation</div></div>
+  </div>
+
+  <!-- ============ D. 领地 激活 ============ -->
+  <div class="flowlabel"><span class="n">D</span> 领地 · 归属叠加（星阵 <code>tunnel/area</code> · 扣 1 次） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="plat"><b></b>星阵 Golaxy</div>
+      <div class="meta">自由对弈 · <b>星铠虾 1级</b> · 中国规则 · 贴 7.5</div>
+      <div class="bal"><span class="coin">星币 14.0</span><div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span></div></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_AREA--></div>
+      <div class="rail">
+        <div class="pcard turn"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p class="think">轮到你落子</p></div><div class="clock"><div class="big">第 88 手</div><div class="sm">提 2 · 黑</div></div></div>
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>星铠虾 · 1级</h4><p>星阵 AI · 白</p></div><div class="clock"><div class="big">不计时</div><div class="sm">提 4</div></div></div>
+        <div class="sect"><div class="st">显示 <span class="hint">本地免费</span></div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span></div></div>
+        <div class="sect"><div class="st">星阵道具 <span class="hint">领地已开 · 其余暂隐</span></div>
+          <div class="aidgrid">
+            <span class="aidbtn on"><span class="qbadge">4</span><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>领地</span>
+            <span class="aidbtn off"><span class="qbadge">3</span><svg viewBox="0 0 24 24"><path d="M9 21h6v-1H9zm3-19a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>支招</span>
+            <span class="aidbtn off"><span class="qbadge">7</span><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8v4h2V3h-8v2h4l-6 6-4-4-8 8z"/></svg>变化图</span>
+          </div>
+        </div>
+        <div class="acts">
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M6 19h12v2H6zM6 3h12v2H6zm6 4a5 5 0 100 10 5 5 0 000-10"/></svg>停一手</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>数子</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7zm-5 16a3 3 0 110-6 3 3 0 010 6m3-10H5V5h10z"/></svg>保存</span>
+          <span class="act danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>放弃</span>
+        </div>
+      </div>
+    </div>
+    <div class="gprompt blue"><div class="pl"></div><div class="msg"><b>星阵领地</b> · 暗=黑地 / 亮=白地。星阵付费道具，已扣 1 次，剩 4 次</div><div class="side">tunnel/area</div></div>
+  </div>
+
+  <!-- ============ E. 道具用尽 7003 ============ -->
+  <div class="flowlabel"><span class="n">E</span> 道具用尽 · <code>7003 item is not sufficient</code>（对齐星阵，但引导去星阵充值） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="gtop">
+      <div class="exit"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4h8V9z"/></svg>退出对局</div>
+      <div class="plat"><b></b>星阵 Golaxy</div>
+      <div class="meta">自由对弈 · <b>星铠虾 1级</b> · 中国规则 · 贴 7.5</div>
+      <div class="bal"><span class="coin">星币 14.0</span><div class="vis"><span><b></b>摄像头</span><span class="warn"><b></b>标定</span></div></div>
+    </div>
+    <div class="gmain">
+      <div class="gboardwrap"><!--BOARD_MAIN--></div>
+      <div class="rail">
+        <div class="pcard turn"><div class="pstone b"></div><div class="pn"><h4>fan（你）</h4><p class="think">轮到你落子</p></div><div class="clock"><div class="big">第 88 手</div><div class="sm">提 2 · 黑</div></div></div>
+        <div class="pcard"><div class="pstone w"></div><div class="pn"><h4>星铠虾 · 1级</h4><p>星阵 AI · 白</p></div><div class="clock"><div class="big">不计时</div><div class="sm">提 4</div></div></div>
+        <div class="sect"><div class="st">显示 <span class="hint">本地免费</span></div><div class="toggles"><span class="tg on"><span>手数</span><span class="dot"></span></span><span class="tg"><span>坐标</span><span class="dot"></span></span></div></div>
+        <div class="sect"><div class="st">星阵道具 <span class="hint">领地次数已用尽</span></div>
+          <div class="aidgrid">
+            <span class="aidbtn spent"><span class="qbadge zero">0</span><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>领地</span>
+            <span class="aidbtn off"><span class="qbadge">3</span><svg viewBox="0 0 24 24"><path d="M9 21h6v-1H9zm3-19a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>支招</span>
+            <span class="aidbtn off"><span class="qbadge">7</span><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8v4h2V3h-8v2h4l-6 6-4-4-8 8z"/></svg>变化图</span>
+          </div>
+        </div>
+        <div class="acts">
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>悔棋</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M6 19h12v2H6zM6 3h12v2H6zm6 4a5 5 0 100 10 5 5 0 000-10"/></svg>停一手</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>数子</span>
+          <span class="act"><svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7zm-5 16a3 3 0 110-6 3 3 0 010 6m3-10H5V5h10z"/></svg>保存</span>
+          <span class="act danger"><svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>放弃</span>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal">
+        <div class="mi"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></div>
+        <h2>领地道具已用尽</h2>
+        <p>「领地」是<b>星阵付费道具</b>，你星阵账号（fan · 61707593）本局次数已用完。<br>请在<b>星阵 App / 网站</b>充值后再使用，本终端不代充。</p>
+        <div class="mbtns">
+          <div class="mbtn">知道了</div>
+          <div class="mbtn jade">去星阵充值</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="margin-top:8px">严格对齐 Golaxy 人机对弈：三分析道具 <b>领地 · 支招 · 变化图</b> 全走星阵隧道、消耗你自己星阵账号的次数（角标=剩余）；<code>7003</code> 用尽 → 引导星阵充值，<b>本终端不代充、不自造免费分析</b>（本地 RK3562 只能跑弱网，且对弈中启用自家引擎等于助战）。悔棋/数子/放弃/停一手/保存 = 常规控制。<b>无形势按钮、无胜率图</b>——星阵人机对弈本就没有。</div>
+</div>
+<script>
+  function fit(){var s=Math.min(1,(innerWidth-48)/1024);
+    document.querySelectorAll('.screen').forEach(function(e){e.style.transform='scale('+s+')';e.style.transformOrigin='top center';e.style.marginBottom=(600*s-600)+'px';});}
+  addEventListener('resize',fit);fit();
+</script>

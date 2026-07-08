@@ -24,6 +24,14 @@ class SetupModeRequest(BaseModel):
     target_board: list[list[int]]  # (board_size x board_size) matrix
 
 
+class ResetSyncRequest(BaseModel):
+    # "digital" = trust-digital recovery (kiosk 重置识别 / escalation restored): re-baseline
+    # to the game, clear the stuck removal/pause. "physical" = accept the camera board as-is
+    # (ambiguous-stone 忽略): keep the ignored stone in the detector baseline so it doesn't
+    # re-fire.
+    adopt: str = "digital"
+
+
 # -- Helpers -----------------------------------------------------------------
 
 
@@ -53,7 +61,9 @@ async def vision_status(request: Request):
             "geometry_ready": False,
             "model_ready": False,
             "recognition_ready": False,
+            "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
         }
+
     vision.refresh_status()
     return {
         "enabled": vision.enabled,
@@ -65,6 +75,7 @@ async def vision_status(request: Request):
         "geometry_ready": vision._latest_status.geometry_ready,
         "model_ready": vision._latest_status.model_ready,
         "recognition_ready": vision._latest_status.recognition_ready,
+        "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
     }
 
 
@@ -113,16 +124,25 @@ async def bind_session(request: Request, body: BindRequest):
     """Bind vision to a game session."""
     vision = _get_vision(request)
     manager = request.app.state.session_manager
-    session = manager.get_session(body.session_id)
+    try:
+        session = manager.get_session(body.session_id)
+    except KeyError:
+        # A stale tab re-binding a session lost to a server restart must get a clean
+        # 404, not a KeyError 500 (SessionManager.get_session raises, not returns None).
+        session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
 
     vision.bind_session(body.session_id)
 
     # Set expected board from current game state
-    game_state = session.get_game_state()
+    game_state = session.katrain.get_state()
     if game_state and "stones" in game_state:
         vision.set_expected_from_stones(game_state["stones"])
+
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.on_bind(body.session_id, session)
 
     return {"ok": True, "session_id": body.session_id}
 
@@ -131,15 +151,28 @@ async def bind_session(request: Request, body: BindRequest):
 async def unbind_session(request: Request):
     """Unbind from current session."""
     vision = _get_vision(request)
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.on_unbind()
     vision.unbind_session()
     return {"ok": True}
 
 
 @router.post("/sync/reset")
-async def reset_sync(request: Request):
-    """Reset sync — accept current physical board as new baseline. Research mode only."""
+async def reset_sync(request: Request, body: ResetSyncRequest | None = None):
+    """Reset vision sync. adopt='digital' (default; kiosk 重置识别 / escalation '已按指示恢复')
+    delegates to the physical-play orchestrator — re-baseline to the DIGITAL game, discard
+    camera phantoms, and release any stuck removal/pause so play continues. adopt='physical'
+    (ambiguous-stone 忽略) accepts the current camera board as baseline so the ignored stone
+    doesn't re-fire. Falls back to a plain physical-adopt reset with no orchestrator
+    (research mode)."""
     vision = _get_vision(request)
-    vision.reset_sync()
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    adopt = body.adopt if body else "digital"
+    if orchestrator is not None and adopt != "physical":
+        orchestrator.resync()
+    else:
+        vision.reset_sync()
     return {"ok": True}
 
 

@@ -1,12 +1,33 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { API } from '../../api';
 import type { GameState } from '../../api';
 
+// Single unified mock of the real api.ts. Spread the actual module so untouched exports keep
+// their real impls, then override exactly what the two suites drive: platformEngineAnalysis/
+// platformEngineItems (star阵 tunnel) as bare vi.fn spies, and requestCount/analyzeCurrent/
+// hintDismiss/hint via `mock`-prefixed closures (hoist-safe; defined below, bound at call time).
+vi.mock('../../api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api')>();
+  return {
+    ...actual,
+    API: {
+      ...actual.API,
+      platformEngineAnalysis: vi.fn(),
+      platformEngineItems: vi.fn(),
+      requestCount: (...a: any[]) => mockRequestCount(...a),
+      analyzeCurrent: (...a: any[]) => mockAnalyzeCurrent(...a),
+      hintDismiss: (...a: any[]) => mockHintDismiss(...a),
+      hint: (...a: any[]) => mockHint(...a),
+    },
+  };
+});
+
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
@@ -26,10 +47,16 @@ vi.mock('../../context/AuthContext', () => ({
 
 // Mock Board with a lightweight stub that exposes a button to trigger onMove(3, 3) —
 // the real Board is canvas-based and can't render in jsdom, and wiring the real thing
-// would be far heavier than exercising the onMove error path needs.
+// would be far heavier than exercising the onMove error path needs. Also surfaces the
+// `engineOverlay` prop as data attributes so tests can assert the decoded overlay
+// GamePage hands to Board without fighting jsdom canvas.
 vi.mock('../../components/Board', () => ({
   default: (props: any) => (
-    <div data-testid="board">
+    <div
+      data-testid="board"
+      data-active-kind={props.engineOverlay?.kind ?? ''}
+      data-overlay={JSON.stringify(props.engineOverlay ?? null)}
+    >
       <button onClick={() => props.onMove(3, 3)}>trigger-move</button>
     </div>
   ),
@@ -49,6 +76,11 @@ const mockSetSessionId = vi.fn();
 const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn();
 const mockOnNavigate = vi.fn();
+// API is mocked (below) so 数子 (count) and the on-demand analysis effect don't hit the network.
+const mockRequestCount = vi.fn();
+const mockAnalyzeCurrent = vi.fn();
+const mockHintDismiss = vi.fn();
+const mockHint = vi.fn();
 
 const mockGameState: GameState = {
   game_id: 'test-game',
@@ -106,46 +138,73 @@ vi.mock('../../hooks/useGameSession', () => ({
 // Import after mocks
 import GamePage from '../pages/GamePage';
 
-const renderPage = (engineMode: boolean) =>
-  render(
-    <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={['/kiosk/play/cross-platform/engine/game/test-session']}>
-        <Routes>
-          <Route path="/kiosk/play/cross-platform/engine/game/:sessionId" element={<GamePage engineMode={engineMode} />} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
+const renderTree = (engineMode: boolean) => (
+  <ThemeProvider theme={kioskTheme}>
+    <MemoryRouter initialEntries={['/kiosk/play/cross-platform/engine/game/test-session']}>
+      <Routes>
+        <Route path="/kiosk/play/cross-platform/engine/game/:sessionId" element={<GamePage engineMode={engineMode} />} />
+      </Routes>
+    </MemoryRouter>
+  </ThemeProvider>
+);
+
+const renderPage = (engineMode: boolean) => render(renderTree(engineMode));
 
 describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
+    mockRequestCount.mockResolvedValue({ state: mockGameState });
+    mockAnalyzeCurrent.mockResolvedValue({});
+    mockHintDismiss.mockResolvedValue({ ok: true });
+    (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockReset();
+    // Default: the mount-time badge fetch resolves with three counts. Individual
+    // tests override as needed.
+    (API.platformEngineItems as ReturnType<typeof vi.fn>).mockReset();
+    (API.platformEngineItems as ReturnType<typeof vi.fn>).mockResolvedValue({ area: 396, options: 398, variation: 3 });
   });
 
-  it('disables Pass and Score when engineMode, but keeps Resign enabled', () => {
+  afterEach(() => {
+    // Some tests mutate mockGameState.current_node_id / .count_min_moves to simulate the
+    // position advancing or clear the 数子 move-count gate — restore them so they don't
+    // bleed into later tests.
+    mockGameState.current_node_id = 42;
+    mockGameState.count_min_moves = undefined;
+  });
+
+  it('停一手/认输 stay enabled in engineMode (galaxy-reference: no blunt engineMode disable)', async () => {
     renderPage(true);
 
-    // Clicking a disabled ItemToggle must not reach session.handleAction (via GamePage's
-    // handleAction wrapper) — ItemToggle sets onClick to undefined when disabled.
+    // 停一手 is available whenever the game is not over — including Golaxy 人机对弈 — and
+    // routes through session.handleAction. (The galaxy web reference gates it on isGameOver
+    // only; there is no engineMode disable.)
     fireEvent.click(screen.getByText('停一手'));
-    fireEvent.click(screen.getByText('数子'));
-    expect(mockHandleAction).not.toHaveBeenCalled();
+    expect(mockHandleAction).toHaveBeenCalledWith('pass');
 
-    // Resign must stay enabled — clicking it should still open the confirm dialog
-    // (GamePage's handleAction intercepts 'resign' before calling session.handleAction).
+    // 认输 also stays enabled (opens the confirm dialog, intercepted before session.handleAction).
     fireEvent.click(screen.getByText('认输'));
     expect(screen.getByText('确认认输？')).toBeInTheDocument();
   });
 
-  it('leaves Pass and Score enabled without engineMode (baseline)', () => {
+  it('数子 is disabled before count_min_moves — the button is gated, no count call fires', async () => {
+    // Default mock has 2 moves < count_min_moves(100) → 数子 disabled (ItemToggle drops onClick),
+    // matching the galaxy reference and the backend /api/count/request move-count guard.
     renderPage(false);
 
-    fireEvent.click(screen.getByText('停一手'));
-    expect(mockHandleAction).toHaveBeenCalledWith('pass');
-
     fireEvent.click(screen.getByText('数子'));
-    expect(mockHandleAction).toHaveBeenCalledWith('count');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockRequestCount).not.toHaveBeenCalled();
+  });
+
+  it('数子 enables at ≥ count_min_moves and counts immediately via requestCount (HvAI)', async () => {
+    // Lower the threshold so the 2-move mock clears the gate (restored in afterEach).
+    mockGameState.count_min_moves = 1;
+    renderPage(false);
+
+    // 数子 now routes to the count API directly (HvAI completes immediately), NOT session.handleAction.
+    fireEvent.click(screen.getByText('数子'));
+    await waitFor(() => expect(mockRequestCount).toHaveBeenCalledWith('test-session'));
+    expect(mockHandleAction).not.toHaveBeenCalledWith('count');
   });
 
   it('shows the engine error toast when a move fails in engineMode', async () => {
@@ -166,5 +225,246 @@ describe('GamePage engine mode', () => {
     // Let the rejected promise's microtask settle before asserting absence.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(screen.queryByText(/AI 连接出错/)).not.toBeInTheDocument();
+  });
+
+  describe('星阵隧道分析 (领地/支招/变化图)', () => {
+    it('renders the three engine buttons and hides local 建议/图表/形势 + ScoreGraph in engineMode', () => {
+      renderPage(true);
+
+      expect(screen.getByText('领地')).toBeInTheDocument();
+      expect(screen.getByText('支招')).toBeInTheDocument();
+      expect(screen.getByText('变化图')).toBeInTheDocument();
+
+      // No local KataGo analysis controls and no winrate chart — golaxy 人机对弈 has neither.
+      expect(screen.queryByText('建议')).not.toBeInTheDocument();
+      expect(screen.queryByText('图表')).not.toBeInTheDocument();
+      expect(screen.queryByText('形势')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('score-graph')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('score-graph-component')).not.toBeInTheDocument();
+    });
+
+    it('leaves the local 领地/AI支招/图表 controls in place without engineMode', () => {
+      renderPage(false);
+
+      expect(screen.getByText('领地')).toBeInTheDocument();
+      // 建议 was renamed to AI支招 (a one-shot hint action, not a toggle) in local free-play.
+      expect(screen.getByText('AI支招')).toBeInTheDocument();
+      expect(screen.getByText('图表')).toBeInTheDocument();
+    });
+
+    it('shows remaining-uses badges from the mount fetch (领地396/支招398/变化图3)', async () => {
+      renderPage(true);
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledWith('golaxy', 'mock-token'));
+      const badges = await screen.findAllByTestId('item-badge');
+      const texts = badges.map((b) => b.textContent);
+      expect(texts).toContain('396');
+      expect(texts).toContain('398');
+      expect(texts).toContain('3');
+    });
+
+    it('renders a 0 badge (次数不足) when a count is exhausted', async () => {
+      (API.platformEngineItems as ReturnType<typeof vi.fn>).mockResolvedValue({ area: 396, options: 0, variation: 3 });
+      renderPage(true);
+      await waitFor(() => {
+        const texts = screen.getAllByTestId('item-badge').map((b) => b.textContent);
+        expect(texts).toContain('0');
+      });
+    });
+
+    it('refetches the counts after an analysis settles (badge resync)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      renderPage(true);
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledTimes(1)); // mount
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledTimes(2)); // after analysis
+    });
+
+    it('clicking 支招 calls API.platformEngineAnalysis(golaxy, sessionId, options, token)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false, reason: 'insufficient', kind: 'options',
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+
+      await waitFor(() => {
+        expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'options', 'mock-token');
+      });
+    });
+
+    it('ok:true sets activeEngineKind and passes the decoded overlay through to Board (options)', async () => {
+      const candidates = [
+        { col: 3, row: 3, prob: 0.6, winrate: 0.55, delta: -1.2 },
+        { col: 15, row: 15, prob: 0.3, winrate: 0.5, delta: -2.1 },
+      ];
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options');
+      });
+      const overlay = JSON.parse(screen.getByTestId('board').getAttribute('data-overlay')!);
+      expect(overlay).toEqual({ kind: 'options', candidates });
+    });
+
+    it('clicking the same active kind again toggles the overlay off (no re-fetch)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1);
+    });
+
+    it('clicking a DIFFERENT kind replaces the active overlay (mutual exclusion)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 } })
+        .mockResolvedValueOnce({ ok: true, kind: 'variation', data: { sequence: [{ col: 3, row: 3 }, { col: 4, row: 4 }], winrate: 0.5, delta: 0 } });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      fireEvent.click(screen.getByText('变化图'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'variation'));
+    });
+
+    it('ok:false insufficient shows the 充值 modal and leaves the current overlay untouched', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 } })
+        .mockResolvedValueOnce({ ok: false, reason: 'insufficient', kind: 'options' });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      fireEvent.click(screen.getByText('支招'));
+
+      expect(await screen.findByText(/请在星阵.*充值/)).toBeInTheDocument();
+      expect(screen.getByText(/本终端不代充/)).toBeInTheDocument();
+      // The insufficient response must not disturb the already-active 领地 overlay.
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area');
+    });
+
+    it('closes the 充值 modal on 关闭 without touching the active overlay', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false, reason: 'insufficient', kind: 'variation',
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('变化图'));
+      expect(await screen.findByText(/变化图.*已用尽/)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('关闭'));
+      await waitFor(() => {
+        expect(screen.queryByText(/请在星阵.*充值/)).not.toBeInTheDocument();
+      });
+    });
+
+    it('clears the overlay + active kind when the board position changes (stale-overlay fix)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
+      });
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      // Simulate the position advancing (a move played, human or AI) by mutating the
+      // mocked session's current_node_id and re-rendering, the way React would after
+      // useGameSession's underlying state updates.
+      mockGameState.current_node_id = 43;
+      rerender(renderTree(true));
+
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+    });
+
+    it('does NOT clear the overlay on an unrelated re-render (same current_node_id)', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
+      });
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      // Re-render with the same current_node_id (unrelated re-render) — overlay must survive.
+      rerender(renderTree(true));
+
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area');
+    });
+
+    it('shows the engine error toast when platformEngineAnalysis rejects, leaving overlay/active kind unchanged', async () => {
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('network fail'));
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+
+      expect(await screen.findByText(/AI 连接出错/)).toBeInTheDocument();
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', '');
+      expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+    });
+
+    it('discards a stale ok:true response that resolves after the position has advanced (race fix)', async () => {
+      let resolveAnalysis: (value: unknown) => void = () => {};
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveAnalysis = resolve; })
+      );
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1));
+
+      // Position advances (a move played) while the request is still in flight.
+      mockGameState.current_node_id = 43;
+      rerender(renderTree(true));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      // The stale request now finally resolves ok:true, computed for the OLD position.
+      resolveAnalysis({ ok: true, kind: 'options', data: { candidates: [{ col: 3, row: 3, prob: 0.6, winrate: 0.55, delta: -1.2 }] } });
+
+      // Give the resolved promise's continuation a tick to run, then assert the stale
+      // overlay was NOT resurrected — Board still sees no active overlay.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', '');
+      expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+    });
+
+    it('a second click while a request is in-flight does not trigger a second platformEngineAnalysis call (quota guard)', async () => {
+      let resolveFirst: (value: unknown) => void = () => {};
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveFirst = resolve; })
+      );
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      fireEvent.click(screen.getByText('支招'));
+      fireEvent.click(screen.getByText('领地'));
+
+      expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1);
+
+      resolveFirst({ ok: true, kind: 'options', data: { candidates: [] } });
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      // Once the in-flight request resolves, the guard must release — a further click works.
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [], winrate: 0.5, delta: 0 },
+      });
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2));
+    });
   });
 });

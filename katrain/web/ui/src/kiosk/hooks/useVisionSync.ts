@@ -17,7 +17,9 @@ export type SyncEventType =
   | 'capture_pending'
   | 'captures_cleared'
   | 'illegal_change'
-  | 'board_lost';
+  | 'board_lost'
+  | 'move_pending'
+  | 'synced';
 
 export interface VisionSyncEvent {
   seq: number; // frontend-local monotonic sequence (survives MAX_EVENTS trimming)

@@ -5,19 +5,45 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
 
-const mockSetRotation = vi.fn();
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: mockSetRotation }),
+// B6: SettingsPage pulls in useSettings/useAuth/useGeometry (via AccountSection +
+// PhysicalBoardStatus). Mock each context module directly — same idiom as
+// src/kiosk/__tests__/KioskAuth.test.tsx (AuthContext) and
+// src/kiosk/__tests__/PhysicalBoardStatus.test.tsx (GeometryContext) — rather
+// than mounting the real providers, which would require faking network calls
+// (SettingsProvider's i18n.loadTranslations, GeometryProvider's status poll).
+const mockSetLanguage = vi.fn();
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({
+    language: 'cn',
+    setLanguage: mockSetLanguage,
+    // Shares galaxy's full catalog; a small subset is enough to exercise the Select.
+    languages: [
+      { code: 'en', name: 'English' },
+      { code: 'cn', name: '中文' },
+      { code: 'jp', name: '日本語' },
+    ],
+  }),
 }));
 
-// SettingsPage now reads the real language system via useSettings; stub it (mirrors the
-// OrientationContext mock) so the page renders without a full SettingsProvider.
-vi.mock('../../context/SettingsContext', () => ({
-  useSettings: () => ({ language: 'cn', setLanguage: vi.fn(), languages: [] }),
-  languages: [
-    { code: 'cn', name: '中文' },
-    { code: 'en', name: 'English' },
-  ],
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+    isAuthenticated: true,
+    login: vi.fn(),
+    logout: vi.fn(),
+    token: 'mock-token',
+  }),
+}));
+
+vi.mock('../context/GeometryContext', () => ({
+  useGeometry: () => ({
+    status: {
+      phase: 'required',
+      session_calibrated: false,
+      last_valid: false,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+    },
+  }),
 }));
 
 const renderPage = () =>
@@ -39,18 +65,12 @@ describe('SettingsPage', () => {
     expect(screen.getByRole('button', { name: '重新标定棋盘' })).toBeInTheDocument();
   });
 
-  it('renders rotation chips with all 4 options', () => {
+  it('switches language via the persisted setter through the shared catalog', () => {
+    mockSetLanguage.mockClear();
     renderPage();
-    expect(screen.getByText('屏幕旋转')).toBeInTheDocument();
-    expect(screen.getByText('0° 横屏')).toBeInTheDocument();
-    expect(screen.getByText('90° 竖屏')).toBeInTheDocument();
-    expect(screen.getByText('180° 横屏翻转')).toBeInTheDocument();
-    expect(screen.getByText('270° 竖屏翻转')).toBeInTheDocument();
-  });
-
-  it('calls setRotation when a rotation chip is clicked', () => {
-    renderPage();
-    fireEvent.click(screen.getByText('90° 竖屏'));
-    expect(mockSetRotation).toHaveBeenCalledWith(90);
+    // Open the language Select (renders the current value 中文) and pick English.
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    fireEvent.click(screen.getByRole('option', { name: 'English' }));
+    expect(mockSetLanguage).toHaveBeenCalledWith('en');
   });
 });

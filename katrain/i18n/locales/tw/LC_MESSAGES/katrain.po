@@ -2545,3 +2545,12 @@ msgstr "排隊中"
 
 msgid "report:summary_failed"
 msgstr "失敗"
+
+msgid "Suggest"
+msgstr "支招"
+
+msgid "Variation Line"
+msgstr "變化圖"
+
+msgid "game:pass"
+msgstr "停一手"

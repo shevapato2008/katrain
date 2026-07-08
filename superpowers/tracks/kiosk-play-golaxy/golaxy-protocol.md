@@ -234,3 +234,127 @@ colIndex      = coord % 19
 **→ 对齐 Golaxy 自由对弈 = 加"让子"下拉（komi 自动推导）+ 颜色扩为 猜先/执黑/执白；棋盘/规则/贴目/计时 全固定。原 §12 计划里的 komi/规则 选择器应删除。**
 
 > ⚠️ 更正 §8.3：让子局 komi 用 **让子档位对应值（chinese 让N子=N、分先=7.5）**，非我 Phase 0 探针里用的 0.5（0.5 隧道也接受，但与星阵不一致）。让子机制仍为「塞 N 颗标准星位(黑) + handicap=N」（Phase 0 §8.3 实测成立）。
+
+---
+
+## 9. 局内分析隧道（领地/支招/形势/变化图）—— 从 app.js 源码逆向
+
+> **2026-07-07** 从当前 bundle `assets.19x19.com/web-resource/golaxy/20260701_script/js/app.9dd37558.js` 逆向（studying real source，非脑补）。genmove(§2) 只是隧道家族的一员；星阵局内的 **领地/支招/变化图/形势** 四个功能背后是 **同族的 `serve:"engine"` REST 隧道**，鉴权/坐标/参数与 genmove 一致，因此**可同样对接**。
+> ⚠️ 以下**端点、方法、参数构造、缓存/限次机制、响应字段名**均来自源码，确凿；但**逐端点响应的完整 JSON 结构**尚需一次实盘 (B) 精校（`变化图` 有额度可测）。已在 §9.5 标注待测点。
+
+### 9.1 端点表（`apiList`，源码原文）
+```
+applyJudgeData : /api/engine/dcnn/tunnel/public/area   (公共/无鉴权 area)
+area           : /api/engine/dcnn/tunnel/area          serve:engine   → 领地(每点归属 + winrate + delta)
+options        : /api/engine/dcnn/tunnel/options       serve:engine   → 支招(候选着列表)
+variation      : /api/engine/dcnn/tunnel/variation     serve:engine   → 变化图(AI 变化手序)
+judge          : /api/engine/dcnn/tunnel/judge         serve:engine   → 形势(winner/delta/owner)
+genmove        : /api/engine/dcnn/tunnel/genmove       serve:engine   → 对手落子(§2)
+```
+base host = `https://api.19x19.com`（`serve:"engine"`），与 genmove 同域同鉴权（`Authorization: bearer <token>` + 浏览器 Origin/Referer/UA，见 §1）。
+
+### 9.2 请求（GET，参数构造 `probsParamsGet`）
+源码 `probsParamsGet(e)`：**先删除传入的 `level`/`style`**，再用固定基底覆盖：
+```js
+n = { moves:"", boardsize:BS, board_size:BS, level: maxLevel||8888,
+      style: this.style, komi: this.komi, rule: this.rule, org: this.org }
+// 然后 probsDataPush() 追加 context_name
+```
+- **method = GET**，参数拼进 query（`urlParse(url, params)`），与 genmove 完全同构。
+- `moves`：完整着手历史 CSV（§3 坐标编码），开局为空。
+- `board_size` **和** `boardsize` 都发（19），冗余，同 genmove。
+- ⚠️ **`level` = `maxLevel`（观测 `probsLevel=8888` = 满血最强引擎），与对手 bot 的强度无关**。即：不管你在跟几级的 bot 下，**分析/支招/形势/变化图都用最强引擎算**。komi/rule/org 取当前对局配置。
+- `type`（area/options/judge/variation）是**内部路由键**（选 `apiList[type].url`），非业务查询参数。
+
+### 9.3 各端点响应（字段来自源码消费处）
+- **judge（形势）** → **⚠️ 实测更正见 §9.5**：真实为 `{code:0, data:{belong:"<361 字符 U/B/W>", winner, delta}}`（下面 owner-map 说法作废）。~~`{code:0, data:{winner:"B"|"W"|"U"|"D", delta:<number>, owner:{<coord>:1|-1|0}}}`~~
+  - `owner[coord]`：`1`=黑地、`-1`=白地、`0`=未定（`U`/`D` → 有未定/和棋，前端不 `/2`）。
+  - `delta`：**目差（子）**；前端 `winner∉{U,D}` 时取 `delta/2` 显示为"黑领先 N 目"。
+- **area（领地）** → 每点归属值 `{<coord>:<areaValue>}`（`areaValue<0` 或 `<areaMinValue` 不画），**并含 `winrate`（0..1）与 `delta`**（前端 `area.res.winrate` / `area.res.delta` → 底部"黑棋胜率/黑棋领先"就来自这里）。
+- **options（支招）** → `parseData(raw)`（`JSON.parse` 字符串）后取 `.coord`：候选着**坐标列表**（附带各手概率/胜率，字段名待 §9.5 实测）。
+- **variation（变化图）** → 同 options：`parseData` 后取 `.coord`，得**一串变化手的坐标序列**。
+- `parseData`：若为字符串则 `JSON.parse`，否则原样。
+
+### 9.4 计费/限次 + 缓存（关键产品约束）
+- **限次道具**：前端 `propsMine.options` / `propsMine.variation` 是**剩余次数**（截图角标 `支招:0`、`变化图:7`）。每次真实请求消耗一次；`0` 则不可用。→ 对接后**每点一次花用户一次星阵额度**，UI 必须**按需触发 + 显示剩余次数**，不可常驻自动请求。
+- **客户端缓存**：`setStoreData` 只缓存 `{area, options, variation}`，键为 `(type, moves)`——**同一局面重复看不重复扣次**；`judge` **不缓存**（每次实算，可能免费或另计）。对接时应**复刻按 moves 缓存**以省额度。
+- **互斥叠加**：`boardChatFun` 里 area/branch(变化图)/prop(支招)/gameJudge(形势) 互相 `off`——**同一时刻只显示一种叠加**。
+
+### 9.4a 剩余次数来源端点 `items`（源码确认 2026-07-07 · app.9dd37558.js）
+
+角标 `领地N/支招N/变化图N` 的数据源。**从公开 bundle 静态确认**（无 token、未做 live 抓取——会话已登出，且沙箱正确拦截 token 观测）：
+
+- **端点**：`GET https://api.19x19.com/api/engine/items/{username}`
+  - 源码：`userToolGet(){ n={url:"/items/"+store.state.username, timeout:2e4, method:"get"}; e.request("engine",n) }`。
+  - group `"engine"` → base `/api/engine`（与 `/dcnn/tunnel/*` 同组），故完整路径如上。
+  - **鉴权/头**：走与 genmove **同一条** `request("engine",…)` 通道 → `Authorization: bearer <token>` + 浏览器 Origin/Referer/UA（复用 `engine_client` 既有头）。
+- **`{username}`** = 星阵 `store.state.username` = localStorage `keep_login_username` = **`0086-{手机号}`**（实测非敏感值 `0086-13116158612`）。**= 我们登录时已用的 `username=f"0086-{phone}"`**（`adapter.py:315/342`），后端已持有，无需解 JWT / 另抓。
+- **响应**：`{code, data}`，`code=="0"` 成功（字符串，同其它端点）。`data` **可能是 JSON 字符串**（源码 `try{r.data=JSON.parse(r.data)}catch{}`）→ 解析后为对象，键含 `area / options / variation`（及其它道具键）。
+  - 消费处：`userPropsInit → propsMine = n.data`；`this.propsMine.area||0`、`this.propsMine.options||0`、`this.propsMine.variation||0` → **均为整数剩余次数**（`||0` 兜底）。
+  - `userToolHandle` 另把 `data`（剔除 `{code,errorMsg,username}`）存为 `tool`——同源数据，本 kiosk 只取 `area/options/variation` 三项。
+- ⚠️ **未 live 验证的残留假设**（留待 Phase 5 真机确认）：`data` 内 `area/options/variation` 为顶层整数键。实现须**防御式**：`data` 为字符串则先 parse；缺键按"未知/不显示"处理，**不阻塞对弈**（对齐 §13 非目标"缺失不阻塞"）。
+- **刷新时机**：进入对局(mount)拉一次；每次 area/options/variation 隧道**成功或 `7003` 后**重拉（golaxy 前端亦在消费后刷新 `propsMine`）——保证角标是真实剩余。judge 免费、不影响三项道具。
+
+### 9.5 实测确认（2026-07-07 · 浏览器自动化直打隧道 · moves=`72,300`[黑Q16,白Q4] · 账号 61707593）
+
+直接以页面 `fetch` 打四个隧道（token 从 localStorage 取、仅用于 header、未落盘），真实响应：
+
+**variation（变化图）** — `code 0`：
+```json
+{"code":"0","data":{"winrate":0.375,"delta":-2.1,"coord":[60,288,320,301,319,299,317,54,73,53,51]}}
+```
+- `coord` = **变化手序坐标数组**（本次 11 手，即 UI 上 1..11）。**无需指定从哪手展开**——默认返回主变。
+- `winrate`(0..1) + `delta`(目差) = 该变化局面评估。**限次**（本次 7→6）。
+
+**judge（形势）** — `code 0`，**免费**（未扣任何道具）：
+```json
+{"code":"0","data":{"belong":"UUU…(361 字符 U/B/W，每点一位)…","winner":"U","delta":0}}
+```
+- `belong`：**长度 361 的字符串**，每点归属 `U`未定 / `B`黑 / `W`白（**非** object map）。
+- `winner`：`U`未定 / `B` / `W` / `D`和；`delta`：目差。
+- ⚠️ **更正 §9.3**：judge 用 **`belong` 字符串**（不是 `owner` 对象）；judge 顶层**没有 winrate**（只有 belong/winner/delta）。winrate 来自 **variation**（和 area）。
+
+**area（领地）** 与 **options（支招）** — **首次样本**（道具剩 0）均 **`7003`**：
+```json
+{"code":"7003","msg":"item is not sufficient","data":""}
+```
+
+**area / options 成功结构（2026-07-07 第二次实测，领地/支招 充值后，同 moves=`288,300`[黑D4,白Q4]）：**
+
+**area（领地）** — `code 0`：
+```json
+{"code":"0","msg":"","data":{"winrate":0.375,"delta":-2.2,"area":[<722 个 float>]}}
+```
+- ⚠️ **`data.area` 是长度 722 的扁平数组（= 361 × 2），不是 §9.3 源码推测的 `{coord:value}` 映射。**
+- **前 361 项 = 每点归属**，下标即 coord（`c=(19-row)*19+col`）：`>0`→黑地、`<0`→白地、`|值|`≈归属强度（范围约 `[-1,1]`）。**实盘校验**：黑子 D4(coord 288)=`+0.683`、白子 Q4(coord 300)=`-0.729`（互相印证坐标+符号）。交错假设 `a[2i],a[2i+1]` 已证伪。
+- **后 361 项** 本样本≈ `-0.99` 常量（近空盘；含义不明，**kiosk 只用前 361**）。
+- 顶层 `winrate`(黑棋胜率 0..1) + `delta`(黑棋目差) —— 即前端底部"黑棋胜率/黑棋领先"。
+- **限次**（本次 领地 398→396，抓结构花 2 次）。
+
+**options（支招）** — `code 0`：
+```json
+{"code":"0","msg":"","data":{"coord":[60,59,320,41,72],"prob":[0.4,0.189,0.144,0.133,0.122],"winrate":[0.376,0.377,0.374,0.372,0.374],"delta":[-2.1,-2.1,-1.9,-1.8,-2.2]}}
+```
+- 四个**等长并行数组**（本次 5 个候选）：`coord`=候选着坐标（coord 编码）、`prob`=推荐概率（降序，和≈1）、`winrate`=该手后黑胜率、`delta`=该手后黑目差。
+- **无需 `parseData`**（本次 data 已是对象，非字符串；若为字符串则按 §9.3 `JSON.parse`）。**限次**（支招 399→398）。
+
+**variation（变化图）** — 复测同 §9.5 顶部结构（`{winrate,delta,coord[11]}`），本次 `coord=[60,72,54,53,73,91,111,40,41,59,97]`，坐标编码一致。**限次**（变化图 4→3）。
+
+**由此确认：**
+- **计费**：`judge` **免费**；`variation`/`area`/`options` **各自独立限次**（本次 变化图 7、领地 0、支招 0）。
+- **错误码 `7003 "item is not sufficient"` = 道具次数不足** → UI 据此提示"次数不足/充值"、禁用该按钮。
+- **`type` 不进 query**（未发 type 即 `code 0`）；analysis 用 `level=8888`（满血）实测可行；参数集 = `moves/board_size/boardsize/komi/rule/handicap/level/style/org/context_name`。
+- ⚠️ **不要据 judge 本次 code 0 就当"免费"**：星阵把 领地/支招/变化图 都做成**付费道具**（实测截图：`领地 x400 = 28星币`，道具用尽弹"可用余额兑换"）。`judge` 这次没扣道具可能是独立额度/形势判断另计，样本仅 1，**不足以断言无限免费**。且这些分析全在**星阵服务器**算（我们只做隧道代理，本地 RK3562 不参与）；本地弱 KataGo 能算但（i）非最优、（ii）等于对弈中挂自家引擎助战。
+- **对齐星阵 = 按付费道具处理**：领地/支招/变化图 全走隧道、用**用户自己的星阵 token**，消耗记在**用户星阵账号**上；kiosk 只显示真实剩余次数，`7003` 时提示"次数不足 · 请在星阵充值"，**不做假免费分析**。**人机对弈无胜率图**（星阵没有，我们也不放）。
+
+> token 全程仅在页面内存用于 header，未写入仓库/日志/文档。
+
+### 9.6 → 对 kiosk 的直接映射（对接落点）
+| kiosk 按钮（应对齐后） | 星阵端点 | 局内语义 |
+|---|---|---|
+| 领地 | `tunnel/area` | 每点归属叠加（+胜率/目差） |
+| 支招（原"建议"） | `tunnel/options` | 候选着标记（限次） |
+| 变化图（**新增**） | `tunnel/variation` | AI 变化手序（限次） |
+| 形势/胜率（原"图表"改按需） | `tunnel/judge` 或 `area.winrate` | winner/delta/owner |
+- 我方 `GameControlPanel` 现有的 领地/建议/图表 走的是**本地 KataGo 分析**，引擎对局下无数据→失效（且用本地引擎助战=作弊）。对接后改为**调星阵这四个隧道**，即"用星阵自己的、受其限次约束的局内助手"，非作弊。
+- 落地细节（按钮全量对齐 + 限次感知 UI + 缓存）另见 `../kiosk-ui-redesign/` 的对局态设计稿更新与本 track plan。

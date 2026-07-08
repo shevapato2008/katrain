@@ -20,8 +20,6 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialBookDetail, TutorialSection } from '../../types/tutorial';
 import type { SectionNavState } from '../types/tutorialNav';
 
-const JADE = '#5cb57a';
-
 /**
  * Route: /kiosk/tutorial/book/:bookId — chapter/section tree for one book.
  *
@@ -85,7 +83,7 @@ const TutorialBookDetailPage = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
@@ -139,9 +137,11 @@ const TutorialBookDetailPage = () => {
                 defaultExpanded
                 disableGutters
                 sx={{
-                  bgcolor: 'rgba(255,255,255,0.05)',
+                  bgcolor: 'background.paper',
                   borderRadius: '12px',
                   mb: 1.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
                   '&:before': { display: 'none' },
                 }}
               >
@@ -188,7 +188,7 @@ const TutorialBookDetailPage = () => {
                                 <Typography variant="body2" color="text.secondary">
                                   {s.figure_count} {t('tutorial:figures', '图')}
                                 </Typography>
-                                {s.has_video && <PlayCircleOutline sx={{ color: JADE }} />}
+                                {s.has_video && <PlayCircleOutline sx={{ color: 'primary.main' }} />}
                               </Box>
                             </ListItemButton>
                           </ListItem>

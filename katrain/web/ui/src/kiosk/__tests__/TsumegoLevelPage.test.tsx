@@ -184,7 +184,7 @@ describe('TsumegoLevelPage', () => {
     // toHaveStyle normalizes hex → rgb, so assert on the computed border-color.
     const card1 = screen.getByText('#1').closest('.MuiCard-root') as HTMLElement;
     const card2 = screen.getByText('#2').closest('.MuiCard-root') as HTMLElement;
-    expect(card1).toHaveStyle('border-color: rgb(92, 181, 122)'); // #5cb57a
-    expect(card2).toHaveStyle('border-color: rgb(196, 154, 60)'); // #c49a3c
+    expect(card1).toHaveStyle('border-color: rgb(88, 181, 122)'); // #58b57a
+    expect(card2).toHaveStyle('border-color: rgb(224, 162, 74)'); // #e0a24a
   });
 });

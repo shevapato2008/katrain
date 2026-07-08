@@ -7,6 +7,7 @@ Auth: phone-only (+86 Chinese mobile number).
 from __future__ import annotations
 
 import base64
+import itertools
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
@@ -16,7 +17,17 @@ import httpx
 from katrain.web.platforms.base import PlatformAdapter
 from katrain.web.platforms.golaxy import engine_client
 from katrain.web.platforms.golaxy.coords import Move, golaxy_to_katrain, katrain_to_golaxy
-from katrain.web.platforms.golaxy.engine_client import AuthExpired, GenmoveResult, Retryable
+from katrain.web.platforms.golaxy.engine_client import (
+    AreaResult,
+    AuthExpired,
+    Fatal,
+    GenmoveResult,
+    ItemCountsResult,
+    JudgeResult,
+    OptionsResult,
+    Retryable,
+    VariationResult,
+)
 from katrain.web.platforms.models import (
     ClockState,
     GamePhase,
@@ -97,6 +108,164 @@ class EngineGameStart:
     first_ai_move: Optional[PlatformMove]  # populated iff human plays White (AI black opens)
 
 
+# --- Engine analysis (area/options/judge/variation) result types -----------
+#
+# Typed, JSON-serializable (via dataclasses.asdict) per-kind results returned
+# by GolaxyAdapter.engine_analysis. These decode the Task-1 engine_client
+# results (raw Golaxy int coords / the 722-float area list / the 361-char
+# judge belong string) into KaTrain (col, row) structures using
+# coords.golaxy_to_katrain -- see golaxy-protocol.md Section 9.5.
+
+
+@dataclass(frozen=True)
+class OwnershipPoint:
+    """One board point's 领地 (territory) ownership value from the area tunnel.
+
+    `value` is the raw signed float from Golaxy: positive = 黑地 (black
+    territory), negative = 白地 (white territory). Not thresholded here --
+    the frontend renders intensity."""
+
+    col: int
+    row: int
+    value: float
+
+
+@dataclass(frozen=True)
+class AreaAnalysis:
+    """Decoded result of the `area` (领地) tunnel: 361 ownership points plus
+    the resulting winrate/delta (passed through verbatim)."""
+
+    ownership: list[OwnershipPoint]
+    winrate: float
+    delta: float
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """One candidate move from the `options` (支招) tunnel, decoded to
+    (col, row) with its recommendation probability and resulting
+    winrate/delta."""
+
+    col: int
+    row: int
+    prob: float
+    winrate: float
+    delta: float
+
+
+@dataclass(frozen=True)
+class OptionsAnalysis:
+    """Decoded result of the `options` (支招) tunnel: ranked candidate moves.
+    No top-level winrate/delta -- each candidate carries its own."""
+
+    candidates: list[Candidate]
+
+
+@dataclass(frozen=True)
+class Point:
+    """A bare board point, in KaTrain (col, row) convention."""
+
+    col: int
+    row: int
+
+
+@dataclass(frozen=True)
+class VariationAnalysis:
+    """Decoded result of the `variation` (变化图) tunnel: the AI's principal
+    variation as an ordered point sequence, plus the resulting winrate/delta."""
+
+    sequence: list[Point]
+    winrate: float
+    delta: float
+
+
+@dataclass(frozen=True)
+class JudgePoint:
+    """One board point's whole-board verdict from the judge tunnel.
+
+    `owner` is one of "U" (undecided) / "B" (black) / "W" (white)."""
+
+    col: int
+    row: int
+    owner: str
+
+
+@dataclass(frozen=True)
+class JudgeAnalysis:
+    """Decoded result of the `judge` (形势) tunnel: 361 verdict points plus
+    the overall winner ("U"/"B"/"W"/"D") and score delta."""
+
+    ownership: list[JudgePoint]
+    winner: str
+    delta: float
+
+
+AnalysisResult = AreaAnalysis | OptionsAnalysis | VariationAnalysis | JudgeAnalysis
+
+
+def _decode_area(result: AreaResult, board_size: int) -> AreaAnalysis:
+    """Use only the first board_size*board_size entries -- the rest (observed
+    722 = 361*2 in the live capture) is a degenerate second channel (§9.5)."""
+    n = board_size * board_size
+    if len(result.area) < n:
+        raise Fatal(f"Golaxy area: expected at least {n} entries, got {len(result.area)}")
+    ownership = []
+    for i in range(n):
+        m = golaxy_to_katrain(i, board_size)  # always a Move for i in [0, n)
+        ownership.append(OwnershipPoint(col=m.col, row=m.row, value=result.area[i]))
+    return AreaAnalysis(ownership=ownership, winrate=result.winrate, delta=result.delta)
+
+
+def _decode_options(result: OptionsResult, board_size: int) -> OptionsAnalysis:
+    """Candidates are driven by `coord` -- the per-move fields (prob/winrate/
+    delta) are best-effort per §13 and may be missing or shorter than `coord`
+    (the Golaxy `options` body sometimes omits them entirely). Use
+    `zip_longest` (not `zip`) so a short/absent parallel array never silently
+    truncates the candidate list, and default a missing field to 0.0 rather
+    than block on it.
+    """
+    candidates = []
+    for coord, prob, winrate, delta in itertools.zip_longest(
+        result.coord, result.prob, result.winrate, result.delta, fillvalue=None
+    ):
+        if coord is None:
+            continue  # only coord can be authoritatively absent-driven; nothing to decode
+        decoded = golaxy_to_katrain(coord, board_size)
+        if not isinstance(decoded, Move):
+            continue  # defensive: skip UnknownSpecial rather than emit a bogus point
+        candidates.append(
+            Candidate(
+                col=decoded.col,
+                row=decoded.row,
+                prob=0.0 if prob is None else prob,
+                winrate=0.0 if winrate is None else winrate,
+                delta=0.0 if delta is None else delta,
+            )
+        )
+    return OptionsAnalysis(candidates=candidates)
+
+
+def _decode_variation(result: VariationResult, board_size: int) -> VariationAnalysis:
+    sequence = []
+    for coord in result.coord:
+        decoded = golaxy_to_katrain(coord, board_size)
+        if not isinstance(decoded, Move):
+            continue  # defensive: skip UnknownSpecial rather than emit a bogus point
+        sequence.append(Point(col=decoded.col, row=decoded.row))
+    return VariationAnalysis(sequence=sequence, winrate=result.winrate, delta=result.delta)
+
+
+def _decode_judge(result: JudgeResult, board_size: int) -> JudgeAnalysis:
+    n = board_size * board_size
+    if len(result.belong) < n:
+        raise Fatal(f"Golaxy judge: expected at least {n} chars, got {len(result.belong)}")
+    ownership = []
+    for i, ch in enumerate(result.belong[:n]):
+        m = golaxy_to_katrain(i, board_size)  # always a Move for i in [0, n)
+        ownership.append(JudgePoint(col=m.col, row=m.row, owner=ch))
+    return JudgeAnalysis(ownership=ownership, winner=result.winner, delta=result.delta)
+
+
 class GolaxyEngineTerminal(Exception):
     """The engine returned a non-move coord (pass/resign/unknown special).
 
@@ -116,6 +285,7 @@ class GolaxyRestClient:
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._user_code: Optional[str] = None
+        self._username: Optional[str] = None  # Golaxy login principal, for /items/{username}
 
     async def _ensure_client(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -226,6 +396,17 @@ class GolaxyRestClient:
     def set_tokens(self, access_token: str, refresh_token: str) -> None:
         self._access_token = access_token
         self._refresh_token = refresh_token
+
+    def set_username(self, username: Optional[str]) -> None:
+        """Record the Golaxy login principal for account-level calls like
+        `/items/{username}`. Normalizes a bare phone to the `0086-{phone}`
+        form the API expects (== store.state.username); leaves an
+        already-prefixed value untouched. No-op on falsy input, so calling it
+        on a token-only reconnect that lacks the phone doesn't clobber a value
+        set earlier."""
+        if not username:
+            return
+        self._username = username if username.startswith("0086-") else f"0086-{username}"
 
     def get_auth_data(self) -> dict:
         return {"access_token": self._access_token, "refresh_token": self._refresh_token, "user_code": self._user_code}
@@ -341,6 +522,49 @@ class GolaxyRestClient:
             board_size=board_size,
         )
 
+    async def engine_analysis(
+        self,
+        *,
+        kind: str,
+        moves: list[int],
+        komi: float = 7.5,
+        rule: str = "chinese",
+        handicap: int = 0,
+        board_size: int = 19,
+        level: int = 8888,
+    ) -> AreaResult | OptionsResult | VariationResult | JudgeResult:
+        """Thin wrapper over engine_client.engine_analysis.
+
+        Sibling of engine_genmove above: keeps the access token encapsulated
+        so the adapter never reaches into private client/token state. Raises
+        AuthExpired/Retryable/Fatal/QuotaExhausted.
+        """
+        from katrain.web.platforms.golaxy.engine_client import engine_analysis as _analysis
+
+        client = await self._ensure_client()
+        return await _analysis(
+            client,
+            kind=kind,
+            moves=moves,
+            access_token=self._access_token,
+            komi=komi,
+            rule=rule,
+            handicap=handicap,
+            board_size=board_size,
+            level=level,
+        )
+
+    async def fetch_item_counts(self) -> ItemCountsResult:
+        """Thin wrapper over engine_client.fetch_item_counts.
+
+        Keeps the access token and username encapsulated so the adapter never
+        reaches into private client state. Raises AuthExpired/Retryable/Fatal.
+        """
+        from katrain.web.platforms.golaxy.engine_client import fetch_item_counts as _fetch
+
+        client = await self._ensure_client()
+        return await _fetch(client, username=self._username, access_token=self._access_token)
+
 
 class GolaxyAdapter(PlatformAdapter):
     """PlatformAdapter implementation for Golaxy / 星阵围棋 (19x19.com).
@@ -368,6 +592,10 @@ class GolaxyAdapter(PlatformAdapter):
 
     async def connect(self, credentials: PlatformCredentials) -> bool:
         try:
+            # Record the login principal up front so account-level calls
+            # (/items/{username} for the 道具 badges) work on every auth path,
+            # including token-only reconnect after a restart.
+            self._rest.set_username(credentials.username)
             auth_data = credentials.auth_data
             if "access_token" in auth_data and auth_data["access_token"]:
                 # Try token-based reconnection
@@ -603,6 +831,93 @@ class GolaxyAdapter(PlatformAdapter):
             handicap=ctx.config.handicap,
             board_size=ctx.config.board_size,
         )
+
+    # --- Engine analysis (read-only; area/options/judge/variation) ---------
+    #
+    # Parallel structure to _genmove_with_retry/_call_genmove above --
+    # intentionally duplicated rather than refactored in, since the genmove
+    # path is regression-forbidden. Analysis never mutates ctx.moves/status
+    # and never commits anything, so it works on the current committed
+    # ctx.moves regardless of status (reviewing a finished game is fine).
+
+    async def engine_analysis(self, game_id: str, kind: str) -> AnalysisResult:
+        """Run one of the area/options/judge/variation analysis tunnels for
+        an existing engine game and return the decoded, typed result.
+
+        Raises KeyError for an unknown game_id (mirrors submit_engine_move).
+        Propagates QuotaExhausted/Fatal from the client unretried; AuthExpired
+        triggers a refresh+retry, Retryable a plain retry (see
+        _analysis_with_retry).
+        """
+        ctx = self._engine_games.get(game_id)
+        if ctx is None:
+            raise KeyError(game_id)
+        result = await self._analysis_with_retry(ctx, kind)
+        board_size = ctx.config.board_size
+        if isinstance(result, AreaResult):
+            return _decode_area(result, board_size)
+        if isinstance(result, OptionsResult):
+            return _decode_options(result, board_size)
+        if isinstance(result, VariationResult):
+            return _decode_variation(result, board_size)
+        if isinstance(result, JudgeResult):
+            return _decode_judge(result, board_size)
+        raise Fatal(f"engine_analysis: unexpected result type {type(result)!r} for kind={kind!r}")
+
+    async def _analysis_with_retry(self, ctx: EngineGameContext, kind: str):
+        """Mirror _genmove_with_retry's auth-refresh-retry discipline for the
+        analysis tunnels. QuotaExhausted and Fatal propagate immediately (no
+        retry) — only AuthExpired (refresh + retry once) and Retryable
+        (retry once) are handled here.
+        """
+        try:
+            return await self._call_analysis(ctx, kind)
+        except AuthExpired:
+            # Refresh once, then retry the SAME request.
+            await self._rest.refresh_access_token()
+            await self._emit("token_refreshed", self._rest.get_auth_data())
+            try:
+                return await self._call_analysis(ctx, kind)
+            except AuthExpired:
+                await self._emit("auth_expired")
+                raise
+        except Retryable:
+            # Transient failure — retry the SAME request once; if it raises
+            # again, that exception propagates.
+            return await self._call_analysis(ctx, kind)
+
+    async def _call_analysis(self, ctx: EngineGameContext, kind: str):
+        return await self._rest.engine_analysis(
+            kind=kind,
+            moves=ctx.moves,
+            komi=ctx.config.komi,
+            rule=ctx.config.rule,
+            handicap=ctx.config.handicap,
+            board_size=ctx.config.board_size,
+        )
+
+    async def fetch_item_counts(self) -> ItemCountsResult:
+        """Remaining metered-道具 counts (领地/支招/变化图) for the connected
+        account — powers the button badges. Account-level: no game context,
+        so it works before/independently of any engine game.
+
+        Mirrors _analysis_with_retry's auth-refresh-retry discipline:
+        AuthExpired → refresh once + retry; Retryable → retry once; Fatal
+        propagates. Missing/malformed counts come back as None from the client
+        (never raise), so the badges degrade to "unknown" rather than block.
+        """
+        try:
+            return await self._rest.fetch_item_counts()
+        except AuthExpired:
+            await self._rest.refresh_access_token()
+            await self._emit("token_refreshed", self._rest.get_auth_data())
+            try:
+                return await self._rest.fetch_item_counts()
+            except AuthExpired:
+                await self._emit("auth_expired")
+                raise
+        except Retryable:
+            return await self._rest.fetch_item_counts()
 
     async def resign_engine_game(self, game_id: str) -> None:
         """Human resigns the engine game — the AI wins. No-op if unknown.

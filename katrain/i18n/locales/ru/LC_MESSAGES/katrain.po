@@ -2537,3 +2537,12 @@ msgstr "в очереди"
 
 msgid "report:summary_failed"
 msgstr "ошибка"
+
+msgid "Suggest"
+msgstr "Подсказка"
+
+msgid "Variation Line"
+msgstr "Вариант"
+
+msgid "game:pass"
+msgstr "Пас"

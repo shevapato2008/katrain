@@ -20,6 +20,11 @@ import {
   type SetupStage,
 } from './physicalTsumegoMachine';
 
+// Re-export phase/stage types so UI consumers (develop's PhysicalStatePanel) import them from the
+// hook module without reaching into the reducer. (develop's stub exported these; our real hook is
+// the authoritative target its whole physical-tsumego UI was designed against.)
+export type { PhysicalPhase, SetupStage } from './physicalTsumegoMachine';
+
 export function stonesToVisionBoard(stones: Stone[], boardSize: number): number[][] {
   const board: number[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
   for (const s of stones) {

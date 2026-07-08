@@ -47,20 +47,17 @@ const detectBrowserLanguage = (): string => {
   if (langCode.startsWith('ru')) return 'ru';
   if (langCode.startsWith('tr')) return 'tr';
   if (langCode.startsWith('uk')) return 'ua';
-  if (langCode.startsWith('en')) return 'en';
 
-  return 'en'; // Default to English
+  // China-first product: English and unrecognized locales default to Chinese.
+  // The kiosk relies on this default; the root app overrides it with the server
+  // session language (ZenModeApp) so non-Chinese config users are unaffected.
+  return 'cn';
 };
 
 const LANGUAGE_STORAGE_KEY = 'katrain_language';
 
-export const SettingsProvider: React.FC<{ children: React.ReactNode; defaultLanguage?: string }> = ({
-  children,
-  defaultLanguage,
-}) => {
-  // defaultLanguage lets a build pin its default (the China-first kiosk passes 'cn' so it loads the
-  // real catalog instead of the dev machine's browser locale). A saved user preference still wins.
-  const [language, setLanguageState] = useState(defaultLanguage || 'en');
+export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguageState] = useState('cn');
   const [, setTick] = useState(0); // For forcing re-render on translation change
 
   const updateLanguage = useCallback(async (lang: string) => {
@@ -75,12 +72,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; defaultLang
   }, []);
 
   useEffect(() => {
-    // Initial load: saved preference wins, then the build's pinned default (kiosk → 'cn'),
-    // then browser detection. Without defaultLanguage here the kiosk loaded the dev machine's
-    // 'en' catalog and showed base-English strings (e.g. Undo) despite the cn initial state.
+    // Initial load - check localStorage first, then detect browser language
     const initLang = async () => {
       const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-      const currentLang = savedLang || defaultLanguage || detectBrowserLanguage();
+      const currentLang = savedLang || detectBrowserLanguage();
       await i18n.loadTranslations(currentLang);
       setLanguageState(currentLang);
     };
@@ -91,7 +86,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; defaultLang
       setTick(t => t + 1);
     });
     return unsubscribe;
-  }, [defaultLanguage]);
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ language, setLanguage: updateLanguage, languages }}>

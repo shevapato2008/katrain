@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Chip } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowBack,
@@ -11,7 +11,6 @@ import {
   NavigateBefore,
   NavigateNext,
   FormatListBulleted,
-  SmartToy,
   CheckCircle,
 } from '@mui/icons-material';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
@@ -23,10 +22,20 @@ import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
 import { useOptionalGeometry } from '../context/GeometryContext';
+import { useImmersive } from '../context/ImmersiveContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { usePhysicalTsumego, stonesToVisionBoard } from '../hooks/usePhysicalTsumego';
-import { useOrientation } from '../context/OrientationContext';
-import { sequenceKey, readAutoAdvance } from './tsumegoUnits';
+import {
+  sequenceKey,
+  readAutoAdvance,
+  levelChinese,
+  readPhysicalMode,
+  writePhysicalMode,
+  writeLastLevel,
+} from './tsumegoUnits';
+import { writeActiveSession } from '../utils/activeSession';
+import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
+import PhysicalStatePanel from '../components/tsumego/PhysicalStatePanel';
 
 interface ProblemSummary {
   id: string;
@@ -43,8 +52,8 @@ const TsumegoProblemPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
-  const { isPortrait } = useOrientation();
   const { progress } = useTsumegoProgress();
+  const { setImmersive } = useImmersive();
   const {
     problem,
     loading,
@@ -74,15 +83,12 @@ const TsumegoProblemPage = () => {
   const { visionStatus } = useVision();
   const geometry = useOptionalGeometry();
   const visionSync = useVisionSync(null); // No session bind for tsumego — physical mode drives vision setup mode
-  const [physicalMode, setPhysicalMode] = useState(
-    () => localStorage.getItem('kiosk-tsumego-physical') === '1',
-  );
-  const togglePhysical = useCallback(() => {
-    setPhysicalMode((prev) => {
-      const next = !prev;
-      try { localStorage.setItem('kiosk-tsumego-physical', next ? '1' : '0'); } catch { /* best-effort */ }
-      return next;
-    });
+
+  // Physical-mode toggle — single owner, persisted via tsumegoUnits (develop's key kiosk_tsumego_physical).
+  const [physicalMode, setPhysicalMode] = useState(readPhysicalMode);
+  const setPhysical = useCallback((v: boolean) => {
+    writePhysicalMode(v);
+    setPhysicalMode(v);
   }, []);
   // Reset re-runs the physical clearing→setup lifecycle (reset() keeps problem.id, so the
   // hook's per-problem restart won't fire on its own — bump resyncKey to force it).
@@ -120,16 +126,11 @@ const TsumegoProblemPage = () => {
   // the units pages). If missing (deep-link), fetch the full category list once and cache it.
   const [sequence, setSequence] = useState<string[]>([]);
 
-  // flushProgress must run BEFORE every navigation away from the current problem (4.1/4.2).
-  // Navigation keeps THIS page mounted (only :problemId changes), so the hook's unmount-flush
-  // won't fire between problems — we must flush manually here. flushProgress is idempotent
-  // (guarded inside the hook), so calling it before navigate is always safe.
-
-  // useVisionSync(null) here never binds a session (its WS/unbind cleanup only runs for a
-  // non-null sessionId), so it leaves nothing dangling on its own. Physical-mode lifecycle
-  // (setup mode, move detection arming, LED, pause) is owned by usePhysicalTsumego, which
-  // tears itself down explicitly (visionMoveDetection/visionPause/visionMonitor/LedAPI.clear)
-  // whenever `enabled` flips false or `problemKey` changes — see its enable-effect cleanup.
+  // Immersive solve screen — hide the Dock + left board console while a problem is open.
+  useEffect(() => {
+    setImmersive(true);
+    return () => setImmersive(false);
+  }, [setImmersive]);
 
   useEffect(() => {
     if (!problem) return;
@@ -179,6 +180,19 @@ const TsumegoProblemPage = () => {
   const isLast = currentIndex >= 0 && currentIndex === sequence.length - 1;
   const prevId = currentIndex > 0 ? sequence[currentIndex - 1] : null;
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
+
+  // Populate the hub 继续练习 card + 上次 level highlight (B2.2/B2.4) whenever a problem loads.
+  useEffect(() => {
+    if (!problem) return;
+    writeLastLevel(problem.level);
+    writeActiveSession({
+      kind: 'practice',
+      label: `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)} · 第 ${currentIndex + 1} 题`,
+      route: `/kiosk/tsumego/problem/${problem.id}`,
+      ts: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
+  }, [problem, currentIndex]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;
@@ -234,6 +248,7 @@ const TsumegoProblemPage = () => {
     navigateToProblem(nextId);
   }, [nextId, navigateToProblem]);
 
+  // Physical-board tsumego — real hook with our availability gating (recognition + geometry + 19-路).
   const physical = usePhysicalTsumego({
     enabled: physicalEnabled,
     visionConnected: visionSync.connected,
@@ -307,14 +322,10 @@ const TsumegoProblemPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board area */}
       <Box
-        sx={
-          isPortrait
-            ? { width: '100%', maxHeight: '50%', aspectRatio: '1', position: 'relative' }
-            : { height: '100%', aspectRatio: '1', position: 'relative' }
-        }
+        sx={{ height: '100%', aspectRatio: '1', position: 'relative' }}
         data-testid="tsumego-board"
       >
         <TsumegoBoard
@@ -351,18 +362,34 @@ const TsumegoProblemPage = () => {
 
       {/* Controls panel */}
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
           <Button onClick={goToUnits} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-          <Box>
-            <Typography variant="h6">{problem?.category || t('Tsumego', '死活题')}</Typography>
-            {problem?.level && (
-              <Chip label={problem.level.toUpperCase()} size="small" sx={{ mt: 0.5 }} />
-            )}
-          </Box>
+          {problem && (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              <Box component="span">死活</Box>
+              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
+              <Box component="span">{levelChinese(problem.level)}</Box>
+              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
+              <Box component="span">{t(`tsumego:${problem.category}`, problem.category)}</Box>
+              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
+              <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>第 {currentIndex + 1} 题</Box>
+            </Typography>
+          )}
         </Box>
 
         {problem?.hint && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{problem.hint}</Typography>
+          <Box
+            sx={{
+              mb: 2,
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{problem.hint}</Typography>
+          </Box>
         )}
 
         {/* Status indicators */}
@@ -373,16 +400,36 @@ const TsumegoProblemPage = () => {
           <Alert severity="info" sx={{ mb: 2 }}>{t('Try mode - free exploration', '试下模式 - 自由探索')}</Alert>
         )}
 
-        {/* Timer and attempts */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-          <Typography variant="body2" color="text.secondary" data-testid="timer">
+        {/* Physical-mode status panel (develop) — concise phase chip; renders null off/clearing/restoring. */}
+        {physicalMode && (
+          <Box sx={{ mb: 2 }}>
+            <PhysicalStatePanel state={physical} />
+          </Box>
+        )}
+
+        {/* Timer and attempts — pill row (develop styling); OUR time hides board-setup as 准备中. */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 2,
+            flexWrap: 'wrap',
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="timer">
             {t('Time', '用时')}: {inPhysicalSetup ? t('tsumego:preparingBoard', '准备中') : formatTime(elapsedTime)}
           </Typography>
-          <Typography variant="body2" color="text.secondary" data-testid="attempts">
+          <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="attempts">
             {t('Attempts', '尝试')}: {attempts}
           </Typography>
           {lastDuration != null && (
-            <Typography variant="body2" color="text.secondary" data-testid="last-time">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="last-time">
               {t('tsumego:lastTime', '上次用时')}: {formatTime(lastDuration)}
             </Typography>
           )}
@@ -414,19 +461,20 @@ const TsumegoProblemPage = () => {
           ) : (
             <Button variant="outlined" startIcon={<ExploreOff />} onClick={exitTryMode}>{t('Exit Try', '退出试下')}</Button>
           )}
-          <Button
-            variant={physicalMode ? 'contained' : 'outlined'}
-            color={physicalMode ? 'success' : 'inherit'}
-            startIcon={<SmartToy />}
-            // Only gate turning ON — always allow turning OFF, else a dropped availability
-            // (e.g. geometry unconfirmed after restart) strands the user with a dead board.
-            disabled={!physicalMode && !physicalAvailable}
-            onClick={togglePhysical}
-          >
-            {physicalMode ? t('tsumego:physicalOn', '退出物理棋盘') : t('tsumego:physicalOff', '使用物理棋盘')}
-          </Button>
         </Box>
 
+        {/* Physical-mode toggle (develop's Switch). capable = physicalMode || physicalAvailable so
+            turning ON is gated on availability, but turning OFF is always allowed (a dropped
+            availability must never strand the user with a dead board). */}
+        <Box sx={{ mt: 2 }}>
+          <PhysicalModeToggle
+            checked={physicalMode}
+            capable={physicalMode || physicalAvailable}
+            onChange={setPhysical}
+          />
+        </Box>
+
+        {/* Why the toggle is off/unavailable (ours) — with a tap-through to calibration. */}
         {physicalHint && (
           <Alert
             severity={physicalHint.severity}
@@ -453,7 +501,14 @@ const TsumegoProblemPage = () => {
             onClick={handlePrev}
             disabled={isFirst}
             data-testid="prev-problem"
-            sx={{ flex: 1, py: 1.5, fontSize: '1.05rem' }}
+            sx={{
+              flex: 1,
+              py: 1.5,
+              fontSize: '1.05rem',
+              bgcolor: 'background.paper',
+              color: 'text.primary',
+              '&:hover': { bgcolor: 'background.paper' },
+            }}
           >
             {t('tsumego:prev', '上一题')}
           </Button>
@@ -513,7 +568,7 @@ const TsumegoProblemPage = () => {
                 stage={physical.stage}
                 isComplete={false}
                 onStartProblem={() => {}}
-                onSkip={togglePhysical}
+                onSkip={() => setPhysical(false)}
               />
             )}
             {physical.phase === 'replying' && (

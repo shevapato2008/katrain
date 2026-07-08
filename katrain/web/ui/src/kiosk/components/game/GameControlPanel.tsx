@@ -66,8 +66,8 @@ const GameControlPanel = ({
         </Box>
 
         {/* 2. Game info bar */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.15)' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{gameState.ruleset} {t('Rules', '规则')}</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'var(--raise2)' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t(gameState.ruleset, gameState.ruleset)} {t('Rules', '规则')}</Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Komi', '贴目')}: {gameState.komi}</Typography>
         </Box>
 
@@ -105,7 +105,7 @@ const GameControlPanel = ({
 
         {/* 6. ScoreGraph */}
         {showScore && (
-          <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.1)' }} data-testid="score-graph">
+          <Box sx={{ px: 2, py: 1, bgcolor: 'var(--raise2)' }} data-testid="score-graph">
             <ScoreGraph gameState={gameState} onNavigate={onNavigate} />
           </Box>
         )}

@@ -4,7 +4,7 @@ import { Videocam, GridOn } from '@mui/icons-material';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
 
-interface StatusBarProps {
+interface HeaderProps {
   username?: string;
 }
 
@@ -21,6 +21,24 @@ const syncStateColor = (syncState: string): string => {
       return 'error.main';
     default:
       return 'grey.500';
+  }
+};
+
+/** Resolve board-pose sync state to a Chinese label */
+const syncStateLabel = (syncState: string): string => {
+  switch (syncState) {
+    case 'synced':
+      return '已同步';
+    case 'calibrating':
+      return '标定中';
+    case 'setup':
+      return '待设置';
+    case 'mismatch':
+      return '不匹配';
+    case 'lost':
+      return '已丢失';
+    default:
+      return '未知';
   }
 };
 
@@ -52,7 +70,7 @@ const VisionIndicators = () => {
 
       {/* Board pose status — only shown after pose lock */}
       {visionStatus.poseLocked && (
-        <Tooltip title={`棋盘状态: ${visionStatus.syncState}`} arrow>
+        <Tooltip title={`棋盘状态: ${syncStateLabel(visionStatus.syncState)}`} arrow>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <GridOn sx={{ fontSize: 18, color: syncStateColor(visionStatus.syncState) }} />
           </Box>
@@ -62,12 +80,18 @@ const VisionIndicators = () => {
   );
 };
 
+/** Geometry/calibration status icon — only rendered when the GeometryProvider is available */
 const GeometryIndicator = () => {
   const geometry = useOptionalGeometry();
   if (!geometry) return null;
   const { status } = geometry;
   if (status.phase === 'disabled') return null;
-  const color = status.phase === 'ready' ? 'success.main' : status.phase === 'degraded' || status.phase === 'failed' ? 'error.main' : 'warning.main';
+  const color =
+    status.phase === 'ready'
+      ? 'success.main'
+      : status.phase === 'degraded' || status.phase === 'failed'
+        ? 'error.main'
+        : 'warning.main';
   return (
     <Tooltip title={status.phase === 'ready' ? '棋盘标定正常' : '需要标定棋盘'} arrow>
       <IconButton component="a" href="/kiosk/vision/setup" size="small" aria-label="棋盘标定状态" sx={{ p: 0.25 }}>
@@ -77,7 +101,7 @@ const GeometryIndicator = () => {
   );
 };
 
-const StatusBar = ({ username }: StatusBarProps) => {
+const Header = ({ username }: HeaderProps) => {
   const [time, setTime] = useState(() =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
@@ -93,24 +117,45 @@ const StatusBar = ({ username }: StatusBarProps) => {
   return (
     <Box
       sx={{
-        height: 40,
+        height: 50,
+        flexShrink: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        px: 2,
+        px: 3,
         borderBottom: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.default',
-        flexShrink: 0,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <img src="/assets/img/logo-white.png" alt="弈航" style={{ width: 20, height: 20 }} />
-        <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-          弈航
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+          <img
+            src="/assets/img/logo-white.png"
+            alt="智星盒 StellaBox"
+            style={{ width: 34, height: 34, objectFit: 'contain' }}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
+            <Typography sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 600, fontSize: 20 }}>
+              智星盒
+            </Typography>
+            <Typography
+              component="span"
+              sx={{
+                fontFamily: "'Newsreader','Noto Serif SC',serif",
+                fontStyle: 'italic',
+                fontSize: 12,
+                color: 'text.secondary',
+                ml: '7px',
+              }}
+            >
+              StellaBox
+            </Typography>
+          </Box>
+        </Box>
         <Box
           data-testid="engine-status"
+          aria-label="engine assumed-ready"
           sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }}
         />
         <VisionIndicators />
@@ -125,7 +170,7 @@ const StatusBar = ({ username }: StatusBarProps) => {
         <Typography
           data-testid="clock"
           variant="caption"
-          sx={{ color: 'text.secondary' }}
+          sx={{ color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}
         >
           {time}
         </Typography>
@@ -134,4 +179,4 @@ const StatusBar = ({ username }: StatusBarProps) => {
   );
 };
 
-export default StatusBar;
+export default Header;

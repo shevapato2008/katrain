@@ -1,4 +1,5 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 
 export interface ItemToggleProps {
   icon: React.ReactNode;
@@ -16,7 +17,9 @@ export interface ItemToggleProps {
 }
 
 const ItemToggle = ({ icon, label, active, onClick, disabled, isDestructive, badge }: ItemToggleProps) => {
+  const theme = useTheme();
   const activeColor = isDestructive ? 'error.main' : 'primary.main';
+  const activeBg = isDestructive ? alpha(theme.palette.error.main, 0.15) : 'primary.dark';
   const showBadge = badge !== undefined;
   const badgeText = badge === null || badge === undefined ? '—' : String(badge);
   const badgeEmpty = badge === 0;
@@ -28,12 +31,12 @@ const ItemToggle = ({ icon, label, active, onClick, disabled, isDestructive, bad
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 0.5, py: 1.5, borderRadius: 2, cursor: disabled ? 'default' : 'pointer',
         border: '1px solid',
-        borderColor: active ? activeColor : 'rgba(255,255,255,0.1)',
-        bgcolor: active ? (isDestructive ? 'rgba(196,93,62,0.15)' : 'rgba(92,181,122,0.15)') : 'transparent',
+        borderColor: active ? activeColor : 'divider',
+        bgcolor: active ? activeBg : 'transparent',
         opacity: disabled ? 0.3 : 1,
         color: active ? activeColor : 'text.secondary',
         transition: 'all 0.15s ease',
-        '&:hover': disabled ? {} : { borderColor: activeColor, bgcolor: isDestructive ? 'rgba(196,93,62,0.08)' : 'rgba(92,181,122,0.08)' },
+        '&:hover': disabled ? {} : { borderColor: activeColor },
       }}
     >
       {showBadge && (

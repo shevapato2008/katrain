@@ -1,4 +1,4 @@
-import { Box, Typography, Card, CardActionArea } from '@mui/material';
+import { Box, Typography, Card, CardActionArea, useTheme } from '@mui/material';
 import MiniBoard from '../../../components/MiniBoard';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../../context/TsumegoProgressContext';
@@ -40,15 +40,16 @@ const ProblemCard = ({
 }: ProblemCardProps) => {
   const { t } = useTranslation();
   const { progress } = useTsumegoProgress();
+  const theme = useTheme();
   const entry = progress[problemId];
 
   const isCompleted = !!entry?.completed;
   const isAttempted = !!entry && entry.attempts > 0;
 
   const borderColor = isCompleted
-    ? '#5cb57a' // jade-glow (green = completed)
+    ? theme.palette.primary.main // jade (green = completed)
     : isAttempted
-      ? '#c49a3c' // wood-amber (orange = attempted, not completed)
+      ? theme.palette.warning.main // amber (orange = attempted, not completed)
       : 'rgba(232,228,220,0.10)'; // gray = untouched
 
   return (
@@ -82,14 +83,14 @@ const ProblemCard = ({
           }}
         >
           {isCompleted && entry?.lastDuration != null && (
-            <Typography variant="caption" sx={{ color: '#c49a3c' }}>
+            <Typography variant="caption" sx={{ color: 'warning.main' }}>
               {t('tsumego:lastTime', '上次用时')} {formatDuration(entry.lastDuration)}
             </Typography>
           )}
           {entry && entry.attempts > 0 && (
             <Typography
               variant="caption"
-              sx={{ color: isCompleted ? 'text.secondary' : '#c45d3e' }}
+              sx={{ color: isCompleted ? 'text.secondary' : 'error.main' }}
             >
               x{entry.attempts}
             </Typography>

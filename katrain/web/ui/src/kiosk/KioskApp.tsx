@@ -68,13 +68,12 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard requireRecognition><TsumegoProblemPage /></PhysicalBoardGuard>} />
+          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard><TsumegoProblemPage /></PhysicalBoardGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           <Route path="research" element={<ResearchPage />} />
-          <Route path="research/session/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
@@ -107,21 +106,26 @@ const KioskApp = () => {
     }
   }, [setLanguage]);
 
+  // Kiosk tab title — scoped to kiosk routes so galaxy's shared index.html title is untouched.
+  useEffect(() => {
+    document.title = '智星盒 StellaBox';
+  }, []);
+
   return (
-  <ThemeProvider theme={kioskTheme}>
-    <CssBaseline />
-    <OrientationProvider>
-      <VisionProvider>
-        <GeometryProvider>
-          <TsumegoProgressProvider>
-            <RotationWrapper>
-              <KioskRoutes />
-            </RotationWrapper>
-          </TsumegoProgressProvider>
-        </GeometryProvider>
-      </VisionProvider>
-    </OrientationProvider>
-  </ThemeProvider>
+    <ThemeProvider theme={kioskTheme}>
+      <CssBaseline />
+      <OrientationProvider>
+        <VisionProvider>
+          <GeometryProvider>
+            <TsumegoProgressProvider>
+              <RotationWrapper>
+                <KioskRoutes />
+              </RotationWrapper>
+            </TsumegoProgressProvider>
+          </GeometryProvider>
+        </VisionProvider>
+      </OrientationProvider>
+    </ThemeProvider>
   );
 };
 

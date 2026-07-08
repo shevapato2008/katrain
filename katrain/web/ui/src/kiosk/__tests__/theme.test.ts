@@ -2,31 +2,39 @@ import { describe, it, expect } from 'vitest';
 import { kioskTheme } from '../theme';
 
 describe('kioskTheme', () => {
-  it('is dark mode with ink-black background', () => {
+  it('is dark mode with slate background', () => {
     expect(kioskTheme.palette.mode).toBe('dark');
-    expect(kioskTheme.palette.background.default).toBe('#1a1714');
+    expect(kioskTheme.palette.background.default).toBe('#0f1416');
   });
 
-  it('uses Noto Sans SC as primary body font', () => {
-    expect(kioskTheme.typography.fontFamily).toContain('Noto Sans SC');
+  it('uses Hanken Grotesk as primary body font', () => {
+    expect(kioskTheme.typography.fontFamily).toContain('Hanken Grotesk');
   });
 
-  it('uses Noto Sans SC for headings (Noto Serif SC removed — unavailable on npmmirror)', () => {
-    expect((kioskTheme.typography.h1 as any).fontFamily).toContain('Noto Sans SC');
-    expect((kioskTheme.typography.h3 as any).fontFamily).toContain('Noto Sans SC');
+  it('uses Newsreader for h1 and Hanken Grotesk for h3', () => {
+    expect((kioskTheme.typography.h1 as any).fontFamily).toContain('Newsreader');
+    expect((kioskTheme.typography.h3 as any).fontFamily).toContain('Hanken Grotesk');
   });
 
-  it('has jade-glow #5cb57a as primary color', () => {
-    expect(kioskTheme.palette.primary.main).toBe('#5cb57a');
+  it('has jade #58b57a as primary color', () => {
+    expect(kioskTheme.palette.primary.main).toBe('#58b57a');
   });
 
-  it('has ember #c45d3e as error color', () => {
-    expect(kioskTheme.palette.error.main).toBe('#c45d3e');
+  it('has coral #e2685c as error color', () => {
+    expect(kioskTheme.palette.error.main).toBe('#e2685c');
+  });
+
+  it('has amber #e0a24a as the single warning/accent token', () => {
+    expect(kioskTheme.palette.warning.main).toBe('#e0a24a');
+  });
+
+  it('has ice #eef3f1 as primary text color', () => {
+    expect(kioskTheme.palette.text.primary).toBe('#eef3f1');
   });
 
   it('has secondary text with sufficient contrast (WCAG AA)', () => {
-    // #9a9590 on #1a1714 gives ~4.7:1 ratio (AA requires 4.5:1)
-    expect(kioskTheme.palette.text.secondary).toBe('#9a9590');
+    // #93a49d on #0f1416 gives sufficient contrast for AA
+    expect(kioskTheme.palette.text.secondary).toBe('#93a49d');
   });
 
   it('does NOT globally force button minHeight', () => {

@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
-  CircularProgress, Pagination, Snackbar, Alert,
+  CircularProgress, Pagination, Snackbar, Alert, Skeleton,
 } from '@mui/material';
-import { Search as SearchIcon, Science as ScienceIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon, Science as ScienceIcon,
+  SkipPrevious, NavigateBefore, NavigateNext, SkipNext,
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import LiveBoard from '../../components/live/LiveBoard';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import { KifuAPI } from '../../api/kifuApi';
-import { useResearchSession } from '../../hooks/useResearchSession';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useOrientation } from '../context/OrientationContext';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -21,8 +22,6 @@ const PAGE_SIZE = 20;
 const KifuPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
-  const { createSession } = useResearchSession();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
@@ -36,7 +35,7 @@ const KifuPage = () => {
   const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
   const [previewSgf, setPreviewSgf] = useState<string | null>(null);
-  const [previewHandicap, setPreviewHandicap] = useState(0);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
 
@@ -82,7 +81,7 @@ const KifuPage = () => {
     setPreviewColors([]);
     setPreviewCurrentMove(0);
     setPreviewSgf(null);
-    setPreviewHandicap(0);
+    setPreviewLoading(true);
 
     KifuAPI.getAlbum(selectedId)
       .then((detail) => {
@@ -96,34 +95,27 @@ const KifuPage = () => {
           // fixes a latent grid/coord mismatch when DB board_size disagrees with SGF.
           setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
           setPreviewSgf(detail.sgf_content);
-          setPreviewHandicap(parsed.metadata.handicap ?? detail.handicap ?? 0);
         }
       })
       .catch((err) => {
         if (!cancelled) console.error('Failed to load kifu detail:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
       });
 
     return () => { cancelled = true; };
   }, [selectedId]);
 
-  const handleOpenInResearch = async () => {
+  const handleOpenInResearch = () => {
     if (!previewSgf || opening) return;
     setOpening(true);
     setOpenError(null);
     try {
-      // previewMoves includes handicap setup stones (AB[]), but the backend redo() only
-      // walks move-nodes; subtract handicap to land on the right node. At the terminal
-      // (default) this equals the real move count → exact terminal; mid-scrub & handicap
-      // are also correct; non-handicap (handicap=0) is unchanged.
-      const initialMove = Math.max(0, previewCurrentMove - previewHandicap);
-      const sessionId = await createSession(previewSgf, { initialMove, skipAnalysis: true });
-      if (sessionId) {
-        navigate(`/kiosk/research/session/${sessionId}`);
-      } else {
-        setOpenError(t('Failed to open in research', '打开研究失败，请重试'));
-      }
+      // The research page fetches the album itself (KifuAPI.getAlbum) and auto-starts the
+      // scan from the fetched SGF — no session pre-creation needed here.
+      navigate('/kiosk/research?kifu_id=' + selectedId + '&analyze=1');
     } catch {
-      // Defensive: createSession swallows errors and returns null, so this is rarely hit.
       setOpenError(t('Failed to open in research', '打开研究失败，请重试'));
     } finally {
       setOpening(false);
@@ -134,17 +126,18 @@ const KifuPage = () => {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
       {/* List panel: Title + Search + Card list + Pagination */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...(isPortrait && { maxHeight: '50%' }) }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+            <Typography variant="h4" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500, letterSpacing: 0 }}>
               {t('Game Records', '棋谱库')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
               {total.toLocaleString()} {t('games', '局')}
+              {query && ` · "${query}"`}
             </Typography>
           </Box>
 
@@ -163,18 +156,16 @@ const KifuPage = () => {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.025)',
+                bgcolor: 'var(--raise2)',
                 borderRadius: '10px',
                 fontSize: '0.88rem',
                 transition: 'all 200ms ease',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.05)' },
+                '& fieldset': { borderColor: 'divider' },
                 '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.04)',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.08)' },
+                  '& fieldset': { borderColor: '#3a4d45' },
                 },
                 '&.Mui-focused': {
-                  bgcolor: 'rgba(255,255,255,0.045)',
-                  '& fieldset': { borderColor: 'rgba(74,107,92,0.4)' },
+                  '& fieldset': { borderColor: 'primary.main' },
                 },
               },
             }}
@@ -191,6 +182,21 @@ const KifuPage = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
               <Typography variant="body2" color="error">{error}</Typography>
             </Box>
+          ) : !loading && !error && kifuList.length === 0 ? (
+            <Box sx={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              height: '100%', gap: 2, p: 2,
+              border: '2px dashed', borderColor: 'divider', borderRadius: '12px',
+              bgcolor: 'background.paper', m: 1,
+            }}>
+              <SearchIcon sx={{ fontSize: 50, color: 'divider' }} />
+              <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                {t('No games found', '未找到棋谱')}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: 280 }}>
+                {t(`No records match "${query}"...`, `没有匹配「${query}」的记录。试试棋手名、赛事名或年份。`)}
+              </Typography>
+            </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {kifuList.map((kifu, index) => {
@@ -203,13 +209,12 @@ const KifuPage = () => {
                     <Box>
                       <Card
                         sx={{
-                          bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)',
-                          border: selected ? 2 : 1,
-                          borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)',
-                          borderRadius: '8px',
+                          bgcolor: selected ? 'linear-gradient(135deg,#1f3a30,#18211f)' : 'background.paper',
+                          border: 1,
+                          borderColor: selected ? 'primary.main' : 'divider',
+                          borderRadius: '13px',
                           '&:hover': {
-                            borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.2)',
-                            bgcolor: selected ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.07)',
+                            borderColor: selected ? 'primary.main' : '#3a4d45',
                           },
                         }}
                       >
@@ -280,7 +285,7 @@ const KifuPage = () => {
 
         {/* Pagination (bottom of list panel) */}
         {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid rgba(255,255,255,0.04)', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
             <Pagination
               count={totalPages}
               page={page}
@@ -297,22 +302,27 @@ const KifuPage = () => {
       <Box
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          bgcolor: '#0f0f0f', overflow: 'hidden',
-          ...(isPortrait
-            ? { borderTop: '1px solid rgba(255,255,255,0.06)' }
-            : { borderLeft: '1px solid rgba(255,255,255,0.06)' }),
+          bgcolor: 'background.default', overflow: 'hidden',
+          borderLeft: '1px solid', borderColor: 'divider',
         }}
       >
         {selectedKifu ? (
           <>
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: 0 }}>
-              <LiveBoard
-                moves={previewMoves}
-                stoneColors={previewColors}
-                currentMove={previewCurrentMove}
-                boardSize={previewBoardSize}
-                showCoordinates={true}
-              />
+              {previewLoading ? (
+                <Skeleton
+                  variant="rounded"
+                  sx={{ width: '88%', aspectRatio: '1', maxHeight: '100%', bgcolor: 'var(--raise2)' }}
+                />
+              ) : (
+                <LiveBoard
+                  moves={previewMoves}
+                  stoneColors={previewColors}
+                  currentMove={previewCurrentMove}
+                  boardSize={previewBoardSize}
+                  showCoordinates={true}
+                />
+              )}
             </Box>
 
             {/*
@@ -320,26 +330,28 @@ const KifuPage = () => {
               flexWrap + button-as-direct-child guarantees no clipping: on panels too
               narrow for one row, the button drops to its own row instead of clipping/
               vertically wrapping. On wide panels it stays a single row (D4).
+              Stays outside the skeleton gate above: nav must remain visible/testable
+              while the board is loading.
             */}
             <Box
               data-testid="kifu-preview-nav"
               sx={{
-                px: 3, py: 1.5, bgcolor: '#1a1a1a',
-                borderTop: '1px solid rgba(255,255,255,0.05)',
+                px: 3, py: 1.5, bgcolor: 'background.paper',
+                borderTop: '1px solid', borderColor: 'divider',
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center',
                 columnGap: 1, rowGap: 1, width: '100%', flexShrink: 0,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexGrow: 1, flexShrink: 0, justifyContent: 'center' }}>
                 <Button size="small" aria-label="first" disabled={previewCurrentMove === 0}
-                  onClick={() => setPreviewCurrentMove(0)} sx={{ minWidth: 32, color: 'text.secondary' }}>⏮</Button>
+                  onClick={() => setPreviewCurrentMove(0)} sx={{ minWidth: 32, color: 'text.secondary' }}><SkipPrevious fontSize="small" /></Button>
                 <Button size="small" aria-label="prev" disabled={previewCurrentMove === 0}
-                  onClick={() => setPreviewCurrentMove(m => Math.max(0, m - 1))} sx={{ minWidth: 32, color: 'text.secondary' }}>◀</Button>
+                  onClick={() => setPreviewCurrentMove(m => Math.max(0, m - 1))} sx={{ minWidth: 32, color: 'text.secondary' }}><NavigateBefore fontSize="small" /></Button>
                 <Typography
                   variant="body2"
                   sx={{
                     mx: 2,
-                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontFamily: '"JetBrains Mono", monospace',
                     color: 'text.secondary',
                     minWidth: 80,
                     textAlign: 'center',
@@ -348,9 +360,9 @@ const KifuPage = () => {
                   {previewCurrentMove} / {previewMoves.length} {t('moves', '手')}
                 </Typography>
                 <Button size="small" aria-label="next" disabled={previewCurrentMove >= previewMoves.length}
-                  onClick={() => setPreviewCurrentMove(m => Math.min(previewMoves.length, m + 1))} sx={{ minWidth: 32, color: 'text.secondary' }}>▶</Button>
+                  onClick={() => setPreviewCurrentMove(m => Math.min(previewMoves.length, m + 1))} sx={{ minWidth: 32, color: 'text.secondary' }}><NavigateNext fontSize="small" /></Button>
                 <Button size="small" aria-label="last" disabled={previewCurrentMove >= previewMoves.length}
-                  onClick={() => setPreviewCurrentMove(previewMoves.length)} sx={{ minWidth: 32, color: 'text.secondary' }}>⏭</Button>
+                  onClick={() => setPreviewCurrentMove(previewMoves.length)} sx={{ minWidth: 32, color: 'text.secondary' }}><SkipNext fontSize="small" /></Button>
               </Box>
 
               <Button
@@ -365,8 +377,8 @@ const KifuPage = () => {
                   textTransform: 'none',
                   minWidth: 150,
                   minHeight: 40,
-                  bgcolor: 'rgba(74,107,92,0.8)',
-                  '&:hover': { bgcolor: 'rgba(74,107,92,1)' },
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
                   borderRadius: '8px',
                   px: 3,
                 }}

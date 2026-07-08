@@ -24,14 +24,21 @@ import TrendChart from '../../components/live/TrendChart';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
-import { useOrientation } from '../context/OrientationContext';
+import { useImmersive } from '../context/ImmersiveContext';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
-  const { isPortrait } = useOrientation();
+  const { setImmersive } = useImmersive();
+
+  // Full-screen session/observing view — hide the kiosk Header + Dock like
+  // ResearchPage; this page already has its own back button (below).
+  useEffect(() => {
+    setImmersive(true);
+    return () => setImmersive(false);
+  }, [setImmersive]);
 
   // Board feature toggles
   const [showAiMarkers, setShowAiMarkers] = useState(true);
@@ -102,7 +109,7 @@ const LiveMatchPage = () => {
   }
   if (error || !match) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, bgcolor: 'background.default' }}>
         <Alert severity="error">{error?.message || t('Failed to load match', '加载对局失败')}</Alert>
         <Button onClick={() => navigate('/kiosk/live')} startIcon={<ArrowBackIcon />} sx={{ mt: 1 }}>
           {t('Back', '返回')}
@@ -112,14 +119,10 @@ const LiveMatchPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', bgcolor: 'background.default' }}>
       {/* Board */}
       <Box
-        sx={
-          isPortrait
-            ? { width: '100%', maxHeight: '50%', aspectRatio: '1', alignSelf: 'center', flexShrink: 0 }
-            : { height: '100%', aspectRatio: '1', flexShrink: 0 }
-        }
+        sx={{ height: '100%', aspectRatio: '1', flexShrink: 0, position: 'relative' }}
       >
         <LiveBoard
           moves={match.moves}
@@ -135,16 +138,29 @@ const LiveMatchPage = () => {
           onTryMove={tryMoveMode ? (move: string) => setTryMoves((prev) => [...prev, move]) : undefined}
           onIntersectionClick={!tryMoveMode && activeMove ? () => setActiveMove(null) : undefined}
         />
+        {activeMove !== null && (
+          <Chip
+            label={t('Variation preview · tap board to close', '变化预览 · 点击棋盘关闭')}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              zIndex: 2,
+              bgcolor: 'var(--raise2)',
+              color: 'text.secondary',
+            }}
+          />
+        )}
       </Box>
 
       {/* Right (or bottom) panel */}
-      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: isPortrait ? 'none' : '1px solid', borderTop: isPortrait ? '1px solid' : 'none', borderColor: 'divider' }}>
+      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid', borderTop: 'none', borderColor: 'divider' }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, flexShrink: 0 }}>
           <IconButton onClick={() => navigate('/kiosk/live')} size="small">
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flex: 1 }} noWrap>
+          <Typography variant="h6" sx={{ flex: 1, fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }} noWrap>
             {match.player_black} vs {match.player_white}
           </Typography>
           <Chip
@@ -158,7 +174,7 @@ const LiveMatchPage = () => {
         <MatchInfo match={match} currentMove={currentMove} analysis={analysis[currentMove]} />
 
         {/* Feature toggles — persistent text labels (no hover tooltips on touch) */}
-        <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)', flexShrink: 0 }}>
+        <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0 }}>
           <ToggleButtonGroup size="small" sx={{ width: '100%', display: 'flex' }}>
             <ToggleButton value="tryMove" selected={tryMoveMode} onChange={handleToggleTry} sx={{ flex: 1, py: 0.75 }}>
               <TouchAppIcon fontSize="small" />

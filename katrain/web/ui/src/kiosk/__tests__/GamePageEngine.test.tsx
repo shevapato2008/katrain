@@ -27,7 +27,7 @@ vi.mock('../../api', async (importOriginal) => {
 });
 
 vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).

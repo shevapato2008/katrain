@@ -13,7 +13,6 @@ import { KifuAPI } from '../../api/kifuApi';
 import { cacheSgf, listRecent, getCachedSgf, type BaipuRecentEntry } from '../../api/baipuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useOrientation } from '../context/OrientationContext';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -28,7 +27,6 @@ const PAGE_SIZE = 20;
 const BaipuListPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isPortrait } = useOrientation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -155,9 +153,9 @@ const BaipuListPage = () => {
   const selectedKifu = visibleKifu.find((k) => k.id === selectedId);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: isPortrait ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
       {/* List panel */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...(isPortrait && { maxHeight: '50%' }) }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
@@ -194,8 +192,8 @@ const BaipuListPage = () => {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.025)', borderRadius: '10px', fontSize: '0.88rem',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.05)' },
+                bgcolor: 'var(--raise2)', borderRadius: '10px', fontSize: '0.88rem',
+                '& fieldset': { borderColor: 'divider' },
               },
             }}
           />
@@ -216,11 +214,11 @@ const BaipuListPage = () => {
                   size="small"
                   onClick={() => handleResume(r)}
                   data-testid="baipu-recent-chip"
-                  sx={{ bgcolor: 'rgba(255,255,255,0.06)', maxWidth: 180 }}
+                  sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', maxWidth: 180 }}
                 />
               ))}
             </Box>
-            <Divider sx={{ mt: 1.5, borderColor: 'rgba(255,255,255,0.05)' }} />
+            <Divider sx={{ mt: 1.5, borderColor: 'divider' }} />
           </Box>
         )}
 
@@ -251,9 +249,9 @@ const BaipuListPage = () => {
                     <Box>
                       <Card
                         sx={{
-                          bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)',
+                          bgcolor: selected ? 'primary.dark' : 'background.paper',
                           border: selected ? 2 : 1,
-                          borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)',
+                          borderColor: selected ? 'primary.main' : 'divider',
                           borderRadius: '8px',
                         }}
                       >
@@ -282,7 +280,7 @@ const BaipuListPage = () => {
         </Box>
 
         {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid rgba(255,255,255,0.04)', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, borderTop: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
             <Pagination count={totalPages} page={page} onChange={(_, p) => setPage(p)} color="primary" shape="rounded" size="small" />
           </Box>
         )}
@@ -292,8 +290,9 @@ const BaipuListPage = () => {
       <Box
         sx={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          bgcolor: '#0f0f0f', overflow: 'hidden',
-          ...(isPortrait ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : { borderLeft: '1px solid rgba(255,255,255,0.06)' }),
+          bgcolor: 'background.default', overflow: 'hidden',
+          borderLeft: '1px solid',
+          borderColor: 'divider',
         }}
       >
         {selectedKifu && previewSgf ? (
@@ -301,7 +300,7 @@ const BaipuListPage = () => {
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: 0 }}>
               <LiveBoard moves={previewMoves} stoneColors={previewColors} currentMove={previewMoves.length} boardSize={previewBoardSize} showCoordinates />
             </Box>
-            <Box sx={{ px: 3, py: 2, bgcolor: '#1a1a1a', borderTop: '1px solid rgba(255,255,255,0.05)', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ px: 3, py: 2, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', width: '100%', display: 'flex', justifyContent: 'center' }}>
               <Button
                 variant="contained"
                 onClick={handleStartSelected}

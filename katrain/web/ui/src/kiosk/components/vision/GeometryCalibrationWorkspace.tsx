@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, LinearProgress, Typography } from '@mui/material';
-import { Cancel, CheckCircle, ErrorOutline, Refresh } from '@mui/icons-material';
+import { Alert, alpha, Box, Button, Chip, CircularProgress, LinearProgress, Typography } from '@mui/material';
+import { Cancel, CheckCircle, ErrorOutline, Refresh, WarningAmberOutlined } from '@mui/icons-material';
 import { GeometryAPI, type GeometryLayout } from '../../../api/geometryApi';
 import { useGeometry } from '../../context/GeometryContext';
 import CameraGeometryOverlay from './CameraGeometryOverlay';
@@ -162,7 +162,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
     <Box sx={{ width: '100%', height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1.5, p: mode === 'guard' ? 2 : 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          <Typography variant="h5" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }}>
             {status.phase === 'degraded'
               ? '摄像头或棋盘位置已变化'
               : status.phase === 'ready'
@@ -191,6 +191,15 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
         </Box>
       </Box>
 
+      {!active && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }} data-testid="geometry-led-advisory">
+          <WarningAmberOutlined sx={{ fontSize: 18, color: 'warning.main' }} />
+          <Typography variant="body2" sx={{ color: 'warning.main' }}>
+            先清空棋盘 · 手动触发 · 不会自动点亮 LED
+          </Typography>
+        </Box>
+      )}
+
       {status.phase === 'degraded' && (
         <Alert severity="error">当前定位已失效，实体棋盘功能已暂停。</Alert>
       )}
@@ -203,11 +212,11 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
             gap: 1.5,
             p: 2,
             borderRadius: 2,
-            bgcolor: 'rgba(255, 149, 0, 0.10)',
-            border: '1px solid rgba(255, 149, 0, 0.45)',
+            bgcolor: (t) => alpha(t.palette.warning.main, 0.1),
+            border: (t) => `1px solid ${alpha(t.palette.warning.main, 0.45)}`,
           }}
         >
-          <ErrorOutline sx={{ color: '#ff9f0a', mt: 0.25 }} />
+          <ErrorOutline sx={{ color: 'warning.main', mt: 0.25 }} />
           <Box>
             <Typography sx={{ fontWeight: 800 }}>{diagnostic.title}</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{diagnostic.body}</Typography>
@@ -231,7 +240,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
       {layoutError && <Alert severity="warning">几何叠加读取失败：{layoutError}</Alert>}
       {canReuse && <Alert severity="info">网格对齐时可直接继续，<strong>无需清空棋盘</strong>。</Alert>}
 
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, overflow: 'auto' }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, overflow: 'auto' }}>
         <GeometryVideoPanel
           title="摄像头原始画面"
           src="/api/v1/geometry/stream"

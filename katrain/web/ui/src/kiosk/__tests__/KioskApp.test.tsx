@@ -9,7 +9,7 @@ vi.mock('../../context/AuthContext', () => ({
 
 vi.mock('../context/OrientationContext', () => ({
   OrientationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: vi.fn() }),
+  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
 vi.mock('../components/layout/RotationWrapper', () => ({
@@ -83,7 +83,7 @@ describe('KioskApp', () => {
     renderApp('/kiosk/play');
     // After auth, nav rail visible
     expect(screen.getByText('对弈')).toBeInTheDocument();
-    expect(screen.getByText('弈航')).toBeInTheDocument();
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
   });
 
   it('renders the tutorial entry on /kiosk/tutorial when authenticated', () => {

@@ -241,6 +241,10 @@ export const API = {
     moves: string[][]; initial_stones?: string[][]; board_size?: number; komi?: number; rules?: string; max_visits?: number;
   }): Promise<any> =>
     apiPost("/api/v1/analysis/quick-analyze", params),
+  // On-demand analysis of the current position (kiosk 领地/图表 in board mode, where per-move
+  // auto-eval is suppressed). Result streams back over the game WebSocket, not this response.
+  analyzeCurrent: (sessionId: string): Promise<any> =>
+    apiPost("/api/analysis/current", { session_id: sessionId }),
   analysisProgress: async (sessionId: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
     const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`);
     if (!response.ok) throw new Error("Failed to fetch analysis progress");
@@ -334,8 +338,11 @@ export const API = {
     apiPost("/api/v1/vision/bind", { session_id: sessionId }),
   visionUnbind: (): Promise<void> =>
     apiPost("/api/v1/vision/unbind", {}),
-  visionResetSync: (): Promise<void> =>
-    apiPost("/api/v1/vision/sync/reset", {}),
+  // adopt='digital' (default): trust-digital recovery — re-baseline to the game, clear the
+  // stuck removal/pause. adopt='physical': accept the camera board as-is (ambiguous 忽略) so
+  // the ignored stone isn't re-detected.
+  visionResetSync: (adopt: 'digital' | 'physical' = 'digital'): Promise<void> =>
+    apiPost("/api/v1/vision/sync/reset", { adopt }),
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
 

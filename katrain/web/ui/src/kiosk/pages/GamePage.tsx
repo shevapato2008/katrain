@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
-import { ExitToApp, Videocam, Lightbulb, TipsAndUpdates } from '@mui/icons-material';
+import { ExitToApp, Videocam, Lightbulb, GpsFixed, Refresh } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
@@ -40,8 +40,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hint, setHint] = useState<HintResponse | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
+  const [countError, setCountError] = useState<string | null>(null);
+  const [resyncing, setResyncing] = useState(false);
+  const [resyncError, setResyncError] = useState(false);
+  const [syncStuck, setSyncStuck] = useState(false);
 
-  const { visionStatus, isVisionEnabled } = useVision();
+  const { visionStatus, isVisionEnabled, refreshStatus } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
 
   useEffect(() => {
@@ -82,10 +86,55 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   }, [isVisionEnabled, visionStatus.cameraConnected]);
 
+  // On-demand analysis for 领地(ownership)/图表(winrate/score). Board mode suppresses per-move
+  // auto-eval, so the current position has no analysis until we ask. Trigger when either toggle
+  // is on, and re-trigger when the current node changes. The result streams back over the game
+  // WebSocket (get_state broadcast). Ranked/rated games block this server-side (analysis_allowed).
+  const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
+  const gs = session.gameState;
+  useEffect(() => {
+    if (!wantAnalysis || !sessionId || !gs) return;
+    if (gs.game_type === 'ranked' || gs.game_type === 'rated') return;
+    API.analyzeCurrent(sessionId).catch(() => undefined);
+  }, [wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
+
   const closeHint = useCallback(() => {
     setHint(null);
     API.hintDismiss().catch(() => undefined);
   }, []);
+
+  // Always-available fallback when vision sync gets stuck (blue-LED / 确认中 deadlock):
+  // re-baseline to the digital board, drop the stuck removal, resume detection. Refresh
+  // status on success so the button clears immediately instead of after the ≤3s poll;
+  // surface a failure instead of silently swallowing it.
+  const handleResetSync = useCallback(async () => {
+    setResyncing(true);
+    try {
+      await API.visionResetSync();
+      await refreshStatus();
+    } catch {
+      setResyncError(true);
+    } finally {
+      setResyncing(false);
+    }
+  }, [refreshStatus]);
+
+  // Offer the 重置识别 button only for genuinely-blocked sync states, and only after they
+  // PERSIST — a routine capture (capture_pending self-clears in a few seconds) or a hand
+  // over the board (board_lost) must not flash the warning button, while a real deadlock
+  // still recovers well under the 30s reminder / 120s escalation. 'unbound' / 'calibrating'
+  // / 'setup_in_progress' / 'synced' are never "stuck".
+  const stuckEligible =
+    isVisionEnabled && !session.gameState?.end_result &&
+    ['mismatch_warning', 'capture_pending', 'board_lost', 'degraded'].includes(visionStatus.syncState);
+  useEffect(() => {
+    if (!stuckEligible) {
+      setSyncStuck(false);
+      return;
+    }
+    const id = setTimeout(() => setSyncStuck(true), 10000);
+    return () => clearTimeout(id);
+  }, [stuckEligible]);
 
   if (!session.gameState) {
     return (
@@ -101,19 +150,32 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
   const isRanked = gameState.game_type === 'ranked' || gameState.game_type === 'rated';
 
+
   // Determine which color the human plays (for turn enforcement)
   const humanColor: 'B' | 'W' | null =
     gameState.players_info?.B?.player_type === 'player:human' ? 'B'
     : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
     : null;
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
     if (action === 'resign') {
       setShowResignConfirm(true);
-    } else {
-      session.handleAction(action);
+      return;
     }
+    if (action === 'count') {
+      // 数子: for human-vs-AI the backend counts immediately and ends the game (no opponent
+      // handshake, no auth). Errors are usually the min-move guard or an already-finished game.
+      if (!sessionId) return;
+      try {
+        const res = await API.requestCount(sessionId);
+        if (res?.state) session.setGameState(res.state);
+      } catch {
+        setCountError(t('Cannot count yet (not enough moves, or the game is over)', '暂时不能数子（对局手数不足或已结束）'));
+      }
+      return;
+    }
+    session.handleAction(action);
   };
 
   const handleBoardMove = async (x: number, y: number) => {
@@ -158,19 +220,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Error display */}
       {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
 
-      {/* Floating vision status (fullscreen GamePage has no KioskLayout/StatusBar) */}
-      {isVisionEnabled && (
-        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5, opacity: 0.8, zIndex: 10 }}>
-          <Videocam sx={{ color: visionStatus.cameraConnected ? 'success.main' : 'error.main', fontSize: 20 }} />
-          <Lightbulb
-            sx={{
-              color: visionStatus.ledConnected === false ? 'error.main'
-                : visionStatus.ledConnected ? 'success.main' : 'text.disabled',
-            }}
-          />
-        </Box>
-      )}
-
       {isVisionEnabled && (
         <PhysicalPlayStatusChip
           latestEvent={visionSync.latestEvent}
@@ -182,17 +231,36 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <PoseLostBanner visible={!visionStatus.poseLocked && !!session.gameState && !session.gameState.end_result} />
       )}
 
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{gameTitle}</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {hintVisible && (
-            <Button variant="outlined" size="small" startIcon={<TipsAndUpdates />} onClick={handleHint}>
-              {t('AI Hint', 'AI 支招')}
+      {/* Header — kiosk-ui-redesign 方案A: title (left) · inline vision chips (right, no longer a
+          floating overlay that collided with the buttons) · 退出. AI 支招 is folded into the
+          right-panel 建议 button, so there is no standalone hint button here anymore. */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, px: 2, py: 1, minHeight: 46 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {gameTitle}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0 }}>
+          {isVisionEnabled && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 0.5 }}>
+              <Videocam titleAccess={t('Camera', '摄像头')}
+                sx={{ fontSize: 20, color: visionStatus.cameraConnected ? 'success.main' : 'error.main' }} />
+              <GpsFixed titleAccess={t('Calibration', '标定')}
+                sx={{ fontSize: 20, color: visionStatus.poseLocked ? 'success.main' : 'warning.main' }} />
+              <Lightbulb titleAccess="LED"
+                sx={{
+                  fontSize: 20,
+                  color: visionStatus.ledConnected === false ? 'error.main'
+                    : visionStatus.ledConnected ? 'success.main' : 'text.disabled',
+                }} />
+            </Box>
+          )}
+          {syncStuck && (
+            <Button variant="outlined" size="small" color="warning" disabled={resyncing}
+              startIcon={resyncing ? <CircularProgress size={16} color="inherit" /> : <Refresh />}
+              onClick={handleResetSync}>
+              {t('Re-sync', '重置识别')}
             </Button>
           )}
-          <Button variant="outlined" size="small" startIcon={<ExitToApp />}
-            onClick={handleExit}>
+          <Button variant="outlined" size="small" startIcon={<ExitToApp />} onClick={handleExit}>
             {t('Exit', '退出')}
           </Button>
         </Box>
@@ -229,9 +297,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+            onHint={handleHint}
+            hintEnabled={hintVisible}
             isGameOver={isGameOver}
             disableUndo={isRanked}
-            disableSpecialActions={engineMode}
           />
         </Box>
       </Box>
@@ -303,6 +372,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         toRemove={session.physicalReminder?.to_remove ?? []}
         onClose={() => setEscalationOpen(false)}
       />
+
+      {/* Count (数子) error toast */}
+      <Snackbar open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
+      </Snackbar>
+
+      {/* Re-sync (重置识别) failure toast */}
+      <Snackbar open={resyncError} autoHideDuration={5000} onClose={() => setResyncError(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setResyncError(false)}>
+          {t('Re-sync failed, please retry', '重置识别失败，请重试')}
+        </Alert>
+      </Snackbar>
 
       {/* Engine error toast */}
       <Snackbar open={engineErrorToast} autoHideDuration={6000} onClose={() => setEngineErrorToast(false)}

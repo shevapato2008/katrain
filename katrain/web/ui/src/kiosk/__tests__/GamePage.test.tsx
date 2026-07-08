@@ -143,7 +143,7 @@ describe('GamePage', () => {
   it('renders all 7 ItemToggles', () => {
     renderPage();
     expect(screen.getByText('领地')).toBeInTheDocument();
-    expect(screen.getByText('建议')).toBeInTheDocument();
+    expect(screen.getByText('AI支招')).toBeInTheDocument();
     expect(screen.getByText('图表')).toBeInTheDocument();
     expect(screen.getByText('悔棋')).toBeInTheDocument();
     expect(screen.getByText('停一手')).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -49,6 +49,11 @@ const mockSetSessionId = vi.fn();
 const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn();
 const mockOnNavigate = vi.fn();
+// API is mocked (below) so 数子 (count) and the on-demand analysis effect don't hit the network.
+const mockRequestCount = vi.fn();
+const mockAnalyzeCurrent = vi.fn();
+const mockHintDismiss = vi.fn();
+const mockHint = vi.fn();
 
 const mockGameState: GameState = {
   game_id: 'test-game',
@@ -103,6 +108,17 @@ vi.mock('../../hooks/useGameSession', () => ({
   }),
 }));
 
+// Mock the API (数子 → requestCount; the 领地/图表 effect → analyzeCurrent). `mock`-prefixed
+// names are hoist-safe inside a vi.mock factory.
+vi.mock('../../api', () => ({
+  API: {
+    requestCount: (...a: any[]) => mockRequestCount(...a),
+    analyzeCurrent: (...a: any[]) => mockAnalyzeCurrent(...a),
+    hintDismiss: (...a: any[]) => mockHintDismiss(...a),
+    hint: (...a: any[]) => mockHint(...a),
+  },
+}));
+
 // Import after mocks
 import GamePage from '../pages/GamePage';
 
@@ -121,31 +137,37 @@ describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
+    mockRequestCount.mockResolvedValue({ state: mockGameState });
+    mockAnalyzeCurrent.mockResolvedValue({});
+    mockHintDismiss.mockResolvedValue({ ok: true });
   });
 
-  it('disables Pass and Score when engineMode, but keeps Resign enabled', () => {
+  it('keeps Pass/Score/Resign usable in engineMode (special actions no longer disabled)', async () => {
     renderPage(true);
 
-    // Clicking a disabled ItemToggle must not reach session.handleAction (via GamePage's
-    // handleAction wrapper) — ItemToggle sets onClick to undefined when disabled.
+    // 停一手 is now enabled during AI play → routes through session.handleAction.
     fireEvent.click(screen.getByText('停一手'));
-    fireEvent.click(screen.getByText('数子'));
-    expect(mockHandleAction).not.toHaveBeenCalled();
+    expect(mockHandleAction).toHaveBeenCalledWith('pass');
 
-    // Resign must stay enabled — clicking it should still open the confirm dialog
-    // (GamePage's handleAction intercepts 'resign' before calling session.handleAction).
+    // 数子 is now enabled → GamePage counts directly via the count API (HvAI completes
+    // immediately), NOT via session.handleAction.
+    fireEvent.click(screen.getByText('数子'));
+    await waitFor(() => expect(mockRequestCount).toHaveBeenCalledWith('test-session'));
+    expect(mockHandleAction).not.toHaveBeenCalledWith('count');
+
+    // Resign still opens the confirm dialog (intercepted before session.handleAction).
     fireEvent.click(screen.getByText('认输'));
     expect(screen.getByText('确认认输？')).toBeInTheDocument();
   });
 
-  it('leaves Pass and Score enabled without engineMode (baseline)', () => {
+  it('routes Pass to handleAction and Score to the count API (baseline)', async () => {
     renderPage(false);
 
     fireEvent.click(screen.getByText('停一手'));
     expect(mockHandleAction).toHaveBeenCalledWith('pass');
 
     fireEvent.click(screen.getByText('数子'));
-    expect(mockHandleAction).toHaveBeenCalledWith('count');
+    await waitFor(() => expect(mockRequestCount).toHaveBeenCalledWith('test-session'));
   });
 
   it('shows the engine error toast when a move fails in engineMode', async () => {

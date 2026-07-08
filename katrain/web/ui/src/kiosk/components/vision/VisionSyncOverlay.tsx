@@ -134,9 +134,10 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
   }, [sessionId]);
 
   const handleAmbiguousIgnore = useCallback(() => {
-    // Ignore = accept the current physical board as the baseline, preventing
-    // a lingering pending state.
-    API.visionResetSync().catch(() => undefined);
+    // Ignore = accept the current physical board as the baseline (adopt='physical'),
+    // keeping the ignored stone in the detector baseline so it doesn't re-fire. (The
+    // trust-digital recovery path would re-push the digital board and re-detect it.)
+    API.visionResetSync('physical').catch(() => undefined);
     setAmbiguous(null);
   }, []);
 

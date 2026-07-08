@@ -16,12 +16,14 @@ interface Props {
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
   onToggleAnalysis: (key: string) => void;
+  onHint?: () => void;
+  hintEnabled?: boolean;
   isGameOver?: boolean;
   disableUndo?: boolean;
   disableSpecialActions?: boolean;
 }
 
-const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, isGameOver = false, disableUndo = false, disableSpecialActions = false }: Props) => {
+const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false, isGameOver = false, disableUndo = false, disableSpecialActions = false }: Props) => {
   const { t } = useTranslation();
   const showScore = !!analysisToggles.score;
 
@@ -59,7 +61,9 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
         {/* 4. ItemToggle grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
           <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.ownership} onClick={() => onToggleAnalysis('ownership')} />
-          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', '建议')} active={!!analysisToggles.hints} onClick={() => onToggleAnalysis('hints')} />
+          {/* 建议 = AI 支招 (top-N candidate points + winrate; LED white-blinks on the board).
+              Unified here per the kiosk-ui-redesign; the old standalone header button is gone. */}
+          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', 'AI支招')} onClick={() => onHint?.()} disabled={!hintEnabled} />
           <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
           {!disableUndo && (
             <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} disabled={isGameOver} />

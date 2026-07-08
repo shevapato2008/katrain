@@ -10,6 +10,38 @@ vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, setRotation: mockSetRotation }),
 }));
 
+// B6: SettingsPage now also pulls in useSettings/useAuth/useGeometry (via
+// AccountSection + PhysicalBoardStatus). Mock each context module directly —
+// same idiom as src/kiosk/__tests__/KioskAuth.test.tsx (AuthContext) and
+// src/kiosk/__tests__/PhysicalBoardStatus.test.tsx (GeometryContext) — rather
+// than mounting the real providers, which would require faking network calls
+// (SettingsProvider's i18n.loadTranslations, GeometryProvider's status poll).
+const mockSetLanguage = vi.fn();
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({ language: 'cn', setLanguage: mockSetLanguage, languages: [] }),
+}));
+
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+    isAuthenticated: true,
+    login: vi.fn(),
+    logout: vi.fn(),
+    token: 'mock-token',
+  }),
+}));
+
+vi.mock('../context/GeometryContext', () => ({
+  useGeometry: () => ({
+    status: {
+      phase: 'required',
+      session_calibrated: false,
+      last_valid: false,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+    },
+  }),
+}));
+
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>

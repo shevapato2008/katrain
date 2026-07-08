@@ -76,8 +76,15 @@ describe('Kiosk navigation integration', () => {
     it('nav rail items navigate correctly', async () => {
       renderApp('/kiosk/play');
       fireEvent.click(screen.getByText('死活'));
+      // Phase B reskin composes the subtitle from two separate translated
+      // spans ("选择难度级别" + " · " + "练习死活以提高计算力"), so an exact
+      // getByText('选择难度级别') no longer matches a single text node. Match
+      // on the full composed subtitle instead — still proves the 死活 nav
+      // item landed on the tsumego levels page.
       await waitFor(() => {
-        expect(screen.getByText('选择难度级别')).toBeInTheDocument();
+        expect(
+          screen.getByText((_, node) => node?.textContent === '选择难度级别 · 练习死活以提高计算力')
+        ).toBeInTheDocument();
       });
     });
 

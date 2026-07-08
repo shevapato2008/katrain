@@ -26,7 +26,7 @@ const AppRouter = () => {
       <CssBaseline />
       <BrowserRouter>
         <AuthProvider>
-          <SettingsProvider>
+          <SettingsProvider defaultLanguage={__KIOSK_2D_ONLY__ ? 'cn' : undefined}>
             <Suspense fallback={null}>
               <Routes>
                 <Route path="/kiosk/*" element={<KioskApp />} />

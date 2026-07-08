@@ -77,13 +77,16 @@ const countColor = (board: number[][], color: number) =>
 const stoneColorAt = (board: number[][] | null, r: number, c: number): LedColor =>
   board?.[r]?.[c] === 2 ? 'white' : 'black';
 
-const blues = (extra: Array<[number, number, number]>): LedPoint[] =>
-  extra.map(([row, col]) => ({ row, col, color: 'remove' as LedColor }));
+// Extra/wrong stones get a bright-WHITE FLASH ('flash'), not solid blue: the LED sits directly
+// under the offending stone, so a static colour is fully occluded. White is the brightest output
+// and the blink (driven in usePhysicalTsumego) leaks around the stone's base + catches the eye.
+const flashes = (extra: Array<[number, number, number]>): LedPoint[] =>
+  extra.map(([row, col]) => ({ row, col, color: 'flash' as LedColor }));
 
-// While converging: still-to-place points in their target stone color, extras in blue.
+// While converging: still-to-place points in their target stone color, extras as white flash.
 const convergenceLeds = (state: MachineState, missing: Array<[number, number]>, extra: Array<[number, number, number]>): LedPoint[] => [
   ...missing.map(([row, col]) => ({ row, col, color: stoneColorAt(state.targetBoard, row, col) })),
-  ...blues(extra),
+  ...flashes(extra),
 ];
 
 const toReady = (state: MachineState, board: number[][]): { state: MachineState; commands: Command[] } => ({
@@ -114,11 +117,11 @@ export function reduce(state: MachineState, evt: MachineEvent): { state: Machine
       switch (state.phase) {
         case 'clearing':
         case 'clearing_next':
-          return { state: base, commands: [{ kind: 'ledPoints', points: blues(extra) }] };
+          return { state: base, commands: [{ kind: 'ledPoints', points: flashes(extra) }] };
         case 'removing':
         case 'restoring':
         case 'replying':
-          // Guide both directions: put back what's missing (target color), take off extras (blue).
+          // Guide both directions: put back what's missing (target color), take off extras (white flash).
           return { state: base, commands: [{ kind: 'ledPoints', points: convergenceLeds(state, missing, extra) }] };
         case 'setup': {
           const target = state.targetBoard!;
@@ -133,7 +136,7 @@ export function reduce(state: MachineState, evt: MachineEvent): { state: Machine
             kind: 'ledPoints',
             points: [
               ...active.map(([row, col]) => ({ row, col, color: nextStage as LedColor })),
-              ...blues(extra),
+              ...flashes(extra),
             ],
           });
           return {

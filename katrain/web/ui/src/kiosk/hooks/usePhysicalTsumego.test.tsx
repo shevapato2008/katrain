@@ -45,7 +45,9 @@ const BOARD_SIZE = 19;
 function makeOpts(overrides: Partial<PhysicalTsumegoOptions> = {}): PhysicalTsumegoOptions {
   return {
     enabled: true,
+    visionConnected: true,
     problemKey: 'p1',
+    resyncKey: 0,
     boardSize: BOARD_SIZE,
     stones: [],
     isSolved: false,
@@ -105,8 +107,9 @@ describe('usePhysicalTsumego', () => {
     rerender({ ...opts, syncEvents: events });
     await flush();
 
-    // Evidence event 1 (setup_progress) was consumed: blue "extra" LED command fired.
-    expect(LedAPI.points).toHaveBeenCalledWith([{ row: 5, col: 5, color: 'remove' }]);
+    // Evidence event 1 (setup_progress) was consumed: white-flash "extra" LED command fired
+    // (occlusion-proof cue — the LED under the offending stone is hidden, so it blinks bright white).
+    expect(LedAPI.points).toHaveBeenCalledWith([{ row: 5, col: 5, color: 'flash' }]);
     // Evidence event 2 (setup_complete) was consumed: phase advanced clearing -> setup,
     // and the physical target now mirrors the screen (non-empty, distinct from the
     // ENABLE-time empty-board setupMode call).
@@ -125,6 +128,44 @@ describe('usePhysicalTsumego', () => {
     expect(vi.mocked(LedAPI.points).mock.calls.length).toBe(pointsCallsBefore);
     expect(vi.mocked(API.visionSetupMode).mock.calls.length).toBe(setupModeCallsBefore);
     expect(result.current.phase).toBe('setup');
+  });
+
+  it('blinks the white-flash extra LED (~2Hz) and does not spam/reset on identical re-emits', async () => {
+    // The 'flash' LED sits under the offending stone (occluded), so it must BLINK. The interval
+    // toggles it off (steady-only) then on (steady ∪ flash). Fake timers must be installed BEFORE
+    // mount so the blink interval is created against them.
+    vi.useFakeTimers();
+    try {
+      const opts = makeOpts({ stones: [{ player: 'B', coords: [3, 3] }] });
+      const { result, rerender } = renderHook((props: PhysicalTsumegoOptions) => usePhysicalTsumego(props), {
+        initialProps: opts,
+      });
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(result.current.phase).toBe('clearing');
+
+      // A stray stone during clearing → white-flash LED, blink phase starts "on".
+      rerender({ ...opts, syncEvents: [setupProgressEvent(0, [], [[5, 5, 1]])] });
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(LedAPI.points).toHaveBeenLastCalledWith([{ row: 5, col: 5, color: 'flash' }]);
+
+      // One blink tick → flash OFF. Steady set is empty during clearing, so all LEDs go dark.
+      vi.mocked(LedAPI.points).mockClear();
+      await act(async () => { vi.advanceTimersByTime(450); await Promise.resolve(); });
+      expect(LedAPI.points).toHaveBeenLastCalledWith([]);
+
+      // Next tick → flash ON again.
+      await act(async () => { vi.advanceTimersByTime(450); await Promise.resolve(); });
+      expect(LedAPI.points).toHaveBeenLastCalledWith([{ row: 5, col: 5, color: 'flash' }]);
+
+      // Frame-rate re-emit of the SAME extra (new seq, identical set) must neither re-arm the blink
+      // nor re-send: flashKeyRef guards the phase and renderLeds dedups the identical output.
+      vi.mocked(LedAPI.points).mockClear();
+      rerender({ ...opts, syncEvents: [setupProgressEvent(1, [], [[5, 5, 1]])] });
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(LedAPI.points).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('wires a physical move_confirmed event into placeStone with converted coords', async () => {
@@ -190,6 +231,52 @@ describe('usePhysicalTsumego', () => {
     expect(placeStone).not.toHaveBeenCalled();
     expect(baseOpts.playMoveSound).not.toHaveBeenCalled();
     expect(result.current.phase).toBe('ready'); // still ready — move never applied
+  });
+
+  it('defers ENABLE until the vision WS is connected (no lost SETUP_COMPLETE)', async () => {
+    const opts = makeOpts({ visionConnected: false });
+    const { result, rerender } = renderHook((props: PhysicalTsumegoOptions) => usePhysicalTsumego(props), {
+      initialProps: opts,
+    });
+    await flush();
+
+    // WS not open yet → must NOT arm setup-mode (would race the SETUP_COMPLETE and lose it).
+    expect(API.visionSetupMode).not.toHaveBeenCalled();
+    expect(API.visionMonitor).not.toHaveBeenCalledWith(true);
+    expect(result.current.phase).toBe('off');
+
+    // WS opens → ENABLE fires: monitor armed and clearing begins.
+    rerender({ ...opts, visionConnected: true });
+    await flush();
+
+    expect(API.visionMonitor).toHaveBeenLastCalledWith(true);
+    expect(API.visionSetupMode).toHaveBeenCalled();
+    expect(result.current.phase).toBe('clearing');
+  });
+
+  it('re-runs the clearing lifecycle when resyncKey bumps (Reset)', async () => {
+    const opts = makeOpts();
+    const { result, rerender } = renderHook((props: PhysicalTsumegoOptions) => usePhysicalTsumego(props), {
+      initialProps: opts,
+    });
+    await flush();
+
+    // Drive the machine out of 'clearing' so we can prove Reset brings it back.
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(1)] });
+    await flush();
+    expect(result.current.phase).not.toBe('clearing');
+
+    const monitorCallsBefore = vi.mocked(API.visionMonitor).mock.calls.length;
+    const setupCallsBefore = vi.mocked(API.visionSetupMode).mock.calls.length;
+
+    // Reset bumps resyncKey → lifecycle restarts: monitor re-armed + machine re-clears.
+    rerender({ ...opts, resyncKey: 1 });
+    await flush();
+
+    expect(result.current.phase).toBe('clearing');
+    expect(vi.mocked(API.visionMonitor).mock.calls.length).toBeGreaterThan(monitorCallsBefore);
+    expect(API.visionMonitor).toHaveBeenLastCalledWith(true);
+    expect(vi.mocked(API.visionSetupMode).mock.calls.length).toBeGreaterThan(setupCallsBefore);
   });
 
   it('tears down vision/LED state on unmount', async () => {

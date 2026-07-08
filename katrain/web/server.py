@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 from typing import Any, List, Optional, Union, Dict
 
+import numpy as np
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -16,6 +18,26 @@ from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
+
+
+def _json_safe(obj):
+    """Recursively convert numpy scalars/arrays to native Python types.
+
+    Vision events are built from numpy arrays (``np.where`` yields ``np.int64``
+    coordinates). ``WebSocket.send_json`` uses the stdlib JSON encoder, which rejects
+    numpy scalars — an unhandled encode error in the /ws/vision send loop silently
+    kills the socket and freezes the kiosk. Sanitise every payload before sending so
+    a numpy value in ANY event type can never take the socket down.
+    """
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, np.generic):
+        return obj.item()
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
 
 
 @asynccontextmanager
@@ -439,7 +461,10 @@ async def _lifespan_board(app: FastAPI, log):
         app.state.capture = None
         app.state.geometry = None
 
-    if app.state.capture is not None and app.state.led is not None:
+    # Calibration service needs only the camera: confirm-existing/promote and drift monitoring
+    # run without an LED (no-LED geometry is a supported primary path). LED is required only for
+    # a full LED-anchor RE-calibration (start() guards that).
+    if app.state.capture is not None:
         from katrain.web.core.geometry_calibration_service import GeometryCalibrationService
 
         def promote_geometry(lock):
@@ -448,12 +473,21 @@ async def _lifespan_board(app: FastAPI, log):
             if vision_service is not None and hasattr(vision_service, "set_geometry"):
                 vision_service.set_geometry(lock)
 
+        def invalidate_geometry():
+            # Drift mid-session (board/camera bumped): drop the stale warp so recognition_ready
+            # falls and physical surfaces stop judging on a wrong grid until re-calibration.
+            app.state.geometry = None
+            vision_service = getattr(app.state, "vision", None)
+            if vision_service is not None and hasattr(vision_service, "set_geometry"):
+                vision_service.set_geometry(None)
+
         app.state.geometry_calibration = GeometryCalibrationService(
             led=app.state.led,
             capture=app.state.capture,
             save_path=Path("~/.katrain/geometry_lock.npz").expanduser(),
             initial_lock=app.state.geometry,
             on_success=promote_geometry,
+            on_degraded=invalidate_geometry,
         )
     else:
         app.state.geometry_calibration = None
@@ -1678,6 +1712,59 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}
             )
 
+    # NOTE (ordering is load-bearing): /ws/vision MUST be registered BEFORE the
+    # /ws/{session_id} param route. Starlette matches websocket routes in registration
+    # order; if the param route comes first it captures /ws/vision as session_id="vision"
+    # and closes it with 1008 "Session not found", silently killing ALL vision events to
+    # the kiosk (physical tsumego then hangs forever at "clear board"). Do not reorder.
+    @app.websocket("/ws/vision")
+    async def vision_websocket(websocket: WebSocket):
+        """Vision event WebSocket — events arrive via the pump's per-connection queue."""
+        await websocket.accept()
+        vision = getattr(app.state, "vision", None)
+        if vision is None:
+            await websocket.close(code=1008, reason="Vision service not enabled")
+            return
+        queue: asyncio.Queue = asyncio.Queue()
+        app.state.vision_ws_clients[websocket] = queue
+        logging.getLogger("katrain_web.vision").info(
+            "[DIAG-WS] /ws/vision CONNECTED (clients now %d)", len(app.state.vision_ws_clients)
+        )
+        try:
+            while True:
+                while not queue.empty():
+                    await websocket.send_json(_json_safe(queue.get_nowait()))
+
+                vision.refresh_status()
+                await websocket.send_json(
+                    _json_safe(
+                        {
+                            "type": "vision_status",
+                            "data": {
+                                "camera_connected": vision.camera_status == "connected",
+                                "pose_locked": vision.pose_lock_status == "locked",
+                                "sync_state": vision.sync_state,
+                            },
+                        }
+                    )
+                )
+
+                try:
+                    message = await asyncio.wait_for(websocket.receive_json(), timeout=0.5)
+                    if message.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                except asyncio.TimeoutError:
+                    pass
+        except WebSocketDisconnect:
+            logging.getLogger("katrain_web.vision").info("[DIAG-WS] /ws/vision client WebSocketDisconnect")
+        except Exception as exc:  # DIAG: surface any non-disconnect error that silently drops the socket
+            logging.getLogger("katrain_web.vision").warning("[DIAG-WS] /ws/vision handler error: %r", exc)
+        finally:
+            app.state.vision_ws_clients.pop(websocket, None)
+            logging.getLogger("katrain_web.vision").info(
+                "[DIAG-WS] /ws/vision DISCONNECTED (clients now %d)", len(app.state.vision_ws_clients)
+            )
+
     @app.websocket("/ws/{session_id}")
     async def websocket_endpoint(websocket: WebSocket, session_id: str):
         try:
@@ -1709,44 +1796,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # Broadcast updated spectator count when someone leaves
             if session.sockets:  # Only if there are still connected clients
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
-
-    @app.websocket("/ws/vision")
-    async def vision_websocket(websocket: WebSocket):
-        """Vision event WebSocket — events arrive via the pump's per-connection queue."""
-        await websocket.accept()
-        vision = getattr(app.state, "vision", None)
-        if vision is None:
-            await websocket.close(code=1008, reason="Vision service not enabled")
-            return
-        queue: asyncio.Queue = asyncio.Queue()
-        app.state.vision_ws_clients[websocket] = queue
-        try:
-            while True:
-                while not queue.empty():
-                    await websocket.send_json(queue.get_nowait())
-
-                vision.refresh_status()
-                await websocket.send_json(
-                    {
-                        "type": "vision_status",
-                        "data": {
-                            "camera_connected": vision.camera_status == "connected",
-                            "pose_locked": vision.pose_lock_status == "locked",
-                            "sync_state": vision.sync_state,
-                        },
-                    }
-                )
-
-                try:
-                    message = await asyncio.wait_for(websocket.receive_json(), timeout=0.5)
-                    if message.get("type") == "ping":
-                        await websocket.send_json({"type": "pong"})
-                except asyncio.TimeoutError:
-                    pass
-        except WebSocketDisconnect:
-            pass
-        finally:
-            app.state.vision_ws_clients.pop(websocket, None)
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
@@ -1812,6 +1861,24 @@ async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
             log.debug("LED failsafe loop error: %s", e)
 
 
+def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
+    t = evt.get("type")
+    data = evt.get("data", {})
+    if t == "setup_progress":
+        log.info(
+            "[DIAG-VIS] setup_progress matched=%s/%s missing=%d extra=%d -> %d clients",
+            data.get("matched"),
+            data.get("total"),
+            len(data.get("missing", [])),
+            len(data.get("extra", [])),
+            n_clients,
+        )
+    elif t == "vision_status":
+        return  # too noisy; sent by the WS handler anyway
+    else:
+        log.info("[DIAG-VIS] %s data=%s -> %d clients", t, data, n_clients)
+
+
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
     from katrain.web.core.vision_pump import route_vision_event
@@ -1822,6 +1889,8 @@ async def _vision_event_pump(app: FastAPI):
             vision = getattr(app.state, "vision", None)
             if vision:
                 for evt in vision.poll_events():
+                    if isinstance(evt, dict):
+                        _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
                     route_vision_event(
                         evt,
                         list(app.state.vision_ws_clients.values()),

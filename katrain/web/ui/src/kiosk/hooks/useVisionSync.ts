@@ -30,6 +30,9 @@ export interface VisionSyncState {
   latestEvent: VisionSyncEvent | null;
   setupProgress: { matched: number; total: number; missing: Array<[number, number]>; extra: Array<[number, number, number]> } | null;
   isSetupComplete: boolean;
+  /** WS open. Consumers must not arm setup/move detection before this — the pump only
+   *  fans out to already-registered connections, so events fired earlier are lost. */
+  connected: boolean;
 }
 
 // ---- Hook ------------------------------------------------------------------
@@ -41,6 +44,7 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
   const [latestEvent, setLatestEvent] = useState<VisionSyncEvent | null>(null);
   const [setupProgress, setSetupProgress] = useState<{ matched: number; total: number; missing: Array<[number, number]>; extra: Array<[number, number, number]> } | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [connected, setConnected] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const nextSeqRef = useRef(0);
@@ -86,9 +90,10 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(`${protocol}//${window.location.host}/ws/vision`);
       wsRef.current = ws;
+      ws.onopen = () => { if (!cancelled) setConnected(true); };
       ws.onmessage = handleMessage;
       ws.onerror = (err) => console.error('Vision WebSocket error', err);
-      ws.onclose = () => { wsRef.current = null; };
+      ws.onclose = () => { wsRef.current = null; setConnected(false); };
     };
 
     connect();
@@ -106,8 +111,9 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
       setLatestEvent(null);
       setSetupProgress(null);
       setIsSetupComplete(false);
+      setConnected(false);
     };
   }, [sessionId, handleMessage]);
 
-  return { syncEvents, latestEvent, setupProgress, isSetupComplete };
+  return { syncEvents, latestEvent, setupProgress, isSetupComplete, connected };
 }

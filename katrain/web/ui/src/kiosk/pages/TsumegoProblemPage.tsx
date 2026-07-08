@@ -12,6 +12,7 @@ import {
   NavigateNext,
   FormatListBulleted,
   SmartToy,
+  CheckCircle,
 } from '@mui/icons-material';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -21,6 +22,7 @@ import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
+import { useOptionalGeometry } from '../context/GeometryContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { usePhysicalTsumego, stonesToVisionBoard } from '../hooks/usePhysicalTsumego';
 import { useOrientation } from '../context/OrientationContext';
@@ -53,6 +55,7 @@ const TsumegoProblemPage = () => {
     isSolved,
     isFailed,
     isTryMode,
+    nextPlayer,
     elapsedTime,
     attempts,
     showHint,
@@ -61,6 +64,7 @@ const TsumegoProblemPage = () => {
     placeStone,
     undo,
     reset,
+    restartTimer,
     toggleHint,
     enterTryMode,
     exitTryMode,
@@ -68,6 +72,7 @@ const TsumegoProblemPage = () => {
   } = useTsumegoProblem(problemId || '');
 
   const { visionStatus } = useVision();
+  const geometry = useOptionalGeometry();
   const visionSync = useVisionSync(null); // No session bind for tsumego — physical mode drives vision setup mode
   const [physicalMode, setPhysicalMode] = useState(
     () => localStorage.getItem('kiosk-tsumego-physical') === '1',
@@ -79,11 +84,36 @@ const TsumegoProblemPage = () => {
       return next;
     });
   }, []);
+  // Reset re-runs the physical clearing→setup lifecycle (reset() keeps problem.id, so the
+  // hook's per-problem restart won't fire on its own — bump resyncKey to force it).
+  const [resyncKey, setResyncKey] = useState(0);
+  const handleReset = useCallback(() => {
+    reset();
+    setResyncKey((k) => k + 1);
+  }, [reset]);
   // recognition_ready = 相机+模型+几何全就绪；物理盘固定 19 路（PRD Q1：非 19 路题隐藏物理模式）
   const physicalAvailable = visionStatus.enabled && visionStatus.recognitionReady && boardSize === 19;
   // problem 数据必须与当前路由匹配，防止题目切换途中用旧 stones 启动新题流程
   const physicalProblemReady = !!problem && problem.id === problemId;
   const physicalEnabled = physicalMode && physicalAvailable && physicalProblemReady;
+
+  // Why can't the physical board be turned on right now? A silently-disabled toggle is confusing —
+  // surface the reason (and a tap-through to calibration) as a hint. The common case after a server
+  // restart: the saved geometry lock reloads but session_calibrated resets, so it needs a one-tap
+  // re-confirm on the calibration page (not a full recalibration).
+  const geoPhase = geometry?.status.phase;
+  const physicalHint: { text: string; calibrate?: boolean; severity: 'info' | 'warning' } | null =
+    physicalMode || physicalAvailable
+      ? null
+      : boardSize !== 19
+        ? { text: t('tsumego:physNeed19', '物理棋盘仅支持 19 路题目'), severity: 'info' }
+        : !visionStatus.enabled
+          ? { text: t('tsumego:physNoCamera', '未检测到摄像头 / 视觉服务未启用'), severity: 'warning' }
+          : geoPhase && geoPhase !== 'ready' && geoPhase !== 'disabled'
+            ? geoPhase === 'degraded' || geoPhase === 'failed'
+              ? { text: t('tsumego:physGeoDrift', '棋盘标定已失效，请重新标定棋盘'), calibrate: true, severity: 'warning' }
+              : { text: t('tsumego:physGeoConfirm', '物理棋盘需先确认棋盘标定（服务重启后需重新确认一次）'), calibrate: true, severity: 'warning' }
+            : { text: t('tsumego:physConnecting', '正在连接摄像头与识别模型，请稍候…'), severity: 'info' };
 
   // ---- Prev/Next sequence (4.1) ----
   // Sequence of problem ids for the whole category, sourced from sessionStorage (written by
@@ -206,7 +236,9 @@ const TsumegoProblemPage = () => {
 
   const physical = usePhysicalTsumego({
     enabled: physicalEnabled,
+    visionConnected: visionSync.connected,
     problemKey: problem?.id ?? null,
+    resyncKey,
     boardSize,
     stones,
     isSolved,
@@ -220,6 +252,34 @@ const TsumegoProblemPage = () => {
     playMoveSound: playSound,
     onAdvance: handleAutoComplete, // 与既有 auto-advance 同一导航路径
   });
+
+  // Physical mode: don't count board-setup time toward 用时. Rebase the answer clock the first
+  // time the board reaches 'ready' after (re)entering setup; answer-phase revisits to 'ready'
+  // (after a reply / wrong-move removal) keep the clock running.
+  const answerClockArmedRef = useRef(false);
+  useEffect(() => {
+    if (!physicalEnabled) {
+      answerClockArmedRef.current = false;
+      return;
+    }
+    if (['clearing', 'clearing_next', 'setup'].includes(physical.phase)) {
+      answerClockArmedRef.current = true; // in setup → arm the next ready-restart
+    } else if (physical.phase === 'ready' && answerClockArmedRef.current) {
+      answerClockArmedRef.current = false;
+      restartTimer();
+    }
+  }, [physicalEnabled, physical.phase, restartTimer]);
+
+  const inPhysicalSetup =
+    physicalEnabled && ['clearing', 'clearing_next', 'setup'].includes(physical.phase);
+
+  // Flag wrong/extra physical stones on the electronic board with a red ✕. physical.extra is in
+  // vision coords [row(0=top), col, color]; TsumegoBoard wants board coords [x=col, y=(size-1-row)].
+  // Occlusion-proof: the screen is never hidden by the stone sitting on the physical LED.
+  const extraMarkers = useMemo<[number, number][]>(
+    () => (physicalEnabled ? physical.extra.map(([row, col]) => [col, boardSize - 1 - row]) : []),
+    [physicalEnabled, physical.extra, boardSize],
+  );
 
   if (loading) {
     return (
@@ -255,6 +315,7 @@ const TsumegoProblemPage = () => {
           lastMove={lastMove}
           hintCoords={hintCoords}
           showHint={showHint}
+          extraMarkers={extraMarkers}
           disabled={isSolved || (isFailed && !isTryMode)}
           moveHistory={moveHistory}
           onPlaceStone={(x, y) => {
@@ -264,7 +325,9 @@ const TsumegoProblemPage = () => {
             const preBoard = physicalEnabled ? stonesToVisionBoard(stones, boardSize) : null;
             const result = placeStone(x, y);
             if (result?.sound) playSound(result.sound);
-            if (physicalEnabled && preBoard) physical.onScreenMove(result, preBoard);
+            // Try-mode clicks are screen-only exploration (recognition is paused) — never feed
+            // them to the physical machine, or a single click pushes it out of 'ready'.
+            if (physicalEnabled && !isTryMode && preBoard) physical.onScreenMove(result, preBoard);
           }}
         />
         {/* Success overlay + auto-advance (4.2). onComplete only wired when auto-advance is
@@ -305,7 +368,7 @@ const TsumegoProblemPage = () => {
         {/* Timer and attempts */}
         <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
           <Typography variant="body2" color="text.secondary" data-testid="timer">
-            {t('Time', '用时')}: {formatTime(elapsedTime)}
+            {t('Time', '用时')}: {inPhysicalSetup ? t('tsumego:preparingBoard', '准备中') : formatTime(elapsedTime)}
           </Typography>
           <Typography variant="body2" color="text.secondary" data-testid="attempts">
             {t('Attempts', '尝试')}: {attempts}
@@ -319,8 +382,10 @@ const TsumegoProblemPage = () => {
 
         {/* Action buttons */}
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button variant="outlined" startIcon={<Undo />} onClick={undo}>{t('Undo', '悔棋')}</Button>
-          <Button variant="outlined" startIcon={<Replay />} onClick={reset}>{t('Reset', '重置')}</Button>
+          {/* Physical mode is board-driven: take moves back by removing physical stones
+              (LED-guided), not the screen button — a screen undo desyncs the machine. */}
+          <Button variant="outlined" startIcon={<Undo />} onClick={undo} disabled={physicalEnabled}>{t('Undo', '悔棋')}</Button>
+          <Button variant="outlined" startIcon={<Replay />} onClick={handleReset}>{t('Reset', '重置')}</Button>
           <Button
             variant="outlined"
             startIcon={<Lightbulb />}
@@ -345,12 +410,30 @@ const TsumegoProblemPage = () => {
             variant={physicalMode ? 'contained' : 'outlined'}
             color={physicalMode ? 'success' : 'inherit'}
             startIcon={<SmartToy />}
-            disabled={!physicalAvailable}
+            // Only gate turning ON — always allow turning OFF, else a dropped availability
+            // (e.g. geometry unconfirmed after restart) strands the user with a dead board.
+            disabled={!physicalMode && !physicalAvailable}
             onClick={togglePhysical}
           >
             {physicalMode ? t('tsumego:physicalOn', '退出物理棋盘') : t('tsumego:physicalOff', '使用物理棋盘')}
           </Button>
         </Box>
+
+        {physicalHint && (
+          <Alert
+            severity={physicalHint.severity}
+            sx={{ mt: 1 }}
+            action={
+              physicalHint.calibrate ? (
+                <Button color="inherit" size="small" href="/kiosk/vision/setup">
+                  {t('tsumego:goCalibrate', '去标定')}
+                </Button>
+              ) : undefined
+            }
+          >
+            {physicalHint.text}
+          </Alert>
+        )}
 
         {/* Prev / Next navigation (4.1) — prominent touch buttons. */}
         <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
@@ -392,6 +475,18 @@ const TsumegoProblemPage = () => {
             </Button>
           )}
         </Box>
+
+        {/* Physical-board "ready to answer" cue (setup complete; setup_done voice fires in the machine) */}
+        {physicalEnabled && physical.phase === 'ready' && (
+          <Box sx={{ mt: 2 }}>
+            <Alert severity="success" icon={<CheckCircle fontSize="inherit" />}>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>{t('tsumego:setupDone', '摆盘完成 · 轮到你了')}</Typography>
+              {nextPlayer === 'B'
+                ? t('tsumego:placeAnswerBlack', '请在正解点落一手黑棋，棋盘会自动识别')
+                : t('tsumego:placeAnswerWhite', '请在正解点落一手白棋，棋盘会自动识别')}
+            </Alert>
+          </Box>
+        )}
 
         {/* Physical-board phase guidance */}
         {physicalEnabled && !['off', 'ready', 'solved'].includes(physical.phase) && (

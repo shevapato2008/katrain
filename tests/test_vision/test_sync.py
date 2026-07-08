@@ -334,6 +334,36 @@ class TestSyncStateMachineDegradedMode:
         assert len(synced) == 1
         assert sm.state == SyncState.SYNCED
 
+    def test_enter_setup_mode_clears_stale_degraded_countdown(self):
+        """清盘回归：已 degraded 的空盘上重新 arm setup，不应被陈旧 degraded 计时器
+        当帧打回 DEGRADED 而饿死 setup 检测——应立即 SETUP_COMPLETE。
+
+        复现用户场景：先清空棋盘（盘空 >10s -> DEGRADED），再点「使用物理棋盘」
+        （arm 空盘 setup 目标）。修复前：enter_setup_mode 抬回 SETUP_IN_PROGRESS 但
+        留着旧 degraded timer，下一帧 mean_conf=0.0 立刻重回 DEGRADED，_check_setup
+        永远轮不到，"请清空棋盘" 永久卡住。
+        """
+        sm = SyncStateMachine(board_size=19, degraded_enter_seconds=10.0)
+        sm.bind()
+        sm.confirm_pose_lock()
+        sm.set_expected_board(empty_board())
+        observed = empty_board()
+
+        # 空盘低置信 >10s -> DEGRADED
+        sm.update(observed, mean_confidence=0.30, timestamp=1000.0)
+        sm.update(observed, mean_confidence=0.30, timestamp=1011.0)
+        assert sm.state == SyncState.DEGRADED
+
+        # 前端进物理模式：arm 空盘 setup 目标
+        sm.enter_setup_mode(empty_board())
+        assert sm.state == SyncState.SETUP_IN_PROGRESS
+
+        # 下一帧空盘（即便 worker 仍喂 0.0），不该被旧计时器打回 degraded
+        events = sm.update(observed, mean_confidence=0.0, timestamp=1012.0)
+        complete = [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
+        assert len(complete) == 1
+        assert sm.state == SyncState.SYNCED
+
 
 class TestSyncStateMachineCaptureStickyBehavior:
     """Test 14: CAPTURE_PENDING persists until stones are physically removed."""

@@ -182,6 +182,7 @@ export interface UseTsumegoProblemReturn extends TsumegoProblemState {
   placeStone: (x: number, y: number) => MoveResult | null;
   undo: () => void;
   reset: () => void;
+  restartTimer: () => void; // physical mode: (re)start the answer clock so setup time isn't counted
   toggleHint: () => void;
 
   // Try mode (free exploration)
@@ -262,6 +263,13 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
     return () => clearInterval(interval);
   }, [startTime, isSolved, isFailed]);
+
+  // Physical mode: the answer clock should exclude the board-setup time. The page calls this
+  // when the board reaches 'ready' (setup complete) to rebase the timer from that moment.
+  const restartTimer = useCallback(() => {
+    setStartTime(Date.now());
+    setElapsedTime(0);
+  }, []);
 
   // Fetch problem data
   useEffect(() => {
@@ -510,7 +518,13 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Undo last move
   const undo = useCallback(() => {
-    if (moveHistory.length === 0 || isSolved) return;
+    if (isSolved) return;
+    // A wrong FIRST move leaves moveHistory empty (incorrect moves are never pushed) but
+    // isFailed=true. Guard on history alone would strand isFailed forever — the isFailed
+    // recovery branch below must still run (kiosk physical 'removing' recovery depends on it).
+    // isFailed and isTryMode are mutually exclusive (enterTryMode clears isFailed), so the
+    // try-mode branch never coincides with this.
+    if (moveHistory.length === 0 && !isFailed) return;
 
     // Try mode undo - simply remove the last move
     if (isTryMode) {
@@ -779,6 +793,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     placeStone,
     undo,
     reset,
+    restartTimer,
     toggleHint,
     enterTryMode,
     exitTryMode,

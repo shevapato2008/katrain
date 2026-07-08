@@ -42,7 +42,9 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export interface PhysicalTsumegoOptions {
   enabled: boolean;
+  visionConnected: boolean; // /ws/vision open — ENABLE must wait for it or SETUP_COMPLETE is lost
   problemKey: string | null; // problem.id — lifecycle restarts on change
+  resyncKey: number; // bumped by Reset — re-runs the clearing→setup lifecycle without a problem change
   boardSize: number;
   stones: Stone[];
   isSolved: boolean;
@@ -70,7 +72,7 @@ export interface PhysicalTsumegoState {
 }
 
 export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumegoState {
-  const { enabled, problemKey, boardSize, stones, isSolved, showHint, hintCoords, isTryMode, syncEvents } = opts;
+  const { enabled, visionConnected, problemKey, resyncKey, boardSize, stones, isSolved, showHint, hintCoords, isTryMode, syncEvents } = opts;
   const { speak } = useVoice();
 
   const machineRef = useRef<MachineState>(initialState);
@@ -90,7 +92,18 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   const processedSeqRef = useRef(-1);
   const prevTryRef = useRef(false); // last-seen isTryMode; drives try-exit edge detection
 
-  const ledPoints = useCallback((pts: LedPoint[]) => {
+  // Flash plumbing: 'flash'-coloured points (a wrong/extra stone) BLINK, because their LED sits
+  // occluded directly under the offending stone — a static colour is invisible. Everything else is
+  // steady. renderLeds composes steady ∪ (flash while the blink phase is "on"); the interval below
+  // toggles flashOnRef ~2Hz. Frame-rate SETUP_PROGRESS re-emits must NOT reset the blink phase, so we
+  // only re-arm (flashOnRef=true) when the flash SET actually changes (flashKeyRef).
+  const steadyPtsRef = useRef<LedPoint[]>([]);
+  const flashPtsRef = useRef<LedPoint[]>([]);
+  const flashOnRef = useRef(true);
+  const flashKeyRef = useRef('');
+
+  const renderLeds = useCallback(() => {
+    const pts = flashOnRef.current ? [...steadyPtsRef.current, ...flashPtsRef.current] : steadyPtsRef.current;
     const key = JSON.stringify(pts);
     if (key === lastLedKeyRef.current) return;
     lastLedKeyRef.current = key;
@@ -99,10 +112,36 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
       .catch(() => setLedOk(false));
   }, []);
 
+  const ledPoints = useCallback((pts: LedPoint[]) => {
+    steadyPtsRef.current = pts.filter((p) => p.color !== 'flash');
+    const flash = pts.filter((p) => p.color === 'flash');
+    const flashKey = JSON.stringify(flash);
+    if (flashKey !== flashKeyRef.current) {
+      flashKeyRef.current = flashKey;
+      flashPtsRef.current = flash;
+      flashOnRef.current = true; // fresh set of extras → show immediately, then let the interval blink
+    }
+    renderLeds();
+  }, [renderLeds]);
+
   const ledClear = useCallback(() => {
+    steadyPtsRef.current = [];
+    flashPtsRef.current = [];
+    flashKeyRef.current = '';
     lastLedKeyRef.current = '';
     LedAPI.clear().catch(() => setLedOk(false));
   }, []);
+
+  // Blink the 'flash' (wrong-stone) LEDs ~2Hz while enabled; no LED traffic when none are active.
+  useEffect(() => {
+    if (!enabled) return;
+    const id = window.setInterval(() => {
+      if (flashPtsRef.current.length === 0) return;
+      flashOnRef.current = !flashOnRef.current;
+      renderLeds();
+    }, 450);
+    return () => window.clearInterval(id);
+  }, [enabled, renderLeds]);
 
   // Forward declaration pattern: dispatch and celebrate reference each other.
   const dispatchRef = useRef<(evt: MachineEvent) => void>(() => {});
@@ -168,8 +207,10 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   dispatchRef.current = dispatch;
 
   // ---- enable / per-problem lifecycle ---------------------------------------
+  // Wait for the vision WS: arming setup-mode before /ws/vision is registered loses the
+  // (near-instant, on an empty board) SETUP_COMPLETE, wedging the flow at "clear board".
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !visionConnected) return;
     runIdRef.current += 1;
     API.visionMonitor(true).catch(() => {});
     dispatch({ type: 'ENABLE', emptyBoard: emptyBoard(boardSize) });
@@ -183,9 +224,11 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
       API.visionMonitor(false).catch(() => {});
       LedAPI.clear().catch(() => {});
     };
-    // dispatch/boardSize stable across a problem's life; problemKey drives restarts.
+    // dispatch/boardSize stable across a problem's life; problemKey drives per-problem
+    // restarts, resyncKey drives Reset-triggered restarts, visionConnected gates the
+    // first arm until the WS can receive events.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, problemKey]);
+  }, [enabled, visionConnected, problemKey, resyncKey]);
 
   // ---- WS event consumption (seq queue — every event exactly once, in order) --
   useEffect(() => {

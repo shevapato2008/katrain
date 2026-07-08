@@ -57,7 +57,7 @@ const BoardSetupGuide = ({
       </Typography>
       {extra && extra.length > 0 && (
         <Typography variant="body2" color="warning.main">
-          盘上有 {extra.length} 颗多余/错色棋子，请先取走（蓝灯指示）
+          盘上有 {extra.length} 颗多余/错色棋子，请先取走（屏上红叉 ✕ 标注，实体棋盘白灯闪烁）
         </Typography>
       )}
 

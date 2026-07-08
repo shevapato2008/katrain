@@ -199,3 +199,6 @@ runs/
 data.zip
 .superpowers/
 .gstack/
+
+# board-mode test sqlite db (generated at runtime by KATRAIN_DATABASE_URL=sqlite:///./board_test.db)
+board_test.db

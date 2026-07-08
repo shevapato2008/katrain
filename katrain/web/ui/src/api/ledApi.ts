@@ -5,7 +5,9 @@
 
 const API_BASE = '/api/v1/led';
 
-export type LedColor = 'black' | 'white' | 'remove' | 'hint';
+// 'flash' = bright white, meant to BLINK (client-driven) — used for a wrong/extra stone whose LED
+// sits occluded directly under it; the blink + max brightness leak around the stone's base.
+export type LedColor = 'black' | 'white' | 'remove' | 'hint' | 'flash';
 
 export interface LedResult {
   ok: boolean;

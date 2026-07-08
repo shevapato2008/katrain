@@ -68,7 +68,7 @@ describe('physicalTsumegoMachine', () => {
     expect(findCommand(commands, 'setupMode')).toEqual({ kind: 'setupMode', board: emptyBoard });
   });
 
-  it('clearing: SETUP_PROGRESS emits blue (remove) LEDs for extra stones only', () => {
+  it('clearing: SETUP_PROGRESS emits white-flash LEDs for extra stones only', () => {
     const emptyBoard = empty(19);
     const { state: clearingState } = step(initialState, { type: 'ENABLE', emptyBoard });
 
@@ -89,8 +89,8 @@ describe('physicalTsumegoMachine', () => {
     expect(commands[0]).toEqual({
       kind: 'ledPoints',
       points: [
-        { row: 3, col: 3, color: 'remove' },
-        { row: 15, col: 15, color: 'remove' },
+        { row: 3, col: 3, color: 'flash' },
+        { row: 15, col: 15, color: 'flash' },
       ],
     });
   });
@@ -206,7 +206,7 @@ describe('physicalTsumegoMachine', () => {
     expect(kinds(commands)).toEqual(['ledPoints']);
   });
 
-  it('setup staging: wrong-color extras get blue LEDs alongside the active stage color', () => {
+  it('setup staging: wrong-color extras get white-flash LEDs alongside the active stage color', () => {
     const emptyBoard = empty(19);
     const { state: clearingState } = step(initialState, { type: 'ENABLE', emptyBoard });
     const initialBoard = boardWith(19, { '3,3': 1, '3,15': 1 });
@@ -223,7 +223,7 @@ describe('physicalTsumegoMachine', () => {
     const ledCmd = findCommand(commands, 'ledPoints')!;
     expect(ledCmd.points).toEqual([
       { row: 3, col: 15, color: 'black' },
-      { row: 10, col: 10, color: 'remove' },
+      { row: 10, col: 10, color: 'flash' },
     ]);
   });
 
@@ -577,7 +577,7 @@ describe('physicalTsumegoMachine', () => {
     expect(kinds(commands)).toEqual(['armMoves', 'setupMode']);
   });
 
-  it('removing/restoring/replying SETUP_PROGRESS uses convergenceLeds: missing→target color, extra→blue', () => {
+  it('removing/restoring/replying SETUP_PROGRESS uses convergenceLeds: missing→target color, extra→white-flash', () => {
     // Build a 'removing' state directly via MOVE_APPLIED(incorrect) so state.targetBoard (=preBoard)
     // is known and colors can be predicted.
     const emptyBoard = empty(19);
@@ -595,7 +595,7 @@ describe('physicalTsumegoMachine', () => {
     expect(removingState.phase).toBe('removing');
 
     // Missing: the black stone at 3,3 still needs to be placed back (target color = black).
-    // Extra: a stray stone at 9,9 that must come off (blue).
+    // Extra: a stray stone at 9,9 that must come off (white flash — occlusion-proof cue).
     const missing: Array<[number, number]> = [[3, 3]];
     const extra: Array<[number, number, number]> = [[9, 9, 1]];
     const { state, commands } = step(removingState, { type: 'SETUP_PROGRESS', missing, extra });
@@ -606,7 +606,7 @@ describe('physicalTsumegoMachine', () => {
       kind: 'ledPoints',
       points: [
         { row: 3, col: 3, color: 'black' },
-        { row: 9, col: 9, color: 'remove' },
+        { row: 9, col: 9, color: 'flash' },
       ],
     });
   });

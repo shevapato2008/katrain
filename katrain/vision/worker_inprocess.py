@@ -19,7 +19,7 @@ from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
-from katrain.vision.gating import move_event, should_detect_moves, should_feed_sync
+from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
 from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
@@ -169,8 +169,7 @@ class InProcessAdapter:
                         detections, img_w=w, img_h=h, occupancy_aware=True
                     )
 
-                    if detections:
-                        mean_confidence = sum(d.confidence for d in detections) / len(detections)
+                    mean_confidence = mean_detection_confidence(detections)
 
                     if should_detect_moves(
                         self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value

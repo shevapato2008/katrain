@@ -27,6 +27,7 @@ class GeometryCalibrationService:
         save_path,
         initial_lock=None,
         on_success=None,
+        on_degraded=None,
         calibrator_factory=LedGeometryCalibrator,
     ):
         self.led = led
@@ -34,6 +35,9 @@ class GeometryCalibrationService:
         self.save_path = Path(save_path).expanduser()
         self.current_lock = initial_lock
         self.on_success = on_success or (lambda _lock: None)
+        # Called once when drift flips a ready lock to degraded — used to invalidate the
+        # downstream vision worker so it stops recognizing on a stale (shifted) warp.
+        self.on_degraded = on_degraded or (lambda: None)
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
         self._cancel_event = threading.Event()
@@ -55,6 +59,8 @@ class GeometryCalibrationService:
         }
 
     def start(self, *, trigger: str, empty_confirmed: bool) -> None:
+        if self.led is None:
+            raise ValueError("LED is required for geometry calibration")
         if not empty_confirmed:
             raise ValueError("empty board confirmation is required")
         with self._lock:
@@ -75,10 +81,11 @@ class GeometryCalibrationService:
 
     def cancel(self) -> None:
         self._cancel_event.set()
-        try:
-            self.led.clear(strict=True)
-        except Exception:
-            pass
+        if self.led is not None:
+            try:
+                self.led.clear(strict=True)
+            except Exception:
+                pass
 
     def stop(self) -> None:
         self.cancel()
@@ -203,10 +210,11 @@ class GeometryCalibrationService:
                 self._status["phase"] = "failed"
                 self._status["error"] = str(exc)
         finally:
-            try:
-                self.led.clear(strict=True)
-            except Exception:
-                pass
+            if self.led is not None:
+                try:
+                    self.led.clear(strict=True)
+                except Exception:
+                    pass
 
     def _init_drift_monitor(self, lock) -> None:
         if not hasattr(self.capture, "grab_fresh"):
@@ -233,14 +241,26 @@ class GeometryCalibrationService:
                 frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
                 if frame is None:
                     continue
-                drift = monitor.update(frame)
-                if drift.degraded:
-                    with self._lock:
-                        self._status["phase"] = "degraded"
-                        self._status["error"] = "board_moved"
-                        self._status["metrics"].update(
-                            shift_cells=drift.shift_cells,
-                            drift_response=drift.response,
-                        )
+                self._apply_drift(monitor.update(frame))
             except Exception:
                 time.sleep(0.1)
+
+    def _apply_drift(self, drift) -> None:
+        """On a ready→degraded transition, record it and invalidate downstream geometry.
+
+        Without invalidation the vision worker keeps warping with the pre-drift matrix, so a
+        bumped board yields confident-but-wrong detections (sub-cell shift → SyncStateMachine's
+        confidence gate never fires) and wrong LED/voice guidance + wrong judging, with no
+        recovery signal on the tsumego surface. Recovery is a fresh calibration (degraded is
+        terminal for confirm_existing — see test_confirm_existing_cannot_override_degraded_state).
+        """
+        if not drift.degraded:
+            return
+        with self._lock:
+            if self._status["phase"] != "ready":
+                return
+            self._status["phase"] = "degraded"
+            self._status["error"] = "board_moved"
+            self._status["metrics"].update(shift_cells=drift.shift_cells, drift_response=drift.response)
+        # Outside the lock: on_degraded fans out to the vision worker (IPC).
+        self.on_degraded()

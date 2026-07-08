@@ -28,6 +28,9 @@ interface TsumegoBoardProps {
   moveHistory?: Stone[];
   /** Show move numbers on stones */
   showMoveNumbers?: boolean;
+  /** Board coords [x, y] of wrong/extra physical stones to flag with a red ✕ (occlusion-proof
+   *  screen cue — the physical LED under the stone is hidden by the stone itself). */
+  extraMarkers?: [number, number][];
   onPlaceStone: (x: number, y: number) => void;
 }
 
@@ -46,6 +49,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   disabled = false,
   moveHistory = [],
   showMoveNumbers = false,
+  extraMarkers = [],
   onPlaceStone
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -297,7 +301,26 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
       ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers]);
+
+    // Draw wrong/extra-stone markers LAST (on top of everything): a bold red ✕ over each flagged
+    // intersection. The physical LED under such a stone is occluded by the stone itself, so this
+    // screen cue is the reliable "take this one off" signal.
+    if (extraMarkers.length > 0) {
+      const arm = layout.gridSize * 0.34;
+      ctx.strokeStyle = "rgba(220, 38, 38, 0.95)"; // red
+      ctx.lineWidth = Math.max(3, layout.gridSize * 0.12);
+      ctx.lineCap = "round";
+      extraMarkers.forEach(([x, y]) => {
+        const pos = gridToCanvas(layout, x, y);
+        ctx.beginPath();
+        ctx.moveTo(pos.x - arm, pos.y - arm);
+        ctx.lineTo(pos.x + arm, pos.y + arm);
+        ctx.moveTo(pos.x + arm, pos.y - arm);
+        ctx.lineTo(pos.x - arm, pos.y + arm);
+        ctx.stroke();
+      });
+    }
+  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, extraMarkers]);
 
   // Re-render on state changes
   useEffect(() => {

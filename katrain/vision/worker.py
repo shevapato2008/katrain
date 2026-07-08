@@ -29,7 +29,7 @@ import numpy as np
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.camera import CameraManager
 from katrain.vision.config import BoardConfig, CameraConfig
-from katrain.vision.gating import move_event, should_detect_moves, should_feed_sync
+from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
 from katrain.vision.ipc import CommandType, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.move_detector import MoveDetector
@@ -247,8 +247,7 @@ class _VisionWorkerLoop:
                     self._prev_observed_board = observed_board
                     self._last_detected_board = self._last_stable_board.tolist()
 
-                    if detections:
-                        mean_confidence = sum(d.confidence for d in detections) / len(detections)
+                    mean_confidence = mean_detection_confidence(detections)
                     if self._frame_count % 30 == 0:
                         logger.info(
                             "detection ok: %d stones, mean_conf=%.2f, board=%.0fms + yolo=%.0fms",

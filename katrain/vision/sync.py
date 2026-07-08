@@ -15,7 +15,6 @@ import numpy as np
 
 from katrain.vision.board_state import BLACK, EMPTY, WHITE
 
-
 # ---------------------------------------------------------------------------
 # Events
 # ---------------------------------------------------------------------------
@@ -124,6 +123,11 @@ class SyncStateMachine:
         """Enter tsumego setup mode with a target position."""
         self._target_board = target_board.copy()
         self._state = SyncState.SETUP_IN_PROGRESS
+        # A fresh setup must not inherit a stale degraded countdown: otherwise an
+        # already-empty board (mean_conf reported as 0.0) re-enters DEGRADED on the
+        # very next frame and starves _check_setup, so "clear board" never completes.
+        self._degraded_timer_start = None
+        self._degraded_recovery_start = None
 
     def update(
         self,
@@ -157,7 +161,11 @@ class SyncStateMachine:
             return events
 
         if self._state == SyncState.BOARD_LOST:
-            self._state = SyncState.SYNCED
+            # A transient loss during setup (a hand occluding a corner while placing
+            # stones) must NOT abandon setup: resume it so subsequently placed stones
+            # keep reporting as SETUP_PROGRESS instead of dropping to compare mode and
+            # being flagged as ILLEGAL_CHANGE.
+            self._state = SyncState.SETUP_IN_PROGRESS if self._target_board is not None else SyncState.SYNCED
             events.append(SyncEvent(SyncEventType.BOARD_REACQUIRED))
             # Fall through to remaining checks with the new frame.
 
@@ -310,7 +318,7 @@ class SyncStateMachine:
             events.append(
                 SyncEvent(
                     SyncEventType.CAPTURE_PENDING,
-                    data={"positions": [(r, c, clr) for r, c, clr in captures]},
+                    data={"positions": [(int(r), int(c), int(clr)) for r, c, clr in captures]},
                 )
             )
             return events
@@ -345,7 +353,7 @@ class SyncStateMachine:
                 events.append(
                     SyncEvent(
                         SyncEventType.ILLEGAL_CHANGE,
-                        data={"positions": [(r, c, clr) for r, c, clr in unexpected]},
+                        data={"positions": [(int(r), int(c), int(clr)) for r, c, clr in unexpected]},
                     )
                 )
                 self._mismatch_board = None

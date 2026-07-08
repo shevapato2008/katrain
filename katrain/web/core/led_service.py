@@ -54,6 +54,7 @@ COLOR_RGB: Dict[str, tuple] = {
     "white": (0, 255, 0),  # white stone -> green LED
     "remove": (0, 0, 255),  # capture/removal -> blue LED
     "hint": (255, 255, 255),  # AI hint / celebration -> white LED
+    "flash": (255, 255, 255),  # wrong/extra stone -> bright white, blinked client-side (occlusion-proof)
     "red": (255, 0, 0),
     "green": (0, 255, 0),
     "blue": (0, 0, 255),
@@ -215,6 +216,7 @@ class LedService:
 
     # -- queue plumbing ---------------------------------------------------- #
     def _submit(self, commands: List[str], *, strict: bool) -> Dict:
+        log.info("[DIAG-LED] submit %d leds", sum(1 for c in commands if c.startswith("SETI")))
         batch = _Batch(commands, strict)
         if strict:
             try:

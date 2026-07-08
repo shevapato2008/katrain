@@ -78,6 +78,32 @@ describe('failed-state snapshot restore', () => {
     expect(result.current.nextPlayer).toBe('B');
   });
 
+  it('undo after an incorrect FIRST move (empty history) clears isFailed and restores', async () => {
+    const { result } = await setup();
+
+    // Play the wrong off-tree capturing move as the VERY FIRST move: moveHistory stays
+    // empty (incorrect moves are never pushed) but isFailed flips true. The kiosk physical
+    // 'removing' recovery drives undo() to clear this — it must NOT no-op on empty history
+    // (else isFailed sticks forever and every subsequent move is rejected).
+    const initialStones = result.current.stones;
+    const wrong = sgfToCoords('ab', 9)!;
+    act(() => {
+      result.current.placeStone(wrong[0], wrong[1]);
+    });
+    expect(result.current.isFailed).toBe(true);
+    expect(result.current.moveHistory.length).toBe(0); // wrong first move is not recorded
+    // capture happened: white aa removed.
+    expect(result.current.stones.some(s => s.player === 'W' && s.coords[0] === 0 && s.coords[1] === 8)).toBe(false);
+
+    act(() => {
+      result.current.undo();
+    });
+
+    // Full restore even with empty history: white aa back, wrong stone gone, isFailed cleared.
+    expect(result.current.isFailed).toBe(false);
+    expect(result.current.stones).toEqual(initialStones);
+  });
+
   it('preserves the failed snapshot across a try-mode excursion (fail → try → exit → undo)', async () => {
     const { result } = await setup();
 

@@ -46,6 +46,13 @@ class ResultCalibrator:
         return self.result
 
 
+class FakeDrift:
+    def __init__(self, degraded, shift_cells=0.5, response=0.9):
+        self.degraded = degraded
+        self.shift_cells = shift_cells
+        self.response = response
+
+
 def test_success_atomically_promotes_new_lock(tmp_path):
     lock = _synth()
     promoted = []
@@ -214,6 +221,75 @@ def test_confirm_existing_cannot_override_degraded_state(tmp_path):
     with pytest.raises(ValueError, match="only be confirmed after restart"):
         service.confirm_existing()
     assert service.status()["phase"] == "degraded"
+
+
+def test_drift_degraded_invalidates_downstream_geometry(tmp_path):
+    # Board bump mid-session must (a) flip to degraded AND (b) invalidate the vision worker,
+    # else recognition keeps warping on the stale matrix and judges on a wrong grid.
+    invalidated = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+        on_degraded=lambda: invalidated.append(True),
+    )
+    service._status["phase"] = "ready"
+
+    service._apply_drift(FakeDrift(degraded=True))
+
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["error"] == "board_moved"
+    assert invalidated == [True]
+    service.stop()
+
+
+def test_drift_below_threshold_is_noop(tmp_path):
+    invalidated = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+        on_degraded=lambda: invalidated.append(True),
+    )
+    service._status["phase"] = "ready"
+
+    service._apply_drift(FakeDrift(degraded=False))
+
+    assert service.status()["phase"] == "ready"
+    assert invalidated == []
+    service.stop()
+
+
+def test_confirm_existing_promotes_without_led(tmp_path):
+    # No-LED config: a persisted lock must still be promotable (recognition_ready otherwise
+    # sticks false forever, and confirm-existing 404s, stranding physical tsumego).
+    old = _synth()
+    promoted = []
+    service = GeometryCalibrationService(
+        led=None,
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=old,
+        on_success=promoted.append,
+    )
+
+    status = service.confirm_existing()
+
+    assert status["phase"] == "ready"
+    assert status["session_calibrated"] is True
+    assert status["capabilities"]["geometry_ready"] is True
+    assert promoted == [old]
+    service.stop()  # must not crash with led=None
+
+
+def test_calibration_requires_led(tmp_path):
+    service = GeometryCalibrationService(led=None, capture=FreshFakeCapture(), save_path=tmp_path / "geometry.npz")
+
+    with pytest.raises(ValueError, match="LED is required"):
+        service.start(trigger="manual", empty_confirmed=True)
+    service.stop()  # cancel() must tolerate led=None
 
 
 def test_status_publishes_anchor_snapshot_and_resets_it_on_new_start(tmp_path):

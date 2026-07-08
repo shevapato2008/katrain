@@ -10,6 +10,16 @@ vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: mockSetRotation }),
 }));
 
+// SettingsPage now reads the real language system via useSettings; stub it (mirrors the
+// OrientationContext mock) so the page renders without a full SettingsProvider.
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({ language: 'cn', setLanguage: vi.fn(), languages: [] }),
+  languages: [
+    { code: 'cn', name: '中文' },
+    { code: 'en', name: 'English' },
+  ],
+}));
+
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>

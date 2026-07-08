@@ -683,8 +683,11 @@ const ResearchPage = () => {
   return (
     <>
       <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', overflow: 'hidden' }}>
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'background.default', minWidth: 0 }}>
-          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'background.default', minWidth: 0, minHeight: 0 }}>
+          {/* minHeight:0 + overflow:hidden: without them this flex child grows to the board's
+              intrinsic content size (~600px) and overflows/clips under the Dock instead of
+              shrinking to the bounded content area. */}
+          <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <LiveBoard
               moves={board.moves}
               stoneColors={board.stoneColors}

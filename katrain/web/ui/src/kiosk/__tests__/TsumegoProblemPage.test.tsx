@@ -6,14 +6,23 @@ import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey } from '../pages/tsumegoUnits';
 
 // ---- Hoisted spies referenced by the mock factories below ----
-const { mockNavigate, mockFlush } = vi.hoisted(() => ({
+const { mockNavigate, mockFlush, mockReadPhysicalMode } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFlush: vi.fn(),
+  mockReadPhysicalMode: vi.fn(() => false),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return { ...actual, useNavigate: () => mockNavigate };
+});
+
+// Only `readPhysicalMode` is mocked (D1.3) — every other export (sequenceKey,
+// AUTO_ADVANCE_KEY, PHYSICAL_MODE_KEY, readAutoAdvance, levelChinese, ...) passes through
+// unmocked so the rest of the test file's existing behavior is unaffected.
+vi.mock('../pages/tsumegoUnits', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../pages/tsumegoUnits')>();
+  return { ...actual, readPhysicalMode: () => mockReadPhysicalMode() };
 });
 
 vi.mock('../context/OrientationContext', () => ({
@@ -124,6 +133,9 @@ beforeEach(() => {
   for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   sessionStorage.clear();
   localStorage.clear();
+  // vi.clearAllMocks() clears call history but not a prior mockReturnValue override —
+  // reset explicitly so physical mode defaults OFF for every test unless a case opts in.
+  mockReadPhysicalMode.mockReturnValue(false);
   // Seed the prev/next sequence the units page would have written.
   sessionStorage.setItem(sequenceKey('15k', '手筋'), JSON.stringify(SEQUENCE));
 });
@@ -373,6 +385,28 @@ describe('TsumegoProblemPage', () => {
         vi.advanceTimersByTime(3000);
       });
       expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---- Phase D: PhysicalStatePanel wiring behind readPhysicalMode (D1.3) ----
+  describe('physical-state panel (D1.3)', () => {
+    it('mounts PhysicalStatePanel starting at phase "setup" when physical mode is on', () => {
+      mockReadPhysicalMode.mockReturnValue(true);
+      renderPage('p1');
+      const panel = screen.getByTestId('physical-state-panel');
+      expect(panel).toBeInTheDocument();
+      expect(panel).toHaveAttribute('data-phase', 'setup');
+    });
+
+    it('renders no PhysicalStatePanel when physical mode is off (default) and preserves existing testids', () => {
+      renderPage('p1');
+      expect(screen.queryByTestId('physical-state-panel')).not.toBeInTheDocument();
+      // Existing surfaces must be unaffected by the D1.3 wiring.
+      expect(screen.getByTestId('tsumego-board')).toBeInTheDocument();
+      expect(screen.getByTestId('timer')).toBeInTheDocument();
+      expect(screen.getByTestId('attempts')).toBeInTheDocument();
+      expect(screen.getByTestId('prev-problem')).toBeInTheDocument();
+      expect(screen.getByTestId('next-problem')).toBeInTheDocument();
     });
   });
 });

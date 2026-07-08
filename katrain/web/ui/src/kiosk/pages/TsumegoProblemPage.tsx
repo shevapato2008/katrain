@@ -26,6 +26,8 @@ import { useVisionSync } from '../hooks/useVisionSync';
 import { sequenceKey, readAutoAdvance, levelChinese, readPhysicalMode, writePhysicalMode, writeLastLevel } from './tsumegoUnits';
 import { writeActiveSession } from '../utils/activeSession';
 import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
+import PhysicalStatePanel from '../components/tsumego/PhysicalStatePanel';
+import { usePhysicalTsumego, type PhysicalTsumegoOptions } from '../hooks/usePhysicalTsumego';
 
 interface ProblemSummary {
   id: string;
@@ -239,6 +241,36 @@ const TsumegoProblemPage = () => {
     if (completeEvent) setSetupDone(true);
   }, [visionSync.syncEvents, isVisionEnabled]);
 
+  // ---- Physical-mode wiring (D1.3) ----
+  // Called unconditionally (rules of hooks) — `enabled: physicalMode` (B2.5's single-owner
+  // state, reused here, NOT re-declared) IS the on/off lifecycle. The real hook has no
+  // enable()/disable() methods, so there is deliberately no lifecycle effect here; the stub
+  // only reacts to `opts.enabled`, everything else below is accepted purely for TYPE parity
+  // with the real hook so it is a drop-in replacement later (phase-D-real-contract.md).
+  const physicalOpts: PhysicalTsumegoOptions = {
+    enabled: physicalMode,
+    // This repo's useVisionSync exposes no WS-open flag (real-contract note) — typed
+    // placeholder derived from live sync traffic; swap for a real "connected" signal
+    // when the real hook lands.
+    visionConnected: visionSync.syncEvents.length > 0,
+    problemKey: problemId ?? null,
+    // No reset/resync counter exists on this page yet — static placeholder.
+    resyncKey: 0,
+    boardSize,
+    stones,
+    isSolved,
+    showHint,
+    hintCoords,
+    isTryMode,
+    autoAdvance: readAutoAdvance() && !!nextId,
+    syncEvents: visionSync.syncEvents,
+    placeStone,
+    undo,
+    playMoveSound: playSound,
+    onAdvance: handleNext,
+  };
+  const physical = usePhysicalTsumego(physicalOpts);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -328,6 +360,16 @@ const TsumegoProblemPage = () => {
         )}
         {isTryMode && (
           <Alert severity="info" sx={{ mb: 2 }}>{t('Try mode - free exploration', '试下模式 - 自由探索')}</Alert>
+        )}
+
+        {/* Physical-mode status panel (D1.3) — physical mode ON only. TR1 dual-input:
+            TsumegoBoard's onPlaceStone below is untouched and un-gated — screen clicks and
+            physical placement coexist; the stub doesn't consume `placeStone` at all (the
+            real adapter wires the `onScreenMove` passthrough later). */}
+        {physicalMode && (
+          <Box sx={{ mb: 2 }}>
+            <PhysicalStatePanel state={physical} />
+          </Box>
         )}
 
         {/* Timer and attempts — .mrow pill row */}

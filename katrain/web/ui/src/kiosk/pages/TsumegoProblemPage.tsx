@@ -281,6 +281,14 @@ const TsumegoProblemPage = () => {
     [physicalEnabled, physical.extra, boardSize],
   );
 
+  // While CLEARING the physical board, the goal is an empty board — every stone is "extra" and gets
+  // a ✕. Showing the static solved/target stones underneath them means removing a physical stone
+  // clears only its ✕ while the electronic stone lingers (unreasonable). Render an empty board
+  // during clearing so the ✕'s float on bare intersections and vanish one-by-one as stones come off.
+  const clearingPhysical =
+    physicalEnabled && (physical.phase === 'clearing' || physical.phase === 'clearing_next');
+  const displayStones = clearingPhysical ? [] : stones;
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -311,7 +319,7 @@ const TsumegoProblemPage = () => {
       >
         <TsumegoBoard
           boardSize={boardSize}
-          stones={stones}
+          stones={displayStones}
           lastMove={lastMove}
           hintCoords={hintCoords}
           showHint={showHint}

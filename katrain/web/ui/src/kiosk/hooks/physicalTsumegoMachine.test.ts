@@ -206,6 +206,39 @@ describe('physicalTsumegoMachine', () => {
     expect(kinds(commands)).toEqual(['ledPoints']);
   });
 
+  it('setup staging: stays in white stage when a placed black stone is transiently occluded', () => {
+    // A hand reaching in to place a white stone routinely hides an already-placed black one, so
+    // vision briefly reports that black as missing. Recomputing the stage from missingBlack.length
+    // would flip back to 'black' and extinguish every green (white) LED until the hand leaves —
+    // the reported green-LED flicker. Stage must stay sticky-white; green persists; the occluded
+    // black gets a SECONDARY red cue that never replaces the green ones.
+    const emptyBoard = empty(19);
+    const { state: clearingState } = step(initialState, { type: 'ENABLE', emptyBoard });
+    const initialBoard = boardWith(19, { '3,3': 1, '15,3': 2, '15,15': 2 });
+    const { state: setupState } = step(clearingState, { type: 'SETUP_COMPLETE', screenBoard: initialBoard });
+
+    // Enter white stage: black (3,3) placed, both white still missing.
+    const { state: whiteStageState } = step(setupState, {
+      type: 'SETUP_PROGRESS',
+      missing: [[15, 3], [15, 15]],
+      extra: [],
+    });
+    expect(whiteStageState.stage).toBe('white');
+
+    // Hand occludes the placed black at 3,3 → reported missing again; one white still missing.
+    const { state, commands } = step(whiteStageState, {
+      type: 'SETUP_PROGRESS',
+      missing: [[3, 3], [15, 15]],
+      extra: [],
+    });
+
+    expect(state.stage).toBe('white'); // sticky — did NOT regress to black
+    const ledCmd = findCommand(commands, 'ledPoints')!;
+    expect(ledCmd.points).toContainEqual({ row: 15, col: 15, color: 'white' }); // green persists
+    expect(ledCmd.points).toContainEqual({ row: 3, col: 3, color: 'black' }); // secondary red for the black
+    expect(kinds(commands)).toEqual(['ledPoints']); // no re-speak, already in white stage
+  });
+
   it('setup staging: wrong-color extras get white-flash LEDs alongside the active stage color', () => {
     const emptyBoard = empty(19);
     const { state: clearingState } = step(initialState, { type: 'ENABLE', emptyBoard });

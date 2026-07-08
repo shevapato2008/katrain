@@ -127,7 +127,13 @@ export function reduce(state: MachineState, evt: MachineEvent): { state: Machine
           const target = state.targetBoard!;
           const missingBlack = missing.filter(([r, c]) => target[r][c] === 1);
           const missingWhite = missing.filter(([r, c]) => target[r][c] === 2);
-          const nextStage: SetupStage = missingBlack.length > 0 ? 'black' : 'white';
+          // Sticky stage: advance black→white but never regress. A hand reaching in to place a
+          // white stone routinely occludes an already-placed black one, so vision briefly reports
+          // that black as missing; recomputing the stage from missingBlack.length would flip back
+          // to 'black' and extinguish every green (white) LED until the hand leaves (the reported
+          // green-LED flicker). Once we've reached white, stay there so white guidance is stable.
+          const wantStage: SetupStage = missingBlack.length > 0 ? 'black' : 'white';
+          const nextStage: SetupStage = state.stage === 'white' ? 'white' : wantStage;
           const active = nextStage === 'black' ? missingBlack : missingWhite;
           const stageTotal = countColor(target, nextStage === 'black' ? 1 : 2);
           const commands: Command[] = [];
@@ -136,6 +142,12 @@ export function reduce(state: MachineState, evt: MachineEvent): { state: Machine
             kind: 'ledPoints',
             points: [
               ...active.map(([row, col]) => ({ row, col, color: nextStage as LedColor })),
+              // In white stage still surface any genuinely-missing black as a SECONDARY red cue (so
+              // a black removed after staging is re-guided) — it never replaces the green LEDs, and
+              // under occlusion it lands on the hand-covered spot (harmless) instead of killing green.
+              ...(nextStage === 'white'
+                ? missingBlack.map(([row, col]) => ({ row, col, color: 'black' as LedColor }))
+                : []),
               ...flashes(extra),
             ],
           });

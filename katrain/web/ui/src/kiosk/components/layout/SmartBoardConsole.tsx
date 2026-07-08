@@ -132,8 +132,10 @@ const SmartBoardConsole = ({ moves, currentMove }: SmartBoardConsoleProps) => {
           boxShadow: '0 8px 24px -12px rgba(0,0,0,0.6)',
         }}
       >
-        {/* TODO: feed recognized board state when available — no recognized-board feed exists yet */}
-        <LiveBoard moves={moves ?? []} currentMove={currentMove ?? 0} boardSize={19} showCoordinates={false} />
+        {/* TODO: feed recognized board state when available — no recognized-board feed exists yet.
+            minContainerHeight={0}: this preview is only ~292px square, so the default 400px floor
+            would overflow and clip the board (see LiveBoard). Let it scale down to fit. */}
+        <LiveBoard moves={moves ?? []} currentMove={currentMove ?? 0} boardSize={19} showCoordinates={false} minContainerHeight={0} />
         <Box
           sx={{
             position: 'absolute',

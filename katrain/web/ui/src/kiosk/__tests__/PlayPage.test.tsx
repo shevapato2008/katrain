@@ -1,9 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import PlayPage from '../pages/PlayPage';
+
+// PlayPage reads the username for the greeting; stub AuthContext (no provider in tests).
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { username: 'fan' }, isAuthenticated: true }),
+}));
 
 const renderPage = () =>
   render(

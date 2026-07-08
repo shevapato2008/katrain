@@ -15,6 +15,11 @@ vi.mock('react-router-dom', async () => {
 const { readActiveSession } = vi.hoisted(() => ({ readActiveSession: vi.fn() }));
 vi.mock('../utils/activeSession', () => ({ readActiveSession }));
 
+// PlayPage reads the username for the greeting; stub AuthContext (no provider in tests).
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { username: 'fan' }, isAuthenticated: true }),
+}));
+
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>

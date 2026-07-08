@@ -2490,3 +2490,12 @@ msgstr "대기 중"
 
 msgid "report:summary_failed"
 msgstr "실패"
+
+msgid "Suggest"
+msgstr "수 추천"
+
+msgid "Variation Line"
+msgstr "변화도"
+
+msgid "game:pass"
+msgstr "패스"

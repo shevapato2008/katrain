@@ -2,12 +2,23 @@ import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 
+// Golaxy-engine analysis overlay (kiosk engineMode: 领地/支招/变化图). Optional and
+// additive — when absent, rendering is byte-for-byte identical to before this prop existed.
+// Coords are in the SAME (col,row) space as gameState.stones (no flip) — see Board.tsx
+// gridToCanvas usage below and task-13-4-brief.md's coordinate-alignment note.
+export type EngineOverlay =
+  | { kind: 'area'; ownership: { col: number; row: number; value: number }[] }
+  | { kind: 'judge'; ownership: { col: number; row: number; owner: string }[] }
+  | { kind: 'options'; candidates: { col: number; row: number; prob: number; winrate: number; delta: number }[] }
+  | { kind: 'variation'; sequence: { col: number; row: number }[] };
+
 export interface BoardProps {
   gameState: GameState;
   onMove: (x: number, y: number) => void;
   onNavigate?: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
   playerColor?: 'B' | 'W' | null;
+  engineOverlay?: EngineOverlay | null;
 }
 
 const ASSETS = {
@@ -30,7 +41,7 @@ const EVAL_COLORS = [
   "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor }) => {
+const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -131,7 +142,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
     const gridMargins = { x: [1.5, 1.5], y: [1.5, 1.5] }; // Symmetric: Left/Right, Bottom/Top
@@ -198,6 +209,28 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
           }
         }
       }
+    }
+
+    // Engine analysis overlay — area/judge ownership (kiosk engineMode; drawn under
+    // stones like the local ownership block above). NO flip: col/row pass straight
+    // into gridToCanvas, same space as gameState.stones.
+    if (engineOverlay?.kind === 'area') {
+      engineOverlay.ownership.forEach(({ col, row, value }) => {
+        if (Math.abs(value) > 0.05) {
+          const pos = gridToCanvas(layout, col, row, boardSize);
+          const alpha = Math.min(0.5, Math.abs(value) * 0.5);
+          ctx.fillStyle = value > 0 ? `rgba(0,0,0,${alpha})` : `rgba(255,255,255,${alpha})`;
+          ctx.fillRect(pos.x - layout.gridSize / 2, pos.y - layout.gridSize / 2, layout.gridSize, layout.gridSize);
+        }
+      });
+    } else if (engineOverlay?.kind === 'judge') {
+      engineOverlay.ownership.forEach(({ col, row, owner }) => {
+        if (owner === 'U') return;
+        const pos = gridToCanvas(layout, col, row, boardSize);
+        const alpha = 0.35;
+        ctx.fillStyle = owner === 'B' ? `rgba(0,0,0,${alpha})` : `rgba(255,255,255,${alpha})`;
+        ctx.fillRect(pos.x - layout.gridSize / 2, pos.y - layout.gridSize / 2, layout.gridSize, layout.gridSize);
+      });
     }
 
     // Policy Heatmap
@@ -334,6 +367,70 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         ctx.stroke();
       }
     });
+
+    // Engine analysis overlay — options/variation (kiosk engineMode; drawn AFTER
+    // stones so markers sit on top). NO flip: same (col,row) space as gameState.stones.
+    if (engineOverlay?.kind === 'options') {
+      engineOverlay.candidates.forEach((c, index) => {
+        const pos = gridToCanvas(layout, c.col, c.row, boardSize);
+        const radius = layout.gridSize * 0.42;
+        const isBest = index === 0;
+
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = isBest ? "rgba(88,181,122,0.92)" : "rgba(16,24,21,0.78)";
+        ctx.fill();
+        ctx.lineWidth = Math.max(1.5, layout.gridSize * 0.05);
+        ctx.strokeStyle = isBest ? "rgba(255,255,255,0.9)" : "rgba(88,181,122,0.75)";
+        ctx.stroke();
+
+        ctx.fillStyle = isBest ? "#0c130f" : "rgba(238,243,241,0.92)";
+        ctx.font = `bold ${Math.max(9, layout.gridSize * 0.32)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${(c.prob * 100).toFixed(0)}`, pos.x, pos.y);
+      });
+    } else if (engineOverlay?.kind === 'variation') {
+      const sequence = engineOverlay.sequence;
+      const startColor = gameState.player_to_move === 'W' ? 'W' : 'B';
+      const oppositeColor = (color: string) => (color === 'B' ? 'W' : 'B');
+
+      // Dashed connector lines between consecutive points
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "rgba(238,243,241,0.5)";
+      ctx.lineWidth = Math.max(1, layout.gridSize * 0.04);
+      for (let i = 1; i < sequence.length; i++) {
+        const prev = gridToCanvas(layout, sequence[i - 1].col, sequence[i - 1].row, boardSize);
+        const cur = gridToCanvas(layout, sequence[i].col, sequence[i].row, boardSize);
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(cur.x, cur.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Numbered stones, alternating from the side to move
+      sequence.forEach((pt, index) => {
+        const pos = gridToCanvas(layout, pt.col, pt.row, boardSize);
+        const stoneColor = index % 2 === 0 ? startColor : oppositeColor(startColor);
+        const radius = layout.gridSize * 0.42;
+
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = stoneColor === 'B' ? "rgba(20,24,22,0.95)" : "rgba(240,240,236,0.95)";
+        ctx.fill();
+        ctx.lineWidth = Math.max(1, layout.gridSize * 0.03);
+        ctx.strokeStyle = "rgba(88,181,122,0.85)";
+        ctx.stroke();
+
+        ctx.fillStyle = stoneColor === 'B' ? "#fff" : "#111";
+        ctx.font = `bold ${Math.max(9, layout.gridSize * 0.34)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${index + 1}`, pos.x, pos.y);
+      });
+    }
 
     // Ghost Stones
     if (analysisToggles.children && gameState.ghost_stones) {

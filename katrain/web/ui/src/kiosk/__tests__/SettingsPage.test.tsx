@@ -10,6 +10,11 @@ vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, isPortrait: false, setRotation: mockSetRotation }),
 }));
 
+const mockSetLanguage = vi.fn();
+vi.mock('../../context/SettingsContext', () => ({
+  useSettings: () => ({ language: 'cn', setLanguage: mockSetLanguage, languages: [] }),
+}));
+
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
@@ -42,5 +47,14 @@ describe('SettingsPage', () => {
     renderPage();
     fireEvent.click(screen.getByText('90° 竖屏'));
     expect(mockSetRotation).toHaveBeenCalledWith(90);
+  });
+
+  it('switches language via the persisted setter (not local state) with katrain codes', () => {
+    mockSetLanguage.mockClear();
+    renderPage();
+    fireEvent.click(screen.getByText('English'));
+    expect(mockSetLanguage).toHaveBeenCalledWith('en');
+    fireEvent.click(screen.getByText('中文'));
+    expect(mockSetLanguage).toHaveBeenCalledWith('cn');
   });
 });

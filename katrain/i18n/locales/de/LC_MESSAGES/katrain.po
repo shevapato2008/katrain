@@ -2607,3 +2607,12 @@ msgstr "in Warteschlange"
 
 msgid "report:summary_failed"
 msgstr "fehlgeschlagen"
+
+msgid "Suggest"
+msgstr "Zugtipp"
+
+msgid "Variation Line"
+msgstr "Variante"
+
+msgid "game:pass"
+msgstr "Passen"

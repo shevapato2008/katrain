@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogActions, Snackbar } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Snackbar } from '@mui/material';
+// TipsAndUpdates is no longer imported here: the standalone header hint button is gone
+// (AI 支招 moved into the right-panel button in GameControlPanel).
 import { ExitToApp, Videocam, Lightbulb, GpsFixed, Refresh } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
-import Board from '../../components/Board';
+import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
@@ -15,7 +17,9 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import PoseLostBanner from '../components/physical/PoseLostBanner';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse } from '../../api';
+import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts } from '../../api';
+
+type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
 const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
@@ -45,6 +49,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [resyncError, setResyncError] = useState(false);
   const [syncStuck, setSyncStuck] = useState(false);
 
+  // Golaxy 人机对弈 is the only engine-play platform today (§13). Revisit if/when
+  // another platform gets engine-play analysis tunnels.
+  const platform = 'golaxy';
+  const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
+  const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
+  const [insufficientKind, setInsufficientKind] = useState<EngineAnalysisKind | null>(null);
+  // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
+  // calls before the first resolves (double quota spend + last-response-wins races).
+  // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
+  const [pendingEngineKind, setPendingEngineKind] = useState<EngineAnalysisKind | null>(null);
+  // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
+  const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
+
+  // refreshStatus drives the 重置识别 recovery button clearing immediately on success.
   const { visionStatus, isVisionEnabled, refreshStatus } = useVision();
   const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
 
@@ -86,17 +104,28 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   }, [isVisionEnabled, visionStatus.cameraConnected]);
 
-  // On-demand analysis for 领地(ownership)/图表(winrate/score). Board mode suppresses per-move
-  // auto-eval, so the current position has no analysis until we ask. Trigger when either toggle
-  // is on, and re-trigger when the current node changes. The result streams back over the game
-  // WebSocket (get_state broadcast). Ranked/rated games block this server-side (analysis_allowed).
+  // Invalidate the 星阵 analysis overlay when the board position advances (a move
+  // played, human or AI) — otherwise stale 领地/支招/变化图 markers keep drawing over
+  // the new position and the button stays stuck "active". Keyed on position identity
+  // only, so it never fires on unrelated re-renders. Does NOT touch insufficientKind —
+  // that dialog is dismissed by the user, not by position changes. engineMode only.
+  useEffect(() => {
+    setEngineOverlay(null);
+    setActiveEngineKind(null);
+  }, [session.gameState?.current_node_id]);
+
+  // Local free-play on-demand analysis for 领地(ownership)/图表(winrate/score). Board mode
+  // suppresses per-move auto-eval, so the current position has no analysis until we ask.
+  // Trigger when either toggle is on, and re-trigger when the current node changes. The
+  // result streams back over the game WebSocket (get_state broadcast). Ranked/rated games
+  // block this server-side (analysis_allowed). Not used in engineMode (star阵 tunnel instead).
   const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
   const gs = session.gameState;
   useEffect(() => {
-    if (!wantAnalysis || !sessionId || !gs) return;
+    if (engineMode || !wantAnalysis || !sessionId || !gs) return;
     if (gs.game_type === 'ranked' || gs.game_type === 'rated') return;
     API.analyzeCurrent(sessionId).catch(() => undefined);
-  }, [wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
+  }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
 
   const closeHint = useCallback(() => {
     setHint(null);
@@ -135,6 +164,23 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     const id = setTimeout(() => setSyncStuck(true), 10000);
     return () => clearTimeout(id);
   }, [stuckEligible]);
+
+  // Remaining-道具 counts for the button badges. Account-level (not per-game),
+  // so it's safe to fetch once on mount and re-fetch after each analysis settles
+  // (each call consumes a use; 7003 means it hit 0). Best-effort: a failed fetch
+  // leaves the prior counts (or null → "—") and never blocks play.
+  const refreshItemCounts = useCallback(async () => {
+    if (!engineMode || !token) return;
+    try {
+      setEngineItemCounts(await API.platformEngineItems(platform, token));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [engineMode, token]);
+
+  useEffect(() => {
+    void refreshItemCounts();
+  }, [refreshItemCounts]);
 
   if (!session.gameState) {
     return (
@@ -215,6 +261,52 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
+  // 星阵隧道分析 (领地/支招/变化图) — engineMode only. Mutually exclusive: a new kind
+  // replaces any prior overlay; clicking the already-active kind toggles it off.
+  const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
+    if (pendingEngineKind) return; // in-flight guard: ignore double-taps until the current call settles
+    if (activeEngineKind === kind) {
+      setActiveEngineKind(null);
+      setEngineOverlay(null);
+      return;
+    }
+    if (!sessionId || !token) return;
+    // Capture the position identity at call time — if the board advances (a move
+    // played) while this request is in flight, the response below is for a stale
+    // position and must be discarded rather than resurrecting an old overlay.
+    const requestedNodeId = session.gameState?.current_node_id;
+    setPendingEngineKind(kind);
+    try {
+      const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
+      // A settled call changed the balance (ok → one consumed; insufficient → it's 0);
+      // resync the badges. Fire-and-forget, and BEFORE the stale-position early return
+      // below so a discarded overlay still updates the count that was actually spent.
+      void refreshItemCounts();
+      if (res.ok) {
+        if (session.gameState?.current_node_id !== requestedNodeId) return; // stale position — discard
+        const overlay: EngineOverlay =
+          kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
+          : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
+          : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
+        setEngineOverlay(overlay);
+        setActiveEngineKind(kind);
+      } else {
+        setInsufficientKind(kind);
+      }
+    } catch (e) {
+      console.error(e);
+      setEngineErrorToast(true);
+    } finally {
+      setPendingEngineKind(null);
+    }
+  };
+
+  const ENGINE_KIND_LABEL: Record<EngineAnalysisKind, string> = {
+    area: t('Territory', '领地'),
+    options: t('Suggest', '支招'),
+    variation: t('Variation Line', '变化图'),
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       {/* Error display */}
@@ -274,6 +366,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
             playerColor={humanColor}
+            engineOverlay={engineOverlay}
           />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -301,6 +394,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             hintEnabled={hintVisible}
             isGameOver={isGameOver}
             disableUndo={isRanked}
+            engineMode={engineMode}
+            activeEngineKind={activeEngineKind}
+            onEngineAnalysis={handleEngineAnalysis}
+            engineItemCounts={engineItemCounts}
           />
         </Box>
       </Box>
@@ -324,6 +421,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Button color="error" onClick={() => { session.handleAction('resign'); navigate('/kiosk/play'); }}>
             {t('Exit', '退出')}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 星阵道具次数不足 (7003) — 本终端不代充，引导去星阵充值 */}
+      <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)}>
+        <DialogTitle>
+          {insufficientKind && t('{item} exhausted', '{item}道具已用尽').replace('{item}', ENGINE_KIND_LABEL[insufficientKind])}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {insufficientKind && t(
+              '{item} quota is insufficient — please recharge in the Golaxy app; this terminal cannot recharge for you.',
+              '{item}次数不足 · 请在星阵 App 充值 · 本终端不代充'
+            ).replace('{item}', ENGINE_KIND_LABEL[insufficientKind])}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInsufficientKind(null)}>{t('Close', '关闭')}</Button>
         </DialogActions>
       </Dialog>
 

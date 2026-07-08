@@ -7,7 +7,7 @@ import {
 import PlayerCard from '../../../components/PlayerCard';
 import ScoreGraph from '../../../components/ScoreGraph';
 import ItemToggle from './ItemToggle';
-import type { GameState } from '../../../api';
+import type { EngineItemCounts, GameState } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface Props {
@@ -20,12 +20,27 @@ interface Props {
   hintEnabled?: boolean;
   isGameOver?: boolean;
   disableUndo?: boolean;
-  disableSpecialActions?: boolean;
+  /** Golaxy 人机对弈: replace the local analysis toggles with the three star阵-tunnel buttons. */
+  engineMode?: boolean;
+  activeEngineKind?: 'area' | 'options' | 'variation' | null;
+  onEngineAnalysis?: (kind: 'area' | 'options' | 'variation') => void;
+  /** Remaining-uses badges for the three engine buttons; null/undefined → "—" (unknown). */
+  engineItemCounts?: EngineItemCounts | null;
 }
 
-const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false, isGameOver = false, disableUndo = false, disableSpecialActions = false }: Props) => {
+const GameControlPanel = ({
+  gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
+  isGameOver = false, disableUndo = false, engineMode = false,
+  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null,
+}: Props) => {
   const { t } = useTranslation();
-  const showScore = !!analysisToggles.score;
+  // golaxy 人机对弈 has no winrate chart — never shown in engineMode, regardless of the toggle state.
+  const showScore = !engineMode && !!analysisToggles.score;
+  // 数子 (count) gating mirrors the galaxy web reference (RightSidebarPanel): the backend
+  // (/api/count/request) rejects counting before count_min_moves, so the button stays disabled
+  // until then. 停一手/认输 have no move-count gate — available whenever the game isn't over,
+  // in both local and Golaxy 人机对弈 (matches galaxy; there is no engineMode blunt-disable).
+  const canCount = !isGameOver && gameState.history.length >= (gameState.count_min_moves ?? 100);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -60,17 +75,30 @@ const GameControlPanel = ({ gameState, onAction, onNavigate, analysisToggles, on
 
         {/* 4. ItemToggle grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 2 }}>
-          <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.ownership} onClick={() => onToggleAnalysis('ownership')} />
-          {/* 建议 = AI 支招 (top-N candidate points + winrate; LED white-blinks on the board).
-              Unified here per the kiosk-ui-redesign; the old standalone header button is gone. */}
-          <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', 'AI支招')} onClick={() => onHint?.()} disabled={!hintEnabled} />
-          <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
+          {engineMode ? (
+            <>
+              {/* 星阵道具 (Golaxy paid tunnel analysis) — 领地/支招/变化图, mutually exclusive.
+                  Badge = remaining uses (null while unloaded/unknown → "—"; 0 → 次数不足). */}
+              <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={activeEngineKind === 'area'} onClick={() => onEngineAnalysis?.('area')} badge={engineItemCounts ? engineItemCounts.area : null} />
+              <ItemToggle icon={<TipsAndUpdates />} label={t('Suggest', '支招')} active={activeEngineKind === 'options'} onClick={() => onEngineAnalysis?.('options')} badge={engineItemCounts ? engineItemCounts.options : null} />
+              <ItemToggle icon={<Timeline />} label={t('Variation Line', '变化图')} active={activeEngineKind === 'variation'} onClick={() => onEngineAnalysis?.('variation')} badge={engineItemCounts ? engineItemCounts.variation : null} />
+            </>
+          ) : (
+            <>
+              {/* Local free-play: 领地/图表 are on-demand analysis toggles; 建议 = AI 支招
+                  (top-N candidate points; LED white-blinks on the board) — a one-shot action,
+                  not a toggle, per the kiosk-ui-redesign (the old standalone header button is gone). */}
+              <ItemToggle icon={<MapIcon />} label={t('Territory', '领地')} active={!!analysisToggles.ownership} onClick={() => onToggleAnalysis('ownership')} />
+              <ItemToggle icon={<TipsAndUpdates />} label={t('Hints', 'AI支招')} onClick={() => onHint?.()} disabled={!hintEnabled} />
+              <ItemToggle icon={<Timeline />} label={t('Chart', '图表')} active={showScore} onClick={() => onToggleAnalysis('score')} />
+            </>
+          )}
           {!disableUndo && (
             <ItemToggle icon={<Undo />} label={t('Undo', '悔棋')} onClick={() => onAction('undo')} disabled={isGameOver} />
           )}
-          <ItemToggle icon={<PanToolAlt />} label={t('Pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver || disableSpecialActions} />
+          <ItemToggle icon={<PanToolAlt />} label={t('game:pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver} />
           <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive disabled={isGameOver} />
-          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={isGameOver || disableSpecialActions} />
+          <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={!canCount} />
         </Box>
 
         <Divider />

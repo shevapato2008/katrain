@@ -63,6 +63,7 @@ async def vision_status(request: Request):
             "recognition_ready": False,
             "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
         }
+
     vision.refresh_status()
     return {
         "enabled": vision.enabled,

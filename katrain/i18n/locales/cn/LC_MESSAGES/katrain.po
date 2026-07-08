@@ -2395,3 +2395,12 @@ msgstr "排队中"
 
 msgid "report:summary_failed"
 msgstr "失败"
+
+msgid "Suggest"
+msgstr "支招"
+
+msgid "Variation Line"
+msgstr "变化图"
+
+msgid "game:pass"
+msgstr "停一手"

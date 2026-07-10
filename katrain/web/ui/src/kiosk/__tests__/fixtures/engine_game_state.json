@@ -25,7 +25,7 @@
   "children": [],
   "commentary": "贴目: 7.5\n规则: 中国\n",
   "count_min_moves": 10,
-  "current_node_id": 4503211616,
+  "current_node_id": 4654239088,
   "current_node_index": 0,
   "end_result": null,
   "engine": null,
@@ -67,13 +67,13 @@
       1
     ]
   ],
-  "game_id": "game_2026-07-11_06-55-49_867d1b43",
+  "game_id": "game_2026-07-11_06-57-25_6c76c697",
   "game_type": "free",
   "ghost_stones": [],
   "handicap": 0,
   "history": [
     {
-      "node_id": 4503211616,
+      "node_id": 4654239088,
       "score": null,
       "winrate": null
     }

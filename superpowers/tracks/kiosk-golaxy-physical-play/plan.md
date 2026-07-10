@@ -104,7 +104,11 @@
   - `_play_engine_move` 开头：`session.lock` 内校验落点合法（复用 KaTrain game 合法性判断）+ 记录 `position_token = current_node_id`；
   - 成功分支：`session.lock` 内断言 `current_node_id == position_token` → 依序 `_local_play(human)`、`_local_play(ai)`（同锁内）→ 广播两个 confirmed；断言失败 → 丢弃 AI 手 + rejected `"position_changed"`（reason 属性见 Task 7）；
   - `GolaxyEngineTerminal` 分支：先 `_local_play(human)`（同样断言位置）再走既有终局广播；
-  - `/api/undo`、`/api/redo`：`gateway.is_platform_game && ctx.is_engine && ctx.is_pending` → HTTP 409 `{"detail":"engine move pending"}`（守卫放 server 端点层，gateway 提供查询）。前端 undo 按钮在 pending 时禁用（`usePlatformEvents.pendingMove` 已有信号，小改随本 task）。
+  - **树变更守卫（Task 0 盘点后扩面，fable5 裁决 2026-07-11）**：gateway 提供查询 `is_engine_move_pending(session_id)`；server 端点层对 engine 局：
+    - pending 时 409：`/api/undo`、`/api/redo`、`/api/nav`、`/api/nav/mistake`、`/api/nav/branch`（nav 家族是前端「悔到第 N 手」常用路径，与 undo 同险）;
+    - **无条件 403（不限 pending）**：`/api/ai-move` —— 该路径绕开星阵隧道直接触发本地 KataGo 落子，engine 局任何时候都不合法；
+    - 其余树变更入口（sgf/load、new-game、edit-game、node/*、player/swap 等）本轨道不加守卫：kiosk engine 模式 UI 不暴露这些操作，逐一加守卫超出本期范围——在 Task 4 实现处留一行注释指向基线记录的完整清单。
+    前端 undo 按钮在 pending 时禁用（`usePlatformEvents.pendingMove` 已有信号，小改随本 task）。
 - [ ] 跑测试通过；`CI=true uv run pytest tests/platforms -q` 无新增失败；commit。
 
 ## Task 5 — 后端：重建 v2 = 让子前缀 + pass 响亮失败（B3，TDD）

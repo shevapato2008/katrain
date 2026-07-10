@@ -63,10 +63,10 @@
 
 ## Task 0 — 基线确认
 
-- [ ] `uv sync`；`CI=true uv run pytest tests -q` 记录基线失败集（写进本文件底部「基线记录」）。
-- [ ] `cd katrain/web/ui && npm install && npm run build && npm run build:kiosk-2d` 双绿。
-- [ ] 通读：`physical_play_orchestrator.py` 全文、`physical_play.py`（LedPlanner）、`gateway.py:41-115`、`golaxy/adapter.py:704-945`、`server.py` 的 `_vision_move_poller`、`GamePage.tsx:35-60,138-200,280-340`、`endpoints/vision.py`。
-- [ ] grep 复核关键事实 #9（undo/redo 之外是否还有树变更入口：`navigate`/`goto`/`load_sgf` 等对活跃 engine 局的可达性），结论记录在下方基线记录。
+- [x] `uv sync`；`CI=true uv run pytest tests -q` 记录基线失败集（写进本文件底部「基线记录」）。
+- [x] `cd katrain/web/ui && npm install && npm run build && npm run build:kiosk-2d` 双绿。
+- [x] 通读：`physical_play_orchestrator.py` 全文、`physical_play.py`（LedPlanner）、`gateway.py:41-115`、`golaxy/adapter.py:704-945`、`server.py` 的 `_vision_move_poller`、`GamePage.tsx:35-60,138-200,280-340`、`endpoints/vision.py`。
+- [x] grep 复核关键事实 #9（undo/redo 之外是否还有树变更入口：`navigate`/`goto`/`load_sgf` 等对活跃 engine 局的可达性），结论记录在下方基线记录。
 - **Verification**: 基线记录已填；能复述全链路与六块设计。
 
 ## Task 1 — 后端：`platform_engine_color` 状态字段（G1/G2 信源，TDD）
@@ -251,8 +251,39 @@
 | Q4 | 人执白+让子语义 | **已答**：D9 澄清并入测试矩阵，Task 12 用例 2 |
 | Q5 | 未知结果是否需「弃局重开」 | **已答**：genmove 无需（D6）；错误对话框已含认输退出兜底 |
 
-## 基线记录（Task 0 填写）
+## 基线记录（Task 0 填写，2026-07-11）
 
-- pytest 基线失败集：*待填*
-- 双构建基线：*待填*
-- 树变更入口盘点结论：*待填*
+- **pytest 基线失败集**：`CI=true uv run pytest tests -q`（repo root，`.venv` 需 `uv sync --extra web --extra vision --extra board` + `uv pip install boto3 respx moto`——见下方「环境陷阱」）→ **32 failed, 10 errors, 1272 passed, 5 skipped, 90 warnings in 75.41s**。按文件条数：
+  - `tests/test_tutorial_assets_endpoint.py`: 1 failed（`test_local_malformed_range_serves_full_200`）
+  - `tests/test_user_game_repo.py`: 2 failed
+  - `tests/web_ui/test_ai_game_autosave.py`: 4 failed
+  - `tests/web_ui/test_backend_scaffolding.py`: 1 failed（`ImportError: cannot import name 'config' from katrain.web`）
+  - `tests/web_ui/test_billing_api.py`: 1 failed（`ValueError: User already exists`）
+  - `tests/web_ui/test_rated_gating.py`: 1 failed
+  - `tests/web_ui/test_settings_snapshot.py`: 1 failed
+  - `tests/web_ui/test_social_api.py`: 1 failed（`ValueError: User already exists`）
+  - `tests/web_ui/test_tsumego_api.py`: 16 failed（全部 502/JSONDecodeError——看起来是环境依赖的外部 tsumego 服务/DB 未就绪，非本轨道代码问题）
+  - `tests/web_ui/test_tutorial_db_api.py`: 4 failed（3 个 `AttributeError: ... 'ASSET_BASE'` + 1 个 auth 断言）
+  - `tests/web_ui/test_ai_settings.py`: 3 errors
+  - `tests/web_ui/test_endpoints.py`: 7 errors（全部 `assert 502 == 200`，同一环境依赖疑点）
+  - 均与 `platforms/`、`physical_play*`、`vision*` 无关——**本轨道相关测试目录（`tests/platforms/`、`tests/test_physical_play*.py`、`tests/test_vision/`、`tests/test_vision_pump.py`、`tests/test_ws_route_order.py`）在本次基线全绿，无预置失败**。后续任务的「相对基线无新增失败」以此 32 failed/10 errors 列表为准。
+  - **环境陷阱（记录以防重复踩坑）**：裸 `uv sync`（无 extra）会把本机已装的 `web` extra（fastapi/uvicorn/sqlalchemy 相关 18 个包）**卸载**，导致 96 个测试文件在 collection 阶段直接因 `ModuleNotFoundError: No module named 'fastapi'` 报错——这不是真实基线，是环境缺失假象。必须 `uv sync --extra web --extra vision --extra board` 后再补 `uv pip install boto3 respx moto`（这三个是 `requirements-web.txt`/测试专用依赖，不在任何 pyproject extra 里，CI workflow 里的 `test` job 同样不装它们，可能是 CI 自身的隐藏缺口，建议另行跟进但不在本轨道范围）。
+
+- **双构建基线**：`cd katrain/web/ui && npm install && npm run build && npm run build:kiosk-2d` → **双绿**。`npm run build` 产出 `../static/`（含 GalaxyApp/Board3D/react-three-fiber chunk，符合预期）；`npm run build:kiosk-2d` 产出 `../static-kiosk-2d/`，链式 `verify:kiosk-2d` 输出 `✅ kiosk boundary clean — no three.js / /galaxy/ / non-board live API in ../static-kiosk-2d ( 23M total)`。两次构建均只有 "chunk >500kB" 的性能提示（非阻断）。
+
+- **树变更入口盘点结论（grep 复核关键事实 #9）**：`katrain/web/server.py` 里对 `session.katrain(...)` 做树/局面变更的入口，除 `/api/undo`（645 行）、`/api/redo`（656 行）外还有：
+  - `/api/nav`（805，`nav` 动作，任意 node_id 跳转）
+  - `/api/nav/mistake`（934，`find_mistake`）、`/api/nav/branch`（943，`switch_branch`）
+  - `/api/sgf/load`（672，`load_sgf`，整树替换）
+  - `/api/new-game`（681，`new_game`，整局重置）
+  - `/api/edit-game`（794，`edit_game`）、`/api/game/setup`（703，按 `mode` 分支调 `new_game`/`_do_edit_game`/`selfplay_setup`）
+  - `/api/node/delete`（1361）、`/api/node/prune`（1370）、`/api/node/make-main`（1379）、`/api/node/toggle-collapse`（1388）
+  - `/api/ai-move`（814，直接触发本地 `"ai-move"` core 动作——**对 engine 局是个额外风险点**：这条路径完全绕开 `gateway.play_move`/`_play_engine_move`，若被前端在 engine 局上误触发，会让本地树落一个不经星阵隧道的"AI"手，与 `ctx.moves` 彻底失配）
+  - `/api/player`（849）、`/api/player/swap`（864，`update_player`/`swap_players`，改变局中 Player 对象）
+  - `/api/timeout`（1259，`timeout` 动作，无 platform 检查；engine 局通常不启用计时器所以风险低但存在）
+  - `/api/mode/insert`（1565，`insert_mode`，UI 态而非树结构，风险最低）
+
+  **grep 确认：`server.py` 中只有 `/api/move`（624 行）、`/api/resign`（1059 行）、以及 `_vision_move_poller` 里的 engine 分支（1999 行）会检查 `gateway.is_platform_game(...)`；上面列出的全部入口（包括 undo/redo 之外的十余个）目前都不检查 `is_platform_game` 或 `ctx.is_pending`。** 换言之 D5/Task 4 计划文本只点名 undo/redo，但可达的树变更入口面远大于此——`/api/nav`（前端「悔到第 N 手」常用路径）与 `/api/ai-move`（绕过隧道）是其中风险最高的两个，实施 Task 4 时应至少在 PR 描述里说明为何只挡 undo/redo 而不挡其余入口（例如：假设前端 kiosk UI 在 engine 局模式下根本不渲染这些按钮，属于纯前端把关——但按 D5 原则「后端约束是权威」，这个假设本身值得在 Task 4 复核一次，即便不扩大本轨道范围）。
+  - `/ws/{session_id}`（1812）本身的消息处理只有 `ping`/`chat`，不做树变更；`/ws/vision`（1763）只推事件/心跳，同样不涉及树变更。两者均已确认无额外入口。
+
+- **通读确认**：`physical_play_orchestrator.py`（374 行，全文）、`physical_play.py`（180 行，`LedPlanner`）、`gateway.py:41-115`（`play_move`/`_play_engine_move`）、`golaxy/adapter.py:704-945`（`start_engine_game`/`submit_engine_move`/`_genmove_committing`/`rebuild_engine_moves` 等）、`server.py` 的 `_vision_move_poller`（1952 行起）、kiosk `pages/GamePage.tsx`（`deriveAiTurnState`/`humanColor` 等）、`endpoints/vision.py`（241 行，全文）均已读，内容与计划中「关键事实」#2/#3/#4/#5/#6 的描述逐一核对一致，无出入。

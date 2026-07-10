@@ -71,6 +71,11 @@ export interface GameState {
   };
   game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
   analysis_allowed?: boolean;
+  // "B" | "W" = the color the REMOTE ENGINE plays in an engine-play game (Golaxy
+  // 人机对弈 genmove tunnel); null/absent for every other game shape (local HvAI,
+  // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —
+  // see kiosk/pages/GamePage.tsx deriveHumanColor/deriveAiTurnState (G2).
+  platform_engine_color?: 'B' | 'W' | null;
 }
 
 export interface SessionResponse {

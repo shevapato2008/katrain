@@ -30,17 +30,35 @@ export interface AiTurnState {
   showThinking: boolean;
 }
 
+// Single-color human-seat derivation, shared by humanColor (turn enforcement / board
+// gating) and the AI-move banner effect below (G2 fix). `platform_engine_color`
+// (Task 1: WebKaTrain state field, "B"|"W"|null = the remote engine's color) is
+// authoritative for engine games (Golaxy 人机对弈 via the genmove tunnel) — BOTH
+// seats carry a bare "human" player_type literal there (session.py:80/82), so the
+// player_type-based checks below can't tell which seat is the AI. Absent/null in
+// every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
+// eslint-disable-next-line react-refresh/only-export-components
+export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
+  if (gameState.platform_engine_color === 'B') return 'W';
+  if (gameState.platform_engine_color === 'W') return 'B';
+  return gameState.players_info?.B?.player_type === 'player:human' ? 'B'
+    : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
+    : null;
+}
+
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
-// AND bare 'ai' (multiplayer session.py:80/82 + tests). Do NOT infer AI from "the non-human color".
-// Pure helper co-located here (not split into a new file) for unit testability; deliberate,
-// not a component — see GamePage.test.tsx.
+// AND bare 'ai' (multiplayer session.py:80/82 + tests), PLUS the engine's color per
+// `platform_engine_color` (G2 fix — engine games carry bare "human" on both seats, so
+// the literal checks alone can't find the AI seat there). Do NOT infer AI from "the
+// non-human color". Pure helper co-located here (not split into a new file) for unit
+// testability; deliberate, not a component — see GamePage.test.tsx.
 // eslint-disable-next-line react-refresh/only-export-components
 export function deriveAiTurnState(gameState: GameState, latestEventType: string | null | undefined): AiTurnState {
   const isAI = (c: 'B' | 'W') => {
     const pt = gameState.players_info[c].player_type;
-    return pt === 'player:ai' || pt === 'ai';
+    return pt === 'player:ai' || pt === 'ai' || c === gameState.platform_engine_color;
   };
   const aiColor = isAI('B') ? 'B' : isAI('W') ? 'W' : null;
   const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !gameState.end_result;
@@ -173,10 +191,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     if (!isVisionEnabled || !session.gameState) return;
     const gs = session.gameState;
-    const human: 'B' | 'W' | null =
-      gs.players_info?.B?.player_type === 'player:human' ? 'B'
-      : gs.players_info?.W?.player_type === 'player:human' ? 'W'
-      : null;
+    const human = deriveHumanColor(gs);
     if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
       const col = String.fromCharCode(65 + (gs.last_move[0] >= 8 ? gs.last_move[0] + 1 : gs.last_move[0]));
       const row = gs.board_size[0] - gs.last_move[1];
@@ -285,10 +300,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
 
   // Determine which color the human plays (for turn enforcement)
-  const humanColor: 'B' | 'W' | null =
-    gameState.players_info?.B?.player_type === 'player:human' ? 'B'
-    : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
-    : null;
+  const humanColor = deriveHumanColor(gameState);
 
   // showThinking is the single-owner gate for the "AI 思考中" surface (state A, B1.4).
   // aiColor also gates the persistent move banner above; physicalConfirming is folded

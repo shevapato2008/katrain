@@ -5,6 +5,16 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API } from '../../api';
 import type { GameState } from '../../api';
+// Real backend-generated contract fixture (Task 1/2): engine game, human=B,
+// platform_engine_color="W", both players_info entries carry the bare "human"
+// player_type literal used by the multiplayer/engine session path (session.py) —
+// NOT the "player:human"/"player:ai" literals used by local kiosk HvAI (server.py).
+// Cast via `unknown` since the fixture's JSON shape (e.g. `is_pass: null`) doesn't
+// match GameState's stricter TS fields exactly; only the fields the helpers under
+// test actually read (players_info, platform_engine_color, player_to_move,
+// end_result, last_move, board_size) matter at runtime.
+import engineFixtureRaw from './fixtures/engine_game_state.json';
+const engineFixture = engineFixtureRaw as unknown as GameState;
 
 // Single unified mock of the real api.ts. Spread the actual module so untouched exports keep
 // their real impls, then override exactly what the two suites drive: platformEngineAnalysis/
@@ -31,11 +41,26 @@ vi.mock('../context/OrientationContext', () => ({
 }));
 
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
-// Disabled vision keeps all vision branches (overlay, toasts, useVisionSync) inert.
+// Mutable via `visionMock` so the G2 banner tests below can flip isVisionEnabled on
+// for a single test without disturbing the rest of the suite (which needs it inert).
+// `vi.hoisted` avoids a TDZ ReferenceError — vi.mock factories are hoisted above
+// ordinary `const` declarations in this file.
+const visionMock = vi.hoisted(() => ({
+  isVisionEnabled: false,
+  visionStatus: {
+    cameraConnected: true,
+    poseLocked: true,
+    syncState: 'synced',
+    ledConnected: true,
+    boundSessionId: null as string | null,
+    recognitionReady: true,
+    enabled: false,
+  },
+}));
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    isVisionEnabled: false,
-    visionStatus: { cameraConnected: true },
+    isVisionEnabled: visionMock.isVisionEnabled,
+    visionStatus: visionMock.visionStatus,
     refreshStatus: vi.fn(),
   }),
 }));
@@ -136,7 +161,7 @@ vi.mock('../../hooks/useGameSession', () => ({
 }));
 
 // Import after mocks
-import GamePage from '../pages/GamePage';
+import GamePage, { deriveAiTurnState, deriveHumanColor } from '../pages/GamePage';
 
 const renderTree = (engineMode: boolean) => (
   <ThemeProvider theme={kioskTheme}>
@@ -465,6 +490,116 @@ describe('GamePage engine mode', () => {
       });
       fireEvent.click(screen.getByText('领地'));
       await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2));
+    });
+  });
+
+  // G2: engine games (Golaxy 人机对弈 via the genmove tunnel) put a bare "human"
+  // player_type literal on BOTH seats (session.py:80/82) — neither literal check in
+  // the old humanColor/isAI derivation ('player:human' / 'player:ai' / 'ai') can tell
+  // which seat is the AI. `platform_engine_color` (Task 1: WebKaTrain state field,
+  // "B"|"W"|null = the ENGINE's color) is the authoritative signal for engine games;
+  // absent/null in every other game shape (local HvAI, PVP, multiplayer) — regression
+  // guarded below.
+  describe('G2: engine-aware humanColor / aiTurn derivation (platform_engine_color)', () => {
+    const ORIGINAL_PLAYERS_INFO = mockGameState.players_info;
+    const ORIGINAL_LAST_MOVE = mockGameState.last_move;
+    const ORIGINAL_PLAYER_TO_MOVE = mockGameState.player_to_move;
+
+    afterEach(() => {
+      mockGameState.players_info = ORIGINAL_PLAYERS_INFO;
+      mockGameState.last_move = ORIGINAL_LAST_MOVE;
+      mockGameState.player_to_move = ORIGINAL_PLAYER_TO_MOVE;
+      delete (mockGameState as Partial<GameState>).platform_engine_color;
+      visionMock.isVisionEnabled = false;
+    });
+
+    describe('deriveHumanColor (pure helper)', () => {
+      it('engine game, human=B (contract fixture, platform_engine_color="W") -> B', () => {
+        expect(deriveHumanColor(engineFixture)).toBe('B');
+      });
+
+      it('engine game, human=W (platform_engine_color="B") -> W', () => {
+        expect(deriveHumanColor({ ...engineFixture, platform_engine_color: 'B' })).toBe('W');
+      });
+
+      it('non-regression: local HvAI (player:human/player:ai literals, no engine signal) -> B', () => {
+        expect(deriveHumanColor(mockGameState)).toBe('B');
+      });
+
+      it('no engine signal and no player:human seat -> null (falls through to old derivation unchanged)', () => {
+        const state = {
+          ...mockGameState,
+          players_info: {
+            B: { ...mockGameState.players_info.B, player_type: 'ai' },
+            W: { ...mockGameState.players_info.W, player_type: 'ai' },
+          },
+        };
+        expect(deriveHumanColor(state)).toBeNull();
+      });
+    });
+
+    describe('deriveAiTurnState (engine branch of isAI)', () => {
+      it('engine fixture: aiColor is the ENGINE color (W) even though players_info literal is bare "human"', () => {
+        const { aiColor } = deriveAiTurnState(engineFixture, null);
+        expect(aiColor).toBe('W');
+      });
+
+      it('genmove-tunnel-wait snapshot (player_to_move still human=B, remote-first apply) -> aiThinking not lit, no flicker', () => {
+        // engineFixture.player_to_move is "B" (human) — the human's own move is only
+        // applied locally after the tunnel returns, so this snapshot must never light
+        // the "AI 思考中" banner even though an aiColor now exists for this game.
+        const { aiColor, aiThinking } = deriveAiTurnState(engineFixture, null);
+        expect(aiColor).toBe('W');
+        expect(aiThinking).toBe(false);
+      });
+
+      it('post-AI-reply snapshot (player_to_move back to human) -> aiThinking still not lit', () => {
+        const { aiThinking } = deriveAiTurnState({ ...engineFixture, player_to_move: 'B' }, null);
+        expect(aiThinking).toBe(false);
+      });
+
+      it('the brief window where state shows the engine to move -> aiThinking lit (sanity: not just always false)', () => {
+        const { aiColor, aiThinking } = deriveAiTurnState({ ...engineFixture, player_to_move: 'W' }, null);
+        expect(aiColor).toBe('W');
+        expect(aiThinking).toBe(true);
+      });
+
+      it('non-regression: local HvAI (player:ai literal) aiColor/aiThinking unchanged', () => {
+        const state = { ...mockGameState, player_to_move: 'W' as const };
+        const { aiColor, aiThinking } = deriveAiTurnState(state, null);
+        expect(aiColor).toBe('W');
+        expect(aiThinking).toBe(true);
+      });
+    });
+
+    describe('AI-move banner (render)', () => {
+      it('engine game, human=W: banner shows the AI(B) move coordinate after AI plays', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
+        mockGameState.player_to_move = 'W'; // human's turn, right after AI(B) moved
+        mockGameState.last_move = [3, 3]; // -> "D16" (col=A+3='D', row=19-3=16)
+        renderPage(true);
+
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
+      });
+
+      it('non-regression: engine game, human=B still shows the AI(W) move coordinate', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'W'; // engine is White -> human is Black
+        mockGameState.player_to_move = 'B';
+        mockGameState.last_move = [3, 3];
+        renderPage(true);
+
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
+      });
+
+      it('non-regression: local HvAI (player:ai literal, no platform_engine_color) still shows the banner', async () => {
+        visionMock.isVisionEnabled = true;
+        // mockGameState default shape: B=player:human, W=player:ai, player_to_move='B', last_move=[3,3].
+        renderPage(false);
+
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
+      });
     });
   });
 });

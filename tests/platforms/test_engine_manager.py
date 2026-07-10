@@ -273,11 +273,36 @@ class TestPlatformEngineColorRealSession:
 
         assert fresh_session.katrain.get_state()["platform_engine_color"] is None
 
+    @pytest.mark.asyncio
+    async def test_new_game_resets_platform_engine_color(self):
+        """A session that finishes an engine game and then starts a plain local game
+        (same WebKaTrain instance, e.g. via POST /api/new-game) must not retain the
+        stale engine color — otherwise Task 2's LED orchestrator would treat a purely
+        local game as having an engine-controlled color."""
+        sm, pm, adapter = _build_real_stack()
+        config = EngineGameConfig(level=1100, human_color="B")
+
+        session_id = await pm.start_engine_game("golaxy", config, user_id=1)
+        session = sm.get_session(session_id)
+        assert session.katrain.get_state()["platform_engine_color"] == "W"
+
+        session.katrain("new_game")
+
+        assert session.katrain.get_state()["platform_engine_color"] is None
+
 
 class TestPlatformEngineColorContractFixture:
     """Dumps a real engine-game get_state() JSON for frontend Task 3 to consume as a
-    contract fixture. Deterministic (sort_keys + indent) so re-running regenerates an
-    identical file."""
+    contract fixture.
+
+    `game_id` (timestamp+uuid) and every `id()`-derived node id (`current_node_id`,
+    `history[].node_id`) are run-to-run non-deterministic — regenerating the raw
+    get_state() output is NOT identical between runs. This test normalizes those
+    fields to fixed placeholders before dumping (preserving each field's original
+    JSON type) so the *normalized* output is deterministic, and only rewrites the
+    fixture file when the normalized content actually differs from what's on disk,
+    so a clean run never dirties the tree.
+    """
 
     FIXTURE_PATH = os.path.join(
         os.path.dirname(__file__),
@@ -293,19 +318,62 @@ class TestPlatformEngineColorContractFixture:
         "engine_game_state.json",
     )
 
-    @pytest.mark.asyncio
-    async def test_dump_engine_game_state_fixture(self):
+    # Keys whose values are id()-derived memory addresses (int) rather than stable
+    # identifiers. Normalized to a fixed int placeholder, keeping the JSON type intact.
+    _NODE_ID_KEYS = frozenset({"current_node_id", "node_id"})
+    _NODE_ID_PLACEHOLDER = 0
+    _GAME_ID_PLACEHOLDER = "golaxy-engine-FIXTURE"
+
+    @classmethod
+    def _normalize(cls, value):
+        """Recursively replace run-varying fields (game_id, id()-derived node ids)
+        with stable placeholders of the same JSON type, leaving everything else
+        untouched."""
+        if isinstance(value, dict):
+            normalized = {}
+            for key, val in value.items():
+                if key == "game_id" and isinstance(val, str):
+                    normalized[key] = cls._GAME_ID_PLACEHOLDER
+                elif key in cls._NODE_ID_KEYS and isinstance(val, int):
+                    normalized[key] = cls._NODE_ID_PLACEHOLDER
+                else:
+                    normalized[key] = cls._normalize(val)
+            return normalized
+        if isinstance(value, list):
+            return [cls._normalize(item) for item in value]
+        return value
+
+    @staticmethod
+    async def _start_engine_game_state():
         sm, pm, adapter = _build_real_stack()
         config = EngineGameConfig(level=1100, human_color="B")
-
         session_id = await pm.start_engine_game("golaxy", config, user_id=1)
         session = sm.get_session(session_id)
-        state = session.katrain.get_state()
+        return session.katrain.get_state()
 
+    @pytest.mark.asyncio
+    async def test_dump_engine_game_state_fixture(self):
+        state = await self._start_engine_game_state()
         assert state["platform_engine_color"] == "W"
+
+        dumped = json.dumps(self._normalize(state), sort_keys=True, indent=2, ensure_ascii=False)
+
+        # Determinism guard: a second, independently-created engine game has its own
+        # game_id (timestamp+uuid) and id()-derived node ids, yet must normalize to
+        # byte-identical output. This is what actually protects the checked-in
+        # fixture from being rewritten (and the tree dirtied) on every test run.
+        state_again = await self._start_engine_game_state()
+        dumped_again = json.dumps(self._normalize(state_again), sort_keys=True, indent=2, ensure_ascii=False)
+        assert dumped == dumped_again
+
+        dumped_with_trailing_newline = dumped + "\n"
 
         fixture_path = os.path.abspath(self.FIXTURE_PATH)
         os.makedirs(os.path.dirname(fixture_path), exist_ok=True)
-        with open(fixture_path, "w", encoding="utf-8") as f:
-            json.dump(state, f, sort_keys=True, indent=2, ensure_ascii=False)
-            f.write("\n")
+        existing = None
+        if os.path.exists(fixture_path):
+            with open(fixture_path, "r", encoding="utf-8") as f:
+                existing = f.read()
+        if existing != dumped_with_trailing_newline:
+            with open(fixture_path, "w", encoding="utf-8") as f:
+                f.write(dumped_with_trailing_newline)

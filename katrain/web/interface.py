@@ -512,6 +512,12 @@ class WebKaTrain(KaTrainBase):
         # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
         if game_type is not None:
             self.game_type = game_type
+        # G1/G2: a brand new game is never engine-controlled until a platform explicitly
+        # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
+        # a session that finishes an engine game and then starts a plain local game (same
+        # WebKaTrain instance, e.g. POST /api/new-game) would retain the stale engine color,
+        # making the LED orchestrator (Task 2) treat a purely local game as engine-controlled.
+        self.platform_engine_color = None
         if self.engine:
             self.engine.on_new_game()
 

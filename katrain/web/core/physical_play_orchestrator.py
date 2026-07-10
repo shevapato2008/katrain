@@ -248,14 +248,22 @@ class PhysicalPlayOrchestrator:
     def _guided_colors_from_state(state: Dict) -> Optional[set]:
         """Colors whose stones need placement lamps = the AI-played colors. Human moves
         need no LED (vision observing them IS the move source). None (no players_info)
-        keeps the legacy guide-everything behavior."""
+        keeps the legacy guide-everything behavior.
+
+        A remote Golaxy engine-play seat marks BOTH players_info entries "human" (the
+        physical board mediates for both), so player_type alone can't see it. Task 1's
+        `platform_engine_color` state field ("B"/"W"/None) names the color the remote
+        engine plays; that color is guided exactly like a local player:ai would be. Read
+        as a plain dict field only (no import from katrain/web/platforms — see the SBC
+        build-boundary contract in CLAUDE.md)."""
         players = state.get("players_info")
         if not players:
             return None
+        engine_color = state.get("platform_engine_color")
         return {
             color
             for bw, color in (("B", BLACK), ("W", WHITE))
-            if (players.get(bw) or {}).get("player_type") == "player:ai"
+            if (players.get(bw) or {}).get("player_type") == "player:ai" or bw == engine_color
         }
 
     @staticmethod

@@ -1,13 +1,36 @@
 """Orchestrator: game state + observed board -> LED writes, catch-up gate, reminder."""
 
 import asyncio
+import copy
+import json
+import os
 import time
 
 import numpy as np
 import pytest
 
-from katrain.web.core.physical_play import PhysicalPlayConfig
+from katrain.web.core.physical_play import BLACK, WHITE, PhysicalPlayConfig
 from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
+
+# Task 1 contract fixture: a real engine-game get_state() dump (both players marked
+# "human"; platform_engine_color:"W" is the only signal that W is the remote Golaxy AI).
+ENGINE_GAME_STATE_FIXTURE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "katrain",
+    "web",
+    "ui",
+    "src",
+    "kiosk",
+    "__tests__",
+    "fixtures",
+    "engine_game_state.json",
+)
+
+
+def _load_engine_game_state_fixture():
+    with open(ENGINE_GAME_STATE_FIXTURE_PATH, encoding="utf-8") as f:
+        return json.load(f)
 
 
 class FakeLed:
@@ -267,6 +290,45 @@ class TestGuidanceContextExtraction:
     def test_guided_colors_missing_players_info_returns_none(self):
         assert PhysicalPlayOrchestrator._guided_colors_from_state({}) is None  # legacy guide-all
 
+    def test_guided_colors_platform_engine_color_white_from_contract_fixture(self):
+        # Task 1 contract fixture: real engine-game state, both players "human",
+        # platform_engine_color:"W" is the only marker that W is the remote Golaxy AI.
+        state = _load_engine_game_state_fixture()
+        assert state["platform_engine_color"] == "W"
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {WHITE}
+
+    def test_guided_colors_platform_engine_color_black(self):
+        state = _load_engine_game_state_fixture()
+        state["platform_engine_color"] = "B"
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {BLACK}
+
+    def test_guided_colors_platform_engine_color_none_no_regression(self):
+        # Field present but None (local pvp / remote-platform games without an engine
+        # seat) must fall back to the existing player_type-only behavior: both human ->
+        # empty set, NOT guide-all.
+        state = _load_engine_game_state_fixture()
+        state["platform_engine_color"] = None
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == set()
+
+    def test_guided_colors_platform_engine_color_absent_no_regression(self):
+        # Field absent entirely (older state / non-engine platform) must not regress
+        # the existing player_type-only behavior either.
+        state = _load_engine_game_state_fixture()
+        del state["platform_engine_color"]
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == set()
+
+    def test_guided_colors_player_ai_branch_unaffected_by_engine_color(self):
+        # player:ai still guides regardless of platform_engine_color (which is None for
+        # local AI games) -- no regression to the pre-existing branch.
+        state = {
+            "players_info": {
+                "B": {"player_type": "player:human"},
+                "W": {"player_type": "player:ai"},
+            },
+            "platform_engine_color": None,
+        }
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {WHITE}
+
     def test_setup_cells_from_root_stones(self):
         # stones entry: [player, [col, gtp_row], score_loss, move_number]; move_number None = 让子/AB
         state = {
@@ -296,3 +358,21 @@ class TestLitPointsIncludeAllLamps:
             ]
         )
         assert vision.lit == [(3, 3), (5, 5)]
+
+
+class TestEngineGameGuidance:
+    """Integration smoke (G1): an engine game (Golaxy AI plays via platform_engine_color,
+    both players_info marked human) must guide the AI's color exactly like a local
+    player:ai opponent would — closing the gap where engine moves got no lamp."""
+
+    def test_engine_ai_white_move_gets_white_lamp(self):
+        orch, led, vision, _ = _orch()
+        fixture = _load_engine_game_state_fixture()
+        assert fixture["platform_engine_color"] == "W"
+        st = copy.deepcopy(fixture)
+        st["stones"] = [["W", [3, 15], None, 1]]  # GTP y=15 -> vision row 3, col 3
+        orch.on_game_state(st)
+        # Physical board still lacks the stone (vision.detected stays all zeros).
+        orch._tick_once()
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "white"}])
+        assert orch.board_caught_up is False

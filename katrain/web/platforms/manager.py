@@ -157,8 +157,19 @@ class PlatformManager:
                 player_b_id=-1, player_w_id=user_id, b_name=bot_name, w_name="Me"
             )
 
-        # Explicitly configure the local game to match the engine game parameters.
-        session.katrain("edit_game", size=gs.board_size, handicap=gs.handicap, komi=gs.komi, rules=gs.rules)
+        # Explicitly configure the local game to match the engine game parameters, and
+        # mark which color is the remote engine (G1/G2 single source of truth): the
+        # LED orchestrator and frontend read this off get_state() to know which side
+        # is not physically playable by the human.
+        ai_color = "W" if gs.my_color == "B" else "B"
+        session.katrain(
+            "edit_game",
+            size=gs.board_size,
+            handicap=gs.handicap,
+            komi=gs.komi,
+            rules=gs.rules,
+            platform_engine_color=ai_color,
+        )
 
         ctx = PlatformGameContext(
             session_id=session.session_id,

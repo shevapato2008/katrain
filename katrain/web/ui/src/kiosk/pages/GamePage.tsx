@@ -440,7 +440,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         >
           <Lightbulb sx={{ color: 'warning.main' }} />
           <Typography sx={{ color: 'text.primary' }}>
-            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
+            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {aiColor === 'B'
+              ? t('place the black stone at the matching point on the board', '请在实体棋盘对应交叉点摆放黑子')
+              : t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
           </Typography>
         </Box>
       )}

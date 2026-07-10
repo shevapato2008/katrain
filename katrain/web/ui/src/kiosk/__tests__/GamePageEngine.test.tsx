@@ -600,6 +600,47 @@ describe('GamePage engine mode', () => {
 
         expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
       });
+
+      // Regression guard for the color-wording bug flagged in the task-3 report's
+      // "Concerns" section: the banner body text was hard-coded to always say
+      // "摆放白子" (place the WHITE stone) no matter which color the AI actually is.
+      // In a human-plays-White engine game the AI is BLACK, so the physical-board
+      // placement guidance was telling the player to place the wrong-color stone.
+      it('engine game, human=W (AI=B): banner tells the player to place the BLACK stone, not white', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
+        mockGameState.player_to_move = 'W';
+        mockGameState.last_move = [3, 3];
+        renderPage(true);
+
+        const banner = await screen.findByTestId('ai-move-banner');
+        expect(banner).toHaveTextContent('D16');
+        expect(banner).toHaveTextContent('黑');
+        expect(banner).not.toHaveTextContent('白');
+      });
+
+      it('non-regression: engine game, human=B (AI=W): banner still tells the player to place the WHITE stone', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'W'; // engine is White -> human is Black
+        mockGameState.player_to_move = 'B';
+        mockGameState.last_move = [3, 3];
+        renderPage(true);
+
+        const banner = await screen.findByTestId('ai-move-banner');
+        expect(banner).toHaveTextContent('D16');
+        expect(banner).toHaveTextContent('白');
+        expect(banner).not.toHaveTextContent('黑');
+      });
+
+      it('non-regression: local HvAI (player:ai literal on W, no platform_engine_color): banner says WHITE', async () => {
+        visionMock.isVisionEnabled = true;
+        // mockGameState default shape: B=player:human, W=player:ai -> AI is White.
+        renderPage(false);
+
+        const banner = await screen.findByTestId('ai-move-banner');
+        expect(banner).toHaveTextContent('白');
+        expect(banner).not.toHaveTextContent('黑');
+      });
     });
   });
 });

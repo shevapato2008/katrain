@@ -590,16 +590,7 @@ class WebKaTrain(KaTrainBase):
             self.game.root.set_property("SZ", size)
             self.update_config("game/size", size)
             changed = True
-        if handicap is not None and (
-            self.game.root.handicap != handicap or (handicap == 0 and self.game.root.placements)
-        ):
-            # Task 5 finding: `BaseGame.__init__` seeds a fresh game's handicap
-            # placements straight from `game/handicap` config WITHOUT setting the
-            # "HA" property, so `root.handicap` can read 0 while stray AB
-            # placements still sit on the board. The `!=` check above alone would
-            # then miss the handicap=0 (even game) case entirely, leaving a
-            # config-seeded box's engine games desynced from the (correctly
-            # empty) remote move history. Catch that case explicitly.
+        if handicap is not None and self.game.root.handicap != handicap:
             self.game.root.set_property("HA", handicap)
             self.game.root.place_handicap_stones(handicap)
             self.update_config("game/handicap", handicap)

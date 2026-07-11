@@ -297,15 +297,21 @@ class TestEngineGameHandicapConfigLeak:
     preference > 0 must not leak stray handicap placements into an even
     (handicap=0) Golaxy engine game's LOCAL board.
 
-    `BaseGame.__init__` (katrain/core/game.py) seeds handicap placements for every
-    freshly-created session from `katrain.config("game/handicap")` by calling
-    `place_handicap_stones` directly -- WITHOUT setting the SGF "HA" property. So
-    `root.handicap` (which only reads the HA property) reports 0 even though N
-    placement stones already sit on the board. `_do_edit_game`'s "did anything
-    change" gate (`self.game.root.handicap != handicap`) is then fooled when
-    handicap=0 is requested (the even-game default): 0 != 0 is False, so
-    `place_handicap_stones(0)` never runs and the stray stones remain -- desynced
-    from Golaxy's `ctx.moves`, which correctly starts empty for an even game.
+    Root-cause fix (superseding an earlier, overly-broad patch to
+    `_do_edit_game`'s gate): `BaseGame.__init__` (katrain/core/game.py) now sets
+    the SGF "HA" property when it config-seeds a freshly-created session's
+    handicap placements from `katrain.config("game/handicap")`, so
+    `root.handicap` correctly reports 9 (not 0) even though only placements were
+    written. That lets `_do_edit_game`'s original, narrow "did anything change"
+    gate (`self.game.root.handicap != handicap`) fire correctly on its own: 9 != 0
+    is True, so `place_handicap_stones(0)` runs and the stray stones are cleared
+    -- staying in sync with Golaxy's `ctx.moves`, which correctly starts empty for
+    an even game.
+
+    A broader version of this fix once widened the edit_game gate itself to
+    `handicap == 0 and placements`, which also fired on legitimately-loaded
+    positions (tsumego/teaching setups with AB but no HA) and wiped their setup
+    stones -- see `TestEditGameHandicapZeroPreservesSetupPlacements` below.
     """
 
     @pytest.mark.asyncio
@@ -327,6 +333,35 @@ class TestEngineGameHandicapConfigLeak:
 
         assert session.katrain.game.root.placements == []
         assert session.katrain.game.root.handicap == 0
+
+
+class TestEditGameHandicapZeroPreservesSetupPlacements:
+    """Reviewer-reproduced regression guard for the collateral damage caused by an
+    earlier, overly-broad fix for `TestEngineGameHandicapConfigLeak` above.
+
+    A legitimately-loaded position with AB/AW setup stones but no "HA" property
+    (tsumego, teaching setups, custom boards loaded from SGF) must survive a plain
+    `edit_game(handicap=0, ...)` call. The frontend's NewGameDialog always submits
+    `handicap` explicitly (pre-filled 0), so merely saving a komi/rules tweak on
+    such a position must never clear the board.
+    """
+
+    def test_setup_placements_without_ha_survive_edit_game_handicap_zero(self):
+        sm = SessionManager(enable_engine=False)
+        session = sm.create_multiplayer_session(player_b_id=1, player_w_id=2, b_name="A", w_name="B")
+
+        # Simulate a loaded setup position: AB/AW placements present, but no HA
+        # property -- e.g. a tsumego/teaching SGF, or any board built without
+        # going through the config-seeded new-game path.
+        root = session.katrain.game.root
+        root.set_property("AB", ["pd", "pp"])  # BQ16, BQ4 in SGF coords
+        root.set_property("AW", ["dd", "dp"])  # WD16, WD4 in SGF coords
+        assert root.handicap == 0
+        assert len(root.placements) == 4
+
+        session.katrain("edit_game", handicap=0, komi=6.5)
+
+        assert len(session.katrain.game.root.placements) == 4
 
 
 class TestPlatformEngineColorContractFixture:

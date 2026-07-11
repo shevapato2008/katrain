@@ -369,3 +369,13 @@ class TestGuardQueries:
         gateway = PlatformCommandGateway(pm, sm)
         assert gateway.is_engine_move_pending("no-such-session") is False
         assert gateway.is_engine_game("no-such-session") is False
+
+    def test_get_game_id_returns_remote_game_id_for_engine_session(self, setup):
+        gateway, pm, sm, adapter, ctx, session = setup
+        assert gateway.get_game_id("s") == ctx.remote_game_id
+
+    def test_get_game_id_none_for_unknown_session(self):
+        sm = MockSessionManager()
+        pm = PlatformManager(sm)
+        gateway = PlatformCommandGateway(pm, sm)
+        assert gateway.get_game_id("no-such-session") is None

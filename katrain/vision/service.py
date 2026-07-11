@@ -125,14 +125,23 @@ class VisionService:
             self._worker.send_command(WorkerCommand(action=CommandType.RESET_SYNC, data=data))
 
     def bind_session(self, session_id: str) -> None:
-        """Bind vision to a game session."""
+        """Bind vision to a game session.
+
+        Clears any pending ConfirmedMove left over from BEFORE this bind (review
+        M1): a stale camera confirmation for whatever was bound previously (or
+        never unbound, e.g. a server-restart edge case) must never be injected
+        into the newly-bound session's game."""
         self._bound_session_id = session_id
+        self._pending_moves.clear()
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.BIND))
 
     def unbind_session(self) -> None:
-        """Unbind from current session."""
+        """Unbind from current session. Clears pending ConfirmedMove (review M1) so
+        a move confirmed just before unbind can't leak into whatever session binds
+        next."""
         self._bound_session_id = None
+        self._pending_moves.clear()
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.UNBIND))
 

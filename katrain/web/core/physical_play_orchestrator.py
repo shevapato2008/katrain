@@ -28,11 +28,12 @@ logger = logging.getLogger("katrain_web.physical_play")
 
 
 class PhysicalPlayOrchestrator:
-    # Pause-reason constants (M2 refactor). Task 7/8 add "engine_error" /
-    # "awaiting_removal" — adding a reason is a single _add_pause_reason(...) call,
-    # no change needed here or in _sync_pause_state.
+    # Pause-reason constants (M2 refactor). Task 8 adds "awaiting_removal" the same
+    # way — a single _add_pause_reason(...) call, no change needed here or in
+    # _sync_pause_state.
     PAUSE_REASON_LAG = "lag"
     PAUSE_REASON_HINT = "hint"
+    PAUSE_REASON_ENGINE_ERROR = "engine_error"  # Task 7 (B5/M1/M4)
 
     def __init__(
         self,
@@ -67,6 +68,7 @@ class PhysicalPlayOrchestrator:
         self._reminded = False
         self._escalated = False
         self._last_assert_ts: Optional[float] = None  # last actual LED write (review A)
+        self._engine_error_context: Optional[dict] = None  # {"coords", "recovery_token"} (Task 8 consumes)
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -107,6 +109,7 @@ class PhysicalPlayOrchestrator:
         self._behind_since = None
         self._reminded = False
         self._escalated = False
+        self._engine_error_context = None
         self._sync_pause_state()  # resume detection if we had it paused
         self._apply_points([])
 
@@ -183,6 +186,21 @@ class PhysicalPlayOrchestrator:
         # Force the next tick to re-emit lamps (the dedupe would otherwise suppress the
         # now-changed plan) so a stale blue lamp clears.
         self._last_points = None
+
+    def enter_engine_error(self, coords: Tuple[int, int], recovery_token: str) -> None:
+        """Task 7 hand-off: the poller's engine_recovery episode tripped its
+        attempts threshold. Suspends the tick AND pauses move detection (same
+        aggregation as hint/lag, via _add_pause_reason) so the physical stone that
+        triggered the failing tunnel call stops being re-confirmed and retried.
+        Stores `coords`/`recovery_token` for Task 8/9's dismiss-dialog endpoint."""
+        self._engine_error_context = {"coords": coords, "recovery_token": recovery_token}
+        self._add_pause_reason(self.PAUSE_REASON_ENGINE_ERROR)
+
+    def clear_engine_error(self) -> None:
+        """Counterpart of enter_engine_error: resumes detection (unless another
+        reason is still active) once the recovery dialog is dismissed/resolved."""
+        self._engine_error_context = None
+        self._remove_pause_reason(self.PAUSE_REASON_ENGINE_ERROR)
 
     def _add_pause_reason(self, reason: str) -> None:
         """Add a suspension reason (M2). Idempotent: a reason already present is a

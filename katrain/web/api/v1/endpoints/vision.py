@@ -43,6 +43,23 @@ def _get_vision(request: Request):
     return vision
 
 
+def _drain_stale_move_queue(request: Request) -> None:
+    """Review M1: app.state.vision_move_queue is the queue route_vision_event feeds
+    ConfirmedMove events into; drain it on every bind/unbind so a move queued for
+    the OLD session (or before any session was ever bound) can't cross into
+    whatever session (re)binds next. VisionService.bind_session/unbind_session
+    separately clear the service-side pending-moves deque -- this covers the
+    app-level queue, which may not exist at all in tests / vision-disabled apps."""
+    queue = getattr(request.app.state, "vision_move_queue", None)
+    if queue is None:
+        return
+    while not queue.empty():
+        try:
+            queue.get_nowait()
+        except Exception:
+            break
+
+
 # -- Endpoints ---------------------------------------------------------------
 
 
@@ -134,6 +151,7 @@ async def bind_session(request: Request, body: BindRequest):
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
 
     vision.bind_session(body.session_id)
+    _drain_stale_move_queue(request)
 
     # Set expected board from current game state
     game_state = session.katrain.get_state()
@@ -155,6 +173,10 @@ async def unbind_session(request: Request):
     if orchestrator is not None:
         orchestrator.on_unbind()
     vision.unbind_session()
+    _drain_stale_move_queue(request)
+    recovery = getattr(request.app.state, "engine_recovery", None)
+    if recovery is not None:
+        recovery.clear()  # Task 7: an in-flight recovery episode belongs to the unbound game
     return {"ok": True}
 
 

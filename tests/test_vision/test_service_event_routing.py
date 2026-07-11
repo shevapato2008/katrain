@@ -35,3 +35,38 @@ class TestEventRouting:
         assert svc.get_confirmed_move() == m2
         assert svc.get_confirmed_move() is None
         assert svc.poll_events() == [{"type": "degraded", "data": {}}]
+
+
+class TestQueueHygieneOnBindUnbind:
+    """Review M1: a ConfirmedMove that arrived for the OLD bound session must never
+    leak into a session bound afterwards. bind_session/unbind_session both clear
+    the pending-moves deque so a stale camera confirmation from session A can't
+    get injected once session B is bound. No worker attached (worker=None) so
+    bind/unbind's send_command calls are no-ops -- these tests are about the
+    main-process deque, not the IPC command."""
+
+    def _service_no_worker(self):
+        return VisionService(VisionServiceConfig(enabled=True))
+
+    def test_unbind_clears_pending_moves(self):
+        svc = self._service_no_worker()
+        svc.bind_session("s1")
+        svc._pending_moves.append(ConfirmedMove(col=3, row=3, color=1))
+        svc.unbind_session()
+        assert svc.get_confirmed_move() is None
+
+    def test_cross_session_move_not_injected_after_rebind(self):
+        svc = self._service_no_worker()
+        svc.bind_session("s1")
+        svc._pending_moves.append(ConfirmedMove(col=3, row=3, color=1))  # stale move for s1
+        svc.unbind_session()
+        svc.bind_session("s2")
+        assert svc.get_confirmed_move() is None  # must NOT surface under s2
+
+    def test_bind_also_clears_any_leftover_pending_moves(self):
+        # Defensive: even if unbind was skipped (server crash/restart edge case),
+        # a fresh bind must not inherit a stale queue either.
+        svc = self._service_no_worker()
+        svc._pending_moves.append(ConfirmedMove(col=5, row=5, color=2))
+        svc.bind_session("s2")
+        assert svc.get_confirmed_move() is None

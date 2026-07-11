@@ -90,6 +90,15 @@ class PlatformCommandGateway:
         ctx = self._pm.get_game_context(session_id)
         return bool(ctx and ctx.is_engine)
 
+    def get_game_id(self, session_id: str) -> Optional[str]:
+        """Remote game id for a platform/engine-backed session, else None.
+
+        Used as the engine_recovery episode key's game_id (Task 7) — the poller
+        needs it to detect a game-id change (new game -> discard the old episode)
+        without reaching into PlatformManager internals itself."""
+        ctx = self._pm.get_game_context(session_id)
+        return ctx.remote_game_id if ctx else None
+
     def is_engine_move_pending(self, session_id: str) -> bool:
         """True while an engine-play move is in flight (genmove tunnel, up to ~180s).
 

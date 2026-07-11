@@ -302,6 +302,55 @@ class TestPauseReasonsMatrix:
         assert vision.calls == ["pause", "resume"]
 
 
+class TestEngineErrorPauseReason:
+    """Task 7 (B5/M1/M4): enter_engine_error/clear_engine_error are the orchestrator's
+    half of the recovery hand-off -- the poller calls enter_engine_error once an
+    engine_recovery episode trips its threshold, so detection stays paused (no more
+    ConfirmedMove) until the frontend dismisses (Task 8/9)."""
+
+    def test_enter_engine_error_adds_pause_reason_and_stores_context(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR in orch._pause_reasons
+        assert vision.paused is True
+        assert orch._suspended is True  # engine_error suspends the tick too, like hint
+        assert vision.calls == ["pause"]
+
+    def test_clear_engine_error_removes_pause_reason(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.clear_engine_error()
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR not in orch._pause_reasons
+        assert vision.paused is False
+        assert orch._suspended is False
+        assert vision.calls == ["pause", "resume"]
+
+    def test_engine_error_coexists_with_lag_like_hint(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.clear_engine_error()
+        assert orch._suspended is False  # tick resumes (lag alone doesn't suspend it)
+        assert vision.paused is True  # but detection stays paused: lag persists
+        assert vision.calls == ["pause"]  # single pause call, no duplicate
+
+    def test_on_unbind_clears_engine_error_too(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.on_unbind()
+        assert orch._pause_reasons == set()
+        assert vision.paused is False
+
+    def test_idempotent_enter_and_clear(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.enter_engine_error((3, 3), "tok-123")  # no-op re-add
+        assert vision.calls == ["pause"]
+        orch.clear_engine_error()
+        orch.clear_engine_error()  # no-op re-remove
+        assert vision.calls == ["pause", "resume"]
+
+
 class FakeKatrainForBind:
     def __init__(self, state):
         self.update_state_callback = None

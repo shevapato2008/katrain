@@ -28,6 +28,12 @@ logger = logging.getLogger("katrain_web.physical_play")
 
 
 class PhysicalPlayOrchestrator:
+    # Pause-reason constants (M2 refactor). Task 7/8 add "engine_error" /
+    # "awaiting_removal" — adding a reason is a single _add_pause_reason(...) call,
+    # no change needed here or in _sync_pause_state.
+    PAUSE_REASON_LAG = "lag"
+    PAUSE_REASON_HINT = "hint"
+
     def __init__(
         self,
         *,
@@ -53,8 +59,8 @@ class PhysicalPlayOrchestrator:
         self._task: Optional[asyncio.Task] = None
         self._last_points: Optional[List[Dict]] = None
         self._caught_up = True
-        self._suspended = False
-        self._hint_active = False
+        self._pause_reasons: set[str] = set()  # {"lag", "hint", ...} -- see _sync_pause_state
+        self._suspended = False  # cached: tick body suspended (derived from _pause_reasons)
         self._paused_sent: Optional[bool] = None  # last pause state sent to the worker
         self._hint_task: Optional[asyncio.Task] = None
         self._behind_since: Optional[float] = None
@@ -97,6 +103,7 @@ class PhysicalPlayOrchestrator:
         self._orig_callback = None
         self._latest_state = None
         self._caught_up = True
+        self._pause_reasons.clear()  # unbind drops EVERY reason (hint/lag/future ones)
         self._behind_since = None
         self._reminded = False
         self._escalated = False
@@ -168,24 +175,62 @@ class PhysicalPlayOrchestrator:
 
         # Release the move-detection pause NOW and reset the lag timers so the
         # reminder/escalation flow re-arms cleanly on the next genuine lag.
-        self._caught_up = True
+        self._set_caught_up(True)
         self._behind_since = None
         self._reminded = False
         self._escalated = False
-        self._sync_pause_state()
 
         # Force the next tick to re-emit lamps (the dedupe would otherwise suppress the
         # now-changed plan) so a stale blue lamp clears.
         self._last_points = None
 
+    def _add_pause_reason(self, reason: str) -> None:
+        """Add a suspension reason (M2). Idempotent: a reason already present is a
+        no-op, so re-adding it never re-triggers _sync_pause_state or its IPC call."""
+        if reason in self._pause_reasons:
+            return
+        self._pause_reasons.add(reason)
+        self._sync_pause_state()
+
+    def _remove_pause_reason(self, reason: str) -> None:
+        """Remove a suspension reason (M2). Idempotent counterpart of _add_pause_reason
+        — removing an absent reason is a no-op. Other reasons still in the set keep
+        the tick/detection paused (this is the fix for review M2: a shared boolean
+        used to let one reason's dismissal wrongly resume everything)."""
+        if reason not in self._pause_reasons:
+            return
+        self._pause_reasons.discard(reason)
+        self._sync_pause_state()
+
+    def _set_caught_up(self, caught_up: bool) -> None:
+        """Translate the board catch-up flag into the "lag" pause reason. Kept as a
+        single call site so every _caught_up assignment stays in sync with the set."""
+        self._caught_up = caught_up
+        if caught_up:
+            self._remove_pause_reason(self.PAUSE_REASON_LAG)
+        else:
+            self._add_pause_reason(self.PAUSE_REASON_LAG)
+
     def _sync_pause_state(self) -> None:
-        """Single owner of the worker's move-detection pause (Q4 redesign + hint).
-        While paused, the worker produces NO ConfirmedMove — this replaces the unsound
-        'hold a confirmed move' design (MoveDetector advances its baseline at confirm
-        time, so held moves could go stale/corrupt — review Blocker 1). A premature
-        user stone simply stays unconfirmed and is picked up naturally after resume,
-        against the baseline force-synced by the expected-board push."""
-        desired = self._hint_active or not self._caught_up
+        """Single aggregation point (M2) for BOTH suspension effects, derived from
+        self._pause_reasons:
+          (a) self._suspended — gates the tick body (_run/_tick_once). Any reason
+              OTHER than pure lag suspends the tick (hint does; Task 7's engine_error
+              will too). Lag ALONE never suspends the tick — the tick itself is what
+              re-evaluates catch-up and clears the lag reason, so stopping it would
+              make lag un-recoverable.
+          (b) the worker's move-detection pause (Q4 redesign + hint) — paused while
+              ANY reason is active. While paused, the worker produces NO ConfirmedMove
+              — this replaces the unsound 'hold a confirmed move' design (MoveDetector
+              advances its baseline at confirm time, so held moves could go
+              stale/corrupt — review Blocker 1). A premature user stone simply stays
+              unconfirmed and is picked up naturally after resume, against the
+              baseline force-synced by the expected-board push.
+        The IPC call to vision is only made when the boolean actually changes
+        (self._paused_sent), so combining/dropping reasons that don't flip the
+        aggregate never re-sends a duplicate pause/resume."""
+        self._suspended = bool(self._pause_reasons - {self.PAUSE_REASON_LAG})
+        desired = bool(self._pause_reasons)
         if desired == self._paused_sent:
             return
         self._paused_sent = desired
@@ -218,8 +263,7 @@ class PhysicalPlayOrchestrator:
         if observed is None:
             return  # board not visible: keep current lamps (PRD §3.4 BOARD_LOST row)
         if state.get("end_result"):
-            self._caught_up = True
-            self._sync_pause_state()
+            self._set_caught_up(True)
             self._apply_points([])
             return
         board_size = state["board_size"][0]
@@ -230,8 +274,7 @@ class PhysicalPlayOrchestrator:
         )
         self._planner.on_expected(expected)
         plan = self._planner.tick(expected, np.asarray(observed))
-        self._caught_up = plan.caught_up
-        self._sync_pause_state()
+        self._set_caught_up(plan.caught_up)
         # Review A: periodically re-send a non-empty lamp state so the 300s LED idle
         # failsafe — and manual clears / serial reconnects — can't strand a dark lamp
         # while the plan is unchanged (the dedupe below would otherwise never re-send).
@@ -339,9 +382,7 @@ class PhysicalPlayOrchestrator:
         """Blink white lamps on the top-N points. Suspends reconciliation AND move
         detection (R4.3) for the duration; auto-restores on timeout or dismiss."""
         self.dismiss_hint()
-        self._suspended = True
-        self._hint_active = True
-        self._sync_pause_state()
+        self._add_pause_reason(self.PAUSE_REASON_HINT)
         if hasattr(self._vision, "set_lit_points"):
             self._vision.set_lit_points(list(points))
         self._hint_task = asyncio.get_running_loop().create_task(self._blink(points))
@@ -353,11 +394,9 @@ class PhysicalPlayOrchestrator:
         self._end_hint()
 
     def _end_hint(self) -> None:
-        if not self._suspended:
+        if self.PAUSE_REASON_HINT not in self._pause_reasons:
             return
-        self._suspended = False
-        self._hint_active = False
-        self._sync_pause_state()  # stays paused if the board is still lagging
+        self._remove_pause_reason(self.PAUSE_REASON_HINT)  # stays paused if another reason remains
         self._last_points = None  # force the game lamp state to re-send next tick
 
     async def _blink(self, points: List[Tuple[int, int]]) -> None:

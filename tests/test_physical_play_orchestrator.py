@@ -56,6 +56,7 @@ class FakeVision:
         self.expected_pushes = []
         self.paused = False
         self.lit = []
+        self.calls = []  # ordered ("pause"|"resume") sequence — dup-call detector
 
     def get_detected_board(self):
         return self.detected
@@ -65,9 +66,11 @@ class FakeVision:
 
     def pause_detection(self):
         self.paused = True
+        self.calls.append("pause")
 
     def resume_detection(self):
         self.paused = False
+        self.calls.append("resume")
 
     def set_lit_points(self, points):
         self.lit = points
@@ -214,6 +217,89 @@ class TestHint:
             assert vision.paused is False
 
         asyncio.run(run())
+
+
+class TestPauseReasonsMatrix:
+    """M2: self._pause_reasons (set) replaces the _suspended/_hint_active shared
+    booleans. Task 7 (engine_error) isn't built yet, so these tests poke the
+    internal _add_pause_reason/_remove_pause_reason API directly as a stand-in.
+    Contract asserted here: detection pause = ANY reason present; tick suspension
+    (orch._suspended) = any reason OTHER than pure "lag" (lag alone must never stop
+    the tick -- the tick is what re-evaluates catch-up and clears the lag reason)."""
+
+    def test_hint_then_engine_error_dismiss_hint_still_paused(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_timeout_s=10.0)
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            assert vision.paused is True
+            assert orch._suspended is True
+            orch._add_pause_reason("engine_error")  # Task 7 stand-in
+            orch.dismiss_hint()
+            assert "hint" not in orch._pause_reasons
+            assert vision.paused is True  # engine_error keeps detection paused
+            assert orch._suspended is True  # ... and keeps the tick suspended too
+
+        asyncio.run(run())
+        assert vision.calls == ["pause"]  # hint->error handoff must not re-pause/resume
+
+    def test_engine_error_then_hint_show_dismiss_error_persists(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_timeout_s=10.0)
+        orch._add_pause_reason("engine_error")
+        assert vision.paused is True
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            assert vision.paused is True
+            orch.dismiss_hint()
+            assert vision.paused is True  # error still set
+            assert orch._suspended is True
+
+        asyncio.run(run())
+        assert vision.calls == ["pause"]  # no duplicate calls across the hint show/dismiss
+
+    def test_lag_alone_pauses_detection_but_not_tick(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        assert vision.paused is True
+        assert orch._suspended is False  # tick keeps running so it can clear the lag itself
+        assert vision.calls == ["pause"]
+
+    def test_lag_plus_hint_suspends_tick_then_hint_dismiss_leaves_lag_pause(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_timeout_s=10.0)
+        orch._add_pause_reason("lag")
+        assert orch._suspended is False
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            assert orch._suspended is True  # hint suspends the tick on top of lag
+            assert vision.paused is True
+            orch.dismiss_hint()
+            assert orch._suspended is False  # lag alone no longer suspends the tick
+            assert vision.paused is True  # but detection stays paused: lag persists
+
+        asyncio.run(run())
+        assert vision.calls == ["pause"]  # lag's initial pause is never re-sent/duplicated
+
+    def test_on_unbind_clears_all_reasons_and_resumes(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        orch._add_pause_reason("engine_error")
+        assert vision.paused is True
+        orch.on_unbind()
+        assert orch._pause_reasons == set()
+        assert orch._suspended is False
+        assert vision.paused is False
+        assert vision.calls == ["pause", "resume"]  # exactly one resume, no duplicates
+
+    def test_idempotent_add_remove_do_not_duplicate_ipc_calls(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        orch._add_pause_reason("lag")  # already present: no-op
+        assert vision.calls == ["pause"]
+        orch._remove_pause_reason("lag")
+        orch._remove_pause_reason("lag")  # already absent: no-op
+        assert vision.calls == ["pause", "resume"]
 
 
 class FakeKatrainForBind:

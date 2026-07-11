@@ -395,9 +395,13 @@ def _build_app_with_board(manager, vision=None, orchestrator=None, session=None,
 
 
 def _options_result_two_candidates():
-    # Gold standard (per test_engine_analysis_adapter.py's golaxy_to_katrain
-    # mapping): KaTrain (col=3,row=3)=D16 -> vision (3,3);
-    # KaTrain (col=3,row=15)=D4 -> vision (15,3).
+    # Gold standard (operative frame rule -- see CLAUDE.md / final-review adjudication):
+    # `Candidate.row`/`.col` are core/GTP frame, row 0 = BOTTOM (the same (col,row)
+    # space Board.tsx uses for gameState.stones; AI moves from this same decoder are
+    # played into the core game with no flip). The LED chain needs vision frame,
+    # row 0 = TOP, so `_maybe_show_hint` must flip: vision_row = board_size-1-core_row.
+    # board_size=19 here (FakeGame.board_size below) -> col=3,row=15 (core) flips to
+    # vision (3,3); col=3,row=3 (core) flips to vision (15,3).
     return OptionsAnalysis(
         candidates=[
             Candidate(col=3, row=15, prob=0.6, winrate=0.6, delta=0.1),
@@ -421,7 +425,9 @@ async def test_options_bound_and_unchanged_shows_hint_gold_standard():
         )
     assert r.status_code == 200, r.text
     assert r.json()["ok"] is True
-    assert orchestrator.shown == [(15, 3), (3, 3)]
+    # Flipped from core (col=3,row=15) and (col=3,row=3) into vision frame: see
+    # _options_result_two_candidates's comment above.
+    assert orchestrator.shown == [(3, 3), (15, 3)]
 
 
 @pytest.mark.asyncio

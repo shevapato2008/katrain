@@ -41,8 +41,8 @@ describe('EngineMoveErrorDialog', () => {
   it('opens on a broadcast with the GTP coordinate + attempts rendered', () => {
     render(<EngineMoveErrorDialog {...base} error={baseError} />);
     expect(screen.getByText('星阵连接出错')).toBeInTheDocument();
-    // col=3,row=3,boardSize=19 -> D16 (same formula as the AI-move banner)
-    expect(screen.getByText(/D16/)).toBeInTheDocument();
+    // col=3,row=3 -> D4 (core/GTP frame, row 0 = bottom; same formula as the AI-move banner)
+    expect(screen.getByText(/D4/)).toBeInTheDocument();
     expect(screen.getByText(/3/)).toBeInTheDocument(); // attempts
   });
 
@@ -136,7 +136,7 @@ describe('EngineMoveErrorDialog', () => {
     fireEvent.click(screen.getByText('拿回棋子'));
     await waitFor(() => expect(cancel).toHaveBeenCalledWith('s1', 'tok-1', undefined));
     expect(await screen.findByText('等待拿回棋子')).toBeInTheDocument();
-    expect(screen.getByText(/D16/)).toBeInTheDocument();
+    expect(screen.getByText(/D4/)).toBeInTheDocument();
 
     // Backend broadcasts physical_engine_error_resolved -> useGameSession nulls the error.
     rerender(<EngineMoveErrorDialog {...base} error={null} />);

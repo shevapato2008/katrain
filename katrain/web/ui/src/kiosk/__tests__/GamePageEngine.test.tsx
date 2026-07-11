@@ -688,10 +688,10 @@ describe('GamePage engine mode', () => {
         visionMock.isVisionEnabled = true;
         mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
         mockGameState.player_to_move = 'W'; // human's turn, right after AI(B) moved
-        mockGameState.last_move = [3, 3]; // -> "D16" (col=A+3='D', row=19-3=16)
+        mockGameState.last_move = [3, 3]; // -> "D4" (col=A+3='D', row=3+1=4; core row 0=bottom)
         renderPage(true);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
       });
 
       it('non-regression: engine game, human=B still shows the AI(W) move coordinate', async () => {
@@ -701,7 +701,7 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
       });
 
       it('non-regression: local HvAI (player:ai literal, no platform_engine_color) still shows the banner', async () => {
@@ -709,7 +709,7 @@ describe('GamePage engine mode', () => {
         // mockGameState default shape: B=player:human, W=player:ai, player_to_move='B', last_move=[3,3].
         renderPage(false);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D16');
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
       });
 
       // Regression guard for the color-wording bug flagged in the task-3 report's
@@ -725,7 +725,7 @@ describe('GamePage engine mode', () => {
         renderPage(true);
 
         const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('D16');
+        expect(banner).toHaveTextContent('D4');
         expect(banner).toHaveTextContent('黑');
         expect(banner).not.toHaveTextContent('白');
       });
@@ -738,7 +738,7 @@ describe('GamePage engine mode', () => {
         renderPage(true);
 
         const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('D16');
+        expect(banner).toHaveTextContent('D4');
         expect(banner).toHaveTextContent('白');
         expect(banner).not.toHaveTextContent('黑');
       });
@@ -772,7 +772,7 @@ describe('GamePage engine mode', () => {
 
       expect(await screen.findByText('星阵连接出错')).toBeInTheDocument();
       const dialog = screen.getByRole('dialog');
-      expect(within(dialog).getByText(/D16/)).toBeInTheDocument();
+      expect(within(dialog).getByText(/D4/)).toBeInTheDocument();
     });
 
     it('does NOT show the dialog when vision is disabled, even with a tracked physical_engine_error (toast path unaffected)', async () => {

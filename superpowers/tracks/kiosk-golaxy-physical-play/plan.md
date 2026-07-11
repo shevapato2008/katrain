@@ -40,7 +40,7 @@
 - 引用代码用**符号名**为主、行号为辅（行号会漂移，实施时以符号定位）。
 - Python 格式 `uv run black -l 120 katrain tests`；conventional commits（`feat(physical-golaxy): …`）。
 - 前端新文案 `t('English key', '中文')`，默认中文，禁日文；静态串收尾统一走 `katrain-i18n-expert`（Task 13）。
-- 坐标约定：vision 网格 row 0 = 顶；KaTrain GTP coords y 自底向上；`vision_rc = (board_size - 1 - y, x)`。**金标准（评审 M8 已纠正）**：KaTrain GTP `(col=3, row=15)` = D16 → vision `(3, 3)`；GTP `(3, 3)` = D4 → vision `(15, 3)`。棋盘固定 19 路。**注意（Task 10 复审发现）**：翻转公式仅适用于 GTP（自底向上）输入；`golaxy/coords.py` 的 `Move/Candidate.row` 已是顶部锚定（row 0 = 顶，与 vision 同向），直接 `(c.row, c.col)` 即 vision_rc，**不得再翻转**（否则双重翻转成镜像）。金标准换算到 Candidate 空间：D16 = `Candidate(col=3, row=3)` → vision `(3, 3)`；D4 = `Candidate(col=3, row=15)` → vision `(15, 3)`。
+- 坐标约定：vision 网格 row 0 = 顶；KaTrain GTP coords y 自底向上；`vision_rc = (board_size - 1 - y, x)`。**金标准（评审 M8 已纠正）**：KaTrain GTP `(col=3, row=15)` = D16 → vision `(3, 3)`；GTP `(3, 3)` = D4 → vision `(15, 3)`。棋盘固定 19 路。**注意（终审复核，替换上一版 Task 10 复审的错误结论）**：`golaxy/coords.py` 文档字符串里"row 0 = 顶"描述的是 Golaxy **线路（wire）坐标系**，不是运行时解码值实际落入的空间——`golaxy_to_katrain` 解码出的 `Move/Candidate.row/col` 与 `gameState.stones`/`last_move`/`physical_engine_error` 广播的 col/row 同属 **core/GTP 坐标系（row 0 = 底）**：`Board.tsx` 用 `gridToCanvas(c.col, c.row)` 渲染候选点，其 `invertedY = boardSize-1-y` 把 core row 0 画在画布底部，代码注释明确写"NO flip: same (col,row) space as gameState.stones"；同一解码器解出的 AI 落子同样不翻转直接下进核心棋局。因此支招白灯**仍须翻转**：`vision_rc = (board_size - 1 - c.row, c.col)`，与 `game_state_stones_to_board`/`_setup_cells_from_state` 的公式一致。金标准换算到 Candidate 空间：`Candidate(col=3, row=15)`（GTP D16）→ vision `(3, 3)`；`Candidate(col=3, row=3)`（GTP D4）→ vision `(15, 3)`。wire 坐标系与运行时消费方式之间的这处历史遗留错位（encode 路径同样不翻转，自洽但与 Golaxy 绝对坐标镜像）是独立的后续 ticket，本次修复不改动 `coords.py` 与 adapter。
 - 新增可调参数挂配置并有默认值；重试/恢复策略参数放独立的 recovery 配置段（不与 LED planner 参数混居，评审 m1）。
 
 ## 关键事实（写代码前必读，2026-07-11 已逐一核实）
@@ -72,35 +72,35 @@
 ## Task 1 — 后端：`platform_engine_color` 状态字段（G1/G2 信源，TDD）
 
 - Files: Modify `katrain/web/interface.py`（属性 + `get_state()` 序列化 + 设置动作，仿 `game_type` 先例）、`katrain/web/platforms/manager.py`（`start_engine_game` 设置）；Test `tests/platforms/test_engine_manager.py` 追加。
-- [ ] **写失败测试**：`start_engine_game`（mock adapter）后 `session.katrain.get_state()["platform_engine_color"] == ai_color`（执黑/执白两用例）；非 engine 局该字段为 `None`；**`edit_game` 后字段仍在**（评审 M6 持久性要求——字段挂 interface 不挂 Player，天然免疫，但测试固化）；resign/终局后不残留到新局。
-- [ ] 实现：interface 属性默认 `None`；manager 在 `edit_game` 之后设置。导出契约 fixture：新增小工具测试把 engine 局 `get_state()` JSON dump 到 `katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json`（前端 Task 3 消费；评审 m1 的 contract fixture 方案）。
-- [ ] 跑测试通过；commit。
+- [x] **写失败测试**：`start_engine_game`（mock adapter）后 `session.katrain.get_state()["platform_engine_color"] == ai_color`（执黑/执白两用例）；非 engine 局该字段为 `None`；**`edit_game` 后字段仍在**（评审 M6 持久性要求——字段挂 interface 不挂 Player，天然免疫，但测试固化）；resign/终局后不残留到新局。
+- [x] 实现：interface 属性默认 `None`；manager 在 `edit_game` 之后设置。导出契约 fixture：新增小工具测试把 engine 局 `get_state()` JSON dump 到 `katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json`（前端 Task 3 消费；评审 m1 的 contract fixture 方案）。
+- [x] 跑测试通过；commit。
 
 ## Task 2 — 后端：编排器识别引导色（TDD）
 
 - Files: Modify `katrain/web/core/physical_play_orchestrator.py`（`_guided_colors_from_state`）；Test `tests/test_physical_play_orchestrator.py` 追加。
-- [ ] **写失败测试**：state 含 `platform_engine_color:"W"` → 引导色 `{WHITE}`；`"B"` → `{BLACK}`；字段缺失/None → 现行为不变（`player:ai` 分支与双 human 空集均不回归）。用 Task 1 契约 fixture 构造。
-- [ ] 实现：guided 条件扩为 `player_type == "player:ai"` **or** `bw == state.get("platform_engine_color")`。core 不 import platforms（读的是 state dict 字段，无依赖问题）。
-- [ ] 集成冒烟：engine 局 state（AI=W 刚落一子、物理盘缺该子）→ tick 后 led 收到绿灯点。
-- [ ] 跑测试通过；commit。
+- [x] **写失败测试**：state 含 `platform_engine_color:"W"` → 引导色 `{WHITE}`；`"B"` → `{BLACK}`；字段缺失/None → 现行为不变（`player:ai` 分支与双 human 空集均不回归）。用 Task 1 契约 fixture 构造。
+- [x] 实现：guided 条件扩为 `player_type == "player:ai"` **or** `bw == state.get("platform_engine_color")`。core 不 import platforms（读的是 state dict 字段，无依赖问题）。
+- [x] 集成冒烟：engine 局 state（AI=W 刚落一子、物理盘缺该子）→ tick 后 led 收到绿灯点。
+- [x] 跑测试通过；commit。
 
 ## Task 3 — 前端：humanColor/横幅修复（TDD）
 
 - Files: Modify `GamePage.tsx`（helpers :35-52、横幅 :170-185、humanColor :288-291）、`GameState` 类型（加可选 `platform_engine_color`；**共享区，双构建**）；Test `GamePageEngine.test.tsx` 追加（用 Task 1 契约 fixture）。
-- [ ] **写失败测试**：engine 局人执白（fixture `platform_engine_color:"B"`）→ humanColor `'W'`；AI(B) 落子后横幅显示 AI 坐标；人执黑不回归；本地 HvAI（player:ai）不回归；隧道等待期 `player_to_move` 仍是人类 → `aiThinking` 不误亮（断言）。
-- [ ] 实现：`humanColor` = `platform_engine_color` 存在时取其对色；否则沿用现推导。`deriveAiTurnState.isAI` 增加 `platform_engine_color` 分支。
-- [ ] 双构建绿；`npm test -- GamePageEngine` 绿；commit。
+- [x] **写失败测试**：engine 局人执白（fixture `platform_engine_color:"B"`）→ humanColor `'W'`；AI(B) 落子后横幅显示 AI 坐标；人执黑不回归；本地 HvAI（player:ai）不回归；隧道等待期 `player_to_move` 仍是人类 → `aiThinking` 不误亮（断言）。
+- [x] 实现：`humanColor` = `platform_engine_color` 存在时取其对色；否则沿用现推导。`deriveAiTurnState.isAI` 增加 `platform_engine_color` 分支。
+- [x] 双构建绿；`npm test -- GamePageEngine` 绿；commit。
 - **Review checkpoint（人工）**: Mac dev 模式开 engine 局，确认 AI 落子亮灯、执白局回合门控正确。
 
 ## Task 4 — 后端：提交协议硬化（B1/B2/D5/D7，TDD）
 
 - Files: Modify `katrain/web/platforms/gateway.py`（`_play_engine_move`）、`katrain/web/server.py`（undo/redo 端点守卫）；Test `tests/platforms/test_engine_gateway.py` 追加。
-- [ ] **写失败测试（四类 interleaving，评审 B1/B2 点名）**：
+- [x] **写失败测试（四类 interleaving，评审 B1/B2 点名）**：
   1. **本地预校验**：物理/屏幕手在本地非法（ko/自杀/占位）→ 不打隧道、rejected `"illegal_move"`、`ctx.moves` 不变；
   2. **pending 期间 undo**：engine 局 pending 时 `POST /api/undo` → 409；pending 清除后可 undo；非 engine 局不受影响；
   3. **原子应用 + 位置断言**：genmove 等待期用可控 future 强改当前节点（模拟绕过守卫的树变更）→ 响应返回后位置断言失败 → 两手都不落、广播 engine_error、下次提交经 Task 5 重建自愈；
   4. **AI terminal 提交人类手（D7）**：mock 隧道返回特殊 coord → 人类这手先落进本地树 → 再广播 game_ended 终局。
-- [ ] 实现：
+- [x] 实现：
   - `_play_engine_move` 开头：`session.lock` 内校验落点合法（复用 KaTrain game 合法性判断）+ 记录 `position_token = current_node_id`；
   - 成功分支：`session.lock` 内断言 `current_node_id == position_token` → 依序 `_local_play(human)`、`_local_play(ai)`（同锁内）→ 广播两个 confirmed；断言失败 → 丢弃 AI 手 + rejected `"position_changed"`（reason 属性见 Task 7）；
   - `GolaxyEngineTerminal` 分支：先 `_local_play(human)`（同样断言位置）再走既有终局广播；
@@ -109,33 +109,33 @@
     - **无条件 403（不限 pending）**：`/api/ai-move` —— 该路径绕开星阵隧道直接触发本地 KataGo 落子，engine 局任何时候都不合法；
     - 其余树变更入口（sgf/load、new-game、edit-game、node/*、player/swap 等）本轨道不加守卫：kiosk engine 模式 UI 不暴露这些操作，逐一加守卫超出本期范围——在 Task 4 实现处留一行注释指向基线记录的完整清单。
     前端 undo 按钮在 pending 时禁用（`usePlatformEvents.pendingMove` 已有信号，小改随本 task）。
-- [ ] 跑测试通过；`CI=true uv run pytest tests/platforms -q` 无新增失败；commit。
+- [x] 跑测试通过；`CI=true uv run pytest tests/platforms -q` 无新增失败；commit。
 
 ## Task 5 — 后端：重建 v2 = 让子前缀 + pass 响亮失败（B3，TDD）
 
 - Files: Modify `katrain/web/platforms/manager.py`（`rebuild_engine_context` helper）、`katrain/web/platforms/golaxy/adapter.py`（`rebuild_engine_moves` 接口调整或新 helper）；Test `tests/platforms/test_engine_gateway.py` / 新 `test_engine_rebuild.py`。
-- [ ] **先读** `_handicap_stones` 与 `EngineGameConfig.handicap`，确认前缀 = `_handicap_stones(config.handicap)`。
-- [ ] **写失败测试（断言完整整数序列，评审 B3 点名）**：
+- [x] **先读** `_handicap_stones` 与 `EngineGameConfig.handicap`，确认前缀 = `_handicap_stones(config.handicap)`。
+- [x] **写失败测试（断言完整整数序列，评审 B3 点名）**：
   1. 分先局下 3 手悔 2 手再落 → 下次 genmove 收到的 moves CSV == 悔后主线编码（当前必挂红测）；
   2. 让 2/4/9 子局悔 1 手再落 → moves == 星位前缀 + 悔后主线；
   3. 当前节点在分支上（undo 后另下一手）→ moves 按当前路径重建；
   4. 主线含 pass 节点（手工构树）→ 重建抛错 → gateway 转 rejected `"engine_error"`，绝不静默丢 pass；
   5. 无悔棋连下 → 重建幂等，与现状完全一致。
-- [ ] 实现：manager `rebuild_engine_context(session_id)`：从**当前节点回溯到根的路径**（不是 root 主线——支持分支导航）提取 move coords，None coords → raise；adapter 侧重建 = `_handicap_stones(config.handicap) + encode(path_moves)`。gateway `_play_engine_move` 在预校验后、`set_pending` 前调用；失败 → rejected 不半提交。
-- [ ] 跑测试通过；commit。
+- [x] 实现：manager `rebuild_engine_context(session_id)`：从**当前节点回溯到根的路径**（不是 root 主线——支持分支导航）提取 move coords，None coords → raise；adapter 侧重建 = `_handicap_stones(config.handicap) + encode(path_moves)`。gateway `_play_engine_move` 在预校验后、`set_pending` 前调用；失败 → rejected 不半提交。
+- [x] 跑测试通过；commit。
 
 ## Task 6 — 后端：编排器暂停原因集合重构（M2，TDD）
 
 - Files: Modify `katrain/web/core/physical_play_orchestrator.py`（`_suspended`/`_hint_active` → `self._pause_reasons: set[str]`）；Test `tests/test_physical_play_orchestrator.py` 追加。
-- [ ] **写失败测试**：reasons 组合矩阵——hint 中 enter engine_error → dismiss hint 后**仍暂停**（error 未清）；error 中 show/dismiss hint → error 保持；lag（`not caught_up`）与两者叠加；`on_unbind` 清空全部 reasons 并恢复 worker；每种进入/退出顺序断言 `pause_detection/resume_detection` 调用序列正确（幂等，不重复调用）。
-- [ ] 实现：`_pause_reasons` 集合 + 单一聚合函数 `_sync_pause_state()`（tick 挂起与 worker 检测暂停都由它算）；`show_hint/_end_hint/enter_engine_error/clear_engine_error/on_unbind` 只增删 reason。现有 hint 行为语义不变（外部测试不回归）。
-- [ ] 跑测试通过；commit。
+- [x] **写失败测试**：reasons 组合矩阵——hint 中 enter engine_error → dismiss hint 后**仍暂停**（error 未清）；error 中 show/dismiss hint → error 保持；lag（`not caught_up`）与两者叠加；`on_unbind` 清空全部 reasons 并恢复 worker；每种进入/退出顺序断言 `pause_detection/resume_detection` 调用序列正确（幂等，不重复调用）。
+- [x] 实现：`_pause_reasons` 集合 + 单一聚合函数 `_sync_pause_state()`（tick 挂起与 worker 检测暂停都由它算）；`show_hint/_end_hint/enter_engine_error/clear_engine_error/on_unbind` 只增删 reason。现有 hint 行为语义不变（外部测试不回归）。
+- [x] 跑测试通过；commit。
 
 ## Task 7 — 后端：恢复状态机（B5/M1/M4/m2，TDD）
 
 - Files: Modify `katrain/web/server.py`（poller 平台分支）、`gateway.py`（`PlatformMoveRejectedError.reason`）、`physical_play_orchestrator.py`（`enter_engine_error/clear_engine_error`）、新 `katrain/web/core/engine_recovery.py`（episode 数据类 + reason 状态转移，纯逻辑可测）+ 配置段（`engine_move_max_attempts: int = 3` 等，独立 recovery 配置，评审 m1）；Test 新 `tests/test_engine_recovery.py`。
-- [ ] `PlatformMoveRejectedError` 加 `reason` 属性；gateway 各 raise 点设置：`"illegal_move" | "position_changed" | "engine_error" | "game_ended" | "pending" | "move_rejected"`。
-- [ ] **写失败测试（reason 状态转移表，评审 M4 点名）**：
+- [x] `PlatformMoveRejectedError` 加 `reason` 属性；gateway 各 raise 点设置：`"illegal_move" | "position_changed" | "engine_error" | "game_ended" | "pending" | "move_rejected"`。
+- [x] **写失败测试（reason 状态转移表，评审 M4 点名）**：
   | reason | 计数 | 行为 |
   |---|---|---|
   | `engine_error` / `position_changed` | 同 episode（同 game_id+coords）+1 | 未达阈值 re-arm；达阈值 → `enter_engine_error` + 广播（带 token）+ **不再 re-arm** |
@@ -145,69 +145,69 @@
   | session missing | 清 episode | continue |
   - episode 语义（评审 m2）：坐标变化 → 新 episode；成功/cancel/unbind/game end/换 game_id → 清零；
   - **queue 卫生（评审 M1）**：`vision.bind_session`/`unbind` 时清空 `vision_move_queue` 与 pending ConfirmedMove（跨局注入测试：旧局 move 残留 → rebind 后不注入新局）。
-- [ ] **写失败测试（orchestrator）**：`enter_engine_error(coords, token)` → `_pause_reasons` 加 `engine_error`；`clear_engine_error()` → 移除。
-- [ ] 实现：失败记录 `{episode_key, count, coords, detail, recovery_token(uuid), game_id}` 存 `app.state.engine_recovery`（每 session 至多一条活动记录）；广播 `{"type":"physical_engine_error", col,row,attempts,detail,recovery_token}`。
-- [ ] 跑测试通过；commit。
+- [x] **写失败测试（orchestrator）**：`enter_engine_error(coords, token)` → `_pause_reasons` 加 `engine_error`；`clear_engine_error()` → 移除。
+- [x] 实现：失败记录 `{episode_key, count, coords, detail, recovery_token(uuid), game_id}` 存 `app.state.engine_recovery`（每 session 至多一条活动记录）；广播 `{"type":"physical_engine_error", col,row,attempts,detail,recovery_token}`。
+- [x] 跑测试通过；commit。
 
 ## Task 8 — 后端：恢复端点 retry/cancel + awaiting_removal（B4/M5/D8，TDD）
 
 - Files: Modify `katrain/web/api/v1/endpoints/vision.py`（两个端点）、`physical_play_orchestrator.py`（`awaiting_removal` 逻辑挂 tick）；Test `tests/test_engine_recovery.py` 追加 + 端点 TestClient 测试。
-- [ ] **写失败测试（retry）**：`POST /api/v1/vision/engine-move/retry {session_id, recovery_token}` →
+- [x] **写失败测试（retry）**：`POST /api/v1/vision/engine-move/retry {session_id, recovery_token}` →
   - token 匹配活动记录 + vision 当前绑定 == session_id → 重新 `gateway.play_move`；成功 → 清记录/reason、返回 ok；再失败 → 记录保持、返回 `{"ok":false,"detail"}`（HTTP 200）；
   - 旧 token / 无活动记录 / 绑定不符 → 409；**双击并发 retry → 恰一次提交**（token CAS：先原子摘取记录再提交）。
-- [ ] **写失败测试（cancel → awaiting_removal，评审 B4 全场景）**：
+- [x] **写失败测试（cancel → awaiting_removal，评审 B4 全场景）**：
   - cancel 后检测保持暂停，进入 `awaiting_removal`（reason 集合）；
   - 模拟观测盘：目标格仍有子 → 不恢复、持续引导（蓝灯该点 + 屏幕提示）；
   - 拿错子（别处少了）→ 不恢复；
   - 拿回又放回 → 不恢复；
   - 目标格空且整盘 == 数字盘、连续 N 稳定 tick → `resync()` + 清 reason/记录 + 恢复检测；
   - 超时（可配）→ 保持引导并再次广播提醒；unbind → 清理。
-- [ ] 实现：`awaiting_removal` 复用 tick 循环的 observed board 对账（新增一个目标条件检查，不新开循环）；蓝灯引导复用 `_apply_points`。
-- [ ] 跑测试通过；commit。
+- [x] 实现：`awaiting_removal` 复用 tick 循环的 observed board 对账（新增一个目标条件检查，不新开循环）；蓝灯引导复用 `_apply_points`。
+- [x] 跑测试通过；commit。
 
 ## Task 9 — 前端：隧道失败对话框（TDD）
 
 - Files: Modify `src/hooks/useGameSession.ts`（`physical_engine_error` → state；共享区）、`src/api.ts`（`visionEngineMoveRetry/Cancel`，带 recovery_token；共享区）、`GamePage.tsx`；New `src/kiosk/components/physical/EngineMoveErrorDialog.tsx`；Test `EngineMoveErrorDialog.test.tsx` + `GamePageEngine.test.tsx` 追加。
-- [ ] **写失败测试**：收到 `physical_engine_error` → 对话框（坐标 + 「星阵连接出错」+ attempts）；
+- [x] **写失败测试**：收到 `physical_engine_error` → 对话框（坐标 + 「星阵连接出错」+ attempts）；
   - 「重试」→ retry API（带 token）；`ok:false` → 留存显示错误；`ok:true` → 关闭；409（旧 token）→ 关闭并提示已过期；
   - 「拿回棋子」→ cancel API → 切换为「请拿回 X 处棋子」等待态（监听后续 `physical_reminder`/恢复广播关闭）；
   - 「认输」→ 复用现有 resign 确认流；
   - 纯屏幕局（`!isVisionEnabled`）不弹（engineErrorToast 不回归）。
-- [ ] 实现；文案 `t()` 中文默认。
-- [ ] `npm test` 绿；双构建绿；commit。
+- [x] 实现；文案 `t()` 中文默认。
+- [x] `npm test` 绿；双构建绿；commit。
 - **Review checkpoint（人工）**: Mac mock 断网走三按钮路径 + 拿回棋子等待态。
 
 ## Task 10 — 后端：支招白灯带位置令牌（G5/M7/M8，TDD）
 
 - Files: Modify `katrain/web/api/v1/endpoints/platforms.py`（engine/analysis）；Test `tests/platforms/test_engine_analysis_endpoint.py` 追加。
-- [ ] **写失败测试**：
-  - `kind=="options"` 成功 + orchestrator 存在 + `vision.bound_session_id == session_id` + **请求前后 `current_node_id` 未变** → `show_hint` 收到 vision_rc list（金标准：`Candidate.row` 已顶部锚定，直接 `(c.row, c.col)`，不翻转 —— D16 = `Candidate(3,3)` → vision `(3,3)`；D4 = `Candidate(3,15)` → vision `(15,3)`；GTP 表述见 Global Constraints）；
+- [x] **写失败测试**：
+  - `kind=="options"` 成功 + orchestrator 存在 + `vision.bound_session_id == session_id` + **请求前后 `current_node_id` 未变** → `show_hint` 收到 vision_rc list（金标准：`Candidate.row/col` 是 core/GTP 坐标系（row 0 = 底，与 `gameState.stones` 同空间），须翻转 `vision_rc = (board_size-1-c.row, c.col)` —— `Candidate(col=3,row=15)`（GTP D16）→ vision `(3,3)`；`Candidate(col=3,row=3)`（GTP D4）→ vision `(15,3)`；操作性规则见 Global Constraints「终审复核」条目）；
   - 请求期间落子/undo（node id 变）→ 不点灯；unbind/换绑 → 不点灯；
   - `kind!="options"`、7003、orchestrator 缺席 → 不调不炸；show_hint 抛错不影响分析结果返回。
-- [ ] 实现：请求前取 token，await 分析，返回后同校验再 `show_hint`（try/except 包裹）。
-- [ ] 跑测试通过；commit。
+- [x] 实现：请求前取 token，await 分析，返回后同校验再 `show_hint`（try/except 包裹）。
+- [x] 跑测试通过；commit。
 
 ## Task 11 — 前端：支招灯同步灭（TDD）
 
 - Files: Modify `GamePage.tsx`（叠加清空路径调 dismiss）、`src/api.ts` 补 `hintDismiss`（若缺；共享区）；Test `GamePageEngine.test.tsx` 追加。
-- [ ] **写失败测试**：engine 局 vision 开启，options 叠加因落子失效/用户关闭/离开页面 → `hintDismiss` 被调（**断言最终状态而非恰好一次**——端点幂等，StrictMode 重复无害，评审 m3）；非 options 叠加与纯屏幕局不调。
-- [ ] 实现；双构建绿；commit。
+- [x] **写失败测试**：engine 局 vision 开启，options 叠加因落子失效/用户关闭/离开页面 → `hintDismiss` 被调（**断言最终状态而非恰好一次**——端点幂等，StrictMode 重复无害，评审 m3）；非 options 叠加与纯屏幕局不调。
+- [x] 实现；双构建绿；commit。
 
 ## Task 12 — 集成测试收口（M3/M9/m4/D9）
 
 - Files: New `tests/test_engine_physical_integration.py`（真实 poller + queue + 可控 future + 真 VisionService command 序列，参照 `tests/test_vision/test_sync_regressions.py` 的组装深度）。
-- [ ] 用例 1（执白分先）：AI(B) 首手随 start 落进数字盘 → bind + tick → 该点红灯。
-- [ ] 用例 2（人执黑让 4 子）：`_setup_cells_from_state` 引导 4 星位 → 视觉逐子到位 → AI(W) 首手灯亮。人执白+让子：无 AI opening、人类先手（D9 语义固化）。
-- [ ] 用例 3（全链路一手）：真实 poller 消费 ConfirmedMove → gateway（mock 隧道可控 future）→ `[human, AI]` 顺序落子 → tick 后 AI 点亮。
-- [ ] 用例 4（等待期第二颗子，评审 M3 口径）：genmove future 挂起时投第二个 ConfirmedMove → 第一手返回后才被消费 → 按真实时序断言其归宿（out-of-turn 忽略或成为合法下一手）+ detector 基线最终一致 + **不触发失败对话框**。
-- [ ] 用例 5（模式切换，评审 M9）：tsumego 页残留 monitor/setup/paused 状态 → 进入 engine 局 bind → 断言 worker 收到的命令序列使检测处于正确态；engine error/hint 挂起中 unbind → 进 tsumego → 不残留暂停。
-- [ ] 用例 6（边界抽样，评审 m4）：角点 (0,0)/(18,18) 编解码贯通；提子后 AI 落回原格（等待期豁免不误蓝灯）；AI 返回已占点 → position 断言/合法性防线拒绝且广播 engine_error；LED/vision 方法抛错不阻塞对局。
-- [ ] 全绿后：`CI=true uv run pytest tests -q` 相对基线无新增失败；`uv run black -l 120 katrain tests`；commit。
+- [x] 用例 1（执白分先）：AI(B) 首手随 start 落进数字盘 → bind + tick → 该点红灯。
+- [x] 用例 2（人执黑让 4 子）：`_setup_cells_from_state` 引导 4 星位 → 视觉逐子到位 → AI(W) 首手灯亮。人执白+让子：无 AI opening、人类先手（D9 语义固化）。
+- [x] 用例 3（全链路一手）：真实 poller 消费 ConfirmedMove → gateway（mock 隧道可控 future）→ `[human, AI]` 顺序落子 → tick 后 AI 点亮。
+- [x] 用例 4（等待期第二颗子，评审 M3 口径）：genmove future 挂起时投第二个 ConfirmedMove → 第一手返回后才被消费 → 按真实时序断言其归宿（out-of-turn 忽略或成为合法下一手）+ detector 基线最终一致 + **不触发失败对话框**。
+- [x] 用例 5（模式切换，评审 M9）：tsumego 页残留 monitor/setup/paused 状态 → 进入 engine 局 bind → 断言 worker 收到的命令序列使检测处于正确态；engine error/hint 挂起中 unbind → 进 tsumego → 不残留暂停。
+- [x] 用例 6（边界抽样，评审 m4）：角点 (0,0)/(18,18) 编解码贯通；提子后 AI 落回原格（等待期豁免不误蓝灯）；AI 返回已占点 → position 断言/合法性防线拒绝且广播 engine_error；LED/vision 方法抛错不阻塞对局。
+- [x] 全绿后：`CI=true uv run pytest tests -q` 相对基线无新增失败；`uv run black -l 120 katrain tests`；commit。
 
 ## Task 13 — i18n + 收尾
 
-- [ ] 新增静态文案走 `katrain-i18n-expert` skill 补全 11 语言（cn≠zh、jp≠ja；默认中文）；`uv run python i18n.py` 重生成 .mo。
-- [ ] 双构建绿 + 全量 pytest 相对基线无新增失败；commit + push `feature/kiosk-play-golaxy`（用户既定：直接推送不开 PR）。
+- [x] 新增静态文案走 `katrain-i18n-expert` skill 补全 11 语言（cn≠zh、jp≠ja；默认中文）；`uv run python i18n.py` 重生成 .mo。
+- [x] 双构建绿 + 全量 pytest 相对基线无新增失败；commit + push `feature/kiosk-play-golaxy`（用户既定：直接推送不开 PR）。
 - **Review checkpoint（人工）**: 走查全部新 UI 文案。
 
 ## Task 14 — 真机部署与验收（用户参与，一次性）

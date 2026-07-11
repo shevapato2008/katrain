@@ -166,10 +166,18 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
             if id(session.katrain.game.current_node) != position_token:
                 logger.debug("支招 hint dropped: position changed for session %s", session_id)
                 return
-        # `Candidate.row`/`.col` are already top-anchored KaTrain (col, row) --
-        # golaxy_to_katrain's row=0 is TOP, same frame vision/show_hint expects
-        # (see katrain/web/platforms/golaxy/coords.py docstring). No flip.
-        points = [(c.row, c.col) for c in result.candidates]
+            board_size = session.katrain.game.board_size[0]
+        # `Candidate.row`/`.col` are decoded from Golaxy into the SAME (col, row)
+        # space as gameState.stones/last_move -- i.e. core/GTP frame, row 0 = BOTTOM
+        # (Board.tsx renders candidates via gridToCanvas(c.col, c.row) whose
+        # invertedY = boardSize-1-y puts core row 0 at the canvas bottom, with the
+        # explicit "NO flip: same (col,row) space as gameState.stones" comment).
+        # show_hint/the LED chain expect vision frame, row 0 = TOP (see
+        # physical_play_orchestrator.py's game_state_stones_to_board /
+        # _setup_cells_from_state, both `vision_row = board_size - 1 - core_row`) --
+        # so flip here, matching every other core->LED path. Without the flip these
+        # hint LEDs light the vertical mirror of what the screen circles.
+        points = [(board_size - 1 - c.row, c.col) for c in result.candidates]
         if points:
             orchestrator.show_hint(points)
     except Exception:

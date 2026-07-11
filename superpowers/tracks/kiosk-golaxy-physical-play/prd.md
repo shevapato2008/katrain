@@ -4,7 +4,7 @@
 - **分支**: `feature/kiosk-play-golaxy`（worktree `/Users/fan/Repositories/katrain-kiosk-play-golaxy`，已合 develop 至 f06440c4）
 - **作者**: fan
 - **日期**: 2026-07-11
-- **状态**: 草案（Draft，待 codex 对抗性评审）
+- **状态**: 已实现（待 rk3562 真机验证）
 - **前置轨道**:
   - [`kiosk-play-golaxy/plan.md`](../kiosk-play-golaxy/plan.md) — 星阵人机对弈闭环（已上线真机验证，含 §12 设置面板、§13 分析道具）
   - [`kiosk-physical-play/prd.md`](../kiosk-physical-play/prd.md) — 自由对弈物理棋盘化一期（PhysicalPlayOrchestrator 后端编排，已实现合入 develop）

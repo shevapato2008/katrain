@@ -51,9 +51,13 @@ def _check_moves_legal_sequence(game, moves) -> None:
     to re-check the engine's genmove reply against the position AFTER the human's
     move, since the two are applied atomically as a pair.
 
-    Callers MUST hold session.lock for the duration of this call (single-threaded
-    per session by convention) so no concurrent read can observe the transient
-    swapped-in copies.
+    The swapped attributes (board/chains/last_capture/prisoners) are the ones
+    `Game` itself normally guards with `game._lock`, not `session.lock` — this
+    function does not take `game._lock`. It is safe anyway because callers MUST
+    hold `session.lock` for the duration of this call (single-threaded per session
+    by convention, for node-tree consistency), which also serializes out every
+    other Game method call for this session, so no concurrent read can observe
+    the transient swapped-in copies.
     """
     from katrain.core.game import IllegalMoveException
 

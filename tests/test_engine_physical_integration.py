@@ -357,23 +357,6 @@ class TestCase2HandicapSetupThenAIOpeningLamp:
         session_id = await stack.pm.start_engine_game("golaxy", config, user_id=1)
         session = stack.sm.get_session(session_id)
 
-        # KNOWN GAP (see Task 12 report): `_do_edit_game`'s `root.place_handicap_stones(n)`
-        # (katrain/web/interface.py) only mutates the SGF "AB" property -- it never
-        # calls `Game._calculate_groups()` (or `set_current_node`, which triggers it),
-        # so `game.stones` / `get_state()["stones"]` stay stale and show NO handicap
-        # placements at all until some later real `game.play()` forces a recompute
-        # (still incremental, and still missing the handicap points even then). This
-        # is reproducible with NO engine involved (`enable_engine=False`) and would
-        # affect a real kiosk board-mode session identically (`suppress_auto_eval`
-        # skips the only other node-analysis path that could incidentally trigger a
-        # recount). It breaks BOTH the LED handicap guidance this test targets AND
-        # (more seriously) move legality, since `_check_move_legal`/`Game.play` read
-        # `game.board`/`game.chains`, not the SGF properties. Forcing the recount
-        # here is a TEST-ONLY workaround standing in for that missing production
-        # call -- it is not something this task's brief authorizes fixing in
-        # interface.py itself.
-        session.katrain.game.set_current_node(session.katrain.game.current_node)
-
         state = session.katrain.get_state()
         assert state["platform_engine_color"] == "W"
         stack.adapter._rest.engine_genmove.assert_awaited_once()  # AI(W) opened synchronously

@@ -557,6 +557,11 @@ class WebKaTrain(KaTrainBase):
         # Ensure handicap stones are placed if handicap is set
         if handicap and handicap >= 2:
             self.game.root.place_handicap_stones(handicap)
+            # place_handicap_stones only mutates the SGF "AB" property -- it never
+            # touches game.board/chains, which back both LED setup guidance and move
+            # legality. Recompute now rather than relying on a later set_current_node
+            # (board mode suppresses the auto-analysis call that would otherwise do it).
+            self.game._calculate_groups()
 
         # Reset timer state for new game
         self.timer_paused = self.config("timer/paused")
@@ -593,6 +598,9 @@ class WebKaTrain(KaTrainBase):
         if handicap is not None and self.game.root.handicap != handicap:
             self.game.root.set_property("HA", handicap)
             self.game.root.place_handicap_stones(handicap)
+            # See the matching comment in _do_new_game: place_handicap_stones is a
+            # pure SGF-property mutation and never recomputes game.board/chains.
+            self.game._calculate_groups()
             self.update_config("game/handicap", handicap)
             changed = True
         if komi is not None and self.game.root.komi != komi:

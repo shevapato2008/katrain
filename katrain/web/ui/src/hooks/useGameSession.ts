@@ -166,5 +166,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         }
     }, []);
 
-    return { sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder };
+    // wsRef is exposed so callers can layer additional message-type listeners on the
+    // same socket (e.g. usePlatformEvents for platform_move_pending/confirmed/rejected —
+    // engine-play (Golaxy 人机对弈) commit-protocol events; see kiosk GamePage's undo-
+    // disable-while-pending wiring). This hook's own onmessage switch above only handles
+    // the generic game-session message types and deliberately ignores platform_* ones.
+    return { sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder, wsRef };
 };

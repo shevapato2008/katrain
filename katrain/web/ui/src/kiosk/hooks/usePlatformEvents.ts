@@ -36,7 +36,7 @@ export interface PlatformEventCallbacks {
  * Listens on an existing WebSocket ref for platform-specific event types.
  */
 export function usePlatformEvents(
-  wsRef: React.MutableRefObject<WebSocket | null>,
+  wsRef: React.MutableRefObject<WebSocket | null> | undefined,
   callbacks: PlatformEventCallbacks
 ) {
   const [pendingMove, setPendingMove] = useState<{ col: number; row: number } | null>(null);
@@ -105,11 +105,11 @@ export function usePlatformEvents(
   }, []);
 
   useEffect(() => {
-    const ws = wsRef.current;
+    const ws = wsRef?.current;
     if (!ws) return;
     ws.addEventListener("message", handleMessage);
     return () => ws.removeEventListener("message", handleMessage);
-  }, [wsRef.current, handleMessage]);
+  }, [wsRef?.current, handleMessage]);
 
   return { pendingMove, clock, gamePhase, lastEvent };
 }

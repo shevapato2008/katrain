@@ -647,6 +647,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session = _get_session_or_404(manager, request.session_id)
         if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("undo", request.n_times)
             state = session.katrain.get_state()
@@ -656,6 +657,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/redo")
     def redo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("redo", request.n_times)
             state = session.katrain.get_state()
@@ -805,6 +807,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav")
     def navigate(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("nav", request.node_id)
             state = session.katrain.get_state()
@@ -814,6 +817,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ai-move")
     def ai_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        # Unconditional (not just while pending): this path bypasses the Golaxy
+        # genmove tunnel entirely and triggers local KataGo directly, which is never
+        # valid for an engine-play game (review D5/Task 0 inventory).
+        gateway = getattr(app.state, "platform_gateway", None)
+        if gateway and gateway.is_engine_game(request.session_id):
+            raise HTTPException(status_code=403, detail="ai-move not allowed for engine-play sessions")
         with session.lock:
             session.katrain("ai-move")
             state = session.katrain.get_state()
@@ -934,6 +943,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("find_mistake", fn=request.fn)
             state = session.katrain.get_state()
@@ -943,6 +953,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/branch")
     def switch_branch(request: SwitchBranchRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("switch_branch", direction=request.direction)
             state = session.katrain.get_state()
@@ -1875,6 +1886,29 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         return manager.get_session(session_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+
+
+def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
+    """409 while an engine-play (Golaxy 人机对弈 genmove tunnel) move is in flight.
+
+    The tunnel can take up to ~180s; mutating the tree underneath it (undo/redo/
+    nav to a different node) makes the eventual AI reply land on the wrong node
+    once it returns (review B2). Task 4's gateway also re-checks a position token
+    atomically before applying, so this 409 is belt-and-suspenders, not the only
+    line of defense — but it's the one that gives the user an immediate, correct
+    error instead of a move silently discarded ~3 minutes later.
+
+    Scope (fable5 裁决 2026-07-11): only this fixed endpoint set is guarded this
+    iteration — undo/redo/nav/nav-mistake/nav-branch (pending-gated, called from
+    here) plus /api/ai-move (unconditional — see its own handler). The rest of the
+    tree-mutation surface (sgf/load, new-game, edit-game, node/*, player/swap, ...)
+    is intentionally NOT guarded — kiosk engine-mode UI doesn't expose those
+    actions. Full endpoint inventory + rationale:
+    superpowers/tracks/kiosk-golaxy-physical-play/plan.md (基线记录).
+    """
+    gateway = getattr(app.state, "platform_gateway", None)
+    if gateway and gateway.is_engine_move_pending(session_id):
+        raise HTTPException(status_code=409, detail="engine move pending")
 
 
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):

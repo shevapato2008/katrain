@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { API, type PhysicalEngineErrorState } from '../../../api';
+import { API, ApiError, type PhysicalEngineErrorState } from '../../../api';
 import { formatGtpCoord } from '../../../utils/gtpCoord';
 
 interface Props {
@@ -34,6 +34,10 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
   const [dismissedToken, setDismissedToken] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
   const [emphasized, setEmphasized] = useState(false);
+  // Finding 1 (HIGH): a transient (non-409) retry/cancel failure — network blip, 5xx —
+  // must NOT be conflated with a genuine expired/stale token. It's shown inline and the
+  // dialog stays open with the SAME `currentToken`, since the backend never rotated it.
+  const [networkError, setNetworkError] = useState('');
   // Retains the last non-null `error` so the Dialog's content stays renderable while it
   // plays its close transition (or right after `error` itself goes null, e.g. the
   // `physical_engine_error_resolved` broadcast) — the Snackbar below is intentionally
@@ -50,6 +54,7 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
     setPhase('error');
     setCurrentToken(error.recovery_token);
     setDetail(error.detail);
+    setNetworkError('');
   }, [error]);
 
   useEffect(() => {
@@ -66,9 +71,18 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
 
   const coordLabel = formatGtpCoord(display.col, display.row, boardSize);
 
+  // Finding 1 (HIGH): only a REAL 409 (stale/consumed token — `ApiError` with
+  // `status === 409`) means the recovery episode is actually gone server-side, and is the
+  // only case where closing without a resolvable token is correct. Any other failure
+  // (network blip, 5xx, or anything apiPost doesn't turn into an `ApiError`) is transient:
+  // the dialog stays open, `currentToken` is untouched (the backend never rotated it —
+  // it never even saw/finished the request), and the user can just press the button again.
+  const isExpiredTokenError = (err: unknown): boolean => err instanceof ApiError && err.status === 409;
+
   const handleRetry = async () => {
     if (!sessionId || !currentToken || busy) return;
     setBusy(true);
+    setNetworkError('');
     try {
       const res = await API.visionEngineMoveRetry(sessionId, currentToken, token);
       if (res.ok) {
@@ -78,13 +92,14 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
         setDetail(res.detail ?? '');
         if (res.recovery_token) setCurrentToken(res.recovery_token);
       }
-    } catch {
-      // 409 (stale/consumed token) or any other transport failure: the recovery episode
-      // is gone server-side — closing without a resolvable token to retry is the only
-      // sane outcome.
-      setExpired(true);
-      setDismissedToken(display.recovery_token);
-      onDismiss?.();
+    } catch (err) {
+      if (isExpiredTokenError(err)) {
+        setExpired(true);
+        setDismissedToken(display.recovery_token);
+        onDismiss?.();
+      } else {
+        setNetworkError(t('Network error, please try again', '网络异常，请重试'));
+      }
     } finally {
       setBusy(false);
     }
@@ -93,20 +108,30 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
   const handleCancel = async () => {
     if (!sessionId || !currentToken || busy) return;
     setBusy(true);
+    setNetworkError('');
     try {
       const res = await API.visionEngineMoveCancel(sessionId, currentToken, token);
       if (res.ok) setPhase('waiting');
-    } catch {
-      setExpired(true);
-      setDismissedToken(display.recovery_token);
-      onDismiss?.();
+    } catch (err) {
+      if (isExpiredTokenError(err)) {
+        setExpired(true);
+        setDismissedToken(display.recovery_token);
+        onDismiss?.();
+      } else {
+        setNetworkError(t('Network error, please try again', '网络异常，请重试'));
+      }
     } finally {
       setBusy(false);
     }
   };
 
+  // Finding 2 (HIGH): 认输 only opens GamePage's confirm sub-dialog (via `onResign`) — it
+  // must NOT dismiss THIS dialog. Fat-fingering 认输 on a 7" kiosk and then cancelling the
+  // confirm must leave this dialog exactly as it was (same token, all buttons live).
+  // GamePage is responsible for actually closing this dialog once resign is CONFIRMED
+  // (via `onDismiss`, e.g. `session.clearPhysicalEngineError`), from whichever path
+  // confirms it.
   const handleResign = () => {
-    setDismissedToken(display.recovery_token);
     onResign();
   };
 
@@ -125,6 +150,11 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
               {detail && (
                 <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
                   {detail}
+                </Typography>
+              )}
+              {networkError && (
+                <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 1 }}>
+                  {networkError}
                 </Typography>
               )}
             </DialogContent>

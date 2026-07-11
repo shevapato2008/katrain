@@ -571,7 +571,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <DialogTitle sx={{ color: 'text.primary' }}>{t('Confirm resign?', '确认认输？')}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button color="error" onClick={() => { setShowResignConfirm(false); session.handleAction('resign'); }}>
+          <Button
+            color="error"
+            onClick={() => {
+              setShowResignConfirm(false);
+              session.handleAction('resign');
+              // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
+              // not it was reached via EngineMoveErrorDialog's 认输 button — so the
+              // physical engine-error recovery dialog (if open) is now irrelevant.
+              // No-op if it was never open (clearPhysicalEngineError just sets null->null).
+              session.clearPhysicalEngineError();
+            }}
+          >
             {t('Resign', '认输')}
           </Button>
         </DialogActions>
@@ -582,7 +593,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <DialogTitle>{t('Game in progress. Resign and exit?', '对局进行中，认输并退出？')}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button color="error" onClick={() => { session.handleAction('resign'); navigate('/kiosk/play'); }}>
+          <Button
+            color="error"
+            onClick={() => {
+              session.handleAction('resign');
+              // Same as the resign-confirm dialog above: this is another path that
+              // confirms a resign, so the engine-error recovery dialog (if open) must
+              // close too — no-op if it wasn't open.
+              session.clearPhysicalEngineError();
+              navigate('/kiosk/play');
+            }}
+          >
             {t('Exit', '退出')}
           </Button>
         </DialogActions>

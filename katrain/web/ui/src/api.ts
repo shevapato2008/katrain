@@ -205,6 +205,21 @@ export interface HintMove {
 }
 export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: number; }
 
+// Thrown by apiPost on a non-2xx HTTP response. Carries the numeric `status` so callers
+// can distinguish a genuine server-side rejection (e.g. a 409 on a stale/consumed token)
+// from a transient network failure — `fetch` itself throws a plain `TypeError`/`Error` for
+// those (offline, DNS, connection reset), never an `ApiError`. Message format is
+// unchanged (`Request failed <status>: <body>`) so existing text-based assertions
+// (e.g. KifuPage.test.tsx's "Request failed 500") keep working.
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) {
@@ -217,7 +232,7 @@ export async function apiPost(path: string, payload: any, token?: string) {
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Request failed ${response.status}: ${body}`);
+    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
   }
   return response.json();
 }

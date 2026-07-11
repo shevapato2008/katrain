@@ -693,5 +693,41 @@ describe('GamePage engine mode', () => {
 
       expect(screen.getByText('确认认输？')).toBeInTheDocument();
     });
+
+    // Finding 2 (HIGH): 认输 must not dismiss the error dialog itself — only the CONFIRM
+    // sub-dialog's own 认输 button (i.e. an actually-confirmed resign) may do that. Fat-
+    // fingering 认输 on a 7" kiosk and then cancelling the confirm must leave the recovery
+    // dialog fully intact (same token, still open, no resign fired).
+    it('cancelling the resign confirm leaves the error dialog open and untouched', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByText('认输'));
+      expect(screen.getByText('确认认输？')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('取消'));
+      await waitFor(() => expect(screen.queryByText('确认认输？')).toBeNull());
+
+      // The error dialog is still there, resign never actually fired.
+      expect(screen.getByText('星阵连接出错')).toBeInTheDocument();
+      expect(mockHandleAction).not.toHaveBeenCalledWith('resign');
+      expect(mockClearPhysicalEngineError).not.toHaveBeenCalled();
+    });
+
+    it('confirming resign from the error dialog fires the resign action AND closes the error dialog', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByText('认输'));
+      const confirmDialog = screen.getByText('确认认输？').closest('[role="dialog"]') as HTMLElement;
+      fireEvent.click(within(confirmDialog).getByText('认输'));
+
+      expect(mockHandleAction).toHaveBeenCalledWith('resign');
+      expect(mockClearPhysicalEngineError).toHaveBeenCalledTimes(1);
+    });
   });
 });

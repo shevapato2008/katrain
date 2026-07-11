@@ -17,10 +17,12 @@ import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
+import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
 import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { usePlatformEvents } from '../hooks/usePlatformEvents';
+import { formatGtpCoord } from '../../utils/gtpCoord';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -198,9 +200,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     const gs = session.gameState;
     const human = deriveHumanColor(gs);
     if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
-      const col = String.fromCharCode(65 + (gs.last_move[0] >= 8 ? gs.last_move[0] + 1 : gs.last_move[0]));
-      const row = gs.board_size[0] - gs.last_move[1];
-      setAiMoveBanner(`${col}${row}`);
+      setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
     }
   }, [isVisionEnabled, session.gameState?.current_node_id]);
 
@@ -647,6 +647,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         toPlace={session.physicalReminder?.to_place ?? []}
         toRemove={session.physicalReminder?.to_remove ?? []}
         onClose={() => setEscalationOpen(false)}
+      />
+
+      {/* Physical engine-move (Golaxy 隧道) bounded-retry failure — physical mode only;
+          pure-screen engine games keep the existing engineErrorToast path (handleBoardMove)
+          untouched. Gate the ERROR PROP (not the mount) on isVisionEnabled so the dialog
+          component itself stays mounted across any isVisionEnabled flap without losing its
+          local dismissed-token bookkeeping (mirrors PhysicalSyncEscalationDialog's always-
+          mounted pattern). */}
+      <EngineMoveErrorDialog
+        error={isVisionEnabled ? session.physicalEngineError : null}
+        sessionId={sessionId ?? null}
+        token={token ?? undefined}
+        boardSize={gameState.board_size[0]}
+        reminderTick={session.awaitingRemovalReminder}
+        onDismiss={session.clearPhysicalEngineError}
+        onResign={() => setShowResignConfirm(true)}
       />
 
       {/* Count (数子) error toast */}

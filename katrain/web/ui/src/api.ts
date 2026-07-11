@@ -175,6 +175,26 @@ export interface VisionStatusResponse {
   led_connected?: boolean;
 }
 
+// Task 9: physical engine-move (Golaxy 隧道) error recovery. `col`/`row` are GTP/board
+// space (row 0 = bottom) — see physical_play_orchestrator.py's enter_engine_error and
+// the `physical_engine_error` WS broadcast (server.py _apply_engine_recovery_outcome).
+export interface PhysicalEngineErrorState {
+  col: number;
+  row: number;
+  attempts: number;
+  detail: string;
+  recovery_token: string;
+}
+export interface EngineMoveRetryResponse {
+  ok: boolean;
+  detail?: string;
+  recovery_token?: string; // present (and NEW) only when ok:false — adopt it for the next retry
+}
+export interface EngineMoveCancelResponse {
+  ok: boolean;
+  awaiting_removal?: boolean;
+}
+
 export interface HintMove {
   gtp: string;
   coords: [number, number];
@@ -402,6 +422,13 @@ export const API = {
     apiPost("/api/v1/vision/move-detection", { armed }),
   visionExpectedBoard: (board: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/expected-board", { board }),
+  // Task 9: engine-move recovery dialog actions. 200 {ok:false, recovery_token} is a
+  // normal "failed again" outcome (NOT an HTTP error); a 409 (stale/consumed token) DOES
+  // reject via apiPost's !response.ok throw — callers treat that as "recovery expired".
+  visionEngineMoveRetry: (sessionId: string, recoveryToken: string, token?: string): Promise<EngineMoveRetryResponse> =>
+    apiPost("/api/v1/vision/engine-move/retry", { session_id: sessionId, recovery_token: recoveryToken }, token),
+  visionEngineMoveCancel: (sessionId: string, recoveryToken: string, token?: string): Promise<EngineMoveCancelResponse> =>
+    apiPost("/api/v1/vision/engine-move/cancel", { session_id: sessionId, recovery_token: recoveryToken }, token),
 
   // AI Hint API (free games only)
   hint: (sessionId: string, topN?: number): Promise<HintResponse> =>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -106,6 +106,11 @@ const mockRequestCount = vi.fn();
 const mockAnalyzeCurrent = vi.fn();
 const mockHintDismiss = vi.fn();
 const mockHint = vi.fn();
+// Task 9: physical engine-move (Golaxy 隧道) error recovery — mutable so individual
+// tests can drive useGameSession's tracked state without a full WS round-trip.
+let mockPhysicalEngineError: { col: number; row: number; attempts: number; detail: string; recovery_token: string } | null = null;
+let mockAwaitingRemovalReminder: { row: number; col: number } | null = null;
+const mockClearPhysicalEngineError = vi.fn();
 
 const mockGameState: GameState = {
   game_id: 'test-game',
@@ -157,6 +162,9 @@ vi.mock('../../hooks/useGameSession', () => ({
     chatMessages: [],
     sendChat: vi.fn(),
     gameEndData: null,
+    physicalEngineError: mockPhysicalEngineError,
+    clearPhysicalEngineError: mockClearPhysicalEngineError,
+    awaitingRemovalReminder: mockAwaitingRemovalReminder,
   }),
 }));
 
@@ -179,6 +187,8 @@ describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
+    mockPhysicalEngineError = null;
+    mockAwaitingRemovalReminder = null;
     mockRequestCount.mockResolvedValue({ state: mockGameState });
     mockAnalyzeCurrent.mockResolvedValue({});
     mockHintDismiss.mockResolvedValue({ ok: true });
@@ -641,6 +651,47 @@ describe('GamePage engine mode', () => {
         expect(banner).toHaveTextContent('白');
         expect(banner).not.toHaveTextContent('黑');
       });
+    });
+  });
+
+  // Task 9: EngineMoveErrorDialog mount gating. The dialog's own retry/cancel/resign
+  // behavior is covered in EngineMoveErrorDialog.test.tsx; this suite only verifies
+  // GamePage wires session.physicalEngineError through it correctly, and — critically —
+  // that a pure-screen engine game (isVisionEnabled false) never sees it, leaving the
+  // pre-existing engineErrorToast path (tested above) as the sole error surface there.
+  describe('Task 9: physical engine-move error dialog (isVisionEnabled gating)', () => {
+    afterEach(() => {
+      visionMock.isVisionEnabled = false;
+    });
+
+    it('shows the dialog with the GTP coordinate + attempts when vision is enabled and a physical_engine_error is tracked', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      expect(await screen.findByText('星阵连接出错')).toBeInTheDocument();
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText(/D16/)).toBeInTheDocument();
+    });
+
+    it('does NOT show the dialog when vision is disabled, even with a tracked physical_engine_error (toast path unaffected)', async () => {
+      visionMock.isVisionEnabled = false;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(screen.queryByText('星阵连接出错')).toBeNull();
+    });
+
+    it('resign from the dialog opens the same 确认认输？ confirm flow', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByText('认输'));
+
+      expect(screen.getByText('确认认输？')).toBeInTheDocument();
     });
   });
 });

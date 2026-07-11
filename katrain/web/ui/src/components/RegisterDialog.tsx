@@ -52,7 +52,7 @@ const RegisterDialog: React.FC<RegisterDialogProps> = ({ open, onClose, onRegist
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>{t("注册弈航")}</DialogTitle>
+        <DialogTitle>{t("注册智星盒")}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {error && <Alert severity="error">{error}</Alert>}

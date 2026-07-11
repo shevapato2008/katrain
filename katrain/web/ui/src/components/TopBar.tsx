@@ -59,7 +59,7 @@ const TopBar: React.FC<TopBarProps> = ({
             mr: 2
           }}
         >
-          弈航
+          智星盒
           <Typography
             variant="caption"
             sx={{

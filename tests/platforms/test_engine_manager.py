@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from katrain.core.base_katrain import KaTrainBase
 from katrain.web.platforms.golaxy.adapter import EngineGameConfig, EngineGameStart, GolaxyAdapter
 from katrain.web.platforms.golaxy.coords import katrain_to_golaxy
 from katrain.web.platforms.golaxy.engine_client import GenmoveResult
@@ -289,6 +290,43 @@ class TestPlatformEngineColorRealSession:
         session.katrain("new_game")
 
         assert session.katrain.get_state()["platform_engine_color"] is None
+
+
+class TestEngineGameHandicapConfigLeak:
+    """Part 1 (Task 5 investigation): a kiosk with a local free-play `game/handicap`
+    preference > 0 must not leak stray handicap placements into an even
+    (handicap=0) Golaxy engine game's LOCAL board.
+
+    `BaseGame.__init__` (katrain/core/game.py) seeds handicap placements for every
+    freshly-created session from `katrain.config("game/handicap")` by calling
+    `place_handicap_stones` directly -- WITHOUT setting the SGF "HA" property. So
+    `root.handicap` (which only reads the HA property) reports 0 even though N
+    placement stones already sit on the board. `_do_edit_game`'s "did anything
+    change" gate (`self.game.root.handicap != handicap`) is then fooled when
+    handicap=0 is requested (the even-game default): 0 != 0 is False, so
+    `place_handicap_stones(0)` never runs and the stray stones remain -- desynced
+    from Golaxy's `ctx.moves`, which correctly starts empty for an even game.
+    """
+
+    @pytest.mark.asyncio
+    async def test_engine_game_clears_stale_config_seeded_handicap(self, monkeypatch):
+        original_config = KaTrainBase.config
+
+        def _leaky_config(self, setting, default=None):
+            if setting == "game/handicap":
+                return 9  # simulates a box with a local free-play preference set
+            return original_config(self, setting, default)
+
+        monkeypatch.setattr(KaTrainBase, "config", _leaky_config)
+
+        sm, pm, adapter = _build_real_stack()
+        config = EngineGameConfig(level=1100, human_color="B", handicap=0)
+
+        session_id = await pm.start_engine_game("golaxy", config, user_id=1)
+        session = sm.get_session(session_id)
+
+        assert session.katrain.game.root.placements == []
+        assert session.katrain.game.root.handicap == 0
 
 
 class TestPlatformEngineColorContractFixture:

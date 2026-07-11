@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from katrain.core.base_katrain import KaTrainBase
 from katrain.web.platforms.gateway import PlatformCommandGateway, PlatformMoveRejectedError
 from katrain.web.platforms.golaxy.adapter import EngineGameConfig, GolaxyAdapter, _handicap_stones
 from katrain.web.platforms.golaxy.coords import katrain_to_golaxy
@@ -23,29 +22,11 @@ from katrain.web.platforms.golaxy.engine_client import GenmoveResult
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.session import SessionManager
 
-
-@pytest.fixture(autouse=True)
-def _hermetic_handicap_default(monkeypatch):
-    """Isolate these tests from whatever "game/handicap" happens to be saved in
-    THIS machine's real ~/.katrain/config.json.
-
-    `Game.__init__` (katrain/core/game.py) silently seeds handicap stones from
-    `katrain.config("game/handicap")` whenever a fresh session's `_do_new_game()`
-    is called with no explicit `handicap` kwarg (the normal `SessionManager
-    .create_session()` path) -- so a real dev box that has ever played a
-    handicap game locally leaves stray pre-placed stones on EVERY session these
-    tests create, unrelated to Task 5's rebuild logic. Force that one lookup to
-    0; every other config key (and every EXPLICIT handicap this file passes via
-    edit_game/EngineGameConfig) is untouched.
-    """
-    original_config = KaTrainBase.config
-
-    def _patched(self, setting, default=None):
-        if setting == "game/handicap":
-            return 0
-        return original_config(self, setting, default)
-
-    monkeypatch.setattr(KaTrainBase, "config", _patched)
+# NOTE: hermeticity against this machine's real ~/.katrain/config.json
+# ("game/handicap" leaking stray placement stones into every fresh session) is
+# now handled directory-wide by tests/platforms/conftest.py's
+# `_hermetic_handicap_default` autouse fixture -- see that file for the full
+# explanation. Previously duplicated here; kept only in one place now.
 
 
 def _main_line(session):

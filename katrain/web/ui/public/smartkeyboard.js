@@ -1,11 +1,29 @@
 /*!
  * smartkeyboard.js — SmartBox kiosk 触屏软键盘(iOS/安卓风,含拼音)
  * 依赖: pinyin-ime.js (window.PinyinIME.getCandidates) — 缺失时拼音降级为不可用,英文照常。
+ *       pinyin-compose.js (window.PinyinCompose) — 多长度候选合成 + 词频重排;缺失时候选
+ *       退化为「整 buffer 一次性转换」的旧逻辑(与 pinyin-ime.js 缺失降级同款防御)。
  * 自动绑定页面所有 text/password/search/url/email/tel/number 输入框与 textarea。
  * 无外部依赖、无构建步骤。触屏用 pointerdown 触发以保证响应并保持输入框聚焦。
  */
 (function () {
   "use strict";
+
+  var CAND_PAGE_SIZE = 7;
+  var FREQ_KEY = "skbd-freq-v1";
+
+  function loadFreq() {
+    try {
+      var raw = window.localStorage && localStorage.getItem(FREQ_KEY);
+      var parsed = raw ? JSON.parse(raw) : null;
+      return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveFreq(freq) {
+    try { localStorage.setItem(FREQ_KEY, JSON.stringify(freq)); }
+    catch (e) { /* 静默降级为不排序 */ }
+  }
 
   var ICON_BACK = '<svg viewBox="0 0 24 24"><path d="M22 3H7c-.7 0-1.3.4-1.7.9L0 12l5.3 8.1c.4.5 1 .9 1.7.9h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.6L17.6 17 14 13.4 10.4 17 9 15.6 12.6 12 9 8.4 10.4 7 14 10.6 17.6 7 19 8.4 15.4 12 19 15.6z"/></svg>';
   var ICON_SHIFT = '<svg viewBox="0 0 24 24"><path d="M12 5l8 8h-5v6H9v-6H4l8-8z"/></svg>';
@@ -31,7 +49,10 @@
     ]
   };
 
-  var state = { mode: "en", layer: "letters", shift: false, target: null, buffer: "" };
+  var state = {
+    mode: "en", layer: "letters", shift: false, target: null, buffer: "",
+    cands: [], page: 0, freq: loadFreq()
+  };
   var root, candBar, compose, candList, rowsEl;
 
   function isEditable(el) {
@@ -138,7 +159,7 @@
       state.buffer += ch;       // 拼音始终小写
       updateCandidates();
     } else {
-      if (state.buffer) commitFirst();   // 有拼音缓冲时先上屏首选
+      if (state.buffer) flushBuffer();   // 非拼音键中断:整串 flush 上屏,不留孤悬 buffer
       insertText(out);
     }
     if (state.shift && state.layer === "letters") { state.shift = false; render(); }
@@ -159,46 +180,127 @@
   }
 
   function onReturn() {
-    if (state.mode === "zh" && state.buffer) { commitFirst(); return; }
+    if (state.mode === "zh" && state.buffer) { flushBuffer(); return; }
     var el = state.target;
     if (el && el.tagName === "TEXTAREA") { insertText("\n"); }
     else { hideKbd(); }
   }
 
-  function getCands() {
-    if (!state.buffer || !window.PinyinIME) return [];
-    try { return window.PinyinIME.getCandidates(state.buffer) || []; }
-    catch (e) { return []; }
+  // 候选项统一为 {t: 上屏文本, l: 消费的拼音长度}。PinyinCompose 在场时走多长度合成 +
+  // 词频重排;缺失时退回旧行为 —— 对整个 buf 一次性转换,l = buf.length(即"选中即清空整
+  // 个缓冲"的旧语义),与 pinyin-ime.js 本身缺失时的降级同款(全部候选为空数组)。
+  function computeCands(buf) {
+    if (!buf) return [];
+    try {
+      if (window.PinyinCompose) {
+        return window.PinyinCompose.boostByHistory(
+          window.PinyinCompose.lookup(buf, function (p) {
+            return (window.PinyinIME && window.PinyinIME.getCandidates(p)) || [];
+          }),
+          state.freq
+        );
+      }
+      if (!window.PinyinIME) return [];
+      var raw = window.PinyinIME.getCandidates(buf) || [];
+      return raw.map(function (t) { return { t: t, l: buf.length }; });
+    } catch (e) { return []; }
   }
 
+  function getCands() { return computeCands(state.buffer); }
+
+  // 空格 = 用户接受当前首选(单次选中,计入词频);死尾 buffer 无候选时原样上屏字母。
   function commitFirst() {
     var c = getCands();
-    if (c.length) commit(c[0]);
+    if (c.length) commit(c[0], true);
     else { insertText(state.buffer); clearBuffer(); }
   }
 
-  function commit(text) { insertText(text); clearBuffer(); }
+  // 非拼音键中断组词时整串 flush:循环上屏首选直到 buffer 耗尽。R4-1 递归可切分保证终止——
+  // 候选非空 ⇒ 每轮至少消费 1 个字母(l ≥ 1),余串要么空要么仍有候选;某轮 lookup 为空
+  // (死尾 buffer,如 beiwuu)则丢弃剩余死字母。自动 flush 不是用户点选,不记词频。
+  function flushBuffer() {
+    while (state.buffer) {
+      var c = getCands();
+      if (!c.length || c[0].l <= 0) { clearBuffer(); return; }  // 死尾丢弃(l<=0 为防御,不可达)
+      commit(c[0], false);
+    }
+  }
+
+  // 选中候选 item:上屏 item.t,buffer 只消费 item.l(可能 < buffer.length —— 多长度候选
+  // 未必吃掉整串)。buffer 非空则立即用剩余串重查并回到第 1 页;buffer 空则清候选条。
+  // isUserChoice: 仅用户主动点选(候选条点击/空格接受首选)计入词频;自动 flush 传 false。
+  function commit(item, isUserChoice) {
+    insertText(item.t);
+    if (isUserChoice) recordFreq(item.t);
+    state.buffer = state.buffer.slice(item.l);
+    updateCandidates();
+  }
+
+  function recordFreq(t) {
+    if (!window.PinyinCompose) return;
+    try {
+      state.freq = window.PinyinCompose.recordChoice(state.freq, t);
+      saveFreq(state.freq);
+    } catch (e) { /* 静默降级为不排序 */ }
+  }
 
   function clearBuffer() { state.buffer = ""; updateCandidates(); }
 
   function updateCandidates() {
     if (!candBar) return;
-    if (state.mode !== "zh") { compose.textContent = ""; candList.innerHTML = ""; return; }
+    if (state.mode !== "zh") { compose.textContent = ""; candList.innerHTML = ""; state.cands = []; state.page = 0; return; }
     compose.textContent = state.buffer;
+    state.cands = state.buffer ? getCands() : [];
+    state.page = 0;
+    renderCandPage();
+  }
+
+  // 只重渲染候选行(翻页调用路径),不触碰键盘主体(rowsEl 不重建)。
+  function renderCandPage() {
     candList.innerHTML = "";
     if (!state.buffer) return;
-    var cands = getCands().slice(0, 60);
-    if (!cands.length) {
+    if (!state.cands.length) {
       var em = document.createElement("span");
       em.className = "skbd-cand-empty"; em.textContent = "无候选";
       candList.appendChild(em); return;
     }
-    cands.forEach(function (w) {
+    var totalPages = Math.max(1, Math.ceil(state.cands.length / CAND_PAGE_SIZE));
+    if (state.page >= totalPages) state.page = totalPages - 1;
+    if (state.page < 0) state.page = 0;
+    var start = state.page * CAND_PAGE_SIZE;
+    var pageItems = state.cands.slice(start, start + CAND_PAGE_SIZE);
+
+    var prevBtn = document.createElement("button");
+    prevBtn.type = "button"; prevBtn.className = "skbd-cand-prev"; prevBtn.textContent = "‹";
+    var atFirst = state.page <= 0;
+    prevBtn.disabled = atFirst;
+    if (atFirst) prevBtn.className += " skbd-cand-nav-disabled";
+    tap(prevBtn, function () {
+      if (state.page > 0) { state.page--; renderCandPage(); }
+    });
+    candList.appendChild(prevBtn);
+
+    pageItems.forEach(function (item) {
       var it = document.createElement("button");
-      it.type = "button"; it.className = "skbd-cand-item"; it.textContent = w;
-      tap(it, function () { commit(w); });
+      it.type = "button"; it.className = "skbd-cand-item"; it.textContent = item.t;
+      tap(it, function () { commit(item, true); });
       candList.appendChild(it);
     });
+
+    var nextBtn = document.createElement("button");
+    nextBtn.type = "button"; nextBtn.className = "skbd-cand-next"; nextBtn.textContent = "›";
+    var atLast = state.page >= totalPages - 1;
+    nextBtn.disabled = atLast;
+    if (atLast) nextBtn.className += " skbd-cand-nav-disabled";
+    tap(nextBtn, function () {
+      if (state.page < totalPages - 1) { state.page++; renderCandPage(); }
+    });
+    candList.appendChild(nextBtn);
+
+    var pageLabel = document.createElement("span");
+    pageLabel.className = "skbd-cand-page";
+    pageLabel.textContent = (state.page + 1) + "/" + totalPages;
+    candList.appendChild(pageLabel);
   }
 
   // 用原生 value setter 赋值,绕过 React/Vue 的 value 追踪器,确保框架 onChange 能识别

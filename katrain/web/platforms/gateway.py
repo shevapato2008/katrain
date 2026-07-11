@@ -32,9 +32,9 @@ class PlatformMoveRejectedError(Exception):
         self.reason = reason
 
 
-def _check_move_legal(game, move) -> None:
-    """Raise IllegalMoveException if `move` is illegal on game's CURRENT position,
-    WITHOUT mutating the tree.
+def _check_moves_legal_sequence(game, moves) -> None:
+    """Raise IllegalMoveException if applying `moves` IN ORDER to game's CURRENT
+    position would be illegal at any step, WITHOUT mutating the tree.
 
     KaTrain core (katrain/core/game.py) has no public non-mutating legality check —
     Game.play() commits the move as a side effect (creates/advances a GameNode).
@@ -46,25 +46,36 @@ def _check_move_legal(game, move) -> None:
     prisoners (never the node tree), so the swap is confined to those four
     attributes and is invisible once this function returns.
 
+    A sequence (rather than a single move) lets a caller validate move N against
+    the position that would result from moves 1..N-1 already having landed — used
+    to re-check the engine's genmove reply against the position AFTER the human's
+    move, since the two are applied atomically as a pair.
+
     Callers MUST hold session.lock for the duration of this call (single-threaded
     per session by convention) so no concurrent read can observe the transient
     swapped-in copies.
     """
+    from katrain.core.game import IllegalMoveException
+
     board_size_x, board_size_y = game.board_size
-    if not move.is_pass and not (0 <= move.coords[0] < board_size_x and 0 <= move.coords[1] < board_size_y):
-        from katrain.core.game import IllegalMoveException
-
-        raise IllegalMoveException(f"Move {move} outside of board coordinates")
-
     saved_board, saved_chains = game.board, game.chains
     saved_last_capture, saved_prisoners = list(game.last_capture), list(game.prisoners)
     game.board = copy.deepcopy(game.board)
     game.chains = copy.deepcopy(game.chains)
     try:
-        game._validate_move_and_update_chains(move, ignore_ko=False)
+        for move in moves:
+            if not move.is_pass and not (0 <= move.coords[0] < board_size_x and 0 <= move.coords[1] < board_size_y):
+                raise IllegalMoveException(f"Move {move} outside of board coordinates")
+            game._validate_move_and_update_chains(move, ignore_ko=False)
     finally:
         game.board, game.chains = saved_board, saved_chains
         game.last_capture, game.prisoners = saved_last_capture, saved_prisoners
+
+
+def _check_move_legal(game, move) -> None:
+    """Raise IllegalMoveException if `move` is illegal on game's CURRENT position,
+    WITHOUT mutating the tree. See `_check_moves_legal_sequence` for the mechanics."""
+    _check_moves_legal_sequence(game, [move])
 
 
 class PlatformCommandGateway:
@@ -223,6 +234,34 @@ class PlatformCommandGateway:
                     raise PlatformMoveRejectedError(
                         "Position changed while waiting for the engine reply", reason="position_changed"
                     )
+
+                # G6: re-validate the AI's OWN returned coordinate before committing
+                # anything. `submit_engine_move` already committed it into the
+                # stateless tunnel's ctx.moves unconditionally once genmove returned
+                # an on-board coord, so an illegal reply (e.g. an already-occupied
+                # point) can't be un-sent to the tunnel -- but it must not be allowed
+                # to land locally: `WebKaTrain._do_play` (interface.py) only logs
+                # IllegalMoveException instead of raising, so without this check the
+                # human's move would silently commit while the AI's reply vanished,
+                # desyncing the tunnel history from the local board with no signal
+                # to the recovery machinery. Check the AI's move against the
+                # position that results from the human move landing first (the
+                # order they're about to be applied in).
+                game = session.katrain.game
+                ai_move_obj = Move(coords=(ai_move.col, ai_move.row), player=ai_move.color)
+                try:
+                    _check_moves_legal_sequence(game, [move, ai_move_obj])
+                except IllegalMoveException as e:
+                    logger.error(
+                        f"Engine returned an illegal move ({ai_move.col},{ai_move.row}) for "
+                        f"session {session_id}: {e}"
+                    )
+                    self._broadcast_rejected(session_id, "engine_error")
+                    raise PlatformMoveRejectedError(
+                        f"Engine returned an illegal move at ({ai_move.col}, {ai_move.row})",
+                        reason="engine_error",
+                    )
+
                 self._local_play(session_id, col, row)
                 human_move_number = ai_move.move_number - 1
                 self._local_play(session_id, ai_move.col, ai_move.row)

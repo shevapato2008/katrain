@@ -603,27 +603,20 @@ class TestCase6BoundarySampling:
         assert led.calls[-1] == ("clear",)  # no lamp at all -- in particular no false "remove"
 
     @pytest.mark.asyncio
-    async def test_ai_returns_already_occupied_point_is_silently_dropped_KNOWN_GAP(self):
-        """m4 asks for 'AI 返回已占点 -> position 断言/合法性防线拒绝且广播 engine_error'.
-        Empirically NEITHER defense fires for this exact scenario -- this test pins
-        the ACTUAL current behavior and is a KNOWN GAP flagged in the Task 12 report,
-        not a fix.
+    async def test_ai_returns_already_occupied_point_is_rejected_as_engine_error(self):
+        """m4: 'AI 返回已占点 -> position 断言/合法性防线拒绝且广播 engine_error'.
 
-        gateway.py's position-token check only guards a CONCURRENT tree mutation
-        during the tunnel wait (undo/nav racing it) -- it does not re-validate the
-        AI's OWN returned coordinate for legality before `_local_play`. And
-        `WebKaTrain._do_play` (katrain/web/interface.py) CATCHES IllegalMoveException
-        internally and just logs it -- it does not raise. So: the human's move
-        commits, the AI's occupied-point "reply" silently fails to land (the tree
-        does NOT gain a second node), `_handle_confirmed_move` never sees an
-        exception (gateway.play_move returns normally) so `tracker.on_success()`
-        runs, and NO physical_engine_error is ever broadcast -- while
-        GolaxyAdapter's stateless `ctx.moves` already committed the illegal coord
-        (`_genmove_committing` commits unconditionally once genmove returns an
-        on-board coord), desyncing the tunnel's history from the local board.
-        Recommended fix (not applied here): re-validate the AI's decoded move for
-        legality before `_local_play`, or assert the tree advanced by exactly 2
-        nodes after the atomic-apply block, in `gateway.py::_play_engine_move`."""
+        Fix round 1 (see Task 12 report, Fix round 1): `gateway.py::_play_engine_move`
+        now re-validates the AI's returned coordinate (against the position with the
+        human move applied first) before committing EITHER move locally. An
+        already-occupied reply is rejected with `PlatformMoveRejectedError(reason=
+        "engine_error")` -- neither move lands locally, so the tunnel's own
+        already-committed (and now-illegal-locally) coord doesn't desync the local
+        board from the tunnel history any further than the single failed attempt.
+        `_handle_confirmed_move` folds that into `EngineRecoveryTracker`, which (with
+        `engine_move_max_attempts=1`) crosses the threshold on the very first
+        attempt: `physical_engine_error` broadcasts and the orchestrator enters its
+        engine-error pause."""
         stack = _build_stack(
             genmove_side_effect=[_genmove_for(9, 9), _genmove_for(3, 3)],
             engine_recovery_config=EngineRecoveryConfig(engine_move_max_attempts=1),
@@ -642,13 +635,16 @@ class TestCase6BoundarySampling:
         move2 = _vision_move(5, 5, "B")
         delay = await _handle_confirmed_move(stack.app, stack.vision, session_id, move2, log)
 
-        # Human's move commits; the AI's illegal "reply" is silently dropped -- the
-        # tree gains only ONE new node, not two.
-        assert _main_line(session) == [("B", (3, 3)), ("W", (9, 9)), ("B", (5, 5))]
-        assert delay == 0.0  # gateway.play_move raised nothing -> treated as a success
-        assert stack.tracker.active_episode is None  # no failure ever recorded
-        assert not any(p.get("type") == "physical_engine_error" for _, p in stack.broadcasts)
-        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR not in stack.orch._pause_reasons
+        # Neither move lands: the human's (5,5) is discarded along with the AI's
+        # illegal reply -- the tree is unchanged from after the first exchange.
+        assert _main_line(session) == [("B", (3, 3)), ("W", (9, 9))]
+        assert delay == 0.0  # threshold crossed on attempt 1 -> rearm=False -> no retry delay
+        assert stack.tracker.active_episode is not None  # tripped episode stays active (not cleared)
+        assert stack.tracker.active_episode.recovery_token is not None
+        error_broadcasts = [p for _, p in stack.broadcasts if p.get("type") == "physical_engine_error"]
+        assert len(error_broadcasts) == 1
+        assert error_broadcasts[0]["col"] == 5 and error_broadcasts[0]["row"] == 5
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR in stack.orch._pause_reasons
         await stack.orch.shutdown()
 
     @pytest.mark.asyncio

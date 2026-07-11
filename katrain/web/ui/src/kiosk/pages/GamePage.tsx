@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Snackbar } from '@mui/material';
 // TipsAndUpdates is intentionally NOT imported: the standalone header hint button is gone
 // (AI 支招 is folded into the right-panel button in GameControlPanel). EmojiEvents is used
@@ -220,6 +220,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setEngineOverlay(null);
     setActiveEngineKind(null);
   }, [session.gameState?.current_node_id]);
+
+  // Task 11: the physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint)
+  // mirror the 支招 (options) overlay above. Whenever activeEngineKind moves AWAY from
+  // 'options' — however that happens (the position-change effect above clearing it, the
+  // user toggling 支招 off, or the user switching to a different kind) — the LEDs must
+  // turn off in sync. A single ref-compared effect catches all three causes uniformly,
+  // rather than duplicating the dismiss call at each call site. Gated to engine games with
+  // vision enabled: screen-only sessions and non-engine free-play don't drive the LEDs, so
+  // dismissing there would be a pointless network call (the endpoint is idempotent, but
+  // there's nothing to gain). Does NOT replace the unmount cleanup above — that already
+  // covers "leaving the page" unconditionally.
+  const prevEngineOptionsKindRef = useRef<EngineAnalysisKind | null>(null);
+  useEffect(() => {
+    const prevKind = prevEngineOptionsKindRef.current;
+    prevEngineOptionsKindRef.current = activeEngineKind;
+    if (engineMode && isVisionEnabled && prevKind === 'options' && activeEngineKind !== 'options') {
+      API.hintDismiss().catch(() => undefined);
+    }
+  }, [activeEngineKind, engineMode, isVisionEnabled]);
 
   // Local free-play on-demand analysis for 领地(ownership)/图表(winrate/score). Board mode
   // suppresses per-move auto-eval, so the current position has no analysis until we ask.

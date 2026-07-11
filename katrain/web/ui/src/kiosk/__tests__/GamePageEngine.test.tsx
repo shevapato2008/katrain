@@ -503,6 +503,107 @@ describe('GamePage engine mode', () => {
     });
   });
 
+  // Task 11: physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint) are
+  // driven by the 支招 (options) overlay. They must turn off in lockstep whenever the
+  // on-screen options overlay goes away, in an engine game with vision enabled — the two
+  // remaining clear paths beyond the pre-existing unmount cleanup (line ~176) and the
+  // free-play HintPanel's closeHint (line ~239, a completely separate overlay): the board
+  // position advancing (a move played) and the user explicitly closing it. A kind-switch
+  // (支招 -> 领地) is also covered since it replaces the options overlay just as fully.
+  describe('Task 11: hintDismiss keeps physical LEDs synced with the 支招 overlay', () => {
+    afterEach(() => {
+      visionMock.isVisionEnabled = false;
+    });
+
+    it('user toggles 支招 off (explicit close) -> hintDismiss called', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      await waitFor(() => expect(mockHintDismiss).toHaveBeenCalled());
+    });
+
+    it('board position change auto-clears an active 支招 overlay -> hintDismiss called', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      mockGameState.current_node_id = 43;
+      rerender(renderTree(true));
+
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      await waitFor(() => expect(mockHintDismiss).toHaveBeenCalled());
+    });
+
+    it('switching from 支招 to a different kind (领地) also dismisses (replaces the options overlay)', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ ok: true, kind: 'options', data: { candidates: [] } })
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [], winrate: 0.5, delta: 0 } });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      await waitFor(() => expect(mockHintDismiss).toHaveBeenCalled());
+    });
+
+    it('toggling a non-options kind (领地) off does NOT call hintDismiss', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [], winrate: 0.5, delta: 0 },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockHintDismiss).not.toHaveBeenCalled();
+    });
+
+    it('clearing an active 支招 overlay with vision DISABLED does NOT call hintDismiss', async () => {
+      visionMock.isVisionEnabled = false;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockHintDismiss).not.toHaveBeenCalled();
+    });
+  });
+
   // G2: engine games (Golaxy 人机对弈 via the genmove tunnel) put a bare "human"
   // player_type literal on BOTH seats (session.py:80/82) — neither literal check in
   // the old humanColor/isAI derivation ('player:human' / 'player:ai' / 'ai') can tell

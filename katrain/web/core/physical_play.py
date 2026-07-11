@@ -30,6 +30,11 @@ class PhysicalPlayConfig:
     hint_max_visits: int = 100
     hint_engine: str = "cloud"  # "local" | "cloud" | "off" — 支招 is an analysis query, so
     # prefer the strong cloud GPU; RequestRouter degrades to local when CLOUD_KATAGO_URL is unset.
+    # Task 8 (B4/M5/D8): awaiting_removal — after the user cancels a stuck engine-move
+    # recovery dialog, the orchestrator waits for the failed move's PHYSICAL stone to
+    # come off the board before resuming detection.
+    awaiting_removal_stable_ticks: int = 3  # consecutive matching ticks before resolving
+    awaiting_removal_remind_interval_s: float = 30.0  # re-broadcast the guidance reminder
 
 
 @dataclass

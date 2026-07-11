@@ -129,3 +129,31 @@ class EngineRecoveryTracker:
             episode.recovery_token = self._token_factory()
             return Outcome(rearm=False, episode=episode, enter_engine_error=True)
         return Outcome(rearm=True, episode=episode)
+
+    def consume(self, token: str) -> Optional[RecoveryEpisode]:
+        """Task 8 (B4/M5/D8) CAS primitive: atomically detach the active episode
+        IFF its token matches, returning the detached episode (or None if there is
+        no active episode, or its token doesn't match). This method does no I/O and
+        awaits nothing, so on the single-threaded asyncio event loop it can never be
+        interleaved with another call -- the retry/cancel endpoints call this BEFORE
+        their own `await` (e.g. the gateway resubmit), so a concurrent double-click
+        (same or stale token) always finds the episode already gone and gets a 409.
+        """
+        if self._episode is None or self._episode.recovery_token != token:
+            return None
+        episode = self._episode
+        self._episode = None
+        return episode
+
+    def trip_now(self, *, game_id: str, coords: Coords, detail: str = "") -> RecoveryEpisode:
+        """Task 8: an explicit user-initiated retry (POST .../engine-move/retry)
+        failed again. Unlike `on_failure`'s bounded-attempts counting (built for the
+        poller's unattended automatic retries), a manual retry has no threshold to
+        climb -- the dialog is already up and the user already asked to retry, so
+        failing again means show the dialog again immediately, with a fresh token.
+        Unconditionally replaces whatever episode is active (there should be none;
+        the caller consumed it via `consume()` first) with a freshly TRIPPED one."""
+        episode = RecoveryEpisode(episode_key=(game_id, coords), game_id=game_id, coords=coords, count=1, detail=detail)
+        episode.recovery_token = self._token_factory()
+        self._episode = episode
+        return episode

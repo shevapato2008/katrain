@@ -151,3 +151,65 @@ class TestDefaultTokenFactory:
         o = t.on_failure(game_id="g1", coords=(3, 3), reason="engine_error")
         assert isinstance(o.episode.recovery_token, str)
         assert len(o.episode.recovery_token) >= 32  # uuid4 hex/str length ballpark
+
+
+class TestConsume:
+    """Task 8 (B4/M5/D8): consume() is the CAS primitive the retry/cancel
+    endpoints use to atomically detach the active episode BEFORE doing anything
+    with an `await` in it -- so a concurrent second call (same or stale token)
+    can never also succeed."""
+
+    def test_consume_matching_token_detaches_and_returns_episode(
+        self,
+    ):
+        t = _tracker(max_attempts=1, tokens=["tok-a"])
+        o = t.on_failure(game_id="g1", coords=(3, 3), reason="engine_error")
+        episode = t.consume("tok-a")
+        assert episode is o.episode
+        assert episode.coords == (3, 3) and episode.game_id == "g1"
+        assert t.active_episode is None  # detached
+
+    def test_consume_stale_token_returns_none_and_leaves_episode_active(self):
+        t = _tracker(max_attempts=1, tokens=["tok-a"])
+        t.on_failure(game_id="g1", coords=(3, 3), reason="engine_error")
+        assert t.consume("tok-wrong") is None
+        assert t.active_episode is not None  # untouched
+
+    def test_consume_with_no_active_episode_returns_none(self):
+        t = _tracker()
+        assert t.consume("anything") is None
+
+    def test_second_consume_after_first_succeeds_returns_none(self):
+        """The concurrency guarantee itself: once the first caller detaches the
+        episode, a second caller (double-click, or a retry racing a cancel) sees
+        no active episode at all -- not even with the same token."""
+        t = _tracker(max_attempts=1, tokens=["tok-a"])
+        t.on_failure(game_id="g1", coords=(3, 3), reason="engine_error")
+        first = t.consume("tok-a")
+        second = t.consume("tok-a")
+        assert first is not None
+        assert second is None
+
+
+class TestTripNow:
+    """Task 8: a manual-retry failure re-shows the recovery dialog immediately with
+    a FRESH token -- there is no bounded-attempts count to climb for an explicit
+    user-initiated retry (unlike the poller's automatic on_failure threshold)."""
+
+    def test_trip_now_creates_a_tripped_episode_with_fresh_token(self):
+        t = _tracker(tokens=["tok-a", "tok-b"])
+        episode = t.trip_now(game_id="g1", coords=(3, 3), detail="boom again")
+        assert episode.recovery_token == "tok-a"
+        assert episode.count == 1
+        assert episode.detail == "boom again"
+        assert t.active_episode is episode
+
+    def test_trip_now_replaces_whatever_was_active(self):
+        # max_attempts=1: on_failure trips immediately and consumes "tok-a" --
+        # trip_now must still hand out a brand-new token ("tok-b"), not reuse it.
+        t = _tracker(max_attempts=1, tokens=["tok-a", "tok-b"])
+        t.on_failure(game_id="g1", coords=(3, 3), reason="engine_error")
+        episode = t.trip_now(game_id="g1", coords=(3, 3), detail="still failing")
+        assert episode.recovery_token == "tok-b"
+        assert episode.count == 1  # fresh episode, not a continuation
+        assert t.active_episode is episode

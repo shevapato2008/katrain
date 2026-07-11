@@ -2499,3 +2499,42 @@ msgstr "변화도"
 
 msgid "game:pass"
 msgstr "패스"
+
+msgid "AI played"
+msgstr "AI가 착수했습니다"
+
+msgid "Attempts"
+msgstr "재시도 횟수"
+
+msgid "Golaxy connection error"
+msgstr "Golaxy 연결 오류"
+
+msgid "Move at {coord} failed to submit"
+msgstr "{coord}에 착수 제출 실패"
+
+msgid "Network error, please try again"
+msgstr "네트워크 오류입니다. 다시 시도해 주세요"
+
+msgid "place the black stone at the matching point on the board"
+msgstr "바둑판의 해당 교차점에 흑돌을 놓아 주세요"
+
+msgid "place the white stone at the matching point on the board"
+msgstr "바둑판의 해당 교차점에 백돌을 놓아 주세요"
+
+msgid "Please remove the stone at {coord}"
+msgstr "{coord}의 돌을 제거해 주세요"
+
+msgid "Remove the physical stone"
+msgstr "돌 제거"
+
+msgid "Resign"
+msgstr "불계"
+
+msgid "Retry"
+msgstr "재시도"
+
+msgid "Waiting for stone removal"
+msgstr "돌 제거 대기 중"
+
+msgid "This recovery request has expired"
+msgstr "이 복구 요청은 만료되었습니다"

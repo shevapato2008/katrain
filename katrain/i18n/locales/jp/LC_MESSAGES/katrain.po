@@ -2572,3 +2572,42 @@ msgstr "変化図"
 
 msgid "game:pass"
 msgstr "パス"
+
+msgid "AI played"
+msgstr "AIが着手しました"
+
+msgid "Attempts"
+msgstr "リトライ回数"
+
+msgid "Golaxy connection error"
+msgstr "Golaxy接続エラー"
+
+msgid "Move at {coord} failed to submit"
+msgstr "{coord}への着手の送信に失敗しました"
+
+msgid "Network error, please try again"
+msgstr "ネットワークエラーです。再試行してください"
+
+msgid "place the black stone at the matching point on the board"
+msgstr "盤面の対応する交点に黒石を置いてください"
+
+msgid "place the white stone at the matching point on the board"
+msgstr "盤面の対応する交点に白石を置いてください"
+
+msgid "Please remove the stone at {coord}"
+msgstr "{coord}の石を取り除いてください"
+
+msgid "Remove the physical stone"
+msgstr "石を取り除く"
+
+msgid "Resign"
+msgstr "投了"
+
+msgid "Retry"
+msgstr "再試行"
+
+msgid "Waiting for stone removal"
+msgstr "石の取り除きを待っています"
+
+msgid "This recovery request has expired"
+msgstr "この復旧リクエストは期限切れです"

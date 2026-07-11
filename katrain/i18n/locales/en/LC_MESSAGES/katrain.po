@@ -2580,3 +2580,43 @@ msgstr "Variation"
 
 msgid "game:pass"
 msgstr "Pass"
+
+#. physical golaxy engine-play
+msgid "AI played"
+msgstr "AI played"
+
+msgid "Attempts"
+msgstr "Attempts"
+
+msgid "Golaxy connection error"
+msgstr "Golaxy connection error"
+
+msgid "Move at {coord} failed to submit"
+msgstr "Move at {coord} failed to submit"
+
+msgid "Network error, please try again"
+msgstr "Network error, please try again"
+
+msgid "place the black stone at the matching point on the board"
+msgstr "place the black stone at the matching point on the board"
+
+msgid "place the white stone at the matching point on the board"
+msgstr "place the white stone at the matching point on the board"
+
+msgid "Please remove the stone at {coord}"
+msgstr "Please remove the stone at {coord}"
+
+msgid "Remove the physical stone"
+msgstr "Remove the physical stone"
+
+msgid "Resign"
+msgstr "Resign"
+
+msgid "Retry"
+msgstr "Retry"
+
+msgid "Waiting for stone removal"
+msgstr "Waiting for stone removal"
+
+msgid "This recovery request has expired"
+msgstr "This recovery request has expired"

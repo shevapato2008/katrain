@@ -2404,3 +2404,42 @@ msgstr "变化图"
 
 msgid "game:pass"
 msgstr "停一手"
+
+msgid "AI played"
+msgstr "AI 已落子"
+
+msgid "Attempts"
+msgstr "已重试"
+
+msgid "Golaxy connection error"
+msgstr "星阵连接出错"
+
+msgid "Move at {coord} failed to submit"
+msgstr "落子 {coord} 提交失败"
+
+msgid "Network error, please try again"
+msgstr "网络异常，请重试"
+
+msgid "place the black stone at the matching point on the board"
+msgstr "请在实体棋盘对应交叉点摆放黑子"
+
+msgid "place the white stone at the matching point on the board"
+msgstr "请在实体棋盘对应交叉点摆放白子"
+
+msgid "Please remove the stone at {coord}"
+msgstr "请拿回 {coord} 处的棋子"
+
+msgid "Remove the physical stone"
+msgstr "拿回棋子"
+
+msgid "Resign"
+msgstr "认输"
+
+msgid "Retry"
+msgstr "重试"
+
+msgid "Waiting for stone removal"
+msgstr "等待拿回棋子"
+
+msgid "This recovery request has expired"
+msgstr "该恢复请求已过期"

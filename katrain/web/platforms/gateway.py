@@ -159,6 +159,19 @@ class PlatformCommandGateway:
                 raise PlatformMoveRejectedError(str(e), reason="illegal_move")
             position_token = id(game.current_node)
 
+            # B3/G4: resync the adapter's stateless move history to the CURRENT
+            # node's path BEFORE spending a ~180s tunnel call -- an undo/branch
+            # navigation since the last commit would otherwise send the AI a
+            # stale or outright wrong history. Failure (e.g. a pass found on the
+            # path) must reject loudly here, before any pending state is set, so
+            # there is no half-commit to unwind.
+            try:
+                self._pm.rebuild_engine_context(session_id)
+            except Exception as e:
+                logger.error(f"Engine move history rebuild failed for session {session_id}: {e}")
+                self._broadcast_rejected(session_id, "engine_error")
+                raise PlatformMoveRejectedError(str(e), reason="engine_error")
+
         ctx.set_pending("move")
         self._broadcast_pending(session_id, col, row)
         adapter = self._pm.get_adapter(ctx.platform)

@@ -932,14 +932,26 @@ class GolaxyAdapter(PlatformAdapter):
         winner = "W" if ctx.config.human_color == "B" else "B"  # human resigns → AI wins
         await self._emit("game_ended", game_id, "resign", winner)
 
-    def rebuild_engine_moves(self, game_id: str, moves_coords: list[tuple[int, int]]) -> None:
-        """Reset an engine context's move list from an already-extracted main line.
+    def rebuild_engine_moves(self, game_id: str, path_moves: list[tuple[int, int]]) -> None:
+        """Reset an engine context's move list to handicap-prefix + the given
+        post-handicap path (B3/G4).
 
         Decoupled recovery helper: the manager (which owns the KaTrain session)
-        extracts the ordered (col, row) main line from the game tree and calls
-        this on reconnect/desync. This method does NOT read the session tree.
+        extracts the ordered (col, row) path from the CURRENT node back to the
+        root (PlatformManager.rebuild_engine_context) and calls this after an
+        undo/branch-nav, before the next genmove. This method does NOT read
+        the session tree itself.
+
+        `path_moves` must NOT include handicap stones -- those are ROOT SETUP
+        placements locally (`place_handicap_stones`), not move nodes, so the
+        manager's traversal naturally excludes them. This method re-derives
+        the SAME handicap prefix `start_engine_game` originally seeded
+        `ctx.moves` with (from `ctx.config.handicap`/`board_size`), so the
+        rebuilt `ctx.moves` is byte-for-byte what the tunnel expects: prefix
+        first, then the alternating post-handicap history.
         """
         ctx = self._engine_games.get(game_id)
         if ctx is None:
             raise KeyError(game_id)
-        ctx.moves = [katrain_to_golaxy(c, r, ctx.config.board_size) for (c, r) in moves_coords]
+        prefix = _handicap_stones(ctx.config.handicap, ctx.config.board_size)
+        ctx.moves = prefix + [katrain_to_golaxy(c, r, ctx.config.board_size) for (c, r) in path_moves]

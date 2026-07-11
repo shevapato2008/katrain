@@ -18,7 +18,7 @@ Task 4 (B1/B2/D5/D7 — commit protocol hardening) adds:
 import asyncio
 import threading
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -30,14 +30,29 @@ from katrain.web.platforms.manager import PlatformManager
 from katrain.web.platforms.models import PlatformGameContext, PlatformMove
 
 
+class MockNode:
+    """Bare stand-in for a GameNode — only enough surface for
+    PlatformManager.rebuild_engine_context's traversal (nodes_from_root/.moves).
+    These gateway tests don't exercise the rebuild feature itself (that's
+    test_engine_rebuild.py); an empty path here just needs to not raise."""
+
+    def __init__(self):
+        self.moves = []
+
+    @property
+    def nodes_from_root(self):
+        return [self]
+
+
 class MockGame:
     """Minimal stand-in for katrain.core.game.Game — just enough surface for the
     gateway's pre-validation (_check_move_legal) and position-token logic.
 
-    Board starts empty (19x19). `current_node` is an arbitrary sentinel object;
-    only its IDENTITY matters (the gateway's position token is `id(current_node)`),
-    so tests simulating an interleaving tree mutation (e.g. undo racing the tunnel
-    wait) just swap it for a fresh sentinel.
+    Board starts empty (19x19). `current_node` starts as a MockNode (so the
+    rebuild-history call added in B3/G4 has a traversable, empty path); tests
+    simulating an interleaving tree mutation (e.g. undo racing the tunnel wait)
+    swap it for a fresh sentinel — only its IDENTITY matters there (the
+    gateway's position token is `id(current_node)`).
 
     `_validate_move_and_update_chains` is the REAL unbound method from
     katrain.core.game.Game — reused as-is (not reimplemented) so pre-validation
@@ -53,7 +68,7 @@ class MockGame:
         self.chains = []
         self.last_capture = []
         self.prisoners = []
-        self.current_node = object()
+        self.current_node = MockNode()
         self.rules = "japanese"  # read (before the length check) by the real suicide-rule branch
 
 
@@ -108,6 +123,7 @@ class MockEngineAdapter:
     def __init__(self):
         self.submit_engine_move = AsyncMock()
         self.resign_engine_game = AsyncMock()
+        self.rebuild_engine_moves = MagicMock()  # called by PlatformManager.rebuild_engine_context
 
 
 @pytest.fixture

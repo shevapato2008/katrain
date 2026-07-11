@@ -40,7 +40,7 @@
 - 引用代码用**符号名**为主、行号为辅（行号会漂移，实施时以符号定位）。
 - Python 格式 `uv run black -l 120 katrain tests`；conventional commits（`feat(physical-golaxy): …`）。
 - 前端新文案 `t('English key', '中文')`，默认中文，禁日文；静态串收尾统一走 `katrain-i18n-expert`（Task 13）。
-- 坐标约定：vision 网格 row 0 = 顶；KaTrain GTP coords y 自底向上；`vision_rc = (board_size - 1 - y, x)`。**金标准（评审 M8 已纠正）**：KaTrain `(col=3, row=15)` = D16 → vision `(3, 3)`；KaTrain `(3, 3)` = D4 → vision `(15, 3)`。棋盘固定 19 路。
+- 坐标约定：vision 网格 row 0 = 顶；KaTrain GTP coords y 自底向上；`vision_rc = (board_size - 1 - y, x)`。**金标准（评审 M8 已纠正）**：KaTrain GTP `(col=3, row=15)` = D16 → vision `(3, 3)`；GTP `(3, 3)` = D4 → vision `(15, 3)`。棋盘固定 19 路。**注意（Task 10 复审发现）**：翻转公式仅适用于 GTP（自底向上）输入；`golaxy/coords.py` 的 `Move/Candidate.row` 已是顶部锚定（row 0 = 顶，与 vision 同向），直接 `(c.row, c.col)` 即 vision_rc，**不得再翻转**（否则双重翻转成镜像）。金标准换算到 Candidate 空间：D16 = `Candidate(col=3, row=3)` → vision `(3, 3)`；D4 = `Candidate(col=3, row=15)` → vision `(15, 3)`。
 - 新增可调参数挂配置并有默认值；重试/恢复策略参数放独立的 recovery 配置段（不与 LED planner 参数混居，评审 m1）。
 
 ## 关键事实（写代码前必读，2026-07-11 已逐一核实）
@@ -181,7 +181,7 @@
 
 - Files: Modify `katrain/web/api/v1/endpoints/platforms.py`（engine/analysis）；Test `tests/platforms/test_engine_analysis_endpoint.py` 追加。
 - [ ] **写失败测试**：
-  - `kind=="options"` 成功 + orchestrator 存在 + `vision.bound_session_id == session_id` + **请求前后 `current_node_id` 未变** → `show_hint` 收到 vision_rc list（金标准：KaTrain `(3,15)`=D16 → `(3,3)`；`(3,3)`=D4 → `(15,3)`，评审 M8 已纠正）；
+  - `kind=="options"` 成功 + orchestrator 存在 + `vision.bound_session_id == session_id` + **请求前后 `current_node_id` 未变** → `show_hint` 收到 vision_rc list（金标准：`Candidate.row` 已顶部锚定，直接 `(c.row, c.col)`，不翻转 —— D16 = `Candidate(3,3)` → vision `(3,3)`；D4 = `Candidate(3,15)` → vision `(15,3)`；GTP 表述见 Global Constraints）；
   - 请求期间落子/undo（node id 变）→ 不点灯；unbind/换绑 → 不点灯；
   - `kind!="options"`、7003、orchestrator 缺席 → 不调不炸；show_hint 抛错不影响分析结果返回。
 - [ ] 实现：请求前取 token，await 分析，返回后同校验再 `show_hint`（try/except 包裹）。

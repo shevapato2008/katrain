@@ -395,8 +395,9 @@ def _build_app_with_board(manager, vision=None, orchestrator=None, session=None,
 
 
 def _options_result_two_candidates():
-    # Gold standard (task-10-brief): KaTrain (col=3,row=15)=D16 -> vision (3,3);
-    # KaTrain (col=3,row=3)=D4 -> vision (15,3).
+    # Gold standard (per test_engine_analysis_adapter.py's golaxy_to_katrain
+    # mapping): KaTrain (col=3,row=3)=D16 -> vision (3,3);
+    # KaTrain (col=3,row=15)=D4 -> vision (15,3).
     return OptionsAnalysis(
         candidates=[
             Candidate(col=3, row=15, prob=0.6, winrate=0.6, delta=0.1),
@@ -420,7 +421,7 @@ async def test_options_bound_and_unchanged_shows_hint_gold_standard():
         )
     assert r.status_code == 200, r.text
     assert r.json()["ok"] is True
-    assert orchestrator.shown == [(3, 3), (15, 3)]
+    assert orchestrator.shown == [(15, 3), (3, 3)]
 
 
 @pytest.mark.asyncio

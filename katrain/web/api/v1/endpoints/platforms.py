@@ -166,8 +166,10 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
             if id(session.katrain.game.current_node) != position_token:
                 logger.debug("支招 hint dropped: position changed for session %s", session_id)
                 return
-            board_size = session.katrain.game.board_size[0]
-        points = [(board_size - 1 - c.row, c.col) for c in result.candidates]
+        # `Candidate.row`/`.col` are already top-anchored KaTrain (col, row) --
+        # golaxy_to_katrain's row=0 is TOP, same frame vision/show_hint expects
+        # (see katrain/web/platforms/golaxy/coords.py docstring). No flip.
+        points = [(c.row, c.col) for c in result.candidates]
         if points:
             orchestrator.show_hint(points)
     except Exception:

@@ -197,87 +197,88 @@ const PlatformEngineSetupPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SubPageBar title={t('Play vs AI', '人机对弈')} to="/kiosk/play/cross-platform" />
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2.5, md: 4 }, py: 3 }}>
-      <Box sx={{ maxWidth: 1060, mx: 'auto' }}>
-        <Typography sx={{ color: 'text.disabled', fontSize: 13.5, mb: 2.5 }}>
-          {t('Golaxy', '星阵围棋')} · <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>{t('Free game', '自由对弈')}</Box>
-          {' · '}{t('Strictly aligned with Golaxy config (from its app.js)', '严格对齐星阵真实配置（取自其 app.js）')}
-        </Typography>
-
-        {levelsLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>
-        ) : levelsError ? (
-          <Alert severity="error">{levelsError}</Alert>
-        ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '340px 1fr' }, gap: 3, alignItems: 'start' }}>
-            {/* Board preview card */}
-            <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 2.25 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '1.2px', mb: 0.5 }}>
-                {t('Board preview', '盘面预览')}
-              </Typography>
-              <Typography sx={{ color: 'text.disabled', fontSize: 12.5, mb: 1.5 }}>{boardNote}</Typography>
-              <BoardPreview handicap={handicap} />
-              <Box sx={{ display: 'flex', gap: 2, mt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
-                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#141414', boxShadow: '0 0 0 1px #000' }} />
-                  {t('Handicap (black)', '让子(黑)')}
-                </Box>
-                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#efeae0' }} />
-                  {t('AI (white)', 'AI(白)')}
-                </Box>
-              </Box>
+      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        {/* Left: board preview console — fixed width, mirrors AiSetupPage's compact layout. */}
+        <Box
+          sx={{
+            width: 322, flexShrink: 0, overflow: 'hidden', m: 2, mr: 0,
+            bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
+            borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
+          }}
+        >
+          <Typography variant="overline" sx={{ color: 'text.secondary', mb: 0.5 }}>
+            {t('Board preview', '盘面预览')}
+          </Typography>
+          <Typography sx={{ color: 'text.disabled', fontSize: 12.5, mb: 1.5 }}>{boardNote}</Typography>
+          <BoardPreview handicap={handicap} />
+          <Box sx={{ display: 'flex', gap: 2, mt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
+            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#141414', boxShadow: '0 0 0 1px #000' }} />
+              {t('Handicap (black)', '让子(黑)')}
             </Box>
+            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#efeae0' }} />
+              {t('AI (white)', 'AI(白)')}
+            </Box>
+          </Box>
+        </Box>
 
-            {/* Settings panel */}
-            <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 4, px: 2.75, pb: 2.5, pt: 0.5 }}>
-              {/* 规则: 棋盘 · 让子 · 贴目 */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', pt: 1.25 }}>{t('Ruleset', '规则')}</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
-                  {fixedDd(t('Board', '棋盘'), t('19 lines', '19 路'))}
-                  <ButtonBase
-                    aria-label={t('Select handicap', '选择让子')}
-                    onClick={(e) => setHcAnchor(e.currentTarget)}
-                    sx={{
-                      display: 'inline-flex', alignItems: 'center', gap: 1.25, minHeight: 46, px: 1.75,
-                      borderRadius: 2.5, border: '1px solid', borderColor: 'primary.main', bgcolor: 'background.paper',
-                      boxShadow: '0 0 0 1px rgba(93,130,112,.3)',
-                    }}
-                  >
+        {/* Right: compact 2-column settings — structurally no-scroll (overflow:hidden). */}
+        <Box
+          data-testid="engine-setup-noscroll-root"
+          sx={{ flex: 1, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}
+        >
+          <Typography sx={{ color: 'text.disabled', fontSize: 13, mb: 1.5 }}>
+            {t('Golaxy', '星阵围棋')} · <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>{t('Free game', '自由对弈')}</Box>
+          </Typography>
+
+          {levelsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>
+          ) : levelsError ? (
+            <Alert severity="error">{levelsError}</Alert>
+          ) : (
+            <>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, alignContent: 'start' }}>
+                {/* Board — fixed */}
+                {fixedDd(t('Board', '棋盘'), t('19 lines', '19 路'))}
+
+                {/* Handicap — dropdown trigger */}
+                <ButtonBase
+                  aria-label={t('Select handicap', '选择让子')}
+                  onClick={(e) => setHcAnchor(e.currentTarget)}
+                  sx={{
+                    display: 'inline-flex', alignItems: 'center', gap: 1.25, minHeight: 46, px: 1.75,
+                    borderRadius: 2.5, border: '1px solid', borderColor: 'primary.main', bgcolor: 'background.paper',
+                    boxShadow: '0 0 0 1px rgba(93,130,112,.3)', justifyContent: 'space-between',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                     <Typography sx={{ color: 'text.disabled', fontSize: 13 }}>{t('Handicap', '让子')}</Typography>
                     <Typography sx={{ color: 'text.primary', fontSize: 15, fontWeight: 600 }}>{currentHandicapLabel}</Typography>
-                    <Typography sx={{ color: 'text.disabled', fontSize: 12 }}>▾</Typography>
-                    <Box component="span" sx={{
-                      ml: 0.5, fontSize: 10, fontWeight: 700, letterSpacing: '.5px', color: 'warning.main',
-                      border: '1px solid', borderColor: 'warning.main', borderRadius: '5px', px: 0.6, py: '1px',
-                    }}>
-                      {t('New', '可选')}
-                    </Box>
-                  </ButtonBase>
-                  <Menu anchorEl={hcAnchor} open={Boolean(hcAnchor)} onClose={() => setHcAnchor(null)}>
-                    {handicapOptions(t).map((o) => (
-                      <MenuItem
-                        key={o.value}
-                        selected={o.value === handicap}
-                        onClick={() => { setHandicap(o.value); setHcAnchor(null); }}
-                      >
-                        {o.label}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                  {fixedDd(t('Komi points', '贴目'), komiLabel(handicap, t))}
-                  {hint(t(
-                    'Handicap dropdown: even / black-first / 2..9 stones. Komi follows handicap (even 7.5 · N stones N); board 19 is Chinese-only.',
-                    '让子下拉：分先 / 让先 / 让2子…让9子。贴目随让子自动定（分先 7.5 · 让N子 N），不单独设。19 路仅中国规则（星阵不在 19 路提供日本规则）。',
+                  </Box>
+                  <Typography sx={{ color: 'text.disabled', fontSize: 12 }}>▾</Typography>
+                </ButtonBase>
+                <Menu anchorEl={hcAnchor} open={Boolean(hcAnchor)} onClose={() => setHcAnchor(null)}>
+                  {handicapOptions(t).map((o) => (
+                    <MenuItem
+                      key={o.value}
+                      selected={o.value === handicap}
+                      onClick={() => { setHandicap(o.value); setHcAnchor(null); }}
+                    >
+                      {o.label}
+                    </MenuItem>
                   ))}
-                </Box>
-              </Box>
+                </Menu>
 
-              {/* 棋手: 先手 · 计时 */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', pt: 1.25 }}>{t('Players', '棋手')}</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25, alignItems: 'center' }}>
+                {/* Komi — fixed, derived from handicap */}
+                {fixedDd(t('Komi points', '贴目'), komiLabel(handicap, t))}
+
+                {/* Timing — fixed */}
+                {fixedDd(t('Timing', '计时'), t('Untimed', '不计时'))}
+
+                {/* Take color — segmented, spans both columns */}
+                <Box sx={{ gridColumn: '1 / -1' }}>
+                  <Typography sx={{ fontSize: 13, color: 'text.disabled', mb: 0.5 }}>{t('First move', '先手')}</Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     {colorOptions.map((o) => {
                       const sel = humanColor === o.value;
@@ -286,7 +287,7 @@ const PlatformEngineSetupPage = () => {
                           key={o.value}
                           onClick={() => setHumanColor(o.value)}
                           sx={{
-                            minWidth: 60, py: 1.25, px: 1.75, borderRadius: 2.5, fontSize: 15,
+                            flex: 1, py: 1.25, px: 1.75, borderRadius: 2.5, fontSize: 15,
                             border: '1px solid', borderColor: sel ? 'primary.main' : 'divider',
                             bgcolor: sel ? 'primary.dark' : 'background.paper', color: sel ? '#fff' : 'text.secondary',
                             fontWeight: sel ? 600 : 400, transition: 'all 100ms ease-out',
@@ -298,18 +299,14 @@ const PlatformEngineSetupPage = () => {
                       );
                     })}
                   </Box>
-                  {fixedDd(t('Timing', '计时'), t('Untimed', '不计时'))}
-                  {hint(t('First move: nigiri (random) / black / white, aligned with Golaxy.', '先手：猜先(随机) / 执黑 / 执白，对齐星阵。'))}
                 </Box>
-              </Box>
 
-              {/* 对手: 等级 */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '68px 1fr', gap: 1.75, alignItems: 'start', py: 2.25 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', pt: 1.25 }}>{t('Opponent', '对手')}</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
+                {/* Opponent level — stepper, spans both columns */}
+                <Box sx={{ gridColumn: '1 / -1' }}>
+                  <Typography sx={{ fontSize: 13, color: 'text.disabled', mb: 0.5 }}>{t('Opponent', '对手')}</Typography>
                   <Box sx={{
                     display: 'flex', alignItems: 'center', gap: 1.75, bgcolor: 'background.paper',
-                    border: '1px solid', borderColor: 'divider', borderRadius: 3, p: '10px 14px', width: '100%', maxWidth: 420,
+                    border: '1px solid', borderColor: 'divider', borderRadius: 3, p: '10px 14px', width: '100%',
                   }}>
                     <ButtonBase
                       aria-label={t('Weaker level', '降低等级')}
@@ -354,33 +351,37 @@ const PlatformEngineSetupPage = () => {
                       </MenuItem>
                     ))}
                   </Menu>
-                  {hint(t('Golaxy 39-level bots, same as existing.', '星阵 39 级 bot，同现有实现。'))}
                 </Box>
               </Box>
 
-              {startError && <Alert severity="error" sx={{ mt: 1.5 }}>{startError}</Alert>}
+              {hint(t(
+                'Handicap dropdown: even / black-first / 2..9 stones. Komi follows handicap automatically. Board 19 is Chinese-rules only; 39-level Golaxy bots.',
+                '让子下拉：分先 / 让先 / 让2子…让9子。贴目随让子自动定，不单独设。19 路仅中国规则；星阵 39 级 bot。',
+              ))}
 
-              <Button
-                fullWidth
-                startIcon={<PlayArrow />}
-                disabled={starting || level === null}
-                onClick={handleStart}
-                sx={{
-                  mt: 2, py: 2, borderRadius: 3.25, fontSize: 18, fontWeight: 650, letterSpacing: '2px', color: '#fff',
-                  background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                  '&:hover': { background: `linear-gradient(180deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})` },
-                  '&.Mui-disabled': { color: 'text.disabled', background: 'var(--raise2)' },
-                }}
-              >
-                {starting ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
-              </Button>
-              <Typography sx={{ color: 'text.disabled', fontSize: 12.5, textAlign: 'center', mt: 1.5 }}>
-                {`${t('Chinese rules', '中国规则')} · ${handicapShort(handicap, t)} · ${komiLabel(handicap, t)} · ${t('19 lines', '19 路')} · ${t('Untimed', '不计时')} · ${colorShort}`}
-              </Typography>
-            </Box>
-          </Box>
-        )}
-      </Box>
+              <Box sx={{ mt: 'auto', pt: 2 }}>
+                {startError && <Alert severity="error" sx={{ mb: 1.5 }}>{startError}</Alert>}
+                <Button
+                  fullWidth
+                  startIcon={<PlayArrow />}
+                  disabled={starting || level === null}
+                  onClick={handleStart}
+                  sx={{
+                    py: 2, borderRadius: 3.25, fontSize: 18, fontWeight: 650, letterSpacing: '2px', color: '#fff',
+                    background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                    '&:hover': { background: `linear-gradient(180deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})` },
+                    '&.Mui-disabled': { color: 'text.disabled', background: 'var(--raise2)' },
+                  }}
+                >
+                  {starting ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
+                </Button>
+                <Typography sx={{ color: 'text.disabled', fontSize: 12.5, textAlign: 'center', mt: 1.5 }}>
+                  {`${t('Chinese rules', '中国规则')} · ${handicapShort(handicap, t)} · ${komiLabel(handicap, t)} · ${t('19 lines', '19 路')} · ${t('Untimed', '不计时')} · ${colorShort}`}
+                </Typography>
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
     </Box>
   );

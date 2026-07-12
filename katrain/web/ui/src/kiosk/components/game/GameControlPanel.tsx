@@ -4,6 +4,7 @@ import {
   PanToolAlt, Flag, Calculate,
   SkipPrevious, FastRewind, ArrowBack, ArrowForward, FastForward, SkipNext,
 } from '@mui/icons-material';
+import ViewInAr from '@mui/icons-material/ViewInAr';
 import PlayerCard from '../../../components/PlayerCard';
 import ScoreGraph from '../../../components/ScoreGraph';
 import ItemToggle from './ItemToggle';
@@ -99,6 +100,7 @@ const GameControlPanel = ({
           <ItemToggle icon={<PanToolAlt />} label={t('game:pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver} />
           <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive disabled={isGameOver} />
           <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={!canCount} />
+          <ItemToggle icon={<ViewInAr />} label={t('3D', '3D')} active={!!analysisToggles.view3d} onClick={() => onToggleAnalysis('view3d')} />
         </Box>
 
         <Divider />

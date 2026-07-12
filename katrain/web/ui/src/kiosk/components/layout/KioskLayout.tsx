@@ -4,6 +4,7 @@ import { ImmersiveProvider, useImmersive } from '../../context/ImmersiveContext'
 import Header from './Header';
 import Dock from './Dock';
 import SmartBoardConsole from './SmartBoardConsole';
+import { L1_PATHS } from './navTabs';
 
 const CONSOLE_ROUTES = ['/kiosk/play'];
 interface KioskLayoutProps { username?: string }
@@ -11,7 +12,9 @@ interface KioskLayoutProps { username?: string }
 const KioskShell = ({ username }: KioskLayoutProps) => {
   const { immersive } = useImmersive();
   const location = useLocation();
+  const isL1 = L1_PATHS.includes(location.pathname);
   const showConsole = !immersive && CONSOLE_ROUTES.includes(location.pathname);
+  const showDock = !immersive && isL1; // Dock only on first-level pages
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', bgcolor: 'background.default' }}>
       {!immersive && <Header username={username} />}
@@ -21,7 +24,7 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
           <Outlet />
         </Box>
       </Box>
-      {!immersive && <Dock />}
+      {showDock && <Dock />}
     </Box>
   );
 };

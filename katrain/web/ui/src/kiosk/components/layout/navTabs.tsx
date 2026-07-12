@@ -30,3 +30,7 @@ export const primaryTabs: NavTab[] = [
 export const settingsTab: NavTab = {
   label: '设置', icon: <SettingsIcon />, path: '/kiosk/settings', pattern: '/kiosk/settings',
 };
+
+// The 8 first-level routes where the bottom Dock is shown. Every other kiosk
+// route is a deeper page: Dock hidden, SubPageBar (back) shown instead.
+export const L1_PATHS: string[] = [...primaryTabs, settingsTab].map((t) => t.path);

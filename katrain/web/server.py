@@ -787,6 +787,54 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     game_type=mode,  # R3/R5: rated/ranked games forbid analysis (anti-cheat)
                 )
 
+            elif mode == "pvp_local":
+                # Two humans face-to-face on one kiosk. Explicitly force BOTH seats to
+                # player:human — reset_players preserves prior player_type, so a session
+                # recycled from a previous AI game could leave a stale player:ai seat that
+                # would wrongly auto-trigger genmove after the first human (vision) move.
+                black_name = settings.get("black_name") or ""
+                white_name = settings.get("white_name") or ""
+                session.katrain(
+                    "update_player",
+                    bw="B",
+                    player_type="player:human",
+                    player_subtype="player:human",
+                    name=black_name,
+                )
+                session.katrain(
+                    "update_player",
+                    bw="W",
+                    player_type="player:human",
+                    player_subtype="player:human",
+                    name=white_name,
+                )
+                if black_name:
+                    session.katrain.game.root.set_property("PB", black_name)
+                if white_name:
+                    session.katrain.game.root.set_property("PW", white_name)
+
+                session.game_type = "pvp_local"
+
+                time_enabled = settings.get("time_enabled", False)
+                if time_enabled:
+                    session.katrain.update_config("timer/main_time", settings.get("main_time", 0))
+                    session.katrain.update_config("timer/byo_length", settings.get("byo_length", 30))
+                    session.katrain.update_config("timer/byo_periods", settings.get("byo_periods", 3))
+                    session.katrain.update_config("timer/paused", False)
+                else:
+                    session.katrain.update_config("timer/main_time", 0)
+                    session.katrain.update_config("timer/byo_length", 0)
+                    session.katrain.update_config("timer/paused", True)
+
+                session.katrain(
+                    "new_game",
+                    size=settings.get("board_size", 19),
+                    handicap=settings.get("handicap", 0),
+                    komi=settings.get("komi", 7.5),
+                    rules=settings.get("rules", "chinese"),
+                    game_type="pvp_local",
+                )
+
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}

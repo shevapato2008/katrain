@@ -16,6 +16,10 @@ def parse_ae_target(value: str) -> tuple[float, float]:
     (e.g. "145"), which is expanded into a band of width 2 * AE_SCALAR_HALF_WIDTH
     centered on the value and clamped to the valid gray range [0, 255].
     """
+    # Splitting on "-" means any negative input (a bare "-5" or a band bound like
+    # "10--5") produces an empty/extra token that the part-count or float() parse
+    # below rejects, and a negative bound can't be expressed in "LO-HI" form at all
+    # (the "-" is the delimiter) — so no explicit < 0 guard is reachable here.
     parts = value.split("-") if value else []
     if len(parts) == 1:
         try:
@@ -23,9 +27,7 @@ def parse_ae_target(value: str) -> tuple[float, float]:
         except ValueError:
             raise ValueError(
                 f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
-            )
-        if midpoint < 0:
-            raise ValueError(f"Invalid ae_target {value!r}: target brightness must be >= 0")
+            ) from None
         lo = max(0.0, midpoint - AE_SCALAR_HALF_WIDTH)
         hi = min(255.0, midpoint + AE_SCALAR_HALF_WIDTH)
         if lo >= hi:
@@ -37,9 +39,7 @@ def parse_ae_target(value: str) -> tuple[float, float]:
         except ValueError:
             raise ValueError(
                 f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
-            )
-        if lo < 0 or hi < 0:
-            raise ValueError(f"Invalid ae_target {value!r}: band bounds must be >= 0")
+            ) from None
         if lo >= hi:
             raise ValueError(f"Invalid ae_target {value!r}: lo must be less than hi")
         return lo, hi
@@ -87,10 +87,13 @@ class VisionServiceConfig:
     # stuck below the add threshold otherwise has NO path onto the board).
     ambiguous_promote_frames: int = 12
     # Software AE ("software" | "off"): drive the board-region median brightness into
-    # ae_target ("LO-HI", calibrated: known-good scenes meter 146-160) by adjusting
-    # exposure at runtime. Advisory-only where exposure controls are inert (macOS);
-    # actuates on SBC/V4L2 where lock_exposure disables the camera's own AE.
+    # ae_target by adjusting exposure at runtime. Advisory-only where exposure controls
+    # are inert (macOS); actuates on SBC/V4L2 where lock_exposure disables the camera's
+    # own AE.
     auto_exposure: str = "software"
+    # Target brightness as either a "LO-HI" gray-level band or a single midpoint scalar
+    # (e.g. "120-170" or "145"; a bare midpoint expands to a +/-AE_SCALAR_HALF_WIDTH band,
+    # clamped to [0, 255] — see parse_ae_target). Calibrated: known-good scenes meter 146-160.
     ae_target: str = "120-170"
     imgsz: int = 960
     use_clahe: bool = False

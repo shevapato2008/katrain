@@ -25,8 +25,10 @@ import { useResearchBoard, type ResearchBoardState } from '../hooks/useResearchB
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useImmersive } from '../context/ImmersiveContext';
+import { useAuth } from '../../context/AuthContext';
 import { API } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
+import { UserGamesAPI } from '../../api/userGamesApi';
 
 // Minimal shape of a KataGo quick-analyze moveInfo entry (API.quickAnalyze returns `any`).
 interface QuickAnalyzeMoveInfo {
@@ -68,6 +70,7 @@ const ResearchPage = () => {
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const { setImmersive } = useImmersive();
+  const { token } = useAuth();
 
   // ── Board state hook (L1: edit/setup) ──
   const board = useResearchBoard();
@@ -418,6 +421,63 @@ const ResearchPage = () => {
         console.error('Failed to load kifu for deep link:', err);
       });
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task 7(a): 复盘本局 — GamePage's EndgameCard hands off the just-finished game's SGF via
+  // sessionStorage (no query param, since the game just ended in-app). Ref-guarded so it
+  // fires exactly once per mount; the key is removed immediately so a later remount (e.g.
+  // navigating away and back) doesn't reload it.
+  const reviewSgfLoadedRef = useRef(false);
+  useEffect(() => {
+    if (reviewSgfLoadedRef.current) return;
+    const sgf = sessionStorage.getItem('kioskReviewSgf');
+    if (!sgf) return;
+    reviewSgfLoadedRef.current = true;
+    sessionStorage.removeItem('kioskReviewSgf');
+    board.loadFromSGF(sgf);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task 7(b): 对局历史 一键复盘 — ?user_game_id=X (&analyze=1) deep link into a recorded
+  // local game (Task 4's shared UserGamesAPI). Same stale-closure trap as ?kifu_id= above:
+  // thread the FETCHED detail.sgf_content straight into createSession, never re-derive from
+  // `board` in this same async continuation. Ref-guarded; waits for `token` (auth loads
+  // asynchronously) before firing.
+  const userGameLoadedRef = useRef(false);
+  useEffect(() => {
+    const userGameId = searchParams.get('user_game_id');
+    if (!userGameId || userGameLoadedRef.current || !token) return;
+    userGameLoadedRef.current = true;
+
+    UserGamesAPI.get(token, userGameId)
+      .then(async (detail) => {
+        if (!detail.sgf_content) return;
+        board.loadFromSGF(detail.sgf_content);
+
+        if (searchParams.get('analyze') === '1') {
+          const newSessionId = await session.createSession(detail.sgf_content, { skipAnalysis: true });
+          if (!newSessionId) {
+            setAnalysisError(t('research:session_failed', '无法创建研究会话，请重试'));
+            setIsAnalyzing(true);
+            return;
+          }
+          activeSessionIdRef.current = newSessionId;
+          setAnalysisProgress(null);
+          setEtaSeconds(null);
+          setAnalysisError(null);
+          analysisStartRef.current = null;
+          hintsEnabledRef.current = false;
+          pollFailRef.current = 0;
+          setIsAnalyzing(true);
+          try {
+            await API.analysisScan(newSessionId, 500);
+          } catch {
+            setAnalysisError(t('research:scan_failed', '启动分析失败，请重试'));
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load user game for deep link:', err);
+      });
+  }, [searchParams, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Step 8: local confirm dialog (replaces galaxy's useGameNavigation) ──
   const confirmDialog = (

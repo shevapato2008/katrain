@@ -60,16 +60,26 @@ const GameHistoryPage = () => {
     fetchGames(source);
   }, [source, fetchGames]);
 
-  // Fetch full game detail (SGF) when a row is selected — mirrors KifuPage's
-  // selectedId→getAlbum effect so the `cancelled` cleanup actually runs (React
-  // discards a plain event-handler's return value, so this must be a real effect):
-  // rapid taps across rows abort the stale fetch instead of letting it clobber
-  // `detail` out of order.
+  // Reset preview state on the row click (setState in an event handler is fine)
+  // and only track the selected id; the effect below owns the async fetch. Guards
+  // a re-tap of the already-selected row so we don't blank the preview into a
+  // permanent spinner (the effect wouldn't re-run for an unchanged selectedId).
+  const handleSelect = useCallback((id: string) => {
+    if (id === selectedId) return;
+    setSelectedId(id);
+    setDetail(null);
+    setPreviewLoading(true);
+  }, [selectedId]);
+
+  // Fetch full game detail (SGF) when the selection changes. All setState stays
+  // inside the .then/.catch/.finally callbacks — never synchronously in the effect
+  // body — to satisfy react-hooks/set-state-in-effect (matches BaipuListPage). The
+  // `cancelled` cleanup runs for real (unlike a plain event handler's discarded
+  // return value), so a rapid re-selection aborts the stale in-flight fetch instead
+  // of letting it clobber `detail` out of order → 复盘 always targets the shown game.
   useEffect(() => {
     if (selectedId === null || !token) return;
     let cancelled = false;
-    setDetail(null);
-    setPreviewLoading(true);
     UserGamesAPI.get(token, selectedId)
       .then((d) => { if (!cancelled) setDetail(d); })
       .catch((err) => { if (!cancelled) console.error('Failed to load game detail:', err); })
@@ -130,7 +140,7 @@ const GameHistoryPage = () => {
                 <ListItemButton
                   key={g.id}
                   selected={selectedId === g.id}
-                  onClick={() => setSelectedId(g.id)}
+                  onClick={() => handleSelect(g.id)}
                   sx={{ display: 'block', px: 2.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}
                 >
                   <Typography sx={{ fontWeight: 600, fontSize: 14 }}>

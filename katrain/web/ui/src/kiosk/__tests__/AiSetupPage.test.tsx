@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -42,13 +42,15 @@ describe('AiSetupPage', () => {
     expect(screen.getByText('19路')).toBeInTheDocument();
   });
 
-  it('renders ruleset selector', () => {
+  it('renders ruleset selector', async () => {
     renderPage();
-    expect(screen.getByText('规则')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '规则' })).toBeInTheDocument();
     expect(screen.getByText('中国')).toBeInTheDocument();
-    expect(screen.getByText('日本')).toBeInTheDocument();
-    expect(screen.getByText('韩国')).toBeInTheDocument();
-    expect(screen.getByText('AGA')).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: '规则' }));
+    expect(screen.getByRole('option', { name: '日本' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '韩国' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'AGA' })).toBeInTheDocument();
   });
 
   it('renders color selection', () => {
@@ -62,104 +64,90 @@ describe('AiSetupPage', () => {
     expect(screen.getByRole('button', { name: /开始对弈/i })).toBeInTheDocument();
   });
 
-  it('shows AI strategy selector for free mode', () => {
+  it('shows AI strategy selector for free mode', async () => {
     renderPage('free');
-    expect(screen.getByText('AI 策略')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'AI 策略' })).toBeInTheDocument();
     expect(screen.getByText('拟人')).toBeInTheDocument();
-    expect(screen.getByText('KataGo')).toBeInTheDocument();
-    expect(screen.getByText('实地')).toBeInTheDocument();
-    expect(screen.getByText('厚势')).toBeInTheDocument();
-    expect(screen.getByText('策略')).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: 'AI 策略' }));
+    expect(screen.getByRole('option', { name: 'KataGo' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '实地' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '厚势' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '策略' })).toBeInTheDocument();
   });
 
-  it('shows rank slider in free mode when human strategy selected', () => {
+  it('shows AI strength selector in free mode when human strategy selected', () => {
     renderPage('free');
-    // Default strategy is ai:human, so rank slider should be visible
-    expect(screen.getByText(/AI 棋力/)).toBeInTheDocument();
+    // Default strategy is ai:human, so the strength dropdown should be visible
+    expect(screen.getByRole('combobox', { name: 'AI 棋力' })).toBeInTheDocument();
   });
 
-  it('hides rank slider in free mode for non-human strategy', async () => {
+  it('hides AI strength selector in free mode for non-human strategy', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    // Click KataGo strategy to switch away from ai:human
-    await user.click(screen.getByText('KataGo'));
-    expect(screen.queryByText(/AI 棋力/)).not.toBeInTheDocument();
+    // Switch AI 策略 away from ai:human (拟人)
+    await user.click(screen.getByRole('combobox', { name: 'AI 策略' }));
+    await user.click(screen.getByRole('option', { name: 'KataGo' }));
+    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
   });
 
   it('hides AI strategy selector for ranked mode', () => {
     renderPage('ranked');
-    expect(screen.queryByText('AI 策略')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'AI 策略' })).not.toBeInTheDocument();
   });
 
-  it('shows rank slider for ranked mode', () => {
+  it('shows AI strength selector for ranked mode', () => {
     renderPage('ranked');
-    expect(screen.getByText(/AI 棋力/)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'AI 棋力' })).toBeInTheDocument();
   });
 
-  it('renders handicap slider', () => {
+  it('renders handicap selector defaulting to none', () => {
     renderPage();
-    expect(screen.getByText(/让子: 无/)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '让子' })).toBeInTheDocument();
+    expect(screen.getByText('无')).toBeInTheDocument();
   });
 
-  it('shows komi slider in free mode with no handicap', () => {
+  it('shows komi selector in free mode with no handicap', () => {
     renderPage('free');
-    expect(screen.getByText(/贴目/)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '贴目' })).toBeInTheDocument();
   });
 
-  it('hides komi slider when handicap is set', () => {
-    renderPage('free');
-    // Find the handicap slider (the one after "让子" label) and change it
-    const handicapSlider = screen.getByText(/让子: 无/).closest('[class*="MuiBox"]')!.querySelector('input[type="range"]')!;
-    fireEvent.change(handicapSlider, { target: { value: 2 } });
-    expect(screen.queryByText(/贴目/)).not.toBeInTheDocument();
-  });
-
-  it('shows time switch label', () => {
-    renderPage();
-    expect(screen.getByText('用时')).toBeInTheDocument();
-  });
-
-  it('hides time options when switch is off in free mode', () => {
-    renderPage('free');
-    // Switch is off by default in free mode
-    expect(screen.queryByText(/主时间/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/读秒时间/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/读秒次数/)).not.toBeInTheDocument();
-  });
-
-  it('shows time options when switch is toggled on in free mode', async () => {
+  it('hides komi selector when handicap is set', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    const toggle = screen.getByLabelText('用时');
-    await user.click(toggle);
-    expect(screen.getByText(/主时间/)).toBeInTheDocument();
-    expect(screen.getByText(/读秒时间/)).toBeInTheDocument();
-    expect(screen.getByText(/读秒次数/)).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: '让子' }));
+    await user.click(screen.getByRole('option', { name: '2子' }));
+    expect(screen.queryByRole('combobox', { name: '贴目' })).not.toBeInTheDocument();
   });
 
-  it('shows time options forced on for ranked mode', () => {
+  it('shows time control selector', () => {
+    renderPage();
+    expect(screen.getByRole('combobox', { name: '用时' })).toBeInTheDocument();
+  });
+
+  it('time selector defaults to untimed in free mode', () => {
+    renderPage('free');
+    expect(screen.getByText('不限时')).toBeInTheDocument();
+  });
+
+  it('offers timed presets that map onto the existing main-time/byoyomi state', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: '用时' }));
+    expect(screen.getByRole('option', { name: /5分.*3.*30秒/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /10分.*3.*30秒/ })).toBeInTheDocument();
+  });
+
+  it('time selector excludes the untimed preset for ranked mode (time is forced on)', async () => {
     renderPage('ranked');
-    expect(screen.getByText(/主时间/)).toBeInTheDocument();
-    expect(screen.getByText(/读秒时间/)).toBeInTheDocument();
-    expect(screen.getByText(/读秒次数/)).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: '用时' }));
+    expect(screen.queryByRole('option', { name: '不限时' })).not.toBeInTheDocument();
   });
 
-  it('renders byoyomi time slider marks', async () => {
-    renderPage('free');
-    const user = userEvent.setup();
-    await user.click(screen.getByLabelText('用时'));
-    expect(screen.getByText('10秒')).toBeInTheDocument();
-    expect(screen.getByText('30秒')).toBeInTheDocument();
-    expect(screen.getByText('60秒')).toBeInTheDocument();
-  });
-
-  it('renders byoyomi period slider marks', async () => {
-    renderPage('free');
-    const user = userEvent.setup();
-    await user.click(screen.getByLabelText('用时'));
-    expect(screen.getByText('1次')).toBeInTheDocument();
-    expect(screen.getByText('3次')).toBeInTheDocument();
-    expect(screen.getByText('5次')).toBeInTheDocument();
+  it('ranked mode defaults to a byoyomi-only preset (30s x3), same as prior slider defaults', () => {
+    renderPage('ranked');
+    expect(screen.getByText(/仅读秒.*30秒.*3/)).toBeInTheDocument();
   });
 
   it('calls API.createSession and gameSetup on start', async () => {

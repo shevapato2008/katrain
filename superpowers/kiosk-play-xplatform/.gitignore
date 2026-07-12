@@ -1,0 +1,7 @@
+# 野狐 FoxGTP 官方接入包 — 第三方(腾讯/野狐)版权材料 + Windows 二进制,
+# 不纳入公开 repo。官方可随时重下,链接见 research-platform-selection.md:
+#   https://www.foxwq.com/Public/Soft/aiProgramAndManual.zip
+aiProgramAndManual.zip
+*.zip
+*.exe
+野狐围棋AI接入程序和使用手册(Fox Go AI Program And Manual)20220606/

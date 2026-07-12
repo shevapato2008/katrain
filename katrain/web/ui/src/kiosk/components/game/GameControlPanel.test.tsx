@@ -51,4 +51,25 @@ describe('GameControlPanel — 3D toggle', () => {
     fireEvent.click(btn);
     expect(onToggle).toHaveBeenCalledWith('view3d');
   });
+
+  test('hides the 3D toggle when WebGL is unavailable, keeping other controls', () => {
+    vi.stubGlobal('WebGLRenderingContext', undefined);
+    try {
+      render(
+        <GameControlPanel
+          gameState={mockGameState}
+          onAction={() => {}}
+          onNavigate={() => {}}
+          analysisToggles={{}}
+          onToggleAnalysis={() => {}}
+          isGameOver={false}
+        />
+      );
+      expect(screen.queryByText('3D')).toBeNull();
+      expect(screen.getByText('领地')).toBeInTheDocument();
+      expect(screen.getByText('数子')).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

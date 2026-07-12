@@ -2656,3 +2656,66 @@ msgstr "Warten auf Entfernen des Steins"
 
 msgid "This recovery request has expired"
 msgstr "Diese Wiederherstellungsanfrage ist abgelaufen"
+
+msgid "Black player"
+msgstr "Spieler Schwarz"
+
+msgid "White player"
+msgstr "Spieler Weiß"
+
+msgid "Move sound"
+msgstr "Zugton"
+
+msgid "Local Game"
+msgstr "Lokale Partie"
+
+msgid "Local games"
+msgstr "Lokale Partien"
+
+msgid "Game History"
+msgstr "Partieverlauf"
+
+msgid "Review this game"
+msgstr "Diese Partie analysieren"
+
+msgid "Review"
+msgstr "Analyse"
+
+msgid "All"
+msgstr "Alle"
+
+msgid "moves"
+msgstr "Züge"
+
+msgid "No recorded games yet"
+msgstr "Noch keine aufgezeichneten Partien"
+
+msgid "Select a game to preview"
+msgstr "Partie zur Vorschau auswählen"
+
+msgid "vs"
+msgstr "vs."
+
+msgid "Board Preview"
+msgstr "Brettvorschau"
+
+msgid "Could not open review, please retry"
+msgstr "Analyse konnte nicht geöffnet werden, bitte erneut versuchen"
+
+msgid "Failed to create game"
+msgstr "Partie konnte nicht erstellt werden"
+
+msgid "Start Game"
+msgstr "Partie starten"
+
+msgid "Creating..."
+msgstr "Wird erstellt..."
+
+msgid "Board"
+msgstr "Brett"
+
+msgid "Handicap"
+msgstr "Vorgabe"
+
+msgid "Time Control"
+msgstr "Bedenkzeit"

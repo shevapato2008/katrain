@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import type { GameState } from '../../api';
+import { API, type GameState } from '../../api';
 import GamePage, { deriveAiTurnState } from './GamePage';
 
 // --- Mocks -----------------------------------------------------------------
@@ -12,7 +12,7 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
-interface MockBoardProps { analysisToggles?: Record<string, boolean> }
+interface MockBoardProps { analysisToggles?: Record<string, boolean>; playerColor?: 'B' | 'W' | null }
 const { capturedBoardProps } = vi.hoisted(() => ({
   capturedBoardProps: { current: null as { analysisToggles?: Record<string, boolean> } | null },
 }));
@@ -125,6 +125,7 @@ const pageTree = () => (
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
+        <Route path="/kiosk/research" element={<div>RESEARCH_PAGE</div>} />
       </Routes>
     </MemoryRouter>
   </ThemeProvider>
@@ -142,6 +143,7 @@ describe('GamePage', () => {
     mockPhysicalReminder = null;
     capturedBoardProps.current = null;
     mockCalibrate.mockClear().mockResolvedValue({});
+    sessionStorage.clear();
   });
 
   it('never renders the TEMP DEBUG vision-stream <img>', () => {
@@ -236,6 +238,19 @@ describe('GamePage', () => {
       renderPage();
       expect(screen.queryByTestId('ai-thinking')).toBeNull();
       expect(screen.queryByTestId('ai-move-banner')).toBeNull();
+    });
+
+    it('passes playerColor=null to Board when both players are human (HvH) — touchscreen fallback must work for BOTH colors', () => {
+      mockGameState = makeGameState({
+        players_info: {
+          B: { ...basePlayer, player_type: 'player:human', name: '张三' },
+          W: { ...basePlayer, player_type: 'player:human', name: '李四' },
+        },
+        player_to_move: 'W',
+        end_result: null,
+      });
+      renderPage();
+      expect(capturedBoardProps.current?.playerColor).toBeNull();
     });
   });
 
@@ -440,6 +455,20 @@ describe('GamePage', () => {
       fireEvent.click(screen.getByText('继续对弈'));
       expect(screen.queryByTestId('endgame-card')).toBeNull();
       expect(mockHandleAction).not.toHaveBeenCalled();
+    });
+
+    it('复盘本局 saves the LIVE sgf (no persisted user_games id is available at endgame), stashes it, and navigates to research', async () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
+      const saveSGFSpy = vi.spyOn(API, 'saveSGF').mockResolvedValue({ sgf: '(;GM[1]FF[4]SZ[19])' });
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('复盘本局'));
+        expect(await screen.findByText('RESEARCH_PAGE')).toBeInTheDocument();
+        expect(saveSGFSpy).toHaveBeenCalledWith('test-session');
+        expect(sessionStorage.getItem('kioskReviewSgf')).toBe('(;GM[1]FF[4]SZ[19])');
+      } finally {
+        saveSGFSpy.mockRestore();
+      }
     });
   });
 

@@ -42,6 +42,15 @@ export interface AiTurnState {
 // every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
 // eslint-disable-next-line react-refresh/only-export-components
 export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
+  // Both-human (local PvP, server.py 'pvp_local'): null lets EITHER side play, so the
+  // touchscreen fallback works for BOTH colors. Must precede the single-human checks
+  // below, which would otherwise collapse to 'B' and block White from moving. Uses the
+  // exact 'player:human' literal both seats carry in local PvP; the engine fixture's bare
+  // 'human' seats don't match, so engine games still resolve via platform_engine_color.
+  if (
+    gameState.players_info?.B?.player_type === 'player:human' &&
+    gameState.players_info?.W?.player_type === 'player:human'
+  ) return null;
   if (gameState.platform_engine_color === 'B') return 'W';
   if (gameState.platform_engine_color === 'W') return 'B';
   return gameState.players_info?.B?.player_type === 'player:human' ? 'B'
@@ -76,6 +85,7 @@ interface EndgameCardProps {
   gameState: GameState;
   t: (key: string, fallback?: string) => string;
   onExit: () => void;
+  onReview: () => void;
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
@@ -88,7 +98,7 @@ interface EndgameCardProps {
 // avoids a useEffect + setState, keeping this repo's react-hooks/set-state-in-effect gate clean).
 // DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a kiosk-only
 // overlay (Gate S); not shipped in this cut, and shared Board.tsx is left untouched.
-const EndgameCard = ({ gameState, t, onExit }: EndgameCardProps) => {
+const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
@@ -104,6 +114,7 @@ const EndgameCard = ({ gameState, t, onExit }: EndgameCardProps) => {
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
+        <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
         <Button variant="contained" onClick={onExit} sx={{ bgcolor: 'primary.main' }}>{t('Confirm result', '确认终局')}</Button>
       </Box>
     </Box>
@@ -142,6 +153,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [countError, setCountError] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [resyncError, setResyncError] = useState(false);
   const [syncStuck, setSyncStuck] = useState(false);
@@ -323,7 +335,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const isRanked = gameState.game_type === 'ranked' || gameState.game_type === 'rated';
 
 
-  // Determine which color the human plays (for turn enforcement)
+  // Determine which color the human plays (for turn enforcement). deriveHumanColor now
+  // returns null for both-human local PvP so Board lets whichever side is to move play
+  // (touchscreen fallback works for BOTH colors — see the helper's both-human guard).
   const humanColor = deriveHumanColor(gameState);
 
   // showThinking is the single-owner gate for the "AI 思考中" surface (state A, B1.4).
@@ -583,7 +597,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           remounts EndgameCard fresh (dismissed=false) whenever a new session/game loads.
           DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a
           kiosk-only overlay (Gate S) — not shipped in this cut; Board.tsx is untouched. */}
-      {isGameOver && <EndgameCard key={sessionId} gameState={gameState} t={t} onExit={handleExit} />}
+      {isGameOver && (
+        <EndgameCard
+          key={sessionId}
+          gameState={gameState}
+          t={t}
+          onExit={handleExit}
+          onReview={async () => {
+            if (!sessionId) return;
+            try {
+              const { sgf } = await API.saveSGF(sessionId);
+              sessionStorage.setItem('kioskReviewSgf', sgf);
+              navigate('/kiosk/research');
+            } catch (e) { console.error(e); setReviewError(true); }
+          }}
+        />
+      )}
 
       {/* Resign confirmation (state D) */}
       <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
@@ -716,6 +745,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="error" onClose={() => setResyncError(false)}>
           {t('Re-sync failed, please retry', '重置识别失败，请重试')}
+        </Alert>
+      </Snackbar>
+
+      {/* Review (复盘) save-SGF failure toast */}
+      <Snackbar open={reviewError} autoHideDuration={5000} onClose={() => setReviewError(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setReviewError(false)}>
+          {t('Could not open review, please retry', '无法进入复盘，请重试')}
         </Alert>
       </Snackbar>
 

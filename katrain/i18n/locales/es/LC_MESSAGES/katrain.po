@@ -2490,3 +2490,66 @@ msgstr "Esperando a que se retire la piedra"
 
 msgid "This recovery request has expired"
 msgstr "Esta solicitud de recuperación ha caducado"
+
+msgid "Black player"
+msgstr "Jugador de negras"
+
+msgid "White player"
+msgstr "Jugador de blancas"
+
+msgid "Move sound"
+msgstr "Sonido de jugada"
+
+msgid "Local Game"
+msgstr "Partida local"
+
+msgid "Local games"
+msgstr "Partidas locales"
+
+msgid "Game History"
+msgstr "Historial de partidas"
+
+msgid "Review this game"
+msgstr "Analizar esta partida"
+
+msgid "Review"
+msgstr "Analizar"
+
+msgid "All"
+msgstr "Todas"
+
+msgid "moves"
+msgstr "jugadas"
+
+msgid "No recorded games yet"
+msgstr "Aún no hay partidas guardadas"
+
+msgid "Select a game to preview"
+msgstr "Selecciona una partida para previsualizar"
+
+msgid "vs"
+msgstr "vs"
+
+msgid "Board Preview"
+msgstr "Vista previa del tablero"
+
+msgid "Could not open review, please retry"
+msgstr "No se pudo abrir el análisis, inténtalo de nuevo"
+
+msgid "Failed to create game"
+msgstr "Error al crear la partida"
+
+msgid "Start Game"
+msgstr "Iniciar partida"
+
+msgid "Creating..."
+msgstr "Creando..."
+
+msgid "Board"
+msgstr "Tablero"
+
+msgid "Handicap"
+msgstr "Hándicap"
+
+msgid "Time Control"
+msgstr "Control de tiempo"

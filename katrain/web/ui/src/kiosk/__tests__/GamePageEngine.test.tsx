@@ -647,6 +647,17 @@ describe('GamePage engine mode', () => {
         };
         expect(deriveHumanColor(state)).toBeNull();
       });
+
+      it('local PvP: BOTH seats player:human -> null (touchscreen fallback plays both colors)', () => {
+        const state = {
+          ...mockGameState,
+          players_info: {
+            B: { ...mockGameState.players_info.B, player_type: 'player:human' },
+            W: { ...mockGameState.players_info.W, player_type: 'player:human' },
+          },
+        };
+        expect(deriveHumanColor(state)).toBeNull();
+      });
     });
 
     describe('deriveAiTurnState (engine branch of isAI)', () => {

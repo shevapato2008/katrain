@@ -38,7 +38,11 @@ describe('PlayPage', () => {
 
   it('renders six equal ModeCards with exactly one primary (jade) card', () => {
     renderPage();
-    const buttons = screen.getAllByRole('button');
+    // ModeCards only — excludes the secondary "Game history" entry button, which is
+    // not a ModeCard (deliberately not a 4th card in the repeat(3,1fr) grid).
+    const buttons = screen
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('data-testid') !== 'game-history-entry');
     expect(buttons).toHaveLength(6);
 
     const primaryCards = screen.getAllByTestId('mode-card-primary');
@@ -68,5 +72,13 @@ describe('PlayPage', () => {
 
     fireEvent.click(bar);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/abc');
+  });
+
+  it('navigates to game history on entry click', () => {
+    renderPage();
+
+    const entry = screen.getByTestId('game-history-entry');
+    fireEvent.click(entry);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/history');
   });
 });

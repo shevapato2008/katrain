@@ -2686,3 +2686,66 @@ msgstr "Taşın kaldırılması bekleniyor"
 
 msgid "This recovery request has expired"
 msgstr "Bu kurtarma isteğinin süresi doldu"
+
+msgid "Black player"
+msgstr "Siyah oyuncu"
+
+msgid "White player"
+msgstr "Beyaz oyuncu"
+
+msgid "Move sound"
+msgstr "Hamle sesi"
+
+msgid "Local Game"
+msgstr "Yerel oyun"
+
+msgid "Local games"
+msgstr "Yerel oyunlar"
+
+msgid "Game History"
+msgstr "Oyun geçmişi"
+
+msgid "Review this game"
+msgstr "Bu oyunu incele"
+
+msgid "Review"
+msgstr "İncele"
+
+msgid "All"
+msgstr "Tümü"
+
+msgid "moves"
+msgstr "hamle"
+
+msgid "No recorded games yet"
+msgstr "Henüz kaydedilmiş oyun yok"
+
+msgid "Select a game to preview"
+msgstr "Önizlemek için bir oyun seçin"
+
+msgid "vs"
+msgstr "vs"
+
+msgid "Board Preview"
+msgstr "Tahta önizlemesi"
+
+msgid "Could not open review, please retry"
+msgstr "İnceleme açılamadı, lütfen tekrar deneyin"
+
+msgid "Failed to create game"
+msgstr "Oyun oluşturulamadı"
+
+msgid "Start Game"
+msgstr "Oyunu başlat"
+
+msgid "Creating..."
+msgstr "Oluşturuluyor..."
+
+msgid "Board"
+msgstr "Tahta"
+
+msgid "Handicap"
+msgstr "Avantaj"
+
+msgid "Time Control"
+msgstr "Zaman kontrolü"

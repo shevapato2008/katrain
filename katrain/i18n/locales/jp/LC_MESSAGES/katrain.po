@@ -2611,3 +2611,66 @@ msgstr "石の取り除きを待っています"
 
 msgid "This recovery request has expired"
 msgstr "この復旧リクエストは期限切れです"
+
+msgid "Black player"
+msgstr "黒番の名前"
+
+msgid "White player"
+msgstr "白番の名前"
+
+msgid "Move sound"
+msgstr "着手音"
+
+msgid "Local Game"
+msgstr "ローカル対局"
+
+msgid "Local games"
+msgstr "ローカル対局"
+
+msgid "Game History"
+msgstr "対局履歴"
+
+msgid "Review this game"
+msgstr "この対局を検討"
+
+msgid "Review"
+msgstr "検討"
+
+msgid "All"
+msgstr "すべて"
+
+msgid "moves"
+msgstr "手"
+
+msgid "No recorded games yet"
+msgstr "まだ記録された対局はありません"
+
+msgid "Select a game to preview"
+msgstr "対局を選択してプレビュー"
+
+msgid "vs"
+msgstr "対"
+
+msgid "Board Preview"
+msgstr "盤面プレビュー"
+
+msgid "Could not open review, please retry"
+msgstr "検討を開けませんでした。もう一度お試しください"
+
+msgid "Failed to create game"
+msgstr "対局の作成に失敗しました"
+
+msgid "Start Game"
+msgstr "対局開始"
+
+msgid "Creating..."
+msgstr "作成中..."
+
+msgid "Board"
+msgstr "碁盤"
+
+msgid "Handicap"
+msgstr "置石"
+
+msgid "Time Control"
+msgstr "持ち時間"

@@ -2443,3 +2443,66 @@ msgstr "等待拿回棋子"
 
 msgid "This recovery request has expired"
 msgstr "该恢复请求已过期"
+
+msgid "Black player"
+msgstr "黑方姓名"
+
+msgid "White player"
+msgstr "白方姓名"
+
+msgid "Move sound"
+msgstr "落子提示音"
+
+msgid "Local Game"
+msgstr "本地对局"
+
+msgid "Local games"
+msgstr "本地对局"
+
+msgid "Game History"
+msgstr "对局历史"
+
+msgid "Review this game"
+msgstr "复盘本局"
+
+msgid "Review"
+msgstr "复盘"
+
+msgid "All"
+msgstr "全部"
+
+msgid "moves"
+msgstr "手"
+
+msgid "No recorded games yet"
+msgstr "暂无对局记录"
+
+msgid "Select a game to preview"
+msgstr "选择一局查看"
+
+msgid "vs"
+msgstr "对"
+
+msgid "Board Preview"
+msgstr "盘面预览"
+
+msgid "Could not open review, please retry"
+msgstr "无法进入复盘，请重试"
+
+msgid "Failed to create game"
+msgstr "创建对局失败"
+
+msgid "Start Game"
+msgstr "开始对弈"
+
+msgid "Creating..."
+msgstr "创建中..."
+
+msgid "Board"
+msgstr "棋盘"
+
+msgid "Handicap"
+msgstr "让子"
+
+msgid "Time Control"
+msgstr "用时"

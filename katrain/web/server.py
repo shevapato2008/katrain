@@ -649,6 +649,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.katrain("play", None if coords is None else tuple(coords))
             state = session.katrain.get_state()
             session.last_state = state
+        # Natural (two-pass) game end never hits resign/count/timeout — record here so
+        # local face-to-face games ending by both passing are still saved (end_result
+        # auto-becomes truthy on two consecutive passes; requestCount then refuses).
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if state.get("end_result") and not is_multiplayer and current_user and session.user_id:
+            await _record_ai_game(session, app, current_user, state["end_result"])
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/undo")
@@ -693,6 +699,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def new_game(request: NewGameRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
+            # A new game is starting: clear the "already recorded" guard from any
+            # previous game on this (possibly reused) session so it becomes recordable again.
+            session._recorded = False
             if request.players:
                 for bw, p in request.players.items():
                     session.katrain(
@@ -717,6 +726,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         mode = request.mode
         settings = request.settings
         with session.lock:
+            # A (re)configured game is starting: clear the "already recorded" guard from
+            # any previous game on this (possibly reused) session so it becomes recordable again.
+            session._recorded = False
             # Update players
             players = settings.get("players")
             if players:
@@ -797,6 +809,53 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     rules=settings.get("rules", "japanese"),
                     game_type=mode,  # R3/R5: rated/ranked games forbid analysis (anti-cheat)
                 )
+
+            elif mode == "pvp_local":
+                # Two humans face-to-face on one kiosk. Explicitly force BOTH seats to
+                # player:human — reset_players preserves prior player_type, so a session
+                # recycled from a previous AI game could leave a stale player:ai seat that
+                # would wrongly auto-trigger genmove after the first human (vision) move.
+                black_name = settings.get("black_name") or ""
+                white_name = settings.get("white_name") or ""
+                session.katrain(
+                    "update_player",
+                    bw="B",
+                    player_type="player:human",
+                    player_subtype="player:human",
+                    name=black_name,
+                )
+                session.katrain(
+                    "update_player",
+                    bw="W",
+                    player_type="player:human",
+                    player_subtype="player:human",
+                    name=white_name,
+                )
+                session.game_type = "pvp_local"
+
+                time_enabled = settings.get("time_enabled", False)
+                if time_enabled:
+                    session.katrain.update_config("timer/main_time", settings.get("main_time", 0))
+                    session.katrain.update_config("timer/byo_length", settings.get("byo_length", 30))
+                    session.katrain.update_config("timer/byo_periods", settings.get("byo_periods", 3))
+                    session.katrain.update_config("timer/paused", False)
+                else:
+                    session.katrain.update_config("timer/main_time", 0)
+                    session.katrain.update_config("timer/byo_length", 0)
+                    session.katrain.update_config("timer/paused", True)
+
+                session.katrain(
+                    "new_game",
+                    size=settings.get("board_size", 19),
+                    handicap=settings.get("handicap", 0),
+                    komi=settings.get("komi", 7.5),
+                    rules=settings.get("rules", "chinese"),
+                    game_type="pvp_local",
+                )
+                if black_name:
+                    session.katrain.game.root.set_property("PB", black_name)
+                if white_name:
+                    session.katrain.game.root.set_property("PW", white_name)
 
             state = session.katrain.get_state()
             session.last_state = state
@@ -998,8 +1057,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def _record_ai_game(session, app, current_user, result):
-        """Record a completed AI (single-player) game to user_games for the logged-in user."""
+    async def _record_ai_game(session, app, current_user, result):
+        """Record a completed single-player/local game to user_games (remote-first via
+        dispatcher, else local). source = play_local when both seats are human, else play_ai.
+
+        Idempotent within a session: the natural (two-pass) game-end hook in `play_move`
+        and the resign/count/timeout paths can all race to record the same finished game;
+        `session._recorded` ensures only the first successful write actually persists."""
+        if getattr(session, "_recorded", False):
+            return
         try:
             sgf_content = session.katrain.get_sgf()
             state = session.katrain.get_state()
@@ -1050,25 +1116,35 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             game_date = datetime.now().strftime("%Y-%m-%d")
 
-            app.state.user_game_repo.create(
-                user_id=current_user.id,
-                sgf_content=sgf_content,
-                source="play_ai",
-                player_black=player_black,
-                player_white=player_white,
-                black_rank=black_rank,
-                white_rank=white_rank,
-                result=result,
-                move_count=move_count,
-                board_size=board_size,
-                komi=komi,
-                rules=rules,
-                game_type=game_type,
-                category="game",
-                game_date=game_date,
-            )
+            source = "play_local" if (players_info["B"].human and players_info["W"].human) else "play_ai"
+
+            data = {
+                "sgf_content": sgf_content,
+                "source": source,
+                "player_black": player_black,
+                "player_white": player_white,
+                "black_rank": black_rank,
+                "white_rank": white_rank,
+                "result": result,
+                "board_size": int(board_size),
+                "rules": rules,
+                "komi": komi,
+                "move_count": move_count,
+                "category": "game",
+                "game_type": game_type,
+                "game_date": game_date,
+            }
+
+            dispatcher = getattr(app.state, "repository_dispatcher", None)
+            if dispatcher is not None:
+                await dispatcher.user_games_create(user_id=current_user.id, data=data)
+            else:
+                app.state.user_game_repo.create(user_id=current_user.id, **data)
+            session._recorded = True
         except Exception as e:
-            logging.getLogger("katrain_web").error(f"Failed to record AI game: {e}")
+            logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
+
+    globals()["_RECORD_FN"] = _record_ai_game
 
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
@@ -1120,12 +1196,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         elif not is_multiplayer and current_user and session.user_id:
             result = session.katrain.game.end_result
             if result:
-                _record_ai_game(session, app, current_user, result)
+                await _record_ai_game(session, app, current_user, result)
 
         return {"session_id": session.session_id, "state": state}
 
     def _complete_count(session, app, current_user):
-        """Helper to complete counting and record result."""
+        """Helper to complete counting and record result.
+
+        Returns (result, needs_record). needs_record is True when the caller must
+        await _record_ai_game(...) AFTER releasing session.lock (single-player/local
+        games only — multiplayer games are recorded synchronously here instead).
+        """
         # Get the score from current node's analysis
         current_node = session.katrain.game.current_node
         score = current_node.score
@@ -1165,13 +1246,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             manager._schedule_broadcast(
                 session, {"type": "game_end", "data": {"reason": "count", "winner_id": winner_id, "result": result}}
             )
-        elif current_user and session.user_id:
-            _record_ai_game(session, app, current_user, result)
+            return result, False
 
-        return result
+        needs_record = current_user is not None and session.user_id is not None
+        return result, needs_record
 
     @app.post("/api/count/request")
-    def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
+    async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
 
@@ -1204,7 +1285,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 # If other player requests, treat as accept
                 with session.lock:
-                    result = _complete_count(session, app, current_user)
+                    result, _ = _complete_count(session, app, current_user)
                     session.pending_count_request = None
                     session.pending_count_timestamp = None
                     state = session.katrain.get_state()
@@ -1228,11 +1309,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             return {"session_id": session.session_id, "status": "pending"}
         else:
-            # HvAI: Complete immediately
+            # HvAI / pvp_local: complete immediately
             with session.lock:
-                result = _complete_count(session, app, current_user)
+                result, needs_record = _complete_count(session, app, current_user)
                 state = session.katrain.get_state()
                 session.last_state = state
+            if needs_record:
+                await _record_ai_game(session, app, current_user, result)
             return {"session_id": session.session_id, "state": state, "result": result}
 
     @app.post("/api/count/respond")
@@ -1261,7 +1344,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if request.accept:
             # Accept: complete the count
             with session.lock:
-                result = _complete_count(session, app, current_user)
+                result, _ = _complete_count(session, app, current_user)
                 session.pending_count_request = None
                 session.pending_count_timestamp = None
                 state = session.katrain.get_state()
@@ -1277,7 +1360,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"session_id": session.session_id, "accepted": False}
 
     @app.post("/api/timeout")
-    def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+    async def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
 
@@ -1312,7 +1395,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         elif not is_multiplayer and current_user and session.user_id:
             result = session.katrain.game.end_result
             if result:
-                _record_ai_game(session, app, current_user, result)
+                await _record_ai_game(session, app, current_user, result)
 
         return {"session_id": session.session_id, "state": state}
 

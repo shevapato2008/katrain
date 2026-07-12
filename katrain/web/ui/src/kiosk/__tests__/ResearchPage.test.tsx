@@ -13,6 +13,14 @@ vi.mock('../context/ImmersiveContext', () => ({
   useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
 }));
 
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock('../../api/userGamesApi', () => ({
+  UserGamesAPI: { get: vi.fn(), list: vi.fn() },
+}));
+
 vi.mock('../../api', () => ({
   API: {
     quickAnalyze: vi.fn().mockResolvedValue({ turnInfos: [{ moveInfos: [], ownership: null }] }),

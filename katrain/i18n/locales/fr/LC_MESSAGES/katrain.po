@@ -2626,3 +2626,66 @@ msgstr "En attente du retrait de la pierre"
 
 msgid "This recovery request has expired"
 msgstr "Cette demande de récupération a expiré"
+
+msgid "Black player"
+msgstr "Joueur noir"
+
+msgid "White player"
+msgstr "Joueur blanc"
+
+msgid "Move sound"
+msgstr "Son de coup"
+
+msgid "Local Game"
+msgstr "Partie locale"
+
+msgid "Local games"
+msgstr "Parties locales"
+
+msgid "Game History"
+msgstr "Historique des parties"
+
+msgid "Review this game"
+msgstr "Analyser cette partie"
+
+msgid "Review"
+msgstr "Analyser"
+
+msgid "All"
+msgstr "Toutes"
+
+msgid "moves"
+msgstr "coups"
+
+msgid "No recorded games yet"
+msgstr "Aucune partie enregistrée pour le moment"
+
+msgid "Select a game to preview"
+msgstr "Sélectionnez une partie à prévisualiser"
+
+msgid "vs"
+msgstr "vs"
+
+msgid "Board Preview"
+msgstr "Aperçu du plateau"
+
+msgid "Could not open review, please retry"
+msgstr "Impossible d'ouvrir l'analyse, veuillez réessayer"
+
+msgid "Failed to create game"
+msgstr "Échec de la création de la partie"
+
+msgid "Start Game"
+msgstr "Commencer la partie"
+
+msgid "Creating..."
+msgstr "Création..."
+
+msgid "Board"
+msgstr "Plateau"
+
+msgid "Handicap"
+msgstr "Handicap"
+
+msgid "Time Control"
+msgstr "Contrôle du temps"

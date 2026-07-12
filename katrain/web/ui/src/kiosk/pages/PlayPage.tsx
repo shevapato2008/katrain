@@ -122,6 +122,19 @@ const PlayPage = () => {
           to="/kiosk/play/cross-platform"
         />
       </Box>
+
+      {/* 对局历史 — compact secondary entry, mirrors the resume-bar ButtonBase style.
+          Deliberately not a 4th ModeCard: the grid above is a fixed repeat(3,1fr). */}
+      <ButtonBase
+        onClick={() => navigate('/kiosk/play/pvp/history')}
+        data-testid="game-history-entry"
+        sx={{
+          mt: 0.5, alignSelf: 'flex-start', px: 1.5, py: 0.75, borderRadius: '10px',
+          border: '1px solid', borderColor: 'divider', color: 'text.secondary', fontSize: 13,
+        }}
+      >
+        {t('Game History', '对局历史')} ›
+      </ButtonBase>
     </Box>
   );
 };

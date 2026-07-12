@@ -808,11 +808,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     player_subtype="player:human",
                     name=white_name,
                 )
-                if black_name:
-                    session.katrain.game.root.set_property("PB", black_name)
-                if white_name:
-                    session.katrain.game.root.set_property("PW", white_name)
-
                 session.game_type = "pvp_local"
 
                 time_enabled = settings.get("time_enabled", False)
@@ -834,6 +829,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     rules=settings.get("rules", "chinese"),
                     game_type="pvp_local",
                 )
+                if black_name:
+                    session.katrain.game.root.set_property("PB", black_name)
+                if white_name:
+                    session.katrain.game.root.set_property("PW", white_name)
 
             state = session.katrain.get_state()
             session.last_state = state

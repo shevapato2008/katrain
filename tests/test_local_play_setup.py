@@ -1,5 +1,3 @@
-import os
-
 # Warm up the real kivy/kivymd Window singleton on the MAIN thread before any
 # TestClient request runs. Starlette's TestClient bridges sync<->async via a
 # background "portal" thread, and WebKaTrain.__init__ does `from kivymd.app
@@ -55,3 +53,30 @@ def test_pvp_local_sets_both_players_human(client):
     # pvp_local behaves like free for analysis, but is distinguishable
     assert state["game_type"] == "pvp_local"
     assert state.get("analysis_allowed") is not False
+
+
+def test_pvp_local_sgf_contains_player_names(client):
+    sid = _new_session(client)
+    r = client.post(
+        "/api/game/setup",
+        json={
+            "session_id": sid,
+            "mode": "pvp_local",
+            "settings": {
+                "board_size": 19,
+                "rules": "chinese",
+                "handicap": 0,
+                "komi": 7.5,
+                "black_name": "小明",
+                "white_name": "小红",
+                "time_enabled": False,
+            },
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    r = client.get("/api/sgf/save", params={"session_id": sid})
+    assert r.status_code == 200, r.text
+    sgf = r.json()["sgf"]
+    assert "PB[小明]" in sgf
+    assert "PW[小红]" in sgf

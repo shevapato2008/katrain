@@ -29,6 +29,13 @@ outdated_log.txt
 
 # too big
 models/
+# ...but DO track the deployed vision model blobs: the RK3562 .rknn + its .meta.json
+# are committed here and consumed on the SBC via the smartbox-software vendor/katrain
+# submodule (plan §14 E3 — atomic with the stone_detector/rknn_backend that reads them).
+# `models/` above would otherwise silently swallow this dir (git check-ignore verified).
+!katrain/vision/models/
+!katrain/vision/models/*.rknn
+!katrain/vision/models/*.meta.json
 katrain/models/*.bin.gz
 
 # Compiled translation files (regenerated on startup from .po files)

@@ -40,6 +40,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
 
     const playSound = useCallback((sound: string) => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('kioskPlaySound') === '0') return;
         const now = Date.now();
         // Prevent duplicate rapid sounds
         if (lastSoundRef.current && lastSoundRef.current.name === sound && now - lastSoundRef.current.time < 300) {

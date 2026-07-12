@@ -16,6 +16,7 @@ import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
+import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
 import GamePage from './pages/GamePage';
 import TsumegoPage from './pages/TsumegoPage';
 import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
@@ -61,7 +62,7 @@ const KioskRoutes = () => {
           <Route index element={<Navigate to="play" replace />} />
           <Route path="play" element={<PlayPage />} />
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
-          <Route path="play/pvp/setup" element={<PlaceholderPage />} />
+          <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, CircularProgress, Alert, Button, Chip } from '@mui/material';
+import { Box, Grid, CircularProgress, Alert, Button, Chip } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';

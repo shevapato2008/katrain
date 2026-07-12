@@ -2289,7 +2289,8 @@ def run_web():
     parser.add_argument(
         "--vision-ae-target",
         default=None,
-        help="Software-AE target brightness band as LO-HI gray levels (default: 120-170).",
+        help="Software-AE target brightness as either a LO-HI gray-level band (e.g. 120-170) or a single "
+        "midpoint value (e.g. 145) (default: 120-170).",
     )
     parser.add_argument(
         "--led-serial-port",

@@ -4,6 +4,49 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Half the default 120-170 band width, so a bare midpoint reproduces a sensible band
+# (e.g. "145" -> 120.0-170.0, matching the historical default).
+AE_SCALAR_HALF_WIDTH = 25.0
+
+
+def parse_ae_target(value: str) -> tuple[float, float]:
+    """Parse a software-AE target brightness spec into a (lo, hi) gray-level band.
+
+    Accepts either band form "LO-HI" (e.g. "120-170") or a single midpoint scalar
+    (e.g. "145"), which is expanded into a band of width 2 * AE_SCALAR_HALF_WIDTH
+    centered on the value and clamped to the valid gray range [0, 255].
+    """
+    parts = value.split("-") if value else []
+    if len(parts) == 1:
+        try:
+            midpoint = float(parts[0])
+        except ValueError:
+            raise ValueError(
+                f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
+            )
+        if midpoint < 0:
+            raise ValueError(f"Invalid ae_target {value!r}: target brightness must be >= 0")
+        lo = max(0.0, midpoint - AE_SCALAR_HALF_WIDTH)
+        hi = min(255.0, midpoint + AE_SCALAR_HALF_WIDTH)
+        if lo >= hi:
+            raise ValueError(f"Invalid ae_target {value!r}: clamped band [{lo}, {hi}] is not a valid range")
+        return lo, hi
+    if len(parts) == 2:
+        try:
+            lo, hi = float(parts[0]), float(parts[1])
+        except ValueError:
+            raise ValueError(
+                f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
+            )
+        if lo < 0 or hi < 0:
+            raise ValueError(f"Invalid ae_target {value!r}: band bounds must be >= 0")
+        if lo >= hi:
+            raise ValueError(f"Invalid ae_target {value!r}: lo must be less than hi")
+        return lo, hi
+    raise ValueError(
+        f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
+    )
+
 
 @dataclass
 class VisionServiceConfig:
@@ -63,7 +106,7 @@ class VisionServiceConfig:
 
     def to_worker_config(self) -> dict:
         """Convert to dict for passing to worker process."""
-        ae_lo, ae_hi = (float(x) for x in self.ae_target.split("-"))
+        ae_lo, ae_hi = parse_ae_target(self.ae_target)
         return {
             "backend": self.backend,
             "model_path": self.model_path,

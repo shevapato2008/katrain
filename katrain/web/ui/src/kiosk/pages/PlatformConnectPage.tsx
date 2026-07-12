@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformInfo } from '../../api';
+import SubPageBar from '../components/layout/SubPageBar';
 
 type LoginFieldConfig = {
   userLabel: string; userLabelCn: string;
@@ -129,10 +130,9 @@ const PlatformConnectPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, height: '100%' }}>
-      <Typography variant="h5" sx={{ color: 'text.secondary' }}>
-        {t('Cross-Platform Play', '跨平台对弈')}
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SubPageBar title={t('Cross-Platform Play', '跨平台对弈')} to="/kiosk/play" />
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, flex: 1, minHeight: 0, overflow: 'auto' }}>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {t('Connect to Go platforms and play through your smart board', '连接围棋平台，通过智能棋盘对弈')}
       </Typography>
@@ -293,6 +293,7 @@ const PlatformConnectPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      </Box>
     </Box>
   );
 };

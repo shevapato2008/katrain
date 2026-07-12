@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, CircularProgress, Alert, Button, Chip } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProblemCard from '../components/tsumego/ProblemCard';
 import { UNIT_SIZE, sequenceKey } from './tsumegoUnits';
+import SubPageBar from '../components/layout/SubPageBar';
 
 interface ProblemSummary {
   id: string;
@@ -102,7 +102,6 @@ const TsumegoUnitListPage = () => {
         <Button
           variant="outlined"
           onClick={() => navigate(`/kiosk/tsumego/${level}/${category}`)}
-          startIcon={<ArrowBack />}
         >
           {t('Back', '返回')}
         </Button>
@@ -112,26 +111,17 @@ const TsumegoUnitListPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button
-          onClick={() => navigate(`/kiosk/tsumego/${level}/${category}`)}
-          startIcon={<ArrowBack />}
-          sx={{ minWidth: 40, p: 0.5 }}
-        />
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h5">
-            {t('tsumego:unit', '单元')} {unitNumber}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {startProblem}–{endProblem}
-          </Typography>
-        </Box>
-        <Chip
-          label={`${completedCount}/${problems.length}`}
-          color={completedCount === problems.length && problems.length > 0 ? 'success' : 'default'}
-          sx={{ fontSize: '0.95rem', px: 1 }}
-        />
-      </Box>
+      <SubPageBar
+        title={`${t('tsumego:unit', '单元')} ${unitNumber} · ${startProblem}–${endProblem}`}
+        to={`/kiosk/tsumego/${level}/${category}`}
+        right={
+          <Chip
+            label={`${completedCount}/${problems.length}`}
+            color={completedCount === problems.length && problems.length > 0 ? 'success' : 'default'}
+            sx={{ fontSize: '0.95rem', px: 1 }}
+          />
+        }
+      />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Grid container spacing={2}>

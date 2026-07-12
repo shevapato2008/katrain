@@ -8,7 +8,7 @@ import {
   IconButton,
   Slider,
 } from '@mui/material';
-import { ArrowBack, NavigateBefore, NavigateNext } from '@mui/icons-material';
+import { NavigateBefore, NavigateNext } from '@mui/icons-material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TutorialReadAPI } from '../../api/tutorialApi';
@@ -16,6 +16,7 @@ import type { TutorialSectionDetail, TutorialFigure } from '../../types/tutorial
 import SGFBoard, { type SGFPayload } from '../../components/tutorials/SGFBoard';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
 import type { SectionNavState } from '../types/tutorialNav';
+import SubPageBar from '../components/layout/SubPageBar';
 
 /** Highest numeric move label on a figure's board (0 when there are none). */
 function maxMoveOf(fig: TutorialFigure | null): number {
@@ -104,7 +105,7 @@ const TutorialSectionPage = () => {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
         <Alert severity="error">{error ? t('tutorial:loadFailed', '加载失败，请稍后重试') : t('tutorial:sectionNotFound', '未找到该小节')}</Alert>
-        <Button variant="outlined" onClick={() => navigate('/kiosk/tutorial')} startIcon={<ArrowBack />}>
+        <Button variant="outlined" onClick={() => navigate('/kiosk/tutorial')}>
           {t('Back', '返回')}
         </Button>
       </Box>
@@ -129,12 +130,7 @@ const TutorialSectionPage = () => {
   if (figures.length === 0 || !current) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-          <Button onClick={onBack} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-          <Typography variant="subtitle1" sx={{ color: 'text.secondary' }} noWrap>
-            {breadcrumb}
-          </Typography>
-        </Box>
+        <SubPageBar title={breadcrumb} onBack={onBack} />
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Typography color="text.secondary">{t('tutorial:noFigures', '本节暂无棋谱')}</Typography>
         </Box>
@@ -246,12 +242,7 @@ const TutorialSectionPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header: back + breadcrumb */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 0.5 }}>
-        <Button onClick={onBack} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-        <Typography variant="subtitle1" sx={{ color: 'text.secondary' }} noWrap>
-          {breadcrumb}
-        </Typography>
-      </Box>
+      <SubPageBar title={breadcrumb} onBack={onBack} />
 
       {/* Figure navigation: ◀ 图X (i / N) ▶ */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.5 }}>

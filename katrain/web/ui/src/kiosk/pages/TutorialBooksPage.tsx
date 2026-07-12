@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialBook } from '../../types/tutorial';
+import SubPageBar from '../components/layout/SubPageBar';
 
 /**
  * Route: tutorial/:category — the book list within a single tutorial category.
@@ -61,7 +61,6 @@ const TutorialBooksPage = () => {
         <Button
           variant="outlined"
           onClick={() => category && loadBooks(category, () => false)}
-          startIcon={<ArrowBack />}
         >
           {t('Retry', '重试')}
         </Button>
@@ -71,19 +70,17 @@ const TutorialBooksPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button onClick={() => navigate('/kiosk/tutorial')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-        <Box>
-          <Typography variant="h5">
-            {t('tutorial:selectBook', '选择书籍')}
-          </Typography>
-          {category && (
+      <SubPageBar
+        title={t('tutorial:selectBook', '选择书籍')}
+        to="/kiosk/tutorial"
+        right={
+          category ? (
             <Typography variant="body2" color="text.secondary">
               {category}
             </Typography>
-          )}
-        </Box>
-      </Box>
+          ) : undefined
+        }
+      />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         {books.length === 0 ? (

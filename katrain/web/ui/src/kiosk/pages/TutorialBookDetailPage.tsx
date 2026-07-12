@@ -13,12 +13,13 @@ import {
   ListItemButton,
   ListItemText,
 } from '@mui/material';
-import { ArrowBack, ExpandMore, PlayCircleOutline } from '@mui/icons-material';
+import { ExpandMore, PlayCircleOutline } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialBookDetail, TutorialSection } from '../../types/tutorial';
 import type { SectionNavState } from '../types/tutorialNav';
+import SubPageBar from '../components/layout/SubPageBar';
 
 /**
  * Route: /kiosk/tutorial/book/:bookId — chapter/section tree for one book.
@@ -95,7 +96,6 @@ const TutorialBookDetailPage = () => {
         <Button
           variant="outlined"
           onClick={() => navigate(-1)}
-          startIcon={<ArrowBack />}
         >
           {t('Back', '返回')}
         </Button>
@@ -105,21 +105,17 @@ const TutorialBookDetailPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button
-          onClick={() => navigate('/kiosk/tutorial/' + book.category)}
-          startIcon={<ArrowBack />}
-          sx={{ minWidth: 40, p: 0.5 }}
-        />
-        <Box>
-          <Typography variant="h5">{book.title}</Typography>
-          {book.author && (
+      <SubPageBar
+        title={book.title}
+        onBack={() => (book ? navigate('/kiosk/tutorial/' + book.category) : navigate(-1))}
+        right={
+          book.author ? (
             <Typography variant="body2" color="text.secondary">
               {book.author}
             </Typography>
-          )}
-        </Box>
-      </Box>
+          ) : undefined
+        }
+      />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         {book.chapters.length === 0 ? (

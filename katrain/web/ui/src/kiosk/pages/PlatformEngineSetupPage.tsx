@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, Button, Alert, CircularProgress, ButtonBase, Menu, MenuItem, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayArrow, ArrowBack, ChevronLeft, ChevronRight, SmartToy } from '@mui/icons-material';
+import { PlayArrow, ChevronLeft, ChevronRight, SmartToy } from '@mui/icons-material';
 import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
+import SubPageBar from '../components/layout/SubPageBar';
 
 type Translate = (en: string, zh: string) => string;
 
@@ -194,25 +195,11 @@ const PlatformEngineSetupPage = () => {
   );
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'auto', px: { xs: 2.5, md: 4 }, py: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SubPageBar title={t('Play vs AI', '人机对弈')} to="/kiosk/play/cross-platform" />
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2.5, md: 4 }, py: 3 }}>
       <Box sx={{ maxWidth: 1060, mx: 'auto' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, mb: 0.5 }}>
-          <ButtonBase
-            aria-label={t('Back', '返回')}
-            onClick={() => navigate('/kiosk/play/cross-platform')}
-            sx={{
-              width: 40, height: 40, borderRadius: 2.5, border: '1px solid', borderColor: 'divider',
-              bgcolor: 'background.paper', color: 'text.secondary',
-            }}
-          >
-            <ArrowBack fontSize="small" />
-          </ButtonBase>
-          <Typography sx={{ fontSize: 26, fontWeight: 650, color: 'text.primary' }}>
-            {t('Play vs AI', '人机对弈')}
-          </Typography>
-        </Box>
-        <Typography sx={{ color: 'text.disabled', fontSize: 13.5, mb: 2.5, ml: '54px' }}>
+        <Typography sx={{ color: 'text.disabled', fontSize: 13.5, mb: 2.5 }}>
           {t('Golaxy', '星阵围棋')} · <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>{t('Free game', '自由对弈')}</Box>
           {' · '}{t('Strictly aligned with Golaxy config (from its app.js)', '严格对齐星阵真实配置（取自其 app.js）')}
         </Typography>
@@ -393,6 +380,7 @@ const PlatformEngineSetupPage = () => {
             </Box>
           </Box>
         )}
+      </Box>
       </Box>
     </Box>
   );

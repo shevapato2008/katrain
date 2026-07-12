@@ -9,6 +9,14 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformUser, type PlatformInfo } from '../../api';
+import SubPageBar from '../components/layout/SubPageBar';
+
+// Minimal display labels for the lobby back-bar title (full metadata lives in PlatformConnectPage).
+const PLATFORM_LABELS: Record<string, { label: string; labelCn: string }> = {
+  ogs: { label: 'OGS', labelCn: 'OGS' },
+  fox: { label: 'Fox Weiqi', labelCn: '野狐围棋' },
+  golaxy: { label: 'Golaxy', labelCn: '星阵围棋' },
+};
 
 const PlatformLobbyPage = () => {
   const { t } = useTranslation();
@@ -93,9 +101,12 @@ const PlatformLobbyPage = () => {
   const connectedPlatforms = platforms.filter(p => p.connected);
   const currentPlatform = connectedPlatforms.find(p => p.platform === activePlatform);
   const filteredUsers = users; // Filtering now done server-side
+  const platformMeta = PLATFORM_LABELS[activePlatform] || { label: activePlatform, labelCn: activePlatform };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2, gap: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SubPageBar title={t(platformMeta.label, platformMeta.labelCn)} to="/kiosk/play/cross-platform" />
+      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, p: 2, gap: 1.5 }}>
       {/* Platform tabs */}
       {connectedPlatforms.length > 1 && (
         <Tabs
@@ -217,6 +228,7 @@ const PlatformLobbyPage = () => {
           <Alert severity={toast.severity} onClose={() => setToast(null)}>{toast.message}</Alert>
         </Snackbar>
       )}
+      </Box>
     </Box>
   );
 };

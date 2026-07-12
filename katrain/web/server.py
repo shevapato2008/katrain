@@ -640,6 +640,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.katrain("play", None if coords is None else tuple(coords))
             state = session.katrain.get_state()
             session.last_state = state
+        # Natural (two-pass) game end never hits resign/count/timeout — record here so
+        # local face-to-face games ending by both passing are still saved (end_result
+        # auto-becomes truthy on two consecutive passes; requestCount then refuses).
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        if state.get("end_result") and not is_multiplayer and current_user and session.user_id:
+            await _record_ai_game(session, app, current_user, state["end_result"])
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/undo")
@@ -1027,7 +1033,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     async def _record_ai_game(session, app, current_user, result):
         """Record a completed single-player/local game to user_games (remote-first via
-        dispatcher, else local). source = play_local when both seats are human, else play_ai."""
+        dispatcher, else local). source = play_local when both seats are human, else play_ai.
+
+        Idempotent within a session: the natural (two-pass) game-end hook in `play_move`
+        and the resign/count/timeout paths can all race to record the same finished game;
+        `session._recorded` ensures only the first successful write actually persists."""
+        if getattr(session, "_recorded", False):
+            return
         try:
             sgf_content = session.katrain.get_sgf()
             state = session.katrain.get_state()
@@ -1102,6 +1114,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 await dispatcher.user_games_create(user_id=current_user.id, data=data)
             else:
                 app.state.user_game_repo.create(user_id=current_user.id, **data)
+            session._recorded = True
         except Exception as e:
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 

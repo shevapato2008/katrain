@@ -29,6 +29,10 @@ def _make_session(both_human=True):
     s.user_id = 42
     s.player_b_id = None
     s.player_w_id = None
+    # A raw MagicMock's auto-created `_recorded` attribute is itself a truthy Mock, so
+    # `getattr(session, "_recorded", False)` in the idempotency guard would never see the
+    # `False` default without this — every test would short-circuit as "already recorded".
+    s._recorded = False
     s.game_type = "pvp_local" if both_human else "free"
     s.katrain.get_sgf.return_value = "(;GM[1])"
     s.katrain.get_state.return_value = {"board_size": [19, 19], "history": [1, 2, 3], "komi": 7.5, "ruleset": "chinese"}
@@ -69,3 +73,17 @@ async def test_record_falls_back_to_local_repo_when_no_dispatcher():
     ckwargs = app.state.user_game_repo.create.call_args.kwargs
     assert ckwargs["source"] == "play_ai"
     assert ckwargs["user_id"] == 42
+
+
+@pytest.mark.asyncio
+async def test_record_is_idempotent_within_session():
+    session = _make_session(both_human=True)
+    session._recorded = False
+    app = MagicMock()
+    app.state.repository_dispatcher.user_games_create = AsyncMock(return_value={"id": "g1"})
+    current_user = types.SimpleNamespace(id=42, username="小明")
+
+    await server._RECORD_FN(session, app, current_user, "board-game-end")
+    await server._RECORD_FN(session, app, current_user, "board-game-end")
+
+    assert app.state.repository_dispatcher.user_games_create.await_count == 1

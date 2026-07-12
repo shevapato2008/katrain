@@ -2627,3 +2627,66 @@ msgstr "Варіант"
 
 msgid "game:pass"
 msgstr "Пас"
+
+msgid "Black player"
+msgstr "Гравець чорними"
+
+msgid "White player"
+msgstr "Гравець білими"
+
+msgid "Move sound"
+msgstr "Звук ходу"
+
+msgid "Local Game"
+msgstr "Локальна гра"
+
+msgid "Local games"
+msgstr "Локальні ігри"
+
+msgid "Game History"
+msgstr "Історія партій"
+
+msgid "Review this game"
+msgstr "Розібрати цю партію"
+
+msgid "Review"
+msgstr "Розбір"
+
+msgid "All"
+msgstr "Усі"
+
+msgid "moves"
+msgstr "ходів"
+
+msgid "No recorded games yet"
+msgstr "Поки немає збережених партій"
+
+msgid "Select a game to preview"
+msgstr "Виберіть партію для перегляду"
+
+msgid "vs"
+msgstr "проти"
+
+msgid "Board Preview"
+msgstr "Попередній перегляд дошки"
+
+msgid "Could not open review, please retry"
+msgstr "Не вдалося відкрити розбір, спробуйте ще раз"
+
+msgid "Failed to create game"
+msgstr "Не вдалося створити гру"
+
+msgid "Start Game"
+msgstr "Почати гру"
+
+msgid "Creating..."
+msgstr "Створення..."
+
+msgid "Board"
+msgstr "Дошка"
+
+msgid "Handicap"
+msgstr "Фора"
+
+msgid "Time Control"
+msgstr "Контроль часу"

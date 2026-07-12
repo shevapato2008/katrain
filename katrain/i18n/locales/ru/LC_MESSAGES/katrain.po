@@ -2546,3 +2546,66 @@ msgstr "Вариант"
 
 msgid "game:pass"
 msgstr "Пас"
+
+msgid "Black player"
+msgstr "Игрок чёрными"
+
+msgid "White player"
+msgstr "Игрок белыми"
+
+msgid "Move sound"
+msgstr "Звук хода"
+
+msgid "Local Game"
+msgstr "Локальная игра"
+
+msgid "Local games"
+msgstr "Локальные игры"
+
+msgid "Game History"
+msgstr "История партий"
+
+msgid "Review this game"
+msgstr "Разобрать эту партию"
+
+msgid "Review"
+msgstr "Разбор"
+
+msgid "All"
+msgstr "Все"
+
+msgid "moves"
+msgstr "ходов"
+
+msgid "No recorded games yet"
+msgstr "Пока нет записанных партий"
+
+msgid "Select a game to preview"
+msgstr "Выберите партию для просмотра"
+
+msgid "vs"
+msgstr "против"
+
+msgid "Board Preview"
+msgstr "Предпросмотр доски"
+
+msgid "Could not open review, please retry"
+msgstr "Не удалось открыть разбор, попробуйте ещё раз"
+
+msgid "Failed to create game"
+msgstr "Не удалось создать игру"
+
+msgid "Start Game"
+msgstr "Начать игру"
+
+msgid "Creating..."
+msgstr "Создание..."
+
+msgid "Board"
+msgstr "Доска"
+
+msgid "Handicap"
+msgstr "Фора"
+
+msgid "Time Control"
+msgstr "Контроль времени"

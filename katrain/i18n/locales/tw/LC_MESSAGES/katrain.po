@@ -2554,3 +2554,66 @@ msgstr "變化圖"
 
 msgid "game:pass"
 msgstr "停一手"
+
+msgid "Black player"
+msgstr "黑方姓名"
+
+msgid "White player"
+msgstr "白方姓名"
+
+msgid "Move sound"
+msgstr "落子提示音"
+
+msgid "Local Game"
+msgstr "本地對局"
+
+msgid "Local games"
+msgstr "本地對局"
+
+msgid "Game History"
+msgstr "對局歷史"
+
+msgid "Review this game"
+msgstr "復盤本局"
+
+msgid "Review"
+msgstr "復盤"
+
+msgid "All"
+msgstr "全部"
+
+msgid "moves"
+msgstr "手"
+
+msgid "No recorded games yet"
+msgstr "暫無對局記錄"
+
+msgid "Select a game to preview"
+msgstr "選擇一局查看"
+
+msgid "vs"
+msgstr "對"
+
+msgid "Board Preview"
+msgstr "盤面預覽"
+
+msgid "Could not open review, please retry"
+msgstr "無法進入復盤，請重試"
+
+msgid "Failed to create game"
+msgstr "建立對局失敗"
+
+msgid "Start Game"
+msgstr "開始對弈"
+
+msgid "Creating..."
+msgstr "建立中..."
+
+msgid "Board"
+msgstr "棋盤"
+
+msgid "Handicap"
+msgstr "讓子"
+
+msgid "Time Control"
+msgstr "用時"

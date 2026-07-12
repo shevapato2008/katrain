@@ -2580,3 +2580,66 @@ msgstr "Variation"
 
 msgid "game:pass"
 msgstr "Pass"
+
+msgid "Black player"
+msgstr "Black player"
+
+msgid "White player"
+msgstr "White player"
+
+msgid "Move sound"
+msgstr "Move sound"
+
+msgid "Local Game"
+msgstr "Local Game"
+
+msgid "Local games"
+msgstr "Local games"
+
+msgid "Game History"
+msgstr "Game History"
+
+msgid "Review this game"
+msgstr "Review this game"
+
+msgid "Review"
+msgstr "Review"
+
+msgid "All"
+msgstr "All"
+
+msgid "moves"
+msgstr "moves"
+
+msgid "No recorded games yet"
+msgstr "No recorded games yet"
+
+msgid "Select a game to preview"
+msgstr "Select a game to preview"
+
+msgid "vs"
+msgstr "vs"
+
+msgid "Board Preview"
+msgstr "Board Preview"
+
+msgid "Could not open review, please retry"
+msgstr "Could not open review, please retry"
+
+msgid "Failed to create game"
+msgstr "Failed to create game"
+
+msgid "Start Game"
+msgstr "Start Game"
+
+msgid "Creating..."
+msgstr "Creating..."
+
+msgid "Board"
+msgstr "Board"
+
+msgid "Handicap"
+msgstr "Handicap"
+
+msgid "Time Control"
+msgstr "Time Control"

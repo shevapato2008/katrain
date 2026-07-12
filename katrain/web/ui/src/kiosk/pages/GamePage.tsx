@@ -544,8 +544,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               playerColor={humanColor}
               engineOverlay={engineOverlay}
               enableAzimuth
-              initialPolarAngle={Math.PI * 0.14}
-              cameraPosition={[0, 30, 20]}
+              initialPolarAngle={Math.PI * 0.122}
+              cameraPosition={[0, 30.1, 11.7]}
             />
           )}
           {view3d && !Board3D && (

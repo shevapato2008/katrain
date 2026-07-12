@@ -5,21 +5,19 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
-// SBC build boundary — kiosk bundle must not reach galaxy / three.js / VideoRecorder.
+// SBC build boundary — kiosk bundle must not reach galaxy / VideoRecorder.
+// (three.js is now allowed in the kiosk bundle via Board3D — see plan
+// docs/superpowers/plans/2026-07-12-kiosk-3d-board.md Task 1.)
 // The build-time gate is `npm run verify:kiosk-2d`; these ESLint rules surface
 // violations earlier (at edit time) so regressions can't slip into a PR.
 const forbiddenFromKiosk = [
   {
     group: ['**/galaxy/**', '*/galaxy/*', '../galaxy/*', '../../galaxy/*', '../../../galaxy/*'],
-    message: 'kiosk bundle must not import galaxy code — would drag in three.js / admin UI',
-  },
-  {
-    group: ['**/components/Board3D/**', '*/components/Board3D/*', '../components/Board3D/*', '../../components/Board3D/*'],
-    message: 'kiosk bundle must not import Board3D — three.js is excluded in the SBC build',
+    message: 'kiosk bundle must not import galaxy code — would drag in admin UI',
   },
   {
     group: ['**/pages/VideoRecorderPage*', '*/pages/VideoRecorderPage', '../pages/VideoRecorderPage'],
-    message: 'kiosk bundle must not import VideoRecorderPage — it statically imports three',
+    message: 'kiosk bundle must not import VideoRecorderPage — recorder-only',
   },
 ]
 

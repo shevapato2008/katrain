@@ -5,13 +5,11 @@ import {
   CircularProgress,
   Alert,
   Button,
-  IconButton,
   ToggleButton,
   ToggleButtonGroup,
   Chip,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import MapIcon from '@mui/icons-material/Map';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
@@ -25,6 +23,7 @@ import AiAnalysis from '../../components/live/AiAnalysis';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { useImmersive } from '../context/ImmersiveContext';
+import SubPageBar from '../components/layout/SubPageBar';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
@@ -111,7 +110,7 @@ const LiveMatchPage = () => {
     return (
       <Box sx={{ p: 2, bgcolor: 'background.default' }}>
         <Alert severity="error">{error?.message || t('Failed to load match', '加载对局失败')}</Alert>
-        <Button onClick={() => navigate('/kiosk/live')} startIcon={<ArrowBackIcon />} sx={{ mt: 1 }}>
+        <Button onClick={() => navigate('/kiosk/live')} sx={{ mt: 1 }}>
           {t('Back', '返回')}
         </Button>
       </Box>
@@ -155,20 +154,17 @@ const LiveMatchPage = () => {
 
       {/* Right (or bottom) panel */}
       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid', borderTop: 'none', borderColor: 'divider' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, flexShrink: 0 }}>
-          <IconButton onClick={() => navigate('/kiosk/live')} size="small">
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h6" sx={{ flex: 1, fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }} noWrap>
-            {match.player_black} vs {match.player_white}
-          </Typography>
-          <Chip
-            label={match.status === 'live' ? t('Live Status', '直播中') : t('Ended', '已结束')}
-            size="small"
-            color={match.status === 'live' ? 'success' : 'default'}
-          />
-        </Box>
+        <SubPageBar
+          title={`${match.player_black} vs ${match.player_white}`}
+          to="/kiosk/live"
+          right={
+            <Chip
+              label={match.status === 'live' ? t('Live Status', '直播中') : t('Ended', '已结束')}
+              size="small"
+              color={match.status === 'live' ? 'success' : 'default'}
+            />
+          }
+        />
 
         {/* Match info */}
         <MatchInfo match={match} currentMove={currentMove} analysis={analysis[currentMove]} />

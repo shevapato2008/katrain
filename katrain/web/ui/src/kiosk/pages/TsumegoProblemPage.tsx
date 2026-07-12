@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowBack,
   Undo,
   Lightbulb,
   Replay,
@@ -36,6 +35,7 @@ import {
 import { writeActiveSession } from '../utils/activeSession';
 import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
 import PhysicalStatePanel from '../components/tsumego/PhysicalStatePanel';
+import SubPageBar from '../components/layout/SubPageBar';
 
 interface ProblemSummary {
   id: string;
@@ -362,20 +362,14 @@ const TsumegoProblemPage = () => {
 
       {/* Controls panel */}
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
-          <Button onClick={goToUnits} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-          {problem && (
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              <Box component="span">死活</Box>
-              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
-              <Box component="span">{levelChinese(problem.level)}</Box>
-              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
-              <Box component="span">{t(`tsumego:${problem.category}`, problem.category)}</Box>
-              <Box component="span" sx={{ mx: 0.75, color: 'text.disabled' }}>›</Box>
-              <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>第 {currentIndex + 1} 题</Box>
-            </Typography>
-          )}
-        </Box>
+        <SubPageBar
+          title={
+            problem
+              ? `${t('Life & Death', '死活')} › ${levelChinese(problem.level)} › ${t(`tsumego:${problem.category}`, problem.category)} › 第 ${currentIndex + 1} 题`
+              : t('Life & Death', '死活棋')
+          }
+          onBack={goToUnits}
+        />
 
         {problem?.hint && (
           <Box

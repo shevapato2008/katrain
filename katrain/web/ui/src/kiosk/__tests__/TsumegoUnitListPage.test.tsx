@@ -97,9 +97,10 @@ describe('TsumegoUnitListPage', () => {
   it('renders the unit heading and problem range', async () => {
     renderPage('15k', 'tesuji', '1');
     await waitFor(() => {
-      expect(screen.getByText((_, el) => el?.textContent === '单元 1')).toBeInTheDocument();
-      // range 1–20
-      expect(screen.getByText('1–20')).toBeInTheDocument();
+      // Unit number + range now render together in the SubPageBar title
+      // ("单元 1 · 1–20"); assert both segments are present.
+      expect(screen.getByText(/单元 1/)).toBeInTheDocument();
+      expect(screen.getByText(/1–20/)).toBeInTheDocument();
     });
   });
 

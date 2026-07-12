@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowBack } from '@mui/icons-material';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
+import SubPageBar from '../components/layout/SubPageBar';
 
 interface ProblemItem {
   id: string;
@@ -86,7 +86,7 @@ const TsumegoLevelPage = () => {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 8 }}>
         <Typography variant="h6" color="text.secondary">{t('No problems for this level', '该难度暂无题目')}</Typography>
-        <Button variant="outlined" onClick={() => navigate(`/kiosk/tsumego/${level}`)} startIcon={<ArrowBack />}>
+        <Button variant="outlined" onClick={() => navigate(`/kiosk/tsumego/${level}`)}>
           {t('Back', '返回')}
         </Button>
       </Box>
@@ -105,15 +105,15 @@ const TsumegoLevelPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button onClick={() => navigate(`/kiosk/tsumego/${level}`)} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-        <Box>
-          <Typography variant="h5">{level?.toUpperCase()} {t('tsumego:allProblems', '全部题目')}</Typography>
+      <SubPageBar
+        title={`${level?.toUpperCase()} ${t('tsumego:allProblems', '全部题目')}`}
+        to={`/kiosk/tsumego/${level}`}
+        right={
           <Typography variant="body2" color="text.secondary">
             {problems.length} / {total} {t('problems count', '道题目')}
           </Typography>
-        </Box>
-      </Box>
+        }
+      />
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Grid container spacing={2}>
           {problems.map((problem, idx) => (

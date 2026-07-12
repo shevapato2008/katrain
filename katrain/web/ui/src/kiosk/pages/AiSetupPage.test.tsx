@@ -75,4 +75,17 @@ describe('AiSetupPage', () => {
       );
     });
   });
+
+  it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
+    renderPage('free');
+    expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /返回|back/i })).toBeInTheDocument();
+  });
+
+  it('rules render as a dropdown trigger, not 4 separate chips', () => {
+    renderPage('free');
+    // Compact form shows the current rule value as one control; the Japanese/Korean/AGA
+    // options are behind the dropdown (not all visible at once).
+    expect(screen.queryByText('AGA')).not.toBeInTheDocument();
+  });
 });

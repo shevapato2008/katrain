@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowBack, GridView, Extension, AutoAwesome, TrackChanges, Assignment } from '@mui/icons-material';
+import { GridView, Extension, AutoAwesome, TrackChanges, Assignment } from '@mui/icons-material';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProgressDots from '../components/tsumego/ProgressDots';
+import SubPageBar from '../components/layout/SubPageBar';
 
 interface CategoryInfo {
   category: string;
@@ -103,7 +104,7 @@ const TsumegoCategoriesPage = () => {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
         <Alert severity="error">{error}</Alert>
-        <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')} startIcon={<ArrowBack />}>
+        <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')}>
           {t('Back', '返回')}
         </Button>
       </Box>
@@ -112,17 +113,15 @@ const TsumegoCategoriesPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button onClick={() => navigate('/kiosk/tsumego')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-        <Box>
-          <Typography variant="h5">
-            {level?.toUpperCase()} {t('tsumego:selectCategory', '选择分类')}
-          </Typography>
+      <SubPageBar
+        title={`${level?.toUpperCase()} ${t('tsumego:selectCategory', '选择分类')}`}
+        to="/kiosk/tsumego"
+        right={
           <Typography variant="body2" color="text.secondary">
             {totalCount} {t('tsumego:problems', '题')}
           </Typography>
-        </Box>
-      </Box>
+        }
+      />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Grid container spacing={2}>

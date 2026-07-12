@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardActionArea, CircularProgress, Alert, Button } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProgressDots from '../components/tsumego/ProgressDots';
 import { UNIT_SIZE, sequenceKey } from './tsumegoUnits';
+import SubPageBar from '../components/layout/SubPageBar';
 
 interface ProblemSummary {
   id: string;
@@ -97,7 +97,6 @@ const TsumegoUnitsPage = () => {
         <Button
           variant="outlined"
           onClick={() => navigate(`/kiosk/tsumego/${level}`)}
-          startIcon={<ArrowBack />}
         >
           {t('Back', '返回')}
         </Button>
@@ -107,21 +106,15 @@ const TsumegoUnitsPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button
-          onClick={() => navigate(`/kiosk/tsumego/${level}`)}
-          startIcon={<ArrowBack />}
-          sx={{ minWidth: 40, p: 0.5 }}
-        />
-        <Box>
-          <Typography variant="h5">
-            {level?.toUpperCase()} {t(`tsumego:${category}`, category)} · {t('tsumego:selectUnit', '选择单元')}
-          </Typography>
+      <SubPageBar
+        title={`${level?.toUpperCase()} ${t(`tsumego:${category}`, category || '')} · ${t('tsumego:selectUnit', '选择单元')}`}
+        to={`/kiosk/tsumego/${level}`}
+        right={
           <Typography variant="body2" color="text.secondary">
             {totalProblems} {t('tsumego:problems', '题')} · {totalUnits} {t('tsumego:unit', '单元')}
           </Typography>
-        </Box>
-      </Box>
+        }
+      />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Box

@@ -5,12 +5,12 @@ import {
   CardContent, Snackbar, alpha, useTheme
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ArrowBack } from '@mui/icons-material';
 import PeopleIcon from '@mui/icons-material/People';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../../context/AuthContext';
 import { i18n } from '../../i18n';
+import SubPageBar from '../components/layout/SubPageBar';
 
 interface OnlineUser {
   id: number;
@@ -171,21 +171,22 @@ const LobbyPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <Button onClick={() => navigate('/kiosk/play')} startIcon={<ArrowBack />} sx={{ minWidth: 40, p: 0.5 }} />
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5">{i18n.t('lobby:title', '在线大厅')}</Typography>
-          <Typography variant="body2" color="text.secondary">{i18n.t('lobby:subtitle', '与其他玩家对弈或观战')}</Typography>
-        </Box>
-        <Stack direction="row" spacing={1}>
-          <Button variant="contained" size="small" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
-            {i18n.t('lobby:quick_match_rated', '排位赛')}
-          </Button>
-          <Button variant="outlined" size="small" onClick={() => startMatchmaking('free')}>
-            {i18n.t('lobby:custom_game', '自由对局')}
-          </Button>
-        </Stack>
+      <SubPageBar
+        title={i18n.t('lobby:title', '在线大厅')}
+        to="/kiosk/play"
+        right={
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" size="small" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
+              {i18n.t('lobby:quick_match_rated', '排位赛')}
+            </Button>
+            <Button variant="outlined" size="small" onClick={() => startMatchmaking('free')}>
+              {i18n.t('lobby:custom_game', '自由对局')}
+            </Button>
+          </Stack>
+        }
+      />
+      <Box sx={{ px: 2, pt: 1 }}>
+        <Typography variant="body2" color="text.secondary">{i18n.t('lobby:subtitle', '与其他玩家对弈或观战')}</Typography>
       </Box>
 
       {/* Matchmaking dialog */}

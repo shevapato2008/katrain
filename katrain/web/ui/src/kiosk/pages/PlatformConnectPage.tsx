@@ -8,28 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformInfo } from '../../api';
-
-type LoginFieldConfig = {
-  userLabel: string; userLabelCn: string;
-  passLabel: string; passLabelCn: string;
-  userType?: string;  // input type, default "text"
-};
-
-const PLATFORM_META: Record<string, { label: string; labelCn: string; color: string; login: LoginFieldConfig; comingSoon?: boolean }> = {
-  ogs: {
-    label: 'OGS', labelCn: 'OGS', color: '#4a90d9',
-    login: { userLabel: 'Username', userLabelCn: '用户名', passLabel: 'Password', passLabelCn: '密码' },
-  },
-  fox: {
-    label: 'Fox Weiqi', labelCn: '野狐围棋', color: '#e67e22',
-    login: { userLabel: 'Username', userLabelCn: '用户名', passLabel: 'Password', passLabelCn: '密码' },
-    comingSoon: true,
-  },
-  golaxy: {
-    label: 'Golaxy', labelCn: '星阵围棋', color: '#2ecc71',
-    login: { userLabel: 'Phone Number', userLabelCn: '手机号', passLabel: 'Verification Code', passLabelCn: '验证码', userType: 'tel' },
-  },
-};
+import SubPageBar from '../components/layout/SubPageBar';
+import { PLATFORM_META } from '../constants/platforms';
 
 const PlatformConnectPage = () => {
   const { t } = useTranslation();
@@ -96,7 +76,7 @@ const PlatformConnectPage = () => {
     setLoginLoading(true);
     setLoginError('');
     try {
-      const isSms = PLATFORM_META[loginDialog]?.login.passLabel === 'Verification Code';
+      const isSms = PLATFORM_META[loginDialog]?.login?.passLabel === 'Verification Code';
       const creds = isSms
         ? { username: loginForm.username, sms_code: loginForm.password }
         : { username: loginForm.username, password: loginForm.password };
@@ -129,10 +109,9 @@ const PlatformConnectPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, height: '100%' }}>
-      <Typography variant="h5" sx={{ color: 'text.secondary' }}>
-        {t('Cross-Platform Play', '跨平台对弈')}
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SubPageBar title={t('Cross-Platform Play', '跨平台对弈')} to="/kiosk/play" />
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, flex: 1, minHeight: 0, overflow: 'auto' }}>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {t('Connect to Go platforms and play through your smart board', '连接围棋平台，通过智能棋盘对弈')}
       </Typography>
@@ -293,6 +272,7 @@ const PlatformConnectPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      </Box>
     </Box>
   );
 };

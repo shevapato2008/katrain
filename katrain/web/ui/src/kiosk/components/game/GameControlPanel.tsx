@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Box, Typography, Divider, Stack, Switch, FormControlLabel, IconButton } from '@mui/material';
 import {
   Map as MapIcon, TipsAndUpdates, Timeline, Undo,
   PanToolAlt, Flag, Calculate,
   SkipPrevious, FastRewind, ArrowBack, ArrowForward, FastForward, SkipNext,
 } from '@mui/icons-material';
+import ViewInAr from '@mui/icons-material/ViewInAr';
 import PlayerCard from '../../../components/PlayerCard';
 import ScoreGraph from '../../../components/ScoreGraph';
 import ItemToggle from './ItemToggle';
@@ -34,6 +36,10 @@ const GameControlPanel = ({
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null,
 }: Props) => {
   const { t } = useTranslation();
+  // Board3D safety net (mirrors smartbox "板上 WebGL 不可用时回退 2D"): hide the 3D toggle
+  // entirely when the browser has no WebGL, so users can't enter a broken 3D view. Computed
+  // once per mount — WebGL support doesn't change during a session.
+  const webgl = useState(() => typeof window !== 'undefined' && !!window.WebGLRenderingContext)[0];
   // golaxy 人机对弈 has no winrate chart — never shown in engineMode, regardless of the toggle state.
   const showScore = !engineMode && !!analysisToggles.score;
   // 数子 (count) gating mirrors the galaxy web reference (RightSidebarPanel): the backend
@@ -99,6 +105,9 @@ const GameControlPanel = ({
           <ItemToggle icon={<PanToolAlt />} label={t('game:pass', '停一手')} onClick={() => onAction('pass')} disabled={isGameOver} />
           <ItemToggle icon={<Flag />} label={t('Resign', '认输')} onClick={() => onAction('resign')} isDestructive disabled={isGameOver} />
           <ItemToggle icon={<Calculate />} label={t('Score', '数子')} onClick={() => onAction('count')} disabled={!canCount} />
+          {webgl && (
+            <ItemToggle icon={<ViewInAr />} label={t('3D', '3D')} active={!!analysisToggles.view3d} onClick={() => onToggleAnalysis('view3d')} />
+          )}
         </Box>
 
         <Divider />

@@ -36,9 +36,8 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: kioskMode ? '../static-kiosk-2d' : '../static',
       emptyOutDir: true,
-      rollupOptions: kioskMode ? {
-        external: ['three', '@react-three/fiber', '@react-three/drei'],
-      } : undefined,
+      // three.js is intentionally BUNDLED into the kiosk build now (3D Go board).
+      // No rollupOptions.external — three/@react-three are packaged normally.
     },
     test: {
       globals: true,

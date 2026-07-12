@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Verify the kiosk-2d dist stays within the board boundary:
-#  - no three.js / @react-three code
 #  - no /galaxy/* routes (Galaxy-only pages/links must be DCE'd out)
 #  - no non-board /api/v1/live calls (kiosk talks to /api/v1/board/live only)
 # Exits 0 on clean, 1 on any match.
+#
+# NOTE: three.js is now intentionally bundled in the kiosk build (3D Go board).
+# We no longer fail on THREE. / 'three' / @react-three. The galaxy-route and
+# non-board live-API guards below still apply.
 set -euo pipefail
 
 DIST="${DIST:-../static-kiosk-2d}"
@@ -14,20 +17,6 @@ if [[ ! -d "$DIST" ]]; then
 fi
 
 fail=0
-
-# Minified three.js uses the `THREE.` namespace prefix.
-if matches=$(grep -l "THREE\." "$DIST"/assets/*.js 2>/dev/null); then
-  echo "❌ Found THREE. in:" >&2
-  echo "$matches" >&2
-  fail=1
-fi
-
-# Source-string residue check — dynamic import paths that survived minification.
-if matches=$(grep -El '["'"'"']three["'"'"']|@react-three' "$DIST"/assets/*.js 2>/dev/null); then
-  echo "❌ Found three / @react-three import string in:" >&2
-  echo "$matches" >&2
-  fail=1
-fi
 
 # Galaxy route residue — kiosk must not link to or route any /galaxy/* page.
 if matches=$(grep -l "/galaxy/" "$DIST"/assets/*.js 2>/dev/null); then
@@ -48,7 +37,7 @@ done
 
 if [[ $fail -eq 0 ]]; then
   size=$(du -sh "$DIST" | cut -f1)
-  echo "✅ kiosk boundary clean — no three.js / /galaxy/ / non-board live API in $DIST ($size total)"
+  echo "✅ kiosk boundary clean — no /galaxy/ / non-board live API in $DIST ($size total)"
 fi
 
 exit $fail

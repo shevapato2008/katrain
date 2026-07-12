@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API, type GameState } from '../api';
+import { API, type GameState, type PhysicalEngineErrorState } from '../api';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
@@ -34,6 +34,15 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         to_place: number[][];
         to_remove: number[][];
     } | null>(null);
+    // Task 9: bounded-retry engine-tunnel failure (Golaxy 隧道). Set on `physical_engine_error`,
+    // cleared to null on the backend's `physical_engine_error_resolved` (awaiting-removal stability
+    // gate satisfied) — EngineMoveErrorDialog also has a local `clearPhysicalEngineError` escape
+    // hatch (retry ok:true / stale-token 409) since those two outcomes have no matching broadcast.
+    const [physicalEngineError, setPhysicalEngineError] = useState<PhysicalEngineErrorState | null>(null);
+    // Task 8's awaiting-removal timeout re-prompt (`_tick_awaiting_removal`'s reminder broadcast).
+    // A fresh object on every occurrence (like physicalReminder) so a dialog can key an effect off
+    // it to re-emphasize the waiting UI without needing a dedicated ack/clear round-trip.
+    const [awaitingRemovalReminder, setAwaitingRemovalReminder] = useState<{ row: number; col: number } | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
@@ -98,6 +107,20 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             }
                         } else if (msg.type === 'physical_reminder') {
                             setPhysicalReminder(msg.data);
+                        } else if (msg.type === 'physical_engine_error') {
+                            // Top-level fields (NOT nested under `data`) — matches
+                            // _apply_engine_recovery_outcome's broadcast shape.
+                            setPhysicalEngineError({
+                                col: msg.col,
+                                row: msg.row,
+                                attempts: msg.attempts,
+                                detail: msg.detail,
+                                recovery_token: msg.recovery_token,
+                            });
+                        } else if (msg.type === 'physical_engine_error_resolved') {
+                            setPhysicalEngineError(null);
+                        } else if (msg.type === 'physical_awaiting_removal_reminder') {
+                            setAwaitingRemovalReminder(msg.data);
                         }
                     };
                 } catch (err) {
@@ -157,6 +180,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         return data.session_id;
     }, [token]);
 
+    // Task 9: local escape hatch for the two engine-error-recovery outcomes that have no
+    // matching WS broadcast (retry ok:true, and a stale/consumed-token 409) — the dialog
+    // calls this itself rather than waiting on the server.
+    const clearPhysicalEngineError = useCallback(() => setPhysicalEngineError(null), []);
+
     const sendChat = useCallback((text: string, sender: string) => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({
@@ -166,5 +194,14 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         }
     }, []);
 
-    return { sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction, initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder };
+    // wsRef is exposed so callers can layer additional message-type listeners on the
+    // same socket (e.g. usePlatformEvents for platform_move_pending/confirmed/rejected —
+    // engine-play (Golaxy 人机对弈) commit-protocol events; see kiosk GamePage's undo-
+    // disable-while-pending wiring). This hook's own onmessage switch above only handles
+    // the generic game-session message types and deliberately ignores platform_* ones.
+    return {
+        sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction,
+        initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
+        physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
+    };
 };

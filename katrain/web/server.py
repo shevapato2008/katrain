@@ -240,6 +240,15 @@ def _init_platform_manager(app, session_manager, log):
     app.state.platform_manager = platform_manager
     app.state.platform_gateway = PlatformCommandGateway(platform_manager, session_manager)
 
+    # Engine-move failure recovery (Task 7, B5/M1/M4/m2): bounded retry + episode
+    # tracking for the vision poller's platform/engine-play branch. Always wired up
+    # (not gated on vision being enabled) so it's available uniformly wherever the
+    # gateway is; the poller is the only consumer.
+    from katrain.web.core.engine_recovery import EngineRecoveryConfig, EngineRecoveryTracker
+
+    app.state.engine_recovery_config = EngineRecoveryConfig()
+    app.state.engine_recovery = EngineRecoveryTracker(app.state.engine_recovery_config)
+
     for adapter_path, name in [
         ("katrain.web.platforms.ogs.adapter", "OGS"),
         ("katrain.web.platforms.fox.adapter", "Fox"),
@@ -647,6 +656,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session = _get_session_or_404(manager, request.session_id)
         if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("undo", request.n_times)
             state = session.katrain.get_state()
@@ -656,6 +666,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/redo")
     def redo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("redo", request.n_times)
             state = session.katrain.get_state()
@@ -805,6 +816,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav")
     def navigate(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("nav", request.node_id)
             state = session.katrain.get_state()
@@ -814,6 +826,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ai-move")
     def ai_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        # Unconditional (not just while pending): this path bypasses the Golaxy
+        # genmove tunnel entirely and triggers local KataGo directly, which is never
+        # valid for an engine-play game (review D5/Task 0 inventory).
+        gateway = getattr(app.state, "platform_gateway", None)
+        if gateway and gateway.is_engine_game(request.session_id):
+            raise HTTPException(status_code=403, detail="ai-move not allowed for engine-play sessions")
         with session.lock:
             session.katrain("ai-move")
             state = session.katrain.get_state()
@@ -934,6 +952,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("find_mistake", fn=request.fn)
             state = session.katrain.get_state()
@@ -943,6 +962,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/branch")
     def switch_branch(request: SwitchBranchRequest):
         session = _get_session_or_404(manager, request.session_id)
+        _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("switch_branch", direction=request.direction)
             state = session.katrain.get_state()
@@ -1877,6 +1897,29 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
+    """409 while an engine-play (Golaxy 人机对弈 genmove tunnel) move is in flight.
+
+    The tunnel can take up to ~180s; mutating the tree underneath it (undo/redo/
+    nav to a different node) makes the eventual AI reply land on the wrong node
+    once it returns (review B2). Task 4's gateway also re-checks a position token
+    atomically before applying, so this 409 is belt-and-suspenders, not the only
+    line of defense — but it's the one that gives the user an immediate, correct
+    error instead of a move silently discarded ~3 minutes later.
+
+    Scope (fable5 裁决 2026-07-11): only this fixed endpoint set is guarded this
+    iteration — undo/redo/nav/nav-mistake/nav-branch (pending-gated, called from
+    here) plus /api/ai-move (unconditional — see its own handler). The rest of the
+    tree-mutation surface (sgf/load, new-game, edit-game, node/*, player/swap, ...)
+    is intentionally NOT guarded — kiosk engine-mode UI doesn't expose those
+    actions. Full endpoint inventory + rationale:
+    superpowers/tracks/kiosk-golaxy-physical-play/plan.md (基线记录).
+    """
+    gateway = getattr(app.state, "platform_gateway", None)
+    if gateway and gateway.is_engine_move_pending(session_id):
+        raise HTTPException(status_code=409, detail="engine move pending")
+
+
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
     """Blackout the LED board after >5 min of inactivity (plan §2.1 Gemini 新#2).
 
@@ -1949,6 +1992,131 @@ async def _vision_event_pump(app: FastAPI):
             await asyncio.sleep(1.0)
 
 
+def _apply_engine_recovery_outcome(
+    app: FastAPI, manager, session_id: str, game_id: str, coords, reason: str, detail: str
+) -> bool:
+    """Task 7 (review B5/M1/M4/m2): run one gateway failure through
+    app.state.engine_recovery's bounded-retry episode tracker; returns whether the
+    caller should re-arm detection (push the expected board again so the stone
+    retries). At the attempts threshold this additionally hands the physical-play
+    orchestrator into its engine_error pause state and broadcasts
+    physical_engine_error to the session — detection then stays paused server-side
+    (the orchestrator pauses the vision worker), so the caller must NOT re-arm
+    (closes gap G3: a stuck physical stone retrying the tunnel forever)."""
+    tracker = getattr(app.state, "engine_recovery", None)
+    if tracker is None:  # e.g. board mode / a test app that never wired one up
+        return True
+    outcome = tracker.on_failure(game_id=game_id, coords=coords, reason=reason, detail=detail)
+    if outcome.enter_engine_error:
+        episode = outcome.episode
+        orchestrator = getattr(app.state, "physical_play", None)
+        if orchestrator is not None:
+            orchestrator.enter_engine_error(coords, episode.recovery_token)
+        manager.broadcast_to_session(
+            session_id,
+            {
+                "type": "physical_engine_error",
+                "col": coords[0],
+                "row": coords[1],
+                "attempts": episode.count,
+                "detail": episode.detail,
+                "recovery_token": episode.recovery_token,
+            },
+        )
+    return outcome.rearm
+
+
+async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_data, log) -> float:
+    """Handle one vision ConfirmedMove for the bound session. Extracted from
+    _vision_move_poller (which is otherwise a bare infinite loop) so tests can
+    drive this per-move logic directly with a mocked gateway/vision, per Task 7's
+    testability note.
+
+    Returns the extra retry-throttle delay the poller should sleep before its next
+    poll: 0.0 normally (the loop's own 0.1s tick is enough), 0.5 on an out-of-turn
+    ignore or a re-armed gateway failure (unchanged pre-Task-7 throttle — a rejected
+    move produces no game_update, so nothing else naturally slows the retry loop).
+    """
+    from katrain.vision.katrain_bridge import vision_move_to_katrain
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    manager = app.state.session_manager
+    tracker = getattr(app.state, "engine_recovery", None)
+    try:
+        session = manager.get_session(session_id)
+    except KeyError:
+        session = None
+    if not session:
+        # Task 7 table: "session missing" clears the episode and continues — the
+        # game this episode belonged to is gone, so there is nothing left to retry.
+        if tracker is not None:
+            tracker.clear()
+        return 0.0
+
+    def _rearm_detection() -> None:
+        game_state = session.katrain.get_state()
+        if game_state and "stones" in game_state:
+            vision.set_expected_from_stones(game_state["stones"])
+
+    # R1.3: only the side to move may inject (color check).
+    expected_player = (session.last_state or {}).get("player_to_move")
+    move_player = "B" if move_data.color == 1 else "W"
+    if expected_player and move_player != expected_player:
+        log.info("Vision move %s out of turn (expects %s) — ignored", move_player, expected_player)
+        # Re-arm detection: the worker advanced its baseline when it emitted this
+        # move; a rejection produces no game update, so nothing would ever
+        # force_sync the baseline back and detection would stay silenced forever.
+        # Re-pushing the (unchanged) expected board triggers the worker's
+        # polluted-baseline re-sync, so the stone retries once the turn comes around.
+        _rearm_detection()
+        return 0.5
+
+    move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
+    coords = (move.coords[0], move.coords[1])
+    gateway = getattr(app.state, "platform_gateway", None)
+    if gateway and gateway.is_platform_game(session_id):
+        game_id = gateway.get_game_id(session_id) or ""
+        try:
+            await gateway.play_move(session_id, coords[0], coords[1], user_id=0)
+        except PlatformMoveRejectedError as e:
+            log.warning("Platform gateway rejected vision move: %s", e)
+            rearm = _apply_engine_recovery_outcome(app, manager, session_id, game_id, coords, e.reason, str(e))
+            if rearm:
+                _rearm_detection()
+                return 0.5
+            return 0.0
+        except Exception as gw_err:
+            log.warning("Platform gateway rejected vision move: %s", gw_err)
+            # Non-PlatformMoveRejectedError exceptions (httpx errors, unexpected
+            # adapter bugs, ...) are tunnel/infra failures too — fold them into the
+            # "engine_error" bucket so they count toward the same bounded-retry
+            # episode instead of retrying forever (documented decision, Task 7).
+            rearm = _apply_engine_recovery_outcome(
+                app, manager, session_id, game_id, coords, "engine_error", str(gw_err)
+            )
+            if rearm:
+                _rearm_detection()
+                return 0.5
+            return 0.0
+        else:
+            if tracker is not None:
+                tracker.on_success()
+    else:
+        with session.lock:
+            session.katrain("play", move.coords)
+
+    log.info(
+        "Vision move submitted: col=%d row=%d color=%d",
+        move_data.col,
+        move_data.row,
+        move_data.color,
+    )
+    orchestrator = getattr(app.state, "physical_play", None)
+    if orchestrator is None:
+        _rearm_detection()
+    return 0.0
+
+
 async def _vision_move_poller(app: FastAPI):
     """Poll vision worker for confirmed moves and inject them into the bound session.
 
@@ -1958,68 +2126,23 @@ async def _vision_move_poller(app: FastAPI):
     baseline at confirm time, so held moves can go stale and corrupt the game.
     Expected-board pushes now happen in the orchestrator's update_state_callback
     wrapper (single authority); a fallback remains for vision-without-orchestrator.
+
+    Per-move handling lives in _handle_confirmed_move (Task 7 extraction) — this
+    loop is now just the poll/dispatch/throttle shell.
     """
     from katrain.vision.ipc import ConfirmedMove
-    from katrain.vision.katrain_bridge import vision_move_to_katrain
 
     log = logging.getLogger("katrain_web.vision")
     while True:
         try:
             vision = getattr(app.state, "vision", None)
             if vision and vision.bound_session_id:
-                orchestrator = getattr(app.state, "physical_play", None)
                 move_data = vision.get_confirmed_move()
                 if move_data and isinstance(move_data, ConfirmedMove):
-                    session_id = vision.bound_session_id
-                    manager = app.state.session_manager
-                    session = manager.get_session(session_id)
-                    if session:
-                        # R1.3: only the side to move may inject (color check).
-                        expected_player = (session.last_state or {}).get("player_to_move")
-                        move_player = "B" if move_data.color == 1 else "W"
-                        if expected_player and move_player != expected_player:
-                            log.info(
-                                "Vision move %s out of turn (expects %s) — ignored",
-                                move_player,
-                                expected_player,
-                            )
-                            # Re-arm detection: the worker advanced its baseline when it
-                            # emitted this move; a rejection produces no game update, so
-                            # nothing would ever force_sync the baseline back and detection
-                            # would stay silenced forever. Re-pushing the (unchanged)
-                            # expected board triggers the worker's polluted-baseline
-                            # re-sync, so the stone retries once the turn comes around.
-                            game_state = session.katrain.get_state()
-                            if game_state and "stones" in game_state:
-                                vision.set_expected_from_stones(game_state["stones"])
-                            await asyncio.sleep(0.5)
-                            continue
-                        move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
-                        gateway = getattr(app.state, "platform_gateway", None)
-                        if gateway and gateway.is_platform_game(session_id):
-                            try:
-                                await gateway.play_move(session_id, move.coords[0], move.coords[1], user_id=0)
-                            except Exception as gw_err:
-                                log.warning("Platform gateway rejected vision move: %s", gw_err)
-                                # Re-arm detection (see out-of-turn comment above).
-                                game_state = session.katrain.get_state()
-                                if game_state and "stones" in game_state:
-                                    vision.set_expected_from_stones(game_state["stones"])
-                                await asyncio.sleep(0.5)
-                                continue
-                        else:
-                            with session.lock:
-                                session.katrain("play", move.coords)
-                        log.info(
-                            "Vision move submitted: col=%d row=%d color=%d",
-                            move_data.col,
-                            move_data.row,
-                            move_data.color,
-                        )
-                        if orchestrator is None:
-                            game_state = session.katrain.get_state()
-                            if game_state and "stones" in game_state:
-                                vision.set_expected_from_stones(game_state["stones"])
+                    retry_delay = await _handle_confirmed_move(app, vision, vision.bound_session_id, move_data, log)
+                    if retry_delay:
+                        await asyncio.sleep(retry_delay)
+                        continue
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -2166,7 +2289,8 @@ def run_web():
     parser.add_argument(
         "--vision-ae-target",
         default=None,
-        help="Software-AE target brightness band as LO-HI gray levels (default: 120-170).",
+        help="Software-AE target brightness as either a LO-HI gray-level band (e.g. 120-170) or a single "
+        "midpoint value (e.g. 145) (default: 120-170).",
     )
     parser.add_argument(
         "--led-serial-port",

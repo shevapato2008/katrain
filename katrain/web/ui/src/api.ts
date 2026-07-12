@@ -71,6 +71,11 @@ export interface GameState {
   };
   game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
   analysis_allowed?: boolean;
+  // "B" | "W" = the color the REMOTE ENGINE plays in an engine-play game (Golaxy
+  // 人机对弈 genmove tunnel); null/absent for every other game shape (local HvAI,
+  // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —
+  // see kiosk/pages/GamePage.tsx deriveHumanColor/deriveAiTurnState (G2).
+  platform_engine_color?: 'B' | 'W' | null;
 }
 
 export interface SessionResponse {
@@ -170,6 +175,26 @@ export interface VisionStatusResponse {
   led_connected?: boolean;
 }
 
+// Task 9: physical engine-move (Golaxy 隧道) error recovery. `col`/`row` are GTP/board
+// space (row 0 = bottom) — see physical_play_orchestrator.py's enter_engine_error and
+// the `physical_engine_error` WS broadcast (server.py _apply_engine_recovery_outcome).
+export interface PhysicalEngineErrorState {
+  col: number;
+  row: number;
+  attempts: number;
+  detail: string;
+  recovery_token: string;
+}
+export interface EngineMoveRetryResponse {
+  ok: boolean;
+  detail?: string;
+  recovery_token?: string; // present (and NEW) only when ok:false — adopt it for the next retry
+}
+export interface EngineMoveCancelResponse {
+  ok: boolean;
+  awaiting_removal?: boolean;
+}
+
 export interface HintMove {
   gtp: string;
   coords: [number, number];
@@ -179,6 +204,21 @@ export interface HintMove {
   visits: number | null;
 }
 export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: number; }
+
+// Thrown by apiPost on a non-2xx HTTP response. Carries the numeric `status` so callers
+// can distinguish a genuine server-side rejection (e.g. a 409 on a stale/consumed token)
+// from a transient network failure — `fetch` itself throws a plain `TypeError`/`Error` for
+// those (offline, DNS, connection reset), never an `ApiError`. Message format is
+// unchanged (`Request failed <status>: <body>`) so existing text-based assertions
+// (e.g. KifuPage.test.tsx's "Request failed 500") keep working.
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
 
 export async function apiPost(path: string, payload: any, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -192,7 +232,7 @@ export async function apiPost(path: string, payload: any, token?: string) {
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Request failed ${response.status}: ${body}`);
+    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
   }
   return response.json();
 }
@@ -397,6 +437,13 @@ export const API = {
     apiPost("/api/v1/vision/move-detection", { armed }),
   visionExpectedBoard: (board: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/expected-board", { board }),
+  // Task 9: engine-move recovery dialog actions. 200 {ok:false, recovery_token} is a
+  // normal "failed again" outcome (NOT an HTTP error); a 409 (stale/consumed token) DOES
+  // reject via apiPost's !response.ok throw — callers treat that as "recovery expired".
+  visionEngineMoveRetry: (sessionId: string, recoveryToken: string, token?: string): Promise<EngineMoveRetryResponse> =>
+    apiPost("/api/v1/vision/engine-move/retry", { session_id: sessionId, recovery_token: recoveryToken }, token),
+  visionEngineMoveCancel: (sessionId: string, recoveryToken: string, token?: string): Promise<EngineMoveCancelResponse> =>
+    apiPost("/api/v1/vision/engine-move/cancel", { session_id: sessionId, recovery_token: recoveryToken }, token),
 
   // AI Hint API (free games only)
   hint: (sessionId: string, topN?: number): Promise<HintResponse> =>

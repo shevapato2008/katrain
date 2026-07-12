@@ -6,9 +6,16 @@ fake-manager + FastAPI TestClient pattern from test_platforms_engine_start.py fo
 the endpoint-boundary cases, and additionally exercises the REAL PlatformManager's
 session_id -> game_id resolution (the mapping logic this task adds) with a stub
 adapter, so that logic isn't mocked away.
+
+Task 10 (G5/M7/M8) additionally covers the 支招 (options) -> physical board white-LED
+hint tie-in: a successful `kind=="options"` result blinks `show_hint` on the
+PhysicalPlayOrchestrator IFF the vision session is bound to this session_id AND the
+game's current_node hasn't changed across the (slow) analysis await -- see
+`_build_app_with_board` / `FakeOrchestrator` / `FakeSession` below.
 """
 
 import dataclasses
+import threading
 from unittest.mock import AsyncMock
 
 import pytest
@@ -319,3 +326,238 @@ async def test_manager_engine_analysis_delegates_kind_through():
     result = await pm.engine_analysis("golaxy", "sess-real", "judge")
     assert result == _judge_result()
     adapter.engine_analysis.assert_awaited_once_with("golaxy-engine-1", "judge")
+
+
+# --- Task 10: 支招 (options) -> physical board white-hint tie-in --------------- #
+
+
+class FakeOrchestrator:
+    def __init__(self):
+        self.shown = None
+        self._raise = None
+
+    def raise_on_show_hint(self, exc):
+        self._raise = exc
+
+    def show_hint(self, points):
+        if self._raise is not None:
+            raise self._raise
+        self.shown = points
+
+
+class FakeVision:
+    def __init__(self, bound_session_id=None):
+        self.bound_session_id = bound_session_id
+
+
+class _FakeNode:
+    """Distinct identity per instance -- id() is the position token."""
+
+
+class FakeGame:
+    board_size = (19, 19)
+
+    def __init__(self):
+        self.current_node = _FakeNode()
+
+    def advance_node(self):
+        """Simulate a move/undo landing on a new node."""
+        self.current_node = _FakeNode()
+
+
+class FakeKatrainForBoard:
+    def __init__(self):
+        self.game = FakeGame()
+
+
+class FakeSessionForBoard:
+    def __init__(self):
+        self.katrain = FakeKatrainForBoard()
+        self.lock = threading.Lock()
+
+
+class FakeBoardSessionManager:
+    def __init__(self, session):
+        self._session = session
+
+    def get_session(self, sid):
+        if self._session is None:
+            raise KeyError(sid)
+        return self._session
+
+
+def _build_app_with_board(manager, vision=None, orchestrator=None, session=None, session_manager=None):
+    app = _build_app(manager)
+    app.state.vision = vision
+    app.state.physical_play = orchestrator
+    app.state.session_manager = session_manager if session_manager is not None else FakeBoardSessionManager(session)
+    return app
+
+
+def _options_result_two_candidates():
+    # Gold standard (operative frame rule -- see CLAUDE.md / final-review adjudication):
+    # `Candidate.row`/`.col` are core/GTP frame, row 0 = BOTTOM (the same (col,row)
+    # space Board.tsx uses for gameState.stones; AI moves from this same decoder are
+    # played into the core game with no flip). The LED chain needs vision frame,
+    # row 0 = TOP, so `_maybe_show_hint` must flip: vision_row = board_size-1-core_row.
+    # board_size=19 here (FakeGame.board_size below) -> col=3,row=15 (core) flips to
+    # vision (3,3); col=3,row=3 (core) flips to vision (15,3).
+    return OptionsAnalysis(
+        candidates=[
+            Candidate(col=3, row=15, prob=0.6, winrate=0.6, delta=0.1),
+            Candidate(col=3, row=3, prob=0.4, winrate=0.5, delta=-0.1),
+        ]
+    )
+
+
+@pytest.mark.asyncio
+async def test_options_bound_and_unchanged_shows_hint_gold_standard():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    mgr.engine_analysis.return_value = _options_result_two_candidates()
+    orchestrator = FakeOrchestrator()
+    vision = FakeVision(bound_session_id="sess-1")
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is True
+    # Flipped from core (col=3,row=15) and (col=3,row=3) into vision frame: see
+    # _options_result_two_candidates's comment above.
+    assert orchestrator.shown == [(3, 3), (15, 3)]
+
+
+@pytest.mark.asyncio
+async def test_options_position_changed_during_await_drops_hint():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+
+    async def _mutate_then_return(*_args, **_kwargs):
+        session.katrain.game.advance_node()  # simulate a move landing mid-await
+        return _options_result_two_candidates()
+
+    mgr.engine_analysis = AsyncMock(side_effect=_mutate_then_return)
+    orchestrator = FakeOrchestrator()
+    vision = FakeVision(bound_session_id="sess-1")
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is True  # analysis result unaffected by the dropped hint
+    assert orchestrator.shown is None
+
+
+@pytest.mark.asyncio
+async def test_options_rebound_to_other_session_during_await_drops_hint():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    vision = FakeVision(bound_session_id="sess-1")
+
+    async def _rebind_then_return(*_args, **_kwargs):
+        vision.bound_session_id = "sess-2"  # 换绑 during the await
+        return _options_result_two_candidates()
+
+    mgr.engine_analysis = AsyncMock(side_effect=_rebind_then_return)
+    orchestrator = FakeOrchestrator()
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    assert orchestrator.shown is None
+
+
+@pytest.mark.asyncio
+async def test_options_unbound_session_no_hint():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    mgr.engine_analysis.return_value = _options_result_two_candidates()
+    orchestrator = FakeOrchestrator()
+    vision = FakeVision(bound_session_id=None)  # not bound to any session
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    assert orchestrator.shown is None
+
+
+@pytest.mark.asyncio
+async def test_non_options_kind_never_shows_hint_even_when_bound():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    mgr.engine_analysis.return_value = _area_result()
+    orchestrator = FakeOrchestrator()
+    vision = FakeVision(bound_session_id="sess-1")
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "area"},
+        )
+    assert r.status_code == 200, r.text
+    assert orchestrator.shown is None
+
+
+@pytest.mark.asyncio
+async def test_options_no_orchestrator_present_no_crash():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    mgr.engine_analysis.return_value = _options_result_two_candidates()
+    vision = FakeVision(bound_session_id="sess-1")
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=None, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is True
+
+
+@pytest.mark.asyncio
+async def test_options_quota_exhausted_7003_no_hint_and_no_crash():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    mgr.engine_analysis.side_effect = QuotaExhausted("item is not sufficient (7003)")
+    orchestrator = FakeOrchestrator()
+    vision = FakeVision(bound_session_id="sess-1")
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    assert r.json() == {"ok": False, "reason": "insufficient", "kind": "options"}
+    assert orchestrator.shown is None
+
+
+@pytest.mark.asyncio
+async def test_options_show_hint_raises_does_not_break_response():
+    session = FakeSessionForBoard()
+    mgr = FakeManager(adapter=FakeAdapter())
+    mgr.engine_analysis.return_value = _options_result_two_candidates()
+    orchestrator = FakeOrchestrator()
+    orchestrator.raise_on_show_hint(RuntimeError("LED serial write failed"))
+    vision = FakeVision(bound_session_id="sess-1")
+    app = _build_app_with_board(mgr, vision=vision, orchestrator=orchestrator, session=session)
+    async with _client(app) as ac:
+        r = await ac.post(
+            "/api/v1/platforms/golaxy/engine/analysis",
+            json={"session_id": "sess-1", "kind": "options"},
+        )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["data"]["candidates"]  # analysis payload still returned intact

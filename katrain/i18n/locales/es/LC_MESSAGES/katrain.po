@@ -2451,3 +2451,42 @@ msgstr "Variación"
 
 msgid "game:pass"
 msgstr "Pasar"
+
+msgid "AI played"
+msgstr "La IA ha jugado"
+
+msgid "Attempts"
+msgstr "Intentos"
+
+msgid "Golaxy connection error"
+msgstr "Error de conexión con Golaxy"
+
+msgid "Move at {coord} failed to submit"
+msgstr "No se pudo enviar la jugada en {coord}"
+
+msgid "Network error, please try again"
+msgstr "Error de red, inténtalo de nuevo"
+
+msgid "place the black stone at the matching point on the board"
+msgstr "Coloca la piedra negra en el punto correspondiente del tablero"
+
+msgid "place the white stone at the matching point on the board"
+msgstr "Coloca la piedra blanca en el punto correspondiente del tablero"
+
+msgid "Please remove the stone at {coord}"
+msgstr "Retira la piedra en {coord}"
+
+msgid "Remove the physical stone"
+msgstr "Retirar la piedra"
+
+msgid "Resign"
+msgstr "Rendirse"
+
+msgid "Retry"
+msgstr "Reintentar"
+
+msgid "Waiting for stone removal"
+msgstr "Esperando a que se retire la piedra"
+
+msgid "This recovery request has expired"
+msgstr "Esta solicitud de recuperación ha caducado"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Snackbar } from '@mui/material';
 // TipsAndUpdates is intentionally NOT imported: the standalone header hint button is gone
 // (AI 支招 is folded into the right-panel button in GameControlPanel). EmojiEvents is used
@@ -17,9 +17,12 @@ import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
+import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
 import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
+import { usePlatformEvents } from '../hooks/usePlatformEvents';
+import { formatGtpCoord } from '../../utils/gtpCoord';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -30,17 +33,35 @@ export interface AiTurnState {
   showThinking: boolean;
 }
 
+// Single-color human-seat derivation, shared by humanColor (turn enforcement / board
+// gating) and the AI-move banner effect below (G2 fix). `platform_engine_color`
+// (Task 1: WebKaTrain state field, "B"|"W"|null = the remote engine's color) is
+// authoritative for engine games (Golaxy 人机对弈 via the genmove tunnel) — BOTH
+// seats carry a bare "human" player_type literal there (session.py:80/82), so the
+// player_type-based checks below can't tell which seat is the AI. Absent/null in
+// every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
+// eslint-disable-next-line react-refresh/only-export-components
+export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
+  if (gameState.platform_engine_color === 'B') return 'W';
+  if (gameState.platform_engine_color === 'W') return 'B';
+  return gameState.players_info?.B?.player_type === 'player:human' ? 'B'
+    : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
+    : null;
+}
+
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
-// AND bare 'ai' (multiplayer session.py:80/82 + tests). Do NOT infer AI from "the non-human color".
-// Pure helper co-located here (not split into a new file) for unit testability; deliberate,
-// not a component — see GamePage.test.tsx.
+// AND bare 'ai' (multiplayer session.py:80/82 + tests), PLUS the engine's color per
+// `platform_engine_color` (G2 fix — engine games carry bare "human" on both seats, so
+// the literal checks alone can't find the AI seat there). Do NOT infer AI from "the
+// non-human color". Pure helper co-located here (not split into a new file) for unit
+// testability; deliberate, not a component — see GamePage.test.tsx.
 // eslint-disable-next-line react-refresh/only-export-components
 export function deriveAiTurnState(gameState: GameState, latestEventType: string | null | undefined): AiTurnState {
   const isAI = (c: 'B' | 'W') => {
     const pt = gameState.players_info[c].player_type;
-    return pt === 'player:ai' || pt === 'ai';
+    return pt === 'player:ai' || pt === 'ai' || c === gameState.platform_engine_color;
   };
   const aiColor = isAI('B') ? 'B' : isAI('W') ? 'W' : null;
   const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !gameState.end_result;
@@ -95,6 +116,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
+  // B2/D5 (engine-move commit protocol): while a Golaxy 人机对弈 move is in flight
+  // (genmove tunnel, up to ~180s), the backend already 409s undo/redo/nav — this
+  // mirrors that in the UI so the button doesn't sit there inviting a rejected tap.
+  const { pendingMove: platformPendingMove } = usePlatformEvents(session.wsRef, {});
   const [analysisToggles, setAnalysisToggles] = useState({
     ownership: false,
     hints: false,
@@ -173,14 +198,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     if (!isVisionEnabled || !session.gameState) return;
     const gs = session.gameState;
-    const human: 'B' | 'W' | null =
-      gs.players_info?.B?.player_type === 'player:human' ? 'B'
-      : gs.players_info?.W?.player_type === 'player:human' ? 'W'
-      : null;
+    const human = deriveHumanColor(gs);
     if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
-      const col = String.fromCharCode(65 + (gs.last_move[0] >= 8 ? gs.last_move[0] + 1 : gs.last_move[0]));
-      const row = gs.board_size[0] - gs.last_move[1];
-      setAiMoveBanner(`${col}${row}`);
+      setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
     }
   }, [isVisionEnabled, session.gameState?.current_node_id]);
 
@@ -200,6 +220,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setEngineOverlay(null);
     setActiveEngineKind(null);
   }, [session.gameState?.current_node_id]);
+
+  // Task 11: the physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint)
+  // mirror the 支招 (options) overlay above. Whenever activeEngineKind moves AWAY from
+  // 'options' — however that happens (the position-change effect above clearing it, the
+  // user toggling 支招 off, or the user switching to a different kind) — the LEDs must
+  // turn off in sync. A single ref-compared effect catches all three causes uniformly,
+  // rather than duplicating the dismiss call at each call site. Gated to engine games with
+  // vision enabled: screen-only sessions and non-engine free-play don't drive the LEDs, so
+  // dismissing there would be a pointless network call (the endpoint is idempotent, but
+  // there's nothing to gain). Does NOT replace the unmount cleanup above — that already
+  // covers "leaving the page" unconditionally.
+  const prevEngineOptionsKindRef = useRef<EngineAnalysisKind | null>(null);
+  useEffect(() => {
+    const prevKind = prevEngineOptionsKindRef.current;
+    prevEngineOptionsKindRef.current = activeEngineKind;
+    if (engineMode && isVisionEnabled && prevKind === 'options' && activeEngineKind !== 'options') {
+      API.hintDismiss().catch(() => undefined);
+    }
+  }, [activeEngineKind, engineMode, isVisionEnabled]);
 
   // Local free-play on-demand analysis for 领地(ownership)/图表(winrate/score). Board mode
   // suppresses per-move auto-eval, so the current position has no analysis until we ask.
@@ -285,10 +324,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
 
   // Determine which color the human plays (for turn enforcement)
-  const humanColor: 'B' | 'W' | null =
-    gameState.players_info?.B?.player_type === 'player:human' ? 'B'
-    : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
-    : null;
+  const humanColor = deriveHumanColor(gameState);
 
   // showThinking is the single-owner gate for the "AI 思考中" surface (state A, B1.4).
   // aiColor also gates the persistent move banner above; physicalConfirming is folded
@@ -428,7 +464,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         >
           <Lightbulb sx={{ color: 'warning.main' }} />
           <Typography sx={{ color: 'text.primary' }}>
-            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
+            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {aiColor === 'B'
+              ? t('place the black stone at the matching point on the board', '请在实体棋盘对应交叉点摆放黑子')
+              : t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
           </Typography>
         </Box>
       )}
@@ -529,7 +567,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onHint={handleHint}
             hintEnabled={hintVisible}
             isGameOver={isGameOver}
-            disableUndo={isRanked}
+            disableUndo={isRanked || !!platformPendingMove}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
             onEngineAnalysis={handleEngineAnalysis}
@@ -552,7 +590,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <DialogTitle sx={{ color: 'text.primary' }}>{t('Confirm resign?', '确认认输？')}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button color="error" onClick={() => { setShowResignConfirm(false); session.handleAction('resign'); }}>
+          <Button
+            color="error"
+            onClick={() => {
+              setShowResignConfirm(false);
+              session.handleAction('resign');
+              // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
+              // not it was reached via EngineMoveErrorDialog's 认输 button — so the
+              // physical engine-error recovery dialog (if open) is now irrelevant.
+              // No-op if it was never open (clearPhysicalEngineError just sets null->null).
+              session.clearPhysicalEngineError();
+            }}
+          >
             {t('Resign', '认输')}
           </Button>
         </DialogActions>
@@ -563,7 +612,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <DialogTitle>{t('Game in progress. Resign and exit?', '对局进行中，认输并退出？')}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button color="error" onClick={() => { session.handleAction('resign'); navigate('/kiosk/play'); }}>
+          <Button
+            color="error"
+            onClick={() => {
+              session.handleAction('resign');
+              // Same as the resign-confirm dialog above: this is another path that
+              // confirms a resign, so the engine-error recovery dialog (if open) must
+              // close too — no-op if it wasn't open.
+              session.clearPhysicalEngineError();
+              navigate('/kiosk/play');
+            }}
+          >
             {t('Exit', '退出')}
           </Button>
         </DialogActions>
@@ -628,6 +687,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         toPlace={session.physicalReminder?.to_place ?? []}
         toRemove={session.physicalReminder?.to_remove ?? []}
         onClose={() => setEscalationOpen(false)}
+      />
+
+      {/* Physical engine-move (Golaxy 隧道) bounded-retry failure — physical mode only;
+          pure-screen engine games keep the existing engineErrorToast path (handleBoardMove)
+          untouched. Gate the ERROR PROP (not the mount) on isVisionEnabled so the dialog
+          component itself stays mounted across any isVisionEnabled flap without losing its
+          local dismissed-token bookkeeping (mirrors PhysicalSyncEscalationDialog's always-
+          mounted pattern). */}
+      <EngineMoveErrorDialog
+        error={isVisionEnabled ? session.physicalEngineError : null}
+        sessionId={sessionId ?? null}
+        token={token ?? undefined}
+        boardSize={gameState.board_size[0]}
+        reminderTick={session.awaitingRemovalReminder}
+        onDismiss={session.clearPhysicalEngineError}
+        onResign={() => setShowResignConfirm(true)}
       />
 
       {/* Count (数子) error toast */}

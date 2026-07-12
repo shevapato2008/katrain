@@ -1,0 +1,187 @@
+{
+  "analysis": null,
+  "analysis_allowed": true,
+  "available_languages": [
+    "cn",
+    "de",
+    "en",
+    "es",
+    "fr",
+    "jp",
+    "ko",
+    "ru",
+    "tr",
+    "tw",
+    "ua"
+  ],
+  "available_themes": [
+    "theme:normal",
+    "theme:red-green-colourblind"
+  ],
+  "board_size": [
+    19,
+    19
+  ],
+  "children": [],
+  "commentary": "贴目: 7.5\n规则: 中国\n",
+  "count_min_moves": 10,
+  "current_node_id": 0,
+  "current_node_index": 0,
+  "end_result": null,
+  "engine": null,
+  "eval_colors": [
+    [
+      1,
+      0,
+      1,
+      1
+    ],
+    [
+      1,
+      0,
+      0,
+      1
+    ],
+    [
+      1,
+      0.5,
+      0,
+      1
+    ],
+    [
+      1,
+      1,
+      0,
+      1
+    ],
+    [
+      0,
+      1,
+      1,
+      1
+    ],
+    [
+      0,
+      0,
+      1,
+      1
+    ]
+  ],
+  "game_id": "golaxy-engine-FIXTURE",
+  "game_type": "free",
+  "ghost_stones": [],
+  "handicap": 0,
+  "history": [
+    {
+      "node_id": 0,
+      "score": null,
+      "winrate": null
+    }
+  ],
+  "insert_mode": false,
+  "is_pass": null,
+  "is_root": true,
+  "komi": 7.5,
+  "language": "cn",
+  "last_move": null,
+  "note": "",
+  "platform_engine_color": "W",
+  "play_analyze_mode": "play",
+  "player_to_move": "B",
+  "players_info": {
+    "B": {
+      "calculated_rank": null,
+      "main_time_used": 0,
+      "name": "Me",
+      "periods_used": 0,
+      "player_subtype": "game:normal",
+      "player_type": "human"
+    },
+    "W": {
+      "calculated_rank": null,
+      "main_time_used": 0,
+      "name": "[golaxy] 星铠虾",
+      "periods_used": 0,
+      "player_subtype": "game:normal",
+      "player_type": "human"
+    }
+  },
+  "pondering": false,
+  "prisoner_count": {
+    "B": 0,
+    "W": 0
+  },
+  "ruleset": "chinese",
+  "stones": [],
+  "theme": "theme:red-green-colourblind",
+  "timer": {
+    "current_node_time_used": 0,
+    "main_time_used": 0,
+    "next_player_periods_used": 0,
+    "paused": true,
+    "settings": {
+      "byo_length": 0,
+      "byo_periods": 3,
+      "main_time": 0,
+      "minimal_use": 0,
+      "paused": true,
+      "sound": true
+    }
+  },
+  "trainer_settings": {
+    "eval_on_show_last": 3,
+    "eval_show_ai": true,
+    "eval_thresholds": [
+      12,
+      6,
+      3,
+      1.5,
+      0.5,
+      0
+    ],
+    "extra_precision": false,
+    "fast_visits": 25,
+    "lock_ai": false,
+    "low_visits": 25,
+    "max_visits": 500,
+    "num_undo_prompts": [
+      1,
+      1,
+      1,
+      0.5,
+      0,
+      0
+    ],
+    "save_analysis": false,
+    "save_feedback": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ],
+    "save_marks": false,
+    "show_dots": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "theme": "theme:red-green-colourblind",
+    "top_moves_show": "top_move_delta_score",
+    "top_moves_show_secondary": "top_move_visits"
+  },
+  "ui_state": {
+    "show_children": false,
+    "show_coordinates": true,
+    "show_dots": false,
+    "show_hints": false,
+    "show_move_numbers": false,
+    "show_ownership": false,
+    "show_policy": false,
+    "zen_mode": false
+  }
+}

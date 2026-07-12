@@ -16,7 +16,45 @@ import json
 import sys
 from pathlib import Path
 
+from katrain.vision.classes import CLASS_NAMES
+
 SUPPORTED_TARGETS = ["rk3562", "rk3566", "rk3568", "rk3576", "rk3588"]
+
+
+def derive_output_basename(onnx_stem: str, target: str, output_name: str | None) -> str:
+    """Compute the shared basename for the ``.rknn`` file and its ``.meta.json`` sidecar.
+
+    Args:
+        onnx_stem: Stem (filename without extension) of the source ONNX model.
+        target: Rockchip target platform (e.g. ``rk3576``).
+        output_name: Explicit output basename, optionally with a trailing ``.rknn``
+            extension (stripped). When ``None``, falls back to ``{onnx_stem}_{target}``.
+
+    Returns:
+        The basename (no extension) to use for both output files.
+    """
+    if output_name:
+        if output_name.endswith(".rknn"):
+            return output_name[: -len(".rknn")]
+        return output_name
+    return f"{onnx_stem}_{target}"
+
+
+def validate_class_order(classes: list[str]) -> None:
+    """Validate that ``classes`` exactly matches the runtime single source of truth.
+
+    Args:
+        classes: Class list (in class-id order) read from an ONNX metadata sidecar.
+
+    Raises:
+        ValueError: If ``classes`` differs from ``katrain.vision.classes.CLASS_NAMES``
+            in any way (order, length, missing, or extra entries).
+    """
+    if classes != CLASS_NAMES:
+        raise ValueError(
+            f"Class order mismatch: expected {CLASS_NAMES} (from katrain.vision.classes.CLASS_NAMES), "
+            f"got {classes}. A mismatched class order will silently produce wrong class ids at runtime."
+        )
 
 
 def export_rknn(
@@ -25,6 +63,7 @@ def export_rknn(
     output_dir: str | None = None,
     quantize: bool = False,
     dataset: str | None = None,
+    output_name: str | None = None,
 ) -> Path:
     """Convert an ONNX YOLO model to RKNN format.
 
@@ -35,6 +74,8 @@ def export_rknn(
         quantize: Whether to apply INT8 quantization (requires ``dataset``).
         dataset: Path to calibration dataset text file (one image path per line).
             Required when ``quantize=True``.
+        output_name: Exact output basename (without extension) for the ``.rknn`` file
+            and its ``.meta.json`` sidecar. Defaults to ``{onnx_stem}_{target}``.
 
     Returns:
         Path to the exported ``.rknn`` file.
@@ -78,6 +119,8 @@ def export_rknn(
 
     imgsz = onnx_meta.get("imgsz", 640)
     classes = onnx_meta.get("classes", ["black", "white"])
+    if "classes" in onnx_meta:
+        validate_class_order(classes)
 
     # --- Downgrade ONNX opset if needed (rknn-toolkit2 requires <= 19) ---
     MAX_OPSET = 19
@@ -120,9 +163,9 @@ def export_rknn(
     if ret != 0:
         raise RuntimeError(f"Failed to build RKNN model (error code: {ret})")
 
-    # Output filename: {stem}_{target}.rknn
-    rknn_filename = f"{onnx_file.stem}_{target}.rknn"
-    rknn_path = out_dir / rknn_filename
+    # Output filename: {basename}.rknn (basename defaults to {stem}_{target})
+    output_basename = derive_output_basename(onnx_file.stem, target, output_name)
+    rknn_path = out_dir / f"{output_basename}.rknn"
 
     print(f"Exporting RKNN model: {rknn_path}")
     ret = rknn.export_rknn(str(rknn_path))
@@ -148,7 +191,7 @@ def export_rknn(
         "quantized": quantize,
     }
 
-    meta_path = rknn_path.with_suffix(".meta.json")
+    meta_path = out_dir / f"{output_basename}.meta.json"
     meta_path.write_text(json.dumps(rknn_meta, indent=2, ensure_ascii=False))
 
     print(f"\nExport complete:")
@@ -175,6 +218,11 @@ def main():
         default=None,
         help="Path to calibration dataset text file (one image path per line). Required for --quantize.",
     )
+    parser.add_argument(
+        "--out-name",
+        default=None,
+        help="Exact output basename without extension, e.g. go4_s_rk3562; default {onnx_stem}_{target}",
+    )
     args = parser.parse_args()
 
     export_rknn(
@@ -183,6 +231,7 @@ def main():
         output_dir=args.output_dir,
         quantize=args.quantize,
         dataset=args.dataset,
+        output_name=args.out_name,
     )
 
 

@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API } from '../../api';
 import type { GameState } from '../../api';
+// Real backend-generated contract fixture (Task 1/2): engine game, human=B,
+// platform_engine_color="W", both players_info entries carry the bare "human"
+// player_type literal used by the multiplayer/engine session path (session.py) —
+// NOT the "player:human"/"player:ai" literals used by local kiosk HvAI (server.py).
+// Cast via `unknown` since the fixture's JSON shape (e.g. `is_pass: null`) doesn't
+// match GameState's stricter TS fields exactly; only the fields the helpers under
+// test actually read (players_info, platform_engine_color, player_to_move,
+// end_result, last_move, board_size) matter at runtime.
+import engineFixtureRaw from './fixtures/engine_game_state.json';
+const engineFixture = engineFixtureRaw as unknown as GameState;
 
 // Single unified mock of the real api.ts. Spread the actual module so untouched exports keep
 // their real impls, then override exactly what the two suites drive: platformEngineAnalysis/
@@ -31,11 +41,26 @@ vi.mock('../context/OrientationContext', () => ({
 }));
 
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
-// Disabled vision keeps all vision branches (overlay, toasts, useVisionSync) inert.
+// Mutable via `visionMock` so the G2 banner tests below can flip isVisionEnabled on
+// for a single test without disturbing the rest of the suite (which needs it inert).
+// `vi.hoisted` avoids a TDZ ReferenceError — vi.mock factories are hoisted above
+// ordinary `const` declarations in this file.
+const visionMock = vi.hoisted(() => ({
+  isVisionEnabled: false,
+  visionStatus: {
+    cameraConnected: true,
+    poseLocked: true,
+    syncState: 'synced',
+    ledConnected: true,
+    boundSessionId: null as string | null,
+    recognitionReady: true,
+    enabled: false,
+  },
+}));
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
-    isVisionEnabled: false,
-    visionStatus: { cameraConnected: true },
+    isVisionEnabled: visionMock.isVisionEnabled,
+    visionStatus: visionMock.visionStatus,
     refreshStatus: vi.fn(),
   }),
 }));
@@ -81,6 +106,11 @@ const mockRequestCount = vi.fn();
 const mockAnalyzeCurrent = vi.fn();
 const mockHintDismiss = vi.fn();
 const mockHint = vi.fn();
+// Task 9: physical engine-move (Golaxy 隧道) error recovery — mutable so individual
+// tests can drive useGameSession's tracked state without a full WS round-trip.
+let mockPhysicalEngineError: { col: number; row: number; attempts: number; detail: string; recovery_token: string } | null = null;
+let mockAwaitingRemovalReminder: { row: number; col: number } | null = null;
+const mockClearPhysicalEngineError = vi.fn();
 
 const mockGameState: GameState = {
   game_id: 'test-game',
@@ -132,11 +162,14 @@ vi.mock('../../hooks/useGameSession', () => ({
     chatMessages: [],
     sendChat: vi.fn(),
     gameEndData: null,
+    physicalEngineError: mockPhysicalEngineError,
+    clearPhysicalEngineError: mockClearPhysicalEngineError,
+    awaitingRemovalReminder: mockAwaitingRemovalReminder,
   }),
 }));
 
 // Import after mocks
-import GamePage from '../pages/GamePage';
+import GamePage, { deriveAiTurnState, deriveHumanColor } from '../pages/GamePage';
 
 const renderTree = (engineMode: boolean) => (
   <ThemeProvider theme={kioskTheme}>
@@ -154,6 +187,8 @@ describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnMove.mockReset();
+    mockPhysicalEngineError = null;
+    mockAwaitingRemovalReminder = null;
     mockRequestCount.mockResolvedValue({ state: mockGameState });
     mockAnalyzeCurrent.mockResolvedValue({});
     mockHintDismiss.mockResolvedValue({ ok: true });
@@ -465,6 +500,335 @@ describe('GamePage engine mode', () => {
       });
       fireEvent.click(screen.getByText('领地'));
       await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2));
+    });
+  });
+
+  // Task 11: physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint) are
+  // driven by the 支招 (options) overlay. They must turn off in lockstep whenever the
+  // on-screen options overlay goes away, in an engine game with vision enabled — the two
+  // remaining clear paths beyond the pre-existing unmount cleanup (line ~176) and the
+  // free-play HintPanel's closeHint (line ~239, a completely separate overlay): the board
+  // position advancing (a move played) and the user explicitly closing it. A kind-switch
+  // (支招 -> 领地) is also covered since it replaces the options overlay just as fully.
+  describe('Task 11: hintDismiss keeps physical LEDs synced with the 支招 overlay', () => {
+    afterEach(() => {
+      visionMock.isVisionEnabled = false;
+    });
+
+    it('user toggles 支招 off (explicit close) -> hintDismiss called', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      await waitFor(() => expect(mockHintDismiss).toHaveBeenCalled());
+    });
+
+    it('board position change auto-clears an active 支招 overlay -> hintDismiss called', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      const { rerender } = renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      mockGameState.current_node_id = 43;
+      rerender(renderTree(true));
+
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      await waitFor(() => expect(mockHintDismiss).toHaveBeenCalled());
+    });
+
+    it('switching from 支招 to a different kind (领地) also dismisses (replaces the options overlay)', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ ok: true, kind: 'options', data: { candidates: [] } })
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [], winrate: 0.5, delta: 0 } });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      await waitFor(() => expect(mockHintDismiss).toHaveBeenCalled());
+    });
+
+    it('toggling a non-options kind (领地) off does NOT call hintDismiss', async () => {
+      visionMock.isVisionEnabled = true;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [], winrate: 0.5, delta: 0 },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockHintDismiss).not.toHaveBeenCalled();
+    });
+
+    it('clearing an active 支招 overlay with vision DISABLED does NOT call hintDismiss', async () => {
+      visionMock.isVisionEnabled = false;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'options', data: { candidates: [] },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+
+      mockHintDismiss.mockClear();
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockHintDismiss).not.toHaveBeenCalled();
+    });
+  });
+
+  // G2: engine games (Golaxy 人机对弈 via the genmove tunnel) put a bare "human"
+  // player_type literal on BOTH seats (session.py:80/82) — neither literal check in
+  // the old humanColor/isAI derivation ('player:human' / 'player:ai' / 'ai') can tell
+  // which seat is the AI. `platform_engine_color` (Task 1: WebKaTrain state field,
+  // "B"|"W"|null = the ENGINE's color) is the authoritative signal for engine games;
+  // absent/null in every other game shape (local HvAI, PVP, multiplayer) — regression
+  // guarded below.
+  describe('G2: engine-aware humanColor / aiTurn derivation (platform_engine_color)', () => {
+    const ORIGINAL_PLAYERS_INFO = mockGameState.players_info;
+    const ORIGINAL_LAST_MOVE = mockGameState.last_move;
+    const ORIGINAL_PLAYER_TO_MOVE = mockGameState.player_to_move;
+
+    afterEach(() => {
+      mockGameState.players_info = ORIGINAL_PLAYERS_INFO;
+      mockGameState.last_move = ORIGINAL_LAST_MOVE;
+      mockGameState.player_to_move = ORIGINAL_PLAYER_TO_MOVE;
+      delete (mockGameState as Partial<GameState>).platform_engine_color;
+      visionMock.isVisionEnabled = false;
+    });
+
+    describe('deriveHumanColor (pure helper)', () => {
+      it('engine game, human=B (contract fixture, platform_engine_color="W") -> B', () => {
+        expect(deriveHumanColor(engineFixture)).toBe('B');
+      });
+
+      it('engine game, human=W (platform_engine_color="B") -> W', () => {
+        expect(deriveHumanColor({ ...engineFixture, platform_engine_color: 'B' })).toBe('W');
+      });
+
+      it('non-regression: local HvAI (player:human/player:ai literals, no engine signal) -> B', () => {
+        expect(deriveHumanColor(mockGameState)).toBe('B');
+      });
+
+      it('no engine signal and no player:human seat -> null (falls through to old derivation unchanged)', () => {
+        const state = {
+          ...mockGameState,
+          players_info: {
+            B: { ...mockGameState.players_info.B, player_type: 'ai' },
+            W: { ...mockGameState.players_info.W, player_type: 'ai' },
+          },
+        };
+        expect(deriveHumanColor(state)).toBeNull();
+      });
+    });
+
+    describe('deriveAiTurnState (engine branch of isAI)', () => {
+      it('engine fixture: aiColor is the ENGINE color (W) even though players_info literal is bare "human"', () => {
+        const { aiColor } = deriveAiTurnState(engineFixture, null);
+        expect(aiColor).toBe('W');
+      });
+
+      it('genmove-tunnel-wait snapshot (player_to_move still human=B, remote-first apply) -> aiThinking not lit, no flicker', () => {
+        // engineFixture.player_to_move is "B" (human) — the human's own move is only
+        // applied locally after the tunnel returns, so this snapshot must never light
+        // the "AI 思考中" banner even though an aiColor now exists for this game.
+        const { aiColor, aiThinking } = deriveAiTurnState(engineFixture, null);
+        expect(aiColor).toBe('W');
+        expect(aiThinking).toBe(false);
+      });
+
+      it('post-AI-reply snapshot (player_to_move back to human) -> aiThinking still not lit', () => {
+        const { aiThinking } = deriveAiTurnState({ ...engineFixture, player_to_move: 'B' }, null);
+        expect(aiThinking).toBe(false);
+      });
+
+      it('the brief window where state shows the engine to move -> aiThinking lit (sanity: not just always false)', () => {
+        const { aiColor, aiThinking } = deriveAiTurnState({ ...engineFixture, player_to_move: 'W' }, null);
+        expect(aiColor).toBe('W');
+        expect(aiThinking).toBe(true);
+      });
+
+      it('non-regression: local HvAI (player:ai literal) aiColor/aiThinking unchanged', () => {
+        const state = { ...mockGameState, player_to_move: 'W' as const };
+        const { aiColor, aiThinking } = deriveAiTurnState(state, null);
+        expect(aiColor).toBe('W');
+        expect(aiThinking).toBe(true);
+      });
+    });
+
+    describe('AI-move banner (render)', () => {
+      it('engine game, human=W: banner shows the AI(B) move coordinate after AI plays', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
+        mockGameState.player_to_move = 'W'; // human's turn, right after AI(B) moved
+        mockGameState.last_move = [3, 3]; // -> "D4" (col=A+3='D', row=3+1=4; core row 0=bottom)
+        renderPage(true);
+
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+      });
+
+      it('non-regression: engine game, human=B still shows the AI(W) move coordinate', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'W'; // engine is White -> human is Black
+        mockGameState.player_to_move = 'B';
+        mockGameState.last_move = [3, 3];
+        renderPage(true);
+
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+      });
+
+      it('non-regression: local HvAI (player:ai literal, no platform_engine_color) still shows the banner', async () => {
+        visionMock.isVisionEnabled = true;
+        // mockGameState default shape: B=player:human, W=player:ai, player_to_move='B', last_move=[3,3].
+        renderPage(false);
+
+        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+      });
+
+      // Regression guard for the color-wording bug flagged in the task-3 report's
+      // "Concerns" section: the banner body text was hard-coded to always say
+      // "摆放白子" (place the WHITE stone) no matter which color the AI actually is.
+      // In a human-plays-White engine game the AI is BLACK, so the physical-board
+      // placement guidance was telling the player to place the wrong-color stone.
+      it('engine game, human=W (AI=B): banner tells the player to place the BLACK stone, not white', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
+        mockGameState.player_to_move = 'W';
+        mockGameState.last_move = [3, 3];
+        renderPage(true);
+
+        const banner = await screen.findByTestId('ai-move-banner');
+        expect(banner).toHaveTextContent('D4');
+        expect(banner).toHaveTextContent('黑');
+        expect(banner).not.toHaveTextContent('白');
+      });
+
+      it('non-regression: engine game, human=B (AI=W): banner still tells the player to place the WHITE stone', async () => {
+        visionMock.isVisionEnabled = true;
+        mockGameState.platform_engine_color = 'W'; // engine is White -> human is Black
+        mockGameState.player_to_move = 'B';
+        mockGameState.last_move = [3, 3];
+        renderPage(true);
+
+        const banner = await screen.findByTestId('ai-move-banner');
+        expect(banner).toHaveTextContent('D4');
+        expect(banner).toHaveTextContent('白');
+        expect(banner).not.toHaveTextContent('黑');
+      });
+
+      it('non-regression: local HvAI (player:ai literal on W, no platform_engine_color): banner says WHITE', async () => {
+        visionMock.isVisionEnabled = true;
+        // mockGameState default shape: B=player:human, W=player:ai -> AI is White.
+        renderPage(false);
+
+        const banner = await screen.findByTestId('ai-move-banner');
+        expect(banner).toHaveTextContent('白');
+        expect(banner).not.toHaveTextContent('黑');
+      });
+    });
+  });
+
+  // Task 9: EngineMoveErrorDialog mount gating. The dialog's own retry/cancel/resign
+  // behavior is covered in EngineMoveErrorDialog.test.tsx; this suite only verifies
+  // GamePage wires session.physicalEngineError through it correctly, and — critically —
+  // that a pure-screen engine game (isVisionEnabled false) never sees it, leaving the
+  // pre-existing engineErrorToast path (tested above) as the sole error surface there.
+  describe('Task 9: physical engine-move error dialog (isVisionEnabled gating)', () => {
+    afterEach(() => {
+      visionMock.isVisionEnabled = false;
+    });
+
+    it('shows the dialog with the GTP coordinate + attempts when vision is enabled and a physical_engine_error is tracked', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      expect(await screen.findByText('星阵连接出错')).toBeInTheDocument();
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText(/D4/)).toBeInTheDocument();
+    });
+
+    it('does NOT show the dialog when vision is disabled, even with a tracked physical_engine_error (toast path unaffected)', async () => {
+      visionMock.isVisionEnabled = false;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(screen.queryByText('星阵连接出错')).toBeNull();
+    });
+
+    it('resign from the dialog opens the same 确认认输？ confirm flow', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByText('认输'));
+
+      expect(screen.getByText('确认认输？')).toBeInTheDocument();
+    });
+
+    // Finding 2 (HIGH): 认输 must not dismiss the error dialog itself — only the CONFIRM
+    // sub-dialog's own 认输 button (i.e. an actually-confirmed resign) may do that. Fat-
+    // fingering 认输 on a 7" kiosk and then cancelling the confirm must leave the recovery
+    // dialog fully intact (same token, still open, no resign fired).
+    it('cancelling the resign confirm leaves the error dialog open and untouched', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByText('认输'));
+      expect(screen.getByText('确认认输？')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('取消'));
+      await waitFor(() => expect(screen.queryByText('确认认输？')).toBeNull());
+
+      // The error dialog is still there, resign never actually fired.
+      expect(screen.getByText('星阵连接出错')).toBeInTheDocument();
+      expect(mockHandleAction).not.toHaveBeenCalledWith('resign');
+      expect(mockClearPhysicalEngineError).not.toHaveBeenCalled();
+    });
+
+    it('confirming resign from the error dialog fires the resign action AND closes the error dialog', async () => {
+      visionMock.isVisionEnabled = true;
+      mockPhysicalEngineError = { col: 3, row: 3, attempts: 3, detail: 'genmove timeout', recovery_token: 'tok-1' };
+      renderPage(true);
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByText('认输'));
+      const confirmDialog = screen.getByText('确认认输？').closest('[role="dialog"]') as HTMLElement;
+      fireEvent.click(within(confirmDialog).getByText('认输'));
+
+      expect(mockHandleAction).toHaveBeenCalledWith('resign');
+      expect(mockClearPhysicalEngineError).toHaveBeenCalledTimes(1);
     });
   });
 });

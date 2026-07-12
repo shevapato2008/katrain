@@ -22,12 +22,20 @@ from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from katrain.vision.sync import game_state_stones_to_board
-from katrain.web.core.physical_play import BLACK, WHITE, LedPlanner, PhysicalPlayConfig
+from katrain.web.core.physical_play import BLACK, EMPTY, WHITE, LedPlanner, PhysicalPlayConfig
 
 logger = logging.getLogger("katrain_web.physical_play")
 
 
 class PhysicalPlayOrchestrator:
+    # Pause-reason constants (M2 refactor). Task 8 adds "awaiting_removal" the same
+    # way — a single _add_pause_reason(...) call, no change needed here or in
+    # _sync_pause_state.
+    PAUSE_REASON_LAG = "lag"
+    PAUSE_REASON_HINT = "hint"
+    PAUSE_REASON_ENGINE_ERROR = "engine_error"  # Task 7 (B5/M1/M4)
+    PAUSE_REASON_AWAITING_REMOVAL = "awaiting_removal"  # Task 8 (B4/M5/D8)
+
     def __init__(
         self,
         *,
@@ -53,14 +61,16 @@ class PhysicalPlayOrchestrator:
         self._task: Optional[asyncio.Task] = None
         self._last_points: Optional[List[Dict]] = None
         self._caught_up = True
-        self._suspended = False
-        self._hint_active = False
+        self._pause_reasons: set[str] = set()  # {"lag", "hint", ...} -- see _sync_pause_state
+        self._suspended = False  # cached: tick body suspended (derived from _pause_reasons)
         self._paused_sent: Optional[bool] = None  # last pause state sent to the worker
         self._hint_task: Optional[asyncio.Task] = None
         self._behind_since: Optional[float] = None
         self._reminded = False
         self._escalated = False
         self._last_assert_ts: Optional[float] = None  # last actual LED write (review A)
+        self._engine_error_context: Optional[dict] = None  # {"coords", "recovery_token"} (Task 8 consumes)
+        self._awaiting_removal_context: Optional[dict] = None  # {"coords", "stable_count", "last_remind_ts"}
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -97,9 +107,12 @@ class PhysicalPlayOrchestrator:
         self._orig_callback = None
         self._latest_state = None
         self._caught_up = True
+        self._pause_reasons.clear()  # unbind drops EVERY reason (hint/lag/future ones)
         self._behind_since = None
         self._reminded = False
         self._escalated = False
+        self._engine_error_context = None
+        self._awaiting_removal_context = None
         self._sync_pause_state()  # resume detection if we had it paused
         self._apply_points([])
 
@@ -168,24 +181,104 @@ class PhysicalPlayOrchestrator:
 
         # Release the move-detection pause NOW and reset the lag timers so the
         # reminder/escalation flow re-arms cleanly on the next genuine lag.
-        self._caught_up = True
+        self._set_caught_up(True)
         self._behind_since = None
         self._reminded = False
         self._escalated = False
-        self._sync_pause_state()
 
         # Force the next tick to re-emit lamps (the dedupe would otherwise suppress the
         # now-changed plan) so a stale blue lamp clears.
         self._last_points = None
 
+    def enter_engine_error(self, coords: Tuple[int, int], recovery_token: str) -> None:
+        """Task 7 hand-off: the poller's engine_recovery episode tripped its
+        attempts threshold. Suspends the tick AND pauses move detection (same
+        aggregation as hint/lag, via _add_pause_reason) so the physical stone that
+        triggered the failing tunnel call stops being re-confirmed and retried.
+        Stores `coords`/`recovery_token` for Task 8/9's dismiss-dialog endpoint."""
+        self._engine_error_context = {"coords": coords, "recovery_token": recovery_token}
+        self._add_pause_reason(self.PAUSE_REASON_ENGINE_ERROR)
+
+    def clear_engine_error(self) -> None:
+        """Counterpart of enter_engine_error: resumes detection (unless another
+        reason is still active) once the recovery dialog is dismissed/resolved."""
+        self._engine_error_context = None
+        self._remove_pause_reason(self.PAUSE_REASON_ENGINE_ERROR)
+
+    def enter_awaiting_removal(self, coords: Tuple[int, int]) -> None:
+        """Task 8 (B4/M5/D8): the recovery dialog's "cancel" hand-off. `coords` are
+        GTP/board space (col, row0=bottom) — same convention as `enter_engine_error`
+        and the `physical_engine_error` broadcast; converted to vision-grid
+        (row0=top) internally by `_tick_awaiting_removal`.
+
+        Replaces the engine_error pause reason with awaiting_removal (add-then-remove
+        order keeps the aggregate non-empty throughout, so _sync_pause_state never
+        fires a spurious resume+re-pause blip) — the failure record is gone (the
+        caller already consumed it via the tracker's CAS), so there's no more retry
+        story, only "wait for the physical stone to come off"."""
+        self._awaiting_removal_context = {
+            "coords": coords,
+            "stable_count": 0,
+            "last_remind_ts": self._clock(),
+        }
+        self._add_pause_reason(self.PAUSE_REASON_AWAITING_REMOVAL)
+        self._remove_pause_reason(self.PAUSE_REASON_ENGINE_ERROR)
+        self._engine_error_context = None
+
+    def clear_awaiting_removal(self) -> None:
+        """Counterpart of enter_awaiting_removal: resumes detection (unless another
+        reason is still active) once the stability gate resolves or the session
+        unbinds."""
+        self._awaiting_removal_context = None
+        self._remove_pause_reason(self.PAUSE_REASON_AWAITING_REMOVAL)
+
+    def _add_pause_reason(self, reason: str) -> None:
+        """Add a suspension reason (M2). Idempotent: a reason already present is a
+        no-op, so re-adding it never re-triggers _sync_pause_state or its IPC call."""
+        if reason in self._pause_reasons:
+            return
+        self._pause_reasons.add(reason)
+        self._sync_pause_state()
+
+    def _remove_pause_reason(self, reason: str) -> None:
+        """Remove a suspension reason (M2). Idempotent counterpart of _add_pause_reason
+        — removing an absent reason is a no-op. Other reasons still in the set keep
+        the tick/detection paused (this is the fix for review M2: a shared boolean
+        used to let one reason's dismissal wrongly resume everything)."""
+        if reason not in self._pause_reasons:
+            return
+        self._pause_reasons.discard(reason)
+        self._sync_pause_state()
+
+    def _set_caught_up(self, caught_up: bool) -> None:
+        """Translate the board catch-up flag into the "lag" pause reason. Kept as a
+        single call site so every _caught_up assignment stays in sync with the set."""
+        self._caught_up = caught_up
+        if caught_up:
+            self._remove_pause_reason(self.PAUSE_REASON_LAG)
+        else:
+            self._add_pause_reason(self.PAUSE_REASON_LAG)
+
     def _sync_pause_state(self) -> None:
-        """Single owner of the worker's move-detection pause (Q4 redesign + hint).
-        While paused, the worker produces NO ConfirmedMove — this replaces the unsound
-        'hold a confirmed move' design (MoveDetector advances its baseline at confirm
-        time, so held moves could go stale/corrupt — review Blocker 1). A premature
-        user stone simply stays unconfirmed and is picked up naturally after resume,
-        against the baseline force-synced by the expected-board push."""
-        desired = self._hint_active or not self._caught_up
+        """Single aggregation point (M2) for BOTH suspension effects, derived from
+        self._pause_reasons:
+          (a) self._suspended — gates the tick body (_run/_tick_once). Any reason
+              OTHER than pure lag suspends the tick (hint does; Task 7's engine_error
+              will too). Lag ALONE never suspends the tick — the tick itself is what
+              re-evaluates catch-up and clears the lag reason, so stopping it would
+              make lag un-recoverable.
+          (b) the worker's move-detection pause (Q4 redesign + hint) — paused while
+              ANY reason is active. While paused, the worker produces NO ConfirmedMove
+              — this replaces the unsound 'hold a confirmed move' design (MoveDetector
+              advances its baseline at confirm time, so held moves could go
+              stale/corrupt — review Blocker 1). A premature user stone simply stays
+              unconfirmed and is picked up naturally after resume, against the
+              baseline force-synced by the expected-board push.
+        The IPC call to vision is only made when the boolean actually changes
+        (self._paused_sent), so combining/dropping reasons that don't flip the
+        aggregate never re-sends a duplicate pause/resume."""
+        self._suspended = bool(self._pause_reasons - {self.PAUSE_REASON_LAG})
+        desired = bool(self._pause_reasons)
         if desired == self._paused_sent:
             return
         self._paused_sent = desired
@@ -201,7 +294,20 @@ class PhysicalPlayOrchestrator:
         try:
             while True:
                 await asyncio.sleep(self.config.tick_interval_s)
-                if self._session_id is None or self._suspended:
+                if self._session_id is None:
+                    continue
+                # Task 8: awaiting_removal is a member of _pause_reasons (so
+                # detection stays paused and _suspended is True, like engine_error/
+                # hint), but the tick loop must keep running a NARROW board-equality
+                # check instead of either the full reconciliation OR nothing —
+                # dispatch here, before the _suspended gate below.
+                if self.PAUSE_REASON_AWAITING_REMOVAL in self._pause_reasons:
+                    try:
+                        self._tick_awaiting_removal()
+                    except Exception as e:  # defensive: LED problems must not kill the loop
+                        logger.warning("physical-play awaiting-removal tick error: %s", e)
+                    continue
+                if self._suspended:
                     continue
                 try:
                     self._tick_once()
@@ -218,8 +324,7 @@ class PhysicalPlayOrchestrator:
         if observed is None:
             return  # board not visible: keep current lamps (PRD §3.4 BOARD_LOST row)
         if state.get("end_result"):
-            self._caught_up = True
-            self._sync_pause_state()
+            self._set_caught_up(True)
             self._apply_points([])
             return
         board_size = state["board_size"][0]
@@ -230,8 +335,7 @@ class PhysicalPlayOrchestrator:
         )
         self._planner.on_expected(expected)
         plan = self._planner.tick(expected, np.asarray(observed))
-        self._caught_up = plan.caught_up
-        self._sync_pause_state()
+        self._set_caught_up(plan.caught_up)
         # Review A: periodically re-send a non-empty lamp state so the 300s LED idle
         # failsafe — and manual clears / serial reconnects — can't strand a dark lamp
         # while the plan is unchanged (the dedupe below would otherwise never re-send).
@@ -244,18 +348,89 @@ class PhysicalPlayOrchestrator:
         self._apply_points(plan.points)
         self._maybe_remind(plan)
 
+    def _tick_awaiting_removal(self) -> None:
+        """Task 8's narrow tick (dispatched by `_run` instead of `_tick_once` while
+        PAUSE_REASON_AWAITING_REMOVAL is active). Resolution gate: the observed board
+        equals the digital board (which implies the target cell is empty — the failed
+        move never landed digitally) for `awaiting_removal_stable_ticks` CONSECUTIVE
+        ticks. A wrong-cell removal, a replace-after-remove, or the target simply
+        staying occupied are all covered by the SAME equality check (any of them
+        breaks the equality, resetting the counter to 0) — no separate branches
+        needed for the review's three non-resolving scenarios.
+
+        Guidance: a blue 'remove' lamp on the target cell while it's still occupied
+        (reuses `_apply_points`, same as the main tick); cleared once removed. A
+        reminder re-broadcasts every `awaiting_removal_remind_interval_s` while still
+        waiting, for the frontend to re-prompt the user."""
+        ctx = self._awaiting_removal_context
+        if ctx is None:
+            return
+        state = self._latest_state
+        if not state:
+            return
+        observed = self._vision.get_detected_board()
+        if observed is None:
+            return  # board not visible: hold current state, try again next tick
+        board_size = state["board_size"][0]
+        expected = np.asarray(game_state_stones_to_board(state["stones"], board_size))
+        observed_arr = np.asarray(observed)
+        col, gtp_row = ctx["coords"]
+        vr, vc = board_size - 1 - int(gtp_row), int(col)
+        target_clear = bool(observed_arr[vr, vc] == EMPTY)
+        board_matches = bool(np.array_equal(observed_arr, expected))
+        stable = target_clear and board_matches
+        ctx["stable_count"] = ctx["stable_count"] + 1 if stable else 0
+
+        self._apply_points([] if target_clear else [{"row": vr, "col": vc, "color": "remove"}])
+
+        if ctx["stable_count"] >= self.config.awaiting_removal_stable_ticks:
+            self._complete_awaiting_removal()
+            return
+
+        now = self._clock()
+        if now - ctx["last_remind_ts"] >= self.config.awaiting_removal_remind_interval_s:
+            ctx["last_remind_ts"] = now
+            self._manager.broadcast_to_session(
+                self._session_id,
+                {
+                    "type": "physical_awaiting_removal_reminder",
+                    "data": {"row": vr, "col": vc},
+                },
+            )
+
+    def _complete_awaiting_removal(self) -> None:
+        """Stability gate satisfied: re-baseline vision to the (already-matching)
+        digital board via the existing `resync()` — reusing it rather than a bespoke
+        reset keeps the removal-pending/planner state consistent with every other
+        recovery path — then drop the reason (resumes detection) and tell the
+        frontend to close the waiting UI."""
+        self.resync()
+        self.clear_awaiting_removal()
+        self._manager.broadcast_to_session(
+            self._session_id,
+            {"type": "physical_engine_error_resolved"},
+        )
+
     @staticmethod
     def _guided_colors_from_state(state: Dict) -> Optional[set]:
         """Colors whose stones need placement lamps = the AI-played colors. Human moves
         need no LED (vision observing them IS the move source). None (no players_info)
-        keeps the legacy guide-everything behavior."""
+        keeps the legacy guide-everything behavior.
+
+        A remote Golaxy engine-play seat marks BOTH players_info entries "human" (the
+        physical board mediates for both), so player_type alone can't see it. Task 1's
+        `platform_engine_color` state field ("B"/"W"/None) names the color the remote
+        engine plays; that color is guided exactly like a local player:ai would be. Read
+        as a plain dict field only (no import from katrain/web/platforms — see the SBC
+        build-boundary contract in CLAUDE.md)."""
         players = state.get("players_info")
         if not players:
             return None
+        engine_color = state.get("platform_engine_color")
         return {
             color
             for bw, color in (("B", BLACK), ("W", WHITE))
-            if (players.get(bw) or {}).get("player_type") == "player:ai"
+            if (players.get(bw) or {}).get("player_type") == "player:ai" or bw == engine_color
         }
 
     @staticmethod
@@ -331,9 +506,7 @@ class PhysicalPlayOrchestrator:
         """Blink white lamps on the top-N points. Suspends reconciliation AND move
         detection (R4.3) for the duration; auto-restores on timeout or dismiss."""
         self.dismiss_hint()
-        self._suspended = True
-        self._hint_active = True
-        self._sync_pause_state()
+        self._add_pause_reason(self.PAUSE_REASON_HINT)
         if hasattr(self._vision, "set_lit_points"):
             self._vision.set_lit_points(list(points))
         self._hint_task = asyncio.get_running_loop().create_task(self._blink(points))
@@ -345,11 +518,9 @@ class PhysicalPlayOrchestrator:
         self._end_hint()
 
     def _end_hint(self) -> None:
-        if not self._suspended:
+        if self.PAUSE_REASON_HINT not in self._pause_reasons:
             return
-        self._suspended = False
-        self._hint_active = False
-        self._sync_pause_state()  # stays paused if the board is still lagging
+        self._remove_pause_reason(self.PAUSE_REASON_HINT)  # stays paused if another reason remains
         self._last_points = None  # force the game lamp state to re-send next tick
 
     async def _blink(self, points: List[Tuple[int, int]]) -> None:

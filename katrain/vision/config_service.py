@@ -2,7 +2,57 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+
+# Half the default 120-170 band width, so a bare midpoint reproduces a sensible band
+# (e.g. "145" -> 120.0-170.0, matching the historical default).
+AE_SCALAR_HALF_WIDTH = 25.0
+
+# Single source of truth for the accepted-forms wording, shared by every malformed-input
+# ValueError raised below.
+_AE_TARGET_ACCEPTED_FORMS = "expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
+
+
+def _invalid_ae_target_error(value: str) -> ValueError:
+    return ValueError(f"Invalid ae_target {value!r}: {_AE_TARGET_ACCEPTED_FORMS}")
+
+
+def parse_ae_target(value: str) -> tuple[float, float]:
+    """Parse a software-AE target brightness spec into a (lo, hi) gray-level band.
+
+    Accepts either band form "LO-HI" (e.g. "120-170") or a single midpoint scalar
+    (e.g. "145"), which is expanded into a band of width 2 * AE_SCALAR_HALF_WIDTH
+    centered on the value and clamped to the valid gray range [0, 255].
+    """
+    # Splitting on "-" means any negative input (a bare "-5" or a band bound like
+    # "10--5") produces an empty/extra token that the part-count or float() parse
+    # below rejects, and a negative bound can't be expressed in "LO-HI" form at all
+    # (the "-" is the delimiter) — so no explicit < 0 guard is reachable here.
+    parts = value.split("-") if value else []
+    if len(parts) == 1:
+        try:
+            midpoint = float(parts[0])
+        except ValueError:
+            raise _invalid_ae_target_error(value) from None
+        if not math.isfinite(midpoint):
+            raise _invalid_ae_target_error(value) from None
+        lo = max(0.0, midpoint - AE_SCALAR_HALF_WIDTH)
+        hi = min(255.0, midpoint + AE_SCALAR_HALF_WIDTH)
+        if lo >= hi:
+            raise ValueError(f"Invalid ae_target {value!r}: clamped band [{lo}, {hi}] is not a valid range")
+        return lo, hi
+    if len(parts) == 2:
+        try:
+            lo, hi = float(parts[0]), float(parts[1])
+        except ValueError:
+            raise _invalid_ae_target_error(value) from None
+        if not math.isfinite(lo) or not math.isfinite(hi):
+            raise _invalid_ae_target_error(value) from None
+        if lo >= hi:
+            raise ValueError(f"Invalid ae_target {value!r}: lo must be less than hi")
+        return lo, hi
+    raise _invalid_ae_target_error(value)
 
 
 @dataclass
@@ -44,10 +94,13 @@ class VisionServiceConfig:
     # stuck below the add threshold otherwise has NO path onto the board).
     ambiguous_promote_frames: int = 12
     # Software AE ("software" | "off"): drive the board-region median brightness into
-    # ae_target ("LO-HI", calibrated: known-good scenes meter 146-160) by adjusting
-    # exposure at runtime. Advisory-only where exposure controls are inert (macOS);
-    # actuates on SBC/V4L2 where lock_exposure disables the camera's own AE.
+    # ae_target by adjusting exposure at runtime. Advisory-only where exposure controls
+    # are inert (macOS); actuates on SBC/V4L2 where lock_exposure disables the camera's
+    # own AE.
     auto_exposure: str = "software"
+    # Target brightness as either a "LO-HI" gray-level band or a single midpoint scalar
+    # (e.g. "120-170" or "145"; a bare midpoint expands to a +/-AE_SCALAR_HALF_WIDTH band,
+    # clamped to [0, 255] — see parse_ae_target). Calibrated: known-good scenes meter 146-160.
     ae_target: str = "120-170"
     imgsz: int = 960
     use_clahe: bool = False
@@ -63,7 +116,7 @@ class VisionServiceConfig:
 
     def to_worker_config(self) -> dict:
         """Convert to dict for passing to worker process."""
-        ae_lo, ae_hi = (float(x) for x in self.ae_target.split("-"))
+        ae_lo, ae_hi = parse_ae_target(self.ae_target)
         return {
             "backend": self.backend,
             "model_path": self.model_path,

@@ -2616,3 +2616,43 @@ msgstr "Variante"
 
 msgid "game:pass"
 msgstr "Passen"
+
+msgid "AI played"
+msgstr "Die KI hat gezogen"
+
+msgid "Attempts"
+msgstr "Versuche"
+
+msgid "Golaxy connection error"
+msgstr "Golaxy-Verbindungsfehler"
+
+msgid "Move at {coord} failed to submit"
+msgstr "Zug bei {coord} konnte nicht übermittelt werden"
+
+msgid "Network error, please try again"
+msgstr "Netzwerkfehler, bitte erneut versuchen"
+
+msgid "place the black stone at the matching point on the board"
+msgstr ""
+"Legen Sie den schwarzen Stein auf den entsprechenden Punkt auf dem Brett"
+
+msgid "place the white stone at the matching point on the board"
+msgstr "Legen Sie den weißen Stein auf den entsprechenden Punkt auf dem Brett"
+
+msgid "Please remove the stone at {coord}"
+msgstr "Bitte entfernen Sie den Stein bei {coord}"
+
+msgid "Remove the physical stone"
+msgstr "Stein entfernen"
+
+msgid "Resign"
+msgstr "Aufgeben"
+
+msgid "Retry"
+msgstr "Erneut versuchen"
+
+msgid "Waiting for stone removal"
+msgstr "Warten auf Entfernen des Steins"
+
+msgid "This recovery request has expired"
+msgstr "Diese Wiederherstellungsanfrage ist abgelaufen"

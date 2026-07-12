@@ -141,6 +141,14 @@ class WebKaTrain(KaTrainBase):
         # "free"; rated/ranked games disable every analysis action at the dispatch
         # chokepoint (see __call__) and via analysis_allowed.
         self.game_type = "free"
+        # G1/G2 (kiosk-golaxy-physical-play): single source of truth marking which
+        # color (B/W) is the remote engine opponent in an active platform engine-play
+        # game (Golaxy 人机). None for research/local/non-engine games. Set by
+        # PlatformManager.start_engine_game via the edit_game action; read by the LED
+        # orchestrator and the frontend off get_state(). Hangs off the interface (not
+        # a Player) so it is immune to player-side mutation and survives later
+        # edit_game calls that don't mention it.
+        self.platform_engine_color = None
         # R6: optional second engine for analysis/review (remote strong engine on kiosk).
         # None until start(); analysis_engine() falls back to self.engine.
         self.analysis_engine_instance = None
@@ -485,6 +493,7 @@ class WebKaTrain(KaTrainBase):
             "engine": getattr(self, "last_engine", None),
             "count_min_moves": self.config("game/count_min_moves", 100),
             "game_type": getattr(self, "game_type", "free"),
+            "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,
         }
 
@@ -503,6 +512,12 @@ class WebKaTrain(KaTrainBase):
         # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
         if game_type is not None:
             self.game_type = game_type
+        # G1/G2: a brand new game is never engine-controlled until a platform explicitly
+        # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
+        # a session that finishes an engine game and then starts a plain local game (same
+        # WebKaTrain instance, e.g. POST /api/new-game) would retain the stale engine color,
+        # making the LED orchestrator (Task 2) treat a purely local game as engine-controlled.
+        self.platform_engine_color = None
         if self.engine:
             self.engine.on_new_game()
 
@@ -542,6 +557,11 @@ class WebKaTrain(KaTrainBase):
         # Ensure handicap stones are placed if handicap is set
         if handicap and handicap >= 2:
             self.game.root.place_handicap_stones(handicap)
+            # place_handicap_stones only mutates the SGF "AB" property -- it never
+            # touches game.board/chains, which back both LED setup guidance and move
+            # legality. Recompute now rather than relying on a later set_current_node
+            # (board mode suppresses the auto-analysis call that would otherwise do it).
+            self.game._calculate_groups()
 
         # Reset timer state for new game
         self.timer_paused = self.config("timer/paused")
@@ -563,7 +583,13 @@ class WebKaTrain(KaTrainBase):
 
         self.update_state()
 
-    def _do_edit_game(self, size=None, handicap=None, komi=None, rules=None):
+    def _do_edit_game(self, size=None, handicap=None, komi=None, rules=None, platform_engine_color=None):
+        # G1/G2: set independently of the board-config `changed` gate below, and only
+        # when explicitly provided, so a later plain edit_game call (e.g. a board-size
+        # tweak) never clears a previously-set value (M6 persistence).
+        if platform_engine_color is not None:
+            self.platform_engine_color = platform_engine_color
+
         changed = False
         if size and list(self.game.board_size) != [size, size]:
             self.game.root.set_property("SZ", size)
@@ -572,6 +598,9 @@ class WebKaTrain(KaTrainBase):
         if handicap is not None and self.game.root.handicap != handicap:
             self.game.root.set_property("HA", handicap)
             self.game.root.place_handicap_stones(handicap)
+            # See the matching comment in _do_new_game: place_handicap_stones is a
+            # pure SGF-property mutation and never recomputes game.board/chains.
+            self.game._calculate_groups()
             self.update_config("game/handicap", handicap)
             changed = True
         if komi is not None and self.game.root.komi != komi:

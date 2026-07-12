@@ -496,3 +496,267 @@
 - `area` 成功响应结构（Phase 0 待抓）。
 - 剩余次数端点（Phase 0；抓不到则 MVP 不预显角标）。
 - `winrate`/`delta` 视角（轮走方 vs 固定黑）——落地时对一眼；本期 UI 主要用 `coord`，视角影响小。
+
+---
+
+## 14. 后续计划：rk3562 真机上板部署（视觉 NPU + LED + 实机对弈走查）
+
+> **REQUIRED SUB-SKILL**：用 `superpowers:executing-plans` 逐 Phase 执行，每 Phase 末尾 **Verification**（可观测证据）+ **Review checkpoint**。硬件相关步骤（Phase A）需人工在设备旁操作。
+> **Written 2026-07-12**，依据当日 `ssh rk3562-direct` 真机诊断（见下「诊断快照」）。这一节把「上板部署」正式并入本 track —— §12/§13 是软件闭环，本节是把闭环真正跑到物理棋盘上。
+
+**Goal**：让 `feature/kiosk-play-golaxy` 的 kiosk 在真机 rk3562（GZPEITE P04 板）上跑通「摄像头识别落子 + LED 引导」，使 **自由对弈 / 升降级对弈 / 跨平台星阵对弈** 三个子模块可做实机走查。
+
+**Architecture**：视觉走 **YOLOv11s INT8 `.rknn` → RK3562 NPU（rknnlite + librknnrt.so）**；LED 走 **Board B 上的 ESP32（原生 USB-CDC）→ WS2812**；两者由 katrain `web.server` 的 board-mode 子进程 vision worker + LED 串口驱动，**通过 systemd `ExecStart` 参数（或 config.json）显式开启**。
+
+### ⚠️ 跨仓库归属（golden image 前提，2026-07-12 核对 `smartbox-software/provisioning`）
+
+**这个 track 的物理链路 = 两仓库协作**：
+- **代码**在本仓库 `feature/kiosk-play-golaxy`（Tasks 0-13 done），以 **git 子模块 `smartbox-software/vendor/katrain`** 被消费（需 bump 到 `7d1b0c32`）。
+- **部署/接线/可复制性**在 **`smartbox-software/provisioning`**，不在本仓库。golden image = 跑 `provision.sh` 各 section（apt-deps→python-stack→katago→**katrain**→…→systemd→**image-prep**）后 `dd`。
+
+**现状 gap（provisioning 里视觉+LED 的真实覆盖度）**：
+- **LED：只装了一半、没接线。** `provision.sh` katrain section 显式装 `pyserial>=3.5`「for the LED guidance board」（意图有），但 **systemd `smartbox-katrain.service` 不传 `--led-serial-port` ⇒ LED 永不启动**；且**无 udev 规则**给 ESP32 串口一个稳定节点（`/dev/ttyACM0` 序号跨机会漂）。
+- **视觉/NPU：完全没 provision。** venv-katrain 的 `requirements-web.txt` **只有 pyserial，没有 opencv**（opencv-python-headless 只在主 venv 的 `requirements-board.txt`）；`provisioning/` 全仓 **零** `rknnlite`/`.rknn`/`vision-model`/`vision-backend`/`capture-camera` 引用；`wheels/` 空；无 `vision` section。
+- ⇒ **Phase A–D 是单板 bring-up 验证；真正进 golden image 必须落地为 `smartbox-software/provisioning` 改动（Phase E）**，否则烧一台配一台、无法复制。
+
+### 诊断快照（2026-07-12，`ssh rk3562-direct` = 10.0.0.3 / hostname `gzpeite`）
+
+这台设备是 smartbox 多游戏机，围棋跑 `smartbox-katrain.service`。当日实测**视觉+LED 半条链路整条没 provision 上去**，具体：
+
+| 层 | 现状 | 证据 |
+|---|---|---|
+| NPU 硬件/驱动 | ✅ 就绪但没人用 | RKNPU driver v0.9.8；`/usr/lib/librknnrt.so` 在 |
+| 视觉模型 | ❌ 全盘无 `.rknn/.onnx/.pt` | 只有 `vendor/katrain/.../tools/Dockerfile.rknn` |
+| 推理运行时 | ❌ 无 venv 装了 rknnlite/ultralytics/onnxruntime；`venv-katrain` 连 cv2/pyserial 都没有 | 逐 venv `python -c import` 全 fail |
+| katrain 启动参数 | ❌ 裸启，无任何视觉/LED flag | `ExecStart=/opt/smartbox/venv-katrain/bin/python -m katrain.web.server --host 127.0.0.1 --port 8081`；provisioning 模板 `/root/smartbox-software/provisioning/systemd/smartbox-katrain.service:16` 本身就是空的 |
+| config.json 视觉段 | ❌ 只有 `engine` 段 | `/mnt/data/weiqi/dot-katrain/config.json`（bind→`/root/.katrain`）无 vision/capture/led/board |
+| 服务日志 | ❌ 无 vision/camera/led/geometry 启动记录，只有 remote 健康检查 | `journalctl -u smartbox-katrain` |
+| 摄像头硬件 | ✅ 真连着 | `/dev/video0` = HBV HD CAMERA（USB，index 0）；`lsusb` 可见 `0ac8:0346` |
+| LED（ESP32/Board B） | ❌ USB 总线上不存在 | `lsusb` 只有摄像头+hub；无 `/dev/ttyUSB*`/`/dev/ttyACM*`（`/dev/ttyS*` 是 SoC 板载 UART，非 LED） |
+
+**结论对齐用户三问**：yolov11s **未部署**、NPU **未用于视觉**、**帧率 N/A**（视觉进程没起）；摄像头 OK、LED 未枚举。
+
+**根因（近端）**：katrain 服务端按参数开关视觉/LED —— `server.py:2215 if args.vision_model:`、`server.py:2248 if args.led_serial_port:`。裸启无参 ⇒ 视觉 worker 与 LED 串口**永不初始化** ⇒ 围棋界面「摄像头/LED 未识别」是后端真没连，不是前端 bug。
+
+**LED 硬件事实（来自 `smartbox-hardware-design/pcb/引脚核对清单.html`）**：LED 由 **Board B（棋智盒侧）上的 ESP32** 驱动 —— ESP32 `GPIO4(IO4) → WS2812 DIN`，ESP32 `USB D+/D-(IO19/IO20) → SBC USB`（**原生 USB-CDC**，故 Mac 上呈现为 `/dev/cu.usbmodem2101`，Linux 上应是 `/dev/ttyACM0`）。当日 ESP32 **没在 SBC USB 总线枚举**，图纸自带告警「USB D+/D-(IO19/IO20) 接反会导致 USB 不识别」。
+
+### Global Constraints（每个 Phase 隐含遵守）
+- **只诊断先行**：改动运行中的生产服务前先 `systemctl` 备份/记录原状；改 systemd 用 `systemctl edit`（drop-in）而非直接改 `/etc` 主单元，验证通过后再回写 provisioning 模板 `/root/smartbox-software/provisioning/systemd/smartbox-katrain.service` 并提 smartbox-software 仓库（否则重 provision 会覆盖）。
+- **RK3562 = 单核 ~1 TOPS NPU**：模型固定 **s 尺寸**（`go4_s_best.pt`，blur 增强、Mac A/B 验证最优且尺寸适配），imgsz 640；不要上 m/x。
+- **模型帧（关键教训，见 [[project_kiosk_golaxy_physical_play]]）**：屏幕候选点与 LED 必须指同一交叉点；vision/LED 是 row0=top，runtime `Candidate.row` 是 core/bottom-anchored → 需 `board_size-1-row` 翻转。上板走查务必**中盘**核对（开局角部对称会掩盖镜像错误）。
+- **凭证/日志安全**：真机走查用真星阵账号；抓包/日志 redact `Authorization`/`refresh_token`。**新增（评审 critic#1）**：Phase D 真账号登录会把真 `refresh_token` 落盘到 `~/.katrain/credentials/<device_id>`（0600，可能明文兜底，位于持久 `/mnt/data/weiqi/dot-katrain` bind）——共享/返修机务必走查后清理该凭证。
+- **勿回归**：§11 FK 守卫 / token 持久化 / 6003 分类、§12 让子、§13 分析道具都不能破。**走查须真在设备上验**（不能只 D3 查 FK+6003）：token 持久化要跨 **C5 服务重启**验、§12 让子、§13 领地/变化图各点一次。
+- **⚠️ 用户 go-ahead 门禁（2026-07-12 评审新增，硬约束）**：本节 Phase A–D 每一条 `ssh` / `pip install` / `scp` / `systemctl restart` / 驱动 LED 的命令都在**改动运行中的生产机 gzpeite**（`venv-katrain` 是 `smartbox-katrain.service` 的解释器）。「只诊断/只写不执行」在拿到用户**显式 go-ahead 前全程有效**——Phase B **不是**「纯软件可无人值守并行」（B4/B5/B6 写 live venv + scp 模型 = 上机改动）。每次上机前逐条报备、留 C1 式回滚点；离线 FPS 自测用**一次性 venv**，勿污染 `venv-katrain`。
+- **视觉运行位置更正（评审证实，`service.py:42` + `server.py:414`）**：`--capture-camera` 一给（本节 C2 必给）⇒ `frame_source=camera_hub` 非空 ⇒ VisionService 走 **InProcessAdapter，视觉与 web server 同进程同解释器**（= `venv-katrain`，因 ExecStart 用它），**不是**独立子进程。依赖装 `venv-katrain` 仍对（server 本体在 venv-katrain），但 **in-process ⇒ rknnlite/opencv/模型任一崩溃会拖垮整个围棋服务**（E8 冒烟测试、go-ahead 门禁据此加严）。原文「vision worker 是子进程」前提作废。
+
+---
+
+### 14.1 评审采纳记录（2026-07-12 · Codex + Claude 双路对抗评审，71 条去重后 34 主题）
+
+> 两路独立对抗评审：**Codex**（`codex exec`，读源码，25 条）+ **Claude fan-out**（5 lens + 完整性 critic，46 条）。均**代码定位/实证接地**（Claude 用 `git check-ignore` 实证）。下表去重后按主题裁决；**★ = 已本人复验为真**（命令/源码），直接改进下方 Phase。
+
+| # | 反馈（来源，去重） | 裁决 | 落地位置 |
+|---|---|---|---|
+| A1 | ★ C2 `--vision-ae-target 145` 是标量，但 `config_service.py:66` 做 `ae_target.split("-")` 解包 (lo,hi) → 标量崩服务 | **采纳** | C2 改 `120-170` 带区间 |
+| A2 | ★ 模型文件名漂移：`export_rknn.py:124` 出 `{stem}_{target}.rknn` = `go4_s_rk3562.rknn`，plan 各处写 `go4_s.rknn`/`go4_s_best.rknn` 不符 | **采纳** | B1/B3/B6/C2/E3 统一实名 `go4_s_rk3562.rknn` |
+| A3 | ★ `convert_rknn.sh` 只挂 `$PROJECT_ROOT:/work`，B1/B2 写 host `/tmp` + 取 sibling repo `katrain-yolo-train` → 容器内不可见，转换必失败 | **采纳** | B1/B2 产物落 worktree 内、校准路径写 `/work/...` |
+| A4 | ★ `.gitignore:31 models/` 吞掉 `katrain/vision/models/`（`git check-ignore` 实证匹配），§14 E3 未加豁免 | **采纳** | E3 加 `!katrain/vision/models/` 或 `git add -f` |
+| A5 | ★ E1↔E3 顺序/原子性：`7d1b0c32` 无模型；E3 提交模型必产**新** commit，E1 须 bump 到新 SHA（非 7d1b0c32），且受 D 合并决定门禁 | **采纳** | E 重排：先提交模型→再 bump 子模块到该 SHA |
+| A6 | ★ 模型路径分裂：B6/C2 验证 `/mnt/data/weiqi/models/`，E3 装 `/opt/smartbox/share/katrain-vision/` → 验证的与出厂的不是同一路径 | **采纳** | C2 与 E4 用**同一路径**；或 E 后按 /opt 复验 B7/D |
+| A7 | ★ C2 drop-in 只覆盖 ExecStart，未保证 `KATRAIN_MODE=board`——worker 子进程/inproc 选择、kiosk 构建 (`server.py:2350/554`) 皆依赖它 | **采纳** | C2 显式确认/设置 `Environment=KATRAIN_MODE=board` |
+| A8 | ★ C6 `/geometry/status locked:true` 在**从未标定**的板上为假：`server.py:484-485` 仅 `if exists` 加载；启动自推是**重启持久**非首标定；真门是 `phase=ready/session_calibrated/geometry_ready/recognition_ready` | **采纳** | C6 要求重启后**新 13 锚点标定** + 断言全 readiness 字段 |
+| A9 | ★ in-process 视觉（见上「运行位置更正」）：`service.py:42` 有 `--capture-camera` 即 InProcessAdapter，非子进程 | **采纳** | Global Constraints 已更正；E8 冒烟须覆盖 |
+| A10 | Phase A 把「软件可修」(host 端 `cdc_acm` 未 load / 未烧录固件) 和「硬件」(D+/D-接反·未上电) 混为一个「软件改不动」判决 | **采纳** | A2 按 `lsusb` 分叉 + ROM 下载模式判别（见改写） |
+| A11 | A4 自造 LED 帧协议，但协议已定在 `led_service.py`：`BRIGHT/CLEAR/SETI/SHOW`@115200、`OK/ERR` ack、开机 `READY` banner；且原生 CDC 下 baud 是 no-op | **采纳** | A4 改走真 `LedService`/精确帧；点几个点勿全亮（WS2812 掉压 critic#6） |
+| A12 | 节点稳定性全推到 E5(udev)，但 C2 硬编 bare `ttyACM0`（会漂）；`set_points(strict=False)` 断连仍回 `ok:True` → D 静默在 LED 断连下「通过」 | **采纳** | A3/C2 用 `/dev/serial/by-id/...`；D 加 `strict=True` LED 连通预检 |
+| A13 | D「中盘核对」可被**镜像不变点**满足（翻转是 row-only `18-row`，不动点 row=9 中心行，星位↔星位）；单点不足证明全路径翻转 | **采纳** | D 定 ≥3 个**非中心非对称**坐标（跨上下半盘）+ 具名 core/screen/vision/LED(row,col)+链号 |
+| A14 | 每手 AI 引导翻转 (`orchestrator:446` + `sync.py:437`) 与刚恢复的 `支招` 翻转 (`platforms.py:181`) 是**独立实现**，三必查项零覆盖；`支招` 在 ranked 被 403 挡 → D2 无坐标校验 | **采纳** | D 显式覆盖每手引导 + 星阵`支招`路径；D2 加非-支招坐标校验 |
+| A15 | D1「本地 KataGo 引擎」实为 HTTP `127.0.0.1:8000`（`config.py:18`）非子进程 → 未言明前置：该引擎在机上是否在跑 | **采纳** | D1 加前置：确认本地 KataGo HTTP 引擎在线 |
+| A16 | E 缺**逐机几何标定**流：出厂镜像无 `geometry_lock.npz` ⇒ `recognition_ready=false` ⇒ 物理对弈死，直到人工标定 | **采纳** | E 加 firstboot/操作员逐机几何标定（金镜像大缺口） |
+| A17 | rknnlite wheel ↔ toolkit2 build ↔ 设备 `librknnrt.so` ↔ 驱动 v0.9.8 四者版本无锁；`Dockerfile.rknn:24` `--no-deps rknn-toolkit2` 无版本钉；B3(转) 在 B4(读设备版本) 之前 | **采纳（proportional）** | B 重排：先读设备 `.so` 版本→再钉 wheel/toolkit；记 hash + init_runtime soak；换 `.so` 视为受控迁移非顺手兜底 |
+| A18 | B7 测的是 raw 帧直喂 StoneDetector，非运行时（warp+clahe+frame-avg(8) 后）管线；FPS/精度不代表生产 | **采纳** | B7 测端到端（含 warp/clahe/均值）+ p50/p95 落子→确认延迟 |
+| A19 | fp16 兜底与 INT8 验收门混淆 → INT8 回归可能静默出厂 | **采纳** | fp16 标「仅诊断」；B7 验收的 INT8 制品 = E 出厂的同一份（记 hash） |
+| A20 | INT8 校准欠采样 LED 类：普通对局帧几乎无点亮 led_red/green → 两类量化范围近零样本 | **采纳（proportional）** | B2 校准集须含**点亮 LED 帧** + white/眩光/弱光；逐类召回抽验 vs .pt |
+| A21 | systemd 沙箱只查了 `PrivateDevices`；未审 `ProtectSystem/DevicePolicy/DeviceAllow/ReadWritePaths/组`，及 `~/.katrain` 写(geometry_lock/credentials) | **采纳** | C3 审**生效单元**全量；确认 BindPaths `dot-katrain→/root/.katrain` 使 `~/.katrain` 可写 |
+| A22 | 曝光双主：in-proc V4L2 锁 (`camera.py:168-173` `CAP_PROP_AUTO_EXPOSURE=0.25` when `lock_exposure`) vs 软件 AE 打架 | **采纳** | C4 单一曝光主；`v4l2-ctl --list-ctrls` 探测；每次设备起都设（非一次性） |
+| A23 | 摄像头单主/CameraHub 双开、协商格式/FPS 未证；1080p 硬编未验 HBV 可协商带宽 | **采纳（proportional）** | C 预检共享 CameraHub 单 fd + `v4l2-ctl --list-formats-ext` 记实际格式/FPS |
+| A24 | 类序契约：运行时 `stone_detector.py:13` 固定 `[black,white,led_red,led_green]`，与 export `meta.classes` 顺序可能不符 | **采纳** | B 加一次类序对照断言 |
+| A25 | udev 只配宽 VID/PID、无唯一 serial/interface、无 service 排序 → 多 Espressif 绑错/开机早于 symlink；且非 303a 桥(1a86/10c4/0403) 分支未纳入 | **采纳** | E5 匹配 serial+interface + `After=` 设备/重连契约；含桥接 VID |
+| A26 | E7 firstboot 一次性设曝光，但 V4L2 控件在插拔/重启复位 | **采纳** | E7 改每次 service/设备起都设，firstboot 仅留不可变项 |
+| A27 | E8 契约测试仅查「文本存在」(包名/flag/文件)，证不了 ABI/模型完整性/udev/单元起 | **采纳** | E8 加镜像级冒烟：`import rknnlite`+`init_runtime`、模型校验和、`systemd-analyze verify`、udev、readiness 断言 |
+| A28 | opencv 装法(在线 PyPI)与 rknnlite 离线纪律不一致；numpy ABI 未钉(2.x 风险)；E3 缺制品来源清单 | **采纳（proportional）** | E2 opencv 亦离线 wheel + 钉 `numpy<=1.26.4`(constraints)；E3 加制品清单(源 .pt hash/校准 rev/toolkit 版/输出 hash) |
+| A29 | E3「决策已定」但「本节风险」仍把模型分发列为**未决**——自相矛盾；且 write-many(重训) 与 KataGo write-once 不同构，git 膨胀 | **采纳** | 删/标记那条 open question；E3 补 git 膨胀/轮换/大小策略 |
+| A30 | 多游戏 smartbox：board 模式服务持续独占摄像头，与其它游戏硬件/target 互斥未验 | **采纳（note）** | E/D 加：确认围棋期 katrain 独占相机、smartbox 互斥放行 |
+| A31 | 语音/emoji 引导（语音为主，`useVoice.ts:24-28` 失败静默 `.catch`）从未在机上 provision/验证 | **采纳** | D 加：机上验证语音+屏幕引导实际出声/显字（mp3 资源在、音频通） |
+| A32 | B7 100 帧突发测不了**稳态/热**：无风扇 RK3562 整局连跑，冷测≠热后 throttle | **采纳（note）** | B7 补热浸后稳态 FPS / throttle 观察 |
+| A33 | C1 备份仅 `systemctl cat`，不含 drop-in/env/enable 态；未定远端执行身份与回滚 | **采纳（minor）** | C1 备份全 fragment/env/enable + 定回滚 |
+| A34 | `systemctl edit` 的 `override.conf` 在「回写模板」后成残留，与 provisioning 的 `vision.conf` 并存合并 | **采纳（minor）** | E 清理手工 override.conf |
+| R1 | Codex 的最重流程要求：正式分层校准语料 + 全 precision/recall/置信漂移/FP 率门、容器 digest 溯源官僚化 | **降级采纳** | 采其意、**降为 bring-up 相称**抽验（见 A17/A20/A28）——单板 bring-up + 首个金镜像，非认证级发布 |
+| R2 | A3 VID/PID 白名单「可能漏真设备」 | **并入 A10/A25** | 不单列（前后 `lsusb`+`udevadm` 对比已含） |
+
+**总裁决：34 主题全部采纳（其中 R1 降级为相称、R2 并项）；无「拒绝为误报」。** 双路评审质量高、代码接地、无幻觉。★ 8 条已本人复验为真（A1–A9 中带★者），是「服务起不来/转换失败/提交被吞/走查测不到镜像 bug」级的实缺陷。下方 Phase A–E 已按上表内联修订。
+
+---
+
+### Phase A — LED（ESP32 / Board B）USB 枚举上线（硬件优先，人工在设备旁）
+
+> 目标：让 SBC 出现 `/dev/ttyACM0`（或 ttyUSB*），且 katrain LED 驱动能打开它点亮 WS2812。**这是硬件/固件问题，软件改不动**——先枚举成功再谈接线。
+
+- [ ] **A1 基线记录**：`ssh rk3562-direct 'lsusb; ls /dev/ttyACM* /dev/ttyUSB* 2>&1'` 存档当前状态（预期仍只有摄像头）。
+- [ ] **A2 边插边看**（人工）：`ssh rk3562-direct 'dmesg -w'`，同时插拔 Board B↔SBC 的 USB / 给 Board B 上电。**期望** `cdc_acm ... ttyACM0: USB ACM device`（ESP32 原生 CDC）。**A10（★ 按 `lsusb` 分叉，别一律判「硬件改不动」）**：
+  - **(i) `lsusb` 有 `303a:*` 但无 `/dev/ttyACM*`** → **host 端软件问题，非硬件**：`dmesg | grep -i cdc_acm`、`modprobe cdc_acm`、查内核 `CONFIG_USB_ACM`（精简 RK3562 vendor 内核常没编）——一行 modprobe/补内核即可，**别改板**。
+  - **(ii) `lsusb` 全无该设备** → 用 **ROM 下载模式判别固件 vs 硬件**：按住 BOOT/IO0 + 点 RST 强制下载模式，再看 `lsusb`/`dmesg`；出现 `303a` 下载设备（如 `303a:1001`）⇒ **USB 路径/供电/D± 都好，纯固件问题**（刷固件，软件可修）；连下载模式都无 ⇒ **供电/D+/D- 接反**（硬件，`就地回报`）。
+  - **控制实验**：把 ESP32 线插到摄像头正在用的那个已知好 host 口，隔离「口的角色」与「设备故障」。
+  - 本设计是**原生 CDC（只 303a）**：`ch34x/cp210x/ttyUSB` 分支在此板**不成立**（无桥接芯片），仅作脚注，别在那上面耗时。
+- [ ] **A3 确认 VID/PID 与节点**：`ssh rk3562-direct 'lsusb | grep -iE "303a|1a86|10c4|0403"; ls -l /dev/ttyACM* /dev/ttyUSB*'`（303a=Espressif, 1a86=CH340, 10c4=CP210x, 0403=FTDI）。记下最终 LED 串口设备路径 `＄LED_PORT`。
+- [ ] **A4 点灯自测**（⚠️ go-ahead）：**A11（★ 用真协议，别自造）**——协议已定在 `katrain/web/core/led_service.py`：ASCII 行命令 **`BRIGHT <n>` / `CLEAR` / `SETI <idx> <r> <g> <b>` / `SHOW`**，各 `\n` 结尾，`OK`/`ERR` 逐条 ack，115200，开机有 `READY` banner（`_open_serial` 会 drain）。**首选直接实例化 `LedService(serial_port=＄LED_BY_ID, ...)` 调 `clear()`/`set_points(strict=True)`**（走真路径，才能 gate Phase C；自造帧的自测不可证伪、可能假过/假败）。
+  - **critic#6（掉压）**：首帧**别全亮**——WS2812 长链 + 每跳 ~0.5V 掉压余量（[[project_led_hardware_bringup]]，UR 末跳最弱），先 `BRIGHT` 调低点几个点，逐段验灯序 UL→LL→LR→UR（[[reference_led_lut_mapping]]）。
+  - 原生 CDC 下 `--led-baud-rate` 是 no-op（仅真 UART 桥有意义），别在 baud 上纠结。
+- **Verification**：**`/dev/serial/by-id/...` 稳定节点**存在（A12，别只认会漂的 `ttyACM0`）；`LedService.set_points(strict=True)` 能点亮指定交叉点、灯序符合 LUT。
+- **Review checkpoint**：LED 硬件确认可控后再进 Phase C；若 A2 判为硬件（D+/D- 接反等需改板/重焊/刷固件），**就地回报用户**。**A9/go-ahead 更正**：Phase B **不是**「纯软件可无人值守并行」——B4/B5/B6 写 live `venv-katrain` + scp 上机，与 Phase A 一样受 go-ahead 门禁；「B 独立于 LED 硬件」为真，「B 免上机」为假。
+
+---
+
+### Phase B — 视觉 NPU（`.rknn`）转换与部署（Mac 侧转换 + SBC 侧落地）
+
+> 链路：`go4_s_best.pt` →(Mac) `export_onnx` → `.onnx`+`.meta.json` →(Mac, Docker) `export_rknn --target rk3562 --quantize --dataset` → `.rknn`+`.meta.json` →(scp) SBC → rknnlite 加载跑 NPU。
+
+> **⚠️ A3 关键（★ 复验 `convert_rknn.sh:30-34`）**：`convert_rknn.sh` 只把 **`$PROJECT_ROOT:/work`** 挂进容器。所以 **ONNX、校准图、`calibration.txt` 必须全落在 worktree（PROJECT_ROOT）内**，且传给容器的路径要用**容器内 `/work/...`**——不能用 host `/tmp` 或 sibling repo `~/Repositories/katrain-yolo-train`（容器里不可见 → 转换必失败）。下面统一用 worktree 内 `build/vision/` 暂存目录（记得 gitignore 或转换后清）。
+
+- [ ] **B1 Mac：导 ONNX**（在**本 worktree** 内，用有 ultralytics 的 conda `py311_katago`）：
+  ```bash
+  conda activate py311_katago
+  cd ＄WORKTREE && mkdir -p build/vision
+  python -m katrain.vision.tools.export_onnx \
+    --weights ~/Repositories/katrain-yolo-train/go4_s_best.pt \
+    --imgsz 640 --out build/vision/go4_s.onnx   # 落 worktree 内（PROJECT_ROOT），不是 /tmp
+  # 产出 build/vision/go4_s.onnx + go4_s.meta.json（含 imgsz/classes；classes 由 .pt 带出，勿手写）
+  ```
+  （export_onnx 的确切 flag 名以 `python -m katrain.vision.tools.export_onnx --help` 为准；`onnx_backend.py`/`rknn_backend.py` 靠 `.meta.json` 读 imgsz/classes。**A24**：转换后核对 `.meta.json` 的 `classes` 顺序 == 运行时 `stone_detector.py:13` 固定序 `[black,white,led_red,led_green]`。）
+- [ ] **B2 Mac：备好 INT8 校准集**：拷 ~100–300 张校准图到 **`＄WORKTREE/build/vision/calib/`**（worktree 内），写 **`build/vision/calibration.txt`**，每行是**容器内路径 `/work/build/vision/calib/xxx.jpg`**（不是 host 绝对路径——A3）。
+  - **A20（★ LED 类欠采样）**：普通对局帧几乎不含点亮 LED，INT8 会把 `led_red/led_green` 的量化范围按近零样本标定 → 走查时误灯/漏灯。校准集**必须掺入点亮 `led_red/led_green` 的帧** + white/眩光/弱光/空盘/边角，覆盖部署相机的曝光分布。
+  - **A19（★ fp16 兜底=仅诊断）**：无合适校准集时可先出 fp16（`convert_rknn.sh --onnx /work/build/vision/go4_s.onnx --target rk3562`，不加 `--quantize`）**仅验 NPU 链路**；fp16≈fp32、召回≈`.pt` 但**不是出厂制品**。B7 验收与 E 出厂**必须是同一份量化 INT8 `.rknn`**（记 sha256），fp16 制品单独命名、勿混入。
+- [ ] **B3 Mac：转 RKNN（Docker，rknn-toolkit2 2.3.2，target=rk3562）**：
+  ```bash
+  cd ＄WORKTREE  # 含 katrain/vision/tools/Dockerfile.rknn；PROJECT_ROOT 会挂成 /work
+  ./katrain/vision/tools/convert_rknn.sh \
+    --onnx /work/build/vision/go4_s.onnx --target rk3562 \
+    --quantize --dataset /work/build/vision/calibration.txt   # 全用容器内 /work/... 路径（A3）
+  # 产出 build/vision/go4_s_rk3562.rknn + go4_s_rk3562.meta.json（A2：export_rknn 命名 {stem}_{target}）
+  ```
+  评审修订：
+  - **A2（★ 文件名）**：产物实名 = **`go4_s_rk3562.rknn`**（`export_rknn.py:124` = `{onnx_stem}_{target}`），不是 `go4_s.rknn`。下游 B6/C2/E3 一律用此实名。
+  - **A17（★ 版本序）**：本步（转换）用的 toolkit2 版本须与 **B4 从设备 `librknnrt.so` 读到的运行时版本匹配**——故 **B4 的「读设备 `.so` 版本」应先于 B3 做**（见 B4 重排注）；`Dockerfile.rknn:24` 是 `--no-deps rknn-toolkit2` 无版本钉，须显式钉到与设备匹配的 2.3.x 并记 sha。
+  - `export_rknn.py:19 SUPPORTED_TARGETS` 含 `rk3562`；`mean_values=[[0,0,0]] std_values=[[255,255,255]]` 已内置 = 输入 /255 归一（A? 归一化契约：`rknn_backend.py:_preprocess` 默认 `nhwc_uint8` = 归一化烘进模型；若 meta 标 `nchw_float32` 才在 host /255——转换与运行时须一致，B7 用 ONNX↔RKNN 同帧张量对拍确认）。
+- [ ] **B4 SBC：确认 librknnrt 版本、装 rknnlite 运行时**（进 `venv-katrain`；⚠️ **上机改动 → 需 go-ahead**）：
+  > **A17 重排（★）**：**「读设备 `.so` 版本」这一步要先于 B3 做**——B3 的 toolkit2 build 版本、B4 的 lite2 wheel、设备 `librknnrt.so`、驱动 v0.9.8 是**四者必须对齐**的链条；先读版本再钉 toolkit/wheel，别 build 完才发现不匹配。
+  ```bash
+  ssh rk3562-direct 'strings /usr/lib/librknnrt.so | grep -iE "librknnrt version" | head'   # ← 先做，记版本
+  # 装与设备 .so **完全同版**的 rknn_toolkit_lite2 aarch64/cp311 wheel（不是 2.3.* glob，是实测那一版）
+  ssh rk3562-direct '/opt/smartbox/venv-katrain/bin/pip install <rknn_toolkit_lite2-<EXACT>-cp311-*aarch64.whl>'
+  ssh rk3562-direct '/opt/smartbox/venv-katrain/bin/python -c "from rknnlite.api import RKNNLite; print(\"rknnlite OK\")"'
+  # + init_runtime soak（真加载 go4_s_rk3562.rknn 并 inference 一帧），import OK ≠ runtime OK
+  ```
+  **风险**：`import rknnlite` 成功 ≠ `init_runtime()`/inference 成功；wheel 与 `.so` 不匹配 `init_runtime` 返错误码（`rknn_backend.py` raise）。**A34/R1**：换/更新设备 `/usr/lib/librknnrt.so` 会波及**同机其它 NPU 消费者**，属**受控迁移**（单列审批 + 回滚），不是顺手兜底。记 wheel/toolkit/`.so`/driver 四者版本 + sha。
+- [ ] **B5 SBC：装视觉/串口依赖**（`venv-katrain` 当前缺 cv2/numpy/pyserial）：
+  ```bash
+  ssh rk3562-direct '/opt/smartbox/venv-katrain/bin/pip install "numpy<=1.26.4" opencv-python-headless pyserial'
+  ssh rk3562-direct '/opt/smartbox/venv-katrain/bin/python -c "import cv2,numpy,serial; print(cv2.__version__, numpy.__version__)"'
+  ```
+  （vision worker 是 katrain server 的子进程，用 `venv-katrain` 解释器 → 依赖必须装进 `venv-katrain`。）
+- [ ] **B6 SBC：部署模型到出厂路径**（⚠️ go-ahead）：`scp` 到暂存后 `install -m0644` 到 **`/opt/smartbox/share/katrain-vision/go4_s_rk3562.rknn`(+`.meta.json`)** —— **A6：与 E3/E4 出厂路径同一**，让 C/D 验证的就是出厂制品。服务只读模型 → `ProtectSystem=strict` 下只读 `/opt` 完全 OK（原文「勿放只读 /opt」是把「服务不能写」误当「不能读」，已更正）。
+- [ ] **B7 SBC：离线测**端到端**帧率（回答用户「每秒多少帧」）**：⚠️ 用**一次性 venv**（勿污染 `venv-katrain`，go-ahead 前不上机）。
+  - **A18（★ 测生产管线非 raw 帧）**：运行时是对**几何 warp 后 + `--vision-frame-average 8` + `--vision-enhance clahe`** 的板面图跑 `StoneDetector.detect()`（`pipeline.py`），**不是** raw `/dev/video0`。测量须含 warp/均值/CLAHE 全链，并报 **p50/p95 从「物理落子」到「移动被接受」的端到端延迟**（不是裸 infer ms），对照 `--vision-move-frames` 默认 5。
+  - **A32（热）**：无风扇 RK3562 整局连跑——除冷启 100 帧突发，另测**热浸后稳态** FPS + 观察是否 throttle。
+  - 模型用 `/opt/smartbox/share/katrain-vision/go4_s_rk3562.rknn`, `backend="rknn"`；核对识别到黑/白/LED。
+- **Verification**：`init_runtime` + 一帧 inference 成功（非仅 import）；端到端 p50/p95 延迟 + 冷/热 FPS 数值（回填本节与 [[project_kiosk_golaxy_physical_play]]）。
+- **Review checkpoint**（**A16 可证伪化**）：拿一个**留出的带标注小集**（含 white/led）测 `.rknn` **逐类召回**并设阈值（对照 `.pt`/ONNX），而非「肉眼看有结果」；FPS 满足落子确认（≥5–10 FPS 端到端）。fp16 vs 最终 INT8 制品各记 sha，出厂 = 验收同一份。
+
+---
+
+### Phase C — 接线 katrain（systemd 参数开启 vision+capture+LED）
+
+- [ ] **C1 备份现单元**：`ssh rk3562-direct 'systemctl cat smartbox-katrain > /root/smartbox-katrain.service.orig-20260712'`。
+- [ ] **C2 加 drop-in 覆盖 ExecStart**（`systemctl edit smartbox-katrain`），补齐视觉/采集/LED 参数（值参照 [[reference_mac_kiosk_launch]] 的 Mac 验证配方，把 backend 换 rknn、串口换实测 `＄LED_PORT`）：
+  ```ini
+  [Service]
+  # A7: worker/kiosk-build 都 gate 在 KATRAIN_MODE==board（server.py:2350/554）——drop-in 只覆盖
+  # ExecStart，须确认基单元已有此 env；没有则本行显式补（否则视觉走 inproc/错构建）。
+  Environment=KATRAIN_MODE=board
+  ExecStart=
+  ExecStart=/opt/smartbox/venv-katrain/bin/python -m katrain.web.server --host 127.0.0.1 --port 8081 \
+    --vision-backend rknn \
+    --vision-model /opt/smartbox/share/katrain-vision/go4_s_rk3562.rknn \
+    --vision-camera 0 --vision-resolution 1920x1080 \
+    --capture-camera 0 --capture-resolution 1920x1080 \
+    --vision-confidence 0.40 --vision-confidence-keep 0.30 --vision-ambiguous-confidence 0.42 \
+    --vision-enhance clahe --vision-auto-exposure software --vision-ae-target 120-170 \
+    --led-serial-port /dev/serial/by-id/＄LED_BY_ID --led-baud-rate 115200 \
+    --hint-engine local --hint-top-n 3
+  ```
+  评审修订（★ 复验）：
+  - **A1**：`--vision-ae-target` 收 **`LO-HI` 带区间**（`config_service.py:66` 做 `.split("-")` 解包）——标量 `145` 会 `ValueError` 崩视觉。用 `120-170`（[[reference_mac_kiosk_launch]] 的 `145` 是错的，一并更正）。
+  - **A2+A6**：模型实名 = `export_rknn` 出的 `go4_s_rk3562.rknn`（`{stem}_{target}`），**路径与 E3/E4 出厂路径统一**为只读 `/opt/smartbox/share/katrain-vision/`（服务只读模型，`ProtectSystem=strict` 下只读 OK；单板 bring-up 由 B6 `install` 到此）——这样 C/D 验证的就是 E 出厂的同一制品，消除「验 `/mnt/data`、出厂 `/opt`」分裂。
+  - **A7**：`Environment=KATRAIN_MODE=board`（见上注）。
+  - **A12**：串口用 `/dev/serial/by-id/...` 稳定路径（内核免费提供、免 udev），别用会漂的 bare `ttyACM0`；原生 CDC 下 `--led-baud-rate` 是 no-op。
+  - 原有约束仍在：第一行空 `ExecStart=` 是 systemd 清原值的必需写法；`--capture-camera` 必给否则几何标定不起、setup 页恒显未连接；vision 与 capture 必须同 index 同分辨率否则 `server.py` `ValueError`。
+- [ ] **C3 设备权限 + 沙箱全审（A21，★ 不止 `PrivateDevices`）**：`systemctl show smartbox-katrain` 审**生效单元**：`ProtectSystem`/`DevicePolicy`/`DeviceAllow`/`ReadWritePaths`/`ReadOnlyPaths`/`SupplementaryGroups`/`BindPaths`。逐项证服务身份能：开 `/dev/video0` 与 `＄LED_BY_ID`（cgroup device 控制器，非仅 DAC）、**读**模型 `/opt/smartbox/share/katrain-vision/`、**写** `~/.katrain`（`geometry_lock.npz`、§11 credentials）——`~/.katrain` 靠 `BindPaths=/mnt/data/weiqi/dot-katrain:/root/.katrain` 落到可写区，**须实测确认该 bind 生效**（`dataoffload` 硬化 profile 恰是 `DevicePolicy=closed`/`DeviceAllow=` 可能出没处）。root 运行不自动绕过沙箱。
+- [ ] **C4 SBC v4l2 曝光（A22，★ 单一曝光主，别打架）**：注意**已有一个 in-process 硬件锁**——`camera.py:168-173` 在 `lock_exposure`（`capture_service.py:33` 默认 True）时置 `CAP_PROP_AUTO_EXPOSURE=0.25`。它与 `--vision-auto-exposure software` 若同时动会互相拉扯/过曝 LED 锚点。**先 `v4l2-ctl -d /dev/video0 --list-ctrls-menus` 探真控件名/范围**，选**一个**曝光主，记录 set/read-back 值，**几何标定前先稳住曝光**；`auto_exposure`/`exposure_time_absolute`/`gain`/`power_line_frequency` 各机可能命名不同（别照抄）。V4L2 控件插拔/重启会复位 → **每次设备起都设**（非一次性，E7 同理）。
+- [ ] **C5 重启并看日志**：`systemctl daemon-reload && systemctl restart smartbox-katrain`；`journalctl -u smartbox-katrain -f` 应出现 vision worker 启动、模型加载成功、摄像头打开、几何标定服务、LED 串口打开（**对比启动前只有健康检查的基线**）。
+- [ ] **C6 setup 页自检（A8，★ `locked:true` 在从未标定的板上为假）**：`server.py:484-485` 仅 `if geo_path.exists()` 加载锁、529-530 仅 `if geometry is not None` 推送——**启动自推是「重启持久」不是「首次标定」**。全新板无 `geometry_lock.npz` ⇒ `geometry=None` ⇒ `recognition_ready=false` ⇒ 物理对弈死。故 C6 = kiosk 进围棋 → **实跑一次 13 锚点几何标定**（空盘 → 自动标定），再断言 `/geometry/status`：**`phase=ready` + `session_calibrated=true` + `capabilities.geometry_ready=true` + `recognition_ready=true`**（不是只看 `locked`），并存响应留证。
+- **Verification**：日志无 traceback；setup 页摄像头+LED=已连接；`/geometry/status` **四字段全绿**（非仅 locked）；LED `strict=True` 连通预检通过（A12：`set_points(strict=False)` 断连也回 `ok:True`，会掩盖 LED 掉线）。
+- **Review checkpoint**：视觉+LED 都上线后再进 Phase D 实机对弈；回写 provisioning 模板（Global Constraints）。
+
+---
+
+### Phase D — 实机三项对弈走查（= 用户原始 (2)(3)(4)）
+
+> 前置：Phase A/B/C 全绿（摄像头识别 + LED 引导 + 星阵链路都通）。走查按 [[project_kiosk_golaxy_physical_play]] 的「三项必查」。
+>
+> **坐标帧走查方法（A13/A14，★ 覆盖多个独立翻转实现）**：翻转是 **row-only（`18-row`），col 不动**——其不动集是 **row=9（第 10 线中心行）**，且**星位↔星位**（`(3,3)↔(3,15)` 仍是星位）。故「中盘一个点对上了」可能只是**踩中镜像不变点**，证明不了全盘。走查须：
+> - **定 ≥3 个非中心、非对称坐标**（跨上/下半盘，如 row∈{2,6,16} 且 col≠row），每个都**具名**：core(bottom-anchored) → screen(渲染) → vision/LED(row0=top,`18-row`) → GTP(`row+1`) → 链号，拍照/存事件日志留证。
+> - **分别验各条独立翻转路径**（它们是不同实现，一条对≠全对）：① **每手 AI 引导**（`orchestrator:446 _setup_cells_from_state` + 对照的 `sync.py:437 game_state_stones_to_board`，最高频路径）；② 星阵 **`支招`**（HEAD `7d1b0c32` 刚恢复的 `platforms.py:181 _maybe_show_hint`）；③ **错误对话框坐标文本**；④ **提子/awaiting_removal LED**；⑤ 本地 `支招`（`hint.py:99 vision_rc`，仅 free）。
+
+- [ ] **D1 自由对弈（本地 KataGo 引擎人机）**：**A15 前置（★）**——「本地引擎」实为 HTTP `http://127.0.0.1:8000`（`config.py:18 LOCAL_KATAGO_URL`），**不是子进程**；先确认该 KataGo HTTP 服务在机上在跑（否则回手全失败）。流程：物理落子被识别 → 引擎回手 → LED 引导。**核对**：按上「坐标帧走查方法」，用**≥3 个非对称点**验**每手 AI 引导 LED == 屏幕候选点**（不只中盘一点）+ `支招`(free 走 `hint.py`)；拿错子/压灯时**引导屏 + 语音实际出声**（A31：`useVoice.ts:24-28` 播放失败 `.catch` 静默，须真听到/看到，别默认它在响）。
+- [ ] **D2 升降级对弈（A14 ★ `支招` 在 ranked 被 403）**：升降级=ranked，`analysis_allowed=False`（`interface.py:210`）+ `game_type!='free'→403`（`hint.py`）⇒ **§13 领地/支招/变化图全禁**，D1 的「支招坐标校验」在此**不可用**。故 D2 的坐标校验改用**每手 AI 引导 LED vs 屏幕**（该路径 ranked 仍在）+ **错误对话框坐标**。另核对定级/升降级结算与段位变化；识别+LED 不回归。
+- [ ] **D3 跨平台星阵对弈（人机）**：真星阵账号登录（本项目 SMS 流程）→ 选星铠虾级别 → 物理落子 → 星阵 genmove 回手（`HTTP 200` 无 6003）→ LED 引导。**核对**：星阵 `支招` 翻转（`platforms.py:181`，HEAD 刚恢复）用非对称点验；**错误对话框坐标文本 == LED 实际点亮位置**；故意物理打劫回提观察 M3 静默循环（见 §follow-up）；认输无 `ForeignKeyViolation`。
+- [ ] **D4 在机回归（勿回归，Global Constraints）**：**token 持久化跨 C5 服务重启**（重启后免重扫 SMS 自动重连）、**§12 让子**（塞子+轮走方）、**§13 领地/变化图**各点一次——不能只 D3 查 FK+6003。
+- **Verification**：三项各连续多手识别+回手+LED 正确；**≥3 非对称点镜像核对通过**（各独立翻转路径都验）；语音+屏幕引导实际可感知；token/让子/道具/记谱不回归。
+- **Review checkpoint**：走查结论 + 遗留缺陷（对齐 [[project_kiosk_golaxy_physical_play]] 的 follow-up M1–M4、I2 坐标帧）回报，决定是否 merge。
+
+### Phase E — 固化进 `smartbox-software/provisioning`（golden image 可复制）
+
+> **仓库 = `smartbox-software`（非本仓库）。** Phase A–D 在单板验证通过的每一项，都要回落成 provisioning 改动，使 `provision.sh ... → image-prep → dd` 出的镜像开箱即带视觉+LED。改后跑 `provisioning/tests/` 契约测试。
+
+> **⚠️ E 顺序更正（A4+A5，★ 复验）**：原 E1「bump 到 `7d1b0c32`」+ E3「提交模型进 katrain 仓库」自相矛盾——`7d1b0c32` **不含** `katrain/vision/models/`（HEAD 实测无此目录），而 E3 提交模型**必产新 commit**。且 `.gitignore:31 models/` 会**吞掉** `katrain/vision/models/*.rknn`（`git check-ignore` 实证匹配）。正确顺序：
+> **(a)** 在 katrain 仓库 `.gitignore` 加豁免 `!katrain/vision/models/` 且 `!katrain/vision/models/*.rknn`（或 `git add -f`）→ **(b)** 提交 `go4_s_rk3562.rknn`+`.meta.json`+制品清单 → 拿到**新 SHA** → **(c)** E1 bump 子模块到**该新 SHA**（非 7d1b0c32）→ 受 **Phase D 的 merge/tag 决定门禁**（别让 provisioning 依赖未合并/会被 rebase 的分支）。
+
+- [ ] **E1 子模块 bump**：`smartbox-software/vendor/katrain` 更新到**含模型 blob 的新 commit**（见上顺序 (b) 产出的 SHA，**不是** `7d1b0c32`），且该 commit 已过 Phase D merge 决定；确保含 Tasks 0-13 + `katrain/vision/` + `katrain/vision/models/go4_s_rk3562.rknn`。
+- [ ] **E2 视觉依赖进 katrain section**（`provision.sh` `install_katrain`，约 :424-428）：
+  - 把 **opencv-python-headless** 加进 venv-katrain（当前只在主 venv）。**A28**：与 rknnlite 一样走**离线 wheel**（勿在线 PyPI，破坏离线纪律），并**钉 `numpy<=1.26.4`**（constraints/lock + hash）——否则某次 provision 解析出 numpy 2.x 与 rknnlite ABI 打架（手测机是 1.26.4）。
+  - **rknnlite**：离线 wheel 放 `provisioning/wheels/`，**用 B4 从设备实测的那一确切版本**（不是 `2.3.*` glob），katrain section `uv_pip_install "$venv_kt" provisioning/wheels/rknn_toolkit_lite2-<EXACT>-cp311-*aarch64.whl`。
+- [ ] **E3 模型 artifact 落地**（**决策已定 2026-07-12：`.rknn`+`.meta.json` 纯 blob 提交进 katrain 仓库 `katrain/vision/models/go4_s.{rknn,meta.json}`，经 `vendor/katrain` 子模块消费——与现有 KataGo net 完全同构**：humanv0/98MB 分析 net 就是纯提交在 `katrain/models/` 且 provision `:494` 从 `$vendor_katrain` 读；**不上 git-LFS，不放对象存储**。理由：烧到 N 机速度两法相同（模型已 dd 进镜像）；provision 时本地拷贝最快最稳、无网络无漂移；模型与消费它的 `stone_detector.py`/`rknn_backend.py` 随子模块 bump 原子对齐；~7–12MB 远小于已纯提交的 98MB net。仅当模型转大（数百 MB）或高频重训致 git 膨胀时才改「Stockfish 式 pinned-URL+SHA256」。）
+  - **A2 实名**：文件是 `go4_s_rk3562.rknn`（+`.meta.json`），非 `go4_s.rknn`。`install -m 0644 "$vendor_katrain/katrain/vision/models/go4_s_rk3562.rknn"（+meta）` → `/opt/smartbox/share/katrain-vision/`（= C2/B6 同一路径，A6）。
+  - **A4 前置**：提交前 katrain `.gitignore` 必加 `!katrain/vision/models/`（`models/` 会吞它，已实证）。
+  - **A28/A29 制品清单**：随 blob 提交一份 `go4_s_rk3562.manifest`（源 `.pt` sha + 校准集 rev + toolkit2/lite2/`.so` 版本 + 输出 `.rknn` sha + license），让后人能证「这份权重怎么来的」。
+  - **A29 消除矛盾**：本 E3「决策已定」与「本节风险/Open questions」里仍列「模型 artifact 分发未决」冲突——删/标记那条 open question 为已决。并记 git-膨胀风险：视觉模型**会重训**（`go4_x→1080p→4class` 轨迹），与 write-once 的 KataGo net 不同构；定**轮换/大小策略**（例如只留最新 + tag 历史），转大到数百 MB 时改「pinned-URL+SHA256」。
+- [ ] **E4 systemd 模板加视觉/LED flag**（`provisioning/systemd/smartbox-katrain.service` 或新增 `.service.d/vision.conf`）：把 Phase C2 验证过的 `--vision-backend rknn --vision-model … --vision-camera 0 --capture-camera 0 --*-resolution 1920x1080 --led-serial-port … --hint-*` 一组固化进 `ExecStart`（当前模板 `:16` 是裸的）。
+- [ ] **E5 LED 串口 udev 稳定节点（A25，★ 唯一匹配 + 排序）**：udev 规则**匹配 serial + USB interface/path**（不是只宽 `303a:*`——多 Espressif 会绑错节点），建 `SYMLINK+="smartbox-led"`，flag 用 `--led-serial-port /dev/smartbox-led`。VID 取 **A3 实测值**（占位 `__FILL_FROM_A3__`；若 A2 判为桥接则含 `1a86/10c4/0403`）。加 **service 排序**（`After=`/`BindsTo=` 该设备或经 systemd `.device` 单元 + 重连契约），避免 systemd 早于 symlink 起 → LED 开机连不上。单板 bring-up 已先用 `/dev/serial/by-id/...`（A12），E5 是金镜像的跨机稳定化。
+- [ ] **E6 摄像头稳定性**：确认 `/dev/video0` 为板载 USB 摄像头稳定 index（多摄像头/枚举顺序风险）；必要时同样加 udev by-path 规则 + flag 用符号链接。
+- [ ] **E7 曝光/相机控件（A26 更正：不是 firstboot 一次性）**：V4L2 控件在**插拔/USB reset/reboot 会复位** → 必须**每次 service/设备起都设**（`ExecStartPre=` 或设备 udev `RUN`，排在相机枚举之后、katrain 开相机之前），不是 firstboot 一次性。firstboot 只留**不可变**初始化。
+- [ ] **E9 逐机几何标定（A16，★ 金镜像大缺口）**：几何锁**天生逐机**（`server.py:483-485` 仅 `if exists` 加载）——出厂镜像**没有** `geometry_lock.npz` ⇒ `recognition_ready=false` ⇒ 物理对弈**开箱即死**，直到有人跑一次标定。E 必须给**逐机首标定流**：firstboot/操作员引导（空盘 → 13 锚点标定 → 存 `~/.katrain/geometry_lock.npz`），装机 SOP 里固化。**这是 A8 的出厂对应项**，不能只在单板 C6 验一次。
+- [ ] **E8 契约测试 + 全流程验证（A27 升级：不止查文本存在）**：更新/新增 `provisioning/tests/` 断言 katrain section 装了 rknnlite/opencv、systemd 带视觉/LED flag+`KATRAIN_MODE=board`、模型就位（**含 sha 校验**）。**加镜像级冒烟**（文本存在证不了能跑）：服务身份下 `import rknnlite` + **`init_runtime` 真加载模型**、`systemd-analyze verify`、udev 规则命中测试、`/geometry/status` readiness 断言、冷启/插拔硬件验收。在**一台干净板**跑完整 `provision.sh` → `image-prep` → 烧录 → 复验 Phase C6/D + E9 逐机标定 全绿。**A34**：清理手工 `systemctl edit` 的 `override.conf`（provisioning 装 `vision.conf` 后二者并存会合并）。
+- **Verification**：干净板经 provisioning 后开箱即视觉+LED 可用；契约测试绿。
+- **Review checkpoint**：确认 golden image 覆盖，提 smartbox-software PR。
+
+### 本节风险 / Open questions（2026-07-12 评审后更新）
+- **归属**：视觉+LED 的可复制部署在 `smartbox-software/provisioning`，非本仓库；Phase A–D 的单板命令只是验证手段，勿当最终交付（否则烧一台配一台）。
+- **模型 artifact 分发** —— ~~未决~~ **已决（A29 消除矛盾）**：纯 blob 提交进 katrain 仓库 `katrain/vision/models/`（需 `.gitignore` 豁免）经子模块消费，见 E1 顺序 + E3；git-LFS/对象存储仅在模型转数百 MB 时再议。
+- **LED ESP32 不枚举** —— **A10 更正**：先按 `lsusb` 分叉——`303a` 在总线但无 tty = host 端 `cdc_acm`/内核（软件可修）；总线全无 → ROM 下载模式判固件 vs 硬件；只有供电/D+/D- 接反才是真硬件（就地回报）。别一律判「改板」。
+- **四版本对齐** —— toolkit2 build == lite2 wheel == 设备 `librknnrt.so` == 驱动 v0.9.8；B4 先读设备版本再钉（A17）；换 `.so` = 受控迁移非顺手兜底。
+- **INT8 量化精度** —— s 模型 INT8 弱光/白子/**LED 类**召回可能降（A20：校准集须含点亮 LED 帧）；fp16 仅诊断、出厂=B7 验收的同一份 INT8（A19）。
+- **RK3562 单核 NPU FPS** —— B7 实测**端到端 + 热稳态**（A18/A32），非 raw/冷突发；落子确认需 ≥5–10 FPS 端到端。
+- **逐机几何标定（A16）** —— 出厂镜像无 `geometry_lock.npz` ⇒ 开箱物理对弈死；E9 必须给逐机首标定流。
+- **多游戏 smartbox 互斥（A30）** —— board 模式服务持续独占相机；须确认围棋期 katrain 独占 `/dev/video0`、与其它游戏 target/mutex 不冲突。
+- **provisioning 回写** —— 改动只在 `/etc` drop-in 会被重 provision 覆盖，须回 smartbox-software 仓库模板；回写后清理手工 `override.conf`（A34）。
+- **go-ahead 门禁（A9）** —— Phase A–D 每条上机命令改动生产机，需用户显式 go-ahead + 回滚点，非「只诊断」。

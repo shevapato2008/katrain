@@ -122,6 +122,68 @@ class EngineAnalysisRequest(BaseModel):
     kind: Literal["area", "options", "judge", "variation"]
 
 
+def _hint_position_token(app_state, session_id: str) -> Optional[int]:
+    """Task 10 (G5/M7/M8): if `session_id` is currently bound to the vision-driven
+    physical board AND an orchestrator is present, return the game's current_node
+    identity as a position token — the caller re-checks this after the (slow)
+    analysis await so a stale 支招 result can never blink LEDs on a position the
+    board has since moved past. Returns None when there is no physical board
+    tie-in to gate against (no orchestrator, no vision, or a different/no session
+    bound), which the caller treats as "never show a hint"."""
+    orchestrator = getattr(app_state, "physical_play", None)
+    vision = getattr(app_state, "vision", None)
+    if orchestrator is None or vision is None or vision.bound_session_id != session_id:
+        return None
+    manager = app_state.session_manager
+    try:
+        session = manager.get_session(session_id)
+    except KeyError:
+        return None
+    with session.lock:
+        return id(session.katrain.game.current_node)
+
+
+def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], result) -> None:
+    """Blink the physical board's white 支招 hint LEDs on a successful `options`
+    result, gated on the position token captured before the analysis await.
+    Re-resolves orchestrator/vision/session fresh (rather than reusing captured
+    references) so a rebind during the await is caught too. LED/IPC failures are
+    swallowed — the paid analysis result must still reach the tablet."""
+    if position_token is None:
+        return
+    orchestrator = getattr(app_state, "physical_play", None)
+    vision = getattr(app_state, "vision", None)
+    if orchestrator is None or vision is None or vision.bound_session_id != session_id:
+        logger.debug("支招 hint dropped: session %s no longer bound", session_id)
+        return
+    manager = app_state.session_manager
+    try:
+        session = manager.get_session(session_id)
+    except KeyError:
+        return
+    try:
+        with session.lock:
+            if id(session.katrain.game.current_node) != position_token:
+                logger.debug("支招 hint dropped: position changed for session %s", session_id)
+                return
+            board_size = session.katrain.game.board_size[0]
+        # `Candidate.row`/`.col` are decoded from Golaxy into the SAME (col, row)
+        # space as gameState.stones/last_move -- i.e. core/GTP frame, row 0 = BOTTOM
+        # (Board.tsx renders candidates via gridToCanvas(c.col, c.row) whose
+        # invertedY = boardSize-1-y puts core row 0 at the canvas bottom, with the
+        # explicit "NO flip: same (col,row) space as gameState.stones" comment).
+        # show_hint/the LED chain expect vision frame, row 0 = TOP (see
+        # physical_play_orchestrator.py's game_state_stones_to_board /
+        # _setup_cells_from_state, both `vision_row = board_size - 1 - core_row`) --
+        # so flip here, matching every other core->LED path. Without the flip these
+        # hint LEDs light the vertical mirror of what the screen circles.
+        points = [(board_size - 1 - c.row, c.col) for c in result.candidates]
+        if points:
+            orchestrator.show_hint(points)
+    except Exception:
+        logger.exception("show_hint failed for session %s (LED/IPC error ignored)", session_id)
+
+
 # --- Credential management ---
 
 
@@ -249,12 +311,22 @@ async def engine_analysis(
         raise HTTPException(status_code=400, detail=f"{platform} does not support engine play")
     from katrain.web.platforms.golaxy.engine_client import QuotaExhausted
 
+    # Task 10 (G5/M7/M8): capture the position token BEFORE the (slow) analysis
+    # tunnel call so a concurrent move/undo/rebind during the await can be
+    # detected afterward. Only "options" ever shows a hint, so skip the lock
+    # acquisition for the other kinds.
+    position_token = _hint_position_token(request.app.state, req.session_id) if req.kind == "options" else None
+
     try:
         result = await pm.engine_analysis(platform, req.session_id, req.kind)
     except QuotaExhausted:
         return {"ok": False, "reason": "insufficient", "kind": req.kind}
     except KeyError:
         raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
+
+    if req.kind == "options":
+        _maybe_show_hint(request.app.state, req.session_id, position_token, result)
+
     import dataclasses
 
     return {"ok": True, "kind": req.kind, "data": dataclasses.asdict(result)}

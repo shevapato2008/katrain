@@ -43,6 +43,43 @@ def _get_vision(request: Request):
     return vision
 
 
+def _drain_stale_move_queue(request: Request) -> None:
+    """Review M1: app.state.vision_move_queue is the queue route_vision_event feeds
+    ConfirmedMove events into; drain it on every bind/unbind so a move queued for
+    the OLD session (or before any session was ever bound) can't cross into
+    whatever session (re)binds next. VisionService.bind_session/unbind_session
+    separately clear the service-side pending-moves deque -- this covers the
+    app-level queue, which may not exist at all in tests / vision-disabled apps."""
+    queue = getattr(request.app.state, "vision_move_queue", None)
+    if queue is None:
+        return
+    while not queue.empty():
+        try:
+            queue.get_nowait()
+        except Exception:
+            break
+
+
+def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest"):
+    """Task 8 (B4/M5/D8) shared guard for both engine-move/retry and .../cancel:
+    validate that an active recovery episode exists for `body.session_id`, that
+    vision is currently bound to that same session, and that `body.recovery_token`
+    matches -- THEN atomically detach it (CAS via tracker.consume()) so a concurrent
+    second call (double-click, or a retry racing a cancel) can never also succeed.
+
+    Auth level matches M5: bound-session+token is the primary check (no separate
+    user/session-cookie auth here, consistent with the rest of this file's vision
+    endpoints -- they're all trusted-kiosk-LAN, session_id-scoped)."""
+    vision = _get_vision(request)
+    tracker = getattr(request.app.state, "engine_recovery", None)
+    if tracker is None or vision.bound_session_id != body.session_id:
+        raise HTTPException(status_code=409, detail="No active engine-move recovery for this session")
+    episode = tracker.consume(body.recovery_token)
+    if episode is None:
+        raise HTTPException(status_code=409, detail="Recovery token is stale or already consumed")
+    return episode
+
+
 # -- Endpoints ---------------------------------------------------------------
 
 
@@ -134,6 +171,7 @@ async def bind_session(request: Request, body: BindRequest):
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
 
     vision.bind_session(body.session_id)
+    _drain_stale_move_queue(request)
 
     # Set expected board from current game state
     game_state = session.katrain.get_state()
@@ -155,6 +193,10 @@ async def unbind_session(request: Request):
     if orchestrator is not None:
         orchestrator.on_unbind()
     vision.unbind_session()
+    _drain_stale_move_queue(request)
+    recovery = getattr(request.app.state, "engine_recovery", None)
+    if recovery is not None:
+        recovery.clear()  # Task 7: an in-flight recovery episode belongs to the unbound game
     return {"ok": True}
 
 
@@ -203,6 +245,11 @@ class ExpectedBoardRequest(BaseModel):
     board: list[list[int]]  # vision coords, row 0 = top
 
 
+class EngineMoveRecoveryRequest(BaseModel):
+    session_id: str
+    recovery_token: str
+
+
 @router.post("/monitor")
 async def set_monitor(request: Request, body: MonitorRequest):
     """Enable/disable sessionless monitor mode (physical tsumego)."""
@@ -239,3 +286,61 @@ async def set_expected_board(request: Request, body: ExpectedBoardRequest):
 
     vision.set_expected_board(np.array(body.board, dtype=int))
     return {"ok": True}
+
+
+@router.post("/engine-move/retry")
+async def retry_engine_move(request: Request, body: EngineMoveRecoveryRequest):
+    """Task 8 (B4/M5/D8): resubmit a stuck engine-tunnel move after Task 7's
+    bounded-retry threshold tripped and the recovery dialog came up.
+
+    Token CAS: `_consume_recovery_episode` detaches the episode BEFORE this
+    resubmit's `await gateway.play_move(...)` — a concurrent double-click (same
+    token) always finds the episode already gone on its second call and gets a
+    409; exactly one submission ever reaches the gateway.
+
+    - success -> clear the orchestrator's engine_error reason (resumes detection
+      via the pause-reasons mechanism) and {"ok": true}.
+    - failure again -> `tracker.trip_now(...)` re-trips a FRESH token immediately
+      (no bounded-attempts count for an explicit user retry — see engine_recovery.py),
+      re-arms the orchestrator's engine_error context with it (detection stays
+      paused throughout — never resumed mid-retry), HTTP 200 {"ok": false, "detail",
+      "recovery_token": <new>}.
+    """
+    episode = _consume_recovery_episode(request, body)
+    tracker = request.app.state.engine_recovery
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    gateway = getattr(request.app.state, "platform_gateway", None)
+    col, row = episode.coords
+
+    try:
+        if gateway is None:
+            raise RuntimeError("Platform gateway not available")
+        await gateway.play_move(body.session_id, col, row, user_id=0)
+    except Exception as e:
+        new_episode = tracker.trip_now(game_id=episode.game_id, coords=episode.coords, detail=str(e))
+        if orchestrator is not None:
+            orchestrator.enter_engine_error(episode.coords, new_episode.recovery_token)
+        return {"ok": False, "detail": str(e), "recovery_token": new_episode.recovery_token}
+
+    tracker.on_success()
+    if orchestrator is not None:
+        orchestrator.clear_engine_error()
+    return {"ok": True}
+
+
+@router.post("/engine-move/cancel")
+async def cancel_engine_move(request: Request, body: EngineMoveRecoveryRequest):
+    """Task 8: give up retrying the stuck move and wait for the PHYSICAL stone at
+    its coords to be removed instead (awaiting_removal). Detection stays paused
+    throughout; the orchestrator's tick loop keeps running a narrow board-equality
+    check each tick (see PhysicalPlayOrchestrator._tick_awaiting_removal /
+    `_run`'s dispatch) rather than a full LED reconciliation or nothing at all.
+
+    Returns immediately — resolution (stone removed + board matches digital for N
+    stable ticks) is asynchronous, signaled later via a `physical_engine_error_resolved`
+    broadcast that the frontend uses to close the waiting UI."""
+    episode = _consume_recovery_episode(request, body)
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None:
+        orchestrator.enter_awaiting_removal(episode.coords)
+    return {"ok": True, "awaiting_removal": True}

@@ -1,13 +1,36 @@
 """Orchestrator: game state + observed board -> LED writes, catch-up gate, reminder."""
 
 import asyncio
+import copy
+import json
+import os
 import time
 
 import numpy as np
 import pytest
 
-from katrain.web.core.physical_play import PhysicalPlayConfig
+from katrain.web.core.physical_play import BLACK, WHITE, PhysicalPlayConfig
 from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
+
+# Task 1 contract fixture: a real engine-game get_state() dump (both players marked
+# "human"; platform_engine_color:"W" is the only signal that W is the remote Golaxy AI).
+ENGINE_GAME_STATE_FIXTURE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "katrain",
+    "web",
+    "ui",
+    "src",
+    "kiosk",
+    "__tests__",
+    "fixtures",
+    "engine_game_state.json",
+)
+
+
+def _load_engine_game_state_fixture():
+    with open(ENGINE_GAME_STATE_FIXTURE_PATH, encoding="utf-8") as f:
+        return json.load(f)
 
 
 class FakeLed:
@@ -33,6 +56,8 @@ class FakeVision:
         self.expected_pushes = []
         self.paused = False
         self.lit = []
+        self.calls = []  # ordered ("pause"|"resume") sequence — dup-call detector
+        self.reset_sync_calls = []  # Task 8: resync() call tracker
 
     def get_detected_board(self):
         return self.detected
@@ -42,12 +67,17 @@ class FakeVision:
 
     def pause_detection(self):
         self.paused = True
+        self.calls.append("pause")
 
     def resume_detection(self):
         self.paused = False
+        self.calls.append("resume")
 
     def set_lit_points(self, points):
         self.lit = points
+
+    def reset_sync(self, expected=None):
+        self.reset_sync_calls.append(expected)
 
 
 class FakeManager:
@@ -193,6 +223,138 @@ class TestHint:
         asyncio.run(run())
 
 
+class TestPauseReasonsMatrix:
+    """M2: self._pause_reasons (set) replaces the _suspended/_hint_active shared
+    booleans. Task 7 (engine_error) isn't built yet, so these tests poke the
+    internal _add_pause_reason/_remove_pause_reason API directly as a stand-in.
+    Contract asserted here: detection pause = ANY reason present; tick suspension
+    (orch._suspended) = any reason OTHER than pure "lag" (lag alone must never stop
+    the tick -- the tick is what re-evaluates catch-up and clears the lag reason)."""
+
+    def test_hint_then_engine_error_dismiss_hint_still_paused(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_timeout_s=10.0)
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            assert vision.paused is True
+            assert orch._suspended is True
+            orch._add_pause_reason("engine_error")  # Task 7 stand-in
+            orch.dismiss_hint()
+            assert "hint" not in orch._pause_reasons
+            assert vision.paused is True  # engine_error keeps detection paused
+            assert orch._suspended is True  # ... and keeps the tick suspended too
+
+        asyncio.run(run())
+        assert vision.calls == ["pause"]  # hint->error handoff must not re-pause/resume
+
+    def test_engine_error_then_hint_show_dismiss_error_persists(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_timeout_s=10.0)
+        orch._add_pause_reason("engine_error")
+        assert vision.paused is True
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            assert vision.paused is True
+            orch.dismiss_hint()
+            assert vision.paused is True  # error still set
+            assert orch._suspended is True
+
+        asyncio.run(run())
+        assert vision.calls == ["pause"]  # no duplicate calls across the hint show/dismiss
+
+    def test_lag_alone_pauses_detection_but_not_tick(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        assert vision.paused is True
+        assert orch._suspended is False  # tick keeps running so it can clear the lag itself
+        assert vision.calls == ["pause"]
+
+    def test_lag_plus_hint_suspends_tick_then_hint_dismiss_leaves_lag_pause(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_timeout_s=10.0)
+        orch._add_pause_reason("lag")
+        assert orch._suspended is False
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            assert orch._suspended is True  # hint suspends the tick on top of lag
+            assert vision.paused is True
+            orch.dismiss_hint()
+            assert orch._suspended is False  # lag alone no longer suspends the tick
+            assert vision.paused is True  # but detection stays paused: lag persists
+
+        asyncio.run(run())
+        assert vision.calls == ["pause"]  # lag's initial pause is never re-sent/duplicated
+
+    def test_on_unbind_clears_all_reasons_and_resumes(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        orch._add_pause_reason("engine_error")
+        assert vision.paused is True
+        orch.on_unbind()
+        assert orch._pause_reasons == set()
+        assert orch._suspended is False
+        assert vision.paused is False
+        assert vision.calls == ["pause", "resume"]  # exactly one resume, no duplicates
+
+    def test_idempotent_add_remove_do_not_duplicate_ipc_calls(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        orch._add_pause_reason("lag")  # already present: no-op
+        assert vision.calls == ["pause"]
+        orch._remove_pause_reason("lag")
+        orch._remove_pause_reason("lag")  # already absent: no-op
+        assert vision.calls == ["pause", "resume"]
+
+
+class TestEngineErrorPauseReason:
+    """Task 7 (B5/M1/M4): enter_engine_error/clear_engine_error are the orchestrator's
+    half of the recovery hand-off -- the poller calls enter_engine_error once an
+    engine_recovery episode trips its threshold, so detection stays paused (no more
+    ConfirmedMove) until the frontend dismisses (Task 8/9)."""
+
+    def test_enter_engine_error_adds_pause_reason_and_stores_context(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR in orch._pause_reasons
+        assert vision.paused is True
+        assert orch._suspended is True  # engine_error suspends the tick too, like hint
+        assert vision.calls == ["pause"]
+
+    def test_clear_engine_error_removes_pause_reason(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.clear_engine_error()
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR not in orch._pause_reasons
+        assert vision.paused is False
+        assert orch._suspended is False
+        assert vision.calls == ["pause", "resume"]
+
+    def test_engine_error_coexists_with_lag_like_hint(self):
+        orch, _, vision, _ = _orch()
+        orch._add_pause_reason("lag")
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.clear_engine_error()
+        assert orch._suspended is False  # tick resumes (lag alone doesn't suspend it)
+        assert vision.paused is True  # but detection stays paused: lag persists
+        assert vision.calls == ["pause"]  # single pause call, no duplicate
+
+    def test_on_unbind_clears_engine_error_too(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.on_unbind()
+        assert orch._pause_reasons == set()
+        assert vision.paused is False
+
+    def test_idempotent_enter_and_clear(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 3), "tok-123")
+        orch.enter_engine_error((3, 3), "tok-123")  # no-op re-add
+        assert vision.calls == ["pause"]
+        orch.clear_engine_error()
+        orch.clear_engine_error()  # no-op re-remove
+        assert vision.calls == ["pause", "resume"]
+
+
 class FakeKatrainForBind:
     def __init__(self, state):
         self.update_state_callback = None
@@ -267,6 +429,45 @@ class TestGuidanceContextExtraction:
     def test_guided_colors_missing_players_info_returns_none(self):
         assert PhysicalPlayOrchestrator._guided_colors_from_state({}) is None  # legacy guide-all
 
+    def test_guided_colors_platform_engine_color_white_from_contract_fixture(self):
+        # Task 1 contract fixture: real engine-game state, both players "human",
+        # platform_engine_color:"W" is the only marker that W is the remote Golaxy AI.
+        state = _load_engine_game_state_fixture()
+        assert state["platform_engine_color"] == "W"
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {WHITE}
+
+    def test_guided_colors_platform_engine_color_black(self):
+        state = _load_engine_game_state_fixture()
+        state["platform_engine_color"] = "B"
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {BLACK}
+
+    def test_guided_colors_platform_engine_color_none_no_regression(self):
+        # Field present but None (local pvp / remote-platform games without an engine
+        # seat) must fall back to the existing player_type-only behavior: both human ->
+        # empty set, NOT guide-all.
+        state = _load_engine_game_state_fixture()
+        state["platform_engine_color"] = None
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == set()
+
+    def test_guided_colors_platform_engine_color_absent_no_regression(self):
+        # Field absent entirely (older state / non-engine platform) must not regress
+        # the existing player_type-only behavior either.
+        state = _load_engine_game_state_fixture()
+        del state["platform_engine_color"]
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == set()
+
+    def test_guided_colors_player_ai_branch_unaffected_by_engine_color(self):
+        # player:ai still guides regardless of platform_engine_color (which is None for
+        # local AI games) -- no regression to the pre-existing branch.
+        state = {
+            "players_info": {
+                "B": {"player_type": "player:human"},
+                "W": {"player_type": "player:ai"},
+            },
+            "platform_engine_color": None,
+        }
+        assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {WHITE}
+
     def test_setup_cells_from_root_stones(self):
         # stones entry: [player, [col, gtp_row], score_loss, move_number]; move_number None = 让子/AB
         state = {
@@ -296,3 +497,170 @@ class TestLitPointsIncludeAllLamps:
             ]
         )
         assert vision.lit == [(3, 3), (5, 5)]
+
+
+class TestEngineGameGuidance:
+    """Integration smoke (G1): an engine game (Golaxy AI plays via platform_engine_color,
+    both players_info marked human) must guide the AI's color exactly like a local
+    player:ai opponent would — closing the gap where engine moves got no lamp."""
+
+    def test_engine_ai_white_move_gets_white_lamp(self):
+        orch, led, vision, _ = _orch()
+        fixture = _load_engine_game_state_fixture()
+        assert fixture["platform_engine_color"] == "W"
+        st = copy.deepcopy(fixture)
+        st["stones"] = [["W", [3, 15], None, 1]]  # GTP y=15 -> vision row 3, col 3
+        orch.on_game_state(st)
+        # Physical board still lacks the stone (vision.detected stays all zeros).
+        orch._tick_once()
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "white"}])
+        assert orch.board_caught_up is False
+
+
+class TestAwaitingRemoval:
+    """Task 8 (B4/M5/D8): cancel hands the orchestrator off from engine_error into
+    awaiting_removal — detection stays paused, but the tick loop keeps running a
+    NARROW board-equality check (not the full LED reconciliation) each tick, guiding
+    removal of the failed-move's PHYSICAL stone via a blue 'remove' lamp until the
+    observed board matches the digital board (with the target cell empty) for N
+    consecutive stable ticks.
+
+    Coordinates passed to enter_awaiting_removal are GTP/board space (col, row0=bottom)
+    — same convention as the engine_recovery episode / physical_engine_error broadcast
+    — and are converted to vision-grid (row0=top) internally, matching
+    _setup_cells_from_state's `(board_size - 1 - gtp_row, col)` flip."""
+
+    def test_enter_awaiting_removal_replaces_engine_error_reason(self):
+        orch, _, vision, _ = _orch()
+        orch.enter_engine_error((3, 15), "tok-123")
+        assert vision.calls == ["pause"]
+        orch.enter_awaiting_removal((3, 15))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR not in orch._pause_reasons
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL in orch._pause_reasons
+        assert orch._suspended is True
+        assert vision.paused is True
+        assert vision.calls == ["pause"]  # no resume/re-pause blip during the handoff
+
+    def test_target_cell_still_occupied_never_resolves(self):
+        orch, _, vision, mgr = _orch()
+        orch.on_game_state(state([]))  # move never landed digitally
+        orch.enter_awaiting_removal((3, 15))  # GTP (col=3,row=15) -> vision (3,3)
+        vision.detected[3][3] = 1  # the failed stone is still sitting there
+        for _ in range(10):
+            orch._tick_awaiting_removal()
+        assert vision.reset_sync_calls == []
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL in orch._pause_reasons
+        assert mgr.broadcasts == []  # no premature "resolved"
+        # guided via the blue remove lamp while still occupied
+        assert led_calls_for(orch) == [{"row": 3, "col": 3, "color": "remove"}]
+
+    def test_wrong_cell_emptied_never_resolves(self):
+        """A DIFFERENT stone missing from the board (拿错子) — target cell is
+        correctly empty, but the overall board no longer matches digital, so the
+        stability gate must still hold. Digital: BLACK at vision (5,5) (GTP col=5,
+        row=13), WHITE at vision (8,10) (GTP col=10, row=10); target (3,3) has no
+        digital stone (the failed engine move never landed)."""
+        orch, _, vision, mgr = _orch()
+        orch.on_game_state(state([["B", [5, 13], None, 1], ["W", [10, 10], None, 2]]))
+        orch.enter_awaiting_removal((3, 15))  # target: vision (3,3), correctly empty
+        vision.detected[8][10] = 2  # WHITE present as expected
+        vision.detected[5][5] = 0  # BLACK wrongly removed (拿错子) -- should be 1
+        for _ in range(10):
+            orch._tick_awaiting_removal()
+        assert vision.reset_sync_calls == []
+        assert mgr.broadcasts == []
+
+    def test_removed_then_replaced_resets_stability(self):
+        orch, _, vision, mgr = _orch()
+        orch.on_game_state(state([]))
+        orch.enter_awaiting_removal((3, 15))
+        vision.detected[3][3] = 1
+        orch._tick_awaiting_removal()
+        orch._tick_awaiting_removal()
+        vision.detected[3][3] = 0  # removed
+        orch._tick_awaiting_removal()
+        vision.detected[3][3] = 1  # replaced before N stable ticks reached
+        orch._tick_awaiting_removal()
+        vision.detected[3][3] = 0  # removed again
+        orch._tick_awaiting_removal()
+        assert vision.reset_sync_calls == []  # never accumulated enough consecutive stability
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL in orch._pause_reasons
+
+    def test_stable_for_n_ticks_resyncs_clears_reason_and_broadcasts_resolved(self):
+        orch, _, vision, mgr = _orch(awaiting_removal_stable_ticks=3)
+        orch.on_game_state(state([]))
+        orch.enter_awaiting_removal((3, 15))
+        vision.detected[3][3] = 0  # already empty + board matches digital (all-empty)
+        orch._tick_awaiting_removal()
+        orch._tick_awaiting_removal()
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL in orch._pause_reasons
+        orch._tick_awaiting_removal()  # 3rd consecutive stable tick -> resolve
+        assert vision.reset_sync_calls  # resync() called
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL not in orch._pause_reasons
+        assert orch._suspended is False
+        assert vision.paused is False  # detection resumed
+        assert mgr.broadcasts and mgr.broadcasts[-1][1] == {"type": "physical_engine_error_resolved"}
+
+    def test_timeout_reprompts_via_reminder_broadcast(self):
+        now = [0.0]
+        orch, _, vision, mgr = _orch(
+            clock=lambda: now[0], awaiting_removal_stable_ticks=3, awaiting_removal_remind_interval_s=15.0
+        )
+        orch.on_game_state(state([]))
+        orch.enter_awaiting_removal((3, 15))
+        vision.detected[3][3] = 1  # never removed -> never resolves, keeps re-prompting
+        orch._tick_awaiting_removal()  # t=0: seeds last_remind_ts, no broadcast yet
+        assert mgr.broadcasts == []
+        now[0] = 16.0
+        orch._tick_awaiting_removal()
+        assert len(mgr.broadcasts) == 1
+        assert mgr.broadcasts[0][1]["type"] == "physical_awaiting_removal_reminder"
+        now[0] = 32.0
+        orch._tick_awaiting_removal()
+        assert len(mgr.broadcasts) == 2  # re-prompts again after another interval
+
+    def test_unbind_mid_wait_cleans_up(self):
+        orch, _, vision, _ = _orch()
+        orch.on_game_state(state([]))
+        orch.enter_awaiting_removal((3, 15))
+        assert vision.paused is True
+        orch.on_unbind()
+        assert orch._awaiting_removal_context is None
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL not in orch._pause_reasons
+        assert vision.paused is False
+
+    def test_run_loop_dispatches_to_narrow_check_while_awaiting_removal(self):
+        """Integration: the tick loop (_run) must call _tick_awaiting_removal — not
+        the full _tick_once — while this reason is active, even though it's also a
+        member of _pause_reasons (which would otherwise fully suspend the tick)."""
+        led, vision, mgr = FakeLed(), FakeVision(), FakeManager()
+        orch = PhysicalPlayOrchestrator(
+            config=PhysicalPlayConfig(tick_interval_s=0.01, awaiting_removal_stable_ticks=2),
+            led=led,
+            vision=vision,
+            session_manager=mgr,
+            touch_led_activity=lambda: None,
+            clock=time.monotonic,
+        )
+        orch._session_id = "s1"
+        orch.on_game_state(state([]))
+        orch.enter_awaiting_removal((3, 15))
+        vision.detected[3][3] = 0
+
+        async def run():
+            orch._task = asyncio.get_running_loop().create_task(orch._run())
+            await asyncio.sleep(0.08)
+            orch._task.cancel()
+            try:
+                await orch._task
+            except asyncio.CancelledError:
+                pass
+
+        asyncio.run(run())
+        assert vision.reset_sync_calls  # narrow check ran and resolved via the real loop
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL not in orch._pause_reasons
+
+
+def led_calls_for(orch):
+    """Last non-empty set_points batch actually applied (helper for the tests above)."""
+    return orch._last_points or []

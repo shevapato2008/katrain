@@ -100,6 +100,13 @@ class BaseGame:
             )
             handicap = katrain.config("game/handicap")
             if not bypass_config and handicap:
+                # Self-describe via the SGF "HA" property so `root.handicap` reflects
+                # reality. Without this, a config-seeded game's placements are
+                # invisible to any `root.handicap != handicap` change-detection gate
+                # (e.g. `_do_edit_game` in web/interface.py), which then fails to
+                # clear the stray stones when a session is later reconfigured to a
+                # different (or zero) handicap.
+                self.root.set_property("HA", handicap)
                 self.root.place_handicap_stones(handicap)
 
         if not self.root.get_property("RU"):  # if rules missing in sgf, inherit current

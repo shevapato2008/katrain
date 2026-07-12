@@ -16,6 +16,7 @@ import cv2
 import numpy as np
 
 from katrain.vision.inference.base import letterbox_preprocess
+from katrain.vision.inference.split_decode import decode_split_heads, is_split_meta
 from katrain.vision.stone_detector import Detection
 
 logger = logging.getLogger(__name__)
@@ -117,6 +118,9 @@ class RknnBackend:
             return []
 
         # --- post-process ---
+        if is_split_meta(self._meta):
+            # Split-head model: 6 raw conv tensors decoded on the host.
+            return self._postprocess_split(outputs, confidence_threshold, iou_threshold)
         return self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold, iou_threshold)
 
     def unload(self) -> None:
@@ -168,6 +172,32 @@ class RknnBackend:
         else:
             # Default RKNN layout: NHWC uint8 (normalization baked into model)
             return resized[np.newaxis, ...].astype(np.uint8)
+
+    def _postprocess_split(
+        self,
+        outputs: list[np.ndarray],
+        confidence_threshold: float,
+        iou_threshold: float | None = None,
+    ) -> list[Detection]:
+        """Decode split-head raw conv tensors on the host (DFL + anchor + sigmoid + NMS).
+
+        Used for models exported with :mod:`katrain.vision.tools.export_onnx_split`,
+        whose metadata carries ``nc``/``reg_max``/``strides`` for the host decode.
+        """
+        nc = int(self._meta.get("nc", len(self._meta.get("classes", ["black", "white"]))))
+        reg_max = int(self._meta.get("reg_max", 16))
+        strides = [int(s) for s in self._meta.get("strides", [8, 16, 32])]
+        return decode_split_heads(
+            outputs,
+            nc=nc,
+            reg_max=reg_max,
+            strides=strides,
+            confidence_threshold=confidence_threshold,
+            iou_threshold=(iou_threshold if iou_threshold is not None else self.NMS_IOU_THRESHOLD),
+            scale=self._last_scale,
+            x_off=self._last_x_off,
+            y_off=self._last_y_off,
+        )
 
     def _postprocess(
         self,

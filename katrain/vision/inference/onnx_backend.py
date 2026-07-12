@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 
 from katrain.vision.inference.base import letterbox_preprocess
+from katrain.vision.inference.split_decode import decode_split_heads, is_split_meta
 from katrain.vision.stone_detector import Detection
 
 logger = logging.getLogger(__name__)
@@ -103,10 +104,15 @@ class OnnxBackend:
 
         # --- inference ---
         input_name = self._meta.get("input_name", "images")
-        output_name = self._meta.get("output_name", "output0")
-        (raw_output,) = self._session.run([output_name], {input_name: tensor})
 
         # --- post-process ---
+        if is_split_meta(self._meta):
+            # Split-head model: request all 6 raw conv tensors, decode on the host.
+            outputs = self._session.run(None, {input_name: tensor})
+            return self._postprocess_split(outputs, confidence_threshold, iou_threshold)
+
+        output_name = self._meta.get("output_name", "output0")
+        (raw_output,) = self._session.run([output_name], {input_name: tensor})
         return self._postprocess(raw_output, orig_w, orig_h, confidence_threshold, iou_threshold)
 
     def unload(self) -> None:
@@ -148,6 +154,32 @@ class OnnxBackend:
 
         # Add batch dimension -> NCHW
         return tensor[np.newaxis, ...]
+
+    def _postprocess_split(
+        self,
+        outputs: list[np.ndarray],
+        confidence_threshold: float,
+        iou_threshold: float | None = None,
+    ) -> list[Detection]:
+        """Decode split-head raw conv tensors on the host (DFL + anchor + sigmoid + NMS).
+
+        Mirrors :meth:`RknnBackend._postprocess_split`; shared decode lets the
+        split path be validated on the dev machine via ONNX Runtime.
+        """
+        nc = int(self._meta.get("nc", len(self._meta.get("classes", ["black", "white"]))))
+        reg_max = int(self._meta.get("reg_max", 16))
+        strides = [int(s) for s in self._meta.get("strides", [8, 16, 32])]
+        return decode_split_heads(
+            outputs,
+            nc=nc,
+            reg_max=reg_max,
+            strides=strides,
+            confidence_threshold=confidence_threshold,
+            iou_threshold=(iou_threshold if iou_threshold is not None else self.NMS_IOU_THRESHOLD),
+            scale=self._last_scale,
+            x_off=self._last_x_off,
+            y_off=self._last_y_off,
+        )
 
     def _postprocess(
         self,

@@ -175,21 +175,45 @@ def export_rknn(
     rknn.release()
 
     # --- Generate RKNN metadata sidecar ---
-    rknn_meta = {
-        "format": "rknn",
-        "source": onnx_meta.get("source", onnx_file.stem),
-        "source_onnx": onnx_file.name,
-        "target_platform": target,
-        "imgsz": imgsz,
-        "input_format": "nhwc_uint8",
-        "input_channel_order": "RGB",
-        "output_format": onnx_meta.get("output_format", "yolo_v8_raw"),
-        "output_shape": onnx_meta.get("output_shape"),
-        "classes": classes,
-        "includes_nms": False,
-        "bbox_format": "xywh_center_normalized",
-        "quantized": quantize,
-    }
+    if onnx_meta.get("format") == "onnx_split":
+        # Split-head model: carry the params the host decoder needs (nc/reg_max/
+        # strides), since the RKNN outputs are raw per-scale conv tensors rather
+        # than a single concatenated YOLO tensor. See export_onnx_split.py and
+        # katrain.vision.inference.split_decode.
+        rknn_meta = {
+            "format": "rknn_split",
+            "source": onnx_meta.get("source", onnx_file.stem),
+            "source_onnx": onnx_file.name,
+            "target_platform": target,
+            "imgsz": imgsz,
+            "input_format": "nhwc_uint8",
+            "input_channel_order": "RGB",
+            "nc": onnx_meta.get("nc", len(classes)),
+            "reg_max": onnx_meta.get("reg_max", 16),
+            "nl": onnx_meta.get("nl", 3),
+            "strides": onnx_meta.get("strides", [8, 16, 32]),
+            "output_names": onnx_meta.get("output_names"),
+            "classes": classes,
+            "includes_nms": False,
+            "decode": "host_dfl_anchor_sigmoid_nms",
+            "quantized": quantize,
+        }
+    else:
+        rknn_meta = {
+            "format": "rknn",
+            "source": onnx_meta.get("source", onnx_file.stem),
+            "source_onnx": onnx_file.name,
+            "target_platform": target,
+            "imgsz": imgsz,
+            "input_format": "nhwc_uint8",
+            "input_channel_order": "RGB",
+            "output_format": onnx_meta.get("output_format", "yolo_v8_raw"),
+            "output_shape": onnx_meta.get("output_shape"),
+            "classes": classes,
+            "includes_nms": False,
+            "bbox_format": "xywh_center_normalized",
+            "quantized": quantize,
+        }
 
     meta_path = out_dir / f"{output_basename}.meta.json"
     meta_path.write_text(json.dumps(rknn_meta, indent=2, ensure_ascii=False))

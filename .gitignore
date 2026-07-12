@@ -210,3 +210,8 @@ data.zip
 
 # board-mode test sqlite db (generated at runtime by KATRAIN_DATABASE_URL=sqlite:///./board_test.db)
 board_test.db
+
+# RKNN / ONNX conversion build outputs (regenerate via export_onnx_split + export_rknn)
+rknn_build/
+rknn_build_fp/
+rknn_build_split/

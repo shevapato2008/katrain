@@ -53,12 +53,20 @@ interface Board3DProps extends BoardProps {
   frameloop?: 'always' | 'demand';
   /** Called once after Canvas is created, receives the full R3F state for manual render control */
   onCanvasReady?: (state: RootState) => void;
+  /** Allow left/right rotation. Default false → azimuth locked (galaxy behavior). */
+  enableAzimuth?: boolean;
+  /** Azimuth clamp in radians when enableAzimuth. Default [-Math.PI/3, Math.PI/3]. */
+  azimuthRange?: [number, number];
+  /** Initial tilt (polar) in radians. Default Math.PI * 0.2 (galaxy). Kiosk uses a
+   *  smaller value for a more top-down first frame. */
+  initialPolarAngle?: number;
 }
 
-const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, cameraPosition, cameraTarget, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady }: Board3DProps) => {
+const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, cameraPosition, cameraTarget, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
   const boardSize = gameState.board_size[0];
   const orbitRef = useRef<any>(null);
-  const [polarAngle, setPolarAngle] = useState(Math.PI * 0.2); // initial approx
+  const [polarAngle, setPolarAngle] = useState(initialPolarAngle ?? Math.PI * 0.2); // initial approx
+  const [az0, az1] = enableAzimuth ? (azimuthRange ?? [-Math.PI / 3, Math.PI / 3]) : [0, 0];
 
   const [hoverPos, setHoverPos] = useState<{ col: number; row: number } | null>(null);
   const handleHover = useCallback((pos: { col: number; row: number } | null) => {
@@ -129,7 +137,7 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
           <StaticCamera position={cameraPosition} target={cameraTarget} />
         ) : (
           <>
-            <CameraController ref={orbitRef} target={cameraTarget} interactive={!disableControls} fixedPolarAngle={fixedPolarAngle} />
+            <CameraController ref={orbitRef} target={cameraTarget} interactive={!disableControls} fixedPolarAngle={fixedPolarAngle} minAzimuthAngle={az0} maxAzimuthAngle={az1} />
             <PolarSync orbitRef={orbitRef} onPolarChange={handlePolarChange} />
           </>
         )}

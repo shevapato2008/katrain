@@ -9,28 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformInfo } from '../../api';
 import SubPageBar from '../components/layout/SubPageBar';
-
-type LoginFieldConfig = {
-  userLabel: string; userLabelCn: string;
-  passLabel: string; passLabelCn: string;
-  userType?: string;  // input type, default "text"
-};
-
-const PLATFORM_META: Record<string, { label: string; labelCn: string; color: string; login: LoginFieldConfig; comingSoon?: boolean }> = {
-  ogs: {
-    label: 'OGS', labelCn: 'OGS', color: '#4a90d9',
-    login: { userLabel: 'Username', userLabelCn: '用户名', passLabel: 'Password', passLabelCn: '密码' },
-  },
-  fox: {
-    label: 'Fox Weiqi', labelCn: '野狐围棋', color: '#e67e22',
-    login: { userLabel: 'Username', userLabelCn: '用户名', passLabel: 'Password', passLabelCn: '密码' },
-    comingSoon: true,
-  },
-  golaxy: {
-    label: 'Golaxy', labelCn: '星阵围棋', color: '#2ecc71',
-    login: { userLabel: 'Phone Number', userLabelCn: '手机号', passLabel: 'Verification Code', passLabelCn: '验证码', userType: 'tel' },
-  },
-};
+import { PLATFORM_META } from '../constants/platforms';
 
 const PlatformConnectPage = () => {
   const { t } = useTranslation();
@@ -97,7 +76,7 @@ const PlatformConnectPage = () => {
     setLoginLoading(true);
     setLoginError('');
     try {
-      const isSms = PLATFORM_META[loginDialog]?.login.passLabel === 'Verification Code';
+      const isSms = PLATFORM_META[loginDialog]?.login?.passLabel === 'Verification Code';
       const creds = isSms
         ? { username: loginForm.username, sms_code: loginForm.password }
         : { username: loginForm.username, password: loginForm.password };

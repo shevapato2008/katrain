@@ -1,10 +1,13 @@
+import { useEffect, useState } from 'react';
 import { Box, Typography, ButtonBase } from '@mui/material';
-import { SmartToy, SportsEsports, Hub, Groups, Public } from '@mui/icons-material';
+import { SmartToy, SportsEsports, Groups, Public } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import ModeCard from '../components/common/ModeCard';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { readActiveSession } from '../utils/activeSession';
+import { API, type PlatformInfo } from '../../api';
+import { PLATFORM_META } from '../constants/platforms';
 
 // Brand serif (artifact `--serif`), used only for the greeting h1.
 const SERIF = "'Newsreader','Noto Serif SC',serif";
@@ -14,16 +17,24 @@ const SERIF = "'Newsreader','Noto Serif SC',serif";
 const sectionLabelSx = { fontSize: 13, fontWeight: 600, color: 'text.secondary', mt: 0.5 } as const;
 
 /**
- * Route: play — the 对弈 hub. Layout mirrors play-hub-states.html §01 (基准态·横屏 1024×600):
- * greeting → optional 继续上一局 resume bar → 人机对弈 (3 compact cards) → 人人对弈 (3 compact cards),
+ * Route: play — the 对弈 hub. Three sibling sections: 人机对弈 (自由/升降级),
+ * 人人对弈 (本地/在线大厅), 跨平台对弈 (platform cards fetched from API.platformStatus).
+ * Layout mirrors play-hub-states.html §01 (基准态·横屏 1024×600):
+ * greeting → optional 继续上一局 resume bar → 人机对弈 → 人人对弈 → 跨平台对弈,
  * all sized to fit the 464px content area without scrolling. The left 智能棋盘 console is rendered
  * by KioskLayout (not here); this page owns only the right column.
  */
 const PlayPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const resume = readActiveSession('game');
+  const [platforms, setPlatforms] = useState<PlatformInfo[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    API.platformStatus(token).then((d) => setPlatforms(d.platforms)).catch(() => {});
+  }, [token]);
 
   const hour = new Date().getHours();
   const [greetKey, greetZh] =
@@ -92,12 +103,6 @@ const PlayPage = () => {
           icon={<SportsEsports fontSize="inherit" />}
           to="/kiosk/play/ai/setup/ranked"
         />
-        <ModeCard
-          title={t('Cross-Platform', '跨平台对弈')}
-          subtitle={t('Play on OGS, Fox, and more', '连接 OGS、野狐等平台')}
-          icon={<Hub fontSize="inherit" />}
-          to="/kiosk/play/cross-platform"
-        />
       </Box>
 
       {/* 人人对弈 */}
@@ -115,12 +120,38 @@ const PlayPage = () => {
           icon={<Public fontSize="inherit" />}
           to="/kiosk/play/pvp/lobby"
         />
-        <ModeCard
-          title={t('Cross-Platform', '跨平台对弈')}
-          subtitle={t('Play on OGS, Fox, and more', '连接 OGS、野狐等平台')}
-          icon={<Hub fontSize="inherit" />}
-          to="/kiosk/play/cross-platform"
-        />
+      </Box>
+
+      {/* 跨平台对弈 — platform cards fetched from API.platformStatus, one per connected/known server */}
+      <Typography sx={sectionLabelSx}>{t('Cross-Platform', '跨平台对弈')}</Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
+        {platforms.map((p) => {
+          const meta = PLATFORM_META[p.platform] ?? { label: p.platform, labelCn: p.platform, color: '#888' };
+          const target = p.connected
+            ? (p.supports_engine_play
+                ? `/kiosk/play/cross-platform/engine/${p.platform}`
+                : `/kiosk/play/cross-platform/lobby?platform=${p.platform}`)
+            : '/kiosk/play/cross-platform';   // not connected → go to login page
+          return (
+            <ButtonBase
+              key={p.platform}
+              onClick={() => navigate(target)}
+              sx={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75, p: '11px 13px',
+                borderRadius: '15px', border: '1px solid', borderColor: p.connected ? 'primary.dark' : 'divider',
+                bgcolor: 'background.paper',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: p.connected ? 'success.main' : 'text.disabled' }} />
+                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t(meta.label, meta.labelCn)}</Typography>
+              </Box>
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                {p.connected ? t('Connected', '已连接') : t('Tap to connect', '点击登录连接')}
+              </Typography>
+            </ButtonBase>
+          );
+        })}
       </Box>
     </Box>
   );

@@ -55,6 +55,7 @@ interface EndgameCardProps {
   gameState: GameState;
   t: (key: string, fallback?: string) => string;
   onExit: () => void;
+  onReview: () => void;
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
@@ -67,7 +68,7 @@ interface EndgameCardProps {
 // avoids a useEffect + setState, keeping this repo's react-hooks/set-state-in-effect gate clean).
 // DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a kiosk-only
 // overlay (Gate S); not shipped in this cut, and shared Board.tsx is left untouched.
-const EndgameCard = ({ gameState, t, onExit }: EndgameCardProps) => {
+const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
@@ -83,6 +84,7 @@ const EndgameCard = ({ gameState, t, onExit }: EndgameCardProps) => {
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
+        <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
         <Button variant="contained" onClick={onExit} sx={{ bgcolor: 'primary.main' }}>{t('Confirm result', '确认终局')}</Button>
       </Box>
     </Box>
@@ -284,9 +286,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const isRanked = gameState.game_type === 'ranked' || gameState.game_type === 'rated';
 
 
-  // Determine which color the human plays (for turn enforcement)
+  // Determine which color the human plays (for turn enforcement). Both-human (local PvP):
+  // pass null so Board lets whichever side is to move play (touchscreen fallback works for
+  // BOTH colors — collapsing to 'B' here blocked WHITE from moving via touchscreen).
+  // Board.tsx:472/627 treat null as "anyone (whoever is to move) may play". Uses the
+  // both-human player_type check rather than game_type==='pvp_local' — more robust, since it
+  // doesn't depend on that string surviving to get_state.
+  const bothHuman =
+    gameState.players_info?.B?.player_type === 'player:human' &&
+    gameState.players_info?.W?.player_type === 'player:human';
   const humanColor: 'B' | 'W' | null =
-    gameState.players_info?.B?.player_type === 'player:human' ? 'B'
+    bothHuman ? null
+    : gameState.players_info?.B?.player_type === 'player:human' ? 'B'
     : gameState.players_info?.W?.player_type === 'player:human' ? 'W'
     : null;
 
@@ -545,7 +556,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           remounts EndgameCard fresh (dismissed=false) whenever a new session/game loads.
           DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a
           kiosk-only overlay (Gate S) — not shipped in this cut; Board.tsx is untouched. */}
-      {isGameOver && <EndgameCard key={sessionId} gameState={gameState} t={t} onExit={handleExit} />}
+      {isGameOver && (
+        <EndgameCard
+          key={sessionId}
+          gameState={gameState}
+          t={t}
+          onExit={handleExit}
+          onReview={async () => {
+            if (!sessionId) return;
+            try {
+              const { sgf } = await API.saveSGF(sessionId);
+              sessionStorage.setItem('kioskReviewSgf', sgf);
+              navigate('/kiosk/research');
+            } catch (e) { console.error(e); }
+          }}
+        />
+      )}
 
       {/* Resign confirmation (state D) */}
       <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>

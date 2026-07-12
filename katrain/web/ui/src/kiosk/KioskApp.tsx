@@ -26,6 +26,7 @@ import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
+import GameHistoryPage from './pages/GameHistoryPage';
 import BaipuListPage from './pages/BaipuListPage';
 import BaipuSessionPage from './pages/BaipuSessionPage';
 import LivePage from './pages/LivePage';
@@ -64,6 +65,7 @@ const KioskRoutes = () => {
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
+          <Route path="play/pvp/history" element={<GameHistoryPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />

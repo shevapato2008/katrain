@@ -60,18 +60,23 @@ const GameHistoryPage = () => {
     fetchGames(source);
   }, [source, fetchGames]);
 
-  const select = useCallback((id: string) => {
-    setSelectedId(id);
-    if (!token) return;
+  // Fetch full game detail (SGF) when a row is selected — mirrors KifuPage's
+  // selectedId→getAlbum effect so the `cancelled` cleanup actually runs (React
+  // discards a plain event-handler's return value, so this must be a real effect):
+  // rapid taps across rows abort the stale fetch instead of letting it clobber
+  // `detail` out of order.
+  useEffect(() => {
+    if (selectedId === null || !token) return;
     let cancelled = false;
     setDetail(null);
     setPreviewLoading(true);
-    UserGamesAPI.get(token, id)
+    UserGamesAPI.get(token, selectedId)
       .then((d) => { if (!cancelled) setDetail(d); })
       .catch((err) => { if (!cancelled) console.error('Failed to load game detail:', err); })
       .finally(() => { if (!cancelled) setPreviewLoading(false); });
+
     return () => { cancelled = true; };
-  }, [token]);
+  }, [selectedId, token]);
 
   const handleReview = () => {
     if (!detail) return;
@@ -125,7 +130,7 @@ const GameHistoryPage = () => {
                 <ListItemButton
                   key={g.id}
                   selected={selectedId === g.id}
-                  onClick={() => select(g.id)}
+                  onClick={() => setSelectedId(g.id)}
                   sx={{ display: 'block', px: 2.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}
                 >
                   <Typography sx={{ fontWeight: 600, fontSize: 14 }}>

@@ -67,6 +67,8 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
   const orbitRef = useRef<any>(null);
   const [polarAngle, setPolarAngle] = useState(initialPolarAngle ?? Math.PI * 0.2); // initial approx
   const [az0, az1] = enableAzimuth ? (azimuthRange ?? [-Math.PI / 3, Math.PI / 3]) : [0, 0];
+  const [azimuth, setAzimuth] = useState(0);
+  const invalidateRef = useRef<(() => void) | null>(null);
 
   const [hoverPos, setHoverPos] = useState<{ col: number; row: number } | null>(null);
   const handleHover = useCallback((pos: { col: number; row: number } | null) => {
@@ -85,6 +87,7 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
   // Force initial render: R3F Canvas may miss the first frame after dynamic import
   const handleCreated = useCallback((state: RootState) => {
     const { gl, invalidate } = state;
+    invalidateRef.current = invalidate;
     gl.setSize(gl.domElement.clientWidth, gl.domElement.clientHeight);
     invalidate();
     onCanvasReady?.(state);
@@ -106,6 +109,17 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
     });
   }, []);
 
+  const handleYaw = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const a = parseFloat(e.target.value);
+    setAzimuth(a);
+    const c = orbitRef.current;
+    if (c?.setAzimuthalAngle) {
+      c.setAzimuthalAngle(a);
+      c.update();
+      invalidateRef.current?.();
+    }
+  }, []);
+
   const handleZoom = useCallback((direction: 'in' | 'out') => {
     const controls = orbitRef.current;
     if (!controls) return;
@@ -124,6 +138,7 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
     <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <Canvas
         shadows={{ type: PCFShadowMap }}
+        dpr={[1, 1.5]}
         camera={{ position: cameraPosition || [0, 22, 26], fov: 40, near: 0.1, far: 100 }}
         gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.2, preserveDrawingBuffer: true }}
         frameloop={frameloop}
@@ -235,6 +250,39 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
           }}
         />
       </div>}
+
+      {/* Left/right (yaw) slider — opt-in, kiosk only (enableAzimuth) */}
+      {!disableControls && enableAzimuth && (
+        <div style={{
+          position: 'absolute',
+          bottom: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          background: 'rgba(0,0,0,0.5)',
+          borderRadius: 8,
+          padding: '6px 8px',
+          backdropFilter: 'blur(4px)',
+          userSelect: 'none',
+        }}>
+          <input
+            type="range"
+            aria-label="左右"
+            min={az0}
+            max={az1}
+            step={0.01}
+            value={azimuth}
+            onChange={handleYaw}
+            title="Yaw angle"
+            style={{
+              width: 180,
+              accentColor: '#90caf9',
+              cursor: 'pointer',
+            }}
+          />
+        </div>
+      )}
 
       {/* End-game result overlay (HTML layer on top of Canvas) */}
       {gameState.end_result && (

@@ -14,7 +14,8 @@
 
   function loadFreq() {
     try {
-      var raw = window.localStorage && localStorage.getItem(FREQ_KEY);
+      var ls = (typeof window !== "undefined") ? window.localStorage : null;
+      var raw = ls && ls.getItem(FREQ_KEY);
       var parsed = raw ? JSON.parse(raw) : null;
       return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
     } catch (e) { return {}; }
@@ -48,6 +49,26 @@
       [{k:"abc",fn:1,label:"ABC"},{k:"lang",fn:1},{k:"space",label:"空格"},{k:"return",label:"换行"}]
     ]
   };
+
+  // 候选区「方案B」纯逻辑(零 DOM,可脱离浏览器单测):
+  // isFirstCand: 「首选」放大只标注全局第 1 候选(第 1 页第 1 项),翻页后不再有放大项。
+  function isFirstCand(page, idxOnPage) { return page === 0 && idxOnPage === 0; }
+
+  // computeDots: 翻页进度点。totalPages<=1 → null(不渲染点行,规格 §3)。
+  // totalPages<=8 → 每页一点,直接按页码点亮;>8 → 固定 8 点,当前点位按进度比例映射
+  // (Math.round(pageIdx/(pages-1)*7)),两端分别对应首页/末页。返回 on/off 布尔数组。
+  function computeDots(pageIdx, totalPages) {
+    if (totalPages <= 1) return null;
+    if (totalPages <= 8) {
+      var dots = [];
+      for (var i = 0; i < totalPages; i++) dots.push(i === pageIdx);
+      return dots;
+    }
+    var activeIdx = Math.round((pageIdx / (totalPages - 1)) * 7);
+    var dots2 = [];
+    for (var j = 0; j < 8; j++) dots2.push(j === activeIdx);
+    return dots2;
+  }
 
   var state = {
     mode: "en", layer: "letters", shift: false, target: null, buffer: "",
@@ -87,7 +108,6 @@
     candBar = document.createElement("div"); candBar.className = "skbd-cand";
     compose = document.createElement("span"); compose.className = "skbd-compose";
     candList = document.createElement("div"); candList.className = "skbd-cand-list";
-    candList.style.cssText = "display:flex;overflow-x:auto;flex:1 1 auto;";
     candBar.appendChild(compose); candBar.appendChild(candList);
     root.appendChild(candBar);
 
@@ -248,14 +268,37 @@
 
   function updateCandidates() {
     if (!candBar) return;
-    if (state.mode !== "zh") { compose.textContent = ""; candList.innerHTML = ""; state.cands = []; state.page = 0; return; }
-    compose.textContent = state.buffer;
+    if (state.mode !== "zh") { compose.innerHTML = ""; candList.innerHTML = ""; state.cands = []; state.page = 0; return; }
     state.cands = state.buffer ? getCands() : [];
     state.page = 0;
+    renderCompose();
     renderCandPage();
   }
 
-  // 只重渲染候选行(翻页调用路径),不触碰键盘主体(rowsEl 不重建)。
+  // 分词下划线(规格 §5/§6):只在缓冲变化处调用(updateCandidates 内),翻页不重算。
+  // headL 取当前头候选(state.cands[0])的消费长度,无候选时 headL=0 —— 与
+  // PinyinCompose.segment 的约定一致。DOM 只用 <span> 分段,不插入分隔字符。
+  function renderCompose() {
+    compose.innerHTML = "";
+    if (!state.buffer) return;
+    var headL = state.cands.length ? state.cands[0].l : 0;
+    var segs;
+    try {
+      segs = (window.PinyinCompose && window.PinyinCompose.segment)
+        ? window.PinyinCompose.segment(state.buffer, headL)
+        : [{ text: state.buffer }];
+    } catch (e) { segs = [{ text: state.buffer }]; }
+    segs.forEach(function (seg, i) {
+      var span = document.createElement("span");
+      span.textContent = seg.text;
+      span.className = seg.dead ? "skbd-seg-dead"
+        : (i === 0 && headL > 0) ? "skbd-seg-head"
+        : "skbd-seg-rest";        // 含 partial:true 段 —— 打字中间态,不按 dead 警示色渲染
+      compose.appendChild(span);
+    });
+  }
+
+  // 只重渲染候选行(翻页调用路径),不触碰键盘主体(rowsEl 不重建),也不重算 segment。
   function renderCandPage() {
     candList.innerHTML = "";
     if (!state.buffer) return;
@@ -271,36 +314,47 @@
     var pageItems = state.cands.slice(start, start + CAND_PAGE_SIZE);
 
     var prevBtn = document.createElement("button");
-    prevBtn.type = "button"; prevBtn.className = "skbd-cand-prev"; prevBtn.textContent = "‹";
-    var atFirst = state.page <= 0;
-    prevBtn.disabled = atFirst;
-    if (atFirst) prevBtn.className += " skbd-cand-nav-disabled";
+    prevBtn.type = "button"; prevBtn.className = "skbd-cand-nav skbd-cand-prev"; prevBtn.textContent = "‹";
+    prevBtn.disabled = state.page <= 0;
     tap(prevBtn, function () {
       if (state.page > 0) { state.page--; renderCandPage(); }
     });
     candList.appendChild(prevBtn);
 
-    pageItems.forEach(function (item) {
+    var itemsWrap = document.createElement("div");
+    itemsWrap.className = "skbd-cand-items";
+    pageItems.forEach(function (item, idx) {
       var it = document.createElement("button");
-      it.type = "button"; it.className = "skbd-cand-item"; it.textContent = item.t;
+      it.type = "button";
+      it.className = "skbd-cand-item" + (isFirstCand(state.page, idx) ? " skbd-cand-item-first" : "");
+      it.textContent = item.t;
       tap(it, function () { commit(item, true); });
-      candList.appendChild(it);
+      itemsWrap.appendChild(it);
     });
+    var fade = document.createElement("div");
+    fade.className = "skbd-cand-fade";
+    itemsWrap.appendChild(fade);
+    candList.appendChild(itemsWrap);
+
+    var dots = computeDots(state.page, totalPages);
+    if (dots) {
+      var dotsWrap = document.createElement("div");
+      dotsWrap.className = "skbd-cand-dots";
+      dots.forEach(function (on) {
+        var d = document.createElement("i");
+        if (on) d.className = "skbd-cand-dot-on";
+        dotsWrap.appendChild(d);
+      });
+      candList.appendChild(dotsWrap);
+    }
 
     var nextBtn = document.createElement("button");
-    nextBtn.type = "button"; nextBtn.className = "skbd-cand-next"; nextBtn.textContent = "›";
-    var atLast = state.page >= totalPages - 1;
-    nextBtn.disabled = atLast;
-    if (atLast) nextBtn.className += " skbd-cand-nav-disabled";
+    nextBtn.type = "button"; nextBtn.className = "skbd-cand-nav skbd-cand-next"; nextBtn.textContent = "›";
+    nextBtn.disabled = state.page >= totalPages - 1;
     tap(nextBtn, function () {
       if (state.page < totalPages - 1) { state.page++; renderCandPage(); }
     });
     candList.appendChild(nextBtn);
-
-    var pageLabel = document.createElement("span");
-    pageLabel.className = "skbd-cand-page";
-    pageLabel.textContent = (state.page + 1) + "/" + totalPages;
-    candList.appendChild(pageLabel);
   }
 
   // 用原生 value setter 赋值,绕过 React/Vue 的 value 追踪器,确保框架 onChange 能识别
@@ -374,7 +428,14 @@
     window.SmartKeyboard = { show: showKbd, hide: hideKbd };
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else { init(); }
+  // Node 侧只需要 computeDots/isFirstCand 这两个纯函数(node --test 单测);
+  // 其余全部依赖 DOM,浏览器环境下才自动挂载启动。
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { computeDots: computeDots, isFirstCand: isFirstCand };
+  }
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else { init(); }
+  }
 })();

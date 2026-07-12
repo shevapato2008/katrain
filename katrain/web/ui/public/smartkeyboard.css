@@ -1,7 +1,8 @@
 /*!
  * smartkeyboard.css — SmartBox kiosk 触屏键盘(iOS/安卓风)样式
  * 配合 smartkeyboard.js + pinyin-ime.js 使用。
- * 尺寸随屏高 clamp 自适应(矮屏/横屏自动变矮),内容宽度收到 600px 居中,键大小与竖屏一致。
+ * 尺寸随屏高 clamp 自适应(矮屏/横屏自动变矮),键位区/把手宽度收到 600px 居中,键大小与竖屏一致。
+ * 候选条(.skbd-cand)例外用满宽 —— 见其规则前的注释。
  */
 .skbd {
   position: fixed;
@@ -19,76 +20,123 @@
 .skbd.skbd-open { transform: translateY(0); }
 .skbd * { box-sizing: border-box; }
 
-/* 候选条 */
+/* 候选条(方案 B「聚焦流」,W2-T2)。注意:候选条宽度不跟随 .skbd-rows 的 600px
+   居中限制 —— 7/页 + 48px chip + 无横向滚动(靠渐隐+‹/›翻页,非滑动)只有在接近
+   1024 满宽时才放得下;裁到 600px 会把每页多数候选挤到不可触达的裁切区外。 */
 .skbd-cand {
   display: none;
   align-items: center;
-  height: clamp(48px, 6.5vh, 56px);   /* 地板 ≥48px:600px 矮屏下也完整容纳 48px 分页按钮,不被 overflow 裁切 */
-  margin: 0 auto 6px;
-  max-width: 600px;
+  gap: 14px;
+  height: 56px;
+  margin: 0 auto 2px;
   width: 100%;
-  background: #fff;
-  border-radius: 8px;
+  background: transparent;
   padding: 0 8px;
-  overflow-x: auto;
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
 }
 .skbd.skbd-zh .skbd-cand { display: flex; }
+
+/* 分词下划线缓冲区(规格 §5):第 1 段(头候选消费段)实线+jade 亮色;其余段(含
+   partial 打字中间态)虚线+次级色;dead 死尾段红系警示,始终按 seg.dead 覆盖。 */
 .skbd-compose {
-  color: #2563eb;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 600;
   font-size: clamp(14px, 2.2vh, 17px);
+  letter-spacing: .02em;
   padding: 0 10px 0 2px;
-  border-right: 1px solid #e5e7eb;
-  margin-right: 6px;
+  border-right: 1px solid rgba(0,0,0,.14);
+  margin-right: 2px;
   flex: 0 0 auto;
 }
 .skbd-compose:empty { display: none; }
+.skbd-seg-head { color: #1f8a52; border-bottom: 2px solid #1f8a52; padding-bottom: 2px; }
+.skbd-seg-rest { color: #6b7583; border-bottom: 2px dotted rgba(107,117,131,.6); padding-bottom: 2px; }
+.skbd-seg-dead { color: #cf222e; border-bottom: 2px dotted rgba(207,34,46,.6); padding-bottom: 2px; }
+
+.skbd-cand-list {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 auto;
+  height: 100%;
+  min-width: 0;
+}
+
+/* 候选 chip 区:overflow hidden + 右缘渐隐(裁掉的候选靠 ‹/› 翻页触达,非滑动) */
+.skbd-cand-items {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
 .skbd-cand-item {
   flex: 0 0 auto;
-  font-size: clamp(16px, 3vh, 20px);
-  color: #111;
-  padding: 6px 12px;
-  border-radius: 6px;
-}
-.skbd-cand-item:active { background: #e5e7eb; }
-.skbd-cand-empty { color:#9ca3af; font-size:15px; padding:0 8px; }
-
-/* 候选分页:‹/› 按钮(触控 target ≥48px)+ x/N 页码 */
-.skbd-cand-prev,
-.skbd-cand-next {
-  flex: 0 0 auto;
-  min-width: 48px;
-  min-height: 48px;
-  border: none;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 11px;
   background: transparent;
-  color: #2563eb;
+  font-size: 20px;
+  color: #111;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.skbd-cand-item:active { background: rgba(0,0,0,.08); }
+/* 首选(规格 §1):只在全局第 1 候选(第 1 页第 1 项)出现,翻页后不再有放大项 */
+.skbd-cand-item-first {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f8a52;
+  padding: 0 16px;
+}
+.skbd-cand-empty { color:#6b7583; font-size:15px; padding:0 8px; }
+.skbd-cand-fade {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 70px;
+  background: linear-gradient(90deg, transparent, #d1d4da);
+  pointer-events: none;
+}
+
+/* 翻页进度点(规格 §3,替代 x/N 文本):见 smartkeyboard.js computeDots()——
+   总页数 ≤8 时每页一点,当前页拉长为 jade 胶囊;>8 页固定 8 点按比例映射当前页。
+   单页时 JS 端不生成整行(此处无需 :empty 兜底,DOM 上直接不存在该节点)。 */
+.skbd-cand-dots { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; }
+.skbd-cand-dots i {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(90,98,110,.4);
+}
+.skbd-cand-dots i.skbd-cand-dot-on {
+  width: 16px;
+  border-radius: 3px;
+  background: #1f8a52;
+}
+
+/* 候选分页 ‹/›(规格 §4):56×48 圆角 11,首/末页 disabled(opacity .3) */
+.skbd-cand-nav {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 48px;
+  border-radius: 11px;
+  background: transparent;
+  color: #374151;
   font-size: 22px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
   cursor: pointer;
 }
-.skbd-cand-prev:active,
-.skbd-cand-next:active { background: #e5e7eb; }
-.skbd-cand-nav-disabled,
-.skbd-cand-prev:disabled,
-.skbd-cand-next:disabled {
-  color: #c8ccd2;
-  cursor: default;
-}
-.skbd-cand-nav-disabled:active,
-.skbd-cand-prev:disabled:active,
-.skbd-cand-next:disabled:active { background: transparent; }
-.skbd-cand-page {
-  flex: 0 0 auto;
-  color: #6b7280;
-  font-size: 13px;
-  padding: 0 8px 0 4px;
-  white-space: nowrap;
-}
+.skbd-cand-nav:active { background: rgba(0,0,0,.08); }
+.skbd-cand-nav:disabled { opacity: .3; cursor: default; }
+.skbd-cand-nav:disabled:active { background: transparent; }
 
 /* 键盘行 */
 .skbd-rows {

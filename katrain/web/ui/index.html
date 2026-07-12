@@ -14,7 +14,7 @@
       if (location.pathname.indexOf('/kiosk') === 0) {
         document.documentElement.lang = 'zh-CN';
         var kbCss = document.createElement('link');
-        kbCss.rel = 'stylesheet'; kbCss.href = '/smartkeyboard.css?v=kbd2';
+        kbCss.rel = 'stylesheet'; kbCss.href = '/smartkeyboard.css?v=kbd4';
         document.head.appendChild(kbCss);
         function loadScript(src, next) {
           var s = document.createElement('script');
@@ -23,9 +23,9 @@
           document.body.appendChild(s);
         }
         function loadKioskKeyboard() {
-          loadScript('/pinyin-ime.js?v=kbd2', function () {
-            loadScript('/pinyin-compose.js?v=kbd2', function () {
-              loadScript('/smartkeyboard.js?v=kbd2', function () {
+          loadScript('/pinyin-ime.js?v=kbd4', function () {
+            loadScript('/pinyin-compose.js?v=kbd4', function () {
+              loadScript('/smartkeyboard.js?v=kbd4', function () {
                 loadScript('/kiosk-home-button.js?v=hb1');
               });
             });

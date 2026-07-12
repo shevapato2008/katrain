@@ -60,6 +60,16 @@ const GameHistoryPage = () => {
     fetchGames(source);
   }, [source, fetchGames]);
 
+  // Switching 本地/全部 changes which games are in the list; drop any preview whose
+  // row may no longer be shown so the right panel never lingers on a filtered-out game.
+  const handleSourceChange = (src: 'play_local' | 'all') => {
+    if (src === source) return;
+    setSource(src);
+    setSelectedId(null);
+    setDetail(null);
+    setPreviewLoading(false);
+  };
+
   // Reset preview state on the row click (setState in an event handler is fine)
   // and only track the selected id; the effect below owns the async fetch. Guards
   // a re-tap of the already-selected row so we don't blank the preview into a
@@ -107,13 +117,13 @@ const GameHistoryPage = () => {
             <Chip
               label={t('Local games', '本地对局')}
               color={source === 'play_local' ? 'primary' : 'default'}
-              onClick={() => setSource('play_local')}
+              onClick={() => handleSourceChange('play_local')}
               size="small"
             />
             <Chip
               label={t('All', '全部')}
               color={source === 'all' ? 'primary' : 'default'}
-              onClick={() => setSource('all')}
+              onClick={() => handleSourceChange('all')}
               size="small"
             />
           </Box>

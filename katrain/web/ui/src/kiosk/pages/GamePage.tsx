@@ -119,6 +119,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [countError, setCountError] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [resyncError, setResyncError] = useState(false);
   const [syncStuck, setSyncStuck] = useState(false);
@@ -568,7 +569,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               const { sgf } = await API.saveSGF(sessionId);
               sessionStorage.setItem('kioskReviewSgf', sgf);
               navigate('/kiosk/research');
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error(e); setReviewError(true); }
           }}
         />
       )}
@@ -667,6 +668,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="error" onClose={() => setResyncError(false)}>
           {t('Re-sync failed, please retry', '重置识别失败，请重试')}
+        </Alert>
+      </Snackbar>
+
+      {/* Review (复盘) save-SGF failure toast */}
+      <Snackbar open={reviewError} autoHideDuration={5000} onClose={() => setReviewError(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setReviewError(false)}>
+          {t('Could not open review, please retry', '无法进入复盘，请重试')}
         </Alert>
       </Snackbar>
 

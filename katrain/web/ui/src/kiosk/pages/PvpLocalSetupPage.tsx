@@ -66,8 +66,8 @@ const PvpLocalSetupPage = () => {
         ts: Date.now(),
       });
       navigate(`/kiosk/play/pvp/local/game/${session_id}`);
-    } catch (e: any) {
-      setError(e.message || t('Failed to create game', '创建对局失败'));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
     } finally {
       setLoading(false);
     }

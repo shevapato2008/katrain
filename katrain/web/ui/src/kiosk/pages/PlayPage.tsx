@@ -133,7 +133,7 @@ const PlayPage = () => {
           border: '1px solid', borderColor: 'divider', color: 'text.secondary', fontSize: 13,
         }}
       >
-        {t('Game history', '对局历史')} ›
+        {t('Game History', '对局历史')} ›
       </ButtonBase>
     </Box>
   );

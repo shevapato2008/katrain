@@ -429,6 +429,9 @@ const ResearchPage = () => {
   const reviewSgfLoadedRef = useRef(false);
   useEffect(() => {
     if (reviewSgfLoadedRef.current) return;
+    // The 对局历史 deep link (?user_game_id, effect below) owns loading in that flow —
+    // don't also replay a live-SGF handoff, or both would race to seed the board.
+    if (searchParams.get('user_game_id')) return;
     const sgf = sessionStorage.getItem('kioskReviewSgf');
     if (!sgf) return;
     reviewSgfLoadedRef.current = true;

@@ -34,6 +34,7 @@ models/
 # submodule (plan §14 E3 — atomic with the stone_detector/rknn_backend that reads them).
 # `models/` above would otherwise silently swallow this dir (git check-ignore verified).
 !katrain/vision/models/
+katrain/vision/models/*
 !katrain/vision/models/*.rknn
 !katrain/vision/models/*.meta.json
 katrain/models/*.bin.gz

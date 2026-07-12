@@ -27,6 +27,23 @@ class TestParseAeTarget:
         with pytest.raises(ValueError):
             parse_ae_target(value)
 
+    def test_scalar_clamp_collapse_raises(self):
+        # midpoint=300 clamps to lo=275 (via max(0, 275)), hi=255 (via min(255, 325)),
+        # so lo >= hi after clamping — must raise rather than return an inverted band.
+        with pytest.raises(ValueError):
+            parse_ae_target("300")
+
+    def test_three_part_negative_band_raises(self):
+        # "10--5" splits into ["10", "", "5"] (3 parts) — a negative hi bound can't be
+        # expressed in "LO-HI" form, so this must raise rather than silently misparse.
+        with pytest.raises(ValueError):
+            parse_ae_target("10--5")
+
+    @pytest.mark.parametrize("value", ["nan-170", "inf"])
+    def test_non_finite_raises(self, value):
+        with pytest.raises(ValueError):
+            parse_ae_target(value)
+
 
 class TestVisionServiceConfigToWorkerConfig:
     def test_bare_scalar_end_to_end(self):

@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 # Half the default 120-170 band width, so a bare midpoint reproduces a sensible band
 # (e.g. "145" -> 120.0-170.0, matching the historical default).
 AE_SCALAR_HALF_WIDTH = 25.0
+
+# Single source of truth for the accepted-forms wording, shared by every malformed-input
+# ValueError raised below.
+_AE_TARGET_ACCEPTED_FORMS = "expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
+
+
+def _invalid_ae_target_error(value: str) -> ValueError:
+    return ValueError(f"Invalid ae_target {value!r}: {_AE_TARGET_ACCEPTED_FORMS}")
 
 
 def parse_ae_target(value: str) -> tuple[float, float]:
@@ -25,9 +34,9 @@ def parse_ae_target(value: str) -> tuple[float, float]:
         try:
             midpoint = float(parts[0])
         except ValueError:
-            raise ValueError(
-                f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
-            ) from None
+            raise _invalid_ae_target_error(value) from None
+        if not math.isfinite(midpoint):
+            raise _invalid_ae_target_error(value) from None
         lo = max(0.0, midpoint - AE_SCALAR_HALF_WIDTH)
         hi = min(255.0, midpoint + AE_SCALAR_HALF_WIDTH)
         if lo >= hi:
@@ -37,15 +46,13 @@ def parse_ae_target(value: str) -> tuple[float, float]:
         try:
             lo, hi = float(parts[0]), float(parts[1])
         except ValueError:
-            raise ValueError(
-                f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
-            ) from None
+            raise _invalid_ae_target_error(value) from None
+        if not math.isfinite(lo) or not math.isfinite(hi):
+            raise _invalid_ae_target_error(value) from None
         if lo >= hi:
             raise ValueError(f"Invalid ae_target {value!r}: lo must be less than hi")
         return lo, hi
-    raise ValueError(
-        f"Invalid ae_target {value!r}: expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
-    )
+    raise _invalid_ae_target_error(value)
 
 
 @dataclass

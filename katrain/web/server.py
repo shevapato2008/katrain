@@ -1025,8 +1025,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def _record_ai_game(session, app, current_user, result):
-        """Record a completed AI (single-player) game to user_games for the logged-in user."""
+    async def _record_ai_game(session, app, current_user, result):
+        """Record a completed single-player/local game to user_games (remote-first via
+        dispatcher, else local). source = play_local when both seats are human, else play_ai."""
         try:
             sgf_content = session.katrain.get_sgf()
             state = session.katrain.get_state()
@@ -1077,25 +1078,34 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             game_date = datetime.now().strftime("%Y-%m-%d")
 
-            app.state.user_game_repo.create(
-                user_id=current_user.id,
-                sgf_content=sgf_content,
-                source="play_ai",
-                player_black=player_black,
-                player_white=player_white,
-                black_rank=black_rank,
-                white_rank=white_rank,
-                result=result,
-                move_count=move_count,
-                board_size=board_size,
-                komi=komi,
-                rules=rules,
-                game_type=game_type,
-                category="game",
-                game_date=game_date,
-            )
+            source = "play_local" if (players_info["B"].human and players_info["W"].human) else "play_ai"
+
+            data = {
+                "sgf_content": sgf_content,
+                "source": source,
+                "player_black": player_black,
+                "player_white": player_white,
+                "black_rank": black_rank,
+                "white_rank": white_rank,
+                "result": result,
+                "board_size": int(board_size),
+                "rules": rules,
+                "komi": komi,
+                "move_count": move_count,
+                "category": "game",
+                "game_type": game_type,
+                "game_date": game_date,
+            }
+
+            dispatcher = getattr(app.state, "repository_dispatcher", None)
+            if dispatcher is not None:
+                await dispatcher.user_games_create(user_id=current_user.id, data=data)
+            else:
+                app.state.user_game_repo.create(user_id=current_user.id, **data)
         except Exception as e:
-            logging.getLogger("katrain_web").error(f"Failed to record AI game: {e}")
+            logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
+
+    globals()["_RECORD_FN"] = _record_ai_game
 
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
@@ -1147,12 +1157,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         elif not is_multiplayer and current_user and session.user_id:
             result = session.katrain.game.end_result
             if result:
-                _record_ai_game(session, app, current_user, result)
+                await _record_ai_game(session, app, current_user, result)
 
         return {"session_id": session.session_id, "state": state}
 
     def _complete_count(session, app, current_user):
-        """Helper to complete counting and record result."""
+        """Helper to complete counting and record result.
+
+        Returns (result, needs_record). needs_record is True when the caller must
+        await _record_ai_game(...) AFTER releasing session.lock (single-player/local
+        games only — multiplayer games are recorded synchronously here instead).
+        """
         # Get the score from current node's analysis
         current_node = session.katrain.game.current_node
         score = current_node.score
@@ -1192,13 +1207,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             manager._schedule_broadcast(
                 session, {"type": "game_end", "data": {"reason": "count", "winner_id": winner_id, "result": result}}
             )
-        elif current_user and session.user_id:
-            _record_ai_game(session, app, current_user, result)
+            return result, False
 
-        return result
+        needs_record = current_user is not None and session.user_id is not None
+        return result, needs_record
 
     @app.post("/api/count/request")
-    def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
+    async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
 
@@ -1231,7 +1246,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 # If other player requests, treat as accept
                 with session.lock:
-                    result = _complete_count(session, app, current_user)
+                    result, _ = _complete_count(session, app, current_user)
                     session.pending_count_request = None
                     session.pending_count_timestamp = None
                     state = session.katrain.get_state()
@@ -1255,11 +1270,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             return {"session_id": session.session_id, "status": "pending"}
         else:
-            # HvAI: Complete immediately
+            # HvAI / pvp_local: complete immediately
             with session.lock:
-                result = _complete_count(session, app, current_user)
+                result, needs_record = _complete_count(session, app, current_user)
                 state = session.katrain.get_state()
                 session.last_state = state
+            if needs_record:
+                await _record_ai_game(session, app, current_user, result)
             return {"session_id": session.session_id, "state": state, "result": result}
 
     @app.post("/api/count/respond")
@@ -1288,7 +1305,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if request.accept:
             # Accept: complete the count
             with session.lock:
-                result = _complete_count(session, app, current_user)
+                result, _ = _complete_count(session, app, current_user)
                 session.pending_count_request = None
                 session.pending_count_timestamp = None
                 state = session.katrain.get_state()
@@ -1304,7 +1321,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"session_id": session.session_id, "accepted": False}
 
     @app.post("/api/timeout")
-    def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+    async def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
 
@@ -1339,7 +1356,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         elif not is_multiplayer and current_user and session.user_id:
             result = session.katrain.game.end_result
             if result:
-                _record_ai_game(session, app, current_user, result)
+                await _record_ai_game(session, app, current_user, result)
 
         return {"session_id": session.session_id, "state": state}
 

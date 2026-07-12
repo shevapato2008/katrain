@@ -688,6 +688,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def new_game(request: NewGameRequest):
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
+            # A new game is starting: clear the "already recorded" guard from any
+            # previous game on this (possibly reused) session so it becomes recordable again.
+            session._recorded = False
             if request.players:
                 for bw, p in request.players.items():
                     session.katrain(
@@ -712,6 +715,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         mode = request.mode
         settings = request.settings
         with session.lock:
+            # A (re)configured game is starting: clear the "already recorded" guard from
+            # any previous game on this (possibly reused) session so it becomes recordable again.
+            session._recorded = False
             # Update players
             players = settings.get("players")
             if players:

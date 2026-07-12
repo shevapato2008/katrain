@@ -1,6 +1,18 @@
+# Warm up the real kivy/kivymd Window singleton on the MAIN thread before any
+# TestClient request runs. Starlette's TestClient bridges sync<->async via a
+# background "portal" thread, and WebKaTrain.__init__ does `from kivymd.app
+# import MDApp` on first use — importing kivymd for the first time from that
+# background thread triggers real SDL2/Cocoa window creation off the main
+# thread, which aborts the process on macOS (NSInternalInconsistencyException:
+# "setting the main menu on a non-main thread"). Importing here, before the
+# portal thread exists, makes the (cached) module import a no-op later.
+import kivymd.app  # noqa: F401
+
 import types
 import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+from fastapi.testclient import TestClient
 
 import katrain.web.server as server
 
@@ -87,3 +99,59 @@ async def test_record_is_idempotent_within_session():
     await server._RECORD_FN(session, app, current_user, "board-game-end")
 
     assert app.state.repository_dispatcher.user_games_create.await_count == 1
+
+
+# --- Regression coverage: `_recorded` must be reset whenever a session is reused
+# for a new game (e.g. ZenMode's long-lived session calling /api/game/setup or
+# /api/new-game again), otherwise the 2nd+ game on that session is silently
+# never recorded (idempotency guard from game 1 stays latched forever).
+
+
+@pytest.fixture
+def client():
+    app = server.create_app(enable_engine=False)
+    with TestClient(app) as c:
+        yield c
+
+
+def _new_session(client):
+    r = client.post("/api/session", json={})
+    assert r.status_code == 200, r.text
+    return r.json()["session_id"]
+
+
+def test_new_game_resets_recorded_flag(client):
+    sid = _new_session(client)
+    session = client.app.state.session_manager.get_session(sid)
+    session._recorded = True  # simulate game 1 already recorded
+
+    r = client.post("/api/new-game", json={"session_id": sid})
+    assert r.status_code == 200, r.text
+
+    assert session._recorded is False
+
+
+def test_game_setup_resets_recorded_flag(client):
+    sid = _new_session(client)
+    session = client.app.state.session_manager.get_session(sid)
+    session._recorded = True  # simulate game 1 already recorded
+
+    r = client.post(
+        "/api/game/setup",
+        json={
+            "session_id": sid,
+            "mode": "pvp_local",
+            "settings": {
+                "board_size": 19,
+                "rules": "chinese",
+                "handicap": 0,
+                "komi": 7.5,
+                "black_name": "小明",
+                "white_name": "小红",
+                "time_enabled": False,
+            },
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    assert session._recorded is False

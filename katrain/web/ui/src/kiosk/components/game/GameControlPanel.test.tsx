@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, test, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, test, expect } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
 
@@ -34,42 +34,22 @@ const mockGameState: GameState = {
   },
 } as GameState;
 
-describe('GameControlPanel — 3D toggle', () => {
-  test('renders a 3D toggle wired to view3d', () => {
-    const onToggle = vi.fn();
+describe('GameControlPanel', () => {
+  // The 3D board was removed from the kiosk on 2026-07-13 (freed ~321MB Mali GPU contending
+  // with KataGo's OpenCL). Guard against reintroducing the toggle; core controls must remain.
+  test('renders core controls and NO 3D toggle', () => {
     render(
       <GameControlPanel
         gameState={mockGameState}
         onAction={() => {}}
         onNavigate={() => {}}
         analysisToggles={{}}
-        onToggleAnalysis={onToggle}
+        onToggleAnalysis={() => {}}
         isGameOver={false}
       />
     );
-    const btn = screen.getByText('3D');
-    fireEvent.click(btn);
-    expect(onToggle).toHaveBeenCalledWith('view3d');
-  });
-
-  test('hides the 3D toggle when WebGL is unavailable, keeping other controls', () => {
-    vi.stubGlobal('WebGLRenderingContext', undefined);
-    try {
-      render(
-        <GameControlPanel
-          gameState={mockGameState}
-          onAction={() => {}}
-          onNavigate={() => {}}
-          analysisToggles={{}}
-          onToggleAnalysis={() => {}}
-          isGameOver={false}
-        />
-      );
-      expect(screen.queryByText('3D')).toBeNull();
-      expect(screen.getByText('领地')).toBeInTheDocument();
-      expect(screen.getByText('数子')).toBeInTheDocument();
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    expect(screen.queryByText('3D')).toBeNull();
+    expect(screen.getByText('领地')).toBeInTheDocument();
+    expect(screen.getByText('数子')).toBeInTheDocument();
   });
 });

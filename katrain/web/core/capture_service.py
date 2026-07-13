@@ -32,7 +32,8 @@ class CaptureServiceConfig:
     out_dir: str = "~/.katrain/baipu_captures"
     lock_exposure: bool = True
     exposure: Optional[float] = None
-    lock_awb: bool = True
+    # Default OFF — see CameraHubConfig.lock_awb (locking WB red-casts the HBV UVC camera).
+    lock_awb: bool = False
 
 
 class CaptureService:

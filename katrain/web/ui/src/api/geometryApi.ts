@@ -38,6 +38,10 @@ export interface GeometryLayout {
   stale: boolean;
   frame: { width: number; height: number };
   out_size: number;
+  /** Board-cell margin the warped-stream is rendered with (backend DEFAULT_MARGIN_CELLS); the
+   *  warped overlay insets the grid by this much so it aligns with the wood-bordered image.
+   *  Optional for backward-compat with an older backend (absent → 0 = flush grid). */
+  warped_margin_cells?: number;
   corners: GeometryCorner[];
   points: [number, number][][];
 }

@@ -21,21 +21,14 @@ vi.mock('../../components/Board', () => ({
 }));
 
 // Exposes onAction so state-D (resign) tests can drive the real GamePage resign flow
-// without a full GameControlPanel render. Also exposes onToggleAnalysis so Task 4's
-// view3d activation tests can drive the real GamePage toggle path.
-interface MockControlPanelProps { onAction: (action: string) => void; onToggleAnalysis: (key: string) => void }
+// without a full GameControlPanel render.
+interface MockControlPanelProps { onAction: (action: string) => void }
 vi.mock('../components/game/GameControlPanel', () => ({
   default: (props: MockControlPanelProps) => (
     <div data-testid="game-control-panel">
       <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
-      <button onClick={() => props.onToggleAnalysis('view3d')}>MOCK_TOGGLE_3D</button>
     </div>
   ),
-}));
-
-// Avoid mounting real three.js/WebGL in jsdom — trivial stand-in, mirrors the Board mock above.
-vi.mock('../../components/Board3D', () => ({
-  default: () => <div data-testid="board3d" />,
 }));
 
 const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
@@ -490,37 +483,15 @@ describe('GamePage', () => {
     });
   });
 
-  // --- Task 4: lazy Board3D mount + persisted view3d --------------------------------
-
-  describe('3D board — lazy mount + persisted view3d (Task 4)', () => {
-    it('does not mount Board3D before activation, and keeps the 2D Board mounted', () => {
+  // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
+  // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
+  // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.
+  describe('3D board removed', () => {
+    it('renders only the 2D Board and never a 3D board', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
       renderPage();
+      expect(screen.getByTestId('board')).toBeInTheDocument();
       expect(screen.queryByTestId('board3d')).toBeNull();
-      expect(screen.getByTestId('board')).toBeInTheDocument();
-    });
-
-    it('lazily mounts Board3D after activating view3d via the toggle, keeping the 2D Board mounted (hidden)', async () => {
-      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
-      renderPage();
-      fireEvent.click(screen.getByText('MOCK_TOGGLE_3D'));
-      await screen.findByTestId('board3d');
-      expect(screen.getByTestId('board')).toBeInTheDocument();
-    });
-
-    it('persists view3d=true to localStorage on activation', async () => {
-      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
-      renderPage();
-      fireEvent.click(screen.getByText('MOCK_TOGGLE_3D'));
-      await screen.findByTestId('board3d');
-      expect(localStorage.getItem('kiosk_view3d')).toBe('true');
-    });
-
-    it('initializes view3d from localStorage on mount, mounting Board3D immediately', async () => {
-      localStorage.setItem('kiosk_view3d', 'true');
-      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
-      renderPage();
-      await screen.findByTestId('board3d');
     });
   });
 });

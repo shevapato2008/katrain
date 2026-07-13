@@ -3,10 +3,13 @@ import { Box, Button, Paper, Typography } from '@mui/material';
 import { Refresh, VideocamOff } from '@mui/icons-material';
 
 interface GeometryVideoPanelProps {
-  title: string;
+  title?: string;
   src?: string;
   alt: string;
-  aspectRatio: string;
+  /** Fixed aspect ratio (e.g. "16 / 9"). Ignored when `fill` is set. */
+  aspectRatio?: string;
+  /** Fill the parent's height (single large preview) instead of using a fixed aspect ratio. */
+  fill?: boolean;
   waitingText?: string;
   overlay?: ReactNode;
   onImageLoad?: (size: { width: number; height: number }) => void;
@@ -17,6 +20,7 @@ const GeometryVideoPanel = ({
   src,
   alt,
   aspectRatio,
+  fill = false,
   waitingText,
   overlay,
   onImageLoad,
@@ -33,13 +37,13 @@ const GeometryVideoPanel = ({
   };
 
   return (
-    <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{title}</Typography>
+    <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {title && <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{title}</Typography>}
       <Paper
         elevation={2}
         sx={{
           width: '100%',
-          aspectRatio,
+          ...(fill ? { flex: 1, minHeight: 0 } : { aspectRatio }),
           overflow: 'hidden',
           borderRadius: 2,
           bgcolor: 'grey.950',

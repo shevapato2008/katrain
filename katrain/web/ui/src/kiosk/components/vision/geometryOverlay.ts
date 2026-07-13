@@ -136,21 +136,27 @@ export const buildWarpedGeometryModel = (
   outSize: number,
   phase: GeometryPhase,
   viewport: OverlayViewport,
+  marginCells = 0,
 ): GeometryOverlayModel => {
   const last = outSize - 1;
+  // The backend warp_with_margin pads the warped image by `pad` px on each side (margin_px_for):
+  // the 19×19 grid sits at [pad, pad+last] inside an (outSize + 2*pad) square. Inset the overlay
+  // by the same pad so the jade grid lines up with the wood-bordered warped image.
+  const pad = marginCells > 0 ? Math.round((marginCells * last) / 18) : 0;
+  const source = outSize + 2 * pad;
   const points = Array.from({ length: 19 }, (_, row) =>
-    Array.from({ length: 19 }, (_, col) => [col * last / 18, row * last / 18] as [number, number]),
+    Array.from({ length: 19 }, (_, col) => [pad + col * last / 18, pad + row * last / 18] as [number, number]),
   );
   const corners: GeometryCorner[] = [
-    { row: 0, col: 0, label: 'A19', x: 0, y: 0 },
-    { row: 0, col: 18, label: 'T19', x: last, y: 0 },
-    { row: 18, col: 18, label: 'T1', x: last, y: last },
-    { row: 18, col: 0, label: 'A1', x: 0, y: last },
+    { row: 0, col: 0, label: 'A19', x: pad, y: pad },
+    { row: 0, col: 18, label: 'T19', x: pad + last, y: pad },
+    { row: 18, col: 18, label: 'T1', x: pad + last, y: pad + last },
+    { row: 18, col: 0, label: 'A1', x: pad, y: pad + last },
   ];
   return gridModel(
     points,
     corners,
-    { width: outSize, height: outSize },
+    { width: source, height: source },
     viewport,
     phase === 'degraded' ? 'stale' : 'normal',
   );

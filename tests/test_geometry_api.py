@@ -223,14 +223,22 @@ class TestGeometryEndpoint:
         assert response.status_code == 409
         assert response.json()["detail"] == "geometry_not_available"
 
-    def test_encode_warped_frame_uses_lock_size(self):
+    def test_encode_warped_frame_adds_board_margin(self):
+        # Preview warp matches the recognition path (warp_with_margin, DEFAULT_MARGIN_CELLS=1):
+        # a 1-cell board margin is padded on each side so the 俯视矫正 view shows wood around the
+        # grid instead of the grid flush to the edge. pad = round(1*(out_size-1)/18).
+        from katrain.vision.config import DEFAULT_MARGIN_CELLS
+        from katrain.vision.warp import margin_px_for
+
         frame = np.zeros((72, 128, 3), np.uint8)
         lock = _ok_lock(out_size=64, M=np.eye(3))
+        pad = margin_px_for(64, DEFAULT_MARGIN_CELLS)
 
         jpeg = geometry._encode_warped_frame(frame, lock)
         decoded = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
 
-        assert decoded.shape[:2] == (64, 64)
+        assert pad > 0
+        assert decoded.shape[:2] == (64 + 2 * pad, 64 + 2 * pad)
 
     def test_warped_stream_returns_409_without_geometry(self):
         _, c = _client(capture=FakeCapture([np.zeros((10, 20, 3), np.uint8)]))

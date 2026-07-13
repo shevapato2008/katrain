@@ -48,7 +48,14 @@ def _geometry_snapshot(request: Request):
 def _encode_warped_frame(frame, lock) -> bytes:
     import cv2
 
-    warped = cv2.warpPerspective(frame, lock.M, (lock.out_size, lock.out_size))
+    from katrain.vision.config import DEFAULT_MARGIN_CELLS
+    from katrain.vision.warp import warp_with_margin
+
+    # Match the recognition path (worker_inprocess uses warp_with_margin too): warp WITH a 1-cell
+    # board margin so the 俯视矫正 preview shows wood around the grid — not flush to the outermost
+    # lines — and looks identical to what the detector actually sees. The overlay insets to match
+    # via layout.warped_margin_cells (see geometry_layout / buildWarpedGeometryModel).
+    warped = warp_with_margin(frame, lock.M, int(lock.out_size), margin_cells=DEFAULT_MARGIN_CELLS)
     ok, jpeg = cv2.imencode(".jpg", warped, [cv2.IMWRITE_JPEG_QUALITY, 65])
     if not ok:
         raise RuntimeError("failed to encode warped geometry frame")
@@ -130,6 +137,8 @@ async def geometry_layout(request: Request):
     frame = capture.read_frame()
     if frame is None:
         raise HTTPException(status_code=503, detail="camera_frame_not_available")
+    from katrain.vision.config import DEFAULT_MARGIN_CELLS
+
     height, width = frame.shape[:2]
     corner_specs = (
         (0, 0, "左上"),
@@ -153,6 +162,9 @@ async def geometry_layout(request: Request):
         "stale": phase != "ready",
         "frame": {"width": int(width), "height": int(height)},
         "out_size": int(lock.out_size),
+        # Margin (in grid cells) the warped-stream is rendered with, so the client overlay can
+        # inset the grid to match the wood border. Mirrors DEFAULT_MARGIN_CELLS in _encode_warped_frame.
+        "warped_margin_cells": float(DEFAULT_MARGIN_CELLS),
         "corners": corners,
         "points": lock.points.astype(float).tolist(),
     }

@@ -13,6 +13,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
+    isLoading: boolean;
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     token: string | null;
@@ -23,33 +24,57 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+    // True until the mount-time session probe settles. Guards MUST wait for this
+    // before redirecting, otherwise a valid persisted session (localStorage token
+    // OR the shared box-SSO cookie) flashes the login page on every fresh page
+    // load — e.g. re-entering 围棋, which is a full :8080→:8081 navigation.
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (token) {
-            // Fetch user profile on mount if token exists
-            fetchUserProfile(token);
-        }
-    }, [token]);
-
-    const fetchUserProfile = async (authToken: string) => {
-        try {
-            const response = await fetch('/api/v1/auth/me', {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
+        let cancelled = false;
+        // Bound the probe so a hung /me never leaves the kiosk stuck on the
+        // guard's loading spinner with no escape (falls through to login instead).
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const bootstrap = async () => {
+            const stored = localStorage.getItem('token');
+            try {
+                // Probe /me with the stored token if any; the browser also
+                // auto-sends the shared 127.0.0.1 `sb_token` cookie.
+                let usedToken: string | null = stored;
+                let response = await fetch('/api/v1/auth/me', {
+                    headers: stored ? { Authorization: `Bearer ${stored}` } : undefined,
+                    signal: controller.signal,
+                });
+                // Stored token stale/expired? Drop it and retry cookie-only, so a
+                // valid box-SSO session still restores instead of bouncing to login.
+                if (!response.ok && stored) {
+                    localStorage.removeItem('token');
+                    usedToken = null;
+                    response = await fetch('/api/v1/auth/me', { signal: controller.signal });
                 }
-            });
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-            } else {
-                // Token invalid
-                logout();
+                if (cancelled) return;
+                if (response.ok) {
+                    setUser(await response.json());
+                    setToken(usedToken);
+                } else {
+                    localStorage.removeItem('token');
+                    setToken(null);
+                    setUser(null);
+                }
+            } catch {
+                if (!cancelled) setUser(null);
+            } finally {
+                if (!cancelled) setIsLoading(false);
             }
-        } catch (error) {
-            console.error("Failed to fetch user profile", error);
-            logout();
-        }
-    };
+        };
+        bootstrap().finally(() => clearTimeout(timeout));
+        return () => {
+            cancelled = true;
+            clearTimeout(timeout);
+            controller.abort();
+        };
+    }, []);
 
     const login = async (username: string, password: string) => {
         try {
@@ -99,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [token]);
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, token }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, token }}>
             {children}
         </AuthContext.Provider>
     );

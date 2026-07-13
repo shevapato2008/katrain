@@ -169,8 +169,16 @@ class CameraManager:
                 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
                 if self._exposure is not None:
                     cap.set(cv2.CAP_PROP_EXPOSURE, self._exposure)
+            # White balance: only DISABLE auto-WB when explicitly locking (plan §3.1). The SBC's
+            # HBV UVC camera has no working manual WB — disabling auto-WB leaves a ~3x red cast
+            # (manual white_balance_temperature=4600 does not neutralize). So the default is
+            # auto-WB ON. V4L2 control state PERSISTS across processes, so when NOT locking we must
+            # explicitly (re)enable auto-WB — otherwise a camera a prior run left at AUTO_WB=0
+            # stays red after restart. (macOS AVFoundation silently ignores this control.)
             if self._lock_awb:
                 cap.set(cv2.CAP_PROP_AUTO_WB, 0)
+            else:
+                cap.set(cv2.CAP_PROP_AUTO_WB, 1)
             try:
                 self._initial_exposure = float(cap.get(cv2.CAP_PROP_EXPOSURE))  # AE seed value
             except cv2.error:

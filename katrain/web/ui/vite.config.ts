@@ -36,8 +36,13 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: kioskMode ? '../static-kiosk-2d' : '../static',
       emptyOutDir: true,
-      // three.js is intentionally BUNDLED into the kiosk build now (3D Go board).
-      // No rollupOptions.external — three/@react-three are packaged normally.
+      // Kiosk (SBC) build EXCLUDES three.js. The 3D Go board was removed from the kiosk on
+      // 2026-07-13 to free ~321MB of Mali GPU memory that was contending with KataGo's OpenCL
+      // on the shared RK3562 GPU. Marking three external makes any accidental kiosk import fail
+      // loudly at build time; the full/galaxy build keeps 3D and bundles them normally.
+      ...(kioskMode
+        ? { rollupOptions: { external: ['three', '@react-three/fiber', '@react-three/drei'] } }
+        : {}),
     },
     test: {
       globals: true,

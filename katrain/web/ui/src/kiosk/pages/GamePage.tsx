@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Snackbar } from '@mui/material';
-import type { BoardProps } from '../../components/Board';
 // TipsAndUpdates is intentionally NOT imported: the standalone header hint button is gone
 // (AI 支招 is folded into the right-panel button in GameControlPanel). EmojiEvents is used
 // by the endgame result card below.
@@ -102,21 +101,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     numbers: false,
     coords: true,
     score: true,
-    view3d: localStorage.getItem('kiosk_view3d') === 'true',
   }));
 
-  // Lazy-load Board3D on first 3D activation, then keep it mounted (galaxy pattern —
-  // src/galaxy/pages/GamePage.tsx:30-32,60-68). Avoids pulling three.js/@react-three
-  // into the initial kiosk bundle load unless the operator actually toggles 3D.
-  const [Board3D, setBoard3D] = useState<ComponentType<BoardProps & Record<string, unknown>> | null>(null);
-  const board3dLoadingRef = useRef(false);
-  const view3d = !!analysisToggles.view3d;
-  useEffect(() => {
-    if (view3d && !Board3D && !board3dLoadingRef.current) {
-      board3dLoadingRef.current = true;
-      import('../../components/Board3D').then((m) => setBoard3D(() => m.default));
-    }
-  }, [view3d, Board3D]);
   const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
@@ -525,32 +511,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Board + Panel */}
       <Box sx={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden' }}>
         <Box sx={{ height: '100%', aspectRatio: '1', position: 'relative' }}>
-          <Box sx={{ display: view3d && Board3D ? 'none' : 'block', height: '100%' }}>
-            <Board
-              gameState={gameState}
-              onMove={handleBoardMove}
-              onNavigate={session.onNavigate}
-              analysisToggles={boardAnalysisToggles}
-              playerColor={humanColor}
-              engineOverlay={engineOverlay}
-            />
-          </Box>
-          {view3d && Board3D && (
-            <Board3D
-              gameState={gameState}
-              onMove={handleBoardMove}
-              onNavigate={session.onNavigate}
-              analysisToggles={boardAnalysisToggles}
-              playerColor={humanColor}
-              engineOverlay={engineOverlay}
-              enableAzimuth
-              initialPolarAngle={Math.PI * 0.122}
-              cameraPosition={[0, 30.1, 11.7]}
-            />
-          )}
-          {view3d && !Board3D && (
-            <CircularProgress sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-          )}
+          <Board
+            gameState={gameState}
+            onMove={handleBoardMove}
+            onNavigate={session.onNavigate}
+            analysisToggles={boardAnalysisToggles}
+            playerColor={humanColor}
+            engineOverlay={engineOverlay}
+          />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <GameControlPanel
@@ -558,11 +526,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onAction={handleAction}
             onNavigate={session.onNavigate}
             analysisToggles={analysisToggles}
-            onToggleAnalysis={(key) => setAnalysisToggles(prev => {
-              const next = { ...prev, [key]: !prev[key as keyof typeof prev] };
-              if (key === 'view3d') localStorage.setItem('kiosk_view3d', String(next.view3d));
-              return next;
-            })}
+            onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
             onHint={handleHint}
             hintEnabled={hintVisible}
             isGameOver={isGameOver}

@@ -5,11 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
-// SBC build boundary — kiosk bundle must not reach galaxy / VideoRecorder.
-// (three.js is now allowed in the kiosk bundle via Board3D — see plan
-// docs/superpowers/plans/2026-07-12-kiosk-3d-board.md Task 1.)
-// The build-time gate is `npm run verify:kiosk-2d`; these ESLint rules surface
-// violations earlier (at edit time) so regressions can't slip into a PR.
+// SBC build boundary — kiosk bundle must not reach galaxy / VideoRecorder / Board3D.
+// three.js was REMOVED from the kiosk bundle on 2026-07-13 (3D board dropped to free ~321MB
+// of Mali GPU memory contending with KataGo's OpenCL — see
+// docs/superpowers/plans/2026-07-13-sbc-3d-off-camera-wb-calib-redesign.md).
+// The build-time gate is `npm run verify:kiosk-2d`; these ESLint rules surface violations
+// earlier (at edit time) so regressions can't slip into a PR.
 const forbiddenFromKiosk = [
   {
     group: ['**/galaxy/**', '*/galaxy/*', '../galaxy/*', '../../galaxy/*', '../../../galaxy/*'],
@@ -18,6 +19,10 @@ const forbiddenFromKiosk = [
   {
     group: ['**/pages/VideoRecorderPage*', '*/pages/VideoRecorderPage', '../pages/VideoRecorderPage'],
     message: 'kiosk bundle must not import VideoRecorderPage — recorder-only',
+  },
+  {
+    group: ['**/components/Board3D/**', '*/components/Board3D/*', '../components/Board3D', '../../components/Board3D', '../../../components/Board3D'],
+    message: 'kiosk bundle must not import Board3D — 3D removed from kiosk to free Mali GPU (2026-07-13)',
   },
 ]
 

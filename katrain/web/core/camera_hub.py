@@ -15,7 +15,9 @@ class CameraHubConfig:
     warmup_seconds: float = 2.0
     lock_exposure: bool = True
     exposure: float | None = None
-    lock_awb: bool = True
+    # Default OFF: locking WB on the HBV UVC camera leaves a red cast (no working manual WB).
+    # Auto-WB gives neutral color; anti-LED-darkening is handled by exposure/software-AE, not WB.
+    lock_awb: bool = False
 
 
 class CameraHub:

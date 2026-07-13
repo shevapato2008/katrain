@@ -98,12 +98,16 @@ else
     log "No alembic directory found, skipping migrations"
 fi
 
-# ── Step 4: Build Frontend (if needed) ──
+# ── Step 4: Build Frontend (KIOSK bundle) ──
+# Board mode serves katrain/web/static-kiosk-2d/ (gitignored; produced ONLY by build:kiosk-2d) —
+# NOT the full katrain/web/static/ bundle. Running `npm run build` here rebuilds the WRONG output
+# and leaves the kiosk UI stale (this was the "changes not showing on the SBC" bug). Also do NOT
+# pass --production: vite + tsc are devDependencies and are required to build.
 if [ -f "katrain/web/ui/package.json" ] && command -v npm &>/dev/null; then
-    log "Building frontend..."
+    log "Building kiosk frontend (static-kiosk-2d)..."
     cd katrain/web/ui
-    npm install --production
-    npm run build
+    npm install
+    npm run build:kiosk-2d
     cd "$KATRAIN_DIR"
 fi
 

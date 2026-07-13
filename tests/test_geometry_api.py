@@ -247,3 +247,15 @@ class TestGeometryEndpoint:
 
         assert response.status_code == 409
         assert response.json()["detail"] == "geometry_not_available"
+
+
+def test_stream_interval_throttles_only_during_active_calibration():
+    # The raw preview drops to ~2fps while a calibration is running so its JPEG
+    # encode/decode stops competing with the flash-loop capture + status poll
+    # (the kiosk "卡顿"); it stays at 5fps the rest of the time.
+    assert geometry._stream_interval_s("flashing_corners") == pytest.approx(0.5)
+    assert geometry._stream_interval_s("verifying") == pytest.approx(0.5)
+    assert geometry._stream_interval_s("building_baseline") == pytest.approx(0.5)
+    assert geometry._stream_interval_s("ready") == pytest.approx(0.2)
+    assert geometry._stream_interval_s("required") == pytest.approx(0.2)
+    assert geometry._stream_interval_s("") == pytest.approx(0.2)

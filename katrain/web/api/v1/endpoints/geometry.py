@@ -19,6 +19,30 @@ log = logging.getLogger("katrain_web")
 
 DEFAULT_GEOMETRY_PATH = Path("~/.katrain/geometry_lock.npz").expanduser()
 
+# While a calibration is running, its LED flashing + fresh-frame capture + status poll are
+# fighting for the SBC's 4 cores. Throttling the raw preview to ~2fps for that window frees
+# the JPEG encode (backend) and decode (kiosk chromium) so the flash loop and progress
+# counter stay responsive (the "卡在 N/13" freeze); the preview returns to 5fps afterwards.
+_ACTIVE_CALIBRATION_PHASES = frozenset(
+    {"waiting_empty", "dark_reference", "flashing_corners", "verifying", "building_baseline"}
+)
+_STREAM_INTERVAL_ACTIVE_S = 0.5
+_STREAM_INTERVAL_IDLE_S = 0.2
+
+
+def _stream_interval_s(phase: str) -> float:
+    return _STREAM_INTERVAL_ACTIVE_S if phase in _ACTIVE_CALIBRATION_PHASES else _STREAM_INTERVAL_IDLE_S
+
+
+def _calibration_phase(request) -> str:
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        return ""
+    try:
+        return calibration.status().get("phase", "")
+    except Exception:
+        return ""
+
 
 class GeometryCalibrateRequest(BaseModel):
     trigger: str = "manual"
@@ -123,7 +147,7 @@ async def geometry_stream(request: Request):
                 ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 65])
                 if ok:
                     yield _mjpeg_part(jpeg.tobytes())
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(_stream_interval_s(_calibration_phase(request)))
 
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")
 

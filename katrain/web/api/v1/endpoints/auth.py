@@ -16,6 +16,20 @@ logger = logging.getLogger("katrain_web")
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+# Optional variant (no auto 401) so we can fall back to the shared SSO cookie.
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
+
+# Box-level SSO (see superpowers/tracks/box-sso-2026-07-13): the launcher (:8080)
+# sets this 127.0.0.1-scoped cookie after a successful katrain login, so every app
+# on the box shares one identity. Read it as a fallback when no
+# `Authorization: Bearer` header is present. A valid header always wins.
+SSO_COOKIE_NAME = "sb_token"
+
+
+def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:
+    """Bearer header takes precedence; else the shared box-SSO cookie."""
+    return header_token or request.cookies.get(SSO_COOKIE_NAME)
+
 
 # Shadow user: placeholder hash that cannot pass verify_password (design 5.3)
 SHADOW_USER_NO_LOCAL_AUTH = "SHADOW_USER_NO_LOCAL_AUTH"
@@ -56,8 +70,15 @@ async def get_user_from_token(token: str, repo: Any) -> User:
     return User(**user_dict)
 
 
-async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)) -> User:
-    return await get_user_from_token(token, request.app.state.user_repo)
+async def get_current_user(request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)) -> User:
+    resolved = _resolve_token(request, token)
+    if not resolved:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return await get_user_from_token(resolved, request.app.state.user_repo)
 
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
@@ -67,15 +88,15 @@ async def get_current_admin_user(current_user: User = Depends(get_current_user))
     return current_user
 
 
-# Optional auth - returns None if not authenticated, doesn't require token
-oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
-
-
-async def get_current_user_optional(request: Request, token: str = Depends(oauth2_scheme_optional)) -> User | None:
-    if not token:
+# Optional auth - returns None if not authenticated (header or shared SSO cookie).
+async def get_current_user_optional(
+    request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)
+) -> User | None:
+    resolved = _resolve_token(request, token)
+    if not resolved:
         return None
     try:
-        return await get_user_from_token(token, request.app.state.user_repo)
+        return await get_user_from_token(resolved, request.app.state.user_repo)
     except HTTPException:
         return None
 

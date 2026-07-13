@@ -92,3 +92,64 @@ async def test_get_me_unauthorized(app):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get("/api/v1/auth/me")
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_me_with_sso_cookie(app):
+    """Box SSO: /me authenticates from the shared `sb_token` cookie when no
+    Authorization header is present (launcher sets this 127.0.0.1 cookie)."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    hashed = pwd_context.hash("testpassword")
+    try:
+        repo.create_user("cookie_user", hashed)
+    except ValueError:
+        pass
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        token = (
+            await ac.post("/api/v1/auth/login", json={"username": "cookie_user", "password": "testpassword"})
+        ).json()["access_token"]
+
+    # No Authorization header — token only in the shared SSO cookie (client-level).
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", cookies={"sb_token": token}
+    ) as ac:
+        response = await ac.get("/api/v1/auth/me")
+
+    assert response.status_code == 200
+    assert response.json()["username"] == "cookie_user"
+
+
+@pytest.mark.asyncio
+async def test_bearer_header_takes_precedence_over_cookie(app):
+    """A valid Authorization header wins over any (stale/other) shared cookie."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    hashed = pwd_context.hash("testpassword")
+    for u in ("hdr_user", "cke_user"):
+        try:
+            repo.create_user(u, hashed)
+        except ValueError:
+            pass
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        hdr_tok = (
+            await ac.post("/api/v1/auth/login", json={"username": "hdr_user", "password": "testpassword"})
+        ).json()["access_token"]
+        cke_tok = (
+            await ac.post("/api/v1/auth/login", json={"username": "cke_user", "password": "testpassword"})
+        ).json()["access_token"]
+
+    # Stale/other user's token in the shared cookie, but a valid Bearer header present.
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", cookies={"sb_token": cke_tok}
+    ) as ac:
+        response = await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {hdr_tok}"})
+
+    assert response.status_code == 200
+    assert response.json()["username"] == "hdr_user"

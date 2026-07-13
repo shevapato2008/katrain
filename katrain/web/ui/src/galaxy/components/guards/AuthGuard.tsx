@@ -21,7 +21,13 @@ const LoginReminder = () => (
 );
 
 export const AuthGuard = ({ children }: { children: ReactNode }) => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
+
+    // Wait for the mount-time session probe before showing the login reminder,
+    // so a valid persisted session doesn't flash "Login Required" on page load.
+    if (isLoading) {
+        return null;
+    }
 
     if (!isAuthenticated) {
         return <LoginReminder />;

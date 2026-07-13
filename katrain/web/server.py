@@ -511,6 +511,20 @@ async def _lifespan_board(app: FastAPI, log):
             if vision_service is not None and hasattr(vision_service, "set_geometry"):
                 vision_service.set_geometry(None)
 
+        def suspend_vision():
+            # For the duration of a calibration run, stop the RKNN worker's warp+CLAHE+detect
+            # (~1 core) — it would otherwise recognise a board being re-locked, starving the
+            # calibration compute + status poll + kiosk UI. Unlike invalidate_geometry this keeps
+            # app.state.geometry as the fallback that resume_vision re-arms the worker with.
+            vision_service = getattr(app.state, "vision", None)
+            if vision_service is not None and hasattr(vision_service, "set_geometry"):
+                vision_service.set_geometry(None)
+
+        def resume_vision():
+            vision_service = getattr(app.state, "vision", None)
+            if vision_service is not None and hasattr(vision_service, "set_geometry"):
+                vision_service.set_geometry(app.state.geometry)
+
         app.state.geometry_calibration = GeometryCalibrationService(
             led=app.state.led,
             capture=app.state.capture,
@@ -518,6 +532,8 @@ async def _lifespan_board(app: FastAPI, log):
             initial_lock=app.state.geometry,
             on_success=promote_geometry,
             on_degraded=invalidate_geometry,
+            on_suspend=suspend_vision,
+            on_resume=resume_vision,
         )
     else:
         app.state.geometry_calibration = None

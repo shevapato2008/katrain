@@ -37,27 +37,51 @@ WHITE_S_MAX = 70.0  # ... AND absolute saturation below this (desaturated highli
 WHITE_DS = -35.0  # ... OR saturation at least this much BELOW baseline
 
 
-def _patch_stats(hsv, cx, cy, r):
-    """Median (H,S,V) over a square patch centred at (cx,cy)."""
-    h, w = hsv.shape[:2]
-    x0, x1 = max(0, int(cx - r)), min(w, int(cx + r) + 1)
-    y0, y1 = max(0, int(cy - r)), min(h, int(cy + r) + 1)
-    patch = hsv[y0:y1, x0:x1].reshape(-1, 3)
-    if patch.size == 0:
-        return np.array([0.0, 0.0, 0.0], np.float32)
-    return np.median(patch, axis=0).astype(np.float32)
-
-
 def sample_grid(warp, xs, ys, patch_ratio=PATCH_RATIO):
-    """(19,19,3) median HSV at each intersection of the warped board."""
+    """(19,19,3) median HSV at each intersection of the warped board.
+
+    Vectorized: rows share y-bounds and columns share x-bounds, so the 361 patches
+    collapse to a handful of distinct (height,width) sizes. Each size is medianed in
+    ONE ``np.median`` call instead of 361 — the per-call Python/numpy overhead is the
+    SBC hotspot (~0.5s/call on RK3562, invoked 16x per calibration). The clipped
+    integer bounds are identical to the original per-point patch, so the output is
+    bit-for-bit unchanged.
+    """
     hsv = cv2.cvtColor(warp, cv2.COLOR_BGR2HSV)
+    h_img, w_img = hsv.shape[:2]
     spacing = float(np.median(np.diff(xs)))
     r = max(3.0, spacing * patch_ratio)
+    # int() truncates toward zero; xs,ys >= 0 for a warped board — identical clipped bounds.
+    x0 = [max(0, int(x - r)) for x in xs]
+    x1 = [min(w_img, int(x + r) + 1) for x in xs]
+    y0 = [max(0, int(y - r)) for y in ys]
+    y1 = [min(h_img, int(y + r) + 1) for y in ys]
+
     out = np.zeros((GRID_SIZE, GRID_SIZE, 3), np.float32)
+    groups: dict[tuple[int, int], list[tuple[int, int]]] = {}
     for ri in range(GRID_SIZE):
+        ph = y1[ri] - y0[ri]
         for ci in range(GRID_SIZE):
-            out[ri, ci] = _patch_stats(hsv, xs[ci], ys[ri], r)
+            pw = x1[ci] - x0[ci]
+            if ph <= 0 or pw <= 0:
+                continue  # empty patch → leave zeros (matches the original guard)
+            groups.setdefault((ph, pw), []).append((ri, ci))
+    for (ph, pw), cells in groups.items():
+        stack = np.empty((len(cells), ph, pw, 3), hsv.dtype)
+        for k, (ri, ci) in enumerate(cells):
+            stack[k] = hsv[y0[ri] : y1[ri], x0[ci] : x1[ci]]
+        med = np.median(stack.reshape(len(cells), ph * pw, 3), axis=1).astype(np.float32)
+        for k, (ri, ci) in enumerate(cells):
+            out[ri, ci] = med[k]
     return out
+
+
+def build_baseline_from_samples(samples):
+    """Mean HSV per intersection over pre-sampled (19,19,3) grids.
+
+    Lets a caller reuse one ``sample_grid`` pass across several baselines instead of
+    re-sampling the same warp (calibration builds two baselines from the same burst)."""
+    return np.mean(samples, axis=0).astype(np.float32)
 
 
 def build_baseline(empty_warps, xs, ys, patch_ratio=PATCH_RATIO):
@@ -65,8 +89,28 @@ def build_baseline(empty_warps, xs, ys, patch_ratio=PATCH_RATIO):
     empty-board warps for stability. `empty_warps` may be a single warp or a list."""
     if isinstance(empty_warps, np.ndarray) and empty_warps.ndim == 3:
         empty_warps = [empty_warps]
-    samples = [sample_grid(w, xs, ys, patch_ratio) for w in empty_warps]
-    return np.mean(samples, axis=0).astype(np.float32)
+    return build_baseline_from_samples([sample_grid(w, xs, ys, patch_ratio) for w in empty_warps])
+
+
+def classify_from_sample(
+    cur,
+    baseline,
+    black_dv=BLACK_DV,
+    white_dv=WHITE_DV,
+    white_s_max=WHITE_S_MAX,
+    white_ds=WHITE_DS,
+):
+    """(19,19) board state in {EMPTY, BLACK, WHITE} from a pre-sampled (19,19,3) grid."""
+    dV = cur[..., 2] - baseline[..., 2]
+    dS = cur[..., 1] - baseline[..., 1]
+    S = cur[..., 1]
+
+    state = np.full((GRID_SIZE, GRID_SIZE), EMPTY, np.int32)
+    is_white = (dV >= white_dv) & ((S <= white_s_max) | (dS <= white_ds))
+    is_black = dV <= black_dv
+    state[is_white] = WHITE
+    state[is_black] = BLACK  # black guard wins ties (a dark patch is never white)
+    return state
 
 
 def classify(
@@ -82,15 +126,9 @@ def classify(
 ):
     """(19,19) board state in {EMPTY, BLACK, WHITE} from one frame's warp."""
     cur = sample_grid(warp, xs, ys, patch_ratio)
-    dV = cur[..., 2] - baseline[..., 2]
-    dS = cur[..., 1] - baseline[..., 1]
-    S = cur[..., 1]
-
-    state = np.full((GRID_SIZE, GRID_SIZE), EMPTY, np.int32)
-    is_white = (dV >= white_dv) & ((S <= white_s_max) | (dS <= white_ds))
-    is_black = dV <= black_dv
-    state[is_white] = WHITE
-    state[is_black] = BLACK  # black guard wins ties (a dark patch is never white)
+    state = classify_from_sample(
+        cur, baseline, black_dv=black_dv, white_dv=white_dv, white_s_max=white_s_max, white_ds=white_ds
+    )
     return state, cur
 
 

@@ -28,6 +28,8 @@ class GeometryCalibrationService:
         initial_lock=None,
         on_success=None,
         on_degraded=None,
+        on_suspend=None,
+        on_resume=None,
         calibrator_factory=LedGeometryCalibrator,
     ):
         self.led = led
@@ -38,6 +40,13 @@ class GeometryCalibrationService:
         # Called once when drift flips a ready lock to degraded — used to invalidate the
         # downstream vision worker so it stops recognizing on a stale (shifted) warp.
         self.on_degraded = on_degraded or (lambda: None)
+        # Suspend/resume the downstream vision worker around a calibration run. The RKNN
+        # worker otherwise keeps warping+CLAHE+detecting (~1 core) on a board that is being
+        # re-locked — pointless work that starves the calibration compute, the status poll,
+        # and the kiosk UI (the "卡在 N/13" freeze). on_resume re-pushes the live lock so a
+        # failed/cancelled run keeps recognising on the previous geometry.
+        self.on_suspend = on_suspend or (lambda: None)
+        self.on_resume = on_resume or (lambda: None)
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
         self._cancel_event = threading.Event()
@@ -167,6 +176,9 @@ class GeometryCalibrationService:
 
     def _run(self) -> None:
         try:
+            # Free the CPU the vision worker hogs for the whole run; on_resume (finally)
+            # re-arms it on the new lock (success) or the previous one (failure/cancel).
+            self.on_suspend()
             calibrator = self.calibrator_factory(
                 led=self.led,
                 capture=self.capture,
@@ -215,6 +227,10 @@ class GeometryCalibrationService:
                     self.led.clear(strict=True)
                 except Exception:
                     pass
+            try:
+                self.on_resume()
+            except Exception:
+                pass
 
     def _init_drift_monitor(self, lock) -> None:
         if not hasattr(self.capture, "grab_fresh"):

@@ -46,6 +46,19 @@ class ResultCalibrator:
         return self.result
 
 
+class RecordingCalibrator:
+    """Records 'calibrate' into a shared list so tests can assert ordering
+    relative to the on_suspend/on_resume vision hooks."""
+
+    def __init__(self, result, events, **_kwargs):
+        self.result = result
+        self.events = events
+
+    def calibrate(self):
+        self.events.append("calibrate")
+        return self.result
+
+
 class FakeDrift:
     def __init__(self, degraded, shift_cells=0.5, response=0.9):
         self.degraded = degraded
@@ -95,6 +108,53 @@ def test_failure_preserves_last_valid_lock(tmp_path):
     assert status["last_valid"] is True
     assert service.current_lock is old
     assert not (tmp_path / "geometry.npz").exists()
+
+
+def test_vision_is_suspended_before_calibrate_and_resumed_after_success(tmp_path):
+    # The RKNN worker burns ~1 core continuously (warp+CLAHE+detect). Recognising a board
+    # that is being re-calibrated is pointless AND starves the calibration/status/UI, so the
+    # worker must be suspended for the whole run and resumed after.
+    events = []
+    lock = _synth()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        on_suspend=lambda: events.append("suspend"),
+        on_resume=lambda: events.append("resume"),
+        calibrator_factory=lambda **kwargs: RecordingCalibrator(
+            CalibrationResult(ok=True, lock=lock), events, **kwargs
+        ),
+    )
+
+    service.start(trigger="auto", empty_confirmed=True)
+    service.wait(timeout=2)
+
+    assert events == ["suspend", "calibrate", "resume"]
+    assert service.status()["phase"] == "ready"
+
+
+def test_vision_is_resumed_even_when_calibration_fails(tmp_path):
+    # On failure/cancel the worker must be un-suspended so recognition resumes on the previous
+    # lock — otherwise a failed recal leaves the box permanently blind.
+    events = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+        on_suspend=lambda: events.append("suspend"),
+        on_resume=lambda: events.append("resume"),
+        calibrator_factory=lambda **kwargs: RecordingCalibrator(
+            CalibrationResult(ok=False, reason="anchor_not_found:0,0"), events, **kwargs
+        ),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(timeout=2)
+
+    assert events == ["suspend", "calibrate", "resume"]
+    assert service.status()["phase"] == "failed"
 
 
 def test_rejects_concurrent_start_and_cancel_clears_led(tmp_path):

@@ -266,13 +266,18 @@ class LedGeometryCalibrator:
         canonical_corners = np.array([[[0, 0]], [[size - 1, 0]], [[size - 1, size - 1]], [[0, size - 1]]], np.float32)
         corners = cv2.perspectiveTransform(canonical_corners, Minv).reshape(4, 2)
         warps = [cv2.warpPerspective(frame, M, (size, size)) for frame in frames]
-        held_out_baseline = stone_classifier.build_baseline(warps[:7], xs, ys)
-        state, _ = stone_classifier.classify(warps[7], xs, ys, held_out_baseline)
+        # Sample the 361-point grid ONCE per warp and reuse it for both the held-out
+        # check and the final baseline. The naive path samples 16x for 8 frames (7 +
+        # 1 + 8, re-sampling the first 7 twice); sampling is the SBC finalization
+        # hotspot, so halving the calls halves ~7.5s on RK3562.
+        grids = [stone_classifier.sample_grid(warp, xs, ys) for warp in warps]
+        held_out_baseline = stone_classifier.build_baseline_from_samples(grids[:7])
+        state = stone_classifier.classify_from_sample(grids[7], held_out_baseline)
         empty_black = int((state == stone_classifier.BLACK).sum())
         empty_white = int((state == stone_classifier.WHITE).sum())
         if empty_black or empty_white:
             raise RuntimeError(f"empty baseline held-out check failed: black={empty_black}, white={empty_white}")
-        baseline = stone_classifier.build_baseline(warps, xs, ys)
+        baseline = stone_classifier.build_baseline_from_samples(grids)
         confidence = (fit.inlier_count / len(CALIBRATION_ANCHORS)) * max(
             0.0, 1.0 - (fit.rms_residual or 0.0) / max((size - 1) / 18.0, 1.0)
         )

@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import pytest
 
+from katrain.vision import stone_classifier
 from katrain.vision.led_geometry_calibrator import (
     CALIBRATION_ANCHORS,
     LedGeometryCalibrator,
@@ -147,6 +148,27 @@ def test_calibrator_retries_red_when_green_signal_is_missing():
     assert result.ok is True
     attempts = [rgb for coord, rgb in led.attempts if coord == (3, 15)]
     assert attempts[:2] == [(0, 96, 0), (96, 0, 0)]
+
+
+def test_build_lock_samples_each_baseline_frame_once(monkeypatch):
+    # `_build_lock` grabs an 8-frame burst. Sampling the 361-point grid is the SBC
+    # hotspot (~0.5s/call on RK3562), so it must sample each warp EXACTLY once — not
+    # 16x (build_baseline(7) + classify(1) + build_baseline(8), re-sampling 7 twice).
+    calls = {"n": 0}
+    real_sample_grid = stone_classifier.sample_grid
+
+    def counting_sample_grid(*args, **kwargs):
+        calls["n"] += 1
+        return real_sample_grid(*args, **kwargs)
+
+    monkeypatch.setattr(stone_classifier, "sample_grid", counting_sample_grid)
+
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is True
+    assert calls["n"] == 8
 
 
 def test_calibrator_reports_each_detected_anchor():

@@ -21,14 +21,18 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/a
 
 # Box-level SSO (see superpowers/tracks/box-sso-2026-07-13): the launcher (:8080)
 # sets this 127.0.0.1-scoped cookie after a successful katrain login, so every app
-# on the box shares one identity. Read it as a fallback when no
-# `Authorization: Bearer` header is present. A valid header always wins.
+# on the box shares one identity. The cookie is the AUTHORITATIVE box identity and
+# takes precedence over the Authorization header (F3, below).
 SSO_COOKIE_NAME = "sb_token"
 
 
 def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:
-    """Bearer header takes precedence; else the shared box-SSO cookie."""
-    return header_token or request.cookies.get(SSO_COOKIE_NAME)
+    """Box-SSO F3: the shared 127.0.0.1 sb_token cookie is the AUTHORITATIVE box
+    identity and wins over the Authorization header. On switch-user the launcher writes
+    user B's fresh cookie, while katrain's localStorage may still hold user A's stale
+    Bearer; cookie-first stops A from being recorded for B's play. galaxy/full web has
+    no such cookie, so it transparently falls back to the header."""
+    return request.cookies.get(SSO_COOKIE_NAME) or header_token
 
 
 # Shadow user: placeholder hash that cannot pass verify_password (design 5.3)
@@ -81,11 +85,18 @@ async def get_current_user(request: Request, token: Optional[str] = Depends(oaut
     return await get_user_from_token(resolved, request.app.state.user_repo)
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    """Require an authenticated user with the is_admin flag. Shadow users never qualify."""
-    if not getattr(current_user, "is_admin", False):
+async def get_current_admin_user(
+    request: Request,
+    token: str = Depends(oauth2_scheme),  # strict header-only (auto_error=True)
+) -> User:
+    """Require an authenticated ADMIN. Box-SSO F1 mitigation: this is strict
+    header-only (does NOT inherit get_current_user's cookie fallback), so the
+    127.0.0.1-broadcast sb_token cookie can NEVER reach a privileged endpoint — a
+    cookie-only request 401s at dependency resolution. Shadow users never qualify."""
+    user = await get_user_from_token(token, request.app.state.user_repo)
+    if not getattr(user, "is_admin", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
-    return current_user
+    return user
 
 
 # Optional auth - returns None if not authenticated (header or shared SSO cookie).

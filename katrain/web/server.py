@@ -1696,8 +1696,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
 
         logger = logging.getLogger("katrain_web")
-        # Prefer the explicit query token; otherwise use the shared Box SSO cookie.
-        token = websocket.query_params.get("token") or websocket.cookies.get("sb_token")
+        # Query tokens are explicit credentials. Ambient SSO cookies may only be
+        # used by a same-origin handshake; CORS does not protect WebSockets.
+        if "token" in websocket.query_params:
+            token = websocket.query_params.get("token")
+        else:
+            expected_origin = f"{'https' if websocket.url.scheme == 'wss' else 'http'}://{websocket.url.netloc}"
+            if websocket.headers.get("origin") != expected_origin:
+                logger.warning("Lobby WebSocket: Rejected cookie authentication from untrusted origin")
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Untrusted origin")
+                return
+            token = websocket.cookies.get("sb_token")
         if not token:
             logger.warning("Lobby WebSocket: No token provided, closing connection")
             await websocket.accept()

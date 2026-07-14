@@ -21,14 +21,14 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/a
 
 # Box-level SSO (see superpowers/tracks/box-sso-2026-07-13): the launcher (:8080)
 # sets this 127.0.0.1-scoped cookie after a successful katrain login, so every app
-# on the box shares one identity. Read it as a fallback when no
-# `Authorization: Bearer` header is present. A valid header always wins.
+# on the box shares one identity. The cookie is authoritative for ordinary user
+# authentication.
 SSO_COOKIE_NAME = "sb_token"
 
 
 def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:
-    """Bearer header takes precedence; else the shared box-SSO cookie."""
-    return header_token or request.cookies.get(SSO_COOKIE_NAME)
+    """The shared box-SSO cookie takes precedence over a Bearer header."""
+    return request.cookies.get(SSO_COOKIE_NAME) or header_token
 
 
 # Shadow user: placeholder hash that cannot pass verify_password (design 5.3)
@@ -81,8 +81,9 @@ async def get_current_user(request: Request, token: Optional[str] = Depends(oaut
     return await get_user_from_token(resolved, request.app.state.user_repo)
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+async def get_current_admin_user(request: Request, token: str = Depends(oauth2_scheme)) -> User:
     """Require an authenticated user with the is_admin flag. Shadow users never qualify."""
+    current_user = await get_user_from_token(token, request.app.state.user_repo)
     if not getattr(current_user, "is_admin", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
     return current_user

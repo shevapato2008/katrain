@@ -1696,11 +1696,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
 
         logger = logging.getLogger("katrain_web")
-        # NOTE: WS auth stays ?token=-only. Cookie-auth on the WS handshake is
-        # deferred to box-SSO Phase 3, where it MUST land together with an Origin
-        # allowlist — a WS handshake skips CORS/preflight, so an ambient cookie
-        # with no Origin check is a cross-site-WebSocket-hijacking surface.
-        token = websocket.query_params.get("token")
+        # Prefer the explicit query token; otherwise use the shared Box SSO cookie.
+        token = websocket.query_params.get("token") or websocket.cookies.get("sb_token")
         if not token:
             logger.warning("Lobby WebSocket: No token provided, closing connection")
             await websocket.accept()

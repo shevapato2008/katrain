@@ -55,6 +55,95 @@ async def test_login_success(app):
 
 
 @pytest.mark.asyncio
+async def test_loopback_login_issues_shared_sso_cookie_for_headerless_me(app):
+    """A direct kiosk login keeps the local JWT in the shared loopback cookie."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    repo.create_user("loopback_user", pwd_context.hash("testpassword"))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1:8081") as ac:
+        login_response = await ac.post(
+            "/api/v1/auth/login", json={"username": "loopback_user", "password": "testpassword"}
+        )
+
+        assert login_response.status_code == 200
+        assert login_response.json()["token_type"] == "bearer"
+        set_cookie = login_response.headers["set-cookie"]
+        assert "sb_token=" in set_cookie
+        assert "Domain=127.0.0.1" in set_cookie
+        assert "HttpOnly" in set_cookie
+        assert "Max-Age=604800" in set_cookie
+        assert "Path=/" in set_cookie
+        assert "SameSite=lax" in set_cookie
+        assert ac.cookies.get("sb_token") == login_response.json()["access_token"]
+
+        # This models a cold kiosk bootstrap: no Authorization header, only the
+        # browser-managed shared SSO cookie from the preceding login response.
+        me_response = await ac.get("/api/v1/auth/me")
+
+    assert me_response.status_code == 200
+    assert me_response.json()["username"] == "loopback_user"
+
+
+@pytest.mark.asyncio
+async def test_loopback_logout_clears_shared_sso_cookie_and_prevents_headerless_session_restore(app):
+    """Kiosk logout must revoke the loopback SSO cookie, not only local state."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    repo.create_user("loopback_logout_user", pwd_context.hash("testpassword"))
+    # ASGITransport deliberately skips lifespan, while logout performs the
+    # normal lobby/match/session cleanup. Supply the same empty managers the
+    # lifespan would create so this test reaches the cookie lifecycle contract.
+    from katrain.web.session import LobbyManager, Matchmaker, SessionManager
+
+    app.state.lobby_manager = LobbyManager()
+    app.state.matchmaker = Matchmaker()
+    app.state.session_manager = SessionManager(enable_engine=False)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1:8081") as ac:
+        login_response = await ac.post(
+            "/api/v1/auth/login", json={"username": "loopback_logout_user", "password": "testpassword"}
+        )
+        assert login_response.status_code == 200
+        assert (await ac.get("/api/v1/auth/me")).status_code == 200
+
+        logout_response = await ac.post("/api/v1/auth/logout")
+
+        assert logout_response.status_code == 200
+        clear_cookie = logout_response.headers["set-cookie"]
+        assert "sb_token=\"\"" in clear_cookie
+        assert "Domain=127.0.0.1" in clear_cookie
+        assert "Path=/" in clear_cookie
+        assert "Max-Age=0" in clear_cookie
+        assert "HttpOnly" in clear_cookie
+        assert "SameSite=lax" in clear_cookie
+        assert (await ac.get("/api/v1/auth/me")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_non_loopback_login_keeps_galaxy_json_only_contract(app):
+    """The public/Galaxy host keeps its existing JSON-token-only login flow."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    repo.create_user("galaxy_user", pwd_context.hash("testpassword"))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post(
+            "/api/v1/auth/login", json={"username": "galaxy_user", "password": "testpassword"}
+        )
+
+    assert response.status_code == 200
+    assert response.json()["token_type"] == "bearer"
+    assert "set-cookie" not in response.headers
+
+
+@pytest.mark.asyncio
 async def test_login_failure(app):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post("/api/v1/auth/login", json={"username": "testuser", "password": "wrongpassword"})

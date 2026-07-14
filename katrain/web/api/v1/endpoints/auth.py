@@ -2,7 +2,7 @@ import logging
 from typing import Any, Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -24,11 +24,46 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/a
 # on the box shares one identity. The cookie is authoritative for ordinary user
 # authentication.
 SSO_COOKIE_NAME = "sb_token"
+SSO_LOOPBACK_HOST = "127.0.0.1"
 
 
 def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:
     """The shared box-SSO cookie takes precedence over a Bearer header."""
     return request.cookies.get(SSO_COOKIE_NAME) or header_token
+
+
+def _issue_loopback_sso_cookie(request: Request, response: Response, access_token: str) -> None:
+    """Persist a direct kiosk login only on the known loopback host.
+
+    The explicit host gate preserves the Galaxy JSON-token flow and avoids
+    emitting an invalid `Domain=127.0.0.1` cookie for other hosts.
+    """
+    if request.url.hostname != SSO_LOOPBACK_HOST:
+        return
+
+    response.set_cookie(
+        key=SSO_COOKIE_NAME,
+        value=access_token,
+        domain=SSO_LOOPBACK_HOST,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
+
+def _clear_loopback_sso_cookie(request: Request, response: Response) -> None:
+    """Expire the shared SSO cookie only for a direct loopback logout."""
+    if request.url.hostname != SSO_LOOPBACK_HOST:
+        return
+
+    response.delete_cookie(
+        key=SSO_COOKIE_NAME,
+        domain=SSO_LOOPBACK_HOST,
+        path="/",
+        httponly=True,
+        samesite="lax",
+    )
 
 
 # Shadow user: placeholder hash that cannot pass verify_password (design 5.3)
@@ -111,7 +146,7 @@ def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
 
 
 @router.post("/login", response_model=Token)
-async def login(request: Request, login_data: LoginRequest) -> Any:
+async def login(request: Request, login_data: LoginRequest, response: Response) -> Any:
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:
@@ -145,6 +180,7 @@ async def login(request: Request, login_data: LoginRequest) -> Any:
         # Issue local tokens (design 5.2)
         local_access = create_access_token(data={"sub": shadow_user["username"]})
         local_refresh = create_refresh_token(data={"sub": shadow_user["username"]})
+        _issue_loopback_sso_cookie(request, response, local_access)
         return {"access_token": local_access, "token_type": "bearer", "refresh_token": local_refresh}
 
     # Server mode: local authentication
@@ -158,6 +194,7 @@ async def login(request: Request, login_data: LoginRequest) -> Any:
         )
     access_token = create_access_token(data={"sub": user_dict["username"]})
     refresh_token = create_refresh_token(data={"sub": user_dict["username"]})
+    _issue_loopback_sso_cookie(request, response, access_token)
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
 
@@ -240,9 +277,11 @@ async def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
 
 
 @router.post("/logout")
-async def logout(request: Request, current_user: User = Depends(get_current_user)) -> Any:
+async def logout(request: Request, response: Response, current_user: User = Depends(get_current_user)) -> Any:
     """Logout and cleanup user's active sessions"""
     from katrain.web.session import SessionManager, LobbyManager
+
+    _clear_loopback_sso_cookie(request, response)
 
     # Board mode: clear remote tokens + delete credential file (design 5.4)
     remote_client = getattr(request.app.state, "remote_client", None)

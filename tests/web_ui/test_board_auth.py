@@ -106,6 +106,28 @@ async def test_board_login_creates_shadow_user(board_app):
 
 
 @pytest.mark.asyncio
+async def test_board_loopback_login_issues_shared_sso_cookie(board_app):
+    """Remote board auth still yields a local loopback SSO identity."""
+    board_app.state.remote_client.login.return_value = {
+        "access_token": "remote_at",
+        "refresh_token": "remote_rt",
+        "token_type": "bearer",
+    }
+
+    with patch("katrain.web.core.credentials.save_refresh_token"):
+        async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://127.0.0.1:8081") as ac:
+            login_response = await ac.post("/api/v1/auth/login", json={"username": "board_user", "password": "pass"})
+            assert login_response.status_code == 200
+            assert "sb_token=" in login_response.headers["set-cookie"]
+            assert ac.cookies.get("sb_token") == login_response.json()["access_token"]
+
+            me_response = await ac.get("/api/v1/auth/me")
+
+    assert me_response.status_code == 200
+    assert me_response.json()["username"] == "board_user"
+
+
+@pytest.mark.asyncio
 async def test_board_login_reuses_shadow_user(board_app):
     """Repeat login reuses existing shadow user, not duplicates."""
     board_app.state.remote_client.login.return_value = {

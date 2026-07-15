@@ -21,15 +21,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Vite compiles this from VITE_KIOSK_2D_ONLY.  The kiosk authenticates solely
-// through the HttpOnly shared-box cookie, while the full Galaxy build keeps its
-// historical Bearer-token/localStorage contract.
+// Box SSO strictness is deliberately independent from the kiosk UI boundary.
+// Legacy kiosk and Galaxy builds retain their historical Bearer/localStorage
+// contract; only a build with both flags authenticates solely through the
+// HttpOnly `sb_go_token` cookie (whose value is never visible to this module).
 const isKioskBuild = __KIOSK_2D_ONLY__;
+const isStrictBoxKiosk = isKioskBuild && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(() =>
-        isKioskBuild ? null : localStorage.getItem('token')
+        isStrictBoxKiosk ? null : localStorage.getItem('token')
     );
     // True until the mount-time session probe settles. Guards MUST wait for this
     // before redirecting, otherwise a valid persisted session (localStorage token
@@ -44,10 +46,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
         const bootstrap = async () => {
-            const stored = isKioskBuild ? null : localStorage.getItem('token');
+            // This deletion is synchronous and precedes the first network call,
+            // preventing an old JS Bearer token from overriding the box cookie.
+            if (isStrictBoxKiosk) localStorage.removeItem('token');
+            const stored = isStrictBoxKiosk ? null : localStorage.getItem('token');
             try {
                 // Probe /me with the stored token if any; the browser also
-                // auto-sends the shared 127.0.0.1 `sb_token` cookie.
+                // auto-sends the shared 127.0.0.1 `sb_go_token` cookie.
                 let usedToken: string | null = stored;
                 let response = await fetch('/api/v1/auth/me', {
                     headers: stored ? { Authorization: `Bearer ${stored}` } : undefined,
@@ -55,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 });
                 // Stored token stale/expired? Drop it and retry cookie-only, so a
                 // valid box-SSO session still restores instead of bouncing to login.
-                if (!isKioskBuild && !response.ok && stored) {
+                if (!isStrictBoxKiosk && !response.ok && stored) {
                     localStorage.removeItem('token');
                     usedToken = null;
                     response = await fetch('/api/v1/auth/me', { signal: controller.signal });
@@ -65,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     setUser(await response.json());
                     setToken(usedToken);
                 } else {
-                    if (!isKioskBuild) localStorage.removeItem('token');
+                    if (!isStrictBoxKiosk) localStorage.removeItem('token');
                     setToken(null);
                     setUser(null);
                 }
@@ -84,6 +89,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const login = async (username: string, password: string) => {
+        if (isStrictBoxKiosk) {
+            throw new Error('Direct login is disabled in strict box mode');
+        }
         try {
             const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
@@ -100,9 +108,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             // 先把用户资料拉到再返回,确保 isAuthenticated(=!!user)在 navigate 前已为 true,
             // 否则首次登录会因 user 尚未加载被 AuthGuard 弹回登录页(需点两次)。
-            // A direct login has the freshly issued token in memory, even in
-            // kiosk mode. Use it only for this active session verification;
-            // kiosk cold starts still use the HttpOnly cookie with no header.
+            // A non-strict direct login has the freshly issued token in memory;
+            // use it for the active-session verification before persisting it.
             const meRes = await fetch('/api/v1/auth/me', {
                 headers: { 'Authorization': `Bearer ${newToken}` }
             });
@@ -111,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             const userData = await meRes.json();
 
-            if (!isKioskBuild) localStorage.setItem('token', newToken);
+            localStorage.setItem('token', newToken);
             setUser(userData);
             setToken(newToken);
         } catch (error) {
@@ -121,17 +128,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = useCallback(async () => {
         // Call backend to cleanup sessions before clearing local state
-        if (isKioskBuild || token) {
+        if (isStrictBoxKiosk || token) {
             try {
-                // Kiosk identity lives in the HttpOnly cookie, so omit Bearer
-                // even after a direct login and let the browser send that
-                // same-origin cookie. Galaxy retains its historical token path.
-                await API.logout(isKioskBuild ? undefined : token ?? undefined);
+                // Strict box identity lives in the HttpOnly cookie, so omit
+                // Bearer and let the browser send the same-origin cookie.
+                // Galaxy and legacy kiosk retain their historical token path.
+                await API.logout(isStrictBoxKiosk ? undefined : token ?? undefined);
             } catch (e) {
                 console.warn("Logout request failed, proceeding with local cleanup");
             }
         }
-        if (!isKioskBuild) localStorage.removeItem('token');
+        localStorage.removeItem('token');
         setToken(null);
         setUser(null);
     }, [token]);

@@ -39,15 +39,17 @@ const hasAuthHeader = (init?: RequestInit) => {
   return Boolean(h.Authorization);
 };
 
-// Vite replaces this with the build mode selected by VITE_KIOSK_2D_ONLY.
-// The focused test command is run once per build mode below so the shared
-// context cannot accidentally regain browser-storage access in the kiosk.
+// Run this focused suite in Galaxy, legacy-kiosk, and strict-box-kiosk modes.
 const isKioskBuild = __KIOSK_2D_ONLY__;
-const kioskIt = isKioskBuild ? it : it.skip;
+const isStrictBoxKiosk = isKioskBuild && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
+const strictKioskIt = isStrictBoxKiosk ? it : it.skip;
+const legacyKioskIt = isKioskBuild && !isStrictBoxKiosk ? it : it.skip;
+const nonStrictIt = isStrictBoxKiosk ? it.skip : it;
 const galaxyIt = isKioskBuild ? it.skip : it;
 
 describe('AuthContext', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.resetAllMocks();
     window.localStorage.clear();
   });
@@ -76,7 +78,7 @@ describe('AuthContext', () => {
     expect(result.current.isAuthenticated).toBe(false);
   });
 
-  galaxyIt('restores the session from a stored localStorage token on mount', async () => {
+  nonStrictIt('restores the session from a stored localStorage token on mount', async () => {
     // REGRESSION: fresh mount (i.e. re-entering 围棋) with a valid persisted
     // token must end authenticated, not bounce to the login page.
     window.localStorage.setItem('token', 'stored-token');
@@ -109,13 +111,16 @@ describe('AuthContext', () => {
     expect(window.localStorage.getItem('token')).toBeNull();
   });
 
-  kioskIt('bootstraps from the SSO cookie without reading or writing localStorage', async () => {
+  strictKioskIt('removes the legacy token before the cookie-only bootstrap request', async () => {
+    window.localStorage.setItem('token', 'must-not-leak');
+    window.localStorage.setItem('sb_go_token', 'must-never-be-read');
     const getItem = vi.spyOn(window.localStorage, 'getItem');
     const setItem = vi.spyOn(window.localStorage, 'setItem');
     const removeItem = vi.spyOn(window.localStorage, 'removeItem');
     mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/api/v1/auth/me')) {
+        expect(window.localStorage.getItem('token')).toBeNull();
         expect(init?.headers).toBeUndefined();
         return okJson(meResponse);
       }
@@ -127,18 +132,25 @@ describe('AuthContext', () => {
     await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
     expect(result.current.user?.username).toBe('testuser');
     expect(result.current.isLoading).toBe(false);
-    expect(getItem).not.toHaveBeenCalled();
+    expect(getItem).not.toHaveBeenCalledWith('sb_go_token');
     expect(setItem).not.toHaveBeenCalled();
-    expect(removeItem).not.toHaveBeenCalled();
+    expect(removeItem).toHaveBeenCalledTimes(1);
+    expect(removeItem).toHaveBeenCalledWith('token');
+    expect(window.localStorage.getItem('sb_go_token')).toBe('must-never-be-read');
   });
 
-  kioskIt('settles unauthenticated after /me rejects the cookie without localStorage access', async () => {
+  strictKioskIt('settles unauthenticated after /me rejects the cookie', async () => {
+    window.localStorage.setItem('token', 'must-not-leak');
     const getItem = vi.spyOn(window.localStorage, 'getItem');
     const setItem = vi.spyOn(window.localStorage, 'setItem');
     const removeItem = vi.spyOn(window.localStorage, 'removeItem');
-    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+    mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
-      if (url.includes('/api/v1/auth/me')) return notOk();
+      if (url.includes('/api/v1/auth/me')) {
+        expect(window.localStorage.getItem('token')).toBeNull();
+        expect(init?.headers).toBeUndefined();
+        return notOk();
+      }
       return okJson({});
     });
 
@@ -147,12 +159,13 @@ describe('AuthContext', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(getItem).not.toHaveBeenCalled();
+    expect(getItem).not.toHaveBeenCalledWith('sb_go_token');
     expect(setItem).not.toHaveBeenCalled();
-    expect(removeItem).not.toHaveBeenCalled();
+    expect(removeItem).toHaveBeenCalledTimes(1);
+    expect(removeItem).toHaveBeenCalledWith('token');
   });
 
-  galaxyIt('recovers via the shared SSO cookie when the stored token is stale', async () => {
+  nonStrictIt('recovers via the shared SSO cookie when the stored token is stale', async () => {
     // REGRESSION: a >7d-expired localStorage token must NOT defeat a valid box
     // cookie. The Bearer probe 401s; we drop the stale token and retry /me
     // cookie-only (no auth header), which the server accepts.
@@ -201,10 +214,7 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('token')).toBe('fake-token');
   });
 
-  kioskIt('uses the fresh login token in memory without persisting it in localStorage', async () => {
-    const setItem = vi.spyOn(window.localStorage, 'setItem');
-    const getItem = vi.spyOn(window.localStorage, 'getItem');
-    const removeItem = vi.spyOn(window.localStorage, 'removeItem');
+  legacyKioskIt('retains the historical login token in localStorage', async () => {
     mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/api/v1/auth/login')) {
@@ -231,12 +241,26 @@ describe('AuthContext', () => {
 
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.token).toBe('fake-token');
-    expect(getItem).not.toHaveBeenCalled();
-    expect(setItem).not.toHaveBeenCalled();
-    expect(removeItem).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('token')).toBe('fake-token');
   });
 
-  kioskIt('logs out a cookie-only session without an Authorization header or localStorage', async () => {
+  strictKioskIt('rejects direct login without making a credential request', async () => {
+    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/v1/auth/me')) return notOk();
+      throw new Error(`unexpected request: ${url}`);
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await expect(result.current.login('testuser', 'password')).rejects.toThrow(
+      'Direct login is disabled in strict box mode',
+    );
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  strictKioskIt('logs out a cookie-only session without an Authorization header', async () => {
     const getItem = vi.spyOn(window.localStorage, 'getItem');
     const setItem = vi.spyOn(window.localStorage, 'setItem');
     const removeItem = vi.spyOn(window.localStorage, 'removeItem');
@@ -261,8 +285,8 @@ describe('AuthContext', () => {
 
     expect(logoutInit).toEqual({ method: 'POST' });
     expect(result.current.isAuthenticated).toBe(false);
-    expect(getItem).not.toHaveBeenCalled();
+    expect(getItem).not.toHaveBeenCalledWith('sb_go_token');
     expect(setItem).not.toHaveBeenCalled();
-    expect(removeItem).not.toHaveBeenCalled();
+    expect(removeItem).toHaveBeenCalledWith('token');
   });
 });

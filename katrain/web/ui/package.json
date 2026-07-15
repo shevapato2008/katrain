@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true vite build && npm run verify:kiosk-2d",
+    "build:smartbox-kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true VITE_BOX_SSO_STRICT=true vite build && npm run verify:kiosk-2d && node scripts/write-smartbox-build-manifest.mjs",
     "verify:kiosk-2d": "scripts/verify-kiosk.sh",
     "lint": "eslint .",
     "test": "vitest run",

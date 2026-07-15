@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import {
@@ -28,13 +28,16 @@ import { KifuAPI } from '../../../api/kifuApi';
 import type { KifuAlbumSummary } from '../../../types/kifu';
 import {
   UserGamesAPI,
-  type CreateUserGameParams,
   type UserGameDetail,
   type UserGameSummary,
-} from '../../api/userGamesApi';
-import { ReportsAPI, type ReportQueueSummary, type ReportTaskSummary } from '../../api/reportApi';
+} from '../../../api/userGamesApi';
+import { useReportTasks } from '../../../features/report/useReportTasks';
+import {
+  toLibraryUserGameParams,
+  toLocalUserGameParams,
+} from '../../../features/report/reportModel';
 import PlaybackBar from '../../../components/live/PlaybackBar';
-import ReportGameCard, { type ReportGameStatus } from '../../components/report/ReportGameCard';
+import ReportGameCard from '../../components/report/ReportGameCard';
 import ReportImportMenu from '../../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../../components/report/ReportLibraryImportDialog';
 import ReportLocalImportDialog, {
@@ -42,69 +45,16 @@ import ReportLocalImportDialog, {
 } from '../../components/report/ReportLocalImportDialog';
 
 const PAGE_SIZE = 12;
-const POLL_INTERVAL_MS = 2000;
 
 type ImportAction = 'save' | 'normal' | 'deep' | null;
-
-function isActiveTask(task: ReportTaskSummary) {
-  return task.status === 'pending' || task.status === 'running';
-}
-
-function optimisticTask(gameId: string, reportType: 'normal' | 'deep', totalMoves: number): ReportTaskSummary {
-  return {
-    id: -Math.floor(Date.now() + Math.random() * 1000),
-    user_game_id: gameId,
-    status: 'pending',
-    report_type: reportType,
-    total_moves: totalMoves,
-    analyzed_moves: 0,
-    requested_visits: reportType === 'deep' ? 2000 : 500,
-  };
-}
-
-function toLocalCreateParams(payload: LocalImportPayload): CreateUserGameParams {
-  return {
-    sgf_content: payload.sgfContent,
-    source: 'import',
-    title: payload.title,
-    player_black: payload.playerBlack,
-    player_white: payload.playerWhite,
-    black_rank: payload.blackRank,
-    white_rank: payload.whiteRank,
-    board_size: payload.boardSize,
-    rules: payload.rules,
-    komi: payload.komi,
-    move_count: payload.moveCount,
-    category: 'game',
-  };
-}
-
-function toLibraryCreateParams(album: KifuAlbumSummary, sgfContent: string): CreateUserGameParams {
-  return {
-    sgf_content: sgfContent,
-    source: 'kifu_library',
-    title: album.event || `${album.player_black} vs ${album.player_white}`,
-    player_black: album.player_black,
-    player_white: album.player_white,
-    black_rank: album.black_rank || undefined,
-    white_rank: album.white_rank || undefined,
-    result: album.result || undefined,
-    board_size: album.board_size,
-    rules: album.rules || 'chinese',
-    komi: album.komi ?? 7.5,
-    move_count: album.move_count,
-    category: 'game',
-    event: album.event || undefined,
-    round_name: album.round_name || undefined,
-    game_date: album.date_played || undefined,
-  };
-}
 
 export default function ReportsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { token, isAuthenticated } = useAuth();
   const { t } = useTranslation();
+  const translationRef = useRef(t);
+  translationRef.current = t;
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const query = searchParams.get('q') || '';
@@ -115,10 +65,16 @@ export default function ReportsPage() {
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(query);
 
-  const [tasks, setTasks] = useState<ReportTaskSummary[]>([]);
-  const [optimisticTasks, setOptimisticTasks] = useState<ReportTaskSummary[]>([]);
   const [taskError, setTaskError] = useState<string | null>(null);
-  const [queueSummary, setQueueSummary] = useState<ReportQueueSummary | null>(null);
+  const {
+    queueSummary,
+    reportStatesByGame,
+    error: reportTasksError,
+    clearError: clearReportTasksError,
+    refresh: refreshTasks,
+    createReport,
+    retryReport,
+  } = useReportTasks(isAuthenticated ? token : null);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
@@ -153,28 +109,11 @@ export default function ReportsPage() {
       setGames(response.items);
       setTotalGames(response.total);
     } catch (error) {
-      setGamesError(error instanceof Error ? error.message : t('report:load_games_failed', 'Failed to load game list'));
+      setGamesError(error instanceof Error ? error.message : translationRef.current('report:load_games_failed', 'Failed to load game list'));
     } finally {
       setGamesLoading(false);
     }
   }, [isAuthenticated, page, query, token]);
-
-  const loadTasks = useCallback(async () => {
-    if (!token || !isAuthenticated) {
-      return;
-    }
-    try {
-      const [taskResponse, summaryResponse] = await Promise.all([
-        ReportsAPI.list(token),
-        ReportsAPI.summary(token),
-      ]);
-      setTasks(taskResponse);
-      setQueueSummary(summaryResponse);
-      setTaskError(null);
-    } catch (error) {
-      setTaskError(error instanceof Error ? error.message : t('report:load_tasks_failed', 'Failed to load report tasks'));
-    }
-  }, [isAuthenticated, token]);
 
   const applyPreview = useCallback((game: UserGameDetail) => {
     const parsed = sgfToMoves(game.sgf_content);
@@ -192,21 +131,6 @@ export default function ReportsPage() {
   useEffect(() => {
     loadGames().catch(() => {});
   }, [loadGames]);
-
-  useEffect(() => {
-    loadTasks().catch(() => {});
-  }, [loadTasks]);
-
-  const allTasks = useMemo(() => [...optimisticTasks, ...tasks], [optimisticTasks, tasks]);
-  const hasActiveTasks = useMemo(() => allTasks.some((task) => isActiveTask(task)), [allTasks]);
-
-  useEffect(() => {
-    if (!hasActiveTasks) return;
-    const timer = window.setInterval(() => {
-      loadTasks().catch(() => {});
-    }, POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [hasActiveTasks, loadTasks]);
 
   useEffect(() => {
     if (games.length === 0) {
@@ -232,7 +156,7 @@ export default function ReportsPage() {
       })
       .catch((error) => {
         if (cancelled) return;
-        setGamesError(error instanceof Error ? error.message : t('report:load_games_failed', 'Failed to load game list'));
+        setGamesError(error instanceof Error ? error.message : translationRef.current('report:load_games_failed', 'Failed to load game list'));
       })
       .finally(() => {
         if (!cancelled) {
@@ -244,34 +168,6 @@ export default function ReportsPage() {
     };
   }, [applyPreview, isAuthenticated, selectedGame?.id, selectedGameId, token]);
 
-  const reportStatesByGame = useMemo<Record<string, ReportGameStatus>>(() => {
-    const result: Record<string, ReportGameStatus> = {};
-    for (const task of [...allTasks].sort((a, b) => b.id - a.id)) {
-      const state = result[task.user_game_id] || {};
-      const typeKey = task.report_type === 'deep' ? 'Deep' : 'Normal';
-      if (task.status === 'completed') {
-        const completedKey = `completed${typeKey}` as keyof ReportGameStatus;
-        if (!state[completedKey]) {
-          state[completedKey] = task;
-        }
-      }
-      if (isActiveTask(task)) {
-        const activeKey = `active${typeKey}` as keyof ReportGameStatus;
-        if (!state[activeKey]) {
-          state[activeKey] = task;
-        }
-      }
-      if (task.status === 'failed') {
-        const failedKey = `failed${typeKey}` as keyof ReportGameStatus;
-        if (!state[failedKey]) {
-          state[failedKey] = task;
-        }
-      }
-      result[task.user_game_id] = state;
-    }
-    return result;
-  }, [allTasks]);
-
   const selectedSummary = useMemo(
     () => games.find((game) => game.id === selectedGameId) || null,
     [games, selectedGameId],
@@ -280,29 +176,14 @@ export default function ReportsPage() {
   const totalPages = Math.max(1, Math.ceil(totalGames / PAGE_SIZE));
 
   const refreshAfterMutation = useCallback(async () => {
-    await Promise.all([loadGames(), loadTasks()]);
-  }, [loadGames, loadTasks]);
+    await Promise.all([loadGames(), refreshTasks()]);
+  }, [loadGames, refreshTasks]);
 
   const createReportForGame = useCallback(
     async (game: UserGameSummary | UserGameDetail, reportType: 'normal' | 'deep') => {
-      if (!token) return;
-
-      const optimistic = optimisticTask(game.id, reportType, game.move_count);
-      setOptimisticTasks((current) => [optimistic, ...current]);
-
-      try {
-        const created = await ReportsAPI.create(token, {
-          user_game_id: game.id,
-          report_type: reportType,
-        });
-        setOptimisticTasks((current) => current.filter((task) => task.id !== optimistic.id));
-        setTasks((current) => [created, ...current.filter((task) => task.id !== created.id)]);
-      } catch (error) {
-        setOptimisticTasks((current) => current.filter((task) => task.id !== optimistic.id));
-        throw error;
-      }
+      await createReport({ userGameId: game.id, reportType, totalMoves: game.move_count });
     },
-    [token],
+    [createReport],
   );
 
   const handleSearch = () => {
@@ -341,20 +222,20 @@ export default function ReportsPage() {
       setLocalImporting(action);
       setTaskError(null);
       try {
-        const createdGame = await UserGamesAPI.create(token, toLocalCreateParams(payload));
+        const createdGame = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
         await focusImportedGame(createdGame);
         if (reportType) {
           await createReportForGame(createdGame, reportType);
         }
         setLocalImportOpen(false);
-        await loadTasks();
+        await refreshTasks();
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : t('report:import_failed', 'Failed to import SGF'));
+        setTaskError(error instanceof Error ? error.message : translationRef.current('report:import_failed', 'Failed to import SGF'));
       } finally {
         setLocalImporting(null);
       }
     },
-    [createReportForGame, focusImportedGame, loadTasks, token],
+    [createReportForGame, focusImportedGame, refreshTasks, token],
   );
 
   const handleLibraryImport = useCallback(
@@ -365,28 +246,28 @@ export default function ReportsPage() {
       setTaskError(null);
       try {
         const detail = await KifuAPI.getAlbum(album.id);
-        const createdGame = await UserGamesAPI.create(token, toLibraryCreateParams(album, detail.sgf_content));
+        const createdGame = await UserGamesAPI.create(token, toLibraryUserGameParams(album, detail.sgf_content));
         await focusImportedGame(createdGame);
         if (reportType) {
           await createReportForGame(createdGame, reportType);
         }
         setLibraryImportOpen(false);
-        await loadTasks();
+        await refreshTasks();
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : t('report:library_import_failed', 'Failed to import from library'));
+        setTaskError(error instanceof Error ? error.message : translationRef.current('report:library_import_failed', 'Failed to import from library'));
       } finally {
         setLibraryImporting(null);
       }
     },
-    [createReportForGame, focusImportedGame, loadTasks, token],
+    [createReportForGame, focusImportedGame, refreshTasks, token],
   );
 
   const handleCreateReport = useCallback(
     async (game: UserGameSummary, reportType: 'normal' | 'deep') => {
       try {
         await createReportForGame(game, reportType);
-      } catch (error) {
-        setTaskError(error instanceof Error ? error.message : t('report:create_task_failed', 'Failed to create report task'));
+      } catch {
+        // useReportTasks owns and clears creation errors.
       }
     },
     [createReportForGame],
@@ -406,7 +287,7 @@ export default function ReportsPage() {
       }
       await refreshAfterMutation();
     } catch (error) {
-      setTaskError(error instanceof Error ? error.message : t('report:delete_failed', 'Failed to delete game'));
+      setTaskError(error instanceof Error ? error.message : translationRef.current('report:delete_failed', 'Failed to delete game'));
     } finally {
       setDeleteLoading(false);
       setDeleteTarget(null);
@@ -415,15 +296,13 @@ export default function ReportsPage() {
 
   const handleRetry = useCallback(
     async (taskId: number) => {
-      if (!token) return;
       try {
-        await ReportsAPI.retry(token, taskId);
-        await loadTasks();
-      } catch (error) {
-        setTaskError(error instanceof Error ? error.message : t('report:retry_failed', 'Failed to retry report'));
+        await retryReport(taskId);
+      } catch {
+        // useReportTasks owns and clears retry errors.
       }
     },
-    [token, loadTasks],
+    [retryReport],
   );
 
   if (!isAuthenticated) {
@@ -457,9 +336,12 @@ export default function ReportsPage() {
             </Typography>
           </Box>
 
-          {taskError && (
-            <Alert severity="error" onClose={() => setTaskError(null)}>
-              {taskError}
+          {(taskError || reportTasksError) && (
+            <Alert severity="error" onClose={() => {
+              setTaskError(null);
+              clearReportTasksError();
+            }}>
+              {taskError || reportTasksError}
             </Alert>
           )}
 

@@ -1,6 +1,9 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { ReportQueueSummary, ReportTaskSummary } from '../../../api/reportApi';
+import { buildReportStatesByGame } from '../../../features/report/reportModel';
 
 import ReportsPage from './ReportsPage';
 
@@ -8,10 +11,10 @@ const mockUserGamesList = vi.fn();
 const mockUserGamesGet = vi.fn();
 const mockUserGamesCreate = vi.fn();
 const mockUserGamesDelete = vi.fn();
-const mockReportsList = vi.fn();
-const mockReportsCreate = vi.fn();
-const mockReportsRetry = vi.fn();
-const mockReportsSummary = vi.fn();
+const mockCreateReport = vi.fn();
+const mockRetryReport = vi.fn();
+const mockTaskRefresh = vi.fn();
+const mockClearTaskError = vi.fn();
 const mockKifuGetAlbums = vi.fn();
 const mockKifuGetAlbum = vi.fn();
 
@@ -23,7 +26,7 @@ vi.mock('../../../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../../api/userGamesApi', () => ({
+vi.mock('../../../api/userGamesApi', () => ({
   UserGamesAPI: {
     list: (...args: unknown[]) => mockUserGamesList(...args),
     get: (...args: unknown[]) => mockUserGamesGet(...args),
@@ -32,13 +35,32 @@ vi.mock('../../api/userGamesApi', () => ({
   },
 }));
 
-vi.mock('../../api/reportApi', () => ({
-  ReportsAPI: {
-    list: (...args: unknown[]) => mockReportsList(...args),
-    create: (...args: unknown[]) => mockReportsCreate(...args),
-    retry: (...args: unknown[]) => mockReportsRetry(...args),
-    summary: (...args: unknown[]) => mockReportsSummary(...args),
-  },
+let reportTasksFixture: {
+  tasks: ReportTaskSummary[];
+  queueSummary: ReportQueueSummary | null;
+  reportStatesByGame: ReturnType<typeof buildReportStatesByGame>;
+  loading: boolean;
+  error: string | null;
+};
+
+function setReportTasks(tasks: ReportTaskSummary[], queueSummary: ReportQueueSummary | null = null) {
+  reportTasksFixture = {
+    tasks,
+    queueSummary,
+    reportStatesByGame: buildReportStatesByGame(tasks),
+    loading: false,
+    error: null,
+  };
+}
+
+vi.mock('../../../features/report/useReportTasks', () => ({
+  useReportTasks: () => ({
+    ...reportTasksFixture,
+    createReport: mockCreateReport,
+    retryReport: mockRetryReport,
+    refresh: mockTaskRefresh,
+    clearError: mockClearTaskError,
+  }),
 }));
 
 vi.mock('../../../api/kifuApi', () => ({
@@ -87,10 +109,10 @@ describe('ReportsPage', () => {
     mockUserGamesGet.mockReset();
     mockUserGamesCreate.mockReset();
     mockUserGamesDelete.mockReset();
-    mockReportsList.mockReset();
-    mockReportsCreate.mockReset();
-    mockReportsRetry.mockReset();
-    mockReportsSummary.mockReset();
+    mockCreateReport.mockReset();
+    mockRetryReport.mockReset();
+    mockTaskRefresh.mockReset();
+    mockClearTaskError.mockReset();
     mockKifuGetAlbums.mockReset();
     mockKifuGetAlbum.mockReset();
 
@@ -101,8 +123,10 @@ describe('ReportsPage', () => {
       page_size: 12,
     });
     mockUserGamesGet.mockResolvedValue(gameDetail);
-    mockReportsList.mockResolvedValue([]);
-    mockReportsSummary.mockResolvedValue({ pending: 0, running: 0, completed: 0, failed: 0 });
+    setReportTasks([], { pending: 0, running: 0, completed: 0, failed: 0 });
+    mockCreateReport.mockResolvedValue(undefined);
+    mockRetryReport.mockResolvedValue(undefined);
+    mockTaskRefresh.mockResolvedValue(undefined);
     mockKifuGetAlbums.mockResolvedValue({
       items: [],
       total: 0,
@@ -180,7 +204,7 @@ describe('ReportsPage', () => {
       id: 'game-2',
       title: 'Imported Game',
     });
-    mockReportsCreate.mockResolvedValue({
+    mockCreateReport.mockResolvedValue({
       id: 11,
       user_game_id: 'game-2',
       status: 'pending',
@@ -212,12 +236,13 @@ describe('ReportsPage', () => {
 
     await waitFor(() => {
       expect(mockUserGamesCreate).toHaveBeenCalledTimes(1);
-      expect(mockReportsCreate).toHaveBeenCalledTimes(1);
+      expect(mockCreateReport).toHaveBeenCalledTimes(1);
     });
 
-    expect(mockReportsCreate).toHaveBeenCalledWith('token', {
-      user_game_id: 'game-2',
-      report_type: 'normal',
+    expect(mockCreateReport).toHaveBeenCalledWith({
+      userGameId: 'game-2',
+      reportType: 'normal',
+      totalMoves: 2,
     });
   });
 
@@ -307,69 +332,36 @@ describe('ReportsPage', () => {
     }));
   });
 
-  it('keeps polling active report tasks so progress updates without refresh', async () => {
-    vi.useFakeTimers();
-    mockReportsList
-      .mockResolvedValueOnce([
-        {
-          id: 11,
-          user_game_id: 'game-1',
-          status: 'running',
-          report_type: 'normal',
-          total_moves: 2,
-          analyzed_moves: 0,
-          requested_visits: 500,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: 11,
-          user_game_id: 'game-1',
-          status: 'running',
-          report_type: 'normal',
-          total_moves: 2,
-          analyzed_moves: 1,
-          requested_visits: 500,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: 11,
-          user_game_id: 'game-1',
-          status: 'running',
-          report_type: 'normal',
-          total_moves: 2,
-          analyzed_moves: 2,
-          requested_visits: 500,
-        },
-      ]);
+  it('renders progressive task snapshots supplied by the shared hook', async () => {
+    const runningTask: ReportTaskSummary = {
+      id: 11,
+      user_game_id: 'game-1',
+      status: 'running',
+      report_type: 'normal',
+      total_moves: 2,
+      analyzed_moves: 0,
+      requested_visits: 500,
+    };
+    setReportTasks([runningTask]);
 
-    render(
+    const { rerender } = render(
       <MemoryRouter>
         <ReportsPage />
       </MemoryRouter>,
     );
+    await waitFor(() => expect(screen.getByText('0/2')).toBeInTheDocument());
 
-    await act(async () => {
-      await Promise.resolve();
-    });
-    expect(screen.getByText('0/2')).toBeInTheDocument();
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2100);
-    });
-
+    setReportTasks([{ ...runningTask, analyzed_moves: 1 }]);
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
     expect(screen.getByText('1/2')).toBeInTheDocument();
 
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2100);
-    });
-
+    setReportTasks([{ ...runningTask, analyzed_moves: 2 }]);
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
     expect(screen.getByText('2/2')).toBeInTheDocument();
   });
 
   it('does not show a completed badge when the same report type is still running', async () => {
-    mockReportsList.mockResolvedValue([
+    setReportTasks([
       {
         id: 7,
         user_game_id: 'game-1',
@@ -404,7 +396,7 @@ describe('ReportsPage', () => {
   });
 
   it('shows pending wording when a report is queued behind concurrency limit', async () => {
-    mockReportsList.mockResolvedValue([
+    setReportTasks([
       {
         id: 9,
         user_game_id: 'game-1',
@@ -466,10 +458,11 @@ describe('ReportsPage', () => {
     await waitFor(() => {
       expect(mockUserGamesList.mock.calls.length).toBeGreaterThan(callsBefore);
     });
+    expect(mockTaskRefresh).toHaveBeenCalled();
   });
 
   it('shows retry button for failed tasks and retries on click', async () => {
-    mockReportsList.mockResolvedValue([
+    setReportTasks([
       {
         id: 15,
         user_game_id: 'game-1',
@@ -479,17 +472,7 @@ describe('ReportsPage', () => {
         analyzed_moves: 1,
         requested_visits: 500,
       },
-    ]);
-    mockReportsSummary.mockResolvedValue({ pending: 0, running: 0, completed: 0, failed: 1 });
-    mockReportsRetry.mockResolvedValue({
-      id: 15,
-      user_game_id: 'game-1',
-      status: 'pending',
-      report_type: 'normal',
-      total_moves: 2,
-      analyzed_moves: 1,
-      requested_visits: 500,
-    });
+    ], { pending: 0, running: 0, completed: 0, failed: 1 });
 
     render(
       <MemoryRouter>
@@ -506,7 +489,7 @@ describe('ReportsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retry normal' }));
 
     await waitFor(() => {
-      expect(mockReportsRetry).toHaveBeenCalledWith('token', 15);
+      expect(mockRetryReport).toHaveBeenCalledWith(15);
     });
   });
 
@@ -519,13 +502,12 @@ describe('ReportsPage', () => {
       page: 1,
       page_size: 12,
     });
-    mockReportsList.mockResolvedValue([
+    setReportTasks([
       { id: 20, user_game_id: 'game-1', status: 'running', report_type: 'normal', total_moves: 10, analyzed_moves: 5, requested_visits: 500 },
       { id: 21, user_game_id: 'game-2', status: 'pending', report_type: 'deep', total_moves: 0, analyzed_moves: 0, requested_visits: 2000 },
       { id: 22, user_game_id: 'game-3', status: 'failed', report_type: 'normal', total_moves: 8, analyzed_moves: 3, requested_visits: 500 },
       { id: 23, user_game_id: 'game-3', status: 'completed', report_type: 'deep', total_moves: 8, analyzed_moves: 8, requested_visits: 2000 },
-    ]);
-    mockReportsSummary.mockResolvedValue({ pending: 1, running: 1, completed: 1, failed: 1 });
+    ], { pending: 1, running: 1, completed: 1, failed: 1 });
 
     render(
       <MemoryRouter>
@@ -550,5 +532,127 @@ describe('ReportsPage', () => {
     // Game 3: failed normal + completed deep
     expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Deep' })).toBeInTheDocument();
+  });
+
+  it('reads search and pagination from the URL and preserves search while paging', async () => {
+    mockUserGamesList.mockResolvedValue({ items: [gameSummary], total: 25, page: 2, page_size: 12 });
+
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report?q=Alpha&page=2']}>
+        <ReportsPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mockUserGamesList).toHaveBeenCalledWith('token', expect.objectContaining({
+        page: 2,
+        q: 'Alpha',
+      }));
+    });
+    expect(screen.getByPlaceholderText('Search by player, title, or event')).toHaveValue('Alpha');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Go to page 3' }));
+    await waitFor(() => {
+      expect(mockUserGamesList).toHaveBeenCalledWith('token', expect.objectContaining({
+        page: 3,
+        q: 'Alpha',
+      }));
+    });
+  });
+
+  it('creates a deep report with the selected game adapter arguments', async () => {
+    render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Deep' }));
+    await waitFor(() => expect(mockCreateReport).toHaveBeenCalledWith({
+      userGameId: 'game-1', reportType: 'deep', totalMoves: 2,
+    }));
+  });
+
+  it('removes a create failure alert when the shared hook recovers', async () => {
+    mockCreateReport.mockRejectedValue(new Error('Create failed'));
+    const { rerender } = render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Normal' }));
+    await waitFor(() => expect(mockCreateReport).toHaveBeenCalled());
+
+    reportTasksFixture = { ...reportTasksFixture, error: 'Create failed' };
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    expect(screen.getByText('Create failed')).toBeInTheDocument();
+
+    reportTasksFixture = { ...reportTasksFixture, error: null };
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    expect(screen.queryByText('Create failed')).not.toBeInTheDocument();
+  });
+
+  it('shows an optimistic queued report until creation reconciles with the server task', async () => {
+    const { rerender } = render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Normal' }));
+
+    expect(mockCreateReport).toHaveBeenCalledWith({
+      userGameId: 'game-1', reportType: 'normal', totalMoves: 2,
+    });
+    setReportTasks([{
+      id: -1, user_game_id: 'game-1', status: 'pending', report_type: 'normal',
+      total_moves: 2, analyzed_moves: 0, requested_visits: 500,
+    }]);
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    expect(screen.getByText('Normal Queued')).toBeInTheDocument();
+
+    setReportTasks([{
+      id: 41, user_game_id: 'game-1', status: 'running', report_type: 'normal',
+      total_moves: 2, analyzed_moves: 1, requested_visits: 500,
+    }]);
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    expect(screen.getByText('Normal Generating')).toBeInTheDocument();
+  });
+
+  it('surfaces a delete rejection and keeps the game visible', async () => {
+    mockUserGamesDelete.mockRejectedValue(new Error('Delete denied'));
+    render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Delete game' })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
+
+    expect(await screen.findByText('Delete denied')).toBeInTheDocument();
+    expect(screen.getAllByText('Report Game').length).toBeGreaterThan(0);
+  });
+
+  it('dismisses shared hook errors through the supported hook boundary', async () => {
+    reportTasksFixture = { ...reportTasksFixture, error: 'Task service unavailable' };
+    render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+
+    expect(await screen.findByText('Task service unavailable')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(mockClearTaskError).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes a retry failure alert when the shared hook recovers', async () => {
+    setReportTasks([{
+      id: 15, user_game_id: 'game-1', status: 'failed', report_type: 'normal',
+      total_moves: 2, analyzed_moves: 1, requested_visits: 500,
+    }]);
+    mockRetryReport.mockRejectedValue(new Error('Retry failed'));
+    const { rerender } = render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry normal' }));
+    await waitFor(() => expect(mockRetryReport).toHaveBeenCalledWith(15));
+
+    reportTasksFixture = { ...reportTasksFixture, error: 'Retry failed' };
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    expect(screen.getByText('Retry failed')).toBeInTheDocument();
+
+    reportTasksFixture = { ...reportTasksFixture, error: null };
+    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    expect(screen.queryByText('Retry failed')).not.toBeInTheDocument();
   });
 });

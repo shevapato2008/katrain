@@ -31,6 +31,7 @@ export interface UseReportTasksResult {
   reportStatesByGame: ReportStatesByGame;
   loading: boolean;
   error: string | null;
+  clearError: () => void;
   refresh: () => Promise<void>;
   createReport: (params: CreateReportParams) => Promise<ReportTaskSummary>;
   retryReport: (taskId: number) => Promise<ReportTaskSummary>;
@@ -52,6 +53,7 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
   const [queueSummary, setQueueSummary] = useState<ReportQueueSummary | null>(null);
   const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState<string | null>(null);
+  const clearError = useCallback(() => setError(null), []);
   const lifecycleGenerationRef = useRef(0);
   const nextOptimisticIdRef = useRef(0);
   const activeRefreshRef = useRef<{
@@ -251,6 +253,7 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
     reportStatesByGame,
     loading,
     error,
+    clearError,
     refresh,
     createReport,
     retryReport,

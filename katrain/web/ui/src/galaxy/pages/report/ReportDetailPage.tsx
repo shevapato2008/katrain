@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MapIcon from '@mui/icons-material/Map';
@@ -22,9 +22,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useSound } from '../../../hooks/useSound';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { sgfToMoves } from '../../../utils/sgfSerializer';
-import type { MoveAnalysis } from '../../../types/live';
-import { UserGamesAPI, type UserGameDetail } from '../../api/userGamesApi';
-import { ReportsAPI, type ReportTaskMove, type ReportTaskSummary } from '../../api/reportApi';
+import { useReportDetail } from '../../../features/report/useReportDetail';
 import AiAnalysis from '../../../components/live/AiAnalysis';
 import PlaybackBar from '../../../components/live/PlaybackBar';
 import TrendChart from '../../../components/live/TrendChart';
@@ -36,19 +34,21 @@ export default function ReportDetailPage() {
   const { token, isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
-  const [task, setTask] = useState<ReportTaskSummary | null>(null);
-  const [game, setGame] = useState<UserGameDetail | null>(null);
-  const [moves, setMoves] = useState<ReportTaskMove[]>([]);
-  const [currentMove, setCurrentMove] = useState(0);
+  const {
+    task,
+    game,
+    analysisByMove,
+    currentMove,
+    setCurrentMove,
+    loading,
+    error,
+  } = useReportDetail(isAuthenticated ? token : null, taskId);
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
   const [showTerritory, setShowTerritory] = useState(false);
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const analyzedMovesRef = useRef(0);
 
   // Sound on move navigation
   const { play: playSound } = useSound();
@@ -61,106 +61,10 @@ export default function ReportDetailPage() {
     prevMoveRef.current = currentMove;
   }, [currentMove, playSound]);
 
-  const loadReport = useCallback(async () => {
-    if (!token || !isAuthenticated || !taskId) {
-      setLoading(false);
-      return { shouldPoll: false };
-    }
-
-    const taskResp = await ReportsAPI.get(token, Number(taskId));
-    const [movesResp, gameResp] = await Promise.all([
-      ReportsAPI.getMoves(token, Number(taskId)),
-      UserGamesAPI.get(token, taskResp.user_game_id),
-    ]);
-
-    setTask(taskResp);
-    setMoves(movesResp);
-    setGame(gameResp);
-    setError(null);
-
-    const latestMove = movesResp.length > 0 ? Math.min(movesResp.length, taskResp.analyzed_moves) : 0;
-    setCurrentMove((prev) => {
-      if (prev === 0 || prev >= analyzedMovesRef.current) {
-        return latestMove;
-      }
-      return Math.min(prev, latestMove);
-    });
-    analyzedMovesRef.current = latestMove;
-
-    return { shouldPoll: taskResp.status === 'pending' || taskResp.status === 'running' };
-  }, [isAuthenticated, taskId, token]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let intervalId: number | null = null;
-
-    const bootstrap = async () => {
-      try {
-        setLoading(true);
-        const { shouldPoll } = await loadReport();
-        if (!cancelled && shouldPoll) {
-          intervalId = window.setInterval(async () => {
-            try {
-              const refresh = await loadReport();
-              if (!refresh.shouldPoll && intervalId != null) {
-                window.clearInterval(intervalId);
-                intervalId = null;
-              }
-            } catch (err) {
-              if (!cancelled) {
-                setError(err instanceof Error ? err.message : t('report:refresh_failed', 'Failed to refresh report'));
-              }
-            }
-          }, 2000);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : t('report:load_failed', 'Failed to load report'));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    bootstrap();
-
-    return () => {
-      cancelled = true;
-      if (intervalId != null) {
-        window.clearInterval(intervalId);
-      }
-    };
-  }, [loadReport]);
-
   const previewData = useMemo(() => {
     if (!game?.sgf_content) return null;
     return sgfToMoves(game.sgf_content);
   }, [game]);
-
-  const analysisByMove = useMemo<Record<number, MoveAnalysis>>(() => {
-    const map: Record<number, MoveAnalysis> = {};
-    for (const move of moves) {
-      if (move.winrate == null || move.score_lead == null) continue;
-      map[move.move_number] = {
-        match_id: task?.user_game_id || '',
-        move_number: move.move_number,
-        move: move.actual_move,
-        player: move.actual_player,
-        winrate: move.winrate,
-        score_lead: move.score_lead,
-        top_moves: move.top_moves || [],
-        ownership: move.ownership,
-        is_brilliant: (move.delta_score || 0) >= 2,
-        is_mistake: (move.delta_score || 0) <= -3,
-        is_questionable: (move.delta_score || 0) <= -1.5,
-        delta_score: move.delta_score || 0,
-        delta_winrate: move.delta_winrate || 0,
-      };
-    }
-    return map;
-  }, [moves, task]);
 
   const currentAnalysis = analysisByMove[currentMove] || null;
 

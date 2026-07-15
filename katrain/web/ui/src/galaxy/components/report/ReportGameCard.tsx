@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   Box,
@@ -15,17 +15,10 @@ import {
 
 import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
-import type { UserGameSummary } from '../../api/userGamesApi';
-import type { ReportTaskSummary } from '../../api/reportApi';
+import type { UserGameSummary } from '../../../api/userGamesApi';
+import type { ReportGameStatus } from '../../../features/report/reportModel';
 
-export interface ReportGameStatus {
-  activeNormal?: ReportTaskSummary;
-  activeDeep?: ReportTaskSummary;
-  completedNormal?: ReportTaskSummary;
-  completedDeep?: ReportTaskSummary;
-  failedNormal?: ReportTaskSummary;
-  failedDeep?: ReportTaskSummary;
-}
+export type { ReportGameStatus } from '../../../features/report/reportModel';
 
 interface ReportGameCardProps {
   game: UserGameSummary;
@@ -70,7 +63,7 @@ export default function ReportGameCard({
   const reportTypeLabel = (type: 'normal' | 'deep') =>
     type === 'normal' ? t('report:normal', 'Normal') : t('report:deep', 'Deep');
 
-  const progressMeta = useMemo(() => {
+  const progressMeta = (() => {
     const activeTask = reportState.activeDeep || reportState.activeNormal;
     if (!activeTask) return null;
     const totalMoves = activeTask.total_moves > 0 ? activeTask.total_moves : game.move_count;
@@ -82,7 +75,7 @@ export default function ReportGameCard({
       ? `${typeLabel} ${t('report:queuing', 'Queued')}`
       : `${typeLabel} ${t('report:generating', 'Generating')}`;
     return { activeTask, progress, totalMoves, statusLabel };
-  }, [game.move_count, reportState, t]);
+  })();
 
   const normalColor = reportBadgeColor('normal');
   const deepColor = reportBadgeColor('deep');

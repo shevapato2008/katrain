@@ -3,8 +3,8 @@ import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
 import type { MoveAnalysis } from '../../../types/live';
-import type { UserGameDetail } from '../../api/userGamesApi';
-import type { ReportTaskSummary } from '../../api/reportApi';
+import type { UserGameDetail } from '../../../api/userGamesApi';
+import type { ReportTaskSummary } from '../../../api/reportApi';
 
 interface ReportMetaPanelProps {
   game: UserGameDetail | null;

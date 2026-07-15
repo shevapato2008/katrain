@@ -312,6 +312,23 @@ describe('useReportTasks', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('clears a visible error without changing the current task snapshot', async () => {
+    const original = task({ id: 3, status: 'completed' });
+    mockList.mockResolvedValueOnce([original]);
+    const { result } = renderHook(() => useReportTasks('token-a'));
+    await settle();
+
+    mockList.mockRejectedValueOnce(new Error('temporary outage'));
+    await act(async () => { await result.current.refresh(); });
+    expect(result.current.error).toBe('temporary outage');
+
+    act(() => result.current.clearError());
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.tasks).toEqual([original]);
+    expect(result.current.queueSummary).toEqual(emptySummary);
+  });
+
   it('uses the translated fallback for non-Error failures and recovers from a failed create', async () => {
     const createRequest = deferred<ReportTaskSummary>();
     mockCreate.mockReturnValue(createRequest.promise);

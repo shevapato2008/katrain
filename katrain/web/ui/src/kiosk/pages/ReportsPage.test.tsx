@@ -59,6 +59,12 @@ const detail = (summary: UserGameSummary, sgf?: string): UserGameDetail => ({
   sgf_content: sgf ?? `(;FF[4]GM[1]SZ[${summary.board_size}];B[aa];W[bb];B[cc])`,
 });
 const response = (items: UserGameSummary[], page = 1, total = items.length) => ({ items, total, page, page_size: 12 });
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
 
 function LocationProbe() {
   const location = useLocation();
@@ -218,6 +224,35 @@ describe('kiosk ReportsPage list and preview', () => {
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     expect(await screen.findByRole('button', { name: /选择棋局.*赛事 a/ })).toBeInTheDocument();
     expect(mocks.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores an old list success that arrives after the latest search result', async () => {
+    const oldRequest = deferred<ReturnType<typeof response>>();
+    mocks.list.mockReturnValueOnce(oldRequest.promise).mockResolvedValueOnce(response([game('newest')]));
+    renderPage('/kiosk/report?q=old');
+    const search = screen.getByPlaceholderText('搜索棋手、标题或赛事');
+    fireEvent.change(search, { target: { value: 'new' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(await screen.findByRole('button', { name: /选择棋局.*赛事 newest/ })).toBeInTheDocument();
+
+    await act(async () => oldRequest.resolve(response([game('stale')])));
+    expect(screen.queryByRole('button', { name: /选择棋局.*赛事 stale/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /选择棋局.*赛事 newest/ })).toBeInTheDocument();
+  });
+
+  it('ignores an old list rejection without clearing the latest result or exposing stale error', async () => {
+    const oldRequest = deferred<ReturnType<typeof response>>();
+    mocks.list.mockReturnValueOnce(oldRequest.promise).mockResolvedValueOnce(response([game('newest')]));
+    renderPage('/kiosk/report?q=old');
+    const search = screen.getByPlaceholderText('搜索棋手、标题或赛事');
+    fireEvent.change(search, { target: { value: 'new' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(await screen.findByRole('button', { name: /选择棋局.*赛事 newest/ })).toBeInTheDocument();
+
+    await act(async () => oldRequest.reject(new Error('stale list failure')));
+    expect(screen.queryByText('stale list failure')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /选择棋局.*赛事 newest/ })).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
   it('never invokes vision or LED APIs while previewing and playing a report game', async () => {

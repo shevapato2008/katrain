@@ -44,6 +44,7 @@ export default function ReportsPage() {
   const [gamesLoading, setGamesLoading] = useState(Boolean(token));
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const listRequestGenerationRef = useRef(0);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
@@ -70,8 +71,9 @@ export default function ReportsPage() {
   } = useReportTasks(isAuthenticated ? token : null);
 
   const loadGames = useCallback(async () => {
+    const requestGeneration = ++listRequestGenerationRef.current;
     if (!token || !isAuthenticated) {
-      setGamesLoading(false);
+      if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
       return null;
     }
     setGamesLoading(true);
@@ -80,14 +82,16 @@ export default function ReportsPage() {
       const response = await UserGamesAPI.list(token, {
         page, page_size: PAGE_SIZE, q: query || undefined, sort: 'created_at_desc',
       });
+      if (requestGeneration !== listRequestGenerationRef.current) return null;
       setGames(response.items);
       setTotalGames(response.total);
       return response;
     } catch (error) {
+      if (requestGeneration !== listRequestGenerationRef.current) return null;
       setGamesError(messageOf(error, translationRef.current('report:load_games_failed', '加载棋谱失败，请重试。')));
       return null;
     } finally {
-      setGamesLoading(false);
+      if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
     }
   }, [isAuthenticated, page, query, token]);
 
@@ -134,7 +138,10 @@ export default function ReportsPage() {
   }, [applyPreview, clearPreview, isAuthenticated, token]);
 
   useEffect(() => setSearchInput(query), [query]);
-  useEffect(() => { void loadGames(); }, [loadGames]);
+  useEffect(() => {
+    void loadGames();
+    return () => { listRequestGenerationRef.current += 1; };
+  }, [loadGames]);
   useEffect(() => {
     if (games.length === 0) {
       setSelectedGameId(null);
@@ -237,7 +244,7 @@ export default function ReportsPage() {
     <>
       <Box data-testid="report-list-page" sx={{ display: 'flex', width: '100%', height: '100%', minWidth: 0, overflow: 'hidden' }}>
         <Box sx={{ width: '54%', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: 1, borderColor: 'divider' }}>
-          <Box sx={{ flex: 1, minHeight: 0, display: 'grid', placeItems: 'center', p: 1.25, overflow: 'hidden' }}>
+          <Box data-testid="report-preview-region" sx={{ flex: 1, minHeight: 0, display: 'grid', placeItems: 'center', p: 1.25, overflow: 'hidden' }}>
             {previewLoading ? <CircularProgress aria-label={t('report:preview_loading', '正在加载预览')} />
               : previewError ? (
                 <Alert
@@ -246,7 +253,7 @@ export default function ReportsPage() {
                   sx={{ maxWidth: '92%', overflowWrap: 'anywhere' }}
                 >{previewError}</Alert>
               ) : selectedGame ? (
-                <LiveBoard moves={previewMoves} stoneColors={previewColors} currentMove={previewCurrentMove} boardSize={previewBoardSize} showCoordinates />
+                <LiveBoard moves={previewMoves} stoneColors={previewColors} currentMove={previewCurrentMove} boardSize={previewBoardSize} showCoordinates minContainerHeight={0} />
               ) : (
                 <Typography color="text.secondary">{t('report:no_preview', '选择一局棋谱预览')}</Typography>
               )}

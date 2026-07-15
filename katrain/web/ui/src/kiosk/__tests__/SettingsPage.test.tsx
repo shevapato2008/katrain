@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, type InitialEntry } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
@@ -55,6 +55,23 @@ const renderPage = () =>
     </ThemeProvider>
   );
 
+const LocationProbe = () => {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}{location.search}{location.hash}</output>;
+};
+
+const renderNavigationPage = (entry: InitialEntry) =>
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path="/kiosk/settings" element={<SettingsPage />} />
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+
 describe('SettingsPage', () => {
   it('renders without crashing and shows key elements', () => {
     renderPage();
@@ -72,5 +89,37 @@ describe('SettingsPage', () => {
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(screen.getByRole('option', { name: 'English' }));
     expect(mockSetLanguage).toHaveBeenCalledWith('en');
+  });
+
+  it('renders a translated page-owned 48 by 48 back button', () => {
+    renderPage();
+
+    const back = screen.getByRole('button', { name: '返回' });
+    expect(back).toHaveStyle({ minWidth: '48px', width: '48px', minHeight: '48px', height: '48px' });
+  });
+
+  it('returns to a validated internal kiosk route from location state', () => {
+    renderNavigationPage({
+      pathname: '/kiosk/settings',
+      state: { from: '/kiosk/kifu?page=3&q=%E6%A3%8B' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/kiosk/kifu?page=3&q=%E6%A3%8B');
+  });
+
+  it.each([
+    ['absent state', undefined],
+    ['an external origin', 'https://example.com/kiosk/kifu'],
+    ['the Settings route with query and hash', '/kiosk/settings?from=kifu#top'],
+    ['a Settings descendant', '/kiosk/settings/account?tab=profile#top'],
+    ['a non-kiosk route', '/galaxy/report'],
+  ])('falls back to play for %s', (_case, from) => {
+    renderNavigationPage({ pathname: '/kiosk/settings', state: from === undefined ? null : { from } });
+
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/kiosk/play');
   });
 });

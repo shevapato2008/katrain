@@ -63,12 +63,14 @@ describe('Kiosk navigation integration', () => {
         token: 'mock-token',
       });
       // Mock fetch for pages that use API calls (e.g., TsumegoPage)
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockImplementation(async (url: string) => ({
         ok: true,
-        json: () => Promise.resolve([
-          { level: '15k', categories: { '手筋': 139 }, total: 1000 },
-        ]),
-      }) as any;
+        json: () => Promise.resolve(
+          String(url).includes('/api/v1/platforms/status')
+            ? { platforms: [] }
+            : [{ level: '15k', categories: { '手筋': 139 }, total: 1000 }],
+        ),
+      })) as unknown as typeof fetch;
     });
 
     it('shows play page with nav rail', () => {
@@ -100,6 +102,20 @@ describe('Kiosk navigation integration', () => {
     it('unknown kiosk routes redirect to play', () => {
       renderApp('/kiosk/nonexistent');
       expect(screen.getByText('人机对弈')).toBeInTheDocument();
+    });
+
+    it('opens Settings from the header and returns to the originating route', async () => {
+      renderApp('/kiosk/play');
+
+      const headerSettings = screen
+        .getAllByRole('button', { name: '设置' })
+        .find((button) => button.querySelector('[data-testid="SettingsOutlinedIcon"]'));
+      expect(headerSettings).toBeDefined();
+      fireEvent.click(headerSettings!);
+      await waitFor(() => expect(screen.getByRole('heading', { name: '设置' })).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: '返回' }));
+      await waitFor(() => expect(screen.getByText('人机对弈')).toBeInTheDocument());
     });
 
     it('navigates to lobby from play/pvp/lobby route', async () => {
@@ -151,7 +167,7 @@ describe('Kiosk navigation integration', () => {
         if (/\/levels\/15k\/categories$/.test(u)) return json([{ category: 'tesuji', name: '手筋', count: 25 }]);
         if (/\/tsumego\/levels$/.test(u)) return json([{ level: '15k', categories: { '手筋': 25 }, total: 25 }]);
         return json([]);
-      }) as any;
+      }) as unknown as typeof fetch;
     });
 
     it('drills from levels → categories → units → unit list → problem', async () => {

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { Box, Typography, FormControlLabel, Switch, Button, Select, MenuItem } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Typography, FormControlLabel, Switch, Button, Select, MenuItem, IconButton } from '@mui/material';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeveloperBoardOutlinedIcon from '@mui/icons-material/DeveloperBoardOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
@@ -47,6 +48,7 @@ const CardHeader = ({ icon, title, sub }: { icon: ReactNode; title: string; sub?
 const SettingsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   // Real, persisted language (loads the catalog + writes localStorage) — not local
   // component state, so the selector actually switches the UI language. `languages`
   // is the shared catalog galaxy uses, so the kiosk offers the same full set.
@@ -65,11 +67,43 @@ const SettingsPage = () => {
     { name: '新浪围棋', color: '#e2685c' },
   ];
 
+  const handleBack = () => {
+    const from = (location.state as { from?: unknown } | null)?.from;
+    let destination = '/kiosk/play';
+
+    if (typeof from === 'string') {
+      try {
+        const url = new URL(from, window.location.origin);
+        const decodedPathname = decodeURIComponent(url.pathname);
+        const isInternalKioskRoute = url.origin === window.location.origin && decodedPathname.startsWith('/kiosk/');
+        const isSettingsRoute =
+          decodedPathname === '/kiosk/settings' || decodedPathname.startsWith('/kiosk/settings/');
+
+        if (isInternalKioskRoute && !isSettingsRoute) {
+          destination = `${url.pathname}${url.search}${url.hash}`;
+        }
+      } catch {
+        // Malformed or un-decodable return locations use the safe kiosk fallback.
+      }
+    }
+
+    navigate(destination);
+  };
+
   return (
     <Box sx={{ height: '100%', overflow: 'hidden', px: 1.5, pt: 1, pb: 1, display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h6" component="h2" sx={{ mb: 0.75, fontSize: '1.1rem', flexShrink: 0 }}>
-        {t('Settings', '设置')}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75, flexShrink: 0 }}>
+        <IconButton
+          aria-label={t('Back', '返回')}
+          onClick={handleBack}
+          sx={{ minWidth: 48, width: 48, minHeight: 48, height: 48, flexShrink: 0 }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '1.1rem', minWidth: 0 }}>
+          {t('Settings', '设置')}
+        </Typography>
+      </Box>
 
       <Box
         sx={{

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Tooltip } from '@mui/material';
-import { Videocam, GridOn } from '@mui/icons-material';
+import { Videocam, GridOn, SettingsOutlined } from '@mui/icons-material';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderProps {
   username?: string;
@@ -102,6 +104,9 @@ const GeometryIndicator = () => {
 };
 
 const Header = ({ username }: HeaderProps) => {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [time, setTime] = useState(() =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
@@ -174,6 +179,19 @@ const Header = ({ username }: HeaderProps) => {
         >
           {time}
         </Typography>
+        <Tooltip title={t('Settings', '设置')} arrow>
+          <IconButton
+            aria-label={t('Settings', '设置')}
+            onClick={() =>
+              navigate('/kiosk/settings', {
+                state: { from: location.pathname + location.search },
+              })
+            }
+            sx={{ minWidth: 48, width: 48, minHeight: 48, height: 48 }}
+          >
+            <SettingsOutlined />
+          </IconButton>
+        </Tooltip>
       </Box>
     </Box>
   );

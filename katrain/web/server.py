@@ -307,16 +307,20 @@ async def _lifespan_board(app: FastAPI, log):
     )
     app.state.remote_client = remote_client
 
-    # Try to restore refresh token from encrypted credentials
-    try:
-        from katrain.web.core.credentials import load_refresh_token
+    # Strict Box SSO receives remote tokens only through the authenticated
+    # loopback bridge; it must never restore the retired device-wide credential.
+    from katrain.web.core.box_sso import strict_box_sso_enabled
 
-        saved_token = load_refresh_token(settings.DEVICE_ID)
-        if saved_token:
-            remote_client.set_refresh_token(saved_token)
-            log.info("Restored refresh token from credentials store")
-    except Exception as e:
-        log.debug(f"No saved credentials: {e}")
+    if not strict_box_sso_enabled():
+        try:
+            from katrain.web.core.credentials import load_refresh_token
+
+            saved_token = load_refresh_token(settings.DEVICE_ID)
+            if saved_token:
+                remote_client.set_refresh_token(saved_token)
+                log.info("Restored refresh token from credentials store")
+        except Exception as e:
+            log.debug(f"No saved credentials: {e}")
 
     # Sync worker
     sync_worker = SyncWorker(SessionLocal, remote_client)
@@ -562,6 +566,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     logging.getLogger("katrain_web").setLevel(logging.INFO)
 
     app = FastAPI(lifespan=lifespan)
+    from katrain.web.core.box_sso import BoxSSOState
+
+    app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
     app.include_router(api_router, prefix="/api/v1")
     add_catalog_cache_middleware(app)
     # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
@@ -1694,20 +1701,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.websocket("/ws/lobby")
     async def lobby_websocket_endpoint(websocket: WebSocket):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
+        from katrain.web.core.box_sso import resolve_websocket_token, strict_box_sso_enabled
 
         logger = logging.getLogger("katrain_web")
-        # Query tokens are explicit credentials. Ambient SSO cookies may only be
-        # used by a same-origin handshake; CORS does not protect WebSockets.
-        if "token" in websocket.query_params:
-            token = websocket.query_params.get("token")
-        else:
-            expected_origin = f"{'https' if websocket.url.scheme == 'wss' else 'http'}://{websocket.url.netloc}"
-            if websocket.headers.get("origin") != expected_origin:
-                logger.warning("Lobby WebSocket: Rejected cookie authentication from untrusted origin")
-                await websocket.accept()
-                await websocket.close(code=1008, reason="Untrusted origin")
-                return
-            token = websocket.cookies.get("sb_token")
+        token = resolve_websocket_token(websocket)
         if not token:
             logger.warning("Lobby WebSocket: No token provided, closing connection")
             await websocket.accept()
@@ -1715,7 +1712,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
 
         try:
-            current_user = await get_user_from_token(token=token, repo=app.state.user_repo)
+            current_user = await get_user_from_token(
+                token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
+            )
         except Exception as e:
             logger.warning(f"Lobby WebSocket: Token validation failed: {e}")
             await websocket.accept()
@@ -1723,6 +1722,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
 
         await websocket.accept()
+        if strict_box_sso_enabled():
+            app.state.box_sso.register_socket(websocket)
         lobby_manager = app.state.lobby_manager
         lobby_manager.add_user(current_user.id, websocket)
         logger.info(
@@ -1879,6 +1880,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")
             pass
         finally:
+            app.state.box_sso.discard_socket(websocket)
             app.state.matchmaker.remove_from_queue(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast(
@@ -1941,6 +1943,22 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.websocket("/ws/{session_id}")
     async def websocket_endpoint(websocket: WebSocket, session_id: str):
+        from katrain.web.api.v1.endpoints.auth import get_user_from_token
+        from katrain.web.core.box_sso import resolve_websocket_token, strict_box_sso_enabled
+
+        strict_box = strict_box_sso_enabled()
+        if strict_box:
+            token = resolve_websocket_token(websocket)
+            try:
+                if not token:
+                    raise ValueError("missing strict credential")
+                await get_user_from_token(
+                    token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
+                )
+            except Exception:
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Invalid token")
+                return
         try:
             session = manager.get_session(session_id)
         except KeyError:
@@ -1949,6 +1967,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
 
         await websocket.accept()
+        if strict_box:
+            app.state.box_sso.register_socket(websocket)
         session.sockets.add(websocket)
         try:
             state = session.last_state or session.katrain.get_state()
@@ -1966,6 +1986,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except WebSocketDisconnect:
             pass
         finally:
+            if strict_box:
+                app.state.box_sso.discard_socket(websocket)
             session.sockets.discard(websocket)
             # Broadcast updated spectator count when someone leaves
             if session.sockets:  # Only if there are still connected clients

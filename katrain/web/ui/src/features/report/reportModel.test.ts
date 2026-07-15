@@ -110,6 +110,19 @@ describe('report task state', () => {
     expect(reconcileReportTasks([server], [optimistic])).toEqual([optimistic, server]);
   });
 
+  it('consumes at most one same-key optimistic mutation per newly observed server task', () => {
+    const older = createOptimisticReportTask('game-1', 'normal', 120, -1, [9]);
+    const newer = createOptimisticReportTask('game-1', 'normal', 120, -2, [9]);
+    const historical = task({ id: 9, status: 'completed' });
+    const newlyObserved = task({ id: 10, status: 'running' });
+
+    expect(reconcileReportTasks([historical, newlyObserved], [newer, older])).toEqual([
+      newer,
+      historical,
+      newlyObserved,
+    ]);
+  });
+
   it('uses the newest task for each type and state while keeping normal and deep independent', () => {
     const tasks = [
       task({ id: 2, status: 'completed' }),

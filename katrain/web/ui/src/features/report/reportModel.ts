@@ -66,17 +66,33 @@ export function reconcileReportTasks(
   serverTasks: ReportTaskSummary[],
   optimisticTasks: OptimisticReportTask[],
 ): ReportTaskSummary[] {
-  const remainingOptimisticTasks = optimisticTasks.filter((optimisticTask) => {
-    const matchingServerTasks = serverTasks.filter(
-      (serverTask) => serverTask.user_game_id === optimisticTask.user_game_id
-        && serverTask.report_type === optimisticTask.report_type,
-    );
-    if (optimisticTask.baseline_server_task_ids !== undefined) {
-      const baselineIds = new Set(optimisticTask.baseline_server_task_ids);
-      return !matchingServerTasks.some((serverTask) => !baselineIds.has(serverTask.id));
+  const consumedServerTaskIds = new Set<number>();
+  const consumedOptimisticTaskIds = new Set<number>();
+
+  // Match mutations FIFO. A server row can acknowledge only one optimistic request,
+  // while the original optimistic ordering remains intact in the returned list.
+  const oldestOptimisticFirst = [...optimisticTasks].sort((left, right) => right.id - left.id);
+  for (const optimisticTask of oldestOptimisticFirst) {
+    const baselineIds = optimisticTask.baseline_server_task_ids === undefined
+      ? null
+      : new Set(optimisticTask.baseline_server_task_ids);
+    const counterpart = [...serverTasks]
+      .sort((left, right) => left.id - right.id)
+      .find((serverTask) => (
+        !consumedServerTaskIds.has(serverTask.id)
+        && serverTask.user_game_id === optimisticTask.user_game_id
+        && serverTask.report_type === optimisticTask.report_type
+        && (baselineIds ? !baselineIds.has(serverTask.id) : isActiveReportTask(serverTask))
+      ));
+    if (counterpart) {
+      consumedServerTaskIds.add(counterpart.id);
+      consumedOptimisticTaskIds.add(optimisticTask.id);
     }
-    return !matchingServerTasks.some(isActiveReportTask);
-  });
+  }
+
+  const remainingOptimisticTasks = optimisticTasks.filter(
+    (optimisticTask) => !consumedOptimisticTaskIds.has(optimisticTask.id),
+  );
   return [...remainingOptimisticTasks, ...serverTasks];
 }
 

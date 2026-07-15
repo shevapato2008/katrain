@@ -214,6 +214,43 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def delete_user_game(self, game_id: str) -> Dict:
+        resp = await self._request("DELETE", f"/api/v1/user-games/{game_id}")
+        resp.raise_for_status()
+        return resp.json()
+
+    # ── Reports (remote-only in board mode) ──
+
+    async def list_reports(self) -> List[Dict]:
+        resp = await self._request("GET", "/api/v1/reports/")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_report_summary(self) -> Dict:
+        resp = await self._request("GET", "/api/v1/reports/summary")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_report(self, task_id: int) -> Dict:
+        resp = await self._request("GET", f"/api/v1/reports/{task_id}")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def create_report(self, data: Dict) -> Dict:
+        resp = await self._request("POST", "/api/v1/reports/", json=data)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def retry_report(self, task_id: int) -> Dict:
+        resp = await self._request("POST", f"/api/v1/reports/{task_id}/retry")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_report_moves(self, task_id: int) -> List[Dict]:
+        resp = await self._request("GET", f"/api/v1/reports/{task_id}/moves")
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Live (read-only) ──
 
     async def get_live_matches(self, **params) -> Any:

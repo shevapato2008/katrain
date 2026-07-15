@@ -1,5 +1,6 @@
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import func as sa_func
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.core import models_db
 from katrain.web.core.db import SessionLocal
+from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.models import User
 
 router = APIRouter()
@@ -89,14 +91,41 @@ def _move_to_dict(move: models_db.ReportTaskMove) -> dict[str, Any]:
     }
 
 
+def _upstream_error_detail(response: httpx.Response):
+    try:
+        payload = response.json()
+    except ValueError:
+        return response.text
+    if isinstance(payload, dict) and "detail" in payload:
+        return payload["detail"]
+    return payload
+
+
+async def _dispatch_remote_only(call):
+    try:
+        return await call()
+    except RemoteServiceUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=exc.response.status_code,
+            detail=_upstream_error_detail(exc.response),
+        ) from exc
+
+
 @router.post("/", response_model=ReportTaskStatus)
 async def create_report_task(
     task: ReportTaskCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
     if task.report_type not in REPORT_VISITS:
         raise HTTPException(status_code=400, detail="Unsupported report_type")
+
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(lambda: dispatcher.reports_create(task.model_dump()))
 
     game = (
         db.query(models_db.UserGame)
@@ -139,9 +168,14 @@ async def create_report_task(
 
 @router.get("/", response_model=list[ReportTaskStatus])
 async def list_report_tasks(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(dispatcher.reports_list)
+
     tasks = (
         db.query(models_db.ReportTask)
         .filter(models_db.ReportTask.user_id == current_user.id)
@@ -153,9 +187,14 @@ async def list_report_tasks(
 
 @router.get("/summary")
 async def get_report_summary(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(dispatcher.reports_summary)
+
     rows = (
         db.query(models_db.ReportTask.status, sa_func.count())
         .filter(models_db.ReportTask.user_id == current_user.id)
@@ -174,9 +213,14 @@ async def get_report_summary(
 @router.post("/{task_id}/retry", response_model=ReportTaskStatus)
 async def retry_report_task(
     task_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(lambda: dispatcher.reports_retry(task_id))
+
     task = (
         db.query(models_db.ReportTask)
         .filter(
@@ -201,9 +245,14 @@ async def retry_report_task(
 @router.get("/{task_id}", response_model=ReportTaskStatus)
 async def get_report_status(
     task_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(lambda: dispatcher.reports_get(task_id))
+
     task = (
         db.query(models_db.ReportTask)
         .filter(
@@ -220,9 +269,14 @@ async def get_report_status(
 @router.get("/{task_id}/moves", response_model=list[ReportTaskMoveResponse])
 async def get_report_moves(
     task_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_report_db),
 ):
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(lambda: dispatcher.reports_moves(task_id))
+
     task = (
         db.query(models_db.ReportTask)
         .filter(

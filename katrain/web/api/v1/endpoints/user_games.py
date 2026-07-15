@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from katrain.web.models import User
 from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.reports import _dispatch_remote_only
 
 router = APIRouter()
 
@@ -174,6 +175,10 @@ async def delete_user_game(
     game_id: str,
     current_user: User = Depends(get_current_user),
 ):
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _dispatch_remote_only(lambda: dispatcher.user_games_delete(game_id))
+
     repo = request.app.state.user_game_repo
     deleted = repo.delete(game_id, current_user.id)
     if not deleted:

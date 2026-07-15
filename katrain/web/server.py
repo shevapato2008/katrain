@@ -337,6 +337,7 @@ async def _lifespan_board(app: FastAPI, log):
         local_user_game_repo=local_user_game_repo,
         sync_enqueue_fn=sync_fn,
         local_tsumego_progress_repo=local_tsumego_progress_repo,
+        remote_client=remote_client,
     )
     app.state.repository_dispatcher = dispatcher
 

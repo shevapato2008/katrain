@@ -160,4 +160,3 @@ The report remains unchanged. If navigation or required data fails, show feedbac
 - Run lint, Vitest, production build, kiosk 2D build, and the kiosk bundle-boundary verifier.
 - Manually verify on the 7-inch SBC: touch targets, no clipping, normal/deep creation, server cron progress, completed detail review, and Settings access from the header.
 - Inspect SBC deployment artifacts to confirm no `katrain-cron` service or local KataGo Report worker was added.
-

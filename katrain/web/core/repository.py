@@ -20,6 +20,10 @@ from katrain.web.core.remote_client import RemoteAPIClient
 logger = logging.getLogger("katrain_web")
 
 
+class RemoteServiceUnavailableError(RuntimeError):
+    """A board-mode remote-only operation can be retried when online."""
+
+
 # ── Protocol Definitions ──
 
 
@@ -167,6 +171,7 @@ class RepositoryDispatcher:
         local_user_game_repo,
         sync_enqueue_fn=None,
         local_tsumego_progress_repo=None,
+        remote_client: Optional[RemoteAPIClient] = None,
     ):
         self._connectivity = connectivity_manager
         self.remote_tsumego = remote_tsumego
@@ -175,6 +180,7 @@ class RepositoryDispatcher:
         self._local_user_game_repo = local_user_game_repo
         self._sync_enqueue = sync_enqueue_fn
         self._local_tsumego_progress_repo = local_tsumego_progress_repo
+        self._remote_client = remote_client
 
     @property
     def is_online(self) -> bool:
@@ -304,6 +310,53 @@ class RepositoryDispatcher:
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
                 logger.warning("user_games_get remote failed, falling back to local: %s", e)
         return self._local_user_game_repo.get(game_id, user_id)
+
+    # ── Remote-only operations ──
+
+    async def _remote_only(self, call, unavailable_detail: str = "Remote server unavailable"):
+        if not self.is_online or self._remote_client is None:
+            raise RemoteServiceUnavailableError(unavailable_detail)
+        try:
+            return await call()
+        except httpx.TransportError as exc:
+            logger.warning("Remote-only operation unavailable: %s", exc)
+            raise RemoteServiceUnavailableError(unavailable_detail) from exc
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code >= 500:
+                logger.warning("Remote-only operation failed upstream: %s", exc)
+                raise RemoteServiceUnavailableError(unavailable_detail) from exc
+            raise
+
+    async def user_games_delete(self, game_id: str):
+        return await self._remote_only(lambda: self._remote_client.delete_user_game(game_id))
+
+    async def reports_list(self):
+        return await self._remote_only(lambda: self._remote_client.list_reports(), "Remote report service unavailable")
+
+    async def reports_summary(self):
+        return await self._remote_only(
+            lambda: self._remote_client.get_report_summary(), "Remote report service unavailable"
+        )
+
+    async def reports_get(self, task_id: int):
+        return await self._remote_only(
+            lambda: self._remote_client.get_report(task_id), "Remote report service unavailable"
+        )
+
+    async def reports_create(self, data: Dict):
+        return await self._remote_only(
+            lambda: self._remote_client.create_report(data), "Remote report service unavailable"
+        )
+
+    async def reports_retry(self, task_id: int):
+        return await self._remote_only(
+            lambda: self._remote_client.retry_report(task_id), "Remote report service unavailable"
+        )
+
+    async def reports_moves(self, task_id: int):
+        return await self._remote_only(
+            lambda: self._remote_client.get_report_moves(task_id), "Remote report service unavailable"
+        )
 
 
 def enqueue_sync_item(

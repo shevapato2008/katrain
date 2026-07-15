@@ -86,7 +86,7 @@ it('creates a deep report through the existing server endpoint', async () => {
 
 - [ ] **Step 2: Run the test and verify the shared module is missing**
 
-Run: `npm run test -- src/api/reportApi.test.ts src/api/userGamesApi.test.ts`  
+Run: `npm run test -- src/api/reportApi.test.ts src/api/userGamesApi.test.ts`
 Expected: FAIL because the new shared implementations do not exist.
 
 - [ ] **Step 3: Move the existing API implementations and contracts into shared files**
@@ -115,13 +115,13 @@ Use the equivalent export for `userGamesApi.ts`. This prevents unrelated Galaxy 
 
 - [ ] **Step 5: Run API tests, Galaxy consumers, and the TypeScript compiler**
 
-Run: `npm run test -- src/api/reportApi.test.ts src/api/userGamesApi.test.ts`  
+Run: `npm run test -- src/api/reportApi.test.ts src/api/userGamesApi.test.ts`
 Expected: PASS, including all pre-existing user-game API tests.
 
-Run: `npm run test -- src/galaxy/pages/report`  
+Run: `npm run test -- src/galaxy/pages/report`
 Expected: PASS through the compatibility exports.
 
-Run: `npx tsc -b --pretty false`  
+Run: `npx tsc -b --pretty false`
 Expected: exit 0 with compatibility imports type-correct.
 
 - [ ] **Step 6: Commit the shared API boundary**
@@ -164,7 +164,7 @@ expect(nextReportCursor(4, 4, 0)).toBe(0);
 
 - [ ] **Step 2: Run the model test and verify it fails**
 
-Run: `npm run test -- src/features/report/reportModel.test.ts`  
+Run: `npm run test -- src/features/report/reportModel.test.ts`
 Expected: FAIL because the model module is absent.
 
 - [ ] **Step 3: Define UI-independent input and state types**
@@ -191,7 +191,7 @@ Do not read clocks or call APIs inside the model. Pass the optimistic ID from th
 
 - [ ] **Step 5: Run the model test**
 
-Run: `npm run test -- src/features/report/reportModel.test.ts`  
+Run: `npm run test -- src/features/report/reportModel.test.ts`
 Expected: PASS.
 
 - [ ] **Step 6: Commit the model**
@@ -213,7 +213,7 @@ Assert initial parallel list/summary load, two-second polling only with pending/
 
 - [ ] **Step 2: Run the hook tests and verify failure**
 
-Run: `npm run test -- src/features/report/useReportTasks.test.tsx`  
+Run: `npm run test -- src/features/report/useReportTasks.test.tsx`
 Expected: FAIL because the hook is absent.
 
 - [ ] **Step 3: Implement the hook with injected token and translation fallback**
@@ -231,7 +231,7 @@ Use a stable `refresh`, clear intervals on unmount/token change, and retain prev
 
 - [ ] **Step 4: Run hook/model/API tests**
 
-Run: `npm run test -- src/features/report src/api/reportApi.test.ts`  
+Run: `npm run test -- src/features/report src/api/reportApi.test.ts`
 Expected: PASS with no fake-timer leakage.
 
 - [ ] **Step 5: Commit task orchestration**
@@ -253,7 +253,7 @@ Test initial parallel move/game fetch after task lookup, pending/running polling
 
 - [ ] **Step 2: Run the hook test and verify failure**
 
-Run: `npm run test -- src/features/report/useReportDetail.test.tsx`  
+Run: `npm run test -- src/features/report/useReportDetail.test.tsx`
 Expected: FAIL because the hook is absent.
 
 - [ ] **Step 3: Implement the headless detail hook**
@@ -262,7 +262,7 @@ Return `task`, `game`, raw moves, `analysisByMove`, `currentMove`, `setCurrentMo
 
 - [ ] **Step 4: Run all shared Report tests**
 
-Run: `npm run test -- src/features/report src/api/reportApi.test.ts`  
+Run: `npm run test -- src/features/report src/api/reportApi.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit the detail hook**
@@ -286,14 +286,14 @@ git commit -m "add progressive report detail hook"
 
 - [ ] **Step 1: Run existing Galaxy Report tests as a green characterization baseline**
 
-Run: `npm run test -- src/galaxy/pages/report`  
+Run: `npm run test -- src/galaxy/pages/report`
 Expected: PASS before the refactor.
 
 - [ ] **Step 2: Add missing behavior-level characterization tests**
 
 Keep mocks at the current ReportsAPI/UserGamesAPI boundary. Add behavior-level assertions for URL search/pagination, normal and deep creation arguments, optimistic reconciliation display, delete rejection, progressive detail refresh, historical cursor pinning, and `/galaxy/research` navigation. These are preservation tests, so they must pass against current behavior before migration.
 
-Run: `npm run test -- src/galaxy/pages/report`  
+Run: `npm run test -- src/galaxy/pages/report`
 Expected: PASS with the new characterization coverage.
 
 - [ ] **Step 3: Replace duplicated page state with shared hooks/model**
@@ -310,10 +310,10 @@ Change `ReportGameCard.tsx` to import `ReportGameStatus` from `features/report/r
 
 - [ ] **Step 6: Run Galaxy and shared tests**
 
-Run: `npm run test -- src/galaxy/pages/report src/features/report src/api/reportApi.test.ts`  
+Run: `npm run test -- src/galaxy/pages/report src/features/report src/api/reportApi.test.ts`
 Expected: PASS with unchanged Galaxy-visible behavior.
 
-Run: `npx tsc -b --pretty false`  
+Run: `npx tsc -b --pretty false`
 Expected: exit 0 before committing the shared-hook adapter and type-import refactor.
 
 - [ ] **Step 7: Commit Galaxy migration**
@@ -338,7 +338,7 @@ Assert a translated 48×48 header Settings button and navigation to `/kiosk/sett
 
 - [ ] **Step 2: Run navigation tests and verify failure**
 
-Run: `npm run test -- src/kiosk/__tests__/Header.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx`  
+Run: `npm run test -- src/kiosk/__tests__/Header.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx`
 Expected: FAIL because header Settings navigation/state and the page-owned return action do not exist.
 
 - [ ] **Step 3: Implement translated Header navigation state**
@@ -351,12 +351,12 @@ Add a page-owned 48×48 `IconButton` rather than relying on the existing 40 px `
 
 - [ ] **Step 5: Run navigation tests**
 
-Run: `npm run test -- src/kiosk/__tests__/Header.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx`  
+Run: `npm run test -- src/kiosk/__tests__/Header.test.tsx src/kiosk/__tests__/SettingsPage.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx`
 Expected: PASS.
 
 - [ ] **Step 6: Type-check the navigation refactor**
 
-Run: `npx tsc -b --pretty false`  
+Run: `npx tsc -b --pretty false`
 Expected: exit 0.
 
 - [ ] **Step 7: Commit navigation**
@@ -380,7 +380,7 @@ Cover selected styling; title/event/source fallback; date; move count; player na
 
 - [ ] **Step 2: Run the card test and verify failure**
 
-Run: `npm run test -- src/kiosk/components/report/ReportGameCard.test.tsx`  
+Run: `npm run test -- src/kiosk/components/report/ReportGameCard.test.tsx`
 Expected: FAIL because the component is absent.
 
 - [ ] **Step 3: Implement the card using kiosk conventions**
@@ -389,7 +389,7 @@ Follow `KifuPage` card visuals and use `KioskResultBadge`. Do not copy the Galax
 
 - [ ] **Step 4: Run the card test**
 
-Run: `npm run test -- src/kiosk/components/report/ReportGameCard.test.tsx`  
+Run: `npm run test -- src/kiosk/components/report/ReportGameCard.test.tsx`
 Expected: PASS.
 
 - [ ] **Step 5: Commit the card**
@@ -415,7 +415,7 @@ Menu tests: both choices open the correct flow, choosing/closing clears the menu
 
 - [ ] **Step 2: Run dialog tests and verify failure**
 
-Run: `npm run test -- src/kiosk/components/report/ReportImportMenu.test.tsx src/kiosk/components/report/ReportLocalImportDialog.test.tsx src/kiosk/components/report/ReportLibraryImportDialog.test.tsx`  
+Run: `npm run test -- src/kiosk/components/report/ReportImportMenu.test.tsx src/kiosk/components/report/ReportLocalImportDialog.test.tsx src/kiosk/components/report/ReportLibraryImportDialog.test.tsx`
 Expected: FAIL because the kiosk dialogs are absent.
 
 - [ ] **Step 3: Implement near-full-screen dialogs**
@@ -424,7 +424,7 @@ Use a bounded paper height below 600 px, scroll only `DialogContent`, keep `Dial
 
 - [ ] **Step 4: Run dialog tests**
 
-Run: `npm run test -- src/kiosk/components/report/ReportImportMenu.test.tsx src/kiosk/components/report/ReportLocalImportDialog.test.tsx src/kiosk/components/report/ReportLibraryImportDialog.test.tsx`  
+Run: `npm run test -- src/kiosk/components/report/ReportImportMenu.test.tsx src/kiosk/components/report/ReportLocalImportDialog.test.tsx src/kiosk/components/report/ReportLibraryImportDialog.test.tsx`
 Expected: PASS.
 
 - [ ] **Step 5: Commit import flows**
@@ -458,7 +458,7 @@ In the same red test set, assert the atomic navigation result: exactly eight tra
 
 - [ ] **Step 2: Run the page test and verify failure**
 
-Run: `npm run test -- src/kiosk/pages/ReportsPage.test.tsx src/kiosk/__tests__/Dock.test.tsx src/kiosk/__tests__/KioskApp.test.tsx src/kiosk/__tests__/KioskLayout.test.tsx src/kiosk/components/layout/KioskLayout.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx`  
+Run: `npm run test -- src/kiosk/pages/ReportsPage.test.tsx src/kiosk/__tests__/Dock.test.tsx src/kiosk/__tests__/KioskApp.test.tsx src/kiosk/__tests__/KioskLayout.test.tsx src/kiosk/components/layout/KioskLayout.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx`
 Expected: FAIL because the real page, route, and atomic Dock swap do not exist.
 
 - [ ] **Step 3: Implement list/query/selection state**
@@ -483,7 +483,7 @@ Confirm before `UserGamesAPI.delete`, preserve the page on server rejection, and
 
 - [ ] **Step 8: Run list, import, navigation, and shared tests**
 
-Run: `npm run test -- src/kiosk/pages/ReportsPage.test.tsx src/kiosk/components/report src/kiosk/__tests__/Dock.test.tsx src/kiosk/__tests__/KioskApp.test.tsx src/kiosk/__tests__/KioskLayout.test.tsx src/kiosk/components/layout/KioskLayout.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx src/features/report`  
+Run: `npm run test -- src/kiosk/pages/ReportsPage.test.tsx src/kiosk/components/report src/kiosk/__tests__/Dock.test.tsx src/kiosk/__tests__/KioskApp.test.tsx src/kiosk/__tests__/KioskLayout.test.tsx src/kiosk/components/layout/KioskLayout.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx src/features/report`
 Expected: PASS.
 
 - [ ] **Step 9: Commit the level-one page**
@@ -507,7 +507,7 @@ Cover pending/running/completed/failed labels, normal/deep, players/ranks/result
 
 - [ ] **Step 2: Run the test and verify failure**
 
-Run: `npm run test -- src/kiosk/components/report/ReportMetaPanel.test.tsx`  
+Run: `npm run test -- src/kiosk/components/report/ReportMetaPanel.test.tsx`
 Expected: FAIL because the panel is absent.
 
 - [ ] **Step 3: Implement a compact touch-safe panel**
@@ -516,7 +516,7 @@ Keep the component presentational. Use shared types and kiosk tokens; do not imp
 
 - [ ] **Step 4: Run the test**
 
-Run: `npm run test -- src/kiosk/components/report/ReportMetaPanel.test.tsx`  
+Run: `npm run test -- src/kiosk/components/report/ReportMetaPanel.test.tsx`
 Expected: PASS.
 
 - [ ] **Step 5: Commit metadata UI**
@@ -543,7 +543,7 @@ Assert the back bar contains a 48×48 back control, ellipsized game title, repor
 
 - [ ] **Step 2: Run the detail test and verify failure**
 
-Run: `npm run test -- src/kiosk/pages/ReportDetailPage.test.tsx`  
+Run: `npm run test -- src/kiosk/pages/ReportDetailPage.test.tsx`
 Expected: FAIL because the page is absent or still a route stub.
 
 - [ ] **Step 3: Implement the immersive split layout**
@@ -560,7 +560,7 @@ Render explicit recovery actions: `refresh` for load/network failures, shared re
 
 - [ ] **Step 5: Run detail and live regression tests**
 
-Run: `npm run test -- src/kiosk/pages/ReportDetailPage.test.tsx src/kiosk/__tests__/LiveMatchPage.test.tsx src/components/live`  
+Run: `npm run test -- src/kiosk/pages/ReportDetailPage.test.tsx src/kiosk/__tests__/LiveMatchPage.test.tsx src/components/live`
 Expected: PASS.
 
 - [ ] **Step 6: Commit detail page**
@@ -586,7 +586,7 @@ Set viewport to exactly `{ width: 1024, height: 600 }`. Exercise list selection,
 
 - [ ] **Step 3: Run Playwright and inspect failure/screenshots**
 
-Run: `npx playwright test tests/report-kiosk.spec.ts --project=chromium`  
+Run: `npx playwright test tests/report-kiosk.spec.ts --project=chromium`
 Expected: PASS if unit-tested layout is already correct. If it fails, Playwright records the exact failing assertion plus trace/screenshot; use those artifacts only to drive Step 4.
 
 - [ ] **Step 4: Fix only verified layout/interaction issues**
@@ -595,7 +595,7 @@ Apply `minWidth: 0`, fixed action flex-shrink, ellipsis/wrapping, bounded dialog
 
 - [ ] **Step 5: Re-run Playwright**
 
-Run: `npx playwright test tests/report-kiosk.spec.ts --project=chromium`  
+Run: `npx playwright test tests/report-kiosk.spec.ts --project=chromium`
 Expected: PASS at 1024×600 with no horizontal document overflow and no clipped critical actions.
 
 - [ ] **Step 6: Commit browser coverage**
@@ -617,45 +617,45 @@ git commit -m "test kiosk report viewport"
 
 - [ ] **Step 1: Run frontend lint and unit tests**
 
-Run: `npm run lint`  
+Run: `npm run lint`
 Expected: exit 0.
 
-Run: `npm run test`  
+Run: `npm run test`
 Expected: all Vitest suites PASS.
 
 - [ ] **Step 2: Run both production builds**
 
-Run: `npm run build`  
+Run: `npm run build`
 Expected: TypeScript and Vite build exit 0.
 
-Run: `npm run build:kiosk-2d`  
+Run: `npm run build:kiosk-2d`
 Expected: build and `verify:kiosk-2d` exit 0; no kiosk import from `src/galaxy/**`, Board3D, or recorder-only code.
 
 - [ ] **Step 3: Run backend Report regressions without requiring an SBC engine**
 
-Run: `CI=true .venv/bin/python -m pytest tests/web_ui/test_reports_api.py tests/web_ui/test_reports_db.py tests/web_ui/test_report_analyzer.py -v`  
+Run: `CI=true .venv/bin/python -m pytest tests/web_ui/test_reports_api.py tests/web_ui/test_reports_db.py tests/web_ui/test_report_analyzer.py -v`
 Expected: PASS, or environment-dependent engine cases explicitly SKIP under CI; no new backend behavior failure.
 
 - [ ] **Step 4: Discover deployment artifacts and audit cron ownership**
 
-Run: `rg --files -g '*.service' -g '*sbc*' -g '*deploy*' -g '*package*' -g 'Dockerfile*' -g '*compose*.yml'`  
+Run: `rg --files -g '*.service' -g '*sbc*' -g '*deploy*' -g '*package*' -g 'Dockerfile*' -g '*compose*.yml'`
 Expected: inventory includes the existing server Docker/cron files and `docs/sbc-setup/RK3588_deployment.md`; inspect every SBC/service/package result, not only Docker files.
 
-Run: `rg -n "katrain-cron|report_analyze" katrain/web/ui/src/kiosk katrain/web/ui/scripts/verify-kiosk.sh docs/sbc-setup/RK3588_deployment.md`  
+Run: `rg -n "katrain-cron|report_analyze" katrain/web/ui/src/kiosk katrain/web/ui/scripts/verify-kiosk.sh docs/sbc-setup/RK3588_deployment.md`
 Expected: no matches. Report kiosk code and SBC deployment documentation contain no local cron/analyzer wiring.
 
-Run: `git diff --name-only origin/develop...HEAD -- docker-compose.yml Dockerfile.cron katrain/cron docs/sbc-setup/RK3588_deployment.md`  
+Run: `git diff --name-only origin/develop...HEAD -- docker-compose.yml Dockerfile.cron katrain/cron docs/sbc-setup/RK3588_deployment.md`
 Expected: no output. `origin/develop` is the recorded base of `feature/sbc-report-parity`; this base-to-HEAD audit includes already committed work and proves the feature has not changed server cron ownership or SBC deployment artifacts. If the branch is deliberately rebased before execution, update this recorded base in the plan/PR before running the audit.
 
-Run: `rg -n "katrain-cron|report_analyze" docker-compose.yml Dockerfile.cron katrain/cron`  
+Run: `rg -n "katrain-cron|report_analyze" docker-compose.yml Dockerfile.cron katrain/cron`
 Expected: existing matches are confined to server services/jobs and remain unchanged by the preceding diff check.
 
 - [ ] **Step 5: Review the final diff for scope and translation coverage**
 
-Run: `git diff --check`  
+Run: `git diff --check`
 Expected: no whitespace errors.
 
-Run: `git status --short`  
+Run: `git status --short`
 Expected: only intended Report/navigation/test/documentation changes are present.
 
 - [ ] **Step 6: Perform 7-inch SBC acceptance**

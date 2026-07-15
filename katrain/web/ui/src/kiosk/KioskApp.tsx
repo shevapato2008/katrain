@@ -34,6 +34,7 @@ import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
+import ReportDetailPage from './pages/ReportDetailPage';
 import VisionSetupPage from './pages/VisionSetupPage';
 import PlatformConnectPage from './pages/PlatformConnectPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
@@ -85,6 +86,7 @@ const KioskRoutes = () => {
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />
+          <Route path="report/:taskId" element={<ReportDetailPage />} />
           {/* Tutorial (read-only mirror) — static `book`/`section` win over dynamic `:category` in v6 best-match */}
           <Route path="tutorial" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />

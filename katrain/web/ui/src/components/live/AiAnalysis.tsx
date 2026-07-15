@@ -175,11 +175,7 @@ export default function AiAnalysis({
             percentage={move.percentage}
             isActualMove={move.isActualMove || false}
             nextPlayer={nextPlayer}
-            onHover={(hovering) => {
-              if (onMoveHover) {
-                onMoveHover(hovering ? move.pv : null);
-              }
-            }}
+            onHover={onMoveHover ? (hovering) => onMoveHover(hovering ? move.pv : null) : undefined}
             isSelected={move.move === activeMove}
             onSelect={onMoveSelect ? () => onMoveSelect(move.move === activeMove ? null : move.move) : undefined}
           />
@@ -221,9 +217,10 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
         gap: 0.5,
         py: 0.5,
         px: 1,
+        minHeight: onSelect ? 48 : undefined,
         mb: 0.25,
         borderRadius: 1,
-        cursor: 'pointer',
+        cursor: onSelect || onHover ? 'pointer' : 'default',
         transition: 'background-color 0.15s',
         bgcolor: isSelected ? 'action.selected' : isActualMove ? 'rgba(76, 175, 80, 0.15)' : 'transparent',
         border: isSelected || isActualMove ? '1px solid' : '1px solid transparent',
@@ -233,6 +230,16 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
       onClick={onSelect}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-label={onSelect ? `${t('live:preview_variation', '预览变化')} ${move.move}` : undefined}
+      aria-pressed={onSelect ? isSelected : undefined}
+      onKeyDown={onSelect ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect();
+        }
+      } : undefined}
     >
       {/* Move position with stone color indicator */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

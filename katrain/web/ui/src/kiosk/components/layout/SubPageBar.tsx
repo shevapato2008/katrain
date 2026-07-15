@@ -1,4 +1,4 @@
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, IconButton } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -23,14 +23,18 @@ const SubPageBar = ({ title, onBack, to, right }: SubPageBarProps) => {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.25,
       borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, minHeight: 52 }}>
-      <Button onClick={handleBack} startIcon={<ArrowBack />} aria-label={t('Back', '返回')}
-        sx={{ minHeight: 40, px: 1.75, color: 'text.primary', bgcolor: 'var(--raise2)',
+      <IconButton onClick={handleBack} aria-label={t('Back', '返回')}
+        sx={{ width: 48, height: 48, minWidth: 48, minHeight: 48, flexShrink: 0, color: 'text.primary', bgcolor: 'var(--raise2)',
           border: '1px solid', borderColor: 'divider' }}>
-        {t('Back', '返回')}
-      </Button>
-      <Typography sx={{ fontSize: 17, fontWeight: 600, color: 'text.primary',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Typography>
-      {right && <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>{right}</Box>}
+        <ArrowBack />
+        <Box component="span" sx={{ position: 'absolute', width: 1, height: 1, p: 0, m: -1,
+          overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>
+          {t('Back', '返回')}
+        </Box>
+      </IconButton>
+      <Typography title={title} sx={{ fontSize: 17, fontWeight: 600, color: 'text.primary',
+        flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Typography>
+      {right && <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 1 }}>{right}</Box>}
     </Box>
   );
 };

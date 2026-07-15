@@ -26,10 +26,24 @@ const analysis: Record<number, MoveAnalysis> = {
 };
 
 describe('AiAnalysis — touch onMoveSelect', () => {
+  it('exposes touch rows as translated, keyboard-focusable 48px buttons', () => {
+    render(<AiAnalysis currentMove={10} analysis={analysis} onMoveSelect={vi.fn()} activeMove={null} />);
+    const row = screen.getByRole('button', { name: /Q16/ });
+    expect(row).toHaveAttribute('tabindex', '0');
+    expect(row).toHaveStyle({ minHeight: '48px' });
+  });
+
   it('calls onMoveSelect with the move key when a row is tapped', () => {
     const onMoveSelect = vi.fn();
     render(<AiAnalysis currentMove={10} analysis={analysis} onMoveSelect={onMoveSelect} activeMove={null} />);
     fireEvent.click(screen.getByText('Q16'));
+    expect(onMoveSelect).toHaveBeenCalledWith('Q16');
+  });
+
+  it.each(['Enter', ' '])('activates a focused recommendation with the %s key', (key) => {
+    const onMoveSelect = vi.fn();
+    render(<AiAnalysis currentMove={10} analysis={analysis} onMoveSelect={onMoveSelect} activeMove={null} />);
+    fireEvent.keyDown(screen.getByRole('button', { name: /Q16/ }), { key });
     expect(onMoveSelect).toHaveBeenCalledWith('Q16');
   });
 
@@ -44,9 +58,24 @@ describe('AiAnalysis — touch onMoveSelect', () => {
     const onMoveHover = vi.fn();
     render(<AiAnalysis currentMove={10} analysis={analysis} onMoveHover={onMoveHover} />);
     const row = screen.getByText('R14').closest('div')!.parentElement!;
+    expect(row).toHaveStyle({ cursor: 'pointer' });
     fireEvent.mouseEnter(row);
     expect(onMoveHover).toHaveBeenCalledWith(['R14', 'C3']);
     fireEvent.mouseLeave(row);
     expect(onMoveHover).toHaveBeenLastCalledWith(null);
+  });
+
+  it('keeps hover-only rows noninteractive to assistive technology and keyboard focus', () => {
+    render(<AiAnalysis currentMove={10} analysis={analysis} onMoveHover={vi.fn()} />);
+    const row = screen.getByText('Q16').closest('div')!.parentElement!;
+    expect(row).not.toHaveAttribute('role');
+    expect(row).not.toHaveAttribute('tabindex');
+    expect(screen.queryByRole('button', { name: /Q16/ })).not.toBeInTheDocument();
+  });
+
+  it('uses the default cursor only when no mouse or touch interaction exists', () => {
+    render(<AiAnalysis currentMove={10} analysis={analysis} />);
+    const row = screen.getByText('Q16').closest('div')!.parentElement!;
+    expect(row).toHaveStyle({ cursor: 'default' });
   });
 });

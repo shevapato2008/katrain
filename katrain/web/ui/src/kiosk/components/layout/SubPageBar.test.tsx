@@ -30,3 +30,8 @@ test('prefers onBack over to', () => {
   expect(onBack).toHaveBeenCalled();
   expect(navigate).not.toHaveBeenCalled();
 });
+
+test('keeps the back control at least 48px high for touch use', () => {
+  render(<MemoryRouter><SubPageBar title="x" /></MemoryRouter>);
+  expect(screen.getByRole('button', { name: /返回|back/i })).toHaveStyle({ minHeight: '48px' });
+});

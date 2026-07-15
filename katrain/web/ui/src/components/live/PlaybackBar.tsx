@@ -55,6 +55,7 @@ export default function PlaybackBar({
   // Stop playing when reaching end
   useEffect(() => {
     if (currentMove >= totalMoves) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reaching the final move must stop active autoplay immediately
       setIsPlaying(false);
     }
   }, [currentMove, totalMoves]);
@@ -113,6 +114,20 @@ export default function PlaybackBar({
           max={totalMoves}
           onChange={handleSliderChange}
           sx={{
+            ...(touchSized ? {
+              minHeight: 48,
+              boxSizing: 'border-box',
+              '& .MuiSlider-thumb input': {
+                width: '48px !important',
+                height: '48px !important',
+                margin: '0 !important',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                clip: 'auto !important',
+                opacity: 0,
+              },
+            } : {}),
             '& .MuiSlider-thumb': {
               width: 16,
               height: 16,

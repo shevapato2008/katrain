@@ -39,7 +39,12 @@ export default function ReportImportMenu({ onImportLocal, onImportLibrary }: Rep
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
-        slotProps={{ list: { 'aria-label': t('report:import_options', '导入方式') } }}
+        slotProps={{
+          list: {
+            'aria-label': t('report:import_options', '导入方式'),
+            sx: { '& .MuiMenuItem-root': { minHeight: 48 } },
+          },
+        }}
       >
         <MenuItem
           onClick={(event) => choose(event, onImportLocal)}

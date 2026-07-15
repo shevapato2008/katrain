@@ -121,6 +121,7 @@ const Header = ({ username }: HeaderProps) => {
 
   return (
     <Box
+      component="header"
       sx={{
         height: 50,
         flexShrink: 0,

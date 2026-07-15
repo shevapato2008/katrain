@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { existsSync } from 'node:fs';
+
+const projectPython = existsSync('../../../.venv/bin/python') ? '.venv/bin/python' : 'python3';
 
 export default defineConfig({
   testDir: './tests',
@@ -18,7 +21,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'cd ../../.. && python3 -m katrain --ui=web --port 8002',
+    command: `cd ../../.. && ${projectPython} -m katrain --ui=web --port 8002`,
     url: 'http://127.0.0.1:8002/health',
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',

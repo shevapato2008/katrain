@@ -343,7 +343,12 @@ export default function ReportGameCard({
           anchorEl={menuAnchor}
           open={Boolean(menuAnchor)}
           onClose={closeMenu}
-          slotProps={{ list: { 'aria-label': t('report:actions_menu', '复盘操作') } }}
+          slotProps={{
+            list: {
+              'aria-label': t('report:actions_menu', '复盘操作'),
+              sx: { '& .MuiMenuItem-root': { minHeight: 48 } },
+            },
+          }}
         >
           {!normalTask && (
             <MenuItem

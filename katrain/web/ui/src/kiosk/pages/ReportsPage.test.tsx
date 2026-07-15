@@ -1,9 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UserGameDetail, UserGameSummary } from '../../api/userGamesApi';
+import { LedAPI } from '../../api/ledApi';
+import { API } from '../../api';
 import { kioskTheme } from '../theme';
 import ReportsPage from './ReportsPage';
 
@@ -208,6 +210,30 @@ describe('kiosk ReportsPage list and preview', () => {
     fireEvent.click(screen.getByRole('button', { name: '重试任务' }));
     expect(mocks.refreshTasks).toHaveBeenCalled();
   });
+
+  it('shows a list failure with a repeatable retry action', async () => {
+    mocks.list.mockRejectedValueOnce(new Error('list offline')).mockResolvedValueOnce(response([game('a')]));
+    renderPage();
+    expect(await screen.findByRole('alert')).toHaveTextContent('list offline');
+    fireEvent.click(screen.getByRole('button', { name: '重试' }));
+    expect(await screen.findByRole('button', { name: /选择棋局.*赛事 a/ })).toBeInTheDocument();
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('never invokes vision or LED APIs while previewing and playing a report game', async () => {
+    const visionSpy = vi.spyOn(API, 'visionStatus');
+    const ledPointSpy = vi.spyOn(LedAPI, 'point');
+    const ledPointsSpy = vi.spyOn(LedAPI, 'points');
+    const ledClearSpy = vi.spyOn(LedAPI, 'clear');
+    renderPage();
+    await screen.findByTestId('live-board');
+    fireEvent.click(screen.getByRole('button', { name: 'live:first_move' }));
+    fireEvent.click(screen.getByRole('button', { name: 'live:next' }));
+    expect(visionSpy).not.toHaveBeenCalled();
+    expect(ledPointSpy).not.toHaveBeenCalled();
+    expect(ledPointsSpy).not.toHaveBeenCalled();
+    expect(ledClearSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('kiosk ReportsPage mutations', () => {
@@ -236,6 +262,51 @@ describe('kiosk ReportsPage mutations', () => {
     fireEvent.change(screen.getByLabelText('SGF 内容'), { target: { value: '(;FF[4]GM[1]SZ[13];B[aa])' } });
     fireEvent.click(screen.getByRole('button', { name: '导入并生成普通复盘' }));
     await waitFor(() => expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'new', reportType: 'normal', totalMoves: 3 }));
+  });
+
+  it('keeps local SGF input and shows submit failure inside the modal until retry succeeds', async () => {
+    mocks.create.mockRejectedValueOnce(new Error('local import rejected')).mockResolvedValueOnce(detail(game('new')));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /导入棋谱/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '导入本地 SGF' }));
+    const dialog = screen.getByRole('dialog', { name: '导入本地 SGF' });
+    const sgfInput = within(dialog).getByRole('textbox', { name: 'SGF 内容' });
+    fireEvent.change(sgfInput, { target: { value: '(;FF[4]GM[1]SZ[9];B[aa])' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: '仅导入' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('local import rejected');
+    expect(sgfInput).toHaveValue('(;FF[4]GM[1]SZ[9];B[aa])');
+    fireEvent.click(within(dialog).getByRole('button', { name: '仅导入' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '导入本地 SGF' })).not.toBeInTheDocument());
+    expect(mocks.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the library selection and shows submit failure inside the modal until retry succeeds', async () => {
+    mocks.getAlbum.mockRejectedValueOnce(new Error('library import rejected')).mockResolvedValueOnce({ sgf_content: '(;SZ[13];B[aa])' });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /导入棋谱/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '从棋谱库导入' }));
+    const dialog = await screen.findByRole('dialog', { name: '从棋谱库导入' });
+    const selected = await within(dialog).findByRole('button', { name: /库赛事/ });
+    expect(selected).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(dialog).getByRole('button', { name: '仅导入' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('library import rejected');
+    expect(selected).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(dialog).getByRole('button', { name: '仅导入' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '从棋谱库导入' })).not.toBeInTheDocument());
+    expect(mocks.getAlbum).toHaveBeenCalledTimes(2);
+  });
+
+  it('selects an imported game when it is present after current-page reconciliation', async () => {
+    const imported = detail(game('new', 13, 1), '(;SZ[13];B[aa])');
+    mocks.create.mockResolvedValue(imported);
+    mocks.list.mockResolvedValueOnce(response([game('a')])).mockResolvedValueOnce(response([game('new', 13, 1), game('a')]));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /导入棋谱/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '导入本地 SGF' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'SGF 内容' }), { target: { value: '(;FF[4]GM[1]SZ[13];B[aa])' } });
+    fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /选择棋局.*赛事 new/ }).closest('[data-testid="report-game-card"]')).toHaveAttribute('data-selected', 'true'));
+    await waitFor(() => expect(screen.getByTestId('live-board')).toHaveAttribute('data-board-size', '13'));
   });
 
   it('creates normal/deep reports and displays optimistic/active progress from the shared hook', async () => {
@@ -280,5 +351,18 @@ describe('kiosk ReportsPage mutations', () => {
     fireEvent.click(screen.getByRole('button', { name: '确认删除' }));
     expect(await screen.findByText('server rejects delete')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('page=2');
+  });
+
+  it('resets a deleted selected game to the first remaining card and its preview', async () => {
+    mocks.list.mockResolvedValueOnce(response([game('a'), game('b')])).mockResolvedValueOnce(response([game('b')]));
+    renderPage();
+    await screen.findByRole('button', { name: /选择棋局.*赛事 a/ });
+    await openActionsFor('a');
+    fireEvent.click(screen.getByRole('menuitem', { name: '删除棋谱' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认删除' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: /选择棋局.*赛事 a/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '确认删除棋谱' })).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /选择棋局.*赛事 b/ }).closest('[data-testid="report-game-card"]')).toHaveAttribute('data-selected', 'true');
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('token', 'b'));
   });
 });

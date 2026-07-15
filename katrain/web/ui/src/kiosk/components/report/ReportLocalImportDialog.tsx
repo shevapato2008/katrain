@@ -1,5 +1,6 @@
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {
+  Alert,
   Button,
   Dialog,
   DialogActions,
@@ -22,6 +23,7 @@ export type LocalImportPayload = LocalReportImportPayload;
 interface ReportLocalImportDialogProps {
   open: boolean;
   loading?: boolean;
+  error?: string | null;
   onClose: () => void;
   onSubmit: (payload: LocalReportImportPayload, reportType?: ReportType) => void;
 }
@@ -174,6 +176,7 @@ function readFile(file: File): Promise<string> {
 export default function ReportLocalImportDialog({
   open,
   loading = false,
+  error = null,
   onClose,
   onSubmit,
 }: ReportLocalImportDialogProps) {
@@ -270,6 +273,7 @@ export default function ReportLocalImportDialog({
         sx={{ minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', py: 1.5 }}
       >
         <Stack spacing={1.5}>
+          {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label={t('report:title_optional', '标题（可选）')}
             value={title}

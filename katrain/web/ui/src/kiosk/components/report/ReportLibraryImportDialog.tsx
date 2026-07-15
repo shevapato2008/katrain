@@ -25,6 +25,7 @@ import type { KifuAlbumSummary } from '../../../types/kifu';
 interface ReportLibraryImportDialogProps {
   open: boolean;
   loading?: boolean;
+  error?: string | null;
   onClose: () => void;
   onImport: (album: KifuAlbumSummary, reportType?: ReportType) => void;
 }
@@ -42,6 +43,7 @@ const actionButtonSx = {
 export default function ReportLibraryImportDialog({
   open,
   loading = false,
+  error = null,
   onClose,
   onImport,
 }: ReportLibraryImportDialogProps) {
@@ -128,6 +130,7 @@ export default function ReportLibraryImportDialog({
         sx={{ minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', py: 1.5 }}
       >
         <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+          {error && <Alert severity="error">{error}</Alert>}
           <Stack direction="row" spacing={1} sx={{ minWidth: 0 }}>
             <TextField
               value={queryInput}

@@ -59,6 +59,8 @@ export default function ReportsPage() {
   const [libraryImportOpen, setLibraryImportOpen] = useState(false);
   const [localImporting, setLocalImporting] = useState<ImportAction>(null);
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
+  const [localImportError, setLocalImportError] = useState<string | null>(null);
+  const [libraryImportError, setLibraryImportError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -172,15 +174,16 @@ export default function ReportsPage() {
   const handleLocalImport = useCallback(async (payload: LocalImportPayload, reportType?: ReportType) => {
     if (!token) return;
     setLocalImporting(reportType ?? 'save');
-    setActionError(null);
+    setLocalImportError(null);
     try {
       const created = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
       await focusImportedGame(created);
       if (reportType) await createForGame(created, reportType);
       setLocalImportOpen(false);
+      setLocalImportError(null);
       await refreshTasks();
     } catch (error) {
-      setActionError(messageOf(error, translationRef.current('report:import_failed', '导入失败，请重试。')));
+      setLocalImportError(messageOf(error, translationRef.current('report:import_failed', '导入失败，请重试。')));
     } finally {
       setLocalImporting(null);
     }
@@ -189,16 +192,17 @@ export default function ReportsPage() {
   const handleLibraryImport = useCallback(async (album: KifuAlbumSummary, reportType?: ReportType) => {
     if (!token) return;
     setLibraryImporting(reportType ?? 'save');
-    setActionError(null);
+    setLibraryImportError(null);
     try {
       const albumDetail = await KifuAPI.getAlbum(album.id);
       const created = await UserGamesAPI.create(token, toLibraryUserGameParams(album, albumDetail.sgf_content));
       await focusImportedGame(created);
       if (reportType) await createForGame(created, reportType);
       setLibraryImportOpen(false);
+      setLibraryImportError(null);
       await refreshTasks();
     } catch (error) {
-      setActionError(messageOf(error, translationRef.current('report:library_import_failed', '从棋谱库导入失败，请重试。')));
+      setLibraryImportError(messageOf(error, translationRef.current('report:library_import_failed', '从棋谱库导入失败，请重试。')));
     } finally {
       setLibraryImporting(null);
     }
@@ -263,7 +267,10 @@ export default function ReportsPage() {
                   {queueSummary?.failed ? <Chip size="small" color="error" variant="outlined" label={`${queueSummary.failed} ${t('report:summary_failed', '失败')}`} /> : null}
                 </Stack>
               </Box>
-              <ReportImportMenu onImportLocal={() => setLocalImportOpen(true)} onImportLibrary={() => setLibraryImportOpen(true)} />
+              <ReportImportMenu
+                onImportLocal={() => { setLocalImportError(null); setLocalImportOpen(true); }}
+                onImportLibrary={() => { setLibraryImportError(null); setLibraryImportOpen(true); }}
+              />
             </Stack>
             <TextField
               fullWidth size="small" value={searchInput} onChange={(event) => setSearchInput(event.target.value)}
@@ -306,8 +313,20 @@ export default function ReportsPage() {
         </Box>
       </Box>
 
-      <ReportLocalImportDialog open={localImportOpen} loading={localImporting !== null} onClose={() => setLocalImportOpen(false)} onSubmit={handleLocalImport} />
-      <ReportLibraryImportDialog open={libraryImportOpen} loading={libraryImporting !== null} onClose={() => setLibraryImportOpen(false)} onImport={handleLibraryImport} />
+      <ReportLocalImportDialog
+        open={localImportOpen}
+        loading={localImporting !== null}
+        error={localImportError}
+        onClose={() => { setLocalImportError(null); setLocalImportOpen(false); }}
+        onSubmit={handleLocalImport}
+      />
+      <ReportLibraryImportDialog
+        open={libraryImportOpen}
+        loading={libraryImporting !== null}
+        error={libraryImportError}
+        onClose={() => { setLibraryImportError(null); setLibraryImportOpen(false); }}
+        onImport={handleLibraryImport}
+      />
       <Dialog open={deleteTarget !== null} onClose={() => { if (!deleteLoading) setDeleteTarget(null); }}>
         <DialogTitle>{t('report:delete_confirm_title', '确认删除棋谱')}</DialogTitle>
         <DialogContent><DialogContentText>{t('report:delete_confirm_body', '删除后将无法恢复，关联复盘数据也会一并删除。')}</DialogContentText></DialogContent>

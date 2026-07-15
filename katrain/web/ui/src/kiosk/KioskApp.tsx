@@ -33,6 +33,7 @@ import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
+import ReportsPage from './pages/ReportsPage';
 import VisionSetupPage from './pages/VisionSetupPage';
 import PlatformConnectPage from './pages/PlatformConnectPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
@@ -83,6 +84,7 @@ const KioskRoutes = () => {
           <Route path="baipu/session/:source" element={<PhysicalBoardGuard><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
+          <Route path="report" element={<ReportsPage />} />
           {/* Tutorial (read-only mirror) — static `book`/`section` win over dynamic `:category` in v6 best-match */}
           <Route path="tutorial" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />

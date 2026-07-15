@@ -1,13 +1,15 @@
 import { Box, ButtonBase, Typography, useTheme } from '@mui/material';
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
-import { primaryTabs, settingsTab, type NavTab } from './navTabs';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { primaryTabs, reportTab, type NavTab } from './navTabs';
 
-const dockTabs: NavTab[] = [...primaryTabs, settingsTab];
+const dockTabs: NavTab[] = [...primaryTabs, reportTab];
 
 const Dock = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const isActive = (pattern: string) => !!matchPath(pattern, location.pathname);
 
@@ -37,7 +39,9 @@ const Dock = () => {
         }}
       >
         <Box sx={{ display: 'flex', '& svg': { fontSize: 24 } }}>{tab.icon}</Box>
-        <Typography sx={{ fontSize: 13, fontWeight: 600, letterSpacing: '.5px' }}>{tab.label}</Typography>
+        <Typography sx={{ fontSize: 13, fontWeight: 600, letterSpacing: '.5px' }}>
+          {t(`kiosk:nav_${tab.path.split('/').at(-1)}`, tab.label)}
+        </Typography>
       </ButtonBase>
     );
   };

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
@@ -28,6 +28,10 @@ vi.mock('../../api/tutorialApi', () => ({
     getCategories: () => Promise.resolve([]),
     assetUrl: (p: string) => `/api/v1/tutorials/assets/${p}`,
   },
+}));
+
+vi.mock('../pages/ReportsPage', () => ({
+  default: () => <h1>KIOSK_REPORT_PAGE</h1>,
 }));
 
 import KioskApp from '../KioskApp';
@@ -99,6 +103,19 @@ describe('KioskApp', () => {
     // Use getAllByText: the tutorial landing page may also render a 教程 title
     // once its (mocked) data resolves, so there can be more than one match.
     expect(screen.getAllByText('教程').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('registers the real first-level Report destination with Header and Dock', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+      login: vi.fn(), logout: vi.fn(), token: 'mock-token',
+    });
+    renderApp('/kiosk/report');
+    expect(screen.getByRole('heading', { name: 'KIOSK_REPORT_PAGE' })).toBeInTheDocument();
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
+    expect(screen.getByText('复盘')).toBeInTheDocument();
+    expect(screen.queryByText('智能棋盘')).not.toBeInTheDocument();
   });
 
   it('redirects /kiosk to /kiosk/play', () => {

@@ -113,9 +113,28 @@ describe('Kiosk navigation integration', () => {
       expect(headerSettings).toBeDefined();
       fireEvent.click(headerSettings!);
       await waitFor(() => expect(screen.getByRole('heading', { name: '设置' })).toBeInTheDocument());
+      expect(screen.queryByText('复盘')).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: '返回' }));
       await waitFor(() => expect(screen.getByText('人机对弈')).toBeInTheDocument());
+    });
+
+    it('opens the Report list from the Dock without mounting physical-board UI', async () => {
+      global.fetch = vi.fn().mockImplementation(async (url: string) => {
+        const path = String(url);
+        const data = path.includes('/reports/summary')
+          ? { pending: 0, running: 0, completed: 0, failed: 0 }
+          : path.includes('/reports/')
+            ? []
+            : path.includes('/user-games/')
+              ? { items: [], total: 0, page: 1, page_size: 12 }
+              : [];
+        return { ok: true, json: async () => data, text: async () => '' };
+      }) as unknown as typeof fetch;
+      renderApp('/kiosk/play');
+      fireEvent.click(screen.getByText('复盘'));
+      await waitFor(() => expect(screen.getAllByText('复盘').length).toBeGreaterThanOrEqual(2));
+      expect(screen.queryByText('智能棋盘')).not.toBeInTheDocument();
     });
 
     it('navigates to lobby from play/pvp/lobby route', async () => {

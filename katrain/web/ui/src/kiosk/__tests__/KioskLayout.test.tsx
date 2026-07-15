@@ -14,6 +14,7 @@ const renderLayout = (route = '/kiosk/play') =>
         <Routes>
           <Route element={<KioskLayout username="张三" />}>
             <Route path="/kiosk/play" element={<div>PLAY_CONTENT</div>} />
+            <Route path="/kiosk/report" element={<div>REPORT_CONTENT</div>} />
             <Route path="/kiosk/settings" element={<div>SETTINGS_CONTENT</div>} />
           </Route>
         </Routes>
@@ -36,9 +37,21 @@ describe('KioskLayout', () => {
     renderLayout('/kiosk/play');
     expect(screen.getByText('智星盒')).toBeInTheDocument();
     expect(screen.getByText('对弈')).toBeInTheDocument();
-    expect(screen.getByText('设置')).toBeInTheDocument();
+    expect(screen.getByText('复盘')).toBeInTheDocument();
     expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
     expect(screen.getByText('智能棋盘')).toBeInTheDocument();
+  });
+
+  it('shows Header and Dock on Report but Header without Dock on Settings', () => {
+    const report = renderLayout('/kiosk/report');
+    expect(screen.getByText('REPORT_CONTENT')).toBeInTheDocument();
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
+    expect(screen.getByText('复盘')).toBeInTheDocument();
+    report.unmount();
+
+    renderLayout('/kiosk/settings');
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
+    expect(screen.queryByText('复盘')).not.toBeInTheDocument();
   });
 
   it('gates the SmartBoardConsole to CONSOLE_ROUTES — hidden on /kiosk/settings', () => {

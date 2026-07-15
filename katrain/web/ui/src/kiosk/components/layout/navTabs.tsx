@@ -7,7 +7,7 @@ import {
   LiveTv as LiveIcon,
   GridOn as BaipuIcon,
   MenuBook as TutorialIcon,   // 教程: was School → MenuBook (galaxy 同款)
-  Settings as SettingsIcon,
+  Assessment as ReportIcon,
 } from '@mui/icons-material';
 
 export interface NavTab {
@@ -27,10 +27,10 @@ export const primaryTabs: NavTab[] = [
   { label: '教程', icon: <TutorialIcon />, path: '/kiosk/tutorial', pattern: '/kiosk/tutorial/*' },
 ];
 
-export const settingsTab: NavTab = {
-  label: '设置', icon: <SettingsIcon />, path: '/kiosk/settings', pattern: '/kiosk/settings',
+export const reportTab: NavTab = {
+  label: '复盘', icon: <ReportIcon />, path: '/kiosk/report', pattern: '/kiosk/report',
 };
 
 // The 8 first-level routes where the bottom Dock is shown. Every other kiosk
 // route is a deeper page: Dock hidden, SubPageBar (back) shown instead.
-export const L1_PATHS: string[] = [...primaryTabs, settingsTab].map((t) => t.path);
+export const L1_PATHS: string[] = [...primaryTabs, reportTab].map((t) => t.path);

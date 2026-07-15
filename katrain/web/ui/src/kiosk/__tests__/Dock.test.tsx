@@ -21,9 +21,10 @@ const renderWithProviders = (ui: React.ReactElement, route = '/kiosk/play') =>
 describe('Dock', () => {
   it('renders all 8 nav labels', () => {
     renderWithProviders(<Dock />);
-    ['对弈', '死活', '研究', '棋谱', '摆谱', '直播', '教程', '设置'].forEach((label) => {
+    ['对弈', '死活', '研究', '棋谱', '摆谱', '直播', '教程', '复盘'].forEach((label) => {
       expect(screen.getByText(label)).toBeInTheDocument();
     });
+    expect(screen.queryByText('设置')).not.toBeInTheDocument();
   });
 
   it('marks 对弈 active and 死活 inactive on /kiosk/play', () => {
@@ -36,5 +37,11 @@ describe('Dock', () => {
     renderWithProviders(<Dock />);
     fireEvent.click(screen.getByText('死活'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego');
+  });
+
+  it('navigates to the Report list from the translated 复盘 item', () => {
+    renderWithProviders(<Dock />);
+    fireEvent.click(screen.getByText('复盘'));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/report');
   });
 });

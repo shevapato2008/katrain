@@ -14,6 +14,7 @@ interface PlaybackBarProps {
   totalMoves: number;
   onMoveChange: (move: number) => void;
   isLive?: boolean;
+  touchSized?: boolean;
 }
 
 export default function PlaybackBar({
@@ -21,11 +22,13 @@ export default function PlaybackBar({
   totalMoves,
   onMoveChange,
   isLive = false,
+  touchSized = false,
 }: PlaybackBarProps) {
   const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [followLatest, setFollowLatest] = useState(isLive); // Auto-follow latest in live mode
   const [playSpeed] = useState(1000); // ms per move
+  const touchButtonSx = touchSized ? { minWidth: 48, width: 48, minHeight: 48, height: 48 } : undefined;
 
   // Auto-play effect
   useEffect(() => {
@@ -127,18 +130,19 @@ export default function PlaybackBar({
       {/* Controls with move counter inline */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
         <Tooltip title={t('live:first_move')}>
-          <IconButton onClick={handleFirst} size="small" disabled={currentMove === 0}>
+          <span><IconButton aria-label={t('live:first_move')} onClick={handleFirst} size="small" disabled={currentMove === 0} sx={touchButtonSx}>
             <KeyboardDoubleArrowLeftIcon />
-          </IconButton>
+          </IconButton></span>
         </Tooltip>
 
         <Tooltip title={t('live:previous')}>
-          <IconButton onClick={handlePrev} size="small" disabled={currentMove === 0}>
+          <span><IconButton aria-label={t('live:previous')} onClick={handlePrev} size="small" disabled={currentMove === 0} sx={touchButtonSx}>
             <ChevronLeftIcon />
-          </IconButton>
+          </IconButton></span>
         </Tooltip>
 
         <IconButton
+          aria-label={isPlaying ? t('live:pause', '暂停') : t('live:play', '播放')}
           onClick={handlePlayPause}
           size="large"
           color="primary"
@@ -147,21 +151,22 @@ export default function PlaybackBar({
             color: 'primary.contrastText',
             '&:hover': { bgcolor: 'primary.dark' },
             mx: 1,
+            ...(touchButtonSx || {}),
           }}
         >
           {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
         </IconButton>
 
         <Tooltip title={t('live:next')}>
-          <IconButton onClick={handleNext} size="small" disabled={currentMove >= totalMoves}>
+          <span><IconButton aria-label={t('live:next')} onClick={handleNext} size="small" disabled={currentMove >= totalMoves} sx={touchButtonSx}>
             <ChevronRightIcon />
-          </IconButton>
+          </IconButton></span>
         </Tooltip>
 
         <Tooltip title={t('live:latest')}>
-          <IconButton onClick={handleLast} size="small" disabled={currentMove >= totalMoves}>
+          <span><IconButton aria-label={t('live:latest')} onClick={handleLast} size="small" disabled={currentMove >= totalMoves} sx={touchButtonSx}>
             <KeyboardDoubleArrowRightIcon />
-          </IconButton>
+          </IconButton></span>
         </Tooltip>
 
         {/* Follow latest toggle (only shown in live mode) */}

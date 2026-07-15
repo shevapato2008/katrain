@@ -9,6 +9,8 @@ function renderAt(path: string) {
       <Routes>
         <Route element={<KioskLayout username="友" />}>
           <Route path="/kiosk/play" element={<div>hub</div>} />
+          <Route path="/kiosk/report" element={<div>report</div>} />
+          <Route path="/kiosk/settings" element={<div>settings</div>} />
           <Route path="/kiosk/play/ai/setup/:mode" element={<div>setup</div>} />
         </Route>
       </Routes>
@@ -24,4 +26,12 @@ test('Dock shows on L1 play', () => {
 test('Dock hidden on deeper setup page', () => {
   renderAt('/kiosk/play/ai/setup/free');
   expect(screen.queryByText('对弈')).not.toBeInTheDocument();
+});
+
+test('Dock shows on L1 Report and is hidden on Settings', () => {
+  const report = renderAt('/kiosk/report');
+  expect(screen.getByText('复盘')).toBeInTheDocument();
+  report.unmount();
+  renderAt('/kiosk/settings');
+  expect(screen.queryByText('复盘')).not.toBeInTheDocument();
 });

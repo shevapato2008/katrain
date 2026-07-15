@@ -47,8 +47,8 @@ export interface MoveAnalysis {
   winrate: number | null;
   score_lead: number | null;
   visits: number | null;
-  top_moves: any | null;
-  ownership: any | null;
+  top_moves: unknown | null;
+  ownership: number[][] | null;
   move: string | null;
   actual_player: string | null;
   delta_score: number | null;

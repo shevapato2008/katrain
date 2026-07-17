@@ -49,13 +49,20 @@ const PlayPage = () => {
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
 
   useEffect(() => {
-    if (!token) {
-      setPlatforms(defaultPlatforms());
-      return;
+    let current = true;
+    setPlatforms(defaultPlatforms());
+
+    if (token) {
+      API.platformStatus(token).then((d) => {
+        if (current) setPlatforms(mergePlatformStatus(d.platforms));
+      }).catch(() => {
+        if (current) setPlatforms(defaultPlatforms());
+      });
     }
-    API.platformStatus(token).then((d) => setPlatforms(mergePlatformStatus(d.platforms))).catch(() => {
-      setPlatforms(defaultPlatforms());
-    });
+
+    return () => {
+      current = false;
+    };
   }, [token]);
 
   const hour = new Date().getHours();

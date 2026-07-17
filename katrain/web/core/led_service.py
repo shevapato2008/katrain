@@ -79,6 +79,7 @@ class LedServiceConfig:
     serial_port: str = ""
     baud_rate: int = 115200
     max_bright: int = 200
+    handshake_timeout: float = 2.0
     lut_path: Optional[str] = None
 
 
@@ -151,7 +152,11 @@ class LedService:
     def _default_serial_factory(self):
         import serial  # pyserial — imported lazily so the module loads without it
 
-        return serial.Serial(self.config.serial_port, self.config.baud_rate, timeout=2)
+        return serial.Serial(
+            self.config.serial_port,
+            self.config.baud_rate,
+            timeout=self.config.handshake_timeout,
+        )
 
     def start(self) -> None:
         self._stop.clear()
@@ -300,32 +305,42 @@ class LedService:
     def _open_serial(self) -> None:
         try:
             self._serial = self._serial_factory()
-            self._connected = True
-            # Set global brightness AND consume its ack (+ any boot "READY" banner).
-            # If we left the BRIGHT ack in the buffer, the next _send_and_ack would
-            # mis-pair it with CLEAR, cascading an off-by-one across the batch.
-            self._send_now(f"BRIGHT {self.config.max_bright}")
-            for _ in range(4):
-                try:
-                    line = self._serial.readline().decode("ascii", errors="replace").strip()
-                except Exception:
+            self._connected = False
+
+            # Discard complete lines already buffered before BRIGHT. In particular,
+            # a stale OK from boot must never authenticate the new connection.
+            drain_deadline = self._clock() + self.config.handshake_timeout
+            for _ in range(32):
+                if self._clock() >= drain_deadline or not getattr(self._serial, "in_waiting", 0):
                     break
-                if line.startswith("OK") or line.startswith("ERR"):
+                self._serial.readline()
+
+            self._serial.write(f"BRIGHT {self.config.max_bright}\n".encode("ascii"))
+            deadline = self._clock() + self.config.handshake_timeout
+            while self._clock() < deadline:
+                line = self._serial.readline().decode("ascii", errors="replace").strip()
+                if self._clock() >= deadline:
                     break
-            log.info("LED serial opened on %s", self.config.serial_port)
+                if line.startswith("OK"):
+                    self._connected = True
+                    log.info("LED serial opened on %s", self.config.serial_port)
+                    return
+                if line.startswith("ERR"):
+                    break
+
+            self._close_serial()
+            log.warning("LED serial handshake failed (%s)", self.config.serial_port)
         except ImportError as e:
             # pyserial not installed — permanent, not a transient device hiccup.
             # Log once and disable reconnect so we don't spam the log every cycle.
-            self._serial = None
-            self._connected = False
+            self._close_serial()
             self._serial_unavailable = True
             log.warning(
                 "LED disabled: pyserial not installed (%s). Run `pip install pyserial` to enable LED guidance.",
                 e,
             )
         except Exception as e:
-            self._serial = None
-            self._connected = False
+            self._close_serial()
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self) -> None:
@@ -336,14 +351,6 @@ class LedService:
             return
         self._last_reconnect = now
         self._open_serial()
-
-    def _send_now(self, cmd: str) -> None:
-        if self._serial is None:
-            return
-        try:
-            self._serial.write((cmd + "\n").encode("ascii"))
-        except Exception:
-            pass
 
     def _close_serial(self) -> None:
         if self._serial is not None:

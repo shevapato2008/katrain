@@ -5,29 +5,33 @@ hardware day; these tests lock the host-side logic: LUT correctness, color/RGB
 mapping, the strict SHOW-ack path, queue-full dropping, and reconnect.
 """
 
+import importlib.util
 import sys
 import threading
-import types
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-# This core-only serial test must not import katrain.web.__init__, whose eager
-# desktop interface import requires compiled locale files. Give the import
-# machinery the real package path without executing that unrelated initializer.
-web_package = types.ModuleType("katrain.web")
-web_package.__path__ = [str(Path(__file__).resolve().parents[1] / "katrain" / "web")]
-sys.modules.setdefault("katrain.web", web_package)
-
-from katrain.web.core.led_service import (
-    LedService,
-    LedServiceConfig,
-    rc2idx,
-    serp,
-    validate_lut,
-    COLOR_RGB,
+# Load this leaf module without executing katrain.web.__init__, whose eager
+# desktop interface import requires compiled locale files. Do not replace the
+# real package in sys.modules: other tests may legitimately import it later.
+_web_package_before = sys.modules.get("katrain.web")
+_led_service_spec = importlib.util.spec_from_file_location(
+    "test_led_service_leaf",
+    Path(__file__).resolve().parents[1] / "katrain" / "web" / "core" / "led_service.py",
 )
+assert _led_service_spec is not None and _led_service_spec.loader is not None
+_led_service = importlib.util.module_from_spec(_led_service_spec)
+sys.modules[_led_service_spec.name] = _led_service
+_led_service_spec.loader.exec_module(_led_service)
+
+LedService = _led_service.LedService
+LedServiceConfig = _led_service.LedServiceConfig
+rc2idx = _led_service.rc2idx
+serp = _led_service.serp
+validate_lut = _led_service.validate_lut
+COLOR_RGB = _led_service.COLOR_RGB
 
 
 class FakeSerial:
@@ -81,6 +85,19 @@ class HandshakeSerial(FakeSerial):
     def reset_input_buffer(self):
         self._buf.clear()
 
+    def read(self, size=1):
+        data = bytearray()
+        while size and self._buf:
+            line = self._buf[0]
+            take = min(size, len(line))
+            data.extend(line[:take])
+            size -= take
+            if take == len(line):
+                self._buf.pop(0)
+            else:
+                self._buf[0] = line[take:]
+        return bytes(data)
+
     def write(self, data: bytes):
         command = data.decode("ascii").strip()
         self.written.append(command)
@@ -115,6 +132,12 @@ class PartialPrewriteSerial:
         self.reset_calls += 1
         self.partial_stale = False
 
+    def read(self, size=1):
+        if not self.partial_stale:
+            return b""
+        self.partial_stale = False
+        return b"OK stale"[:size]
+
     def write(self, data: bytes):
         self.written.append(data.decode("ascii").strip())
         if self.written[-1].startswith("BRIGHT"):
@@ -129,6 +152,42 @@ class PartialPrewriteSerial:
             self.partial_stale = False
             return b"OK stale\n"
         return self._responses.pop(0) if self._responses else b""
+
+    def close(self):
+        self.closed = True
+
+
+class DelayedReadySerial:
+    """Serial fake that emits READY only after the board's boot-settle delay."""
+
+    def __init__(self, clock, *, ready_delay=0.25, bright_response=("OK bright",)):
+        self.clock = clock
+        self.ready_delay = ready_delay
+        self.ready_sent = False
+        self.reset_calls = 0
+        self.write_times = []
+        self.closed = False
+        self._responses = list(bright_response)
+
+    @property
+    def in_waiting(self):
+        return 0
+
+    def reset_input_buffer(self):
+        self.reset_calls += 1
+
+    def write(self, data: bytes):
+        self.write_times.append((data.decode("ascii").strip(), self.clock()))
+
+    def readline(self) -> bytes:
+        if not self.ready_sent:
+            self.ready_sent = True
+            self.clock.advance(self.ready_delay)
+            return b"READY\n"
+        if self._responses:
+            return (self._responses.pop(0) + "\n").encode("ascii")
+        self.clock.advance(2.0)
+        return b""
 
     def close(self):
         self.closed = True
@@ -156,6 +215,11 @@ class TestLut:
     def test_serp_helper(self):
         assert serp(0, 0, 10) == 1  # first row, left to right
         assert serp(1, 0, 10) == 20  # second row, right to left
+
+
+class TestModuleIsolation:
+    def test_leaf_import_does_not_replace_katrain_web_package(self):
+        assert sys.modules.get("katrain.web") is _web_package_before
 
 
 # --------------------------------------------------------------------------- #
@@ -295,6 +359,36 @@ class TestConnectionHandshake:
         assert svc.is_connected() is True
         assert fake.written == ["BRIGHT 200"]
         assert fake._buf == []
+
+    def test_delayed_ready_precedes_bright_and_fresh_ok_connects(self):
+        clock = FakeClock()
+        fake = DelayedReadySerial(clock)
+        svc = LedService(
+            LedServiceConfig(enabled=True, serial_port="fake", handshake_timeout=1.0),
+            serial_factory=lambda: fake,
+            clock=clock,
+        )
+
+        svc._open_serial()
+
+        assert fake.reset_calls == 1
+        assert fake.write_times == [("BRIGHT 200", 1000.25)]
+        assert svc.is_connected() is True
+
+    def test_ready_banner_does_not_replace_postwrite_ok(self):
+        clock = FakeClock()
+        fake = DelayedReadySerial(clock, bright_response=("READY still booting",))
+        svc = LedService(
+            LedServiceConfig(enabled=True, serial_port="fake", handshake_timeout=1.0),
+            serial_factory=lambda: fake,
+            clock=clock,
+        )
+
+        svc._open_serial()
+
+        assert fake.write_times == [("BRIGHT 200", 1000.25)]
+        assert svc.is_connected() is False
+        assert fake.closed is True
 
     def test_partial_prewrite_input_is_nonblocking_and_cannot_authenticate(self):
         clock = FakeClock()

@@ -302,6 +302,33 @@ class LedService:
             batch.event.set()
 
     # -- serial helpers ---------------------------------------------------- #
+    def _wait_for_boot_ready(self) -> None:
+        """Give a freshly opened ESP32 a bounded chance to announce READY."""
+        deadline = self._clock() + self.config.handshake_timeout
+        boot_data = b""
+
+        while self._clock() < deadline:
+            waiting = getattr(self._serial, "in_waiting", 0)
+            read_available = getattr(self._serial, "read", None)
+            if waiting and callable(read_available):
+                # pyserial read(n) is nonblocking for bytes reported in_waiting,
+                # unlike readline() on an unterminated boot banner.
+                chunk = read_available(waiting)
+                if not chunk:
+                    break
+                boot_data += chunk
+            else:
+                line = self._serial.readline()
+                boot_data += line
+                if not line:
+                    # A normal pyserial readline just waited through its timeout.
+                    break
+
+            if self._clock() >= deadline:
+                break
+            if any(line.strip().startswith(b"READY") for line in boot_data.splitlines()):
+                return
+
     def _drain_prewrite_input(self) -> None:
         """Discard stale input without letting a partial line consume a read timeout."""
         reset_input_buffer = getattr(self._serial, "reset_input_buffer", None)
@@ -329,6 +356,10 @@ class LedService:
         try:
             self._serial = self._serial_factory()
             self._connected = False
+
+            # A USB-open can reset the ESP32. Wait for its boot banner (or a
+            # bounded timeout), then discard boot chatter before BRIGHT.
+            self._wait_for_boot_ready()
 
             # Discard all buffered input before BRIGHT. In particular, a stale OK
             # or an unterminated partial line must never authenticate a connection.

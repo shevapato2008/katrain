@@ -1,17 +1,14 @@
 """Board startup remains available when the optional camera is absent."""
 
 import asyncio
+import importlib.util
 import sys
+from pathlib import Path
 from types import SimpleNamespace
+from types import ModuleType
 
 import pytest
 from fastapi import APIRouter
-
-# Keep this lifecycle unit test independent from the full endpoint import tree,
-# which loads desktop i18n assets that are deliberately absent in web CI.
-sys.modules["katrain.web.api.v1.api"] = SimpleNamespace(api_router=APIRouter())
-from katrain.web import server
-
 
 class _Repository:
     def __init__(self, *args, **kwargs):
@@ -70,6 +67,61 @@ class _MustNotConstruct:
 class _Manager:
     def attach_loop(self, loop):
         self.loop = loop
+
+
+def _package(name):
+    module = ModuleType(name)
+    module.__path__ = []
+    return module
+
+
+@pytest.fixture
+def server_module(monkeypatch):
+    """Load server.py as a leaf and restore every temporary package afterwards."""
+    katrain = _package("katrain")
+    web = _package("katrain.web")
+    api = _package("katrain.web.api")
+    api_v1 = _package("katrain.web.api.v1")
+    core = _package("katrain.web.core")
+    katrain.web = web
+    web.api = api
+    web.core = core
+    api.v1 = api_v1
+    modules = {
+        "katrain": katrain,
+        "katrain.web": web,
+        "katrain.web.api": api,
+        "katrain.web.api.v1": api_v1,
+        "katrain.web.core": core,
+        "katrain.web.api.v1.api": SimpleNamespace(api_router=APIRouter()),
+        "katrain.web.core.catalog_cache": SimpleNamespace(add_catalog_cache_middleware=lambda app: None),
+        "katrain.web.core.config": SimpleNamespace(
+            settings=SimpleNamespace(
+                DEVICE_ID="",
+                REMOTE_API_URL="",
+                LOCAL_KATAGO_URL="",
+                CLOUD_KATAGO_URL="",
+            )
+        ),
+        "katrain.web.session": SimpleNamespace(
+            SessionManager=object,
+            LobbyManager=lambda: object(),
+            Matchmaker=lambda: object(),
+        ),
+        "katrain.web.models": ModuleType("katrain.web.models"),
+    }
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    spec = importlib.util.spec_from_file_location(
+        "test_board_lifespan_server",
+        Path(__file__).resolve().parents[2] / "katrain" / "web" / "server.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, spec.name, module)
+    spec.loader.exec_module(module)
+    return module
 
 
 async def _cancel_startup_tasks(app):
@@ -132,6 +184,11 @@ def _install_board_startup_fakes(monkeypatch):
     monkeypatch.setitem(sys.modules, "katrain.web.core.router", SimpleNamespace(build_router=lambda *args: object()))
     monkeypatch.setitem(
         sys.modules,
+        "katrain.web.core.box_sso",
+        SimpleNamespace(strict_box_sso_enabled=lambda: True),
+    )
+    monkeypatch.setitem(
+        sys.modules,
         "katrain.web.interface",
         SimpleNamespace(WebKaTrain=lambda **kwargs: SimpleNamespace(config=lambda _name: {})),
     )
@@ -150,7 +207,8 @@ def _install_board_startup_fakes(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_board_lifespan_degrades_when_camera_hub_cannot_start(monkeypatch, caplog):
+async def test_board_lifespan_degrades_when_camera_hub_cannot_start(server_module, monkeypatch, caplog):
+    server = server_module
     _CameraUnavailable.instances.clear()
     _Led.instances.clear()
     _install_board_startup_fakes(monkeypatch)
@@ -206,7 +264,8 @@ async def test_board_lifespan_degrades_when_camera_hub_cannot_start(monkeypatch,
 
 
 @pytest.mark.asyncio
-async def test_board_lifespan_keeps_shared_camera_config_mismatch_fatal(monkeypatch):
+async def test_board_lifespan_keeps_shared_camera_config_mismatch_fatal(server_module, monkeypatch):
+    server = server_module
     _CameraUnavailable.instances.clear()
     _install_board_startup_fakes(monkeypatch)
     monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)

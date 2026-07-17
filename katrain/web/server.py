@@ -377,6 +377,21 @@ async def _lifespan_board(app: FastAPI, log):
     vision_config = getattr(settings, "_vision_config", None)
     capture_config = getattr(settings, "_capture_config", None)
 
+    # Initialise every optional camera-dependent surface before attempting to
+    # acquire the device. A missing UVC device must leave the regular board
+    # (including LEDs and kiosk play) available rather than aborting lifespan.
+    app.state.camera_hub = None
+    app.state.vision = None
+    app.state.vision_ws_clients = {}
+    app.state.vision_move_queue = None
+    app.state.vision_pump_task = None
+    app.state.vision_poller_task = None
+    app.state.capture = None
+    app.state.geometry = None
+    app.state.geometry_calibration = None
+    app.state.physical_play = None
+    app.state.physical_play_config = None
+
     # One physical camera owner shared by capture, calibration, and recognition.
     camera_hub = None
     if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
@@ -408,11 +423,22 @@ async def _lifespan_board(app: FastAPI, log):
                 lock_awb=False,
             )
         camera_hub = CameraHub(hub_config)
-        camera_hub.start()
+        try:
+            camera_hub.start()
+        except RuntimeError as exc:
+            # CameraHub uses this error only when CameraManager cannot open the
+            # configured device. Preserve every other RuntimeError as a startup
+            # failure (including future non-device configuration defects).
+            if not str(exc).startswith("Failed to open camera "):
+                raise
+            log.warning(
+                "Camera unavailable; continuing without vision, capture, calibration, or physical play: %s", exc
+            )
+            camera_hub = None
     app.state.camera_hub = camera_hub
 
     # Vision service (optional — enabled when --vision-model is provided)
-    if vision_config and vision_config.enabled:
+    if vision_config and vision_config.enabled and camera_hub is not None:
         from katrain.vision.service import VisionService
 
         vision = VisionService(vision_config, frame_source=camera_hub)
@@ -465,7 +491,7 @@ async def _lifespan_board(app: FastAPI, log):
         app.state.physical_play_config = None
 
     # Capture service consumes the shared CameraHub and only owns file output.
-    if capture_config and capture_config.enabled:
+    if capture_config and capture_config.enabled and camera_hub is not None:
         from katrain.web.core.capture_service import CaptureService
 
         capture = CaptureService(capture_config, hub=camera_hub)

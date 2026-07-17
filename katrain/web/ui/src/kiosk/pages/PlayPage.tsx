@@ -16,6 +16,23 @@ const SERIF = "'Newsreader','Noto Serif SC',serif";
 // NOT a big heading (variant h6 pushed the cards down and out of the viewport).
 const sectionLabelSx = { fontSize: 13, fontWeight: 600, color: 'text.secondary', mt: 0.5 } as const;
 
+const PLATFORM_CATALOGUE = ['ogs', 'fox', 'golaxy'] as const;
+
+const defaultPlatforms = (): PlatformInfo[] => PLATFORM_CATALOGUE.map((platform) => ({
+  platform,
+  connected: false,
+  supports_live_play: false,
+  supports_automatch: false,
+  supports_rooms: false,
+  supports_seek_graph: false,
+  supports_engine_play: false,
+}));
+
+const mergePlatformStatus = (records: PlatformInfo[]): PlatformInfo[] => {
+  const byPlatform = new Map(records.map((record) => [record.platform, record]));
+  return defaultPlatforms().map((fallback) => byPlatform.get(fallback.platform) ?? fallback);
+};
+
 /**
  * Route: play — the 对弈 hub. Three sibling sections: 人机对弈 (自由/升降级),
  * 人人对弈 (本地/在线大厅), 跨平台对弈 (platform cards fetched from API.platformStatus).
@@ -29,11 +46,16 @@ const PlayPage = () => {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const resume = readActiveSession('game');
-  const [platforms, setPlatforms] = useState<PlatformInfo[]>([]);
+  const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
 
   useEffect(() => {
-    if (!token) return;
-    API.platformStatus(token).then((d) => setPlatforms(d.platforms)).catch(() => {});
+    if (!token) {
+      setPlatforms(defaultPlatforms());
+      return;
+    }
+    API.platformStatus(token).then((d) => setPlatforms(mergePlatformStatus(d.platforms))).catch(() => {
+      setPlatforms(defaultPlatforms());
+    });
   }, [token]);
 
   const hour = new Date().getHours();
@@ -122,7 +144,7 @@ const PlayPage = () => {
         />
       </Box>
 
-      {/* 跨平台对弈 — platform cards fetched from API.platformStatus, one per connected/known server */}
+      {/* 跨平台对弈 — fixed catalogue with connection state overlaid from API.platformStatus */}
       <Typography sx={sectionLabelSx}>{t('Cross-Platform', '跨平台对弈')}</Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
         {platforms.map((p) => {

@@ -33,6 +33,18 @@ const renderPage = () =>
     </ThemeProvider>
   );
 
+const platformButtons = () => [
+  screen.getByRole('button', { name: /OGS/ }),
+  screen.getByRole('button', { name: /野狐围棋/ }),
+  screen.getByRole('button', { name: /星阵围棋/ }),
+];
+
+const expectPlatformOrder = () => {
+  const buttons = platformButtons();
+  expect(buttons[0].compareDocumentPosition(buttons[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(buttons[1].compareDocumentPosition(buttons[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+};
+
 describe('PlayPage', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
@@ -46,12 +58,10 @@ describe('PlayPage', () => {
 
   it('renders four equal ModeCards with exactly one primary (jade) card', () => {
     renderPage();
-    // ModeCards only — excludes the secondary "Game history" entry button, which is
-    // not a ModeCard (deliberately not part of the section grids).
-    const buttons = screen
-      .getAllByRole('button')
-      .filter((b) => b.getAttribute('data-testid') !== 'game-history-entry');
-    expect(buttons).toHaveLength(4);
+    const modeCardLabels = ['自由对弈', '升降级对弈', '本地对局', '在线大厅'];
+    const buttons = modeCardLabels.map((label) => screen.getByText(label).closest('button'));
+    expect(buttons.every(Boolean)).toBe(true);
+    expect(new Set(buttons)).toHaveLength(4);
 
     const primaryCards = screen.getAllByTestId('mode-card-primary');
     expect(primaryCards).toHaveLength(1);
@@ -106,5 +116,51 @@ describe('PlayPage', () => {
     renderPage();
     // The old duplicate ModeCard title. Platform cards use platform names, not this.
     expect(screen.queryByText('连接 OGS、野狐等平台')).not.toBeInTheDocument();
+  });
+
+  it('keeps OGS, 野狐围棋, and 星阵围棋 in stable order when the API returns no platforms', async () => {
+    useAuthMock.mockReturnValue({ user: { username: '友' }, isAuthenticated: true, token: 't' });
+    platformStatusMock.mockResolvedValue({ platforms: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(platformStatusMock).toHaveBeenCalledWith('t'));
+    expectPlatformOrder();
+    platformButtons().forEach((button) => expect(button).toHaveTextContent('点击登录连接'));
+  });
+
+  it('keeps OGS, 野狐围棋, and 星阵围棋 in stable order when the API rejects', async () => {
+    useAuthMock.mockReturnValue({ user: { username: '友' }, isAuthenticated: true, token: 't' });
+    platformStatusMock.mockRejectedValue(new Error('offline'));
+
+    renderPage();
+
+    await waitFor(() => expect(platformStatusMock).toHaveBeenCalledWith('t'));
+    expectPlatformOrder();
+    platformButtons().forEach((button) => expect(button).toHaveTextContent('点击登录连接'));
+  });
+
+  it('merges one connected platform without changing the other platform labels or routes', async () => {
+    useAuthMock.mockReturnValue({ user: { username: '友' }, isAuthenticated: true, token: 't' });
+    platformStatusMock.mockResolvedValue({
+      platforms: [{ platform: 'golaxy', connected: true, saved_username: '13800000000', supports_engine_play: true }],
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(platformButtons()[2]).toHaveTextContent('已连接'));
+    const [ogs, fox, golaxy] = platformButtons();
+    expect(ogs).toHaveTextContent('点击登录连接');
+    expect(fox).toHaveTextContent('点击登录连接');
+    expect(golaxy).toHaveTextContent('已连接');
+
+    fireEvent.click(ogs);
+    fireEvent.click(fox);
+    fireEvent.click(golaxy);
+    expect(mockNavigate.mock.calls).toEqual([
+      ['/kiosk/play/cross-platform'],
+      ['/kiosk/play/cross-platform'],
+      ['/kiosk/play/cross-platform/engine/golaxy'],
+    ]);
   });
 });

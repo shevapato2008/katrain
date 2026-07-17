@@ -7,9 +7,18 @@ mapping, the strict SHOW-ack path, queue-full dropping, and reconnect.
 
 import sys
 import threading
+import types
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+# This core-only serial test must not import katrain.web.__init__, whose eager
+# desktop interface import requires compiled locale files. Give the import
+# machinery the real package path without executing that unrelated initializer.
+web_package = types.ModuleType("katrain.web")
+web_package.__path__ = [str(Path(__file__).resolve().parents[1] / "katrain" / "web")]
+sys.modules.setdefault("katrain.web", web_package)
 
 from katrain.web.core.led_service import (
     LedService,
@@ -69,6 +78,9 @@ class HandshakeSerial(FakeSerial):
     def in_waiting(self):
         return sum(len(line) for line in self._buf)
 
+    def reset_input_buffer(self):
+        self._buf.clear()
+
     def write(self, data: bytes):
         command = data.decode("ascii").strip()
         self.written.append(command)
@@ -81,6 +93,45 @@ class HandshakeSerial(FakeSerial):
         if self.clock is not None:
             self.clock.advance(self.read_advance)
         return self._buf.pop(0) if self._buf else b""
+
+
+class PartialPrewriteSerial:
+    """Serial fake whose partial stale input blocks readline until it is reset."""
+
+    def __init__(self, clock):
+        self.clock = clock
+        self.partial_stale = True
+        self.prewrite_reads = 0
+        self.reset_calls = 0
+        self.written = []
+        self.closed = False
+        self._responses = []
+
+    @property
+    def in_waiting(self):
+        return 8 if self.partial_stale else 0
+
+    def reset_input_buffer(self):
+        self.reset_calls += 1
+        self.partial_stale = False
+
+    def write(self, data: bytes):
+        self.written.append(data.decode("ascii").strip())
+        if self.written[-1].startswith("BRIGHT"):
+            self._responses.append(b"ERR fresh-bright\n")
+
+    def readline(self) -> bytes:
+        if self.partial_stale and not self.written:
+            self.prewrite_reads += 1
+            self.clock.advance(5.0)
+            return b""
+        if self.partial_stale:
+            self.partial_stale = False
+            return b"OK stale\n"
+        return self._responses.pop(0) if self._responses else b""
+
+    def close(self):
+        self.closed = True
 
 
 # --------------------------------------------------------------------------- #
@@ -244,6 +295,23 @@ class TestConnectionHandshake:
         assert svc.is_connected() is True
         assert fake.written == ["BRIGHT 200"]
         assert fake._buf == []
+
+    def test_partial_prewrite_input_is_nonblocking_and_cannot_authenticate(self):
+        clock = FakeClock()
+        fake = PartialPrewriteSerial(clock)
+        svc = LedService(
+            LedServiceConfig(enabled=True, serial_port="fake", handshake_timeout=1.0),
+            serial_factory=lambda: fake,
+            clock=clock,
+        )
+
+        svc._open_serial()
+
+        assert fake.reset_calls == 1
+        assert fake.prewrite_reads == 0
+        assert clock.t == 1000.0
+        assert fake.written == ["BRIGHT 200"]
+        assert svc.is_connected() is False
 
     def test_bright_err_closes_without_connecting(self):
         fake = HandshakeSerial(bright_response=("ERR bad brightness",))

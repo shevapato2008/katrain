@@ -302,18 +302,37 @@ class LedService:
             batch.event.set()
 
     # -- serial helpers ---------------------------------------------------- #
+    def _drain_prewrite_input(self) -> None:
+        """Discard stale input without letting a partial line consume a read timeout."""
+        reset_input_buffer = getattr(self._serial, "reset_input_buffer", None)
+        if callable(reset_input_buffer):
+            reset_input_buffer()
+            return
+
+        # pyserial exposes reset_input_buffer, but keep serial-compatible test or
+        # adapter objects safe too: a zero timeout makes readline nonblocking.
+        missing = object()
+        previous_timeout = getattr(self._serial, "timeout", missing)
+        if previous_timeout is missing:
+            return
+        try:
+            self._serial.timeout = 0
+            deadline = self._clock() + self.config.handshake_timeout
+            for _ in range(32):
+                if self._clock() >= deadline or not getattr(self._serial, "in_waiting", 0):
+                    break
+                self._serial.readline()
+        finally:
+            self._serial.timeout = previous_timeout
+
     def _open_serial(self) -> None:
         try:
             self._serial = self._serial_factory()
             self._connected = False
 
-            # Discard complete lines already buffered before BRIGHT. In particular,
-            # a stale OK from boot must never authenticate the new connection.
-            drain_deadline = self._clock() + self.config.handshake_timeout
-            for _ in range(32):
-                if self._clock() >= drain_deadline or not getattr(self._serial, "in_waiting", 0):
-                    break
-                self._serial.readline()
+            # Discard all buffered input before BRIGHT. In particular, a stale OK
+            # or an unterminated partial line must never authenticate a connection.
+            self._drain_prewrite_input()
 
             self._serial.write(f"BRIGHT {self.config.max_bright}\n".encode("ascii"))
             deadline = self._clock() + self.config.handshake_timeout

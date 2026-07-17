@@ -10,6 +10,7 @@ from types import ModuleType
 import pytest
 from fastapi import APIRouter
 
+
 class _Repository:
     def __init__(self, *args, **kwargs):
         pass

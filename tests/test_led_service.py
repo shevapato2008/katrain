@@ -25,6 +25,9 @@ assert _led_service_spec is not None and _led_service_spec.loader is not None
 _led_service = importlib.util.module_from_spec(_led_service_spec)
 sys.modules[_led_service_spec.name] = _led_service
 _led_service_spec.loader.exec_module(_led_service)
+# Capture this immediately: other test modules may legitimately import the real
+# package between collection and this test's execution.
+_web_package_after_leaf_import = sys.modules.get("katrain.web")
 
 LedService = _led_service.LedService
 LedServiceConfig = _led_service.LedServiceConfig
@@ -219,7 +222,7 @@ class TestLut:
 
 class TestModuleIsolation:
     def test_leaf_import_does_not_replace_katrain_web_package(self):
-        assert sys.modules.get("katrain.web") is _web_package_before
+        assert _web_package_after_leaf_import is _web_package_before
 
 
 # --------------------------------------------------------------------------- #

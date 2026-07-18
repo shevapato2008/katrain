@@ -1,12 +1,25 @@
 """HTTP-layer tests for the LED endpoints (web env). No serial/board required."""
 
+import importlib.util
+import sys
+from pathlib import Path
+
 import pytest
 
 pytest.importorskip("fastapi")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from katrain.web.api.v1.endpoints import led
+# The endpoint is a leaf module. Loading it directly keeps this HTTP test from
+# importing katrain.web.__init__, which eagerly starts the desktop i18n stack.
+_led_endpoint_spec = importlib.util.spec_from_file_location(
+    "test_led_api_leaf",
+    Path(__file__).resolve().parents[1] / "katrain" / "web" / "api" / "v1" / "endpoints" / "led.py",
+)
+assert _led_endpoint_spec is not None and _led_endpoint_spec.loader is not None
+led = importlib.util.module_from_spec(_led_endpoint_spec)
+sys.modules[_led_endpoint_spec.name] = led
+_led_endpoint_spec.loader.exec_module(led)
 
 
 class FakeLed:

@@ -2,12 +2,17 @@ import logging
 from typing import Any, Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from katrain.web.core.auth import verify_password, create_access_token, create_refresh_token
+from katrain.web.core.box_sso import (
+    BRIDGE_KEY_HEADER,
+    resolve_http_token,
+    strict_box_sso_enabled,
+)
 from katrain.web.core.config import settings
 from katrain.web.models import User, UserInDB
 
@@ -21,14 +26,49 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/a
 
 # Box-level SSO (see superpowers/tracks/box-sso-2026-07-13): the launcher (:8080)
 # sets this 127.0.0.1-scoped cookie after a successful katrain login, so every app
-# on the box shares one identity. Read it as a fallback when no
-# `Authorization: Bearer` header is present. A valid header always wins.
+# on the box shares one identity. The cookie is authoritative for ordinary user
+# authentication.
 SSO_COOKIE_NAME = "sb_token"
+SSO_LOOPBACK_HOST = "127.0.0.1"
 
 
 def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:
-    """Bearer header takes precedence; else the shared box-SSO cookie."""
-    return header_token or request.cookies.get(SSO_COOKIE_NAME)
+    """Select the credential allowed by the active server/strict-box mode."""
+    return resolve_http_token(request, header_token)
+
+
+def _issue_loopback_sso_cookie(request: Request, response: Response, access_token: str) -> None:
+    """Persist a direct kiosk login only on the known loopback host.
+
+    The explicit host gate preserves the Galaxy JSON-token flow and avoids
+    emitting an invalid `Domain=127.0.0.1` cookie for other hosts.
+    """
+    if strict_box_sso_enabled() or request.url.hostname != SSO_LOOPBACK_HOST:
+        return
+
+    response.set_cookie(
+        key=SSO_COOKIE_NAME,
+        value=access_token,
+        domain=SSO_LOOPBACK_HOST,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
+
+def _clear_loopback_sso_cookie(request: Request, response: Response) -> None:
+    """Expire the shared SSO cookie only for a direct loopback logout."""
+    if request.url.hostname != SSO_LOOPBACK_HOST:
+        return
+
+    response.delete_cookie(
+        key=SSO_COOKIE_NAME,
+        domain=SSO_LOOPBACK_HOST,
+        path="/",
+        httponly=True,
+        samesite="lax",
+    )
 
 
 # Shadow user: placeholder hash that cannot pass verify_password (design 5.3)
@@ -50,7 +90,18 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-async def get_user_from_token(token: str, repo: Any) -> User:
+class BoxBootstrapRequest(BaseModel):
+    username: str
+    generation: int
+    remote_access_token: str
+    remote_refresh_token: str
+
+
+class BoxClearRequest(BaseModel):
+    generation: int
+
+
+async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -60,6 +111,10 @@ async def get_user_from_token(token: str, repo: Any) -> User:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            raise credentials_exception
+        if strict_box_sso_enabled() and (
+            box_sso is None or not box_sso.validates(payload.get("box_generation"))
+        ):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
@@ -78,11 +133,32 @@ async def get_current_user(request: Request, token: Optional[str] = Depends(oaut
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return await get_user_from_token(resolved, request.app.state.user_repo)
+    return await get_user_from_token(
+        resolved,
+        request.app.state.user_repo,
+        getattr(request.app.state, "box_sso", None),
+    )
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+async def get_current_admin_user(
+    request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)
+) -> User:
     """Require an authenticated user with the is_admin flag. Shadow users never qualify."""
+    # Preserve the public/server contract: admin endpoints require an explicit
+    # Bearer token there. Strict Box mode has no browser Bearer path, so its
+    # generation-bound Go cookie is the only permitted credential.
+    resolved = _resolve_token(request, token) if strict_box_sso_enabled() else token
+    if not resolved:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    current_user = await get_user_from_token(
+        resolved,
+        request.app.state.user_repo,
+        getattr(request.app.state, "box_sso", None),
+    )
     if not getattr(current_user, "is_admin", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
     return current_user
@@ -96,7 +172,11 @@ async def get_current_user_optional(
     if not resolved:
         return None
     try:
-        return await get_user_from_token(resolved, request.app.state.user_repo)
+        return await get_user_from_token(
+            resolved,
+            request.app.state.user_repo,
+            getattr(request.app.state, "box_sso", None),
+        )
     except HTTPException:
         return None
 
@@ -109,8 +189,54 @@ def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
     return repo.create_user(username=username, hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
 
 
+def _require_bridge(request: Request) -> Any:
+    if not strict_box_sso_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    state = request.app.state.box_sso
+    client_host = request.client.host if request.client else None
+    if not state.authorize_bridge(client_host, request.headers.get(BRIDGE_KEY_HEADER)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    return state
+
+
+@router.post("/box-sso/bootstrap")
+async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
+    state = _require_bridge(request)
+    if isinstance(body.generation, bool) or body.generation <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
+    if (
+        not body.username.strip()
+        or not body.remote_access_token
+        or not body.remote_refresh_token
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bootstrap payload")
+    remote_client = getattr(request.app.state, "remote_client", None)
+    if remote_client is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Board client unavailable")
+    remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
+    shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username)
+    await state.activate(body.generation)
+    local_access = create_access_token(
+        data={"sub": shadow_user["username"]}, box_generation=body.generation
+    )
+    return {"access_token": local_access, "token_type": "bearer"}
+
+
+@router.post("/box-sso/clear")
+async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
+    state = _require_bridge(request)
+    if not await state.clear(body.generation):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stale generation")
+    remote_client = getattr(request.app.state, "remote_client", None)
+    if remote_client is not None:
+        remote_client.clear_tokens()
+    return {"ok": True}
+
+
 @router.post("/login", response_model=Token)
-async def login(request: Request, login_data: LoginRequest) -> Any:
+async def login(request: Request, login_data: LoginRequest, response: Response) -> Any:
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct login disabled")
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:
@@ -144,6 +270,7 @@ async def login(request: Request, login_data: LoginRequest) -> Any:
         # Issue local tokens (design 5.2)
         local_access = create_access_token(data={"sub": shadow_user["username"]})
         local_refresh = create_refresh_token(data={"sub": shadow_user["username"]})
+        _issue_loopback_sso_cookie(request, response, local_access)
         return {"access_token": local_access, "token_type": "bearer", "refresh_token": local_refresh}
 
     # Server mode: local authentication
@@ -157,12 +284,15 @@ async def login(request: Request, login_data: LoginRequest) -> Any:
         )
     access_token = create_access_token(data={"sub": user_dict["username"]})
     refresh_token = create_refresh_token(data={"sub": user_dict["username"]})
+    _issue_loopback_sso_cookie(request, response, access_token)
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
 
 @router.post("/refresh", response_model=Token)
 async def refresh(request: Request, body: RefreshRequest) -> Any:
     """Exchange a valid refresh token for a new access token."""
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct refresh disabled")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or expired refresh token",
@@ -196,6 +326,8 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
 
 @router.post("/register", response_model=User)
 async def register(request: Request, register_data: LoginRequest) -> Any:
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct registration disabled")
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:
@@ -239,9 +371,13 @@ async def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
 
 
 @router.post("/logout")
-async def logout(request: Request, current_user: User = Depends(get_current_user)) -> Any:
+async def logout(request: Request, response: Response, current_user: User = Depends(get_current_user)) -> Any:
     """Logout and cleanup user's active sessions"""
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Use Box SSO bridge clear")
     from katrain.web.session import SessionManager, LobbyManager
+
+    _clear_loopback_sso_cookie(request, response)
 
     # Board mode: clear remote tokens + delete credential file (design 5.4)
     remote_client = getattr(request.app.state, "remote_client", None)

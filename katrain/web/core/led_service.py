@@ -79,6 +79,7 @@ class LedServiceConfig:
     serial_port: str = ""
     baud_rate: int = 115200
     max_bright: int = 200
+    handshake_timeout: float = 2.0
     lut_path: Optional[str] = None
 
 
@@ -151,7 +152,11 @@ class LedService:
     def _default_serial_factory(self):
         import serial  # pyserial — imported lazily so the module loads without it
 
-        return serial.Serial(self.config.serial_port, self.config.baud_rate, timeout=2)
+        return serial.Serial(
+            self.config.serial_port,
+            self.config.baud_rate,
+            timeout=self.config.handshake_timeout,
+        )
 
     def start(self) -> None:
         self._stop.clear()
@@ -297,35 +302,95 @@ class LedService:
             batch.event.set()
 
     # -- serial helpers ---------------------------------------------------- #
+    def _wait_for_boot_ready(self) -> None:
+        """Give a freshly opened ESP32 a bounded chance to announce READY."""
+        deadline = self._clock() + self.config.handshake_timeout
+        boot_data = b""
+
+        while self._clock() < deadline:
+            waiting = getattr(self._serial, "in_waiting", 0)
+            read_available = getattr(self._serial, "read", None)
+            if waiting and callable(read_available):
+                # pyserial read(n) is nonblocking for bytes reported in_waiting,
+                # unlike readline() on an unterminated boot banner.
+                chunk = read_available(waiting)
+                if not chunk:
+                    break
+                boot_data += chunk
+            else:
+                line = self._serial.readline()
+                boot_data += line
+                if not line:
+                    # A normal pyserial readline just waited through its timeout.
+                    break
+
+            if self._clock() >= deadline:
+                break
+            if any(line.strip().startswith(b"READY") for line in boot_data.splitlines()):
+                return
+
+    def _drain_prewrite_input(self) -> None:
+        """Discard stale input without letting a partial line consume a read timeout."""
+        reset_input_buffer = getattr(self._serial, "reset_input_buffer", None)
+        if callable(reset_input_buffer):
+            reset_input_buffer()
+            return
+
+        # pyserial exposes reset_input_buffer, but keep serial-compatible test or
+        # adapter objects safe too: a zero timeout makes readline nonblocking.
+        missing = object()
+        previous_timeout = getattr(self._serial, "timeout", missing)
+        if previous_timeout is missing:
+            return
+        try:
+            self._serial.timeout = 0
+            deadline = self._clock() + self.config.handshake_timeout
+            for _ in range(32):
+                if self._clock() >= deadline or not getattr(self._serial, "in_waiting", 0):
+                    break
+                self._serial.readline()
+        finally:
+            self._serial.timeout = previous_timeout
+
     def _open_serial(self) -> None:
         try:
             self._serial = self._serial_factory()
-            self._connected = True
-            # Set global brightness AND consume its ack (+ any boot "READY" banner).
-            # If we left the BRIGHT ack in the buffer, the next _send_and_ack would
-            # mis-pair it with CLEAR, cascading an off-by-one across the batch.
-            self._send_now(f"BRIGHT {self.config.max_bright}")
-            for _ in range(4):
-                try:
-                    line = self._serial.readline().decode("ascii", errors="replace").strip()
-                except Exception:
+            self._connected = False
+
+            # A USB-open can reset the ESP32. Wait for its boot banner (or a
+            # bounded timeout), then discard boot chatter before BRIGHT.
+            self._wait_for_boot_ready()
+
+            # Discard all buffered input before BRIGHT. In particular, a stale OK
+            # or an unterminated partial line must never authenticate a connection.
+            self._drain_prewrite_input()
+
+            self._serial.write(f"BRIGHT {self.config.max_bright}\n".encode("ascii"))
+            deadline = self._clock() + self.config.handshake_timeout
+            while self._clock() < deadline:
+                line = self._serial.readline().decode("ascii", errors="replace").strip()
+                if self._clock() >= deadline:
                     break
-                if line.startswith("OK") or line.startswith("ERR"):
+                if line.startswith("OK"):
+                    self._connected = True
+                    log.info("LED serial opened on %s", self.config.serial_port)
+                    return
+                if line.startswith("ERR"):
                     break
-            log.info("LED serial opened on %s", self.config.serial_port)
+
+            self._close_serial()
+            log.warning("LED serial handshake failed (%s)", self.config.serial_port)
         except ImportError as e:
             # pyserial not installed — permanent, not a transient device hiccup.
             # Log once and disable reconnect so we don't spam the log every cycle.
-            self._serial = None
-            self._connected = False
+            self._close_serial()
             self._serial_unavailable = True
             log.warning(
                 "LED disabled: pyserial not installed (%s). Run `pip install pyserial` to enable LED guidance.",
                 e,
             )
         except Exception as e:
-            self._serial = None
-            self._connected = False
+            self._close_serial()
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self) -> None:
@@ -336,14 +401,6 @@ class LedService:
             return
         self._last_reconnect = now
         self._open_serial()
-
-    def _send_now(self, cmd: str) -> None:
-        if self._serial is None:
-            return
-        try:
-            self._serial.write((cmd + "\n").encode("ascii"))
-        except Exception:
-            pass
 
     def _close_serial(self) -> None:
         if self._serial is not None:

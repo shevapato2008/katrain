@@ -39,6 +39,30 @@ for f in "$DIST"/assets/*.js; do
   fi
 done
 
+# Strict appliance builds must not retain any JS-readable bearer-token path.
+# Legacy kiosk/Galaxy builds intentionally keep their historical localStorage contract.
+if [[ "${VITE_BOX_SSO_STRICT:-false}" == "true" ]]; then
+  if ! node - "$DIST" <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const assets = path.join(process.argv[2], 'assets');
+const forbidden = /localStorage\.(?:getItem|setItem)\((["'`])token\1/;
+const offenders = fs.readdirSync(assets)
+  .filter((name) => name.endsWith('.js'))
+  .filter((name) => forbidden.test(fs.readFileSync(path.join(assets, name), 'utf8')));
+if (offenders.length) {
+  console.error(`legacy localStorage token access remains in: ${offenders.join(', ')}`);
+  process.exit(1);
+}
+NODE
+  then
+    echo "❌ strict Box SSO build contains legacy localStorage token reads/writes" >&2
+    fail=1
+  else
+    echo "✅ strict Box SSO boundary clean — no legacy localStorage token reads/writes"
+  fi
+fi
+
 if [[ $fail -eq 0 ]]; then
   size=$(du -sh "$DIST" | cut -f1)
   echo "✅ kiosk boundary clean — no three.js / /galaxy/ / non-board live API in $DIST ($size total)"

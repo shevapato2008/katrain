@@ -451,10 +451,11 @@ export const API = {
   hintDismiss: (): Promise<{ ok: boolean }> =>
     apiPost("/api/v1/hint/dismiss", {}) as Promise<{ ok: boolean }>,
 
-  logout: async (token: string): Promise<any> => {
+  logout: async (token?: string): Promise<any> => {
+    const request: RequestInit = { method: "POST" };
+    if (token) request.headers = { "Authorization": `Bearer ${token}` };
     const response = await fetch("/api/v1/auth/logout", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
+      ...request,
     });
     if (!response.ok) {
       // Don't throw on logout failure - still proceed with local cleanup

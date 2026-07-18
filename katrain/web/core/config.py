@@ -46,6 +46,8 @@ class Settings(BaseModel):
     KATRAIN_MODE: str = "server"  # "server" or "board"
     REMOTE_API_URL: str = ""  # Remote server URL for board mode, e.g. "https://katrain.example.com"
     DEVICE_ID: str = ""  # Unique device identifier, auto-generated if empty
+    KATRAIN_BOX_SSO: bool = False
+    KATRAIN_BOX_SSO_BRIDGE_KEY_PATH: str = "/etc/smartbox/box-sso-bridge.key"
 
     # Billing / paid-analysis (single-pool integer credits). Prices are per analysis action.
     BILLING_PRICES: dict = {"territory": 10, "hints": 10, "variations": 10}
@@ -116,6 +118,17 @@ class Settings(BaseModel):
         # Board mode settings
         data.setdefault("KATRAIN_MODE", os.getenv("KATRAIN_MODE", "server"))
         data.setdefault("REMOTE_API_URL", os.getenv("KATRAIN_REMOTE_URL", ""))
+        data.setdefault(
+            "KATRAIN_BOX_SSO",
+            os.getenv("KATRAIN_BOX_SSO", "0").lower() in ("1", "true", "yes"),
+        )
+        data.setdefault(
+            "KATRAIN_BOX_SSO_BRIDGE_KEY_PATH",
+            os.getenv(
+                "KATRAIN_BOX_SSO_BRIDGE_KEY_PATH",
+                "/etc/smartbox/box-sso-bridge.key",
+            ),
+        )
         device_id = os.getenv("KATRAIN_DEVICE_ID", "")
         if not device_id:
             device_id = uuid_module.uuid4().hex

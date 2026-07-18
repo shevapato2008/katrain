@@ -1,7 +1,7 @@
 import pytest
+from fastapi import Depends, FastAPI
 from httpx import AsyncClient, ASGITransport
 from katrain.web.server import create_app
-from katrain.web.core.config import settings
 import os
 
 
@@ -55,6 +55,95 @@ async def test_login_success(app):
 
 
 @pytest.mark.asyncio
+async def test_loopback_login_issues_shared_sso_cookie_for_headerless_me(app):
+    """A direct kiosk login keeps the local JWT in the shared loopback cookie."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    repo.create_user("loopback_user", pwd_context.hash("testpassword"))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1:8081") as ac:
+        login_response = await ac.post(
+            "/api/v1/auth/login", json={"username": "loopback_user", "password": "testpassword"}
+        )
+
+        assert login_response.status_code == 200
+        assert login_response.json()["token_type"] == "bearer"
+        set_cookie = login_response.headers["set-cookie"]
+        assert "sb_token=" in set_cookie
+        assert "Domain=127.0.0.1" in set_cookie
+        assert "HttpOnly" in set_cookie
+        assert "Max-Age=604800" in set_cookie
+        assert "Path=/" in set_cookie
+        assert "SameSite=lax" in set_cookie
+        assert ac.cookies.get("sb_token") == login_response.json()["access_token"]
+
+        # This models a cold kiosk bootstrap: no Authorization header, only the
+        # browser-managed shared SSO cookie from the preceding login response.
+        me_response = await ac.get("/api/v1/auth/me")
+
+    assert me_response.status_code == 200
+    assert me_response.json()["username"] == "loopback_user"
+
+
+@pytest.mark.asyncio
+async def test_loopback_logout_clears_shared_sso_cookie_and_prevents_headerless_session_restore(app):
+    """Kiosk logout must revoke the loopback SSO cookie, not only local state."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    repo.create_user("loopback_logout_user", pwd_context.hash("testpassword"))
+    # ASGITransport deliberately skips lifespan, while logout performs the
+    # normal lobby/match/session cleanup. Supply the same empty managers the
+    # lifespan would create so this test reaches the cookie lifecycle contract.
+    from katrain.web.session import LobbyManager, Matchmaker, SessionManager
+
+    app.state.lobby_manager = LobbyManager()
+    app.state.matchmaker = Matchmaker()
+    app.state.session_manager = SessionManager(enable_engine=False)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1:8081") as ac:
+        login_response = await ac.post(
+            "/api/v1/auth/login", json={"username": "loopback_logout_user", "password": "testpassword"}
+        )
+        assert login_response.status_code == 200
+        assert (await ac.get("/api/v1/auth/me")).status_code == 200
+
+        logout_response = await ac.post("/api/v1/auth/logout")
+
+        assert logout_response.status_code == 200
+        clear_cookie = logout_response.headers["set-cookie"]
+        assert "sb_token=\"\"" in clear_cookie
+        assert "Domain=127.0.0.1" in clear_cookie
+        assert "Path=/" in clear_cookie
+        assert "Max-Age=0" in clear_cookie
+        assert "HttpOnly" in clear_cookie
+        assert "SameSite=lax" in clear_cookie
+        assert (await ac.get("/api/v1/auth/me")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_non_loopback_login_keeps_galaxy_json_only_contract(app):
+    """The public/Galaxy host keeps its existing JSON-token-only login flow."""
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    repo.create_user("galaxy_user", pwd_context.hash("testpassword"))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post(
+            "/api/v1/auth/login", json={"username": "galaxy_user", "password": "testpassword"}
+        )
+
+    assert response.status_code == 200
+    assert response.json()["token_type"] == "bearer"
+    assert "set-cookie" not in response.headers
+
+
+@pytest.mark.asyncio
 async def test_login_failure(app):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post("/api/v1/auth/login", json={"username": "testuser", "password": "wrongpassword"})
@@ -88,10 +177,33 @@ async def test_get_me(app):
 
 
 @pytest.mark.asyncio
-async def test_get_me_unauthorized(app):
+async def test_get_me_missing_creds_401_contract(app):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get("/api/v1/auth/me")
     assert response.status_code == 401
+    assert response.json() == {"detail": "Not authenticated"}
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+@pytest.mark.asyncio
+async def test_get_me_non_bearer_header_401(app):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.get("/api/v1/auth/me", headers={"Authorization": "Basic abc123"})
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Not authenticated"}
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+@pytest.mark.asyncio
+async def test_get_me_garbage_cookie_401(app):
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", cookies={"sb_token": "not-a-jwt"}
+    ) as ac:
+        response = await ac.get("/api/v1/auth/me")
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
 @pytest.mark.asyncio
@@ -124,8 +236,8 @@ async def test_get_me_with_sso_cookie(app):
 
 
 @pytest.mark.asyncio
-async def test_bearer_header_takes_precedence_over_cookie(app):
-    """A valid Authorization header wins over any (stale/other) shared cookie."""
+async def test_cookie_authoritative_over_header(app):
+    """The shared SSO cookie wins over a stale Authorization header."""
     repo = app.state.user_repo
     from passlib.context import CryptContext
 
@@ -145,11 +257,98 @@ async def test_bearer_header_takes_precedence_over_cookie(app):
             await ac.post("/api/v1/auth/login", json={"username": "cke_user", "password": "testpassword"})
         ).json()["access_token"]
 
-    # Stale/other user's token in the shared cookie, but a valid Bearer header present.
+    # User B is signed in through the shared Box SSO cookie, while a stale client
+    # Authorization header still names user A.
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test", cookies={"sb_token": cke_tok}
     ) as ac:
         response = await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {hdr_tok}"})
 
     assert response.status_code == 200
-    assert response.json()["username"] == "hdr_user"
+    assert response.json()["username"] == "cke_user"
+
+
+@pytest.mark.asyncio
+async def test_admin_dep_rejects_cookie_only(app):
+    """Admin dependencies must not accept the ambient Box SSO cookie."""
+    from katrain.web.api.v1.endpoints.auth import get_current_admin_user
+
+    probe_app = FastAPI()
+    probe_app.state.user_repo = app.state.user_repo
+
+    @probe_app.get("/admin-probe")
+    async def admin_probe(current_user=Depends(get_current_admin_user)):
+        return {"username": current_user.username}
+
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    hashed = pwd_context.hash("testpassword")
+    repo.create_user("cookie_admin", hashed)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        token = (
+            await ac.post("/api/v1/auth/login", json={"username": "cookie_admin", "password": "testpassword"})
+        ).json()["access_token"]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=probe_app), base_url="http://test", cookies={"sb_token": token}
+    ) as ac:
+        response = await ac.get("/admin-probe")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Not authenticated"}
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+@pytest.mark.asyncio
+async def test_optional_dep_identifies_user_from_cookie(app):
+    from katrain.web.api.v1.endpoints.auth import get_current_user_optional
+
+    probe_app = FastAPI()
+    probe_app.state.user_repo = app.state.user_repo
+
+    @probe_app.get("/optional-auth")
+    async def optional_auth_probe(current_user=Depends(get_current_user_optional)):
+        return {"username": current_user.username if current_user else None}
+
+    repo = app.state.user_repo
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    hashed = pwd_context.hash("testpassword")
+    repo.create_user("optional_cookie_user", hashed)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        token = (
+            await ac.post(
+                "/api/v1/auth/login", json={"username": "optional_cookie_user", "password": "testpassword"}
+            )
+        ).json()["access_token"]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=probe_app), base_url="http://test", cookies={"sb_token": token}
+    ) as ac:
+        response = await ac.get("/optional-auth")
+
+    assert response.status_code == 200
+    assert response.json() == {"username": "optional_cookie_user"}
+
+
+@pytest.mark.asyncio
+async def test_optional_dep_returns_none_without_credentials(app):
+    from katrain.web.api.v1.endpoints.auth import get_current_user_optional
+
+    probe_app = FastAPI()
+    probe_app.state.user_repo = app.state.user_repo
+
+    @probe_app.get("/optional-auth")
+    async def optional_auth_probe(current_user=Depends(get_current_user_optional)):
+        return {"username": current_user.username if current_user else None}
+
+    async with AsyncClient(transport=ASGITransport(app=probe_app), base_url="http://test") as ac:
+        response = await ac.get("/optional-auth")
+
+    assert response.status_code == 200
+    assert response.json() == {"username": None}

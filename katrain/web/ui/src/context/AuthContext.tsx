@@ -21,9 +21,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Box SSO strictness is deliberately independent from the kiosk UI boundary.
+// Legacy kiosk and Galaxy builds retain their historical Bearer/localStorage
+// contract; only a build with both flags authenticates solely through the
+// HttpOnly `sb_go_token` cookie (whose value is never visible to this module).
+const isKioskBuild = __KIOSK_2D_ONLY__;
+const isStrictBoxKiosk = isKioskBuild && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+    const [token, setToken] = useState<string | null>(() =>
+        isStrictBoxKiosk ? null : localStorage.getItem('token')
+    );
     // True until the mount-time session probe settles. Guards MUST wait for this
     // before redirecting, otherwise a valid persisted session (localStorage token
     // OR the shared box-SSO cookie) flashes the login page on every fresh page
@@ -37,10 +46,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
         const bootstrap = async () => {
-            const stored = localStorage.getItem('token');
+            // This deletion is synchronous and precedes the first network call,
+            // preventing an old JS Bearer token from overriding the box cookie.
+            if (isStrictBoxKiosk) localStorage.removeItem('token');
+            const stored = isStrictBoxKiosk ? null : localStorage.getItem('token');
             try {
                 // Probe /me with the stored token if any; the browser also
-                // auto-sends the shared 127.0.0.1 `sb_token` cookie.
+                // auto-sends the shared 127.0.0.1 `sb_go_token` cookie.
                 let usedToken: string | null = stored;
                 let response = await fetch('/api/v1/auth/me', {
                     headers: stored ? { Authorization: `Bearer ${stored}` } : undefined,
@@ -48,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 });
                 // Stored token stale/expired? Drop it and retry cookie-only, so a
                 // valid box-SSO session still restores instead of bouncing to login.
-                if (!response.ok && stored) {
+                if (!isStrictBoxKiosk && !response.ok && stored) {
                     localStorage.removeItem('token');
                     usedToken = null;
                     response = await fetch('/api/v1/auth/me', { signal: controller.signal });
@@ -58,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     setUser(await response.json());
                     setToken(usedToken);
                 } else {
-                    localStorage.removeItem('token');
+                    if (!isStrictBoxKiosk) localStorage.removeItem('token');
                     setToken(null);
                     setUser(null);
                 }
@@ -77,6 +89,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const login = async (username: string, password: string) => {
+        if (isStrictBoxKiosk) {
+            throw new Error('Direct login is disabled in strict box mode');
+        }
         try {
             const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
@@ -93,6 +108,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             // 先把用户资料拉到再返回,确保 isAuthenticated(=!!user)在 navigate 前已为 true,
             // 否则首次登录会因 user 尚未加载被 AuthGuard 弹回登录页(需点两次)。
+            // A non-strict direct login has the freshly issued token in memory;
+            // use it for the active-session verification before persisting it.
             const meRes = await fetch('/api/v1/auth/me', {
                 headers: { 'Authorization': `Bearer ${newToken}` }
             });
@@ -111,9 +128,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = useCallback(async () => {
         // Call backend to cleanup sessions before clearing local state
-        if (token) {
+        if (isStrictBoxKiosk || token) {
             try {
-                await API.logout(token);
+                // Strict box identity lives in the HttpOnly cookie, so omit
+                // Bearer and let the browser send the same-origin cookie.
+                // Galaxy and legacy kiosk retain their historical token path.
+                await API.logout(isStrictBoxKiosk ? undefined : token ?? undefined);
             } catch (e) {
                 console.warn("Logout request failed, proceeding with local cleanup");
             }

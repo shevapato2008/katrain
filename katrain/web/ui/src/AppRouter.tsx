@@ -1,10 +1,12 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { zenTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
-import ZenModeApp from './ZenModeApp';
+
+const isStrictBoxKiosk =
+  __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
 
 // Code-split: kiosk and galaxy bundles load independently.
 // Galaxy + VideoRecorder reach three.js (via Board3D / direct import),
@@ -19,6 +21,9 @@ const GalaxyApp = __KIOSK_2D_ONLY__
 const VideoRecorderPage = __KIOSK_2D_ONLY__
   ? null
   : lazy(() => import('./pages/VideoRecorderPage'));
+const ZenModeApp = isStrictBoxKiosk
+  ? null
+  : lazy(() => import('./ZenModeApp'));
 
 const AppRouter = () => {
   return (
@@ -36,7 +41,11 @@ const AppRouter = () => {
                 {!__KIOSK_2D_ONLY__ && VideoRecorderPage && (
                   <Route path="/record" element={<VideoRecorderPage />} />
                 )}
-                <Route path="/*" element={<ZenModeApp />} />
+                {isStrictBoxKiosk ? (
+                  <Route path="/*" element={<Navigate to="/kiosk" replace />} />
+                ) : ZenModeApp && (
+                  <Route path="/*" element={<ZenModeApp />} />
+                )}
               </Routes>
             </Suspense>
           </SettingsProvider>

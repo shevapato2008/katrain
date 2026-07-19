@@ -68,3 +68,14 @@ class TestAI:
         rank = ai_rank_estimation(AI_LADDER, {})
         assert rank is None
         json.dumps({"calculated_rank": rank})  # would raise ValueError on nan
+
+    def test_ladder_thought_label_is_rank_name_only(self):
+        # User-visible (SGF comment + ZenMode log): the branded 段位 label ONLY — star阵-free AND free
+        # of the rung index / visits / debug prefix (codex round 2).
+        from katrain.core.ai import _ladder_thought_label
+        from katrain.core.ladder import get_rung
+
+        label = _ladder_thought_label(get_rung(39))  # rung 39 == 超越职业 (was 星阵3星)
+        assert "超越职业" in label
+        for banned in ("星阵", "对标星阵", "rung", "visits", "39", "[LadderStrategy]"):
+            assert banned not in label

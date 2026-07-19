@@ -223,3 +223,36 @@ def test_expected_ties_documented():
 
 def test_rung_40_max_key():
     assert config_sanity_key(LADDER_RUNGS[39]) == max(config_sanity_key(r) for r in LADDER_RUNGS)
+
+
+# --- Task 2: rank_name (user-facing 段位 label, star阵-free) ---
+
+
+def test_rank_name_generic_ranks_match_level_name_for_amateur_rungs():
+    from katrain.core.ladder import LADDER_RUNGS
+    # rungs 1..36 (amateur 级/段): rank_name is the plain Go rank, identical to golaxy_level_name
+    for r in LADDER_RUNGS[:36]:
+        assert r.rank_name == r.golaxy_level_name
+
+
+def test_rank_name_renames_pro_tiers_and_ceiling():
+    from katrain.core.ladder import get_rung
+    assert get_rung(37).rank_name == "职业棋手"
+    assert get_rung(38).rank_name == "职业顶尖"
+    assert get_rung(39).rank_name == "超越职业"
+    assert get_rung(40).rank_name == "KataGo 中等算力"
+
+
+def test_golaxy_level_name_unchanged_internally():
+    # De-branding is display-only: internal calibration metadata is untouched.
+    from katrain.core.ladder import get_rung
+    assert get_rung(37).golaxy_level_name == "星阵1星"
+    assert get_rung(39).golaxy_level_name == "星阵3星"
+    assert get_rung(40).golaxy_level_name is None
+
+
+def test_no_rank_name_leaks_xingzhen():
+    # Every user-visible 段位 label must be star阵-free (rank_name feeds the UI + ai_thoughts).
+    from katrain.core.ladder import LADDER_RUNGS
+    for r in LADDER_RUNGS:
+        assert "星阵" not in r.rank_name

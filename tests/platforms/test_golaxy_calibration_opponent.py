@@ -38,7 +38,19 @@ async def test_golaxy_move_decodes_and_rejects_bad_api_level():
     val = await adapters.golaxy_move(mk(h), moves_golaxy=[], rung=get_rung(18), token=TOKEN)  # 1级=1100
     assert isinstance(val, int) and "level=1100" in seen["url"]
     bad = LadderRung(
-        1, "x", 4000, 4000, "", "b18", "net_search", None, 1, {}, "server", 1.0
+        rung=1,
+        golaxy_level_name="x",
+        golaxy_api_level=4000,
+        display_elo=4000,
+        ref_rank="",
+        rank_name="测试",
+        net="b18",
+        mechanism="net_search",
+        human_sl_profile=None,
+        max_visits=1,
+        human_sl_params={},
+        backend_hint="server",
+        root_policy_temperature=1.0,
     )  # api_level=4000 (a display Elo)
     with pytest.raises(Exception):
         await adapters.golaxy_move(mk(h), moves_golaxy=[], rung=bad, token=TOKEN)

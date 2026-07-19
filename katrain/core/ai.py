@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import heapq
+import logging
 import math
 import random
 import time
@@ -50,6 +51,8 @@ from katrain.core.utils import var_to_grid, weighted_selection_without_replaceme
 # Rung-40 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
 # hung engine can hold ai_lock and block new-game (see LadderStrategy).
 LADDER_ANALYSIS_TIMEOUT_S = 60
+
+logger = logging.getLogger(__name__)  # "katrain.core.ai" — server-side sink, NOT the WS log channel
 
 # Decorator pattern for adding classes to the registry
 STRATEGY_REGISTRY = {}
@@ -333,7 +336,7 @@ class AIStrategy(ABC):
         self.settings = ai_settings
         self.cn = game.current_node
         self.strategy_name = self.__class__.__name__
-        self.game.katrain.log(f"Initializing {self.strategy_name} with settings: {self.settings}", OUTPUT_DEBUG)
+        logger.debug("Initializing %s with settings: %s", self.strategy_name, self.settings)
 
     @abstractmethod
     def generate_move(self) -> Tuple[Move, str]:
@@ -1823,7 +1826,13 @@ class HumanStyleStrategy(AIStrategy):
 class LadderUnavailable(Exception):
     """Raised when a ladder rung cannot be played at its certified strength (missing human
     model, or analysis failure). The caller must NOT play an uncalibrated fallback move —
-    it fails closed (no move) so the '对标星阵' strength label is never silently violated."""
+    it fails closed (no move) so the '棋力阶梯' strength label is never silently violated."""
+
+
+def _ladder_thought_label(rung) -> str:
+    # User-visible: becomes played_node.ai_thoughts -> SGF comment + ZenMode TopBar log.
+    # rank_name ONLY: star阵-free and free of rung index / visits / debug prefix.
+    return f"棋力阶梯 {rung.rank_name}"
 
 
 @register_strategy(AI_LADDER)
@@ -1893,10 +1902,8 @@ class LadderStrategy(AIStrategy):
             # e.g. a humanSL rung whose response lacks humanPolicy: do NOT play a search move.
             raise LadderUnavailable(f"rung {rung.rung}: {e}") from e
         move = Move(None, player=self.cn.next_player) if picked == "pass" else Move(picked, player=self.cn.next_player)
-        return (
-            move,
-            f"[LadderStrategy] rung {rung.rung} · 对标星阵{rung.golaxy_level_name or '最强'} · visits={params['visits']}",
-        )
+        logger.debug("[LadderStrategy] rung %s · %s · visits=%s", rung.rung, rung.rank_name, params["visits"])
+        return (move, _ladder_thought_label(rung))
 
 
 def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tuple[Move, GameNode]]:

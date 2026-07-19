@@ -36,6 +36,7 @@ class LadderRung:
     golaxy_api_level: Optional[int]  # eloScore = the `level` wire param (calibration only)
     display_elo: Optional[int]
     ref_rank: str
+    rank_name: str  # user-facing 段位 label (星阵-free); NEVER derived from golaxy_level_name at display time
     net: str  # v1: always 'b18' (== shipping engine)
     mechanism: str
     human_sl_profile: Optional[str]
@@ -146,14 +147,20 @@ def _band(name: str):
     return ("net_search", None, _SEARCH_VISITS[name], {}, 1.0)
 
 
+# Display-only 段位 rename for the top tiers (星阵1/2/3星 have no standard dan name).
+# Keys are the internal golaxy_level_name; values are the user-facing 段位 label.
+_RANK_NAME_OVERRIDE = {"星阵1星": "职业棋手", "星阵2星": "职业顶尖", "星阵3星": "超越职业"}
+
+
 def _build_ladder() -> List[LadderRung]:
     rungs = []
     for i, (name, api, disp, ref) in enumerate(_GOLAXY_WEAK_TO_STRONG):
         mech, prof, visits, params, temp = _band(name)
-        rungs.append(LadderRung(i + 1, name, api, disp, ref, "b18", mech, prof, visits, dict(params), "server", temp))
-    # Rung 40: ceiling. v1 = b18@500 on the session engine (honest net='b18'). A true
-    # b28@:8002 ceiling is a documented follow-up (calibration/README.md), NOT exposed as net.
-    rungs.append(LadderRung(40, None, None, None, "最强", "b18", "net_search", None, 500, {}, "server", 1.0))
+        rank_name = _RANK_NAME_OVERRIDE.get(name, name)
+        rungs.append(LadderRung(i + 1, name, api, disp, ref, rank_name, "b18", mech, prof, visits, dict(params), "server", temp))
+    # Rung 40: ceiling. v1 = b18@500 on the session engine. rank_name is the honest "中等算力"
+    # ceiling label (NOT max KataGo). golaxy_level_name stays None (no Golaxy tier maps to it).
+    rungs.append(LadderRung(40, None, None, None, "最强", "KataGo 中等算力", "b18", "net_search", None, 500, {}, "server", 1.0))
     return rungs
 
 

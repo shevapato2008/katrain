@@ -167,3 +167,30 @@ def test_ladder_never_global_resigns(monkeypatch):
     move, played_node = result
     assert move.gtp() == "Q16"
     assert game.current_node.end_state is None
+
+
+def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
+    # katrain.log is the WS-broadcast channel: WebKaTrain.log forwards EVERY level via
+    # message_callback -> SessionManager WS -> ZenModeApp TopBar (codex round 3/5, verified).
+    # NOTHING on the ladder path may push the rung index / visits / 星阵 through it:
+    #   - AIStrategy.__init__ settings-dump ({'rung': 39})  -> routed to stdlib logger (round 5 fix)
+    #   - LadderStrategy success detail (rung · visits)     -> routed to stdlib logger (round 3 fix)
+    #   - the returned ai_thoughts                          -> clean 段位 label only
+    # The spy is installed BEFORE generate_ai_move so it sees the construction-time init log.
+    import logging
+    from katrain.core.ai import generate_ai_move
+    from katrain.core.constants import AI_LADDER
+
+    eng = FakeEngine({"moveInfos": [{"move": "Q16", "order": 0}]})
+    game = FakeGame(eng)
+    seen = []
+    game.katrain.log = lambda *a, **k: seen.append(str(a[0]) if a else "")
+
+    with caplog.at_level(logging.DEBUG, logger="katrain.core.ai"):
+        move, node = generate_ai_move(game, AI_LADDER, {"rung": 39})  # rung 39 == 超越职业
+
+    assert node.ai_thoughts == "棋力阶梯 超越职业"          # clean user-visible thought (SGF + TopBar)
+    joined = " ".join(seen)
+    for banned in ("星阵", "rung", "visits", "39"):           # per codex round 5 recommendation
+        assert banned not in joined
+    assert "visits=" in caplog.text                            # observability preserved server-side

@@ -56,3 +56,15 @@ class TestAI:
             settings = katrain.config(f"ai/{strategy}")
             rank = ai_rank_estimation(strategy, settings)
             assert -20 <= rank <= 9
+
+    def test_ladder_rank_estimation_is_json_safe(self):
+        # The ladder's strength is per-rung (injected at game start), not derivable from strategy
+        # settings, and AI_STRENGTH[AI_LADDER] is nan. ai_rank_estimation must NOT return that nan:
+        # it flows verbatim into players_info.calculated_rank in the /api/player state response, and
+        # FastAPI's JSONResponse cannot serialize nan (ValueError -> HTTP 500, blocking game start).
+        # None is the JSON-safe contract (the rung's Golaxy level is surfaced via the player name).
+        import json
+
+        rank = ai_rank_estimation(AI_LADDER, {})
+        assert rank is None
+        json.dumps({"calculated_rank": rank})  # would raise ValueError on nan

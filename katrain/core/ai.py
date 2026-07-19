@@ -89,7 +89,15 @@ def interp2d(gridspec, x, y):
     )
 
 
-def ai_rank_estimation(strategy, settings) -> int:
+def ai_rank_estimation(strategy, settings) -> Optional[int]:
+    if strategy == AI_LADDER:
+        # Ladder strength is per-rung (injected at game start), not derivable from settings here,
+        # and AI_STRENGTH[AI_LADDER] is nan. Every other nan-strength strategy is special-cased
+        # above/below to a real value; AI_LADDER must NOT fall through to the `AI_STRENGTH[strategy]`
+        # else-branch, because that nan flows verbatim into players_info.calculated_rank and
+        # FastAPI's JSONResponse cannot serialize nan (HTTP 500, blocking game start). None is the
+        # JSON-safe contract; the rung's Golaxy level is surfaced via the player name instead.
+        return None
     if strategy in [AI_DEFAULT, AI_HANDICAP, AI_JIGO, AI_PRO]:
         return 9
     if strategy == AI_RANK:

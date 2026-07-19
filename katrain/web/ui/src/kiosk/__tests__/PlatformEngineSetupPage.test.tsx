@@ -12,9 +12,9 @@ vi.mock('react-router-dom', async () => {
 });
 
 const mockLevels = vi.hoisted(() => [
-  { elo_score: 1300, level_name: '1段', name: '星树熊', goal_difference: 3, timing: '40|30|3' },
-  { elo_score: 1100, level_name: '1级', name: '星铠虾', goal_difference: 2, timing: '30|30|3' },
-  { elo_score: 1000, level_name: '2级', name: '星夜鹰', goal_difference: 2, timing: '30|30|3' },
+  { elo_score: 1300, level_name: '1段', name: '星树熊', goal_difference: 3, timing: '40|30|3', display_elo: 1300, ref_rank: '业余1段' },
+  { elo_score: 1100, level_name: '1级', name: '星铠虾', goal_difference: 2, timing: '30|30|3', display_elo: 1100, ref_rank: '业余1级' },
+  { elo_score: 1000, level_name: '2级', name: '星夜鹰', goal_difference: 2, timing: '30|30|3', display_elo: 1000, ref_rank: '业余2级' },
 ]);
 
 vi.mock('../../api', () => ({

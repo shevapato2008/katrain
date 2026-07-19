@@ -10,6 +10,7 @@ ensure_kivy()
 
 from katrain.core.base_katrain import KaTrainBase
 from katrain.core.constants import (
+    AI_LADDER,
     MODE_ANALYZE,
     MODE_PLAY,
     OUTPUT_DEBUG,
@@ -101,6 +102,20 @@ class WebGame(Game):
         return node
 
 
+def resolve_ladder_rung(n):
+    """Validate a rung number for per-game injection (Task 4).
+
+    None -> None (absent; caller/`_do_new_game` treats this as "no ladder rung this game").
+    Invalid (out of range 1..40, or not int-able) -> ValueError (caller/REST layer 422s).
+    Valid -> {'rung': int}. Never silently downgrades or substitutes a default rung."""
+    if n is None:
+        return None
+    from katrain.core.ladder import get_rung
+
+    get_rung(int(n))  # raises ValueError if out of range 1..40
+    return {"rung": int(n)}
+
+
 class WebKaTrain(KaTrainBase):
     """
     A headless version of KaTrain for the Web UI.
@@ -149,6 +164,14 @@ class WebKaTrain(KaTrainBase):
         # a Player) so it is immune to player-side mutation and survives later
         # edit_game calls that don't mention it.
         self.platform_engine_color = None
+        # Task 4: per-game ladder rung, injected (non-persisted) via POST /api/new-game
+        # ladder_rung=N. None until a caller explicitly sets it via _do_new_game; reset to
+        # None by every _do_new_game call that doesn't pass one (see resolve_ladder_rung).
+        # `_do_ai_move` fails closed (no move) if an ai:ladder player finds this None.
+        self.ladder_rung = None
+        # Set when a LadderUnavailable failure suppresses a move; cleared on the next
+        # successful AI move or new game. Surfaced via get_state() for the frontend.
+        self.last_ladder_error = False
         # R6: optional second engine for analysis/review (remote strong engine on kiosk).
         # None until start(); analysis_engine() falls back to self.engine.
         self.analysis_engine_instance = None
@@ -316,6 +339,22 @@ class WebKaTrain(KaTrainBase):
         if self.message_callback:
             self.message_callback("log", {"message": message, "level": level})
 
+    def _ladder_rank_display(self, p):
+        """User-facing 段位 string for the local 棋力阶梯 AI, computed from the injected rung.
+        None for every other player. calculated_rank stays None (JSON-safe); this rides its own field.
+
+        The `p.ai` guard matters (codex round 1): /api/player supports partial updates where only
+        `player_type` changes (models.py), and Player.update() preserves the omitted `player_subtype`.
+        Flipping a ladder seat to human while the game's rung is still set would otherwise stamp a
+        human with the ladder 段位. Require BOTH the AI player_type AND the ladder subtype."""
+        if p.ai and p.player_subtype == AI_LADDER:
+            rung_info = getattr(self, "ladder_rung", None)
+            if rung_info:
+                from katrain.core.ladder import get_rung
+
+                return get_rung(rung_info["rung"]).rank_name
+        return None
+
     def get_state(self):
         """Returns a JSON-serializable representation of the current game state."""
         if not self.game:
@@ -455,6 +494,7 @@ class WebKaTrain(KaTrainBase):
                     "player_subtype": p.player_subtype,
                     "name": p.name,
                     "calculated_rank": p.calculated_rank,
+                    "rank_display": self._ladder_rank_display(p),
                     "periods_used": p.periods_used,
                     "main_time_used": self.main_time_used_by_player.get(bw, 0),
                 }
@@ -495,6 +535,7 @@ class WebKaTrain(KaTrainBase):
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,
+            "last_ladder_error": getattr(self, "last_ladder_error", False),
         }
 
     def _do_new_game(
@@ -508,78 +549,96 @@ class WebKaTrain(KaTrainBase):
         rules=None,
         skip_initial_analysis=False,
         game_type=None,
+        ladder_rung=None,
     ):
-        # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
-        if game_type is not None:
-            self.game_type = game_type
-        # G1/G2: a brand new game is never engine-controlled until a platform explicitly
-        # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
-        # a session that finishes an engine game and then starts a plain local game (same
-        # WebKaTrain instance, e.g. POST /api/new-game) would retain the stale engine color,
-        # making the LED orchestrator (Task 2) treat a purely local game as engine-controlled.
-        self.platform_engine_color = None
-        if self.engine:
-            self.engine.on_new_game()
+        # Task 4 concurrency invariant: the background AI thread (_do_ai_move) holds
+        # ai_lock for the full duration of a move generation and reads self.game/
+        # self.ladder_rung only via a local snapshot taken under that same lock. So the
+        # game/rung/engine-color state swap below MUST also run under ai_lock -- otherwise
+        # a REST-driven new game could replace self.game (or clear/replace self.ladder_rung)
+        # while a generation is mid-flight, corrupting which game the move lands on or which
+        # strength it was certified at. _do_new_game is only ever invoked from the request
+        # thread (REST handlers / __call__ dispatch) or from start(), never from within the
+        # AI thread itself, so acquiring ai_lock here cannot self-deadlock.
+        with self.ai_lock:
+            # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
+            if game_type is not None:
+                self.game_type = game_type
+            # G1/G2: a brand new game is never engine-controlled until a platform explicitly
+            # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
+            # a session that finishes an engine game and then starts a plain local game (same
+            # WebKaTrain instance, e.g. POST /api/new-game) would retain the stale engine color,
+            # making the LED orchestrator (Task 2) treat a purely local game as engine-controlled.
+            self.platform_engine_color = None
+            # Task 4: fail-closed lifecycle reset. A brand new game is never a ladder game
+            # until the caller explicitly injects a rung (POST /api/new-game ladder_rung=...).
+            # Any new-game / load_sgf call that omits it (including a plain reset) clears a
+            # leftover rung from a previous game, so a stale ai:ladder player then fails
+            # closed in _do_ai_move rather than silently continuing at the old strength.
+            self.ladder_rung = resolve_ladder_rung(ladder_rung)
+            self.last_ladder_error = False
+            if self.engine:
+                self.engine.on_new_game()
 
-        self.active_game_timer = copy.deepcopy(self.config("timer"))
+            self.active_game_timer = copy.deepcopy(self.config("timer"))
 
-        # Update global config for persistence of defaults
-        if size:
-            self.update_config("game/size", size)
-        if handicap is not None:
-            self.update_config("game/handicap", handicap)
-        if komi is not None:
-            self.update_config("game/komi", komi)
-        if rules:
-            self.update_config("game/rules", rules)
+            # Update global config for persistence of defaults
+            if size:
+                self.update_config("game/size", size)
+            if handicap is not None:
+                self.update_config("game/handicap", handicap)
+            if komi is not None:
+                self.update_config("game/komi", komi)
+            if rules:
+                self.update_config("game/rules", rules)
 
-        game_properties = {}
-        if size:
-            game_properties["SZ"] = size
-        if handicap is not None:  # Note: 0 is falsy, check if not None
-            game_properties["HA"] = handicap
-        if komi is not None:
-            game_properties["KM"] = komi
-        if rules:
-            game_properties["RU"] = rules
+            game_properties = {}
+            if size:
+                game_properties["SZ"] = size
+            if handicap is not None:  # Note: 0 is falsy, check if not None
+                game_properties["HA"] = handicap
+            if komi is not None:
+                game_properties["KM"] = komi
+            if rules:
+                game_properties["RU"] = rules
 
-        self.game = WebGame(
-            self,
-            self.engine,
-            move_tree=move_tree,
-            analyze_fast=analyze_fast or not move_tree,
-            sgf_filename=sgf_filename,
-            game_properties=game_properties,
-            user_id=self.user_id,
-            skip_initial_analysis=skip_initial_analysis or self.should_suppress_auto_eval(),
-        )
+            self.game = WebGame(
+                self,
+                self.engine,
+                move_tree=move_tree,
+                analyze_fast=analyze_fast or not move_tree,
+                sgf_filename=sgf_filename,
+                game_properties=game_properties,
+                user_id=self.user_id,
+                skip_initial_analysis=skip_initial_analysis or self.should_suppress_auto_eval(),
+            )
 
-        # Ensure handicap stones are placed if handicap is set
-        if handicap and handicap >= 2:
-            self.game.root.place_handicap_stones(handicap)
-            # place_handicap_stones only mutates the SGF "AB" property -- it never
-            # touches game.board/chains, which back both LED setup guidance and move
-            # legality. Recompute now rather than relying on a later set_current_node
-            # (board mode suppresses the auto-analysis call that would otherwise do it).
-            self.game._calculate_groups()
+            # Ensure handicap stones are placed if handicap is set
+            if handicap and handicap >= 2:
+                self.game.root.place_handicap_stones(handicap)
+                # place_handicap_stones only mutates the SGF "AB" property -- it never
+                # touches game.board/chains, which back both LED setup guidance and move
+                # legality. Recompute now rather than relying on a later set_current_node
+                # (board mode suppresses the auto-analysis call that would otherwise do it).
+                self.game._calculate_groups()
 
-        # Reset timer state for new game
-        self.timer_paused = self.config("timer/paused")
-        self.last_timer_update = time.time()
-        self.main_time_used_by_player = {"B": 0, "W": 0}
+            # Reset timer state for new game
+            self.timer_paused = self.config("timer/paused")
+            self.last_timer_update = time.time()
+            self.main_time_used_by_player = {"B": 0, "W": 0}
 
-        # Save names before reset if they were set (e.g. by API call just before this)
-        saved_names = {bw: p.name for bw, p in self.players_info.items()}
-        self.reset_players()  # Resets periods_used
-        for bw, name in saved_names.items():
-            if name:
-                self.players_info[bw].name = name
+            # Save names before reset if they were set (e.g. by API call just before this)
+            saved_names = {bw: p.name for bw, p in self.players_info.items()}
+            self.reset_players()  # Resets periods_used
+            for bw, name in saved_names.items():
+                if name:
+                    self.players_info[bw].name = name
 
-        # Update player info based on game settings
-        for bw, player_info in self.players_info.items():
-            player_info.sgf_rank = self.game.root.get_property(bw + "R")
-            player_info.calculated_rank = None
-            self.update_player(bw, player_type=player_info.player_type, player_subtype=player_info.player_subtype)
+            # Update player info based on game settings
+            for bw, player_info in self.players_info.items():
+                player_info.sgf_rank = self.game.root.get_property(bw + "R")
+                player_info.calculated_rank = None
+                self.update_player(bw, player_type=player_info.player_type, player_subtype=player_info.player_subtype)
 
         self.update_state()
 
@@ -687,6 +746,7 @@ class WebKaTrain(KaTrainBase):
                 and not cn.children
                 and not self.game.end_result
                 and not (teaching_undo and cn.auto_undo is None)
+                and not getattr(self, "last_ladder_error", False)
             ):
                 if not self._ai_move_pending:
                     self._ai_move_pending = True
@@ -933,18 +993,46 @@ class WebKaTrain(KaTrainBase):
             if not self.next_player_info.ai:
                 return
             if node is None or self.game.current_node == node:
+                # Snapshot under ai_lock: a concurrent _do_new_game (same lock) cannot swap
+                # self.game/self.ladder_rung out from under an in-flight generation, but we
+                # still take explicit locals and pass THEM to generate_ai_move so this thread
+                # never re-reads self.game mid-generation even if that invariant ever drifts.
+                game = self.game
                 mode = self.next_player_info.strategy
                 settings = self.config(f"ai/{mode}")
+                if mode == AI_LADDER:
+                    rung = getattr(self, "ladder_rung", None)
+                    if not rung:
+                        # Fail closed: an ai:ladder player with no injected rung must NOT
+                        # play an uncalibrated move (e.g. a stale/reset game). No move.
+                        logger.error("[ladder] ai:ladder player has no injected rung; refusing to move (fail closed).")
+                        self._surface_ladder_unavailable()
+                        return
+                    settings = {**(settings or {}), "rung": rung["rung"]}
                 if settings is not None:
-                    from katrain.core.ai import generate_ai_move
+                    from katrain.core.ai import generate_ai_move, LadderUnavailable
 
-                    result = generate_ai_move(self.game, mode, settings)
+                    try:
+                        result = generate_ai_move(game, mode, settings)  # local `game`, not self.game
+                    except LadderUnavailable as e:
+                        # Certified-strength failure. The exception embeds the rung index -> server-side
+                        # stdlib logger ONLY (self.log broadcasts every level to the ZenMode TopBar; see
+                        # interface.py:338-340). User surface is the generic last_ladder_error flag.
+                        logger.error("[ladder] engine unavailable at certified strength; no move: %s", e)
+                        self._surface_ladder_unavailable()
+                        return
                     if result is None:
                         # AI resigned, state will be updated by the caller
                         return
+                    self.last_ladder_error = False
                     self.play_stone_sound()
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
+
+    def _surface_ladder_unavailable(self):
+        """Session flag so the frontend can render '棋力阶梯引擎暂不可用' after a
+        LadderUnavailable failure. Cleared on the next successful AI move or new game."""
+        self.last_ladder_error = True
 
     def _do_play(self, coords):
         from katrain.core.game import IllegalMoveException, Move

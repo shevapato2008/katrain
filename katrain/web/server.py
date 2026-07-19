@@ -747,6 +747,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/new-game")
     def new_game(request: NewGameRequest):
+        # Task 4: validate the rung BEFORE touching the session, so an out-of-range value
+        # 422s cleanly instead of partially mutating game state.
+        if request.ladder_rung is not None:
+            from katrain.core.ladder import get_rung
+
+            try:
+                get_rung(int(request.ladder_rung))
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=422, detail=f"invalid ladder_rung: {request.ladder_rung}")
+
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             # A new game is starting: clear the "already recorded" guard from any
@@ -764,7 +774,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.katrain.engine.on_new_game()
 
             session.katrain(
-                "new_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules
+                "new_game",
+                size=request.size,
+                handicap=request.handicap,
+                komi=request.komi,
+                rules=request.rules,
+                ladder_rung=request.ladder_rung,
             )
             state = session.katrain.get_state()
             session.last_state = state
@@ -1645,6 +1660,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             "ai:p:rank": {"kyu_rank": -2},
             "ai:human": {"human_kyu_rank": 0, "modern_style": True},
             "ai:pro": {"pro_year": 2010, "modern_style": True},
+            "ai:ladder": {},
         }
 
         return {
@@ -1654,6 +1670,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             "default_strategy": AI_CONFIG_DEFAULT,
             "strategy_defaults": strategy_defaults,
         }
+
+    @app.get("/api/ladder-rungs")
+    def get_ladder_rungs():
+        from katrain.core.ladder import LADDER_RUNGS
+
+        # UI-facing subset only. star阵-free: internal golaxy_level_name / golaxy_api_level /
+        # display_elo / ref_rank / humanSL knobs are NOT exposed to the browser.
+        return {"rungs": [{"rung": r.rung, "rank_name": r.rank_name} for r in LADDER_RUNGS]}
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):
@@ -1739,9 +1763,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
 
         try:
-            current_user = await get_user_from_token(
-                token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
-            )
+            current_user = await get_user_from_token(token=token, repo=app.state.user_repo, box_sso=app.state.box_sso)
         except Exception as e:
             logger.warning(f"Lobby WebSocket: Token validation failed: {e}")
             await websocket.accept()
@@ -1979,9 +2001,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             try:
                 if not token:
                     raise ValueError("missing strict credential")
-                await get_user_from_token(
-                    token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
-                )
+                await get_user_from_token(token=token, repo=app.state.user_repo, box_sso=app.state.box_sso)
             except Exception:
                 await websocket.accept()
                 await websocket.close(code=1008, reason="Invalid token")

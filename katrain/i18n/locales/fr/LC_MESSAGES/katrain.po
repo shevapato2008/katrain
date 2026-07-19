@@ -2689,3 +2689,9 @@ msgstr "Handicap"
 
 msgid "Time Control"
 msgstr "Contrôle du temps"
+
+msgid "ai:golaxy_parity"
+msgstr "Échelle de Force"
+
+msgid "ai:golaxy_parity_rung"
+msgstr "Niveau de Rang"

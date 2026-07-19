@@ -2656,3 +2656,9 @@ msgstr "讓子"
 
 msgid "Time Control"
 msgstr "用時"
+
+msgid "ai:golaxy_parity"
+msgstr "棋力階梯"
+
+msgid "ai:golaxy_parity_rung"
+msgstr "棋力等級"

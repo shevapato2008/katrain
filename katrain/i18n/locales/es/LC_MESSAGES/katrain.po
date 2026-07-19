@@ -2553,3 +2553,9 @@ msgstr "Hándicap"
 
 msgid "Time Control"
 msgstr "Control de tiempo"
+
+msgid "ai:golaxy_parity"
+msgstr "Escalera de Fuerza"
+
+msgid "ai:golaxy_parity_rung"
+msgstr "Nivel de Rango"

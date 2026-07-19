@@ -191,7 +191,8 @@
         },
         "ai:pro": {
             "pro_year": 1914
-        }
+        },
+        "ai:ladder": {}
     },
     "ui_state": {
         "restoresize": true,

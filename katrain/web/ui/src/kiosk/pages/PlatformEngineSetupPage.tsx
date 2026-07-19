@@ -327,7 +327,9 @@ const PlatformEngineSetupPage = () => {
                       <Box sx={{ textAlign: 'left' }}>
                         <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'text.primary' }}>{currentLevel?.name ?? '—'}</Typography>
                         <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                          {currentLevel ? `${currentLevel.level_name} · elo ${currentLevel.elo_score}` : ''}
+                          {currentLevel
+                            ? `${currentLevel.level_name} · 展示Elo ${currentLevel.display_elo} · ${currentLevel.ref_rank}`
+                            : ''}
                         </Typography>
                       </Box>
                     </ButtonBase>
@@ -347,7 +349,7 @@ const PlatformEngineSetupPage = () => {
                         selected={l.elo_score === level}
                         onClick={() => { setLevel(l.elo_score); setLvAnchor(null); }}
                       >
-                        {`${l.name} · ${l.level_name} · elo ${l.elo_score}`}
+                        {`${l.name} · ${l.level_name} · 展示Elo ${l.display_elo}`}
                       </MenuItem>
                     ))}
                   </Menu>

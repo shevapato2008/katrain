@@ -7,8 +7,8 @@ import PlatformEngineSetupPage from './PlatformEngineSetupPage';
 
 const { mockLevels } = vi.hoisted(() => ({
   mockLevels: [
-    { elo_score: 100, level_name: '1级', name: '星铠虾', goal_difference: 0, timing: '' },
-    { elo_score: 200, level_name: '2级', name: '星铠龙', goal_difference: 0, timing: '' },
+    { elo_score: 100, level_name: '1级', name: '星铠虾', goal_difference: 0, timing: '', display_elo: 1100, ref_rank: '业余1级' },
+    { elo_score: 200, level_name: '2级', name: '星铠龙', goal_difference: 0, timing: '', display_elo: 1200, ref_rank: '业余2级' },
   ],
 }));
 

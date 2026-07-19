@@ -259,7 +259,7 @@ class TestLevelTable:
 
     def test_entries_have_required_keys(self):
         for entry in GOLAXY_AI_LEVELS:
-            assert set(entry.keys()) == {"elo_score", "level_name", "name", "goal_difference", "timing"}
+            assert {"elo_score", "level_name", "name", "goal_difference", "timing"} <= set(entry.keys())
 
     def test_strongest_first(self):
         assert GOLAXY_AI_LEVELS[0]["elo_score"] == 3300
@@ -285,3 +285,22 @@ class TestLevelTable:
         levels = list_levels()
         levels.append({"bogus": True})
         assert len(GOLAXY_AI_LEVELS) == 39
+
+    def test_entries_have_double_scale_keys(self):
+        for e in GOLAXY_AI_LEVELS:
+            assert set(e.keys()) == {
+                "elo_score",
+                "level_name",
+                "name",
+                "goal_difference",
+                "timing",
+                "display_elo",
+                "ref_rank",
+            }
+            assert isinstance(e["display_elo"], int) and isinstance(e["ref_rank"], str) and e["ref_rank"]
+
+    def test_display_elo_scales(self):
+        by = {e["level_name"]: e for e in GOLAXY_AI_LEVELS}
+        assert by["5级"]["display_elo"] == 700 and by["准9段"]["display_elo"] == 2900  # middle == api
+        assert by["6级"]["display_elo"] == 600 and by["18级"]["display_elo"] == -600  # bottom -100/step
+        assert by["9段"]["display_elo"] == 3100 and by["星阵3星"]["display_elo"] == 4000  # top +300/step

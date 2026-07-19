@@ -2,7 +2,8 @@ export interface PlayerInfo {
   player_type: string;
   player_subtype: string;
   name: string;
-  calculated_rank: string | null;
+  calculated_rank: string | null;  // pre-existing quirk: typed string|null though backend emits int|None; NOT changed here
+  rank_display?: string | null;    // NEW: ladder 段位 (optional to avoid breaking existing PlayerInfo literals)
   periods_used: number;
   main_time_used: number;
 }
@@ -102,6 +103,15 @@ export interface EngineLevel {
   name: string;         // bot name e.g. "星铠虾"
   goal_difference: number;
   timing: string;
+  display_elo: number;
+  ref_rank: string;
+}
+
+// One rung of the local 棋力阶梯 (strength-ladder) 40-rung opponent — the UI-facing
+// subset served by GET /api/ladder-rungs (see katrain/web/server.py). star阵-free.
+export interface LadderRung {
+  rung: number;
+  rank_name: string;
 }
 
 export interface PlatformStatusResponse {
@@ -343,6 +353,11 @@ export const API = {
   },
   estimateRank: (strategy: string, settings: any): Promise<{ rank: string }> =>
     apiPost("/api/ai/estimate-rank", { strategy, settings }),
+  getLadderRungs: async (): Promise<{ rungs: LadderRung[] }> => {
+    const response = await fetch('/api/ladder-rungs');
+    if (!response.ok) throw new Error("Failed to fetch ladder rungs");
+    return response.json();
+  },
   getTranslations: async (lang: string) => {
     const params = new URLSearchParams({ lang });
     const response = await fetch(`/api/translations?${params.toString()}`);

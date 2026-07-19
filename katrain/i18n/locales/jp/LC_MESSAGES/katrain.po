@@ -2674,3 +2674,9 @@ msgstr "置石"
 
 msgid "Time Control"
 msgstr "持ち時間"
+
+msgid "ai:golaxy_parity"
+msgstr "棋力ステップ"
+
+msgid "ai:golaxy_parity_rung"
+msgstr "棋力レベル"

@@ -2908,6 +2908,32 @@ GALAXY_TRANSLATIONS = {
         "tr": "Anti-ayna",
         "ua": "Анти-дзеркало",
     },
+    "ai:golaxy_parity": {
+        "en": "Strength Ladder",
+        "cn": "棋力阶梯",
+        "tw": "棋力階梯",
+        "jp": "棋力ステップ",
+        "ko": "실력 사다리",
+        "de": "Stärkeleiter",
+        "es": "Escalera de Fuerza",
+        "fr": "Échelle de Force",
+        "ru": "Лестница силы",
+        "tr": "Güç Merdiveni",
+        "ua": "Драбина сили",
+    },
+    "ai:golaxy_parity_rung": {
+        "en": "Rank Level",
+        "cn": "棋力等级",
+        "tw": "棋力等級",
+        "jp": "棋力レベル",
+        "ko": "실력 등급",
+        "de": "Rangstufe",
+        "es": "Nivel de Rango",
+        "fr": "Niveau de Rang",
+        "ru": "Уровень ранга",
+        "tr": "Derece Seviyesi",
+        "ua": "Рівень рангу",
+    },
     # =============================================
     # Research Module
     # =============================================

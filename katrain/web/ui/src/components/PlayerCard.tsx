@@ -74,8 +74,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
     // Only depend on truly changing values, not object references
   }, [active, timer?.paused, info.main_time_used]);
 
-  // Localized rank display
-  const rawRank = localizedRank(info.calculated_rank, lang);
+  // 段位: a ladder AI carries its 段位 as a string in rank_display; everyone else uses the
+  // numeric calculated_rank rendered by localizedRank.
+  const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
   const displayRank = rawRank === "No Rank" ? t("No Rank", "No Rank") : rawRank;
   const displayName = info.name || (isBlack ? t('Black') : t('White'));
 

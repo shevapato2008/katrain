@@ -62,7 +62,7 @@ class TestAI:
         # settings, and AI_STRENGTH[AI_LADDER] is nan. ai_rank_estimation must NOT return that nan:
         # it flows verbatim into players_info.calculated_rank in the /api/player state response, and
         # FastAPI's JSONResponse cannot serialize nan (ValueError -> HTTP 500, blocking game start).
-        # None is the JSON-safe contract (the rung's Golaxy level is surfaced via the player name).
+        # None is the JSON-safe contract (the rung's 段位 is surfaced via the separate rank_display field).
         import json
 
         rank = ai_rank_estimation(AI_LADDER, {})

@@ -99,7 +99,7 @@ def ai_rank_estimation(strategy, settings) -> Optional[int]:
         # above/below to a real value; AI_LADDER must NOT fall through to the `AI_STRENGTH[strategy]`
         # else-branch, because that nan flows verbatim into players_info.calculated_rank and
         # FastAPI's JSONResponse cannot serialize nan (HTTP 500, blocking game start). None is the
-        # JSON-safe contract; the rung's Golaxy level is surfaced via the player name instead.
+        # JSON-safe contract; the rung's 段位 is surfaced via the separate rank_display field instead.
         return None
     if strategy in [AI_DEFAULT, AI_HANDICAP, AI_JIGO, AI_PRO]:
         return 9

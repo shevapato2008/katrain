@@ -516,46 +516,93 @@ async def fetch_item_counts(
 # from the web client's Vuex `state.gameConfig.aiLevelList` (2026-07-02).
 # `elo_score` is exactly the `level` query param for `engine_genmove`.
 
+_GOLAXY_ROWS = [
+    (3300, "星阵3星", "星猛虎", 6, "60|60|3"),
+    (3200, "星阵2星", "星雄狮", 6, "60|60|3"),
+    (3100, "星阵1星", "星巨象", 6, "60|60|3"),
+    (3000, "9段", "星壮牛", 5, "45|40|3"),
+    (2900, "准9段", "星蓝鲸", 5, "45|40|3"),
+    (2800, "8段", "星美鹿", 5, "45|40|3"),
+    (2600, "准8段", "星孤狼", 5, "45|40|3"),
+    (2500, "7段", "星奇豚", 4, "45|40|3"),
+    (2400, "准7段", "星萌猪", 4, "45|40|3"),
+    (2300, "6段", "星骏马", 4, "45|40|3"),
+    (2200, "准6段", "星呆羊", 4, "45|40|3"),
+    (2100, "5段", "星跳鼠", 4, "45|40|3"),
+    (2000, "准5段", "星云鹤", 4, "40|30|3"),
+    (1900, "4段", "星灵狐", 3, "40|30|3"),
+    (1800, "准4段", "星白鹭", 3, "40|30|3"),
+    (1700, "3段", "星智狗", 3, "40|30|3"),
+    (1600, "准3段", "星巧猫", 3, "40|30|3"),
+    (1500, "2段", "星皮猴", 3, "40|30|3"),
+    (1400, "准2段", "星乖兔", 3, "40|30|3"),
+    (1300, "1段", "星树熊", 3, "40|30|3"),
+    (1200, "准1段", "星长蛇", 3, "40|30|3"),
+    (1100, "1级", "星铠虾", 2, "30|30|3"),
+    (1000, "2级", "星夜鹰", 2, "30|30|3"),
+    (900, "3级", "星憨鹅", 2, "30|30|3"),
+    (800, "4级", "星刺头", 2, "30|30|3"),
+    (700, "5级", "星黄鸭", 2, "30|30|3"),
+    (620, "6级", "星轻燕", 2, "30|30|3"),
+    (540, "7级", "星绿蛙", 2, "30|30|3"),
+    (460, "8级", "星老龟", 2, "30|30|3"),
+    (380, "9级", "星钳蟹", 2, "30|30|3"),
+    (300, "10级", "星尾鱼", 2, "30|30|3"),
+    (290, "11级", "星敏螳", 2, "30|30|3"),
+    (280, "12级", "星鸣蝉", 2, "30|30|3"),
+    (270, "13级", "星飞蜓", 2, "30|30|3"),
+    (260, "14级", "星舞蝶", 2, "30|30|3"),
+    (250, "15级", "星忙蜂", 2, "30|30|3"),
+    (240, "16级", "星慢蜗", 2, "30|30|3"),
+    (230, "17级", "星花虫", 2, "30|30|3"),
+    (220, "18级", "星小蚁", 2, "30|30|3"),
+]
+_DISPLAY_BOTTOM = {
+    "6级": 600,
+    "7级": 500,
+    "8级": 400,
+    "9级": 300,
+    "10级": 200,
+    "11级": 100,
+    "12级": 0,
+    "13级": -100,
+    "14级": -200,
+    "15级": -300,
+    "16级": -400,
+    "17级": -500,
+    "18级": -600,
+}
+_DISPLAY_TOP = {"9段": 3100, "星阵1星": 3400, "星阵2星": 3700, "星阵3星": 4000}
+
+
+def _display_elo(level_name, elo_score):
+    if level_name in _DISPLAY_BOTTOM:
+        return _DISPLAY_BOTTOM[level_name]
+    if level_name in _DISPLAY_TOP:
+        return _DISPLAY_TOP[level_name]
+    return elo_score  # middle band 5级..准9段: identical (PRD §2)
+
+
+def _ref_rank(level_name):
+    # PROVISIONAL UI hint (Golaxy nominal runs strong; pro saturates to 野狐9D). Refined post-calibration.
+    if level_name in ("星阵1星", "星阵2星", "星阵3星"):
+        return "职业/野狐9D+"
+    if level_name in ("9段", "准9段", "8段", "准8段", "7段", "准7段"):
+        return "野狐9D"
+    return f"业余{level_name}"
+
+
 GOLAXY_AI_LEVELS: list[dict] = [
-    {"elo_score": 3300, "level_name": "星阵3星", "name": "星猛虎", "goal_difference": 6, "timing": "60|60|3"},
-    {"elo_score": 3200, "level_name": "星阵2星", "name": "星雄狮", "goal_difference": 6, "timing": "60|60|3"},
-    {"elo_score": 3100, "level_name": "星阵1星", "name": "星巨象", "goal_difference": 6, "timing": "60|60|3"},
-    {"elo_score": 3000, "level_name": "9段", "name": "星壮牛", "goal_difference": 5, "timing": "45|40|3"},
-    {"elo_score": 2900, "level_name": "准9段", "name": "星蓝鲸", "goal_difference": 5, "timing": "45|40|3"},
-    {"elo_score": 2800, "level_name": "8段", "name": "星美鹿", "goal_difference": 5, "timing": "45|40|3"},
-    {"elo_score": 2600, "level_name": "准8段", "name": "星孤狼", "goal_difference": 5, "timing": "45|40|3"},
-    {"elo_score": 2500, "level_name": "7段", "name": "星奇豚", "goal_difference": 4, "timing": "45|40|3"},
-    {"elo_score": 2400, "level_name": "准7段", "name": "星萌猪", "goal_difference": 4, "timing": "45|40|3"},
-    {"elo_score": 2300, "level_name": "6段", "name": "星骏马", "goal_difference": 4, "timing": "45|40|3"},
-    {"elo_score": 2200, "level_name": "准6段", "name": "星呆羊", "goal_difference": 4, "timing": "45|40|3"},
-    {"elo_score": 2100, "level_name": "5段", "name": "星跳鼠", "goal_difference": 4, "timing": "45|40|3"},
-    {"elo_score": 2000, "level_name": "准5段", "name": "星云鹤", "goal_difference": 4, "timing": "40|30|3"},
-    {"elo_score": 1900, "level_name": "4段", "name": "星灵狐", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1800, "level_name": "准4段", "name": "星白鹭", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1700, "level_name": "3段", "name": "星智狗", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1600, "level_name": "准3段", "name": "星巧猫", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1500, "level_name": "2段", "name": "星皮猴", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1400, "level_name": "准2段", "name": "星乖兔", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1300, "level_name": "1段", "name": "星树熊", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1200, "level_name": "准1段", "name": "星长蛇", "goal_difference": 3, "timing": "40|30|3"},
-    {"elo_score": 1100, "level_name": "1级", "name": "星铠虾", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 1000, "level_name": "2级", "name": "星夜鹰", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 900, "level_name": "3级", "name": "星憨鹅", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 800, "level_name": "4级", "name": "星刺头", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 700, "level_name": "5级", "name": "星黄鸭", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 620, "level_name": "6级", "name": "星轻燕", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 540, "level_name": "7级", "name": "星绿蛙", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 460, "level_name": "8级", "name": "星老龟", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 380, "level_name": "9级", "name": "星钳蟹", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 300, "level_name": "10级", "name": "星尾鱼", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 290, "level_name": "11级", "name": "星敏螳", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 280, "level_name": "12级", "name": "星鸣蝉", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 270, "level_name": "13级", "name": "星飞蜓", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 260, "level_name": "14级", "name": "星舞蝶", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 250, "level_name": "15级", "name": "星忙蜂", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 240, "level_name": "16级", "name": "星慢蜗", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 230, "level_name": "17级", "name": "星花虫", "goal_difference": 2, "timing": "30|30|3"},
-    {"elo_score": 220, "level_name": "18级", "name": "星小蚁", "goal_difference": 2, "timing": "30|30|3"},
+    {
+        "elo_score": elo,
+        "level_name": n,
+        "name": bot,
+        "goal_difference": gd,
+        "timing": t,
+        "display_elo": _display_elo(n, elo),
+        "ref_rank": _ref_rank(n),
+    }
+    for (elo, n, bot, gd, t) in _GOLAXY_ROWS
 ]
 
 

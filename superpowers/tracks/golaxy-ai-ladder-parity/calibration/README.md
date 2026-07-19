@@ -244,9 +244,12 @@ following from `results/smoke_report.json` + the smoke run's console log:
    `code="0"` on every genmove) — in particular, **no `7003`** (`QuotaExhausted`) on plain
    genmove calls; a `7003` there would be unexpected (genmove itself isn't one of the metered
    道具 tunnels) and should be investigated before proceeding.
-2. **Strong-level per-move time is within tolerance** — inspect `per_move_timing["36"]`
-   (9段) and `per_move_timing["39"]` (if present) `golaxy_move_s` entries plus the two smoke
-   anchors' timings: none should be uncomfortably close to the 180s HTTP timeout ceiling
+2. **Strong-level per-move time is within tolerance** — the strong-level single-move latency
+   (9段/星阵3星) lives in `level_probes`, NOT `per_move_timing` (that key only covers the two
+   ~10-game smoke anchors, rungs 18/28). Inspect the `level_probes` entries where
+   `level == 3000` (9段) and `level == 3300` (星阵3星), field `elapsed_s`, plus the two smoke
+   anchors' `per_move_timing["18"]` (1级) and `per_move_timing["28"]` (5段) `golaxy_move_s`/
+   `our_move_s` entries: none should be uncomfortably close to the 180s HTTP timeout ceiling
    (`engine_client.GENMOVE_TIMEOUT_SECONDS`). A level probe that itself took >60-90s is a
    signal the live server/network is under load; consider re-running before committing to
    ~50-game anchors at that level.

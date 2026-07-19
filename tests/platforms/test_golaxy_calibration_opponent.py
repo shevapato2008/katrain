@@ -135,3 +135,14 @@ async def test_adjudicate_missing_score_inconclusive():
 
 def test_load_engine_wide_root_noise_from_config():
     assert adapters.load_engine_wide_root_noise({"wide_root_noise": 0.07, "max_visits": 50}) == 0.07
+
+
+@pytest.mark.asyncio
+async def test_smoke_probe_records(monkeypatch):
+    smoke = importlib.import_module("run_smoke")
+
+    def h(req):
+        return httpx.Response(200, json={"code": "0", "msg": "", "data": {"coord": 72, "prob": 0.2}})
+
+    rec = await smoke.probe_level(mk(h), rung=get_rung(18), token=TOKEN)  # 1级
+    assert rec["ok"] and rec["coord"] == 72 and rec["elapsed_s"] >= 0

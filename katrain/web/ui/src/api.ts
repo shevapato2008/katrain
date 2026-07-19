@@ -106,6 +106,17 @@ export interface EngineLevel {
   ref_rank: string;
 }
 
+// One rung of the local "对标星阵" (Golaxy-parity) 40-rung strength ladder — the
+// UI-facing subset served by GET /api/ladder-rungs (see katrain/web/server.py).
+export interface LadderRung {
+  rung: number;
+  golaxy_level_name: string | null;
+  display_elo: number | null;
+  ref_rank: string;
+  net: string;
+  mechanism: string;
+}
+
 export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
 }
@@ -345,6 +356,11 @@ export const API = {
   },
   estimateRank: (strategy: string, settings: any): Promise<{ rank: string }> =>
     apiPost("/api/ai/estimate-rank", { strategy, settings }),
+  getLadderRungs: async (): Promise<{ rungs: LadderRung[] }> => {
+    const response = await fetch('/api/ladder-rungs');
+    if (!response.ok) throw new Error("Failed to fetch ladder rungs");
+    return response.json();
+  },
   getTranslations: async (lang: string) => {
     const params = new URLSearchParams({ lang });
     const response = await fetch(`/api/translations?${params.toString()}`);

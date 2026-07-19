@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
-import { API } from '../../api';
+import { API, type LadderRung } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -44,6 +44,12 @@ const AiSetupPage = () => {
     const [estimatedRank, setEstimatedRank] = useState<string>('...');
     const [aiLoading, setAiLoading] = useState(false);
 
+    // 对标星阵 (Golaxy-parity) ladder: 40 rungs fetched from GET /api/ladder-rungs.
+    // Default rung 18 == "1级" (LADDER_RUNGS index 17), a mid-strength anchor.
+    const [ladderRungs, setLadderRungs] = useState<LadderRung[]>([]);
+    const [ladderRung, setLadderRung] = useState<number>(18);
+    const isLadder = opponent === 'ai:ladder';
+
     // Time Settings
     const [timerEnabled, setTimerEnabled] = useState(isRated); 
     const [mainTime, setMainTime] = useState(10); 
@@ -77,6 +83,10 @@ const AiSetupPage = () => {
             }
         };
         fetchConstants();
+
+        API.getLadderRungs()
+            .then((data) => setLadderRungs(data.rungs))
+            .catch((err) => console.error('Failed to load ladder rungs', err));
     }, [isRated]);
 
     // Load strategy default settings when opponent changes (Free mode)
@@ -122,6 +132,7 @@ const AiSetupPage = () => {
             'policy': t('ai:policy', 'Policy'),
             'jigo': t('ai:jigo', 'Jigo'),
             'antimirror': t('ai:antimirror', 'Anti-mirror'),
+            'ladder': t('ai:golaxy_parity', '对标星阵'),
         };
         return strategyDisplayMap[name] || (name.charAt(0).toUpperCase() + name.slice(1));
     };
@@ -167,7 +178,8 @@ const AiSetupPage = () => {
                 size: boardSize,
                 handicap: handicap,
                 komi: komi,
-                rules: rules
+                rules: rules,
+                ...(isLadder ? { ladder_rung: ladderRung } : {})
             });
 
             // Update players with names
@@ -177,8 +189,11 @@ const AiSetupPage = () => {
             await API.updatePlayer(session.session_id, aiColor, "player:ai", opponent, aiLabel);
             await API.updateConfig(session.session_id, `players/${aiColor}/name`, aiLabel);
 
-            // Update AI settings
-            if (opponent === 'ai:human') {
+            // Update AI settings. ai:ladder carries no configurable strategySettings (the
+            // rung is injected server-side via ladder_rung above), so skip both writes.
+            if (isLadder) {
+                // no-op
+            } else if (opponent === 'ai:human') {
                 await API.updateConfig(session.session_id, `ai/${opponent}/human_kyu_rank`, humanKyuRank);
             } else if (!isRated && Object.keys(strategySettings).length > 0) {
                 await API.updateConfig(session.session_id, `ai/${opponent}`, strategySettings);
@@ -338,8 +353,8 @@ const AiSetupPage = () => {
                                 <span>{t('Rank', 'Rank')}:</span>
                                 <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
                             </Typography>
-                            <Slider 
-                                value={rankValue} min={0} max={28} step={1} 
+                            <Slider
+                                value={rankValue} min={0} max={28} step={1}
                                 onChange={(_, v) => setRankValue(v as number)}
                                 valueLabelFormat={valueToRank}
                                 valueLabelDisplay="auto"
@@ -348,6 +363,26 @@ const AiSetupPage = () => {
                                 <Typography variant="caption" color="text.secondary">20k</Typography>
                                 <Typography variant="caption" color="text.secondary">9d</Typography>
                             </Stack>
+                        </Box>
+                    ) : isLadder ? (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom color="primary">
+                                {t('ai:golaxy_parity', '对标星阵')}
+                            </Typography>
+                            <FormControl fullWidth margin="dense" size="small">
+                                <InputLabel>{t('ai:golaxy_parity_rung', '棋力等级')}</InputLabel>
+                                <Select
+                                    value={ladderRung}
+                                    label={t('ai:golaxy_parity_rung', '棋力等级')}
+                                    onChange={(e) => setLadderRung(Number(e.target.value))}
+                                >
+                                    {ladderRungs.map((r) => (
+                                        <MenuItem key={r.rung} value={r.rung}>
+                                            {`${r.golaxy_level_name ?? '最强'} · 对标星阵 · 展示Elo ${r.display_elo ?? '—'}`}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Box>
                     ) : (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>

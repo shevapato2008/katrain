@@ -37,6 +37,7 @@ from katrain.core.constants import (
     ADDITIONAL_MOVE_ORDER,
     AI_HUMAN,
     AI_PRO,
+    AI_LADDER,
     AI_RESIGNATION_ENABLED_DEFAULT,
     AI_RESIGNATION_WINRATE_THRESHOLD,
     AI_RESIGNATION_CONSECUTIVE_TURNS,
@@ -45,6 +46,10 @@ from katrain.core.constants import (
 )
 from katrain.core.game import Game, GameNode, Move
 from katrain.core.utils import var_to_grid, weighted_selection_without_replacement, evaluation_class
+
+# Rung-40 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
+# hung engine can hold ai_lock and block new-game (see LadderStrategy).
+LADDER_ANALYSIS_TIMEOUT_S = 60
 
 # Decorator pattern for adding classes to the registry
 STRATEGY_REGISTRY = {}
@@ -1807,6 +1812,85 @@ class HumanStyleStrategy(AIStrategy):
         return move, ai_thoughts
 
 
+class LadderUnavailable(Exception):
+    """Raised when a ladder rung cannot be played at its certified strength (missing human
+    model, or analysis failure). The caller must NOT play an uncalibrated fallback move —
+    it fails closed (no move) so the '对标星阵' strength label is never silently violated."""
+
+
+@register_strategy(AI_LADDER)
+class LadderStrategy(AIStrategy):
+    """Golaxy-parity ladder opponent. Fail-closed on every uncertainty: no valid rung ->
+    ValueError; missing model / analysis error -> LadderUnavailable (NO PolicyStrategy or
+    cached-top-policy fallback — those are uncalibrated and would silently mislabel
+    strength). Pure-visits (time_limit=False) for hardware-independent strength. Shares
+    rung_engine_params + pick_ladder_move with the calibration harness."""
+
+    def generate_move(self) -> Tuple[Move, str]:
+        from katrain.core.ladder import get_rung, rung_engine_params, pick_ladder_move, LadderMoveError
+
+        if "rung" not in self.settings or self.settings.get("rung") is None:
+            raise ValueError("LadderStrategy invoked without an injected rung (fail closed)")
+        rung = get_rung(int(self.settings["rung"]))  # raises ValueError if out of range
+        params = rung_engine_params(rung)
+        engine = self.game.engines[self.cn.player]
+
+        if rung.human_sl_profile is not None and not getattr(engine, "has_human_model", False):
+            # Certified humanSL rung with no human model -> cannot reproduce strength. Fail closed.
+            raise LadderUnavailable(f"rung {rung.rung} requires human model but engine has none")
+
+        analysis, error, done = None, False, False
+
+        def set_analysis(a, partial):
+            nonlocal analysis, done
+            if not partial:
+                analysis = a
+                done = True  # explicit completion flag: an empty/malformed dict is 'done' too (M2)
+
+        def set_error(a):
+            nonlocal error, done
+            error = True
+            done = True
+            self.game.katrain.log(f"[LadderStrategy] analysis error: {a}", OUTPUT_ERROR)
+
+        engine.request_analysis(
+            self.cn,
+            callback=set_analysis,
+            error_callback=set_error,
+            priority=PRIORITY_EXTRA_AI_QUERY,
+            visits=params["visits"],
+            include_policy=True,
+            extra_settings=params["extra_settings"],
+            time_limit=False,  # pure visits -> reproducible strength (not truncated by maxTime)
+        )
+        # Bounded wait keyed on the explicit `done` flag (NOT analysis truthiness — an empty dict is
+        # falsy but complete). check_alive returns a BOOL (KataGoHttpEngine.check_alive does NOT raise
+        # for a dead worker), so inspect it and enforce a deadline; otherwise a lost callback / dead
+        # engine would spin while _do_ai_move holds ai_lock, blocking new-game (G3/H3/M2).
+        deadline = time.monotonic() + LADDER_ANALYSIS_TIMEOUT_S
+        while not done:
+            time.sleep(0.01)
+            if not engine.check_alive(exception_if_dead=False):
+                raise LadderUnavailable(f"rung {rung.rung}: engine died during analysis")
+            if time.monotonic() > deadline:
+                raise LadderUnavailable(f"rung {rung.rung}: analysis timed out ({LADDER_ANALYSIS_TIMEOUT_S}s)")
+
+        if error or not analysis:  # error, or completed with an empty/missing payload
+            # No uncalibrated fallback — the ladder's whole value is the certified strength.
+            raise LadderUnavailable(f"rung {rung.rung} analysis failed/empty; refusing uncalibrated fallback")
+
+        try:
+            picked = pick_ladder_move(analysis, self.game.board_size, rung.mechanism)
+        except LadderMoveError as e:
+            # e.g. a humanSL rung whose response lacks humanPolicy: do NOT play a search move.
+            raise LadderUnavailable(f"rung {rung.rung}: {e}") from e
+        move = Move(None, player=self.cn.next_player) if picked == "pass" else Move(picked, player=self.cn.next_player)
+        return (
+            move,
+            f"[LadderStrategy] rung {rung.rung} · 对标星阵{rung.golaxy_level_name or '最强'} · visits={params['visits']}",
+        )
+
+
 def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tuple[Move, GameNode]]:
     """
     Generate a move using the selected AI strategy.
@@ -1818,7 +1902,7 @@ def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tu
 
     # Check resignation conditions before generating a move
     resignation_settings = game.katrain.config("ai/resignation") or {}
-    if should_ai_resign(game, resignation_settings):
+    if ai_mode != AI_LADDER and should_ai_resign(game, resignation_settings):  # ladder never global-resigns
         ai_player = game.current_node.next_player
         opponent = "W" if ai_player == "B" else "B"
         # end_state format: "{winner}+R" (e.g., "W+R" means White wins by resignation)

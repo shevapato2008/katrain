@@ -191,3 +191,14 @@ def test_pick_non_dict_analysis_raises():
             pick_ladder_move(bad, bs, "net_search")  # no AttributeError from .get on a non-dict
         with pytest.raises(LadderMoveError):
             pick_ladder_move(bad, bs, "humansl")
+
+
+def test_ai_ladder_registered():
+    from katrain.core import constants as C
+
+    assert C.AI_LADDER == "ai:ladder"
+    assert (
+        C.AI_LADDER in C.AI_STRATEGIES
+        and C.AI_LADDER in C.AI_STRATEGIES_RECOMMENDED_ORDER
+        and C.AI_LADDER in C.AI_STRENGTH
+    )

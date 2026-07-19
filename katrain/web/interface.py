@@ -729,6 +729,7 @@ class WebKaTrain(KaTrainBase):
                 and not cn.children
                 and not self.game.end_result
                 and not (teaching_undo and cn.auto_undo is None)
+                and not getattr(self, "last_ladder_error", False)
             ):
                 if not self._ai_move_pending:
                     self._ai_move_pending = True
@@ -991,6 +992,7 @@ class WebKaTrain(KaTrainBase):
                             "[ladder] ai:ladder player has no injected rung; refusing to move (fail closed).",
                             OUTPUT_ERROR,
                         )
+                        self._surface_ladder_unavailable()
                         return
                     settings = {**(settings or {}), "rung": rung["rung"]}
                 if settings is not None:

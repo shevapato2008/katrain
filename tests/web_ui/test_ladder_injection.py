@@ -25,7 +25,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 # limited to this module.
 sys.modules.pop("katrain.web.interface", None)
 
-from katrain.core.constants import AI_LADDER, PLAYER_AI  # noqa: E402
+from katrain.core.constants import AI_LADDER, AI_POLICY, PLAYER_AI  # noqa: E402
 from katrain.core.game import Move  # noqa: E402
 from katrain.web.interface import WebKaTrain, resolve_ladder_rung  # noqa: E402
 from katrain.web.server import create_app  # noqa: E402
@@ -146,6 +146,24 @@ def test_ai_ladder_no_rung_fails_closed_no_move():
     assert wkt.game.root is root
 
 
+def test_ai_ladder_no_rung_fail_closed_sets_last_ladder_error():
+    """Final-review fix, part 1: the no-injected-rung fail-closed branch must ALSO
+    mark last_ladder_error, same as the LadderUnavailable branch does -- otherwise
+    _do_update_state's re-trigger guard (which gates on last_ladder_error) has nothing
+    to gate on for this path and spawns an AI thread forever (see the loop test below)."""
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+    assert wkt.ladder_rung is None  # no rung was ever injected
+    assert wkt.last_ladder_error is False
+
+    wkt._do_ai_move()
+
+    assert wkt.game.root.children == []  # no move was played
+    assert wkt.last_ladder_error is True
+    assert wkt.get_state()["last_ladder_error"] is True
+
+
 # --- Step 4d: LadderUnavailable -> no move + surfaced flag --------------------------
 
 
@@ -258,6 +276,98 @@ def test_new_game_serialized_against_inflight_ai_move(monkeypatch):
     assert wkt.game is not old_game
     assert wkt.game.root.children == []
     assert wkt.ladder_rung == {"rung": 20}
+
+
+# --- Final-review fix: stop the infinite AI-move retry loop on ladder fail-closed ---
+#
+# _do_ai_move_and_broadcast runs _do_ai_move on a background thread and, in its
+# `finally`, clears _ai_move_pending then calls update_state() -> _do_update_state().
+# _do_update_state's re-trigger block spawns a NEW _do_ai_move_and_broadcast thread
+# whenever (next_player.ai and not cn.children and not end_result and not pending).
+# After a fail-closed ladder move (no move played, no end_result), that condition was
+# TRUE again -> infinite respawn loop (CPU busy-loop for the no-rung case; repeated
+# bounded-wait engine queries for the LadderUnavailable case). The fix gates the
+# re-trigger on `not last_ladder_error` so a ladder that just failed closed does not
+# get immediately respawned; the flag clears on new game / successful move so normal
+# play and recovery are unaffected.
+
+
+class _FakeThread:
+    """Records spawn attempts instead of actually starting a thread, so the test is
+    deterministic (no real threads/sleep) and doesn't need a working AI backend."""
+
+    calls = []
+
+    def __init__(self, target=None, args=(), kwargs=None, daemon=None):
+        self.target = target
+        self.args = args
+
+    def start(self):
+        _FakeThread.calls.append((self.target, self.args))
+
+
+def test_do_update_state_does_not_respawn_ai_thread_when_ladder_error_set(monkeypatch):
+    """The core regression test: with an ai:ladder next player, no children, no
+    end_result, and last_ladder_error already True (simulating 'this turn's ladder
+    move just failed closed'), _do_update_state must NOT spawn a new AI thread."""
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+    assert wkt.game.current_node.children == []
+    assert wkt.game.end_result is None
+
+    wkt.last_ladder_error = True  # this turn's ladder move already failed closed
+    wkt._ai_move_pending = False  # cleared by _do_ai_move_and_broadcast's finally
+
+    _FakeThread.calls = []
+    monkeypatch.setattr(threading, "Thread", _FakeThread)
+
+    wkt._do_update_state()
+
+    assert _FakeThread.calls == []  # NOT respawned -> loop is broken
+    assert wkt._ai_move_pending is False  # never flipped True since nothing spawned
+
+
+def test_do_update_state_respawns_ai_thread_when_no_ladder_error(monkeypatch):
+    """Confirms the guard is a no-op for the normal case: a regular (non-ladder) AI
+    player with last_ladder_error False (the default, and what a successful ladder
+    move resets it to) still gets re-triggered as before."""
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    wkt.update_player(next_bw, player_type=PLAYER_AI, player_subtype=AI_POLICY)
+    assert wkt.last_ladder_error is False
+    wkt._ai_move_pending = False
+
+    _FakeThread.calls = []
+    monkeypatch.setattr(threading, "Thread", _FakeThread)
+
+    wkt._do_update_state()
+
+    assert len(_FakeThread.calls) == 1  # normal re-trigger flow still fires
+    target, args = _FakeThread.calls[0]
+    assert target == wkt._do_ai_move_and_broadcast
+    assert args == (wkt.game.current_node,)
+    assert wkt._ai_move_pending is True  # set before the (faked) spawn, as before
+
+
+def test_do_update_state_respawns_ai_ladder_when_last_ladder_error_false(monkeypatch):
+    """Same guard-is-a-no-op check, but for an ai:ladder player specifically -- this is
+    the state right after a SUCCESSFUL ladder move (last_ladder_error reset to False at
+    interface.py:1010), i.e. the very case the fix must not break: normal ladder play
+    must keep re-triggering turn after turn."""
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+    wkt.ladder_rung = {"rung": 5}
+    assert wkt.last_ladder_error is False
+    wkt._ai_move_pending = False
+
+    _FakeThread.calls = []
+    monkeypatch.setattr(threading, "Thread", _FakeThread)
+
+    wkt._do_update_state()
+
+    assert len(_FakeThread.calls) == 1  # ladder re-trigger still fires when healthy
 
 
 if __name__ == "__main__":

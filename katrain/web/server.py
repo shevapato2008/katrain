@@ -1660,6 +1660,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             "ai:p:rank": {"kyu_rank": -2},
             "ai:human": {"human_kyu_rank": 0, "modern_style": True},
             "ai:pro": {"pro_year": 2010, "modern_style": True},
+            "ai:ladder": {},
         }
 
         return {
@@ -1668,6 +1669,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             "key_properties": list(AI_KEY_PROPERTIES),
             "default_strategy": AI_CONFIG_DEFAULT,
             "strategy_defaults": strategy_defaults,
+        }
+
+    @app.get("/api/ladder-rungs")
+    def get_ladder_rungs():
+        from katrain.core.ladder import LADDER_RUNGS
+
+        # UI-facing subset only -- NOT the full LadderRung (no human_sl_profile /
+        # human_sl_params leak; those are internal humanSL calibration knobs).
+        return {
+            "rungs": [
+                {
+                    "rung": r.rung,
+                    "golaxy_level_name": r.golaxy_level_name,
+                    "display_elo": r.display_elo,
+                    "ref_rank": r.ref_rank,
+                    "net": r.net,
+                    "mechanism": r.mechanism,
+                }
+                for r in LADDER_RUNGS
+            ]
         }
 
     @app.post("/api/ai/estimate-rank")
@@ -1754,9 +1775,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
 
         try:
-            current_user = await get_user_from_token(
-                token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
-            )
+            current_user = await get_user_from_token(token=token, repo=app.state.user_repo, box_sso=app.state.box_sso)
         except Exception as e:
             logger.warning(f"Lobby WebSocket: Token validation failed: {e}")
             await websocket.accept()
@@ -1994,9 +2013,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             try:
                 if not token:
                     raise ValueError("missing strict credential")
-                await get_user_from_token(
-                    token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
-                )
+                await get_user_from_token(token=token, repo=app.state.user_repo, box_sso=app.state.box_sso)
             except Exception:
                 await websocket.accept()
                 await websocket.close(code=1008, reason="Invalid token")

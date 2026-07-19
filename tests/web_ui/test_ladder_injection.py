@@ -15,6 +15,9 @@ import threading
 
 import pytest
 
+pytest.importorskip("fastapi")
+from fastapi.testclient import TestClient  # noqa: E402
+
 # The shared web_ui conftest mocks `katrain.web.interface` as a MagicMock so that
 # unrelated tests don't drag in the kivy import chain. This suite needs the REAL
 # WebKaTrain/resolve_ladder_rung, so undo that mock here (same pattern as
@@ -25,6 +28,38 @@ sys.modules.pop("katrain.web.interface", None)
 from katrain.core.constants import AI_LADDER, PLAYER_AI  # noqa: E402
 from katrain.core.game import Move  # noqa: E402
 from katrain.web.interface import WebKaTrain, resolve_ladder_rung  # noqa: E402
+from katrain.web.server import create_app  # noqa: E402
+
+
+# --- Task 5: /api/ladder-rungs + ai:ladder default (HTTP surface) -------------------
+
+
+@pytest.fixture
+def client():
+    app = create_app(enable_engine=False)
+    with TestClient(app) as c:
+        yield c
+
+
+def test_ladder_rungs_endpoint(client):
+    rungs = client.get("/api/ladder-rungs").json()["rungs"]
+    assert len(rungs) == 40 and rungs[0]["golaxy_level_name"] == "18级" and rungs[38]["golaxy_level_name"] == "星阵3星"
+    assert rungs[39]["golaxy_level_name"] is None
+    assert all(r["net"] == "b18" for r in rungs)  # honest net metadata
+    assert "human_sl_profile" not in rungs[0] and "human_sl_params" not in rungs[0]
+
+
+def test_ai_constants_ladder_default(client):
+    assert client.get("/api/ai-constants").json()["strategy_defaults"]["ai:ladder"] == {}
+
+
+def test_new_game_invalid_ladder_rung_returns_422(client):
+    session_resp = client.post("/api/session")
+    assert session_resp.status_code == 200
+    session_id = session_resp.json()["session_id"]
+
+    resp = client.post("/api/new-game", json={"session_id": session_id, "ladder_rung": 41})
+    assert resp.status_code == 422
 
 
 # --- Step 1/2: resolve_ladder_rung unit tests -------------------------------------

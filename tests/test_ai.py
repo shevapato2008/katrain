@@ -4,7 +4,14 @@ import pytest
 
 from katrain.core.ai import ai_rank_estimation, generate_ai_move
 from katrain.core.base_katrain import KaTrainBase
-from katrain.core.constants import AI_STRATEGIES, AI_STRATEGIES_RECOMMENDED_ORDER, AI_HUMAN, AI_PRO, OUTPUT_INFO
+from katrain.core.constants import (
+    AI_STRATEGIES,
+    AI_STRATEGIES_RECOMMENDED_ORDER,
+    AI_HUMAN,
+    AI_PRO,
+    AI_LADDER,
+    OUTPUT_INFO,
+)
 from katrain.core.engine import KataGoEngine
 from katrain.core.game import Game
 
@@ -44,7 +51,7 @@ class TestAI:
     def test_ai_rank_estimation(self):
         katrain = KaTrainBase(force_package_config=True, debug_level=0)
         for strategy in AI_STRATEGIES:
-            if strategy in [AI_HUMAN, AI_PRO]:
+            if strategy in [AI_HUMAN, AI_PRO, AI_LADDER]:
                 continue
             settings = katrain.config(f"ai/{strategy}")
             rank = ai_rank_estimation(strategy, settings)

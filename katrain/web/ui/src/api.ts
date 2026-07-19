@@ -2,7 +2,8 @@ export interface PlayerInfo {
   player_type: string;
   player_subtype: string;
   name: string;
-  calculated_rank: string | null;
+  calculated_rank: string | null;  // pre-existing quirk: typed string|null though backend emits int|None; NOT changed here
+  rank_display?: string | null;    // NEW: ladder 段位 (optional to avoid breaking existing PlayerInfo literals)
   periods_used: number;
   main_time_used: number;
 }

@@ -378,5 +378,73 @@ def test_do_update_state_respawns_ai_ladder_when_last_ladder_error_false(monkeyp
     assert len(_FakeThread.calls) == 1  # ladder re-trigger still fires when healthy
 
 
+# --- Task 5: rank_display 段位 on the board nameplate --------------------------------
+
+
+def test_get_state_emits_rank_display_for_ladder_ai():
+    wkt = _make_katrain()
+    _make_ladder_player(wkt, "W")
+    wkt.ladder_rung = {"rung": 39}
+
+    state = wkt.get_state()
+    w = state["players_info"]["W"]
+    assert w["rank_display"] == "超越职业"  # the rung's rank_name
+    assert w["calculated_rank"] is None  # 段位 rides rank_display, not calculated_rank
+    b = state["players_info"]["B"]
+    assert b["rank_display"] is None  # human player: no ladder rank_display
+
+
+def test_rank_display_none_when_seat_flipped_to_human_via_partial_update():
+    """codex round 1 (medium): a partial /api/player update that changes only player_type
+    must not leave a human wearing the ladder 段位 while the rung is still set. Guard is
+    `p.ai and ...`."""
+    from katrain.core.constants import PLAYER_HUMAN
+
+    wkt = _make_katrain()
+    _make_ladder_player(wkt, "W")
+    wkt.ladder_rung = {"rung": 39}
+
+    wkt.players_info["W"].player_type = PLAYER_HUMAN  # subtype intentionally left as "ai:ladder"
+    assert wkt.players_info["W"].player_subtype == AI_LADDER  # precondition: stale subtype
+
+    state = wkt.get_state()
+    assert state["players_info"]["W"]["rank_display"] is None
+
+
+# --- codex round 4 (high): ladder-error broadcast must not leak the rung index -------
+
+
+def test_ladder_unavailable_does_not_broadcast_rung_index(monkeypatch, caplog):
+    # codex round 4 (high): the LadderUnavailable catch in _do_ai_move interpolated the
+    # exception (whose message embeds `rung {n}`) into self.log(..., OUTPUT_ERROR).
+    # WebKaTrain.log broadcasts EVERY level via message_callback -> SessionManager WS ->
+    # ZenModeApp TopBar. The rung index / visits / 星阵 must NOT reach the client; only the
+    # generic last_ladder_error flag should.
+    import logging
+    import katrain.core.ai as ai
+
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+    wkt.ladder_rung = {"rung": 39}
+
+    def boom(game, mode, settings):
+        raise ai.LadderUnavailable("rung 39: analysis timed out (visits=480)")
+
+    monkeypatch.setattr(ai, "generate_ai_move", boom)
+
+    broadcasts = []
+    wkt.message_callback = lambda msg_type, data: broadcasts.append((msg_type, data))
+
+    with caplog.at_level(logging.ERROR, logger="katrain_web"):
+        wkt._do_ai_move()
+
+    assert wkt.last_ladder_error is True  # user-facing surface = generic flag, not the diagnostic text
+    logged = " ".join(str(d.get("message", "")) for (t, d) in broadcasts if t == "log")
+    for banned in ("rung", "visits", "39", "星阵"):
+        assert banned not in logged
+    assert "rung 39" in caplog.text  # diagnostics preserved on the server-side stdlib logger
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

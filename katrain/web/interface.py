@@ -339,6 +339,22 @@ class WebKaTrain(KaTrainBase):
         if self.message_callback:
             self.message_callback("log", {"message": message, "level": level})
 
+    def _ladder_rank_display(self, p):
+        """User-facing 段位 string for the local 棋力阶梯 AI, computed from the injected rung.
+        None for every other player. calculated_rank stays None (JSON-safe); this rides its own field.
+
+        The `p.ai` guard matters (codex round 1): /api/player supports partial updates where only
+        `player_type` changes (models.py), and Player.update() preserves the omitted `player_subtype`.
+        Flipping a ladder seat to human while the game's rung is still set would otherwise stamp a
+        human with the ladder 段位. Require BOTH the AI player_type AND the ladder subtype."""
+        if p.ai and p.player_subtype == AI_LADDER:
+            rung_info = getattr(self, "ladder_rung", None)
+            if rung_info:
+                from katrain.core.ladder import get_rung
+
+                return get_rung(rung_info["rung"]).rank_name
+        return None
+
     def get_state(self):
         """Returns a JSON-serializable representation of the current game state."""
         if not self.game:
@@ -478,6 +494,7 @@ class WebKaTrain(KaTrainBase):
                     "player_subtype": p.player_subtype,
                     "name": p.name,
                     "calculated_rank": p.calculated_rank,
+                    "rank_display": self._ladder_rank_display(p),
                     "periods_used": p.periods_used,
                     "main_time_used": self.main_time_used_by_player.get(bw, 0),
                 }
@@ -988,10 +1005,7 @@ class WebKaTrain(KaTrainBase):
                     if not rung:
                         # Fail closed: an ai:ladder player with no injected rung must NOT
                         # play an uncalibrated move (e.g. a stale/reset game). No move.
-                        self.log(
-                            "[ladder] ai:ladder player has no injected rung; refusing to move (fail closed).",
-                            OUTPUT_ERROR,
-                        )
+                        logger.error("[ladder] ai:ladder player has no injected rung; refusing to move (fail closed).")
                         self._surface_ladder_unavailable()
                         return
                     settings = {**(settings or {}), "rung": rung["rung"]}
@@ -1001,9 +1015,10 @@ class WebKaTrain(KaTrainBase):
                     try:
                         result = generate_ai_move(game, mode, settings)  # local `game`, not self.game
                     except LadderUnavailable as e:
-                        # Certified-strength failure (e.g. missing human model / dead engine
-                        # analysis): NO uncalibrated fallback move. Surface a flag instead.
-                        self.log(f"[ladder] engine unavailable at certified strength; no move: {e}", OUTPUT_ERROR)
+                        # Certified-strength failure. The exception embeds the rung index -> server-side
+                        # stdlib logger ONLY (self.log broadcasts every level to the ZenMode TopBar; see
+                        # interface.py:338-340). User surface is the generic last_ladder_error flag.
+                        logger.error("[ladder] engine unavailable at certified strength; no move: %s", e)
                         self._surface_ladder_unavailable()
                         return
                     if result is None:
@@ -1015,7 +1030,7 @@ class WebKaTrain(KaTrainBase):
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 
     def _surface_ladder_unavailable(self):
-        """Session flag so the frontend can render '对标星阵引擎暂不可用' after a
+        """Session flag so the frontend can render '棋力阶梯引擎暂不可用' after a
         LadderUnavailable failure. Cleared on the next successful AI move or new game."""
         self.last_ladder_error = True
 

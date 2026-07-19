@@ -1,0 +1,229 @@
+"""Task 4: per-game rung injection (fail-closed) + lifecycle/concurrency safety.
+
+Covers:
+  - resolve_ladder_rung(n) module helper (Step 1/2).
+  - WebKaTrain lifecycle: new-game rung injection + reset-to-None on any new game/
+    load_sgf that omits it (Step 4a/b).
+  - _do_ai_move fail-closed when an ai:ladder player has no injected rung (Step 4c).
+  - _do_ai_move catches LadderUnavailable -> no move + surfaced flag (Step 4d).
+  - Deterministic concurrency: _do_new_game's game/rung swap is serialized against an
+    in-flight _do_ai_move generation by the SAME ai_lock (Step 4e).
+"""
+
+import sys
+import threading
+
+import pytest
+
+# The shared web_ui conftest mocks `katrain.web.interface` as a MagicMock so that
+# unrelated tests don't drag in the kivy import chain. This suite needs the REAL
+# WebKaTrain/resolve_ladder_rung, so undo that mock here (same pattern as
+# test_suppress_auto_eval.py / test_cloud_analysis_routing.py). Blast radius is
+# limited to this module.
+sys.modules.pop("katrain.web.interface", None)
+
+from katrain.core.constants import AI_LADDER, PLAYER_AI  # noqa: E402
+from katrain.core.game import Move  # noqa: E402
+from katrain.web.interface import WebKaTrain, resolve_ladder_rung  # noqa: E402
+
+
+# --- Step 1/2: resolve_ladder_rung unit tests -------------------------------------
+
+
+def test_resolve_valid():
+    s = resolve_ladder_rung(1)
+    assert s == {"rung": 1}
+
+
+def test_resolve_absent_is_none():
+    assert resolve_ladder_rung(None) is None
+
+
+def test_resolve_invalid_raises():
+    with pytest.raises(ValueError):
+        resolve_ladder_rung(0)
+    with pytest.raises(ValueError):
+        resolve_ladder_rung(41)
+
+
+# --- helpers -----------------------------------------------------------------------
+
+
+def _make_katrain():
+    wkt = WebKaTrain(force_package_config=True, enable_engine=False)
+    wkt.start()
+    return wkt
+
+
+def _make_ladder_player(wkt, bw):
+    """Turn player `bw` into an ai:ladder player (does not touch ladder_rung)."""
+    wkt.update_player(bw, player_type=PLAYER_AI, player_subtype=AI_LADDER)
+
+
+# --- Step 4a/b: lifecycle (set + reset) ---------------------------------------------
+
+
+def test_new_game_sets_injected_rung():
+    wkt = _make_katrain()
+    wkt("new_game", ladder_rung=5)
+    assert wkt.ladder_rung == {"rung": 5}
+
+
+def test_new_game_without_rung_resets_to_none():
+    wkt = _make_katrain()
+    wkt("new_game", ladder_rung=5)
+    assert wkt.ladder_rung == {"rung": 5}
+
+    # A subsequent new game that does NOT pass a rung must clear the stale value --
+    # this is the fix for the SGF-load / plain-new-game stale-rung leak.
+    wkt("new_game")
+    assert wkt.ladder_rung is None
+
+
+def test_load_sgf_without_rung_resets_to_none():
+    wkt = _make_katrain()
+    wkt._do_new_game(ladder_rung=7)
+    assert wkt.ladder_rung == {"rung": 7}
+
+    wkt("load_sgf", "(;GM[1]FF[4]SZ[19])")
+    assert wkt.ladder_rung is None
+
+
+def test_new_game_invalid_rung_raises():
+    wkt = _make_katrain()
+    with pytest.raises(ValueError):
+        wkt._do_new_game(ladder_rung=999)
+
+
+# --- Step 4c: fail-closed when ai:ladder player has no injected rung ----------------
+
+
+def test_ai_ladder_no_rung_fails_closed_no_move():
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+    assert wkt.ladder_rung is None  # no rung was ever injected
+
+    root = wkt.game.root
+    wkt._do_ai_move()
+
+    assert wkt.game.root.children == []  # no move was played
+    assert wkt.game.root is root
+
+
+# --- Step 4d: LadderUnavailable -> no move + surfaced flag --------------------------
+
+
+def test_ai_ladder_unavailable_no_move_and_flag_set():
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+
+    # Rung 1 is a humanSL rung; the test harness's NullEngine has no has_human_model
+    # attribute (getattr(...) -> False), so LadderStrategy.generate_move() raises
+    # LadderUnavailable before issuing any analysis request.
+    wkt.ladder_rung = {"rung": 1}
+    assert wkt.last_ladder_error is False
+
+    root = wkt.game.root
+    wkt._do_ai_move()
+
+    assert wkt.game.root.children == []  # NO uncalibrated fallback move was played
+    assert wkt.game.root is root
+    assert wkt.last_ladder_error is True
+    assert wkt.get_state()["last_ladder_error"] is True
+
+
+def test_ladder_error_flag_cleared_by_new_game():
+    wkt = _make_katrain()
+    wkt.last_ladder_error = True
+    wkt("new_game")
+    assert wkt.last_ladder_error is False
+
+
+# --- Step 4e: deterministic concurrency test ----------------------------------------
+
+
+def test_new_game_serialized_against_inflight_ai_move(monkeypatch):
+    """_do_new_game must block on ai_lock while an ai:ladder generation is in flight, and
+    the in-flight generation must use its OWN (game, rung) snapshot -- not whatever
+    _do_new_game swaps self.game/self.ladder_rung to concurrently."""
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+    wkt.ladder_rung = {"rung": 5}
+    old_game = wkt.game
+
+    gen_started = threading.Event()
+    release_gen = threading.Event()
+    captured = {}
+
+    def fake_generate_ai_move(game, mode, settings):
+        captured["game"] = game
+        captured["rung"] = settings.get("rung")
+        captured["mode"] = mode
+        gen_started.set()
+        assert release_gen.wait(timeout=5), "test bug: release_gen never set"
+        # Simulate a played move landing on the LOCAL (old) game snapshot.
+        node = game.play(Move((3, 3), player=game.current_node.next_player))
+        return (node.move, node)
+
+    import katrain.core.ai as ai_mod
+
+    monkeypatch.setattr(ai_mod, "generate_ai_move", fake_generate_ai_move)
+
+    # We call _do_ai_move directly (not via _do_ai_move_and_broadcast) for tight control
+    # over timing, so mirror its real bookkeeping: mark a move as already pending so the
+    # new game's update_state() (next player is STILL ai:ladder -- reset_players() does not
+    # clear player_type/subtype) doesn't spawn a second, uncontrolled AI-move thread that
+    # would race with our assertions below.
+    wkt._ai_move_pending = True
+
+    ai_thread = threading.Thread(target=wkt._do_ai_move, daemon=True)
+    ai_thread.start()
+
+    assert gen_started.wait(timeout=5), "AI thread never entered generate_ai_move"
+    assert wkt.ai_lock.locked()  # AI thread holds ai_lock for the whole generation
+
+    new_game_done = threading.Event()
+
+    def _do_new_game_call():
+        wkt._do_new_game(ladder_rung=20)
+        new_game_done.set()
+
+    ng_thread = threading.Thread(target=_do_new_game_call, daemon=True)
+    ng_thread.start()
+
+    # Bounded window to let _do_new_game attempt (and, if the lock were missing, complete)
+    # its state swap. Since the AI thread genuinely still holds ai_lock (release_gen is not
+    # set), _do_new_game can only still be blocked at this point if the swap is correctly
+    # serialized by the same lock.
+    ng_thread.join(timeout=0.5)
+    assert ng_thread.is_alive(), "_do_new_game did not block on ai_lock during in-flight AI move"
+    assert not new_game_done.is_set()
+    assert wkt.ladder_rung == {"rung": 5}  # unchanged while the AI thread still holds the lock
+    assert wkt.game is old_game
+
+    release_gen.set()
+
+    ai_thread.join(timeout=5)
+    assert not ai_thread.is_alive()
+
+    assert new_game_done.wait(timeout=5)
+    ng_thread.join(timeout=5)
+
+    # (ii) the completed move used rung 5's LOCAL snapshot (not the new game's rung 20),
+    # and landed on the OLD game.
+    assert captured["rung"] == 5
+    assert captured["mode"] == AI_LADDER
+    assert captured["game"] is old_game
+    assert len(old_game.root.children) == 1
+
+    # The new-game swap completed only after the lock was released.
+    assert wkt.game is not old_game
+    assert wkt.game.root.children == []
+    assert wkt.ladder_rung == {"rung": 20}
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])

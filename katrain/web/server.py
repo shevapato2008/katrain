@@ -747,6 +747,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/new-game")
     def new_game(request: NewGameRequest):
+        # Task 4: validate the rung BEFORE touching the session, so an out-of-range value
+        # 422s cleanly instead of partially mutating game state.
+        if request.ladder_rung is not None:
+            from katrain.core.ladder import get_rung
+
+            try:
+                get_rung(int(request.ladder_rung))
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=422, detail=f"invalid ladder_rung: {request.ladder_rung}")
+
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             # A new game is starting: clear the "already recorded" guard from any
@@ -764,7 +774,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.katrain.engine.on_new_game()
 
             session.katrain(
-                "new_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules
+                "new_game",
+                size=request.size,
+                handicap=request.handicap,
+                komi=request.komi,
+                rules=request.rules,
+                ladder_rung=request.ladder_rung,
             )
             state = session.katrain.get_state()
             session.last_state = state

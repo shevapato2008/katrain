@@ -44,7 +44,7 @@ const AiSetupPage = () => {
     const [estimatedRank, setEstimatedRank] = useState<string>('...');
     const [aiLoading, setAiLoading] = useState(false);
 
-    // 对标星阵 (Golaxy-parity) ladder: 40 rungs fetched from GET /api/ladder-rungs.
+    // 棋力阶梯 (strength ladder): 40 rungs fetched from GET /api/ladder-rungs.
     // Default rung 18 == "1级" (LADDER_RUNGS index 17), a mid-strength anchor.
     const [ladderRungs, setLadderRungs] = useState<LadderRung[]>([]);
     const [ladderRung, setLadderRung] = useState<number>(18);
@@ -132,7 +132,7 @@ const AiSetupPage = () => {
             'policy': t('ai:policy', 'Policy'),
             'jigo': t('ai:jigo', 'Jigo'),
             'antimirror': t('ai:antimirror', 'Anti-mirror'),
-            'ladder': t('ai:golaxy_parity', '对标星阵'),
+            'ladder': t('ai:golaxy_parity', '棋力阶梯'),
         };
         return strategyDisplayMap[name] || (name.charAt(0).toUpperCase() + name.slice(1));
     };
@@ -367,7 +367,7 @@ const AiSetupPage = () => {
                     ) : isLadder ? (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
                             <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('ai:golaxy_parity', '对标星阵')}
+                                {t('ai:golaxy_parity', '棋力阶梯')}
                             </Typography>
                             <FormControl fullWidth margin="dense" size="small">
                                 <InputLabel>{t('ai:golaxy_parity_rung', '棋力等级')}</InputLabel>
@@ -378,7 +378,7 @@ const AiSetupPage = () => {
                                 >
                                     {ladderRungs.map((r) => (
                                         <MenuItem key={r.rung} value={r.rung}>
-                                            {`${r.golaxy_level_name ?? '最强'} · 对标星阵 · 展示Elo ${r.display_elo ?? '—'}`}
+                                            {r.rank_name}
                                         </MenuItem>
                                     ))}
                                 </Select>

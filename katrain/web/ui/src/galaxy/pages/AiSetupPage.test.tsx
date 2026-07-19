@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AiSetupPage from './AiSetupPage';
 
-// Task 11: 对标星阵 (Golaxy-parity) 40-rung opponent selector on the galaxy AiSetupPage.
+// Task 11: 棋力阶梯 (strength ladder) 40-rung opponent selector on the galaxy AiSetupPage.
 // Mirrors the Vitest/RTL pattern in kiosk/pages/PlatformEngineSetupPage.test.tsx: mock the
 // API module (vi.hoisted so the mocked fns are reachable from assertions) and mock the
 // auth/settings contexts (this page isn't wrapped in their Providers in isolation).
@@ -34,8 +34,8 @@ const { mockAiConstants, mockRungsResponse, mockNewGame, mockUpdateConfig } = vi
   },
   mockRungsResponse: {
     rungs: [
-      { rung: 18, golaxy_level_name: '1级', display_elo: 1100, ref_rank: '业余1级', net: 'b18', mechanism: 'humansl' },
-      { rung: 40, golaxy_level_name: null, display_elo: null, ref_rank: '最强', net: 'b18', mechanism: 'net_search' },
+      { rung: 18, rank_name: '1级' },
+      { rung: 40, rank_name: 'KataGo 中等算力' },
     ],
   },
   mockNewGame: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
@@ -82,32 +82,32 @@ const comboboxForLabel = (text: string): HTMLElement => {
   return within(formControl).getByRole('combobox');
 };
 
-describe('AiSetupPage — 对标星阵 ladder opponent', () => {
+describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
     mockNewGame.mockClear();
     mockUpdateConfig.mockClear();
   });
 
-  it('lists 对标星阵 in the AI Strategy dropdown', async () => {
+  it('lists 棋力阶梯 in the AI Strategy dropdown', async () => {
     renderPage();
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
     const user = userEvent.setup();
     await user.click(comboboxForLabel('AI Strategy'));
-    expect(screen.getByRole('option', { name: '对标星阵' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '棋力阶梯' })).toBeInTheDocument();
   });
 
-  it('shows a rung selector (not the human-rank slider) once 对标星阵 is chosen', async () => {
+  it('shows a rung selector (not the human-rank slider) once 棋力阶梯 is chosen', async () => {
     renderPage();
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
     const user = userEvent.setup();
 
     await user.click(comboboxForLabel('AI Strategy'));
-    await user.click(screen.getByRole('option', { name: '对标星阵' }));
+    await user.click(screen.getByRole('option', { name: '棋力阶梯' }));
 
-    // Default rung 18 (1级) is pre-selected; its label follows the brief's format.
+    // Default rung 18 (1级) is pre-selected; label is rank_name only, no elo.
     await waitFor(() => {
-      expect(screen.getByText(/1级 · 对标星阵 · 展示Elo 1100/)).toBeInTheDocument();
+      expect(screen.getByText('1级')).toBeInTheDocument(); // rank_name only, no elo
     });
     // The generic human-rank slider (visible for ai:human) must not be showing.
     expect(screen.queryByText('20k')).not.toBeInTheDocument();
@@ -119,12 +119,12 @@ describe('AiSetupPage — 对标星阵 ladder opponent', () => {
     const user = userEvent.setup();
 
     await user.click(comboboxForLabel('AI Strategy'));
-    await user.click(screen.getByRole('option', { name: '对标星阵' }));
+    await user.click(screen.getByRole('option', { name: '棋力阶梯' }));
 
-    // Pick the strongest rung (40, 最强) from the rung selector.
-    await waitFor(() => expect(screen.getByText(/1级 · 对标星阵 · 展示Elo 1100/)).toBeInTheDocument());
+    // Pick the strongest rung (40, KataGo 中等算力) from the rung selector.
+    await waitFor(() => expect(screen.getByText('1级')).toBeInTheDocument());
     await user.click(comboboxForLabel('棋力等级'));
-    await user.click(screen.getByRole('option', { name: /最强 · 对标星阵 · 展示Elo —/ }));
+    await user.click(screen.getByRole('option', { name: 'KataGo 中等算力' }));
 
     await user.click(screen.getByRole('button', { name: /start game/i }));
 

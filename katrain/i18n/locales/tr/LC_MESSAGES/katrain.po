@@ -2749,3 +2749,9 @@ msgstr "Avantaj"
 
 msgid "Time Control"
 msgstr "Zaman kontrolü"
+
+msgid "ai:golaxy_parity"
+msgstr "Güç Merdiveni"
+
+msgid "ai:golaxy_parity_rung"
+msgstr "Derece Seviyesi"

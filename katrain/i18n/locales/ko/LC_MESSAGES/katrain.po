@@ -2601,3 +2601,9 @@ msgstr "접바둑"
 
 msgid "Time Control"
 msgstr "시간 설정"
+
+msgid "ai:golaxy_parity"
+msgstr "실력 사다리"
+
+msgid "ai:golaxy_parity_rung"
+msgstr "실력 등급"

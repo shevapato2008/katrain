@@ -102,6 +102,8 @@ export interface EngineLevel {
   name: string;         // bot name e.g. "星铠虾"
   goal_difference: number;
   timing: string;
+  display_elo: number;
+  ref_rank: string;
 }
 
 export interface PlatformStatusResponse {

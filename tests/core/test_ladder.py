@@ -8,6 +8,7 @@ from katrain.core.ladder import (
     gtp_to_colrow,
     colrow_to_golaxy,
     golaxy_to_colrow,
+    config_sanity_key,
     MECHANISMS,
 )
 
@@ -202,3 +203,23 @@ def test_ai_ladder_registered():
         and C.AI_LADDER in C.AI_STRATEGIES_RECOMMENDED_ORDER
         and C.AI_LADDER in C.AI_STRENGTH
     )
+
+
+# --- Task 6: config-sanity monotonicity guard (non-strict; ties expected) ---
+
+
+def test_config_key_non_decreasing():
+    keys = [config_sanity_key(r) for r in LADDER_RUNGS]
+    for i in range(1, len(keys)):
+        assert keys[i] >= keys[i - 1] - 1e-9, f"config regressed at rung {i+1} ({LADDER_RUNGS[i].golaxy_level_name})"
+
+
+def test_expected_ties_documented():
+    # Adjacent same-profile + same-visits rungs are EXPECTED to tie on the config key.
+    by = {r.golaxy_level_name: r for r in LADDER_RUNGS}
+    assert by["准1段"].human_sl_profile == by["1段"].human_sl_profile  # both rank_1d
+    assert abs(config_sanity_key(by["准1段"]) - config_sanity_key(by["1段"])) < 1e-9  # tie, by design
+
+
+def test_rung_40_max_key():
+    assert config_sanity_key(LADDER_RUNGS[39]) == max(config_sanity_key(r) for r in LADDER_RUNGS)

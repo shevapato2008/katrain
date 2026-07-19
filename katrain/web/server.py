@@ -1675,21 +1675,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def get_ladder_rungs():
         from katrain.core.ladder import LADDER_RUNGS
 
-        # UI-facing subset only -- NOT the full LadderRung (no human_sl_profile /
-        # human_sl_params leak; those are internal humanSL calibration knobs).
-        return {
-            "rungs": [
-                {
-                    "rung": r.rung,
-                    "golaxy_level_name": r.golaxy_level_name,
-                    "display_elo": r.display_elo,
-                    "ref_rank": r.ref_rank,
-                    "net": r.net,
-                    "mechanism": r.mechanism,
-                }
-                for r in LADDER_RUNGS
-            ]
-        }
+        # UI-facing subset only. star阵-free: internal golaxy_level_name / golaxy_api_level /
+        # display_elo / ref_rank / humanSL knobs are NOT exposed to the browser.
+        return {"rungs": [{"rung": r.rung, "rank_name": r.rank_name} for r in LADDER_RUNGS]}
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):

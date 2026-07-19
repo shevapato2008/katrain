@@ -42,11 +42,19 @@ def client():
 
 
 def test_ladder_rungs_endpoint(client):
-    rungs = client.get("/api/ladder-rungs").json()["rungs"]
-    assert len(rungs) == 40 and rungs[0]["golaxy_level_name"] == "18级" and rungs[38]["golaxy_level_name"] == "星阵3星"
-    assert rungs[39]["golaxy_level_name"] is None
-    assert all(r["net"] == "b18" for r in rungs)  # honest net metadata
-    assert "human_sl_profile" not in rungs[0] and "human_sl_params" not in rungs[0]
+    resp = client.get("/api/ladder-rungs")
+    assert resp.status_code == 200
+    rungs = resp.json()["rungs"]
+    assert len(rungs) == 40
+    # New star阵-free wire schema: only rung + rank_name.
+    assert set(rungs[0].keys()) == {"rung", "rank_name"}
+    assert rungs[0] == {"rung": 1, "rank_name": "18级"}
+    assert rungs[38] == {"rung": 39, "rank_name": "超越职业"}
+    assert rungs[39] == {"rung": 40, "rank_name": "KataGo 中等算力"}
+    # No internal 星阵/elo fields leak to the browser.
+    for r in rungs:
+        assert "golaxy_level_name" not in r
+        assert "display_elo" not in r
 
 
 def test_ai_constants_ladder_default(client):

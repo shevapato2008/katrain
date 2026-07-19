@@ -16,6 +16,12 @@ from typing import Dict, List, Optional, Tuple, Union
 MECHANISMS = ("humansl", "humansl_search", "net_search")
 _COLS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"  # GTP columns, 'I' skipped
 
+# Bumped by calibration/bake_results.py's bump_ladder_version() every time a REAL measured-Elo
+# bake overwrites the table below (Phase P3b, Task 10). "v1" = the current PROVISIONAL table
+# (offline PRD reasoning only, never yet measured against live Golaxy) -- see the module
+# docstring above.
+LADDER_VERSION = "v1"
+
 
 class LadderMoveError(Exception):
     """A rung's required analysis output is absent/malformed, so no certified move can be

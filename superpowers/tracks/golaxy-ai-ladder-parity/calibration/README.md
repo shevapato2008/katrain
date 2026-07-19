@@ -8,7 +8,7 @@ This directory holds the **operator-run** (NOT CI-tested) calibration tools for 
 | `adapters.py` | Shared, unit-tested primitives: `our_move` (our engine via `/analyze`), `golaxy_move` (typed Golaxy genmove-tunnel opponent), `adjudicate` (black-relative final score). |
 | `run_smoke.py` | **Task 9 (this doc).** Level re-verify (5 rungs) + a ~10-game smoke + timing, BEFORE committing hours to the full run. Writes `results/smoke_report.json`. |
 | `run_calibration.py` | **Task 8/P3b.** The full empirical calibration: 7 anchors × ~50 games each, checkpointed, resumable. Reads `pass_code`/`resign_code` from `results/smoke_report.json`. |
-| `bake_results.py` | **Task 10.** Turns measured Elo into corrected `ladder.py` rung values (not built yet as of Task 9). |
+| `bake_results.py` | **Task 10.** Turns measured Elo into corrected `ladder.py` rung values: per-band (kyu/amateur-dan/pro/super-pro) offset+slope fit, tie/reversal-aware (`banded_correction`/`classify_pairs`/`apply_corrections`/`bump_ladder_version` — unit-tested in `tests/core/test_bake_results.py`). Never edits `ladder.py` itself; prints/writes values for a human to paste in (see Steps 8–11 below). |
 | `results/` | Checkpoints + reports. `smoke_report.json` (token-free) is safe to commit; per-anchor `.jsonl` checkpoints and raw logs generally are not needed in the repo. |
 
 Everything below is written to be **executed**, not just read. Follow it top to bottom the
@@ -278,6 +278,139 @@ any fail: fix the underlying issue (engine health, token, network, rate limiting
 construction (see `run_smoke.py`'s schema — only `level_probes`/`games`/timing/error data +
 the two sentinel codes you add by hand), so it's safe to commit as-is once Step 5's codes are
 filled in (or confirmed `null` with a documented golaxy-terminal rate per Step 6).
+
+## Step 8: HARD PRE-GATE — trustworthy terminals, per anchor, before you bake anything
+
+**Parity conclusions require trustworthy terminals.** This is a hard gate, re-stated here
+because Task 10's `bake_results.py` is the point where a bad anchor's win rate would otherwise
+get baked permanently into `ladder.py`. For **each** of the 7 anchors below, before using its
+win rate for anything:
+
+- **(a)** validated `pass_code`+`resign_code` (per `_valid_sentinels`, Step 5/6 above) are in
+  effect for this run, **or**
+- **(b)** that anchor's own `golaxy_terminal_rate` (from its `run_calibration.py` summary, NOT
+  the smoke run's) is **~0**.
+
+An anchor failing **BOTH** (a) and (b) is **untrusted**: its win rate must **NOT** be used to
+bake or relabel rungs in `bake_results.py`, even informally — the excluded/unclassified
+terminal games are a **selection bias of unknown direction** (you cannot know whether the
+games thrown out were ones Golaxy was winning, losing, or drawing), not a simple under-count
+you can mentally correct for. Report an untrusted anchor's rate AND its untrusted status; do
+not feed it into `--anchors` derived corrections, and flag it in the final report (Step 11) so
+a later re-run with a fresh sentinel capture (Step 5) can supersede it.
+
+## Step 9: Run the full P3b calibration — 7 anchors × ~50 games
+
+The 7 calibration anchors (rung numbers are this checkout's — re-derive via
+`katrain.core.ladder.get_rung`/`golaxy_level_name` if `ladder.py` has since been edited):
+
+| Golaxy level | `golaxy_api_level` | rung # | band (per `bake_results.band_of_rung`) |
+|---|---|---|---|
+| 7级 | 540 | 12 | kyu |
+| 1级 | 1100 | 18 | kyu |
+| 1段 | 1300 | 20 | amateur |
+| 5段 | 2100 | 28 | amateur |
+| 9段 | 3000 | 36 | pro |
+| 星阵1星 | 3100 | 37 | super |
+| 星阵3星 | 3300 | 39 | super |
+
+These 7 were chosen to give **every band** (kyu / amateur-dan / pro / super-pro) at least one
+anchor — `bake_results.banded_correction` fits each band's offset+slope independently, so a
+band with zero anchors simply cannot be corrected (its rungs are left untouched by
+`apply_corrections`; make sure this doesn't silently happen for a band you meant to calibrate).
+
+Run ~50 games per anchor (half each color — `run_calibration.py` alternates automatically),
+resumable/checkpointed, throttled to avoid rate-limiting:
+
+```bash
+GOLAXY_TOKEN=<redacted> uv run python \
+  superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_calibration.py \
+  --anchors "12:50,18:50,20:50,28:50,36:50,37:50,39:50" \
+  --base-url http://<prod-host>:8000 \
+  --throttle 2.0 \
+  --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results
+```
+
+This is a multi-hour run (350 games total, plus the score-stability re-check on any
+non-two-pass game). If it's interrupted (crash, token expiry not auto-recovered, network
+blip): **just re-run the exact same command** — `_already_done` counts each anchor's
+checkpointed `results/rung_<n>.jsonl` lines and resumes at the first unplayed index, replaying
+the SAME deterministic alternating-color sequence, so no game is replayed or double-counted.
+If the token expired mid-run and the one automatic re-auth retry (`_golaxy_move_with_reauth`)
+also failed, re-capture a fresh token (Step 1) and re-run the same command — resume picks up
+from where the checkpoint left off. Watch the console for the golaxy-terminal-rate warnings;
+if an anchor's rate looks materially worse than what the smoke run suggested, stop and
+re-examine Step 8's gate for that anchor before continuing to burn hours on it.
+
+When all 7 anchors finish, `results/summary.json` holds the per-anchor
+`elo_vs_opponent`/`elo_ci95`/`golaxy_terminal_rate` that `bake_results.py` consumes next.
+
+## Step 10: Bake — `bake_results.py`
+
+```bash
+uv run python \
+  superpowers/tracks/golaxy-ai-ladder-parity/calibration/bake_results.py \
+  --summary superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/summary.json \
+  --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/baked_ladder.json
+```
+
+**Before running this, drop any untrusted anchor's row from `results/summary.json`** (or a
+copy of it) per Step 8 — `bake_results.py` has no way to know an anchor is untrusted on its
+own; that judgment is Step 8's, made by a human reading the golaxy-terminal rate and the
+sentinel-capture status.
+
+This prints, per band, the fitted `{offset, slope, n, rungs}` (per-band, **never** a single
+global line — `corr["kyu"]["offset"] != corr["amateur"]["offset"]` etc. by construction), the
+adjacent-anchor tie/reversal classification (`classify_pairs`: overlapping-CI pairs are
+`"tie"`, CI-confirmed inversions are `"reversed"` — **neither is ever "corrected" by nudging a
+knob**; they are recorded), whether `config_sanity_key` stayed non-decreasing across the full
+baked 40-rung table after `apply_corrections` (it always should — that's the whole point of
+the clamp; a logged "UNRESOLVED" regression here means a knob's range was exhausted and needs
+a human look, not a re-run), and the bumped `LADDER_VERSION` (`bump_ladder_version`). The full
+baked table (every rung's new `human_sl_profile`/`max_visits`) is written to `--out` as JSON.
+
+**Paste the corrected values into `katrain/core/ladder.py` by hand** — `bake_results.py`
+**never** edits `ladder.py` directly (this is deliberate: a bake is not a mechanical
+find-replace, it's a judgment call an operator should look at, especially around any
+documented tie/reversal). At minimum:
+1. Bump `LADDER_VERSION` to the value `bake_results.py` printed.
+2. For each rung `bake_results.py` changed, update its `_KYU_PROFILE`/`_DAN_PROFILE`/
+   `_SEARCH_VISITS` entry (or `human_sl_profile`/`max_visits` directly) to match
+   `results/baked_ladder.json`'s `"rungs"` list.
+3. Leave anything in a band with **zero** anchor coverage untouched (it wasn't corrected —
+   don't invent a correction for it).
+
+## Step 11: Re-guard, spot-check, and record the report
+
+After pasting the baked values in:
+
+```bash
+CI=true uv run pytest tests/core/test_ladder.py tests/core/test_bake_results.py -v
+```
+`test_config_key_non_decreasing`/`test_rung_40_max_key` etc. must still pass — if they don't,
+the manual paste introduced an inconsistency `bake_results.py`'s own clamp would not have
+produced; fix the transcription rather than the test.
+
+**Spot-check 3–4 non-anchor rungs** (rungs that got NO direct anchor, only the interpolated
+per-band offset+slope): play a handful of games at each against the corresponding Golaxy
+level and sanity-check the result is in the right ballpark for that band's tolerance:
+- **deep kyu** (weakest ~5 rungs, e.g. 18级–14级): tolerance **±1.5 段** (段=class/rank step) —
+  wider, because deep-kyu humanSL profiles are coarser and noisier.
+- **mid kyu / amateur-dan and above**: tolerance **±1 段**.
+
+**Record, per anchor, in the P3b report:**
+- Measured win rate over **conclusive** games, and whether it falls in **SC2's [40%, 60%]**
+  window (pass/fail) — this is the primary "did this rung actually match its claimed Golaxy
+  level" signal.
+- Its **trusted/untrusted** status (Step 8) and **golaxy-terminal rate**.
+- Any **documented tie** (adjacent anchors with overlapping CI) or **documented reversal**
+  (CI-confirmed inversion) `bake_results.py` reported — ties/reversals are findings to report,
+  not defects to silently paper over.
+- The per-band `{offset, slope}` that was actually applied.
+- The spot-check results for the 3–4 non-anchor rungs, against the tolerance above.
+
+This report (SC2 pass/fail per anchor + ties/reversals + trusted/untrusted status) is what
+gets handed back for the go/no-go decision on shipping the newly baked `ladder.py`.
 
 ---
 

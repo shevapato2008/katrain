@@ -5,6 +5,11 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey } from '../pages/tsumegoUnits';
 import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
+import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
+
+// AUTO_ADVANCE_KEY is identity-scoped (box-SSO guest mode, R9-F1) — these tests exercise a
+// resolved real user, so seed the NAMESPACED key via this fixed uuid, not the legacy raw one.
+const TEST_UUID = 'test-uuid';
 
 // ---- Hoisted spies referenced by the mock factories below ----
 const { mockNavigate, mockFlush, mockReadPhysicalMode } = vi.hoisted(() => ({
@@ -164,6 +169,8 @@ beforeEach(() => {
   for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   // vi.clearAllMocks() clears call history but not a prior mockReturnValue override —
   // reset explicitly so physical mode defaults OFF for every test unless a case opts in.
   mockReadPhysicalMode.mockReturnValue(false);
@@ -388,7 +395,7 @@ describe('TsumegoProblemPage', () => {
     });
 
     it('does NOT auto-advance when the preference is disabled', () => {
-      localStorage.setItem(AUTO_ADVANCE_KEY, 'false');
+      localStorage.setItem(`${AUTO_ADVANCE_KEY}:${TEST_UUID}`, 'false');
       hookReturn = { ...defaultHookReturn, isSolved: true };
       renderPage('p1');
 
@@ -399,7 +406,7 @@ describe('TsumegoProblemPage', () => {
     });
 
     it('does NOT auto-advance on the last problem (no next)', () => {
-      localStorage.setItem(AUTO_ADVANCE_KEY, 'true');
+      localStorage.setItem(`${AUTO_ADVANCE_KEY}:${TEST_UUID}`, 'true');
       hookReturn = { ...defaultHookReturn, isSolved: true };
       renderPage('p2'); // p2 is the last → no next
 
@@ -410,7 +417,7 @@ describe('TsumegoProblemPage', () => {
     });
 
     it('does NOT auto-advance while unsolved', () => {
-      localStorage.setItem(AUTO_ADVANCE_KEY, 'true');
+      localStorage.setItem(`${AUTO_ADVANCE_KEY}:${TEST_UUID}`, 'true');
       hookReturn = { ...defaultHookReturn, isSolved: false };
       renderPage('p1');
 

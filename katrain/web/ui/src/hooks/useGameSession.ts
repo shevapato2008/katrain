@@ -49,6 +49,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
 
     const playSound = useCallback((sound: string) => {
+        // Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): 'kioskPlaySound'
+        // is deliberately LEFT GLOBAL — a room/environment audio preference, not per-account
+        // activity — see the justification comment at its write site in PvpLocalSetupPage.tsx.
         if (typeof localStorage !== 'undefined' && localStorage.getItem('kioskPlaySound') === '0') return;
         const now = Date.now();
         // Prevent duplicate rapid sounds

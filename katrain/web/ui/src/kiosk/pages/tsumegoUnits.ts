@@ -3,6 +3,8 @@
  * Kept in a non-component module so the unit pages stay react-refresh clean.
  */
 
+import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
+
 /** Problems per unit (matches galaxy D5). */
 export const UNIT_SIZE = 20;
 
@@ -21,13 +23,20 @@ export const sequenceKey = (level: string, category: string) => `kiosk_problems_
 /**
  * localStorage key for the "auto-advance to next problem after solving" preference (D4).
  * Default is ON (true) when unset.
+ *
+ * Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): a per-user workflow
+ * toggle, not a device property — routed through kioskActivityStorage (guest/unresolved ->
+ * in-memory only; real user -> namespaced `${key}:${uuid}`), via the resolved-identity
+ * singleton (same pattern as activeSession.ts — these are read post-mount, never a
+ * synchronous first-paint snapshot, so the singleton's own empty-until-resolved default is
+ * sufficient without per-page useAuth() gating).
  */
 export const AUTO_ADVANCE_KEY = 'kiosk_tsumego_autoadvance';
 
 /** Read the auto-advance preference. Defaults to true when unset / unparseable. */
 export function readAutoAdvance(): boolean {
   try {
-    const v = localStorage.getItem(AUTO_ADVANCE_KEY);
+    const v = getCurrentKioskActivityStorage().getItem(AUTO_ADVANCE_KEY);
     if (v === null) return true; // default ON
     return v === 'true';
   } catch {
@@ -38,7 +47,7 @@ export function readAutoAdvance(): boolean {
 /** Persist the auto-advance preference. */
 export function writeAutoAdvance(enabled: boolean): void {
   try {
-    localStorage.setItem(AUTO_ADVANCE_KEY, enabled ? 'true' : 'false');
+    getCurrentKioskActivityStorage().setItem(AUTO_ADVANCE_KEY, enabled ? 'true' : 'false');
   } catch {
     /* best-effort */
   }
@@ -59,13 +68,18 @@ export function levelChinese(level: string): string {
  * localStorage key for the last difficulty level the user browsed into (hub 上次 highlight).
  * Single string, cheap to store — does NOT reintroduce the deliberately-omitted per-level
  * completion stat (R2 / §3.5): it's just a pointer, not progress data.
+ *
+ * Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): still prior-identity
+ * ACTIVITY residue (which level a specific person was practicing), not a device property — so
+ * it is routed through kioskActivityStorage exactly like AUTO_ADVANCE_KEY above (guest/
+ * unresolved -> in-memory only; real user -> namespaced `${key}:${uuid}`).
  */
 export const LAST_LEVEL_KEY = 'kiosk_tsumego_last_level';
 
 /** Read the last-practiced level, or null if never set / unavailable. */
 export function readLastLevel(): string | null {
   try {
-    return localStorage.getItem(LAST_LEVEL_KEY);
+    return getCurrentKioskActivityStorage().getItem(LAST_LEVEL_KEY);
   } catch {
     return null;
   }
@@ -74,7 +88,7 @@ export function readLastLevel(): string | null {
 /** Persist the last-practiced level. */
 export function writeLastLevel(level: string): void {
   try {
-    localStorage.setItem(LAST_LEVEL_KEY, level);
+    getCurrentKioskActivityStorage().setItem(LAST_LEVEL_KEY, level);
   } catch {
     /* best-effort */
   }
@@ -83,6 +97,12 @@ export function writeLastLevel(level: string): void {
 /**
  * localStorage key for the "use physical board" preference (Phase B / Phase D).
  * Default is OFF (false) — opt-in for physical mode.
+ *
+ * Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): deliberately LEFT
+ * GLOBAL, unlike AUTO_ADVANCE_KEY/LAST_LEVEL_KEY above — this reflects whether a physical
+ * sensor board is actually wired to THIS kiosk unit (a hardware fact of the device), not a
+ * per-account preference or activity residue, so identity-scoping it would be actively wrong
+ * (every identity on this kiosk shares the same physical hardware).
  */
 export const PHYSICAL_MODE_KEY = 'kiosk_tsumego_physical';
 

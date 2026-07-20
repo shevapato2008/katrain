@@ -104,7 +104,9 @@ describe('TsumegoPage', () => {
   });
 
   it('highlights the last-practiced level with a 上次 tag', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '15k');
+    // kiosk_tsumego_last_level is identity-scoped (box-SSO guest mode, R9-F1) — seed the
+    // namespaced key, not the legacy raw one.
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '15k');
     renderPage();
     await waitFor(() => {
       const card = screen.getByTestId('tsumego-level-card-15k');

@@ -35,7 +35,10 @@ const PvpLocalSetupPage = () => {
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
 
-  // Move sound — client-side preference, persisted in localStorage (shared useGameSession.playSound reads it)
+  // Move sound — client-side preference, persisted in localStorage (shared useGameSession.playSound reads it).
+  // Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): deliberately LEFT
+  // GLOBAL — a mute/audio preference tied to the physical kiosk's environment (e.g. a quiet
+  // room), not per-account activity or content, so it carries no identity-linkable residue.
   const [confirmSound, setConfirmSound] = useState(localStorage.getItem('kioskPlaySound') !== '0');
 
   const [loading, setLoading] = useState(false);

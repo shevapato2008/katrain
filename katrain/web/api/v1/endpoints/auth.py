@@ -315,6 +315,9 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Board client unavailable")
+    # A cloud account literally named "guest" must not collapse into the box's
+    # reserved zero-persistence guest identity (see guest-mode spec CRO-1).
+    _reject_reserved_username(body.username)
     remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
     shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username)
     await state.activate(body.generation)

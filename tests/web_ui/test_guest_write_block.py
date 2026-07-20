@@ -834,6 +834,75 @@ async def test_timeout_local_multiplayer_rejects_nonparticipants_but_allows_part
     mock_session.katrain.assert_any_call("timeout")
 
 
+
+# ---------------------------------------------------------------------------
+# `_is_guest_participant` True branch (TES-1, final-review defense-in-depth
+# follow-up): guest genuinely SEATED as a participant. This is the only way
+# to reach the belt-and-suspenders recording guard's True branch at all --
+# the participant-guard tests above seat guest as a NON-participant (e.g.
+# player_w_id=-1), so control never gets past `_require_multiplayer_participant`
+# to exercise this guard. In real deployments guest can never actually be
+# seated (rejected at `/ws/lobby`, so it never enters matchmaking), but this
+# proves the second, independent line of defense also holds on its own: IF a
+# guest ever ends up seated (compound failure), recording is still skipped and
+# zero rows -- for either player -- are ever written.
+# ---------------------------------------------------------------------------
+
+
+def _seat_guest_headers_and_id(full_app):
+    guest_row = _get_or_create_shadow_user(full_app.state.user_repo, GUEST_USERNAME)
+    token = create_access_token(data={"sub": GUEST_USERNAME})
+    return {"Authorization": f"Bearer {token}"}, guest_row["id"]
+
+
+@pytest.mark.asyncio
+async def test_resign_by_seated_guest_participant_skips_recording_and_writes_zero_rows(full_app):
+    seated_guest_headers, guest_id = _seat_guest_headers_and_id(full_app)
+    _, opponent_id, _ = await _create_user_and_login(full_app, "resign-vs-guest")
+
+    mock_session = _mock_multiplayer_session(player_b_id=guest_id, player_w_id=opponent_id)
+    full_app.state.session_manager._sessions[mock_session.session_id] = mock_session
+
+    record_spy = MagicMock(wraps=full_app.state.game_repo.record_multiplayer_game)
+    full_app.state.game_repo.record_multiplayer_game = record_spy
+
+    async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
+        resp = await ac.post(
+            "/api/resign", headers=seated_guest_headers, json={"session_id": mock_session.session_id}
+        )
+
+    assert resp.status_code == 200  # participant check passed -- guest WAS seated
+    mock_session.katrain.assert_any_call("resign")  # the resign mutation itself still runs
+    record_spy.assert_not_called()
+    with _db(full_app)() as db:
+        assert db.query(models_db.UserGame).filter_by(user_id=guest_id).count() == 0
+        assert db.query(models_db.UserGame).filter_by(user_id=opponent_id).count() == 0
+
+
+@pytest.mark.asyncio
+async def test_timeout_by_seated_guest_participant_skips_recording_and_writes_zero_rows(full_app):
+    seated_guest_headers, guest_id = _seat_guest_headers_and_id(full_app)
+    _, opponent_id, _ = await _create_user_and_login(full_app, "timeout-vs-guest")
+
+    mock_session = _mock_multiplayer_session(player_b_id=opponent_id, player_w_id=guest_id)
+    full_app.state.session_manager._sessions[mock_session.session_id] = mock_session
+
+    record_spy = MagicMock(wraps=full_app.state.game_repo.record_multiplayer_game)
+    full_app.state.game_repo.record_multiplayer_game = record_spy
+
+    async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
+        resp = await ac.post(
+            "/api/timeout", headers=seated_guest_headers, json={"session_id": mock_session.session_id}
+        )
+
+    assert resp.status_code == 200
+    mock_session.katrain.assert_any_call("timeout")
+    record_spy.assert_not_called()
+    with _db(full_app)() as db:
+        assert db.query(models_db.UserGame).filter_by(user_id=guest_id).count() == 0
+        assert db.query(models_db.UserGame).filter_by(user_id=opponent_id).count() == 0
+
+
 @pytest.mark.asyncio
 async def test_resign_and_timeout_still_open_for_single_player_session(full_app):
     """Non-multiplayer sessions (both player ids None) are unaffected by the

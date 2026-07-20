@@ -96,6 +96,22 @@ async def test_strict_bridge_bootstrap_returns_generation_bound_local_token(stri
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("username", ["guest", " GUEST "])
+async def test_strict_bridge_bootstrap_rejects_reserved_guest_username(strict_app, username):
+    """CRO-1: a cloud account literally named "guest" (or a normalized variant)
+    must not collapse into the box's reserved zero-persistence guest identity.
+    """
+    async with AsyncClient(
+        transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
+    ) as client:
+        response = await bootstrap(client, generation=1, username=username)
+
+    assert response.status_code == 400
+    assert strict_app.state.user_repo.get_user_by_username(GUEST_USERNAME) is None
+    strict_app.state.remote_client.set_tokens.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_strict_mode_rejects_bad_bridge_secret_and_non_loopback(strict_app):
     async with AsyncClient(
         transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"

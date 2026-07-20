@@ -4,6 +4,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
@@ -46,6 +47,10 @@ import TutorialSectionPage from './pages/TutorialSectionPage';
 
 const KioskRoutes = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  // The shared zero-persistence guest account has literal username "guest";
+  // never surface that raw string in the header — show the localized label.
+  const headerUsername = user?.username === 'guest' ? t('Guest', '访客') : user?.username;
 
   return (
     <Routes>
@@ -61,7 +66,7 @@ const KioskRoutes = () => {
         <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage engineMode /></PhysicalBoardGuard>} />
 
         {/* Standard — with nav rail */}
-        <Route element={<KioskLayout username={user?.username} />}>
+        <Route element={<KioskLayout username={headerUsername} />}>
           <Route index element={<Navigate to="play" replace />} />
           <Route path="play" element={<PlayPage />} />
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />

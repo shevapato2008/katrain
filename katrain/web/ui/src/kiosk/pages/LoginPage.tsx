@@ -1,5 +1,5 @@
-import { useState, type KeyboardEvent } from 'react';
-import { Box, TextField, Button, Typography, Alert, useTheme } from '@mui/material';
+import { useState, useEffect, type KeyboardEvent } from 'react';
+import { Box, TextField, Button, Typography, Alert, CircularProgress, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -8,15 +8,46 @@ import { useTranslation } from '../../hooks/useTranslation';
 // Brand lockup matches the Header (智星盒 / StellaBox) — Newsreader serif, jade console palette.
 const BRAND_SERIF = "'Newsreader','Noto Serif SC',serif";
 
+// Decision B (logout-then-register): in a strict box kiosk there is no local
+// auth form at all — the box identity lives solely in the HttpOnly cookie set
+// by the setup-wizard. Falling through here means that cookie is absent/expired,
+// so send the user to the wizard's launcher gate via a top-level navigation
+// instead of rendering a dead username/password form nobody can submit.
+const SETUP_WIZARD_ORIGIN = import.meta.env.VITE_SETUP_WIZARD_ORIGIN || 'http://127.0.0.1:8080';
+
 const LoginPage = () => {
   const theme = useTheme();
-  const { login } = useAuth();
+  const { login, isStrictBoxKiosk } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isStrictBoxKiosk) {
+      window.location.href = `${SETUP_WIZARD_ORIGIN}/launcher`;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (isStrictBoxKiosk) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const handleLogin = async () => {
     setError('');

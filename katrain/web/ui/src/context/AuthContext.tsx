@@ -17,6 +17,12 @@ interface AuthContextType {
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     token: string | null;
+    // True for the shared zero-persistence `guest` account (box-SSO guest mode).
+    isGuest: boolean;
+    // True only for a kiosk-2d build with VITE_BOX_SSO_STRICT=true — the box
+    // identity lives solely in the HttpOnly cookie and direct login/registration
+    // forms must not be shown; callers redirect to the setup-wizard instead.
+    isStrictBoxKiosk: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -143,8 +149,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
     }, [token]);
 
+    const isGuest = user?.username === 'guest';
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, token }}>
+        <AuthContext.Provider
+            value={{ user, isAuthenticated: !!user, isLoading, login, logout, token, isGuest, isStrictBoxKiosk }}
+        >
             {children}
         </AuthContext.Provider>
     );

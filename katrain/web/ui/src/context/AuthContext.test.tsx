@@ -109,6 +109,23 @@ describe('AuthContext', () => {
     await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
     expect(result.current.user?.username).toBe('testuser');
     expect(window.localStorage.getItem('token')).toBeNull();
+    expect(result.current.isGuest).toBe(false);
+  });
+
+  it('marks the shared zero-persistence guest account as isGuest', async () => {
+    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/v1/auth/me')) {
+        return okJson({ id: 0, username: 'guest', rank: '', credits: 0 });
+      }
+      return okJson({});
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+    expect(result.current.user?.username).toBe('guest');
+    expect(result.current.isGuest).toBe(true);
   });
 
   strictKioskIt('removes the legacy token before the cookie-only bootstrap request', async () => {

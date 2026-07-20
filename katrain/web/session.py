@@ -15,6 +15,7 @@ class WebSession:
     session_id: str
     katrain: WebKaTrain
     user_id: Optional[int] = None  # Primary user (usually for AI play)
+    owner_user_id: Optional[int] = None  # Transient management owner (guest OR real); independent of user_id persistence key
     player_b_id: Optional[int] = None  # For HvH
     player_w_id: Optional[int] = None  # For HvH
     mode: str = "play"  # "play" or "research"

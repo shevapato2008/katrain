@@ -15,6 +15,8 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
 import katrain.web.server as server
+from katrain.web.models import User
+from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 
 # `_record_ai_game` is a closure defined inside `create_app()`; the module-level
 # test hook `server._RECORD_FN` (see server.py, set via `globals()["_RECORD_FN"]
@@ -155,3 +157,184 @@ def test_game_setup_resets_recorded_flag(client):
     assert r.status_code == 200, r.text
 
     assert session._recorded is False
+
+
+# --- Task 3: guest zero-persistence + session-ownership authz -------------
+#
+# Guest sessions must never be attributed (no `user_id` persisted, no AI-game
+# recording), and `delete_session` must gate on *ownership presence*
+# (transient `owner_user_id` OR either multiplayer participant id), not on
+# `mode`. See superpowers/tracks/box-sso-2026-07-13 guest-mode spec, task 3.
+
+GUEST_USER = User(id=999, username="guest")
+
+
+def _as_user(client, user):
+    """Make subsequent requests on `client` resolve `current_user` to `user`
+    (or None for anonymous/no-token) via a dependency override."""
+    client.app.dependency_overrides[get_current_user_optional] = lambda: user
+
+
+def test_guest_play_session_has_no_user_id(client):
+    _as_user(client, GUEST_USER)
+    r = client.post("/api/session", json={})
+    assert r.status_code == 200, r.text
+    assert r.json()["mode"] == "play"
+
+    session = client.app.state.session_manager.get_session(r.json()["session_id"])
+    assert session.user_id is None
+    assert session.owner_user_id == GUEST_USER.id
+
+
+def test_guest_research_session_keeps_research_mode_and_no_user_id(client):
+    _as_user(client, GUEST_USER)
+    r = client.post("/api/session", params={"mode": "research"})
+    assert r.status_code == 200, r.text
+    assert r.json()["mode"] == "research"
+
+    session = client.app.state.session_manager.get_session(r.json()["session_id"])
+    assert session.mode == "research"
+    assert session.user_id is None
+    assert session.owner_user_id == GUEST_USER.id
+
+
+def test_guest_can_delete_own_research_session(client):
+    _as_user(client, GUEST_USER)
+    sid = client.post("/api/session", params={"mode": "research"}).json()["session_id"]
+
+    r = client.delete(f"/api/session/{sid}")
+    assert r.status_code == 200, r.text
+    with pytest.raises(KeyError):
+        client.app.state.session_manager.get_session(sid)
+
+
+def test_guest_cannot_delete_other_users_research_session(client):
+    owner = User(id=1, username="alice")
+    _as_user(client, owner)
+    sid = client.post("/api/session", params={"mode": "research"}).json()["session_id"]
+
+    _as_user(client, GUEST_USER)
+    r = client.delete(f"/api/session/{sid}")
+    assert r.status_code == 403
+
+    client.app.state.session_manager.get_session(sid)  # still exists
+
+
+@pytest.mark.asyncio
+async def test_record_ai_game_noop_for_guest():
+    session = _make_session(both_human=False)
+    app = MagicMock()
+    app.state.repository_dispatcher.user_games_create = AsyncMock(return_value={"id": "g1"})
+    guest_user = types.SimpleNamespace(id=999, username="guest")
+
+    await server._RECORD_FN(session, app, guest_user, "W+R")
+
+    app.state.repository_dispatcher.user_games_create.assert_not_awaited()
+    assert session._recorded is False
+
+
+# --- R3-F6: owner-presence authz matrix (research OR play) -----------------
+
+
+def test_unauthenticated_cannot_delete_owned_session(client):
+    owner = User(id=1, username="alice")
+    _as_user(client, owner)
+    sid = client.post("/api/session", json={}).json()["session_id"]  # mode="play", owned
+
+    _as_user(client, None)
+    r = client.delete(f"/api/session/{sid}")
+    assert r.status_code == 403
+
+    client.app.state.session_manager.get_session(sid)  # still exists
+
+
+def test_user_cannot_delete_other_users_play_session(client):
+    owner = User(id=1, username="alice")
+    other = User(id=2, username="bob")
+    _as_user(client, owner)
+    sid = client.post("/api/session", json={}).json()["session_id"]
+
+    _as_user(client, other)
+    r = client.delete(f"/api/session/{sid}")
+    assert r.status_code == 403
+
+    client.app.state.session_manager.get_session(sid)  # still exists
+
+
+def test_owner_can_delete_own_play_session(client):
+    owner = User(id=1, username="alice")
+    _as_user(client, owner)
+    sid = client.post("/api/session", json={}).json()["session_id"]
+
+    r = client.delete(f"/api/session/{sid}")
+    assert r.status_code == 200, r.text
+    with pytest.raises(KeyError):
+        client.app.state.session_manager.get_session(sid)
+
+
+def test_anonymous_session_freely_deletable(client):
+    # No token at all.
+    _as_user(client, None)
+    sid = client.post("/api/session", json={}).json()["session_id"]
+    r = client.delete(f"/api/session/{sid}")
+    assert r.status_code == 200, r.text
+    with pytest.raises(KeyError):
+        client.app.state.session_manager.get_session(sid)
+
+    # With a token/current_user present too -- ownership presence gates
+    # deletion, not authentication, so an anonymous (no-owner) session stays
+    # freely deletable even by some unrelated authenticated user.
+    _as_user(client, None)
+    sid2 = client.post("/api/session", json={}).json()["session_id"]
+    _as_user(client, User(id=77, username="carol"))
+    r = client.delete(f"/api/session/{sid2}")
+    assert r.status_code == 200, r.text
+    with pytest.raises(KeyError):
+        client.app.state.session_manager.get_session(sid2)
+
+
+# --- R4-F7: multiplayer participant authz matrix ----------------------------
+# `create_multiplayer_session` sets only player_b_id/player_w_id (session.py),
+# never owner_user_id/user_id -- so the delete gate must treat those
+# participant ids as authorized owners too, else an anonymous or guest caller
+# could terminate a live real multiplayer game.
+
+
+def test_anonymous_cannot_delete_multiplayer_session(client):
+    session = client.app.state.session_manager.create_multiplayer_session(player_b_id=1, player_w_id=2)
+    _as_user(client, None)
+
+    r = client.delete(f"/api/session/{session.session_id}")
+    assert r.status_code == 403
+
+    client.app.state.session_manager.get_session(session.session_id)  # still exists
+
+
+def test_guest_cannot_delete_multiplayer_session(client):
+    session = client.app.state.session_manager.create_multiplayer_session(player_b_id=1, player_w_id=2)
+    _as_user(client, GUEST_USER)  # guest, not a participant (ids 1/2)
+
+    r = client.delete(f"/api/session/{session.session_id}")
+    assert r.status_code == 403
+
+    client.app.state.session_manager.get_session(session.session_id)  # still exists
+
+
+def test_nonparticipant_cannot_delete_multiplayer_session(client):
+    session = client.app.state.session_manager.create_multiplayer_session(player_b_id=1, player_w_id=2)
+    _as_user(client, User(id=3, username="carol"))  # real user, not a participant
+
+    r = client.delete(f"/api/session/{session.session_id}")
+    assert r.status_code == 403
+
+    client.app.state.session_manager.get_session(session.session_id)  # still exists
+
+
+def test_participant_can_delete_own_multiplayer_session(client):
+    session = client.app.state.session_manager.create_multiplayer_session(player_b_id=1, player_w_id=2)
+    _as_user(client, User(id=1, username="alice"))  # matches player_b_id
+
+    r = client.delete(f"/api/session/{session.session_id}")
+    assert r.status_code == 200, r.text
+    with pytest.raises(KeyError):
+        client.app.state.session_manager.get_session(session.session_id)

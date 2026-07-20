@@ -593,7 +593,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     logging.getLogger("katrain_web").setLevel(logging.INFO)
 
     app = FastAPI(lifespan=lifespan)
-    from katrain.web.core.box_sso import BoxSSOState
+    from katrain.web.core.box_sso import BoxSSOState, is_guest_user
 
     app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
     app.include_router(api_router, prefix="/api/v1")
@@ -627,12 +627,19 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def create_session(current_user: User = Depends(get_current_user_optional), mode: str = "play"):
         try:
             katago_uuid = current_user.uuid if current_user else None
+            guest = is_guest_user(current_user)
             if mode == "research" and current_user:
-                session = manager.create_research_session(user_id=current_user.id, katago_uuid=katago_uuid)
+                if guest:
+                    session = manager.create_session(katago_uuid=katago_uuid)
+                    session.mode = "research"
+                else:
+                    session = manager.create_research_session(user_id=current_user.id, katago_uuid=katago_uuid)
             else:
                 session = manager.create_session(katago_uuid=katago_uuid)
-                if current_user:
+                if current_user and not guest:
                     session.user_id = current_user.id
+            if current_user:
+                session.owner_user_id = current_user.id  # transient owner: guest OR real
         except Exception as exc:
             logging.getLogger("katrain_web").error(f"API: create_session failed: {exc}")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -642,8 +649,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def delete_session(session_id: str, current_user: User = Depends(get_current_user_optional)):
         try:
             session = manager.get_session(session_id)
-            # Only allow owner to delete research sessions
-            if session.mode == "research" and current_user and session.user_id != current_user.id:
+            # Ownership set = the research/play owner AND both multiplayer participants (R4-F7).
+            owners = set()
+            primary = session.owner_user_id if session.owner_user_id is not None else session.user_id
+            if primary is not None:
+                owners.add(primary)
+            for pid in (getattr(session, "player_b_id", None), getattr(session, "player_w_id", None)):
+                if pid is not None:
+                    owners.add(pid)
+            if owners and (current_user is None or current_user.id not in owners):
                 raise HTTPException(status_code=403, detail="Not authorized")
             manager.remove_session(session_id)
         except KeyError:
@@ -1114,6 +1128,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         Idempotent within a session: the natural (two-pass) game-end hook in `play_move`
         and the resign/count/timeout paths can all race to record the same finished game;
         `session._recorded` ensures only the first successful write actually persists."""
+        if is_guest_user(current_user):
+            return
         if getattr(session, "_recorded", False):
             return
         try:

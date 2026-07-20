@@ -104,7 +104,12 @@ class BoxClearRequest(BaseModel):
 
 
 class GuestBootstrapRequest(BaseModel):
-    generation: int
+    # Intentionally `Any`, not `int`: Pydantic v2 silently coerces a JSON `true`/
+    # `false` to the plain int 1/0 for an `int`-typed field *before* any endpoint
+    # code runs, which would make an `isinstance(..., bool)` guard dead code. By
+    # keeping the raw value untouched here, `_validate_guest_bootstrap_generation`
+    # can reject bool (and any other non-int) with a real 400, not a coerced pass-through.
+    generation: Any
 
 
 async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> User:
@@ -193,6 +198,18 @@ def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
     if user_dict:
         return user_dict
     return repo.create_user(username=username, hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
+
+
+def _validate_guest_bootstrap_generation(generation: Any) -> int:
+    """Reject bool, any non-int, and non-positive values with a 400 (not 422).
+
+    Scoped to /box-sso/guest-bootstrap only -- the pre-existing /box-sso/bootstrap
+    endpoint has the same latent `int`-field coercion pattern but is out of scope
+    for this fix.
+    """
+    if isinstance(generation, bool) or not isinstance(generation, int) or generation <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
+    return generation
 
 
 def _reject_reserved_username(username: str) -> None:
@@ -310,8 +327,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     with accumulated data is never adopted (409). See guest-mode spec R1-F6/R2-F7.
     """
     state = _require_bridge(request)
-    if isinstance(body.generation, bool) or body.generation <= 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
+    generation = _validate_guest_bootstrap_generation(body.generation)
     repo = request.app.state.user_repo
     existing = repo.get_user_by_username(GUEST_USERNAME)
     if existing is not None:
@@ -326,10 +342,10 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None and hasattr(remote_client, "clear_tokens"):
         remote_client.clear_tokens()
-    await state.activate(body.generation)
+    await state.activate(generation)
     return {
         "access_token": create_access_token(
-            data={"sub": shadow_user["username"]}, box_generation=body.generation
+            data={"sub": shadow_user["username"]}, box_generation=generation
         ),
         "token_type": "bearer",
     }

@@ -325,6 +325,52 @@ async def test_guest_bootstrap_clears_remote_tokens(strict_app):
     strict_app.state.remote_client.clear_tokens.assert_called_once_with()
 
 
+# Regression: Pydantic v2 coerces a JSON `true`/`false` to plain int 1/0 for an
+# `int`-typed field *before* any endpoint code runs, which made a post-coercion
+# `isinstance(generation, bool)` guard dead code -- `{"generation": true}` used to
+# mint a 200 token instead of the required 400. `GuestBootstrapRequest.generation`
+# is now `Any`, validated explicitly by `_validate_guest_bootstrap_generation`.
+@pytest.mark.asyncio
+@pytest.mark.parametrize("generation", [True, False])
+async def test_guest_bootstrap_rejects_boolean_generation(strict_app, generation):
+    async with AsyncClient(
+        transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
+    ) as client:
+        response = await guest_bootstrap(client, generation=generation)
+
+    assert response.status_code == 400
+    assert "access_token" not in response.json()
+    strict_app.state.remote_client.clear_tokens.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("generation", ["1", 1.5])
+async def test_guest_bootstrap_rejects_non_int_generation(strict_app, generation):
+    async with AsyncClient(
+        transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
+    ) as client:
+        response = await guest_bootstrap(client, generation=generation)
+
+    assert response.status_code == 400
+    assert "access_token" not in response.json()
+
+
+@pytest.mark.asyncio
+async def test_guest_bootstrap_mints_token_without_remote_client(strict_app):
+    """The `remote_client is not None` guard must not be load-bearing for success."""
+    strict_app.state.remote_client = None
+
+    async with AsyncClient(
+        transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
+    ) as client:
+        response = await guest_bootstrap(client, generation=1)
+
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    assert payload["sub"] == "guest"
+
+
 @pytest.mark.asyncio
 async def test_guest_bootstrap_409_on_non_pristine_guest_row(strict_app):
     repo = strict_app.state.user_repo

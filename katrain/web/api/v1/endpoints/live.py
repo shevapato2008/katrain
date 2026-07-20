@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from katrain.web.live.models import MatchStatus
 from katrain.web.live.translator import get_translator
-from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
+from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional, require_writable_user
 from katrain.web.models import User
 
 router = APIRouter()
@@ -589,7 +589,7 @@ async def create_comment(
     match_id: str,
     request: Request,
     comment_data: CreateCommentRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     live_service=Depends(get_live_service),
 ):
     """Create a new comment on a match.
@@ -637,7 +637,7 @@ async def create_comment(
 async def delete_comment(
     comment_id: int,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
 ):
     """Delete a comment.
 
@@ -718,7 +718,7 @@ class MissingTranslationsResponse(BaseModel):
 @router.post("/translations/learn")
 async def learn_translation(
     request: TranslationRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_writable_user),
 ):
     """Store a new translation in the database.
 

@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_admin_user, get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_admin_user, get_current_user, require_writable_user
 from katrain.web.core import billing
 from katrain.web.core.config import settings
 from katrain.web.core.db import get_db
@@ -94,7 +94,7 @@ async def get_prices(current_user: User = Depends(get_current_user)):
 @router.post("/redeem")
 async def redeem(
     body: RedeemRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_db),
 ):
     if _is_board():

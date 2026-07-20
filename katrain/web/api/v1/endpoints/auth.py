@@ -11,6 +11,7 @@ from katrain.web.core.auth import verify_password, create_access_token, create_r
 from katrain.web.core.box_sso import (
     BRIDGE_KEY_HEADER,
     GUEST_USERNAME,
+    is_guest_user,
     resolve_http_token,
     strict_box_sso_enabled,
 )
@@ -190,6 +191,20 @@ async def get_current_user_optional(
         )
     except HTTPException:
         return None
+
+
+async def require_writable_user(request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)) -> User:
+    """Like `get_current_user`, but 403s the reserved `guest` account.
+
+    The central write-block for guest mode (R2-F1): every per-user HTTP route
+    that persists data swaps its `Depends(get_current_user)` for this instead,
+    so the guest can authenticate (read-only browsing) but can never create a
+    row. See superpowers/tracks/box-sso-2026-07-13 guest-mode spec.
+    """
+    user = await get_current_user(request, token)
+    if is_guest_user(user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Guest is read-only")
+    return user
 
 
 def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
@@ -560,8 +575,11 @@ async def logout(request: Request, response: Response, current_user: User = Depe
             # path); it skips synthetic opponent ids (<=0), so engine games record
             # only the human. NOTE: GameRepository has no `record_game` method --
             # the previous call here always raised AttributeError and recorded nothing.
+            # Guest never persists a result (belt-and-suspenders: the guest cannot
+            # actually reach here since it can't enter the lobby / become a
+            # multiplayer participant, but guard the write anyway).
             game_repo = request.app.state.game_repo
-            if game_repo:
+            if game_repo and not is_guest_user(current_user):
                 try:
                     game_repo.record_multiplayer_game(
                         sgf_content=session.katrain.get_sgf(),

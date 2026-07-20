@@ -1,6 +1,5 @@
 """Tests for auto-saving AI (single-player) games to user_games on game completion."""
 
-import os
 import uuid
 from unittest.mock import MagicMock, patch
 import threading
@@ -9,8 +8,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from katrain.web.core.config import settings
-from katrain.web.core.db import Base
-from katrain.web.server import create_app
+
+from tests.web_ui._helpers import _create_user_and_login
 
 settings.DATABASE_URL = "sqlite:///./test_ai_autosave.db"
 
@@ -28,6 +27,12 @@ def _make_mock_session(user_id, sgf="(;FF[4]SZ[19];B[pd];W[dp])", end_result="B+
     session.sockets = set()
     session.pending_count_request = None
     session.pending_count_timestamp = None
+    # Pre-existing test-fixture bug (unrelated to guest mode): a bare MagicMock()
+    # auto-vivifies ANY attribute access, so `getattr(session, "_recorded", False)`
+    # in `_record_ai_game` never sees the intended False default and the game is
+    # silently never recorded. A real WebSession explicitly initializes this to
+    # False; the fake session double must do the same.
+    session._recorded = False
 
     # Mock katrain
     katrain = MagicMock()
@@ -47,12 +52,19 @@ def _make_mock_session(user_id, sgf="(;FF[4]SZ[19];B[pd];W[dp])", end_result="B+
     black_player.human = True
     black_player.ai = False
     black_player.calculated_rank = None
+    # Same MagicMock-auto-vivification trap as `_recorded` above: `_record_ai_game`
+    # falls back to `sgf_rank` when `calculated_rank` is falsy, via
+    # `getattr(players_info["B"], "sgf_rank", None)` — an unset attribute on a
+    # bare MagicMock() is NOT None, it's a fresh child Mock, which then fails to
+    # bind as a SQL parameter. Must be set explicitly on both sides.
+    black_player.sgf_rank = None
 
     white_player = MagicMock()
     white_player.name = ""
     white_player.human = False
     white_player.ai = True
     white_player.calculated_rank = "5d"
+    white_player.sgf_rank = None
 
     katrain.players_info = {"B": black_player, "W": white_player}
 
@@ -71,54 +83,6 @@ def _make_mock_session(user_id, sgf="(;FF[4]SZ[19];B[pd];W[dp])", end_result="B+
 
     session.katrain = katrain
     return session
-
-
-@pytest.fixture
-def app():
-    if os.path.exists("./test_ai_autosave.db"):
-        os.remove("./test_ai_autosave.db")
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from katrain.web.core.auth import SQLAlchemyUserRepository
-    from katrain.web.core.game_repo import GameRepository
-    from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
-
-    test_engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=test_engine)
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-
-    app = create_app(enable_engine=False)
-    app.state.user_repo = SQLAlchemyUserRepository(TestSessionLocal)
-    app.state.game_repo = GameRepository(TestSessionLocal)
-    app.state.user_game_repo = UserGameRepository(TestSessionLocal)
-    app.state.user_game_analysis_repo = UserGameAnalysisRepository(TestSessionLocal)
-    app.state.report_session_factory = TestSessionLocal
-
-    yield app
-
-    if os.path.exists("./test_ai_autosave.db"):
-        os.remove("./test_ai_autosave.db")
-
-
-async def _create_user_and_login(app, username="testuser"):
-    """Create a user and return (headers, user_id, username)."""
-    unique_name = f"{username}-{uuid.uuid4().hex[:8]}"
-    from passlib.context import CryptContext
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    hashed = pwd_context.hash("password")
-    user = app.state.user_repo.create_user(unique_name, hashed)
-    user_id = user["id"]
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        login_resp = await ac.post(
-            "/api/v1/auth/login",
-            json={"username": unique_name, "password": "password"},
-        )
-        assert login_resp.status_code == 200
-        token = login_resp.json()["access_token"]
-        return {"Authorization": f"Bearer {token}"}, user_id, unique_name
 
 
 @pytest.mark.asyncio

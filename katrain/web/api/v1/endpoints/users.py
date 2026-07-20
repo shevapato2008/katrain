@@ -1,13 +1,13 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.models import User
 
 router = APIRouter()
 
 
 @router.post("/follow/{username}")
-async def follow_user(username: str, request: Request, current_user: User = Depends(get_current_user)) -> Any:
+async def follow_user(username: str, request: Request, current_user: User = Depends(require_writable_user)) -> Any:
     repo = request.app.state.user_repo
     target_user_dict = repo.get_user_by_username(username)
     if not target_user_dict:
@@ -21,7 +21,7 @@ async def follow_user(username: str, request: Request, current_user: User = Depe
 
 
 @router.delete("/follow/{username}")
-async def unfollow_user(username: str, request: Request, current_user: User = Depends(get_current_user)) -> Any:
+async def unfollow_user(username: str, request: Request, current_user: User = Depends(require_writable_user)) -> Any:
     repo = request.app.state.user_repo
     target_user_dict = repo.get_user_by_username(username)
     if not target_user_dict:

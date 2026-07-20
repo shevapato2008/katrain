@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import TsumegoProblem, UserTsumegoProgress
 from katrain.web.core.tsumego_progress_repo import merge_tsumego_progress
-from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
+from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional, require_writable_user
 from katrain.web.models import User
 
 logger = logging.getLogger(__name__)
@@ -323,7 +323,7 @@ async def update_progress(
     request: Request,
     problem_id: str,
     data: ProgressUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_db),
 ):
     """Update user's progress on a specific problem."""

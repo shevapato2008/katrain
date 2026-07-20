@@ -5,7 +5,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from katrain.web.models import User
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.api.v1.endpoints.reports import _dispatch_remote_only
 
 router = APIRouter()
@@ -88,7 +88,7 @@ async def list_user_games(
 async def create_user_game(
     request: Request,
     game_in: UserGameCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
 ):
     # Board mode: route through dispatcher (online → remote, offline → local + sync queue)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
@@ -147,7 +147,7 @@ async def update_user_game(
     request: Request,
     game_id: str,
     game_in: UserGameUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
 ):
     repo = request.app.state.user_game_repo
     try:
@@ -173,7 +173,7 @@ async def update_user_game(
 async def delete_user_game(
     request: Request,
     game_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
 ):
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
@@ -240,7 +240,7 @@ async def save_analysis_from_session(
     request: Request,
     game_id: str,
     body: SaveAnalysisRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
 ):
     """Extract analysis from an active research session and persist to user_game_analysis."""
     # Verify game ownership

@@ -10,10 +10,12 @@ from pydantic import BaseModel
 from katrain.web.core.auth import verify_password, create_access_token, create_refresh_token
 from katrain.web.core.box_sso import (
     BRIDGE_KEY_HEADER,
+    GUEST_USERNAME,
     resolve_http_token,
     strict_box_sso_enabled,
 )
 from katrain.web.core.config import settings
+from katrain.web.core import models_db
 from katrain.web.models import User, UserInDB
 
 logger = logging.getLogger("katrain_web")
@@ -98,6 +100,10 @@ class BoxBootstrapRequest(BaseModel):
 
 
 class BoxClearRequest(BaseModel):
+    generation: int
+
+
+class GuestBootstrapRequest(BaseModel):
     generation: int
 
 
@@ -189,6 +195,70 @@ def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
     return repo.create_user(username=username, hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
 
 
+def _reject_reserved_username(username: str) -> None:
+    """Nobody may register or log in directly as the reserved guest account."""
+    if (username or "").strip().lower() == GUEST_USERNAME:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
+
+
+def _guest_row_has_data(repo: Any, user_id: int) -> bool:
+    """True if the existing `guest` row is NOT pristine (R2-F7 / R3-F5 / R4-F6 / R5-F4).
+
+    A closed, explicit contract over the real SQLAlchemy models: covers every
+    user-FK table (owned rows), one attributable non-FK column (sync_queue,
+    a String not a FK), and the named User profile fields compared to their
+    exact real defaults -- NOT "any field diverging" (uuid/timestamps legitimately
+    differ) and NOT "any counter == 0" (credits defaults to 10000, not 0).
+    """
+    session = repo.session_factory()
+    try:
+        user = session.query(models_db.User).filter(models_db.User.id == user_id).first()
+        if user is None:
+            return False
+        if (
+            user.rank != "20k"
+            or user.net_wins != 0
+            or user.elo_points != 0
+            or user.credits != 10000
+            or user.is_admin is not False
+            or user.avatar_url is not None
+        ):
+            return True
+
+        owned_row_queries = [
+            session.query(models_db.UserGame).filter(models_db.UserGame.user_id == user_id),
+            session.query(models_db.UserGameAnalysis)
+            .join(models_db.UserGame, models_db.UserGameAnalysis.game_id == models_db.UserGame.id)
+            .filter(models_db.UserGame.user_id == user_id),
+            session.query(models_db.UserTsumegoProgress).filter(
+                models_db.UserTsumegoProgress.user_id == user_id
+            ),
+            session.query(models_db.UserTutorialProgress).filter(
+                models_db.UserTutorialProgress.user_id == user_id
+            ),
+            session.query(models_db.RatingHistory).filter(models_db.RatingHistory.user_id == user_id),
+            session.query(models_db.Relationship).filter(models_db.Relationship.follower_id == user_id),
+            session.query(models_db.Relationship).filter(models_db.Relationship.following_id == user_id),
+            session.query(models_db.LiveCommentDB).filter(models_db.LiveCommentDB.user_id == user_id),
+            session.query(models_db.ReportTask).filter(models_db.ReportTask.user_id == user_id),
+            session.query(models_db.ReportTaskMove)
+            .join(models_db.ReportTask, models_db.ReportTaskMove.task_id == models_db.ReportTask.id)
+            .filter(models_db.ReportTask.user_id == user_id),
+            session.query(models_db.PlatformGameDB).filter(models_db.PlatformGameDB.user_id == user_id),
+            session.query(models_db.CreditTransaction).filter(models_db.CreditTransaction.user_id == user_id),
+            # R4-F6: two distinct user FKs on RechargeOrder -- both must be checked.
+            session.query(models_db.RechargeOrder).filter(models_db.RechargeOrder.user_id == user_id),
+            session.query(models_db.RechargeOrder).filter(models_db.RechargeOrder.confirmed_by == user_id),
+            session.query(models_db.RedeemCode).filter(models_db.RedeemCode.used_by == user_id),
+            # R4-F6: SyncQueueEntry.user_id is a String(64), not an FK, but still
+            # guest-attributable state -- must be checked too.
+            session.query(models_db.SyncQueueEntry).filter(models_db.SyncQueueEntry.user_id == str(user_id)),
+        ]
+        return any(query.first() is not None for query in owned_row_queries)
+    finally:
+        session.close()
+
+
 def _require_bridge(request: Request) -> Any:
     if not strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -233,10 +303,43 @@ async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
     return {"ok": True}
 
 
+@router.post("/box-sso/guest-bootstrap")
+async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest) -> Any:
+    """Mint a LOCAL katrain JWT for the reserved `guest` account (no remote/cloud
+    tokens). Guarded by a pristine-row check so a legacy real `guest` shadow row
+    with accumulated data is never adopted (409). See guest-mode spec R1-F6/R2-F7.
+    """
+    state = _require_bridge(request)
+    if isinstance(body.generation, bool) or body.generation <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
+    repo = request.app.state.user_repo
+    existing = repo.get_user_by_username(GUEST_USERNAME)
+    if existing is not None:
+        # R2-F7: a legacy real "guest" (board-mode shadow) also has the sentinel hash;
+        # only adopt a PRISTINE row. Any accumulated personalization -> fail closed.
+        if existing.get("hashed_password") != SHADOW_USER_NO_LOCAL_AUTH or _guest_row_has_data(
+            repo, existing["id"]
+        ):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="guest identity conflict")
+    shadow_user = _get_or_create_shadow_user(repo, GUEST_USERNAME)
+    # Defensive: guest must never carry a prior real session's cloud credentials.
+    remote_client = getattr(request.app.state, "remote_client", None)
+    if remote_client is not None and hasattr(remote_client, "clear_tokens"):
+        remote_client.clear_tokens()
+    await state.activate(body.generation)
+    return {
+        "access_token": create_access_token(
+            data={"sub": shadow_user["username"]}, box_generation=body.generation
+        ),
+        "token_type": "bearer",
+    }
+
+
 @router.post("/login", response_model=Token)
 async def login(request: Request, login_data: LoginRequest, response: Response) -> Any:
     if strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct login disabled")
+    _reject_reserved_username(login_data.username)
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:
@@ -328,6 +431,7 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
 async def register(request: Request, register_data: LoginRequest) -> Any:
     if strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct registration disabled")
+    _reject_reserved_username(register_data.username)
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:

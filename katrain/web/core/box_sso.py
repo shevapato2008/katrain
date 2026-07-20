@@ -12,6 +12,15 @@ BRIDGE_KEY_HEADER = "x-smartbox-bridge-key"
 GO_COOKIE_NAME = "sb_go_token"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1"}
 
+# Reserved local account for guest mode (see superpowers/tracks/box-sso-2026-07-13
+# guest-mode spec). Nobody may register or log in as this username directly --
+# only the guest-bootstrap bridge endpoint may mint tokens for it.
+GUEST_USERNAME = "guest"
+
+
+def is_guest_user(user: Any) -> bool:
+    return user is not None and getattr(user, "username", None) == GUEST_USERNAME
+
 
 def strict_box_sso_enabled() -> bool:
     return settings.KATRAIN_MODE == "board" and settings.KATRAIN_BOX_SSO

@@ -301,6 +301,24 @@ describe('TsumegoProgressProvider — first-paint race (unresolved identity)', (
     expect(result.current.isCompleted('p2')).toBe(false);
   });
 
+  it('THE precise race guard: stays empty even when `user` already carries a resolved uuid, as long as isLoading is still true', () => {
+    // AuthContext's CURRENT contract happens to always pair isLoading=true with user=null, so
+    // an implementation that keys ONLY off `identityKey == null` (and ignores `isLoading`
+    // entirely) would accidentally pass every other test in this file too. This test isolates
+    // the isLoading-specific guard from that coincidence: it simulates a hypothetical (but
+    // plausible future) AuthContext that optimistically restores a cached `user` object before
+    // the `/me` probe has actually confirmed it. If TsumegoProgressProvider's useState
+    // initializer keyed off identityKey alone, this would read Alice's namespaced data on
+    // first paint despite isLoading still being true — the isLoading check is what stops it.
+    seedNamespaced(ALICE, { p1: { completed: true, attempts: 1 } });
+    mockUseAuth.mockReturnValue({ token: null, user: { uuid: ALICE, username: 'alice' }, isGuest: false, isLoading: true });
+
+    const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+
+    expect(result.current.progress).toEqual({});
+    expect(result.current.isCompleted('p1')).toBe(false);
+  });
+
   it('stays empty and never fetches while unresolved, then hydrates once resolved to Alice', async () => {
     seedNamespaced(ALICE, { p1: { completed: true, attempts: 1 } });
     mockUseAuth.mockReturnValue(unresolvedAuth());

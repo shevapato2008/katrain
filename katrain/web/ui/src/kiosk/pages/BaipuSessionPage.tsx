@@ -14,6 +14,8 @@ import {
 import { LedAPI, type LedColor } from '../../api/ledApi';
 import { LED_HEX } from '../constants/ledColors';
 import { useImmersive } from '../context/ImmersiveContext';
+import { useAuth } from '../../context/AuthContext';
+import { kioskActivityStorage } from '../storage/kioskActivityStorage';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
@@ -147,6 +149,18 @@ const BaipuSessionPage = () => {
   const theme = useTheme();
   const { setImmersive } = useImmersive();
 
+  // Box-SSO guest mode (client-side zero-persistence, 4th layer): `sgf` (below) is read
+  // SYNCHRONOUSLY at first paint via useMemo, before AuthContext's async /me probe may have
+  // resolved — so the store used there MUST be empty (identityKey=null) while isLoading,
+  // exactly like TsumegoProgressContext/BaipuListPage. `store` is memoized on the resolved
+  // identity signature so every cache read/write in this component stays consistently scoped.
+  const { user, isGuest, isLoading } = useAuth();
+  const identityKey = user?.uuid ?? null;
+  const store = useMemo(
+    () => kioskActivityStorage(isLoading || isGuest ? null : identityKey, isGuest),
+    [isLoading, isGuest, identityKey],
+  );
+
   // Full-screen session view — hide the kiosk Header + Dock like ResearchPage;
   // this page already has its own 退出 button + confirm dialog (below).
   useEffect(() => {
@@ -172,12 +186,15 @@ const BaipuSessionPage = () => {
   const initialCapturedRef = useRef(false);
   const mountedRef = useRef(true);
 
-  // Resolve SGF: fresh navigation state first, then the offline localStorage cache.
+  // Resolve SGF: fresh navigation state first, then the offline cache (identity-scoped —
+  // empty while isLoading/guest, so this can never surface a prior real user's cached SGF;
+  // `store` in the deps re-runs this once identity resolves, since the useMemo above only
+  // captures its FIRST value otherwise).
   const sgf = useMemo(() => {
     const navSgf = (location.state as { sgf?: string } | null)?.sgf;
     if (navSgf) return navSgf;
-    return getCachedSgf(source)?.sgf ?? null;
-  }, [location.state, source]);
+    return getCachedSgf(source, store)?.sgf ?? null;
+  }, [location.state, source, store]);
 
   // Load per-step truth from the backend engine. (The "no SGF" case is rendered
   // directly below — no effect-driven setState needed.)
@@ -190,7 +207,7 @@ const BaipuSessionPage = () => {
         setSteps(resp.steps);
         setBoardSize(resp.board_size);
         setMeta(resp.meta);
-        const prog = getProgress(source);
+        const prog = getProgress(source, store);
         if (prog && prog.k > 0 && prog.k < resp.steps.length) {
           setResumePrompt(prog.k); // ask continue vs restart
         }
@@ -202,7 +219,7 @@ const BaipuSessionPage = () => {
         setPhase('error');
       });
     return () => { cancelled = true; };
-  }, [sgf, source]);
+  }, [sgf, source, store]);
 
   const currentStep: BaipuStep | undefined = steps[k];
   const isPlaceable = !!currentStep && currentStep.kind !== 'pass' && currentStep.kind !== 'clear';
@@ -217,11 +234,11 @@ const BaipuSessionPage = () => {
   const advance = useCallback(() => {
     setK((prev) => {
       const next = prev + 1;
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() }, store);
       setPhase(next >= steps.length ? 'done' : 'guiding');
       return next;
     });
-  }, [source, steps.length]);
+  }, [source, steps.length, store]);
 
   // 带灯拍: trust the operator confirmation, then light-next + photo on the backend. Falls back
   // to a plain advance when capture isn't enabled (404, dev/screen-only mode).
@@ -331,7 +348,7 @@ const BaipuSessionPage = () => {
     setUndoOpen(false);
     setK((prev) => {
       const next = Math.max(0, prev - 1);
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() }, store);
       return next;
     });
     setPhase('guiding');
@@ -555,7 +572,7 @@ const BaipuSessionPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => {
-            clearProgress(source);
+            clearProgress(source, store);
             setOverwriteExisting(true);
             setFrameCount(0);
             setLatestSavedFile(null);

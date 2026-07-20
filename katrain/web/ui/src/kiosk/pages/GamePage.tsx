@@ -23,6 +23,7 @@ import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, ty
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
+import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -608,7 +609,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             if (!sessionId) return;
             try {
               const { sgf } = await API.saveSGF(sessionId);
-              sessionStorage.setItem('kioskReviewSgf', sgf);
+              // Box-SSO guest mode (client-side zero-persistence, 4th layer): routed through
+              // the identity-scoped singleton — a guest's SGF handoff stays in-memory only,
+              // never reaching sessionStorage/localStorage; a real user's is namespaced.
+              getCurrentKioskActivityStorage().setItem('kioskReviewSgf', sgf);
               navigate('/kiosk/research');
             } catch (e) { console.error(e); setReviewError(true); }
           }}

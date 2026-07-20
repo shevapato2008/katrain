@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { readLocalProgress } from '../../context/TsumegoProgressContext';
 
 interface ProgressData {
   completed: boolean;
@@ -92,15 +93,9 @@ const TsumegoUnitsPage = () => {
         setLoading(false);
       });
 
-    // Load progress from localStorage
-    const stored = localStorage.getItem('tsumego_progress');
-    if (stored) {
-      try {
-        setProgress(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to parse stored progress', e);
-      }
-    }
+    // Load progress from the identity-scoped cache (box-SSO guest mode, R9-F1): see
+    // TsumegoListPage.tsx for why the raw `tsumego_progress` key is no longer read directly.
+    setProgress(readLocalProgress());
 
     // If logged in, also fetch from server
     if (user && token) {

@@ -1,9 +1,15 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { API } from '../api';
+import { setKioskIdentity } from '../kiosk/storage/kioskActivityStorage';
 
 // Define User type matching backend response
 interface User {
     id: number;
+    // Stable per-account identity key (assigned at registration; never reused). This is the
+    // ONLY identity key the client-side storage isolation shim (kioskActivityStorage) trusts
+    // to namespace localStorage — `id` is not used for that because it is not guaranteed
+    // stable across the box-SSO / cross-platform identity paths the way `uuid` is.
+    uuid?: string;
     username: string;
     rank: string;
     credits: number;
@@ -150,6 +156,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [token]);
 
     const isGuest = user?.username === 'guest';
+
+    // Push the resolved identity into the kiosk storage-isolation singleton — but ONLY once
+    // resolved (never while isLoading). This is what lets provider-less/module-level call
+    // sites (activeSession.ts, the TsumegoProgressContext default value, baipuApi.ts) inherit
+    // "empty until resolved" for free: until this fires, kioskActivityStorage's singleton
+    // stays on its own safe ephemeral default, so no read there can ever surface a prior
+    // real user's (or the legacy unscoped) data during the first-paint window.
+    useEffect(() => {
+        if (isLoading) return;
+        setKioskIdentity(isGuest ? null : (user?.uuid ?? null), isGuest);
+    }, [isLoading, isGuest, user]);
 
     return (
         <AuthContext.Provider

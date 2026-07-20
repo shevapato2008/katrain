@@ -29,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../../api/userGamesApi';
+import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 
 // Minimal shape of a KataGo quick-analyze moveInfo entry (API.quickAnalyze returns `any`).
 interface QuickAnalyzeMoveInfo {
@@ -432,10 +433,14 @@ const ResearchPage = () => {
     // The 对局历史 deep link (?user_game_id, effect below) owns loading in that flow —
     // don't also replay a live-SGF handoff, or both would race to seed the board.
     if (searchParams.get('user_game_id')) return;
-    const sgf = sessionStorage.getItem('kioskReviewSgf');
+    // Box-SSO guest mode (client-side zero-persistence, 4th layer): identity-scoped — a
+    // guest's handoff (or GamePage's write before it) never touched real storage, so this
+    // read is correctly empty for a guest; a real user's is namespaced.
+    const store = getCurrentKioskActivityStorage();
+    const sgf = store.getItem('kioskReviewSgf');
     if (!sgf) return;
     reviewSgfLoadedRef.current = true;
-    sessionStorage.removeItem('kioskReviewSgf');
+    store.removeItem('kioskReviewSgf');
     board.loadFromSGF(sgf);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -82,18 +82,26 @@ const { get } = vi.hoisted(() => ({
 vi.mock('../../api/userGamesApi', () => ({ UserGamesAPI: { get, list: vi.fn() } }));
 
 import ResearchPage from './ResearchPage';
+import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
-beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  sessionStorage.clear();
+  localStorage.clear();
+  __resetKioskActivityStorageForTests();
+});
 
 const renderAt = (path: string) =>
   render(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={[path]}><ResearchPage /></MemoryRouter></ThemeProvider>);
 
 describe('ResearchPage local-play review entry', () => {
-  it('loads SGF handed off via sessionStorage (复盘本局)', async () => {
-    sessionStorage.setItem('kioskReviewSgf', '(;GM[1]FF[4])');
+  it('loads SGF handed off via the identity-scoped storage (复盘本局)', async () => {
+    // Box-SSO guest mode (client-side zero-persistence, 4th layer): the handoff is routed
+    // through the identity-scoped singleton, not raw sessionStorage directly.
+    getCurrentKioskActivityStorage().setItem('kioskReviewSgf', '(;GM[1]FF[4])');
     renderAt('/kiosk/research');
     await waitFor(() => expect(loadFromSGF).toHaveBeenCalledWith('(;GM[1]FF[4])'));
-    expect(sessionStorage.getItem('kioskReviewSgf')).toBeNull();
+    expect(getCurrentKioskActivityStorage().getItem('kioskReviewSgf')).toBeNull();
   });
 
   it('loads a recorded game by ?user_game_id', async () => {

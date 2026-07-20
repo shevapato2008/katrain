@@ -26,7 +26,7 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
 
-const meResponse = { id: 1, username: 'testuser', rank: '1d', credits: 100 };
+const meResponse = { id: 1, uuid: 'test-uuid-1234', username: 'testuser', rank: '1d', credits: 100 };
 
 const okJson = (body: unknown): Promise<Response> =>
   Promise.resolve({ ok: true, json: async () => body } as Response);
@@ -110,6 +110,19 @@ describe('AuthContext', () => {
     expect(result.current.user?.username).toBe('testuser');
     expect(window.localStorage.getItem('token')).toBeNull();
     expect(result.current.isGuest).toBe(false);
+  });
+
+  it('exposes the backend-assigned uuid on the resolved user (the kiosk storage-isolation identity key)', async () => {
+    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/v1/auth/me')) return okJson(meResponse);
+      return okJson({});
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+    expect(result.current.user?.uuid).toBe('test-uuid-1234');
   });
 
   it('marks the shared zero-persistence guest account as isGuest', async () => {

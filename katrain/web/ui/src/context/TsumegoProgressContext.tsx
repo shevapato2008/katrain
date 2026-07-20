@@ -1,19 +1,39 @@
 /**
- * TsumegoProgressContext — unified, account-scoped tsumego progress source (shared zone).
+ * TsumegoProgressContext — unified, IDENTITY-SCOPED tsumego progress source (shared zone).
  *
  * Single READ source for every layer (level / category / unit / card): the provider loads
- * localStorage('tsumego_progress') synchronously on mount, then (if logged in) merges the
+ * the current identity's cache synchronously on mount, then (if logged in) merges the
  * server's GET /progress field-by-field. All aggregate counts are computed locally from this
  * one map — no per-page fetch, no backend aggregation endpoint.
  *
- * WRITE: markProgress() does an immediate field-level localStorage merge (live UI cache) and,
- * when a token is present, fires TsumegoAPI.saveProgress fire-and-forget (offline is handled
+ * WRITE: markProgress() does an immediate field-level cache merge (live UI cache) and, when a
+ * token is present, fires TsumegoAPI.saveProgress fire-and-forget (offline is handled
  * server-side via local-write + sync queue in board mode).
  *
+ * Client-side zero-persistence (box-SSO guest mode, 4th layer, R9-F1): the cache is no longer
+ * a single global `localStorage['tsumego_progress']` key. It is routed through
+ * `kioskActivityStorage`, identity-scoped by `user.uuid`:
+ *   - a guest (or any UNRESOLVED identity — see below) gets an in-memory-only namespace:
+ *     nothing it reads can be a prior real user's data, nothing it writes ever reaches disk.
+ *   - a real user gets `localStorage` under `tsumego_progress:${user.uuid}`.
+ *
+ * THE FIRST-PAINT RACE: this provider's `useState` initializer runs SYNCHRONOUSLY at mount
+ * (so first paint already has cached progress), but AuthContext resolves identity
+ * ASYNCHRONOUSLY (`isLoading` starts true, flips false only after the `/me` probe settles).
+ * The initializer therefore MUST NOT read any real localStorage key while `isLoading` is
+ * still true — doing so would let a guest's first paint observe whatever the PREVIOUS
+ * identity (or the legacy unscoped key) last wrote, since decision-B guest entry only
+ * navigates the browser rather than restarting the chromium process. The fix: the
+ * initializer returns `{}` unconditionally while `isLoading`, and a resolution effect
+ * (re)hydrates — and, for a real user, migrates the legacy unscoped key exactly once — the
+ * moment identity settles (or changes, e.g. Alice -> guest -> Alice).
+ *
  * R3 safety: the DEFAULT context value (rendered WITHOUT a Provider, e.g. in tests) still
- * performs the localStorage field-merge in markProgress via the shared pure helper, but skips
- * in-memory state + server. This guarantees localStorage persistence is never lost even when
- * the Provider is absent, and the consuming hook never crashes for lack of a Provider.
+ * performs the cache field-merge in markProgress via the shared pure helper (routed through
+ * the kioskActivityStorage resolved-identity singleton, which defaults to the same safe
+ * ephemeral store until AuthContext explicitly resolves a real identity), but skips
+ * in-memory state + server. This guarantees the consuming hook never crashes for lack of a
+ * Provider, and never leaks/persists before identity is known either.
  */
 
 import {
@@ -28,6 +48,12 @@ import {
 } from 'react';
 import { useAuth } from './AuthContext';
 import { TsumegoAPI, type TsumegoProgressEntry } from '../api/tsumegoApi';
+import {
+  kioskActivityStorage,
+  getCurrentKioskActivityStorage,
+  migrateLegacyActivityKey,
+  type KioskActivityStorage,
+} from '../kiosk/storage/kioskActivityStorage';
 
 export type { TsumegoProgressEntry } from '../api/tsumegoApi';
 
@@ -78,10 +104,18 @@ export function mergeProgressEntry(
   };
 }
 
-/** Read the full progress map from localStorage (safe — never throws). */
-export function readLocalProgress(): TsumegoProgressMap {
+/**
+ * Read the full progress map from the given identity-scoped store (safe — never throws).
+ * Defaults to the kioskActivityStorage resolved-identity singleton, which is itself safe by
+ * default (ephemeral, in-memory) until AuthContext explicitly resolves a real identity — see
+ * module doc. Pass an explicit `store` (as the Provider below does) when the caller already
+ * knows the current identity synchronously and cannot wait for the singleton to catch up.
+ */
+export function readLocalProgress(
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): TsumegoProgressMap {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = store.getItem(STORAGE_KEY);
     if (!stored) return {};
     const parsed = JSON.parse(stored);
     return parsed && typeof parsed === 'object' ? (parsed as TsumegoProgressMap) : {};
@@ -91,16 +125,20 @@ export function readLocalProgress(): TsumegoProgressMap {
 }
 
 /**
- * Field-merge one entry into the localStorage map and persist it.
+ * Field-merge one entry into the identity-scoped map and persist it.
  * Returns the merged entry (so the caller can also update in-memory state).
  * This is the pure write used by BOTH the default context and the provider.
  */
-export function writeLocalProgress(id: string, incoming: TsumegoProgressEntry): TsumegoProgressEntry {
-  const map = readLocalProgress();
+export function writeLocalProgress(
+  id: string,
+  incoming: TsumegoProgressEntry,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): TsumegoProgressEntry {
+  const map = readLocalProgress(store);
   const merged = mergeProgressEntry(map[id], incoming);
   map[id] = merged;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    store.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
     // best-effort cache; ignore quota/serialization failures
   }
@@ -135,7 +173,7 @@ function entryFromMark(input: MarkProgressInput): TsumegoProgressEntry {
 
 export interface TsumegoProgressContextValue {
   progress: TsumegoProgressMap;
-  /** Write progress for one problem: localStorage always, in-memory + server only under Provider. */
+  /** Write progress for one problem: cache always, in-memory + server only under Provider. */
   markProgress: (id: string, input: MarkProgressInput) => void;
   isCompleted: (id: string) => boolean;
   unitProgress: (ids: string[]) => { completed: number; total: number };
@@ -144,14 +182,17 @@ export interface TsumegoProgressContextValue {
 }
 
 /**
- * DEFAULT value (no Provider). markProgress still persists to localStorage via the shared
- * pure helper, but does NOT touch in-memory state or the server. Aggregates read live from
- * localStorage so they remain correct without a Provider.
+ * DEFAULT value (no Provider). markProgress still persists via the shared pure helper (routed
+ * through the resolved-identity singleton — safe/ephemeral until AuthContext resolves a real
+ * identity), but does NOT touch in-memory state or the server. Aggregates read live from the
+ * current identity's cache so they remain correct without a Provider.
  */
 const defaultContextValue: TsumegoProgressContextValue = {
   progress: {},
   markProgress: (id, input) => {
-    // R3 safety: localStorage persistence must survive even without a Provider.
+    // R3 safety: cache persistence must survive even without a Provider — but never before
+    // (or across) identity resolution; see the resolved-identity singleton in
+    // kioskActivityStorage.ts.
     writeLocalProgress(id, entryFromMark(input));
   },
   isCompleted: (id) => !!readLocalProgress()[id]?.completed,
@@ -171,21 +212,38 @@ const TsumegoProgressContext = createContext<TsumegoProgressContextValue>(defaul
 // ============ Provider ============
 
 export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) => {
-  const { token } = useAuth();
+  const { token, user, isGuest, isLoading } = useAuth();
+  const identityKey = user?.uuid ?? null;
 
-  // Synchronous initial load from localStorage (so first paint already has cached progress).
-  const [progress, setProgress] = useState<TsumegoProgressMap>(() => readLocalProgress());
+  // "Resolved identity" signature — null while genuinely unresolved (isLoading, or no
+  // identity at all). Only ever changes when the ACTUAL resolved identity changes (guest vs
+  // "user:<uuid>"), so effects below don't re-fire on every unrelated re-render.
+  const signature = isLoading ? null : isGuest ? 'guest' : identityKey ? `user:${identityKey}` : null;
+
+  // Synchronous first-paint init: MUST be empty while identity is unresolved (isLoading) —
+  // this is the load-bearing race guard described in the module doc. Passing
+  // identityKey=null whenever isLoading forces kioskActivityStorage's ephemeral branch
+  // regardless of what identityKey/isGuest eventually resolve to, so the very first render
+  // can never surface a prior real user's (or the legacy unscoped) data.
+  const [progress, setProgress] = useState<TsumegoProgressMap>(() =>
+    isLoading ? {} : readLocalProgress(kioskActivityStorage(isGuest ? null : identityKey, isGuest)),
+  );
+
+  // The store backing the CURRENT resolved identity. Starts on the same safe ephemeral
+  // default as the useState initializer above; only ever replaced by the resolution effect.
+  const storeRef = useRef<KioskActivityStorage>(kioskActivityStorage(null, false));
+  const resolvedSignatureRef = useRef<string | null>(null);
 
   // Guard against double server-fetch (e.g. React StrictMode) for the same token.
   const fetchedTokenRef = useRef<string | null>(null);
 
-  const fetchAndMerge = useCallback((authToken: string) => {
+  const fetchAndMerge = useCallback((authToken: string, store: KioskActivityStorage) => {
     TsumegoAPI.getProgress(authToken)
       .then((serverMap) => {
         setProgress((prev) => {
           const merged = mergeProgressMaps(prev, serverMap);
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            store.setItem(STORAGE_KEY, JSON.stringify(merged));
           } catch {
             // best-effort cache
           }
@@ -193,25 +251,51 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
         });
       })
       .catch(() => {
-        // offline / unauthorized — keep localStorage-only progress
+        // offline / unauthorized — keep the local-only progress
       });
   }, []);
 
+  // Resolve / (re)hydrate / migrate exactly once per identity signature change, and refetch
+  // whenever the token changes under a resolved identity. Never runs while `signature` is
+  // null (i.e. while isLoading, or with no identity at all) — that is what keeps the
+  // first-paint window empty: `progress` simply stays at the `{}` the initializer produced.
   useEffect(() => {
+    if (signature === null) return;
+
+    let store = storeRef.current;
+    if (resolvedSignatureRef.current !== signature) {
+      resolvedSignatureRef.current = signature;
+      store = kioskActivityStorage(isGuest ? null : identityKey, isGuest);
+      storeRef.current = store;
+
+      // Legacy migration — real, resolved identity ONLY. Guests must never migrate: they
+      // must not read, consume, or delete the legacy unscoped key.
+      if (!isGuest && identityKey) {
+        migrateLegacyActivityKey(store, STORAGE_KEY);
+      }
+
+      // Synchronizing React state with an external store (identity-scoped storage) on an
+      // identity change is exactly what this effect is for — there is no render-time
+      // equivalent, since `store` itself is only known once identity resolves.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProgress(readLocalProgress(store));
+      fetchedTokenRef.current = null; // force a refetch under the (possibly new) store below
+    }
+
     if (!token) {
       fetchedTokenRef.current = null;
       return;
     }
     if (fetchedTokenRef.current === token) return;
     fetchedTokenRef.current = token;
-    fetchAndMerge(token);
-  }, [token, fetchAndMerge]);
+    fetchAndMerge(token, store);
+  }, [signature, isGuest, identityKey, token, fetchAndMerge]);
 
   const markProgress = useCallback(
     (id: string, input: MarkProgressInput) => {
       const incoming = entryFromMark(input);
-      // 1) localStorage live write (field-merge) — immediate cache for UI/offline.
-      const merged = writeLocalProgress(id, incoming);
+      // 1) identity-scoped cache write (field-merge) — immediate cache for UI/offline.
+      const merged = writeLocalProgress(id, incoming, storeRef.current);
       // 2) in-memory state update with the same merged entry.
       setProgress((prev) => ({ ...prev, [id]: merged }));
       // 3) server fire-and-forget (only when authenticated). Offline handled server-side.
@@ -221,7 +305,7 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
           { completed: input.completed, attempts: input.attempts, lastDuration: input.lastDuration },
           token,
         ).catch(() => {
-          // swallow — offline/queued server-side; localStorage already holds the truth
+          // swallow — offline/queued server-side; the cache already holds the truth
         });
       }
     },
@@ -229,9 +313,9 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
   );
 
   const refresh = useCallback(() => {
-    // Re-sync from localStorage + server.
-    setProgress((prev) => mergeProgressMaps(prev, readLocalProgress()));
-    if (token) fetchAndMerge(token);
+    // Re-sync from the identity-scoped cache + server.
+    setProgress((prev) => mergeProgressMaps(prev, readLocalProgress(storeRef.current)));
+    if (token) fetchAndMerge(token, storeRef.current);
   }, [token, fetchAndMerge]);
 
   const isCompleted = useCallback((id: string) => !!progress[id]?.completed, [progress]);
@@ -264,7 +348,8 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
 
 /**
  * Consume the unified progress source. Returns the safe default when no Provider is mounted
- * (markProgress still persists to localStorage; in-memory/server are skipped).
+ * (markProgress still persists via the resolved-identity singleton; in-memory/server are
+ * skipped).
  */
 export const useTsumegoProgress = (): TsumegoProgressContextValue =>
   useContext(TsumegoProgressContext);

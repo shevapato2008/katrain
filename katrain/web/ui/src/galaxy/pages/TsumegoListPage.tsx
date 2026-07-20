@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import ProblemCard from '../components/tsumego/ProblemCard';
+import { readLocalProgress } from '../../context/TsumegoProgressContext';
 
 interface ProblemSummary {
   id: string;
@@ -72,15 +73,11 @@ const TsumegoListPage = () => {
         setLoading(false);
       });
 
-    // Load progress from localStorage
-    const stored = localStorage.getItem('tsumego_progress');
-    if (stored) {
-      try {
-        setProgress(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to parse stored progress', e);
-      }
-    }
+    // Load progress from the identity-scoped cache (box-SSO guest mode, R9-F1): reading the
+    // raw `tsumego_progress` key directly would go stale post-migration (real users' data now
+    // lives under `tsumego_progress:${uuid}`), and would be reachable by a guest — this always
+    // goes through the same resolved-identity singleton that the kiosk build uses.
+    setProgress(readLocalProgress());
 
     // If logged in, also fetch from server
     if (user && token) {

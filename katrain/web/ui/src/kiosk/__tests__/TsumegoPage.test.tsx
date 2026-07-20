@@ -3,15 +3,23 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 const mockLevels = [
   { level: '15k', categories: { '手筋': 139, '吃子': 630, '死活': 167 }, total: 1000 },
   { level: '14k', categories: { '对杀': 124, '吃子': 295 }, total: 419 },
 ];
 
+// readActiveSession/readLastLevel are identity-scoped (box-SSO guest mode, R9-F1); these
+// tests exercise a resolved real user (`test-uuid`), so seed the NAMESPACED key, not the
+// legacy raw one — a real user's activity is namespaced by uuid, never global.
+const TEST_UUID = 'test-uuid';
+
 beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve(mockLevels),
@@ -77,7 +85,7 @@ describe('TsumegoPage', () => {
 
   it('shows the 继续练习 resume card when an active practice session exists', async () => {
     localStorage.setItem(
-      'kiosk_active_practice',
+      `kiosk_active_practice:${TEST_UUID}`,
       JSON.stringify({ kind: 'practice', label: '3 段 · 死活题 · 第 12 题', route: '/kiosk/tsumego/problem/p12', ts: Date.now() })
     );
     renderPage();

@@ -8,6 +8,18 @@
 //
 // Offline (decision (b)): selected SGF text is cached in localStorage so the
 // capture floor never depends on the remote kifu repository (which is online-only).
+//
+// Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): every cache read/
+// write below is routed through kioskActivityStorage, identity-scoped by `user.uuid`. A
+// guest (or any unresolved identity) gets an in-memory-only namespace — nothing it reads can
+// be a prior real user's cached SGF/progress, nothing it writes ever reaches disk. Callers
+// that read synchronously at first paint (e.g. BaipuListPage's `useState(() => listRecent())`
+// initializer) MUST pass an explicit `store` computed from their own `useAuth()` call, gated
+// on `isLoading`, rather than relying on the default (which falls back to the
+// kioskActivityStorage resolved-identity singleton — safe, but updated by an effect and so
+// not itself race-proof for a synchronous first-paint read).
+
+import { getCurrentKioskActivityStorage, type KioskActivityStorage } from '../kiosk/storage/kioskActivityStorage';
 
 const API_BASE = '/api/v1/baipu';
 
@@ -146,41 +158,67 @@ function safeParse<T>(raw: string | null): T | null {
   }
 }
 
-export function cacheSgf(id: string, name: string, sgf: string): void {
+// Every function below defaults `store` to the kioskActivityStorage resolved-identity
+// singleton (see top-of-file doc): guest/unresolved -> in-memory only, real user ->
+// localStorage namespaced by `user.uuid`. Callers with a synchronous first-paint read (e.g.
+// BaipuListPage's `listRecent()` initializer) should pass an explicit store instead of
+// relying on the default — see BaipuListPage.tsx / BaipuSessionPage.tsx.
+
+export function cacheSgf(
+  id: string,
+  name: string,
+  sgf: string,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): void {
   const entry: BaipuCachedSgf = { id, name, sgf, savedAt: Date.now() };
   try {
-    localStorage.setItem(SGF_KEY(id), JSON.stringify(entry));
-    const recent = (safeParse<BaipuRecentEntry[]>(localStorage.getItem(RECENT_KEY)) ?? []).filter((e) => e.id !== id);
+    store.setItem(SGF_KEY(id), JSON.stringify(entry));
+    const recent = (safeParse<BaipuRecentEntry[]>(store.getItem(RECENT_KEY)) ?? []).filter((e) => e.id !== id);
     recent.unshift({ id, name, savedAt: entry.savedAt });
-    localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, 30)));
+    store.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, 30)));
   } catch {
-    // localStorage may be full/unavailable; the in-memory navigation state still works.
+    // storage may be full/unavailable; the in-memory navigation state still works.
   }
 }
 
-export function getCachedSgf(id: string): BaipuCachedSgf | null {
-  return safeParse<BaipuCachedSgf>(localStorage.getItem(SGF_KEY(id)));
+export function getCachedSgf(
+  id: string,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): BaipuCachedSgf | null {
+  return safeParse<BaipuCachedSgf>(store.getItem(SGF_KEY(id)));
 }
 
-export function listRecent(): BaipuRecentEntry[] {
-  return safeParse<BaipuRecentEntry[]>(localStorage.getItem(RECENT_KEY)) ?? [];
+export function listRecent(
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): BaipuRecentEntry[] {
+  return safeParse<BaipuRecentEntry[]>(store.getItem(RECENT_KEY)) ?? [];
 }
 
-export function saveProgress(id: string, progress: BaipuProgress): void {
+export function saveProgress(
+  id: string,
+  progress: BaipuProgress,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): void {
   try {
-    localStorage.setItem(PROGRESS_KEY(id), JSON.stringify(progress));
+    store.setItem(PROGRESS_KEY(id), JSON.stringify(progress));
   } catch {
     // ignore
   }
 }
 
-export function getProgress(id: string): BaipuProgress | null {
-  return safeParse<BaipuProgress>(localStorage.getItem(PROGRESS_KEY(id)));
+export function getProgress(
+  id: string,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): BaipuProgress | null {
+  return safeParse<BaipuProgress>(store.getItem(PROGRESS_KEY(id)));
 }
 
-export function clearProgress(id: string): void {
+export function clearProgress(
+  id: string,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): void {
   try {
-    localStorage.removeItem(PROGRESS_KEY(id));
+    store.removeItem(PROGRESS_KEY(id));
   } catch {
     // ignore
   }

@@ -81,6 +81,10 @@ def _valid_exchange(probe, run_id="run-abc"):
     return requests, responses
 
 
+def _validate(probe, requests, responses):
+    return probe.validate_probe_results(_health(), requests, responses, case_order=list(probe.PROBE_CASES))
+
+
 def _canonical_pikl_spec(probe, pikl_lambda):
     params = dict(HUMANSL_PIKL_BASELINE)
     params["humanSLChosenMovePiklLambda"] = pikl_lambda
@@ -151,7 +155,7 @@ def test_validate_results_checks_ids_attestation_wire_fingerprints_and_semantics
     probe = _load_probe()
     requests, responses = _valid_exchange(probe)
 
-    summary = probe.validate_probe_results(_health(), requests, responses)
+    summary = _validate(probe, requests, responses)
 
     assert summary["passed"] is True
     assert summary["selected_moves"] == {
@@ -173,7 +177,7 @@ def test_validate_results_rejects_response_id_mismatch():
     responses["b18_pikl_low"]["id"] = requests["b18_pikl_high"]["id"]
 
     with pytest.raises(ValueError, match="response id"):
-        probe.validate_probe_results(_health(), requests, responses)
+        _validate(probe, requests, responses)
 
 
 def test_validate_results_rejects_wrong_model_attestation():
@@ -182,7 +186,7 @@ def test_validate_results_rejects_wrong_model_attestation():
     responses["b18_pikl_low"]["_wrapper"]["selected_model"] = "b28"
 
     with pytest.raises(ValueError, match="attestation"):
-        probe.validate_probe_results(_health(), requests, responses)
+        _validate(probe, requests, responses)
 
 
 def test_control_nondeterminism_cannot_masquerade_as_lambda_effect():
@@ -195,7 +199,7 @@ def test_control_nondeterminism_cannot_masquerade_as_lambda_effect():
     )
 
     with pytest.raises(ValueError, match="locked fixture"):
-        probe.validate_probe_results(_health(), requests, responses)
+        _validate(probe, requests, responses)
 
 
 def test_locked_pikl_comparison_rejects_zero_psv_ties():
@@ -204,7 +208,7 @@ def test_locked_pikl_comparison_rejects_zero_psv_ties():
     responses["b18_pikl_low"]["moveInfos"][1]["playSelectionValue"] = 0.0
 
     with pytest.raises(ValueError, match="stable positive"):
-        probe.validate_probe_results(_health(), requests, responses)
+        _validate(probe, requests, responses)
 
 
 @pytest.mark.parametrize("bad_value", [True, math.nan, math.inf, -math.inf])
@@ -214,7 +218,7 @@ def test_observation_rejects_non_plain_or_nonfinite_psv(bad_value):
     responses["b18_pikl_low"]["moveInfos"][0]["playSelectionValue"] = bad_value
 
     with pytest.raises(ValueError, match="playSelectionValue"):
-        probe.validate_probe_results(_health(), requests, responses)
+        _validate(probe, requests, responses)
 
 
 def test_result_writer_is_collision_safe_and_strict_json(tmp_path, monkeypatch):
@@ -257,3 +261,46 @@ async def test_run_probe_posts_exactly_five_and_persists_exact_wire_bodies(tmp_p
         case: probe.fingerprint_wire_body(body) for case, body in payload["wire_requests"].items()
     }
     assert json.loads(output.read_text())["wire_requests"] == payload["wire_requests"]
+
+
+@pytest.mark.asyncio
+async def test_written_result_roundtrips_and_revalidates_after_sorted_json(tmp_path, monkeypatch):
+    probe = _load_probe()
+    monkeypatch.setattr(probe, "RESULTS_DIR", tmp_path)
+
+    def handler(request):
+        if request.method == "GET":
+            return httpx.Response(200, json=_health())
+        body = json.loads(request.content)
+        case = body["id"].rsplit(":", 1)[1]
+        alias = "b28" if case == "b28_base" else "b18"
+        moves = ["O6", "R2"] if case in {"b18_pikl_high", "b28_base"} else ["R2", "O6"]
+        values = [35.0, 23.0] if moves[0] == "O6" else [85.0, 0.5]
+        return httpx.Response(200, json=_analysis(alias, body["id"], moves, values, [0, 1]))
+
+    _, output = await probe.run_probe(
+        "http://127.0.0.1:8000", run_id="roundtrip", transport=httpx.MockTransport(handler)
+    )
+    saved = json.loads(output.read_text())
+
+    assert saved["case_order"] == list(probe.PROBE_CASES)
+    assert list(saved["wire_requests"]) != saved["case_order"]  # sort_keys reordered the mapping
+    summary = probe.validate_probe_results(
+        saved["health"], saved["wire_requests"], saved["responses"], case_order=saved["case_order"]
+    )
+    assert summary["passed"] is True
+
+
+def test_validator_rejects_wrong_explicit_case_order_but_not_mapping_key_order():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    sorted_requests = dict(sorted(requests.items()))
+    sorted_responses = dict(sorted(responses.items()))
+
+    assert probe.validate_probe_results(
+        _health(), sorted_requests, sorted_responses, case_order=list(probe.PROBE_CASES)
+    )["passed"]
+    with pytest.raises(ValueError, match="case_order"):
+        probe.validate_probe_results(
+            _health(), sorted_requests, sorted_responses, case_order=list(reversed(probe.PROBE_CASES))
+        )

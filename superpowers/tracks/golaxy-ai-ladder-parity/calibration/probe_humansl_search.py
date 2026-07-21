@@ -202,13 +202,21 @@ def _observation(response: dict) -> dict:
     return {"selected_move": selected[0], "moves": rows, "root_info": response.get("rootInfo")}
 
 
-def validate_probe_results(health: dict, wire_requests: dict[str, dict], responses: dict[str, dict]) -> dict:
-    if list(wire_requests) != list(PROBE_CASES) or set(responses) != set(PROBE_CASES):
+def validate_probe_results(
+    health: dict,
+    wire_requests: dict[str, dict],
+    responses: dict[str, dict],
+    *,
+    case_order: list[str],
+) -> dict:
+    if set(wire_requests) != set(PROBE_CASES) or set(responses) != set(PROBE_CASES):
         raise ValueError("probe exchange must contain the exact five cases")
+    if case_order != list(PROBE_CASES):
+        raise ValueError("case_order does not match the locked five-request execution order")
     identities = {alias: _health_identity(health, alias) for alias in ("b18", "b28")}
     observations = {}
     fingerprints = {}
-    for case in PROBE_CASES:
+    for case in case_order:
         request = wire_requests[case]
         response = responses[case]
         expected_id = request.get("id")
@@ -299,10 +307,12 @@ async def run_probe(
             response.raise_for_status()
             responses[case] = response.json()
 
-    summary = validate_probe_results(health, wire_requests, responses)
+    case_order = list(PROBE_CASES)
+    summary = validate_probe_results(health, wire_requests, responses, case_order=case_order)
     payload = {
-        "probe_schema": 2,
+        "probe_schema": 3,
         "run_id": run_id,
+        "case_order": case_order,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "base_url": base_url,
         "locked_fixture": {

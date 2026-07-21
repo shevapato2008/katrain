@@ -34,7 +34,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import dataclasses
-import fcntl
 import hashlib
 import json
 import logging
@@ -49,6 +48,16 @@ from pathlib import Path
 from typing import List, Mapping, Optional, Tuple
 
 import httpx
+
+try:  # POSIX (macOS/Linux)
+    import fcntl as _fcntl
+except ImportError:  # pragma: no cover - exercised by backend-selection tests
+    _fcntl = None
+
+try:  # Windows
+    import msvcrt as _msvcrt
+except ImportError:  # pragma: no cover - exercised by backend-selection tests
+    _msvcrt = None
 
 os.environ.setdefault("KIVY_NO_ARGS", "1")  # keep Kivy from hijacking our argv (see run_calibration)
 
@@ -203,7 +212,7 @@ async def _player_move(
         capability_identity = adapters._capability_identity(capabilities, spec)
     except LadderMoveError:
         return "unavailable"
-    q = adapters.build_ladder_analysis_query(history, rung, 19, 7.5, "chinese", wrn)
+    q = adapters.build_ladder_analysis_query(history, rung, BOARD_SIZE, KOMI, RULES, wrn)
     r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
     r.raise_for_status()
     analysis = r.json()
@@ -217,14 +226,14 @@ async def _player_move(
         )
         validate_analysis_attestation(analysis, attested_spec, capability_identity)
         if selection == "search":
-            picked = pick_ladder_move(analysis, (19, 19), rung.mechanism)
+            picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), rung.mechanism)
         elif selection == "weighted":
-            picked = pick_ladder_move(analysis, (19, 19), "humansl")
+            picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), "humansl")
         elif selection == "argmax_human":
             hp = analysis.get("humanPolicy")
-            if not _valid_policy(hp, 19 * 19 + 1):
+            if not _valid_policy(hp, BOARD_SIZE * BOARD_SIZE + 1):
                 raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
-            picked = _pick_argmax_human(hp, (19, 19))
+            picked = _pick_argmax_human(hp, (BOARD_SIZE, BOARD_SIZE))
         else:
             raise LadderMoveError(f"unknown self-play selection {selection!r}")
     except (KeyError, LadderMoveError):
@@ -233,7 +242,7 @@ async def _player_move(
         if player not in {"A", "B"}:
             raise ValueError("attested self-play moves require player A or B")
         attestations.append({"ply": len(history), "player": player, "identity": dict(analysis["_wrapper"])})
-    return "pass" if picked == "pass" else colrow_to_golaxy(picked[0], picked[1], 19)
+    return "pass" if picked == "pass" else colrow_to_golaxy(picked[0], picked[1], BOARD_SIZE)
 
 
 def _fname(label: str) -> str:
@@ -452,7 +461,8 @@ def _validate_game_record(
     if conclusive != expected_conclusive or our_win != (result == "our_win"):
         raise ValueError("checkpoint game result flags are inconsistent")
     _validate_record_attestations(record, configuration)
-    expected_attested = num_moves + (1 if end_reason in {"our_pass", "golaxy_pass"} else 0)
+    accepted_pass = end_reason in {"our_pass", "golaxy_pass"} and result != "inconclusive_engine"
+    expected_attested = num_moves + (1 if accepted_pass else 0)
     if record.get("attested_turn_count") != expected_attested:
         raise ValueError("checkpoint game attested turn count is inconsistent with its ending")
 
@@ -502,16 +512,32 @@ def _checkpoint_lock(path: Path):
     """Hold a non-blocking process lock for one checkpoint's complete validate/append run."""
     lock_path = path.with_name(path.name + ".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    lock_file = lock_path.open("a+")
+    lock_file = lock_path.open("a+b")
+    locked = False
     try:
         try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
+            if _fcntl is not None:
+                _fcntl.flock(lock_file.fileno(), _fcntl.LOCK_EX | _fcntl.LOCK_NB)
+            elif _msvcrt is not None:
+                lock_file.seek(0, os.SEEK_END)
+                if lock_file.tell() == 0:
+                    lock_file.write(b"\0")
+                    lock_file.flush()
+                lock_file.seek(0)
+                _msvcrt.locking(lock_file.fileno(), _msvcrt.LK_NBLCK, 1)
+            else:  # unsupported Python/platform build
+                raise RuntimeError("no supported checkpoint locking backend (need fcntl or msvcrt)")
+            locked = True
+        except (BlockingIOError, OSError) as exc:
             raise RuntimeError(f"self-play checkpoint is locked by another process: {path}") from exc
         yield
     finally:
         try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            if locked and _fcntl is not None:
+                _fcntl.flock(lock_file.fileno(), _fcntl.LOCK_UN)
+            elif locked and _msvcrt is not None:
+                lock_file.seek(0)
+                _msvcrt.locking(lock_file.fileno(), _msvcrt.LK_UNLCK, 1)
         finally:
             lock_file.close()
 
@@ -581,6 +607,8 @@ async def _run_matchup_checkpoint(
     ckpt,
 ) -> dict:
     start = _prepare_checkpoint(ckpt, fingerprint, configuration)
+    if games < start:
+        raise ValueError(f"requested target {games} is smaller than existing checkpoint count {start}")
     winsA = conclusive = 0
     reason_counts: dict = {}
     if ckpt.is_file():  # fold prior games into the running totals (resume)

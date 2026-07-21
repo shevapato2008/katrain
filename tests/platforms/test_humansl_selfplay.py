@@ -526,6 +526,132 @@ async def test_self_produced_terminal_pass_record_roundtrips_on_resume(tmp_path,
     assert len(records[1]["move_attestations"]) == 1
 
 
+@pytest.mark.asyncio
+async def test_self_produced_unavailable_record_roundtrips_on_resume(tmp_path, monkeypatch):
+    calls = {"games": 0}
+
+    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, **_settings):
+        calls["games"] += 1
+        assert await our_move([]) == "unavailable"
+        return selfplay.GameOutcome(our_color, "inconclusive_engine", False, 0, None, False, "our_pass")
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_play_one_game)
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["boardXSize"] == selfplay.BOARD_SIZE
+        assert body["boardYSize"] == selfplay.BOARD_SIZE
+        assert body["komi"] == selfplay.KOMI
+        assert body["rules"] == selfplay.adapters.BaseEngine.get_rules(selfplay.RULES)
+        return httpx.Response(
+            200,
+            json={
+                "moveInfos": [],
+                "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        kwargs = dict(
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+        )
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+
+    assert calls["games"] == 1
+    records = [json.loads(line) for line in next(tmp_path.glob("*.jsonl")).read_text().splitlines()]
+    assert records[1]["result"] == "inconclusive_engine"
+    assert records[1]["attested_turn_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_player_move_uses_shared_board_komi_and_rules_constants(monkeypatch):
+    monkeypatch.setattr(selfplay, "BOARD_SIZE", 9)
+    monkeypatch.setattr(selfplay, "KOMI", 6.5)
+    monkeypatch.setattr(selfplay, "RULES", "japanese")
+    _, rung, selection = selfplay.make_player("rank_9d@1s")
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["boardXSize"] == body["boardYSize"] == 9
+        assert body["komi"] == 6.5
+        assert body["rules"] == selfplay.adapters.BaseEngine.get_rules("japanese")
+        human_policy = [0.0] * (9 * 9 + 1)
+        human_policy[0] = 1.0
+        return httpx.Response(200, json={"humanPolicy": human_policy, "_wrapper": _attestation()})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=_health_snapshot(),
+        )
+
+    assert isinstance(result, int)
+    assert 0 <= result < 9 * 9
+
+
+def test_checkpoint_lock_selects_windows_backend_when_fcntl_is_unavailable(tmp_path, monkeypatch):
+    class FakeMsvcrt:
+        LK_NBLCK = 1
+        LK_UNLCK = 2
+
+        def __init__(self):
+            self.calls = []
+
+        def locking(self, fd, operation, size):
+            self.calls.append((operation, size))
+
+    fake = FakeMsvcrt()
+    monkeypatch.setattr(selfplay, "_fcntl", None)
+    monkeypatch.setattr(selfplay, "_msvcrt", fake)
+
+    with selfplay._checkpoint_lock(tmp_path / "match.jsonl"):
+        assert fake.calls == [(fake.LK_NBLCK, 1)]
+    assert fake.calls == [(fake.LK_NBLCK, 1), (fake.LK_UNLCK, 1)]
+
+
+@pytest.mark.asyncio
+async def test_run_matchup_rejects_target_smaller_than_existing_checkpoint(tmp_path, monkeypatch):
+    calls = {"games": 0}
+
+    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, **_settings):
+        calls["games"] += 1
+        assert await our_move([]) == "pass"
+        return selfplay.GameOutcome(our_color, "our_win", True, 0, 1.5, True, "our_pass")
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_play_one_game)
+
+    def handler(_request):
+        return httpx.Response(
+            200,
+            json={
+                "moveInfos": [{"move": "pass", "order": 0}],
+                "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        kwargs = dict(
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+        )
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+        with pytest.raises(ValueError, match="target.*existing"):
+            await selfplay.run_matchup("rank_9d@40", "b28@20", 0, **kwargs)
+
+
 def test_fresh_checkpoint_writes_schema2_header_before_append(tmp_path):
     configuration, fingerprint, _header, _game = _checkpoint_payload()
     checkpoint = tmp_path / "match.jsonl"

@@ -115,6 +115,16 @@ def _health_snapshot():
             "katago_version": "KataGo v1.16.3",
             "default_model": "b28",
             "models": {
+                "b18": {
+                    "running": True,
+                    "model_path": "/models/b18.bin.gz",
+                    "model_sha256": "b18-sha",
+                    "model_sha256_verified": True,
+                    "has_human_model": True,
+                    "human_model_path": "/models/human.bin.gz",
+                    "human_model_sha256": "human-sha",
+                    "human_model_sha256_verified": True,
+                },
                 "b28": {
                     "running": True,
                     "model_path": "/models/b28.bin.gz",
@@ -124,7 +134,7 @@ def _health_snapshot():
                     "human_model_path": "/models/human.bin.gz",
                     "human_model_sha256": "human-sha",
                     "human_model_sha256_verified": True,
-                }
+                },
             },
         }
     )
@@ -177,6 +187,7 @@ async def test_native_humansl_selection_rejects_missing_or_drifted_attestation(p
 @pytest.mark.parametrize("player_spec", ["rank_9d@1", "rank_9d@1s"])
 async def test_native_humansl_selection_accepts_full_default_model_attestation(player_spec):
     _, rung, selection = selfplay.make_player(player_spec)
+    attestations = []
 
     def handler(_request):
         human_policy = [0.0] * (19 * 19 + 1)
@@ -192,9 +203,48 @@ async def test_native_humansl_selection_accepts_full_default_model_attestation(p
             selection=selection,
             wrn=0.04,
             capabilities=_health_snapshot(),
+            attestations=attestations,
+            player="A",
         )
 
     assert result != "unavailable"
+    assert attestations == [{"ply": 0, "player": "A", "identity": _attestation()}]
+
+
+@pytest.mark.asyncio
+async def test_humansl_search_move_records_complete_b18_attestation():
+    _, rung, selection = selfplay.make_player("rank_9d@40")
+    attestations = []
+    b18_attestation = _attestation(
+        selected_model="b18",
+        model_path="/models/b18.bin.gz",
+        model_sha256="b18-sha",
+        wrapper_extension="preserved",
+    )
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["overrideSettings"]["model"] == "b18"
+        return httpx.Response(
+            200,
+            json={"moveInfos": [{"move": "Q16", "order": 0}], "_wrapper": b18_attestation},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=_health_snapshot(),
+            attestations=attestations,
+            player="A",
+        )
+
+    assert result != "unavailable"
+    assert attestations == [{"ply": 0, "player": "A", "identity": b18_attestation}]
 
 
 def test_default_result_namespace_is_v2_pikl_and_legacy_namespace_is_rejected():
@@ -203,3 +253,174 @@ def test_default_result_namespace_is_v2_pikl_and_legacy_namespace_is_rejected():
     assert Path(args.out).name == "selfplay_v2_pikl"
     with pytest.raises(ValueError, match=r"legacy.*selfplay_v2_pikl"):
         selfplay._validated_out_dir(Path(selfplay.__file__).parent / "results" / "selfplay")
+
+
+def _players():
+    return {
+        "A": selfplay.make_player("rank_9d@40"),
+        "B": selfplay.make_player("b28@20"),
+    }
+
+
+@pytest.mark.parametrize(
+    ("mutation", "match"),
+    [
+        (lambda h: h["models"].pop("b18"), "b18"),
+        (lambda h: h["models"]["b18"].update(running=False), "not running"),
+        (lambda h: h["models"]["b18"].update(has_human_model=False), "human model"),
+        (lambda h: h["models"]["b18"].update(human_model_sha256_verified=False), "human model"),
+    ],
+)
+def test_capability_preflight_rejects_missing_stopped_or_nonhuman_alias(mutation, match):
+    frozen = _health_snapshot()
+    health = {key: value for key, value in frozen.items() if key != "models"}
+    health["models"] = {name: dict(identity) for name, identity in frozen["models"].items()}
+    mutation(health)
+
+    with pytest.raises(ValueError, match=match):
+        selfplay._preflight_capabilities(health, _players())
+
+
+def test_capability_preflight_returns_requested_and_referee_identities():
+    identities = selfplay._preflight_capabilities(_health_snapshot(), _players())
+
+    assert identities["A"]["selected_model"] == "b18"
+    assert identities["A"]["model_sha256"] == "b18-sha"
+    assert identities["A"]["human_model_sha256"] == "human-sha"
+    assert identities["B"]["selected_model"] == "b28"
+    assert identities["referee"]["selected_model"] == "b28"
+
+
+def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
+    players = _players()
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+    )
+    digest = selfplay._configuration_fingerprint(configuration)
+
+    assert configuration["capability_schema"] == 1
+    assert configuration["katago_version"] == "KataGo v1.16.3"
+    assert configuration["players"]["A"]["identity"]["model_sha256"] == "b18-sha"
+    assert configuration["players"]["A"]["identity"]["human_model_sha256"] == "human-sha"
+    assert all(
+        configuration["players"]["A"]["effective_overrides"][key] == value
+        for key, value in HUMANSL_PIKL_BASELINE.items()
+    )
+    assert configuration["players"]["A"]["effective_overrides"]["humanSLProfile"] == "rank_9d"
+    assert configuration["players"]["A"]["visits"] == 40
+    assert configuration["players"]["A"]["selection_algorithm_version"]
+    assert configuration["wide_root_noise"] == 0.04
+    assert configuration["symmetry_settings"]
+    assert configuration["opening_suite"]["id"]
+    assert len(digest) == 64
+
+
+def test_fingerprint_is_stable_across_mapping_insertion_order():
+    first = {"outer": {"b": 2, "a": 1}, "items": [{"z": 3, "y": 2}]}
+    second = {"items": [{"y": 2, "z": 3}], "outer": {"a": 1, "b": 2}}
+
+    assert selfplay._configuration_fingerprint(first) == selfplay._configuration_fingerprint(second)
+
+
+def _checkpoint_payload():
+    players = _players()
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+    )
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    header = {
+        "record_type": "header",
+        "schema": 2,
+        "fingerprint": fingerprint,
+        "configuration": configuration,
+    }
+    game = {
+        "record_type": "game",
+        "fingerprint": fingerprint,
+        "index": 0,
+        "a_color": "B",
+        "conclusive": True,
+        "our_win": True,
+        "result": "win",
+        "num_moves": 2,
+        "move_attestations": [
+            {"ply": 0, "player": "A", "identity": dict(identities["A"])},
+            {"ply": 1, "player": "B", "identity": dict(identities["B"])},
+        ],
+    }
+    return configuration, fingerprint, header, game
+
+
+def test_resume_accepts_schema2_header_and_matching_record_attestations(tmp_path):
+    configuration, fingerprint, header, game = _checkpoint_payload()
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    assert selfplay._already_done(checkpoint, fingerprint, configuration) == 1
+
+
+@pytest.mark.parametrize("target", ["header", "record"])
+def test_resume_rejects_any_header_or_record_fingerprint_mismatch(tmp_path, target):
+    configuration, fingerprint, header, game = _checkpoint_payload()
+    (header if target == "header" else game)["fingerprint"] = "0" * 64
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    with pytest.raises(ValueError, match="fingerprint"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_resume_rejects_recorded_move_attestation_drift(tmp_path):
+    configuration, fingerprint, header, game = _checkpoint_payload()
+    game["move_attestations"][0]["identity"]["model_sha256"] = "drifted"
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    with pytest.raises(ValueError, match="attestation"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_resume_rejects_game_record_missing_an_accepted_move_attestation(tmp_path):
+    configuration, fingerprint, header, game = _checkpoint_payload()
+    game["num_moves"] = 2
+    game["move_attestations"].pop()
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    with pytest.raises(ValueError, match="every accepted move"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_resume_rejects_move_attestation_relabelled_to_wrong_player(tmp_path):
+    configuration, fingerprint, header, game = _checkpoint_payload()
+    game["move_attestations"][0]["player"] = "B"
+    game["move_attestations"][0]["identity"] = dict(configuration["players"]["B"]["identity"])
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    with pytest.raises(ValueError, match="wrong player"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_fresh_checkpoint_writes_schema2_header_before_append(tmp_path):
+    configuration, fingerprint, _header, _game = _checkpoint_payload()
+    checkpoint = tmp_path / "match.jsonl"
+
+    assert selfplay._prepare_checkpoint(checkpoint, fingerprint, configuration) == 0
+    lines = checkpoint.read_text().splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0]) == {
+        "record_type": "header",
+        "schema": 2,
+        "fingerprint": fingerprint,
+        "configuration": configuration,
+    }

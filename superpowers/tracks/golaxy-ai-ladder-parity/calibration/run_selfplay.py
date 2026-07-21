@@ -4,7 +4,7 @@ each other via the local /analyze engine, adjudicated by an impartial b28 refere
 NO token, NO daily budget -- pure self-assessment of how humanSL ranks scale with search.
 
 Reuses the TESTED calibration primitives:
-  * adapters.our_move       -- builds the ladder analysis query + picks the move for ANY mechanism
+  * adapters query/identity -- builds the canonical ladder query and verifies the executed model
   * ladder_calibration.play_one_game -- the fail-closed alternating game loop
   * adapters.adjudicate     -- b28 black-relative settled scoring (same stability contract as
                                run_calibration; neither side resigns, matching the ladder)
@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import dataclasses
+import hashlib
 import json
 import logging
 import os
@@ -73,6 +74,18 @@ LEGACY_OUT_DIR = _RESULTS_DIR / "selfplay"
 _RANK_TOKEN = r"(?:[1-9]d|(?:[1-9]|1[0-9]|20)k)"
 _RANK_PROFILE_RE = re.compile(rf"(?:rank|preaz)_{_RANK_TOKEN}(?:_{_RANK_TOKEN})?\Z")
 _PROYEAR_PROFILE_RE = re.compile(r"proyear_([0-9]{4})\Z")
+CHECKPOINT_SCHEMA = 2
+SELECTION_ALGORITHM_VERSION = "selfplay-selection-v1"
+SYMMETRY_SETTINGS = {"mode": "katago-default", "requested_symmetry": None}
+OPENING_SUITE = {"id": "empty-board-v1", "seed": None}
+_IDENTITY_FIELDS = (
+    "selected_model",
+    "model_path",
+    "model_sha256",
+    "human_model_path",
+    "human_model_sha256",
+    "katago_version",
+)
 
 
 class _MockKaTrainForConfig(KaTrainBase):
@@ -172,17 +185,10 @@ async def _player_move(
     selection: str,
     wrn: float,
     capabilities: Mapping[str, object],
+    attestations: Optional[list] = None,
+    player: Optional[str] = None,
 ):
     """Dispatch a self-play move and fail closed unless the executed model is fully attested."""
-    if selection == "search":
-        return await adapters.our_move(
-            client,
-            base_url,
-            history,
-            rung=rung,
-            wide_root_noise=wrn,
-            capabilities=capabilities,
-        )
     spec = rung_strength_spec(rung)
     try:
         capability_identity = adapters._capability_identity(capabilities, spec)
@@ -195,9 +201,15 @@ async def _player_move(
     try:
         # Native HumanSL has no explicit route selector, but this experiment harness still requires
         # the wrapper to attest the default main model and its human model before using humanPolicy.
-        attested_spec = dataclasses.replace(spec, main_model=capability_identity["selected_model"])
+        attested_spec = (
+            spec
+            if spec.main_model is not None
+            else dataclasses.replace(spec, main_model=capability_identity["selected_model"])
+        )
         validate_analysis_attestation(analysis, attested_spec, capability_identity)
-        if selection == "weighted":
+        if selection == "search":
+            picked = pick_ladder_move(analysis, (19, 19), rung.mechanism)
+        elif selection == "weighted":
             picked = pick_ladder_move(analysis, (19, 19), "humansl")
         elif selection == "argmax_human":
             hp = analysis.get("humanPolicy")
@@ -208,6 +220,10 @@ async def _player_move(
             raise LadderMoveError(f"unknown self-play selection {selection!r}")
     except (KeyError, LadderMoveError):
         return "unavailable"  # -> harness marks inconclusive_engine (never a fabricated move)
+    if attestations is not None:
+        if player not in {"A", "B"}:
+            raise ValueError("attested self-play moves require player A or B")
+        attestations.append({"ply": len(history), "player": player, "identity": dict(analysis["_wrapper"])})
     return "pass" if picked == "pass" else colrow_to_golaxy(picked[0], picked[1], 19)
 
 
@@ -236,11 +252,138 @@ def parse_matchups(spec: str) -> List[Tuple[str, str, int]]:
     return out
 
 
-def _already_done(path: Path) -> int:
+def _json_value(value):
+    """Convert frozen capability mappings to canonical JSON-compatible values."""
+    if isinstance(value, Mapping):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    return value
+
+
+def _configuration_fingerprint(configuration: Mapping[str, object]) -> str:
+    payload = json.dumps(_json_value(configuration), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _preflight_capabilities(capabilities: Mapping[str, object], players: Mapping[str, tuple]) -> dict:
+    """Resolve and validate every player route plus the fixed b28 referee before games begin."""
+    identities = {}
+    try:
+        for side in ("A", "B"):
+            _label, rung, _selection = players[side]
+            identities[side] = dict(adapters._capability_identity(capabilities, rung_strength_spec(rung)))
+        _label, referee, _selection = make_player("b28@200")
+        identities["referee"] = dict(adapters._capability_identity(capabilities, rung_strength_spec(referee)))
+    except (KeyError, LadderMoveError) as exc:
+        raise ValueError(f"self-play capability preflight failed: {exc}") from exc
+    return identities
+
+
+def _matchup_configuration(
+    players: Mapping[str, tuple],
+    identities: Mapping[str, Mapping[str, object]],
+    *,
+    capabilities: Mapping[str, object],
+    wide_root_noise: float,
+) -> dict:
+    configured_players = {}
+    for side in ("A", "B"):
+        label, rung, selection = players[side]
+        spec = rung_strength_spec(rung)
+        configured_players[side] = {
+            "label": label,
+            "profile": rung.human_sl_profile,
+            "mechanism": rung.mechanism,
+            "visits": spec.visits,
+            "effective_overrides": dict(spec.override_settings),
+            "selection": selection,
+            "selection_algorithm_version": SELECTION_ALGORITHM_VERSION,
+            "identity": dict(identities[side]),
+        }
+    return _json_value(
+        {
+            "capability_schema": capabilities.get("capability_schema"),
+            "katago_version": capabilities.get("katago_version"),
+            "capability_snapshot": capabilities,
+            "players": configured_players,
+            "referee_identity": identities["referee"],
+            "wide_root_noise": wide_root_noise,
+            "symmetry_settings": SYMMETRY_SETTINGS,
+            "opening_suite": OPENING_SUITE,
+        }
+    )
+
+
+def _validate_record_attestations(record: Mapping[str, object], configuration: Mapping[str, object]) -> None:
+    attestations = record.get("move_attestations")
+    if not isinstance(attestations, list):
+        raise ValueError("checkpoint game record has no move attestations")
+    num_moves = record.get("num_moves")
+    if type(num_moves) is not int or num_moves < 0 or len(attestations) != num_moves:
+        raise ValueError("checkpoint does not attest every accepted move")
+    a_color = record.get("a_color")
+    if a_color not in ("B", "W"):
+        raise ValueError("checkpoint game record has invalid A color")
+    expected_players = configuration.get("players")
+    if not isinstance(expected_players, Mapping):
+        raise ValueError("checkpoint configuration has no players")
+    for expected_ply, attestation in enumerate(attestations):
+        if not isinstance(attestation, Mapping):
+            raise ValueError("checkpoint move attestation is malformed")
+        side = attestation.get("player")
+        if side not in ("A", "B") or attestation.get("ply") != expected_ply:
+            raise ValueError("checkpoint move attestation has invalid player or ply")
+        expected_side = "A" if ((expected_ply % 2 == 0) == (a_color == "B")) else "B"
+        if side != expected_side:
+            raise ValueError("checkpoint move attestation names the wrong player")
+        actual = attestation.get("identity")
+        expected_player = expected_players.get(side)
+        expected = expected_player.get("identity") if isinstance(expected_player, Mapping) else None
+        if not isinstance(actual, Mapping) or not isinstance(expected, Mapping):
+            raise ValueError("checkpoint move attestation identity is malformed")
+        if any(field not in actual or actual.get(field) != expected.get(field) for field in _IDENTITY_FIELDS):
+            raise ValueError("checkpoint move attestation does not match startup capability")
+
+
+def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
     if not path.is_file():
         return 0
     with path.open() as f:
-        return sum(1 for line in f if line.strip())
+        records = [json.loads(line) for line in f if line.strip()]
+    if not records:
+        raise ValueError("checkpoint exists without a schema-2 header")
+    header = records[0]
+    if header.get("record_type") != "header" or header.get("schema") != CHECKPOINT_SCHEMA:
+        raise ValueError("checkpoint has no schema-2 header")
+    if header.get("fingerprint") != fingerprint:
+        raise ValueError("checkpoint header fingerprint does not match this run")
+    if _configuration_fingerprint(header.get("configuration", {})) != fingerprint:
+        raise ValueError("checkpoint header configuration does not match its fingerprint")
+    if _json_value(header.get("configuration")) != _json_value(configuration):
+        raise ValueError("checkpoint header configuration does not match this run")
+    for record in records[1:]:
+        if record.get("record_type") != "game":
+            raise ValueError("checkpoint contains an unexpected record type")
+        if record.get("fingerprint") != fingerprint:
+            raise ValueError("checkpoint game fingerprint does not match this run")
+        _validate_record_attestations(record, configuration)
+    return len(records) - 1
+
+
+def _prepare_checkpoint(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
+    if path.exists():
+        return _already_done(path, fingerprint, configuration)
+    header = {
+        "record_type": "header",
+        "schema": CHECKPOINT_SCHEMA,
+        "fingerprint": fingerprint,
+        "configuration": _json_value(configuration),
+    }
+    with path.open("x") as f:
+        f.write(json.dumps(header, sort_keys=True, ensure_ascii=False) + "\n")
+        f.flush()
+    return 0
 
 
 def _validated_out_dir(path: Path) -> Path:
@@ -261,11 +404,17 @@ async def run_matchup(
     out_dir: Path,
     capabilities: Mapping[str, object],
 ) -> dict:
-    labelA, rungA, selA = make_player(specA)
-    labelB, rungB, selB = make_player(specB)
+    playerA = make_player(specA)
+    playerB = make_player(specB)
+    labelA, rungA, selA = playerA
+    labelB, rungB, selB = playerB
+    players = {"A": playerA, "B": playerB}
+    identities = _preflight_capabilities(capabilities, players)
+    configuration = _matchup_configuration(players, identities, capabilities=capabilities, wide_root_noise=wrn)
+    fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
     ckpt = out_dir / f"selfplay_{_fname(labelA)}__vs__{_fname(labelB)}.jsonl"
-    start = _already_done(ckpt)
+    start = _prepare_checkpoint(ckpt, fingerprint, configuration)
     winsA = conclusive = 0
     reason_counts: dict = {}
     if ckpt.is_file():  # fold prior games into the running totals (resume)
@@ -274,6 +423,8 @@ async def run_matchup(
                 if not line.strip():
                     continue
                 rec = json.loads(line)
+                if rec.get("record_type") == "header":
+                    continue
                 if rec["conclusive"]:
                     conclusive += 1
                     winsA += 1 if rec["our_win"] else 0
@@ -287,6 +438,7 @@ async def run_matchup(
     with ckpt.open("a") as f:
         for i in range(start, games):
             a_color = "B" if i % 2 == 0 else "W"  # alternate A's color for a fair B/W split
+            move_attestations = []
 
             async def a_move(history):
                 return await _player_move(
@@ -297,6 +449,8 @@ async def run_matchup(
                     selection=selA,
                     wrn=wrn,
                     capabilities=capabilities,
+                    attestations=move_attestations,
+                    player="A",
                 )
 
             async def b_move(history):
@@ -308,6 +462,8 @@ async def run_matchup(
                     selection=selB,
                     wrn=wrn,
                     capabilities=capabilities,
+                    attestations=move_attestations,
+                    player="B",
                 )
 
             # A occupies play_one_game's "our" slot, B the "golaxy" slot; both return int|'pass'|
@@ -320,11 +476,14 @@ async def run_matchup(
                 winsA += 1 if outcome.our_win else 0
             reason_counts[outcome.result] = reason_counts.get(outcome.result, 0) + 1
             rec = {
+                "record_type": "game",
+                "fingerprint": fingerprint,
                 "index": i,
                 "player_a": labelA,
                 "player_b": labelB,
                 "a_color": a_color,
                 **dataclasses.asdict(outcome),  # result/our_win(=A won)/num_moves/black_score/conclusive/end_reason
+                "move_attestations": move_attestations,
                 "ts": time.time(),
             }
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")

@@ -1,8 +1,12 @@
 import importlib.util
 import json
+import math
 from pathlib import Path
 
+import httpx
 import pytest
+
+from katrain.core.ladder import HUMANSL_PIKL_BASELINE, LadderRung, rung_strength_spec
 
 
 PROBE_PATH = (
@@ -28,13 +32,14 @@ def _attestation(alias):
     }
 
 
-def _analysis(alias, move, psv, order):
+def _analysis(alias, request_id, moves, psv, orders):
     return {
+        "id": request_id,
         "moveInfos": [
             {"move": candidate, "playSelectionValue": value, "order": rank}
-            for candidate, value, rank in zip(move, psv, order)
+            for candidate, value, rank in zip(moves, psv, orders)
         ],
-        "rootInfo": {"visits": 40, "scoreLead": 0.5},
+        "rootInfo": {"visits": 500, "scoreLead": 0.5},
         "_wrapper": _attestation(alias),
     }
 
@@ -60,97 +65,195 @@ def _health():
     }
 
 
-def test_builds_exact_four_requests_for_each_locked_lambda():
+def _valid_exchange(probe, run_id="run-abc"):
+    requests = probe.build_probe_requests(run_id)
+    low_move = probe.LOCKED_EXPECTED["b18_pikl_low"]["move"]
+    high_move = probe.LOCKED_EXPECTED["b18_pikl_high"]["move"]
+    responses = {
+        "b18_base": _analysis("b18", requests["b18_base"]["id"], [low_move, high_move], [20.0, 8.0], [0, 1]),
+        "b18_profile_zero": _analysis(
+            "b18", requests["b18_profile_zero"]["id"], [low_move, high_move], [19.0, 8.0], [0, 1]
+        ),
+        "b18_pikl_low": _analysis("b18", requests["b18_pikl_low"]["id"], [low_move, high_move], [85.0, 0.5], [0, 1]),
+        "b18_pikl_high": _analysis("b18", requests["b18_pikl_high"]["id"], [high_move, low_move], [35.0, 23.0], [0, 1]),
+        "b28_base": _analysis("b28", requests["b28_base"]["id"], [high_move, low_move], [30.0, 12.0], [0, 1]),
+    }
+    return requests, responses
+
+
+def _canonical_pikl_spec(probe, pikl_lambda):
+    params = dict(HUMANSL_PIKL_BASELINE)
+    params["humanSLChosenMovePiklLambda"] = pikl_lambda
+    rung = LadderRung(
+        rung=0,
+        golaxy_level_name=None,
+        golaxy_api_level=None,
+        display_elo=None,
+        ref_rank=probe.LOCKED_PROFILE,
+        rank_name=probe.LOCKED_PROFILE,
+        net="b18",
+        mechanism="humansl_search",
+        human_sl_profile=probe.LOCKED_PROFILE,
+        max_visits=probe.LOCKED_VISITS,
+        human_sl_params=params,
+    )
+    return rung_strength_spec(rung)
+
+
+def test_builds_exact_five_run_unique_wire_requests_from_production_recipe():
     probe = _load_probe()
+    requests = probe.build_probe_requests("run-abc")
 
-    assert len(probe.LOCKED_HISTORY) > 1
-    assert len(probe.LOCKED_LAMBDAS) == 2
-    assert all(value > 0 for value in probe.LOCKED_LAMBDAS)
-    for pikl_lambda in probe.LOCKED_LAMBDAS:
-        requests = probe.build_probe_requests(pikl_lambda)
-        assert list(requests) == ["b18_base", "b18_profile_zero", "b18_pikl", "b28_base"]
-        assert all(query["moves"] == probe.LOCKED_HISTORY for query in requests.values())
-        assert all(query["maxVisits"] == probe.LOCKED_VISITS for query in requests.values())
-        assert requests["b18_base"]["overrideSettings"] == {"model": "b18"}
-        assert requests["b28_base"]["overrideSettings"] == {"model": "b28"}
+    assert list(requests) == ["b18_base", "b18_profile_zero", "b18_pikl_low", "b18_pikl_high", "b28_base"]
+    assert len({query["id"] for query in requests.values()}) == 5
+    assert all(query["id"].startswith("semantic-probe-run-abc:") for query in requests.values())
+    assert all(query["moves"] == probe.LOCKED_HISTORY for query in requests.values())
+    assert all(query["maxVisits"] == probe.LOCKED_VISITS for query in requests.values())
 
-        zero = requests["b18_profile_zero"]["overrideSettings"]
-        assert zero["model"] == "b18"
-        assert zero["humanSLProfile"] == probe.LOCKED_PROFILE
-        assert all(zero[key] == 0.0 for key in probe.HUMANSL_BLEND_KEYS)
-
-        pikl = requests["b18_pikl"]["overrideSettings"]
-        assert pikl["model"] == "b18"
-        assert pikl["humanSLProfile"] == probe.LOCKED_PROFILE
-        assert pikl["humanSLChosenMovePiklLambda"] == pikl_lambda
-        assert {key: pikl[key] for key in probe.PIKL_BASELINE} == {
-            **probe.PIKL_BASELINE,
+    for case, pikl_lambda in zip(("b18_pikl_low", "b18_pikl_high"), probe.LOCKED_LAMBDAS):
+        expected = dict(_canonical_pikl_spec(probe, pikl_lambda).override_settings)
+        assert requests[case]["overrideSettings"] == {"model": "b18", **expected}
+        assert expected["ignorePreRootHistory"] is False
+        assert {key: expected[key] for key in HUMANSL_PIKL_BASELINE} == {
+            **HUMANSL_PIKL_BASELINE,
             "humanSLChosenMovePiklLambda": pikl_lambda,
         }
 
-
-def test_locked_fixture_declares_different_pikl_moves_values_and_orders():
-    probe = _load_probe()
-
-    low, high = probe.LOCKED_LAMBDAS
-    assert probe.LOCKED_EXPECTED[low]["move"] != probe.LOCKED_EXPECTED[high]["move"]
-    assert probe.LOCKED_EXPECTED[low]["play_selection_values"] != probe.LOCKED_EXPECTED[high]["play_selection_values"]
-    assert probe.LOCKED_EXPECTED[low]["orders"] != probe.LOCKED_EXPECTED[high]["orders"]
-
-
-def test_validate_results_checks_attestation_and_semantic_differences():
-    probe = _load_probe()
-    low, high = probe.LOCKED_LAMBDAS
-    low_move = probe.LOCKED_EXPECTED[low]["move"]
-    high_move = probe.LOCKED_EXPECTED[high]["move"]
-    other = "pass" if low_move != "pass" and high_move != "pass" else "A1"
-    responses = {
-        str(low): {
-            "b18_base": _analysis("b18", [low_move, other], [10.0, 9.0], [0, 1]),
-            "b18_profile_zero": _analysis("b18", [low_move, other], [10.0, 9.0], [0, 1]),
-            "b18_pikl": _analysis("b18", [low_move, high_move], [10.0, 9.0], [0, 1]),
-            "b28_base": _analysis("b28", [other, low_move], [11.0, 8.0], [0, 1]),
-        },
-        str(high): {
-            "b18_base": _analysis("b18", [low_move, other], [10.0, 9.0], [0, 1]),
-            "b18_profile_zero": _analysis("b18", [low_move, other], [10.0, 9.0], [0, 1]),
-            "b18_pikl": _analysis("b18", [high_move, low_move], [12.0, 7.0], [0, 1]),
-            "b28_base": _analysis("b28", [other, low_move], [11.0, 8.0], [0, 1]),
-        },
+    zero = requests["b18_profile_zero"]["overrideSettings"]
+    assert zero["model"] == "b18"
+    assert zero["humanSLProfile"] == probe.LOCKED_PROFILE
+    assert zero["ignorePreRootHistory"] is False
+    assert set(zero) == {
+        "model",
+        "reportAnalysisWinratesAs",
+        "humanSLProfile",
+        "ignorePreRootHistory",
+        *HUMANSL_PIKL_BASELINE,
     }
+    assert all(zero[key] == 0.0 for key in probe.HUMANSL_BLEND_KEYS)
 
-    summary = probe.validate_probe_results(_health(), responses)
+
+def test_locked_fixture_declares_controls_and_lambda_order_swap():
+    probe = _load_probe()
+
+    assert probe.LOCKED_LAMBDAS == (0.01, 100.0)
+    assert {case: expected["move"] for case, expected in probe.LOCKED_EXPECTED.items()} == {
+        "b18_base": "R2",
+        "b18_profile_zero": "R2",
+        "b18_pikl_low": "R2",
+        "b18_pikl_high": "O6",
+    }
+    assert probe.LOCKED_EXPECTED["b18_pikl_low"]["orders"] == {"R2": 0, "O6": 1}
+    assert probe.LOCKED_EXPECTED["b18_pikl_high"]["orders"] == {"R2": 1, "O6": 0}
+
+
+def test_validate_results_checks_ids_attestation_wire_fingerprints_and_semantics():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+
+    summary = probe.validate_probe_results(_health(), requests, responses)
 
     assert summary["passed"] is True
-    assert summary["selected_moves"][str(low)] == low_move
-    assert summary["selected_moves"][str(high)] == high_move
-    assert summary["request_fingerprints"]["b18_base"] != summary["request_fingerprints"]["b28_base"]
+    assert summary["selected_moves"] == {
+        "b18_base": "R2",
+        "b18_profile_zero": "R2",
+        "b18_pikl_low": "R2",
+        "b18_pikl_high": "O6",
+        "b28_base": "O6",
+    }
+    assert summary["request_fingerprints"] == {
+        case: probe.fingerprint_wire_body(body) for case, body in requests.items()
+    }
+    assert all(value > 0 for value in summary["pikl_play_selection_values"]["low"].values())
+
+
+def test_validate_results_rejects_response_id_mismatch():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    responses["b18_pikl_low"]["id"] = requests["b18_pikl_high"]["id"]
+
+    with pytest.raises(ValueError, match="response id"):
+        probe.validate_probe_results(_health(), requests, responses)
 
 
 def test_validate_results_rejects_wrong_model_attestation():
     probe = _load_probe()
-    low, high = probe.LOCKED_LAMBDAS
-    low_move = probe.LOCKED_EXPECTED[low]["move"]
-    high_move = probe.LOCKED_EXPECTED[high]["move"]
-    responses = {}
-    for value, move in ((low, low_move), (high, high_move)):
-        responses[str(value)] = {
-            "b18_base": _analysis("b18", [move, "pass"], [2.0, 1.0], [0, 1]),
-            "b18_profile_zero": _analysis("b18", [move, "pass"], [2.0, 1.0], [0, 1]),
-            "b18_pikl": _analysis("b18", [move, "pass"], [3.0, 1.0], [0, 1]),
-            "b28_base": _analysis("b28", ["pass", move], [2.0, 1.0], [0, 1]),
-        }
-    responses[str(low)]["b18_pikl"]["_wrapper"]["selected_model"] = "b28"
+    requests, responses = _valid_exchange(probe)
+    responses["b18_pikl_low"]["_wrapper"]["selected_model"] = "b28"
 
     with pytest.raises(ValueError, match="attestation"):
-        probe.validate_probe_results(_health(), responses)
+        probe.validate_probe_results(_health(), requests, responses)
 
 
-def test_result_writer_uses_timestamped_semantic_probe_namespace(tmp_path, monkeypatch):
+def test_control_nondeterminism_cannot_masquerade_as_lambda_effect():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    # The old two-group validator accepted this shape when each lambda's controls
+    # drifted along with its PIKL result. A single locked control must now fail.
+    responses["b18_profile_zero"] = _analysis(
+        "b18", requests["b18_profile_zero"]["id"], ["O6", "R2"], [30.0, 12.0], [0, 1]
+    )
+
+    with pytest.raises(ValueError, match="locked fixture"):
+        probe.validate_probe_results(_health(), requests, responses)
+
+
+def test_locked_pikl_comparison_rejects_zero_psv_ties():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    responses["b18_pikl_low"]["moveInfos"][1]["playSelectionValue"] = 0.0
+
+    with pytest.raises(ValueError, match="stable positive"):
+        probe.validate_probe_results(_health(), requests, responses)
+
+
+@pytest.mark.parametrize("bad_value", [True, math.nan, math.inf, -math.inf])
+def test_observation_rejects_non_plain_or_nonfinite_psv(bad_value):
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    responses["b18_pikl_low"]["moveInfos"][0]["playSelectionValue"] = bad_value
+
+    with pytest.raises(ValueError, match="playSelectionValue"):
+        probe.validate_probe_results(_health(), requests, responses)
+
+
+def test_result_writer_is_collision_safe_and_strict_json(tmp_path, monkeypatch):
     probe = _load_probe()
     monkeypatch.setattr(probe, "RESULTS_DIR", tmp_path)
 
-    output = probe.write_result({"passed": True}, timestamp="20260722T012345Z")
+    output = probe.write_result({"passed": True}, timestamp="20260722T012345.123456Z", run_id="abc123")
 
-    assert output == tmp_path / "humansl_semantic_probe_20260722T012345Z.json"
+    assert output == tmp_path / "humansl_semantic_probe_20260722T012345.123456Z_abc123.json"
     assert json.loads(output.read_text()) == {"passed": True}
+    with pytest.raises(FileExistsError):
+        probe.write_result({"passed": False}, timestamp="20260722T012345.123456Z", run_id="abc123")
+    with pytest.raises(ValueError, match="JSON"):
+        probe.write_result({"bad": math.nan}, timestamp="20260722T012346.123456Z", run_id="def456")
+
+
+@pytest.mark.asyncio
+async def test_run_probe_posts_exactly_five_and_persists_exact_wire_bodies(tmp_path, monkeypatch):
+    probe = _load_probe()
+    monkeypatch.setattr(probe, "RESULTS_DIR", tmp_path)
+    posted = []
+
+    def handler(request):
+        if request.method == "GET":
+            return httpx.Response(200, json=_health())
+        body = json.loads(request.content)
+        posted.append(body)
+        case = body["id"].rsplit(":", 1)[1]
+        expected_alias = "b28" if case == "b28_base" else "b18"
+        moves = ["O6", "R2"] if case in {"b18_pikl_high", "b28_base"} else ["R2", "O6"]
+        values = [35.0, 23.0] if moves[0] == "O6" else [85.0, 0.5]
+        return httpx.Response(200, json=_analysis(expected_alias, body["id"], moves, values, [0, 1]))
+
+    transport = httpx.MockTransport(handler)
+    payload, output = await probe.run_probe("http://127.0.0.1:8000", run_id="fixed-run", transport=transport)
+
+    assert len(posted) == 5
+    assert posted == list(payload["wire_requests"].values())
+    assert payload["summary"]["request_fingerprints"] == {
+        case: probe.fingerprint_wire_body(body) for case, body in payload["wire_requests"].items()
+    }
+    assert json.loads(output.read_text())["wire_requests"] == payload["wire_requests"]

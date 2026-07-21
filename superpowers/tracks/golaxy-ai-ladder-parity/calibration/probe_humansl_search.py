@@ -7,6 +7,9 @@ import argparse
 import asyncio
 import hashlib
 import json
+import math
+import re
+import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,13 +17,13 @@ from urllib.parse import urlparse
 
 import httpx
 
-from katrain.core.ladder import HUMANSL_PIKL_BASELINE
+from katrain.core.ladder import HUMANSL_PIKL_BASELINE, LadderRung, rung_strength_spec
 
 
 RESULTS_DIR = Path(__file__).parent / "results" / "semantic_probe"
 LOCKED_PROFILE = "rank_9d"
 LOCKED_VISITS = 500
-LOCKED_LAMBDAS = (0.000001, 100.0)
+LOCKED_LAMBDAS = (0.01, 100.0)
 
 # First 20 moves of tests/data/fox sgf works.sgf, copied here deliberately so
 # the executable probe cannot drift when an unrelated SGF fixture is edited.
@@ -47,30 +50,19 @@ LOCKED_HISTORY = [
     ["W", "R11"],
 ]
 
-PIKL_BASELINE = dict(HUMANSL_PIKL_BASELINE)
 HUMANSL_BLEND_KEYS = (
     "humanSLChosenMoveProp",
     "humanSLRootExploreProbWeightless",
     "humanSLCpuctPermanent",
     "subtreeValueBiasFactor",
 )
-
-# Representative discovery values are documentation, not brittle numeric
-# assertions. The executable contract locks the selected move and relative order;
-# exact PSV varies slightly with multithreaded search.
 LOCKED_EXPECTED = {
-    LOCKED_LAMBDAS[0]: {
-        "move": "R2",
-        "play_selection_values": {"R2": 88.0, "O6": 0.0},
-        "orders": {"R2": 0, "O6": 1},
-    },
-    LOCKED_LAMBDAS[1]: {
-        "move": "O6",
-        "play_selection_values": {"R2": 28.12, "O6": 42.15},
-        "orders": {"R2": 1, "O6": 0},
-    },
+    "b18_base": {"move": "R2", "orders": {"R2": 0, "O6": 1}},
+    "b18_profile_zero": {"move": "R2", "orders": {"R2": 0, "O6": 1}},
+    "b18_pikl_low": {"move": "R2", "orders": {"R2": 0, "O6": 1}},
+    "b18_pikl_high": {"move": "O6", "orders": {"R2": 1, "O6": 0}},
 }
-
+PROBE_CASES = ("b18_base", "b18_profile_zero", "b18_pikl_low", "b18_pikl_high", "b28_base")
 _IDENTITY_KEYS = (
     "selected_model",
     "model_path",
@@ -79,10 +71,39 @@ _IDENTITY_KEYS = (
     "human_model_sha256",
     "katago_version",
 )
+_SAFE_RUN_ID = re.compile(r"^[A-Za-z0-9-]+$")
 
 
-def _base_query() -> dict:
+def _rung(*, model: str, mechanism: str, profile: str | None = None, params: dict | None = None) -> LadderRung:
+    return LadderRung(
+        rung=0,
+        golaxy_level_name=None,
+        golaxy_api_level=None,
+        display_elo=None,
+        ref_rank=profile or model,
+        rank_name=profile or model,
+        net=model,
+        mechanism=mechanism,
+        human_sl_profile=profile,
+        max_visits=LOCKED_VISITS,
+        human_sl_params=params or {},
+    )
+
+
+def _net_overrides(model: str) -> dict:
+    return dict(rung_strength_spec(_rung(model=model, mechanism="net_search")).override_settings)
+
+
+def _pikl_overrides(pikl_lambda: float) -> dict:
+    params = dict(HUMANSL_PIKL_BASELINE)
+    params["humanSLChosenMovePiklLambda"] = pikl_lambda
+    spec = rung_strength_spec(_rung(model="b18", mechanism="humansl_search", profile=LOCKED_PROFILE, params=params))
+    return dict(spec.override_settings)
+
+
+def _base_query(case: str, run_id: str) -> dict:
     return {
+        "id": f"semantic-probe-{run_id}:{case}",
         "rules": "chinese",
         "komi": 7.5,
         "boardXSize": 19,
@@ -95,30 +116,34 @@ def _base_query() -> dict:
     }
 
 
-def build_probe_requests(pikl_lambda: float) -> dict[str, dict]:
-    if pikl_lambda not in LOCKED_LAMBDAS:
-        raise ValueError(f"lambda must be one of the locked values {LOCKED_LAMBDAS!r}")
-    base = _base_query()
-    zero_recipe = dict(PIKL_BASELINE)
-    zero_recipe.update({key: 0.0 for key in HUMANSL_BLEND_KEYS})
-    pikl_recipe = dict(PIKL_BASELINE)
-    pikl_recipe["humanSLChosenMovePiklLambda"] = pikl_lambda
-    return {
-        "b18_base": {**deepcopy(base), "overrideSettings": {"model": "b18"}},
-        "b18_profile_zero": {
-            **deepcopy(base),
-            "overrideSettings": {"model": "b18", "humanSLProfile": LOCKED_PROFILE, **zero_recipe},
-        },
-        "b18_pikl": {
-            **deepcopy(base),
-            "overrideSettings": {"model": "b18", "humanSLProfile": LOCKED_PROFILE, **pikl_recipe},
-        },
-        "b28_base": {**deepcopy(base), "overrideSettings": {"model": "b28"}},
+def _validate_run_id(run_id: str) -> str:
+    if not isinstance(run_id, str) or not _SAFE_RUN_ID.fullmatch(run_id):
+        raise ValueError("run_id must contain only ASCII letters, digits, and hyphens")
+    return run_id
+
+
+def build_probe_requests(run_id: str) -> dict[str, dict]:
+    """Build the exact five JSON bodies posted by one probe run."""
+    run_id = _validate_run_id(run_id)
+    low_overrides = _pikl_overrides(LOCKED_LAMBDAS[0])
+    high_overrides = _pikl_overrides(LOCKED_LAMBDAS[1])
+    zero_overrides = _pikl_overrides(HUMANSL_PIKL_BASELINE["humanSLChosenMovePiklLambda"])
+    zero_overrides.update({key: 0.0 for key in HUMANSL_BLEND_KEYS})
+    overrides = {
+        "b18_base": {"model": "b18", **_net_overrides("b18")},
+        "b18_profile_zero": {"model": "b18", **zero_overrides},
+        "b18_pikl_low": {"model": "b18", **low_overrides},
+        "b18_pikl_high": {"model": "b18", **high_overrides},
+        "b28_base": {"model": "b28", **_net_overrides("b28")},
     }
+    return {case: {**_base_query(case, run_id), "overrideSettings": overrides[case]} for case in PROBE_CASES}
 
 
-def _fingerprint(value: dict) -> str:
-    canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+def fingerprint_wire_body(value: dict) -> str:
+    try:
+        canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("wire body is not strict JSON") from exc
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -165,81 +190,88 @@ def _observation(response: dict) -> dict:
         if not isinstance(info, dict):
             raise ValueError("analysis has malformed moveInfos")
         move, value, order = info.get("move"), info.get("playSelectionValue"), info.get("order")
-        if not isinstance(move, str) or not isinstance(value, (int, float)) or type(order) is not int:
-            raise ValueError("analysis lacks move/playSelectionValue/order")
+        if not isinstance(move, str) or type(value) not in (int, float) or not math.isfinite(value):
+            raise ValueError("analysis has malformed move/playSelectionValue")
+        if type(order) is not int:
+            raise ValueError("analysis has malformed order")
         rows[move] = {"playSelectionValue": float(value), "order": order}
         if order == 0:
             selected.append(move)
     if len(selected) != 1:
         raise ValueError("analysis must have exactly one order=0 move")
-    return {"selected_move": selected[0], "moves": rows}
+    return {"selected_move": selected[0], "moves": rows, "root_info": response.get("rootInfo")}
 
 
-def validate_probe_results(health: dict, responses: dict[str, dict[str, dict]]) -> dict:
+def validate_probe_results(health: dict, wire_requests: dict[str, dict], responses: dict[str, dict]) -> dict:
+    if list(wire_requests) != list(PROBE_CASES) or set(responses) != set(PROBE_CASES):
+        raise ValueError("probe exchange must contain the exact five cases")
     identities = {alias: _health_identity(health, alias) for alias in ("b18", "b28")}
     observations = {}
     fingerprints = {}
-    expected_aliases = {"b18_base": "b18", "b18_profile_zero": "b18", "b18_pikl": "b18", "b28_base": "b28"}
+    for case in PROBE_CASES:
+        request = wire_requests[case]
+        response = responses[case]
+        expected_id = request.get("id")
+        if not isinstance(expected_id, str) or response.get("id") != expected_id:
+            raise ValueError(f"response id mismatch for {case}")
+        alias = "b28" if case == "b28_base" else "b18"
+        if request.get("overrideSettings", {}).get("model") != alias:
+            raise ValueError(f"wire request model mismatch for {case}")
+        _validate_attestation(response, identities[alias])
+        observations[case] = _observation(response)
+        fingerprints[case] = fingerprint_wire_body(request)
 
-    for pikl_lambda in LOCKED_LAMBDAS:
-        lambda_key = str(pikl_lambda)
-        group = responses.get(lambda_key)
-        if not isinstance(group, dict) or set(group) != set(expected_aliases):
-            raise ValueError(f"responses for lambda {lambda_key} do not contain the exact four probe cases")
-        observations[lambda_key] = {}
-        requests = build_probe_requests(pikl_lambda)
-        for case, alias in expected_aliases.items():
-            _validate_attestation(group[case], identities[alias])
-            observations[lambda_key][case] = _observation(group[case])
-            fingerprints[f"{lambda_key}:{case}"] = _fingerprint(requests[case])
+    watched = {"R2", "O6"}
+    for case, expected in LOCKED_EXPECTED.items():
+        observation = observations[case]
+        if observation["selected_move"] != expected["move"]:
+            raise ValueError(f"{case} selected move drifted from the locked fixture")
+        if not watched.issubset(observation["moves"]):
+            raise ValueError(f"{case} locked comparison moves are missing")
+        orders = {move: observation["moves"][move]["order"] for move in watched}
+        if orders != expected["orders"]:
+            raise ValueError(f"{case} order drifted from the locked fixture")
 
-        base_move = observations[lambda_key]["b18_base"]["selected_move"]
-        zero_move = observations[lambda_key]["b18_profile_zero"]["selected_move"]
-        if base_move != zero_move:
-            raise ValueError("b18 profile-only zero-blend selection differs from b18 base")
-
-    low_key, high_key = map(str, LOCKED_LAMBDAS)
-    low = observations[low_key]["b18_pikl"]
-    high = observations[high_key]["b18_pikl"]
-    if low["selected_move"] != LOCKED_EXPECTED[LOCKED_LAMBDAS[0]]["move"]:
-        raise ValueError("low-lambda selected move drifted from the locked fixture")
-    if high["selected_move"] != LOCKED_EXPECTED[LOCKED_LAMBDAS[1]]["move"]:
-        raise ValueError("high-lambda selected move drifted from the locked fixture")
-
-    watched = set(LOCKED_EXPECTED[LOCKED_LAMBDAS[0]]["orders"])
-    if not watched.issubset(low["moves"]) or not watched.issubset(high["moves"]):
-        raise ValueError("locked PIKL comparison moves are missing")
+    control = observations["b18_base"]
+    zero = observations["b18_profile_zero"]
+    low = observations["b18_pikl_low"]
+    high = observations["b18_pikl_high"]
+    if not (control["selected_move"] == zero["selected_move"] == low["selected_move"]):
+        raise ValueError("same-run b18 controls and low-lambda selection are unstable")
     low_values = {move: low["moves"][move]["playSelectionValue"] for move in watched}
     high_values = {move: high["moves"][move]["playSelectionValue"] for move in watched}
     low_orders = {move: low["moves"][move]["order"] for move in watched}
     high_orders = {move: high["moves"][move]["order"] for move in watched}
     if low_values == high_values:
         raise ValueError("changing PIKL lambda did not change playSelectionValue")
-    if low_orders == high_orders:
-        raise ValueError("changing PIKL lambda did not change move order")
-
-    # Stable convenience aliases for callers; all lambda-independent requests
-    # have the same fingerprints in both groups.
-    request_fingerprints = {case: fingerprints[f"{low_key}:{case}"] for case in expected_aliases}
-    request_fingerprints["b18_pikl_high"] = fingerprints[f"{high_key}:b18_pikl"]
-    if request_fingerprints["b18_base"] == request_fingerprints["b28_base"]:
+    if any(value <= 0.0 for value in (*low_values.values(), *high_values.values())):
+        raise ValueError("locked PIKL comparison requires stable positive playSelectionValue values")
+    if low_orders == high_orders or low["selected_move"] == high["selected_move"]:
+        raise ValueError("changing PIKL lambda did not change order=0 move")
+    if fingerprints["b18_base"] == fingerprints["b28_base"]:
         raise ValueError("b18 and b28 request fingerprints unexpectedly match")
 
     return {
         "passed": True,
-        "selected_moves": {low_key: low["selected_move"], high_key: high["selected_move"]},
-        "pikl_play_selection_values": {low_key: low_values, high_key: high_values},
-        "pikl_orders": {low_key: low_orders, high_key: high_orders},
-        "request_fingerprints": request_fingerprints,
+        "selected_moves": {case: observations[case]["selected_move"] for case in PROBE_CASES},
+        "pikl_play_selection_values": {"low": low_values, "high": high_values},
+        "pikl_orders": {"low": low_orders, "high": high_orders},
+        "request_fingerprints": fingerprints,
         "observations": observations,
     }
 
 
-def write_result(payload: dict, timestamp: str | None = None) -> Path:
-    stamp = timestamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+def write_result(payload: dict, *, timestamp: str | None = None, run_id: str) -> Path:
+    run_id = _validate_run_id(run_id)
+    stamp = timestamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+    try:
+        encoded = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n"
+    except (TypeError, ValueError) as exc:
+        raise ValueError("result is not strict JSON") from exc
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    output = RESULTS_DIR / f"humansl_semantic_probe_{stamp}.json"
-    output.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    output = RESULTS_DIR / f"humansl_semantic_probe_{stamp}_{run_id}.json"
+    with output.open("x", encoding="utf-8") as result_file:
+        result_file.write(encoded)
     return output
 
 
@@ -250,30 +282,27 @@ def _assert_local_url(base_url: str) -> str:
     return base_url.rstrip("/")
 
 
-async def run_probe(base_url: str) -> tuple[dict, Path]:
+async def run_probe(
+    base_url: str, *, run_id: str | None = None, transport: httpx.AsyncBaseTransport | None = None
+) -> tuple[dict, Path]:
     base_url = _assert_local_url(base_url)
+    run_id = _validate_run_id(run_id or uuid.uuid4().hex[:12])
     timeout = httpx.Timeout(180.0, connect=10.0)
+    wire_requests = build_probe_requests(run_id)
     responses = {}
-    requests_record = {}
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
         health_response = await client.get(f"{base_url}/health")
         health_response.raise_for_status()
         health = health_response.json()
-        for pikl_lambda in LOCKED_LAMBDAS:
-            lambda_key = str(pikl_lambda)
-            responses[lambda_key] = {}
-            requests_record[lambda_key] = {}
-            for case, query in build_probe_requests(pikl_lambda).items():
-                wire_query = deepcopy(query)
-                wire_query["id"] = f"semantic-probe-{lambda_key}-{case}"
-                response = await client.post(f"{base_url}/analyze", json=wire_query)
-                response.raise_for_status()
-                responses[lambda_key][case] = response.json()
-                requests_record[lambda_key][case] = query
+        for case, wire_body in wire_requests.items():
+            response = await client.post(f"{base_url}/analyze", json=wire_body)
+            response.raise_for_status()
+            responses[case] = response.json()
 
-    summary = validate_probe_results(health, responses)
+    summary = validate_probe_results(health, wire_requests, responses)
     payload = {
-        "probe_schema": 1,
+        "probe_schema": 2,
+        "run_id": run_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "base_url": base_url,
         "locked_fixture": {
@@ -284,12 +313,12 @@ async def run_probe(base_url: str) -> tuple[dict, Path]:
             "expected": LOCKED_EXPECTED,
         },
         "health": health,
-        "requests": requests_record,
+        "wire_requests": wire_requests,
         "responses": responses,
         "summary": summary,
         "passed": True,
     }
-    return payload, write_result(payload)
+    return payload, write_result(payload, run_id=run_id)
 
 
 def main() -> int:
@@ -302,7 +331,7 @@ def main() -> int:
         print(f"FAILED: {exc}")
         return 1
     print(f"PASS: {output}")
-    print(json.dumps(payload["summary"], indent=2, sort_keys=True))
+    print(json.dumps(payload["summary"], indent=2, sort_keys=True, allow_nan=False))
     return 0
 
 

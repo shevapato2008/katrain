@@ -139,3 +139,108 @@ async def test_missing_score_is_inconclusive():
 
     r = await play_one_game(our_move=our, golaxy_move=gx, adjudicate=adj, our_color="B", move_cap=10)
     assert r.conclusive is False and r.result == "inconclusive_score"
+
+
+@pytest.mark.asyncio
+async def test_initial_history_is_copied_and_sets_white_to_play():
+    initial_history = [0, 20, 2]
+    seen = []
+
+    async def our(history):
+        seen.append(("our", list(history), history is initial_history))
+        return "pass"
+
+    async def opponent(history):
+        seen.append(("opponent", list(history), history is initial_history))
+        return "pass"
+
+    async def adjudicate(history):
+        assert history == initial_history
+        assert history is not initial_history
+        return (-1.0, True)
+
+    outcome = await play_one_game(
+        our_move=our,
+        golaxy_move=opponent,
+        adjudicate=adjudicate,
+        our_color="B",
+        initial_history=initial_history,
+        move_cap=10,
+    )
+
+    assert seen == [("opponent", initial_history, False)]
+    assert initial_history == [0, 20, 2]
+    assert outcome.num_moves == 3
+
+
+@pytest.mark.asyncio
+async def test_initial_history_counts_only_new_moves_against_move_cap_and_is_adjudicated():
+    initial_history = [0, 20, 2, 22]
+    seen = []
+
+    async def move(history):
+        seen.append(list(history))
+        return 40 + len(seen)
+
+    async def adjudicate(history):
+        assert history == [0, 20, 2, 22, 41, 42, 43]
+        return (1.0, True)
+
+    outcome = await play_one_game(
+        our_move=move,
+        golaxy_move=move,
+        adjudicate=adjudicate,
+        our_color="B",
+        initial_history=initial_history,
+        move_cap=7,
+    )
+
+    assert len(seen) == 3
+    assert outcome.num_moves == 7
+    assert outcome.end_reason == "move_cap"
+    assert initial_history == [0, 20, 2, 22]
+
+
+@pytest.mark.asyncio
+async def test_initial_history_at_move_cap_plays_no_new_moves():
+    calls = 0
+
+    async def move(_history):
+        nonlocal calls
+        calls += 1
+        return 42
+
+    async def adjudicate(history):
+        assert history == [0, 20, 2, 22]
+        return (1.0, True)
+
+    outcome = await play_one_game(
+        our_move=move,
+        golaxy_move=move,
+        adjudicate=adjudicate,
+        our_color="B",
+        initial_history=[0, 20, 2, 22],
+        move_cap=4,
+    )
+
+    assert calls == 0
+    assert outcome.num_moves == 4
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_history", [[-1], [361], [True], [1.0], "not-a-list"])
+async def test_initial_history_rejects_non_wire_or_out_of_bounds_moves(bad_history):
+    async def move(_history):
+        return "pass"
+
+    async def adjudicate(_history):
+        return (1.0, True)
+
+    with pytest.raises(ValueError, match="initial_history"):
+        await play_one_game(
+            our_move=move,
+            golaxy_move=move,
+            adjudicate=adjudicate,
+            our_color="B",
+            initial_history=bad_history,
+        )

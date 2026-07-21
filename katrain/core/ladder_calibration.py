@@ -44,17 +44,25 @@ async def play_one_game(
     our_color: str,
     board_size: int = 19,
     move_cap: int = 400,
+    initial_history: Optional[List[int]] = None,
 ) -> GameOutcome:
     """Alternate our engine & Golaxy on a shared history of ONLY valid Golaxy wire coords
     (NO sentinel ever appended; G1). Trust only VERIFIED stops (H1): our-'pass' and a
     smoke-verified golaxy-'pass' adjudicate; a verified golaxy-'resign' is our win; an
     UNVERIFIED golaxy-'terminal' (out-of-board/malformed) is inconclusive_terminal — never
     scored. our-'unavailable' -> inconclusive_engine. move_cap -> adjudicate."""
-    history: List[int] = []  # valid Golaxy wire coords only
-    to_play = "B"
+    if initial_history is None:
+        history: List[int] = []
+    elif not isinstance(initial_history, list) or any(
+        type(coord) is not int or not 0 <= coord < board_size * board_size for coord in initial_history
+    ):
+        raise ValueError("initial_history must be a list of valid Golaxy wire coordinates")
+    else:
+        history = list(initial_history)
+    to_play = "B" if len(history) % 2 == 0 else "W"
     end_reason = "move_cap"
 
-    for _ in range(move_cap):
+    for _ in range(max(0, move_cap - len(history))):
         is_our_turn = to_play == our_color
         val = await (our_move if is_our_turn else golaxy_move)(history)
         if val == "unavailable":  # our_move only: no certified move -> inconclusive

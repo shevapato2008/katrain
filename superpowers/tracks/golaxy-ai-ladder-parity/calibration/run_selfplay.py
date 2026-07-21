@@ -23,12 +23,14 @@ attestation. Games end on a natural double-pass or the 400-move cap, then b28 sc
 Usage:
     KIVY_NO_ARGS=1 uv run python \
       superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py \
-      --matchups "rank_9d@80:rank_9d@40:10,rank_9d@40:b28@20:10" \
+      --matchups "rank_9d@80:rank_9d@40:20,rank_9d@40:b28@20:40" \
+      --phase confirm \
       --base-url http://127.0.0.1:8000 \
       --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl
 
-Each matchup is "A:B:games"; A wins are counted (from A's alternating color). Checkpoints per
-matchup to selfplay_<A>__vs__<B>.jsonl (resumable -- a re-run skips finished games)."""
+Each matchup is "A:B:fully-conclusive-pairs". Every frozen opening is played with A as Black and
+White; a pair with either game inconclusive contributes zero decision games. Checkpoints are
+phase-isolated and resumable, including completion of an interrupted color pair."""
 from __future__ import annotations
 
 import argparse
@@ -71,11 +73,14 @@ from katrain.core.ladder import (  # noqa: E402
     LadderRung,
     _valid_policy,
     colrow_to_golaxy,
+    golaxy_to_colrow,
     pick_ladder_move,
     rung_strength_spec,
     validate_analysis_attestation,
 )
 from katrain.core.ladder_calibration import play_one_game, elo_from_winrate, GameOutcome  # noqa: E402
+from katrain.core.game import BaseGame, IllegalMoveException  # noqa: E402
+from katrain.core.sgf_parser import Move  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("run_selfplay")
@@ -86,10 +91,12 @@ LEGACY_OUT_DIR = _RESULTS_DIR / "selfplay"
 _RANK_TOKEN = r"(?:[1-9]d|(?:[1-9]|1[0-9]|20)k)"
 _RANK_PROFILE_RE = re.compile(rf"(?:rank|preaz)_{_RANK_TOKEN}(?:_{_RANK_TOKEN})?\Z")
 _PROYEAR_PROFILE_RE = re.compile(r"proyear_([0-9]{4})\Z")
-CHECKPOINT_SCHEMA = 2
+CHECKPOINT_SCHEMA = 3
 SELECTION_ALGORITHM_VERSION = "selfplay-selection-v1"
 SYMMETRY_SETTINGS = {"mode": "katago-default", "requested_symmetry": None}
-OPENING_SUITE = {"id": "empty-board-v1", "seed": None}
+OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_v1.json"
+OPENING_SUITE_ID = "humansl-opening-suite-v1"
+OPENING_SUITE_SEED = 20260721
 BOARD_SIZE = 19
 KOMI = 7.5
 RULES = "chinese"
@@ -104,6 +111,180 @@ _IDENTITY_FIELDS = (
     "human_model_sha256",
     "katago_version",
 )
+WILSON_Z95 = 1.959963984540054
+
+
+def wilson_interval(wins: int, n: int) -> Tuple[float, float]:
+    """Return the two-sided 95% Wilson score interval for a binomial sample."""
+    if type(wins) is not int or type(n) is not int or n <= 0 or not 0 <= wins <= n:
+        raise ValueError("Wilson inputs require integer 0 <= wins <= n and n > 0")
+    p = wins / n
+    z2 = WILSON_Z95 * WILSON_Z95
+    denominator = 1 + z2 / n
+    center = (p + z2 / (2 * n)) / denominator
+    radius = WILSON_Z95 * math.sqrt((p * (1 - p) + z2 / (4 * n)) / n) / denominator
+    return max(0.0, center - radius), min(1.0, center + radius)
+
+
+def required_conclusive_pairs(phase: str, *, experiment4: bool = False) -> int:
+    if phase not in {"screen", "confirm"}:
+        raise ValueError("phase must be 'screen' or 'confirm'")
+    if experiment4 and phase != "confirm":
+        raise ValueError("experiment-4 requires confirm phase")
+    return 40 if experiment4 else (10 if phase == "screen" else 20)
+
+
+def classify_seam(wins: int, n: int, *, experiment4: bool = False) -> str:
+    minimum_games = 2 * required_conclusive_pairs("confirm", experiment4=experiment4)
+    if n < minimum_games or n % 2:
+        return "insufficient_pairs"
+    low, high = wilson_interval(wins, n)
+    if low > 0.5:
+        return "a_stronger"
+    if high < 0.5:
+        return "a_weaker"
+    return "inconclusive"
+
+
+def opening_suite_checksum(payload: Mapping[str, object]) -> str:
+    canonical = {key: value for key, value in payload.items() if key != "checksum"}
+    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+class _OpeningBoardConfig:
+    @staticmethod
+    def config(key):
+        return 0 if key == "game/handicap" else "chinese"
+
+
+def _validate_opening_legality(moves: List[int], board_size: int) -> None:
+    game = BaseGame(
+        _OpeningBoardConfig(),
+        game_properties={"SZ": board_size, "KM": KOMI, "RU": RULES},
+        bypass_config=True,
+    )
+    for ply, wire in enumerate(moves):
+        colrow = golaxy_to_colrow(wire, board_size)
+        if colrow == "pass":
+            raise ValueError("opening moves must not contain pass")
+        try:
+            game.play(Move(colrow, player="B" if ply % 2 == 0 else "W"))
+        except IllegalMoveException as exc:
+            raise ValueError(f"opening is not legal at ply {ply}: {exc}") from exc
+
+
+def load_opening_suite(path: Path = OPENING_SUITE_PATH) -> dict:
+    try:
+        payload = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot load opening suite: {exc}") from exc
+    if not isinstance(payload, dict) or payload.get("suite_id") != OPENING_SUITE_ID:
+        raise ValueError(f"opening suite ID must be {OPENING_SUITE_ID!r}")
+    if type(payload.get("seed")) is not int or payload["seed"] != OPENING_SUITE_SEED:
+        raise ValueError(f"opening suite seed must be documented as {OPENING_SUITE_SEED}")
+    if payload.get("board_size") != BOARD_SIZE:
+        raise ValueError(f"opening suite board size must be {BOARD_SIZE}")
+    openings = payload.get("openings")
+    if not isinstance(openings, list) or len(openings) < 20:
+        raise ValueError("opening suite requires at least 20 openings")
+    seen_ids, seen_prefixes = set(), set()
+    for opening in openings:
+        if not isinstance(opening, dict) or not isinstance(opening.get("id"), str) or not opening["id"]:
+            raise ValueError("opening suite entry has invalid ID")
+        if opening["id"] in seen_ids:
+            raise ValueError("opening IDs must be unique")
+        seen_ids.add(opening["id"])
+        moves = opening.get("moves")
+        if not isinstance(moves, list) or not moves:
+            raise ValueError("opening moves must be a nonempty list")
+        if any(type(move) is not int or not 0 <= move < BOARD_SIZE * BOARD_SIZE for move in moves):
+            raise ValueError("opening move is outside coordinate bounds")
+        prefix = tuple(moves)
+        if prefix in seen_prefixes:
+            raise ValueError("opening prefixes must be unique")
+        seen_prefixes.add(prefix)
+        _validate_opening_legality(moves, BOARD_SIZE)
+    actual_checksum = payload.get("checksum")
+    expected_checksum = opening_suite_checksum(payload)
+    if not isinstance(actual_checksum, str) or actual_checksum != expected_checksum:
+        raise ValueError(f"opening suite checksum mismatch: expected {expected_checksum}")
+    return payload
+
+
+def complete_pair_sample(records: List[Mapping[str, object]], *, phase: str) -> dict:
+    grouped = {}
+    for record in records:
+        if record.get("phase") != phase:
+            raise ValueError("checkpoint phase does not match this run")
+        key = (record.get("pair_attempt"), record.get("opening_id"))
+        color_index = record.get("color_index")
+        if type(key[0]) is not int or color_index not in {0, 1}:
+            raise ValueError("checkpoint pair key is malformed")
+        pair = grouped.setdefault(key, {})
+        if color_index in pair:
+            raise ValueError("checkpoint contains duplicate pair color")
+        pair[color_index] = record
+    complete_pairs = games = wins = inconclusive_pairs = 0
+    for pair in grouped.values():
+        if len(pair) != 2:
+            continue
+        if all(record.get("conclusive") is True for record in pair.values()):
+            complete_pairs += 1
+            games += 2
+            wins += sum(record.get("our_win") is True for record in pair.values())
+        else:
+            inconclusive_pairs += 1
+    return {
+        "complete_pairs": complete_pairs,
+        "games": games,
+        "a_wins": wins,
+        "inconclusive_pairs": inconclusive_pairs,
+    }
+
+
+def schedule_pair_games(
+    records: List[Mapping[str, object]], openings: List[Mapping[str, object]], *, phase: str, max_pair_attempts: int
+) -> List[dict]:
+    if phase not in {"screen", "confirm"}:
+        raise ValueError("phase must be screen or confirm")
+    if type(max_pair_attempts) is not int or max_pair_attempts <= 0:
+        raise ValueError("maximum pair attempts must be positive")
+    if not openings:
+        raise ValueError("opening suite is empty")
+    completed_keys = set()
+    for record in records:
+        if record.get("phase") != phase:
+            raise ValueError("checkpoint phase does not match this run")
+        attempt = record.get("pair_attempt")
+        color_index = record.get("color_index")
+        if type(attempt) is not int or not 0 <= attempt < max_pair_attempts:
+            raise ValueError("checkpoint exceeds maximum pair attempts")
+        expected = openings[attempt % len(openings)]
+        if record.get("opening_id") != expected["id"]:
+            raise ValueError("checkpoint opening does not match pair schedule")
+        if record.get("opening_moves") != expected["moves"]:
+            raise ValueError("checkpoint opening history does not match pair schedule")
+        key = (attempt, color_index)
+        if color_index not in {0, 1} or key in completed_keys:
+            raise ValueError("checkpoint contains duplicate or malformed pair color")
+        completed_keys.add(key)
+    scheduled = []
+    for attempt in range(max_pair_attempts):
+        opening = openings[attempt % len(openings)]
+        for color_index, a_color in enumerate(("B", "W")):
+            if (attempt, color_index) not in completed_keys:
+                scheduled.append(
+                    {
+                        "phase": phase,
+                        "opening_id": opening["id"],
+                        "pair_attempt": attempt,
+                        "color_index": color_index,
+                        "a_color": a_color,
+                        "initial_history": list(opening["moves"]),
+                    }
+                )
+    return scheduled
 
 
 class _MockKaTrainForConfig(KaTrainBase):
@@ -250,7 +431,7 @@ def _fname(label: str) -> str:
 
 
 def parse_matchups(spec: str) -> List[Tuple[str, str, int]]:
-    """'rank_9d@80:rank_9d@40:10,rank_9d@40:b28@20:10' -> [(A,B,games), ...]."""
+    """Parse ``A:B:target`` entries where target is fully conclusive color pairs."""
     out = []
     for part in spec.split(","):
         part = part.strip()
@@ -258,12 +439,12 @@ def parse_matchups(spec: str) -> List[Tuple[str, str, int]]:
             continue
         bits = part.split(":")
         if len(bits) != 3:
-            raise ValueError(f"matchup {part!r}: want 'A:B:games'")
+            raise ValueError(f"matchup {part!r}: want 'A:B:complete_pairs'")
         a, b, g = bits[0].strip(), bits[1].strip(), int(bits[2])
         make_player(a)  # validate
         make_player(b)
         if g <= 0:
-            raise ValueError(f"matchup {part!r}: games must be > 0")
+            raise ValueError(f"matchup {part!r}: complete pairs must be > 0")
         out.append((a, b, g))
     if not out:
         raise ValueError(f"no matchups parsed from {spec!r}")
@@ -304,7 +485,11 @@ def _matchup_configuration(
     *,
     capabilities: Mapping[str, object],
     wide_root_noise: float,
+    phase: str = "confirm",
+    experiment4: bool = False,
+    opening_suite: Optional[Mapping[str, object]] = None,
 ) -> dict:
+    suite = dict(opening_suite or load_opening_suite())
     configured_players = {}
     for side in ("A", "B"):
         label, rung, selection = players[side]
@@ -346,7 +531,15 @@ def _matchup_configuration(
             "adjudication_algorithm_version": ADJUDICATION_ALGORITHM_VERSION,
             "wide_root_noise": wide_root_noise,
             "symmetry_settings": SYMMETRY_SETTINGS,
-            "opening_suite": OPENING_SUITE,
+            "phase": phase,
+            "experiment4": experiment4,
+            "opening_suite": {
+                "id": suite["suite_id"],
+                "suite_id": suite["suite_id"],
+                "seed": suite["seed"],
+                "board_size": suite["board_size"],
+                "checksum": suite["checksum"],
+            },
         }
     )
 
@@ -364,7 +557,12 @@ def _validate_record_attestations(record: Mapping[str, object], configuration: M
     expected_players = configuration.get("players")
     if not isinstance(expected_players, Mapping):
         raise ValueError("checkpoint configuration has no players")
-    for expected_ply, attestation in enumerate(attestations):
+    opening_moves = record.get("opening_moves")
+    if not isinstance(opening_moves, list):
+        raise ValueError("checkpoint game record has no opening moves")
+    opening_length = len(opening_moves)
+    for attestation_index, attestation in enumerate(attestations):
+        expected_ply = opening_length + attestation_index
         if not isinstance(attestation, Mapping):
             raise ValueError("checkpoint move attestation is malformed")
         side = attestation.get("player")
@@ -422,15 +620,31 @@ def _validate_game_record(
         "end_reason",
         "attested_turn_count",
         "move_attestations",
+        "phase",
+        "opening_id",
+        "opening_moves",
+        "pair_attempt",
+        "color_index",
         "ts",
     }
     if not required_fields.issubset(record):
         raise ValueError("checkpoint game record is missing required fields")
-    expected_color = "B" if expected_index % 2 == 0 else "W"
+    expected_color = "B" if record.get("color_index") == 0 else "W"
     if type(record.get("index")) is not int or record.get("index") != expected_index:
         raise ValueError("checkpoint game indices must be unique, ordered, and gap-free")
     if record.get("a_color") != expected_color or record.get("our_color") != expected_color:
         raise ValueError("checkpoint game color parity is invalid")
+    if record.get("phase") != configuration.get("phase"):
+        raise ValueError("checkpoint game phase does not match the header")
+    if (
+        type(record.get("pair_attempt")) is not int
+        or record.get("pair_attempt") < 0
+        or record.get("color_index") not in {0, 1}
+        or record.get("index") != 2 * record.get("pair_attempt") + record.get("color_index")
+    ):
+        raise ValueError("checkpoint game pair key is malformed")
+    if not isinstance(record.get("opening_id"), str) or not isinstance(record.get("opening_moves"), list):
+        raise ValueError("checkpoint game opening is malformed")
     if record.get("player_a") != players["A"]["label"] or record.get("player_b") != players["B"]["label"]:
         raise ValueError("checkpoint game player labels do not match the header")
     result = record.get("result")
@@ -462,7 +676,10 @@ def _validate_game_record(
         raise ValueError("checkpoint game result flags are inconsistent")
     _validate_record_attestations(record, configuration)
     accepted_pass = end_reason in {"our_pass", "golaxy_pass"} and result != "inconclusive_engine"
-    expected_attested = num_moves + (1 if accepted_pass else 0)
+    opening_length = len(record["opening_moves"])
+    if num_moves < opening_length:
+        raise ValueError("checkpoint game num_moves is shorter than its opening")
+    expected_attested = num_moves - opening_length + (1 if accepted_pass else 0)
     if record.get("attested_turn_count") != expected_attested:
         raise ValueError("checkpoint game attested turn count is inconsistent with its ending")
 
@@ -473,10 +690,10 @@ def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, obje
     with path.open() as f:
         records = [json.loads(line) for line in f if line.strip()]
     if not records:
-        raise ValueError("checkpoint exists without a schema-2 header")
+        raise ValueError(f"checkpoint exists without a schema-{CHECKPOINT_SCHEMA} header")
     header = records[0]
     if header.get("record_type") != "header" or header.get("schema") != CHECKPOINT_SCHEMA:
-        raise ValueError("checkpoint has no schema-2 header")
+        raise ValueError(f"checkpoint has no schema-{CHECKPOINT_SCHEMA} header")
     if header.get("fingerprint") != fingerprint:
         raise ValueError("checkpoint header fingerprint does not match this run")
     if _configuration_fingerprint(header.get("configuration", {})) != fingerprint:
@@ -552,24 +769,42 @@ def _validated_out_dir(path: Path) -> Path:
 async def run_matchup(
     specA: str,
     specB: str,
-    games: int,
+    target_pairs: int,
     *,
     client: httpx.AsyncClient,
     base_url: str,
     wrn: float,
     out_dir: Path,
     capabilities: Mapping[str, object],
+    phase: str = "confirm",
+    experiment4: bool = False,
+    max_pair_attempts: Optional[int] = None,
 ) -> dict:
+    required = required_conclusive_pairs(phase, experiment4=experiment4)
+    if type(target_pairs) is not int or target_pairs < required or (phase == "screen" and target_pairs != required):
+        comparator = "exactly" if phase == "screen" else "at least"
+        raise ValueError(f"{phase} target must be {comparator} {required} fully conclusive pairs")
+    if max_pair_attempts is None:
+        max_pair_attempts = max(target_pairs * 2, target_pairs + 10)
+    opening_suite = load_opening_suite()
     playerA = make_player(specA)
     playerB = make_player(specB)
     labelA, rungA, selA = playerA
     labelB, rungB, selB = playerB
     players = {"A": playerA, "B": playerB}
     identities = _preflight_capabilities(capabilities, players)
-    configuration = _matchup_configuration(players, identities, capabilities=capabilities, wide_root_noise=wrn)
+    configuration = _matchup_configuration(
+        players,
+        identities,
+        capabilities=capabilities,
+        wide_root_noise=wrn,
+        phase=phase,
+        experiment4=experiment4,
+        opening_suite=opening_suite,
+    )
     fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
-    ckpt = out_dir / f"selfplay_{_fname(labelA)}__vs__{_fname(labelB)}.jsonl"
+    ckpt = out_dir / f"selfplay_{phase}_{_fname(labelA)}__vs__{_fname(labelB)}.jsonl"
     with _checkpoint_lock(ckpt):
         return await _run_matchup_checkpoint(
             labelA=labelA,
@@ -578,7 +813,11 @@ async def run_matchup(
             labelB=labelB,
             rungB=rungB,
             selB=selB,
-            games=games,
+            target_pairs=target_pairs,
+            max_pair_attempts=max_pair_attempts,
+            phase=phase,
+            experiment4=experiment4,
+            openings=opening_suite["openings"],
             client=client,
             base_url=base_url,
             wrn=wrn,
@@ -597,7 +836,11 @@ async def _run_matchup_checkpoint(
     labelB,
     rungB,
     selB,
-    games,
+    target_pairs,
+    max_pair_attempts,
+    phase,
+    experiment4,
+    openings,
     client,
     base_url,
     wrn,
@@ -606,12 +849,10 @@ async def _run_matchup_checkpoint(
     fingerprint,
     ckpt,
 ) -> dict:
-    start = _prepare_checkpoint(ckpt, fingerprint, configuration)
-    if games < start:
-        raise ValueError(f"requested target {games} is smaller than existing checkpoint count {start}")
-    winsA = conclusive = 0
+    _prepare_checkpoint(ckpt, fingerprint, configuration)
+    records = []
     reason_counts: dict = {}
-    if ckpt.is_file():  # fold prior games into the running totals (resume)
+    if ckpt.is_file():
         with ckpt.open() as f:
             for line in f:
                 if not line.strip():
@@ -619,14 +860,14 @@ async def _run_matchup_checkpoint(
                 rec = json.loads(line)
                 if rec.get("record_type") == "header":
                     continue
-                if rec["conclusive"]:
-                    conclusive += 1
-                    winsA += 1 if rec["our_win"] else 0
+                records.append(rec)
                 reason_counts[rec["result"]] = reason_counts.get(rec["result"], 0) + 1
-    if start >= games:
-        log.info("matchup %s vs %s: already have %d/%d, skipping", labelA, labelB, start, games)
-    else:
-        log.info("matchup %s vs %s: resuming at game %d/%d", labelA, labelB, start, games)
+    existing_sample = complete_pair_sample(records, phase=phase)
+    if existing_sample["complete_pairs"] > target_pairs:
+        raise ValueError(
+            f"requested target {target_pairs} is smaller than existing complete pair count "
+            f"{existing_sample['complete_pairs']}"
+        )
 
     adj = partial(
         adapters.adjudicate,
@@ -639,8 +880,14 @@ async def _run_matchup_checkpoint(
         capabilities=capabilities,
     )
     with ckpt.open("a") as f:
-        for i in range(start, games):
-            a_color = "B" if i % 2 == 0 else "W"  # alternate A's color for a fair B/W split
+        scheduled = schedule_pair_games(records, openings, phase=phase, max_pair_attempts=max_pair_attempts)
+        for scheduled_game in scheduled:
+            sample = complete_pair_sample(records, phase=phase)
+            if sample["complete_pairs"] >= target_pairs:
+                break
+            i = 2 * scheduled_game["pair_attempt"] + scheduled_game["color_index"]
+            a_color = scheduled_game["a_color"]
+            initial_history = scheduled_game["initial_history"]
             move_attestations = []
 
             async def a_move(history):
@@ -678,10 +925,8 @@ async def _run_matchup_checkpoint(
                 our_color=a_color,
                 board_size=BOARD_SIZE,
                 move_cap=MOVE_CAP,
+                initial_history=initial_history,
             )
-            if outcome.conclusive:
-                conclusive += 1
-                winsA += 1 if outcome.our_win else 0
             reason_counts[outcome.result] = reason_counts.get(outcome.result, 0) + 1
             rec = {
                 "record_type": "game",
@@ -690,6 +935,11 @@ async def _run_matchup_checkpoint(
                 "player_a": labelA,
                 "player_b": labelB,
                 "a_color": a_color,
+                "phase": phase,
+                "opening_id": scheduled_game["opening_id"],
+                "opening_moves": list(initial_history),
+                "pair_attempt": scheduled_game["pair_attempt"],
+                "color_index": scheduled_game["color_index"],
                 **dataclasses.asdict(outcome),  # result/our_win(=A won)/num_moves/black_score/conclusive/end_reason
                 "attested_turn_count": len(move_attestations),
                 "move_attestations": move_attestations,
@@ -697,12 +947,13 @@ async def _run_matchup_checkpoint(
             }
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             f.flush()
+            records.append(rec)
             log.info(
                 "  %s vs %s game %d/%d: A_%s (%s, end=%s, conclusive=%s, moves=%d, score=%s)",
                 labelA,
                 labelB,
                 i + 1,
-                games,
+                2 * max_pair_attempts,
                 "win" if (outcome.conclusive and outcome.our_win) else ("loss" if outcome.conclusive else "?"),
                 outcome.result,
                 outcome.end_reason,
@@ -711,16 +962,34 @@ async def _run_matchup_checkpoint(
                 outcome.black_score,
             )
 
+    sample = complete_pair_sample(records, phase=phase)
+    winsA, conclusive = sample["a_wins"], sample["games"]
     elo, lo, hi = elo_from_winrate(winsA, conclusive)
+    interval = list(wilson_interval(winsA, conclusive)) if conclusive else [0.0, 1.0]
+    attempted = 1 + max((record["pair_attempt"] for record in records), default=-1)
+    classification = (
+        classify_seam(winsA, conclusive, experiment4=experiment4)
+        if phase == "confirm"
+        else "screen_complete" if sample["complete_pairs"] == target_pairs else "insufficient_pairs"
+    )
     summary = {
         "player_a": labelA,
         "player_b": labelB,
-        "games": games,
+        "phase": phase,
+        "target_complete_pairs": target_pairs,
+        "complete_pairs": sample["complete_pairs"],
+        "decision_games": conclusive,
+        "pair_attempts": attempted,
+        "inconclusive_pairs": sample["inconclusive_pairs"],
+        "max_pair_attempts": max_pair_attempts,
+        "max_attempts_reached": sample["complete_pairs"] < target_pairs and attempted >= max_pair_attempts,
         "conclusive": conclusive,
         "a_wins": winsA,
         "a_winrate": (winsA / conclusive if conclusive else None),
         "a_elo_vs_b": elo,
         "a_elo_ci95": [lo, hi],
+        "wilson_ci95": interval,
+        "classification": classification,
         "reason_counts": reason_counts,
     }
     log.info(
@@ -762,6 +1031,9 @@ async def main_async(args) -> int:
                     wrn=wrn,
                     out_dir=out_dir,
                     capabilities=capabilities,
+                    phase=args.phase,
+                    experiment4=args.experiment4,
+                    max_pair_attempts=args.max_pair_attempts,
                 )
             )
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -774,12 +1046,19 @@ async def main_async(args) -> int:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--matchups", required=True, help="'A:B:games,...' e.g. 'rank_9d@80:rank_9d@40:10'")
+    p.add_argument(
+        "--matchups",
+        required=True,
+        help="'A:B:complete_pairs,...' e.g. 'rank_9d@80:rank_9d@40:20' (pairs, not games/attempts)",
+    )
     p.add_argument("--base-url", default="http://127.0.0.1:8000", help="our KataGo HTTP analysis server")
     p.add_argument("--out", default=str(DEFAULT_OUT_DIR), help="checkpoint dir")
     p.add_argument(
         "--wide-root-noise", type=float, default=None, help="override wideRootNoise (default: shipping config)"
     )
+    p.add_argument("--phase", choices=("screen", "confirm"), default="confirm")
+    p.add_argument("--experiment4", action="store_true", help="apply the 40-complete-pair experiment-4 threshold")
+    p.add_argument("--max-pair-attempts", type=int, default=None, help="separate guard including inconclusive pairs")
     return p
 
 

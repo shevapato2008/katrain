@@ -356,7 +356,7 @@ def _checkpoint_payload():
     fingerprint = selfplay._configuration_fingerprint(configuration)
     header = {
         "record_type": "header",
-        "schema": 2,
+        "schema": 3,
         "fingerprint": fingerprint,
         "configuration": configuration,
     }
@@ -364,6 +364,11 @@ def _checkpoint_payload():
         "record_type": "game",
         "fingerprint": fingerprint,
         "index": 0,
+        "phase": "confirm",
+        "opening_id": "o001",
+        "opening_moves": [],
+        "pair_attempt": 0,
+        "color_index": 0,
         "a_color": "B",
         "conclusive": True,
         "our_win": True,
@@ -384,7 +389,7 @@ def _checkpoint_payload():
     return configuration, fingerprint, header, game
 
 
-def test_resume_accepts_schema2_header_and_matching_record_attestations(tmp_path):
+def test_resume_accepts_schema3_header_and_matching_record_attestations(tmp_path):
     configuration, fingerprint, header, game = _checkpoint_payload()
     checkpoint = tmp_path / "match.jsonl"
     checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
@@ -437,7 +442,7 @@ def test_resume_rejects_move_attestation_relabelled_to_wrong_player(tmp_path):
 
 def _second_game(configuration, fingerprint):
     game = json.loads(json.dumps(_checkpoint_payload()[3]))
-    game.update(index=1, a_color="W", our_color="W", our_win=False, result="our_loss", ts=2.0)
+    game.update(index=1, a_color="W", our_color="W", color_index=1, our_win=False, result="our_loss", ts=2.0)
     game["move_attestations"] = [
         {"ply": 0, "player": "B", "identity": dict(configuration["players"]["B"]["identity"])},
         {"ply": 1, "player": "A", "identity": dict(configuration["players"]["A"]["identity"])},
@@ -490,21 +495,27 @@ def test_checkpoint_lock_rejects_contention_and_releases(tmp_path):
 async def test_self_produced_terminal_pass_record_roundtrips_on_resume(tmp_path, monkeypatch):
     calls = {"games": 0}
 
-    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, **_settings):
+    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, initial_history, **_settings):
         calls["games"] += 1
-        assert await our_move([]) == "pass"
-        return selfplay.GameOutcome(our_color, "our_win", True, 0, 1.5, True, "our_pass")
+        mover = our_move if our_color == "B" else golaxy_move
+        assert await mover(initial_history) == "pass"
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history), 1.5, True, "our_pass")
 
     monkeypatch.setattr(selfplay, "play_one_game", fake_play_one_game)
+    monkeypatch.setattr(selfplay, "required_conclusive_pairs", lambda *_args, **_kwargs: 1)
 
     def handler(request):
         body = json.loads(request.content)
-        assert body["overrideSettings"]["model"] == "b18"
+        model = body["overrideSettings"]["model"]
         return httpx.Response(
             200,
             json={
                 "moveInfos": [{"move": "pass", "order": 0}],
-                "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+                "_wrapper": _attestation(
+                    selected_model=model,
+                    model_path=f"/models/{model}.bin.gz",
+                    model_sha256=f"{model}-sha",
+                ),
             },
         )
 
@@ -516,12 +527,12 @@ async def test_self_produced_terminal_pass_record_roundtrips_on_resume(tmp_path,
             out_dir=tmp_path,
             capabilities=_health_snapshot(),
         )
-        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
-        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, phase="screen", max_pair_attempts=1, **kwargs)
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, phase="screen", max_pair_attempts=1, **kwargs)
 
-    assert calls["games"] == 1
+    assert calls["games"] == 2
     records = [json.loads(line) for line in next(tmp_path.glob("*.jsonl")).read_text().splitlines()]
-    assert records[1]["num_moves"] == 0
+    assert records[1]["num_moves"] == len(records[1]["opening_moves"])
     assert records[1]["attested_turn_count"] == 1
     assert len(records[1]["move_attestations"]) == 1
 
@@ -530,12 +541,15 @@ async def test_self_produced_terminal_pass_record_roundtrips_on_resume(tmp_path,
 async def test_self_produced_unavailable_record_roundtrips_on_resume(tmp_path, monkeypatch):
     calls = {"games": 0}
 
-    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, **_settings):
+    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, initial_history, **_settings):
         calls["games"] += 1
-        assert await our_move([]) == "unavailable"
-        return selfplay.GameOutcome(our_color, "inconclusive_engine", False, 0, None, False, "our_pass")
+        assert await our_move(initial_history) == "unavailable"
+        return selfplay.GameOutcome(
+            our_color, "inconclusive_engine", False, len(initial_history), None, False, "our_pass"
+        )
 
     monkeypatch.setattr(selfplay, "play_one_game", fake_play_one_game)
+    monkeypatch.setattr(selfplay, "required_conclusive_pairs", lambda *_args, **_kwargs: 1)
 
     def handler(request):
         body = json.loads(request.content)
@@ -559,10 +573,10 @@ async def test_self_produced_unavailable_record_roundtrips_on_resume(tmp_path, m
             out_dir=tmp_path,
             capabilities=_health_snapshot(),
         )
-        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
-        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, phase="screen", max_pair_attempts=1, **kwargs)
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, phase="screen", max_pair_attempts=1, **kwargs)
 
-    assert calls["games"] == 1
+    assert calls["games"] == 2
     records = [json.loads(line) for line in next(tmp_path.glob("*.jsonl")).read_text().splitlines()]
     assert records[1]["result"] == "inconclusive_engine"
     assert records[1]["attested_turn_count"] == 0
@@ -623,19 +637,24 @@ def test_checkpoint_lock_selects_windows_backend_when_fcntl_is_unavailable(tmp_p
 async def test_run_matchup_rejects_target_smaller_than_existing_checkpoint(tmp_path, monkeypatch):
     calls = {"games": 0}
 
-    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, **_settings):
+    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, initial_history, **_settings):
         calls["games"] += 1
-        assert await our_move([]) == "pass"
-        return selfplay.GameOutcome(our_color, "our_win", True, 0, 1.5, True, "our_pass")
+        mover = our_move if our_color == "B" else golaxy_move
+        assert await mover(initial_history) == "pass"
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history), 1.5, True, "our_pass")
 
     monkeypatch.setattr(selfplay, "play_one_game", fake_play_one_game)
+    monkeypatch.setattr(selfplay, "required_conclusive_pairs", lambda *_args, **_kwargs: 0)
 
-    def handler(_request):
+    def handler(request):
+        model = json.loads(request.content)["overrideSettings"]["model"]
         return httpx.Response(
             200,
             json={
                 "moveInfos": [{"move": "pass", "order": 0}],
-                "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+                "_wrapper": _attestation(
+                    selected_model=model, model_path=f"/models/{model}.bin.gz", model_sha256=f"{model}-sha"
+                ),
             },
         )
 
@@ -652,7 +671,7 @@ async def test_run_matchup_rejects_target_smaller_than_existing_checkpoint(tmp_p
             await selfplay.run_matchup("rank_9d@40", "b28@20", 0, **kwargs)
 
 
-def test_fresh_checkpoint_writes_schema2_header_before_append(tmp_path):
+def test_fresh_checkpoint_writes_schema3_header_before_append(tmp_path):
     configuration, fingerprint, _header, _game = _checkpoint_payload()
     checkpoint = tmp_path / "match.jsonl"
 
@@ -661,7 +680,281 @@ def test_fresh_checkpoint_writes_schema2_header_before_append(tmp_path):
     assert len(lines) == 1
     assert json.loads(lines[0]) == {
         "record_type": "header",
-        "schema": 2,
+        "schema": 3,
         "fingerprint": fingerprint,
         "configuration": configuration,
     }
+
+
+@pytest.mark.parametrize(
+    ("wins", "games", "expected"),
+    [
+        (0, 1, (0.0, 0.7934506856227626)),
+        (5, 10, (0.236593090512564, 0.7634069094874361)),
+        (30, 40, (0.5980603857923197, 0.858128813609037)),
+        (40, 40, (0.9123783988027132, 1.0)),
+    ],
+)
+def test_wilson_interval_locked_numerical_cases(wins, games, expected):
+    actual = selfplay.wilson_interval(wins, games)
+    assert actual == pytest.approx(expected, abs=1e-15)
+
+
+@pytest.mark.parametrize(
+    ("wins", "games", "expected"),
+    [(30, 40, "a_stronger"), (20, 40, "inconclusive"), (10, 40, "a_weaker")],
+)
+def test_classify_seam_locked_cases(wins, games, expected):
+    assert selfplay.classify_seam(wins, games) == expected
+
+
+def test_classify_refuses_underpowered_confirmatory_samples():
+    assert selfplay.classify_seam(38, 38) == "insufficient_pairs"
+    assert selfplay.classify_seam(78, 78, experiment4=True) == "insufficient_pairs"
+    assert selfplay.classify_seam(40, 40, experiment4=True) == "insufficient_pairs"
+    assert selfplay.classify_seam(80, 80, experiment4=True) == "a_stronger"
+
+
+def test_screen_target_is_exactly_ten_complete_pairs():
+    assert selfplay.required_conclusive_pairs("screen", experiment4=False) == 10
+    assert selfplay.required_conclusive_pairs("confirm", experiment4=False) == 20
+    assert selfplay.required_conclusive_pairs("confirm", experiment4=True) == 40
+    with pytest.raises(ValueError, match="experiment-4.*confirm"):
+        selfplay.required_conclusive_pairs("screen", experiment4=True)
+
+
+def _paired_record(pair_attempt, color_index, *, conclusive=True, our_win=False, phase="screen", opening_id="o001"):
+    return {
+        "phase": phase,
+        "opening_id": opening_id,
+        "pair_attempt": pair_attempt,
+        "color_index": color_index,
+        "conclusive": conclusive,
+        "our_win": our_win,
+        "opening_moves": [0, 20] if opening_id == "o001" else [2, 22],
+    }
+
+
+def test_inconclusive_opening_pair_contributes_zero_decision_games():
+    records = [
+        _paired_record(0, 0, conclusive=True, our_win=True),
+        _paired_record(0, 1, conclusive=False),
+        _paired_record(1, 0, conclusive=True, our_win=False, opening_id="o002"),
+        _paired_record(1, 1, conclusive=True, our_win=True, opening_id="o002"),
+    ]
+
+    sample = selfplay.complete_pair_sample(records, phase="screen")
+
+    assert sample == {"complete_pairs": 1, "games": 2, "a_wins": 1, "inconclusive_pairs": 1}
+
+
+def test_pair_scheduler_orders_colors_and_completes_interrupted_pair_first():
+    openings = [{"id": "o001", "moves": [0, 20]}, {"id": "o002", "moves": [2, 22]}]
+    records = [_paired_record(0, 0, opening_id="o001")]
+
+    scheduled = selfplay.schedule_pair_games(records, openings, phase="screen", max_pair_attempts=2)
+
+    assert [(s["pair_attempt"], s["opening_id"], s["color_index"], s["a_color"]) for s in scheduled] == [
+        (0, "o001", 1, "W"),
+        (1, "o002", 0, "B"),
+        (1, "o002", 1, "W"),
+    ]
+    assert scheduled[0]["initial_history"] == [0, 20]
+
+
+def test_pair_scheduler_rejects_phase_leakage_duplicate_color_and_attempt_overflow():
+    openings = [{"id": "o001", "moves": [0, 20]}]
+    with pytest.raises(ValueError, match="phase"):
+        selfplay.schedule_pair_games(
+            [_paired_record(0, 0, phase="confirm")], openings, phase="screen", max_pair_attempts=1
+        )
+    with pytest.raises(ValueError, match="duplicate"):
+        selfplay.schedule_pair_games(
+            [_paired_record(0, 0), _paired_record(0, 0)], openings, phase="screen", max_pair_attempts=1
+        )
+    with pytest.raises(ValueError, match="maximum pair attempts"):
+        selfplay.schedule_pair_games([_paired_record(1, 0)], openings, phase="screen", max_pair_attempts=1)
+
+
+def test_pair_scheduler_rejects_resume_opening_history_drift():
+    openings = [{"id": "o001", "moves": [0, 20]}]
+    record = _paired_record(0, 0)
+    record["opening_moves"] = [2, 22]
+
+    with pytest.raises(ValueError, match="opening.*history"):
+        selfplay.schedule_pair_games([record], openings, phase="screen", max_pair_attempts=1)
+
+
+def test_pair_scheduler_exhausts_declared_max_attempts_without_runtime_generation():
+    openings = [{"id": "o001", "moves": [0, 20]}, {"id": "o002", "moves": [2, 22]}]
+    scheduled = selfplay.schedule_pair_games([], openings, phase="confirm", max_pair_attempts=5)
+
+    assert len(scheduled) == 10
+    assert [s["opening_id"] for s in scheduled[::2]] == ["o001", "o002", "o001", "o002", "o001"]
+    assert [s["pair_attempt"] for s in scheduled[::2]] == list(range(5))
+
+
+def _suite_payload(openings=None):
+    payload = {
+        "suite_id": "humansl-opening-suite-v1",
+        "seed": 20260721,
+        "board_size": 19,
+        "openings": openings or [{"id": f"o{i:03d}", "moves": [i, 19 + i]} for i in range(1, 21)],
+    }
+    payload["checksum"] = selfplay.opening_suite_checksum(payload)
+    return payload
+
+
+def test_shipped_opening_suite_has_documented_identity_checksum_and_legal_unique_prefixes():
+    suite = selfplay.load_opening_suite(selfplay.OPENING_SUITE_PATH)
+
+    assert suite["suite_id"] == "humansl-opening-suite-v1"
+    assert suite["seed"] == 20260721
+    assert suite["board_size"] == 19
+    assert len(suite["openings"]) >= 20
+    assert len({tuple(opening["moves"]) for opening in suite["openings"]}) == len(suite["openings"])
+    assert suite["checksum"] == selfplay.opening_suite_checksum(suite)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "match"),
+    [
+        (lambda p: p.update(suite_id="wrong"), "suite ID"),
+        (lambda p: p.update(seed=None), "seed"),
+        (lambda p: p["openings"][0]["moves"].__setitem__(0, 361), "bounds"),
+        (lambda p: p["openings"][0].update(moves=[0, 0]), "legal"),
+        (lambda p: p["openings"][1].update(moves=list(p["openings"][0]["moves"])), "unique"),
+        (lambda p: p.update(checksum="0" * 64), "checksum"),
+    ],
+)
+def test_opening_suite_loader_rejects_identity_bounds_legality_uniqueness_and_checksum(tmp_path, mutation, match):
+    payload = _suite_payload()
+    mutation(payload)
+    if match != "checksum":
+        payload["checksum"] = selfplay.opening_suite_checksum(payload)
+    path = tmp_path / "suite.json"
+    path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match=match):
+        selfplay.load_opening_suite(path)
+
+
+def test_cli_target_is_complete_conclusive_pairs_with_separate_attempt_guard():
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_9d@80:rank_9d@40:20",
+            "--phase",
+            "confirm",
+            "--max-pair-attempts",
+            "30",
+        ]
+    )
+
+    assert selfplay.parse_matchups(args.matchups) == [("rank_9d@80", "rank_9d@40", 20)]
+    assert args.phase == "confirm"
+    assert args.max_pair_attempts == 30
+    assert "pairs" in selfplay.build_arg_parser().format_help()
+
+
+@pytest.mark.asyncio
+async def test_screen_run_stops_at_exactly_ten_complete_pairs(tmp_path, monkeypatch):
+    calls = []
+
+    async def fake_game(*, our_color, initial_history, **_kwargs):
+        calls.append((our_color, list(initial_history)))
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history), 1.0, True, "move_cap")
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_game)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _request: httpx.Response(500))) as client:
+        summary = await selfplay.run_matchup(
+            "rank_9d@40",
+            "b28@20",
+            10,
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+            phase="screen",
+            max_pair_attempts=25,
+        )
+
+    assert summary["complete_pairs"] == 10
+    assert summary["decision_games"] == 20
+    assert summary["pair_attempts"] == 10
+    assert len(calls) == 20
+    assert [color for color, _opening in calls] == ["B", "W"] * 10
+
+
+@pytest.mark.asyncio
+async def test_inconclusive_pair_forces_a_fresh_pair_attempt_and_max_attempts_terminates(tmp_path, monkeypatch):
+    calls = 0
+
+    async def fake_game(*, our_color, initial_history, **_kwargs):
+        nonlocal calls
+        calls += 1
+        conclusive = calls not in {2, 3, 4}
+        result = "our_win" if conclusive else "inconclusive_unsettled"
+        return selfplay.GameOutcome(
+            our_color,
+            result,
+            conclusive,
+            len(initial_history),
+            1.0,
+            conclusive,
+            "move_cap",
+        )
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_game)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _request: httpx.Response(500))) as client:
+        summary = await selfplay.run_matchup(
+            "rank_9d@40",
+            "b28@20",
+            10,
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+            phase="screen",
+            max_pair_attempts=2,
+        )
+
+    assert calls == 4
+    assert summary["complete_pairs"] == 0
+    assert summary["decision_games"] == 0
+    assert summary["inconclusive_pairs"] == 2
+    assert summary["max_attempts_reached"] is True
+
+
+@pytest.mark.asyncio
+async def test_interrupted_pair_resume_runs_only_missing_color_then_continues(tmp_path, monkeypatch):
+    calls = []
+
+    async def fake_game(*, our_color, initial_history, **_kwargs):
+        calls.append(our_color)
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history), 1.0, True, "move_cap")
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_game)
+    kwargs = dict(
+        client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _request: httpx.Response(500))),
+        base_url="http://engine",
+        wrn=0.04,
+        out_dir=tmp_path,
+        capabilities=_health_snapshot(),
+        phase="screen",
+        max_pair_attempts=20,
+    )
+    try:
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 10, **kwargs)
+        checkpoint = next(tmp_path.glob("*.jsonl"))
+        lines = checkpoint.read_text().splitlines()
+        checkpoint.write_text("\n".join(lines[:2]) + "\n")
+        calls.clear()
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 10, **kwargs)
+    finally:
+        await kwargs["client"].aclose()
+
+    assert calls[0] == "W"
+    assert len(calls) == 19

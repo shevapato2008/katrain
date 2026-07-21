@@ -1,5 +1,6 @@
 import importlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -312,9 +313,25 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
         for key, value in HUMANSL_PIKL_BASELINE.items()
     )
     assert configuration["players"]["A"]["effective_overrides"]["humanSLProfile"] == "rank_9d"
+    assert configuration["players"]["A"]["requested_main_model"] == "b18"
+    assert configuration["players"]["A"]["http_effective_overrides"]["model"] == "b18"
+    assert configuration["players"]["A"]["http_effective_overrides"]["wideRootNoise"] == 0.04
     assert configuration["players"]["A"]["visits"] == 40
     assert configuration["players"]["A"]["selection_algorithm_version"]
     assert configuration["wide_root_noise"] == 0.04
+    assert configuration["game"] == {
+        "board_size": 19,
+        "komi": 7.5,
+        "rules": selfplay.adapters.BaseEngine.get_rules("chinese"),
+        "move_cap": 400,
+    }
+    assert configuration["referee"]["visits"] == 200
+    assert configuration["referee"]["requested_main_model"] == "b28"
+    assert configuration["referee"]["http_effective_overrides"] == {
+        "model": "b28",
+        "reportAnalysisWinratesAs": "BLACK",
+    }
+    assert configuration["adjudication_algorithm_version"]
     assert configuration["symmetry_settings"]
     assert configuration["opening_suite"]["id"]
     assert len(digest) == 64
@@ -350,8 +367,15 @@ def _checkpoint_payload():
         "a_color": "B",
         "conclusive": True,
         "our_win": True,
-        "result": "win",
+        "result": "our_win",
+        "player_a": "rank_9d@40",
+        "player_b": "b28@20",
         "num_moves": 2,
+        "attested_turn_count": 2,
+        "black_score": 1.5,
+        "end_reason": "move_cap",
+        "our_color": "B",
+        "ts": 1.0,
         "move_attestations": [
             {"ply": 0, "player": "A", "identity": dict(identities["A"])},
             {"ply": 1, "player": "B", "identity": dict(identities["B"])},
@@ -409,6 +433,97 @@ def test_resume_rejects_move_attestation_relabelled_to_wrong_player(tmp_path):
 
     with pytest.raises(ValueError, match="wrong player"):
         selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def _second_game(configuration, fingerprint):
+    game = json.loads(json.dumps(_checkpoint_payload()[3]))
+    game.update(index=1, a_color="W", our_color="W", our_win=False, result="our_loss", ts=2.0)
+    game["move_attestations"] = [
+        {"ply": 0, "player": "B", "identity": dict(configuration["players"]["B"]["identity"])},
+        {"ply": 1, "player": "A", "identity": dict(configuration["players"]["A"]["identity"])},
+    ]
+    return game
+
+
+@pytest.mark.parametrize(
+    "corrupt",
+    [
+        lambda games: games[1].update(index=0),
+        lambda games: games[1].update(index=2),
+        lambda games: games[1].update(index=1.0),
+        lambda games: games.reverse(),
+        lambda games: games[1].update(a_color="B"),
+        lambda games: games[1].update(player_a="wrong"),
+        lambda games: games[1].update(our_win="yes"),
+        lambda games: games[1].update(result="fabricated"),
+        lambda games: games[1].update(result=[]),
+        lambda games: games[1].pop("black_score"),
+        lambda games: games[1].update(ts=math.nan),
+        lambda games: games[0]["move_attestations"][0].update(ply=False),
+    ],
+)
+def test_resume_rejects_duplicate_gap_reordered_or_corrupt_game_sequence(tmp_path, corrupt):
+    configuration, fingerprint, header, first = _checkpoint_payload()
+    first.update(player_a="rank_9d@40", player_b="b28@20")
+    games = [first, _second_game(configuration, fingerprint)]
+    corrupt(games)
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text("\n".join(json.dumps(record) for record in [header, *games]) + "\n")
+
+    with pytest.raises(ValueError, match="checkpoint game"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_checkpoint_lock_rejects_contention_and_releases(tmp_path):
+    checkpoint = tmp_path / "match.jsonl"
+
+    with selfplay._checkpoint_lock(checkpoint):
+        with pytest.raises(RuntimeError, match="locked"):
+            with selfplay._checkpoint_lock(checkpoint):
+                pass
+
+    with selfplay._checkpoint_lock(checkpoint):
+        pass
+
+
+@pytest.mark.asyncio
+async def test_self_produced_terminal_pass_record_roundtrips_on_resume(tmp_path, monkeypatch):
+    calls = {"games": 0}
+
+    async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, **_settings):
+        calls["games"] += 1
+        assert await our_move([]) == "pass"
+        return selfplay.GameOutcome(our_color, "our_win", True, 0, 1.5, True, "our_pass")
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_play_one_game)
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["overrideSettings"]["model"] == "b18"
+        return httpx.Response(
+            200,
+            json={
+                "moveInfos": [{"move": "pass", "order": 0}],
+                "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        kwargs = dict(
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+        )
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+        await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
+
+    assert calls["games"] == 1
+    records = [json.loads(line) for line in next(tmp_path.glob("*.jsonl")).read_text().splitlines()]
+    assert records[1]["num_moves"] == 0
+    assert records[1]["attested_turn_count"] == 1
+    assert len(records[1]["move_attestations"]) == 1
 
 
 def test_fresh_checkpoint_writes_schema2_header_before_append(tmp_path):

@@ -34,13 +34,16 @@ from __future__ import annotations
 import argparse
 import asyncio
 import dataclasses
+import fcntl
 import hashlib
 import json
 import logging
+import math
 import os
 import re
 import sys
 import time
+from contextlib import contextmanager
 from functools import partial
 from pathlib import Path
 from typing import List, Mapping, Optional, Tuple
@@ -78,6 +81,12 @@ CHECKPOINT_SCHEMA = 2
 SELECTION_ALGORITHM_VERSION = "selfplay-selection-v1"
 SYMMETRY_SETTINGS = {"mode": "katago-default", "requested_symmetry": None}
 OPENING_SUITE = {"id": "empty-board-v1", "seed": None}
+BOARD_SIZE = 19
+KOMI = 7.5
+RULES = "chinese"
+MOVE_CAP = 400
+REFEREE_VISITS = 200
+ADJUDICATION_ALGORITHM_VERSION = "b28-settled-score-v1"
 _IDENTITY_FIELDS = (
     "selected_model",
     "model_path",
@@ -291,12 +300,15 @@ def _matchup_configuration(
     for side in ("A", "B"):
         label, rung, selection = players[side]
         spec = rung_strength_spec(rung)
+        query = adapters.build_ladder_analysis_query([], rung, BOARD_SIZE, KOMI, RULES, wide_root_noise)
         configured_players[side] = {
             "label": label,
             "profile": rung.human_sl_profile,
             "mechanism": rung.mechanism,
             "visits": spec.visits,
+            "requested_main_model": spec.main_model,
             "effective_overrides": dict(spec.override_settings),
+            "http_effective_overrides": query["overrideSettings"],
             "selection": selection,
             "selection_algorithm_version": SELECTION_ALGORITHM_VERSION,
             "identity": dict(identities[side]),
@@ -307,7 +319,22 @@ def _matchup_configuration(
             "katago_version": capabilities.get("katago_version"),
             "capability_snapshot": capabilities,
             "players": configured_players,
-            "referee_identity": identities["referee"],
+            "game": {
+                "board_size": BOARD_SIZE,
+                "komi": KOMI,
+                "rules": adapters.BaseEngine.get_rules(RULES),
+                "move_cap": MOVE_CAP,
+            },
+            "referee": {
+                "visits": REFEREE_VISITS,
+                "requested_main_model": "b28",
+                "http_effective_overrides": {
+                    "model": "b28",
+                    "reportAnalysisWinratesAs": "BLACK",
+                },
+                "identity": identities["referee"],
+            },
+            "adjudication_algorithm_version": ADJUDICATION_ALGORITHM_VERSION,
             "wide_root_noise": wide_root_noise,
             "symmetry_settings": SYMMETRY_SETTINGS,
             "opening_suite": OPENING_SUITE,
@@ -319,8 +346,8 @@ def _validate_record_attestations(record: Mapping[str, object], configuration: M
     attestations = record.get("move_attestations")
     if not isinstance(attestations, list):
         raise ValueError("checkpoint game record has no move attestations")
-    num_moves = record.get("num_moves")
-    if type(num_moves) is not int or num_moves < 0 or len(attestations) != num_moves:
+    attested_turn_count = record.get("attested_turn_count")
+    if type(attested_turn_count) is not int or attested_turn_count < 0 or len(attestations) != attested_turn_count:
         raise ValueError("checkpoint does not attest every accepted move")
     a_color = record.get("a_color")
     if a_color not in ("B", "W"):
@@ -332,8 +359,8 @@ def _validate_record_attestations(record: Mapping[str, object], configuration: M
         if not isinstance(attestation, Mapping):
             raise ValueError("checkpoint move attestation is malformed")
         side = attestation.get("player")
-        if side not in ("A", "B") or attestation.get("ply") != expected_ply:
-            raise ValueError("checkpoint move attestation has invalid player or ply")
+        if side not in ("A", "B") or type(attestation.get("ply")) is not int or attestation.get("ply") != expected_ply:
+            raise ValueError("checkpoint game move attestation has invalid player or ply")
         expected_side = "A" if ((expected_ply % 2 == 0) == (a_color == "B")) else "B"
         if side != expected_side:
             raise ValueError("checkpoint move attestation names the wrong player")
@@ -344,6 +371,90 @@ def _validate_record_attestations(record: Mapping[str, object], configuration: M
             raise ValueError("checkpoint move attestation identity is malformed")
         if any(field not in actual or actual.get(field) != expected.get(field) for field in _IDENTITY_FIELDS):
             raise ValueError("checkpoint move attestation does not match startup capability")
+
+
+_RESULTS = {
+    "our_win",
+    "our_loss",
+    "inconclusive_score",
+    "inconclusive_unsettled",
+    "inconclusive_engine",
+    "inconclusive_terminal",
+}
+_END_REASONS = {
+    "our_pass",
+    "golaxy_pass",
+    "golaxy_resign",
+    "golaxy_terminal",
+    "golaxy_illegal",
+    "move_cap",
+}
+
+
+def _validate_game_record(
+    record: Mapping[str, object], expected_index: int, configuration: Mapping[str, object]
+) -> None:
+    players = configuration.get("players")
+    if not isinstance(record, Mapping) or not isinstance(players, Mapping):
+        raise ValueError("checkpoint game record is malformed")
+    required_fields = {
+        "record_type",
+        "fingerprint",
+        "index",
+        "player_a",
+        "player_b",
+        "a_color",
+        "our_color",
+        "result",
+        "our_win",
+        "num_moves",
+        "black_score",
+        "conclusive",
+        "end_reason",
+        "attested_turn_count",
+        "move_attestations",
+        "ts",
+    }
+    if not required_fields.issubset(record):
+        raise ValueError("checkpoint game record is missing required fields")
+    expected_color = "B" if expected_index % 2 == 0 else "W"
+    if type(record.get("index")) is not int or record.get("index") != expected_index:
+        raise ValueError("checkpoint game indices must be unique, ordered, and gap-free")
+    if record.get("a_color") != expected_color or record.get("our_color") != expected_color:
+        raise ValueError("checkpoint game color parity is invalid")
+    if record.get("player_a") != players["A"]["label"] or record.get("player_b") != players["B"]["label"]:
+        raise ValueError("checkpoint game player labels do not match the header")
+    result = record.get("result")
+    our_win = record.get("our_win")
+    conclusive = record.get("conclusive")
+    num_moves = record.get("num_moves")
+    black_score = record.get("black_score")
+    end_reason = record.get("end_reason")
+    timestamp = record.get("ts")
+    if (
+        not isinstance(result, str)
+        or result not in _RESULTS
+        or type(our_win) is not bool
+        or type(conclusive) is not bool
+    ):
+        raise ValueError("checkpoint game outcome fields are malformed")
+    if type(num_moves) is not int or num_moves < 0:
+        raise ValueError("checkpoint game num_moves is malformed")
+    if black_score is not None and (
+        isinstance(black_score, bool) or not isinstance(black_score, (int, float)) or not math.isfinite(black_score)
+    ):
+        raise ValueError("checkpoint game black_score is malformed")
+    if not isinstance(end_reason, str) or end_reason not in _END_REASONS:
+        raise ValueError("checkpoint game end_reason is malformed")
+    if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)) or not math.isfinite(timestamp):
+        raise ValueError("checkpoint game timestamp is malformed")
+    expected_conclusive = result in {"our_win", "our_loss"}
+    if conclusive != expected_conclusive or our_win != (result == "our_win"):
+        raise ValueError("checkpoint game result flags are inconsistent")
+    _validate_record_attestations(record, configuration)
+    expected_attested = num_moves + (1 if end_reason in {"our_pass", "golaxy_pass"} else 0)
+    if record.get("attested_turn_count") != expected_attested:
+        raise ValueError("checkpoint game attested turn count is inconsistent with its ending")
 
 
 def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
@@ -362,12 +473,12 @@ def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, obje
         raise ValueError("checkpoint header configuration does not match its fingerprint")
     if _json_value(header.get("configuration")) != _json_value(configuration):
         raise ValueError("checkpoint header configuration does not match this run")
-    for record in records[1:]:
+    for expected_index, record in enumerate(records[1:]):
         if record.get("record_type") != "game":
             raise ValueError("checkpoint contains an unexpected record type")
         if record.get("fingerprint") != fingerprint:
             raise ValueError("checkpoint game fingerprint does not match this run")
-        _validate_record_attestations(record, configuration)
+        _validate_game_record(record, expected_index, configuration)
     return len(records) - 1
 
 
@@ -384,6 +495,25 @@ def _prepare_checkpoint(path: Path, fingerprint: str, configuration: Mapping[str
         f.write(json.dumps(header, sort_keys=True, ensure_ascii=False) + "\n")
         f.flush()
     return 0
+
+
+@contextmanager
+def _checkpoint_lock(path: Path):
+    """Hold a non-blocking process lock for one checkpoint's complete validate/append run."""
+    lock_path = path.with_name(path.name + ".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_file = lock_path.open("a+")
+    try:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise RuntimeError(f"self-play checkpoint is locked by another process: {path}") from exc
+        yield
+    finally:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        finally:
+            lock_file.close()
 
 
 def _validated_out_dir(path: Path) -> Path:
@@ -414,6 +544,42 @@ async def run_matchup(
     fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
     ckpt = out_dir / f"selfplay_{_fname(labelA)}__vs__{_fname(labelB)}.jsonl"
+    with _checkpoint_lock(ckpt):
+        return await _run_matchup_checkpoint(
+            labelA=labelA,
+            rungA=rungA,
+            selA=selA,
+            labelB=labelB,
+            rungB=rungB,
+            selB=selB,
+            games=games,
+            client=client,
+            base_url=base_url,
+            wrn=wrn,
+            capabilities=capabilities,
+            configuration=configuration,
+            fingerprint=fingerprint,
+            ckpt=ckpt,
+        )
+
+
+async def _run_matchup_checkpoint(
+    *,
+    labelA,
+    rungA,
+    selA,
+    labelB,
+    rungB,
+    selB,
+    games,
+    client,
+    base_url,
+    wrn,
+    capabilities,
+    configuration,
+    fingerprint,
+    ckpt,
+) -> dict:
     start = _prepare_checkpoint(ckpt, fingerprint, configuration)
     winsA = conclusive = 0
     reason_counts: dict = {}
@@ -434,7 +600,16 @@ async def run_matchup(
     else:
         log.info("matchup %s vs %s: resuming at game %d/%d", labelA, labelB, start, games)
 
-    adj = partial(adapters.adjudicate, client, base_url, capabilities=capabilities)
+    adj = partial(
+        adapters.adjudicate,
+        client,
+        base_url,
+        board_size=BOARD_SIZE,
+        komi=KOMI,
+        rules=RULES,
+        visits=REFEREE_VISITS,
+        capabilities=capabilities,
+    )
     with ckpt.open("a") as f:
         for i in range(start, games):
             a_color = "B" if i % 2 == 0 else "W"  # alternate A's color for a fair B/W split
@@ -469,7 +644,12 @@ async def run_matchup(
             # A occupies play_one_game's "our" slot, B the "golaxy" slot; both return int|'pass'|
             # 'unavailable' only (never resign/terminal/illegal), so the loop scores them normally.
             outcome: GameOutcome = await play_one_game(
-                our_move=a_move, golaxy_move=b_move, adjudicate=adj, our_color=a_color
+                our_move=a_move,
+                golaxy_move=b_move,
+                adjudicate=adj,
+                our_color=a_color,
+                board_size=BOARD_SIZE,
+                move_cap=MOVE_CAP,
             )
             if outcome.conclusive:
                 conclusive += 1
@@ -483,6 +663,7 @@ async def run_matchup(
                 "player_b": labelB,
                 "a_color": a_color,
                 **dataclasses.asdict(outcome),  # result/our_win(=A won)/num_moves/black_score/conclusive/end_reason
+                "attested_turn_count": len(move_attestations),
                 "move_attestations": move_attestations,
                 "ts": time.time(),
             }

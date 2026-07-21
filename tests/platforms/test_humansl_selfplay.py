@@ -301,6 +301,8 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
         identities,
         capabilities=_health_snapshot(),
         wide_root_noise=0.04,
+        target_pairs=20,
+        max_pair_attempts=30,
     )
     digest = selfplay._configuration_fingerprint(configuration)
 
@@ -334,7 +336,25 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
     assert configuration["adjudication_algorithm_version"]
     assert configuration["symmetry_settings"]
     assert configuration["opening_suite"]["id"]
+    assert configuration["target_complete_pairs"] == 20
+    assert configuration["max_pair_attempts"] == 30
     assert len(digest) == 64
+
+
+@pytest.mark.parametrize(("target", "attempts"), [(True, 30), (20, False), (0, 30), (20, 0)])
+def test_matchup_configuration_rejects_nonpositive_or_bool_declared_counts(target, attempts):
+    players = _players()
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+
+    with pytest.raises(ValueError, match="plain int"):
+        selfplay._matchup_configuration(
+            players,
+            identities,
+            capabilities=_health_snapshot(),
+            wide_root_noise=0.04,
+            target_pairs=target,
+            max_pair_attempts=attempts,
+        )
 
 
 def test_fingerprint_is_stable_across_mapping_insertion_order():
@@ -352,6 +372,8 @@ def _checkpoint_payload():
         identities,
         capabilities=_health_snapshot(),
         wide_root_noise=0.04,
+        target_pairs=20,
+        max_pair_attempts=30,
     )
     fingerprint = selfplay._configuration_fingerprint(configuration)
     header = {
@@ -395,6 +417,18 @@ def test_resume_accepts_schema3_header_and_matching_record_attestations(tmp_path
     checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
 
     assert selfplay._already_done(checkpoint, fingerprint, configuration) == 1
+
+
+@pytest.mark.parametrize(("field", "value"), [("target_complete_pairs", 21), ("max_pair_attempts", 31)])
+def test_resume_rejects_declared_target_or_attempt_guard_drift(tmp_path, field, value):
+    configuration, fingerprint, header, _game = _checkpoint_payload()
+    checkpoint = tmp_path / "match.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n")
+    changed = json.loads(json.dumps(configuration))
+    changed[field] = value
+
+    with pytest.raises(ValueError, match="fingerprint"):
+        selfplay._already_done(checkpoint, selfplay._configuration_fingerprint(changed), changed)
 
 
 @pytest.mark.parametrize("target", ["header", "record"])
@@ -465,6 +499,8 @@ def _second_game(configuration, fingerprint):
         lambda games: games[1].pop("black_score"),
         lambda games: games[1].update(ts=math.nan),
         lambda games: games[0]["move_attestations"][0].update(ply=False),
+        lambda games: games[0].update(color_index=True),
+        lambda games: games[0].update(pair_attempt=True),
     ],
 )
 def test_resume_rejects_duplicate_gap_reordered_or_corrupt_game_sequence(tmp_path, corrupt):
@@ -634,7 +670,7 @@ def test_checkpoint_lock_selects_windows_backend_when_fcntl_is_unavailable(tmp_p
 
 
 @pytest.mark.asyncio
-async def test_run_matchup_rejects_target_smaller_than_existing_checkpoint(tmp_path, monkeypatch):
+async def test_run_matchup_rejects_any_target_drift_from_existing_checkpoint(tmp_path, monkeypatch):
     calls = {"games": 0}
 
     async def fake_play_one_game(*, our_move, golaxy_move, adjudicate, our_color, initial_history, **_settings):
@@ -667,8 +703,8 @@ async def test_run_matchup_rejects_target_smaller_than_existing_checkpoint(tmp_p
             capabilities=_health_snapshot(),
         )
         await selfplay.run_matchup("rank_9d@40", "b28@20", 1, **kwargs)
-        with pytest.raises(ValueError, match="target.*existing"):
-            await selfplay.run_matchup("rank_9d@40", "b28@20", 0, **kwargs)
+        with pytest.raises(ValueError, match="fingerprint"):
+            await selfplay.run_matchup("rank_9d@40", "b28@20", 2, **kwargs)
 
 
 def test_fresh_checkpoint_writes_schema3_header_before_append(tmp_path):
@@ -774,6 +810,18 @@ def test_pair_scheduler_rejects_phase_leakage_duplicate_color_and_attempt_overfl
         )
     with pytest.raises(ValueError, match="maximum pair attempts"):
         selfplay.schedule_pair_games([_paired_record(1, 0)], openings, phase="screen", max_pair_attempts=1)
+
+
+@pytest.mark.parametrize(("field", "value"), [("color_index", True), ("pair_attempt", False)])
+def test_pair_helpers_reject_bool_schema_integers(field, value):
+    openings = [{"id": "o001", "moves": [0, 20]}]
+    record = _paired_record(0, 0)
+    record[field] = value
+
+    with pytest.raises(ValueError, match="pair"):
+        selfplay.complete_pair_sample([record], phase="screen")
+    with pytest.raises(ValueError, match="pair"):
+        selfplay.schedule_pair_games([record], openings, phase="screen", max_pair_attempts=1)
 
 
 def test_pair_scheduler_rejects_resume_opening_history_drift():
@@ -926,6 +974,36 @@ async def test_inconclusive_pair_forces_a_fresh_pair_attempt_and_max_attempts_te
     assert summary["decision_games"] == 0
     assert summary["inconclusive_pairs"] == 2
     assert summary["max_attempts_reached"] is True
+    assert summary["a_elo_ci95"] == [None, None]
+    assert summary["classification"] == "insufficient_pairs"
+    encoded = json.dumps(summary, allow_nan=False)
+    assert json.loads(encoded, parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value))) == summary
+
+
+@pytest.mark.asyncio
+async def test_confirm_guard_exhaustion_never_emits_strength_classification(tmp_path, monkeypatch):
+    async def fake_game(*, our_color, initial_history, **_kwargs):
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history), 1.0, True, "move_cap")
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_game)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _request: httpx.Response(500))) as client:
+        summary = await selfplay.run_matchup(
+            "rank_9d@40",
+            "b28@20",
+            30,
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+            phase="confirm",
+            max_pair_attempts=20,
+        )
+
+    assert summary["complete_pairs"] == 20
+    assert summary["target_complete_pairs"] == 30
+    assert summary["max_attempts_reached"] is True
+    assert summary["classification"] == "insufficient_pairs"
 
 
 @pytest.mark.asyncio

@@ -219,7 +219,7 @@ def complete_pair_sample(records: List[Mapping[str, object]], *, phase: str) -> 
             raise ValueError("checkpoint phase does not match this run")
         key = (record.get("pair_attempt"), record.get("opening_id"))
         color_index = record.get("color_index")
-        if type(key[0]) is not int or color_index not in {0, 1}:
+        if type(key[0]) is not int or type(color_index) is not int or color_index not in {0, 1}:
             raise ValueError("checkpoint pair key is malformed")
         pair = grouped.setdefault(key, {})
         if color_index in pair:
@@ -266,7 +266,7 @@ def schedule_pair_games(
         if record.get("opening_moves") != expected["moves"]:
             raise ValueError("checkpoint opening history does not match pair schedule")
         key = (attempt, color_index)
-        if color_index not in {0, 1} or key in completed_keys:
+        if type(color_index) is not int or color_index not in {0, 1} or key in completed_keys:
             raise ValueError("checkpoint contains duplicate or malformed pair color")
         completed_keys.add(key)
     scheduled = []
@@ -461,7 +461,9 @@ def _json_value(value):
 
 
 def _configuration_fingerprint(configuration: Mapping[str, object]) -> str:
-    payload = json.dumps(_json_value(configuration), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    payload = json.dumps(
+        _json_value(configuration), sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -485,10 +487,16 @@ def _matchup_configuration(
     *,
     capabilities: Mapping[str, object],
     wide_root_noise: float,
+    target_pairs: int,
+    max_pair_attempts: int,
     phase: str = "confirm",
     experiment4: bool = False,
     opening_suite: Optional[Mapping[str, object]] = None,
 ) -> dict:
+    if type(target_pairs) is not int or target_pairs <= 0:
+        raise ValueError("target complete pairs must be a positive plain int")
+    if type(max_pair_attempts) is not int or max_pair_attempts <= 0:
+        raise ValueError("maximum pair attempts must be a positive plain int")
     suite = dict(opening_suite or load_opening_suite())
     configured_players = {}
     for side in ("A", "B"):
@@ -533,6 +541,8 @@ def _matchup_configuration(
             "symmetry_settings": SYMMETRY_SETTINGS,
             "phase": phase,
             "experiment4": experiment4,
+            "target_complete_pairs": target_pairs,
+            "max_pair_attempts": max_pair_attempts,
             "opening_suite": {
                 "id": suite["suite_id"],
                 "suite_id": suite["suite_id"],
@@ -629,7 +639,8 @@ def _validate_game_record(
     }
     if not required_fields.issubset(record):
         raise ValueError("checkpoint game record is missing required fields")
-    expected_color = "B" if record.get("color_index") == 0 else "W"
+    color_index = record.get("color_index")
+    expected_color = "B" if color_index == 0 else "W"
     if type(record.get("index")) is not int or record.get("index") != expected_index:
         raise ValueError("checkpoint game indices must be unique, ordered, and gap-free")
     if record.get("a_color") != expected_color or record.get("our_color") != expected_color:
@@ -639,8 +650,9 @@ def _validate_game_record(
     if (
         type(record.get("pair_attempt")) is not int
         or record.get("pair_attempt") < 0
-        or record.get("color_index") not in {0, 1}
-        or record.get("index") != 2 * record.get("pair_attempt") + record.get("color_index")
+        or type(color_index) is not int
+        or color_index not in {0, 1}
+        or record.get("index") != 2 * record.get("pair_attempt") + color_index
     ):
         raise ValueError("checkpoint game pair key is malformed")
     if not isinstance(record.get("opening_id"), str) or not isinstance(record.get("opening_moves"), list):
@@ -719,7 +731,7 @@ def _prepare_checkpoint(path: Path, fingerprint: str, configuration: Mapping[str
         "configuration": _json_value(configuration),
     }
     with path.open("x") as f:
-        f.write(json.dumps(header, sort_keys=True, ensure_ascii=False) + "\n")
+        f.write(json.dumps(header, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n")
         f.flush()
     return 0
 
@@ -786,6 +798,8 @@ async def run_matchup(
         raise ValueError(f"{phase} target must be {comparator} {required} fully conclusive pairs")
     if max_pair_attempts is None:
         max_pair_attempts = max(target_pairs * 2, target_pairs + 10)
+    elif type(max_pair_attempts) is not int or max_pair_attempts <= 0:
+        raise ValueError("maximum pair attempts must be a positive plain int")
     opening_suite = load_opening_suite()
     playerA = make_player(specA)
     playerB = make_player(specB)
@@ -798,6 +812,8 @@ async def run_matchup(
         identities,
         capabilities=capabilities,
         wide_root_noise=wrn,
+        target_pairs=target_pairs,
+        max_pair_attempts=max_pair_attempts,
         phase=phase,
         experiment4=experiment4,
         opening_suite=opening_suite,
@@ -945,7 +961,7 @@ async def _run_matchup_checkpoint(
                 "move_attestations": move_attestations,
                 "ts": time.time(),
             }
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            f.write(json.dumps(rec, ensure_ascii=False, allow_nan=False) + "\n")
             f.flush()
             records.append(rec)
             log.info(
@@ -965,12 +981,15 @@ async def _run_matchup_checkpoint(
     sample = complete_pair_sample(records, phase=phase)
     winsA, conclusive = sample["a_wins"], sample["games"]
     elo, lo, hi = elo_from_winrate(winsA, conclusive)
+    if not conclusive:
+        lo = hi = None
     interval = list(wilson_interval(winsA, conclusive)) if conclusive else [0.0, 1.0]
     attempted = 1 + max((record["pair_attempt"] for record in records), default=-1)
+    target_reached = sample["complete_pairs"] == target_pairs
     classification = (
         classify_seam(winsA, conclusive, experiment4=experiment4)
-        if phase == "confirm"
-        else "screen_complete" if sample["complete_pairs"] == target_pairs else "insufficient_pairs"
+        if phase == "confirm" and target_reached
+        else "screen_complete" if phase == "screen" and target_reached else "insufficient_pairs"
     )
     summary = {
         "player_a": labelA,
@@ -993,7 +1012,7 @@ async def _run_matchup_checkpoint(
         "reason_counts": reason_counts,
     }
     log.info(
-        "=== %s vs %s: A %d/%d (%.0f%%) Elo %+.0f [%.0f,%.0f] ===",
+        "=== %s vs %s: A %d/%d (%.0f%%) Elo %+.0f [%s,%s] ===",
         labelA,
         labelB,
         winsA,
@@ -1038,7 +1057,12 @@ async def main_async(args) -> int:
             )
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "selfplay_summary.json").write_text(
-        json.dumps({"matchups": summaries, "wide_root_noise": wrn}, indent=2, ensure_ascii=False)
+        json.dumps(
+            {"matchups": summaries, "wide_root_noise": wrn},
+            indent=2,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
     )
     log.info("wrote %s", out_dir / "selfplay_summary.json")
     return 0

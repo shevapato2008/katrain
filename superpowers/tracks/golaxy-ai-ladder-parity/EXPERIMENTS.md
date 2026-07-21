@@ -314,7 +314,7 @@ attestation 均通过 harness `_already_done`/record validators;opening suite ch
 | [`selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl) | `dbe719a9c5f96d48296588e80264b45a1ed4b6bf743bb5b1364419c3157c6770` | `11fb0b385ad8ede150e4008b960d5123dcae9bca85dcddb7dde9165dfe395e98` |
 | [`selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl) | `fac29f99e215af1769f64def50785513440c36705361373ed9d3435597300e32` | `f8c512b9f816d31aaf46ee7211c8cb03207800f3af629225f826cf808779bafb` |
 | [`selfplay_screen_rank-9d-40__vs__b28-20.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-9d-40__vs__b28-20.jsonl) | `edfa26aa3d7f138a766cc5285b62086de0a2e7e2173f02a1d1c42c080604a3c6` | `8bc9acf9213e2efe880862a033407c71d7e9921a61a911fa4eaa4123b2716d78` |
-| [`selfplay_summary.json`](calibration/results/selfplay_v2_pikl/selfplay_summary.json) | — | `0b920fb71627d7f584c23474e4614a8a6e7741ef86f583a3a94a20a47e81f139` |
+| [`selfplay_summary_screen_batch1.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch1.json) | — | `0b920fb71627d7f584c23474e4614a8a6e7741ef86f583a3a94a20a47e81f139` |
 
 **后续对局预声明(任何 continuation 之前冻结):**
 

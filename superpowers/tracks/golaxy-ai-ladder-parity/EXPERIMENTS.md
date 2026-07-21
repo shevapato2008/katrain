@@ -15,9 +15,9 @@
 | 加载的网络 | **b28**(默认主网,最强)、**b18**(备用主网)、**humanv0**(human-SL 网,`-human-model`) |
 | 实际模型身份(`/health`) | b28 SHA-256 `798da8fe3e9819f09535240b1bc29cb3047a4fa981433c56c491e57007a3d3f0`;b18 `9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d`;humanv0 `637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5`;三者均 `*_sha256_verified=true`,b18/b28 均 `running=true` 且 `has_human_model=true` |
 | `wideRootNoise` | 0.04(与 shipping `config.json` 一致;用于对局多样性) |
-| 判胜方法 | `adjudicate`:b28@200visits、`reportAnalysisWinratesAs=BLACK`、ownership-settled(≥98% 归属确定)+ 稳定性复检。**双方均不认输**(阶梯 never-resign);对手 resign_code=-3 → 我方定胜;pass_code=-1 → 交由 adjudicate。 |
+| 判胜方法 | 我方棋手从不认输。对星阵校准时,smoke 已验证 Golaxy `resign_code=-3`(认输直接判我方胜;12 局锚点胜局中 11 局如此)与 `pass_code=-1`(交 b28@200、BLACK 视角、ownership-settled 判分);初判 conclusive 且 `end_reason` 属于 `{move_cap,golaxy_terminal,our_pass,golaxy_illegal}` 时,再以最高 b28@800 做稳定性复检。纯自对弈双方均不认输,pass 或 400 手上限后只做一次 b28@200 判分,**不做**第二次稳定性复检。 |
 | 校准脚本 | `calibration/run_calibration.py`(打星阵)、`calibration/run_selfplay.py`(自对弈) |
-| 胜率→Elo | `elo_from_winrate`;100%/0% 会被 harness 封顶到 **±529**(即极值是下界,不是真实差距) |
+| 胜率→Elo | `elo_from_winrate`;以 `eps=1/(2n+2)` 对 0%/100% 作样本量相关的连续性修正,不是固定封顶。全胜点估计示例:10/10 = +528.9、40/40 = +763.4、80/80 = +882.7 Elo(全败对称为负);极值仍只是差距下界。 |
 
 **修复后三种阶梯落子机制**(详见 `katrain/core/ladder.py`):
 - `humansl` — humanv0 人类策略 @1visit,对 `humanPolicy` 全分布**加权采样**(Band A 配置)。
@@ -60,8 +60,9 @@
 ## B. 自对弈 search-strength 实验(不打星阵,无预算限制)
 
 > **硬失效边界:**`calibration/results/selfplay/` 下所有旧结果均为修复前历史数据。凡名称含
-> `rank_*@2/@4/@7/@16/@32` 的 HumanSL-search 战绩、实验(1)(2)(3)由它们导出的全部 HumanSL 棋力结论,以及
-> 实验(4)旧 `rank_9d@20 vs b28@20` 对照,**一律无效,不得用于新结论、合并统计或恢复运行**。新实验只能写入
+> `rank_*@2/@4/@7/@16/@32` 的战绩、实验(1)(2)(3)由它们导出的全部 **HumanSL-search** 棋力结论,以及实验(4)
+> 旧 `rank_9d@20 vs b28@20` 的 **HumanSL-vs-b28** 解释,一律无效。旧原始记录仍可保留作历史 b28 对照/visits
+> 诊断(实验4也是同配置随机对照),但不得恢复运行或与修复后 HumanSL 样本合并。新实验只能写入
 > `calibration/results/selfplay_v2_pikl/`,旧 namespace 会被 harness 拒绝。
 
 ### B0. 2026-07-21 语义审计勘误(影响实验1–4的解释)
@@ -95,8 +96,8 @@ visits 递增的阶梯,**每档与前一档打 10 盘**,汇总胜率。playerA=�
 
 | 台阶 | 胜/可判 | 胜率 | Elo(点估) | 对局多样性 |
 |---|---|---|---|---|
-| `@1s` vs `@1` | 10/10 | 100% | +529(封顶) | 10 局各异 ✓ |
-| `@2` vs `@1s` | 5/5 | 100% | +417(封顶) | ⚠️ 仅 2 种棋局(见坑2) |
+| `@1s` vs `@1` | 10/10 | 100% | +529(连续性修正) | 10 局各异 ✓ |
+| `@2` vs `@1s` | 5/5 | 100% | +417(连续性修正) | ⚠️ 仅 2 种棋局(见坑2) |
 | `@4` vs `@2` | 6/8 | 75% | +191 | 10 局各异 ✓ |
 | `@7` vs `@4` | 6/10 | 60% | +70 | 10 局各异 ✓ |
 | `@16` vs `@7` | 7/10 | 70% | +147 | 10 局各异 ✓ |
@@ -122,10 +123,10 @@ rank_9d humanSL 搜索单调提升。** 另有两点:
 
 | 台阶 | 胜/可判 | 胜率 | Elo(点估) | 多样性 |
 |---|---|---|---|---|
-| `@1s` vs `@1` | 10/10 | 100% | +529(封顶) | ✓ |
-| `@4` vs `@1s` | 9/9 | 100% | +512(封顶) | ✓ |
+| `@1s` vs `@1` | 10/10 | 100% | +529(连续性修正) | ✓ |
+| `@4` vs `@1s` | 9/9 | 100% | +512(连续性修正) | ✓ |
 | `@7` vs `@4` | 6/9 | 67% | +120 | ✓ |
-| `@16` vs `@7` | 9/9 | 100% | +512(封顶) | ✓ |
+| `@16` vs `@7` | 9/9 | 100% | +512(连续性修正) | ✓ |
 | `@32` vs `@16` | **14/19** | **74%** | +179 | ✓ 19 局各异(加厚到 20 盘) |
 
 **rank_7d**:
@@ -166,9 +167,9 @@ b28 visits 曲线的重复采样。数据仍稳健支持“b28 搜索随 visits 
 
 | 对局 | 胜/可判 | 胜率 | Elo(点估) | 黑/白战绩 |
 |---|---:|---:|---:|---:|
-| `rank_5d@4` vs `rank_6d@1s` | 10/10 | 100% | +529(封顶) | 5/5、5/5 |
+| `rank_5d@4` vs `rank_6d@1s` | 10/10 | 100% | +529(连续性修正) | 5/5、5/5 |
 | `rank_6d@4` vs `rank_7d@1s` | 8/10 | 80% | +241 | 5/5、3/5 |
-| `rank_7d@4` vs `rank_8d@1s` | 10/10 | 100% | +529(封顶) | 5/5、5/5 |
+| `rank_7d@4` vs `rank_8d@1s` | 10/10 | 100% | +529(连续性修正) | 5/5、5/5 |
 | `rank_8d@4` vs `rank_9d@1s` | 9/10 | 90% | +382 | 4/5、5/5 |
 
 **勘误后的有效结论:**四组 A 方其实都是同一个 `b28@4`(rank 标签不影响 `moveInfos`),B 方才是各高一段的
@@ -309,8 +310,8 @@ wire request、request fingerprint、`_wrapper` attestation 与摘要,因此同�
 | 星阵 9D 锚点 | `calibration/results/rung_33.jsonl` |
 | 星阵 超职业 锚点 | `calibration/results/rung_36.jsonl` |
 | 星阵3星 visits 二分 | `calibration/results/rung_36_v20.jsonl`、`rung_36_v5.jsonl` |
-| 旧自对弈全部接缝(**HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
-| 旧自对弈汇总(**不得续跑/合并**) | `calibration/results/selfplay/selfplay_summary.json` |
+| 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
+| 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |
 | schema 3 HumanSL 语义探针 | `calibration/results/semantic_probe/humansl_semantic_probe_20260721T183703.918547Z_c0bedf887cf3.json` |
 | 冒烟/level 探针 | `calibration/results/smoke_report.json` |

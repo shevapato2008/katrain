@@ -377,6 +377,32 @@ configuration/header/game fingerprint、逐手模型 attestation、开局/pair �
 `rank_9d@320:b28@20`,恰好10个完整 pair,最多20次 pair 尝试。完成、固化并记账前不运行其他实验(4)
 matchup,也不选择/启动40完整-pair confirmation;是否把 @320 选作 confirmation 候选必须等该固定筛查结束。
 
+### C10. 实验(4) @320 screening 与 confirmation 预声明(2026-07-22)
+
+C9 预声明的 `rank_9d@320:b28@20` 独立 screening 已完成:尝试11个颜色 pair(预定上限20),10个完整
+pair 进入固定筛查样本,1个 pair 因1盘 `inconclusive_unsettled` 整对排除。完整 pair 样本为 A 方
+`rank_9d@320` **11–9**(55%,Wilson 95% CI [34.21%, 74.18%]),对应 Elo(A-B) **+34.9**
+[-121.5, +208.0]。全部22盘原始结果为 A胜/A负/不可判=12/9/1;不完整 pair 内的1盘 A胜依预声明规则
+排除。该结果仍然**仅是 screening,不作显著性、确认性或“已经追平”声明,也不与较低 visits batch 合并**。
+
+@320 是预声明 visits 网格中首个筛查胜率到达50%附近并越过点估计50%的档位,因此仅据此把它选为实验(4)
+的固定 confirmation 候选;选择本身不是实验结论。严格 JSON、configuration/header/game fingerprint、逐手
+模型 attestation、开局/pair 调度、`_already_done` resume、固定样本计数与可变 summary 独立重算均通过:
+
+| batch-4 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-9d-320__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch4_exp4_320/selfplay_screen_rank-9d-320__vs__b28-20.jsonl.gz) | `488410f084b471503ae6a2b3e88d1fa1752f06246ca12e1ebed01b49e84d8f9c` | `f72378a724728204aedf00abbc25431aba0b31549750ca870bae78d67f274276` | `9fad26d9deca93adb43c160ce021a35714be9ce8146673e089ff43e641f8b481` |
+| [`selfplay_summary_screen_batch4_exp4_320.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch4_exp4_320.json) | — | `dd66a8361c260f0f42f9fa28d63dc6ff6eedd7d0ddaf835455ce1e357b6b7bb9` | — |
+
+压缩档案以 `gzip -n -9` 确定性生成,解压字节与本地未跟踪原始 checkpoint 完全一致。
+
+**固定 confirmation 预声明(任何 confirmation 运行之前冻结):**实验(4)使用全新 `phase=confirm`、
+`--experiment4` checkpoint 运行 `rank_9d@320:b28@20`,恰好40个完整 pair(80盘 decision games),默认
+最多80次 pair 尝试。screening checkpoint/summary 永不加载或计入 confirmation;固定样本结束后无论 Wilson
+分类为何都不追加样本。先前已预声明的普通 confirmation 保持不变:`rank_5d@80:rank_5d@40`、
+`rank_7d@80:rank_7d@40`、`rank_9d@80:rank_9d@40` 各自使用全新 `phase=confirm` checkpoint,恰好20个
+完整 pair(40盘 decision games),默认最多40次 pair 尝试,同样不加载 screening 数据且不追样本。
+
 ---
 
 ## D. 待办 / 开放项

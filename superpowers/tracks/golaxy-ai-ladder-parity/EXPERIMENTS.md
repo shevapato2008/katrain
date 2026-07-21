@@ -282,6 +282,50 @@ wire request、request fingerprint、`_wrapper` attestation 与摘要,因此同�
 据此,`humansl_search` **语义修复已完成并经本地实机探针通过**;这只恢复了开展有效实验的前提,不把任何旧
 战绩“洗白”为 HumanSL 数据。
 
+### C7. 修复后 screening 结果与确认实验预声明(2026-07-22)
+
+以下四组均来自全新 `selfplay_v2_pikl` namespace,且仅是 **screening**:每组预定恰好10个完整颜色对
+(20盘 decision games),不用于显著性结论,也不并入后续 confirmation。若同一开局颜色对中任一盘不可判,
+该 pair 的两盘都不进入胜负样本;原始记录仍全部保留。因此表中同时列出完整 pair 样本和所有尝试的原始
+结果计数。
+
+| screening 对局(A vs B) | 完整 pair / 尝试 pair (上限) | 完整 pair 样本 | Wilson 95% CI | Elo(A-B)及95%区间 | 不完整 pair / 原始不可判盘 | 所有尝试的原始结果(A胜/A负/不可判) |
+|---|---:|---:|---:|---:|---:|---:|
+| rank_5d@80 vs rank_5d@40 | 10 / 12 (20) | 14–6 (70%) | [48.10%, 85.45%] | +147.2 [-0.6, +383.3] | 2 / 2 | 16/6/2 |
+| rank_7d@80 vs rank_7d@40 | 10 / 12 (20) | 13–7 (65%) | [43.29%, 81.88%] | +107.5 [-41.2, +314.0] | 2 / 3 | 13/8/3 |
+| rank_9d@80 vs rank_9d@40 | 10 / 16 (20) | 11–9 (55%) | [34.21%, 74.18%] | +34.9 [-121.5, +208.0] | 6 / 8 | 13/11/8 |
+| rank_9d@40 vs b28@20 | 10 / 11 (20) | 2–18 (10%) | [2.79%, 30.10%] | -381.7 [-645.1, -208.5] | 1 / 1 | 2/19/1 |
+
+这些数值只用于选择固定样本的后续对局。即使区间位于50%一侧,本节也**不作显著性、确认性或实验完成
+声明**。实验(4)的 `rank_9d@40` 候选因 screening 为 2–18 而淘汰,不会对它启动40-pair confirmation。
+
+原始数据审计(2026-07-22):四个 JSONL 均通过严格 JSON 解析;schema-3 header 的 configuration SHA-256
+与 header fingerprint 一致;每条 game record 的 fingerprint、顺序/颜色对、开局、结果字段和逐手执行模型
+attestation 均通过 harness `_already_done`/record validators;opening suite checksum 为
+`db5bf2f7b1944a26bf6e027d6a32efc13c848f4dcb3d22eb1afd274383fe033e`;用 `complete_pair_sample`、
+`wilson_interval` 与 `elo_from_winrate` 独立重算后与 summary 逐字段一致。固定模型身份为 b18
+`9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d`、humanv0
+`637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5`,b28 对手/裁判为
+`798da8fe3e9819f09535240b1bc29cb3047a4fa981433c56c491e57007a3d3f0`。
+
+| checkpoint | configuration fingerprint | 文件 SHA-256 |
+|---|---|---|
+| [`selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl) | `d08bb5318f594a5dbdb50e1006eb9bf56ca89f979dbffb2c37791edf479759b8` | `af4d912b2987649d51f62b004d624b8c88091a0133fbf3dfb99830f7f3d8bcbd` |
+| [`selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl) | `dbe719a9c5f96d48296588e80264b45a1ed4b6bf743bb5b1364419c3157c6770` | `11fb0b385ad8ede150e4008b960d5123dcae9bca85dcddb7dde9165dfe395e98` |
+| [`selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl) | `fac29f99e215af1769f64def50785513440c36705361373ed9d3435597300e32` | `f8c512b9f816d31aaf46ee7211c8cb03207800f3af629225f826cf808779bafb` |
+| [`selfplay_screen_rank-9d-40__vs__b28-20.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-9d-40__vs__b28-20.jsonl) | `edfa26aa3d7f138a766cc5285b62086de0a2e7e2173f02a1d1c42c080604a3c6` | `8bc9acf9213e2efe880862a033407c71d7e9921a61a911fa4eaa4123b2716d78` |
+| [`selfplay_summary.json`](calibration/results/selfplay_v2_pikl/selfplay_summary.json) | — | `0b920fb71627d7f584c23474e4614a8a6e7741ef86f583a3a94a20a47e81f139` |
+
+**后续对局预声明(任何 continuation 之前冻结):**
+
+1. 普通接缝 confirmation 分别为 `rank_5d@80:rank_5d@40`、`rank_7d@80:rank_7d@40`、
+   `rank_9d@80:rank_9d@40`;各自使用全新 `phase=confirm` checkpoint,恰好20个完整 pair(40盘 decision
+   games),默认最多40次 pair 尝试。screening 记录不加载、不计入 confirmation,固定样本结束后无论分类为何
+   都不追样本。
+2. 实验(4)尚未选定 confirmation 候选。下一步仅 screening `rank_9d@80:b28@20`,恰好10个完整 pair,
+   最多20次 pair 尝试。完成并记账后才允许选择一个40完整-pair confirmation 候选;若 @80 仍不适合作为
+   候选,先以同样的独立10-pair screening 规则考察更高 visits,不得把多个 screening 合并或边跑边改确认样本。
+
 ---
 
 ## D. 待办 / 开放项

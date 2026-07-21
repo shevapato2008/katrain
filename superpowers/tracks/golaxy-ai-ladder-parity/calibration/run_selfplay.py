@@ -6,8 +6,8 @@ NO token, NO daily budget -- pure self-assessment of how humanSL ranks scale wit
 Reuses the TESTED calibration primitives:
   * adapters query/identity -- builds the canonical ladder query and verifies the executed model
   * ladder_calibration.play_one_game -- the fail-closed alternating game loop
-  * adapters.adjudicate     -- b28 black-relative settled scoring (same stability contract as
-                               run_calibration; neither side resigns, matching the ladder)
+  * adapters.adjudicate     -- one b28@200 black-relative settled score; unlike calibration,
+                               self-play does not run a second stability recheck
 
 A "player" is a minimal LadderRung built from a spec "<profile>@<visits>":
   * rank_9d@1     -> mechanism 'humansl'        (humanv0 human policy @1 visit, weighted sample;

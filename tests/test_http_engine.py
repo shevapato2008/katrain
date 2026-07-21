@@ -80,13 +80,16 @@ def test_ladder_extra_settings_routes_http_model_without_mutating_input():
     assert routed is not native_settings
 
 
-def test_ladder_extra_settings_rejects_explicit_model_on_base_and_native():
+@pytest.mark.parametrize("main_model", ["b18", "", 0, False])
+def test_base_and_native_reject_every_explicit_model_selector(main_model):
     base = object.__new__(BaseEngine)
     native = _native_engine()
 
     for engine in (base, native):
         with pytest.raises(ValueError, match="per-query model"):
-            engine.ladder_extra_settings({}, "b18")
+            engine.ladder_extra_settings({}, main_model)
+        with pytest.raises(ValueError, match="per-query model"):
+            engine.require_ladder_capability(main_model, human_required=False)
         assert engine.ladder_extra_settings({"humanSLProfile": "rank_5d"}, None) == {"humanSLProfile": "rank_5d"}
 
 

@@ -126,12 +126,12 @@ class BaseEngine:  # some common elements between analysis and contribute engine
         pass  # avoid transitional error
 
     def ladder_extra_settings(self, native_settings, main_model):
-        if main_model:
+        if main_model is not None:
             raise ValueError("This engine does not support per-query model selection")
         return copy.deepcopy(native_settings)
 
     def require_ladder_capability(self, main_model, human_required):
-        if main_model:
+        if main_model is not None:
             raise ValueError("This engine does not support per-query model selection")
         if human_required and not getattr(self, "has_human_model", False):
             raise ValueError("This engine does not have the required human model")

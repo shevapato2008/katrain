@@ -141,6 +141,15 @@ def test_require_ladder_capability_uses_default_model_for_none():
     assert identity["selected_model"] == "b28"
 
 
+@pytest.mark.parametrize("field", ["running", "has_human_model"])
+def test_require_ladder_capability_rejects_non_boolean_protocol_fields(field):
+    capabilities = _capabilities()
+    capabilities["models"]["b18"][field] = 1
+
+    with pytest.raises(ValueError, match="invalid"):
+        _http_engine(capabilities).require_ladder_capability("b18", human_required=False)
+
+
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
@@ -208,12 +217,16 @@ def test_create_engine_parses_schema_one_health_and_derives_default_human_suppor
     assert engine.has_human_model is True
 
 
-def test_create_engine_uses_config_human_fallback_only_for_legacy_health():
+@pytest.mark.parametrize(
+    ("server_flag", "config_flag", "expected"),
+    [(False, True, True), (True, False, True), (False, False, False)],
+)
+def test_create_engine_preserves_legacy_server_or_config_human_fallback(server_flag, config_flag, expected):
     katrain = KaTrainBase(force_package_config=True, debug_level=0)
     config = _engine_config(katrain)
-    config["http_has_human_model"] = True
+    config["http_has_human_model"] = config_flag
     response = MagicMock()
-    response.json.return_value = {"status": "ok"}
+    response.json.return_value = {"status": "ok", "has_human_model": server_flag}
 
     with (
         patch("katrain.core.engine.requests.get", return_value=response),
@@ -222,7 +235,7 @@ def test_create_engine_uses_config_human_fallback_only_for_legacy_health():
         engine = create_engine(katrain, config)
 
     assert isinstance(engine, KataGoHttpEngine)
-    assert engine.has_human_model is True
+    assert engine.has_human_model is expected
     with pytest.raises(ValueError, match="certified"):
         engine.require_ladder_capability(None, human_required=False)
 
@@ -231,9 +244,12 @@ def test_create_engine_uses_config_human_fallback_only_for_legacy_health():
     "mutate",
     [
         lambda data: data.update(capability_schema=2),
+        lambda data: data.update(capability_schema=True),
         lambda data: data.update(katago_version=""),
         lambda data: data.update(default_model=""),
         lambda data: data.update(models={}),
+        lambda data: data["models"]["b18"].update(running=1),
+        lambda data: data["models"]["b18"].update(has_human_model=1),
         lambda data: data["models"]["b18"].update(model_sha256_verified=False),
     ],
 )
@@ -244,13 +260,17 @@ def test_create_engine_rejects_malformed_certified_health(mutate):
     mutate(capabilities)
     response = MagicMock()
     response.json.return_value = capabilities
-    local = object()
+    original_config = deepcopy(config)
 
     with (
         patch("katrain.core.engine.requests.get", return_value=response),
-        patch("katrain.core.engine.KataGoEngine", return_value=local),
+        patch("katrain.core.engine.KataGoEngine") as native_engine,
     ):
-        assert create_engine(katrain, config) is local
+        with pytest.raises(ValueError, match="HTTP engine"):
+            create_engine(katrain, config)
+
+    native_engine.assert_not_called()
+    assert config == original_config
 
 
 def test_create_engine_calls_raise_for_status_before_using_health_body():
@@ -259,14 +279,19 @@ def test_create_engine_calls_raise_for_status_before_using_health_body():
     response = MagicMock()
     response.raise_for_status.side_effect = requests.HTTPError("503 unavailable")
     local = object()
+    original_config = deepcopy(config)
 
     with (
         patch("katrain.core.engine.requests.get", return_value=response),
-        patch("katrain.core.engine.KataGoEngine", return_value=local),
+        patch("katrain.core.engine.KataGoEngine", return_value=local) as native_engine,
     ):
         assert create_engine(katrain, config) is local
 
     response.json.assert_not_called()
+    assert config == original_config
+    local_config = native_engine.call_args.args[1]
+    assert local_config is not config
+    assert local_config["backend"] == "local"
 
 
 def test_http_engine_request_payload():

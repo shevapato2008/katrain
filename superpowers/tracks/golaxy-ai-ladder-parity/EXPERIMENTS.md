@@ -308,13 +308,17 @@ attestation 均通过 harness `_already_done`/record validators;opening suite ch
 `637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5`,b28 对手/裁判为
 `798da8fe3e9819f09535240b1bc29cb3047a4fa981433c56c491e57007a3d3f0`。
 
-| checkpoint | configuration fingerprint | 文件 SHA-256 |
-|---|---|---|
-| [`selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl) | `d08bb5318f594a5dbdb50e1006eb9bf56ca89f979dbffb2c37791edf479759b8` | `af4d912b2987649d51f62b004d624b8c88091a0133fbf3dfb99830f7f3d8bcbd` |
-| [`selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl) | `dbe719a9c5f96d48296588e80264b45a1ed4b6bf743bb5b1364419c3157c6770` | `11fb0b385ad8ede150e4008b960d5123dcae9bca85dcddb7dde9165dfe395e98` |
-| [`selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl) | `fac29f99e215af1769f64def50785513440c36705361373ed9d3435597300e32` | `f8c512b9f816d31aaf46ee7211c8cb03207800f3af629225f826cf808779bafb` |
-| [`selfplay_screen_rank-9d-40__vs__b28-20.jsonl`](calibration/results/selfplay_v2_pikl/selfplay_screen_rank-9d-40__vs__b28-20.jsonl) | `edfa26aa3d7f138a766cc5285b62086de0a2e7e2173f02a1d1c42c080604a3c6` | `8bc9acf9213e2efe880862a033407c71d7e9921a61a911fa4eaa4123b2716d78` |
-| [`selfplay_summary_screen_batch1.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch1.json) | — | `0b920fb71627d7f584c23474e4614a8a6e7741ef86f583a3a94a20a47e81f139` |
+| 已提交的不可变 checkpoint 档案 | configuration fingerprint | 原始 JSONL SHA-256 | `.jsonl.gz` SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl.gz) | `d08bb5318f594a5dbdb50e1006eb9bf56ca89f979dbffb2c37791edf479759b8` | `af4d912b2987649d51f62b004d624b8c88091a0133fbf3dfb99830f7f3d8bcbd` | `f30b1e8c98ff29514aa0ba8301edee3850f07ebe5b1c3cdd6d3786f05fe7fae2` |
+| [`selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl.gz) | `dbe719a9c5f96d48296588e80264b45a1ed4b6bf743bb5b1364419c3157c6770` | `11fb0b385ad8ede150e4008b960d5123dcae9bca85dcddb7dde9165dfe395e98` | `26c017977ccc2a13dcabfbb0c84bae3957b91848af743f49d76236c53d4c6dff` |
+| [`selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl.gz) | `fac29f99e215af1769f64def50785513440c36705361373ed9d3435597300e32` | `f8c512b9f816d31aaf46ee7211c8cb03207800f3af629225f826cf808779bafb` | `abeba92ca8aefcb35c7c6e00bee09880ba9b26dfb901b31f78901bbda56dcbd7` |
+| [`selfplay_screen_rank-9d-40__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-9d-40__vs__b28-20.jsonl.gz) | `edfa26aa3d7f138a766cc5285b62086de0a2e7e2173f02a1d1c42c080604a3c6` | `8bc9acf9213e2efe880862a033407c71d7e9921a61a911fa4eaa4123b2716d78` | `8ff6b3cdb21dc9931d5dc93333d231482ce0e7b096ec21bafbbb82ba873d23b3` |
+| [`selfplay_summary_screen_batch1.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch1.json) | — | `0b920fb71627d7f584c23474e4614a8a6e7741ef86f583a3a94a20a47e81f139` | — |
+
+四个档案均以 `mtime=0` 且不保存原文件名的确定性 gzip 生成;从仓库根目录一次复现全部四个档案:
+`for f in superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl/selfplay_screen_rank-{5d-80__vs__rank-5d-40,7d-80__vs__rank-7d-40,9d-80__vs__rank-9d-40,9d-40__vs__b28-20}.jsonl; do gzip -n -9 -c "$f" > "superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/$(basename "$f").gz"; done`。
+解压后的字节必须与表中原始 JSONL SHA-256 一致;本地未压缩 checkpoint 保留用于审计/resume,但不提交到 Git。
 
 **后续对局预声明(任何 continuation 之前冻结):**
 

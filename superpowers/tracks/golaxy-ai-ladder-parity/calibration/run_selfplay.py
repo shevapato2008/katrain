@@ -18,7 +18,7 @@ A "player" is a minimal LadderRung built from a spec "<profile>@<visits>":
   * b28@20        -> mechanism 'net_search'     (pure b28 @20, no human profile)
 HumanSL search is intentionally accepted only at 40 visits or more, the validated minimum for this
 harness. The HTTP adapter routes b18/b28 explicitly and rejects missing or mismatched wrapper
-attestation. Games end on a natural double-pass or the 400-move cap, then b28 scores.
+attestation. Games end on the first pass or the 400-move cap, then b28 scores.
 
 Usage:
     KIVY_NO_ARGS=1 uv run python \

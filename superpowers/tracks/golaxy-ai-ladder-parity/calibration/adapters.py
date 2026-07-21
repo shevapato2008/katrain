@@ -6,24 +6,63 @@ web/platforms/golaxy/coords (top-anchored -> mirror)."""
 from __future__ import annotations
 
 import math
-from typing import List, Optional, Tuple, Union
+from copy import deepcopy
+from typing import List, Mapping, Optional, Tuple, Union
 
 import httpx
 
-from katrain.core.engine import BaseEngine  # for get_rules: send the SAME normalized rules as runtime
+from katrain.core.engine import (  # for get_rules and the SAME certified health validation as runtime
+    BaseEngine,
+    _freeze_capabilities,
+    _has_verified_human_model,
+    _validate_certified_capabilities,
+)
 from katrain.core.ladder import (
+    LadderStrengthSpec,
     LadderRung,
-    rung_engine_params,
-    ladder_override_settings,
+    rung_strength_spec,
     pick_ladder_move,
     colrow_to_gtp,
     colrow_to_golaxy,
     golaxy_to_colrow,
     LadderMoveError,
+    validate_analysis_attestation,
 )
 from katrain.web.platforms.golaxy.engine_client import engine_genmove, GOLAXY_AI_LEVELS
 
 _VALID_WIRE = {row["elo_score"] for row in GOLAXY_AI_LEVELS}  # only real api levels; excludes display_elo
+
+
+def retain_health_snapshot(health: dict) -> Mapping[str, object]:
+    """Validate and deeply freeze one startup `/health` response."""
+    _validate_certified_capabilities(health)
+    return _freeze_capabilities(deepcopy(health))
+
+
+async def fetch_health_snapshot(client, base_url: str) -> Mapping[str, object]:
+    response = await client.get(f"{base_url.rstrip('/')}/health", timeout=httpx.Timeout(30.0, connect=10.0))
+    response.raise_for_status()
+    return retain_health_snapshot(response.json())
+
+
+def _capability_identity(capabilities: Mapping[str, object], spec: LadderStrengthSpec) -> Mapping[str, object]:
+    alias = spec.main_model if spec.main_model is not None else capabilities.get("default_model")
+    models = capabilities.get("models")
+    if not isinstance(models, Mapping) or alias not in models:
+        raise LadderMoveError(f"startup capability does not advertise model {alias!r}")
+    model = models[alias]
+    if not isinstance(model, Mapping) or model.get("running") is not True:
+        raise LadderMoveError(f"startup capability model {alias!r} is not running")
+    if spec.human_model is not None and not _has_verified_human_model(model):
+        raise LadderMoveError(f"startup capability model {alias!r} has no verified human model")
+    return {
+        "selected_model": alias,
+        "model_path": model.get("model_path"),
+        "model_sha256": model.get("model_sha256"),
+        "human_model_path": model.get("human_model_path"),
+        "human_model_sha256": model.get("human_model_sha256"),
+        "katago_version": capabilities.get("katago_version"),
+    }
 
 
 def _assert_real_wire_level(level: int) -> None:
@@ -46,8 +85,11 @@ def build_ladder_analysis_query(moves_golaxy, rung: LadderRung, board_size, komi
     """Shared strength-relevant query (contract-tested vs the REAL runtime builder). `rules`
     is a ruleset NAME (e.g. 'chinese'); it is normalized via the SAME BaseEngine.get_rules the
     runtime uses, so the emitted `rules` value is byte-identical. No maxTime (pure visits)."""
-    ov = dict(ladder_override_settings(rung))
+    spec = rung_strength_spec(rung)
+    ov = dict(spec.override_settings)
     ov["wideRootNoise"] = wide_root_noise
+    if spec.main_model is not None:
+        ov["model"] = spec.main_model
     moves = _golaxy_history_to_gtp(moves_golaxy, board_size)
     return {
         "rules": BaseEngine.get_rules(rules),
@@ -56,7 +98,7 @@ def build_ladder_analysis_query(moves_golaxy, rung: LadderRung, board_size, komi
         "boardYSize": board_size,
         "moves": moves,
         "analyzeTurns": [len(moves)],
-        "maxVisits": rung_engine_params(rung)["visits"],
+        "maxVisits": spec.visits,
         "includePolicy": True,
         "includeOwnership": False,
         "overrideSettings": ov,
@@ -72,12 +114,21 @@ async def our_move(
     komi=7.5,
     rules="chinese",
     wide_root_noise=0.04,
+    *,
+    capabilities: Mapping[str, object],
 ) -> Union[int, str]:
+    spec = rung_strength_spec(rung)
+    try:
+        capability_identity = _capability_identity(capabilities, spec)
+    except LadderMoveError:
+        return "unavailable"
     q = build_ladder_analysis_query(moves_golaxy, rung, board_size, komi, rules, wide_root_noise)
     r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
     r.raise_for_status()
+    analysis = r.json()
     try:
-        picked = pick_ladder_move(r.json(), (board_size, board_size), rung.mechanism)
+        validate_analysis_attestation(analysis, spec, capability_identity)
+        picked = pick_ladder_move(analysis, (board_size, board_size), rung.mechanism)
     except LadderMoveError:
         return "unavailable"  # certified move not derivable -> harness marks the game inconclusive_engine
     if picked == "pass":
@@ -140,7 +191,15 @@ async def golaxy_move(
 
 
 async def adjudicate(
-    client, base_url, moves_golaxy, board_size=19, komi=7.5, rules="chinese", visits=200
+    client,
+    base_url,
+    moves_golaxy,
+    board_size=19,
+    komi=7.5,
+    rules="chinese",
+    visits=200,
+    *,
+    capabilities: Mapping[str, object],
 ) -> Tuple[Optional[float], bool]:
     """Black-relative final score via reportAnalysisWinratesAs=BLACK. Missing/non-finite ->
     (None, False). `settled` requires a low-uncertainty endgame (see criteria)."""
@@ -154,11 +213,21 @@ async def adjudicate(
         "maxVisits": visits,
         "includeOwnership": True,
         "includePolicy": False,
-        "overrideSettings": {"reportAnalysisWinratesAs": "BLACK"},
+        "overrideSettings": {"reportAnalysisWinratesAs": "BLACK", "model": "b28"},
     }
     r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
     r.raise_for_status()
     a = r.json()
+    referee_spec = LadderStrengthSpec(
+        visits=visits,
+        main_model="b28",
+        human_model=None,
+        override_settings={"reportAnalysisWinratesAs": "BLACK"},
+    )
+    try:
+        validate_analysis_attestation(a, referee_spec, _capability_identity(capabilities, referee_spec))
+    except LadderMoveError:
+        return (None, False)
     root = a.get("rootInfo") or {}
     lead = root.get("scoreLead")
     if lead is None or not isinstance(lead, (int, float)) or not math.isfinite(lead):

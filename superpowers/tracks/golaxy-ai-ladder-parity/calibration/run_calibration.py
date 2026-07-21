@@ -33,7 +33,7 @@ import sys
 import time
 from functools import partial
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Mapping, Optional, Tuple
 
 import httpx
 
@@ -237,6 +237,7 @@ async def run_anchor(
     resign_code: Optional[int],
     throttle: float,
     out_dir: Path,
+    capabilities: Mapping[str, object],
 ) -> dict:
     rung = get_rung(rung_n)
     token_holder = {"token": token}  # mutable so a mid-anchor re-auth persists across games
@@ -276,7 +277,14 @@ async def run_anchor(
 
             async def our_move_fn(history, _holder=history_holder):
                 _holder["history"] = history
-                return await adapters.our_move(client, base_url, history, rung=rung, wide_root_noise=wrn)
+                return await adapters.our_move(
+                    client,
+                    base_url,
+                    history,
+                    rung=rung,
+                    wide_root_noise=wrn,
+                    capabilities=capabilities,
+                )
 
             async def golaxy_move_fn(history, _holder=history_holder):
                 _holder["history"] = history
@@ -291,7 +299,7 @@ async def run_anchor(
                     throttle=throttle,
                 )
 
-            adjudicate_partial = partial(adapters.adjudicate, client, base_url)
+            adjudicate_partial = partial(adapters.adjudicate, client, base_url, capabilities=capabilities)
 
             outcome: GameOutcome = await play_one_game(
                 our_move=our_move_fn, golaxy_move=golaxy_move_fn, adjudicate=adjudicate_partial, our_color=our_color
@@ -371,6 +379,7 @@ async def main_async(args) -> int:
 
     summaries = []
     async with httpx.AsyncClient() as client, httpx.AsyncClient() as gx_client:
+        capabilities = await adapters.fetch_health_snapshot(client, args.base_url)
         for rung_n, games in anchors:
             summary = await run_anchor(
                 rung_n,
@@ -385,6 +394,7 @@ async def main_async(args) -> int:
                 resign_code=resign_code,
                 throttle=args.throttle,
                 out_dir=out_dir,
+                capabilities=capabilities,
             )
             summaries.append(summary)
             log.info("=== anchor summary: %s ===", json.dumps(summary, ensure_ascii=False))

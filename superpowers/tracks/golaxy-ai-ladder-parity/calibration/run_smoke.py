@@ -36,7 +36,7 @@ import sys
 import time
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Mapping, Optional
 
 import httpx
 
@@ -143,6 +143,7 @@ async def run_smoke_anchor(
     wrn: float,
     throttle: float,
     errors: List[str],
+    capabilities: Mapping[str, object],
 ) -> dict:
     """Play `games` games at `rung_n` (alternating our color) using the SAME fail-closed
     `play_one_game` loop the full calibration harness (`run_calibration.py`) uses. Records a
@@ -174,7 +175,14 @@ async def run_smoke_anchor(
         async def our_move_fn(history, _rung=rung):
             t0 = time.monotonic()
             try:
-                return await adapters.our_move(client, base_url, history, rung=_rung, wide_root_noise=wrn)
+                return await adapters.our_move(
+                    client,
+                    base_url,
+                    history,
+                    rung=_rung,
+                    wide_root_noise=wrn,
+                    capabilities=capabilities,
+                )
             finally:
                 our_move_s.append(time.monotonic() - t0)
 
@@ -186,7 +194,7 @@ async def run_smoke_anchor(
             finally:
                 golaxy_move_s.append(time.monotonic() - t0)
 
-        adjudicate_partial = partial(adapters.adjudicate, client, base_url)
+        adjudicate_partial = partial(adapters.adjudicate, client, base_url, capabilities=capabilities)
 
         try:
             outcome = await play_one_game(
@@ -284,6 +292,7 @@ async def main_async(args) -> int:
     all_games: List[dict] = []
 
     async with httpx.AsyncClient() as client, httpx.AsyncClient() as gx_client:
+        capabilities = await adapters.fetch_health_snapshot(client, args.base_url)
         log.info("=== level probes: rungs %s ===", LEVEL_PROBE_RUNGS)
         level_probes = await run_level_probes(gx_client, token)
 
@@ -300,6 +309,7 @@ async def main_async(args) -> int:
                 wrn=wrn,
                 throttle=args.throttle,
                 errors=errors,
+                capabilities=capabilities,
             )
             per_move_timing[str(rung_n)] = {
                 "golaxy_move_s": anchor["golaxy_move_timing_s"],

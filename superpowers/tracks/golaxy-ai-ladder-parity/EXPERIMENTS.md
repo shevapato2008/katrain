@@ -287,7 +287,7 @@ wire request、request fingerprint、`_wrapper` attestation 与摘要,因此同�
 ## D. 待办 / 开放项
 
 - [ ] **实验(1)(2)有效重跑**:使用新 `selfplay_v2_pikl` namespace 与 ≥40 visits 网格重新筛查/确认;旧 V>1
-  数据实际测的是 b28 visits 曲线,全部保持失效。
+  数据实际测的是 b28 visits 曲线,不能作为 HumanSL 棋力证据,但仍保留作历史 b28 对照/visits 诊断。
 - [ ] **实验(3)有效重跑**:旧 A 方均为 b28@4,未测到低一段 HumanSL 搜索跨高一段所需 visits;改用修复后
   ≥40 visits player 重跑。
 - [ ] **实验(4)有效重跑**:加厚到20局后为 9/18(50%,2局不可判),且代码确认双方实为 b28@20;需用真正

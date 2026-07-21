@@ -330,6 +330,30 @@ attestation 均通过 harness `_already_done`/record validators;opening suite ch
    最多20次 pair 尝试。完成并记账后才允许选择一个40完整-pair confirmation 候选;若 @80 仍不适合作为
    候选,先以同样的独立10-pair screening 规则考察更高 visits,不得把多个 screening 合并或边跑边改确认样本。
 
+### C8. 实验(4) @80 screening 与下一档预声明(2026-07-22)
+
+C7 预声明的 `rank_9d@80:b28@20` 独立 screening 已完成:共尝试11个颜色 pair(预定上限20),其中10个
+完整 pair 进入固定筛查样本、1个 pair 因1盘 `inconclusive_unsettled` 整对排除。完整 pair 样本为 A 方
+`rank_9d@80` **4–16**(20%,Wilson 95% CI [8.07%, 41.60%]),对应 Elo(A-B) **-240.8**
+[-638.6, -88.5]。全部22盘原始结果计数为 A胜/A负/不可判=4/17/1;其中不完整 pair 内的1盘 A负也按
+预声明规则排除。该结果仍然**仅是 screening,不作显著性或确认性声明,也不与其他 batch 合并**。
+
+@80 因4–16的 screening 结果被淘汰,不会成为实验(4)的40完整-pair confirmation 候选。原始 checkpoint
+与可变 summary 均经严格 JSON、configuration/header/game fingerprint、逐手模型 attestation、开局/pair
+调度、`_already_done` resume 及 summary 独立重算校验:
+
+| batch-2 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-9d-80__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch2_exp4_80/selfplay_screen_rank-9d-80__vs__b28-20.jsonl.gz) | `0528ed874fc4596467d510288516d1a3ead1767eff85849e886785add8c40f86` | `0db824d1d6a81af3d1e8971f225153ffe45487e391f29f6ff86bfd4c902ddb6a` | `a589941cebb082d18d182d6d7626c3cdf3657e057ae50cc6bb73bc13fb1ea327` |
+| [`selfplay_summary_screen_batch2_exp4_80.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch2_exp4_80.json) | — | `a3e7cf16215d949bc4cfc17dd882e3943713fd2cc9348c33c450261219f8ba15` | — |
+
+档案以 `gzip -n -9 -c selfplay_screen_rank-9d-80__vs__b28-20.jsonl > artifacts/screen_batch2_exp4_80/selfplay_screen_rank-9d-80__vs__b28-20.jsonl.gz`
+确定性生成,解压字节与未压缩 checkpoint 完全一致;未压缩文件继续仅在本地保留用于审计/resume。
+
+**下一步预声明(任何 continuation 之前冻结):**实验(4)接下来且只运行一次独立 screening
+`rank_9d@160:b28@20`,恰好10个完整 pair,最多20次 pair 尝试。完成、固化并记账前不运行其他实验(4)
+matchup,也不选择/启动40完整-pair confirmation;是否把 @160 选作 confirmation 候选必须等该固定筛查结束。
+
 ---
 
 ## D. 待办 / 开放项

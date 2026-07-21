@@ -1,0 +1,35 @@
+{
+  "matchups": [
+    {
+      "player_a": "rank_9d@80",
+      "player_b": "b28@20",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 4,
+      "a_winrate": 0.2,
+      "a_elo_vs_b": -240.82399653118495,
+      "a_elo_ci95": [
+        -638.6322555966997,
+        -88.51144944084167
+      ],
+      "wilson_ci95": [
+        0.08065766257979806,
+        0.41601743225189364
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 4,
+        "our_loss": 17,
+        "inconclusive_unsettled": 1
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

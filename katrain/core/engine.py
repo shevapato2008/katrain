@@ -12,6 +12,7 @@ import subprocess
 import threading
 import time
 import traceback
+from types import MappingProxyType
 from typing import Callable, Dict, List, Optional
 
 from katrain.core.constants import (
@@ -30,8 +31,60 @@ from katrain.core.sgf_parser import Move
 from katrain.core.utils import find_package_resource, json_truncate_arrays
 
 
+def _freeze_capabilities(value):
+    if isinstance(value, dict):
+        return MappingProxyType({key: _freeze_capabilities(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_capabilities(item) for item in value)
+    return value
+
+
+def _normalized_capabilities(data):
+    if not isinstance(data, dict) or data.get("capability_schema") != 1:
+        return _freeze_capabilities({})
+    return _freeze_capabilities(copy.deepcopy(data))
+
+
+def _nonempty_string(value):
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _validate_certified_capabilities(data):
+    if not isinstance(data, dict) or data.get("capability_schema") != 1:
+        raise ValueError("Unsupported HTTP engine capability schema")
+    if not _nonempty_string(data.get("katago_version")):
+        raise ValueError("HTTP engine capability is missing katago_version")
+    default_model = data.get("default_model")
+    models = data.get("models")
+    if not _nonempty_string(default_model):
+        raise ValueError("HTTP engine capability is missing default_model")
+    if not isinstance(models, dict) or not models:
+        raise ValueError("HTTP engine capability has no models")
+    if default_model not in models:
+        raise ValueError("HTTP engine default_model is not present in models")
+    for alias, model in models.items():
+        if not _nonempty_string(alias) or not isinstance(model, dict):
+            raise ValueError("HTTP engine capability has an invalid model alias")
+        if not _nonempty_string(model.get("model_path")) or not _nonempty_string(model.get("model_sha256")):
+            raise ValueError(f"HTTP engine model {alias!r} has malformed identity")
+        if model.get("model_sha256_verified") is not True:
+            raise ValueError(f"HTTP engine model {alias!r} identity is not verified")
+        if model.get("has_human_model") is True and not _has_verified_human_model(model):
+            raise ValueError(f"HTTP engine model {alias!r} has malformed human model identity")
+
+
+def _has_verified_human_model(model):
+    return bool(
+        model.get("has_human_model") is True
+        and _nonempty_string(model.get("human_model_path"))
+        and _nonempty_string(model.get("human_model_sha256"))
+        and model.get("human_model_sha256_verified") is True
+    )
+
+
 class BaseEngine:  # some common elements between analysis and contribute engine
     PONDER_KEY = "_kt_continuous"
+    supports_per_query_model = False
 
     RULESETS_ABBR = [
         ("jp", "japanese"),
@@ -71,6 +124,18 @@ class BaseEngine:  # some common elements between analysis and contribute engine
 
     def advance_showing_game(self):
         pass  # avoid transitional error
+
+    def ladder_extra_settings(self, native_settings, main_model):
+        if main_model:
+            raise ValueError("This engine does not support per-query model selection")
+        return copy.deepcopy(native_settings)
+
+    def require_ladder_capability(self, main_model, human_required):
+        if main_model:
+            raise ValueError("This engine does not support per-query model selection")
+        if human_required and not getattr(self, "has_human_model", False):
+            raise ValueError("This engine does not have the required human model")
+        return None
 
     def status(self):
         return ""  # avoid transitional error
@@ -120,6 +185,8 @@ class BaseEngine:  # some common elements between analysis and contribute engine
         include_policy=True,
         report_every: Optional[float] = None,
     ):
+        if extra_settings is not None and "model" in extra_settings and not self.supports_per_query_model:
+            raise ValueError("Native KataGo does not support per-query model selection")
         nodes = analysis_node.nodes_from_root
         moves = [m for node in nodes for m in node.moves]
         initial_stones = [m for node in nodes for m in node.placements]
@@ -538,7 +605,9 @@ class HttpEngineStatus:
 class KataGoHttpEngine(BaseEngine):
     """Communicates with a KataGo HTTP analysis service."""
 
-    def __init__(self, katrain, config):
+    supports_per_query_model = True
+
+    def __init__(self, katrain, config, capabilities=None):
         super().__init__(katrain, config)
         self.allow_recovery = self.config.get("allow_recovery", False)
         self.queries = {}  # outstanding query id -> start time and callback
@@ -550,7 +619,13 @@ class KataGoHttpEngine(BaseEngine):
         self.thread_lock = threading.Lock()
         self._stop_event = threading.Event()
         self._available = True
+        self.capabilities = _normalized_capabilities(capabilities)
+        self.capability_schema = self.capabilities.get("capability_schema")
         self.has_human_model = self.config.get("http_has_human_model", False)
+        if self.capability_schema == 1:
+            default_model = self.capabilities.get("default_model")
+            default_record = self.capabilities.get("models", {}).get(default_model, {})
+            self.has_human_model = _has_verified_human_model(default_record)
 
         base_url = self.config.get("http_url") or self.config.get("api_url") or "http://127.0.0.1:8000"
         self.base_url = base_url.rstrip("/")
@@ -564,6 +639,41 @@ class KataGoHttpEngine(BaseEngine):
         self.katago_process = HttpEngineStatus(self)
         self.worker_thread = None
         self.start()
+
+    def require_ladder_capability(self, main_model, human_required):
+        if self.capability_schema != 1:
+            raise ValueError("HTTP engine does not advertise certified ladder capabilities")
+        if main_model is not None and not _nonempty_string(main_model):
+            raise ValueError("HTTP ladder model alias must be nonempty")
+        alias = main_model if main_model is not None else self.capabilities.get("default_model")
+        models = self.capabilities.get("models", {})
+        if alias not in models:
+            raise ValueError(f"HTTP ladder model {alias!r} is not advertised")
+        model = models[alias]
+        if model.get("running") is not True:
+            raise ValueError(f"HTTP ladder model {alias!r} is not running")
+        if not _nonempty_string(model.get("model_path")) or not _nonempty_string(model.get("model_sha256")):
+            raise ValueError(f"HTTP ladder model {alias!r} has malformed identity")
+        if model.get("model_sha256_verified") is not True:
+            raise ValueError(f"HTTP ladder model {alias!r} identity is not verified")
+        if human_required and not _has_verified_human_model(model):
+            raise ValueError(f"HTTP ladder model {alias!r} has no verified human model")
+        return {
+            "selected_model": alias,
+            "model_path": model["model_path"],
+            "model_sha256": model["model_sha256"],
+            "human_model_path": model.get("human_model_path"),
+            "human_model_sha256": model.get("human_model_sha256"),
+            "katago_version": self.capabilities["katago_version"],
+        }
+
+    def ladder_extra_settings(self, native_settings, main_model):
+        settings = copy.deepcopy(native_settings)
+        if main_model is None:
+            return settings
+        self.require_ladder_capability(main_model, human_required=False)
+        settings["model"] = main_model
+        return settings
 
     @property
     def available(self):
@@ -831,22 +941,29 @@ def create_engine(katrain, config):
             target = f"{url.rstrip('/')}{health_path}"
             katrain.log(f"Checking HTTP engine status at {target}...", OUTPUT_INFO)
             response = requests.get(target, timeout=2.0)
+            response.raise_for_status()
             katrain.log(f"HTTP engine found and healthy. Status code: {response.status_code}", OUTPUT_INFO)
 
-            # Auto-detect human model support
-            server_has_human_model = False
+            capabilities = None
+            server_has_human_model = config.get("http_has_human_model", False)
             try:
                 data = response.json()
-                if isinstance(data, dict):
-                    server_has_human_model = data.get("has_human_model", False)
-                    if server_has_human_model:
-                        katrain.log("Server reports support for human-like models.", OUTPUT_INFO)
             except Exception:
-                pass  # Use fallback
+                data = None
+            if isinstance(data, dict):
+                if "capability_schema" in data:
+                    _validate_certified_capabilities(data)
+                    capabilities = data
+                    default_record = data["models"][data["default_model"]]
+                    server_has_human_model = _has_verified_human_model(default_record)
+                else:
+                    server_has_human_model = data.get("has_human_model", server_has_human_model)
+                if server_has_human_model:
+                    katrain.log("Server reports support for human-like models.", OUTPUT_INFO)
 
-            engine = KataGoHttpEngine(katrain, config)
-            # Use detected capability or fallback to config
-            engine.has_human_model = server_has_human_model or config.get("http_has_human_model", False)
+            engine = KataGoHttpEngine(katrain, config, capabilities=capabilities)
+            if capabilities is None:
+                engine.has_human_model = server_has_human_model
             return engine
 
         except Exception as e:

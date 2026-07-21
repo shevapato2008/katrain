@@ -25,7 +25,7 @@ Usage:
       superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py \
       --matchups "rank_9d@80:rank_9d@40:10,rank_9d@40:b28@20:10" \
       --base-url http://127.0.0.1:8000 \
-      --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay
+      --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl
 
 Each matchup is "A:B:games"; A wins are counted (from A's alternating color). Checkpoints per
 matchup to selfplay_<A>__vs__<B>.jsonl (resumable -- a re-run skips finished games)."""
@@ -58,16 +58,33 @@ from katrain.core.ladder import (  # noqa: E402
     LadderRung,
     _valid_policy,
     colrow_to_golaxy,
+    pick_ladder_move,
     rung_strength_spec,
+    validate_analysis_attestation,
 )
 from katrain.core.ladder_calibration import play_one_game, elo_from_winrate, GameOutcome  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("run_selfplay")
 
+_RESULTS_DIR = Path(__file__).parent / "results"
+DEFAULT_OUT_DIR = _RESULTS_DIR / "selfplay_v2_pikl"
+LEGACY_OUT_DIR = _RESULTS_DIR / "selfplay"
+_RANK_TOKEN = r"(?:[1-9]d|(?:[1-9]|1[0-9]|20)k)"
+_RANK_PROFILE_RE = re.compile(rf"(?:rank|preaz)_{_RANK_TOKEN}(?:_{_RANK_TOKEN})?\Z")
+_PROYEAR_PROFILE_RE = re.compile(r"proyear_([0-9]{4})\Z")
+
 
 class _MockKaTrainForConfig(KaTrainBase):
     """Config-only double: reads the SAME shipping engine block engine.py ships with."""
+
+
+def _valid_humansl_profile(profile: str) -> bool:
+    """Mirror KataGo SGFMetadata::getProfile's accepted named-profile ranges."""
+    if _RANK_PROFILE_RE.fullmatch(profile):
+        return True
+    proyear = _PROYEAR_PROFILE_RE.fullmatch(profile)
+    return proyear is not None and 1800 <= int(proyear.group(1)) <= 2023
 
 
 def make_player(spec: str) -> Tuple[str, LadderRung, str]:
@@ -98,7 +115,7 @@ def make_player(spec: str) -> Tuple[str, LadderRung, str]:
         if force_search:
             raise ValueError("the 's' suffix is only supported by HumanSL '<profile>@1s'")
         mech, net, profile, label, selection = "net_search", "b28", None, f"b28@{visits}", "search"
-    elif prof.startswith("rank_") or prof.startswith("preaz_") or prof.startswith("proyear_"):
+    elif _valid_humansl_profile(prof):
         if visits == 1 and force_search:
             mech, selection, label = "humansl", "argmax_human", f"{prof}@1s"  # argmax humanPolicy @1
         elif visits == 1:
@@ -156,10 +173,8 @@ async def _player_move(
     wrn: float,
     capabilities: Mapping[str, object],
 ):
-    """Dispatch a self-play move by selection. 'search'/'weighted' reuse the TESTED adapters.our_move
-    (pick_ladder_move). 'argmax_human' issues the same maxVisits=1 humanSL query but picks argmax of
-    humanPolicy directly (moveInfos are empty at 1 visit, so the search picker cannot be used)."""
-    if selection != "argmax_human":
+    """Dispatch a self-play move and fail closed unless the executed model is fully attested."""
+    if selection == "search":
         return await adapters.our_move(
             client,
             base_url,
@@ -168,17 +183,31 @@ async def _player_move(
             wide_root_noise=wrn,
             capabilities=capabilities,
         )
+    spec = rung_strength_spec(rung)
     try:
-        adapters._capability_identity(capabilities, rung_strength_spec(rung))
+        capability_identity = adapters._capability_identity(capabilities, spec)
     except LadderMoveError:
         return "unavailable"
     q = adapters.build_ladder_analysis_query(history, rung, 19, 7.5, "chinese", wrn)
     r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
     r.raise_for_status()
-    hp = r.json().get("humanPolicy")
-    if not _valid_policy(hp, 19 * 19 + 1):
+    analysis = r.json()
+    try:
+        # Native HumanSL has no explicit route selector, but this experiment harness still requires
+        # the wrapper to attest the default main model and its human model before using humanPolicy.
+        attested_spec = dataclasses.replace(spec, main_model=capability_identity["selected_model"])
+        validate_analysis_attestation(analysis, attested_spec, capability_identity)
+        if selection == "weighted":
+            picked = pick_ladder_move(analysis, (19, 19), "humansl")
+        elif selection == "argmax_human":
+            hp = analysis.get("humanPolicy")
+            if not _valid_policy(hp, 19 * 19 + 1):
+                raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
+            picked = _pick_argmax_human(hp, (19, 19))
+        else:
+            raise LadderMoveError(f"unknown self-play selection {selection!r}")
+    except (KeyError, LadderMoveError):
         return "unavailable"  # -> harness marks inconclusive_engine (never a fabricated move)
-    picked = _pick_argmax_human(hp, (19, 19))
     return "pass" if picked == "pass" else colrow_to_golaxy(picked[0], picked[1], 19)
 
 
@@ -212,6 +241,13 @@ def _already_done(path: Path) -> int:
         return 0
     with path.open() as f:
         return sum(1 for line in f if line.strip())
+
+
+def _validated_out_dir(path: Path) -> Path:
+    path = Path(path)
+    if path.resolve() == LEGACY_OUT_DIR.resolve():
+        raise ValueError(f"legacy self-play results cannot be resumed; use the fresh namespace {DEFAULT_OUT_DIR}")
+    return path
 
 
 async def run_matchup(
@@ -343,7 +379,7 @@ async def main_async(args) -> int:
     else:
         wrn = args.wide_root_noise
         log.info("wide_root_noise = %.4f (override)", wrn)
-    out_dir = Path(args.out)
+    out_dir = _validated_out_dir(args.out)
     summaries = []
     async with httpx.AsyncClient() as client:
         capabilities = await adapters.fetch_health_snapshot(client, args.base_url)
@@ -372,7 +408,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--matchups", required=True, help="'A:B:games,...' e.g. 'rank_9d@80:rank_9d@40:10'")
     p.add_argument("--base-url", default="http://127.0.0.1:8000", help="our KataGo HTTP analysis server")
-    p.add_argument("--out", default=str(Path(__file__).parent / "results" / "selfplay"), help="checkpoint dir")
+    p.add_argument("--out", default=str(DEFAULT_OUT_DIR), help="checkpoint dir")
     p.add_argument(
         "--wide-root-noise", type=float, default=None, help="override wideRootNoise (default: shipping config)"
     )

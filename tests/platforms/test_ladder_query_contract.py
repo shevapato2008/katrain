@@ -74,7 +74,7 @@ def _strength_subset_matches(rung, engine, wrn):
     )
 
 
-@pytest.mark.parametrize("rung_n", [20, 1, 32])  # 20=1段 humansl; 1=18级 humansl+temp(1.1); 32=7段 net_search
+@pytest.mark.parametrize("rung_n", [20, 1, 32])  # 20=1K humansl; 1=20K humansl+temp(1.1); 32=准9D net_search
 def test_harness_query_equals_runtime_strength_subset(rung_n):
     """Exact-equality parity vs a REAL KataGoHttpEngine's build_analysis_query, across the three
     mechanism/knob classes. wideRootNoise from ONE source (the real engine config)."""

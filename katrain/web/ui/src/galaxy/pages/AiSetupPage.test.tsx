@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AiSetupPage from './AiSetupPage';
 
-// Task 11: 棋力阶梯 (strength ladder) 40-rung opponent selector on the galaxy AiSetupPage.
+// Task 11: 棋力阶梯 (strength ladder) 37-rung opponent selector on the galaxy AiSetupPage.
 // Mirrors the Vitest/RTL pattern in kiosk/pages/PlatformEngineSetupPage.test.tsx: mock the
 // API module (vi.hoisted so the mocked fns are reachable from assertions) and mock the
 // auth/settings contexts (this page isn't wrapped in their Providers in isolation).
@@ -34,8 +34,8 @@ const { mockAiConstants, mockRungsResponse, mockNewGame, mockUpdateConfig } = vi
   },
   mockRungsResponse: {
     rungs: [
-      { rung: 18, rank_name: '1级' },
-      { rung: 40, rank_name: 'KataGo 中等算力' },
+      { rung: 18, rank_name: '3K' },
+      { rung: 37, rank_name: 'KataGo中等' },
     ],
   },
   mockNewGame: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
@@ -105,9 +105,9 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     await user.click(comboboxForLabel('AI Strategy'));
     await user.click(screen.getByRole('option', { name: '棋力阶梯' }));
 
-    // Default rung 18 (1级) is pre-selected; label is rank_name only, no elo.
+    // Default rung 18 (native HumanSL 3K) is pre-selected; label is rank_name only, no elo.
     await waitFor(() => {
-      expect(screen.getByText('1级')).toBeInTheDocument(); // rank_name only, no elo
+      expect(screen.getByText('3K')).toBeInTheDocument(); // rank_name only, no elo
     });
     // The generic human-rank slider (visible for ai:human) must not be showing.
     expect(screen.queryByText('20k')).not.toBeInTheDocument();
@@ -121,17 +121,17 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     await user.click(comboboxForLabel('AI Strategy'));
     await user.click(screen.getByRole('option', { name: '棋力阶梯' }));
 
-    // Pick the strongest rung (40, KataGo 中等算力) from the rung selector.
-    await waitFor(() => expect(screen.getByText('1级')).toBeInTheDocument());
+    // Pick the strongest rung (37, KataGo中等) from the rung selector.
+    await waitFor(() => expect(screen.getByText('3K')).toBeInTheDocument());
     await user.click(comboboxForLabel('棋力等级'));
-    await user.click(screen.getByRole('option', { name: 'KataGo 中等算力' }));
+    await user.click(screen.getByRole('option', { name: 'KataGo中等' }));
 
     await user.click(screen.getByRole('button', { name: /start game/i }));
 
     await waitFor(() => {
       expect(mockNewGame).toHaveBeenCalledWith(
         's1',
-        expect.objectContaining({ ladder_rung: 40 }),
+        expect.objectContaining({ ladder_rung: 37 }),
       );
     });
 

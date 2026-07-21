@@ -44,8 +44,8 @@ const AiSetupPage = () => {
     const [estimatedRank, setEstimatedRank] = useState<string>('...');
     const [aiLoading, setAiLoading] = useState(false);
 
-    // 棋力阶梯 (strength ladder): 40 rungs fetched from GET /api/ladder-rungs.
-    // Default rung 18 == "1级" (LADDER_RUNGS index 17), a mid-strength anchor.
+    // 棋力阶梯 (strength ladder): 37 rungs fetched from GET /api/ladder-rungs.
+    // Default rung 18 == native HumanSL "3K" (LADDER_RUNGS index 17).
     const [ladderRungs, setLadderRungs] = useState<LadderRung[]>([]);
     const [ladderRung, setLadderRung] = useState<number>(18);
     const isLadder = opponent === 'ai:ladder';

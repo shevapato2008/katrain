@@ -80,7 +80,7 @@ def test_humansl_rung_pure_visits_and_profile():
 
 
 def test_search_rung_high_visits_top_move():
-    s, eng = _mk(39, {"moveInfos": [{"move": "Q16", "order": 0}]})
+    s, eng = _mk(36, {"moveInfos": [{"move": "Q16", "order": 0}]})
     move, _ = s.generate_move()
     assert eng.last["visits"] >= 100 and eng.last["extra"].get("humanSLProfile") is None and move.gtp() == "Q16"
 
@@ -137,7 +137,7 @@ def test_dead_engine_raises_unavailable_no_hang(monkeypatch):
 
     monkeypatch.setattr(ai, "LADDER_ANALYSIS_TIMEOUT_S", 0.2, raising=False)
     eng = FakeEngine({"moveInfos": [{"move": "Q16", "order": 0}]}, alive=False, call_back=False)
-    s = STRATEGY_REGISTRY[AI_LADDER](FakeGame(eng), {"rung": 39})  # net_search, no human model needed
+    s = STRATEGY_REGISTRY[AI_LADDER](FakeGame(eng), {"rung": 36})  # net_search, no human model needed
     with pytest.raises(LadderUnavailable):
         s.generate_move()
 
@@ -147,7 +147,7 @@ def test_empty_completed_analysis_raises_unavailable_no_hang():
     # the explicit `done` flag fires, then `not analysis` -> LadderUnavailable (M2).
     from katrain.core.ai import LadderUnavailable
 
-    s, eng = _mk(39, {})  # net_search rung, callback delivers {} synchronously, alive=True
+    s, eng = _mk(36, {})  # net_search rung, callback delivers {} synchronously, alive=True
     with pytest.raises(LadderUnavailable):
         s.generate_move()
     assert eng.last["visits"] >= 100  # it DID issue the query, then failed closed on empty payload
@@ -162,7 +162,7 @@ def test_ladder_never_global_resigns(monkeypatch):
     monkeypatch.setattr(ai, "should_ai_resign", lambda *a, **k: True)
     eng = FakeEngine({"moveInfos": [{"move": "Q16", "order": 0}]})
     game = FakeGame(eng)
-    result = ai.generate_ai_move(game, AI_LADDER, {"rung": 39})
+    result = ai.generate_ai_move(game, AI_LADDER, {"rung": 36})
     assert result is not None
     move, played_node = result
     assert move.gtp() == "Q16"
@@ -173,7 +173,7 @@ def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     # katrain.log is the WS-broadcast channel: WebKaTrain.log forwards EVERY level via
     # message_callback -> SessionManager WS -> ZenModeApp TopBar (codex round 3/5, verified).
     # NOTHING on the ladder path may push the rung index / visits / 星阵 through it:
-    #   - AIStrategy.__init__ settings-dump ({'rung': 39})  -> routed to stdlib logger (round 5 fix)
+    #   - AIStrategy.__init__ settings-dump ({'rung': 36})  -> routed to stdlib logger (round 5 fix)
     #   - LadderStrategy success detail (rung · visits)     -> routed to stdlib logger (round 3 fix)
     #   - the returned ai_thoughts                          -> clean 段位 label only
     # The spy is installed BEFORE generate_ai_move so it sees the construction-time init log.
@@ -187,10 +187,10 @@ def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     game.katrain.log = lambda *a, **k: seen.append(str(a[0]) if a else "")
 
     with caplog.at_level(logging.DEBUG, logger="katrain.core.ai"):
-        move, node = generate_ai_move(game, AI_LADDER, {"rung": 39})  # rung 39 == 超越职业
+        move, node = generate_ai_move(game, AI_LADDER, {"rung": 36})  # rung 36 == 超职业
 
-    assert node.ai_thoughts == "棋力阶梯 超越职业"          # clean user-visible thought (SGF + TopBar)
+    assert node.ai_thoughts == "棋力阶梯 超职业"            # clean user-visible thought (SGF + TopBar)
     joined = " ".join(seen)
-    for banned in ("星阵", "rung", "visits", "39"):           # per codex round 5 recommendation
+    for banned in ("星阵", "rung", "visits", "36"):           # per codex round 5 recommendation
         assert banned not in joined
     assert "visits=" in caplog.text                            # observability preserved server-side

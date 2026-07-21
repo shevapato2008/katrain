@@ -45,12 +45,12 @@ def test_ladder_rungs_endpoint(client):
     resp = client.get("/api/ladder-rungs")
     assert resp.status_code == 200
     rungs = resp.json()["rungs"]
-    assert len(rungs) == 40
+    assert len(rungs) == 37
     # New star阵-free wire schema: only rung + rank_name.
     assert set(rungs[0].keys()) == {"rung", "rank_name"}
-    assert rungs[0] == {"rung": 1, "rank_name": "18级"}
-    assert rungs[38] == {"rung": 39, "rank_name": "超越职业"}
-    assert rungs[39] == {"rung": 40, "rank_name": "KataGo 中等算力"}
+    assert rungs[0] == {"rung": 1, "rank_name": "20K"}
+    assert rungs[35] == {"rung": 36, "rank_name": "超职业"}
+    assert rungs[36] == {"rung": 37, "rank_name": "KataGo中等"}
     # No internal 星阵/elo fields leak to the browser.
     for r in rungs:
         assert "golaxy_level_name" not in r
@@ -384,11 +384,11 @@ def test_do_update_state_respawns_ai_ladder_when_last_ladder_error_false(monkeyp
 def test_get_state_emits_rank_display_for_ladder_ai():
     wkt = _make_katrain()
     _make_ladder_player(wkt, "W")
-    wkt.ladder_rung = {"rung": 39}
+    wkt.ladder_rung = {"rung": 36}
 
     state = wkt.get_state()
     w = state["players_info"]["W"]
-    assert w["rank_display"] == "超越职业"  # the rung's rank_name
+    assert w["rank_display"] == "超职业"  # the rung's rank_name
     assert w["calculated_rank"] is None  # 段位 rides rank_display, not calculated_rank
     b = state["players_info"]["B"]
     assert b["rank_display"] is None  # human player: no ladder rank_display
@@ -402,7 +402,7 @@ def test_rank_display_none_when_seat_flipped_to_human_via_partial_update():
 
     wkt = _make_katrain()
     _make_ladder_player(wkt, "W")
-    wkt.ladder_rung = {"rung": 39}
+    wkt.ladder_rung = {"rung": 36}
 
     wkt.players_info["W"].player_type = PLAYER_HUMAN  # subtype intentionally left as "ai:ladder"
     assert wkt.players_info["W"].player_subtype == AI_LADDER  # precondition: stale subtype
@@ -426,10 +426,10 @@ def test_ladder_unavailable_does_not_broadcast_rung_index(monkeypatch, caplog):
     wkt = _make_katrain()
     next_bw = wkt.game.current_node.next_player
     _make_ladder_player(wkt, next_bw)
-    wkt.ladder_rung = {"rung": 39}
+    wkt.ladder_rung = {"rung": 36}
 
     def boom(game, mode, settings):
-        raise ai.LadderUnavailable("rung 39: analysis timed out (visits=480)")
+        raise ai.LadderUnavailable("rung 36: analysis timed out (visits=450)")
 
     monkeypatch.setattr(ai, "generate_ai_move", boom)
 
@@ -441,9 +441,9 @@ def test_ladder_unavailable_does_not_broadcast_rung_index(monkeypatch, caplog):
 
     assert wkt.last_ladder_error is True  # user-facing surface = generic flag, not the diagnostic text
     logged = " ".join(str(d.get("message", "")) for (t, d) in broadcasts if t == "log")
-    for banned in ("rung", "visits", "39", "星阵"):
+    for banned in ("rung", "visits", "36", "星阵"):
         assert banned not in logged
-    assert "rung 39" in caplog.text  # diagnostics preserved on the server-side stdlib logger
+    assert "rung 36" in caplog.text  # diagnostics preserved on the server-side stdlib logger
 
 
 if __name__ == "__main__":

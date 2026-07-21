@@ -48,7 +48,7 @@ from katrain.core.constants import (
 from katrain.core.game import Game, GameNode, Move
 from katrain.core.utils import var_to_grid, weighted_selection_without_replacement, evaluation_class
 
-# Rung-40 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
+# Rung 37 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
 # hung engine can hold ai_lock and block new-game (see LadderStrategy).
 LADDER_ANALYSIS_TIMEOUT_S = 60
 

@@ -57,19 +57,18 @@ from katrain.web.platforms.golaxy.engine_client import engine_genmove, GolaxyEng
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("run_smoke")
 
-# Level re-verify set: 18级/12级/1级/9段/星阵3星 (api 220/280/1100/3000/3300). Rung numbers are
-# derived from katrain/core/ladder.py's `_GOLAXY_WEAK_TO_STRONG` (weakest-first, 1-indexed):
-# index 0="18级"->rung1, index 6="12级"->rung7, index 17="1级"->rung18, index 35="9段"->rung36,
-# index 38="星阵3星"->rung39. Spans the FULL wire range (weakest kyu -> the super-pro ceiling)
-# so a re-verify catches drift anywhere on Golaxy's side, not just at the calibration anchors.
-LEVEL_PROBE_RUNGS = [1, 7, 18, 36, 39]
+# Level re-verify set spans every part of the Golaxy-aligned Band B: 准6段, 准7段, 准8段,
+# 9段, and 星阵3星 (api 2200/2400/2600/3000/3300). Native HumanSL Band A and the
+# api-less rung-37 ceiling are deliberately excluded: neither has a Golaxy wire counterpart.
+LEVEL_PROBE_RUNGS = [26, 28, 30, 33, 36]
 
-# ~10-game smoke: 2 anchors, rung 18 (1级, api 1100 -- fast/weak) + rung 28 (5段, api 2100 --
-# mid-strength), 5 games each by default. Deliberately NOT the strongest rungs (9段/星阵3星):
+# ~10-game smoke: 2 anchors, rung 26 (准6段, api 2200 -- weakest/fastest valid opponent)
+# + rung 30 (准8段, api 2600 -- mid-band), 5 games each by default. Deliberately NOT the
+# strongest rungs (9段/星阵3星):
 # those are already timing-probed above via `probe_level`, and a full ~10-game smoke at the
 # super-pro ceiling would make the "quick smoke before committing hours to P3b" gate itself
 # slow. `--games-per-anchor` can widen this if the operator wants more smoke coverage.
-SMOKE_ANCHORS = [(18, 5), (28, 5)]
+SMOKE_ANCHORS = [(26, 5), (30, 5)]
 
 
 class _MockKaTrainForConfig(KaTrainBase):

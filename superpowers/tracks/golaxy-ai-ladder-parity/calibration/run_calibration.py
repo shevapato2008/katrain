@@ -15,7 +15,7 @@ the numbers, per Task 9 / plan.md Phase P3a note).
 Usage:
     GOLAXY_TOKEN=<redacted> uv run python \\
         superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_calibration.py \\
-        --anchors "18:20,28:20,35:10" --base-url http://127.0.0.1:8000 \\
+        --anchors "26:20,30:20,36:10" --base-url http://127.0.0.1:8000 \\
         --token-env GOLAXY_TOKEN --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results
 
 Never commit a live token: --token-env only names the env var to read (default GOLAXY_TOKEN);
@@ -68,7 +68,7 @@ class _MockKaTrainForConfig(KaTrainBase):
 
 
 def parse_anchors(spec: str) -> List[Tuple[int, int]]:
-    """'18:20,28:20,35:10' -> [(18,20),(28,20),(35,10)]. Validates rung range + games>0."""
+    """'26:20,30:20,36:10' -> valid Golaxy-aligned anchors. Validates counterpart + games."""
     anchors = []
     for part in spec.split(","):
         part = part.strip()
@@ -76,7 +76,9 @@ def parse_anchors(spec: str) -> List[Tuple[int, int]]:
             continue
         rung_s, _, games_s = part.partition(":")
         rung_n, games = int(rung_s), int(games_s)
-        get_rung(rung_n)  # raises ValueError if out of range 1..40
+        rung = get_rung(rung_n)  # raises ValueError if out of range 1..37
+        if rung.golaxy_api_level is None:
+            raise ValueError(f"anchor rung {rung_n} has no Golaxy counterpart")
         if games <= 0:
             raise ValueError(f"anchor {part!r}: games must be > 0")
         anchors.append((rung_n, games))
@@ -395,7 +397,7 @@ async def main_async(args) -> int:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--anchors", required=True, help="'rung:games,rung:games,...' e.g. '18:20,28:20,35:10'")
+    p.add_argument("--anchors", required=True, help="'rung:games,rung:games,...' e.g. '26:20,30:20,36:10'")
     p.add_argument("--throttle", type=float, default=2.0, help="seconds to sleep between games (rate-limit Golaxy)")
     p.add_argument("--base-url", default="http://127.0.0.1:8000", help="our KataGo HTTP analysis server base URL")
     p.add_argument("--token-env", default="GOLAXY_TOKEN", help="env var name holding the Golaxy access token")

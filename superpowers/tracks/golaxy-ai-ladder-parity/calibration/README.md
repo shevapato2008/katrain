@@ -1,7 +1,8 @@
 # Golaxy AI-ladder calibration — operator runbook
 
-This directory holds the **operator-run** (NOT CI-tested) calibration tools for the 40-rung
-"对标星阵" ladder (`katrain/core/ladder.py`):
+This directory holds the **operator-run** (NOT CI-tested) calibration tools for the 37-rung
+hybrid strength ladder (`katrain/core/ladder.py`). Only Golaxy-aligned Band B rungs 26..36
+are valid calibration opponents; native HumanSL Band A and the api-less ceiling are not:
 
 | File | Purpose |
 |---|---|
@@ -108,10 +109,10 @@ GOLAXY_TOKEN=<redacted> uv run python \
 
 What it does (see `run_smoke.py`'s module docstring + `probe_level`/`run_smoke_anchor`
 docstrings for the exact contract):
-1. **Level re-verify** — one genmove each at 5 rungs spanning the whole wire range
-   (18级/12级/1级/9段/星阵3星 → api levels 220/280/1100/3000/3300), timed, with any wire error
+1. **Level re-verify** — one genmove each at 5 representative Band B rungs
+   (准6段/准7段/准8段/9段/星阵3星 → api levels 2200/2400/2600/3000/3300), timed, with any wire error
    (`Retryable`/`Fatal`/`QuotaExhausted`/`AuthExpired`) recorded instead of crashing the sweep.
-2. **~10-game smoke** — 2 anchors (rung 18 = 1级, rung 28 = 5段; 5 games each by default,
+2. **~10-game smoke** — 2 anchors (rung 26 = 准6段, rung 30 = 准8段; 5 games each by default,
    `--games-per-anchor` to widen), alternating our color, using the SAME fail-closed
    `play_one_game` loop the full calibration harness uses. Records per-move timing for both
    sides and the **golaxy-terminal rate** per anchor (see "Trusted terminals" below).
@@ -246,9 +247,9 @@ following from `results/smoke_report.json` + the smoke run's console log:
    道具 tunnels) and should be investigated before proceeding.
 2. **Strong-level per-move time is within tolerance** — the strong-level single-move latency
    (9段/星阵3星) lives in `level_probes`, NOT `per_move_timing` (that key only covers the two
-   ~10-game smoke anchors, rungs 18/28). Inspect the `level_probes` entries where
+   ~10-game smoke anchors, rungs 26/30). Inspect the `level_probes` entries where
    `level == 3000` (9段) and `level == 3300` (星阵3星), field `elapsed_s`, plus the two smoke
-   anchors' `per_move_timing["18"]` (1级) and `per_move_timing["28"]` (5段) `golaxy_move_s`/
+   anchors' `per_move_timing["26"]` (准6段) and `per_move_timing["30"]` (准8段) `golaxy_move_s`/
    `our_move_s` entries: none should be uncomfortably close to the 180s HTTP timeout ceiling
    (`engine_client.GENMOVE_TIMEOUT_SECONDS`). A level probe that itself took >60-90s is a
    signal the live server/network is under load; consider re-running before committing to
@@ -306,18 +307,17 @@ The 7 calibration anchors (rung numbers are this checkout's — re-derive via
 
 | Golaxy level | `golaxy_api_level` | rung # | band (per `bake_results.band_of_rung`) |
 |---|---|---|---|
-| 7级 | 540 | 12 | kyu |
-| 1级 | 1100 | 18 | kyu |
-| 1段 | 1300 | 20 | amateur |
-| 5段 | 2100 | 28 | amateur |
-| 9段 | 3000 | 36 | pro |
-| 星阵1星 | 3100 | 37 | super |
-| 星阵3星 | 3300 | 39 | super |
+| 准6段 | 2200 | 26 | amateur |
+| 准7段 | 2400 | 28 | pro |
+| 准8段 | 2600 | 30 | pro |
+| 准9段 | 2900 | 32 | pro |
+| 9段 | 3000 | 33 | pro |
+| 星阵1星 | 3100 | 34 | super |
+| 星阵3星 | 3300 | 36 | super |
 
-These 7 were chosen to give **every band** (kyu / amateur-dan / pro / super-pro) at least one
-anchor — `bake_results.banded_correction` fits each band's offset+slope independently, so a
-band with zero anchors simply cannot be corrected (its rungs are left untouched by
-`apply_corrections`; make sure this doesn't silently happen for a band you meant to calibrate).
+These 7 span the complete Golaxy-aligned Band B range. Band A is intentionally absent because
+its native HumanSL ranks have no Golaxy counterpart. The existing bake model is not compatible
+with that hybrid split; see the Step 10 blocker before attempting to convert measurements.
 
 Run ~50 games per anchor (half each color — `run_calibration.py` alternates automatically),
 resumable/checkpointed, throttled to avoid rate-limiting:
@@ -325,7 +325,7 @@ resumable/checkpointed, throttled to avoid rate-limiting:
 ```bash
 GOLAXY_TOKEN=<redacted> uv run python \
   superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_calibration.py \
-  --anchors "12:50,18:50,20:50,28:50,36:50,37:50,39:50" \
+  --anchors "26:50,28:50,30:50,32:50,33:50,34:50,36:50" \
   --base-url http://<prod-host>:8000 \
   --throttle 2.0 \
   --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results
@@ -346,6 +346,12 @@ When all 7 anchors finish, `results/summary.json` holds the per-anchor
 `elo_vs_opponent`/`elo_ci95`/`golaxy_terminal_rate` that `bake_results.py` consumes next.
 
 ## Step 10: Bake — `bake_results.py`
+
+> **Blocked for the 37-rung hybrid:** the current bake algorithm still models the superseded
+> four-band Golaxy ladder and treats every api-less rung as a super-band search rung. Do not
+> run it against the hybrid table until that calibration model is redesigned to leave native
+> HumanSL Band A and the api-less ceiling untouched. The command below is retained only as
+> historical operator context for that follow-up.
 
 ```bash
 uv run python \
@@ -416,8 +422,7 @@ gets handed back for the go/no-go decision on shipping the newly baked `ladder.p
 
 ## Known open items (carried from `plan.md`)
 
-- Rung 40 is a `net='b18'@500` visits ceiling in v1 (no real b28@:8002 super-ceiling exposed
-  yet) — not part of the calibration anchors above.
+- Rung 37 is the api-less `b28@500` visits ceiling and is not a valid calibration anchor.
 - The 98%-decisive / lead-margin thresholds in `adapters._is_settled` are conservative
   starting values from offline reasoning; Step 7 point 4 above is the first live check —
   refine them from real smoke endgames if they look too strict/loose in practice.

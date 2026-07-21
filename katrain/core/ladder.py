@@ -1,25 +1,37 @@
-"""Golaxy-parity strength ladder: 40 rungs of local-KataGo config + pure helpers
-shared by LadderStrategy (runtime) and the calibration harness.
+"""棋力阶梯 strength ladder: 37 rungs of local-KataGo config + pure helpers shared by
+LadderStrategy (runtime) and the calibration harness.
 
-VALUES ARE PROVISIONAL (offline, PRD §6/§7); empirical calibration (P3b) overwrites
-them. `config_sanity_key` is a config sanity check ONLY — ties between adjacent
-same-profile rungs are EXPECTED and fine (PRD §2: adjacent Golaxy levels can have
-near-identical real strength). True monotonicity comes from measured games, not
-this key."""
+STRUCTURE (restructured 2026-07-21):
+  * Rungs 1..25  — KataGo humanSL NATIVE ranks (20K..1K, 1D..5D), NOT benchmarked
+    against Golaxy. Each rung IS a humanSL rank, played by the human net (humanv0)
+    at 1 visit. Labels are the ranks themselves; no Golaxy counterpart.
+  * Rungs 26..36 — Golaxy-ALIGNED strong tiers (准6D..超职业), mapped 1:1 to Golaxy
+    准6段..星阵3星. net_search on the DEFAULT main net (b28). visits are PROVISIONAL
+    (uncalibrated) starting points; calibration vs live Golaxy overwrites them —
+    goal = >= the Golaxy level at the same label (never visibly weaker), NOT 50%.
+  * Rung 37     — "KataGo中等" ceiling = b28 @ 500 visits (no Golaxy counterpart).
+
+`net` reflects which net actually produces the move (humanv0 for humansl, b28 for
+net_search); the default main net is b28. Routing a rung to the b18 main net (a
+compute-saving option) would ALSO need overrideSettings.model="b18" — not wired here.
+`config_sanity_key` is a CONFIG sanity ordering ONLY; real strength comes from measured
+games. Band B visits are PROVISIONAL until calibrated."""
 
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Union
+from types import MappingProxyType
+from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 MECHANISMS = ("humansl", "humansl_search", "net_search")
 _COLS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"  # GTP columns, 'I' skipped
 
 # Bumped by calibration/bake_results.py's bump_ladder_version() every time a REAL measured-Elo
-# bake overwrites the table below (Phase P3b, Task 10). "v1" = the current PROVISIONAL table
-# (offline PRD reasoning only, never yet measured against live Golaxy) -- see the module
-# docstring above.
+# bake overwrites the table below. "v1" = PROVISIONAL, never yet measured against live Golaxy
+# (Band B visits are uncalibrated starting guesses; Band A native humanSL ranks need no Golaxy
+# calibration). Restructured 2026-07-21 to the 37-rung hybrid -- see the module docstring above.
 LADDER_VERSION = "v1"
 
 
@@ -46,121 +58,121 @@ class LadderRung:
     root_policy_temperature: float = 1.0
 
 
-_GOLAXY_WEAK_TO_STRONG = [
-    ("18级", 220, -600, "业余18级"),
-    ("17级", 230, -500, "业余17级"),
-    ("16级", 240, -400, "业余16级"),
-    ("15级", 250, -300, "业余15级"),
-    ("14级", 260, -200, "业余14级"),
-    ("13级", 270, -100, "业余13级"),
-    ("12级", 280, 0, "业余12级"),
-    ("11级", 290, 100, "业余11级"),
-    ("10级", 300, 200, "业余10级"),
-    ("9级", 380, 300, "业余9级"),
-    ("8级", 460, 400, "业余8级"),
-    ("7级", 540, 500, "业余7级"),
-    ("6级", 620, 600, "业余6级"),
-    ("5级", 700, 700, "业余5级"),
-    ("4级", 800, 800, "业余4级"),
-    ("3级", 900, 900, "业余3级"),
-    ("2级", 1000, 1000, "业余2级"),
-    ("1级", 1100, 1100, "业余1级"),
-    ("准1段", 1200, 1200, "业余准1段"),
-    ("1段", 1300, 1300, "业余1段"),
-    ("准2段", 1400, 1400, "业余准2段"),
-    ("2段", 1500, 1500, "业余2段"),
-    ("准3段", 1600, 1600, "业余准3段"),
-    ("3段", 1700, 1700, "业余3段"),
-    ("准4段", 1800, 1800, "业余准4段"),
-    ("4段", 1900, 1900, "业余4段"),
-    ("准5段", 2000, 2000, "业余准5段"),
-    ("5段", 2100, 2100, "业余5段"),
-    ("准6段", 2200, 2200, "业余准6段"),
-    ("6段", 2300, 2300, "业余6段"),
-    ("准7段", 2400, 2400, "野狐9D"),
-    ("7段", 2500, 2500, "野狐9D"),
-    ("准8段", 2600, 2600, "野狐9D"),
-    ("8段", 2800, 2800, "野狐9D"),
-    ("准9段", 2900, 2900, "野狐9D"),
-    ("9段", 3000, 3100, "野狐9D"),
-    ("星阵1星", 3100, 3400, "职业/野狐9D+"),
-    ("星阵2星", 3200, 3700, "职业/野狐9D+"),
-    ("星阵3星", 3300, 4000, "职业/野狐9D+"),
+@dataclass(frozen=True)
+class LadderStrengthSpec:
+    visits: int
+    main_model: Optional[str]
+    human_model: Optional[str]
+    override_settings: Mapping[str, object]
+
+    def __post_init__(self):
+        settings = deepcopy(dict(self.override_settings))
+        if any(type(value) not in (bool, int, float, str) for value in settings.values()):
+            raise ValueError("override_settings values must be immutable scalar bool/int/float/string values")
+        if any(type(value) is float and not math.isfinite(value) for value in settings.values()):
+            raise ValueError("override_settings numeric values must be finite")
+        object.__setattr__(self, "override_settings", MappingProxyType(settings))
+
+
+HUMANSL_PIKL_BASELINE = {
+    "humanSLChosenMoveProp": 1.0,
+    "humanSLChosenMovePiklLambda": 0.08,
+    "humanSLRootExploreProbWeightless": 0.8,
+    "humanSLCpuctPermanent": 2.0,
+    "useUncertainty": False,
+    "subtreeValueBiasFactor": 0.0,
+    "useNoisePruning": False,
+}
+
+_PIKL_NUMERIC_SETTINGS = {
+    "humanSLChosenMoveProp",
+    "humanSLChosenMovePiklLambda",
+    "humanSLRootExploreProbWeightless",
+    "humanSLCpuctPermanent",
+    "subtreeValueBiasFactor",
+}
+_PIKL_BOOLEAN_SETTINGS = {"useUncertainty", "useNoisePruning"}
+_RESERVED_OVERRIDE_SETTINGS = {"model", "maxVisits"}
+
+
+# ── Band A: KataGo humanSL NATIVE ranks (rungs 1..25) ─────────────────────────
+# NOT benchmarked against Golaxy. Each rung IS a humanSL rank, played by the HUMAN
+# net (humanv0) at 1 visit. Label = the rank; no Golaxy counterpart (golaxy_* /
+# display_elo = None). The deepest kyu get a temperature bump (looser, weaker play).
+_HUMANSL_NATIVE = [
+    # (rank_name, humanSLProfile)
+    ("20K", "rank_20k"), ("19K", "rank_19k"), ("18K", "rank_18k"), ("17K", "rank_17k"),
+    ("16K", "rank_16k"), ("15K", "rank_15k"), ("14K", "rank_14k"), ("13K", "rank_13k"),
+    ("12K", "rank_12k"), ("11K", "rank_11k"), ("10K", "rank_10k"), ("9K", "rank_9k"),
+    ("8K", "rank_8k"), ("7K", "rank_7k"), ("6K", "rank_6k"), ("5K", "rank_5k"),
+    ("4K", "rank_4k"), ("3K", "rank_3k"), ("2K", "rank_2k"), ("1K", "rank_1k"),
+    ("1D", "rank_1d"), ("2D", "rank_2d"), ("3D", "rank_3d"), ("4D", "rank_4d"), ("5D", "rank_5d"),
+]
+_DEEP_KYU_TEMP = {"rank_20k", "rank_19k", "rank_18k", "rank_17k", "rank_16k"}  # looser weak play
+
+# ── Band B: Golaxy-ALIGNED strong tiers (rungs 26..36) ────────────────────────
+# net_search on the DEFAULT main net (b28). `max_visits` here are PROVISIONAL
+# starting guesses — calibration vs live Golaxy overwrites them (goal: >= the Golaxy
+# level at the same label, never visibly weaker). golaxy_api_level / display_elo /
+# ref_rank mirror GOLAXY_AI_LEVELS (locked by tests/platforms/test_golaxy_ladder_consistency).
+_GOLAXY_ALIGNED = [
+    # (rank_name, golaxy_level_name, api_level, display_elo, ref_rank, provisional_visits)
+    ("准6D", "准6段", 2200, 2200, "业余准6段", 4),
+    ("6D", "6段", 2300, 2300, "业余6段", 8),
+    ("准7D", "准7段", 2400, 2400, "野狐9D", 16),
+    ("7D", "7段", 2500, 2500, "野狐9D", 24),
+    ("准8D", "准8段", 2600, 2600, "野狐9D", 40),
+    ("8D", "8段", 2800, 2800, "野狐9D", 64),
+    ("准9D", "准9段", 2900, 2900, "野狐9D", 100),
+    ("9D", "9段", 3000, 3100, "野狐9D", 160),
+    ("职业", "星阵1星", 3100, 3400, "职业/野狐9D+", 250),
+    ("职业顶尖", "星阵2星", 3200, 3700, "职业/野狐9D+", 350),
+    ("超职业", "星阵3星", 3300, 4000, "职业/野狐9D+", 450),
 ]
 
-# Provisional humanSL profile per Golaxy level (kyu/amateur-dan bands, visits=1). Adjacent
-# levels MAY share a profile (expected ties). PRD §7 anchors interpolated.
-_KYU_PROFILE = {
-    "18级": "rank_20k",
-    "17级": "rank_19k",
-    "16级": "rank_18k",
-    "15级": "rank_17k",
-    "14级": "rank_16k",
-    "13级": "rank_15k",
-    "12级": "rank_14k",
-    "11级": "rank_13k",
-    "10级": "rank_12k",
-    "9级": "rank_11k",
-    "8级": "rank_10k",
-    "7级": "rank_9k",
-    "6级": "rank_8k",
-    "5级": "rank_7k",
-    "4级": "rank_6k",
-    "3级": "rank_5k",
-    "2级": "rank_4k",
-    "1级": "rank_3k",
-}
-_DAN_PROFILE = {
-    "准1段": "rank_1d",
-    "1段": "rank_1d",
-    "准2段": "rank_2d",
-    "2段": "rank_2d",
-    "准3段": "rank_3d",
-    "3段": "rank_3d",
-    "准4段": "rank_4d",
-    "4段": "rank_4d",
-    "准5段": "rank_5d",
-    "5段": "rank_5d",
-    "准6段": "rank_6d",
-    "6段": "rank_6d",
-}
-# High amateur / pro / super-pro: pure b18 search, increasing visits (strength-first).
-_SEARCH_VISITS = {
-    "准7段": 8,
-    "7段": 12,
-    "准8段": 20,
-    "8段": 40,
-    "准9段": 80,
-    "9段": 140,
-    "星阵1星": 220,
-    "星阵2星": 350,
-    "星阵3星": 480,
-}
-
-
-def _band(name: str):
-    if name in _KYU_PROFILE:
-        temp = 1.1 if name in ("18级", "17级", "16级", "15级") else 1.0
-        return ("humansl", _KYU_PROFILE[name], 1, {}, temp)
-    if name in _DAN_PROFILE:
-        return ("humansl", _DAN_PROFILE[name], 1, {}, 1.0)
-    return ("net_search", None, _SEARCH_VISITS[name], {}, 1.0)
-
-
-# Display-only 段位 rename for the top tiers (星阵1/2/3星 have no standard dan name).
-# Keys are the internal golaxy_level_name; values are the user-facing 段位 label.
-_RANK_NAME_OVERRIDE = {"星阵1星": "职业棋手", "星阵2星": "职业顶尖", "星阵3星": "超越职业"}
+# ── Ceiling: rung 37 = "KataGo中等" = b28 @ 500 visits (no Golaxy counterpart) ──
+# Fixed medium-compute ceiling. OPEN QUESTION: whether b28@500 is actually >= Golaxy
+# 星阵3星 (超职业, rung 36) is a calibration finding — if 超职业 needs >500 visits to
+# match 星阵3星, revisit this ceiling.
+_CEILING_VISITS = 500
 
 
 def _build_ladder() -> List[LadderRung]:
-    rungs = []
-    for i, (name, api, disp, ref) in enumerate(_GOLAXY_WEAK_TO_STRONG):
-        mech, prof, visits, params, temp = _band(name)
-        rank_name = _RANK_NAME_OVERRIDE.get(name, name)
-        rungs.append(LadderRung(i + 1, name, api, disp, ref, rank_name, "b18", mech, prof, visits, dict(params), "server", temp))
-    # Rung 40: ceiling. v1 = b18@500 on the session engine. rank_name is the honest "中等算力"
-    # ceiling label (NOT max KataGo). golaxy_level_name stays None (no Golaxy tier maps to it).
-    rungs.append(LadderRung(40, None, None, None, "最强", "KataGo 中等算力", "b18", "net_search", None, 500, {}, "server", 1.0))
+    rungs: List[LadderRung] = []
+    n = 0
+    # Band A — native humanSL ranks (human net humanv0, 1 visit, no Golaxy alignment)
+    for rank_name, profile in _HUMANSL_NATIVE:
+        n += 1
+        temp = 1.1 if profile in _DEEP_KYU_TEMP else 1.0
+        rungs.append(
+            LadderRung(
+                rung=n, golaxy_level_name=None, golaxy_api_level=None, display_elo=None,
+                ref_rank=rank_name, rank_name=rank_name, net="humanv0", mechanism="humansl",
+                human_sl_profile=profile, max_visits=1, human_sl_params={},
+                backend_hint="server", root_policy_temperature=temp,
+            )
+        )
+    # Band B — Golaxy-aligned strong tiers (net_search @ default b28, provisional visits)
+    for rank_name, gname, api, disp, ref, visits in _GOLAXY_ALIGNED:
+        n += 1
+        rungs.append(
+            LadderRung(
+                rung=n, golaxy_level_name=gname, golaxy_api_level=api, display_elo=disp,
+                ref_rank=ref, rank_name=rank_name, net="b28", mechanism="net_search",
+                human_sl_profile=None, max_visits=visits, human_sl_params={},
+                backend_hint="server", root_policy_temperature=1.0,
+            )
+        )
+    # Ceiling — rung 37 (b28 @ 500)
+    n += 1
+    rungs.append(
+        LadderRung(
+            rung=n, golaxy_level_name=None, golaxy_api_level=None, display_elo=None,
+            ref_rank="天花板", rank_name="KataGo中等", net="b28", mechanism="net_search",
+            human_sl_profile=None, max_visits=_CEILING_VISITS, human_sl_params={},
+            backend_hint="server", root_policy_temperature=1.0,
+        )
+    )
     return rungs
 
 
@@ -170,27 +182,106 @@ _BY_RUNG = {r.rung: r for r in LADDER_RUNGS}
 
 def get_rung(n: int) -> LadderRung:
     if n not in _BY_RUNG:
-        raise ValueError(f"rung out of range 1..40: {n!r}")
+        raise ValueError(f"rung out of range 1..37: {n!r}")
     return _BY_RUNG[n]
 
 
-def ladder_override_settings(rung: LadderRung) -> Dict:
-    """overrideSettings for a rung. Forces reportAnalysisWinratesAs=BLACK (matches the
-    runtime engine + makes score/winrate black-relative for calibration scoring)."""
+def _nonempty_string(value) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _finite_number(value) -> bool:
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def _validate_humansl_search_recipe(params: Mapping[str, object]) -> None:
+    missing = (_PIKL_NUMERIC_SETTINGS | _PIKL_BOOLEAN_SETTINGS) - params.keys()
+    if missing:
+        raise ValueError(f"humansl_search missing required settings: {sorted(missing)}")
+    for key in _PIKL_NUMERIC_SETTINGS:
+        value = params[key]
+        if not _finite_number(value):
+            raise ValueError(f"humansl_search setting {key} must be a finite number")
+    for key in _PIKL_BOOLEAN_SETTINGS:
+        if type(params[key]) is not bool:
+            raise ValueError(f"humansl_search setting {key} must be a bool")
+    if not 0 < params["humanSLChosenMoveProp"] <= 1:
+        raise ValueError("humanSLChosenMoveProp must be in the range (0, 1]")
+    if not 0 < params["humanSLChosenMovePiklLambda"] <= 1_000_000_000:
+        raise ValueError("humanSLChosenMovePiklLambda must be in the range (0, 1e9]")
+    if not 0 < params["humanSLRootExploreProbWeightless"] <= 1:
+        raise ValueError("humanSLRootExploreProbWeightless must be in the range (0, 1]")
+    if not 0 < params["humanSLCpuctPermanent"] <= 1000:
+        raise ValueError("humanSLCpuctPermanent must be in the range (0, 1000]")
+    if not 0 <= params["subtreeValueBiasFactor"] <= 1:
+        raise ValueError("subtreeValueBiasFactor must be in the range [0, 1]")
+
+
+def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
+    """Return a validated, immutable description of the engine strength request."""
+    if rung.mechanism not in MECHANISMS:
+        raise ValueError(f"invalid ladder mechanism: {rung.mechanism!r}")
+    if not _is_plain_int(rung.max_visits) or rung.max_visits <= 0:
+        raise ValueError(f"max_visits must be a positive plain int: {rung.max_visits!r}")
+    if not _nonempty_string(rung.net):
+        raise ValueError(f"rung net must be a nonempty model name: {rung.net!r}")
+    if not _finite_number(rung.root_policy_temperature) or rung.root_policy_temperature <= 0:
+        raise ValueError(f"root_policy_temperature must be a positive finite number: {rung.root_policy_temperature!r}")
+    if not isinstance(rung.human_sl_params, Mapping):
+        raise ValueError("human_sl_params must be a mapping")
+    params = deepcopy(dict(rung.human_sl_params))
+    if any(type(value) not in (bool, int, float, str) for value in params.values()):
+        raise ValueError("human_sl_params values must be immutable scalar bool/int/float/string values")
+    if any(type(value) is float and not math.isfinite(value) for value in params.values()):
+        raise ValueError("human_sl_params numeric values must be finite")
+    reserved = _RESERVED_OVERRIDE_SETTINGS & params.keys()
+    if reserved:
+        raise ValueError(f"reserved settings do not belong in human_sl_params: {sorted(reserved)}")
+
+    if rung.mechanism == "humansl":
+        if not _nonempty_string(rung.human_sl_profile):
+            raise ValueError("humansl requires a nonempty HumanSL profile")
+        if rung.net != "humanv0" or rung.max_visits != 1:
+            raise ValueError("humansl requires humanv0 at exactly one visit")
+        if params:
+            raise ValueError("humansl requires empty human_sl_params")
+        main_model, human_model = None, "humanv0"
+    elif rung.mechanism == "net_search":
+        if rung.human_sl_profile is not None or params:
+            raise ValueError("net_search must not carry a HumanSL profile or parameters")
+        main_model, human_model = rung.net, None
+    else:
+        if not _nonempty_string(rung.human_sl_profile):
+            raise ValueError("humansl_search requires a nonempty HumanSL profile")
+        if rung.net == "humanv0":
+            raise ValueError("humansl_search must use a non-human main search model")
+        _validate_humansl_search_recipe(params)
+        main_model, human_model = rung.net, "humanv0"
+
     ov: Dict = {"reportAnalysisWinratesAs": "BLACK"}
     if rung.human_sl_profile:
         ov["humanSLProfile"] = rung.human_sl_profile
         ov["ignorePreRootHistory"] = False
     if abs(rung.root_policy_temperature - 1.0) > 1e-9:
         ov["rootPolicyTemperature"] = rung.root_policy_temperature
-    ov.update(rung.human_sl_params or {})
-    return ov
+    ov.update(params)
+    return LadderStrengthSpec(rung.max_visits, main_model, human_model, ov)
+
+
+def ladder_override_settings(rung: LadderRung) -> Dict:
+    """Compatibility projection of the canonical native KataGo overrides."""
+    return deepcopy(dict(rung_strength_spec(rung).override_settings))
 
 
 def rung_engine_params(rung: LadderRung) -> Dict:
-    """{'visits','extra_settings'}. visits -> top-level maxVisits; extra_settings ->
-    overrideSettings. maxVisits is NEVER in extra_settings."""
-    return {"visits": rung.max_visits, "extra_settings": ladder_override_settings(rung)}
+    """Compatibility projection; model identities remain outside overrideSettings."""
+    spec = rung_strength_spec(rung)
+    return {
+        "visits": spec.visits,
+        "extra_settings": deepcopy(dict(spec.override_settings)),
+        "main_model": spec.main_model,
+        "human_model": spec.human_model,
+    }
 
 
 def colrow_to_gtp(col: int, row0: int) -> str:

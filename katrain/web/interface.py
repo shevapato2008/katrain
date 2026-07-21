@@ -106,13 +106,13 @@ def resolve_ladder_rung(n):
     """Validate a rung number for per-game injection (Task 4).
 
     None -> None (absent; caller/`_do_new_game` treats this as "no ladder rung this game").
-    Invalid (out of range 1..40, or not int-able) -> ValueError (caller/REST layer 422s).
+    Invalid (out of range 1..37, or not int-able) -> ValueError (caller/REST layer 422s).
     Valid -> {'rung': int}. Never silently downgrades or substitutes a default rung."""
     if n is None:
         return None
     from katrain.core.ladder import get_rung
 
-    get_rung(int(n))  # raises ValueError if out of range 1..40
+    get_rung(int(n))  # raises ValueError if out of range 1..37
     return {"rung": int(n)}
 
 

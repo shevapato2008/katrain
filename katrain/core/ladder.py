@@ -284,6 +284,56 @@ def rung_engine_params(rung: LadderRung) -> Dict:
     }
 
 
+_ATTESTATION_IDENTITY_FIELDS = (
+    "selected_model",
+    "model_path",
+    "model_sha256",
+    "human_model_path",
+    "human_model_sha256",
+    "katago_version",
+)
+
+
+def validate_analysis_attestation(
+    analysis: Mapping[str, object],
+    spec: LadderStrengthSpec,
+    capability_identity: Optional[Mapping[str, object]] = None,
+) -> None:
+    """Validate the HTTP wrapper's executed-model identity for a certified ladder query.
+
+    Native HumanSL at one visit has no explicit main-model route and therefore needs no
+    wrapper attestation. Every explicitly routed search must attest both what was requested
+    and the immutable identity retained from wrapper startup health.
+    """
+    if spec.main_model is None:
+        return
+    if not isinstance(analysis, Mapping):
+        raise LadderMoveError("analysis attestation: analysis is not a mapping")
+    wrapper = analysis.get("_wrapper")
+    if not isinstance(wrapper, Mapping):
+        raise LadderMoveError("analysis attestation: missing/malformed _wrapper identity")
+    if wrapper.get("selected_model") != spec.main_model:
+        raise LadderMoveError(
+            f"analysis attestation selected_model mismatch: expected {spec.main_model!r}, "
+            f"got {wrapper.get('selected_model')!r}"
+        )
+
+    required_response_fields = ["model_path", "model_sha256", "katago_version"]
+    if spec.human_model is not None:
+        required_response_fields.extend(("human_model_path", "human_model_sha256"))
+    for field_name in required_response_fields:
+        if not isinstance(wrapper.get(field_name), str) or not wrapper[field_name]:
+            raise LadderMoveError(f"analysis attestation {field_name} is missing/malformed")
+
+    if not isinstance(capability_identity, Mapping):
+        raise LadderMoveError("analysis attestation: missing retained startup capability identity")
+    for field_name in _ATTESTATION_IDENTITY_FIELDS:
+        expected = capability_identity.get(field_name)
+        actual = wrapper.get(field_name)
+        if actual != expected:
+            raise LadderMoveError(f"analysis attestation {field_name} mismatch: expected {expected!r}, got {actual!r}")
+
+
 def colrow_to_gtp(col: int, row0: int) -> str:
     return f"{_COLS[col]}{row0 + 1}"
 

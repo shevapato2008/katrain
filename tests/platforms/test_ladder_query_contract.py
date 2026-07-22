@@ -8,7 +8,7 @@ from katrain.core.base_katrain import KaTrainBase
 from katrain.core.engine import KataGoHttpEngine
 from katrain.core.game import Game, Move
 from katrain.core.game_node import GameNode
-from katrain.core.ladder import get_rung, rung_engine_params
+from katrain.core.ladder import get_rung, rung_engine_params, rung_strength_spec
 
 
 class _MockKaTrain(KaTrainBase):
@@ -33,7 +33,25 @@ def _runtime_engine(wide_root_noise):
     kt = _MockKaTrain(force_package_config=True)
     cfg = dict(kt.config("engine"))  # the REAL engine config block from config.json
     cfg["wide_root_noise"] = wide_root_noise
-    return _NoStartHttpEngine(kt, cfg)
+    capabilities = {
+        "capability_schema": 1,
+        "katago_version": "KataGo v1.16.3",
+        "default_model": "b28",
+        "models": {
+            alias: {
+                "running": True,
+                "model_path": f"/models/{alias}.bin.gz",
+                "model_sha256": f"{alias}-sha",
+                "model_sha256_verified": True,
+                "has_human_model": True,
+                "human_model_path": "/models/human.bin.gz",
+                "human_model_sha256": "human-sha",
+                "human_model_sha256_verified": True,
+            }
+            for alias in ("b18", "b28")
+        },
+    }
+    return _NoStartHttpEngine(kt, cfg, capabilities=capabilities)
 
 
 def _real_current_node(moves):  # moves: list[(player, gtp)]
@@ -53,7 +71,7 @@ def _runtime_query(engine, rung, node):
     query, _visits = engine.build_analysis_query(  # real builder on a real engine; real (query, visits)
         node,
         visits=params["visits"],
-        extra_settings=params["extra_settings"],
+        extra_settings=engine.ladder_extra_settings(params["extra_settings"], params["main_model"]),
         time_limit=False,
     )
     return query
@@ -65,7 +83,7 @@ def _strength_subset_matches(rung, engine, wrn):
     harness = adapters.build_ladder_analysis_query([288, 300], rung, 19, 7.5, "chinese", wide_root_noise=wrn)
     return (
         harness["maxVisits"] == runtime["maxVisits"] == rung_engine_params(rung)["visits"]
-        and harness["overrideSettings"] == runtime["overrideSettings"]  # EXACT dict equality
+        and harness["overrideSettings"] == runtime["overrideSettings"]  # EXACT HTTP-wire dict equality
         and harness["moves"] == runtime["moves"]
         and (harness["komi"], harness["boardXSize"], harness["boardYSize"], harness["rules"])
         == (runtime["komi"], runtime["boardXSize"], runtime["boardYSize"], runtime["rules"])
@@ -74,7 +92,7 @@ def _strength_subset_matches(rung, engine, wrn):
     )
 
 
-@pytest.mark.parametrize("rung_n", [20, 1, 32])  # 20=1段 humansl; 1=18级 humansl+temp(1.1); 32=7段 net_search
+@pytest.mark.parametrize("rung_n", [20, 1, 32])  # 20=1K humansl; 1=20K humansl+temp(1.1); 32=准9D net_search
 def test_harness_query_equals_runtime_strength_subset(rung_n):
     """Exact-equality parity vs a REAL KataGoHttpEngine's build_analysis_query, across the three
     mechanism/knob classes. wideRootNoise from ONE source (the real engine config)."""
@@ -88,6 +106,16 @@ def test_harness_query_equals_runtime_strength_subset(rung_n):
         assert q["overrideSettings"]["humanSLProfile"] == rung.human_sl_profile
     else:
         assert "humanSLProfile" not in q["overrideSettings"]
+
+
+def test_band_b_http_wire_routes_b28_but_canonical_overrides_are_model_free():
+    rung = get_rung(32)
+    spec = rung_strength_spec(rung)
+    query = adapters.build_ladder_analysis_query([], rung, 19, 7.5, "chinese", wide_root_noise=0.04)
+
+    assert spec.main_model == "b28"
+    assert "model" not in spec.override_settings
+    assert query["overrideSettings"]["model"] == "b28"
 
 
 def test_contract_fails_on_runtime_override_drift():

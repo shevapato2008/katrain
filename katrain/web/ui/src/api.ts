@@ -107,7 +107,7 @@ export interface EngineLevel {
   ref_rank: string;
 }
 
-// One rung of the local 棋力阶梯 (strength-ladder) 40-rung opponent — the UI-facing
+// One rung of the local 棋力阶梯 (strength-ladder) 37-rung opponent — the UI-facing
 // subset served by GET /api/ladder-rungs (see katrain/web/server.py). star阵-free.
 export interface LadderRung {
   rung: number;

@@ -15,7 +15,7 @@ the numbers, per Task 9 / plan.md Phase P3a note).
 Usage:
     GOLAXY_TOKEN=<redacted> uv run python \\
         superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_calibration.py \\
-        --anchors "18:20,28:20,35:10" --base-url http://127.0.0.1:8000 \\
+        --anchors "26:20,30:20,36:10" --base-url http://127.0.0.1:8000 \\
         --token-env GOLAXY_TOKEN --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results
 
 Never commit a live token: --token-env only names the env var to read (default GOLAXY_TOKEN);
@@ -33,7 +33,7 @@ import sys
 import time
 from functools import partial
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Mapping, Optional, Tuple
 
 import httpx
 
@@ -68,7 +68,7 @@ class _MockKaTrainForConfig(KaTrainBase):
 
 
 def parse_anchors(spec: str) -> List[Tuple[int, int]]:
-    """'18:20,28:20,35:10' -> [(18,20),(28,20),(35,10)]. Validates rung range + games>0."""
+    """'26:20,30:20,36:10' -> valid Golaxy-aligned anchors. Validates counterpart + games."""
     anchors = []
     for part in spec.split(","):
         part = part.strip()
@@ -76,7 +76,9 @@ def parse_anchors(spec: str) -> List[Tuple[int, int]]:
             continue
         rung_s, _, games_s = part.partition(":")
         rung_n, games = int(rung_s), int(games_s)
-        get_rung(rung_n)  # raises ValueError if out of range 1..40
+        rung = get_rung(rung_n)  # raises ValueError if out of range 1..37
+        if rung.golaxy_api_level is None:
+            raise ValueError(f"anchor rung {rung_n} has no Golaxy counterpart")
         if games <= 0:
             raise ValueError(f"anchor {part!r}: games must be > 0")
         anchors.append((rung_n, games))
@@ -235,6 +237,7 @@ async def run_anchor(
     resign_code: Optional[int],
     throttle: float,
     out_dir: Path,
+    capabilities: Mapping[str, object],
 ) -> dict:
     rung = get_rung(rung_n)
     token_holder = {"token": token}  # mutable so a mid-anchor re-auth persists across games
@@ -274,7 +277,14 @@ async def run_anchor(
 
             async def our_move_fn(history, _holder=history_holder):
                 _holder["history"] = history
-                return await adapters.our_move(client, base_url, history, rung=rung, wide_root_noise=wrn)
+                return await adapters.our_move(
+                    client,
+                    base_url,
+                    history,
+                    rung=rung,
+                    wide_root_noise=wrn,
+                    capabilities=capabilities,
+                )
 
             async def golaxy_move_fn(history, _holder=history_holder):
                 _holder["history"] = history
@@ -289,7 +299,7 @@ async def run_anchor(
                     throttle=throttle,
                 )
 
-            adjudicate_partial = partial(adapters.adjudicate, client, base_url)
+            adjudicate_partial = partial(adapters.adjudicate, client, base_url, capabilities=capabilities)
 
             outcome: GameOutcome = await play_one_game(
                 our_move=our_move_fn, golaxy_move=golaxy_move_fn, adjudicate=adjudicate_partial, our_color=our_color
@@ -369,6 +379,7 @@ async def main_async(args) -> int:
 
     summaries = []
     async with httpx.AsyncClient() as client, httpx.AsyncClient() as gx_client:
+        capabilities = await adapters.fetch_health_snapshot(client, args.base_url)
         for rung_n, games in anchors:
             summary = await run_anchor(
                 rung_n,
@@ -383,6 +394,7 @@ async def main_async(args) -> int:
                 resign_code=resign_code,
                 throttle=args.throttle,
                 out_dir=out_dir,
+                capabilities=capabilities,
             )
             summaries.append(summary)
             log.info("=== anchor summary: %s ===", json.dumps(summary, ensure_ascii=False))
@@ -395,7 +407,7 @@ async def main_async(args) -> int:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--anchors", required=True, help="'rung:games,rung:games,...' e.g. '18:20,28:20,35:10'")
+    p.add_argument("--anchors", required=True, help="'rung:games,rung:games,...' e.g. '26:20,30:20,36:10'")
     p.add_argument("--throttle", type=float, default=2.0, help="seconds to sleep between games (rate-limit Golaxy)")
     p.add_argument("--base-url", default="http://127.0.0.1:8000", help="our KataGo HTTP analysis server base URL")
     p.add_argument("--token-env", default="GOLAXY_TOKEN", help="env var name holding the Golaxy access token")

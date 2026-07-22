@@ -48,7 +48,7 @@ from katrain.core.constants import (
 from katrain.core.game import Game, GameNode, Move
 from katrain.core.utils import var_to_grid, weighted_selection_without_replacement, evaluation_class
 
-# Rung-40 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
+# Rung 37 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
 # hung engine can hold ai_lock and block new-game (see LadderStrategy).
 LADDER_ANALYSIS_TIMEOUT_S = 60
 
@@ -1844,17 +1844,29 @@ class LadderStrategy(AIStrategy):
     rung_engine_params + pick_ladder_move with the calibration harness."""
 
     def generate_move(self) -> Tuple[Move, str]:
-        from katrain.core.ladder import get_rung, rung_engine_params, pick_ladder_move, LadderMoveError
+        from katrain.core.ladder import (
+            LadderMoveError,
+            get_rung,
+            pick_ladder_move,
+            rung_engine_params,
+            rung_strength_spec,
+            validate_analysis_attestation,
+        )
 
         if "rung" not in self.settings or self.settings.get("rung") is None:
             raise ValueError("LadderStrategy invoked without an injected rung (fail closed)")
         rung = get_rung(int(self.settings["rung"]))  # raises ValueError if out of range
+        spec = rung_strength_spec(rung)
         params = rung_engine_params(rung)
         engine = self.game.engines[self.cn.player]
 
-        if rung.human_sl_profile is not None and not getattr(engine, "has_human_model", False):
-            # Certified humanSL rung with no human model -> cannot reproduce strength. Fail closed.
-            raise LadderUnavailable(f"rung {rung.rung} requires human model but engine has none")
+        try:
+            capability_identity = engine.require_ladder_capability(
+                spec.main_model, human_required=spec.human_model is not None
+            )
+            extra_settings = engine.ladder_extra_settings(params["extra_settings"], spec.main_model)
+        except ValueError as e:
+            raise LadderUnavailable(f"rung {rung.rung}: {e}") from e
 
         analysis, error, done = None, False, False
 
@@ -1877,7 +1889,7 @@ class LadderStrategy(AIStrategy):
             priority=PRIORITY_EXTRA_AI_QUERY,
             visits=params["visits"],
             include_policy=True,
-            extra_settings=params["extra_settings"],
+            extra_settings=extra_settings,
             time_limit=False,  # pure visits -> reproducible strength (not truncated by maxTime)
         )
         # Bounded wait keyed on the explicit `done` flag (NOT analysis truthiness — an empty dict is
@@ -1897,6 +1909,7 @@ class LadderStrategy(AIStrategy):
             raise LadderUnavailable(f"rung {rung.rung} analysis failed/empty; refusing uncalibrated fallback")
 
         try:
+            validate_analysis_attestation(analysis, spec, capability_identity)
             picked = pick_ladder_move(analysis, self.game.board_size, rung.mechanism)
         except LadderMoveError as e:
             # e.g. a humanSL rung whose response lacks humanPolicy: do NOT play a search move.

@@ -75,7 +75,7 @@ class TestAI:
         from katrain.core.ai import _ladder_thought_label
         from katrain.core.ladder import get_rung
 
-        label = _ladder_thought_label(get_rung(39))  # rung 39 == 超越职业 (was 星阵3星)
-        assert "超越职业" in label
-        for banned in ("星阵", "对标星阵", "rung", "visits", "39", "[LadderStrategy]"):
+        label = _ladder_thought_label(get_rung(36))  # rung 36 == 超职业 (Golaxy 星阵3星)
+        assert "超职业" in label
+        for banned in ("星阵", "对标星阵", "rung", "visits", "36", "[LadderStrategy]"):
             assert banned not in label

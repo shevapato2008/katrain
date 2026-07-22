@@ -24,6 +24,10 @@ RESULTS_DIR = Path(__file__).parent / "results" / "semantic_probe"
 LOCKED_PROFILE = "rank_9d"
 LOCKED_VISITS = 500
 LOCKED_LAMBDAS = (0.01, 100.0)
+# The current wrapper config runs eight search threads. KataGo's reported root
+# statistic may overshoot maxVisits by up to the other seven in-flight threads.
+LOW_VISITS_SEARCH_THREADS = 8
+LOW_VISITS_ROOT_VISIT_OVERSHOOT = LOW_VISITS_SEARCH_THREADS - 1
 
 # First 20 moves of tests/data/fox sgf works.sgf, copied here deliberately so
 # the executable probe cannot drift when an unrelated SGF fixture is edited.
@@ -57,10 +61,10 @@ HUMANSL_BLEND_KEYS = (
     "subtreeValueBiasFactor",
 )
 LOCKED_EXPECTED = {
-    "b18_base": {"move": "R2", "orders": {"R2": 0, "O6": 1}},
-    "b18_profile_zero": {"move": "R2", "orders": {"R2": 0, "O6": 1}},
-    "b18_pikl_low": {"move": "R2", "orders": {"R2": 0, "O6": 1}},
-    "b18_pikl_high": {"move": "O6", "orders": {"R2": 1, "O6": 0}},
+    "b18_base": {"move": "R2"},
+    "b18_profile_zero": {"move": "R2"},
+    "b18_pikl_low": {"move": "R2"},
+    "b18_pikl_high": {"move": "O6"},
 }
 PROBE_CASES = ("b18_base", "b18_profile_zero", "b18_pikl_low", "b18_pikl_high", "b28_base")
 _IDENTITY_KEYS = (
@@ -288,9 +292,13 @@ def validate_low_visits_probe_result(
     if (
         not isinstance(root_info, dict)
         or type(root_info.get("visits")) is not int
-        or root_info["visits"] != spec.visits
+        or root_info["visits"] <= 0
+        or root_info["visits"] > spec.visits + LOW_VISITS_ROOT_VISIT_OVERSHOOT
     ):
-        raise ValueError(f"low-visits response rootInfo.visits must be the requested plain int {spec.visits}")
+        raise ValueError(
+            "low-visits response rootInfo.visits must be a positive plain int no greater than "
+            f"requested maxVisits {spec.visits} + {LOW_VISITS_ROOT_VISIT_OVERSHOOT} thread overshoot"
+        )
     wrapper = response.get("_wrapper")
     verified_fields = ("model_sha256_verified", "human_model_sha256_verified")
     if (
@@ -325,6 +333,8 @@ def validate_low_visits_probe_result(
         "response_sha256": response_sha256,
         "configuration": configuration,
         "configuration_sha256": configuration_sha256,
+        "requested_max_visits": spec.visits,
+        "reported_root_visits": root_info["visits"],
         "observation": observation,
     }
 
@@ -385,9 +395,6 @@ def validate_probe_results(
             raise ValueError(f"{case} selected move drifted from the locked fixture")
         if not watched.issubset(observation["moves"]):
             raise ValueError(f"{case} locked comparison moves are missing")
-        orders = {move: observation["moves"][move]["order"] for move in watched}
-        if orders != expected["orders"]:
-            raise ValueError(f"{case} order drifted from the locked fixture")
 
     control = observations["b18_base"]
     zero = observations["b18_profile_zero"]

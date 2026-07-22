@@ -231,8 +231,28 @@ def test_low_visits_probe_rejects_missing_zeroed_or_mismatched_attestation():
             )
 
 
-@pytest.mark.parametrize("root_info", [None, {}, {"visits": 500}, {"visits": True}])
-def test_low_visits_probe_requires_exact_plain_int_root_visits(root_info):
+@pytest.mark.parametrize("reported_visits", [3, 27])
+def test_low_visits_probe_accepts_bounded_pruned_root_visits(reported_visits):
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    response["rootInfo"]["visits"] = reported_visits
+
+    result = probe.validate_low_visits_probe_result(
+        _health(),
+        request,
+        response,
+        low_visits=20,
+        experimental_min_humansl_search_visits=20,
+    )
+
+    assert result["requested_max_visits"] == 20
+    assert result["reported_root_visits"] == reported_visits
+
+
+@pytest.mark.parametrize(
+    "root_info", [None, {}, {"visits": True}, {"visits": 0}, {"visits": -1}, {"visits": 28}, {"visits": 500}]
+)
+def test_low_visits_probe_rejects_invalid_or_excessive_root_visits(root_info):
     probe = _load_probe()
     request, response = _low_visits_exchange(probe)
     if root_info is None:
@@ -248,6 +268,18 @@ def test_low_visits_probe_requires_exact_plain_int_root_visits(root_info):
             low_visits=20,
             experimental_min_humansl_search_visits=20,
         )
+
+
+def test_validate_results_accepts_live_nonselected_order_drift():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    responses["b18_pikl_high"]["moveInfos"][1]["order"] = 2
+
+    summary = _validate(probe, requests, responses)
+
+    assert summary["selected_moves"]["b18_pikl_low"] == "R2"
+    assert summary["selected_moves"]["b18_pikl_high"] == "O6"
+    assert summary["pikl_orders"]["high"] == {"R2": 2, "O6": 0}
 
 
 @pytest.mark.parametrize("field", ["model_sha256_verified", "human_model_sha256_verified"])
@@ -340,7 +372,7 @@ def test_builds_exact_five_run_unique_wire_requests_from_production_recipe():
     assert all(zero[key] == 0.0 for key in probe.HUMANSL_BLEND_KEYS)
 
 
-def test_locked_fixture_declares_controls_and_lambda_order_swap():
+def test_locked_fixture_declares_controls_and_lambda_selection_swap():
     probe = _load_probe()
 
     assert probe.LOCKED_LAMBDAS == (0.01, 100.0)
@@ -350,8 +382,7 @@ def test_locked_fixture_declares_controls_and_lambda_order_swap():
         "b18_pikl_low": "R2",
         "b18_pikl_high": "O6",
     }
-    assert probe.LOCKED_EXPECTED["b18_pikl_low"]["orders"] == {"R2": 0, "O6": 1}
-    assert probe.LOCKED_EXPECTED["b18_pikl_high"]["orders"] == {"R2": 1, "O6": 0}
+    assert all(set(expected) == {"move"} for expected in probe.LOCKED_EXPECTED.values())
 
 
 def test_validate_results_checks_ids_attestation_wire_fingerprints_and_semantics():

@@ -35,6 +35,12 @@ class NullEngine:
     def __init__(self):
         self.config = {"max_visits": 10, "fast_visits": 5}
 
+    def require_ladder_capability(self, main_model, human_required):
+        raise ValueError("No engine is available for ladder play")
+
+    def ladder_extra_settings(self, native_settings, main_model):
+        raise ValueError("No engine is available for ladder play")
+
     def on_new_game(self):
         return None
 

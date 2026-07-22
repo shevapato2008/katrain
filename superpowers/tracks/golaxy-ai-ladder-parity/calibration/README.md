@@ -429,7 +429,8 @@ alignment implementation; later documentation-only commits may advance `HEAD`, w
 change to alignment runtime/helper/test sources fails closed.
 
 ```bash
-export ALIGNMENT_REV=dd9d7e0130334865f58005c3e714d39505ebb22b
+export ALIGNMENT_REV=634ba17cddcdab989763ae9693ef9020ebef3cee
+export ALIGNMENT_LEDGER_REV=dd9d7e0130334865f58005c3e714d39505ebb22b
 export ALIGNMENT_OUT=/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/golaxy_9d_humansl_alignment
 export ALIGNMENT_QUOTA='<operator-confirmed unique quota id>'
 
@@ -439,6 +440,12 @@ NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost KIVY_NO_ARGS=1 \
   --preflight-only --base-url http://127.0.0.1:8000 \
   --expected-source-revision "$ALIGNMENT_REV" --out "$ALIGNMENT_OUT"
 ```
+
+The existing 2026-07-23 ledger began on `ALIGNMENT_LEDGER_REV`, before observational probe
+counts were removed from the configuration fingerprint. Its audited `rank_9d@4` continuation
+also passes `--ledger-source-revision "$ALIGNMENT_LEDGER_REV" --resume-legacy-fingerprint
+c0867051b2a5bde164cd8a8e1d2036a3f3c890fd4e9f27849ca46767e1d143c4`. The exact legacy value
+must match the immutable checkpoint; omit both migration arguments for a brand-new experiment.
 
 After the operator has independently confirmed that the named Golaxy quota is unused, create
 its append-only local ledger entry exactly once:

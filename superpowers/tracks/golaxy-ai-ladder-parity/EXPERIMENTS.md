@@ -636,6 +636,19 @@ quota 为 `golaxy9d-humansl-20260723-a`,本批结束时该 quota 与全实验 ch
 2–3胜命中冻结的边界分支,故唯一下一批为同档 **`rank_9d@4` 再补5个有效结果**,使该档累计达到
 10局(最终5黑5白);不得改测其他档或丢弃本批2–3。
 
+第三批首次启动在任何新 reservation 前被 fingerprint gate 拒绝,因此 quota 仍为10/20。根因已复现:
+旧 fingerprint 错误包含文档提交后的当前 `HEAD` 及探针 `reported_visits`;相同 `@4` 请求会因正常剪枝把
+candidate 报告为1或2 visits,裁判也会在205/206间波动,从而产生假配置漂移。修复 commit
+`634ba17cddcdab989763ae9693ef9020ebef3cee` 将配置 fingerprint 限定为请求配置、模型身份、PIKL、裁判、
+smoke 证据和冻结实现,排除上述观察统计与文档 HEAD;相关回归 **519 passed**。
+
+既有10局账本继续显式绑定原 ledger revision `dd9d7e0130334865f58005c3e714d39505ebb22b`,不得重写。
+续跑 `@4` 必须同时指定新实现 revision、旧 ledger revision 及 checkpoint 中原 fingerprint
+`c0867051b2a5bde164cd8a8e1d2036a3f3c890fd4e9f27849ca46767e1d143c4`;缺少或不精确匹配均拒绝。
+修复后本地-only preflight 已通过,稳定 configuration fingerprint 为
+`deb7fd6ef4d12432d43f4c2aeea0718e09fc4df7a50b368053ce40504bbb42b2`,解析出的唯一下一批仍是
+`rank_9d@4` 累计补到10局。该失败未访问星阵、未改变样本或计费分母。
+
 ---
 
 ## D. 待办 / 开放项

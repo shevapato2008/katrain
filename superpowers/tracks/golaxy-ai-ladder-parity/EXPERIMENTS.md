@@ -588,6 +588,29 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision 451cd73b27c205f4518576f590943f2c0dd671b7 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
 
+### C15. 星阵 9D 与 HumanSL 产品档对齐预声明(2026-07-23)
+
+本实验独立于已结束的本地自对弈后台任务,直接在当前
+`feature/golaxy-ai-ladder-parity` worktree 运行,不创建额外 worktree。冻结的可执行实现 revision 为
+`dd9d7e0130334865f58005c3e714d39505ebb22b`;允许随后仅更新本路径下实验文档,但该 revision 到当前
+`HEAD` 之间若任何 alignment runtime/helper/test 源码变化,runner 必须在星阵请求前失败关闭。
+
+目标是找出对星阵 9D(API level `3000`)累计10个有效结果至少5胜的最低 `rank_9d` HumanSL 档,并在恰好
+5–5时把产品安全档上调一级。固定候选网格为 `@1s/@4/@8/@16/@32`,`@1` 加权采样不参与。第一批且仅
+第一批为 `rank_9d@8` 的5个有效结果;4–5胜下调一档、2–3胜原档补到10、0–1胜上调一档。筛选局累计
+进入同候选的10局证据,不另起重复的“确认10局”。每候选独立按有效局交替颜色,10局为5黑5白。
+
+每次 live invocation 只运行协议许可的一批,完整落盘后停止。每次可能计费的星阵尝试先写入只增不减的
+quota ledger,单个操作者显式 quota 最多20次;不可判定、网络失败或进程中断后的未知尝试仍计费且不重试。
+本地引擎 URL 必须精确为 `http://127.0.0.1:8000`,运行环境为 conda `py311_katago`,候选必须逐手证明
+`@1s=humanv0 argmax` 或 `@4+ = b18+humanv0+canonical PIKL`,禁止把旧 b28 星阵数据并入。
+
+唯一输出目录为
+`calibration/results/golaxy_9d_humansl_alignment/`。创建新 quota 前必须由操作者确认对应星阵额度未使用;
+首个真实批次前依次通过514项相关回归、离线 smoke 证据、本地 `/health`/模型身份、候选语义 probe、精确
+source/output gate。首批结束后先在本节追加 charged attempts、有效胜负、颜色、不可判盘及冻结规则唯一
+导出的下一批,再允许继续。
+
 ---
 
 ## D. 待办 / 开放项
@@ -598,6 +621,8 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
   其程序仅为边界定位所取代。`exp3-boundary-v1` 的四组独立 `@20` screening 已于 §C14 预声明,待运行。
 - [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
   `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
+- [ ] **星阵9D HumanSL产品档对齐(已预声明)**:按 §C15 从 `rank_9d@8` 启动首批5个有效结果;
+  当日最多20次计费尝试,筛选结果累计进入候选10局样本。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。

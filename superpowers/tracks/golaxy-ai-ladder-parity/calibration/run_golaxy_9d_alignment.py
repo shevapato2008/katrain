@@ -54,10 +54,6 @@ _SCOPED_PATHS = (
     "tests/platforms/test_golaxy_9d_alignment_runner.py",
     "tests/platforms/test_golaxy_calibration_opponent.py",
     "tests/platforms/test_humansl_selfplay.py",
-    "superpowers/tracks/golaxy-ai-ladder-parity/golaxy-9d-humansl-alignment-design.md",
-    "superpowers/tracks/golaxy-ai-ladder-parity/golaxy-9d-humansl-alignment-plan.md",
-    "superpowers/tracks/golaxy-ai-ladder-parity/calibration/README.md",
-    "superpowers/tracks/golaxy-ai-ladder-parity/EXPERIMENTS.md",
 )
 
 
@@ -153,13 +149,21 @@ def validate_source_revision(expected: object, *, repo_root: Path = _REPO_ROOT) 
     if root != Path(repo_root).resolve():
         raise ValueError("runner must execute in the current repository")
     head = _git(root, "rev-parse", "HEAD")
-    if head != expected:
-        raise ValueError(f"expected source revision {expected} does not equal current HEAD {head}")
-    dirty = _git(root, "diff", "--name-only", expected, "--", *_SCOPED_PATHS).splitlines()
+    ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", expected, head],
+        cwd=root,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if ancestor.returncode != 0:
+        raise ValueError(f"expected source revision {expected} is not an ancestor of current HEAD {head}")
+    committed = _git(root, "diff", "--name-only", expected, head, "--", *_SCOPED_PATHS).splitlines()
+    dirty = _git(root, "diff", "--name-only", "HEAD", "--", *_SCOPED_PATHS).splitlines()
     untracked = _git(root, "ls-files", "--others", "--exclude-standard", "--", *_SCOPED_PATHS).splitlines()
-    changed = sorted(set(filter(None, dirty + untracked)))
+    changed = sorted(set(filter(None, committed + dirty + untracked)))
     if changed:
-        raise ValueError("alignment-scoped source is not clean at expected HEAD: " + ", ".join(changed))
+        raise ValueError("alignment-scoped source changed since expected revision: " + ", ".join(changed))
     return {"expected": expected, "head": head, "scoped_clean": True, "scoped_paths": list(_SCOPED_PATHS)}
 
 

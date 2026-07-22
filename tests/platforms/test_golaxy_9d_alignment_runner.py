@@ -145,13 +145,15 @@ def test_source_validation_accepts_feature_branch_and_unrelated_dirty_files(monk
     def fake_run(command, **kwargs):
         calls.append(command)
         if command[1:] == ["rev-parse", "--show-toplevel"]:
-            return SimpleNamespace(stdout=str(tmp_path) + "\n")
+            return SimpleNamespace(stdout=str(tmp_path) + "\n", returncode=0)
         if command[1:] == ["rev-parse", "HEAD"]:
-            return SimpleNamespace(stdout=revision + "\n")
+            return SimpleNamespace(stdout=revision + "\n", returncode=0)
+        if command[1:3] == ["merge-base", "--is-ancestor"]:
+            return SimpleNamespace(stdout="", returncode=0)
         if command[1] == "diff":
-            return SimpleNamespace(stdout="")
+            return SimpleNamespace(stdout="", returncode=0)
         if command[1] == "ls-files":
-            return SimpleNamespace(stdout="")
+            return SimpleNamespace(stdout="", returncode=0)
         raise AssertionError(command)
 
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
@@ -160,6 +162,73 @@ def test_source_validation_accepts_feature_branch_and_unrelated_dirty_files(monk
     assert attestation["head"] == revision
     assert attestation["scoped_clean"] is True
     assert not any("symbolic-ref" in call for call in calls)
+
+
+def test_source_validation_accepts_docs_only_descendant(monkeypatch, tmp_path):
+    revision = "e" * 40
+    head = "f" * 40
+
+    def fake_run(command, **kwargs):
+        if command[1:] == ["rev-parse", "--show-toplevel"]:
+            return SimpleNamespace(stdout=str(tmp_path) + "\n", returncode=0)
+        if command[1:] == ["rev-parse", "HEAD"]:
+            return SimpleNamespace(stdout=head + "\n", returncode=0)
+        if command[1:4] == ["merge-base", "--is-ancestor", revision]:
+            return SimpleNamespace(stdout="", returncode=0)
+        if command[1] in {"diff", "ls-files"}:
+            return SimpleNamespace(stdout="", returncode=0)
+        raise AssertionError(command)
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    attestation = runner.validate_source_revision(revision, repo_root=tmp_path)
+
+    assert attestation["expected"] == revision
+    assert attestation["head"] == head
+    assert attestation["scoped_clean"] is True
+
+
+def test_source_validation_rejects_runtime_change_after_frozen_revision(monkeypatch, tmp_path):
+    revision = "e" * 40
+    head = "f" * 40
+    changed_path = "superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_golaxy_9d_alignment.py"
+
+    def fake_run(command, **kwargs):
+        if command[1:] == ["rev-parse", "--show-toplevel"]:
+            return SimpleNamespace(stdout=str(tmp_path) + "\n", returncode=0)
+        if command[1:] == ["rev-parse", "HEAD"]:
+            return SimpleNamespace(stdout=head + "\n", returncode=0)
+        if command[1:3] == ["merge-base", "--is-ancestor"]:
+            return SimpleNamespace(stdout="", returncode=0)
+        if command[1:4] == ["diff", "--name-only", revision]:
+            return SimpleNamespace(stdout=changed_path + "\n", returncode=0)
+        if command[1] in {"diff", "ls-files"}:
+            return SimpleNamespace(stdout="", returncode=0)
+        raise AssertionError(command)
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    with pytest.raises(ValueError, match="changed since expected revision"):
+        runner.validate_source_revision(revision, repo_root=tmp_path)
+
+
+def test_source_validation_rejects_non_ancestor_revision(monkeypatch, tmp_path):
+    revision = "e" * 40
+    head = "f" * 40
+
+    def fake_run(command, **kwargs):
+        if command[1:] == ["rev-parse", "--show-toplevel"]:
+            return SimpleNamespace(stdout=str(tmp_path) + "\n", returncode=0)
+        if command[1:] == ["rev-parse", "HEAD"]:
+            return SimpleNamespace(stdout=head + "\n", returncode=0)
+        if command[1:3] == ["merge-base", "--is-ancestor"]:
+            return SimpleNamespace(stdout="", returncode=1)
+        raise AssertionError(command)
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    with pytest.raises(ValueError, match="is not an ancestor"):
+        runner.validate_source_revision(revision, repo_root=tmp_path)
 
 
 def _health():

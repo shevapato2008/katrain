@@ -611,6 +611,20 @@ quota ledger,单个操作者显式 quota 最多20次;不可判定、网络失败
 source/output gate。首批结束后先在本节追加 charged attempts、有效胜负、颜色、不可判盘及冻结规则唯一
 导出的下一批,再允许继续。
 
+**首批结果(2026-07-23):** `rank_9d@8` 对星阵9D完成首批5个有效结果,战绩 **5–0**;依次执
+黑/白/黑/白/黑,即颜色计数3黑2白。5次可能计费尝试全部产生有效胜负,不可判盘0,无网络重试。
+quota 为 `golaxy9d-humansl-20260723-a`,本批结束时该 quota 与全实验 charged attempts 均为5。
+候选 fingerprint 为 `c431d55a7b9f746a826a8d48415ef63113a89a501da75a945fb12fa8ab66a963`。
+
+| 首批账本证据 | SHA-256 |
+|---|---|
+| `golaxy_9d_humansl_alignment/quotas.jsonl` | `c1e5e102352d3a3e72dfa2785e2ca0a6caba8bf27a82088a10f5e54493336249` |
+| `golaxy_9d_humansl_alignment/checkpoints.jsonl` | `33ea23132464a84363bb61027225bd9cb1b9bd297392af729b7f22bb096736b1` |
+| `golaxy_9d_humansl_alignment/attempts.jsonl` | `bbe0b31902ceb497d0770991cd421ad25d50ac0e1a93ae822c0f46700c2ff041` |
+
+该5局仅完成筛选里程碑,不单独形成“产品档已对齐”的10局结论。按冻结规则,4–5胜必须降低搜索强度,
+因此唯一下一批为相邻的 **`rank_9d@4` 对星阵9D,目标5个有效结果**;不得先给 `@8` 补局或跳测其他档。
+
 ---
 
 ## D. 待办 / 开放项
@@ -621,8 +635,8 @@ source/output gate。首批结束后先在本节追加 charged attempts、有效
   其程序仅为边界定位所取代。`exp3-boundary-v1` 的四组独立 `@20` screening 已于 §C14 预声明,待运行。
 - [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
   `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
-- [ ] **星阵9D HumanSL产品档对齐(已预声明)**:按 §C15 从 `rank_9d@8` 启动首批5个有效结果;
-  当日最多20次计费尝试,筛选结果累计进入候选10局样本。
+- [ ] **星阵9D HumanSL产品档对齐(进行中)**:`rank_9d@8` 首批已5–0完成;按 §C15 唯一下一批为
+  `rank_9d@4` 的5个有效结果。当前 quota 已用5/20次计费尝试。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。

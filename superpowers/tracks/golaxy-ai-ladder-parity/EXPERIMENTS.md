@@ -458,14 +458,46 @@ checkpoint。任一 pair 有不可判盘则整对排除;screening 只用于选�
 screening,也不得在看到中途结果后改变样本量。四组候选全部确定后,再在任何 confirmation 运行之前冻结
 各候选的确认样本。
 
+### C13. 实验(3) @40 screening 与 confirmation 预声明(2026-07-22)
+
+C12 预声明的四组独立 screening 均完成固定10个完整颜色 pair。结果只用于选择 confirmation 候选:
+
+| screening 对局(A vs B) | 完整 pair / 尝试 pair (上限) | 完整 pair 样本 | Wilson 95% CI | Elo(A-B)及95%区间 | 不完整 pair / 原始不可判盘 | 所有尝试的原始结果(A胜/A负/不可判) |
+|---|---:|---:|---:|---:|---:|---:|
+| rank_5d@40 vs rank_6d@1s | 10 / 10 (20) | **19–1 (95%)** | [76.39%, 99.11%] | +511.5 [+307.5, +645.1] | 0 / 0 | 19/1/0 |
+| rank_6d@40 vs rank_7d@1s | 10 / 12 (20) | **19–1 (95%)** | [76.39%, 99.11%] | +511.5 [+307.5, +645.1] | 2 / 2 | 21/1/2 |
+| rank_7d@40 vs rank_8d@1s | 10 / 13 (20) | **17–3 (85%)** | [63.96%, 94.76%] | +301.3 [+141.9, +645.1] | 3 / 3 | 20/3/3 |
+| rank_8d@40 vs rank_9d@1s | 10 / 17 (20) | **16–4 (80%)** | [58.40%, 91.93%] | +240.8 [+88.5, +638.6] | 7 / 8 | 21/5/8 |
+
+四组在支持网格的最低 HumanSL+PIKL 搜索档 `@40` 即达到点估计50%以上,故按 C12 规则全部选择 `@40`
+作为固定 confirmation 候选。筛查结果虽然很强,本节仍不作确认性或“已完成实验(3)”声明;在当前 harness
+强制下限下,最终可识别的 visits 结论最多只能是 `≤40`,不能外推为恰好40或零搜索。
+
+严格 JSON、configuration/header/game fingerprint、逐手模型 attestation、开局/pair 调度、固定样本计数和
+summary 独立重算均通过。不可变证据如下:
+
+| screening 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-5d-40__vs__rank-6d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-5d-40__vs__rank-6d-1s.jsonl.gz) | `e40fd441def5e0680d0d94044bec2ef9cb6c9d88fcb9c064b448a36b86d346b2` | `7a856d6a0c76f00784bc8857685a047398dab3db3006411c78879f4ce05668a6` | `70a043250d99dd1c4d32e75b83689b03581d14a32f57a625d378d32d14d9f171` |
+| [`selfplay_screen_rank-6d-40__vs__rank-7d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-6d-40__vs__rank-7d-1s.jsonl.gz) | `6998a98ee39c7fc8093740140c86a0a67897b3333df13417a0145d737088e5fb` | `e124dc6635141b19943ffc0cbd9349726b37444b474b9320e8010eaf045766fc` | `3fcdd551476e0a0f54bb2e2e88c10733e2dec11a7d1924f71adaa15e54ee12d4` |
+| [`selfplay_screen_rank-7d-40__vs__rank-8d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-7d-40__vs__rank-8d-1s.jsonl.gz) | `dad716038e9ffc730a727b687b2b49823ec284eb23e7517dbee8e5b09962445b` | `3904286460908f1937f073d3a0e6295d97efcf541ad648cdddac201ad2896040` | `8f801c5127975b78751d4449f0ffdb57d3acb72c13625752a1a246c0439e6482` |
+| [`selfplay_screen_rank-8d-40__vs__rank-9d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-8d-40__vs__rank-9d-1s.jsonl.gz) | `a9c88d777fdb32c173f7a1552a5edda6f7c574f9dd1cf60028cae0321c0c9fff` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` |
+| [`selfplay_summary_screen_exp3_40.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_exp3_40.json) | — | `dde2e2296ccdbdf77cf5b1ae8905533fc1e8f8f0d340b5d729800a982809d57d` | — |
+
+**固定 confirmation 预声明(任何运行之前冻结):**实验(3)使用四个全新 `phase=confirm` checkpoint,分别
+运行上述四个 `低一段@40 vs 高一段@1s` matchup;每组恰好20个完整颜色 pair(40盘 decision games),
+默认最多40次 pair 尝试。screening 记录不加载、不计入 confirmation;每组固定样本结束后无论 Wilson 分类
+为何都不追加样本。四组均完成后才能作“低一段在支持网格内需要≤40 visits 可超过高一段 @1s”的确认性
+判定;若某组确认区间仍跨50%,如实报告该组统计不确定,不追样本、不改候选。
+
 ---
 
 ## D. 待办 / 开放项
 
 - [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
   三段位确认样本点估计均略高于50%,但95% CI 全跨50%,结论为方向一致、统计不确定。
-- [ ] **实验(3)有效重跑(进行中)**:首轮四组 `低一段@40 vs 高一段@1s` screening 已于 §C12 预声明,
-  待运行、固化并按固定网格选择候选 visits。
+- [ ] **实验(3)有效重跑(进行中)**:四组 `低一段@40 vs 高一段@1s` screening 已完成并全部选择 @40;
+  20完整-pair confirmation 已于 §C13 预声明,待运行。
 - [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
   `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits

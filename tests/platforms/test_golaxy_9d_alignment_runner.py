@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 import importlib
 import json
@@ -136,6 +137,32 @@ def test_cli_modes_are_mutually_exclusive():
     parser = runner.build_parser()
     with pytest.raises(SystemExit):
         parser.parse_args(["--preflight-only", "--summarize-only"])
+
+
+def test_configuration_fingerprint_ignores_observational_probe_counts_and_docs_head():
+    first = {
+        "source": {"expected": "a" * 40, "head": "b" * 40, "scoped_clean": True},
+        "candidate": {"requested_visits": 4, "reported_visits": 1, "identity": {"model": "b18"}},
+        "referee": {
+            "adjudication": {"requested_visits": 200, "reported_visits": 205, "identity": {"model": "b28"}},
+            "stability": {"requested_visits": 800, "reported_visits": 807, "identity": {"model": "b28"}},
+        },
+        "game": {"board_size": 19},
+    }
+    second = copy.deepcopy(first)
+    second["source"]["head"] = "c" * 40
+    second["candidate"]["reported_visits"] = 2
+    second["referee"]["adjudication"]["reported_visits"] = 206
+
+    assert runner.configuration_fingerprint(first) == runner.configuration_fingerprint(second)
+
+
+def test_legacy_fingerprint_resume_requires_exact_explicit_value():
+    assert runner.resolve_ledger_fingerprint("stable", "legacy", "legacy") == "legacy"
+    with pytest.raises(ValueError, match="fingerprint drift"):
+        runner.resolve_ledger_fingerprint("stable", "legacy", None)
+    with pytest.raises(ValueError, match="legacy fingerprint"):
+        runner.resolve_ledger_fingerprint("stable", "legacy", "wrong")
 
 
 def test_source_validation_accepts_feature_branch_and_unrelated_dirty_files(monkeypatch, tmp_path):

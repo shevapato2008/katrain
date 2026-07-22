@@ -195,6 +195,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token-env")
     parser.add_argument("--base-url")
     parser.add_argument("--expected-source-revision", required=True)
+    parser.add_argument("--ledger-source-revision")
+    parser.add_argument("--resume-legacy-fingerprint")
     parser.add_argument("--out", required=True)
     parser.add_argument("--smoke-report")
     return parser
@@ -202,7 +204,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def validate_args(args: argparse.Namespace) -> str:
     if args.summarize_only:
-        forbidden = (args.base_url, args.token_env, args.quota_id, args.smoke_report)
+        forbidden = (args.base_url, args.token_env, args.quota_id, args.smoke_report, args.resume_legacy_fingerprint)
         if any(value is not None for value in forbidden) or args.confirm_new_quota:
             raise ValueError("summarize-only rejects base URL, token, quota, smoke, and live arguments")
         return "summarize"
@@ -210,6 +212,8 @@ def validate_args(args: argparse.Namespace) -> str:
         raise ValueError("--confirm-new-quota is valid only with --create-quota-only")
     if args.create_quota_only and (not args.confirm_new_quota or not args.quota_id):
         raise ValueError("create-quota-only requires --confirm-new-quota and --quota-id")
+    if args.create_quota_only and args.resume_legacy_fingerprint:
+        raise ValueError("create-quota-only does not accept a legacy fingerprint")
     if not args.preflight_only and not args.create_quota_only and not args.quota_id:
         raise ValueError("live mode requires an explicit existing --quota-id")
     if args.preflight_only and (args.quota_id or args.token_env):
@@ -335,6 +339,39 @@ def _fingerprint(payload: Mapping[str, object]) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+def configuration_fingerprint(payload: Mapping[str, object]) -> str:
+    """Hash requested configuration and identities, excluding observational probe statistics."""
+    stable = _canonical(payload)
+    source = stable.get("source")
+    if isinstance(source, dict):
+        source.pop("head", None)
+    candidate = stable.get("candidate")
+    if isinstance(candidate, dict):
+        candidate.pop("reported_visits", None)
+    referee = stable.get("referee")
+    if isinstance(referee, dict):
+        for probe in referee.values():
+            if isinstance(probe, dict):
+                probe.pop("reported_visits", None)
+    return _fingerprint(stable)
+
+
+def resolve_ledger_fingerprint(current: str, persisted: str | None, explicit_legacy: str | None) -> str:
+    if persisted is None:
+        if explicit_legacy is not None:
+            raise ValueError("legacy fingerprint is valid only for an existing candidate checkpoint")
+        return current
+    if persisted == current:
+        if explicit_legacy not in (None, persisted):
+            raise ValueError("legacy fingerprint does not match the persisted candidate checkpoint")
+        return current
+    if explicit_legacy != persisted:
+        if explicit_legacy is None:
+            raise ValueError("selection fingerprint drift; exact legacy fingerprint is required for audited resume")
+        raise ValueError("legacy fingerprint does not match the persisted candidate checkpoint")
+    return persisted
+
+
 async def common_preflight(*, client, base_url: str, action, source_attestation: dict, smoke_report: Path) -> dict:
     validate_base_url(base_url)
     if not isinstance(action, golaxy_9d_alignment.Batch):
@@ -365,7 +402,7 @@ async def common_preflight(*, client, base_url: str, action, source_attestation:
         "capabilities": capabilities,
         "smoke": smoke,
         "payload": payload,
-        "fingerprint": _fingerprint(payload),
+        "fingerprint": configuration_fingerprint(payload),
     }
 
 
@@ -458,15 +495,31 @@ def _summary_from_session(session) -> dict:
 async def _run_async(args: argparse.Namespace) -> dict:
     mode = validate_args(args)
     source = validate_source_revision(args.expected_source_revision)
+    ledger_revision = args.ledger_source_revision or args.expected_source_revision
+    if re.fullmatch(r"[0-9a-f]{40}", ledger_revision) is None:
+        raise ValueError("ledger source revision must be a full lowercase 40-hex SHA-1")
+    if ledger_revision != args.expected_source_revision:
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ledger_revision, args.expected_source_revision],
+            cwd=_REPO_ROOT,
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        if ancestor.returncode != 0:
+            raise ValueError("ledger source revision must be an ancestor of the current implementation revision")
     out = validate_output_path(args.out)
     smoke_report = Path(args.smoke_report).resolve() if args.smoke_report else DEFAULT_SMOKE_REPORT
     if mode == "summarize" and not out.is_dir():
         raise ValueError("summarize-only requires an existing experiment directory")
-    with golaxy_9d_alignment.experiment_session(out, args.expected_source_revision) as session:
+    with golaxy_9d_alignment.experiment_session(out, ledger_revision) as session:
         if mode == "summarize":
             return _summary_from_session(session)
         evidence = golaxy_9d_alignment.load_evidence(session, {})
         action = golaxy_9d_alignment.next_batch(evidence)
+        persisted_fingerprint = dict(golaxy_9d_alignment.load_experiment_snapshot(session).fingerprints).get(
+            action.player
+        )
         async with httpx.AsyncClient(follow_redirects=False, trust_env=False) as local_client:
             preflight = await common_preflight(
                 client=local_client,
@@ -475,9 +528,17 @@ async def _run_async(args: argparse.Namespace) -> dict:
                 source_attestation=source,
                 smoke_report=smoke_report,
             )
-            golaxy_9d_alignment.load_evidence(session, {action.player: preflight["fingerprint"]})
+            ledger_fingerprint = resolve_ledger_fingerprint(
+                preflight["fingerprint"], persisted_fingerprint, args.resume_legacy_fingerprint
+            )
+            golaxy_9d_alignment.load_evidence(session, {action.player: ledger_fingerprint})
             if mode == "preflight":
-                return {"mode": mode, "fingerprint": preflight["fingerprint"], "next_action": repr(action)}
+                return {
+                    "mode": mode,
+                    "configuration_fingerprint": preflight["fingerprint"],
+                    "ledger_fingerprint": ledger_fingerprint,
+                    "next_action": repr(action),
+                }
             token = load_token(args.token_env)
             operator_date = datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
             quota = golaxy_9d_alignment.create_or_resume_quota(
@@ -512,7 +573,7 @@ async def _run_async(args: argparse.Namespace) -> dict:
                     if conclusive >= current.target_conclusive:
                         break
                     reservation = golaxy_9d_alignment.reserve_next_attempt(
-                        session, args.quota_id, current, preflight["fingerprint"]
+                        session, args.quota_id, current, ledger_fingerprint
                     )
                     outcome = await play_alignment_game(
                         local_client=local_client,
@@ -528,7 +589,7 @@ async def _run_async(args: argparse.Namespace) -> dict:
                         result = "inconclusive"
                     else:
                         raise AlignmentStop(f"unexpected non-replenishable result: {outcome.result}")
-                    golaxy_9d_alignment.append_attempt_result(session, reservation, result, preflight["fingerprint"])
+                    golaxy_9d_alignment.append_attempt_result(session, reservation, result, ledger_fingerprint)
             summary = _summary_from_session(session)
             summary["mode"] = "live"
             summary["completed_batch"] = dataclasses.asdict(batch_started)

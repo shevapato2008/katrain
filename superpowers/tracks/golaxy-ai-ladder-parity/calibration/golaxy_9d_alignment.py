@@ -3,6 +3,7 @@
 import fcntl
 import json
 import os
+import re
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -18,7 +19,6 @@ GOLAXY_API_LEVEL = 3000
 LOCAL_BASE_URL = "http://127.0.0.1:8000"
 DAILY_CHARGED_CAP = 20
 LEDGER_SCHEMA_VERSION = 1
-SOURCE_REVISION = "bb37920ba859f21684cb2d2e1a845120d9c13676"
 
 
 @dataclass(frozen=True)
@@ -225,19 +225,15 @@ class AttemptReservation:
     scheduled_color: str
     quota_id: str
     selection_fingerprint: str
-
-
-_SESSION_TOKEN = object()
+    source_revision: str
 
 
 class _ExperimentSession:
-    def __init__(self, path: Path, lock_file):
-        self.path = path
-        self._lock_file = lock_file
-        self._token = _SESSION_TOKEN
-        self._pid = os.getpid()
-        self._thread_id = threading.get_ident()
-        self._open = True
+    def __init__(self, *_args, **_kwargs):
+        raise RuntimeError("experiment sessions cannot be constructed directly")
+
+
+_ACTIVE_SESSIONS: set[_ExperimentSession] = set()
 
 
 def _fsync_file(handle) -> None:
@@ -261,10 +257,17 @@ def _open_created_file(path: Path, mode: str):
     return handle
 
 
+def _validate_source_revision(source_revision) -> str:
+    if type(source_revision) is not str or re.fullmatch(r"[0-9a-f]{40}", source_revision) is None:
+        raise ValueError("source revision must be a full lowercase 40-hex SHA-1")
+    return source_revision
+
+
 @contextmanager
-def experiment_session(session_path):
+def experiment_session(session_path, source_revision):
     """Hold the experiment-wide, crash-released OS lock for the caller's lifetime."""
 
+    source_revision = _validate_source_revision(source_revision)
     path = Path(session_path)
     if path.exists() and not path.is_dir():
         raise ValueError("session path must be a directory")
@@ -278,11 +281,20 @@ def experiment_session(session_path):
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise RuntimeError("experiment session lock is already held") from exc
-        session = _ExperimentSession(path.resolve(), lock_file)
+        session = object.__new__(_ExperimentSession)
+        session.path = path.resolve()
+        session.source_revision = source_revision
+        session._lock_path = lock_path.resolve()
+        session._lock_file = lock_file
+        session._pid = os.getpid()
+        session._thread_id = threading.get_ident()
+        session._open = True
+        _ACTIVE_SESSIONS.add(session)
         try:
             yield session
         finally:
             session._open = False
+            _ACTIVE_SESSIONS.discard(session)
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
     finally:
         lock_file.close()
@@ -291,11 +303,13 @@ def experiment_session(session_path):
 def _require_session(session) -> _ExperimentSession:
     if (
         not isinstance(session, _ExperimentSession)
-        or session._token is not _SESSION_TOKEN
+        or session not in _ACTIVE_SESSIONS
         or not session._open
         or session._pid != os.getpid()
         or session._thread_id != threading.get_ident()
         or session._lock_file.closed
+        or Path(session._lock_file.name).resolve() != session._lock_path
+        or session._lock_path != session.path / ".experiment.lock"
     ):
         raise ValueError("a live owned experiment session is required")
     return session
@@ -385,8 +399,11 @@ def _load_ledgers(session: _ExperimentSession):
         )
         if type(record["schema_version"]) is not int or record["schema_version"] != LEDGER_SCHEMA_VERSION:
             raise ValueError("invalid checkpoint schema_version")
-        if record["protocol_version"] != PROTOCOL_VERSION or record["source_revision"] != SOURCE_REVISION:
-            raise ValueError("invalid checkpoint protocol/source revision")
+        if record["protocol_version"] != PROTOCOL_VERSION:
+            raise ValueError("invalid checkpoint protocol version")
+        _validate_source_revision(record["source_revision"])
+        if record["source_revision"] != session.source_revision:
+            raise ValueError("checkpoint source revision mismatch")
         candidate = validate_player_spec(record["candidate"])
         _plain_string(record["selection_fingerprint"], "selection_fingerprint")
         if candidate in headers:
@@ -403,7 +420,15 @@ def _load_ledgers(session: _ExperimentSession):
         if record.get("type") == "attempt_reserved":
             _require_exact(
                 record,
-                {"type", "attempt_id", "candidate", "scheduled_color", "quota_id", "selection_fingerprint"},
+                {
+                    "type",
+                    "attempt_id",
+                    "candidate",
+                    "scheduled_color",
+                    "quota_id",
+                    "selection_fingerprint",
+                    "source_revision",
+                },
                 "attempt_reserved",
             )
             attempt_id = record["attempt_id"]
@@ -413,17 +438,22 @@ def _load_ledgers(session: _ExperimentSession):
             candidate = validate_player_spec(record["candidate"])
             if record["scheduled_color"] not in ("B", "W"):
                 raise ValueError("invalid scheduled_color")
-            expected_color = "B" if conclusive_by_candidate[candidate] % 2 == 0 else "W"
+            expected_color = _next_conclusive_color(conclusive_by_candidate[candidate])
             if record["scheduled_color"] != expected_color:
                 raise ValueError("reservation color does not match the next conclusive color")
             quota_id = _plain_string(record["quota_id"], "quota_id")
             fingerprint = _plain_string(record["selection_fingerprint"], "selection_fingerprint")
+            _validate_source_revision(record["source_revision"])
+            if record["source_revision"] != session.source_revision:
+                raise ValueError("reservation source revision mismatch")
             if quota_id not in quotas:
                 raise ValueError(f"unknown quota reference: {quota_id}")
             header = headers.get(candidate)
             if header is None or header["selection_fingerprint"] != fingerprint:
                 raise ValueError("reservation does not match immutable checkpoint header")
-            reservation = AttemptReservation(attempt_id, candidate, record["scheduled_color"], quota_id, fingerprint)
+            reservation = AttemptReservation(
+                attempt_id, candidate, record["scheduled_color"], quota_id, fingerprint, record["source_revision"]
+            )
             reservations[attempt_id] = reservation
             charged[quota_id] += 1
             if charged[quota_id] > DAILY_CHARGED_CAP:
@@ -431,7 +461,16 @@ def _load_ledgers(session: _ExperimentSession):
         elif record.get("type") == "attempt_result":
             _require_exact(
                 record,
-                {"type", "attempt_id", "candidate", "scheduled_color", "quota_id", "selection_fingerprint", "outcome"},
+                {
+                    "type",
+                    "attempt_id",
+                    "candidate",
+                    "scheduled_color",
+                    "quota_id",
+                    "selection_fingerprint",
+                    "source_revision",
+                    "outcome",
+                },
                 "attempt_result",
             )
             attempt_id = record["attempt_id"]
@@ -449,13 +488,14 @@ def _load_ledgers(session: _ExperimentSession):
                     ("scheduled_color", "scheduled_color"),
                     ("quota_id", "quota_id"),
                     ("selection_fingerprint", "selection_fingerprint"),
+                    ("source_revision", "source_revision"),
                 )
             ):
                 raise ValueError("result does not match exact reservation")
             results[attempt_id] = record
             result_records.append(record)
             if record["outcome"] in ("win", "loss"):
-                expected_color = "B" if conclusive_by_candidate[reservation.candidate] % 2 == 0 else "W"
+                expected_color = _next_conclusive_color(conclusive_by_candidate[reservation.candidate])
                 if reservation.scheduled_color != expected_color:
                     raise ValueError("conclusive result uses a stale reservation color")
                 conclusive_by_candidate[reservation.candidate] += 1
@@ -539,12 +579,7 @@ def load_evidence(session, expected_fingerprints) -> Evidence:
     return _evidence_from_results(result_records)
 
 
-def next_conclusive_color(session, candidate: str) -> str:
-    session = _require_session(session)
-    _, _, _, _, result_records = _load_ledgers(session)
-    conclusive = sum(
-        record["candidate"] == candidate and record["outcome"] in ("win", "loss") for record in result_records
-    )
+def _next_conclusive_color(conclusive: int) -> str:
     return "B" if conclusive % 2 == 0 else "W"
 
 
@@ -571,21 +606,19 @@ def reserve_next_attempt(session, quota_id, expected_batch, expected_fingerprint
                 "type": "checkpoint_header",
                 "schema_version": LEDGER_SCHEMA_VERSION,
                 "protocol_version": PROTOCOL_VERSION,
-                "source_revision": SOURCE_REVISION,
+                "source_revision": session.source_revision,
                 "candidate": candidate,
                 "selection_fingerprint": fingerprint,
             },
         )
     if quotas[quota_id].charged_attempts >= DAILY_CHARGED_CAP:
         raise ValueError("quota already has 20 charged reservations")
-    color = (
-        "B"
-        if sum(record["candidate"] == candidate and record["outcome"] in ("win", "loss") for record in result_records)
-        % 2
-        == 0
-        else "W"
+    color = _next_conclusive_color(
+        sum(record["candidate"] == candidate and record["outcome"] in ("win", "loss") for record in result_records)
     )
-    reservation = AttemptReservation(len(reservations) + 1, candidate, color, quota_id, fingerprint)
+    reservation = AttemptReservation(
+        len(reservations) + 1, candidate, color, quota_id, fingerprint, session.source_revision
+    )
     _append_record(
         session.path / "attempts.jsonl",
         {
@@ -595,6 +628,7 @@ def reserve_next_attempt(session, quota_id, expected_batch, expected_fingerprint
             "scheduled_color": color,
             "quota_id": quota_id,
             "selection_fingerprint": fingerprint,
+            "source_revision": session.source_revision,
         },
     )
     return reservation
@@ -618,7 +652,7 @@ def append_attempt_result(session, reservation, outcome, expected_fingerprint) -
             record["candidate"] == reservation.candidate and record["outcome"] in ("win", "loss")
             for record in result_records
         )
-        expected_color = "B" if conclusive % 2 == 0 else "W"
+        expected_color = _next_conclusive_color(conclusive)
         if reservation.scheduled_color != expected_color:
             raise ValueError("conclusive result uses a stale reservation color")
     header = headers.get(reservation.candidate)
@@ -637,6 +671,7 @@ def append_attempt_result(session, reservation, outcome, expected_fingerprint) -
             "scheduled_color": reservation.scheduled_color,
             "quota_id": reservation.quota_id,
             "selection_fingerprint": reservation.selection_fingerprint,
+            "source_revision": reservation.source_revision,
             "outcome": outcome,
         },
     )

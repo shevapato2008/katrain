@@ -490,14 +490,60 @@ summary 独立重算均通过。不可变证据如下:
 为何都不追加样本。四组均完成后才能作“低一段在支持网格内需要≤40 visits 可超过高一段 @1s”的确认性
 判定;若某组确认区间仍跨50%,如实报告该组统计不确定,不追样本、不改候选。
 
+### C14. 实验(3)旧 @40 confirmation 状态与边界 @20 screening 预声明(2026-07-22)
+
+C13 的旧 confirmation batch 停止时,四个 checkpoint 的实际状态经原始 JSONL 复核如下:
+
+| 旧 confirmation 对局(A vs B) | 完整 pair / 尝试 pair | 完整 pair 样本 | 状态与边界实验用途 |
+|---|---:|---:|---|
+| `rank_5d@40` vs `rank_6d@1s` | **20 / 22** | **36–4** | 固定样本完成;保留为该精确 `@40` 对局的有效既有证据 |
+| `rank_6d@40` vs `rank_7d@1s` | **20 / 24** | **36–4** | 固定样本完成;保留为该精确 `@40` 对局的有效既有证据 |
+| `rank_7d@40` vs `rank_8d@1s` | **11 / 16** | **19–3** | 中断;仅作描述,不作固定样本结论且永不并入新样本 |
+| `rank_8d@40` vs `rank_9d@1s` | **0 / 0** | — | 未启动 |
+
+前两组各有2/4个不完整 pair;第三组有5个不完整 pair。所有原始 checkpoint 均原样保留。旧 batch
+**仅作为寻找 search boundary 的程序被新协议取代**:两组已经完成的 `@40` confirmation 事实不作废,
+但旧 batch 的任何棋局都不加载、不追加、不合并到以下 screening 或未来重新冻结的 confirmation。
+
+**任何 boundary query 之前冻结:**协议版本为 `exp3-boundary-v1`。首轮且只启动以下四个独立
+`phase=screen` matchup,每组目标恰好10个完整颜色 pair(20盘 decision games),最多20次 pair 尝试:
+
+- `rank_5d@20:rank_6d@1s:10`
+- `rank_6d@20:rank_7d@1s:10`
+- `rank_7d@20:rank_8d@1s:10`
+- `rank_8d@20:rank_9d@1s:10`
+
+每组在恰好10个完整 pair 时按 A 方 decision-game **点估计 `>=50%` 为 pass**,`<50%` 为 fail;
+任一 pair 有不可判盘则整对排除。达到20次 pair 尝试仍不足10个完整 pair 时 abort,不分类、不选候选。
+`@20` pass 的下一独立 screening 点是 `@10`;`@20` fail 的下一独立 screening 点是 `@30`。
+不得在结果出现后追加样本或更改下一点。
+
+本轮绑定的已提交输入如下;生成器/loader 必须在运行前逐字节及逐来源验证它们:
+
+| 冻结输入 | SHA-256 / canonical digest |
+|---|---|
+| opening suite checksum (`humansl-boundary-opening-suite-v1`) | `8d99e5288ee4e391f4b8429eba9e117864b7fadaa438b80bfe56d988c0f8e292` |
+| opening allocation digest (`humansl-boundary-opening-allocation-v1`) | `45a2bbb390f1c27882a82ceea9e5b9dd5c4ab595e9e48a14b6ab5fa1e8a1c9c4` |
+| known-endpoints manifest digest (`known-endpoints-exp3-v1`) | `0cdfac46b4b0e55936f8434eebef499a3179762d7cccc5565b35944efb59995f` |
+| shared committed source-summary SHA-256 | `dde2e2296ccdbdf77cf5b1ae8905533fc1e8f8f0d340b5d729800a982809d57d` |
+
+| transition / `@20` allocation | known-endpoint source digest | archive SHA-256 | decompressed checkpoint SHA-256 |
+|---|---|---|---|
+| `rank_5d__rank_6d` / `screen:rank_5d__rank_6d:20` (`b0061`–`b0080`) | `a1982503af2a295832f9358a15b95cf79637fb7bc413a74883083953f8beb4b6` | `70a043250d99dd1c4d32e75b83689b03581d14a32f57a625d378d32d14d9f171` | `7a856d6a0c76f00784bc8857685a047398dab3db3006411c78879f4ce05668a6` |
+| `rank_6d__rank_7d` / `screen:rank_6d__rank_7d:20` (`b0161`–`b0180`) | `f58b2b471861b5a6bfbf49f3582cdb57add946218d280bb4ae15c4de9eccd21c` | `3fcdd551476e0a0f54bb2e2e88c10733e2dec11a7d1924f71adaa15e54ee12d4` | `e124dc6635141b19943ffc0cbd9349726b37444b474b9320e8010eaf045766fc` |
+| `rank_7d__rank_8d` / `screen:rank_7d__rank_8d:20` (`b0261`–`b0280`) | `f85f3e1013de4fdfc6c4f7bae1694337dd82b0367a0fdb11291e00c5f47a8592` | `8f801c5127975b78751d4449f0ffdb57d3acb72c13625752a1a246c0439e6482` | `3904286460908f1937f073d3a0e6295d97efcf541ad648cdddac201ad2896040` |
+| `rank_8d__rank_9d` / `screen:rank_8d__rank_9d:20` (`b0361`–`b0380`) | `bbdbb54feb9c8cab062fb8057420959fa96dc0276541472f7336c47064931c56` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` |
+
+本预声明及上述冻结输入验证必须先提交;提交前不允许发出 semantic probe 或任何 self-play HTTP query。
+
 ---
 
 ## D. 待办 / 开放项
 
 - [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
   三段位确认样本点估计均略高于50%,但95% CI 全跨50%,结论为方向一致、统计不确定。
-- [ ] **实验(3)有效重跑(进行中)**:四组 `低一段@40 vs 高一段@1s` screening 已完成并全部选择 @40;
-  20完整-pair confirmation 已于 §C13 预声明,待运行。
+- [ ] **实验(3)边界定位(进行中)**:旧 @40 batch 的两个 confirmation 已完成、一个中断、一个未启动;
+  其程序仅为边界定位所取代。`exp3-boundary-v1` 的四组独立 `@20` screening 已于 §C14 预声明,待运行。
 - [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
   `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits

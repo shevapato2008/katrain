@@ -21,10 +21,13 @@ confirm the already-dominant `@40` point.
 ## Existing `@40` evidence
 
 The four 10-pair screenings at `@40` remain valid evidence that the boundary is at most 40 visits.
-Before the old confirmation batch was stopped, `rank_5d@40` vs `rank_6d@1s` completed its fixed
-20-pair sample at 36--4; the other three matchups had not started. The completed first confirmation
-remains valid evidence for that exact `@40` matchup, but the batch is superseded as the procedure for
-answering the boundary question. It is not merged into screening or into any later confirmation.
+Before the old confirmation batch was stopped, `rank_5d@40` vs `rank_6d@1s` and `rank_6d@40` vs
+`rank_7d@1s` each completed their fixed 20-pair samples at 36--4. The `rank_7d@40` vs `rank_8d@1s`
+checkpoint was interrupted after 11 complete pairs at 19--3, and `rank_8d@40` vs `rank_9d@1s` never
+started. The two completed confirmations remain valid evidence for those exact `@40` matchups; the
+interrupted checkpoint is descriptive only. The old batch is superseded only as the procedure for
+answering the boundary question. None of these games is merged into boundary screening or any later
+confirmation.
 
 ## Boundary-search protocol
 

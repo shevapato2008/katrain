@@ -71,11 +71,13 @@
 
 **Files:**
 - Modify: `superpowers/tracks/golaxy-ai-ladder-parity/EXPERIMENTS.md`
+- Modify: `superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-design.md`
+- Modify: `superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-plan.md`
 - Runtime output: `superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary/`
 
-- [ ] Record the completed prior `rank_5d@40 vs rank_6d@1s` confirmation as 36--4; mark only the remaining three-matchup batch superseded for boundary finding.
+- [ ] Record the verified old-batch status: the 5d--6d and 6d--7d confirmations each completed 20 pairs at 36--4; the 7d--8d checkpoint stopped after 11 complete pairs at 19--3 and is descriptive only; 8d--9d never started. Preserve both completed confirmations as valid exact-`@40` evidence and supersede the old batch only as the procedure for boundary finding.
 - [ ] Predeclare four `@20` screens, exactly 10 complete pairs, cap20, point-estimate `>=50%` pass, protocol/allocation/known-endpoints digests, and next step (`@10` after pass, `@30` after fail). Verify the already committed asset digests with the generator `--check` and validate every known endpoint against its committed archive.
-- [ ] Before any boundary query, commit only the preregistration inputs with `git add superpowers/tracks/golaxy-ai-ladder-parity/EXPERIMENTS.md superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-plan.md superpowers/tracks/golaxy-ai-ladder-parity/calibration/known_endpoints_exp3_v1.json && git commit -m 'predeclare HumanSL boundary screening'`.
+- [ ] Before any boundary query, commit only the preregistration documents with `git add superpowers/tracks/golaxy-ai-ladder-parity/EXPERIMENTS.md superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-design.md superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-plan.md && git commit -m 'predeclare HumanSL boundary screening'`.
 - [ ] Run the local probe:
   `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 uv run python superpowers/tracks/golaxy-ai-ladder-parity/calibration/probe_humansl_search.py --base-url http://127.0.0.1:8000 --low-visits 20 --experimental-min-humansl-search-visits 20`.
   Expect exit0, b18/humanv0 verified hashes, visits20, and all canonical PIKL fields nonzero where required.

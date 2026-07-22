@@ -21,6 +21,30 @@ def _session(path, revision=REVISION_ONE):
     return protocol.experiment_session(path, revision)
 
 
+def test_read_only_experiment_snapshot_strictly_replays_ledgers_without_mutation(tmp_path):
+    with _session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "quota-1", confirm_new=True, operator_date="2026-07-23")
+        batch = protocol.Batch("rank_9d@8", 5)
+        first = protocol.reserve_next_attempt(session, "quota-1", batch, "fingerprint-1")
+        protocol.append_attempt_result(session, first, "win", "fingerprint-1")
+        second = protocol.reserve_next_attempt(session, "quota-1", batch, "fingerprint-1")
+        protocol.append_attempt_result(session, second, "inconclusive", "fingerprint-1")
+        before = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+
+        snapshot = protocol.load_experiment_snapshot(session)
+
+        after = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+        assert before == after
+        assert snapshot.source_revision == REVISION_ONE
+        assert snapshot.quotas[0].charged_attempts == 2
+        assert snapshot.charged_attempts == 2
+        assert (snapshot.reservations, snapshot.results) == (2, 2)
+        assert (snapshot.wins, snapshot.losses, snapshot.inconclusive) == (1, 0, 1)
+        assert snapshot.fingerprints == (("rank_9d@8", "fingerprint-1"),)
+        assert snapshot.colors == (("rank_9d@8", 1, 0),)
+        assert snapshot.evidence == protocol.Evidence((protocol.EvidenceBatch("rank_9d@8", 5, 1, 0),))
+
+
 def test_grid_and_initial_batch_are_frozen():
     assert protocol.PROTOCOL_VERSION == "golaxy-9d-humansl-alignment-v1"
     assert protocol.CANDIDATES == (

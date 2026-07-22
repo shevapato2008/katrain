@@ -228,6 +228,23 @@ class AttemptReservation:
     source_revision: str
 
 
+@dataclass(frozen=True)
+class ExperimentSnapshot:
+    """Immutable, offline summary produced by the protocol's strict ledger replay."""
+
+    source_revision: str
+    quotas: tuple[QuotaState, ...]
+    fingerprints: tuple[tuple[str, str], ...]
+    charged_attempts: int
+    reservations: int
+    results: int
+    wins: int
+    losses: int
+    inconclusive: int
+    colors: tuple[tuple[str, int, int], ...]
+    evidence: Evidence
+
+
 class _ExperimentSession:
     def __init__(self, *_args, **_kwargs):
         raise RuntimeError("experiment sessions cannot be constructed directly")
@@ -674,4 +691,43 @@ def append_attempt_result(session, reservation, outcome, expected_fingerprint) -
             "source_revision": reservation.source_revision,
             "outcome": outcome,
         },
+    )
+
+
+def load_experiment_snapshot(session) -> ExperimentSnapshot:
+    """Strictly replay all persisted evidence and return an immutable read-only summary."""
+
+    session = _require_session(session)
+    quotas, headers, reservations, results, result_records = _load_ledgers(session)
+    evidence = _evidence_from_results(result_records)
+    outcomes = [record["outcome"] for record in result_records]
+    color_counts = []
+    for candidate in CANDIDATES:
+        conclusive = [
+            record
+            for record in result_records
+            if record["candidate"] == candidate and record["outcome"] in ("win", "loss")
+        ]
+        if conclusive:
+            color_counts.append(
+                (
+                    candidate,
+                    sum(record["scheduled_color"] == "B" for record in conclusive),
+                    sum(record["scheduled_color"] == "W" for record in conclusive),
+                )
+            )
+    return ExperimentSnapshot(
+        source_revision=session.source_revision,
+        quotas=tuple(quotas[key] for key in sorted(quotas)),
+        fingerprints=tuple(
+            (candidate, headers[candidate]["selection_fingerprint"]) for candidate in CANDIDATES if candidate in headers
+        ),
+        charged_attempts=len(reservations),
+        reservations=len(reservations),
+        results=len(results),
+        wins=outcomes.count("win"),
+        losses=outcomes.count("loss"),
+        inconclusive=outcomes.count("inconclusive"),
+        colors=tuple(color_counts),
+        evidence=evidence,
     )

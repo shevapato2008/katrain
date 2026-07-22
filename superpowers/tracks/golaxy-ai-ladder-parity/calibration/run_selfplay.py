@@ -304,6 +304,22 @@ def _git_output(arguments: List[str], *, cwd: Path) -> str:
     return completed.stdout.strip()
 
 
+def _git_returncode(arguments: List[str], *, cwd: Path) -> int:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(cwd), *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise ValueError(f"cannot inspect boundary source revision: git unavailable: {exc}") from exc
+    if completed.returncode not in {0, 1}:
+        detail = completed.stderr.strip() or completed.stdout.strip() or f"exit {completed.returncode}"
+        raise ValueError(f"cannot inspect boundary source revision: git failed: {detail}")
+    return completed.returncode
+
+
 def load_boundary_source_snapshot(expected_source_revision: Optional[str]) -> dict:
     if not isinstance(expected_source_revision, str) or not re.fullmatch(r"[0-9a-f]{40}", expected_source_revision):
         raise ValueError("boundary protocol requires --expected-source-revision as a full 40-hex lowercase commit")
@@ -314,6 +330,8 @@ def load_boundary_source_snapshot(expected_source_revision: Optional[str]) -> di
         Path(__file__).resolve().relative_to(git_root)
     except (OSError, ValueError) as exc:
         raise ValueError("boundary source git root does not contain the self-play harness") from exc
+    if _git_returncode(["symbolic-ref", "--quiet", "HEAD"], cwd=git_root) != 1:
+        raise ValueError("boundary source must be checked out at detached HEAD")
     source_revision = _git_output(["rev-parse", "HEAD"], cwd=git_root)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("git HEAD did not resolve to a full 40-hex commit")
@@ -328,20 +346,51 @@ def load_boundary_source_snapshot(expected_source_revision: Optional[str]) -> di
         "source_revision": source_revision,
         "expected_source_revision": expected_source_revision,
         "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(git_root),
     }
 
 
 def _validate_boundary_source_snapshot(snapshot: object, expected_source_revision: Optional[str]) -> dict:
     if not isinstance(expected_source_revision, str) or not re.fullmatch(r"[0-9a-f]{40}", expected_source_revision):
         raise ValueError("boundary protocol requires --expected-source-revision as a full 40-hex lowercase commit")
+    if not isinstance(snapshot, Mapping):
+        raise ValueError("boundary source snapshot is malformed")
+    source_git_root = snapshot.get("source_git_root")
+    if not isinstance(source_git_root, str) or not Path(source_git_root).is_absolute():
+        raise ValueError("boundary source snapshot git root must be absolute")
+    try:
+        resolved_root = str(Path(source_git_root).resolve(strict=True))
+    except OSError as exc:
+        raise ValueError(f"boundary source snapshot git root cannot be resolved: {exc}") from exc
     expected = {
         "source_revision": expected_source_revision,
         "expected_source_revision": expected_source_revision,
         "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": resolved_root,
     }
     if snapshot != expected:
         raise ValueError("boundary source snapshot does not match the expected clean revision")
     return dict(expected)
+
+
+def validate_boundary_out_dir(path: Path, source_snapshot: Mapping[str, object]) -> Path:
+    supplied = Path(path)
+    if not supplied.is_absolute():
+        raise ValueError("boundary protocol --out must be supplied as an absolute path")
+    resolved = supplied.resolve()
+    source_root_value = source_snapshot.get("source_git_root")
+    if not isinstance(source_root_value, str) or not Path(source_root_value).is_absolute():
+        raise ValueError("boundary source snapshot git root must be absolute")
+    try:
+        source_root = Path(source_root_value).resolve(strict=True)
+        resolved.relative_to(source_root)
+    except OSError as exc:
+        raise ValueError(f"boundary source git root cannot be resolved: {exc}") from exc
+    except ValueError:
+        return resolved
+    raise ValueError("boundary protocol --out must resolve outside the source git root/worktree")
 
 
 class _OpeningBoardConfig:
@@ -1285,6 +1334,7 @@ async def run_matchup(
             boundary_source_snapshot = _validate_boundary_source_snapshot(
                 boundary_source_snapshot, expected_source_revision
             )
+        out_dir = validate_boundary_out_dir(out_dir, boundary_source_snapshot)
         boundary_inputs = resolve_boundary_assignment(
             boundary_protocol,
             phase=phase,
@@ -1543,10 +1593,12 @@ async def main_async(args) -> int:
     )
     if args.boundary_protocol is not None:
         boundary_source_snapshot = load_boundary_source_snapshot(args.expected_source_revision)
+        requested_out_dir = validate_boundary_out_dir(Path(args.out), boundary_source_snapshot)
     else:
         if args.expected_source_revision is not None:
             raise ValueError("--expected-source-revision is only valid with --boundary-protocol")
         boundary_source_snapshot = None
+        requested_out_dir = Path(args.out)
     if args.wide_root_noise is None:
         wrn = adapters.load_engine_wide_root_noise(
             dict(_MockKaTrainForConfig(force_package_config=True).config("engine"))
@@ -1555,7 +1607,7 @@ async def main_async(args) -> int:
     else:
         wrn = args.wide_root_noise
         log.info("wide_root_noise = %.4f (override)", wrn)
-    out_dir = _validated_out_dir(args.out)
+    out_dir = _validated_out_dir(requested_out_dir)
     summaries = []
     async with httpx.AsyncClient() as client:
         capabilities = await adapters.fetch_health_snapshot(client, args.base_url)

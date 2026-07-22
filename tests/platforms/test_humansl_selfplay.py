@@ -942,6 +942,8 @@ def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
             "source_revision": "a" * 40,
             "expected_source_revision": "a" * 40,
             "source_tree_clean": True,
+            "detached": True,
+            "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
         },
     )
     fingerprint = selfplay._configuration_fingerprint(configuration)
@@ -993,6 +995,8 @@ def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
         lambda changed: changed["boundary_source"].update(source_revision="b" * 40),
         lambda changed: changed["boundary_source"].update(expected_source_revision="b" * 40),
         lambda changed: changed["boundary_source"].update(source_tree_clean=False),
+        lambda changed: changed["boundary_source"].update(detached=False),
+        lambda changed: changed["boundary_source"].update(source_git_root="/drifted"),
     ]:
         changed = copy.deepcopy(configuration)
         mutate(changed)
@@ -1070,10 +1074,13 @@ def test_boundary_source_revision_requires_full_matching_clean_commit(monkeypatc
         raise AssertionError(arguments)
 
     monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    monkeypatch.setattr(selfplay, "_git_returncode", lambda arguments, *, cwd: 1)
     assert selfplay.load_boundary_source_snapshot(revision) == {
         "source_revision": revision,
         "expected_source_revision": revision,
         "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
     }
     assert [call[0] for call in calls] == [
         ["rev-parse", "--show-toplevel"],
@@ -1084,6 +1091,22 @@ def test_boundary_source_revision_requires_full_matching_clean_commit(monkeypatc
     for invalid in [None, "a" * 39, "g" * 40, revision.upper()]:
         with pytest.raises(ValueError, match="full 40-hex"):
             selfplay.load_boundary_source_snapshot(invalid)
+
+
+def test_boundary_source_revision_requires_detached_head(monkeypatch):
+    revision = "a" * 40
+
+    def fake_git(arguments, *, cwd):
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            return str(Path(selfplay.__file__).parents[4])
+        if arguments == ["rev-parse", "HEAD"]:
+            return revision
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    monkeypatch.setattr(selfplay, "_git_returncode", lambda arguments, *, cwd: 0)
+    with pytest.raises(ValueError, match="detached HEAD"):
+        selfplay.load_boundary_source_snapshot(revision)
 
 
 @pytest.mark.parametrize(
@@ -1100,12 +1123,89 @@ def test_boundary_source_revision_rejects_mismatch_or_tracked_dirty_tree(monkeyp
         raise AssertionError(arguments)
 
     monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    monkeypatch.setattr(selfplay, "_git_returncode", lambda arguments, *, cwd: 1)
     with pytest.raises(ValueError, match=match):
         selfplay.load_boundary_source_snapshot("a" * 40)
 
 
+def test_boundary_output_requires_absolute_external_path(tmp_path):
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    inside = source_root / "results"
+    external = tmp_path / "external"
+    snapshot = {
+        "source_revision": "a" * 40,
+        "expected_source_revision": "a" * 40,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(source_root.resolve()),
+    }
+
+    with pytest.raises(ValueError, match="absolute"):
+        selfplay.validate_boundary_out_dir(Path("relative/results"), snapshot)
+    with pytest.raises(ValueError, match="outside.*source git root"):
+        selfplay.validate_boundary_out_dir(inside.resolve(), snapshot)
+
+    external.mkdir()
+    symlink = external / "linked-inside"
+    symlink.symlink_to(inside, target_is_directory=True)
+    with pytest.raises(ValueError, match="outside.*source git root"):
+        selfplay.validate_boundary_out_dir(symlink, snapshot)
+
+    valid = external / "boundary-results"
+    assert selfplay.validate_boundary_out_dir(valid, snapshot) == valid.resolve()
+    original_repo_results = Path(selfplay.__file__).resolve().parent / "results"
+    assert selfplay.validate_boundary_out_dir(original_repo_results, snapshot) == original_repo_results.resolve()
+
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize("source_error", ["git unavailable", "does not match", "not clean"])
+@pytest.mark.parametrize("out_kind", ["relative", "inside"])
+async def test_boundary_output_failure_happens_before_any_http_query(monkeypatch, tmp_path, out_kind):
+    revision = "a" * 40
+    source_root = tmp_path / "detached-source"
+    source_root.mkdir()
+    snapshot = {
+        "source_revision": revision,
+        "expected_source_revision": revision,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(source_root.resolve()),
+    }
+    calls = {"http": 0}
+
+    async def fake_health(*_args):
+        calls["http"] += 1
+        raise AssertionError("HTTP must not be reached")
+
+    monkeypatch.setattr(selfplay, "load_boundary_source_snapshot", lambda _expected: snapshot)
+    monkeypatch.setattr(selfplay.adapters, "fetch_health_snapshot", fake_health)
+    out = Path("relative-results") if out_kind == "relative" else source_root / "results"
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+            "--expected-source-revision",
+            revision,
+            "--experimental-min-humansl-search-visits",
+            "20",
+            "--wide-root-noise",
+            "0.04",
+            "--out",
+            str(out),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="absolute|outside"):
+        await selfplay.main_async(args)
+    assert calls["http"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("source_error", ["git unavailable", "does not match", "not clean", "detached HEAD"])
 async def test_boundary_source_failure_happens_before_any_http_query(monkeypatch, tmp_path, source_error):
     calls = {"http": 0}
 
@@ -1149,6 +1249,8 @@ async def test_main_threads_one_boundary_source_snapshot_to_every_matchup(monkey
         "source_revision": revision,
         "expected_source_revision": revision,
         "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
     }
     source_calls = []
     received = []
@@ -1196,6 +1298,8 @@ def test_boundary_source_snapshot_is_fingerprinted_and_ordinary_runs_ignore_git(
         "source_revision": "a" * 40,
         "expected_source_revision": "a" * 40,
         "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
     }
     players = {
         "A": selfplay.make_player("rank_5d@20", experimental_min_humansl_search_visits=20),

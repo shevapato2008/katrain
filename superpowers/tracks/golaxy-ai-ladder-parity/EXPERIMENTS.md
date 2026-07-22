@@ -550,11 +550,17 @@ game record 与逐手模型 attestation 校验;表中统计由完整颜色 pair 
 | `rank_8d__rank_9d` / `screen:rank_8d__rank_9d:20` (`b0361`–`b0380`) | `bbdbb54feb9c8cab062fb8057420959fa96dc0276541472f7336c47064931c56` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` |
 
 本预声明及上述冻结输入验证必须先提交;提交前不允许发出 semantic probe 或任何 self-play HTTP query。
-实际 launch 还必须等待 harness 的 source-revision fingerprint follow-up 落地并另行提交;**当前 harness 尚未
-实现 source revision fingerprint,本节不宣称已经实现或已经可以启动。** 最终 launch 只能从目标 launch
-commit 的独立 clean detached worktree 执行:先在该 worktree 运行 `uv run python i18n.py` 生成被忽略的
-`.mo`,再确认 tracked tree clean;`--out` 必须指向原始工作区中预先解析的绝对结果目录,不得写入 detached
-worktree 内部。
+source-revision gate 已由 commit `b72451b01169560a44d2ad6f5e6e4cfbca7d5007` 实现并通过审核;本轮
+canonical launch source **精确固定为该 commit**,不得使用随后仅修改文档的 commit 作为 source revision。
+最终 launch 必须从 `b72451b01169560a44d2ad6f5e6e4cfbca7d5007` 的独立 clean detached worktree
+执行:先运行 `uv run python i18n.py` 生成被忽略的 `.mo`,再验证 HEAD 精确匹配、处于 detached 状态且
+`git status --porcelain=v1 --untracked-files=no` 为空。唯一允许的输出目录是原始工作区外置于 detached
+worktree 的绝对路径
+`/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary`。
+
+上述 gate 全部通过后,canonical screening 命令为(这里只预声明,本次文档提交不执行):
+
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 uv run python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
 
 ---
 

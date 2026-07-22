@@ -125,16 +125,21 @@ screening, it must verify the returned wrapper identity and the exact nonzero PI
 
 ## Launch isolation and source provenance
 
-The eventual probe and screening launch must run from a separate clean detached worktree at the
-exact launch commit, never from the primary dirty checkout. Because compiled locale `.mo` files are
-ignored but required at import time, run `uv run python i18n.py` inside that detached worktree first,
-then require a clean tracked-file status. Resolve the result directory in the original workspace to
-an absolute path before entering the detached worktree and pass that absolute path to `--out`; no
-runtime evidence is written inside the disposable source snapshot.
+The source-revision gate is implemented and approved in commit
+`b72451b01169560a44d2ad6f5e6e4cfbca7d5007`, which is the exact pinned source for the initial
+`@20` launch. Later documentation commits are not launch sources. The probe and screening launch
+must run from a separate clean detached worktree at that commit, never from the primary dirty
+checkout. Because compiled locale `.mo` files are ignored but required at import time, run
+`uv run python i18n.py` inside that detached worktree first. Then verify
+`git rev-parse HEAD` equals the pinned commit, `git rev-parse --abbrev-ref HEAD` equals `HEAD`, and
+`git status --porcelain=v1 --untracked-files=no` is empty.
 
-The current harness does not fingerprint its Git source revision. A forthcoming harness follow-up
-must add and test source-revision fingerprinting and be committed before the launch commit is chosen.
-This design records that gate; it does not claim the fingerprint is already implemented.
+The screening command must pass
+`--expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007` and must use the external
+absolute output path
+`/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary`.
+It must also set `NO_PROXY=127.0.0.1,localhost` and `no_proxy=127.0.0.1,localhost`. No runtime
+evidence is written inside the detached source snapshot.
 
 ## Failure handling
 

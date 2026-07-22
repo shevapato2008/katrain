@@ -38,6 +38,7 @@ import asyncio
 import dataclasses
 import gzip
 import hashlib
+import io
 import json
 import logging
 import math
@@ -99,6 +100,10 @@ OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_v1.json"
 BOUNDARY_OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_boundary_v1.json"
 BOUNDARY_OPENING_ALLOCATION_PATH = Path(__file__).parent / "opening_allocation_boundary_v1.json"
 KNOWN_ENDPOINTS_PATH = Path(__file__).parent / "known_endpoints_exp3_v1.json"
+KNOWN_ENDPOINT_SOURCE_ROOT = (Path(__file__).resolve().parent / "results").resolve()
+MAX_KNOWN_ENDPOINT_COMPRESSED_BYTES = 1024 * 1024
+MAX_KNOWN_ENDPOINT_DECOMPRESSED_BYTES = 16 * 1024 * 1024
+MAX_KNOWN_ENDPOINT_SUMMARY_BYTES = 1024 * 1024
 OPENING_SUITE_ID = "humansl-opening-suite-v1"
 OPENING_SUITE_SEED = 20260721
 BOARD_SIZE = 19
@@ -180,7 +185,7 @@ def canonical_manifest_digest(payload: Mapping[str, object], digest_field: Optio
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _load_strict_json(path: Path) -> dict:
+def _strict_json_loads(data: object, *, context: str) -> object:
     def reject_duplicates(pairs):
         result = {}
         for key, value in pairs:
@@ -189,13 +194,49 @@ def _load_strict_json(path: Path) -> dict:
             result[key] = value
         return result
 
+    if isinstance(data, bytes):
+        try:
+            data = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"{context} strict JSON is not UTF-8: {exc}") from exc
+    if not isinstance(data, str):
+        raise ValueError(f"{context} strict JSON input must be text or bytes")
     try:
-        payload = json.loads(
-            Path(path).read_text(),
+        return json.loads(
+            data,
             object_pairs_hook=reject_duplicates,
             parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant {value}")),
         )
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise ValueError(f"{context} strict JSON is invalid: {exc}") from exc
+
+
+def _parse_strict_jsonl(data: object, *, context: str) -> List[dict]:
+    if isinstance(data, bytes):
+        try:
+            data = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"{context} strict JSONL is not UTF-8: {exc}") from exc
+    if not isinstance(data, str):
+        raise ValueError(f"{context} strict JSONL input must be text or bytes")
+    records = []
+    for line_number, line in enumerate(data.splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            record = _strict_json_loads(line, context=f"{context} line {line_number}")
+        except ValueError as exc:
+            raise ValueError(f"{context} strict JSONL is invalid: {exc}") from exc
+        if not isinstance(record, dict):
+            raise ValueError(f"{context} strict JSONL line {line_number} must be an object")
+        records.append(record)
+    return records
+
+
+def _load_strict_json(path: Path) -> dict:
+    try:
+        payload = _strict_json_loads(Path(path).read_bytes(), context=f"strict JSON file {path}")
+    except OSError as exc:
         raise ValueError(f"cannot load strict JSON {path}: {exc}") from exc
     if not isinstance(payload, dict):
         raise ValueError(f"strict JSON root in {path} must be an object")
@@ -210,7 +251,40 @@ def _source_path(value: object) -> Path:
     if not isinstance(value, str) or not value:
         raise ValueError("known endpoint source path is malformed")
     path = Path(value)
-    return path if path.is_absolute() else Path(__file__).parent / path
+    if path.is_absolute():
+        raise ValueError("known endpoint source path must be relative and contained under results")
+    if ".." in path.parts:
+        raise ValueError("known endpoint source path traversal is forbidden")
+    resolved = (Path(__file__).resolve().parent / path).resolve()
+    try:
+        resolved.relative_to(KNOWN_ENDPOINT_SOURCE_ROOT)
+    except ValueError as exc:
+        raise ValueError("known endpoint source path must be relative and contained under results") from exc
+    return resolved
+
+
+def _read_bounded(path: Path, limit: int, *, label: str) -> bytes:
+    try:
+        if path.stat().st_size > limit:
+            raise ValueError(f"known endpoint {label} exceeds size limit {limit}")
+        with path.open("rb") as source:
+            data = source.read(limit + 1)
+    except OSError as exc:
+        raise ValueError(f"cannot read known endpoint {label}: {exc}") from exc
+    if len(data) > limit:
+        raise ValueError(f"known endpoint {label} exceeds size limit {limit}")
+    return data
+
+
+def _decompress_bounded(data: bytes, limit: int) -> bytes:
+    try:
+        with gzip.GzipFile(fileobj=io.BytesIO(data)) as source:
+            decompressed = source.read(limit + 1)
+    except (EOFError, OSError, gzip.BadGzipFile) as exc:
+        raise ValueError(f"cannot decompress known endpoint archive: {exc}") from exc
+    if len(decompressed) > limit:
+        raise ValueError(f"known endpoint decompressed archive exceeds size limit {limit}")
+    return decompressed
 
 
 class _OpeningBoardConfig:
@@ -299,8 +373,8 @@ def load_boundary_opening_allocation(
         if (
             not isinstance(moves, list)
             or len(moves) != 8
-            or len(set(moves)) != 8
             or any(type(move) is not int or not 0 <= move < BOARD_SIZE * BOARD_SIZE for move in moves)
+            or len(set(moves)) != 8
         ):
             raise ValueError("boundary opening must contain eight distinct legal coordinates")
         sequence = tuple(moves)
@@ -340,7 +414,7 @@ def load_boundary_opening_allocation(
     }
     allocations = allocation.get("allocations")
     if not isinstance(allocations, dict) or set(allocations) != set(expected):
-        raise ValueError("boundary allocation must have exact 1360-key coverage")
+        raise ValueError("boundary allocation must have exactly 44 allocation keys")
     assigned = []
     for key, count in expected.items():
         ids = allocations[key]
@@ -348,7 +422,7 @@ def load_boundary_opening_allocation(
             raise ValueError(f"boundary allocation {key!r} is malformed")
         assigned.extend(ids)
     if len(assigned) != 1360 or len(set(assigned)) != 1360 or set(assigned) != set(by_id):
-        raise ValueError("every boundary opening must be assigned exactly once")
+        raise ValueError("all 1360 boundary opening IDs must be assigned exactly once")
     return suite, allocation
 
 
@@ -373,12 +447,9 @@ def load_known_endpoints(path: Path = KNOWN_ENDPOINTS_PATH) -> Tuple[dict, str]:
             raise ValueError("known endpoint must be a passing visit-40 screen")
         archive_path = _source_path(endpoint.get("archive_path"))
         summary_path = _source_path(endpoint.get("source_summary_path"))
-        try:
-            archive = archive_path.read_bytes()
-            decompressed = gzip.decompress(archive)
-            summary_bytes = summary_path.read_bytes()
-        except (OSError, gzip.BadGzipFile) as exc:
-            raise ValueError(f"cannot validate known endpoint source: {exc}") from exc
+        archive = _read_bounded(archive_path, MAX_KNOWN_ENDPOINT_COMPRESSED_BYTES, label="compressed archive")
+        decompressed = _decompress_bounded(archive, MAX_KNOWN_ENDPOINT_DECOMPRESSED_BYTES)
+        summary_bytes = _read_bounded(summary_path, MAX_KNOWN_ENDPOINT_SUMMARY_BYTES, label="summary")
         if _sha256_bytes(archive) != endpoint.get("archive_sha256"):
             raise ValueError("known endpoint archive SHA-256 mismatch")
         if _sha256_bytes(decompressed) != endpoint.get("decompressed_sha256"):
@@ -386,10 +457,10 @@ def load_known_endpoints(path: Path = KNOWN_ENDPOINTS_PATH) -> Tuple[dict, str]:
         if _sha256_bytes(summary_bytes) != endpoint.get("source_summary_sha256"):
             raise ValueError("known endpoint summary SHA-256 mismatch")
         try:
-            checkpoint_records = [json.loads(line) for line in decompressed.decode("utf-8").splitlines() if line]
+            checkpoint_records = _parse_strict_jsonl(decompressed, context="known endpoint checkpoint archive")
             header, games = checkpoint_records[0], checkpoint_records[1:]
             configuration = header["configuration"]
-            summary = json.loads(summary_bytes)
+            summary = _strict_json_loads(summary_bytes, context="known endpoint source summary")
             low, high = endpoint["transition"].split("__")
             player_a = f"{low}@40"
             player_b = f"{high}@1s"
@@ -1028,8 +1099,10 @@ def _validate_game_record(
 def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
     if not path.is_file():
         return 0
-    with path.open() as f:
-        records = [json.loads(line) for line in f if line.strip()]
+    try:
+        records = _parse_strict_jsonl(path.read_bytes(), context="self-play checkpoint game stream")
+    except OSError as exc:
+        raise ValueError(f"cannot read self-play checkpoint: {exc}") from exc
     if not records:
         raise ValueError(f"checkpoint exists without a schema-{CHECKPOINT_SCHEMA} header")
     header = records[0]
@@ -1219,15 +1292,15 @@ async def _run_matchup_checkpoint(
     records = []
     reason_counts: dict = {}
     if ckpt.is_file():
-        with ckpt.open() as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                rec = json.loads(line)
-                if rec.get("record_type") == "header":
-                    continue
-                records.append(rec)
-                reason_counts[rec["result"]] = reason_counts.get(rec["result"], 0) + 1
+        try:
+            checkpoint_records = _parse_strict_jsonl(ckpt.read_bytes(), context="self-play checkpoint game stream")
+        except OSError as exc:
+            raise ValueError(f"cannot read self-play checkpoint: {exc}") from exc
+        for rec in checkpoint_records:
+            if rec.get("record_type") == "header":
+                continue
+            records.append(rec)
+            reason_counts[rec["result"]] = reason_counts.get(rec["result"], 0) + 1
     existing_sample = complete_pair_sample(records, phase=phase)
     if existing_sample["complete_pairs"] > target_pairs:
         raise ValueError(

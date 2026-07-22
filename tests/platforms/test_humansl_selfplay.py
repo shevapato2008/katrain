@@ -851,6 +851,67 @@ def test_known_endpoints_bind_all_prior_40_screens(tmp_path):
         selfplay.load_known_endpoints(swapped_path)
 
 
+@pytest.mark.parametrize(
+    "source_path",
+    ["/tmp/outside.jsonl.gz", "results/../opening_suite_v1.json", "results/missing/../../escape.jsonl.gz"],
+)
+def test_known_endpoint_paths_are_confined_to_results_root(tmp_path, source_path):
+    manifest = json.loads(selfplay.KNOWN_ENDPOINTS_PATH.read_text())
+    manifest["endpoints"][0]["archive_path"] = source_path
+    manifest["digest"] = selfplay.canonical_manifest_digest(manifest, "digest")
+    path = tmp_path / "bad-path.json"
+    path.write_text(json.dumps(manifest))
+
+    with pytest.raises(ValueError, match="relative.*results|traversal"):
+        selfplay.load_known_endpoints(path)
+
+
+@pytest.mark.parametrize(
+    ("limit_name", "match"),
+    [
+        ("MAX_KNOWN_ENDPOINT_COMPRESSED_BYTES", "compressed.*size limit"),
+        ("MAX_KNOWN_ENDPOINT_DECOMPRESSED_BYTES", "decompressed.*size limit"),
+        ("MAX_KNOWN_ENDPOINT_SUMMARY_BYTES", "summary.*size limit"),
+    ],
+)
+def test_known_endpoint_sources_enforce_size_limits(monkeypatch, limit_name, match):
+    monkeypatch.setattr(selfplay, limit_name, 1)
+
+    with pytest.raises(ValueError, match=match):
+        selfplay.load_known_endpoints()
+
+
+def test_boundary_json_decoding_rejects_duplicates_and_nonfinite_values(tmp_path):
+    for payload in ['{"matchups":[],"matchups":[]}', '{"value":NaN}', '{"value":Infinity}']:
+        with pytest.raises(ValueError, match="strict JSON"):
+            selfplay._strict_json_loads(payload, context="boundary source summary")
+        with pytest.raises(ValueError, match="strict JSONL"):
+            selfplay._parse_strict_jsonl(payload.encode(), context="boundary archive")
+
+    configuration, fingerprint, header, _game = _checkpoint_payload()
+    checkpoint = tmp_path / "boundary.jsonl"
+    duplicate_header = json.dumps(header)[:-1] + ',"fingerprint":"drifted"}\n'
+    checkpoint.write_text(duplicate_header)
+    with pytest.raises(ValueError, match="strict JSONL"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_boundary_loader_normalizes_unhashable_move_types_to_value_error(tmp_path):
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    suite["openings"][0]["moves"][0] = []
+    suite["checksum"] = selfplay.canonical_manifest_digest(suite, "checksum")
+    allocation["suite_checksum"] = suite["checksum"]
+    allocation["digest"] = selfplay.canonical_manifest_digest(allocation, "digest")
+    suite_path = tmp_path / "suite.json"
+    allocation_path = tmp_path / "allocation.json"
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+
+    with pytest.raises(ValueError, match="eight distinct legal coordinates"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+
 def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
     players = {
         "A": selfplay.make_player("rank_5d@20", experimental_min_humansl_search_visits=20),

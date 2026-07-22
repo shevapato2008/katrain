@@ -1,6 +1,8 @@
 import importlib
 import sys
+from collections import UserDict
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 
@@ -236,6 +238,112 @@ def test_unreachable_histories_are_rejected(state):
 def test_non_empty_mapping_is_not_a_second_evidence_schema():
     with pytest.raises(ValueError, match="Evidence"):
         protocol.next_batch({"rank_9d@8": {"wins": 3, "losses": 2}})
+
+
+@pytest.mark.parametrize(
+    "mapping",
+    [
+        UserDict(),
+        MappingProxyType({}),
+        UserDict({"rank_9d@8": None}),
+        MappingProxyType({"rank_9d@8": None}),
+    ],
+)
+def test_only_exact_empty_builtin_dict_is_allowed_as_empty_shorthand(mapping):
+    with pytest.raises(ValueError, match="Evidence"):
+        protocol.next_batch(mapping)
+
+
+class EmptyCustomMapping(dict):
+    pass
+
+
+def test_empty_custom_mapping_is_rejected():
+    with pytest.raises(ValueError, match="Evidence"):
+        protocol.next_batch(EmptyCustomMapping())
+
+
+@pytest.mark.parametrize(
+    ("player", "prefix", "wins", "expected"),
+    [
+        *[
+            (
+                "rank_9d@1s",
+                (("rank_9d@8", 5, 4, 1), ("rank_9d@4", 5, 4, 1)),
+                wins,
+                protocol.Batch("rank_9d@4", 10) if wins <= 1 else protocol.Batch("rank_9d@1s", 10),
+            )
+            for wins in range(6)
+        ],
+        *[
+            (
+                "rank_9d@4",
+                (("rank_9d@8", 5, 4, 1),),
+                wins,
+                (
+                    protocol.Batch("rank_9d@8", 10)
+                    if wins <= 1
+                    else protocol.Batch("rank_9d@4", 10) if wins <= 3 else protocol.Batch("rank_9d@1s", 5)
+                ),
+            )
+            for wins in range(6)
+        ],
+        *[
+            (
+                "rank_9d@8",
+                (),
+                wins,
+                (
+                    protocol.Batch("rank_9d@16", 5)
+                    if wins <= 1
+                    else protocol.Batch("rank_9d@8", 10) if wins <= 3 else protocol.Batch("rank_9d@4", 5)
+                ),
+            )
+            for wins in range(6)
+        ],
+        *[
+            (
+                "rank_9d@16",
+                (("rank_9d@8", 5, 1, 4),),
+                wins,
+                (
+                    protocol.Batch("rank_9d@32", 5)
+                    if wins <= 1
+                    else protocol.Batch("rank_9d@16", 10) if wins <= 3 else protocol.Batch("rank_9d@8", 10)
+                ),
+            )
+            for wins in range(6)
+        ],
+        *[
+            (
+                "rank_9d@32",
+                (("rank_9d@8", 5, 1, 4), ("rank_9d@16", 5, 1, 4)),
+                wins,
+                protocol.Batch("rank_9d@32", 10) if wins <= 3 else protocol.Batch("rank_9d@16", 10),
+            )
+            for wins in range(6)
+        ],
+    ],
+)
+def test_every_five_game_outcome_for_every_candidate(player, prefix, wins, expected):
+    assert protocol.next_batch(evidence(*prefix, (player, 5, wins, 5 - wins))) == expected
+
+
+@pytest.mark.parametrize("total", [1, 2, 3, 4])
+def test_every_partial_total_before_first_milestone_resumes_to_five(total):
+    assert protocol.next_batch(evidence(("rank_9d@8", 5, total, 0))) == protocol.Batch("rank_9d@8", 5)
+
+
+@pytest.mark.parametrize("total", [6, 7, 8, 9])
+def test_every_partial_total_before_second_milestone_resumes_to_ten(total):
+    wins = total - 2
+    state = evidence(("rank_9d@8", 5, 3, 2), ("rank_9d@8", 10, wins, 2))
+    assert protocol.next_batch(state) == protocol.Batch("rank_9d@8", 10)
+
+
+def test_zero_conclusive_record_is_rejected():
+    with pytest.raises(ValueError, match="unreachable evidence"):
+        protocol.next_batch(evidence(("rank_9d@8", 5, 0, 0)))
 
 
 def test_revisits_a_previously_screened_tier_then_selects_qualified_higher_tier():

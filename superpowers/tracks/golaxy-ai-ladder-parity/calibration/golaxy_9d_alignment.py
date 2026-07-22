@@ -160,7 +160,7 @@ def _validate_record(record: object) -> EvidenceBatch:
 def next_batch(evidence: object) -> ProtocolAction:
     """Return the unique next protocol action after strictly replaying evidence."""
 
-    if evidence == {}:
+    if type(evidence) is dict and not evidence:
         evidence = Evidence()
     elif isinstance(evidence, Mapping):
         raise ValueError("evidence must be an Evidence instance")
@@ -190,6 +190,8 @@ def next_batch(evidence: object) -> ProtocolAction:
         totals[record.player] = record
 
         conclusive = record.wins + record.losses
+        if conclusive == 0:
+            raise _unreachable("a batch record must contain at least one conclusive result")
         if conclusive < record.target_conclusive:
             if position != len(evidence.batches) - 1:
                 raise _unreachable("only the final batch may be partial")

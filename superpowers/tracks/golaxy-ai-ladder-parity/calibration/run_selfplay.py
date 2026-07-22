@@ -31,6 +31,7 @@ Usage:
 Each matchup is "A:B:fully-conclusive-pairs". Every frozen opening is played with A as Black and
 White; a pair with either game inconclusive contributes zero decision games. Checkpoints are
 phase-isolated and resumable, including completion of an interrupted color pair."""
+
 from __future__ import annotations
 
 import argparse
@@ -809,6 +810,88 @@ def _pick_argmax_human(hp: list, board_size: Tuple[int, int]) -> object:
     return best if best is not None else "pass"
 
 
+async def _player_move_certified(
+    client,
+    base_url,
+    history,
+    *,
+    rung: LadderRung,
+    selection: str,
+    wrn: float,
+    capabilities: Mapping[str, object],
+    attestations: Optional[list] = None,
+    player: Optional[str] = None,
+):
+    """Shared attested move implementation; callers define their permitted selection modes."""
+    try:
+        spec = rung_strength_spec(rung)
+        if rung.mechanism == "humansl_search" and dict(rung.human_sl_params) != HUMANSL_PIKL_BASELINE:
+            raise LadderMoveError("HumanSL search PIKL settings drifted from the canonical recipe")
+        capability_identity = adapters._capability_identity(capabilities, spec)
+    except (KeyError, ValueError, LadderMoveError) as exc:
+        if isinstance(exc, LadderMoveError):
+            raise
+        raise LadderMoveError(f"invalid self-play strength specification: {exc}") from exc
+    q = adapters.build_ladder_analysis_query(history, rung, BOARD_SIZE, KOMI, RULES, wrn)
+    r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
+    r.raise_for_status()
+    analysis = r.json()
+
+    # Native HumanSL has no explicit route selector, but this experiment harness still requires
+    # the wrapper to attest the default main model and its human model before using humanPolicy.
+    attested_spec = (
+        spec
+        if spec.main_model is not None
+        else dataclasses.replace(spec, main_model=capability_identity["selected_model"])
+    )
+    validate_analysis_attestation(analysis, attested_spec, capability_identity)
+    if selection == "search":
+        picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), rung.mechanism)
+    elif selection == "weighted":
+        picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), "humansl")
+    elif selection == "argmax_human":
+        hp = analysis.get("humanPolicy")
+        if not _valid_policy(hp, BOARD_SIZE * BOARD_SIZE + 1):
+            raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
+        picked = _pick_argmax_human(hp, (BOARD_SIZE, BOARD_SIZE))
+    else:
+        raise LadderMoveError(f"unknown self-play selection {selection!r}")
+    if attestations is not None:
+        if player not in {"A", "B"}:
+            raise ValueError("attested self-play moves require player A or B")
+        attestations.append({"ply": len(history), "player": player, "identity": dict(analysis["_wrapper"])})
+    return "pass" if picked == "pass" else colrow_to_golaxy(picked[0], picked[1], BOARD_SIZE)
+
+
+async def player_move_strict(
+    client,
+    base_url,
+    history,
+    *,
+    rung: LadderRung,
+    selection: str,
+    wrn: float,
+    capabilities: Mapping[str, object],
+    attestations: Optional[list] = None,
+    player: Optional[str] = None,
+):
+    """Return one alignment-safe move, raising ``LadderMoveError`` on any drift."""
+    expected_selection = "argmax_human" if rung.mechanism == "humansl" else "search"
+    if selection != expected_selection:
+        raise LadderMoveError(f"strict self-play selection drift: expected {expected_selection!r}, got {selection!r}")
+    return await _player_move_certified(
+        client,
+        base_url,
+        history,
+        rung=rung,
+        selection=selection,
+        wrn=wrn,
+        capabilities=capabilities,
+        attestations=attestations,
+        player=player,
+    )
+
+
 async def _player_move(
     client,
     base_url,
@@ -821,43 +904,21 @@ async def _player_move(
     attestations: Optional[list] = None,
     player: Optional[str] = None,
 ):
-    """Dispatch a self-play move and fail closed unless the executed model is fully attested."""
-    spec = rung_strength_spec(rung)
+    """Backward-compatible self-play move wrapper: typed certification failures are unavailable."""
     try:
-        capability_identity = adapters._capability_identity(capabilities, spec)
-    except LadderMoveError:
-        return "unavailable"
-    q = adapters.build_ladder_analysis_query(history, rung, BOARD_SIZE, KOMI, RULES, wrn)
-    r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
-    r.raise_for_status()
-    analysis = r.json()
-    try:
-        # Native HumanSL has no explicit route selector, but this experiment harness still requires
-        # the wrapper to attest the default main model and its human model before using humanPolicy.
-        attested_spec = (
-            spec
-            if spec.main_model is not None
-            else dataclasses.replace(spec, main_model=capability_identity["selected_model"])
+        return await _player_move_certified(
+            client,
+            base_url,
+            history,
+            rung=rung,
+            selection=selection,
+            wrn=wrn,
+            capabilities=capabilities,
+            attestations=attestations,
+            player=player,
         )
-        validate_analysis_attestation(analysis, attested_spec, capability_identity)
-        if selection == "search":
-            picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), rung.mechanism)
-        elif selection == "weighted":
-            picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), "humansl")
-        elif selection == "argmax_human":
-            hp = analysis.get("humanPolicy")
-            if not _valid_policy(hp, BOARD_SIZE * BOARD_SIZE + 1):
-                raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
-            picked = _pick_argmax_human(hp, (BOARD_SIZE, BOARD_SIZE))
-        else:
-            raise LadderMoveError(f"unknown self-play selection {selection!r}")
-    except (KeyError, LadderMoveError):
+    except LadderMoveError:
         return "unavailable"  # -> harness marks inconclusive_engine (never a fabricated move)
-    if attestations is not None:
-        if player not in {"A", "B"}:
-            raise ValueError("attested self-play moves require player A or B")
-        attestations.append({"ply": len(history), "player": player, "identity": dict(analysis["_wrapper"])})
-    return "pass" if picked == "pass" else colrow_to_golaxy(picked[0], picked[1], BOARD_SIZE)
 
 
 def _fname(label: str) -> str:

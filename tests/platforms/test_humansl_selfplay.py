@@ -10,7 +10,6 @@ import pytest
 
 from katrain.core.ladder import HUMANSL_PIKL_BASELINE
 
-
 CALIBRATION_DIR = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladder-parity/calibration"
 sys.path.insert(0, str(CALIBRATION_DIR))
 selfplay = importlib.import_module("run_selfplay")
@@ -331,6 +330,152 @@ async def test_humansl_search_move_records_complete_b18_attestation():
 
     assert result != "unavailable"
     assert attestations == [{"ply": 0, "player": "A", "identity": b18_attestation}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "analysis",
+    [
+        {"moveInfos": [{"move": "Q16", "order": 0}]},
+        {
+            "moveInfos": [{"move": "Q16", "order": 0}],
+            "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="drifted"),
+        },
+        {
+            "moveInfos": [{"move": "Q16", "order": 0}],
+            "_wrapper": _attestation(selected_model="b28"),
+        },
+        {
+            "moveInfos": [{"move": "Q16", "order": 0}],
+            "_wrapper": _attestation(
+                selected_model="b18",
+                model_path="/models/b18.bin.gz",
+                model_sha256="b18-sha",
+                human_model_sha256="drifted",
+            ),
+        },
+        {
+            "moveInfos": [],
+            "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+        },
+    ],
+)
+async def test_strict_player_move_raises_typed_error_while_default_remains_fail_soft(analysis):
+    _, rung, selection = selfplay.make_player("rank_9d@8", experimental_min_humansl_search_visits=2)
+
+    def handler(_request):
+        return httpx.Response(200, json=analysis)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+        assert (
+            await selfplay._player_move(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+            == "unavailable"
+        )
+
+
+@pytest.mark.asyncio
+async def test_strict_argmax_requires_valid_human_policy_and_known_selection():
+    _, rung, selection = selfplay.make_player("rank_9d@1s")
+
+    def handler(_request):
+        return httpx.Response(200, json={"humanPolicy": [], "_wrapper": _attestation()})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError, match="humanPolicy"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+        with pytest.raises(selfplay.LadderMoveError, match="selection"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection="drifted",
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("player_spec", "wrong_selection"),
+    [("rank_9d@1s", "weighted"), ("rank_9d@8", "argmax_human")],
+)
+async def test_strict_player_move_rejects_recognized_but_wrong_selection_mode(player_spec, wrong_selection):
+    _, rung, _selection = selfplay.make_player(player_spec, experimental_min_humansl_search_visits=2)
+
+    def handler(_request):
+        pytest.fail("selection drift must be rejected before an engine request")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError, match="selection"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=wrong_selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+
+
+@pytest.mark.asyncio
+async def test_strict_player_move_rejects_post_construction_pikl_drift_while_default_is_fail_soft():
+    _, rung, selection = selfplay.make_player("rank_9d@8", experimental_min_humansl_search_visits=2)
+    rung.human_sl_params["humanSLCpuctPermanent"] += 0.5
+
+    def handler(_request):
+        pytest.fail("PIKL drift must be rejected before an engine request")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError, match="PIKL"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+        assert (
+            await selfplay._player_move(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+            == "unavailable"
+        )
 
 
 def test_default_result_namespace_is_v2_pikl_and_legacy_namespace_is_rejected():

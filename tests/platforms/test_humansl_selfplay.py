@@ -59,6 +59,90 @@ def test_player_rejects_unsupported_humansl_search_visits(visits):
         selfplay.make_player(f"rank_9d@{visits}")
 
 
+def test_low_humansl_search_requires_explicit_floor():
+    with pytest.raises(ValueError, match=r"HumanSL search.*minimum.*40"):
+        selfplay.make_player("rank_9d@20")
+
+    label, rung, selection = selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=20)
+
+    assert label == "rank_9d@20"
+    assert rung.max_visits == 20
+    assert rung.mechanism == "humansl_search"
+    assert selection == "search"
+
+
+def test_experimental_floor_scope_and_validation():
+    with pytest.raises(ValueError, match=r"minimum.*21"):
+        selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=21)
+    with pytest.raises(ValueError, match=r"plain int.*at least 2"):
+        selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=1)
+    with pytest.raises(ValueError, match=r"plain int.*at least 2"):
+        selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=True)
+
+    _, native, native_selection = selfplay.make_player("rank_9d@1s", experimental_min_humansl_search_visits=20)
+    _, pure_net, pure_net_selection = selfplay.make_player("b28@20", experimental_min_humansl_search_visits=21)
+
+    assert (native.max_visits, native_selection) == (1, "argmax_human")
+    assert (pure_net.max_visits, pure_net_selection) == (20, "search")
+    assert selfplay.parse_matchups("rank_9d@20:b28@20:10", experimental_min_humansl_search_visits=20) == [
+        ("rank_9d@20", "b28@20", 10)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_low_humansl_search_preserves_canonical_query_contract():
+    _, rung, selection = selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=20)
+    spec = selfplay.rung_strength_spec(rung)
+    capabilities = _health_snapshot()
+    identity = selfplay._preflight_capabilities(
+        capabilities,
+        {"A": ("rank_9d@20", rung, selection), "B": selfplay.make_player("b28@20")},
+    )["A"]
+    expected_identity = _attestation(
+        selected_model="b18",
+        model_path="/models/b18.bin.gz",
+        model_sha256="b18-sha",
+    )
+
+    assert spec.visits == 20
+    assert spec.main_model == "b18"
+    assert spec.human_model == "humanv0"
+    assert all(spec.override_settings[key] == value for key, value in HUMANSL_PIKL_BASELINE.items())
+    assert all(
+        spec.override_settings[key] != 0
+        for key, value in HUMANSL_PIKL_BASELINE.items()
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value != 0
+    )
+    assert identity == expected_identity
+
+    def handler(request):
+        query = json.loads(request.content)
+        assert query["maxVisits"] == 20
+        assert query["overrideSettings"]["model"] == "b18"
+        assert all(query["overrideSettings"][key] == value for key, value in HUMANSL_PIKL_BASELINE.items())
+        return httpx.Response(
+            200,
+            json={"moveInfos": [{"move": "Q16", "order": 0}], "_wrapper": expected_identity},
+        )
+
+    attestations = []
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=capabilities,
+            attestations=attestations,
+            player="A",
+        )
+
+    assert result != "unavailable"
+    assert attestations == [{"ply": 0, "player": "A", "identity": expected_identity}]
+
+
 def test_player_rejects_search_suffix_above_one_visit():
     with pytest.raises(ValueError, match=r"1s"):
         selfplay.make_player("rank_9d@40s")
@@ -252,6 +336,7 @@ def test_default_result_namespace_is_v2_pikl_and_legacy_namespace_is_rejected():
     args = selfplay.build_arg_parser().parse_args(["--matchups", "rank_9d@80:rank_9d@40:1"])
 
     assert Path(args.out).name == "selfplay_v2_pikl"
+    assert args.experimental_min_humansl_search_visits == 40
     with pytest.raises(ValueError, match=r"legacy.*selfplay_v2_pikl"):
         selfplay._validated_out_dir(Path(selfplay.__file__).parent / "results" / "selfplay")
 
@@ -308,6 +393,10 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
 
     assert configuration["capability_schema"] == 1
     assert configuration["katago_version"] == "KataGo v1.16.3"
+    assert configuration["boundary_protocol_version"] is None
+    assert configuration["experimental_min_humansl_search_visits"] == 40
+    assert configuration["capability_snapshot"]["models"]["b18"]["model_sha256_verified"] is True
+    assert configuration["capability_snapshot"]["models"]["b18"]["human_model_sha256_verified"] is True
     assert configuration["players"]["A"]["identity"]["model_sha256"] == "b18-sha"
     assert configuration["players"]["A"]["identity"]["human_model_sha256"] == "human-sha"
     assert all(
@@ -316,6 +405,7 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
     )
     assert configuration["players"]["A"]["effective_overrides"]["humanSLProfile"] == "rank_9d"
     assert configuration["players"]["A"]["requested_main_model"] == "b18"
+    assert configuration["players"]["A"]["requested_human_model"] == "humanv0"
     assert configuration["players"]["A"]["http_effective_overrides"]["model"] == "b18"
     assert configuration["players"]["A"]["http_effective_overrides"]["wideRootNoise"] == 0.04
     assert configuration["players"]["A"]["visits"] == 40
@@ -329,6 +419,7 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
     }
     assert configuration["referee"]["visits"] == 200
     assert configuration["referee"]["requested_main_model"] == "b28"
+    assert configuration["referee"]["requested_human_model"] is None
     assert configuration["referee"]["http_effective_overrides"] == {
         "model": "b28",
         "reportAnalysisWinratesAs": "BLACK",

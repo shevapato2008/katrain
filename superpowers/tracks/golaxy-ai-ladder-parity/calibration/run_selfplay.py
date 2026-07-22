@@ -16,9 +16,9 @@ A "player" is a minimal LadderRung built from a spec "<profile>@<visits>":
   * rank_9d@40    -> mechanism 'humansl_search' (b18 main model + humanv0 using the canonical
                      nonzero PIKL recipe, then select the top search move)
   * b28@20        -> mechanism 'net_search'     (pure b28 @20, no human profile)
-HumanSL search is intentionally accepted only at 40 visits or more, the validated minimum for this
-harness. The HTTP adapter routes b18/b28 explicitly and rejects missing or mismatched wrapper
-attestation. Games end on the first pass or the 400-move cap, then b28 scores.
+HumanSL search defaults to a 40-visit minimum. Lower visits require the explicit operator-only
+experimental floor option. The HTTP adapter routes b18/b28 explicitly and rejects missing or
+mismatched wrapper attestation. Games end on the first pass or the 400-move cap, then b28 scores.
 
 Usage:
     KIVY_NO_ARGS=1 uv run python \
@@ -299,7 +299,7 @@ def _valid_humansl_profile(profile: str) -> bool:
     return proyear is not None and 1800 <= int(proyear.group(1)) <= 2023
 
 
-def make_player(spec: str) -> Tuple[str, LadderRung, str]:
+def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) -> Tuple[str, LadderRung, str]:
     """'rank_9d@40' / 'rank_9d@1s' / 'b28@20' -> (label, minimal LadderRung, selection).
 
     selection drives HOW the move is picked from the engine reply:
@@ -312,7 +312,10 @@ def make_player(spec: str) -> Tuple[str, LadderRung, str]:
                           argmax over the (present) humanPolicy is the real "argmax@1" the spec means.
 
     A trailing 's' is valid only for argmax_human at 1 visit ('rank_9d@1s'); plain 'rank_9d@1' is
-    weighted vanilla HumanSL. HumanSL search requires at least 40 visits."""
+    weighted vanilla HumanSL. HumanSL search requires at least the explicitly supplied experimental
+    floor, which defaults to 40 visits. The floor must be a plain integer of at least 2."""
+    if type(experimental_min_humansl_search_visits) is not int or experimental_min_humansl_search_visits < 2:
+        raise ValueError("experimental HumanSL search minimum must be a plain int of at least 2")
     prof, sep, vs = spec.partition("@")
     force_search = vs.endswith("s")  # trailing 's' -> argmax_human @1 (see docstring)
     if force_search:
@@ -334,8 +337,11 @@ def make_player(spec: str) -> Tuple[str, LadderRung, str]:
             mech, selection, label = "humansl", "weighted", f"{prof}@1"  # vanilla weighted humanSL
         elif force_search:
             raise ValueError("the 's' suffix is only supported by HumanSL '<profile>@1s'")
-        elif visits < 40:
-            raise ValueError(f"HumanSL search has a supported minimum of 40 visits, got {visits}")
+        elif visits < experimental_min_humansl_search_visits:
+            raise ValueError(
+                "HumanSL search has a supported minimum of "
+                f"{experimental_min_humansl_search_visits} visits, got {visits}"
+            )
         else:
             mech, selection, label = "humansl_search", "search", f"{prof}@{visits}"
         net = "humanv0" if visits == 1 else "b18"
@@ -430,7 +436,7 @@ def _fname(label: str) -> str:
     return re.sub(r"[^0-9A-Za-z]+", "-", label)
 
 
-def parse_matchups(spec: str) -> List[Tuple[str, str, int]]:
+def parse_matchups(spec: str, *, experimental_min_humansl_search_visits: int = 40) -> List[Tuple[str, str, int]]:
     """Parse ``A:B:target`` entries where target is fully conclusive color pairs."""
     out = []
     for part in spec.split(","):
@@ -441,8 +447,8 @@ def parse_matchups(spec: str) -> List[Tuple[str, str, int]]:
         if len(bits) != 3:
             raise ValueError(f"matchup {part!r}: want 'A:B:complete_pairs'")
         a, b, g = bits[0].strip(), bits[1].strip(), int(bits[2])
-        make_player(a)  # validate
-        make_player(b)
+        make_player(a, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
+        make_player(b, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
         if g <= 0:
             raise ValueError(f"matchup {part!r}: complete pairs must be > 0")
         out.append((a, b, g))
@@ -492,7 +498,11 @@ def _matchup_configuration(
     phase: str = "confirm",
     experiment4: bool = False,
     opening_suite: Optional[Mapping[str, object]] = None,
+    experimental_min_humansl_search_visits: int = 40,
+    boundary_protocol_version: Optional[str] = None,
 ) -> dict:
+    if type(experimental_min_humansl_search_visits) is not int or experimental_min_humansl_search_visits < 2:
+        raise ValueError("experimental HumanSL search minimum must be a plain int of at least 2")
     if type(target_pairs) is not int or target_pairs <= 0:
         raise ValueError("target complete pairs must be a positive plain int")
     if type(max_pair_attempts) is not int or max_pair_attempts <= 0:
@@ -509,6 +519,7 @@ def _matchup_configuration(
             "mechanism": rung.mechanism,
             "visits": spec.visits,
             "requested_main_model": spec.main_model,
+            "requested_human_model": spec.human_model,
             "effective_overrides": dict(spec.override_settings),
             "http_effective_overrides": query["overrideSettings"],
             "selection": selection,
@@ -520,6 +531,8 @@ def _matchup_configuration(
             "capability_schema": capabilities.get("capability_schema"),
             "katago_version": capabilities.get("katago_version"),
             "capability_snapshot": capabilities,
+            "boundary_protocol_version": boundary_protocol_version,
+            "experimental_min_humansl_search_visits": experimental_min_humansl_search_visits,
             "players": configured_players,
             "game": {
                 "board_size": BOARD_SIZE,
@@ -530,6 +543,7 @@ def _matchup_configuration(
             "referee": {
                 "visits": REFEREE_VISITS,
                 "requested_main_model": "b28",
+                "requested_human_model": None,
                 "http_effective_overrides": {
                     "model": "b28",
                     "reportAnalysisWinratesAs": "BLACK",
@@ -791,6 +805,7 @@ async def run_matchup(
     phase: str = "confirm",
     experiment4: bool = False,
     max_pair_attempts: Optional[int] = None,
+    experimental_min_humansl_search_visits: int = 40,
 ) -> dict:
     required = required_conclusive_pairs(phase, experiment4=experiment4)
     if type(target_pairs) is not int or target_pairs < required or (phase == "screen" and target_pairs != required):
@@ -801,8 +816,8 @@ async def run_matchup(
     elif type(max_pair_attempts) is not int or max_pair_attempts <= 0:
         raise ValueError("maximum pair attempts must be a positive plain int")
     opening_suite = load_opening_suite()
-    playerA = make_player(specA)
-    playerB = make_player(specB)
+    playerA = make_player(specA, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
+    playerB = make_player(specB, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
     labelA, rungA, selA = playerA
     labelB, rungB, selB = playerB
     players = {"A": playerA, "B": playerB}
@@ -817,6 +832,8 @@ async def run_matchup(
         phase=phase,
         experiment4=experiment4,
         opening_suite=opening_suite,
+        experimental_min_humansl_search_visits=experimental_min_humansl_search_visits,
+        boundary_protocol_version=None,
     )
     fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1026,7 +1043,10 @@ async def _run_matchup_checkpoint(
 
 
 async def main_async(args) -> int:
-    matchups = parse_matchups(args.matchups)
+    matchups = parse_matchups(
+        args.matchups,
+        experimental_min_humansl_search_visits=args.experimental_min_humansl_search_visits,
+    )
     if args.wide_root_noise is None:
         wrn = adapters.load_engine_wide_root_noise(
             dict(_MockKaTrainForConfig(force_package_config=True).config("engine"))
@@ -1053,6 +1073,7 @@ async def main_async(args) -> int:
                     phase=args.phase,
                     experiment4=args.experiment4,
                     max_pair_attempts=args.max_pair_attempts,
+                    experimental_min_humansl_search_visits=args.experimental_min_humansl_search_visits,
                 )
             )
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1083,6 +1104,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--phase", choices=("screen", "confirm"), default="confirm")
     p.add_argument("--experiment4", action="store_true", help="apply the 40-complete-pair experiment-4 threshold")
     p.add_argument("--max-pair-attempts", type=int, default=None, help="separate guard including inconclusive pairs")
+    p.add_argument(
+        "--experimental-min-humansl-search-visits",
+        type=int,
+        default=40,
+        help="explicit HumanSL-search visit floor for operator-run experiments (default: 40; minimum: 2)",
+    )
     return p
 
 

@@ -403,16 +403,71 @@ pair 进入固定筛查样本,1个 pair 因1盘 `inconclusive_unsettled` 整对�
 `rank_7d@80:rank_7d@40`、`rank_9d@80:rank_9d@40` 各自使用全新 `phase=confirm` checkpoint,恰好20个
 完整 pair(40盘 decision games),默认最多40次 pair 尝试,同样不加载 screening 数据且不追样本。
 
+### C11. 实验(1)(2)修复后 confirmation 结果(2026-07-22)
+
+C7 预声明的三个普通接缝 confirmation 均已完成固定样本。每组恰好20个完整颜色 pair(40盘 decision
+games),screening 数据未加载、未并入,达到固定样本后未追加对局。结果如下:
+
+| confirmation 对局(A vs B) | 完整 pair / 尝试 pair (上限) | 完整 pair 样本 | Wilson 95% CI | Elo(A-B)及95%区间 | 不完整 pair / 原始不可判盘 | 所有尝试的原始结果(A胜/A负/不可判) |
+|---|---:|---:|---:|---:|---:|---:|
+| rank_5d@80 vs rank_5d@40 | 20 / 27 (40) | **22–18 (55.0%)** | [39.83%, 69.29%] | +34.9 [-73.5, +150.7] | 7 / 7 | 26/21/7 |
+| rank_7d@80 vs rank_7d@40 | 20 / 24 (40) | **21–19 (52.5%)** | [37.50%, 67.06%] | +17.4 [-92.3, +130.8] | 4 / 5 | 22/21/5 |
+| rank_9d@80 vs rank_9d@40 | 20 / 24 (40) | **21–19 (52.5%)** | [37.50%, 67.06%] | +17.4 [-92.3, +130.8] | 4 / 4 | 23/21/4 |
+
+**固定样本判定:**三个段位的点估计方向一致,均为 `@80 > @40`,但三组 Wilson 95% CI 都跨过50%,harness
+分类均为 `inconclusive`。因此本批数据**没有确认**把 HumanSL+PIKL 搜索从40加到80 visits 会产生可辨识的
+棋力提升;也没有观察到反向证据。screening 的70%/65%/55%在独立 confirmation 中回落到
+55%/52.5%/52.5%,再次说明不能把小样本 screening 当作实验结论。实验(1)(2)的修复后固定样本采集至此
+完成,结论为“方向一致但统计不确定”,而不是“搜索单调增强已证明”。
+
+运行期间曾因 Python HTTP 客户端继承本机代理设置,在断网时由本机代理返回一次502而退出;checkpoint 在
+48/60完整 pair 处安全恢复。恢复前 `_already_done` 对 header/configuration/game fingerprint、pair 调度和已有
+记录逐条 fail-closed 校验通过;续跑显式设置 `NO_PROXY=127.0.0.1,localhost`,底层连接日志确认直连本机
+`127.0.0.1:8000`。该中断没有丢失、重复或跨样本合并数据。
+
+三个 JSONL 均通过严格 JSON、configuration/header/game fingerprint、逐手模型 attestation、开局/pair
+调度、固定样本计数及 summary 独立重算校验。不可变证据如下:
+
+| confirmation 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_confirm_rank-5d-80__vs__rank-5d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp12/selfplay_confirm_rank-5d-80__vs__rank-5d-40.jsonl.gz) | `1706b3a639c3306fc1b3577fbb5df6f15eb001cbca41ca7a213b98d32b152a42` | `b446f56c9c66187b022906a650c9e98517624d206d933baf0e3de4e39bf0ed6f` | `704c4573dccef60dfdca80252e6425b53d6de3fafc5a566ba25a2a7ca14f9852` |
+| [`selfplay_confirm_rank-7d-80__vs__rank-7d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp12/selfplay_confirm_rank-7d-80__vs__rank-7d-40.jsonl.gz) | `473df1dd0325858818a989cd1d650dea6a3471899126705d6ffa5bdba9b53f81` | `9e277283fd9f72c4683e3093f11701f1033d2e9fae5914ecf84ccbe961ba1157` | `bb9ccbc22992c3680026aa8c38bf34eac59ef9ce5c314d431e456af65f955626` |
+| [`selfplay_confirm_rank-9d-80__vs__rank-9d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp12/selfplay_confirm_rank-9d-80__vs__rank-9d-40.jsonl.gz) | `dec42908e76e21a563cde07a534ca3e329c062d8d41a1d386e4242b4241132a2` | `f26f8daec0a27e4cfd5a23a3a7ae503478a224c970d34bacd23b753d0f08bdc3` | `acef4d78100fdca02722c693018bc704e5f09e84460c810a7e1482e5b2a725d1` |
+| [`selfplay_summary_confirm_exp12.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_confirm_exp12.json) | — | `43213a71b170c5731971f835bfbb63b4981c132189b893dcc3ef9429343393f9` | — |
+
+压缩档案均以 `gzip -n -9` 确定性生成,解压字节与表中原始 JSONL SHA-256 一致;本地未压缩 checkpoint
+继续保留用于审计/resume,但不提交到 Git。
+
+### C12. 实验(3)修复后首轮 screening 预声明(2026-07-22)
+
+实验目标保持用户已确认的 apples-to-apples 口径:测“低一段 HumanSL+PIKL 搜索需要多少 visits 才能达到/
+超过高一段的 `@1s` humanPolicy argmax”。低一段搜索方使用显式 b18+humanv0+完整 PIKL,高一段基准为
+humanv0 `@1s` argmax;不使用会混入加权采样选点损失的普通 `@1`。
+
+**任何本轮运行之前冻结:**首轮只运行以下四个独立 `phase=screen` matchup:
+
+- `rank_5d@40:rank_6d@1s`
+- `rank_6d@40:rank_7d@1s`
+- `rank_7d@40:rank_8d@1s`
+- `rank_8d@40:rank_9d@1s`
+
+每组恰好10个完整颜色 pair(20盘 decision games),最多20次 pair 尝试,使用同一锁定开局套件但各自独立
+checkpoint。任一 pair 有不可判盘则整对排除;screening 只用于选择 visits 候选,不作显著性或实验完成声明。
+某组若 `@40` 固定筛查点估计达到/超过50%,则把40记为当前支持网格内首个候选(只能表述为“所需 visits
+≤40”);若低于50%,须先固化并记账该组结果,再单独预声明其 `@80` screening。不得合并不同 visits 的
+screening,也不得在看到中途结果后改变样本量。四组候选全部确定后,再在任何 confirmation 运行之前冻结
+各候选的确认样本。
+
 ---
 
 ## D. 待办 / 开放项
 
-- [ ] **实验(1)(2)有效重跑**:使用新 `selfplay_v2_pikl` namespace 与 ≥40 visits 网格重新筛查/确认;旧 V>1
-  数据实际测的是 b28 visits 曲线,不能作为 HumanSL 棋力证据,但仍保留作历史 b28 对照/visits 诊断。
-- [ ] **实验(3)有效重跑**:旧 A 方均为 b28@4,未测到低一段 HumanSL 搜索跨高一段所需 visits;改用修复后
-  ≥40 visits player 重跑。
-- [ ] **实验(4)有效重跑**:加厚到20局后为 9/18(50%,2局不可判),且代码确认双方实为 b28@20;需用真正
-  的修复后 HumanSL/b18+PIKL 搜索选手重新对 b28@20。
+- [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
+  三段位确认样本点估计均略高于50%,但95% CI 全跨50%,结论为方向一致、统计不确定。
+- [ ] **实验(3)有效重跑(进行中)**:首轮四组 `低一段@40 vs 高一段@1s` screening 已于 §C12 预声明,
+  待运行、固化并按固定网格选择候选 visits。
+- [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
+  `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。

@@ -1,4 +1,6 @@
 import importlib
+import json
+import subprocess
 import sys
 from collections import UserDict
 from pathlib import Path
@@ -426,3 +428,214 @@ def test_public_protocol_records_are_frozen():
 def test_evidence_requires_an_immutable_tuple_history():
     with pytest.raises(ValueError, match="tuple"):
         protocol.next_batch(protocol.Evidence([]))
+
+
+def _reserve(session, quota_id="q1", batch=None, fingerprint="fp-1"):
+    return protocol.reserve_next_attempt(session, quota_id, batch or protocol.Batch("rank_9d@8", 5), fingerprint)
+
+
+def test_quota_requires_confirmation_and_resume_preserves_metadata(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        with pytest.raises(ValueError, match="confirm"):
+            protocol.create_or_resume_quota(session, "q1", confirm_new=False, operator_date="2026-07-22")
+        original = protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        resumed = protocol.create_or_resume_quota(session, "q1", confirm_new=False, operator_date="2099-01-01")
+        assert resumed == original
+        with pytest.raises(ValueError, match="metadata"):
+            protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2099-01-01")
+
+    record = json.loads((tmp_path / "quotas.jsonl").read_text())
+    assert record == {
+        "type": "quota_created",
+        "quota_id": "q1",
+        "created_at": original.created_at,
+        "operator_date": "2026-07-22",
+    }
+
+
+def test_quota_cap_charges_crashed_reservations_and_ids_continue_across_quotas(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        reservations = [_reserve(session) for _ in range(20)]
+        assert [item.attempt_id for item in reservations] == list(range(1, 21))
+        with pytest.raises(ValueError, match="20"):
+            _reserve(session)
+        protocol.create_or_resume_quota(session, "q2", confirm_new=True, operator_date="2026-07-22")
+        assert _reserve(session, "q2").attempt_id == 21
+
+
+def test_checkpoint_precedes_first_reservation_and_drift_is_detected_after_crash(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        reservation = _reserve(session)
+        header = json.loads((tmp_path / "checkpoints.jsonl").read_text())
+        assert header["type"] == "checkpoint_header"
+        assert header["schema_version"] == 1
+        assert header["protocol_version"] == protocol.PROTOCOL_VERSION
+        assert header["source_revision"]
+        assert header["candidate"] == reservation.candidate
+        assert header["selection_fingerprint"] == "fp-1"
+        with pytest.raises(ValueError, match="fingerprint"):
+            _reserve(session, fingerprint="changed")
+
+
+def test_inconclusive_does_not_advance_color_and_ten_conclusive_are_balanced(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        first = _reserve(session)
+        assert first.scheduled_color == "B"
+        protocol.append_attempt_result(session, first, "inconclusive", "fp-1")
+        second = _reserve(session)
+        assert second.scheduled_color == "B"
+        protocol.append_attempt_result(session, second, "win", "fp-1")
+        colors = [second.scheduled_color]
+        outcomes = ["win", "win", "loss", "loss", "win", "win", "loss", "loss", "loss"]
+        for index in range(9):
+            item = _reserve(session, batch=protocol.Batch("rank_9d@8", 5 if index < 4 else 10))
+            colors.append(item.scheduled_color)
+            protocol.append_attempt_result(session, item, outcomes[index], "fp-1")
+        assert colors.count("B") == colors.count("W") == 5
+        loaded = protocol.load_evidence(session, {"rank_9d@8": "fp-1"})
+        assert loaded == evidence(("rank_9d@8", 5, 3, 2), ("rank_9d@8", 10, 5, 5))
+
+
+def test_results_strictly_cross_reference_reservations(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        item = _reserve(session)
+        for changed in (
+            protocol.AttemptReservation(
+                item.attempt_id + 10, item.candidate, item.scheduled_color, item.quota_id, item.selection_fingerprint
+            ),
+            protocol.AttemptReservation(
+                item.attempt_id, "rank_9d@4", item.scheduled_color, item.quota_id, item.selection_fingerprint
+            ),
+            protocol.AttemptReservation(
+                item.attempt_id, item.candidate, "W", item.quota_id, item.selection_fingerprint
+            ),
+            protocol.AttemptReservation(
+                item.attempt_id, item.candidate, item.scheduled_color, "other", item.selection_fingerprint
+            ),
+        ):
+            with pytest.raises(ValueError, match="reservation"):
+                protocol.append_attempt_result(session, changed, "win", "fp-1")
+        with pytest.raises(ValueError, match="fingerprint"):
+            protocol.append_attempt_result(session, item, "win", "wrong")
+        protocol.append_attempt_result(session, item, "win", "fp-1")
+        with pytest.raises(ValueError, match="duplicate"):
+            protocol.append_attempt_result(session, item, "loss", "fp-1")
+
+
+@pytest.mark.parametrize(
+    ("filename", "contents", "message"),
+    [
+        (
+            "quotas.jsonl",
+            '{"type":"quota_created","quota_id":"q","quota_id":"x","created_at":"x","operator_date":"2026-01-01"}\n',
+            "duplicate",
+        ),
+        ("quotas.jsonl", "not-json\n", "JSON"),
+        (
+            "quotas.jsonl",
+            '{"type":"quota_created","quota_id":"q","created_at":"2026-01-01T00:00:00+08:00","operator_date":"2026-01-01"}\n'
+            * 2,
+            "duplicate quota",
+        ),
+        (
+            "attempts.jsonl",
+            '{"type":"attempt_reserved","attempt_id":2,"candidate":"rank_9d@8","scheduled_color":"B","quota_id":"q","selection_fingerprint":"fp"}\n',
+            "contiguous",
+        ),
+        (
+            "attempts.jsonl",
+            '{"type":"attempt_reserved","attempt_id":1,"candidate":"rank_9d@8","scheduled_color":"B","quota_id":"missing","selection_fingerprint":"fp"}\n',
+            "unknown quota",
+        ),
+    ],
+)
+def test_malformed_or_inconsistent_ledgers_fail_closed(tmp_path, filename, contents, message):
+    (tmp_path / filename).write_text(contents)
+    with protocol.experiment_session(tmp_path) as session:
+        with pytest.raises(ValueError, match=message):
+            protocol.load_evidence(session, {})
+
+
+def test_expected_batch_is_verified_before_reservation(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        with pytest.raises(ValueError, match="batch"):
+            _reserve(session, batch=protocol.Batch("rank_9d@16", 5))
+        assert not (tmp_path / "attempts.jsonl").exists()
+
+
+def test_naive_quota_creation_timestamp_is_rejected(tmp_path):
+    (tmp_path / "quotas.jsonl").write_text(
+        '{"type":"quota_created","quota_id":"q","created_at":"2026-07-22T12:00:00",' '"operator_date":"2026-07-22"}\n'
+    )
+    with protocol.experiment_session(tmp_path) as session:
+        with pytest.raises(ValueError, match="timestamp"):
+            protocol.load_evidence(session, {})
+
+
+def test_tampered_reservation_color_is_rejected_during_replay(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        _reserve(session)
+    ledger = tmp_path / "attempts.jsonl"
+    ledger.write_text(ledger.read_text().replace('"scheduled_color":"B"', '"scheduled_color":"W"'))
+    with protocol.experiment_session(tmp_path) as session:
+        with pytest.raises(ValueError, match="color"):
+            protocol.load_evidence(session, {"rank_9d@8": "fp-1"})
+
+
+def test_stale_same_color_reservation_cannot_break_conclusive_balance(tmp_path):
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+        first = _reserve(session)
+        presumed_crashed = _reserve(session)
+        assert (first.scheduled_color, presumed_crashed.scheduled_color) == ("B", "B")
+        protocol.append_attempt_result(session, first, "win", "fp-1")
+        with pytest.raises(ValueError, match="color"):
+            protocol.append_attempt_result(session, presumed_crashed, "win", "fp-1")
+
+
+def test_session_ownership_fails_closed(tmp_path):
+    with pytest.raises(ValueError, match="session"):
+        protocol.create_or_resume_quota(object(), "q", confirm_new=True, operator_date="2026-07-22")
+    with protocol.experiment_session(tmp_path) as session:
+        pass
+    with pytest.raises(ValueError, match="session"):
+        protocol.load_evidence(session, {})
+
+
+def test_first_creation_fsyncs_file_and_parent(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(protocol, "_fsync_file", lambda handle: calls.append(("file", Path(handle.name).name)))
+    monkeypatch.setattr(protocol, "_fsync_directory", lambda path: calls.append(("directory", Path(path))))
+    with protocol.experiment_session(tmp_path) as session:
+        protocol.create_or_resume_quota(session, "q1", confirm_new=True, operator_date="2026-07-22")
+    assert ("file", "quotas.jsonl") in calls
+    assert ("directory", tmp_path) in calls
+
+
+def test_cross_process_lock_rejects_contention_and_recovers_after_abrupt_exit(tmp_path):
+    code = f"""import sys, time
+sys.path.insert(0, {str(CALIBRATION_DIR)!r})
+import golaxy_9d_alignment as p
+with p.experiment_session({str(tmp_path)!r}):
+ print("locked", flush=True)
+ time.sleep(60)
+"""
+    child = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE, text=True)
+    try:
+        assert child.stdout.readline().strip() == "locked"
+        with pytest.raises((BlockingIOError, RuntimeError), match="lock|session"):
+            with protocol.experiment_session(tmp_path):
+                pass
+        child.kill()
+        child.wait(timeout=10)
+        with protocol.experiment_session(tmp_path):
+            pass
+    finally:
+        if child.poll() is None:
+            child.kill()

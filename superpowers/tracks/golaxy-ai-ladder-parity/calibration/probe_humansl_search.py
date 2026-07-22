@@ -284,8 +284,20 @@ def validate_low_visits_probe_result(
     identity = _low_visits_identity(health)
     if not isinstance(response, dict) or response.get("id") != request_id:
         raise ValueError("low-visits response id mismatch")
+    root_info = response.get("rootInfo")
+    if (
+        not isinstance(root_info, dict)
+        or type(root_info.get("visits")) is not int
+        or root_info["visits"] != spec.visits
+    ):
+        raise ValueError(f"low-visits response rootInfo.visits must be the requested plain int {spec.visits}")
     wrapper = response.get("_wrapper")
-    if not isinstance(wrapper, dict) or any(wrapper.get(key) != value for key, value in identity.items()):
+    verified_fields = ("model_sha256_verified", "human_model_sha256_verified")
+    if (
+        not isinstance(wrapper, dict)
+        or any(wrapper.get(key) != value for key, value in identity.items() if key not in verified_fields)
+        or any(wrapper.get(key) is not True for key in verified_fields)
+    ):
         raise ValueError("low-visits response attestation does not match the retained b18/human identity")
 
     effective_overrides = dict(spec.override_settings)

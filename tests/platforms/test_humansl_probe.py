@@ -200,6 +200,45 @@ def test_low_visits_probe_rejects_missing_zeroed_or_mismatched_attestation():
             )
 
 
+@pytest.mark.parametrize("root_info", [None, {}, {"visits": 500}, {"visits": True}])
+def test_low_visits_probe_requires_exact_plain_int_root_visits(root_info):
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    if root_info is None:
+        response.pop("rootInfo")
+    else:
+        response["rootInfo"] = root_info
+
+    with pytest.raises(ValueError, match=r"rootInfo\.visits"):
+        probe.validate_low_visits_probe_result(
+            _health(),
+            request,
+            response,
+            low_visits=20,
+            experimental_min_humansl_search_visits=20,
+        )
+
+
+@pytest.mark.parametrize("field", ["model_sha256_verified", "human_model_sha256_verified"])
+@pytest.mark.parametrize("bad_value", [None, False, 1])
+def test_low_visits_probe_requires_strict_wrapper_verified_states(field, bad_value):
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    if bad_value is None:
+        response["_wrapper"].pop(field)
+    else:
+        response["_wrapper"][field] = bad_value
+
+    with pytest.raises(ValueError, match="attestation"):
+        probe.validate_low_visits_probe_result(
+            _health(),
+            request,
+            response,
+            low_visits=20,
+            experimental_min_humansl_search_visits=20,
+        )
+
+
 @pytest.mark.asyncio
 async def test_low_visits_run_adds_separate_strict_request_and_result_sections(tmp_path, monkeypatch):
     probe = _load_probe()

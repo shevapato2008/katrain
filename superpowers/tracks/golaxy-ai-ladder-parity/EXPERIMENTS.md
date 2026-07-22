@@ -505,6 +505,21 @@ C13 的旧 confirmation batch 停止时,四个 checkpoint 的实际状态经原�
 **仅作为寻找 search boundary 的程序被新协议取代**:两组已经完成的 `@40` confirmation 事实不作废,
 但旧 batch 的任何棋局都不加载、不追加、不合并到以下 screening 或未来重新冻结的 confirmation。
 
+上述状态已固化为 [`halted_confirmations_manifest.json`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/halted_confirmations_manifest.json),
+canonical digest 为 `8e6d2f94715f482c294e3593e68a4d5355a3d78fa79a39a3a68ed4f73fab824a`。三个现存
+checkpoint 均通过严格 JSONL、schema/header/configuration fingerprint、连续 game fingerprint、pair 调度、
+game record 与逐手模型 attestation 校验;表中统计由完整颜色 pair 独立重算。档案使用 `gzip -n -9`
+(mtime=0、不写原文件名),解压字节与 raw SHA-256 完全一致:
+
+| halted confirmation 不可变证据 | configuration fingerprint | raw SHA-256 | gzip SHA-256 |
+|---|---|---|---|
+| [`selfplay_confirm_rank-5d-40__vs__rank-6d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/selfplay_confirm_rank-5d-40__vs__rank-6d-1s.jsonl.gz) | `ac2acbfdc4c642c6b4b4991e4a1cd115cafed739da039031ef913e77bab7a0a0` | `a9493fd58b7dcaf76dd058edcca13e3b9aaf46eeb7cc693981a706e1989328c9` | `7566fba2ca9c9c65e254bdd9a9d989a221b872ace029274183a8770ea4da1184` |
+| [`selfplay_confirm_rank-6d-40__vs__rank-7d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/selfplay_confirm_rank-6d-40__vs__rank-7d-1s.jsonl.gz) | `de53323c474125da5b3f8cc3dfdc59dcea3f0609b56dfa0b63476fb1bc81868b` | `8f1b84d7a1819050ac6fd5e6110f0596e6e6ae9bbbbc91d8ff77d0e769cdeb15` | `168fe27afdf08aa583a36ca68a9c0f30fb7bf4073f5c6e8a371ad25839c98c0a` |
+| [`selfplay_confirm_rank-7d-40__vs__rank-8d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/selfplay_confirm_rank-7d-40__vs__rank-8d-1s.jsonl.gz) | `f1234fa042abeb8f1b613e8ac1d806363728513299245afc088e94cea8d320ec` | `4365afebe83744199e6f7901f363b9110aa58bc3e7b864de723534be100a58dd` | `aa962af50101c47454eb7ce0f317b08da598fde6d60f0cace68d9249232ef444` |
+
+第4组的 `absent` 状态也写入同一 manifest,但没有伪造空 archive 或 digest。原始本地 JSONL 不删除,
+只读档案是其提交后的不可变证据副本。
+
 **任何 boundary query 之前冻结:**协议版本为 `exp3-boundary-v1`。首轮且只启动以下四个独立
 `phase=screen` matchup,每组目标恰好10个完整颜色 pair(20盘 decision games),最多20次 pair 尝试:
 
@@ -535,6 +550,11 @@ C13 的旧 confirmation batch 停止时,四个 checkpoint 的实际状态经原�
 | `rank_8d__rank_9d` / `screen:rank_8d__rank_9d:20` (`b0361`–`b0380`) | `bbdbb54feb9c8cab062fb8057420959fa96dc0276541472f7336c47064931c56` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` |
 
 本预声明及上述冻结输入验证必须先提交;提交前不允许发出 semantic probe 或任何 self-play HTTP query。
+实际 launch 还必须等待 harness 的 source-revision fingerprint follow-up 落地并另行提交;**当前 harness 尚未
+实现 source revision fingerprint,本节不宣称已经实现或已经可以启动。** 最终 launch 只能从目标 launch
+commit 的独立 clean detached worktree 执行:先在该 worktree 运行 `uv run python i18n.py` 生成被忽略的
+`.mo`,再确认 tracked tree clean;`--out` 必须指向原始工作区中预先解析的绝对结果目录,不得写入 detached
+worktree 内部。
 
 ---
 

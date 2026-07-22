@@ -73,18 +73,24 @@
 - Modify: `superpowers/tracks/golaxy-ai-ladder-parity/EXPERIMENTS.md`
 - Modify: `superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-design.md`
 - Modify: `superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-plan.md`
+- Create: `superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/halted_confirmations_manifest.json`
+- Create: three deterministic old-confirmation `.jsonl.gz` archives beside that manifest
 - Runtime output: `superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary/`
 
 - [ ] Record the verified old-batch status: the 5d--6d and 6d--7d confirmations each completed 20 pairs at 36--4; the 7d--8d checkpoint stopped after 11 complete pairs at 19--3 and is descriptive only; 8d--9d never started. Preserve both completed confirmations as valid exact-`@40` evidence and supersede the old batch only as the procedure for boundary finding.
+- [ ] Validate each present old checkpoint with strict header/configuration/game fingerprints, pair scheduling, game records, and every move attestation; independently recompute the complete-pair statistics. Archive all three with `gzip -n -9`, bind raw/archive hashes and the explicit absent fourth checkpoint in the strict canonical manifest, and never delete the raw JSONLs.
 - [ ] Predeclare four `@20` screens, exactly 10 complete pairs, cap20, point-estimate `>=50%` pass, protocol/allocation/known-endpoints digests, and next step (`@10` after pass, `@30` after fail). Verify the already committed asset digests with the generator `--check` and validate every known endpoint against its committed archive.
-- [ ] Before any boundary query, commit only the preregistration documents with `git add superpowers/tracks/golaxy-ai-ladder-parity/EXPERIMENTS.md superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-design.md superpowers/tracks/golaxy-ai-ladder-parity/humansl-search-boundary-plan.md && git commit -m 'predeclare HumanSL boundary screening'`.
+- [ ] Before any boundary query, commit only the three preregistration documents, the halted-confirmation manifest, and its three gzip archives by explicit path. Never add the mutable raw JSONLs or unrelated worktree changes.
+- [ ] Implement and test a harness follow-up that fingerprints the exact Git source revision, then commit it. This gate is forthcoming and is **not implemented by this documentation/evidence commit**; do not choose or launch the experiment commit before it lands.
+- [ ] In the original workspace, create and resolve the external output first: `BOUNDARY_RESULTS_ABS=/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary; mkdir -p "$BOUNDARY_RESULTS_ABS"; BOUNDARY_RESULTS_ABS="$(cd "$BOUNDARY_RESULTS_ABS" && pwd -P)"; export BOUNDARY_RESULTS_ABS`. Then create a separate detached worktree at the eventual launch commit (for example, `git worktree add --detach /tmp/katrain-exp3-boundary-launch <launch-commit>`). In that worktree run `uv run python i18n.py` to compile ignored locale `.mo` files, then require `test -z "$(git status --porcelain --untracked-files=no)"`. Use only `$BOUNDARY_RESULTS_ABS` for `--out`.
 - [ ] Run the local probe:
   `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 uv run python superpowers/tracks/golaxy-ai-ladder-parity/calibration/probe_humansl_search.py --base-url http://127.0.0.1:8000 --low-visits 20 --experimental-min-humansl-search-visits 20`.
   Expect exit0, b18/humanv0 verified hashes, visits20, and all canonical PIKL fields nonzero where required.
 - [ ] Run the regression gate:
   `CI=true uv run pytest -q tests/platforms/test_humansl_selfplay.py tests/platforms/test_humansl_probe.py tests/platforms/test_ladder_query_contract.py tests/platforms/test_golaxy_calibration_opponent.py tests/test_http_engine.py tests/core/test_ladder_strategy.py`.
 - [ ] Launch:
-  `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 uv run python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`.
+  From the clean detached worktree, with `BOUNDARY_RESULTS_ABS` already resolved to the original workspace's absolute result directory:
+  `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 uv run python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out "$BOUNDARY_RESULTS_ABS" --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`.
 - [ ] Inspect `lsof -nP -iTCP:8000`, the first JSONL header, and first game. Expect direct localhost connection, frozen allocation/fingerprint, and b18 + humanv0 attestation. Abort on any mismatch.
 
 ---

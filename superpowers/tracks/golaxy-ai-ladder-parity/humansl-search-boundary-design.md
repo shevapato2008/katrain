@@ -29,6 +29,22 @@ interrupted checkpoint is descriptive only. The old batch is superseded only as 
 answering the boundary question. None of these games is merged into boundary screening or any later
 confirmation.
 
+The three present checkpoints are preserved as deterministic `gzip -n -9` archives under
+`calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/`. The strict canonical
+`halted_confirmations_manifest.json` has digest
+`8e6d2f94715f482c294e3593e68a4d5355a3d78fa79a39a3a68ed4f73fab824a` and binds, respectively,
+raw/gzip SHA-256 pairs
+`a9493fd58b7dcaf76dd058edcca13e3b9aaf46eeb7cc693981a706e1989328c9` /
+`7566fba2ca9c9c65e254bdd9a9d989a221b872ace029274183a8770ea4da1184`,
+`8f1b84d7a1819050ac6fd5e6110f0596e6e6ae9bbbbc91d8ff77d0e769cdeb15` /
+`168fe27afdf08aa583a36ca68a9c0f30fb7bf4073f5c6e8a371ad25839c98c0a`, and
+`4365afebe83744199e6f7901f363b9110aa58bc3e7b864de723534be100a58dd` /
+`aa962af50101c47454eb7ce0f317b08da598fde6d60f0cace68d9249232ef444`, plus each configuration
+fingerprint and the fourth transition's explicit `absent` state. Validation recomputes all pair
+statistics after applying the harness's strict header, fingerprint, game-record, scheduling, and
+per-move attestation checks. The raw local JSONLs remain preserved, but only the committed archives
+and manifest are immutable evidence.
+
 ## Boundary-search protocol
 
 Each rank transition is selected independently:
@@ -106,6 +122,19 @@ selection algorithm/version, visits, noise/symmetry, board/rules, and referee se
 
 The semantic probe accepts the same explicit floor and a player such as `rank_9d@20`. Before any
 screening, it must verify the returned wrapper identity and the exact nonzero PIKL override settings.
+
+## Launch isolation and source provenance
+
+The eventual probe and screening launch must run from a separate clean detached worktree at the
+exact launch commit, never from the primary dirty checkout. Because compiled locale `.mo` files are
+ignored but required at import time, run `uv run python i18n.py` inside that detached worktree first,
+then require a clean tracked-file status. Resolve the result directory in the original workspace to
+an absolute path before entering the detached worktree and pass that absolute path to `--out`; no
+runtime evidence is written inside the disposable source snapshot.
+
+The current harness does not fingerprint its Git source revision. A forthcoming harness follow-up
+must add and test source-revision fingerprinting and be committed before the launch commit is chosen.
+This design records that gate; it does not claim the fingerprint is already implemented.
 
 ## Failure handling
 

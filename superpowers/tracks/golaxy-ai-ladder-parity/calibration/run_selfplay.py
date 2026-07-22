@@ -44,6 +44,7 @@ import logging
 import math
 import os
 import re
+import subprocess
 import sys
 import time
 from contextlib import contextmanager
@@ -285,6 +286,62 @@ def _decompress_bounded(data: bytes, limit: int) -> bytes:
     if len(decompressed) > limit:
         raise ValueError(f"known endpoint decompressed archive exceeds size limit {limit}")
     return decompressed
+
+
+def _git_output(arguments: List[str], *, cwd: Path) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(cwd), *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise ValueError(f"cannot inspect boundary source revision: git unavailable: {exc}") from exc
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or f"exit {completed.returncode}"
+        raise ValueError(f"cannot inspect boundary source revision: git failed: {detail}")
+    return completed.stdout.strip()
+
+
+def load_boundary_source_snapshot(expected_source_revision: Optional[str]) -> dict:
+    if not isinstance(expected_source_revision, str) or not re.fullmatch(r"[0-9a-f]{40}", expected_source_revision):
+        raise ValueError("boundary protocol requires --expected-source-revision as a full 40-hex lowercase commit")
+    checkout_path = Path(__file__).resolve().parent
+    root_text = _git_output(["rev-parse", "--show-toplevel"], cwd=checkout_path)
+    try:
+        git_root = Path(root_text).resolve(strict=True)
+        Path(__file__).resolve().relative_to(git_root)
+    except (OSError, ValueError) as exc:
+        raise ValueError("boundary source git root does not contain the self-play harness") from exc
+    source_revision = _git_output(["rev-parse", "HEAD"], cwd=git_root)
+    if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
+        raise ValueError("git HEAD did not resolve to a full 40-hex commit")
+    if source_revision != expected_source_revision:
+        raise ValueError(
+            f"boundary source revision {source_revision} does not match expected {expected_source_revision}"
+        )
+    tracked_status = _git_output(["status", "--porcelain=v1", "--untracked-files=no"], cwd=git_root)
+    if tracked_status:
+        raise ValueError("boundary source tracked files or index are not clean")
+    return {
+        "source_revision": source_revision,
+        "expected_source_revision": expected_source_revision,
+        "source_tree_clean": True,
+    }
+
+
+def _validate_boundary_source_snapshot(snapshot: object, expected_source_revision: Optional[str]) -> dict:
+    if not isinstance(expected_source_revision, str) or not re.fullmatch(r"[0-9a-f]{40}", expected_source_revision):
+        raise ValueError("boundary protocol requires --expected-source-revision as a full 40-hex lowercase commit")
+    expected = {
+        "source_revision": expected_source_revision,
+        "expected_source_revision": expected_source_revision,
+        "source_tree_clean": True,
+    }
+    if snapshot != expected:
+        raise ValueError("boundary source snapshot does not match the expected clean revision")
+    return dict(expected)
 
 
 class _OpeningBoardConfig:
@@ -885,6 +942,7 @@ def _matchup_configuration(
     experimental_min_humansl_search_visits: int = 40,
     boundary_protocol_version: Optional[str] = None,
     boundary: Optional[Mapping[str, object]] = None,
+    boundary_source_snapshot: Optional[Mapping[str, object]] = None,
 ) -> dict:
     if type(experimental_min_humansl_search_visits) is not int or experimental_min_humansl_search_visits < 2:
         raise ValueError("experimental HumanSL search minimum must be a plain int of at least 2")
@@ -951,6 +1009,19 @@ def _matchup_configuration(
     }
     if boundary is not None:
         configuration["boundary"] = dict(boundary)
+    if boundary_protocol_version is not None:
+        if boundary_source_snapshot is None:
+            raise ValueError("boundary configuration requires a validated source snapshot")
+        expected_revision = (
+            boundary_source_snapshot.get("expected_source_revision")
+            if isinstance(boundary_source_snapshot, Mapping)
+            else None
+        )
+        configuration["boundary_source"] = _validate_boundary_source_snapshot(
+            boundary_source_snapshot, expected_revision
+        )
+    elif boundary_source_snapshot is not None:
+        raise ValueError("ordinary self-play cannot include a boundary source snapshot")
     return _json_value(configuration)
 
 
@@ -1195,6 +1266,8 @@ async def run_matchup(
     max_pair_attempts: Optional[int] = None,
     experimental_min_humansl_search_visits: int = 40,
     boundary_protocol: Optional[str] = None,
+    expected_source_revision: Optional[str] = None,
+    boundary_source_snapshot: Optional[Mapping[str, object]] = None,
 ) -> dict:
     required = required_conclusive_pairs(phase, experiment4=experiment4)
     if type(target_pairs) is not int or target_pairs < required or (phase == "screen" and target_pairs != required):
@@ -1206,6 +1279,12 @@ async def run_matchup(
         raise ValueError("maximum pair attempts must be a positive plain int")
     boundary_inputs = None
     if boundary_protocol is not None:
+        if boundary_source_snapshot is None:
+            boundary_source_snapshot = load_boundary_source_snapshot(expected_source_revision)
+        else:
+            boundary_source_snapshot = _validate_boundary_source_snapshot(
+                boundary_source_snapshot, expected_source_revision
+            )
         boundary_inputs = resolve_boundary_assignment(
             boundary_protocol,
             phase=phase,
@@ -1217,6 +1296,8 @@ async def run_matchup(
         opening_suite = boundary_inputs["suite"]
         openings = boundary_inputs["openings"]
     else:
+        if expected_source_revision is not None or boundary_source_snapshot is not None:
+            raise ValueError("--expected-source-revision is only valid with --boundary-protocol")
         opening_suite = load_opening_suite()
         openings = opening_suite["openings"]
     playerA = make_player(specA, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
@@ -1238,6 +1319,7 @@ async def run_matchup(
         experimental_min_humansl_search_visits=experimental_min_humansl_search_visits,
         boundary_protocol_version=boundary_protocol,
         boundary=boundary_inputs["fingerprint"] if boundary_inputs else None,
+        boundary_source_snapshot=boundary_source_snapshot,
     )
     fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1459,6 +1541,12 @@ async def main_async(args) -> int:
         args.matchups,
         experimental_min_humansl_search_visits=args.experimental_min_humansl_search_visits,
     )
+    if args.boundary_protocol is not None:
+        boundary_source_snapshot = load_boundary_source_snapshot(args.expected_source_revision)
+    else:
+        if args.expected_source_revision is not None:
+            raise ValueError("--expected-source-revision is only valid with --boundary-protocol")
+        boundary_source_snapshot = None
     if args.wide_root_noise is None:
         wrn = adapters.load_engine_wide_root_noise(
             dict(_MockKaTrainForConfig(force_package_config=True).config("engine"))
@@ -1487,6 +1575,8 @@ async def main_async(args) -> int:
                     max_pair_attempts=args.max_pair_attempts,
                     experimental_min_humansl_search_visits=args.experimental_min_humansl_search_visits,
                     boundary_protocol=args.boundary_protocol,
+                    expected_source_revision=args.expected_source_revision,
+                    boundary_source_snapshot=boundary_source_snapshot,
                 )
             )
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1528,6 +1618,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         choices=(BOUNDARY_PROTOCOL_VERSION,),
         default=None,
         help="enable the frozen HumanSL boundary protocol and exact opening assignment",
+    )
+    p.add_argument(
+        "--expected-source-revision",
+        default=None,
+        help="required full 40-hex git commit for a boundary-protocol launch",
     )
     return p
 

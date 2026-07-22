@@ -938,6 +938,11 @@ def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
         experimental_min_humansl_search_visits=20,
         boundary_protocol_version="exp3-boundary-v1",
         boundary=boundary["fingerprint"],
+        boundary_source_snapshot={
+            "source_revision": "a" * 40,
+            "expected_source_revision": "a" * 40,
+            "source_tree_clean": True,
+        },
     )
     fingerprint = selfplay._configuration_fingerprint(configuration)
     checkpoint = tmp_path / "boundary.jsonl"
@@ -985,6 +990,9 @@ def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
         lambda changed: changed.update(experimental_min_humansl_search_visits=21),
         lambda changed: changed["game"].update(board_size=13),
         lambda changed: changed["game"].update(rules="drifted"),
+        lambda changed: changed["boundary_source"].update(source_revision="b" * 40),
+        lambda changed: changed["boundary_source"].update(expected_source_revision="b" * 40),
+        lambda changed: changed["boundary_source"].update(source_tree_clean=False),
     ]:
         changed = copy.deepcopy(configuration)
         mutate(changed)
@@ -1045,6 +1053,182 @@ def test_boundary_protocol_cli_and_exact_noncycling_schedule():
             target_pairs=10,
             max_pair_attempts=20,
         )
+
+
+def test_boundary_source_revision_requires_full_matching_clean_commit(monkeypatch):
+    revision = "a" * 40
+    calls = []
+
+    def fake_git(arguments, *, cwd):
+        calls.append((arguments, Path(cwd)))
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            return str(Path(selfplay.__file__).parents[4])
+        if arguments == ["rev-parse", "HEAD"]:
+            return revision
+        if arguments == ["status", "--porcelain=v1", "--untracked-files=no"]:
+            return ""
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    assert selfplay.load_boundary_source_snapshot(revision) == {
+        "source_revision": revision,
+        "expected_source_revision": revision,
+        "source_tree_clean": True,
+    }
+    assert [call[0] for call in calls] == [
+        ["rev-parse", "--show-toplevel"],
+        ["rev-parse", "HEAD"],
+        ["status", "--porcelain=v1", "--untracked-files=no"],
+    ]
+
+    for invalid in [None, "a" * 39, "g" * 40, revision.upper()]:
+        with pytest.raises(ValueError, match="full 40-hex"):
+            selfplay.load_boundary_source_snapshot(invalid)
+
+
+@pytest.mark.parametrize(
+    ("head", "status", "match"), [("b" * 40, "", "does not match"), ("a" * 40, " M tracked.py", "not clean")]
+)
+def test_boundary_source_revision_rejects_mismatch_or_tracked_dirty_tree(monkeypatch, head, status, match):
+    def fake_git(arguments, *, cwd):
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            return str(Path(selfplay.__file__).parents[4])
+        if arguments == ["rev-parse", "HEAD"]:
+            return head
+        if arguments == ["status", "--porcelain=v1", "--untracked-files=no"]:
+            return status
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    with pytest.raises(ValueError, match=match):
+        selfplay.load_boundary_source_snapshot("a" * 40)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("source_error", ["git unavailable", "does not match", "not clean"])
+async def test_boundary_source_failure_happens_before_any_http_query(monkeypatch, tmp_path, source_error):
+    calls = {"http": 0}
+
+    def fail_source(_expected):
+        raise ValueError(source_error)
+
+    async def fake_health(*_args):
+        calls["http"] += 1
+        raise AssertionError("HTTP must not be reached")
+
+    monkeypatch.setattr(selfplay, "load_boundary_source_snapshot", fail_source)
+    monkeypatch.setattr(selfplay.adapters, "fetch_health_snapshot", fake_health)
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+            "--expected-source-revision",
+            "a" * 40,
+            "--experimental-min-humansl-search-visits",
+            "20",
+            "--wide-root-noise",
+            "0.04",
+            "--out",
+            str(tmp_path),
+        ]
+    )
+
+    with pytest.raises(ValueError, match=source_error):
+        await selfplay.main_async(args)
+    assert calls["http"] == 0
+
+
+@pytest.mark.asyncio
+async def test_main_threads_one_boundary_source_snapshot_to_every_matchup(monkeypatch, tmp_path):
+    revision = "a" * 40
+    snapshot = {
+        "source_revision": revision,
+        "expected_source_revision": revision,
+        "source_tree_clean": True,
+    }
+    source_calls = []
+    received = []
+
+    def fake_source(expected):
+        source_calls.append(expected)
+        return snapshot
+
+    async def fake_health(*_args):
+        return _health_snapshot()
+
+    async def fake_run_matchup(*_args, **kwargs):
+        received.append(kwargs["boundary_source_snapshot"])
+        return {"ok": True}
+
+    monkeypatch.setattr(selfplay, "load_boundary_source_snapshot", fake_source)
+    monkeypatch.setattr(selfplay.adapters, "fetch_health_snapshot", fake_health)
+    monkeypatch.setattr(selfplay, "run_matchup", fake_run_matchup)
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+            "--expected-source-revision",
+            revision,
+            "--experimental-min-humansl-search-visits",
+            "20",
+            "--wide-root-noise",
+            "0.04",
+            "--out",
+            str(tmp_path),
+        ]
+    )
+
+    assert await selfplay.main_async(args) == 0
+    assert source_calls == [revision]
+    assert received == [snapshot, snapshot]
+
+
+def test_boundary_source_snapshot_is_fingerprinted_and_ordinary_runs_ignore_git():
+    source = {
+        "source_revision": "a" * 40,
+        "expected_source_revision": "a" * 40,
+        "source_tree_clean": True,
+    }
+    players = {
+        "A": selfplay.make_player("rank_5d@20", experimental_min_humansl_search_visits=20),
+        "B": selfplay.make_player("rank_6d@1s", experimental_min_humansl_search_visits=20),
+    }
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    boundary = selfplay.resolve_boundary_assignment(
+        "exp3-boundary-v1",
+        phase="screen",
+        spec_a="rank_5d@20",
+        spec_b="rank_6d@1s",
+        target_pairs=10,
+        max_pair_attempts=20,
+    )
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=10,
+        max_pair_attempts=20,
+        phase="screen",
+        opening_suite=boundary["suite"],
+        experimental_min_humansl_search_visits=20,
+        boundary_protocol_version="exp3-boundary-v1",
+        boundary=boundary["fingerprint"],
+        boundary_source_snapshot=source,
+    )
+
+    assert configuration["boundary_source"] == source
+    ordinary = selfplay.build_arg_parser().parse_args(["--matchups", "rank_9d@40:b28@20:20"])
+    assert ordinary.boundary_protocol is None
+    assert ordinary.expected_source_revision is None
 
 
 @pytest.mark.asyncio

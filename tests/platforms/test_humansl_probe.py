@@ -2,6 +2,7 @@ import copy
 import importlib.util
 import json
 import math
+import sys
 from pathlib import Path
 
 import httpx
@@ -127,6 +128,36 @@ def test_low_visits_probe_floor_contract():
     for bad_floor in (1, True, 20.0, "20"):
         with pytest.raises(ValueError, match="plain int.*at least 2"):
             probe.build_low_visits_probe_request("run-abc", 20, experimental_min_humansl_search_visits=bad_floor)
+
+
+@pytest.mark.asyncio
+async def test_run_probe_validates_supplied_floor_without_low_visits():
+    probe = _load_probe()
+
+    def fail_request(_request):
+        raise AssertionError("invalid floor reached the network")
+
+    with pytest.raises(ValueError, match="plain int.*at least 2"):
+        await probe.run_probe(
+            "http://127.0.0.1:8000",
+            run_id="invalid-floor",
+            experimental_min_humansl_search_visits=1,
+            transport=httpx.MockTransport(fail_request),
+        )
+
+
+def test_cli_rejects_invalid_supplied_floor_without_network(monkeypatch, capsys):
+    probe = _load_probe()
+
+    def fail_client(*_args, **_kwargs):
+        raise AssertionError("invalid floor constructed a network client")
+
+    assert probe.build_arg_parser().parse_args([]).experimental_min_humansl_search_visits == 40
+    monkeypatch.setattr(probe.httpx, "AsyncClient", fail_client)
+    monkeypatch.setattr(sys, "argv", ["probe_humansl_search.py", "--experimental-min-humansl-search-visits", "1"])
+
+    assert probe.main() == 1
+    assert "plain int of at least 2" in capsys.readouterr().out
 
 
 def test_low_visits_probe_has_exact_canonical_pikl_recipe():

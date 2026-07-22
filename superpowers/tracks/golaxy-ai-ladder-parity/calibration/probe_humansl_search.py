@@ -447,6 +447,7 @@ async def run_probe(
     experimental_min_humansl_search_visits: int = 40,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> tuple[dict, Path]:
+    experimental_min_humansl_search_visits = _validate_experimental_floor(experimental_min_humansl_search_visits)
     base_url = _assert_local_url(base_url)
     run_id = _validate_run_id(run_id or uuid.uuid4().hex[:12])
     timeout = httpx.Timeout(180.0, connect=10.0)

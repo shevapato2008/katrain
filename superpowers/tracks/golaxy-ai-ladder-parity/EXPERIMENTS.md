@@ -553,14 +553,32 @@ game record 与逐手模型 attestation 校验;表中统计由完整颜色 pair 
 source-revision gate 已由 commit `b72451b01169560a44d2ad6f5e6e4cfbca7d5007` 实现并通过审核;本轮
 canonical launch source **精确固定为该 commit**,不得使用随后仅修改文档的 commit 作为 source revision。
 最终 launch 必须从 `b72451b01169560a44d2ad6f5e6e4cfbca7d5007` 的独立 clean detached worktree
-执行:先运行 `uv run python i18n.py` 生成被忽略的 `.mo`,再验证 HEAD 精确匹配、处于 detached 状态且
-`git status --porcelain=v1 --untracked-files=no` 为空。唯一允许的输出目录是原始工作区外置于 detached
-worktree 的绝对路径
+执行。`requirements.txt` 的固定依赖要求 Python 3.12;在 worktree 内必须按顺序执行以下 bootstrap/gate,
+且 bootstrap 完成后所有 Python 命令只使用该 worktree 的 `.venv/bin/python`:
+
+```sh
+export UV_PYTHON=3.12
+uv sync
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python -c 'from pathlib import Path; import polib; [polib.pofile(str(p)).save_as_mofile(str(p.with_suffix(".mo"))) for p in Path("katrain/i18n/locales").glob("*/LC_MESSAGES/katrain.po")]'
+test "$(git rev-parse HEAD)" = "b72451b01169560a44d2ad6f5e6e4cfbca7d5007"
+test "$(git rev-parse --abbrev-ref HEAD)" = "HEAD"
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+.venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/generate_boundary_openings.py --check
+```
+
+直接用 `polib` 只编译被忽略的 `.mo`,不运行会改写 `.po` 的 `i18n.py`;上述 tracked-status gate 必须保持
+为空。唯一允许的输出目录是原始工作区外置于 detached worktree 的绝对路径
 `/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary`。
 
-上述 gate 全部通过后,canonical screening 命令为(这里只预声明,本次文档提交不执行):
+上述 gate 全部通过后,依次使用以下 canonical probe、regression 和 screening 命令(这里只预声明,本次文档
+提交不执行任何 HTTP/self-play):
 
-`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 uv run python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/probe_humansl_search.py --base-url http://127.0.0.1:8000 --low-visits 20 --experimental-min-humansl-search-visits 20`
+
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python -m pytest -q tests/platforms/test_humansl_selfplay.py tests/platforms/test_humansl_probe.py tests/platforms/test_ladder_query_contract.py tests/platforms/test_golaxy_calibration_opponent.py tests/test_http_engine.py tests/core/test_ladder_strategy.py`
+
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
 
 ---
 

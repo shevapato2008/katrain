@@ -129,17 +129,22 @@ The source-revision gate is implemented and approved in commit
 `b72451b01169560a44d2ad6f5e6e4cfbca7d5007`, which is the exact pinned source for the initial
 `@20` launch. Later documentation commits are not launch sources. The probe and screening launch
 must run from a separate clean detached worktree at that commit, never from the primary dirty
-checkout. Because compiled locale `.mo` files are ignored but required at import time, run
-`uv run python i18n.py` inside that detached worktree first. Then verify
-`git rev-parse HEAD` equals the pinned commit, `git rev-parse --abbrev-ref HEAD` equals `HEAD`, and
+checkout. Export `UV_PYTHON=3.12`, then run `uv sync` followed by
+`uv pip install --python .venv/bin/python -r requirements.txt`; the latter supplies the web imports
+that the calibration modules require and whose pinned Pydantic version is not compatible with
+Python 3.13. Compile ignored locale catalogs without mutating tracked `.po` files via
+`.venv/bin/python -c 'from pathlib import Path; import polib; [polib.pofile(str(p)).save_as_mofile(str(p.with_suffix(".mo"))) for p in Path("katrain/i18n/locales").glob("*/LC_MESSAGES/katrain.po")]'`.
+Do not use `i18n.py` for this launch bootstrap. Then verify `git rev-parse HEAD` equals the pinned
+commit, `git rev-parse --abbrev-ref HEAD` equals `HEAD`, and
 `git status --porcelain=v1 --untracked-files=no` is empty.
 
-The screening command must pass
+Run the frozen-input generator, semantic probe, regression suite, and screening harness only with
+`.venv/bin/python`, never `uv run`. The probe and screening retain both `NO_PROXY` variables, and the
+screening command must pass
 `--expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007` and must use the external
 absolute output path
 `/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary`.
-It must also set `NO_PROXY=127.0.0.1,localhost` and `no_proxy=127.0.0.1,localhost`. No runtime
-evidence is written inside the detached source snapshot.
+No runtime evidence is written inside the detached source snapshot.
 
 ## Failure handling
 

@@ -550,10 +550,18 @@ game record 与逐手模型 attestation 校验;表中统计由完整颜色 pair 
 | `rank_8d__rank_9d` / `screen:rank_8d__rank_9d:20` (`b0361`–`b0380`) | `bbdbb54feb9c8cab062fb8057420959fa96dc0276541472f7336c47064931c56` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` |
 
 本预声明及上述冻结输入验证必须先提交;提交前不允许发出 semantic probe 或任何 self-play HTTP query。
-source-revision gate 已由 commit `b72451b01169560a44d2ad6f5e6e4cfbca7d5007` 实现并通过审核;本轮
+source-revision gate 及 live-probe 语义修复已由 commit
+`451cd73b27c205f4518576f590943f2c0dd671b7` 实现并通过审核;本轮
 canonical launch source **精确固定为该 commit**,不得使用随后仅修改文档的 commit 作为 source revision。
-最终 launch 必须从 `b72451b01169560a44d2ad6f5e6e4cfbca7d5007` 的独立 clean detached worktree
-执行。`requirements.txt` 的固定依赖要求 Python 3.12;在 worktree 内必须按顺序执行以下 bootstrap/gate,
+最终 launch 必须从 `451cd73b27c205f4518576f590943f2c0dd671b7` 的独立 clean detached worktree
+`/tmp/katrain-exp3-boundary-451cd73b` 执行。low probe 请求中的 `maxVisits` 是精确发出的搜索 cap;
+`rootInfo.visits` 是 KataGo 剪枝后的报告统计,不是请求值回显。在 shipping 8-thread 配置下,允许它为
+positive plain int 且 `<= requested maxVisits + 7`;结果中分别记录 `requested_max_visits` 与
+`reported_root_visits`。旧锁定 fixture 中未被选中(nonselected)候选手的 `order` 可随 live engine 漂移,不再因此否决
+有效语义证据;仍要求关键候选存在,并以低 λ 选 `R2`、高 λ 选 `O6` 的 selected-move 变化证明 PIKL
+产生了有意义的选点效果。
+
+`requirements.txt` 的固定依赖要求 Python 3.12;在该 clean detached worktree 内必须按顺序执行以下 bootstrap/gate,
 且 bootstrap 完成后所有 Python 命令只使用该 worktree 的 `.venv/bin/python`:
 
 ```sh
@@ -561,7 +569,7 @@ export UV_PYTHON=3.12
 uv sync
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python -c 'from pathlib import Path; import polib; [polib.pofile(str(p)).save_as_mofile(str(p.with_suffix(".mo"))) for p in Path("katrain/i18n/locales").glob("*/LC_MESSAGES/katrain.po")]'
-test "$(git rev-parse HEAD)" = "b72451b01169560a44d2ad6f5e6e4cfbca7d5007"
+test "$(git rev-parse HEAD)" = "451cd73b27c205f4518576f590943f2c0dd671b7"
 test "$(git rev-parse --abbrev-ref HEAD)" = "HEAD"
 test -z "$(git status --porcelain=v1 --untracked-files=no)"
 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/generate_boundary_openings.py --check
@@ -578,7 +586,7 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python -m pytest -q tests/platforms/test_humansl_selfplay.py tests/platforms/test_humansl_probe.py tests/platforms/test_ladder_query_contract.py tests/platforms/test_golaxy_calibration_opponent.py tests/test_http_engine.py tests/core/test_ladder_strategy.py`
 
-`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision 451cd73b27c205f4518576f590943f2c0dd671b7 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
 
 ---
 

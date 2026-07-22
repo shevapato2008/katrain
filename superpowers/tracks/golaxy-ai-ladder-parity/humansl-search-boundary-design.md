@@ -126,10 +126,21 @@ screening, it must verify the returned wrapper identity and the exact nonzero PI
 ## Launch isolation and source provenance
 
 The source-revision gate is implemented and approved in commit
-`b72451b01169560a44d2ad6f5e6e4cfbca7d5007`, which is the exact pinned source for the initial
+`451cd73b27c205f4518576f590943f2c0dd671b7`, which includes the approved live-probe fix and is the
+exact pinned source for the initial
 `@20` launch. Later documentation commits are not launch sources. The probe and screening launch
 must run from a separate clean detached worktree at that commit, never from the primary dirty
-checkout. Export `UV_PYTHON=3.12`, then run `uv sync` followed by
+checkout; its canonical path is `/tmp/katrain-exp3-boundary-451cd73b`.
+
+For low-visit probes, `maxVisits` is the exact requested search cap while `rootInfo.visits` is a
+pruned reported statistic rather than an echo. With the shipped eight search threads, the validator
+accepts a positive plain integer no greater than requested `maxVisits + 7`, and records
+`requested_max_visits` and `reported_root_visits` separately. Legacy drift in the `order` of a
+nonselected watched move no longer invalidates the semantic result: the watched moves must remain
+present, and the meaningful PIKL effect is the selected-move change from `R2` at low lambda to `O6`
+at high lambda.
+
+Export `UV_PYTHON=3.12`, then run `uv sync` followed by
 `uv pip install --python .venv/bin/python -r requirements.txt`; the latter supplies the web imports
 that the calibration modules require and whose pinned Pydantic version is not compatible with
 Python 3.13. Compile ignored locale catalogs without mutating tracked `.po` files via
@@ -141,7 +152,7 @@ commit, `git rev-parse --abbrev-ref HEAD` equals `HEAD`, and
 Run the frozen-input generator, semantic probe, regression suite, and screening harness only with
 `.venv/bin/python`, never `uv run`. The probe and screening retain both `NO_PROXY` variables, and the
 screening command must pass
-`--expected-source-revision b72451b01169560a44d2ad6f5e6e4cfbca7d5007` and must use the external
+`--expected-source-revision 451cd73b27c205f4518576f590943f2c0dd671b7` and must use the external
 absolute output path
 `/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary`.
 No runtime evidence is written inside the detached source snapshot.

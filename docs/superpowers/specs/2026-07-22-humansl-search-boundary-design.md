@@ -58,9 +58,10 @@ not a population-level boundary or proof of monotonicity.
 
 After all four transitions have a selected lowest passing candidate on the tested grid, write and
 commit an immutable selection manifest containing each candidate and the digests of all source
-screening checkpoints. Only then run fresh confirmation checkpoints. Each confirmation uses exactly
-20 complete color pairs and at most 40 pair attempts. Screening games and the earlier `@40`
-confirmation games are never merged into these samples.
+screening checkpoints. The selection manifest references the already committed opening-allocation
+manifest by digest. Only then run fresh confirmation checkpoints. Each confirmation uses exactly 20
+complete color pairs and at most 40 pair attempts. Screening games and the earlier `@40` confirmation
+games are never merged into these samples.
 
 Confirmation succeeds only when the per-transition 95% Wilson lower bound is greater than 50%.
 Otherwise classify it as inconclusive (interval contains 50%) or weaker (upper bound below 50%) and
@@ -71,12 +72,18 @@ no familywise 95% claim or joint “all four” inferential claim is made.
 
 ## Independent opening allocation
 
-Boundary screening and confirmation use a new frozen opening suite large enough to allocate unique
-opening IDs without cycling at either attempt cap. The manifest preassigns non-overlapping opening
-ID ranges by rank transition, visit point, and phase. The suite checksum and exact assigned ID list
-are fingerprinted. No boundary-screening opening may appear in confirmation, and neither phase may
-reuse the earlier `@40` experiment's openings. This prevents deterministic replay from masquerading
-as independent confirmation.
+Before any boundary screening starts, generate and commit a frozen opening suite and a separate
+immutable opening-allocation manifest. The manifest preassigns every possible rank-transition,
+visit-point, and phase allocation needed by the finite protocol, including candidates that may never
+run. It is never regenerated after outcomes are observed.
+
+The suite is large enough to avoid cycling at either attempt cap. Disjointness is defined by the
+canonical opening move sequence, not merely by ID: every allocated sequence must be unique across
+all boundary screening and confirmation allocations and must differ from every sequence in the
+earlier `@40` suite. The harness validates sequence uniqueness and allocation coverage before play.
+The suite checksum, allocation-manifest digest, exact assigned IDs, and canonical move sequences are
+fingerprinted. This prevents relabeling or deterministic replay from masquerading as independent
+confirmation.
 
 ## Harness changes
 

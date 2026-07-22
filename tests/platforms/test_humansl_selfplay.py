@@ -1,4 +1,5 @@
 import importlib
+import copy
 import json
 import math
 import sys
@@ -758,6 +759,231 @@ def test_checkpoint_lock_selects_windows_backend_when_fcntl_is_unavailable(tmp_p
     with selfplay._checkpoint_lock(tmp_path / "match.jsonl"):
         assert fake.calls == [(fake.LK_NBLCK, 1)]
     assert fake.calls == [(fake.LK_NBLCK, 1), (fake.LK_UNLCK, 1)]
+
+
+def test_boundary_allocation_is_complete_and_disjoint():
+    suite, allocation = selfplay.load_boundary_opening_allocation()
+    prior = selfplay.load_opening_suite()
+
+    assert suite["suite_id"] == "humansl-boundary-opening-suite-v1"
+    assert suite["seed"] == 20260722
+    assert len(suite["openings"]) == 1360
+    assert len(allocation["allocations"]) == 44
+    assert sum(len(ids) for ids in allocation["allocations"].values()) == 1360
+    assert all(len(ids) == (20 if key.startswith("screen:") else 40) for key, ids in allocation["allocations"].items())
+    sequences = [tuple(opening["moves"]) for opening in suite["openings"]]
+    assert len(sequences) == len(set(sequences)) == 1360
+    assert set(sequences).isdisjoint(tuple(opening["moves"]) for opening in prior["openings"])
+
+
+def test_boundary_allocation_rejects_checksum_or_sequence_drift(tmp_path):
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    suite_path = tmp_path / "suite.json"
+    allocation_path = tmp_path / "allocation.json"
+
+    suite["openings"][0]["moves"][0] = (suite["openings"][0]["moves"][0] + 1) % 361
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+    with pytest.raises(ValueError, match="suite checksum"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    suite["openings"][1]["moves"] = suite["openings"][0]["moves"]
+    suite["checksum"] = selfplay.canonical_manifest_digest(suite, "checksum")
+    allocation["suite_checksum"] = suite["checksum"]
+    allocation["digest"] = selfplay.canonical_manifest_digest(allocation, "digest")
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+    with pytest.raises(ValueError, match="globally unique"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    allocation["allocations"]["screen:rank_5d__rank_6d:2"][1] = allocation["allocations"]["screen:rank_5d__rank_6d:2"][
+        0
+    ]
+    allocation["digest"] = selfplay.canonical_manifest_digest(allocation, "digest")
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+    with pytest.raises(ValueError, match="assigned exactly once"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+
+def test_known_endpoints_bind_all_prior_40_screens(tmp_path):
+    manifest, digest = selfplay.load_known_endpoints()
+
+    assert len(digest) == 64
+    assert [endpoint["transition"] for endpoint in manifest["endpoints"]] == list(selfplay.BOUNDARY_TRANSITIONS)
+    assert all(endpoint["visits"] == 40 and endpoint["classification"] == "pass" for endpoint in manifest["endpoints"])
+
+    missing = copy.deepcopy(manifest)
+    missing["endpoints"].pop()
+    missing["digest"] = selfplay.canonical_manifest_digest(missing, "digest")
+    missing_path = tmp_path / "missing.json"
+    missing_path.write_text(json.dumps(missing))
+    with pytest.raises(ValueError, match="exactly four"):
+        selfplay.load_known_endpoints(missing_path)
+
+    for field, match in [
+        ("archive_sha256", "archive SHA-256"),
+        ("decompressed_sha256", "decompressed SHA-256"),
+        ("source_summary_sha256", "summary SHA-256"),
+        ("source_summary_matchup_sha256", "source-summary matchup digest"),
+    ]:
+        changed = copy.deepcopy(manifest)
+        changed["endpoints"][0][field] = "0" * 64
+        changed["digest"] = selfplay.canonical_manifest_digest(changed, "digest")
+        changed_path = tmp_path / f"changed-{field}.json"
+        changed_path.write_text(json.dumps(changed))
+        with pytest.raises(ValueError, match=match):
+            selfplay.load_known_endpoints(changed_path)
+
+    swapped = copy.deepcopy(manifest)
+    source_fields = ("archive_path", "archive_sha256", "decompressed_sha256")
+    for field in source_fields:
+        swapped["endpoints"][0][field] = manifest["endpoints"][1][field]
+    swapped["digest"] = selfplay.canonical_manifest_digest(swapped, "digest")
+    swapped_path = tmp_path / "swapped-source.json"
+    swapped_path.write_text(json.dumps(swapped))
+    with pytest.raises(ValueError, match="checkpoint transition"):
+        selfplay.load_known_endpoints(swapped_path)
+
+
+def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
+    players = {
+        "A": selfplay.make_player("rank_5d@20", experimental_min_humansl_search_visits=20),
+        "B": selfplay.make_player("rank_6d@1s", experimental_min_humansl_search_visits=20),
+    }
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    boundary = selfplay.resolve_boundary_assignment(
+        "exp3-boundary-v1",
+        phase="screen",
+        spec_a="rank_5d@20",
+        spec_b="rank_6d@1s",
+        target_pairs=10,
+        max_pair_attempts=20,
+    )
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=10,
+        max_pair_attempts=20,
+        phase="screen",
+        opening_suite=boundary["suite"],
+        experimental_min_humansl_search_visits=20,
+        boundary_protocol_version="exp3-boundary-v1",
+        boundary=boundary["fingerprint"],
+    )
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    checkpoint = tmp_path / "boundary.jsonl"
+    checkpoint.write_text(
+        json.dumps(
+            {
+                "record_type": "header",
+                "schema": selfplay.CHECKPOINT_SCHEMA,
+                "fingerprint": fingerprint,
+                "configuration": configuration,
+            }
+        )
+        + "\n"
+    )
+    assert selfplay._already_done(checkpoint, fingerprint, configuration) == 0
+    assert len(boundary["openings"]) == 20
+
+    mutation_paths = [
+        ("protocol_version",),
+        ("phase",),
+        ("transition",),
+        ("tested_visits",),
+        ("point_estimate_pass_rule",),
+        ("finite_grid",),
+        ("search_order",),
+        ("stopping_rule",),
+        ("target_complete_pairs",),
+        ("max_pair_attempts",),
+        ("suite_checksum",),
+        ("allocation_digest",),
+        ("known_endpoints_digest",),
+        ("known_endpoint_source_digest",),
+        ("allocation_key",),
+        ("assigned_opening_ids",),
+        ("assigned_opening_sequences",),
+    ]
+    for path in mutation_paths:
+        changed = copy.deepcopy(configuration)
+        value = changed["boundary"][path[0]]
+        changed["boundary"][path[0]] = [*value, "drift"] if isinstance(value, list) else f"{value}-drift"
+        with pytest.raises(ValueError, match="fingerprint"):
+            selfplay._already_done(checkpoint, selfplay._configuration_fingerprint(changed), changed)
+
+    for mutate in [
+        lambda changed: changed.update(experimental_min_humansl_search_visits=21),
+        lambda changed: changed["game"].update(board_size=13),
+        lambda changed: changed["game"].update(rules="drifted"),
+    ]:
+        changed = copy.deepcopy(configuration)
+        mutate(changed)
+        with pytest.raises(ValueError, match="fingerprint"):
+            selfplay._already_done(checkpoint, selfplay._configuration_fingerprint(changed), changed)
+
+
+def test_ordinary_configuration_does_not_gain_boundary_fingerprint_fields():
+    players = _players()
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=20,
+        max_pair_attempts=30,
+    )
+
+    assert "boundary" not in configuration
+
+
+def test_boundary_protocol_cli_and_exact_noncycling_schedule():
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+        ]
+    )
+    assert args.boundary_protocol == "exp3-boundary-v1"
+    with pytest.raises(SystemExit):
+        selfplay.build_arg_parser().parse_args(
+            ["--matchups", "rank_5d@20:rank_6d@1s:10", "--boundary-protocol", "unsupported"]
+        )
+
+    boundary = selfplay.resolve_boundary_assignment(
+        args.boundary_protocol,
+        phase="screen",
+        spec_a="rank_5d@20",
+        spec_b="rank_6d@1s",
+        target_pairs=10,
+        max_pair_attempts=20,
+    )
+    scheduled = selfplay.schedule_pair_games(
+        [], boundary["openings"], phase="screen", max_pair_attempts=20, cycle_openings=False
+    )
+    assert len({game["opening_id"] for game in scheduled}) == 20
+    with pytest.raises(ValueError, match="does not support"):
+        selfplay.resolve_boundary_assignment(
+            args.boundary_protocol,
+            phase="screen",
+            spec_a="rank_5d@20",
+            spec_b="rank_7d@1s",
+            target_pairs=10,
+            max_pair_attempts=20,
+        )
 
 
 @pytest.mark.asyncio

@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import dataclasses
+import gzip
 import hashlib
 import json
 import logging
@@ -95,6 +96,9 @@ CHECKPOINT_SCHEMA = 3
 SELECTION_ALGORITHM_VERSION = "selfplay-selection-v1"
 SYMMETRY_SETTINGS = {"mode": "katago-default", "requested_symmetry": None}
 OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_v1.json"
+BOUNDARY_OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_boundary_v1.json"
+BOUNDARY_OPENING_ALLOCATION_PATH = Path(__file__).parent / "opening_allocation_boundary_v1.json"
+KNOWN_ENDPOINTS_PATH = Path(__file__).parent / "known_endpoints_exp3_v1.json"
 OPENING_SUITE_ID = "humansl-opening-suite-v1"
 OPENING_SUITE_SEED = 20260721
 BOARD_SIZE = 19
@@ -112,6 +116,22 @@ _IDENTITY_FIELDS = (
     "katago_version",
 )
 WILSON_Z95 = 1.959963984540054
+BOUNDARY_PROTOCOL_VERSION = "exp3-boundary-v1"
+BOUNDARY_TRANSITIONS = (
+    "rank_5d__rank_6d",
+    "rank_6d__rank_7d",
+    "rank_7d__rank_8d",
+    "rank_8d__rank_9d",
+)
+BOUNDARY_GRID = (2, 5, 10, 20, 30, 40)
+BOUNDARY_SCREEN_VISITS = (2, 5, 10, 20, 30)
+BOUNDARY_CONFIRM_VISITS = BOUNDARY_GRID
+BOUNDARY_POINT_ESTIMATE_PASS_RULE = "A decision-game point estimate >= 50% at exactly 10 complete color pairs"
+BOUNDARY_SEARCH_ORDER = {"start": 20, "after_pass": [10, 5, 2], "after_fail": [30], "known_pass": 40}
+BOUNDARY_STOPPING_RULE = (
+    "stop at first failure after descending from 20, after testing 30 following a failure at 20, "
+    "or after a pass at the floor 2; abort at the attempt cap"
+)
 
 
 def wilson_interval(wins: int, n: int) -> Tuple[float, float]:
@@ -150,6 +170,47 @@ def opening_suite_checksum(payload: Mapping[str, object]) -> str:
     canonical = {key: value for key, value in payload.items() if key != "checksum"}
     encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def canonical_manifest_digest(payload: Mapping[str, object], digest_field: Optional[str] = None) -> str:
+    canonical = {key: value for key, value in payload.items() if key != digest_field}
+    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode(
+        "utf-8"
+    )
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _load_strict_json(path: Path) -> dict:
+    def reject_duplicates(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON key {key!r}")
+            result[key] = value
+        return result
+
+    try:
+        payload = json.loads(
+            Path(path).read_text(),
+            object_pairs_hook=reject_duplicates,
+            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant {value}")),
+        )
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        raise ValueError(f"cannot load strict JSON {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"strict JSON root in {path} must be an object")
+    return payload
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _source_path(value: object) -> Path:
+    if not isinstance(value, str) or not value:
+        raise ValueError("known endpoint source path is malformed")
+    path = Path(value)
+    return path if path.is_absolute() else Path(__file__).parent / path
 
 
 class _OpeningBoardConfig:
@@ -212,6 +273,185 @@ def load_opening_suite(path: Path = OPENING_SUITE_PATH) -> dict:
     return payload
 
 
+def load_boundary_opening_allocation(
+    suite_path: Path = BOUNDARY_OPENING_SUITE_PATH,
+    allocation_path: Path = BOUNDARY_OPENING_ALLOCATION_PATH,
+) -> Tuple[dict, dict]:
+    suite = _load_strict_json(Path(suite_path))
+    allocation = _load_strict_json(Path(allocation_path))
+    if suite.get("suite_id") != "humansl-boundary-opening-suite-v1":
+        raise ValueError("boundary opening suite ID mismatch")
+    if suite.get("seed") != 20260722 or suite.get("board_size") != BOARD_SIZE:
+        raise ValueError("boundary opening suite seed or board size mismatch")
+    if suite.get("opening_count") != 1360:
+        raise ValueError("boundary opening suite must declare exactly 1360 openings")
+    if suite.get("checksum") != canonical_manifest_digest(suite, "checksum"):
+        raise ValueError("boundary suite checksum mismatch")
+    openings = suite.get("openings")
+    if not isinstance(openings, list) or len(openings) != 1360:
+        raise ValueError("boundary opening suite must contain exactly 1360 openings")
+    by_id = {}
+    sequences = set()
+    for opening in openings:
+        if not isinstance(opening, dict) or not isinstance(opening.get("id"), str):
+            raise ValueError("boundary opening entry has invalid ID")
+        moves = opening.get("moves")
+        if (
+            not isinstance(moves, list)
+            or len(moves) != 8
+            or len(set(moves)) != 8
+            or any(type(move) is not int or not 0 <= move < BOARD_SIZE * BOARD_SIZE for move in moves)
+        ):
+            raise ValueError("boundary opening must contain eight distinct legal coordinates")
+        sequence = tuple(moves)
+        if opening["id"] in by_id or sequence in sequences:
+            raise ValueError("boundary opening IDs and canonical sequences must be globally unique")
+        _validate_opening_legality(moves, BOARD_SIZE)
+        by_id[opening["id"]] = opening
+        sequences.add(sequence)
+
+    prior_sequences = {tuple(opening["moves"]) for opening in load_opening_suite()["openings"]}
+    if sequences & prior_sequences:
+        raise ValueError("boundary opening sequences must be disjoint from opening_suite_v1")
+    if allocation.get("allocation_id") != "humansl-boundary-opening-allocation-v1":
+        raise ValueError("boundary opening allocation ID mismatch")
+    if allocation.get("protocol_version") != BOUNDARY_PROTOCOL_VERSION:
+        raise ValueError("boundary opening allocation protocol mismatch")
+    if allocation.get("suite_id") != suite["suite_id"] or allocation.get("suite_checksum") != suite["checksum"]:
+        raise ValueError("boundary allocation suite checksum mismatch")
+    if allocation.get("digest") != canonical_manifest_digest(allocation, "digest"):
+        raise ValueError("boundary allocation digest mismatch")
+    if allocation.get("transitions") != list(BOUNDARY_TRANSITIONS):
+        raise ValueError("boundary allocation transitions mismatch")
+    if allocation.get("screening_visits") != list(BOUNDARY_SCREEN_VISITS):
+        raise ValueError("boundary screening grid mismatch")
+    if allocation.get("confirmation_visits") != list(BOUNDARY_CONFIRM_VISITS):
+        raise ValueError("boundary confirmation grid mismatch")
+    if allocation.get("screening_attempt_cap") != 20 or allocation.get("confirmation_attempt_cap") != 40:
+        raise ValueError("boundary allocation attempt caps mismatch")
+    expected = {
+        f"{phase}:{transition}:{visits}": cap
+        for phase, visits_grid, cap in (
+            ("screen", BOUNDARY_SCREEN_VISITS, 20),
+            ("confirm", BOUNDARY_CONFIRM_VISITS, 40),
+        )
+        for transition in BOUNDARY_TRANSITIONS
+        for visits in visits_grid
+    }
+    allocations = allocation.get("allocations")
+    if not isinstance(allocations, dict) or set(allocations) != set(expected):
+        raise ValueError("boundary allocation must have exact 1360-key coverage")
+    assigned = []
+    for key, count in expected.items():
+        ids = allocations[key]
+        if not isinstance(ids, list) or len(ids) != count or any(item not in by_id for item in ids):
+            raise ValueError(f"boundary allocation {key!r} is malformed")
+        assigned.extend(ids)
+    if len(assigned) != 1360 or len(set(assigned)) != 1360 or set(assigned) != set(by_id):
+        raise ValueError("every boundary opening must be assigned exactly once")
+    return suite, allocation
+
+
+def load_known_endpoints(path: Path = KNOWN_ENDPOINTS_PATH) -> Tuple[dict, str]:
+    manifest = _load_strict_json(Path(path))
+    if manifest.get("manifest_id") != "known-endpoints-exp3-v1":
+        raise ValueError("known endpoints manifest ID mismatch")
+    if manifest.get("protocol_version") != BOUNDARY_PROTOCOL_VERSION:
+        raise ValueError("known endpoints protocol mismatch")
+    digest = canonical_manifest_digest(manifest, "digest")
+    if manifest.get("digest") != digest:
+        raise ValueError("known endpoints manifest digest mismatch")
+    endpoints = manifest.get("endpoints")
+    if not isinstance(endpoints, list) or len(endpoints) != 4:
+        raise ValueError("known endpoints manifest requires exactly four transitions")
+    if [endpoint.get("transition") for endpoint in endpoints if isinstance(endpoint, dict)] != list(
+        BOUNDARY_TRANSITIONS
+    ):
+        raise ValueError("known endpoints must cover the four transitions in canonical order")
+    for endpoint in endpoints:
+        if endpoint.get("visits") != 40 or endpoint.get("classification") != "pass":
+            raise ValueError("known endpoint must be a passing visit-40 screen")
+        archive_path = _source_path(endpoint.get("archive_path"))
+        summary_path = _source_path(endpoint.get("source_summary_path"))
+        try:
+            archive = archive_path.read_bytes()
+            decompressed = gzip.decompress(archive)
+            summary_bytes = summary_path.read_bytes()
+        except (OSError, gzip.BadGzipFile) as exc:
+            raise ValueError(f"cannot validate known endpoint source: {exc}") from exc
+        if _sha256_bytes(archive) != endpoint.get("archive_sha256"):
+            raise ValueError("known endpoint archive SHA-256 mismatch")
+        if _sha256_bytes(decompressed) != endpoint.get("decompressed_sha256"):
+            raise ValueError("known endpoint decompressed SHA-256 mismatch")
+        if _sha256_bytes(summary_bytes) != endpoint.get("source_summary_sha256"):
+            raise ValueError("known endpoint summary SHA-256 mismatch")
+        try:
+            checkpoint_records = [json.loads(line) for line in decompressed.decode("utf-8").splitlines() if line]
+            header, games = checkpoint_records[0], checkpoint_records[1:]
+            configuration = header["configuration"]
+            summary = json.loads(summary_bytes)
+            low, high = endpoint["transition"].split("__")
+            player_a = f"{low}@40"
+            player_b = f"{high}@1s"
+            matches = [
+                matchup
+                for matchup in summary["matchups"]
+                if matchup.get("player_a") == player_a and matchup.get("player_b") == player_b
+            ]
+        except (IndexError, KeyError, TypeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError(f"known endpoint source summary is malformed: {exc}") from exc
+        if len(matches) != 1 or matches[0].get("a_winrate", -1) < 0.5:
+            raise ValueError("known endpoint source summary does not contain its passing screen")
+        if canonical_manifest_digest(matches[0]) != endpoint.get("source_summary_matchup_sha256"):
+            raise ValueError("known endpoint source-summary matchup digest mismatch")
+        if (
+            header.get("record_type") != "header"
+            or header.get("schema") != CHECKPOINT_SCHEMA
+            or header.get("fingerprint") != _configuration_fingerprint(configuration)
+        ):
+            raise ValueError("known endpoint checkpoint header or fingerprint mismatch")
+        players = configuration.get("players")
+        if (
+            not isinstance(players, Mapping)
+            or players.get("A", {}).get("label") != player_a
+            or players.get("B", {}).get("label") != player_b
+            or players.get("A", {}).get("visits") != 40
+            or players.get("B", {}).get("visits") != 1
+        ):
+            raise ValueError("known endpoint checkpoint transition does not match its manifest entry")
+        if (
+            configuration.get("phase") != "screen"
+            or configuration.get("target_complete_pairs") != 10
+            or configuration.get("max_pair_attempts") != 20
+        ):
+            raise ValueError("known endpoint checkpoint is not the fixed @40 screen protocol")
+        for index, game in enumerate(games):
+            if game.get("record_type") != "game" or game.get("fingerprint") != header["fingerprint"]:
+                raise ValueError("known endpoint checkpoint game fingerprint mismatch")
+            _validate_game_record(game, index, configuration)
+        sample = complete_pair_sample(games, phase="screen")
+        pair_attempts = 1 + max((game["pair_attempt"] for game in games), default=-1)
+        reason_counts = {}
+        for game in games:
+            reason_counts[game["result"]] = reason_counts.get(game["result"], 0) + 1
+        expected_summary = matches[0]
+        if (
+            sample["complete_pairs"] != 10
+            or sample["games"] != expected_summary.get("decision_games")
+            or sample["a_wins"] != expected_summary.get("a_wins")
+            or sample["inconclusive_pairs"] != expected_summary.get("inconclusive_pairs")
+            or pair_attempts != expected_summary.get("pair_attempts")
+            or reason_counts != expected_summary.get("reason_counts")
+            or expected_summary.get("target_complete_pairs") != 10
+            or expected_summary.get("max_pair_attempts") != 20
+            or expected_summary.get("phase") != "screen"
+            or expected_summary.get("classification") != "screen_complete"
+            or sample["a_wins"] / sample["games"] < 0.5
+        ):
+            raise ValueError("known endpoint checkpoint outcome does not match its passing source summary")
+    return manifest, digest
+
+
 def complete_pair_sample(records: List[Mapping[str, object]], *, phase: str) -> dict:
     grouped = {}
     for record in records:
@@ -244,7 +484,12 @@ def complete_pair_sample(records: List[Mapping[str, object]], *, phase: str) -> 
 
 
 def schedule_pair_games(
-    records: List[Mapping[str, object]], openings: List[Mapping[str, object]], *, phase: str, max_pair_attempts: int
+    records: List[Mapping[str, object]],
+    openings: List[Mapping[str, object]],
+    *,
+    phase: str,
+    max_pair_attempts: int,
+    cycle_openings: bool = True,
 ) -> List[dict]:
     if phase not in {"screen", "confirm"}:
         raise ValueError("phase must be screen or confirm")
@@ -252,6 +497,12 @@ def schedule_pair_games(
         raise ValueError("maximum pair attempts must be positive")
     if not openings:
         raise ValueError("opening suite is empty")
+    if not cycle_openings and len(openings) != max_pair_attempts:
+        raise ValueError("exact opening assignment must equal the maximum pair attempts")
+
+    def opening_for(attempt):
+        return openings[attempt % len(openings)] if cycle_openings else openings[attempt]
+
     completed_keys = set()
     for record in records:
         if record.get("phase") != phase:
@@ -260,7 +511,7 @@ def schedule_pair_games(
         color_index = record.get("color_index")
         if type(attempt) is not int or not 0 <= attempt < max_pair_attempts:
             raise ValueError("checkpoint exceeds maximum pair attempts")
-        expected = openings[attempt % len(openings)]
+        expected = opening_for(attempt)
         if record.get("opening_id") != expected["id"]:
             raise ValueError("checkpoint opening does not match pair schedule")
         if record.get("opening_moves") != expected["moves"]:
@@ -271,7 +522,7 @@ def schedule_pair_games(
         completed_keys.add(key)
     scheduled = []
     for attempt in range(max_pair_attempts):
-        opening = openings[attempt % len(openings)]
+        opening = opening_for(attempt)
         for color_index, a_color in enumerate(("B", "W")):
             if (attempt, color_index) not in completed_keys:
                 scheduled.append(
@@ -457,6 +708,68 @@ def parse_matchups(spec: str, *, experimental_min_humansl_search_visits: int = 4
     return out
 
 
+def resolve_boundary_assignment(
+    protocol_version: str,
+    *,
+    phase: str,
+    spec_a: str,
+    spec_b: str,
+    target_pairs: int,
+    max_pair_attempts: int,
+) -> dict:
+    if protocol_version != BOUNDARY_PROTOCOL_VERSION:
+        raise ValueError(f"unsupported boundary protocol {protocol_version!r}")
+    match = re.fullmatch(r"(rank_[5-8]d)@([0-9]+)", spec_a)
+    opponent = re.fullmatch(r"(rank_[6-9]d)@1s", spec_b)
+    if not match or not opponent:
+        raise ValueError("boundary protocol does not support this matchup")
+    transition = f"{match.group(1)}__{opponent.group(1)}"
+    if transition not in BOUNDARY_TRANSITIONS:
+        raise ValueError("boundary protocol does not support this rank transition")
+    visits = int(match.group(2))
+    allowed_visits = BOUNDARY_SCREEN_VISITS if phase == "screen" else BOUNDARY_CONFIRM_VISITS
+    expected_target = 10 if phase == "screen" else 20
+    expected_cap = 20 if phase == "screen" else 40
+    if phase not in {"screen", "confirm"} or visits not in allowed_visits:
+        raise ValueError("boundary protocol does not support this phase or visit point")
+    if target_pairs != expected_target or max_pair_attempts != expected_cap:
+        raise ValueError(f"boundary protocol requires target/cap {expected_target}/{expected_cap} for phase {phase}")
+    suite, allocation = load_boundary_opening_allocation()
+    known, known_digest = load_known_endpoints()
+    allocation_key = f"{phase}:{transition}:{visits}"
+    assigned_ids = allocation["allocations"][allocation_key]
+    by_id = {opening["id"]: opening for opening in suite["openings"]}
+    openings = [by_id[opening_id] for opening_id in assigned_ids]
+    known_endpoint = next(endpoint for endpoint in known["endpoints"] if endpoint["transition"] == transition)
+    source_digest = canonical_manifest_digest(known_endpoint)
+    fingerprint = {
+        "protocol_version": protocol_version,
+        "phase": phase,
+        "transition": transition,
+        "tested_visits": visits,
+        "point_estimate_pass_rule": BOUNDARY_POINT_ESTIMATE_PASS_RULE,
+        "finite_grid": list(BOUNDARY_GRID),
+        "search_order": BOUNDARY_SEARCH_ORDER,
+        "stopping_rule": BOUNDARY_STOPPING_RULE,
+        "target_complete_pairs": target_pairs,
+        "max_pair_attempts": max_pair_attempts,
+        "suite_checksum": suite["checksum"],
+        "allocation_digest": allocation["digest"],
+        "known_endpoints_digest": known_digest,
+        "known_endpoint_source_digest": source_digest,
+        "allocation_key": allocation_key,
+        "assigned_opening_ids": list(assigned_ids),
+        "assigned_opening_sequences": [list(opening["moves"]) for opening in openings],
+    }
+    return {
+        "suite": suite,
+        "allocation": allocation,
+        "known_endpoints": known,
+        "openings": openings,
+        "fingerprint": fingerprint,
+    }
+
+
 def _json_value(value):
     """Convert frozen capability mappings to canonical JSON-compatible values."""
     if isinstance(value, Mapping):
@@ -500,6 +813,7 @@ def _matchup_configuration(
     opening_suite: Optional[Mapping[str, object]] = None,
     experimental_min_humansl_search_visits: int = 40,
     boundary_protocol_version: Optional[str] = None,
+    boundary: Optional[Mapping[str, object]] = None,
 ) -> dict:
     if type(experimental_min_humansl_search_visits) is not int or experimental_min_humansl_search_visits < 2:
         raise ValueError("experimental HumanSL search minimum must be a plain int of at least 2")
@@ -526,46 +840,47 @@ def _matchup_configuration(
             "selection_algorithm_version": SELECTION_ALGORITHM_VERSION,
             "identity": dict(identities[side]),
         }
-    return _json_value(
-        {
-            "capability_schema": capabilities.get("capability_schema"),
-            "katago_version": capabilities.get("katago_version"),
-            "capability_snapshot": capabilities,
-            "boundary_protocol_version": boundary_protocol_version,
-            "experimental_min_humansl_search_visits": experimental_min_humansl_search_visits,
-            "players": configured_players,
-            "game": {
-                "board_size": BOARD_SIZE,
-                "komi": KOMI,
-                "rules": adapters.BaseEngine.get_rules(RULES),
-                "move_cap": MOVE_CAP,
+    configuration = {
+        "capability_schema": capabilities.get("capability_schema"),
+        "katago_version": capabilities.get("katago_version"),
+        "capability_snapshot": capabilities,
+        "boundary_protocol_version": boundary_protocol_version,
+        "experimental_min_humansl_search_visits": experimental_min_humansl_search_visits,
+        "players": configured_players,
+        "game": {
+            "board_size": BOARD_SIZE,
+            "komi": KOMI,
+            "rules": adapters.BaseEngine.get_rules(RULES),
+            "move_cap": MOVE_CAP,
+        },
+        "referee": {
+            "visits": REFEREE_VISITS,
+            "requested_main_model": "b28",
+            "requested_human_model": None,
+            "http_effective_overrides": {
+                "model": "b28",
+                "reportAnalysisWinratesAs": "BLACK",
             },
-            "referee": {
-                "visits": REFEREE_VISITS,
-                "requested_main_model": "b28",
-                "requested_human_model": None,
-                "http_effective_overrides": {
-                    "model": "b28",
-                    "reportAnalysisWinratesAs": "BLACK",
-                },
-                "identity": identities["referee"],
-            },
-            "adjudication_algorithm_version": ADJUDICATION_ALGORITHM_VERSION,
-            "wide_root_noise": wide_root_noise,
-            "symmetry_settings": SYMMETRY_SETTINGS,
-            "phase": phase,
-            "experiment4": experiment4,
-            "target_complete_pairs": target_pairs,
-            "max_pair_attempts": max_pair_attempts,
-            "opening_suite": {
-                "id": suite["suite_id"],
-                "suite_id": suite["suite_id"],
-                "seed": suite["seed"],
-                "board_size": suite["board_size"],
-                "checksum": suite["checksum"],
-            },
-        }
-    )
+            "identity": identities["referee"],
+        },
+        "adjudication_algorithm_version": ADJUDICATION_ALGORITHM_VERSION,
+        "wide_root_noise": wide_root_noise,
+        "symmetry_settings": SYMMETRY_SETTINGS,
+        "phase": phase,
+        "experiment4": experiment4,
+        "target_complete_pairs": target_pairs,
+        "max_pair_attempts": max_pair_attempts,
+        "opening_suite": {
+            "id": suite["suite_id"],
+            "suite_id": suite["suite_id"],
+            "seed": suite["seed"],
+            "board_size": suite["board_size"],
+            "checksum": suite["checksum"],
+        },
+    }
+    if boundary is not None:
+        configuration["boundary"] = dict(boundary)
+    return _json_value(configuration)
 
 
 def _validate_record_attestations(record: Mapping[str, object], configuration: Mapping[str, object]) -> None:
@@ -806,6 +1121,7 @@ async def run_matchup(
     experiment4: bool = False,
     max_pair_attempts: Optional[int] = None,
     experimental_min_humansl_search_visits: int = 40,
+    boundary_protocol: Optional[str] = None,
 ) -> dict:
     required = required_conclusive_pairs(phase, experiment4=experiment4)
     if type(target_pairs) is not int or target_pairs < required or (phase == "screen" and target_pairs != required):
@@ -815,7 +1131,21 @@ async def run_matchup(
         max_pair_attempts = max(target_pairs * 2, target_pairs + 10)
     elif type(max_pair_attempts) is not int or max_pair_attempts <= 0:
         raise ValueError("maximum pair attempts must be a positive plain int")
-    opening_suite = load_opening_suite()
+    boundary_inputs = None
+    if boundary_protocol is not None:
+        boundary_inputs = resolve_boundary_assignment(
+            boundary_protocol,
+            phase=phase,
+            spec_a=specA,
+            spec_b=specB,
+            target_pairs=target_pairs,
+            max_pair_attempts=max_pair_attempts,
+        )
+        opening_suite = boundary_inputs["suite"]
+        openings = boundary_inputs["openings"]
+    else:
+        opening_suite = load_opening_suite()
+        openings = opening_suite["openings"]
     playerA = make_player(specA, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
     playerB = make_player(specB, experimental_min_humansl_search_visits=experimental_min_humansl_search_visits)
     labelA, rungA, selA = playerA
@@ -833,7 +1163,8 @@ async def run_matchup(
         experiment4=experiment4,
         opening_suite=opening_suite,
         experimental_min_humansl_search_visits=experimental_min_humansl_search_visits,
-        boundary_protocol_version=None,
+        boundary_protocol_version=boundary_protocol,
+        boundary=boundary_inputs["fingerprint"] if boundary_inputs else None,
     )
     fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -850,7 +1181,8 @@ async def run_matchup(
             max_pair_attempts=max_pair_attempts,
             phase=phase,
             experiment4=experiment4,
-            openings=opening_suite["openings"],
+            openings=openings,
+            cycle_openings=boundary_inputs is None,
             client=client,
             base_url=base_url,
             wrn=wrn,
@@ -874,6 +1206,7 @@ async def _run_matchup_checkpoint(
     phase,
     experiment4,
     openings,
+    cycle_openings,
     client,
     base_url,
     wrn,
@@ -913,7 +1246,13 @@ async def _run_matchup_checkpoint(
         capabilities=capabilities,
     )
     with ckpt.open("a") as f:
-        scheduled = schedule_pair_games(records, openings, phase=phase, max_pair_attempts=max_pair_attempts)
+        scheduled = schedule_pair_games(
+            records,
+            openings,
+            phase=phase,
+            max_pair_attempts=max_pair_attempts,
+            cycle_openings=cycle_openings,
+        )
         for scheduled_game in scheduled:
             sample = complete_pair_sample(records, phase=phase)
             if sample["complete_pairs"] >= target_pairs:
@@ -1074,6 +1413,7 @@ async def main_async(args) -> int:
                     experiment4=args.experiment4,
                     max_pair_attempts=args.max_pair_attempts,
                     experimental_min_humansl_search_visits=args.experimental_min_humansl_search_visits,
+                    boundary_protocol=args.boundary_protocol,
                 )
             )
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1109,6 +1449,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=40,
         help="explicit HumanSL-search visit floor for operator-run experiments (default: 40; minimum: 2)",
+    )
+    p.add_argument(
+        "--boundary-protocol",
+        choices=(BOUNDARY_PROTOCOL_VERSION,),
+        default=None,
+        help="enable the frozen HumanSL boundary protocol and exact opening assignment",
     )
     return p
 

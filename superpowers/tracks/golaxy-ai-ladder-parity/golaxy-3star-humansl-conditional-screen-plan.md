@@ -10,6 +10,10 @@
 
 **Design:** `superpowers/tracks/golaxy-ai-ladder-parity/golaxy-3star-humansl-conditional-screen-design.md`
 
+> **执行状态（2026-07-25）：未按本计划实施。** 用户明确要求停止过度工程化并直接运行实验；实际只增加
+> 最小 fixed-screen preset 与条件调度，复用现有 preflight/ledger。专用 smoke、严格 replay 和离线 CLI
+> 等任务均取消。实际实现为 `aefc2076c49214108cdd328f23f4967acad228e6`，结果见 `EXPERIMENTS.md` §C20。
+
 ---
 
 ## Chunk 1: Protocol identity and strict conditional ledger

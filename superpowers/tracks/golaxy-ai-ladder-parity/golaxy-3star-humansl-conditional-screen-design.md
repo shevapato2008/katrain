@@ -4,6 +4,10 @@
 
 状态：用户已确认
 
+> 执行变更（2026-07-25）：用户随后明确要求简化并直接运行实验。实际执行只复用既有 fixed-screen
+> 账本/preflight，新增星阵3星 preset 与条件调度；本文原拟的专用 smoke artifact、严格新 ledger schema
+> 和恢复审计扩展均取消、未实现。实际协议与结果以 `EXPERIMENTS.md` §C20 为准。
+
 ## 目标
 
 寻找 HumanSL `rank_9d` 搜索配置与星阵最强公开档“星阵3星”的实测关系。主序列固定为

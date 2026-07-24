@@ -800,6 +800,30 @@ header 也没有 source-revision binding，因此恢复证据明确标记为 **`
 [`summary.json`](calibration/results/selfplay_v2_policy_argmax_gap_recovery/exploratory_adjacent_rank_1s/summary.json)
 （canonical digest `277cb36dad967824809c985ec46e6349a0a29366a127d11953a22ec9afb57555`）。原始工作区文件保持不变。
 
+### C20. 星阵3星对 HumanSL `rank_9d` visits 固定筛选（2026-07-25）
+
+按用户确认的条件筛选，先测试 `rank_9d@8` 对星阵“星阵3星/星猛虎”（core rung 36，真实 API wire
+level 3300）。每档取得5个有效结果，HumanSL 颜色为 B/W/B/W/B；若 `@8` 5–0 则向下测试 `@4/@2`，
+否则依次测试 `@16/@32/@64`。运行使用本机 b18 + humanv0 + canonical PIKL HumanSL 搜索，source revision
+`aefc2076c49214108cdd328f23f4967acad228e6`，独立 quota
+`golaxy3star-rank9d-conditional-20260725-a`。
+
+| HumanSL 配置 | 胜–负 | 胜率 | 黑/白有效局 | 不可判定 |
+|---|---:|---:|---:|---:|
+| `rank_9d@8` | **0–5** | 0% | 3/2 | 0 |
+| `rank_9d@16` | **0–5** | 0% | 3/2 | 0 |
+| `rank_9d@32` | **0–5** | 0% | 3/2 | 0 |
+| `rank_9d@64` | **0–5** | 0% | 3/2 | 0 |
+
+`@8` 首盘即负，因此未进入向下分支，`@4/@2` 均未运行。整轮20次计费尝试全部得到有效结果，HumanSL
+合计 **0–20**；runner 在完成 `@64` 第5局后以 `next_game=null` 正常退出。该结果显示在本实验配置下，
+即使把 `rank_9d` 搜索从8 visits 增加到64 visits，仍未在20局小样本中战胜星阵3星；它是明确的方向性
+筛选结果，但不用于估计 Elo 或证明真实胜率为0。
+
+原始 append-only 账本：
+`calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl`，SHA-256
+`851b5c5a205a94e203dc5f80b8b6ba99e037042f13c8868465cb019a4d6da37c`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -823,6 +847,8 @@ header 也没有 source-revision binding，因此恢复证据明确标记为 **`
   无不可判定局,5次计费尝试后按预声明停止。
 - [x] **星阵7D HumanSL固定筛选**:§C18 的 `rank_7d@4` 已完成5个有效结果并取得 **5–0**;
   第5次尝试未触发预期中的额度拒绝。
+- [x] **星阵3星 HumanSL visits 固定筛选**:§C20 的 `rank_9d@8/@16/@32/@64` 各完成5个有效结果，
+  四档均为 **0–5**，合计0–20；因 `@8` 非5–0，按条件协议未运行 `@4/@2`。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。
@@ -844,6 +870,7 @@ header 也没有 source-revision binding，因此恢复证据明确标记为 **`
 | 星阵9D `rank_9d@5/@6` 固定筛选 | `calibration/results/golaxy_9d_fixed_5_6_20260724/fixed_screen.jsonl` |
 | 星阵8D `rank_8d@4` 固定筛选 | `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl` |
 | 星阵7D `rank_7d@4` 固定筛选 | `calibration/results/golaxy_7d_rank_7d_4_20260724/fixed_screen.jsonl` |
+| 星阵3星 `rank_9d@8/@16/@32/@64` 固定筛选 | `calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |

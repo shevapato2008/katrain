@@ -63,6 +63,14 @@ def render_compose(production=False):
     return yaml.safe_load(result.stdout)
 
 
+def run_preflight(*args):
+    return subprocess.run(
+        [str(DEPLOY / "scripts" / "preflight.sh"), *map(str, args)],
+        text=True,
+        capture_output=True,
+    )
+
+
 def test_env_example_names_required_secrets_but_leaves_values_empty():
     lines = [
         line
@@ -288,3 +296,51 @@ def test_web_build_script_enforces_size_and_runtime_gates_without_shell_trace():
     assert "HOME=/home/katrain" in script
     assert "PlatformCredentialStore" in script
     assert "RepoDigests" not in script
+
+
+def test_preflight_capacity_fixtures_enforce_migration_headroom(tmp_path):
+    fixtures = Path(__file__).parent / "fixtures"
+    passed = run_preflight("--fixture", fixtures / "preflight-pass.env")
+    failed = run_preflight("--fixture", fixtures / "preflight-fail.env")
+
+    assert passed.returncode == 0, passed.stdout + passed.stderr
+    assert failed.returncode != 0
+    assert "requires at least 38500000000 bytes" in failed.stdout + failed.stderr
+
+    projected = tmp_path / "projected.env"
+    projected.write_text((fixtures / "preflight-pass.env").read_text().replace(
+        "FS_USED_BYTES=55000000000", "FS_USED_BYTES=60000000000"
+    ))
+    projected_result = run_preflight("--fixture", projected)
+    assert projected_result.returncode != 0
+    assert "projected filesystem use" in projected_result.stdout + projected_result.stderr
+
+
+def test_preflight_phases_isolate_runtime_and_network_gates(tmp_path):
+    fixture = (Path(__file__).parent / "fixtures" / "preflight-pass.env").read_text()
+    structural = tmp_path / "structural.env"
+    structural.write_text(fixture.replace("COMPOSE_OK=1", "COMPOSE_OK=0"))
+    assert run_preflight("--structural", "--fixture", structural).returncode != 0
+
+    network_bad = tmp_path / "network-bad.env"
+    network_bad.write_text(
+        fixture.replace("WG_PEER_OK=1", "WG_PEER_OK=0").replace("FIREWALL_OK=1", "FIREWALL_OK=0")
+    )
+
+    assert run_preflight("--phase", "capacity", "--fixture", network_bad).returncode == 0
+    assert run_preflight("--phase", "runtime", "--fixture", network_bad).returncode == 0
+    full = run_preflight("--phase", "full", "--fixture", network_bad)
+    assert full.returncode != 0
+    assert "WG_PEER_OK" in full.stderr and "FIREWALL_OK" in full.stderr
+
+    runtime_bad = tmp_path / "runtime-bad.env"
+    runtime_bad.write_text(
+        fixture.replace("SECRET_FILE_OK=1", "SECRET_FILE_OK=0")
+        .replace("IMAGES_OK=1", "IMAGES_OK=0")
+        .replace("PREVIEW_PROFILE_OK=1", "PREVIEW_PROFILE_OK=0")
+    )
+    runtime = run_preflight("--phase", "runtime", "--fixture", runtime_bad)
+    assert runtime.returncode != 0
+    assert "SECRET_FILE_OK" in runtime.stderr
+    assert "IMAGES_OK" in runtime.stderr
+    assert "PREVIEW_PROFILE_OK" in runtime.stderr

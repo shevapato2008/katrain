@@ -692,6 +692,22 @@ b18+humanv0+canonical PIKL,对手为星阵9D level3000,只访问本地 KataGo
 **528 passed**。源码门禁允许本次预声明等后续 Markdown-only commits 推进 `HEAD`,但 runner、共用
 alignment helper 或对应测试若相对该 revision 有任何提交/工作区变化,必须在星阵请求前拒绝。
 
+本轮已完成,固定 runner 正常退出(退出码0):
+
+| 棋手 | 有效战绩 vs 星阵9D | 有效胜率 | 有效局颜色 | 不可判定 | 计费尝试 |
+|---|---:|---:|---|---:|---:|
+| `rank_9d@5` | **5胜0负** | **100%** | B/W/B/W/B | 1(执白,原色补局) | 6 |
+| `rank_9d@6` | **4胜1负** | **80%** | W/B/W/B/W | 0 | 5 |
+| 合计 | **9胜1负** | **90%** | — | 1 | **11** |
+
+`@5` 与 `@6` 都在这组小样本筛选中明显占优;其中搜索更低的 `rank_9d@5` 已取得5个胜局,因此是当前
+更节省搜索的星阵9D产品对齐候选。`@5` 的5–0与`@6`的4–1不能用于反推 `@5` 强于`@6`,两者一盘之差
+应视为小样本波动。本轮按用户指定在各5个有效结果后停止,不自动追加确认赛。
+
+两档配置 fingerprint 分别为 `9297756ba210380eae4db8108011683451e525485dfc7a1fe7b683234cfb3752`
+与 `2caf4c97d22b2c39ac8e0156f52633a837cbb31da5aad3b84123aa92899511b4`;原始 append-only ledger
+`fixed_screen.jsonl` SHA-256 为 `5eb911b697de90dad5dca2d7b51a127af36788b747e13bca822af1725ea895c1`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -702,9 +718,10 @@ alignment helper 或对应测试若相对该 revision 有任何提交/工作区�
   其程序仅为边界定位所取代。`exp3-boundary-v1` 的四组独立 `@20` screening 已于 §C14 预声明,待运行。
 - [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
   `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
-- [ ] **星阵9D HumanSL产品档对齐(进行中)**:`rank_9d@8` 首批5–0,`rank_9d@4` 首批2–3;
+- [x] **星阵9D HumanSL产品档固定筛选**:`rank_9d@8` 首批5–0,`rank_9d@4` 首批2–3;
   `rank_9d@4` 已累计5–5成为实测对齐档。按 §C15 唯一下一批为把安全档 `rank_9d@8` 从5局补到
-  10局的旧计划已由用户停止;`@8` 保持9–0。当前按 §C16 固定筛选 `@5/@6` 各5局。
+  10局的旧计划已由用户停止;`@8` 保持9–0。§C16 固定筛选已完成:`@5` 5–0、`@6` 4–1;
+  搜索更低的 `@5` 是当前产品候选,本轮不自动追加确认赛。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。
@@ -723,6 +740,7 @@ alignment helper 或对应测试若相对该 revision 有任何提交/工作区�
 | 星阵 9D 锚点 | `calibration/results/rung_33.jsonl` |
 | 星阵 超职业 锚点 | `calibration/results/rung_36.jsonl` |
 | 星阵3星 visits 二分 | `calibration/results/rung_36_v20.jsonl`、`rung_36_v5.jsonl` |
+| 星阵9D `rank_9d@5/@6` 固定筛选 | `calibration/results/golaxy_9d_fixed_5_6_20260724/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |

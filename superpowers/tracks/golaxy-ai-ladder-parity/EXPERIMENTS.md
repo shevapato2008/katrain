@@ -724,6 +724,15 @@ alignment helper 或对应测试若相对该 revision 有任何提交/工作区�
 `057fb959474e92b1fc91753d2f89e57e3dcf7034`,相关回归 **196 passed**。任何 scoped runner/helper/test
 相对该 revision 的提交或工作区变化都必须在星阵请求前 fail closed。结果完成后在本节续写。
 
+**结果:** 固定 runner 正常退出(退出码0),`rank_8d@4` 对星阵8D取得 **5胜0负(100%)**。五个有效结果
+严格依次执 B/W/B/W/B,无不可判定局,因此只使用5次计费尝试。实际星阵请求日志和 ledger header 均记录
+wire level `2800`;全程使用同一配置 fingerprint
+`2b084fa06bb4f3be11ca6943677b03537e4d549566c75411ac9f259bb400914a`。
+
+这5局支持“`rank_8d@4` 至少不弱于星阵8D”的方向性结论,并否定了二者在该小样本中势均力敌的直观预期;
+但5–0仍是小样本筛选,不能量化真实胜率或 Elo 差。本轮按预声明停止,不自动追加确认赛。原始 append-only
+ledger SHA-256 为 `2f910b18413ed464926348bb71c9f1a65f845fdca90d3116067ba30a8068250a`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -738,6 +747,8 @@ alignment helper 或对应测试若相对该 revision 有任何提交/工作区�
   `rank_9d@4` 已累计5–5成为实测对齐档。按 §C15 唯一下一批为把安全档 `rank_9d@8` 从5局补到
   10局的旧计划已由用户停止;`@8` 保持9–0。§C16 固定筛选已完成:`@5` 5–0、`@6` 4–1;
   搜索更低的 `@5` 是当前产品候选,本轮不自动追加确认赛。
+- [x] **星阵8D HumanSL固定筛选**:§C17 的 `rank_8d@4` 已完成5个有效结果并取得 **5–0**;
+  无不可判定局,5次计费尝试后按预声明停止。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。
@@ -757,6 +768,7 @@ alignment helper 或对应测试若相对该 revision 有任何提交/工作区�
 | 星阵 超职业 锚点 | `calibration/results/rung_36.jsonl` |
 | 星阵3星 visits 二分 | `calibration/results/rung_36_v20.jsonl`、`rung_36_v5.jsonl` |
 | 星阵9D `rank_9d@5/@6` 固定筛选 | `calibration/results/golaxy_9d_fixed_5_6_20260724/fixed_screen.jsonl` |
+| 星阵8D `rank_8d@4` 固定筛选 | `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |

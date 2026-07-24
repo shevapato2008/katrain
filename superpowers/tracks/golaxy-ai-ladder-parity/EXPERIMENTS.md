@@ -708,6 +708,22 @@ alignment helper 或对应测试若相对该 revision 有任何提交/工作区�
 与 `2caf4c97d22b2c39ac8e0156f52633a837cbb31da5aad3b84123aa92899511b4`;原始 append-only ledger
 `fixed_screen.jsonl` SHA-256 为 `5eb911b697de90dad5dca2d7b51a127af36788b747e13bca822af1725ea895c1`。
 
+### C17. `rank_8d@4` 对星阵8D固定筛选预声明(2026-07-24)
+
+目标是检验用户提出的“星阵8D可能接近 HumanSL `rank_8d@4`”假设。本轮固定取得5个有效结果后停止,
+不做二分、自动追加或产品档选择:
+
+- 我方固定为修复后的 b18+humanv0+canonical PIKL `rank_8d@4`;
+- 对手固定为星阵“8段/星美鹿”,真实 API wire level **2800**(core rung 31),不是展示 Elo;
+- 有效局颜色固定为 B/W/B/W/B;不可判定局不进分母并以原颜色补局;
+- 新 quota ID 为 `golaxy8d-rank8d4-20260724-a`,最多9次可能计费尝试;token/7002/429/断连零重试停止;
+- 本地 KataGo 固定为 `http://127.0.0.1:8000`,输出固定到
+  `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl`,不与任何9D账本合并。
+
+固定 preset 为 `golaxy8d-rank8d4-20260724`;实现 source revision 为
+`057fb959474e92b1fc91753d2f89e57e3dcf7034`,相关回归 **196 passed**。任何 scoped runner/helper/test
+相对该 revision 的提交或工作区变化都必须在星阵请求前 fail closed。结果完成后在本节续写。
+
 ---
 
 ## D. 待办 / 开放项

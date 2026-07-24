@@ -588,6 +588,27 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision 451cd73b27c205f4518576f590943f2c0dd671b7 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
 
+**正式 `@20` screening 结果（2026-07-24 恢复归档）：**上述四组预声明样本均完成10个完整颜色
+pair，并按冻结的点估计 `>=50%` 规则通过：`rank_5d@20` 17–3、`rank_6d@20` 14–6、
+`rank_7d@20` 15–5、`rank_8d@20` 16–4。原始 header 均绑定 clean detached source
+`451cd73b27c205f4518576f590943f2c0dd671b7`、协议 `exp3-boundary-v1` 及上表三项冻结输入
+digest；预声明提交为 `6712b622b6db94c979961ab59e8f17b6a78afaa2` 和
+`bcf9080d80d2a991674ba71511c5559cda221170`。正式证据见
+[`manifest.json`](calibration/results/selfplay_v2_pikl_boundary_recovery/formal_screen_20/manifest.json)
+（canonical digest `0255ceb559ae05ff6660063b8053711eadced75e1dbcd04e5caf869689213a8e`）及
+[`summary.json`](calibration/results/selfplay_v2_pikl_boundary_recovery/formal_screen_20/summary.json)
+（canonical digest `afeb063d2facb6c81ba2fa5d86d8a2e759a2f13a0f1fb4af514252fa2a008f05`）。
+
+**回溯性手工续跑（仅描述性）：**随后观察到四个 transition 的 `@10/@5/@2` 共12个点也全部达到
+同一点估计阈值；`@2` 分别为15–5、13–7、12–8、12–8。但运行时尚无
+`boundary_protocol.py`、不可变 `history_*.json` 链及 `--boundary-history-manifest` 门禁，也未建立
+`selection_manifest_exp3_v1.json`，故这些点的 `evidence_class` 明确为 `descriptive_only`；
+它们不能补造 Task 5 合规性，也不能支持正式“边界 `<=2`”结论。恢复清单见
+[`manifest.json`](calibration/results/selfplay_v2_pikl_boundary_recovery/retrospective_manual_continuation/manifest.json)
+（canonical digest `027110163aef8e2f0985c0850d4f5971006f6d7181fa5ac501696a3e41d34fc3`）及
+[`summary.json`](calibration/results/selfplay_v2_pikl_boundary_recovery/retrospective_manual_continuation/summary.json)
+（canonical digest `15ebfd122b7fed3cb7047830fc19de8ff5c7e15558c6819a6592b4cc819b55f7`）。
+
 ### C15. 星阵 9D 与 HumanSL 产品档对齐预声明(2026-07-23)
 
 本实验独立于已结束的本地自对弈后台任务,直接在当前
@@ -763,7 +784,9 @@ append-only ledger SHA-256 为 `077f85aeab3e1cbbcbddd510df72438e0cf36a4b755ba39d
 - [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
   三段位确认样本点估计均略高于50%,但95% CI 全跨50%,结论为方向一致、统计不确定。
 - [ ] **实验(3)边界定位(进行中)**:旧 @40 batch 的两个 confirmation 已完成、一个中断、一个未启动;
-  其程序仅为边界定位所取代。`exp3-boundary-v1` 的四组独立 `@20` screening 已于 §C14 预声明,待运行。
+  `exp3-boundary-v1` 四组正式 `@20` screening 已完成且全部通过。另观察到手工续跑的
+  `@10/@5/@2` 全部通过，但因 Task 5 历史门禁缺失仅属描述性证据，不能正式报告边界 `<=2`；
+  Task 5 实现、合规历史链及后续候选冻结/confirmation 仍待完成。
 - [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
   `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
 - [x] **星阵9D HumanSL产品档固定筛选**:`rank_9d@8` 首批5–0,`rank_9d@4` 首批2–3;
@@ -798,5 +821,7 @@ append-only ledger SHA-256 为 `077f85aeab3e1cbbcbddd510df72438e0cf36a4b755ba39d
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |
+| 实验(3)正式 `@20` 恢复档案 | `calibration/results/selfplay_v2_pikl_boundary_recovery/formal_screen_20/` |
+| 实验(3)手工续跑描述性恢复档案 | `calibration/results/selfplay_v2_pikl_boundary_recovery/retrospective_manual_continuation/` |
 | schema 3 HumanSL 语义探针 | `calibration/results/semantic_probe/humansl_semantic_probe_20260721T183703.918547Z_c0bedf887cf3.json` |
 | 冒烟/level 探针 | `calibration/results/smoke_report.json` |

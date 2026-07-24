@@ -100,6 +100,14 @@
 
 ### Task 5: Protocol classification and next-point selection
 
+**2026-07-24 recovery status:** Task 5 was not implemented before the recovered continuation runs:
+`boundary_protocol.py`, immutable `history_*.json` manifests, and the
+`--boundary-history-manifest` launch gate were absent. The observed `@10/@5/@2` checkpoints were
+therefore manual, protocol-noncompliant continuation and are archived as `descriptive_only`.
+No Task 5 implementation checkbox below is complete, no history manifest or
+`selection_manifest_exp3_v1.json` is retroactively created, and the observations do not establish
+a formal `<=2` boundary.
+
 **Files:**
 - Create: `superpowers/tracks/golaxy-ai-ladder-parity/calibration/boundary_protocol.py`
 - Modify: `superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py`

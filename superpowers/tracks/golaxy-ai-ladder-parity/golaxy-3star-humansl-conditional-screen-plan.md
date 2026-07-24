@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11, pytest, httpx, existing KaTrain/HumanSL calibration helpers, append-only JSONL, SHA-256 evidence manifests.
 
-**Design:** `docs/superpowers/specs/2026-07-25-golaxy-3star-humansl-conditional-screen-design.md`
+**Design:** `superpowers/tracks/golaxy-ai-ladder-parity/golaxy-3star-humansl-conditional-screen-design.md`
 
 ---
 

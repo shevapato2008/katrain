@@ -1,0 +1,30 @@
+# KaTrain Web server and authentication
+fastapi==0.115.14
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# Text, localization, parsing, and external APIs
+chardet==5.2.0
+polib>=1.2.0,<2
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+openai>=1.0.0
+anthropic>=0.86.0
+httpx>=0.28.1
+requests==2.32.4
+
+# Persistence and migrations
+SQLAlchemy>=2.0.46
+psycopg2-binary>=2.9.0
+Alembic>=1.13.0
+
+# Media, storage, board, and computer vision
+edge-tts>=7.2.7
+boto3>=1.34.0
+pyserial>=3.5
+docutils>=0.21.2
+numpy>=1.24.0
+opencv-python-headless>=4.8.0

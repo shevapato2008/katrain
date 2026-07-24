@@ -59,7 +59,18 @@ GOLAXY_8D_PRESET = ScreenSpec(
     golaxy_api_level=2800,
     expected_out_dir=(_RESULTS_DIR / "golaxy_8d_rank_8d_4_20260724").resolve(),
 )
-PRESETS = {spec.name: spec for spec in (LEGACY_PRESET, GOLAXY_8D_PRESET)}
+GOLAXY_7D_PRESET = ScreenSpec(
+    name="golaxy7d-rank7d4-20260724",
+    players=("rank_7d@4",),
+    starting_colors=(("rank_7d@4", "B"),),
+    valid_per_player=5,
+    charged_cap=9,
+    golaxy_rung=29,
+    golaxy_level_name="7段",
+    golaxy_api_level=2500,
+    expected_out_dir=(_RESULTS_DIR / "golaxy_7d_rank_7d_4_20260724").resolve(),
+)
+PRESETS = {spec.name: spec for spec in (LEGACY_PRESET, GOLAXY_8D_PRESET, GOLAXY_7D_PRESET)}
 
 # Backward-compatible names for the completed 9D preset and its tests.
 PLAYERS = LEGACY_PRESET.players

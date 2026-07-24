@@ -60,6 +60,44 @@ def test_eight_d_preset_schedules_five_valid_games_and_repeats_inconclusive_colo
     assert fixed.next_game(inconclusive, spec) == fixed.FixedGame("rank_8d@4", "B")
 
 
+def test_seven_d_preset_is_exact_and_builds_rank_seven_player():
+    spec = fixed.GOLAXY_7D_PRESET
+    assert spec.name == "golaxy7d-rank7d4-20260724"
+    assert spec.players == ("rank_7d@4",)
+    assert spec.starting_colors == (("rank_7d@4", "B"),)
+    assert spec.valid_per_player == 5
+    assert spec.charged_cap == 9
+    assert (spec.golaxy_rung, spec.golaxy_level_name, spec.golaxy_api_level) == (29, "7段", 2500)
+    assert spec.expected_out_dir.name == "golaxy_7d_rank_7d_4_20260724"
+
+    label, rung, selection = fixed.make_fixed_player("rank_7d@4", spec)
+    assert label == "rank_7d@4"
+    assert rung.net == "b18"
+    assert rung.max_visits == 4
+    assert rung.human_sl_profile == "rank_7d"
+    assert rung.human_sl_params == HUMANSL_PIKL_BASELINE
+    assert selection == "search"
+    assert fixed.fixed_opponent(spec).golaxy_api_level == 2500
+
+
+def test_seven_d_preset_schedules_five_games_and_freezes_header_cap_and_output(tmp_path):
+    spec = fixed.GOLAXY_7D_PRESET
+    records = []
+    for color in ("B", "W", "B", "W", "B"):
+        game = fixed.next_game(records, spec)
+        assert game == fixed.FixedGame("rank_7d@4", color)
+        records.append({"type": "result", "player": game.player, "color": game.color, "outcome": "win"})
+    assert fixed.next_game(records, spec) is None
+    assert fixed.validate_output_path(str(spec.expected_out_dir), spec) == spec.expected_out_dir
+
+    ledger = fixed.FixedLedger.create(tmp_path, "golaxy7d-20260724", "f" * 40, spec)
+    assert ledger.records()[0]["golaxy"] == {"rung": 29, "level_name": "7段", "api_level": 2500}
+    for _ in range(9):
+        ledger.reserve(fixed.FixedGame("rank_7d@4", "B"), "fingerprint")
+    with pytest.raises(ValueError, match="9 charged"):
+        ledger.reserve(fixed.FixedGame("rank_7d@4", "B"), "fingerprint")
+
+
 def test_next_game_runs_five_then_six_with_opposite_starting_colors():
     records = []
     expected = [

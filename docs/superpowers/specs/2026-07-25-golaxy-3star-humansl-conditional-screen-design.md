@@ -14,7 +14,7 @@
 
 - 我方：`rank_9d@N`，b18 主模型、humanv0、canonical PIKL HumanSL 搜索配方；
   `N ∈ {2, 4, 8, 16, 32, 64}`。
-- 对手：星阵“星阵3星/星猛虎”，真实 API wire level `3300`，core rung 39；不得以展示 Elo
+- 对手：星阵“星阵3星/星猛虎”，真实 API wire level `3300`，当前分支 core rung 36；不得以展示 Elo
   或旧 b28“超职业”配置替代。
 - 棋盘：19路，中国规则，贴7.5目，无让子。
 - 每档目标：恰好5个有效结果。
@@ -46,7 +46,7 @@
   留出替补空间；每次远端调用前先持久化 reservation。
 - 每个棋手配置的有效 query、KataGo capability、模型 identity 和配置 fingerprint 必须在首局前
   通过本地 preflight，并在续跑时保持一致。
-- 协议/preset 名和星阵 rung 39 / wire level 3300 必须进入 fingerprint。远端停止码 smoke 证据必须
+- 协议/preset 名和星阵 rung 36 / wire level 3300 必须进入 fingerprint。远端停止码 smoke 证据必须
   由本协议专用的星阵3星 `3300` probe 生成并验证，不得复用只证明 level 3000 的旧 smoke report。
 - token/鉴权错误、7002、429、传输中断、远端协议异常、账本冲突或 identity 漂移立即停止，零自动重试。
 - reservation 一旦持久化就计入32次上限。若进程未能为它追加 result，该 reservation 保持未配对；
@@ -72,7 +72,7 @@
 
 ## 验证与报告
 
-- 单元测试覆盖星阵3星 rung 39 / wire level 3300 绑定、协议 fingerprint、3300 smoke evidence、两条
+- 单元测试覆盖星阵3星 rung 36 / wire level 3300 绑定、协议 fingerprint、3300 smoke evidence、两条
   条件路径、五局颜色、不可判定原色补局、合法重启恢复、未配对 reservation 阻断、恶意/损坏历史
   拒绝、32次额度上限、exact output path 和旧 preset 回归。
 - live 前先运行相关 pytest、源修订 attestation 和 local-only preflight；preflight 不读取星阵 token、

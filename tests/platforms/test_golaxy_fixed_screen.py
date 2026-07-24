@@ -98,6 +98,62 @@ def test_seven_d_preset_schedules_five_games_and_freezes_header_cap_and_output(t
         ledger.reserve(fixed.FixedGame("rank_7d@4", "B"), "fingerprint")
 
 
+def test_three_star_conditional_preset_is_exact():
+    spec = fixed.GOLAXY_3STAR_PRESET
+    assert spec.name == "golaxy3star-rank9d-conditional-20260725"
+    assert spec.players == (
+        "rank_9d@8",
+        "rank_9d@16",
+        "rank_9d@32",
+        "rank_9d@64",
+        "rank_9d@4",
+        "rank_9d@2",
+    )
+    assert spec.valid_per_player == 5
+    assert spec.charged_cap == 32
+    assert (spec.golaxy_rung, spec.golaxy_level_name, spec.golaxy_api_level) == (36, "星阵3星", 3300)
+    assert spec.expected_out_dir.name == "golaxy_3star_rank_9d_conditional_20260725"
+    assert fixed.fixed_opponent(spec).golaxy_api_level == 3300
+
+
+def _five_results(player, outcomes):
+    return [
+        {"type": "result", "player": player, "color": color, "outcome": outcome}
+        for color, outcome in zip(("B", "W", "B", "W", "B"), outcomes)
+    ]
+
+
+def test_three_star_five_zero_at_eight_goes_down_and_skips_upper_visits():
+    spec = fixed.GOLAXY_3STAR_PRESET
+    records = _five_results("rank_9d@8", ["win"] * 5)
+    assert fixed.next_game(records, spec) == fixed.FixedGame("rank_9d@4", "B")
+
+    records += _five_results("rank_9d@4", ["win"] * 5)
+    assert fixed.next_game(records, spec) == fixed.FixedGame("rank_9d@2", "B")
+
+    records += _five_results("rank_9d@2", ["win", "loss", "win", "loss", "win"])
+    assert fixed.next_game(records, spec) is None
+
+
+def test_three_star_non_sweep_at_eight_runs_upper_visits_in_order():
+    spec = fixed.GOLAXY_3STAR_PRESET
+    records = _five_results("rank_9d@8", ["win", "win", "win", "win", "loss"])
+    assert fixed.next_game(records, spec) == fixed.FixedGame("rank_9d@16", "B")
+
+    for player, next_player in (("rank_9d@16", "rank_9d@32"), ("rank_9d@32", "rank_9d@64")):
+        records += _five_results(player, ["win"] * 5)
+        assert fixed.next_game(records, spec) == fixed.FixedGame(next_player, "B")
+
+    records += _five_results("rank_9d@64", ["win"] * 5)
+    assert fixed.next_game(records, spec) is None
+
+
+def test_three_star_inconclusive_repeats_same_player_and_color():
+    spec = fixed.GOLAXY_3STAR_PRESET
+    records = [{"type": "result", "player": "rank_9d@8", "color": "B", "outcome": "inconclusive"}]
+    assert fixed.next_game(records, spec) == fixed.FixedGame("rank_9d@8", "B")
+
+
 def test_next_game_runs_five_then_six_with_opposite_starting_colors():
     records = []
     expected = [

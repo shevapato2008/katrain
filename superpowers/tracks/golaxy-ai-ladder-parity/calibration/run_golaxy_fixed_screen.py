@@ -70,7 +70,25 @@ GOLAXY_7D_PRESET = ScreenSpec(
     golaxy_api_level=2500,
     expected_out_dir=(_RESULTS_DIR / "golaxy_7d_rank_7d_4_20260724").resolve(),
 )
-PRESETS = {spec.name: spec for spec in (LEGACY_PRESET, GOLAXY_8D_PRESET, GOLAXY_7D_PRESET)}
+GOLAXY_3STAR_PRESET = ScreenSpec(
+    name="golaxy3star-rank9d-conditional-20260725",
+    players=("rank_9d@8", "rank_9d@16", "rank_9d@32", "rank_9d@64", "rank_9d@4", "rank_9d@2"),
+    starting_colors=(
+        ("rank_9d@8", "B"),
+        ("rank_9d@16", "B"),
+        ("rank_9d@32", "B"),
+        ("rank_9d@64", "B"),
+        ("rank_9d@4", "B"),
+        ("rank_9d@2", "B"),
+    ),
+    valid_per_player=5,
+    charged_cap=32,
+    golaxy_rung=36,
+    golaxy_level_name="星阵3星",
+    golaxy_api_level=3300,
+    expected_out_dir=(_RESULTS_DIR / "golaxy_3star_rank_9d_conditional_20260725").resolve(),
+)
+PRESETS = {spec.name: spec for spec in (LEGACY_PRESET, GOLAXY_8D_PRESET, GOLAXY_7D_PRESET, GOLAXY_3STAR_PRESET)}
 
 # Backward-compatible names for the completed 9D preset and its tests.
 PLAYERS = LEGACY_PRESET.players
@@ -135,6 +153,29 @@ def _valid_results(records: list[dict], player: str) -> list[dict]:
 
 def next_game(records: list[dict], spec: ScreenSpec = LEGACY_PRESET) -> FixedGame | None:
     starts = dict(spec.starting_colors)
+    if spec.name == GOLAXY_3STAR_PRESET.name:
+        eight_results = _valid_results(records, "rank_9d@8")
+        if len(eight_results) < spec.valid_per_player:
+            color = "B" if len(eight_results) % 2 == 0 else "W"
+            return FixedGame("rank_9d@8", color)
+
+        if all(record["outcome"] == "win" for record in eight_results):
+            branch = ("rank_9d@4",)
+            four_results = _valid_results(records, "rank_9d@4")
+            if len(four_results) == spec.valid_per_player and all(
+                record["outcome"] == "win" for record in four_results
+            ):
+                branch += ("rank_9d@2",)
+        else:
+            branch = ("rank_9d@16", "rank_9d@32", "rank_9d@64")
+
+        for player in branch:
+            completed = len(_valid_results(records, player))
+            if completed < spec.valid_per_player:
+                color = starts[player] if completed % 2 == 0 else "W"
+                return FixedGame(player, color)
+        return None
+
     for player in spec.players:
         completed = len(_valid_results(records, player))
         if completed < spec.valid_per_player:

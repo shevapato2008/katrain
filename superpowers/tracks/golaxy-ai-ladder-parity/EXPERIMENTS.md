@@ -733,6 +733,20 @@ wire level `2800`;全程使用同一配置 fingerprint
 但5–0仍是小样本筛选,不能量化真实胜率或 Elo 差。本轮按预声明停止,不自动追加确认赛。原始 append-only
 ledger SHA-256 为 `2f910b18413ed464926348bb71c9f1a65f845fdca90d3116067ba30a8068250a`。
 
+### C18. `rank_7d@4` 对星阵7D固定筛选预声明(2026-07-24)
+
+固定测试修复后的 b18+humanv0+canonical PIKL `rank_7d@4` 对星阵“7段/星奇豚”(core rung 29,
+真实 API wire level **2500**)。目标为5个有效结果,颜色固定 B/W/B/W/B;不可判定局原色补局。
+
+今日 §C16/§C17 已分别使用11/5次额度,预计只剩4次。按用户决定先取得可用的4局,随后仍尝试第5局:
+若正常返回则累计5个有效结果后停止;若返回额度耗尽/7002/429,零重试停止并保留调用前 reservation,
+额度恢复后以同一账本补齐第5个有效结果。本地 reservation cap 为9,只用于容纳被拒绝尝试和不可判定局,
+不绕过星阵服务端额度。
+
+固定 preset/quota 分别为 `golaxy7d-rank7d4-20260724` / `golaxy7d-rank7d4-20260724-a`;输出固定为
+`calibration/results/golaxy_7d_rank_7d_4_20260724/fixed_screen.jsonl`。实现 source revision 为
+`b354c66e7ca8283d099589deb3b0dea33f207e10`,相关回归 **198 passed**。结果或额度停止点完成后在本节续写。
+
 ---
 
 ## D. 待办 / 开放项

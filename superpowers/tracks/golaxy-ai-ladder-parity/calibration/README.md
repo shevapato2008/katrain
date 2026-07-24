@@ -420,6 +420,62 @@ gets handed back for the go/no-go decision on shipping the newly baked `ladder.p
 
 ---
 
+## Golaxy 9D HumanSL alignment batches
+
+The dedicated alignment runner is launched directly from the current
+`feature/golaxy-ai-ladder-parity` worktree with the `py311_katago` conda environment. It does
+not require a detached worktree. The frozen source revision below attests the executable
+alignment implementation; later documentation-only commits may advance `HEAD`, while any
+change to alignment runtime/helper/test sources fails closed.
+
+```bash
+export ALIGNMENT_REV=634ba17cddcdab989763ae9693ef9020ebef3cee
+export ALIGNMENT_LEDGER_REV=dd9d7e0130334865f58005c3e714d39505ebb22b
+export ALIGNMENT_OUT=/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/golaxy_9d_humansl_alignment
+export ALIGNMENT_QUOTA='<operator-confirmed unique quota id>'
+
+NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost KIVY_NO_ARGS=1 \
+  conda run -n py311_katago python \
+  superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_golaxy_9d_alignment.py \
+  --preflight-only --base-url http://127.0.0.1:8000 \
+  --expected-source-revision "$ALIGNMENT_REV" --out "$ALIGNMENT_OUT"
+```
+
+The existing 2026-07-23 ledger began on `ALIGNMENT_LEDGER_REV`, before observational probe
+counts were removed from the configuration fingerprint. Its audited `rank_9d@4` continuation
+also passes `--ledger-source-revision "$ALIGNMENT_LEDGER_REV" --resume-legacy-fingerprint
+c0867051b2a5bde164cd8a8e1d2036a3f3c890fd4e9f27849ca46767e1d143c4`. The exact legacy value
+must match the immutable checkpoint; omit both migration arguments for a brand-new experiment.
+
+After the operator has independently confirmed that the named Golaxy quota is unused, create
+its append-only local ledger entry exactly once:
+
+```bash
+NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost KIVY_NO_ARGS=1 \
+  conda run -n py311_katago python \
+  superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_golaxy_9d_alignment.py \
+  --create-quota-only --confirm-new-quota --quota-id "$ALIGNMENT_QUOTA" \
+  --base-url http://127.0.0.1:8000 --expected-source-revision "$ALIGNMENT_REV" \
+  --out "$ALIGNMENT_OUT"
+```
+
+Each normal live invocation runs only the single 5-conclusive-game batch currently authorized
+by the frozen protocol, then stops for review. It never creates or resets a quota:
+
+```bash
+NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost KIVY_NO_ARGS=1 \
+  caffeinate -dimsu conda run -n py311_katago python \
+  superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_golaxy_9d_alignment.py \
+  --quota-id "$ALIGNMENT_QUOTA" --base-url http://127.0.0.1:8000 \
+  --expected-source-revision "$ALIGNMENT_REV" --out "$ALIGNMENT_OUT"
+```
+
+`--summarize-only` uses the same revision and output arguments but needs neither the local
+engine nor a Golaxy token. Transport, token, quota, identity, or referee failures stop without
+retry; a reserved attempt remains charged.
+
+---
+
 ## Known open items (carried from `plan.md`)
 
 - Rung 37 is the api-less `b28@500` visits ceiling and is not a valid calibration anchor.

@@ -1,6 +1,8 @@
+import copy
 import importlib.util
 import json
 import math
+import sys
 from pathlib import Path
 
 import httpx
@@ -26,8 +28,10 @@ def _attestation(alias):
         "selected_model": alias,
         "model_path": f"/models/{alias}.bin.gz",
         "model_sha256": f"{alias}-sha",
+        "model_sha256_verified": True,
         "human_model_path": "/models/human.bin.gz",
         "human_model_sha256": "human-sha",
+        "human_model_sha256_verified": True,
         "katago_version": "KataGo v1.16.3",
     }
 
@@ -46,6 +50,7 @@ def _analysis(alias, request_id, moves, psv, orders):
 
 def _health():
     return {
+        "status": "ok",
         "capability_schema": 1,
         "katago_version": "KataGo v1.16.3",
         "default_model": "b28",
@@ -104,6 +109,236 @@ def _canonical_pikl_spec(probe, pikl_lambda):
     return rung_strength_spec(rung)
 
 
+def _low_visits_exchange(probe, *, visits=20, floor=20):
+    request = probe.build_low_visits_probe_request("run-abc", visits, experimental_min_humansl_search_visits=floor)
+    response = _analysis("b18", request["id"], ["R2", "O6"], [85.0, 0.5], [0, 1])
+    response["rootInfo"]["visits"] = visits
+    return request, response
+
+
+def test_low_visits_probe_floor_contract():
+    probe = _load_probe()
+
+    with pytest.raises(ValueError, match="experimental.*minimum"):
+        probe.build_low_visits_probe_request("run-abc", 20)
+    accepted = probe.build_low_visits_probe_request("run-abc", 20, experimental_min_humansl_search_visits=20)
+    assert accepted["maxVisits"] == 20
+    with pytest.raises(ValueError, match="experimental.*minimum"):
+        probe.build_low_visits_probe_request("run-abc", 19, experimental_min_humansl_search_visits=20)
+    for bad_floor in (1, True, 20.0, "20"):
+        with pytest.raises(ValueError, match="plain int.*at least 2"):
+            probe.build_low_visits_probe_request("run-abc", 20, experimental_min_humansl_search_visits=bad_floor)
+
+
+@pytest.mark.asyncio
+async def test_run_probe_validates_supplied_floor_without_low_visits():
+    probe = _load_probe()
+
+    def fail_request(_request):
+        raise AssertionError("invalid floor reached the network")
+
+    with pytest.raises(ValueError, match="plain int.*at least 2"):
+        await probe.run_probe(
+            "http://127.0.0.1:8000",
+            run_id="invalid-floor",
+            experimental_min_humansl_search_visits=1,
+            transport=httpx.MockTransport(fail_request),
+        )
+
+
+def test_cli_rejects_invalid_supplied_floor_without_network(monkeypatch, capsys):
+    probe = _load_probe()
+
+    def fail_client(*_args, **_kwargs):
+        raise AssertionError("invalid floor constructed a network client")
+
+    assert probe.build_arg_parser().parse_args([]).experimental_min_humansl_search_visits == 40
+    monkeypatch.setattr(probe.httpx, "AsyncClient", fail_client)
+    monkeypatch.setattr(sys, "argv", ["probe_humansl_search.py", "--experimental-min-humansl-search-visits", "1"])
+
+    assert probe.main() == 1
+    assert "plain int of at least 2" in capsys.readouterr().out
+
+
+def test_low_visits_probe_has_exact_canonical_pikl_recipe():
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    expected_spec = _canonical_pikl_spec(probe, HUMANSL_PIKL_BASELINE["humanSLChosenMovePiklLambda"])
+    expected_overrides = {"model": "b18", **dict(expected_spec.override_settings)}
+
+    assert request == {
+        **probe._base_query("low_visits", "run-abc"),
+        "maxVisits": 20,
+        "overrideSettings": expected_overrides,
+    }
+    assert request["overrideSettings"]["humanSLProfile"] == "rank_9d"
+    assert request["overrideSettings"]["ignorePreRootHistory"] is False
+    assert {key: request["overrideSettings"][key] for key in HUMANSL_PIKL_BASELINE} == HUMANSL_PIKL_BASELINE
+
+    result = probe.validate_low_visits_probe_result(
+        _health(),
+        request,
+        response,
+        low_visits=20,
+        experimental_min_humansl_search_visits=20,
+    )
+    configuration = result["configuration"]
+    assert configuration["visits"] == 20
+    assert configuration["experimental_min_humansl_search_visits"] == 20
+    assert configuration["requested_main_model"] == "b18"
+    assert configuration["requested_human_model"] == "humanv0"
+    assert configuration["effective_overrides"] == dict(expected_spec.override_settings)
+    assert configuration["http_effective_overrides"] == expected_overrides
+    assert configuration["capability_schema"] == 1
+    assert configuration["katago_version"] == "KataGo v1.16.3"
+    assert configuration["capability_snapshot"] == _health()
+    assert configuration["identity"]["model_sha256_verified"] is True
+    assert configuration["identity"]["human_model_sha256_verified"] is True
+    assert result["request"] == request
+    assert result["response"] == response
+    assert result["request_sha256"] == probe.fingerprint_wire_body(request)
+    assert result["response_sha256"] == probe.fingerprint_wire_body(response)
+    assert result["configuration_sha256"] == probe.fingerprint_wire_body(configuration)
+
+
+def test_low_visits_probe_rejects_missing_zeroed_or_mismatched_attestation():
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+
+    for mutate, match in [
+        (lambda req, _res, _health: req["overrideSettings"].pop("humanSLCpuctPermanent"), "PIKL"),
+        (lambda req, _res, _health: req["overrideSettings"].update(humanSLCpuctPermanent=0.0), "PIKL"),
+        (lambda _req, res, _health: res["_wrapper"].update(selected_model="b28"), "attestation"),
+        (lambda _req, res, _health: res["_wrapper"].pop("human_model_sha256"), "attestation"),
+        (lambda _req, res, _health: res["_wrapper"].update(model_sha256_verified=False), "attestation"),
+        (lambda _req, _res, health: health["models"].pop("b18"), "b18"),
+        (lambda _req, _res, health: health["models"]["b18"].update(model_sha256_verified=False), "verified"),
+        (lambda _req, _res, health: health["models"]["b18"].update(has_human_model=False), "human"),
+        (
+            lambda _req, _res, health: health["models"]["b18"].update(human_model_sha256_verified=False),
+            "human",
+        ),
+    ]:
+        changed_request, changed_response, changed_health = copy.deepcopy((request, response, _health()))
+        mutate(changed_request, changed_response, changed_health)
+        with pytest.raises(ValueError, match=match):
+            probe.validate_low_visits_probe_result(
+                changed_health,
+                changed_request,
+                changed_response,
+                low_visits=20,
+                experimental_min_humansl_search_visits=20,
+            )
+
+
+@pytest.mark.parametrize("reported_visits", [3, 27])
+def test_low_visits_probe_accepts_bounded_pruned_root_visits(reported_visits):
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    response["rootInfo"]["visits"] = reported_visits
+
+    result = probe.validate_low_visits_probe_result(
+        _health(),
+        request,
+        response,
+        low_visits=20,
+        experimental_min_humansl_search_visits=20,
+    )
+
+    assert result["requested_max_visits"] == 20
+    assert result["reported_root_visits"] == reported_visits
+
+
+@pytest.mark.parametrize(
+    "root_info", [None, {}, {"visits": True}, {"visits": 0}, {"visits": -1}, {"visits": 28}, {"visits": 500}]
+)
+def test_low_visits_probe_rejects_invalid_or_excessive_root_visits(root_info):
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    if root_info is None:
+        response.pop("rootInfo")
+    else:
+        response["rootInfo"] = root_info
+
+    with pytest.raises(ValueError, match=r"rootInfo\.visits"):
+        probe.validate_low_visits_probe_result(
+            _health(),
+            request,
+            response,
+            low_visits=20,
+            experimental_min_humansl_search_visits=20,
+        )
+
+
+def test_validate_results_accepts_live_nonselected_order_drift():
+    probe = _load_probe()
+    requests, responses = _valid_exchange(probe)
+    responses["b18_pikl_high"]["moveInfos"][1]["order"] = 2
+
+    summary = _validate(probe, requests, responses)
+
+    assert summary["selected_moves"]["b18_pikl_low"] == "R2"
+    assert summary["selected_moves"]["b18_pikl_high"] == "O6"
+    assert summary["pikl_orders"]["high"] == {"R2": 2, "O6": 0}
+
+
+@pytest.mark.parametrize("field", ["model_sha256_verified", "human_model_sha256_verified"])
+@pytest.mark.parametrize("bad_value", [None, False, 1])
+def test_low_visits_probe_requires_strict_wrapper_verified_states(field, bad_value):
+    probe = _load_probe()
+    request, response = _low_visits_exchange(probe)
+    if bad_value is None:
+        response["_wrapper"].pop(field)
+    else:
+        response["_wrapper"][field] = bad_value
+
+    with pytest.raises(ValueError, match="attestation"):
+        probe.validate_low_visits_probe_result(
+            _health(),
+            request,
+            response,
+            low_visits=20,
+            experimental_min_humansl_search_visits=20,
+        )
+
+
+@pytest.mark.asyncio
+async def test_low_visits_run_adds_separate_strict_request_and_result_sections(tmp_path, monkeypatch):
+    probe = _load_probe()
+    monkeypatch.setattr(probe, "RESULTS_DIR", tmp_path)
+    posted = []
+
+    def handler(request):
+        if request.method == "GET":
+            return httpx.Response(200, json=_health())
+        body = json.loads(request.content)
+        posted.append(body)
+        case = body["id"].rsplit(":", 1)[1]
+        alias = "b28" if case == "b28_base" else "b18"
+        moves = ["O6", "R2"] if case in {"b18_pikl_high", "b28_base"} else ["R2", "O6"]
+        values = [35.0, 23.0] if moves[0] == "O6" else [85.0, 0.5]
+        response = _analysis(alias, body["id"], moves, values, [0, 1])
+        response["rootInfo"]["visits"] = body["maxVisits"]
+        return httpx.Response(200, json=response)
+
+    payload, output = await probe.run_probe(
+        "http://127.0.0.1:8000",
+        run_id="low-run",
+        low_visits=20,
+        experimental_min_humansl_search_visits=20,
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert len(posted) == 6
+    assert posted[:5] == list(payload["wire_requests"].values())
+    assert posted[5] == payload["low_visits_request"]
+    assert payload["low_visits_result"]["response"]["id"] == payload["low_visits_request"]["id"]
+    assert json.loads(output.read_text())["low_visits_result"] == payload["low_visits_result"]
+
+    args = probe.build_arg_parser().parse_args(["--low-visits", "20", "--experimental-min-humansl-search-visits", "20"])
+    assert (args.low_visits, args.experimental_min_humansl_search_visits) == (20, 20)
+
+
 def test_builds_exact_five_run_unique_wire_requests_from_production_recipe():
     probe = _load_probe()
     requests = probe.build_probe_requests("run-abc")
@@ -137,7 +372,7 @@ def test_builds_exact_five_run_unique_wire_requests_from_production_recipe():
     assert all(zero[key] == 0.0 for key in probe.HUMANSL_BLEND_KEYS)
 
 
-def test_locked_fixture_declares_controls_and_lambda_order_swap():
+def test_locked_fixture_declares_controls_and_lambda_selection_swap():
     probe = _load_probe()
 
     assert probe.LOCKED_LAMBDAS == (0.01, 100.0)
@@ -147,8 +382,7 @@ def test_locked_fixture_declares_controls_and_lambda_order_swap():
         "b18_pikl_low": "R2",
         "b18_pikl_high": "O6",
     }
-    assert probe.LOCKED_EXPECTED["b18_pikl_low"]["orders"] == {"R2": 0, "O6": 1}
-    assert probe.LOCKED_EXPECTED["b18_pikl_high"]["orders"] == {"R2": 1, "O6": 0}
+    assert all(set(expected) == {"move"} for expected in probe.LOCKED_EXPECTED.values())
 
 
 def test_validate_results_checks_ids_attestation_wire_fingerprints_and_semantics():
@@ -260,6 +494,8 @@ async def test_run_probe_posts_exactly_five_and_persists_exact_wire_bodies(tmp_p
     assert payload["summary"]["request_fingerprints"] == {
         case: probe.fingerprint_wire_body(body) for case, body in payload["wire_requests"].items()
     }
+    assert "low_visits_request" not in payload
+    assert "low_visits_result" not in payload
     assert json.loads(output.read_text())["wire_requests"] == payload["wire_requests"]
 
 

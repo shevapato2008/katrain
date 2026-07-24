@@ -286,6 +286,29 @@ async def test_adjudicate_routes_b28_and_rejects_bad_attestation(wrapper):
     assert seen["body"]["overrideSettings"]["model"] == "b28"
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("wrapper", [None, attestation(model_sha256="wrong")])
+async def test_adjudicate_strict_identity_raises_typed_error_but_default_is_compatible(wrapper):
+    def h(_req):
+        body = {"rootInfo": {"scoreLead": 12.0}, "ownership": [1.0] * 361}
+        if wrapper is not None:
+            body["_wrapper"] = wrapper
+        return httpx.Response(200, json=body)
+
+    with pytest.raises(adapters.LadderMoveError):
+        await adapters.adjudicate(
+            mk(h),
+            "http://x:8000",
+            moves_golaxy=[],
+            capabilities=health_snapshot(),
+            strict_identity=True,
+        )
+    assert await adapters.adjudicate(mk(h), "http://x:8000", moves_golaxy=[], capabilities=health_snapshot()) == (
+        None,
+        False,
+    )
+
+
 class _AsyncClientContext:
     async def __aenter__(self):
         return self

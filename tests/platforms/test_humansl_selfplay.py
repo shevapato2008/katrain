@@ -1,4 +1,5 @@
 import importlib
+import copy
 import json
 import math
 import sys
@@ -8,7 +9,6 @@ import httpx
 import pytest
 
 from katrain.core.ladder import HUMANSL_PIKL_BASELINE
-
 
 CALIBRATION_DIR = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladder-parity/calibration"
 sys.path.insert(0, str(CALIBRATION_DIR))
@@ -57,6 +57,90 @@ def test_player_preserves_native_and_pure_search_modes(spec, mechanism, net, sel
 def test_player_rejects_unsupported_humansl_search_visits(visits):
     with pytest.raises(ValueError, match=r"HumanSL search.*minimum.*40"):
         selfplay.make_player(f"rank_9d@{visits}")
+
+
+def test_low_humansl_search_requires_explicit_floor():
+    with pytest.raises(ValueError, match=r"HumanSL search.*minimum.*40"):
+        selfplay.make_player("rank_9d@20")
+
+    label, rung, selection = selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=20)
+
+    assert label == "rank_9d@20"
+    assert rung.max_visits == 20
+    assert rung.mechanism == "humansl_search"
+    assert selection == "search"
+
+
+def test_experimental_floor_scope_and_validation():
+    with pytest.raises(ValueError, match=r"minimum.*21"):
+        selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=21)
+    with pytest.raises(ValueError, match=r"plain int.*at least 2"):
+        selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=1)
+    with pytest.raises(ValueError, match=r"plain int.*at least 2"):
+        selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=True)
+
+    _, native, native_selection = selfplay.make_player("rank_9d@1s", experimental_min_humansl_search_visits=20)
+    _, pure_net, pure_net_selection = selfplay.make_player("b28@20", experimental_min_humansl_search_visits=21)
+
+    assert (native.max_visits, native_selection) == (1, "argmax_human")
+    assert (pure_net.max_visits, pure_net_selection) == (20, "search")
+    assert selfplay.parse_matchups("rank_9d@20:b28@20:10", experimental_min_humansl_search_visits=20) == [
+        ("rank_9d@20", "b28@20", 10)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_low_humansl_search_preserves_canonical_query_contract():
+    _, rung, selection = selfplay.make_player("rank_9d@20", experimental_min_humansl_search_visits=20)
+    spec = selfplay.rung_strength_spec(rung)
+    capabilities = _health_snapshot()
+    identity = selfplay._preflight_capabilities(
+        capabilities,
+        {"A": ("rank_9d@20", rung, selection), "B": selfplay.make_player("b28@20")},
+    )["A"]
+    expected_identity = _attestation(
+        selected_model="b18",
+        model_path="/models/b18.bin.gz",
+        model_sha256="b18-sha",
+    )
+
+    assert spec.visits == 20
+    assert spec.main_model == "b18"
+    assert spec.human_model == "humanv0"
+    assert all(spec.override_settings[key] == value for key, value in HUMANSL_PIKL_BASELINE.items())
+    assert all(
+        spec.override_settings[key] != 0
+        for key, value in HUMANSL_PIKL_BASELINE.items()
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value != 0
+    )
+    assert identity == expected_identity
+
+    def handler(request):
+        query = json.loads(request.content)
+        assert query["maxVisits"] == 20
+        assert query["overrideSettings"]["model"] == "b18"
+        assert all(query["overrideSettings"][key] == value for key, value in HUMANSL_PIKL_BASELINE.items())
+        return httpx.Response(
+            200,
+            json={"moveInfos": [{"move": "Q16", "order": 0}], "_wrapper": expected_identity},
+        )
+
+    attestations = []
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=capabilities,
+            attestations=attestations,
+            player="A",
+        )
+
+    assert result != "unavailable"
+    assert attestations == [{"ply": 0, "player": "A", "identity": expected_identity}]
 
 
 def test_player_rejects_search_suffix_above_one_visit():
@@ -248,10 +332,157 @@ async def test_humansl_search_move_records_complete_b18_attestation():
     assert attestations == [{"ply": 0, "player": "A", "identity": b18_attestation}]
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "analysis",
+    [
+        {"moveInfos": [{"move": "Q16", "order": 0}]},
+        {
+            "moveInfos": [{"move": "Q16", "order": 0}],
+            "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="drifted"),
+        },
+        {
+            "moveInfos": [{"move": "Q16", "order": 0}],
+            "_wrapper": _attestation(selected_model="b28"),
+        },
+        {
+            "moveInfos": [{"move": "Q16", "order": 0}],
+            "_wrapper": _attestation(
+                selected_model="b18",
+                model_path="/models/b18.bin.gz",
+                model_sha256="b18-sha",
+                human_model_sha256="drifted",
+            ),
+        },
+        {
+            "moveInfos": [],
+            "_wrapper": _attestation(selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha"),
+        },
+    ],
+)
+async def test_strict_player_move_raises_typed_error_while_default_remains_fail_soft(analysis):
+    _, rung, selection = selfplay.make_player("rank_9d@8", experimental_min_humansl_search_visits=2)
+
+    def handler(_request):
+        return httpx.Response(200, json=analysis)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+        assert (
+            await selfplay._player_move(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+            == "unavailable"
+        )
+
+
+@pytest.mark.asyncio
+async def test_strict_argmax_requires_valid_human_policy_and_known_selection():
+    _, rung, selection = selfplay.make_player("rank_9d@1s")
+
+    def handler(_request):
+        return httpx.Response(200, json={"humanPolicy": [], "_wrapper": _attestation()})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError, match="humanPolicy"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+        with pytest.raises(selfplay.LadderMoveError, match="selection"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection="drifted",
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("player_spec", "wrong_selection"),
+    [("rank_9d@1s", "weighted"), ("rank_9d@8", "argmax_human")],
+)
+async def test_strict_player_move_rejects_recognized_but_wrong_selection_mode(player_spec, wrong_selection):
+    _, rung, _selection = selfplay.make_player(player_spec, experimental_min_humansl_search_visits=2)
+
+    def handler(_request):
+        pytest.fail("selection drift must be rejected before an engine request")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError, match="selection"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=wrong_selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+
+
+@pytest.mark.asyncio
+async def test_strict_player_move_rejects_post_construction_pikl_drift_while_default_is_fail_soft():
+    _, rung, selection = selfplay.make_player("rank_9d@8", experimental_min_humansl_search_visits=2)
+    rung.human_sl_params["humanSLCpuctPermanent"] += 0.5
+
+    def handler(_request):
+        pytest.fail("PIKL drift must be rejected before an engine request")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(selfplay.LadderMoveError, match="PIKL"):
+            await selfplay.player_move_strict(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+        assert (
+            await selfplay._player_move(
+                client,
+                "http://engine",
+                [],
+                rung=rung,
+                selection=selection,
+                wrn=0.04,
+                capabilities=_health_snapshot(),
+            )
+            == "unavailable"
+        )
+
+
 def test_default_result_namespace_is_v2_pikl_and_legacy_namespace_is_rejected():
     args = selfplay.build_arg_parser().parse_args(["--matchups", "rank_9d@80:rank_9d@40:1"])
 
     assert Path(args.out).name == "selfplay_v2_pikl"
+    assert args.experimental_min_humansl_search_visits == 40
     with pytest.raises(ValueError, match=r"legacy.*selfplay_v2_pikl"):
         selfplay._validated_out_dir(Path(selfplay.__file__).parent / "results" / "selfplay")
 
@@ -308,6 +539,10 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
 
     assert configuration["capability_schema"] == 1
     assert configuration["katago_version"] == "KataGo v1.16.3"
+    assert configuration["boundary_protocol_version"] is None
+    assert configuration["experimental_min_humansl_search_visits"] == 40
+    assert configuration["capability_snapshot"]["models"]["b18"]["model_sha256_verified"] is True
+    assert configuration["capability_snapshot"]["models"]["b18"]["human_model_sha256_verified"] is True
     assert configuration["players"]["A"]["identity"]["model_sha256"] == "b18-sha"
     assert configuration["players"]["A"]["identity"]["human_model_sha256"] == "human-sha"
     assert all(
@@ -316,6 +551,7 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
     )
     assert configuration["players"]["A"]["effective_overrides"]["humanSLProfile"] == "rank_9d"
     assert configuration["players"]["A"]["requested_main_model"] == "b18"
+    assert configuration["players"]["A"]["requested_human_model"] == "humanv0"
     assert configuration["players"]["A"]["http_effective_overrides"]["model"] == "b18"
     assert configuration["players"]["A"]["http_effective_overrides"]["wideRootNoise"] == 0.04
     assert configuration["players"]["A"]["visits"] == 40
@@ -329,6 +565,7 @@ def test_fingerprint_configuration_captures_all_strength_relevant_inputs():
     }
     assert configuration["referee"]["visits"] == 200
     assert configuration["referee"]["requested_main_model"] == "b28"
+    assert configuration["referee"]["requested_human_model"] is None
     assert configuration["referee"]["http_effective_overrides"] == {
         "model": "b28",
         "reportAnalysisWinratesAs": "BLACK",
@@ -667,6 +904,580 @@ def test_checkpoint_lock_selects_windows_backend_when_fcntl_is_unavailable(tmp_p
     with selfplay._checkpoint_lock(tmp_path / "match.jsonl"):
         assert fake.calls == [(fake.LK_NBLCK, 1)]
     assert fake.calls == [(fake.LK_NBLCK, 1), (fake.LK_UNLCK, 1)]
+
+
+def test_boundary_allocation_is_complete_and_disjoint():
+    suite, allocation = selfplay.load_boundary_opening_allocation()
+    prior = selfplay.load_opening_suite()
+
+    assert suite["suite_id"] == "humansl-boundary-opening-suite-v1"
+    assert suite["seed"] == 20260722
+    assert len(suite["openings"]) == 1360
+    assert len(allocation["allocations"]) == 44
+    assert sum(len(ids) for ids in allocation["allocations"].values()) == 1360
+    assert all(len(ids) == (20 if key.startswith("screen:") else 40) for key, ids in allocation["allocations"].items())
+    sequences = [tuple(opening["moves"]) for opening in suite["openings"]]
+    assert len(sequences) == len(set(sequences)) == 1360
+    assert set(sequences).isdisjoint(tuple(opening["moves"]) for opening in prior["openings"])
+
+
+def test_boundary_allocation_rejects_checksum_or_sequence_drift(tmp_path):
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    suite_path = tmp_path / "suite.json"
+    allocation_path = tmp_path / "allocation.json"
+
+    suite["openings"][0]["moves"][0] = (suite["openings"][0]["moves"][0] + 1) % 361
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+    with pytest.raises(ValueError, match="suite checksum"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    suite["openings"][1]["moves"] = suite["openings"][0]["moves"]
+    suite["checksum"] = selfplay.canonical_manifest_digest(suite, "checksum")
+    allocation["suite_checksum"] = suite["checksum"]
+    allocation["digest"] = selfplay.canonical_manifest_digest(allocation, "digest")
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+    with pytest.raises(ValueError, match="globally unique"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    allocation["allocations"]["screen:rank_5d__rank_6d:2"][1] = allocation["allocations"]["screen:rank_5d__rank_6d:2"][
+        0
+    ]
+    allocation["digest"] = selfplay.canonical_manifest_digest(allocation, "digest")
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+    with pytest.raises(ValueError, match="assigned exactly once"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+
+def test_known_endpoints_bind_all_prior_40_screens(tmp_path):
+    manifest, digest = selfplay.load_known_endpoints()
+
+    assert len(digest) == 64
+    assert [endpoint["transition"] for endpoint in manifest["endpoints"]] == list(selfplay.BOUNDARY_TRANSITIONS)
+    assert all(endpoint["visits"] == 40 and endpoint["classification"] == "pass" for endpoint in manifest["endpoints"])
+
+    missing = copy.deepcopy(manifest)
+    missing["endpoints"].pop()
+    missing["digest"] = selfplay.canonical_manifest_digest(missing, "digest")
+    missing_path = tmp_path / "missing.json"
+    missing_path.write_text(json.dumps(missing))
+    with pytest.raises(ValueError, match="exactly four"):
+        selfplay.load_known_endpoints(missing_path)
+
+    for field, match in [
+        ("archive_sha256", "archive SHA-256"),
+        ("decompressed_sha256", "decompressed SHA-256"),
+        ("source_summary_sha256", "summary SHA-256"),
+        ("source_summary_matchup_sha256", "source-summary matchup digest"),
+    ]:
+        changed = copy.deepcopy(manifest)
+        changed["endpoints"][0][field] = "0" * 64
+        changed["digest"] = selfplay.canonical_manifest_digest(changed, "digest")
+        changed_path = tmp_path / f"changed-{field}.json"
+        changed_path.write_text(json.dumps(changed))
+        with pytest.raises(ValueError, match=match):
+            selfplay.load_known_endpoints(changed_path)
+
+    swapped = copy.deepcopy(manifest)
+    source_fields = ("archive_path", "archive_sha256", "decompressed_sha256")
+    for field in source_fields:
+        swapped["endpoints"][0][field] = manifest["endpoints"][1][field]
+    swapped["digest"] = selfplay.canonical_manifest_digest(swapped, "digest")
+    swapped_path = tmp_path / "swapped-source.json"
+    swapped_path.write_text(json.dumps(swapped))
+    with pytest.raises(ValueError, match="checkpoint transition"):
+        selfplay.load_known_endpoints(swapped_path)
+
+
+@pytest.mark.parametrize(
+    "source_path",
+    ["/tmp/outside.jsonl.gz", "results/../opening_suite_v1.json", "results/missing/../../escape.jsonl.gz"],
+)
+def test_known_endpoint_paths_are_confined_to_results_root(tmp_path, source_path):
+    manifest = json.loads(selfplay.KNOWN_ENDPOINTS_PATH.read_text())
+    manifest["endpoints"][0]["archive_path"] = source_path
+    manifest["digest"] = selfplay.canonical_manifest_digest(manifest, "digest")
+    path = tmp_path / "bad-path.json"
+    path.write_text(json.dumps(manifest))
+
+    with pytest.raises(ValueError, match="relative.*results|traversal"):
+        selfplay.load_known_endpoints(path)
+
+
+@pytest.mark.parametrize(
+    ("limit_name", "match"),
+    [
+        ("MAX_KNOWN_ENDPOINT_COMPRESSED_BYTES", "compressed.*size limit"),
+        ("MAX_KNOWN_ENDPOINT_DECOMPRESSED_BYTES", "decompressed.*size limit"),
+        ("MAX_KNOWN_ENDPOINT_SUMMARY_BYTES", "summary.*size limit"),
+    ],
+)
+def test_known_endpoint_sources_enforce_size_limits(monkeypatch, limit_name, match):
+    monkeypatch.setattr(selfplay, limit_name, 1)
+
+    with pytest.raises(ValueError, match=match):
+        selfplay.load_known_endpoints()
+
+
+def test_boundary_json_decoding_rejects_duplicates_and_nonfinite_values(tmp_path):
+    for payload in ['{"matchups":[],"matchups":[]}', '{"value":NaN}', '{"value":Infinity}']:
+        with pytest.raises(ValueError, match="strict JSON"):
+            selfplay._strict_json_loads(payload, context="boundary source summary")
+        with pytest.raises(ValueError, match="strict JSONL"):
+            selfplay._parse_strict_jsonl(payload.encode(), context="boundary archive")
+
+    configuration, fingerprint, header, _game = _checkpoint_payload()
+    checkpoint = tmp_path / "boundary.jsonl"
+    duplicate_header = json.dumps(header)[:-1] + ',"fingerprint":"drifted"}\n'
+    checkpoint.write_text(duplicate_header)
+    with pytest.raises(ValueError, match="strict JSONL"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_boundary_loader_normalizes_unhashable_move_types_to_value_error(tmp_path):
+    suite = json.loads(selfplay.BOUNDARY_OPENING_SUITE_PATH.read_text())
+    allocation = json.loads(selfplay.BOUNDARY_OPENING_ALLOCATION_PATH.read_text())
+    suite["openings"][0]["moves"][0] = []
+    suite["checksum"] = selfplay.canonical_manifest_digest(suite, "checksum")
+    allocation["suite_checksum"] = suite["checksum"]
+    allocation["digest"] = selfplay.canonical_manifest_digest(allocation, "digest")
+    suite_path = tmp_path / "suite.json"
+    allocation_path = tmp_path / "allocation.json"
+    suite_path.write_text(json.dumps(suite))
+    allocation_path.write_text(json.dumps(allocation))
+
+    with pytest.raises(ValueError, match="eight distinct legal coordinates"):
+        selfplay.load_boundary_opening_allocation(suite_path, allocation_path)
+
+
+def test_boundary_checkpoint_fingerprints_exact_assignment(tmp_path):
+    players = {
+        "A": selfplay.make_player("rank_5d@20", experimental_min_humansl_search_visits=20),
+        "B": selfplay.make_player("rank_6d@1s", experimental_min_humansl_search_visits=20),
+    }
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    boundary = selfplay.resolve_boundary_assignment(
+        "exp3-boundary-v1",
+        phase="screen",
+        spec_a="rank_5d@20",
+        spec_b="rank_6d@1s",
+        target_pairs=10,
+        max_pair_attempts=20,
+    )
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=10,
+        max_pair_attempts=20,
+        phase="screen",
+        opening_suite=boundary["suite"],
+        experimental_min_humansl_search_visits=20,
+        boundary_protocol_version="exp3-boundary-v1",
+        boundary=boundary["fingerprint"],
+        boundary_source_snapshot={
+            "source_revision": "a" * 40,
+            "expected_source_revision": "a" * 40,
+            "source_tree_clean": True,
+            "detached": True,
+            "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
+        },
+    )
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    checkpoint = tmp_path / "boundary.jsonl"
+    checkpoint.write_text(
+        json.dumps(
+            {
+                "record_type": "header",
+                "schema": selfplay.CHECKPOINT_SCHEMA,
+                "fingerprint": fingerprint,
+                "configuration": configuration,
+            }
+        )
+        + "\n"
+    )
+    assert selfplay._already_done(checkpoint, fingerprint, configuration) == 0
+    assert len(boundary["openings"]) == 20
+
+    mutation_paths = [
+        ("protocol_version",),
+        ("phase",),
+        ("transition",),
+        ("tested_visits",),
+        ("point_estimate_pass_rule",),
+        ("finite_grid",),
+        ("search_order",),
+        ("stopping_rule",),
+        ("target_complete_pairs",),
+        ("max_pair_attempts",),
+        ("suite_checksum",),
+        ("allocation_digest",),
+        ("known_endpoints_digest",),
+        ("known_endpoint_source_digest",),
+        ("allocation_key",),
+        ("assigned_opening_ids",),
+        ("assigned_opening_sequences",),
+    ]
+    for path in mutation_paths:
+        changed = copy.deepcopy(configuration)
+        value = changed["boundary"][path[0]]
+        changed["boundary"][path[0]] = [*value, "drift"] if isinstance(value, list) else f"{value}-drift"
+        with pytest.raises(ValueError, match="fingerprint"):
+            selfplay._already_done(checkpoint, selfplay._configuration_fingerprint(changed), changed)
+
+    for mutate in [
+        lambda changed: changed.update(experimental_min_humansl_search_visits=21),
+        lambda changed: changed["game"].update(board_size=13),
+        lambda changed: changed["game"].update(rules="drifted"),
+        lambda changed: changed["boundary_source"].update(source_revision="b" * 40),
+        lambda changed: changed["boundary_source"].update(expected_source_revision="b" * 40),
+        lambda changed: changed["boundary_source"].update(source_tree_clean=False),
+        lambda changed: changed["boundary_source"].update(detached=False),
+        lambda changed: changed["boundary_source"].update(source_git_root="/drifted"),
+    ]:
+        changed = copy.deepcopy(configuration)
+        mutate(changed)
+        with pytest.raises(ValueError, match="fingerprint"):
+            selfplay._already_done(checkpoint, selfplay._configuration_fingerprint(changed), changed)
+
+
+def test_ordinary_configuration_does_not_gain_boundary_fingerprint_fields():
+    players = _players()
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=20,
+        max_pair_attempts=30,
+    )
+
+    assert "boundary" not in configuration
+
+
+def test_boundary_protocol_cli_and_exact_noncycling_schedule():
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+        ]
+    )
+    assert args.boundary_protocol == "exp3-boundary-v1"
+    with pytest.raises(SystemExit):
+        selfplay.build_arg_parser().parse_args(
+            ["--matchups", "rank_5d@20:rank_6d@1s:10", "--boundary-protocol", "unsupported"]
+        )
+
+    boundary = selfplay.resolve_boundary_assignment(
+        args.boundary_protocol,
+        phase="screen",
+        spec_a="rank_5d@20",
+        spec_b="rank_6d@1s",
+        target_pairs=10,
+        max_pair_attempts=20,
+    )
+    scheduled = selfplay.schedule_pair_games(
+        [], boundary["openings"], phase="screen", max_pair_attempts=20, cycle_openings=False
+    )
+    assert len({game["opening_id"] for game in scheduled}) == 20
+    with pytest.raises(ValueError, match="does not support"):
+        selfplay.resolve_boundary_assignment(
+            args.boundary_protocol,
+            phase="screen",
+            spec_a="rank_5d@20",
+            spec_b="rank_7d@1s",
+            target_pairs=10,
+            max_pair_attempts=20,
+        )
+
+
+def test_boundary_source_revision_requires_full_matching_clean_commit(monkeypatch):
+    revision = "a" * 40
+    calls = []
+
+    def fake_git(arguments, *, cwd):
+        calls.append((arguments, Path(cwd)))
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            return str(Path(selfplay.__file__).parents[4])
+        if arguments == ["rev-parse", "HEAD"]:
+            return revision
+        if arguments == ["status", "--porcelain=v1", "--untracked-files=no"]:
+            return ""
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    monkeypatch.setattr(selfplay, "_git_returncode", lambda arguments, *, cwd: 1)
+    assert selfplay.load_boundary_source_snapshot(revision) == {
+        "source_revision": revision,
+        "expected_source_revision": revision,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
+    }
+    assert [call[0] for call in calls] == [
+        ["rev-parse", "--show-toplevel"],
+        ["rev-parse", "HEAD"],
+        ["status", "--porcelain=v1", "--untracked-files=no"],
+    ]
+
+    for invalid in [None, "a" * 39, "g" * 40, revision.upper()]:
+        with pytest.raises(ValueError, match="full 40-hex"):
+            selfplay.load_boundary_source_snapshot(invalid)
+
+
+def test_boundary_source_revision_requires_detached_head(monkeypatch):
+    revision = "a" * 40
+
+    def fake_git(arguments, *, cwd):
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            return str(Path(selfplay.__file__).parents[4])
+        if arguments == ["rev-parse", "HEAD"]:
+            return revision
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    monkeypatch.setattr(selfplay, "_git_returncode", lambda arguments, *, cwd: 0)
+    with pytest.raises(ValueError, match="detached HEAD"):
+        selfplay.load_boundary_source_snapshot(revision)
+
+
+@pytest.mark.parametrize(
+    ("head", "status", "match"), [("b" * 40, "", "does not match"), ("a" * 40, " M tracked.py", "not clean")]
+)
+def test_boundary_source_revision_rejects_mismatch_or_tracked_dirty_tree(monkeypatch, head, status, match):
+    def fake_git(arguments, *, cwd):
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            return str(Path(selfplay.__file__).parents[4])
+        if arguments == ["rev-parse", "HEAD"]:
+            return head
+        if arguments == ["status", "--porcelain=v1", "--untracked-files=no"]:
+            return status
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(selfplay, "_git_output", fake_git)
+    monkeypatch.setattr(selfplay, "_git_returncode", lambda arguments, *, cwd: 1)
+    with pytest.raises(ValueError, match=match):
+        selfplay.load_boundary_source_snapshot("a" * 40)
+
+
+def test_boundary_output_requires_absolute_external_path(tmp_path):
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    inside = source_root / "results"
+    external = tmp_path / "external"
+    snapshot = {
+        "source_revision": "a" * 40,
+        "expected_source_revision": "a" * 40,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(source_root.resolve()),
+    }
+
+    with pytest.raises(ValueError, match="absolute"):
+        selfplay.validate_boundary_out_dir(Path("relative/results"), snapshot)
+    with pytest.raises(ValueError, match="outside.*source git root"):
+        selfplay.validate_boundary_out_dir(inside.resolve(), snapshot)
+
+    external.mkdir()
+    symlink = external / "linked-inside"
+    symlink.symlink_to(inside, target_is_directory=True)
+    with pytest.raises(ValueError, match="outside.*source git root"):
+        selfplay.validate_boundary_out_dir(symlink, snapshot)
+
+    valid = external / "boundary-results"
+    assert selfplay.validate_boundary_out_dir(valid, snapshot) == valid.resolve()
+    original_repo_results = Path(selfplay.__file__).resolve().parent / "results"
+    assert selfplay.validate_boundary_out_dir(original_repo_results, snapshot) == original_repo_results.resolve()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("out_kind", ["relative", "inside"])
+async def test_boundary_output_failure_happens_before_any_http_query(monkeypatch, tmp_path, out_kind):
+    revision = "a" * 40
+    source_root = tmp_path / "detached-source"
+    source_root.mkdir()
+    snapshot = {
+        "source_revision": revision,
+        "expected_source_revision": revision,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(source_root.resolve()),
+    }
+    calls = {"http": 0}
+
+    async def fake_health(*_args):
+        calls["http"] += 1
+        raise AssertionError("HTTP must not be reached")
+
+    monkeypatch.setattr(selfplay, "load_boundary_source_snapshot", lambda _expected: snapshot)
+    monkeypatch.setattr(selfplay.adapters, "fetch_health_snapshot", fake_health)
+    out = Path("relative-results") if out_kind == "relative" else source_root / "results"
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+            "--expected-source-revision",
+            revision,
+            "--experimental-min-humansl-search-visits",
+            "20",
+            "--wide-root-noise",
+            "0.04",
+            "--out",
+            str(out),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="absolute|outside"):
+        await selfplay.main_async(args)
+    assert calls["http"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("source_error", ["git unavailable", "does not match", "not clean", "detached HEAD"])
+async def test_boundary_source_failure_happens_before_any_http_query(monkeypatch, tmp_path, source_error):
+    calls = {"http": 0}
+
+    def fail_source(_expected):
+        raise ValueError(source_error)
+
+    async def fake_health(*_args):
+        calls["http"] += 1
+        raise AssertionError("HTTP must not be reached")
+
+    monkeypatch.setattr(selfplay, "load_boundary_source_snapshot", fail_source)
+    monkeypatch.setattr(selfplay.adapters, "fetch_health_snapshot", fake_health)
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+            "--expected-source-revision",
+            "a" * 40,
+            "--experimental-min-humansl-search-visits",
+            "20",
+            "--wide-root-noise",
+            "0.04",
+            "--out",
+            str(tmp_path),
+        ]
+    )
+
+    with pytest.raises(ValueError, match=source_error):
+        await selfplay.main_async(args)
+    assert calls["http"] == 0
+
+
+@pytest.mark.asyncio
+async def test_main_threads_one_boundary_source_snapshot_to_every_matchup(monkeypatch, tmp_path):
+    revision = "a" * 40
+    snapshot = {
+        "source_revision": revision,
+        "expected_source_revision": revision,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
+    }
+    source_calls = []
+    received = []
+
+    def fake_source(expected):
+        source_calls.append(expected)
+        return snapshot
+
+    async def fake_health(*_args):
+        return _health_snapshot()
+
+    async def fake_run_matchup(*_args, **kwargs):
+        received.append(kwargs["boundary_source_snapshot"])
+        return {"ok": True}
+
+    monkeypatch.setattr(selfplay, "load_boundary_source_snapshot", fake_source)
+    monkeypatch.setattr(selfplay.adapters, "fetch_health_snapshot", fake_health)
+    monkeypatch.setattr(selfplay, "run_matchup", fake_run_matchup)
+    args = selfplay.build_arg_parser().parse_args(
+        [
+            "--matchups",
+            "rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10",
+            "--phase",
+            "screen",
+            "--boundary-protocol",
+            "exp3-boundary-v1",
+            "--expected-source-revision",
+            revision,
+            "--experimental-min-humansl-search-visits",
+            "20",
+            "--wide-root-noise",
+            "0.04",
+            "--out",
+            str(tmp_path),
+        ]
+    )
+
+    assert await selfplay.main_async(args) == 0
+    assert source_calls == [revision]
+    assert received == [snapshot, snapshot]
+
+
+def test_boundary_source_snapshot_is_fingerprinted_and_ordinary_runs_ignore_git():
+    source = {
+        "source_revision": "a" * 40,
+        "expected_source_revision": "a" * 40,
+        "source_tree_clean": True,
+        "detached": True,
+        "source_git_root": str(Path(selfplay.__file__).parents[4].resolve()),
+    }
+    players = {
+        "A": selfplay.make_player("rank_5d@20", experimental_min_humansl_search_visits=20),
+        "B": selfplay.make_player("rank_6d@1s", experimental_min_humansl_search_visits=20),
+    }
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    boundary = selfplay.resolve_boundary_assignment(
+        "exp3-boundary-v1",
+        phase="screen",
+        spec_a="rank_5d@20",
+        spec_b="rank_6d@1s",
+        target_pairs=10,
+        max_pair_attempts=20,
+    )
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=10,
+        max_pair_attempts=20,
+        phase="screen",
+        opening_suite=boundary["suite"],
+        experimental_min_humansl_search_visits=20,
+        boundary_protocol_version="exp3-boundary-v1",
+        boundary=boundary["fingerprint"],
+        boundary_source_snapshot=source,
+    )
+
+    assert configuration["boundary_source"] == source
+    ordinary = selfplay.build_arg_parser().parse_args(["--matchups", "rank_9d@40:b28@20:20"])
+    assert ordinary.boundary_protocol is None
+    assert ordinary.expected_source_revision is None
 
 
 @pytest.mark.asyncio

@@ -15,9 +15,9 @@
 | 加载的网络 | **b28**(默认主网,最强)、**b18**(备用主网)、**humanv0**(human-SL 网,`-human-model`) |
 | 实际模型身份(`/health`) | b28 SHA-256 `798da8fe3e9819f09535240b1bc29cb3047a4fa981433c56c491e57007a3d3f0`;b18 `9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d`;humanv0 `637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5`;三者均 `*_sha256_verified=true`,b18/b28 均 `running=true` 且 `has_human_model=true` |
 | `wideRootNoise` | 0.04(与 shipping `config.json` 一致;用于对局多样性) |
-| 判胜方法 | `adjudicate`:b28@200visits、`reportAnalysisWinratesAs=BLACK`、ownership-settled(≥98% 归属确定)+ 稳定性复检。**双方均不认输**(阶梯 never-resign);对手 resign_code=-3 → 我方定胜;pass_code=-1 → 交由 adjudicate。 |
+| 判胜方法 | 我方棋手从不认输。对星阵校准时,smoke 已验证 Golaxy `resign_code=-3`(认输直接判我方胜;12 局锚点胜局中 11 局如此)与 `pass_code=-1`(交 b28@200、BLACK 视角、ownership-settled 判分);初判 conclusive 且 `end_reason` 属于 `{move_cap,golaxy_terminal,our_pass,golaxy_illegal}` 时,再以最高 b28@800 做稳定性复检。纯自对弈双方均不认输,pass 或 400 手上限后只做一次 b28@200 判分,**不做**第二次稳定性复检。 |
 | 校准脚本 | `calibration/run_calibration.py`(打星阵)、`calibration/run_selfplay.py`(自对弈) |
-| 胜率→Elo | `elo_from_winrate`;100%/0% 会被 harness 封顶到 **±529**(即极值是下界,不是真实差距) |
+| 胜率→Elo | `elo_from_winrate`;以 `eps=1/(2n+2)` 对 0%/100% 作样本量相关的连续性修正,不是固定封顶。全胜点估计示例:10/10 = +528.9、40/40 = +763.4、80/80 = +882.7 Elo(全败对称为负);极值仍只是差距下界。 |
 
 **修复后三种阶梯落子机制**(详见 `katrain/core/ladder.py`):
 - `humansl` — humanv0 人类策略 @1visit,对 `humanPolicy` 全分布**加权采样**(Band A 配置)。
@@ -60,8 +60,9 @@
 ## B. 自对弈 search-strength 实验(不打星阵,无预算限制)
 
 > **硬失效边界:**`calibration/results/selfplay/` 下所有旧结果均为修复前历史数据。凡名称含
-> `rank_*@2/@4/@7/@16/@32` 的 HumanSL-search 战绩、实验(1)(2)(3)由它们导出的全部 HumanSL 棋力结论,以及
-> 实验(4)旧 `rank_9d@20 vs b28@20` 对照,**一律无效,不得用于新结论、合并统计或恢复运行**。新实验只能写入
+> `rank_*@2/@4/@7/@16/@32` 的战绩、实验(1)(2)(3)由它们导出的全部 **HumanSL-search** 棋力结论,以及实验(4)
+> 旧 `rank_9d@20 vs b28@20` 的 **HumanSL-vs-b28** 解释,一律无效。旧原始记录仍可保留作历史 b28 对照/visits
+> 诊断(实验4也是同配置随机对照),但不得恢复运行或与修复后 HumanSL 样本合并。新实验只能写入
 > `calibration/results/selfplay_v2_pikl/`,旧 namespace 会被 harness 拒绝。
 
 ### B0. 2026-07-21 语义审计勘误(影响实验1–4的解释)
@@ -95,8 +96,8 @@ visits 递增的阶梯,**每档与前一档打 10 盘**,汇总胜率。playerA=�
 
 | 台阶 | 胜/可判 | 胜率 | Elo(点估) | 对局多样性 |
 |---|---|---|---|---|
-| `@1s` vs `@1` | 10/10 | 100% | +529(封顶) | 10 局各异 ✓ |
-| `@2` vs `@1s` | 5/5 | 100% | +417(封顶) | ⚠️ 仅 2 种棋局(见坑2) |
+| `@1s` vs `@1` | 10/10 | 100% | +529(连续性修正) | 10 局各异 ✓ |
+| `@2` vs `@1s` | 5/5 | 100% | +417(连续性修正) | ⚠️ 仅 2 种棋局(见坑2) |
 | `@4` vs `@2` | 6/8 | 75% | +191 | 10 局各异 ✓ |
 | `@7` vs `@4` | 6/10 | 60% | +70 | 10 局各异 ✓ |
 | `@16` vs `@7` | 7/10 | 70% | +147 | 10 局各异 ✓ |
@@ -122,10 +123,10 @@ rank_9d humanSL 搜索单调提升。** 另有两点:
 
 | 台阶 | 胜/可判 | 胜率 | Elo(点估) | 多样性 |
 |---|---|---|---|---|
-| `@1s` vs `@1` | 10/10 | 100% | +529(封顶) | ✓ |
-| `@4` vs `@1s` | 9/9 | 100% | +512(封顶) | ✓ |
+| `@1s` vs `@1` | 10/10 | 100% | +529(连续性修正) | ✓ |
+| `@4` vs `@1s` | 9/9 | 100% | +512(连续性修正) | ✓ |
 | `@7` vs `@4` | 6/9 | 67% | +120 | ✓ |
-| `@16` vs `@7` | 9/9 | 100% | +512(封顶) | ✓ |
+| `@16` vs `@7` | 9/9 | 100% | +512(连续性修正) | ✓ |
 | `@32` vs `@16` | **14/19** | **74%** | +179 | ✓ 19 局各异(加厚到 20 盘) |
 
 **rank_7d**:
@@ -166,9 +167,9 @@ b28 visits 曲线的重复采样。数据仍稳健支持“b28 搜索随 visits 
 
 | 对局 | 胜/可判 | 胜率 | Elo(点估) | 黑/白战绩 |
 |---|---:|---:|---:|---:|
-| `rank_5d@4` vs `rank_6d@1s` | 10/10 | 100% | +529(封顶) | 5/5、5/5 |
+| `rank_5d@4` vs `rank_6d@1s` | 10/10 | 100% | +529(连续性修正) | 5/5、5/5 |
 | `rank_6d@4` vs `rank_7d@1s` | 8/10 | 80% | +241 | 5/5、3/5 |
-| `rank_7d@4` vs `rank_8d@1s` | 10/10 | 100% | +529(封顶) | 5/5、5/5 |
+| `rank_7d@4` vs `rank_8d@1s` | 10/10 | 100% | +529(连续性修正) | 5/5、5/5 |
 | `rank_8d@4` vs `rank_9d@1s` | 9/10 | 90% | +382 | 4/5、5/5 |
 
 **勘误后的有效结论:**四组 A 方其实都是同一个 `b28@4`(rank 标签不影响 `moveInfos`),B 方才是各高一段的
@@ -281,16 +282,473 @@ wire request、request fingerprint、`_wrapper` attestation 与摘要,因此同�
 据此,`humansl_search` **语义修复已完成并经本地实机探针通过**;这只恢复了开展有效实验的前提,不把任何旧
 战绩“洗白”为 HumanSL 数据。
 
+### C7. 修复后 screening 结果与确认实验预声明(2026-07-22)
+
+以下四组均来自全新 `selfplay_v2_pikl` namespace,且仅是 **screening**:每组预定恰好10个完整颜色对
+(20盘 decision games),不用于显著性结论,也不并入后续 confirmation。若同一开局颜色对中任一盘不可判,
+该 pair 的两盘都不进入胜负样本;原始记录仍全部保留。因此表中同时列出完整 pair 样本和所有尝试的原始
+结果计数。
+
+| screening 对局(A vs B) | 完整 pair / 尝试 pair (上限) | 完整 pair 样本 | Wilson 95% CI | Elo(A-B)及95%区间 | 不完整 pair / 原始不可判盘 | 所有尝试的原始结果(A胜/A负/不可判) |
+|---|---:|---:|---:|---:|---:|---:|
+| rank_5d@80 vs rank_5d@40 | 10 / 12 (20) | 14–6 (70%) | [48.10%, 85.45%] | +147.2 [-0.6, +383.3] | 2 / 2 | 16/6/2 |
+| rank_7d@80 vs rank_7d@40 | 10 / 12 (20) | 13–7 (65%) | [43.29%, 81.88%] | +107.5 [-41.2, +314.0] | 2 / 3 | 13/8/3 |
+| rank_9d@80 vs rank_9d@40 | 10 / 16 (20) | 11–9 (55%) | [34.21%, 74.18%] | +34.9 [-121.5, +208.0] | 6 / 8 | 13/11/8 |
+| rank_9d@40 vs b28@20 | 10 / 11 (20) | 2–18 (10%) | [2.79%, 30.10%] | -381.7 [-645.1, -208.5] | 1 / 1 | 2/19/1 |
+
+这些数值只用于选择固定样本的后续对局。即使区间位于50%一侧,本节也**不作显著性、确认性或实验完成
+声明**。实验(4)的 `rank_9d@40` 候选因 screening 为 2–18 而淘汰,不会对它启动40-pair confirmation。
+
+原始数据审计(2026-07-22):四个 JSONL 均通过严格 JSON 解析;schema-3 header 的 configuration SHA-256
+与 header fingerprint 一致;每条 game record 的 fingerprint、顺序/颜色对、开局、结果字段和逐手执行模型
+attestation 均通过 harness `_already_done`/record validators;opening suite checksum 为
+`db5bf2f7b1944a26bf6e027d6a32efc13c848f4dcb3d22eb1afd274383fe033e`;用 `complete_pair_sample`、
+`wilson_interval` 与 `elo_from_winrate` 独立重算后与 summary 逐字段一致。固定模型身份为 b18
+`9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d`、humanv0
+`637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5`,b28 对手/裁判为
+`798da8fe3e9819f09535240b1bc29cb3047a4fa981433c56c491e57007a3d3f0`。
+
+| 已提交的不可变 checkpoint 档案 | configuration fingerprint | 原始 JSONL SHA-256 | `.jsonl.gz` SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-5d-80__vs__rank-5d-40.jsonl.gz) | `d08bb5318f594a5dbdb50e1006eb9bf56ca89f979dbffb2c37791edf479759b8` | `af4d912b2987649d51f62b004d624b8c88091a0133fbf3dfb99830f7f3d8bcbd` | `f30b1e8c98ff29514aa0ba8301edee3850f07ebe5b1c3cdd6d3786f05fe7fae2` |
+| [`selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-7d-80__vs__rank-7d-40.jsonl.gz) | `dbe719a9c5f96d48296588e80264b45a1ed4b6bf743bb5b1364419c3157c6770` | `11fb0b385ad8ede150e4008b960d5123dcae9bca85dcddb7dde9165dfe395e98` | `26c017977ccc2a13dcabfbb0c84bae3957b91848af743f49d76236c53d4c6dff` |
+| [`selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-9d-80__vs__rank-9d-40.jsonl.gz) | `fac29f99e215af1769f64def50785513440c36705361373ed9d3435597300e32` | `f8c512b9f816d31aaf46ee7211c8cb03207800f3af629225f826cf808779bafb` | `abeba92ca8aefcb35c7c6e00bee09880ba9b26dfb901b31f78901bbda56dcbd7` |
+| [`selfplay_screen_rank-9d-40__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/selfplay_screen_rank-9d-40__vs__b28-20.jsonl.gz) | `edfa26aa3d7f138a766cc5285b62086de0a2e7e2173f02a1d1c42c080604a3c6` | `8bc9acf9213e2efe880862a033407c71d7e9921a61a911fa4eaa4123b2716d78` | `8ff6b3cdb21dc9931d5dc93333d231482ce0e7b096ec21bafbbb82ba873d23b3` |
+| [`selfplay_summary_screen_batch1.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch1.json) | — | `0b920fb71627d7f584c23474e4614a8a6e7741ef86f583a3a94a20a47e81f139` | — |
+
+四个档案均以 `mtime=0` 且不保存原文件名的确定性 gzip 生成;从仓库根目录一次复现全部四个档案:
+`for f in superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl/selfplay_screen_rank-{5d-80__vs__rank-5d-40,7d-80__vs__rank-7d-40,9d-80__vs__rank-9d-40,9d-40__vs__b28-20}.jsonl; do gzip -n -9 -c "$f" > "superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl/artifacts/screen_batch1/$(basename "$f").gz"; done`。
+解压后的字节必须与表中原始 JSONL SHA-256 一致;本地未压缩 checkpoint 保留用于审计/resume,但不提交到 Git。
+
+**后续对局预声明(任何 continuation 之前冻结):**
+
+1. 普通接缝 confirmation 分别为 `rank_5d@80:rank_5d@40`、`rank_7d@80:rank_7d@40`、
+   `rank_9d@80:rank_9d@40`;各自使用全新 `phase=confirm` checkpoint,恰好20个完整 pair(40盘 decision
+   games),默认最多40次 pair 尝试。screening 记录不加载、不计入 confirmation,固定样本结束后无论分类为何
+   都不追样本。
+2. 实验(4)尚未选定 confirmation 候选。下一步仅 screening `rank_9d@80:b28@20`,恰好10个完整 pair,
+   最多20次 pair 尝试。完成并记账后才允许选择一个40完整-pair confirmation 候选;若 @80 仍不适合作为
+   候选,先以同样的独立10-pair screening 规则考察更高 visits,不得把多个 screening 合并或边跑边改确认样本。
+
+### C8. 实验(4) @80 screening 与下一档预声明(2026-07-22)
+
+C7 预声明的 `rank_9d@80:b28@20` 独立 screening 已完成:共尝试11个颜色 pair(预定上限20),其中10个
+完整 pair 进入固定筛查样本、1个 pair 因1盘 `inconclusive_unsettled` 整对排除。完整 pair 样本为 A 方
+`rank_9d@80` **4–16**(20%,Wilson 95% CI [8.07%, 41.60%]),对应 Elo(A-B) **-240.8**
+[-638.6, -88.5]。全部22盘原始结果计数为 A胜/A负/不可判=4/17/1;其中不完整 pair 内的1盘 A负也按
+预声明规则排除。该结果仍然**仅是 screening,不作显著性或确认性声明,也不与其他 batch 合并**。
+
+@80 因4–16的 screening 结果被淘汰,不会成为实验(4)的40完整-pair confirmation 候选。原始 checkpoint
+与可变 summary 均经严格 JSON、configuration/header/game fingerprint、逐手模型 attestation、开局/pair
+调度、`_already_done` resume 及 summary 独立重算校验:
+
+| batch-2 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-9d-80__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch2_exp4_80/selfplay_screen_rank-9d-80__vs__b28-20.jsonl.gz) | `0528ed874fc4596467d510288516d1a3ead1767eff85849e886785add8c40f86` | `0db824d1d6a81af3d1e8971f225153ffe45487e391f29f6ff86bfd4c902ddb6a` | `a589941cebb082d18d182d6d7626c3cdf3657e057ae50cc6bb73bc13fb1ea327` |
+| [`selfplay_summary_screen_batch2_exp4_80.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch2_exp4_80.json) | — | `a3e7cf16215d949bc4cfc17dd882e3943713fd2cc9348c33c450261219f8ba15` | — |
+
+档案以 `gzip -n -9 -c selfplay_screen_rank-9d-80__vs__b28-20.jsonl > artifacts/screen_batch2_exp4_80/selfplay_screen_rank-9d-80__vs__b28-20.jsonl.gz`
+确定性生成,解压字节与未压缩 checkpoint 完全一致;未压缩文件继续仅在本地保留用于审计/resume。
+
+**下一步预声明(任何 continuation 之前冻结):**实验(4)接下来且只运行一次独立 screening
+`rank_9d@160:b28@20`,恰好10个完整 pair,最多20次 pair 尝试。完成、固化并记账前不运行其他实验(4)
+matchup,也不选择/启动40完整-pair confirmation;是否把 @160 选作 confirmation 候选必须等该固定筛查结束。
+
+### C9. 实验(4) @160 screening 与下一档预声明(2026-07-22)
+
+C8 预声明的 `rank_9d@160:b28@20` 独立 screening 已完成:尝试11个颜色 pair(预定上限20),10个完整
+pair 进入固定筛查样本,1个 pair 因1盘 `inconclusive_unsettled` 整对排除。完整 pair 样本为 A 方
+`rank_9d@160` **5–15**(25%,Wilson 95% CI [11.19%, 46.87%]),对应 Elo(A-B) **-190.8**
+[-477.3, -42.1]。全部22盘原始结果为 A胜/A负/不可判=6/15/1;不完整 pair 内的1盘 A胜依预声明规则
+排除。该结果仍然**仅是 screening,不作显著性或确认性声明,也不与 @40/@80 batch 合并**。
+
+@160 因5–15的 screening 结果被淘汰,不会成为实验(4)的40完整-pair confirmation 候选。严格 JSON、
+configuration/header/game fingerprint、逐手模型 attestation、开局/pair 调度、`_already_done` resume、
+固定样本计数与可变 summary 独立重算均通过:
+
+| batch-3 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-9d-160__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch3_exp4_160/selfplay_screen_rank-9d-160__vs__b28-20.jsonl.gz) | `dd66dbc0550498c7076527d195c443e5d21f1e2ec60601bf79bc7206ad4a99ff` | `baae1060c9147d9ef8cc53c5224ab47d53747b1bb4c6d47e005a7317f5781bac` | `58b0b53e49d4ce7be48ebec18e58a6549e49bfc37e8560da817510058d6d85fa` |
+| [`selfplay_summary_screen_batch3_exp4_160.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch3_exp4_160.json) | — | `4af5d2dd83bcda0aae088a7b96a69009494c26ac9f1c6ee724e7a72eef5508c8` | — |
+
+压缩档案以 `gzip -n -9` 确定性生成,解压字节与本地未跟踪原始 checkpoint 完全一致。
+
+**下一步预声明(任何 continuation 之前冻结):**实验(4)接下来且只运行一次独立 screening
+`rank_9d@320:b28@20`,恰好10个完整 pair,最多20次 pair 尝试。完成、固化并记账前不运行其他实验(4)
+matchup,也不选择/启动40完整-pair confirmation;是否把 @320 选作 confirmation 候选必须等该固定筛查结束。
+
+### C10. 实验(4) @320 screening 与 confirmation 预声明(2026-07-22)
+
+C9 预声明的 `rank_9d@320:b28@20` 独立 screening 已完成:尝试11个颜色 pair(预定上限20),10个完整
+pair 进入固定筛查样本,1个 pair 因1盘 `inconclusive_unsettled` 整对排除。完整 pair 样本为 A 方
+`rank_9d@320` **11–9**(55%,Wilson 95% CI [34.21%, 74.18%]),对应 Elo(A-B) **+34.9**
+[-121.5, +208.0]。全部22盘原始结果为 A胜/A负/不可判=12/9/1;不完整 pair 内的1盘 A胜依预声明规则
+排除。该结果仍然**仅是 screening,不作显著性、确认性或“已经追平”声明,也不与较低 visits batch 合并**。
+
+@320 是预声明 visits 网格中首个筛查胜率到达50%附近并越过点估计50%的档位,因此仅据此把它选为实验(4)
+的固定 confirmation 候选;选择本身不是实验结论。严格 JSON、configuration/header/game fingerprint、逐手
+模型 attestation、开局/pair 调度、`_already_done` resume、固定样本计数与可变 summary 独立重算均通过:
+
+| batch-4 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-9d-320__vs__b28-20.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_batch4_exp4_320/selfplay_screen_rank-9d-320__vs__b28-20.jsonl.gz) | `488410f084b471503ae6a2b3e88d1fa1752f06246ca12e1ebed01b49e84d8f9c` | `f72378a724728204aedf00abbc25431aba0b31549750ca870bae78d67f274276` | `9fad26d9deca93adb43c160ce021a35714be9ce8146673e089ff43e641f8b481` |
+| [`selfplay_summary_screen_batch4_exp4_320.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_batch4_exp4_320.json) | — | `dd66a8361c260f0f42f9fa28d63dc6ff6eedd7d0ddaf835455ce1e357b6b7bb9` | — |
+
+压缩档案以 `gzip -n -9` 确定性生成,解压字节与本地未跟踪原始 checkpoint 完全一致。
+
+**固定 confirmation 预声明(任何 confirmation 运行之前冻结):**实验(4)使用全新 `phase=confirm`、
+`--experiment4` checkpoint 运行 `rank_9d@320:b28@20`,恰好40个完整 pair(80盘 decision games),默认
+最多80次 pair 尝试。screening checkpoint/summary 永不加载或计入 confirmation;固定样本结束后无论 Wilson
+分类为何都不追加样本。先前已预声明的普通 confirmation 保持不变:`rank_5d@80:rank_5d@40`、
+`rank_7d@80:rank_7d@40`、`rank_9d@80:rank_9d@40` 各自使用全新 `phase=confirm` checkpoint,恰好20个
+完整 pair(40盘 decision games),默认最多40次 pair 尝试,同样不加载 screening 数据且不追样本。
+
+### C11. 实验(1)(2)修复后 confirmation 结果(2026-07-22)
+
+C7 预声明的三个普通接缝 confirmation 均已完成固定样本。每组恰好20个完整颜色 pair(40盘 decision
+games),screening 数据未加载、未并入,达到固定样本后未追加对局。结果如下:
+
+| confirmation 对局(A vs B) | 完整 pair / 尝试 pair (上限) | 完整 pair 样本 | Wilson 95% CI | Elo(A-B)及95%区间 | 不完整 pair / 原始不可判盘 | 所有尝试的原始结果(A胜/A负/不可判) |
+|---|---:|---:|---:|---:|---:|---:|
+| rank_5d@80 vs rank_5d@40 | 20 / 27 (40) | **22–18 (55.0%)** | [39.83%, 69.29%] | +34.9 [-73.5, +150.7] | 7 / 7 | 26/21/7 |
+| rank_7d@80 vs rank_7d@40 | 20 / 24 (40) | **21–19 (52.5%)** | [37.50%, 67.06%] | +17.4 [-92.3, +130.8] | 4 / 5 | 22/21/5 |
+| rank_9d@80 vs rank_9d@40 | 20 / 24 (40) | **21–19 (52.5%)** | [37.50%, 67.06%] | +17.4 [-92.3, +130.8] | 4 / 4 | 23/21/4 |
+
+**固定样本判定:**三个段位的点估计方向一致,均为 `@80 > @40`,但三组 Wilson 95% CI 都跨过50%,harness
+分类均为 `inconclusive`。因此本批数据**没有确认**把 HumanSL+PIKL 搜索从40加到80 visits 会产生可辨识的
+棋力提升;也没有观察到反向证据。screening 的70%/65%/55%在独立 confirmation 中回落到
+55%/52.5%/52.5%,再次说明不能把小样本 screening 当作实验结论。实验(1)(2)的修复后固定样本采集至此
+完成,结论为“方向一致但统计不确定”,而不是“搜索单调增强已证明”。
+
+运行期间曾因 Python HTTP 客户端继承本机代理设置,在断网时由本机代理返回一次502而退出;checkpoint 在
+48/60完整 pair 处安全恢复。恢复前 `_already_done` 对 header/configuration/game fingerprint、pair 调度和已有
+记录逐条 fail-closed 校验通过;续跑显式设置 `NO_PROXY=127.0.0.1,localhost`,底层连接日志确认直连本机
+`127.0.0.1:8000`。该中断没有丢失、重复或跨样本合并数据。
+
+三个 JSONL 均通过严格 JSON、configuration/header/game fingerprint、逐手模型 attestation、开局/pair
+调度、固定样本计数及 summary 独立重算校验。不可变证据如下:
+
+| confirmation 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_confirm_rank-5d-80__vs__rank-5d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp12/selfplay_confirm_rank-5d-80__vs__rank-5d-40.jsonl.gz) | `1706b3a639c3306fc1b3577fbb5df6f15eb001cbca41ca7a213b98d32b152a42` | `b446f56c9c66187b022906a650c9e98517624d206d933baf0e3de4e39bf0ed6f` | `704c4573dccef60dfdca80252e6425b53d6de3fafc5a566ba25a2a7ca14f9852` |
+| [`selfplay_confirm_rank-7d-80__vs__rank-7d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp12/selfplay_confirm_rank-7d-80__vs__rank-7d-40.jsonl.gz) | `473df1dd0325858818a989cd1d650dea6a3471899126705d6ffa5bdba9b53f81` | `9e277283fd9f72c4683e3093f11701f1033d2e9fae5914ecf84ccbe961ba1157` | `bb9ccbc22992c3680026aa8c38bf34eac59ef9ce5c314d431e456af65f955626` |
+| [`selfplay_confirm_rank-9d-80__vs__rank-9d-40.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp12/selfplay_confirm_rank-9d-80__vs__rank-9d-40.jsonl.gz) | `dec42908e76e21a563cde07a534ca3e329c062d8d41a1d386e4242b4241132a2` | `f26f8daec0a27e4cfd5a23a3a7ae503478a224c970d34bacd23b753d0f08bdc3` | `acef4d78100fdca02722c693018bc704e5f09e84460c810a7e1482e5b2a725d1` |
+| [`selfplay_summary_confirm_exp12.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_confirm_exp12.json) | — | `43213a71b170c5731971f835bfbb63b4981c132189b893dcc3ef9429343393f9` | — |
+
+压缩档案均以 `gzip -n -9` 确定性生成,解压字节与表中原始 JSONL SHA-256 一致;本地未压缩 checkpoint
+继续保留用于审计/resume,但不提交到 Git。
+
+### C12. 实验(3)修复后首轮 screening 预声明(2026-07-22)
+
+实验目标保持用户已确认的 apples-to-apples 口径:测“低一段 HumanSL+PIKL 搜索需要多少 visits 才能达到/
+超过高一段的 `@1s` humanPolicy argmax”。低一段搜索方使用显式 b18+humanv0+完整 PIKL,高一段基准为
+humanv0 `@1s` argmax;不使用会混入加权采样选点损失的普通 `@1`。
+
+**任何本轮运行之前冻结:**首轮只运行以下四个独立 `phase=screen` matchup:
+
+- `rank_5d@40:rank_6d@1s`
+- `rank_6d@40:rank_7d@1s`
+- `rank_7d@40:rank_8d@1s`
+- `rank_8d@40:rank_9d@1s`
+
+每组恰好10个完整颜色 pair(20盘 decision games),最多20次 pair 尝试,使用同一锁定开局套件但各自独立
+checkpoint。任一 pair 有不可判盘则整对排除;screening 只用于选择 visits 候选,不作显著性或实验完成声明。
+某组若 `@40` 固定筛查点估计达到/超过50%,则把40记为当前支持网格内首个候选(只能表述为“所需 visits
+≤40”);若低于50%,须先固化并记账该组结果,再单独预声明其 `@80` screening。不得合并不同 visits 的
+screening,也不得在看到中途结果后改变样本量。四组候选全部确定后,再在任何 confirmation 运行之前冻结
+各候选的确认样本。
+
+### C13. 实验(3) @40 screening 与 confirmation 预声明(2026-07-22)
+
+C12 预声明的四组独立 screening 均完成固定10个完整颜色 pair。结果只用于选择 confirmation 候选:
+
+| screening 对局(A vs B) | 完整 pair / 尝试 pair (上限) | 完整 pair 样本 | Wilson 95% CI | Elo(A-B)及95%区间 | 不完整 pair / 原始不可判盘 | 所有尝试的原始结果(A胜/A负/不可判) |
+|---|---:|---:|---:|---:|---:|---:|
+| rank_5d@40 vs rank_6d@1s | 10 / 10 (20) | **19–1 (95%)** | [76.39%, 99.11%] | +511.5 [+307.5, +645.1] | 0 / 0 | 19/1/0 |
+| rank_6d@40 vs rank_7d@1s | 10 / 12 (20) | **19–1 (95%)** | [76.39%, 99.11%] | +511.5 [+307.5, +645.1] | 2 / 2 | 21/1/2 |
+| rank_7d@40 vs rank_8d@1s | 10 / 13 (20) | **17–3 (85%)** | [63.96%, 94.76%] | +301.3 [+141.9, +645.1] | 3 / 3 | 20/3/3 |
+| rank_8d@40 vs rank_9d@1s | 10 / 17 (20) | **16–4 (80%)** | [58.40%, 91.93%] | +240.8 [+88.5, +638.6] | 7 / 8 | 21/5/8 |
+
+四组在支持网格的最低 HumanSL+PIKL 搜索档 `@40` 即达到点估计50%以上,故按 C12 规则全部选择 `@40`
+作为固定 confirmation 候选。筛查结果虽然很强,本节仍不作确认性或“已完成实验(3)”声明;在当前 harness
+强制下限下,最终可识别的 visits 结论最多只能是 `≤40`,不能外推为恰好40或零搜索。
+
+严格 JSON、configuration/header/game fingerprint、逐手模型 attestation、开局/pair 调度、固定样本计数和
+summary 独立重算均通过。不可变证据如下:
+
+| screening 不可变证据 | configuration fingerprint | 原始/摘要 SHA-256 | 压缩档案 SHA-256 |
+|---|---|---|---|
+| [`selfplay_screen_rank-5d-40__vs__rank-6d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-5d-40__vs__rank-6d-1s.jsonl.gz) | `e40fd441def5e0680d0d94044bec2ef9cb6c9d88fcb9c064b448a36b86d346b2` | `7a856d6a0c76f00784bc8857685a047398dab3db3006411c78879f4ce05668a6` | `70a043250d99dd1c4d32e75b83689b03581d14a32f57a625d378d32d14d9f171` |
+| [`selfplay_screen_rank-6d-40__vs__rank-7d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-6d-40__vs__rank-7d-1s.jsonl.gz) | `6998a98ee39c7fc8093740140c86a0a67897b3333df13417a0145d737088e5fb` | `e124dc6635141b19943ffc0cbd9349726b37444b474b9320e8010eaf045766fc` | `3fcdd551476e0a0f54bb2e2e88c10733e2dec11a7d1924f71adaa15e54ee12d4` |
+| [`selfplay_screen_rank-7d-40__vs__rank-8d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-7d-40__vs__rank-8d-1s.jsonl.gz) | `dad716038e9ffc730a727b687b2b49823ec284eb23e7517dbee8e5b09962445b` | `3904286460908f1937f073d3a0e6295d97efcf541ad648cdddac201ad2896040` | `8f801c5127975b78751d4449f0ffdb57d3acb72c13625752a1a246c0439e6482` |
+| [`selfplay_screen_rank-8d-40__vs__rank-9d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/screen_exp3_40/selfplay_screen_rank-8d-40__vs__rank-9d-1s.jsonl.gz) | `a9c88d777fdb32c173f7a1552a5edda6f7c574f9dd1cf60028cae0321c0c9fff` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` |
+| [`selfplay_summary_screen_exp3_40.json`](calibration/results/selfplay_v2_pikl/selfplay_summary_screen_exp3_40.json) | — | `dde2e2296ccdbdf77cf5b1ae8905533fc1e8f8f0d340b5d729800a982809d57d` | — |
+
+**固定 confirmation 预声明(任何运行之前冻结):**实验(3)使用四个全新 `phase=confirm` checkpoint,分别
+运行上述四个 `低一段@40 vs 高一段@1s` matchup;每组恰好20个完整颜色 pair(40盘 decision games),
+默认最多40次 pair 尝试。screening 记录不加载、不计入 confirmation;每组固定样本结束后无论 Wilson 分类
+为何都不追加样本。四组均完成后才能作“低一段在支持网格内需要≤40 visits 可超过高一段 @1s”的确认性
+判定;若某组确认区间仍跨50%,如实报告该组统计不确定,不追样本、不改候选。
+
+### C14. 实验(3)旧 @40 confirmation 状态与边界 @20 screening 预声明(2026-07-22)
+
+C13 的旧 confirmation batch 停止时,四个 checkpoint 的实际状态经原始 JSONL 复核如下:
+
+| 旧 confirmation 对局(A vs B) | 完整 pair / 尝试 pair | 完整 pair 样本 | 状态与边界实验用途 |
+|---|---:|---:|---|
+| `rank_5d@40` vs `rank_6d@1s` | **20 / 22** | **36–4** | 固定样本完成;保留为该精确 `@40` 对局的有效既有证据 |
+| `rank_6d@40` vs `rank_7d@1s` | **20 / 24** | **36–4** | 固定样本完成;保留为该精确 `@40` 对局的有效既有证据 |
+| `rank_7d@40` vs `rank_8d@1s` | **11 / 16** | **19–3** | 中断;仅作描述,不作固定样本结论且永不并入新样本 |
+| `rank_8d@40` vs `rank_9d@1s` | **0 / 0** | — | 未启动 |
+
+前两组各有2/4个不完整 pair;第三组有5个不完整 pair。所有原始 checkpoint 均原样保留。旧 batch
+**仅作为寻找 search boundary 的程序被新协议取代**:两组已经完成的 `@40` confirmation 事实不作废,
+但旧 batch 的任何棋局都不加载、不追加、不合并到以下 screening 或未来重新冻结的 confirmation。
+
+上述状态已固化为 [`halted_confirmations_manifest.json`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/halted_confirmations_manifest.json),
+canonical digest 为 `8e6d2f94715f482c294e3593e68a4d5355a3d78fa79a39a3a68ed4f73fab824a`。三个现存
+checkpoint 均通过严格 JSONL、schema/header/configuration fingerprint、连续 game fingerprint、pair 调度、
+game record 与逐手模型 attestation 校验;表中统计由完整颜色 pair 独立重算。档案使用 `gzip -n -9`
+(mtime=0、不写原文件名),解压字节与 raw SHA-256 完全一致:
+
+| halted confirmation 不可变证据 | configuration fingerprint | raw SHA-256 | gzip SHA-256 |
+|---|---|---|---|
+| [`selfplay_confirm_rank-5d-40__vs__rank-6d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/selfplay_confirm_rank-5d-40__vs__rank-6d-1s.jsonl.gz) | `ac2acbfdc4c642c6b4b4991e4a1cd115cafed739da039031ef913e77bab7a0a0` | `a9493fd58b7dcaf76dd058edcca13e3b9aaf46eeb7cc693981a706e1989328c9` | `7566fba2ca9c9c65e254bdd9a9d989a221b872ace029274183a8770ea4da1184` |
+| [`selfplay_confirm_rank-6d-40__vs__rank-7d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/selfplay_confirm_rank-6d-40__vs__rank-7d-1s.jsonl.gz) | `de53323c474125da5b3f8cc3dfdc59dcea3f0609b56dfa0b63476fb1bc81868b` | `8f1b84d7a1819050ac6fd5e6110f0596e6e6ae9bbbbc91d8ff77d0e769cdeb15` | `168fe27afdf08aa583a36ca68a9c0f30fb7bf4073f5c6e8a371ad25839c98c0a` |
+| [`selfplay_confirm_rank-7d-40__vs__rank-8d-1s.jsonl.gz`](calibration/results/selfplay_v2_pikl/artifacts/confirm_exp3_40_halted/selfplay_confirm_rank-7d-40__vs__rank-8d-1s.jsonl.gz) | `f1234fa042abeb8f1b613e8ac1d806363728513299245afc088e94cea8d320ec` | `4365afebe83744199e6f7901f363b9110aa58bc3e7b864de723534be100a58dd` | `aa962af50101c47454eb7ce0f317b08da598fde6d60f0cace68d9249232ef444` |
+
+第4组的 `absent` 状态也写入同一 manifest,但没有伪造空 archive 或 digest。原始本地 JSONL 不删除,
+只读档案是其提交后的不可变证据副本。
+
+**任何 boundary query 之前冻结:**协议版本为 `exp3-boundary-v1`。首轮且只启动以下四个独立
+`phase=screen` matchup,每组目标恰好10个完整颜色 pair(20盘 decision games),最多20次 pair 尝试:
+
+- `rank_5d@20:rank_6d@1s:10`
+- `rank_6d@20:rank_7d@1s:10`
+- `rank_7d@20:rank_8d@1s:10`
+- `rank_8d@20:rank_9d@1s:10`
+
+每组在恰好10个完整 pair 时按 A 方 decision-game **点估计 `>=50%` 为 pass**,`<50%` 为 fail;
+任一 pair 有不可判盘则整对排除。达到20次 pair 尝试仍不足10个完整 pair 时 abort,不分类、不选候选。
+`@20` pass 的下一独立 screening 点是 `@10`;`@20` fail 的下一独立 screening 点是 `@30`。
+不得在结果出现后追加样本或更改下一点。
+
+本轮绑定的已提交输入如下;生成器/loader 必须在运行前逐字节及逐来源验证它们:
+
+| 冻结输入 | SHA-256 / canonical digest |
+|---|---|
+| opening suite checksum (`humansl-boundary-opening-suite-v1`) | `8d99e5288ee4e391f4b8429eba9e117864b7fadaa438b80bfe56d988c0f8e292` |
+| opening allocation digest (`humansl-boundary-opening-allocation-v1`) | `45a2bbb390f1c27882a82ceea9e5b9dd5c4ab595e9e48a14b6ab5fa1e8a1c9c4` |
+| known-endpoints manifest digest (`known-endpoints-exp3-v1`) | `0cdfac46b4b0e55936f8434eebef499a3179762d7cccc5565b35944efb59995f` |
+| shared committed source-summary SHA-256 | `dde2e2296ccdbdf77cf5b1ae8905533fc1e8f8f0d340b5d729800a982809d57d` |
+
+| transition / `@20` allocation | known-endpoint source digest | archive SHA-256 | decompressed checkpoint SHA-256 |
+|---|---|---|---|
+| `rank_5d__rank_6d` / `screen:rank_5d__rank_6d:20` (`b0061`–`b0080`) | `a1982503af2a295832f9358a15b95cf79637fb7bc413a74883083953f8beb4b6` | `70a043250d99dd1c4d32e75b83689b03581d14a32f57a625d378d32d14d9f171` | `7a856d6a0c76f00784bc8857685a047398dab3db3006411c78879f4ce05668a6` |
+| `rank_6d__rank_7d` / `screen:rank_6d__rank_7d:20` (`b0161`–`b0180`) | `f58b2b471861b5a6bfbf49f3582cdb57add946218d280bb4ae15c4de9eccd21c` | `3fcdd551476e0a0f54bb2e2e88c10733e2dec11a7d1924f71adaa15e54ee12d4` | `e124dc6635141b19943ffc0cbd9349726b37444b474b9320e8010eaf045766fc` |
+| `rank_7d__rank_8d` / `screen:rank_7d__rank_8d:20` (`b0261`–`b0280`) | `f85f3e1013de4fdfc6c4f7bae1694337dd82b0367a0fdb11291e00c5f47a8592` | `8f801c5127975b78751d4449f0ffdb57d3acb72c13625752a1a246c0439e6482` | `3904286460908f1937f073d3a0e6295d97efcf541ad648cdddac201ad2896040` |
+| `rank_8d__rank_9d` / `screen:rank_8d__rank_9d:20` (`b0361`–`b0380`) | `bbdbb54feb9c8cab062fb8057420959fa96dc0276541472f7336c47064931c56` | `87bae6b4d51536df064c0694be25ebc44c512ced84674e50be0114b15b299937` | `60eaec1f217cc909ca7c7330366a76502c589735c0bc488bdceecb867df57e8b` |
+
+本预声明及上述冻结输入验证必须先提交;提交前不允许发出 semantic probe 或任何 self-play HTTP query。
+source-revision gate 及 live-probe 语义修复已由 commit
+`451cd73b27c205f4518576f590943f2c0dd671b7` 实现并通过审核;本轮
+canonical launch source **精确固定为该 commit**,不得使用随后仅修改文档的 commit 作为 source revision。
+最终 launch 必须从 `451cd73b27c205f4518576f590943f2c0dd671b7` 的独立 clean detached worktree
+`/tmp/katrain-exp3-boundary-451cd73b` 执行。low probe 请求中的 `maxVisits` 是精确发出的搜索 cap;
+`rootInfo.visits` 是 KataGo 剪枝后的报告统计,不是请求值回显。在 shipping 8-thread 配置下,允许它为
+positive plain int 且 `<= requested maxVisits + 7`;结果中分别记录 `requested_max_visits` 与
+`reported_root_visits`。旧锁定 fixture 中未被选中(nonselected)候选手的 `order` 可随 live engine 漂移,不再因此否决
+有效语义证据;仍要求关键候选存在,并以低 λ 选 `R2`、高 λ 选 `O6` 的 selected-move 变化证明 PIKL
+产生了有意义的选点效果。
+
+`requirements.txt` 的固定依赖要求 Python 3.12;在该 clean detached worktree 内必须按顺序执行以下 bootstrap/gate,
+且 bootstrap 完成后所有 Python 命令只使用该 worktree 的 `.venv/bin/python`:
+
+```sh
+export UV_PYTHON=3.12
+uv sync
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python -c 'from pathlib import Path; import polib; [polib.pofile(str(p)).save_as_mofile(str(p.with_suffix(".mo"))) for p in Path("katrain/i18n/locales").glob("*/LC_MESSAGES/katrain.po")]'
+test "$(git rev-parse HEAD)" = "451cd73b27c205f4518576f590943f2c0dd671b7"
+test "$(git rev-parse --abbrev-ref HEAD)" = "HEAD"
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+.venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/generate_boundary_openings.py --check
+```
+
+直接用 `polib` 只编译被忽略的 `.mo`,不运行会改写 `.po` 的 `i18n.py`;上述 tracked-status gate 必须保持
+为空。唯一允许的输出目录是原始工作区外置于 detached worktree 的绝对路径
+`/Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary`。
+
+上述 gate 全部通过后,依次使用以下 canonical probe、regression 和 screening 命令(这里只预声明,本次文档
+提交不执行任何 HTTP/self-play):
+
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/probe_humansl_search.py --base-url http://127.0.0.1:8000 --low-visits 20 --experimental-min-humansl-search-visits 20`
+
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python -m pytest -q tests/platforms/test_humansl_selfplay.py tests/platforms/test_humansl_probe.py tests/platforms/test_ladder_query_contract.py tests/platforms/test_golaxy_calibration_opponent.py tests/test_http_engine.py tests/core/test_ladder_strategy.py`
+
+`NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost CI=true KIVY_NO_ARGS=1 .venv/bin/python superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py --base-url http://127.0.0.1:8000 --phase screen --boundary-protocol exp3-boundary-v1 --expected-source-revision 451cd73b27c205f4518576f590943f2c0dd671b7 --experimental-min-humansl-search-visits 20 --max-pair-attempts 20 --out /Users/fan/Repositories/katrain-golaxy-ai-ladder-parity/superpowers/tracks/golaxy-ai-ladder-parity/calibration/results/selfplay_v2_pikl_boundary --matchups 'rank_5d@20:rank_6d@1s:10,rank_6d@20:rank_7d@1s:10,rank_7d@20:rank_8d@1s:10,rank_8d@20:rank_9d@1s:10'`
+
+### C15. 星阵 9D 与 HumanSL 产品档对齐预声明(2026-07-23)
+
+本实验独立于已结束的本地自对弈后台任务,直接在当前
+`feature/golaxy-ai-ladder-parity` worktree 运行,不创建额外 worktree。冻结的可执行实现 revision 为
+`dd9d7e0130334865f58005c3e714d39505ebb22b`;允许随后仅更新本路径下实验文档,但该 revision 到当前
+`HEAD` 之间若任何 alignment runtime/helper/test 源码变化,runner 必须在星阵请求前失败关闭。
+
+目标是找出对星阵 9D(API level `3000`)累计10个有效结果至少5胜的最低 `rank_9d` HumanSL 档,并在恰好
+5–5时把产品安全档上调一级。固定候选网格为 `@1s/@4/@8/@16/@32`,`@1` 加权采样不参与。第一批且仅
+第一批为 `rank_9d@8` 的5个有效结果;4–5胜下调一档、2–3胜原档补到10、0–1胜上调一档。筛选局累计
+进入同候选的10局证据,不另起重复的“确认10局”。每候选独立按有效局交替颜色,10局为5黑5白。
+
+每次 live invocation 只运行协议许可的一批,完整落盘后停止。每次可能计费的星阵尝试先写入只增不减的
+quota ledger,单个操作者显式 quota 最多20次;不可判定、网络失败或进程中断后的未知尝试仍计费且不重试。
+本地引擎 URL 必须精确为 `http://127.0.0.1:8000`,运行环境为 conda `py311_katago`,候选必须逐手证明
+`@1s=humanv0 argmax` 或 `@4+ = b18+humanv0+canonical PIKL`,禁止把旧 b28 星阵数据并入。
+
+唯一输出目录为
+`calibration/results/golaxy_9d_humansl_alignment/`。创建新 quota 前必须由操作者确认对应星阵额度未使用;
+首个真实批次前依次通过514项相关回归、离线 smoke 证据、本地 `/health`/模型身份、候选语义 probe、精确
+source/output gate。首批结束后先在本节追加 charged attempts、有效胜负、颜色、不可判盘及冻结规则唯一
+导出的下一批,再允许继续。
+
+**首批结果(2026-07-23):** `rank_9d@8` 对星阵9D完成首批5个有效结果,战绩 **5–0**;依次执
+黑/白/黑/白/黑,即颜色计数3黑2白。5次可能计费尝试全部产生有效胜负,不可判盘0,无网络重试。
+quota 为 `golaxy9d-humansl-20260723-a`,本批结束时该 quota 与全实验 charged attempts 均为5。
+候选 fingerprint 为 `c431d55a7b9f746a826a8d48415ef63113a89a501da75a945fb12fa8ab66a963`。
+
+| 首批账本证据 | SHA-256 |
+|---|---|
+| `golaxy_9d_humansl_alignment/quotas.jsonl` | `c1e5e102352d3a3e72dfa2785e2ca0a6caba8bf27a82088a10f5e54493336249` |
+| `golaxy_9d_humansl_alignment/checkpoints.jsonl` | `33ea23132464a84363bb61027225bd9cb1b9bd297392af729b7f22bb096736b1` |
+| `golaxy_9d_humansl_alignment/attempts.jsonl` | `bbe0b31902ceb497d0770991cd421ad25d50ac0e1a93ae822c0f46700c2ff041` |
+
+该5局仅完成筛选里程碑,不单独形成“产品档已对齐”的10局结论。按冻结规则,4–5胜必须降低搜索强度,
+因此唯一下一批为相邻的 **`rank_9d@4` 对星阵9D,目标5个有效结果**;不得先给 `@8` 补局或跳测其他档。
+
+**第二批结果(2026-07-23):** `rank_9d@4` 首批5个有效结果为 **2–3**,逐局为负/负/胜/胜/负,
+颜色同样为黑/白/黑/白/黑(3黑2白)。新增5次计费尝试全部有效,不可判盘0;累计 quota 使用10/20。
+该档 fingerprint 为 `c0867051b2a5bde164cd8a8e1d2036a3f3c890fd4e9f27849ca46767e1d143c4`。
+此时累计账本 SHA-256 为:quotas
+`c1e5e102352d3a3e72dfa2785e2ca0a6caba8bf27a82088a10f5e54493336249`,checkpoints
+`37dc6c9cfd8b8e0706a430fb51385e3ee122c55a370a19e0acde82c1e5b0089e`,attempts
+`85c97d60ab1774f8862a613612d1e642b05a4586e4ffa7dc7cda89b8b5a3e8c7`。
+
+2–3胜命中冻结的边界分支,故唯一下一批为同档 **`rank_9d@4` 再补5个有效结果**,使该档累计达到
+10局(最终5黑5白);不得改测其他档或丢弃本批2–3。
+
+第三批首次启动在任何新 reservation 前被 fingerprint gate 拒绝,因此 quota 仍为10/20。根因已复现:
+旧 fingerprint 错误包含文档提交后的当前 `HEAD` 及探针 `reported_visits`;相同 `@4` 请求会因正常剪枝把
+candidate 报告为1或2 visits,裁判也会在205/206间波动,从而产生假配置漂移。修复 commit
+`634ba17cddcdab989763ae9693ef9020ebef3cee` 将配置 fingerprint 限定为请求配置、模型身份、PIKL、裁判、
+smoke 证据和冻结实现,排除上述观察统计与文档 HEAD;相关回归 **519 passed**。
+
+既有10局账本继续显式绑定原 ledger revision `dd9d7e0130334865f58005c3e714d39505ebb22b`,不得重写。
+续跑 `@4` 必须同时指定新实现 revision、旧 ledger revision 及 checkpoint 中原 fingerprint
+`c0867051b2a5bde164cd8a8e1d2036a3f3c890fd4e9f27849ca46767e1d143c4`;缺少或不精确匹配均拒绝。
+修复后本地-only preflight 已通过,稳定 configuration fingerprint 为
+`deb7fd6ef4d12432d43f4c2aeea0718e09fc4df7a50b368053ce40504bbb42b2`,解析出的唯一下一批仍是
+`rank_9d@4` 累计补到10局。该失败未访问星阵、未改变样本或计费分母。
+
+**第三批结果(2026-07-23):** 修复后从原 checkpoint 续跑成功。`rank_9d@4` 后5个有效结果为
+胜/负/胜/负/胜,与首批2–3合并后累计 **5–5**,颜色正好5黑5白。期间另有1次
+`inconclusive` 不进入分母并按相同预定颜色补局,因此本批使用6次、全日累计16/20次计费尝试。
+累计 attempts SHA-256 更新为
+`a7ad287edcb732f8cf963fdf4148120d9ac9c54da06a0637d83f2c8dbd6ef22a`;quotas/checkpoints 未变化,
+仍分别为 `c1e5e102352d3a3e72dfa2785e2ca0a6caba8bf27a82088a10f5e54493336249` 与
+`37dc6c9cfd8b8e0706a430fb51385e3ee122c55a370a19e0acde82c1e5b0089e`。
+
+按冻结规则,`rank_9d@4` 是累计10局的**实测对齐档**,但恰好5–5时产品安全档必须上调一级至
+`rank_9d@8`;不得把尚未完成10局的 `@8` 写成最终实测达标。`@8` 已有5–0,故唯一下一批是把它累计
+补到10个有效结果。当前 quota 仅余4次,不足以保证完成剩余5个有效结果;按协议使用剩余额度并保存部分
+断点,达到20次硬上限即停,下一显式新 quota 再续。
+
+**当日剩余额度结果(2026-07-23):** `rank_9d@8` 又完成4个有效结果且全胜,故累计 **9–0**,
+有效颜色5黑4白。第20次结果持久化后,runner 在尝试预留第21次时被 quota 硬上限按设计拒绝;没有发出
+第21次星阵请求,也没有产生未知 reservation。全日最终为20次计费尝试、19个有效结果、1个不可判定;
+跨档有效总战绩14–5。最终 attempts SHA-256 为
+`75c87db809f87f2b821acffb8c5f0a36003256d58fec72e126590e760651035a`;quotas/checkpoints SHA-256 仍为
+`c1e5e102352d3a3e72dfa2785e2ca0a6caba8bf27a82088a10f5e54493336249` /
+`37dc6c9cfd8b8e0706a430fb51385e3ee122c55a370a19e0acde82c1e5b0089e`。
+
+冻结协议解析出的唯一下一动作仍为 **`rank_9d@8` 累计补到10局**:下一有效局预定执白,只差1局。
+在该第10局完成前,`@8` 的9–0只能描述为极强的进行中证据,尚不把它写成最终10局产品安全档结论。
+当前 quota 已满且禁止复用/重置;必须等操作者从星阵端确认新额度后,显式创建全新 quota ID 再续。
+
+### C16. `rank_9d@5/@6` 固定星阵9D筛选(2026-07-24)
+
+用户决定不再补 `rank_9d@8` 的第10局,也不实施自适应 v2 确认状态机。2026-07-24 新额度已由用户确认
+可以尝试;本轮仅固定运行以下10个有效结果,完成后停止并报告,不自动追加样本或选择产品档:
+
+- `rank_9d@5`：5个有效结果,颜色黑/白/黑/白/黑;
+- `rank_9d@6`：5个有效结果,颜色白/黑/白/黑/白。
+
+不可判定局不进分母并以同一颜色补局;所有可能计费尝试使用新 quota
+`golaxy9d-fixed56-20260724-a`,上限20次。token/7002/429/断连零重试停止。棋手固定为
+b18+humanv0+canonical PIKL,对手为星阵9D level3000,只访问本地 KataGo
+`http://127.0.0.1:8000`。独立输出目录为
+`calibration/results/golaxy_9d_fixed_5_6_20260724/`,不读写或合并 C15 的旧账本。
+
+固定 runner 实现 revision 为 `2696fd7f8f359dccd8bded008c473d7d93ce0f87`;相关回归
+**528 passed**。源码门禁允许本次预声明等后续 Markdown-only commits 推进 `HEAD`,但 runner、共用
+alignment helper 或对应测试若相对该 revision 有任何提交/工作区变化,必须在星阵请求前拒绝。
+
+本轮已完成,固定 runner 正常退出(退出码0):
+
+| 棋手 | 有效战绩 vs 星阵9D | 有效胜率 | 有效局颜色 | 不可判定 | 计费尝试 |
+|---|---:|---:|---|---:|---:|
+| `rank_9d@5` | **5胜0负** | **100%** | B/W/B/W/B | 1(执白,原色补局) | 6 |
+| `rank_9d@6` | **4胜1负** | **80%** | W/B/W/B/W | 0 | 5 |
+| 合计 | **9胜1负** | **90%** | — | 1 | **11** |
+
+`@5` 与 `@6` 都在这组小样本筛选中明显占优;其中搜索更低的 `rank_9d@5` 已取得5个胜局,因此是当前
+更节省搜索的星阵9D产品对齐候选。`@5` 的5–0与`@6`的4–1不能用于反推 `@5` 强于`@6`,两者一盘之差
+应视为小样本波动。本轮按用户指定在各5个有效结果后停止,不自动追加确认赛。
+
+两档配置 fingerprint 分别为 `9297756ba210380eae4db8108011683451e525485dfc7a1fe7b683234cfb3752`
+与 `2caf4c97d22b2c39ac8e0156f52633a837cbb31da5aad3b84123aa92899511b4`;原始 append-only ledger
+`fixed_screen.jsonl` SHA-256 为 `5eb911b697de90dad5dca2d7b51a127af36788b747e13bca822af1725ea895c1`。
+
+### C17. `rank_8d@4` 对星阵8D固定筛选预声明(2026-07-24)
+
+目标是检验用户提出的“星阵8D可能接近 HumanSL `rank_8d@4`”假设。本轮固定取得5个有效结果后停止,
+不做二分、自动追加或产品档选择:
+
+- 我方固定为修复后的 b18+humanv0+canonical PIKL `rank_8d@4`;
+- 对手固定为星阵“8段/星美鹿”,真实 API wire level **2800**(core rung 31),不是展示 Elo;
+- 有效局颜色固定为 B/W/B/W/B;不可判定局不进分母并以原颜色补局;
+- 新 quota ID 为 `golaxy8d-rank8d4-20260724-a`,最多9次可能计费尝试;token/7002/429/断连零重试停止;
+- 本地 KataGo 固定为 `http://127.0.0.1:8000`,输出固定到
+  `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl`,不与任何9D账本合并。
+
+固定 preset 为 `golaxy8d-rank8d4-20260724`;实现 source revision 为
+`057fb959474e92b1fc91753d2f89e57e3dcf7034`,相关回归 **196 passed**。任何 scoped runner/helper/test
+相对该 revision 的提交或工作区变化都必须在星阵请求前 fail closed。结果完成后在本节续写。
+
+**结果:** 固定 runner 正常退出(退出码0),`rank_8d@4` 对星阵8D取得 **5胜0负(100%)**。五个有效结果
+严格依次执 B/W/B/W/B,无不可判定局,因此只使用5次计费尝试。实际星阵请求日志和 ledger header 均记录
+wire level `2800`;全程使用同一配置 fingerprint
+`2b084fa06bb4f3be11ca6943677b03537e4d549566c75411ac9f259bb400914a`。
+
+这5局支持“`rank_8d@4` 至少不弱于星阵8D”的方向性结论,并否定了二者在该小样本中势均力敌的直观预期;
+但5–0仍是小样本筛选,不能量化真实胜率或 Elo 差。本轮按预声明停止,不自动追加确认赛。原始 append-only
+ledger SHA-256 为 `2f910b18413ed464926348bb71c9f1a65f845fdca90d3116067ba30a8068250a`。
+
 ---
 
 ## D. 待办 / 开放项
 
-- [ ] **实验(1)(2)有效重跑**:使用新 `selfplay_v2_pikl` namespace 与 ≥40 visits 网格重新筛查/确认;旧 V>1
-  数据实际测的是 b28 visits 曲线,全部保持失效。
-- [ ] **实验(3)有效重跑**:旧 A 方均为 b28@4,未测到低一段 HumanSL 搜索跨高一段所需 visits;改用修复后
-  ≥40 visits player 重跑。
-- [ ] **实验(4)有效重跑**:加厚到20局后为 9/18(50%,2局不可判),且代码确认双方实为 b28@20;需用真正
-  的修复后 HumanSL/b18+PIKL 搜索选手重新对 b28@20。
+- [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
+  三段位确认样本点估计均略高于50%,但95% CI 全跨50%,结论为方向一致、统计不确定。
+- [ ] **实验(3)边界定位(进行中)**:旧 @40 batch 的两个 confirmation 已完成、一个中断、一个未启动;
+  其程序仅为边界定位所取代。`exp3-boundary-v1` 的四组独立 `@20` screening 已于 §C14 预声明,待运行。
+- [ ] **实验(4)有效重跑**:`@40/@80/@160/@320` screening 已完成并选定 `rank_9d@320`;
+  `rank_9d@320 vs b28@20` 的40完整-pair confirmation 已预声明,尚未运行。
+- [x] **星阵9D HumanSL产品档固定筛选**:`rank_9d@8` 首批5–0,`rank_9d@4` 首批2–3;
+  `rank_9d@4` 已累计5–5成为实测对齐档。按 §C15 唯一下一批为把安全档 `rank_9d@8` 从5局补到
+  10局的旧计划已由用户停止;`@8` 保持9–0。§C16 固定筛选已完成:`@5` 5–0、`@6` 4–1;
+  搜索更低的 `@5` 是当前产品候选,本轮不自动追加确认赛。
+- [x] **星阵8D HumanSL固定筛选**:§C17 的 `rank_8d@4` 已完成5个有效结果并取得 **5–0**;
+  无不可判定局,5次计费尝试后按预声明停止。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
   实验下限与 schema 3 本地语义探针均已落地并通过。KataGo C++ 引擎无需修改搜索实现;需使用包含上述 wrapper
   commits 的本地服务。
@@ -309,8 +767,10 @@ wire request、request fingerprint、`_wrapper` attestation 与摘要,因此同�
 | 星阵 9D 锚点 | `calibration/results/rung_33.jsonl` |
 | 星阵 超职业 锚点 | `calibration/results/rung_36.jsonl` |
 | 星阵3星 visits 二分 | `calibration/results/rung_36_v20.jsonl`、`rung_36_v5.jsonl` |
-| 旧自对弈全部接缝(**HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
-| 旧自对弈汇总(**不得续跑/合并**) | `calibration/results/selfplay/selfplay_summary.json` |
+| 星阵9D `rank_9d@5/@6` 固定筛选 | `calibration/results/golaxy_9d_fixed_5_6_20260724/fixed_screen.jsonl` |
+| 星阵8D `rank_8d@4` 固定筛选 | `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl` |
+| 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
+| 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |
 | schema 3 HumanSL 语义探针 | `calibration/results/semantic_probe/humansl_semantic_probe_20260721T183703.918547Z_c0bedf887cf3.json` |
 | 冒烟/level 探针 | `calibration/results/smoke_report.json` |

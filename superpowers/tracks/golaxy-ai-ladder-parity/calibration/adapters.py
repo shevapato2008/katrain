@@ -200,6 +200,7 @@ async def adjudicate(
     visits=200,
     *,
     capabilities: Mapping[str, object],
+    strict_identity: bool = False,
 ) -> Tuple[Optional[float], bool]:
     """Black-relative final score via reportAnalysisWinratesAs=BLACK. Missing/non-finite ->
     (None, False). `settled` requires a low-uncertainty endgame (see criteria)."""
@@ -227,6 +228,8 @@ async def adjudicate(
     try:
         validate_analysis_attestation(a, referee_spec, _capability_identity(capabilities, referee_spec))
     except LadderMoveError:
+        if strict_identity:
+            raise
         return (None, False)
     root = a.get("rootInfo") or {}
     lead = root.get("scoreLead")

@@ -777,12 +777,38 @@ wire level `2500`,全程 fingerprint 为
 该5–0支持“`rank_7d@4` 至少不弱于星阵7D”的方向性结论,但仍不足以量化真实胜率/Elo 差。原始
 append-only ledger SHA-256 为 `077f85aeab3e1cbbcbddd510df72438e0cf36a4b755ba39ddd0cf105bdfebe3c`。
 
+### C19. 相邻段位纯 HumanSL argmax `@1s` 探索性筛选恢复(2026-07-24)
+
+退出前另行运行了四组低段位 `rank_n@1s` 对 `rank_{n+1}@1s`。双方均为原生 HumanSL
+`humanPolicy`、单 visit、确定性 argmax 选点；每组目标为10个完整颜色 pair。该批次没有预声明提交，schema 3
+header 也没有 source-revision binding，因此恢复证据明确标记为 **`exploratory_only`**，只能观察相邻段位排序方向
+和噪声，不能作为确认性实验，不能据此校准 Elo 或量化真实强度差。
+
+| A(较低段位) | B(相邻较高段位) | A 完整-pair 战绩 | A 胜率 | 完整 pair | 不可判定 pair |
+|---|---|---:|---:|---:|---:|
+| `rank_5d@1s` | `rank_6d@1s` | 6–14 | 30% | 10 | 0 |
+| `rank_6d@1s` | `rank_7d@1s` | 9–11 | 45% | 10 | 0 |
+| `rank_7d@1s` | `rank_8d@1s` | 6–14 | 30% | 10 | 2 |
+| `rank_8d@1s` | `rank_9d@1s` | 7–13 | 35% | 10 | 1 |
+
+四组点估计都指向预期的段位方向，即较高段位胜局更多；但 `rank_6d@1s` 对 `rank_7d@1s` 仅9–11
+（A 45%），方向很弱且容易由小样本噪声产生，不能写成已确认的段位分离。恢复过程逐条验证 schema 3 header
+及 canonical configuration fingerprint、双方完整 player config、opening suite、capability/model/referee identity、
+每局 attestation 和 pair 调度，并从完整 pair 独立重算表中结果。确定性 `gzip -n -9` 档案见
+[`manifest.json`](calibration/results/selfplay_v2_policy_argmax_gap_recovery/exploratory_adjacent_rank_1s/manifest.json)
+（canonical digest `5d2a9d63cef666def61dab1b1b63917a51aeb2f8728e63f8c36be3ebffc113d0`）及
+[`summary.json`](calibration/results/selfplay_v2_policy_argmax_gap_recovery/exploratory_adjacent_rank_1s/summary.json)
+（canonical digest `277cb36dad967824809c985ec46e6349a0a29366a127d11953a22ec9afb57555`）。原始工作区文件保持不变。
+
 ---
 
 ## D. 待办 / 开放项
 
 - [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
   三段位确认样本点估计均略高于50%,但95% CI 全跨50%,结论为方向一致、统计不确定。
+- [x] **相邻段位纯 HumanSL argmax 探索性筛选恢复**:四组 `rank_n@1s` 对 `rank_{n+1}@1s` 均完成
+  10个完整颜色 pair，点估计方向一致；`6d` 对 `7d` 的45%尤其弱/噪声大。因无预声明和 source-revision
+  binding，仅为 `exploratory_only`，不支持确认性或校准 Elo 结论。
 - [ ] **实验(3)边界定位(进行中)**:旧 @40 batch 的两个 confirmation 已完成、一个中断、一个未启动;
   `exp3-boundary-v1` 四组正式 `@20` screening 已完成且全部通过。另观察到手工续跑的
   `@10/@5/@2` 全部通过，但因 Task 5 历史门禁缺失仅属描述性证据，不能正式报告边界 `<=2`；
@@ -823,5 +849,6 @@ append-only ledger SHA-256 为 `077f85aeab3e1cbbcbddd510df72438e0cf36a4b755ba39d
 | 修复后新自对弈 namespace | `calibration/results/selfplay_v2_pikl/` |
 | 实验(3)正式 `@20` 恢复档案 | `calibration/results/selfplay_v2_pikl_boundary_recovery/formal_screen_20/` |
 | 实验(3)手工续跑描述性恢复档案 | `calibration/results/selfplay_v2_pikl_boundary_recovery/retrospective_manual_continuation/` |
+| 相邻段位纯 HumanSL argmax `@1s` 探索性恢复档案 | `calibration/results/selfplay_v2_policy_argmax_gap_recovery/exploratory_adjacent_rank_1s/` |
 | schema 3 HumanSL 语义探针 | `calibration/results/semantic_probe/humansl_semantic_probe_20260721T183703.918547Z_c0bedf887cf3.json` |
 | 冒烟/level 探针 | `calibration/results/smoke_report.json` |

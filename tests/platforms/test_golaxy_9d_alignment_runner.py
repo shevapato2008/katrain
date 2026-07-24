@@ -327,11 +327,13 @@ async def test_common_preflight_attests_candidate_referees_and_smoke_without_gol
             action=runner.golaxy_9d_alignment.Batch("rank_9d@8", 5),
             source_attestation={"head": "f" * 40, "scoped_clean": True},
             smoke_report=smoke,
+            opponent=runner.get_rung(31),
         )
 
     assert requested == [("b18", 8), ("b28", 200), ("b28", 800)]
     assert result["payload"]["candidate"]["requested_visits"] == 8
     assert result["payload"]["candidate"]["reported_visits"] == 7
+    assert result["payload"]["golaxy"] == {"rung": 31, "api_level": 2800}
     assert len(result["fingerprint"]) == 64
 
 
@@ -392,6 +394,37 @@ async def test_live_game_uses_level_3000_once_and_never_retries_service_errors(m
         )
 
     assert calls == [3000]
+
+
+@pytest.mark.asyncio
+async def test_live_game_uses_explicit_level_2800_opponent(monkeypatch):
+    calls = []
+
+    class ServiceError(Exception):
+        pass
+
+    async def golaxy_move(_client, _history, *, rung, **_kwargs):
+        calls.append((rung.rung, rung.golaxy_level_name, rung.golaxy_api_level))
+        raise ServiceError("stop after observing opponent")
+
+    async def invoke_opponent(**kwargs):
+        return await kwargs["golaxy_move"]([])
+
+    monkeypatch.setattr(runner.adapters, "golaxy_move", golaxy_move)
+    monkeypatch.setattr(runner, "play_one_game", invoke_opponent)
+
+    with pytest.raises(ServiceError, match="observing opponent"):
+        await runner.play_alignment_game(
+            local_client=object(),
+            golaxy_client=object(),
+            base_url="http://127.0.0.1:8000",
+            token="secret",
+            reservation=SimpleNamespace(scheduled_color="B"),
+            preflight=_game_preflight(),
+            opponent=runner.get_rung(31),
+        )
+
+    assert calls == [(31, "8段", 2800)]
 
 
 @pytest.mark.asyncio

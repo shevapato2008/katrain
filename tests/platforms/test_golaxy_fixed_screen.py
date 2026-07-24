@@ -28,6 +28,38 @@ def test_fixed_players_are_only_five_and_six_visits():
         fixed.make_fixed_player("rank_9d@8")
 
 
+def test_eight_d_preset_is_exact_and_builds_rank_eight_player():
+    spec = fixed.GOLAXY_8D_PRESET
+    assert spec.name == "golaxy8d-rank8d4-20260724"
+    assert spec.players == ("rank_8d@4",)
+    assert spec.starting_colors == (("rank_8d@4", "B"),)
+    assert spec.valid_per_player == 5
+    assert spec.charged_cap == 9
+    assert (spec.golaxy_rung, spec.golaxy_level_name, spec.golaxy_api_level) == (31, "8段", 2800)
+    assert spec.expected_out_dir.name == "golaxy_8d_rank_8d_4_20260724"
+
+    label, rung, selection = fixed.make_fixed_player("rank_8d@4", spec)
+    assert label == "rank_8d@4"
+    assert rung.net == "b18"
+    assert rung.max_visits == 4
+    assert rung.human_sl_profile == "rank_8d"
+    assert rung.human_sl_params == HUMANSL_PIKL_BASELINE
+    assert selection == "search"
+
+
+def test_eight_d_preset_schedules_five_valid_games_and_repeats_inconclusive_color():
+    spec = fixed.GOLAXY_8D_PRESET
+    records = []
+    for color in ("B", "W", "B", "W", "B"):
+        game = fixed.next_game(records, spec)
+        assert game == fixed.FixedGame("rank_8d@4", color)
+        records.append({"type": "result", "player": game.player, "color": game.color, "outcome": "win"})
+    assert fixed.next_game(records, spec) is None
+
+    inconclusive = [{"type": "result", "player": "rank_8d@4", "color": "B", "outcome": "inconclusive"}]
+    assert fixed.next_game(inconclusive, spec) == fixed.FixedGame("rank_8d@4", "B")
+
+
 def test_next_game_runs_five_then_six_with_opposite_starting_colors():
     records = []
     expected = [
@@ -61,6 +93,28 @@ def test_reservation_cap_is_twenty(tmp_path):
         assert reservation.attempt_id == attempt_id
     with pytest.raises(ValueError, match="20 charged"):
         ledger.reserve(fixed.FixedGame("rank_9d@5", "B"), "fingerprint")
+
+
+def test_eight_d_ledger_header_and_reservation_cap_are_frozen(tmp_path):
+    spec = fixed.GOLAXY_8D_PRESET
+    ledger = fixed.FixedLedger.create(tmp_path, "golaxy8d-20260724", "f" * 40, spec)
+    assert ledger.records()[0] == {
+        "type": "header",
+        "quota_id": "golaxy8d-20260724",
+        "source_revision": "f" * 40,
+        "preset": "golaxy8d-rank8d4-20260724",
+        "players": ["rank_8d@4"],
+        "charged_cap": 9,
+        "golaxy": {"rung": 31, "level_name": "8段", "api_level": 2800},
+    }
+    for attempt_id in range(1, 10):
+        reservation = ledger.reserve(fixed.FixedGame("rank_8d@4", "B"), "fingerprint")
+        assert reservation.attempt_id == attempt_id
+    with pytest.raises(ValueError, match="9 charged"):
+        ledger.reserve(fixed.FixedGame("rank_8d@4", "B"), "fingerprint")
+
+    resumed = fixed.FixedLedger.open(tmp_path, "golaxy8d-20260724", "f" * 40, spec)
+    assert resumed.spec == spec
 
 
 def test_result_append_is_durable_and_rejects_duplicates(tmp_path):
@@ -108,3 +162,24 @@ def test_cli_requires_explicit_quota_for_live_mode():
     )
     with pytest.raises(ValueError, match="quota-id"):
         fixed.validate_args(args)
+
+
+def test_cli_selects_eight_d_preset_and_requires_its_exact_output_path(tmp_path):
+    args = fixed.build_parser().parse_args(
+        [
+            "--preset",
+            "golaxy8d-rank8d4-20260724",
+            "--preflight-only",
+            "--expected-source-revision",
+            "f" * 40,
+            "--out",
+            str(fixed.GOLAXY_8D_PRESET.expected_out_dir),
+            "--base-url",
+            "http://127.0.0.1:8000",
+        ]
+    )
+    spec = fixed.resolve_preset(args.preset)
+    assert spec is fixed.GOLAXY_8D_PRESET
+    assert fixed.validate_output_path(args.out, spec) == spec.expected_out_dir
+    with pytest.raises(ValueError, match="output must be exactly"):
+        fixed.validate_output_path(str(tmp_path), spec)

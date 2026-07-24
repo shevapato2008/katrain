@@ -122,6 +122,14 @@ def golaxy_9d_opponent() -> LadderRung:
     return rung
 
 
+def _resolve_golaxy_opponent(opponent: LadderRung | None) -> LadderRung:
+    resolved = golaxy_9d_opponent() if opponent is None else opponent
+    if not isinstance(resolved, LadderRung):
+        raise ValueError("Golaxy opponent must be a LadderRung")
+    adapters._assert_real_wire_level(resolved.golaxy_api_level)
+    return resolved
+
+
 player_move_strict = run_selfplay.player_move_strict
 
 
@@ -375,7 +383,14 @@ def resolve_ledger_fingerprint(current: str, persisted: str | None, explicit_leg
 
 
 async def common_preflight(
-    *, client, base_url: str, action, source_attestation: dict, smoke_report: Path, player_factory=make_alignment_player
+    *,
+    client,
+    base_url: str,
+    action,
+    source_attestation: dict,
+    smoke_report: Path,
+    player_factory=make_alignment_player,
+    opponent: LadderRung | None = None,
 ) -> dict:
     validate_base_url(base_url)
     if not isinstance(action, golaxy_9d_alignment.Batch):
@@ -389,14 +404,13 @@ async def common_preflight(
         "stability": await _probe_referee(client, base_url, capabilities, _STABILITY_VISITS),
     }
     smoke = load_verified_smoke_codes(smoke_report)
-    if golaxy_9d_opponent().golaxy_api_level != 3000:
-        raise ValueError("Golaxy opponent must remain level 3000")
+    opponent = _resolve_golaxy_opponent(opponent)
     payload = {
         "protocol_version": golaxy_9d_alignment.PROTOCOL_VERSION,
         "source": source_attestation,
         "candidate": candidate,
         "capability_snapshot": capabilities,
-        "golaxy": {"rung": 33, "api_level": 3000},
+        "golaxy": {"rung": opponent.rung, "api_level": opponent.golaxy_api_level},
         "game": {"board_size": _BOARD_SIZE, "rules": _RULES, "komi": _KOMI},
         "referee": referee,
         "smoke": smoke,
@@ -411,12 +425,19 @@ async def common_preflight(
 
 
 async def play_alignment_game(
-    *, local_client, golaxy_client, base_url: str, token: str, reservation, preflight: dict
+    *,
+    local_client,
+    golaxy_client,
+    base_url: str,
+    token: str,
+    reservation,
+    preflight: dict,
+    opponent: LadderRung | None = None,
 ) -> GameOutcome:
     _label, rung, selection = preflight["player"]
     capabilities = preflight["capabilities"]
     smoke = preflight["smoke"]
-    opponent = golaxy_9d_opponent()
+    opponent = _resolve_golaxy_opponent(opponent)
     history_holder = {"history": None}
 
     async def our_move(history):

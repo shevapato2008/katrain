@@ -83,6 +83,64 @@ def test_compose_service_contract_and_bind_addresses():
             assert port.get("host_ip") in {"127.0.0.1", "10.8.0.3"}
 
 
+def test_data_services_are_pinned_private_and_persistent():
+    compose = render_compose()
+    services = compose["services"]
+
+    for name in ("postgres", "minio", "minio-setup"):
+        assert re.fullmatch(r"[^\s]+@sha256:[0-9a-f]{64}", services[name]["image"])
+    assert set(compose["volumes"]) >= {"postgres-data", "minio-data"}
+    assert services["postgres"].get("ports", []) == []
+    assert services["postgres"]["volumes"] == [
+        {"type": "volume", "source": "postgres-data", "target": "/var/lib/postgresql/data", "volume": {}}
+    ]
+    assert services["minio"]["volumes"] == [
+        {"type": "volume", "source": "minio-data", "target": "/data", "volume": {}}
+    ]
+    assert services["minio"]["ports"] == [
+        {"mode": "ingress", "target": 9000, "published": "9000", "host_ip": "10.8.0.3", "protocol": "tcp"},
+        {"mode": "ingress", "target": 9001, "published": "9001", "host_ip": "127.0.0.1", "protocol": "tcp"},
+    ]
+
+
+def test_data_service_credentials_urls_and_bootstrap_contract():
+    services = render_compose()["services"]
+    postgres = services["postgres"]
+    minio = services["minio"]
+    setup = services["minio-setup"]
+
+    assert postgres["environment"] == {
+        "POSTGRES_DB": "katrain_db",
+        "POSTGRES_PASSWORD": "test-only",
+        "POSTGRES_USER": "katrain_user",
+    }
+    assert minio["environment"] == {
+        "MINIO_ROOT_PASSWORD": "test-only",
+        "MINIO_ROOT_USER": "test-only",
+    }
+    assert setup["environment"]["MINIO_ENDPOINT"] == "http://minio:9000"
+    assert setup["environment"]["S3_BUCKET"] == "tutorial-assets"
+    assert setup["restart"] == "no"
+    assert setup["depends_on"]["minio"]["condition"] == "service_healthy"
+    assert setup["volumes"] == [{
+        "type": "bind",
+        "source": str(DEPLOY / "minio" / "bootstrap.sh"),
+        "target": "/bootstrap.sh",
+        "read_only": True,
+        "bind": {},
+    }]
+    bootstrap = DEPLOY / "minio" / "bootstrap.sh"
+    assert bootstrap.is_file() and os.access(bootstrap, os.X_OK)
+    compose_text = (DEPLOY / "compose.yml").read_text()
+    for name in ("POSTGRES_PASSWORD", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD", "WG_BIND_IP"):
+        assert "${" + name + ":?" in compose_text
+
+    bootstrap_text = bootstrap.read_text()
+    assert "until mc alias set" in bootstrap_text
+    assert "mc stat" in bootstrap_text and "mc mb" in bootstrap_text
+    assert not re.search(r"anonymous|replicat|lifecycle|notify", bootstrap_text, re.IGNORECASE)
+
+
 def test_production_adds_exactly_one_cron():
     preview = render_compose()["services"]
     production = render_compose(production=True)["services"]

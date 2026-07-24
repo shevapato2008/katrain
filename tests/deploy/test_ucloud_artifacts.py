@@ -150,6 +150,50 @@ def test_production_adds_exactly_one_cron():
     assert production["katrain-web"]["environment"]["KATRAIN_PREVIEW_MODE"] == "0"
 
 
+def test_application_images_state_and_service_dns_contract():
+    preview = render_compose()["services"]
+    production = render_compose(production=True)["services"]
+    immutable = re.compile(r"(?:[^\s]+@)?sha256:[0-9a-f]{64}")
+
+    for name in ("katrain-web", "katago-web", "katago-cron"):
+        assert immutable.fullmatch(preview[name]["image"])
+    assert immutable.fullmatch(production["katrain-cron"]["image"])
+    assert preview["katrain-web"]["user"] == "10001:10001"
+    assert preview["katrain-web"]["environment"]["KATRAIN_DATABASE_URL"].endswith(
+        "@postgres:5432/katrain_db"
+    )
+    assert preview["katrain-web"]["environment"]["LOCAL_KATAGO_URL"] == "http://katago-web:8000"
+    assert production["katrain-cron"]["environment"]["KATAGO_URL"] == "http://katago-cron:8000"
+    assert preview["katrain-web"]["volumes"] == [{
+        "type": "volume",
+        "source": "katrain-state-preview",
+        "target": "/home/katrain/.katrain",
+        "volume": {},
+    }]
+    assert production["katrain-web"]["volumes"] == [{
+        "type": "volume",
+        "source": "katrain-state-production",
+        "target": "/home/katrain/.katrain",
+        "volume": {},
+    }]
+
+
+def test_katago_services_preserve_proven_gpu_runtime_with_distinct_endpoints():
+    services = render_compose()["services"]
+    web = services["katago-web"]
+    cron = services["katago-cron"]
+
+    assert web["image"] == cron["image"]
+    assert web["command"] == cron["command"] == ["python3", "-m", "realtime_api.main"]
+    assert web["environment"]["KATAGO_CONFIG_FILE"] == "/app/config.yaml"
+    assert cron["environment"]["KATAGO_CONFIG_FILE"] == "/app/config.yaml"
+    assert {port["published"] for port in web["ports"]} == {"8000"}
+    assert {port["published"] for port in cron["ports"]} == {"8002"}
+    for service in (web, cron):
+        reservations = service["deploy"]["resources"]["reservations"]["devices"]
+        assert reservations == [{"driver": "nvidia", "count": 1, "capabilities": ["gpu"]}]
+
+
 def test_long_running_services_have_health_restart_resource_and_log_limits():
     services = render_compose(production=True)["services"]
     for name in ("postgres", "minio", "katrain-web", "katrain-cron", "katago-web", "katago-cron"):

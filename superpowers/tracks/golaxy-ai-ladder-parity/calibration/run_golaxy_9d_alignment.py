@@ -54,6 +54,8 @@ _SCOPED_PATHS = (
     "tests/platforms/test_golaxy_9d_alignment_runner.py",
     "tests/platforms/test_golaxy_calibration_opponent.py",
     "tests/platforms/test_humansl_selfplay.py",
+    "superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_golaxy_fixed_screen.py",
+    "tests/platforms/test_golaxy_fixed_screen.py",
 )
 
 
@@ -372,11 +374,13 @@ def resolve_ledger_fingerprint(current: str, persisted: str | None, explicit_leg
     return persisted
 
 
-async def common_preflight(*, client, base_url: str, action, source_attestation: dict, smoke_report: Path) -> dict:
+async def common_preflight(
+    *, client, base_url: str, action, source_attestation: dict, smoke_report: Path, player_factory=make_alignment_player
+) -> dict:
     validate_base_url(base_url)
     if not isinstance(action, golaxy_9d_alignment.Batch):
         raise ValueError(f"protocol is terminal; no live batch is available: {action!r}")
-    player = make_alignment_player(action.player)
+    player = player_factory(action.player)
     response = await client.get(f"{base_url}/health", timeout=httpx.Timeout(30.0, connect=10.0))
     capabilities = adapters.retain_health_snapshot(dict(_json_response(response, "/health")))
     candidate = await _probe_player(client, base_url, player, capabilities)

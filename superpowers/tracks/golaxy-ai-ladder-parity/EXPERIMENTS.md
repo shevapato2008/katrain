@@ -872,6 +872,28 @@ level decision、1条 stopped，所有新 reservation 均有 result 或 stopped 
 `calibration/results/golaxy_b18_binary_stars_20260726/binary_search_v4.jsonl`，SHA-256
 `d64be0d257c8c7ce01ca4835ed72c4a0c0015eb4a59194d3b52765d067c02d9d`。
 
+### C23. 纯 b18 对星阵1–2星 visits 串行二分完成（2026-07-26）
+
+经核对，C22 的停止错误是 `Retryable: Golaxy genmove network error`，没有 HTTP/业务错误码，也不是7002。
+按用户授权另建 v5 批次，校验并继承 v4 的38条已完成结果，丢弃由该网络错误闭合的 reservation/stopped，
+继续保持单盘串行和盘间5秒冷却。本批19条新 reservation 全部由19条 result 闭合，没有远端错误或重试。
+
+| 纯 b18 配置 | 对手 | 有效胜–负 | 不可判定 | 状态 |
+|---|---|---:|---:|---|
+| `b18@16` | 星阵2星 | **8–2** | 1 | 最小强侧候选，累计10盘完成 |
+| `b18@8` | 星阵1星 | **3–1** | 0 | 强侧，二分下探 |
+| `b18@4` | 星阵1星 | **3–1** | 0 | 强侧，二分下探 |
+| `b18@2` | 星阵1星 | **7–3** | 0 | 网格下界及最小强侧候选，累计10盘完成 |
+
+至此三个星级的纯 b18 对标结果均已完成：星阵3星为 `b18@64`（7–3），星阵2星为 `b18@16`
+（8–2），星阵1星为 `b18@2`（7–3）。这些是每点4盘筛选、最终候选10盘确认的小样本分档结果，
+不用于精确估计胜率或 Elo。
+
+正式 append-only v5 账本共1条 header、38条 carry result、19条 reservation、19条 result、2条
+level decision，所有新 reservation 均由 result 闭合：
+`calibration/results/golaxy_b18_binary_stars_20260726/binary_search_v5.jsonl`，SHA-256
+`9a5796b624924266efa6eb6937a4cb4833468bfa0270e5f115fc6d2714fc4082`。
+
 ---
 
 ## D. 待办 / 开放项

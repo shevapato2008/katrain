@@ -849,6 +849,29 @@ level 3300）。每档取得5个有效结果，HumanSL 颜色为 B/W/B/W/B；若
 `calibration/results/golaxy_b18_binary_stars_20260725/binary_search_v3.jsonl`，SHA-256
 `4dd4cf3a016f139eb0a6fd6387ddcf2f9b58321e591602fdca2773ea212f3015`。
 
+### C22. 纯 b18 对星阵1–3星 visits 串行二分续跑（2026-07-26，因网络异常停止）
+
+v4 校验并继承 C21 的16条已完成结果，明确丢弃 v3 最后一条未配对的 `b18@32` 执白 reservation，
+从同一颜色重新开始。执行规则保持不变：单盘串行、盘间5秒、不可判定局不计有效样本并重复颜色；任何远端异常
+立即停止且不重试。
+
+| 纯 b18 配置 | 对手 | 有效胜–负 | 不可判定 | 状态 |
+|---|---|---:|---:|---|
+| `b18@32` | 星阵3星 | **1–3** | 0 | 非强侧 |
+| `b18@64` | 星阵3星 | **7–3** | 0 | 最小强侧候选，累计10盘完成 |
+| `b18@8` | 星阵2星 | **1–3** | 0 | 非强侧 |
+| `b18@16` | 星阵2星 | **8–1** | 1 | 筛选4–0后进入确认；仅9个有效结果，未完成10盘 |
+
+星阵3星的二分边界由 `@32` 的1–3与 `@64` 的强端点确定，最终 `b18@64` 累计10盘为 **7–3**。
+星阵2星先测 `@8` 得1–3，再测 `@16`；`@16` 前4个有效结果为4–0，因此选为强侧候选并继续补样。
+第10个有效结果对应的我方白棋对局中，星阵接口返回 `Golaxy genmove network error`，runner 立即停止；该次
+reservation 由 stopped 记录闭合，不计入战绩且没有重试。故星阵2星尚差1个有效结果，星阵1星尚未启动。
+
+正式 append-only v4 账本共1条 header、16条 carry result、23条 reservation、22条 result、1条
+level decision、1条 stopped，所有新 reservation 均有 result 或 stopped 闭合：
+`calibration/results/golaxy_b18_binary_stars_20260726/binary_search_v4.jsonl`，SHA-256
+`d64be0d257c8c7ce01ca4835ed72c4a0c0015eb4a59194d3b52765d067c02d9d`。
+
 ---
 
 ## D. 待办 / 开放项

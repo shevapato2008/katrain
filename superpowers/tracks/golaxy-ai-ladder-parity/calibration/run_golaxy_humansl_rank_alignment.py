@@ -28,6 +28,8 @@ LEVELS = {
     9: (33, 3000, "9段"),
 }
 PROTOCOL = "golaxy-humansl-rank5-9-log-grid-v1"
+REFINEMENT_PROTOCOL = "golaxy-humansl-rank7-rank9-refinement-v1"
+REFINEMENT_TARGETS = ((7, "1s", "B"), (9, "6", "W"))
 
 
 @dataclass(frozen=True)
@@ -93,6 +95,99 @@ def seed_results() -> list[dict]:
             }
         )
     return seeded
+
+
+def refinement_seed_results() -> list[dict]:
+    seeded = []
+    alignment_path = RESULTS / "golaxy_humansl_rank5_9_alignment_20260727/alignment_v1.jsonl"
+    for row in _jsonl(alignment_path):
+        if (
+            row.get("type") == "result"
+            and row.get("rank") == 7
+            and row.get("tier") == "1s"
+            and row.get("outcome") in {"win", "loss"}
+        ):
+            seeded.append(
+                {
+                    "type": "carry_result",
+                    "rank": 7,
+                    "tier": "1s",
+                    "color": row["color"],
+                    "outcome": row["outcome"],
+                    "source": str(alignment_path.relative_to(RESULTS.parent.parent.parent.parent.parent)),
+                }
+            )
+
+    fixed_path = RESULTS / "golaxy_9d_fixed_5_6_20260724/fixed_screen.jsonl"
+    for row in _jsonl(fixed_path):
+        if row.get("type") == "result" and row.get("player") == "rank_9d@6" and row.get("outcome") in {"win", "loss"}:
+            seeded.append(
+                {
+                    "type": "carry_result",
+                    "rank": 9,
+                    "tier": "6",
+                    "color": row["color"],
+                    "outcome": row["outcome"],
+                    "source": str(fixed_path.relative_to(RESULTS.parent.parent.parent.parent.parent)),
+                }
+            )
+    return seeded
+
+
+def _refinement_outcomes(records: list[dict], rank: int, tier: str) -> list[str]:
+    return [
+        row["outcome"]
+        for row in records
+        if row.get("type") in {"carry_result", "result"}
+        and row.get("rank") == rank
+        and row.get("tier") == tier
+        and row.get("outcome") in {"win", "loss"}
+    ]
+
+
+def next_refinement_action(records: list[dict]) -> Action | None:
+    for rank, tier, _starting_color in REFINEMENT_TARGETS:
+        if len(_refinement_outcomes(records, rank, tier)) < 10:
+            return Action(f"rank_{rank}d@{tier}", "confirm")
+    return None
+
+
+def next_refinement_color(records: list[dict], rank: int, tier: str) -> str:
+    starting_color = next(
+        start for target_rank, target_tier, start in REFINEMENT_TARGETS if (target_rank, target_tier) == (rank, tier)
+    )
+    completed = len(_refinement_outcomes(records, rank, tier))
+    if completed % 2 == 0:
+        return starting_color
+    return "W" if starting_color == "B" else "B"
+
+
+def initialize_refinement(path: Path) -> None:
+    if path.exists():
+        records = read_jsonl(path)
+        if not records or records[0].get("protocol") != REFINEMENT_PROTOCOL:
+            raise RuntimeError("existing refinement ledger has an unexpected header")
+        if any(row.get("type") == "stopped" for row in records):
+            raise RuntimeError("refinement ledger already stopped; a remote error must not be retried automatically")
+        reservations = sum(row.get("type") == "reservation" for row in records)
+        results = sum(row.get("type") == "result" for row in records)
+        if reservations != results:
+            raise RuntimeError("refinement ledger has an unmatched reservation; automatic resume is forbidden")
+        return
+    _append(
+        path,
+        {
+            "type": "header",
+            "ts": time.time(),
+            "protocol": REFINEMENT_PROTOCOL,
+            "targets": [f"rank_{rank}d@{tier}" for rank, tier, _ in REFINEMENT_TARGETS],
+            "target_valid_each": 10,
+            "intergame_cooldown_seconds": 5,
+            "execution": "strictly_serial_no_retry_stop_on_any_remote_error",
+        },
+    )
+    for record in refinement_seed_results():
+        _append(path, record)
 
 
 def initialize(path: Path) -> None:
@@ -369,6 +464,124 @@ async def run_live(path: Path) -> dict:
     return summarize(read_jsonl(path))
 
 
+def summarize_refinement(records: list[dict]) -> dict:
+    targets = {}
+    for rank, tier, _starting_color in REFINEMENT_TARGETS:
+        outcomes = _refinement_outcomes(records, rank, tier)
+        targets[f"rank_{rank}d@{tier}"] = {
+            "valid": len(outcomes),
+            "wins": outcomes.count("win"),
+            "losses": outcomes.count("loss"),
+        }
+    action = next_refinement_action(records)
+    return {
+        "protocol": REFINEMENT_PROTOCOL,
+        "new_reservations": sum(row.get("type") == "reservation" for row in records),
+        "new_results": sum(row.get("type") == "result" for row in records),
+        "stopped": sum(row.get("type") == "stopped" for row in records),
+        "targets": targets,
+        "next": dataclasses.asdict(action) if action is not None else None,
+    }
+
+
+async def run_refinement_live(path: Path) -> dict:
+    initialize_refinement(path)
+    access_token = alignment.load_token(None)
+    async with httpx.AsyncClient(follow_redirects=False, trust_env=False) as local_client:
+        async with httpx.AsyncClient(follow_redirects=False, trust_env=False) as golaxy_client:
+            checks = {}
+            while True:
+                records = read_jsonl(path)
+                action = next_refinement_action(records)
+                if action is None:
+                    break
+                rank = int(action.player.split("_", 1)[1].split("d", 1)[0])
+                tier = _tier(action.player)
+                key = (rank, tier)
+                if key not in checks:
+                    checks[key] = await preflight(local_client, rank, tier)
+                color = next_refinement_color(records, rank, tier)
+                attempt = 1 + sum(row.get("type") == "reservation" for row in records)
+                reservation = {
+                    "type": "reservation",
+                    "ts": time.time(),
+                    "attempt": attempt,
+                    "rank": rank,
+                    "tier": tier,
+                    "player": action.player,
+                    "stage": action.stage,
+                    "color": color,
+                    "api_level": LEVELS[rank][1],
+                    "fingerprint": checks[key]["fingerprint"],
+                }
+                _append(path, reservation)
+                print(
+                    json.dumps(
+                        {"event": "game_start", "rank": rank, "player": action.player, "color": color},
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+                started = time.monotonic()
+                try:
+                    outcome = await alignment.play_alignment_game(
+                        local_client=local_client,
+                        golaxy_client=golaxy_client,
+                        base_url=alignment_protocol.LOCAL_BASE_URL,
+                        token=access_token,
+                        reservation=SimpleNamespace(scheduled_color=color),
+                        preflight=checks[key],
+                        opponent=opponent(rank),
+                    )
+                except BaseException as exc:
+                    _append(
+                        path,
+                        {
+                            "type": "stopped",
+                            "ts": time.time(),
+                            "attempt": attempt,
+                            "rank": rank,
+                            "tier": tier,
+                            "player": action.player,
+                            "color": color,
+                            "error_type": type(exc).__name__,
+                            "error": str(exc),
+                        },
+                    )
+                    print(json.dumps({"event": "stopped", "error": str(exc)}, ensure_ascii=False), flush=True)
+                    raise
+                result = (
+                    "win"
+                    if outcome.conclusive and outcome.our_win
+                    else "loss" if outcome.conclusive else "inconclusive"
+                )
+                _append(
+                    path,
+                    {
+                        "type": "result",
+                        "ts": time.time(),
+                        "attempt": attempt,
+                        "rank": rank,
+                        "tier": tier,
+                        "player": action.player,
+                        "stage": action.stage,
+                        "color": color,
+                        "outcome": result,
+                        "elapsed_seconds": time.monotonic() - started,
+                        "game_outcome": dataclasses.asdict(outcome),
+                    },
+                )
+                print(
+                    json.dumps(
+                        {"event": "game_result", "rank": rank, "player": action.player, "outcome": result},
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+                await asyncio.sleep(5)
+    return summarize_refinement(read_jsonl(path))
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -377,10 +590,23 @@ def main(argv=None) -> int:
         default=RESULTS / "golaxy_humansl_rank5_9_alignment_20260727/alignment_v1.jsonl",
     )
     parser.add_argument("--summary", action="store_true")
+    parser.add_argument(
+        "--refinement-out",
+        type=Path,
+        help="run only the rank_7d@1s and rank_9d@6 ten-game refinements in this append-only ledger",
+    )
     args = parser.parse_args(argv)
     try:
-        initialize(args.out)
-        result = summarize(read_jsonl(args.out)) if args.summary else asyncio.run(run_live(args.out))
+        if args.refinement_out is not None:
+            initialize_refinement(args.refinement_out)
+            result = (
+                summarize_refinement(read_jsonl(args.refinement_out))
+                if args.summary
+                else asyncio.run(run_refinement_live(args.refinement_out))
+            )
+        else:
+            initialize(args.out)
+            result = summarize(read_jsonl(args.out)) if args.summary else asyncio.run(run_live(args.out))
     except Exception as exc:
         print(f"HumanSL rank alignment stopped: {exc}", file=sys.stderr)
         return 1

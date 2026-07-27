@@ -914,7 +914,7 @@ level decision，所有新 reservation 均由 result 闭合：
 
 2026-07-28 权限恢复后从上述唯一断点启动，runner 正常退出（退出码0）。全程同一时刻只运行一盘，新增
 56条 reservation 全部由56条 result 闭合，无不可判定局、无 stopped、无7002/429或其他远端错误。
-最终对标结果为：
+该轮实际得到的“最低强侧档”为：
 
 | 星阵等级 | 筛选路径 | 最终最低强侧档 | 10盘战绩 |
 |---|---|---|---:|
@@ -924,12 +924,28 @@ level decision，所有新 reservation 均由 result 闭合：
 | 6D | `@8` 4–0 → `@4` 4–0 → `@1s` 首4盘3–1 | `rank_6d@1s` | **9–1** |
 | 5D | `@8` 4–0 → `@4` 4–0 → `@1s` 首4盘4–0 | `rank_5d@1s` | **10–0** |
 
-五个最终候选均恰好10个有效结果、5黑5白。`@1s` 已是网格下界，因此5D、6D、8D不能由本实验继续
-向下细分；这些结果是固定4盘筛选加10盘确认的小样本分档，不用于精确估计胜率或 Elo。
+五个候选均恰好10个有效结果、5黑5白。后续复核发现4盘筛选规则把2–2视为弱侧，因此这里的结果回答
+的是“最低强侧”而非“最接近五五开”：9D已有 `rank_9d@4` **5–5**，应视为比 `@8` 10–0更好的
+实测对齐档；7D `rank_7d@1s` 当时只有2–2，仍需补样本。按用户决定，5D `rank_5d@1s` 10–0与6D
+`rank_6d@1s` 9–1直接作为产品档保留，不再降低 HumanSL rank profile。8D仍采用 `rank_8d@1s` 6–4。
 
 账本：`calibration/results/golaxy_humansl_rank5_9_alignment_20260727/alignment_v1.jsonl`，包含1条 header、
 29条 carry result、56条 reservation、56条 result及5条 level decision，SHA-256
 `14ddf05ef0c95e9017bd9e7d4345e7e43da9b4a66fe9a68cb3d300bea306a494`。
+
+### C25. 7D `rank_7d@1s` 与9D `rank_9d@6` 对标续跑（2026-07-28，因7002停止）
+
+按用户要求，7D复用 §C24 的 `rank_7d@1s` 4盘2–2并计划补到累计10盘；9D复用 §C16 的
+`rank_9d@6` 5盘4–1并计划补到累计10盘。执行仍为单盘严格串行、盘间冷却5秒，出现7002或任何远端
+错误立即停止且不重试。
+
+封禁前7D新增3个有效结果（黑胜、白胜、黑负），累计由2–2变为 **4–3**。第4次新尝试由我方执白，
+对局进行中星阵返回 `code=7002, msg=illegal query`；runner 立即写入 stopped 并退出，未再发起对局。
+因此7D尚差3个有效结果，9D `rank_9d@6` 尚未开始追加，仍为历史 **4–1**。
+
+账本：`calibration/results/golaxy_humansl_rank7_rank9_refinement_20260728/refinement_v1.jsonl`，包含1条
+header、9条 carry result、4条 reservation、3条 result和1条 stopped，SHA-256
+`c3a782609b47f812df26c1aacf871c72c2661581687773b2059eac642b4efbc2`。
 
 ---
 
@@ -954,9 +970,10 @@ level decision，所有新 reservation 均由 result 闭合：
   无不可判定局,5次计费尝试后按预声明停止。
 - [x] **星阵7D HumanSL固定筛选**:§C18 的 `rank_7d@4` 已完成5个有效结果并取得 **5–0**;
   第5次尝试未触发预期中的额度拒绝。
-- [x] **星阵5D–9D HumanSL网格对标**:§C24 严格串行续跑完成，最终档依次为5D `rank_5d@1s`
-  （10–0）、6D `rank_6d@1s`（9–1）、7D `rank_7d@4`（10–0）、8D `rank_8d@1s`（6–4）、
-  9D `rank_9d@8`（10–0）；新增56次尝试全部闭合，无远端错误。
+- [ ] **星阵5D–9D HumanSL对标复核**:5D `rank_5d@1s`（10–0）与6D `rank_6d@1s`（9–1）按
+  用户决定直接保留，8D采用 `rank_8d@1s`（6–4），9D现有最佳五五开证据为 `rank_9d@4`（5–5）。
+  7D `rank_7d@1s` 在 §C25 补至4–3后遇7002，尚差3个有效结果；9D `rank_9d@6` 追加赛未启动，
+  保持历史4–1。待软封禁解除后只能从新账本人工审计续跑，不得自动重试 stopped 账本。
 - [x] **星阵3星 HumanSL visits 固定筛选**:§C20 的 `rank_9d@8/@16/@32/@64` 各完成5个有效结果，
   四档均为 **0–5**，合计0–20；因 `@8` 非5–0，按条件协议未运行 `@4/@2`。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits

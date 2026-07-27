@@ -95,3 +95,37 @@ def test_next_color_alternates_only_after_valid_results():
     evidence = rows(5, "8", ["win", "loss"])
     evidence.append({"type": "result", "rank": 5, "tier": "8", "outcome": "inconclusive", "color": "B"})
     assert runner.next_color(evidence, 5, "8") == "B"
+
+
+def test_refinement_seeds_only_existing_seven_at_one_second_and_nine_at_six():
+    evidence = runner.refinement_seed_results()
+    seven = [row for row in evidence if row["rank"] == 7]
+    nine = [row for row in evidence if row["rank"] == 9]
+
+    assert [(row["color"], row["outcome"]) for row in seven] == [
+        ("B", "loss"),
+        ("W", "win"),
+        ("B", "loss"),
+        ("W", "win"),
+    ]
+    assert [(row["color"], row["outcome"]) for row in nine] == [
+        ("W", "win"),
+        ("B", "win"),
+        ("W", "win"),
+        ("B", "win"),
+        ("W", "loss"),
+    ]
+
+
+def test_refinement_completes_seven_then_nine_to_ten_valid_games():
+    evidence = rows(7, "1s", ["loss", "win", "loss", "win"])
+    assert runner.next_refinement_action(evidence) == runner.Action("rank_7d@1s", "confirm")
+    assert runner.next_refinement_color(evidence, 7, "1s") == "B"
+
+    evidence += rows(7, "1s", ["win"] * 6)
+    evidence += rows(9, "6", ["win", "win", "win", "win", "loss"])
+    assert runner.next_refinement_action(evidence) == runner.Action("rank_9d@6", "confirm")
+    assert runner.next_refinement_color(evidence, 9, "6") == "B"
+
+    evidence += rows(9, "6", ["loss"] * 5)
+    assert runner.next_refinement_action(evidence) is None

@@ -61,10 +61,15 @@ reservation，结束后写 result；任一异常同时写当前盘 stopped 和�
 验证所有前驱阶段均为 `stage_completed` 且活动没有 stopped，从持久化层保证“停止整个执行”。
 
 旧 stopped 账本永不自动重启。人工恢复必须显式提供旧账本路径和SHA-256并另建新账本；新header记录
-`parent_path/parent_sha256`。只继承带 result 的有效局，carry记录包含稳定ID
-`parent_sha256:source_line_number`，加载时按稳定ID拒绝重复继承。只有reservation而无result/stopped的本地崩溃
-视为 `unknown_charged_attempt`，不得自动续跑或继承为结果，仍需人工创建新活动。7D首个新账本只继承此前7个
-有效结果；`b18@1` 与准段实验不混入其他配置或其他对手的历史战绩。
+`campaign_id/parent_path/parent_sha256`。真实result在首次生成时获得不可变
+`origin_result_id=<origin_campaign_id>:<attempt_id>`；任何代的carry必须原样保留该ID，另记直接父账本SHA和行号。
+加载完整祖先链时按 `origin_result_id` 拒绝重复，不得用carry所在的新行重新生成ID。只有reservation而无
+result/stopped的本地崩溃视为 `unknown_charged_attempt`，不得自动续跑或继承为结果，仍需人工创建新活动。
+
+恢复账本不继承 `stage_completed` 事件，而是从所有去重后的carry/result重放三个确定性状态机：满足终止条件的
+前驱阶段自动重建为已完成，首个未满足终止条件的阶段是唯一续跑阶段，后续阶段保持未启动。这样从中途停止恢复
+时既不会重跑已完成阶段，也不依赖父账本中的控制事件。7D首个新账本只继承此前7个有效结果；`b18@1` 与准段
+实验不混入其他配置或其他对手的历史战绩。
 
 ## 错误分类与身份门禁
 
@@ -72,9 +77,18 @@ reservation，结束后写 result；任一异常同时写当前盘 stopped 和�
 7002/429、网络超时、响应缺失或非法、引擎调用失败、身份回显不匹配均记 stopped 并停止活动，不进入有效或
 不可判定分母。本地预检失败发生在reservation前，写 `campaign_stopped` 后退出且不访问星阵。
 
-活动header冻结可信 `/health` 返回的 b18、humanv0路径和SHA。每次本地分析响应必须回显服务端实际选择的
-`selected_model`、主模型路径/SHA及human模型路径/SHA，并与header逐字段匹配；只验证请求参数不算通过。
-`b18@1` 还必须逐局证明human模型/profile为空。任何回显缺失或b28身份都 fail closed，从而防止历史默认路由bug。
+活动header冻结可信 `/health` 返回的默认模型、b18及其所挂载humanv0的路径和SHA。三种模式的唯一身份与
+选点断言如下：
+
+| 模式 | 请求与响应身份 | 唯一允许的选点来源 |
+|---|---|---|
+| `rank_Nd@1s` | 请求省略 `model`；服务端可回显已冻结的默认主模型，但其 `human_model_path/SHA` 必须是humanv0 | 只取返回的 `humanPolicy` argmax，绝不取 `moveInfos` |
+| `rank_Nd@4+` | 请求显式 `model=b18`；响应 `_wrapper.selected_model=b18`，b18主模型和humanv0路径/SHA均匹配 | `moveInfos`，且请求含正确profile和完整canonical PIKL |
+| `b18@1` | 请求显式 `model=b18`；响应实际b18路径/SHA匹配；服务进程即使挂载humanv0也允许回显 | `moveInfos`；请求必须无 `humanSLProfile` 和全部PIKL字段 |
+
+因此“空值”要求作用于请求语义字段，而不是要求服务进程卸载human模型。每次显式b18分析都必须校验响应中的
+实际 `_wrapper` 身份；`@1s` 则校验冻结默认进程挂载的humanv0身份、合法humanPolicy和argmax选择算法。任何
+回显缺失、显式b18请求回显为b28、或选点来源漂移都 fail closed，从而防止历史默认路由bug。
 
 ## 验证与报告
 

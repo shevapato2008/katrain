@@ -42,6 +42,15 @@ WIDE_ROOT_NOISE = 0.04
 QUASI_PROFILES = dict(golaxy_alignment_campaign.QUASI_PROFILES)
 _GRID_VISITS = {4, 8, 16, 32, 64}
 _PROFILE_RE = re.compile(r"rank_[4-8]d")
+FROZEN_STAGE_PLAYERS = {
+    "seven_d": ("rank_7d@1s",),
+    "one_star_b18_1": ("b18@1",),
+    **{
+        stage: tuple(f"{profile}@{tier}" for tier in golaxy_alignment_campaign.GRID)
+        for stage, profile in QUASI_PROFILES.items()
+    },
+}
+_FROZEN_PLAYERS = frozenset(player for players in FROZEN_STAGE_PLAYERS.values() for player in players)
 
 
 @dataclass(frozen=True)
@@ -182,6 +191,8 @@ def validate_campaign_player(player: CampaignPlayer) -> CampaignPlayer:
     """Reject any label, rung, selection, or effective-query drift."""
     if not isinstance(player, CampaignPlayer):
         raise ValueError("campaign player must be a CampaignPlayer")
+    if player.label not in _FROZEN_PLAYERS:
+        raise ValueError(f"player {player.label!r} is not in the frozen campaign player set")
     try:
         spec = rung_strength_spec(player.rung)
     except ValueError as exc:
@@ -241,6 +252,16 @@ def validate_campaign_player(player: CampaignPlayer) -> CampaignPlayer:
         raise ValueError("campaign player strength or effective query drifted from the frozen configuration")
     if query != _expected_empty_query(player):
         raise ValueError("campaign player effective query drifted from the frozen configuration")
+    return player
+
+
+def validate_stage_player(stage: str, player: CampaignPlayer) -> CampaignPlayer:
+    validate_campaign_player(player)
+    allowed = FROZEN_STAGE_PLAYERS.get(stage)
+    if allowed is None:
+        raise ValueError(f"unknown campaign stage {stage!r}")
+    if player.label not in allowed:
+        raise ValueError(f"player {player.label!r} is not valid for campaign stage {stage!r}")
     return player
 
 
@@ -357,6 +378,10 @@ def select_player_move(analysis: object, player: CampaignPlayer, identity_snapsh
         require_human=player.rung.mechanism == "humansl_search",
     )
     if player.selection == "policy_argmax":
+        root_info = analysis.get("rootInfo") if isinstance(analysis, Mapping) else None
+        visits = root_info.get("visits") if isinstance(root_info, Mapping) else None
+        if type(visits) is not int or visits != 1:
+            raise LadderMoveError(f"b18@1 rootInfo.visits must be exactly 1, got {visits!r}")
         if not isinstance(analysis, Mapping) or analysis.get("moveInfos") != []:
             raise LadderMoveError("b18@1 requires exactly empty moveInfos")
         policy = analysis.get("policy")

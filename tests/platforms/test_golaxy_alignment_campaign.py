@@ -278,6 +278,15 @@ def test_pure_b18_rejects_nonempty_move_infos_or_invalid_native_policy(captured_
         runner.select_player_move(missing, player, snapshot)
 
 
+def test_pure_b18_rejects_policy_when_root_visits_are_not_exactly_one(captured_b18_one_visit_response):
+    player = runner.make_campaign_player("b18@1")
+    snapshot = runner.build_identity_snapshot(campaign_health())
+    wrong_visits = dict(captured_b18_one_visit_response, rootInfo={"visits": 99, "scoreLead": 0.18})
+
+    with pytest.raises(runner.LadderMoveError, match="rootInfo.visits.*exactly 1"):
+        runner.select_player_move(wrong_visits, player, snapshot)
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -293,6 +302,30 @@ def test_campaign_player_validation_rejects_label_selection_and_query_mutations(
 
     with pytest.raises(ValueError, match="label|selection|query|profile|visits|strength"):
         runner.validate_campaign_player(mutated)
+
+
+@pytest.mark.parametrize("spec", ["rank_9d@1s", "rank_9d@4"])
+def test_coordinated_canonical_but_out_of_campaign_player_is_rejected(spec):
+    label, rung, selection = runner.run_selfplay.make_player(spec, experimental_min_humansl_search_visits=2)
+    player = runner.CampaignPlayer(label, rung, selection)
+
+    with pytest.raises(ValueError, match="frozen campaign player set"):
+        runner.validate_campaign_player(player)
+
+
+def test_stage_player_membership_is_exact_even_for_players_used_by_other_stages():
+    assert runner.FROZEN_STAGE_PLAYERS == {
+        "seven_d": ("rank_7d@1s",),
+        "one_star_b18_1": ("b18@1",),
+        "quasi_5d": tuple(f"rank_4d@{tier}" for tier in campaign.GRID),
+        "quasi_6d": tuple(f"rank_5d@{tier}" for tier in campaign.GRID),
+        "quasi_7d": tuple(f"rank_6d@{tier}" for tier in campaign.GRID),
+        "quasi_8d": tuple(f"rank_7d@{tier}" for tier in campaign.GRID),
+        "quasi_9d": tuple(f"rank_8d@{tier}" for tier in campaign.GRID),
+    }
+    runner.validate_stage_player("seven_d", runner.make_campaign_player("rank_7d@1s"))
+    with pytest.raises(ValueError, match="stage.*quasi_5d"):
+        runner.validate_stage_player("quasi_5d", runner.make_campaign_player("rank_7d@1s"))
 
 
 def analysis_for_player(player, captured_b18):

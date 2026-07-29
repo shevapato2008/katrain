@@ -287,7 +287,7 @@ def build_identity_snapshot(health: dict) -> dict:
         raise ValueError(f"invalid health capability schema or identity: {exc}") from exc
     default_model = capabilities["default_model"]
     models = capabilities["models"]
-    aliases = tuple(dict.fromkeys((default_model, "b18")))
+    aliases = tuple(dict.fromkeys((default_model, "b18", "b28")))
     frozen_models = {}
     for alias in aliases:
         model = models.get(alias)
@@ -447,6 +447,20 @@ async def campaign_preflight(client, base_url: str, player_spec: str) -> dict:
     }
 
 
+async def preflight_referees(client, identity_snapshot: Mapping[str, object]) -> dict:
+    """Semantically probe both frozen b28 referee paths before any game is reserved."""
+    if "b28" not in identity_snapshot.get("models", {}):
+        raise ValueError("frozen identity snapshot is missing the explicit b28 referee")
+    return {
+        "adjudication": await run_golaxy_9d_alignment._probe_referee(
+            client, BASE_URL, identity_snapshot, REFEREE_VISITS
+        ),
+        "stability": await run_golaxy_9d_alignment._probe_referee(
+            client, BASE_URL, identity_snapshot, STABILITY_VISITS
+        ),
+    }
+
+
 class CampaignStopped(RuntimeError):
     """One-shot campaign failure already persisted in the append-only ledger."""
 
@@ -454,7 +468,8 @@ class CampaignStopped(RuntimeError):
 @contextmanager
 def campaign_output_lock(path: str | Path):
     """Hold a non-blocking cross-process lock for the full mutation session."""
-    lock_path = Path(f"{Path(path)}.lock")
+    canonical_path = Path(path).resolve()
+    lock_path = Path(f"{canonical_path}.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     handle = lock_path.open("a+")
     try:
@@ -514,13 +529,14 @@ async def _execute_serial_campaign_unlocked(
     emit: Callable[[Mapping[str, object]], object],
 ) -> dict:
     loaded = golaxy_alignment_campaign.load_campaign(path)
+    _validate_summary_control_flow(loaded)
     snapshot = loaded.header["identity_snapshot"]
     active_stage = _persisted_active_stage(loaded.records)
     if active_stage is not None and golaxy_alignment_campaign.stage_decision(loaded.evidence, active_stage) is not None:
         golaxy_alignment_campaign.append_stage_event(path, "stage_completed", active_stage)
         active_stage = None
     preflighted_players: set[str] = set()
-    needs_cooldown = False
+    needs_cooldown = any(row.get("type") == "result" for row in loaded.records)
 
     while True:
         loaded = golaxy_alignment_campaign.load_campaign(path)
@@ -556,16 +572,16 @@ async def _execute_serial_campaign_unlocked(
         loaded = golaxy_alignment_campaign.load_campaign(path)
         attempt_id = _next_attempt_id(loaded.records)
         golaxy_alignment_campaign.append_reservation(path, attempt_id, action)
-        emit(
-            {
-                "event": "game_start",
-                "attempt_id": attempt_id,
-                "stage": action.stage,
-                "player": action.player,
-                "color": action.color,
-            }
-        )
         try:
+            emit(
+                {
+                    "event": "game_start",
+                    "attempt_id": attempt_id,
+                    "stage": action.stage,
+                    "player": action.player,
+                    "color": action.color,
+                }
+            )
             outcome = await play_game(action, snapshot)
             result = _outcome_value(outcome)
         except Exception as exc:
@@ -615,7 +631,7 @@ async def execute_serial_campaign(
     emit: Callable[[Mapping[str, object]], object] = _emit_default,
 ) -> dict:
     """Execute an existing ledger with exactly one in-flight game and no retry path."""
-    path = Path(path)
+    path = Path(path).resolve()
     with campaign_output_lock(path):
         # This load intentionally precedes either injected callback, so stopped/unmatched ledgers
         # cannot touch the local service or Golaxy.
@@ -628,34 +644,31 @@ async def execute_serial_campaign(
 def _validate_summary_control_flow(loaded: golaxy_alignment_campaign.LoadedCampaign) -> None:
     replayed: list[Mapping[str, object]] = []
     active_stage: str | None = None
-    control_seen = False
-    completed: list[str] = []
     for line_number, row in enumerate(loaded.records, 2):
         row_type = row.get("type")
         if row_type == "carry_result":
             replayed.append(row)
-        elif row_type == "result":
-            replayed.append(row)
         elif row_type == "stage_started":
-            control_seen = True
             expected = golaxy_alignment_campaign.next_action(replayed)
             if (
                 active_stage is not None
                 or not isinstance(expected, golaxy_alignment_campaign.GameRequest)
                 or row.get("stage") != expected.stage
-                or completed != list(golaxy_alignment_campaign.STAGE_ORDER[: len(completed)])
             ):
                 raise ValueError(f"invalid stage_started ordering on line {line_number}")
             active_stage = str(row["stage"])
+        elif row_type == "reservation":
+            if active_stage != row.get("stage"):
+                raise ValueError(f"game reservation on line {line_number} has no matching active stage_started")
+        elif row_type == "result":
+            if active_stage != row.get("stage"):
+                raise ValueError(f"game result on line {line_number} has no matching active stage_started")
+            replayed.append(row)
         elif row_type == "stage_completed":
-            control_seen = True
             stage = row.get("stage")
             if active_stage != stage or golaxy_alignment_campaign.stage_decision(replayed, str(stage)) is None:
                 raise ValueError(f"invalid stage_completed ordering on line {line_number}")
-            completed.append(str(stage))
             active_stage = None
-        elif row_type == "reservation" and control_seen and active_stage != row.get("stage"):
-            raise ValueError(f"reservation outside active stage on line {line_number}")
 
 
 def summarize_campaign(path: str | Path) -> dict:
@@ -768,7 +781,7 @@ def validate_args(args: argparse.Namespace) -> str:
 
 
 async def _run_live(args: argparse.Namespace) -> dict:
-    path = Path(args.out)
+    path = Path(args.out).resolve()
     with campaign_output_lock(path):
         if path.exists():
             if args.parent is not None:
@@ -792,6 +805,9 @@ async def _run_live(args: argparse.Namespace) -> dict:
                 args.parent,
                 args.parent_sha256,
             )
+        # Persisted orchestration state is a local gate: reject it before constructing any
+        # analysis client or invoking a campaign callback.
+        _validate_summary_control_flow(loaded)
         try:
             async with httpx.AsyncClient(follow_redirects=False, trust_env=False) as local_client:
                 response = await local_client.get(f"{BASE_URL}/health", timeout=httpx.Timeout(30.0, connect=10.0))
@@ -800,6 +816,8 @@ async def _run_live(args: argparse.Namespace) -> dict:
                 )
                 if current_snapshot != loaded.header["identity_snapshot"]:
                     raise ValueError("health identity differs from campaign header")
+
+                await preflight_referees(local_client, current_snapshot)
 
                 async def preflight(request, snapshot):
                     player = validate_stage_player(request.stage, make_campaign_player(request.player))
@@ -834,6 +852,7 @@ async def _run_live(args: argparse.Namespace) -> dict:
             if not loaded_after_failure.stopped:
                 reason = f"local preflight failed: {exc}"
                 golaxy_alignment_campaign.append_stop(path, reason)
+                _emit_default({"event": "campaign_stopped", "reason": reason})
                 raise CampaignStopped(reason) from exc
             raise
 

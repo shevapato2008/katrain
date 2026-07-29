@@ -947,6 +947,39 @@ level decision，所有新 reservation 均由 result 闭合：
 header、9条 carry result、4条 reservation、3条 result和1条 stopped，SHA-256
 `c3a782609b47f812df26c1aacf871c72c2661581687773b2059eac642b4efbc2`。
 
+### C26. 7D、1星与准5D–准9D串行对标活动（2026-07-29，因7002停止）
+
+本轮仅使用修复后、逐请求身份核验的引擎路径。7D继承 §C25 的7个有效结果；1星使用显式 b18
+`maxVisits=1` 的原生 `policy` 确定性 argmax（不带 HumanSL/PIKL）；准5D–准9D依次使用低一段
+HumanSL profile，在 `@1s/@4/@8/@16/@32/@64` 网格做4盘筛选、最低强侧10盘确认，并在强侧过强时
+把相邻弱侧也补到10盘后选取更接近5–5的一档。所有对局严格单盘串行、盘间冷却5秒；任一远端错误
+立即停止且不重试。
+
+停止前得到：
+
+| 星阵等级 | 候选 | 战绩 | 状态 |
+|---|---|---:|---|
+| 7D | `rank_7d@1s` | **5–5 / 10** | 继承4–3后新增1–2，累计确认完成 |
+| 1星 | `b18@1` | **2–2 / 4** | 4盘筛选弱侧，按预声明结束 |
+| 准5D | `rank_4d@8` | **3–1 / 4** | 强侧筛选 |
+| 准5D | `rank_4d@1s` | **9–1 / 10** | 网格下界仍过强，确认完成 |
+| 准6D | `rank_5d@8` | **4–0 / 4** | 强侧筛选 |
+| 准6D | `rank_5d@1s` | **10–0 / 10** | 网格下界仍过强，确认完成 |
+| 准7D | `rank_6d@8` | **4–0 / 4** | 强侧筛选 |
+| 准7D | `rank_6d@1s` | **9–1 / 10** | 网格下界仍过强，确认完成 |
+| 准8D | `rank_7d@8` | **4–0 / 4** | 强侧筛选 |
+| 准8D | `rank_7d@1s` | **2–2 / 4** | 相邻弱侧，尚差6盘确认 |
+| 准8D | `rank_7d@4` | **10–0 / 10** | 最低强侧已确认，但阶段尚待弱侧补样 |
+| 准9D | — | — | 尚未启动 |
+
+第68次新 reservation 为准8D `rank_7d@1s` 相邻弱侧补样、我方执黑；首个星阵请求返回
+`code=7002, msg='illegal query'`。runner 立即写入 attempt stopped 与 campaign stopped，未重试、未再
+发起任何对局。该次没有 result，不计入战绩。账本包含1条 header、7条 carry result、68条
+reservation、67条 result、6条 stage started、5条 stage completed、1条 attempt stopped和1条
+campaign stopped；所有74个有效结果均有唯一 origin ID。账本：
+`calibration/results/golaxy_alignment_campaign_20260729/campaign_v1.jsonl`，SHA-256
+`da354ddadf07a2bd2963c99cab94798c87be3f62822207c69338364410952699`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -974,6 +1007,10 @@ header、9条 carry result、4条 reservation、3条 result和1条 stopped，SHA
   用户决定直接保留，8D采用 `rank_8d@1s`（6–4），9D现有最佳五五开证据为 `rank_9d@4`（5–5）。
   7D `rank_7d@1s` 在 §C25 补至4–3后遇7002，尚差3个有效结果；9D `rank_9d@6` 追加赛未启动，
   保持历史4–1。待软封禁解除后只能从新账本人工审计续跑，不得自动重试 stopped 账本。
+- [ ] **准5D–准9D低一段 HumanSL 对标**:§C26 已完成准5D `rank_4d@1s` 9–1、准6D
+  `rank_5d@1s` 10–0、准7D `rank_6d@1s` 9–1；准8D最低强侧 `rank_7d@4` 已10–0，但相邻弱侧
+  `rank_7d@1s` 仅2–2，补样首盘遇7002。准9D尚未启动。只能在软封禁解除后以新 child ledger、
+  精确父 SHA 恢复，不得续写或自动重试已停止账本。
 - [x] **星阵3星 HumanSL visits 固定筛选**:§C20 的 `rank_9d@8/@16/@32/@64` 各完成5个有效结果，
   四档均为 **0–5**，合计0–20；因 `@8` 非5–0，按条件协议未运行 `@4/@2`。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
@@ -997,6 +1034,7 @@ header、9条 carry result、4条 reservation、3条 result和1条 stopped，SHA
 | 星阵9D `rank_9d@5/@6` 固定筛选 | `calibration/results/golaxy_9d_fixed_5_6_20260724/fixed_screen.jsonl` |
 | 星阵8D `rank_8d@4` 固定筛选 | `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl` |
 | 星阵7D `rank_7d@4` 固定筛选 | `calibration/results/golaxy_7d_rank_7d_4_20260724/fixed_screen.jsonl` |
+| 7D、1星与准5D–准9D串行活动 | `calibration/results/golaxy_alignment_campaign_20260729/campaign_v1.jsonl` |
 | 星阵3星 `rank_9d@8/@16/@32/@64` 固定筛选 | `calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |

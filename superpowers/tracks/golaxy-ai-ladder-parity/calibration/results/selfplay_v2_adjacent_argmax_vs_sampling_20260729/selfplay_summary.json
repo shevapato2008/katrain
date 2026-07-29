@@ -1,0 +1,241 @@
+{
+  "matchups": [
+    {
+      "player_a": "rank_8d@1s",
+      "player_b": "rank_9d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 16,
+      "a_winrate": 0.8,
+      "a_elo_vs_b": 240.82399653118495,
+      "a_elo_ci95": [
+        88.51144944084176,
+        638.6322555967002
+      ],
+      "wilson_ci95": [
+        0.5839825677481064,
+        0.919342337420202
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 16,
+        "our_loss": 4
+      }
+    },
+    {
+      "player_a": "rank_7d@1s",
+      "player_b": "rank_8d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 17,
+      "a_winrate": 0.85,
+      "a_elo_vs_b": 301.3310666634446,
+      "a_elo_ci95": [
+        141.85174751491064,
+        645.113542687894
+      ],
+      "wilson_ci95": [
+        0.6395811352592431,
+        0.9476312541037835
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 18,
+        "our_loss": 3,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_6d@1s",
+      "player_b": "rank_7d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 12,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 17,
+      "a_winrate": 0.85,
+      "a_elo_vs_b": 301.3310666634446,
+      "a_elo_ci95": [
+        141.85174751491064,
+        645.113542687894
+      ],
+      "wilson_ci95": [
+        0.6395811352592431,
+        0.9476312541037835
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 19,
+        "inconclusive_unsettled": 2,
+        "our_loss": 3
+      }
+    },
+    {
+      "player_a": "rank_5d@1s",
+      "player_b": "rank_6d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 14,
+      "a_winrate": 0.7,
+      "a_elo_vs_b": 147.19071411783776,
+      "a_elo_ci95": [
+        -0.5838556369023904,
+        383.32491456508194
+      ],
+      "wilson_ci95": [
+        0.4810271816464765,
+        0.8545227551323956
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 14,
+        "our_loss": 6
+      }
+    },
+    {
+      "player_a": "rank_4d@1s",
+      "player_b": "rank_5d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 18,
+      "a_winrate": 0.9,
+      "a_elo_vs_b": 381.69700377572985,
+      "a_elo_ci95": [
+        208.45590180554748,
+        645.113542687894
+      ],
+      "wilson_ci95": [
+        0.6989663547715128,
+        0.9721335187862319
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 18,
+        "our_loss": 2
+      }
+    },
+    {
+      "player_a": "rank_3d@1s",
+      "player_b": "rank_4d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 18,
+      "a_winrate": 0.9,
+      "a_elo_vs_b": 381.69700377572985,
+      "a_elo_ci95": [
+        208.45590180554748,
+        645.113542687894
+      ],
+      "wilson_ci95": [
+        0.6989663547715128,
+        0.9721335187862319
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 18,
+        "our_loss": 2
+      }
+    },
+    {
+      "player_a": "rank_2d@1s",
+      "player_b": "rank_3d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 14,
+      "a_winrate": 0.7,
+      "a_elo_vs_b": 147.19071411783776,
+      "a_elo_ci95": [
+        -0.5838556369023904,
+        383.32491456508194
+      ],
+      "wilson_ci95": [
+        0.4810271816464765,
+        0.8545227551323956
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 15,
+        "our_loss": 6,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_1d@1s",
+      "player_b": "rank_2d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 12,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 16,
+      "a_winrate": 0.8,
+      "a_elo_vs_b": 240.82399653118495,
+      "a_elo_ci95": [
+        88.51144944084176,
+        638.6322555967002
+      ],
+      "wilson_ci95": [
+        0.5839825677481064,
+        0.919342337420202
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 16,
+        "inconclusive_unsettled": 2,
+        "our_loss": 6
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

@@ -1010,6 +1010,32 @@ b28 的 wiring bug。
 `selfplay_summary.json` SHA-256 为
 `a81d49c4df13f7e165ece0f6064d1caa47114b4d7e48b48e6696ba5e29252f74`。
 
+### C28. 低一段 HumanSL `@1s` argmax vs 高一段 `@1` 加权采样（2026-07-29）
+
+承接 §C27，测试 `rank_{n-1}d@1s vs rank_nd@1`，覆盖 n=9...2。A方为低一段 profile 的
+`humanPolicy` argmax，B方为高一段 profile 的 `humanPolicy` 加权采样。每组10个冻结开局、交换黑白，
+取得10个完整 pair、20盘有效结果；不可判定 pair 整对剔除并继续补样。
+
+| A：低一段 `@1s` | B：高一段 `@1` | A胜–负 | 完整 pair | 不可判定 pair |
+|---|---|---:|---:|---:|
+| `rank_8d@1s` | `rank_9d@1` | **16–4** | 10 | 0 |
+| `rank_7d@1s` | `rank_8d@1` | **17–3** | 10 | 1 |
+| `rank_6d@1s` | `rank_7d@1` | **17–3** | 10 | 2 |
+| `rank_5d@1s` | `rank_6d@1` | **14–6** | 10 | 0 |
+| `rank_4d@1s` | `rank_5d@1` | **18–2** | 10 | 0 |
+| `rank_3d@1s` | `rank_4d@1` | **18–2** | 10 | 0 |
+| `rank_2d@1s` | `rank_3d@1` | **14–6** | 10 | 1 |
+| `rank_1d@1s` | `rank_2d@1` | **16–4** | 10 | 2 |
+| **合计** |  | **130–30** | **80** | **6** |
+
+八组全部为 `screen_complete`，低一段 argmax 在160盘有效样本中取得81.25%胜率，且每个相邻段位
+组合都获胜。这说明普通 `@1` 的加权采样损失在本设置下大于一个 HumanSL profile 段位差；它比较的
+仍主要是选点规则，不应解释为1 visit 搜索强度差。
+
+目录：`calibration/results/selfplay_v2_adjacent_argmax_vs_sampling_20260729/`；汇总文件
+`selfplay_summary.json` SHA-256 为
+`166a46f2b99d977f8e3cae87ffc3212a07991cea9f9837353a6433a5df3c9cdd`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -1066,6 +1092,7 @@ b28 的 wiring bug。
 | 星阵7D `rank_7d@4` 固定筛选 | `calibration/results/golaxy_7d_rank_7d_4_20260724/fixed_screen.jsonl` |
 | 7D、1星与准5D–准9D串行活动 | `calibration/results/golaxy_alignment_campaign_20260729/campaign_v1.jsonl` |
 | 同段位 HumanSL `@1` vs `@1s`（1D–9D） | `calibration/results/selfplay_v2_same_rank_sampling_vs_argmax_20260729/` |
+| 低一段 HumanSL `@1s` vs 高一段 `@1`（1D–9D接缝） | `calibration/results/selfplay_v2_adjacent_argmax_vs_sampling_20260729/` |
 | 星阵3星 `rank_9d@8/@16/@32/@64` 固定筛选 | `calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |

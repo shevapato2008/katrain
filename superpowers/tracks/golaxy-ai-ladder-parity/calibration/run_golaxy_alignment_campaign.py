@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+import httpx
+
 sys.path.insert(0, str(Path(__file__).parent))
 import adapters  # noqa: E402
 import golaxy_alignment_campaign  # noqa: E402
@@ -26,6 +28,7 @@ from katrain.core.ladder import (  # noqa: E402
     HUMANSL_PIKL_BASELINE,
     LadderMoveError,
     LadderRung,
+    colrow_to_golaxy,
     pick_ladder_move,
     rung_strength_spec,
 )
@@ -117,7 +120,7 @@ def _pure_b18_player() -> CampaignPlayer:
         root_policy_temperature=1.0,
     )
     rung_strength_spec(rung)
-    return CampaignPlayer("b18@1", rung, "search")
+    return CampaignPlayer("b18@1", rung, "policy_argmax")
 
 
 def make_campaign_player(spec: str) -> CampaignPlayer:
@@ -138,13 +141,11 @@ def make_campaign_player(spec: str) -> CampaignPlayer:
             raise ValueError(f"campaign player is not on the frozen visit grid: {spec!r}")
         label, rung, selection = run_selfplay.make_player(spec, experimental_min_humansl_search_visits=2)
         player = CampaignPlayer(label, rung, selection)
-    _validate_player_definition(player)
+    validate_campaign_player(player)
     return player
 
 
-def build_player_query(history: list, player: CampaignPlayer) -> dict:
-    if not isinstance(player, CampaignPlayer):
-        raise ValueError("player must be a CampaignPlayer")
+def _raw_player_query(history: list, player: CampaignPlayer) -> dict:
     return adapters.build_ladder_analysis_query(
         history,
         player.rung,
@@ -155,16 +156,61 @@ def build_player_query(history: list, player: CampaignPlayer) -> dict:
     )
 
 
-def _validate_player_definition(player: CampaignPlayer) -> None:
-    spec = rung_strength_spec(player.rung)
-    query = build_player_query([], player)
+def _expected_empty_query(player: CampaignPlayer) -> dict:
+    overrides = {"reportAnalysisWinratesAs": "BLACK"}
+    if player.rung.human_sl_profile is not None:
+        overrides.update(humanSLProfile=player.rung.human_sl_profile, ignorePreRootHistory=False)
+    overrides.update(player.rung.human_sl_params)
+    overrides["wideRootNoise"] = WIDE_ROOT_NOISE
+    if player.rung.net != "humanv0":
+        overrides["model"] = player.rung.net
+    return {
+        "rules": RULES,
+        "komi": KOMI,
+        "boardXSize": BOARD_SIZE,
+        "boardYSize": BOARD_SIZE,
+        "moves": [],
+        "analyzeTurns": [0],
+        "maxVisits": player.rung.max_visits,
+        "includePolicy": True,
+        "includeOwnership": False,
+        "overrideSettings": overrides,
+    }
+
+
+def validate_campaign_player(player: CampaignPlayer) -> CampaignPlayer:
+    """Reject any label, rung, selection, or effective-query drift."""
+    if not isinstance(player, CampaignPlayer):
+        raise ValueError("campaign player must be a CampaignPlayer")
+    try:
+        spec = rung_strength_spec(player.rung)
+    except ValueError as exc:
+        raise ValueError(f"campaign player strength is invalid: {exc}") from exc
+    if player.rung.mechanism == "humansl":
+        expected_label = f"{player.rung.human_sl_profile}@1s"
+        expected_selection = "argmax_human"
+    elif player.rung.mechanism == "humansl_search":
+        expected_label = f"{player.rung.human_sl_profile}@{player.rung.max_visits}"
+        expected_selection = "search"
+    elif player.rung.mechanism == "net_search" and player.rung.net == "b18" and player.rung.max_visits == 1:
+        expected_label = "b18@1"
+        expected_selection = "policy_argmax"
+    else:
+        raise ValueError("campaign player strength is not one of the frozen campaign mechanisms")
+    if player.label != expected_label:
+        raise ValueError(f"campaign player label mismatch: expected {expected_label!r}, got {player.label!r}")
+    if player.selection != expected_selection:
+        raise ValueError(
+            f"campaign player selection mismatch: expected {expected_selection!r}, got {player.selection!r}"
+        )
+    query = _raw_player_query([], player)
     overrides = query["overrideSettings"]
     if player.label == "b18@1":
         valid = (
             spec.visits == 1
             and spec.main_model == "b18"
             and spec.human_model is None
-            and player.selection == "search"
+            and player.selection == "policy_argmax"
             and overrides == {"reportAnalysisWinratesAs": "BLACK", "wideRootNoise": WIDE_ROOT_NOISE, "model": "b18"}
         )
     elif player.label.endswith("@1s"):
@@ -193,6 +239,14 @@ def _validate_player_definition(player: CampaignPlayer) -> None:
         )
     if not valid:
         raise ValueError("campaign player strength or effective query drifted from the frozen configuration")
+    if query != _expected_empty_query(player):
+        raise ValueError("campaign player effective query drifted from the frozen configuration")
+    return player
+
+
+def build_player_query(history: list, player: CampaignPlayer) -> dict:
+    validate_campaign_player(player)
+    return _raw_player_query(history, player)
 
 
 def build_identity_snapshot(health: dict) -> dict:
@@ -283,7 +337,7 @@ def _validate_explicit_b18_attestation(
 
 def select_player_move(analysis: object, player: CampaignPlayer, identity_snapshot: Mapping[str, object]):
     """Validate one response and return its sole permitted `(col, row0)` move or ``pass``."""
-    _validate_player_definition(player)
+    validate_campaign_player(player)
     if player.selection == "argmax_human":
         default_model = identity_snapshot.get("default_model")
         identity = _snapshot_identity(identity_snapshot, default_model)
@@ -302,6 +356,13 @@ def select_player_move(analysis: object, player: CampaignPlayer, identity_snapsh
         identity_snapshot,
         require_human=player.rung.mechanism == "humansl_search",
     )
+    if player.selection == "policy_argmax":
+        if not isinstance(analysis, Mapping) or analysis.get("moveInfos") != []:
+            raise LadderMoveError("b18@1 requires exactly empty moveInfos")
+        policy = analysis.get("policy")
+        if not run_selfplay._valid_policy(policy, BOARD_SIZE * BOARD_SIZE + 1):
+            raise LadderMoveError("b18@1 requires a valid 362-entry native policy")
+        return run_selfplay._pick_argmax_human(policy, (BOARD_SIZE, BOARD_SIZE))
     return pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), player.rung.mechanism)
 
 
@@ -313,6 +374,33 @@ def preflight_player(health: dict, player_spec: str) -> tuple[CampaignPlayer, di
     return player, build_player_query([], player), snapshot
 
 
-# These proven helpers remain the single transport/adjudication implementation for Task 4.
-common_preflight = run_golaxy_9d_alignment.common_preflight
-play_alignment_game = run_golaxy_9d_alignment.play_alignment_game
+async def analyze_player_move(
+    client,
+    base_url: str,
+    history: list,
+    player: CampaignPlayer,
+    identity_snapshot: Mapping[str, object],
+):
+    """Request and validate one campaign move from the local analysis service."""
+    validate_base_url(base_url)
+    query = build_player_query(history, player)
+    response = await client.post(f"{base_url}/analyze", json=query, timeout=httpx.Timeout(180.0, connect=10.0))
+    analysis = run_golaxy_9d_alignment._json_response(response, "/analyze")
+    selected = select_player_move(analysis, player, identity_snapshot)
+    return "pass" if selected == "pass" else colrow_to_golaxy(selected[0], selected[1], BOARD_SIZE)
+
+
+async def campaign_preflight(client, base_url: str, player_spec: str) -> dict:
+    """Probe one mode against the local service; never contacts Golaxy."""
+    validate_base_url(base_url)
+    player = make_campaign_player(player_spec)
+    response = await client.get(f"{base_url}/health", timeout=httpx.Timeout(30.0, connect=10.0))
+    health = dict(run_golaxy_9d_alignment._json_response(response, "/health"))
+    identity_snapshot = build_identity_snapshot(health)
+    probe_move = await analyze_player_move(client, base_url, [], player, identity_snapshot)
+    return {
+        "player": player,
+        "effective_query": build_player_query([], player),
+        "identity_snapshot": identity_snapshot,
+        "probe_move": probe_move,
+    }

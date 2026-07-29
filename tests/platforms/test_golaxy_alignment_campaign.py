@@ -8,6 +8,7 @@ import sys
 import typing
 from pathlib import Path
 
+import httpx
 import pytest
 
 
@@ -53,6 +54,21 @@ def campaign_wrapper(alias="b18", **changes):
     }
     wrapper.update(changes)
     return wrapper
+
+
+@pytest.fixture
+def captured_b18_one_visit_response():
+    """Shape captured from the local b18 one-visit probe; identity values are test-frozen."""
+    policy = [0.0] * 362
+    policy[60] = 0.73
+    policy[361] = 0.12
+    return {
+        "id": "campaign-b18-one-visit-probe",
+        "rootInfo": {"visits": 1, "scoreLead": 0.18},
+        "moveInfos": [],
+        "policy": policy,
+        "_wrapper": campaign_wrapper(),
+    }
 
 
 @pytest.mark.parametrize(
@@ -150,7 +166,23 @@ def test_native_one_second_player_omits_model_and_uses_human_policy_argmax_only(
     }
 
     assert player.selection == "argmax_human"
-    assert "model" not in query["overrideSettings"]
+    assert query == {
+        "rules": "chinese",
+        "komi": 7.5,
+        "boardXSize": 19,
+        "boardYSize": 19,
+        "moves": [],
+        "analyzeTurns": [0],
+        "maxVisits": 1,
+        "includePolicy": True,
+        "includeOwnership": False,
+        "overrideSettings": {
+            "reportAnalysisWinratesAs": "BLACK",
+            "humanSLProfile": "rank_4d",
+            "ignorePreRootHistory": False,
+            "wideRootNoise": 0.04,
+        },
+    }
     assert runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health())) == (0, 18)
 
 
@@ -207,7 +239,7 @@ def test_pure_b18_one_visit_is_direct_search_without_humansl_controls():
         "b18",
         "net_search",
         1,
-        "search",
+        "policy_argmax",
     )
     assert query["maxVisits"] == 1
     assert query["overrideSettings"] == {
@@ -226,14 +258,112 @@ def test_pure_b18_fails_closed_on_missing_or_b28_wrapper(wrapper):
         runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health()))
 
 
-def test_pure_b18_allows_mounted_human_model_but_requires_nonempty_search_moves():
+def test_pure_b18_uses_captured_native_policy_argmax_with_empty_move_infos(captured_b18_one_visit_response):
     player = runner.make_campaign_player("b18@1")
     snapshot = runner.build_identity_snapshot(campaign_health())
-    analysis = {"moveInfos": [{"move": "D4", "order": 0}], "_wrapper": campaign_wrapper()}
 
-    assert runner.select_player_move(analysis, player, snapshot) == (3, 3)
-    with pytest.raises(runner.LadderMoveError, match="moveInfos|move"):
-        runner.select_player_move({"moveInfos": [], "_wrapper": campaign_wrapper()}, player, snapshot)
+    assert runner.select_player_move(captured_b18_one_visit_response, player, snapshot) == (3, 15)
+
+
+def test_pure_b18_rejects_nonempty_move_infos_or_invalid_native_policy(captured_b18_one_visit_response):
+    player = runner.make_campaign_player("b18@1")
+    snapshot = runner.build_identity_snapshot(campaign_health())
+    nonempty = dict(captured_b18_one_visit_response, moveInfos=[{"move": "D4", "order": 0}])
+    missing = dict(captured_b18_one_visit_response)
+    missing.pop("policy")
+
+    with pytest.raises(runner.LadderMoveError, match="empty moveInfos"):
+        runner.select_player_move(nonempty, player, snapshot)
+    with pytest.raises(runner.LadderMoveError, match="policy"):
+        runner.select_player_move(missing, player, snapshot)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda player: dataclasses.replace(player, label="rank_5d@1s"),
+        lambda player: dataclasses.replace(player, selection="weighted"),
+        lambda player: dataclasses.replace(player, rung=dataclasses.replace(player.rung, root_policy_temperature=1.1)),
+        lambda player: dataclasses.replace(player, rung=dataclasses.replace(player.rung, human_sl_profile="rank_5d")),
+        lambda player: dataclasses.replace(player, rung=dataclasses.replace(player.rung, max_visits=4)),
+    ],
+)
+def test_campaign_player_validation_rejects_label_selection_and_query_mutations(mutate):
+    mutated = mutate(runner.make_campaign_player("rank_4d@1s"))
+
+    with pytest.raises(ValueError, match="label|selection|query|profile|visits|strength"):
+        runner.validate_campaign_player(mutated)
+
+
+def analysis_for_player(player, captured_b18):
+    if player == "b18@1":
+        return captured_b18
+    if player.endswith("@1s"):
+        human_policy = [0.0] * 362
+        human_policy[0] = 0.9
+        return {"rootInfo": {"visits": 1}, "moveInfos": [{"move": "Q16", "order": 0}], "humanPolicy": human_policy}
+    return {
+        "rootInfo": {"visits": 4},
+        "moveInfos": [{"move": "Q16", "order": 0}],
+        "_wrapper": campaign_wrapper(),
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("player_spec", "expected_move"),
+    [("rank_4d@1s", 0), ("rank_6d@4", 72), ("b18@1", 60)],
+)
+async def test_campaign_preflight_probes_each_mode_through_local_mock_transport_only(
+    player_spec, expected_move, captured_b18_one_visit_response
+):
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path)
+        if request.url.path == "/health":
+            return httpx.Response(200, json=campaign_health())
+        assert request.url.path == "/analyze"
+        player = runner.make_campaign_player(player_spec)
+        assert json.loads(request.content) == runner.build_player_query([], player)
+        return httpx.Response(200, json=analysis_for_player(player_spec, captured_b18_one_visit_response))
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), follow_redirects=False) as client:
+        preflight = await runner.campaign_preflight(client, runner.BASE_URL, player_spec)
+
+    assert calls == ["/health", "/analyze"]
+    assert preflight["probe_move"] == expected_move
+    assert preflight["player"].label == player_spec
+    assert preflight["identity_snapshot"]["models"]["b18"]["model_sha256"] == "b18-sha"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("player_spec", "expected_move"),
+    [("rank_8d@1s", 0), ("rank_6d@4", 72), ("b18@1", 60)],
+)
+async def test_per_move_local_analysis_uses_the_campaign_specific_mode_validator(
+    player_spec, expected_move, captured_b18_one_visit_response
+):
+    requested = []
+
+    def handler(request):
+        query = json.loads(request.content)
+        requested.append(query)
+        return httpx.Response(200, json=analysis_for_player(player_spec, captured_b18_one_visit_response))
+
+    player = runner.make_campaign_player(player_spec)
+    snapshot = runner.build_identity_snapshot(campaign_health())
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), follow_redirects=False) as client:
+        move = await runner.analyze_player_move(client, runner.BASE_URL, [], player, snapshot)
+
+    assert move == expected_move
+    assert requested == [runner.build_player_query([], player)]
+
+
+def test_runner_does_not_export_incompatible_old_alignment_helpers():
+    assert not hasattr(runner, "common_preflight")
+    assert not hasattr(runner, "play_alignment_game")
 
 
 @pytest.mark.parametrize(

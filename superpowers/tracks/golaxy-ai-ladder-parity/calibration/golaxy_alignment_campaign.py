@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping, Sequence
 
 
@@ -23,6 +27,12 @@ QUASI_PROFILES = {
     "quasi_8d": "rank_7d",
     "quasi_9d": "rank_8d",
 }
+LEDGER_PROTOCOL = "golaxy-alignment-campaign-v1"
+SEED_SHA256 = "c3a782609b47f812df26c1aacf871c72c2661581687773b2059eac642b4efbc2"
+SEED_PATH = (
+    Path(__file__).resolve().parent / "results/golaxy_humansl_rank7_rank9_refinement_20260728/refinement_v1.jsonl"
+)
+SEED_LINES = (2, 3, 4, 5, 12, 14, 16)
 
 
 @dataclass(frozen=True)
@@ -58,6 +68,18 @@ class StageDecision:
 class CampaignDecision:
     status: str
     stages: tuple[StageDecision, ...]
+
+
+@dataclass(frozen=True)
+class LoadedCampaign:
+    path: Path
+    header: Mapping[str, object]
+    records: tuple[Mapping[str, object], ...]
+    evidence: tuple[Mapping[str, object], ...]
+    evidence_lines: tuple[int, ...]
+    stopped: bool
+    unknown_charged_attempts: tuple[int, ...]
+    action: GameRequest | CampaignDecision
 
 
 def _player(stage: str, candidate_index: int | None = None) -> str:
@@ -233,3 +255,430 @@ def next_action(records: Sequence[Mapping[str, object]]) -> GameRequest | Campai
             return _request(records, stage)
         decisions.append(decision)
     return CampaignDecision("completed", tuple(decisions))
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _json_line(row: Mapping[str, object]) -> str:
+    return json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+
+
+def _append_row(path: Path, row: Mapping[str, object]) -> None:
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(_json_line(row))
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _read_rows(path: Path) -> list[dict[str, object]]:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise ValueError(f"cannot read campaign ledger {path}: {exc}") from exc
+    if not lines:
+        raise ValueError("campaign ledger is empty; header required")
+    rows: list[dict[str, object]] = []
+    for line_number, line in enumerate(lines, 1):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"invalid JSON on ledger line {line_number}") from exc
+        if not isinstance(row, dict):
+            raise ValueError(f"ledger line {line_number} must be a JSON object")
+        rows.append(row)
+    return rows
+
+
+def _validate_header(header: Mapping[str, object], records: Sequence[Mapping[str, object]]) -> None:
+    required = {"type", "protocol", "campaign_id", "identity_snapshot"}
+    optional = {"parent_path", "parent_sha256"}
+    if not required <= set(header) or set(header) - required - optional:
+        raise ValueError("invalid campaign header fields")
+    if header.get("type") != "campaign_header" or header.get("protocol") != LEDGER_PROTOCOL:
+        raise ValueError("invalid campaign header protocol")
+    if not isinstance(header.get("campaign_id"), str) or not header["campaign_id"]:
+        raise ValueError("invalid campaign header campaign_id")
+    if not isinstance(header.get("identity_snapshot"), dict):
+        raise ValueError("invalid campaign header identity_snapshot")
+    has_parent_path = "parent_path" in header
+    has_parent_sha = "parent_sha256" in header
+    if has_parent_path != has_parent_sha:
+        raise ValueError("campaign header must contain both parent_path and parent_sha256")
+    if has_parent_path and (
+        not isinstance(header["parent_path"], str)
+        or not header["parent_path"]
+        or not isinstance(header["parent_sha256"], str)
+        or len(header["parent_sha256"]) != 64
+    ):
+        raise ValueError("invalid campaign header parent reference")
+    if any(row.get("type") == "campaign_header" for row in records):
+        raise ValueError("campaign header must occur exactly once and first")
+
+
+def _validate_evidence_row(row: Mapping[str, object], line_number: int) -> None:
+    if not isinstance(row.get("origin_result_id"), str) or not row["origin_result_id"]:
+        raise ValueError(f"evidence line {line_number} lacks origin_result_id")
+    if row.get("stage") not in STAGE_ORDER:
+        raise ValueError(f"evidence line {line_number} has invalid stage")
+    if not isinstance(row.get("player"), str) or row.get("color") not in {"B", "W"}:
+        raise ValueError(f"evidence line {line_number} has invalid player or color")
+    if row.get("outcome") not in {"win", "loss", "inconclusive"} or not isinstance(row.get("conclusive"), bool):
+        raise ValueError(f"evidence line {line_number} has invalid outcome")
+    if (row["outcome"] == "inconclusive") == row["conclusive"]:
+        raise ValueError(f"evidence line {line_number} has inconsistent conclusive flag")
+
+
+def _same_evidence(left: Mapping[str, object], right: Mapping[str, object]) -> bool:
+    keys = ("origin_result_id", "stage", "player", "color", "outcome", "conclusive")
+    return all(left.get(key) == right.get(key) for key in keys)
+
+
+def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: frozenset[Path]) -> LoadedCampaign:
+    path = path.resolve()
+    if path in ancestors:
+        raise ValueError("campaign parent chain contains a cycle")
+    rows = _read_rows(path)
+    header, records = rows[0], rows[1:]
+    _validate_header(header, records)
+
+    parent: LoadedCampaign | None = None
+    parent_sha: str | None = None
+    if "parent_path" in header:
+        parent_path = Path(str(header["parent_path"]))
+        if not parent_path.is_absolute():
+            parent_path = path.parent / parent_path
+        parent_sha = _sha256(parent_path)
+        if parent_sha != header["parent_sha256"]:
+            raise ValueError(f"parent SHA-256 mismatch for {parent_path}")
+        parent = _load_campaign(parent_path, True, ancestors | {path})
+        if not parent.stopped:
+            raise ValueError("parent campaign must be stopped before evidence can be imported")
+
+    evidence: list[Mapping[str, object]] = []
+    evidence_lines: list[int] = []
+    origins: set[str] = set()
+    reservations: dict[int, Mapping[str, object]] = {}
+    completed_attempts: set[int] = set()
+    seed_by_line = {row["direct_parent_line"]: row for row in _seed_evidence()} if parent is None else {}
+    stopped = False
+    stop_types: set[str] = set()
+    for line_number, row in enumerate(records, 2):
+        row_type = row.get("type")
+        if stopped and not (row_type == "campaign_stopped" and stop_types == {"stopped"}):
+            raise ValueError(f"ledger row on line {line_number} occurs after stop")
+        if row_type in {"result", "carry_result"}:
+            _validate_evidence_row(row, line_number)
+            origin = str(row["origin_result_id"])
+            if origin in origins:
+                raise ValueError(f"duplicate origin_result_id {origin}")
+            origins.add(origin)
+            evidence.append(row)
+            evidence_lines.append(line_number)
+        if row_type == "reservation":
+            attempt_id = row.get("attempt_id")
+            if type(attempt_id) is not int or attempt_id <= 0 or attempt_id in reservations:
+                raise ValueError(f"invalid or duplicate reservation on line {line_number}")
+            if row.get("stage") not in STAGE_ORDER or row.get("color") not in {"B", "W"}:
+                raise ValueError(f"invalid reservation on line {line_number}")
+            reservations[attempt_id] = row
+        elif row_type == "result":
+            attempt_id = row.get("attempt_id")
+            reservation = reservations.get(attempt_id) if type(attempt_id) is int else None
+            if reservation is None or attempt_id in completed_attempts:
+                raise ValueError(f"result on line {line_number} has no unique reservation")
+            expected_origin = f"{header['campaign_id']}:{attempt_id}"
+            if row["origin_result_id"] != expected_origin:
+                raise ValueError(f"result on line {line_number} has invalid immutable origin_result_id")
+            for key in ("stage", "player", "color"):
+                if row.get(key) != reservation.get(key):
+                    raise ValueError(f"result on line {line_number} does not match reservation")
+            completed_attempts.add(attempt_id)
+        elif row_type == "carry_result":
+            if parent is None:
+                if row.get("direct_parent_sha256") != SEED_SHA256 or row.get("direct_parent_line") not in SEED_LINES:
+                    raise ValueError(f"invalid legacy seed carry on line {line_number}")
+                expected_origin = f"legacy:{SEED_SHA256}:{row['direct_parent_line']}"
+                expected_seed = seed_by_line[row["direct_parent_line"]]
+                if row["origin_result_id"] != expected_origin or not _same_evidence(row, expected_seed):
+                    raise ValueError(f"legacy seed carry on line {line_number} does not match its SHA-validated source")
+            else:
+                direct_line = row.get("direct_parent_line")
+                if row.get("direct_parent_sha256") != parent_sha or type(direct_line) is not int:
+                    raise ValueError(f"invalid direct parent reference on line {line_number}")
+                try:
+                    parent_index = parent.evidence_lines.index(direct_line)
+                except ValueError as exc:
+                    raise ValueError(f"direct parent line {direct_line} is not completed evidence") from exc
+                if not _same_evidence(row, parent.evidence[parent_index]):
+                    raise ValueError(f"carry on line {line_number} does not match direct parent evidence")
+        elif row_type in {"campaign_stopped", "stopped"}:
+            if row_type in stop_types:
+                raise ValueError(f"duplicate {row_type} row on line {line_number}")
+            attempt_id = row.get("attempt_id")
+            if attempt_id is not None:
+                if (
+                    row_type != "stopped"
+                    or type(attempt_id) is not int
+                    or attempt_id not in reservations
+                    or attempt_id in completed_attempts
+                ):
+                    raise ValueError(f"stopped row on line {line_number} has no unique reservation")
+                completed_attempts.add(attempt_id)
+            stopped = True
+            stop_types.add(str(row_type))
+        elif row_type in {"stage_started", "stage_completed"}:
+            continue
+        elif row_type != "reservation":
+            raise ValueError(f"unknown ledger row type {row_type!r} on line {line_number}")
+
+    carry_origins = {str(row["origin_result_id"]) for row in evidence if row.get("type") == "carry_result"}
+    expected_carry_origins = (
+        {str(row["origin_result_id"]) for row in seed_by_line.values()}
+        if parent is None
+        else {str(row["origin_result_id"]) for row in parent.evidence}
+    )
+    if carry_origins != expected_carry_origins:
+        raise ValueError("ledger does not contain the complete required carry evidence set")
+    expected_direct_lines = list(SEED_LINES if parent is None else parent.evidence_lines)
+    carry_rows = [row for row in records if row.get("type") == "carry_result"]
+    if (
+        any(row.get("type") != "carry_result" for row in records[: len(carry_rows)])
+        or [row.get("direct_parent_line") for row in carry_rows] != expected_direct_lines
+    ):
+        raise ValueError("carry evidence must be a complete initial prefix in direct-parent order")
+
+    for stage in STAGE_ORDER:
+        indices = (None,) if stage in {"seven_d", "one_star_b18_1"} else range(len(GRID))
+        for candidate_index in indices:
+            summarize_candidate(evidence, stage, candidate_index)
+
+    replayed: list[Mapping[str, object]] = []
+    open_attempt: int | None = None
+    request_keys = ("stage", "player", "color", "target_valid", "phase")
+    for line_number, row in enumerate(records, 2):
+        if row.get("type") == "carry_result":
+            replayed.append(row)
+        elif row.get("type") == "reservation":
+            if open_attempt is not None:
+                raise ValueError(f"reservation on line {line_number} overlaps unmatched reservation {open_attempt}")
+            expected = next_action(replayed)
+            if not isinstance(expected, GameRequest) or any(
+                row.get(key) != getattr(expected, key) for key in request_keys
+            ):
+                raise ValueError(f"reservation on line {line_number} does not match the next expected request")
+            open_attempt = int(row["attempt_id"])
+        elif row.get("type") == "result":
+            if row.get("attempt_id") != open_attempt:
+                raise ValueError(f"result on line {line_number} is not for the current reservation")
+            replayed.append(row)
+            open_attempt = None
+        elif row.get("type") == "stopped" and row.get("attempt_id") is not None:
+            if row.get("attempt_id") != open_attempt:
+                raise ValueError(f"stopped row on line {line_number} is not for the current reservation")
+            open_attempt = None
+
+    unmatched = tuple(sorted(set(reservations) - completed_attempts))
+    action = next_action(evidence)
+    loaded = LoadedCampaign(
+        path,
+        header,
+        tuple(records),
+        tuple(evidence),
+        tuple(evidence_lines),
+        stopped,
+        unmatched,
+        action,
+    )
+    if not allow_stopped_for_summary:
+        if stopped:
+            raise ValueError("campaign ledger is stopped and cannot be resumed")
+        if unmatched:
+            raise ValueError(f"campaign ledger has unmatched reservation(s): {unmatched}")
+    return loaded
+
+
+def load_campaign(path: str | Path, allow_stopped_for_summary: bool = False) -> LoadedCampaign:
+    return _load_campaign(Path(path), allow_stopped_for_summary, frozenset())
+
+
+def _seed_evidence() -> list[dict[str, object]]:
+    if _sha256(SEED_PATH) != SEED_SHA256:
+        raise ValueError(f"seed SHA-256 mismatch for {SEED_PATH}")
+    source_rows = _read_rows(SEED_PATH)
+    seeded: list[dict[str, object]] = []
+    for line_number in SEED_LINES:
+        source = source_rows[line_number - 1]
+        if source.get("rank") != 7 or source.get("tier") != "1s" or source.get("outcome") not in {"win", "loss"}:
+            raise ValueError(f"frozen seed line {line_number} is not a valid rank_7d@1s result")
+        seeded.append(
+            {
+                "type": "carry_result",
+                "stage": "seven_d",
+                "player": "rank_7d@1s",
+                "color": source["color"],
+                "outcome": source["outcome"],
+                "conclusive": True,
+                "origin_result_id": f"legacy:{SEED_SHA256}:{line_number}",
+                "direct_parent_sha256": SEED_SHA256,
+                "direct_parent_line": line_number,
+            }
+        )
+    return seeded
+
+
+def initialize_campaign(
+    path: str | Path,
+    campaign_id: str,
+    identity_snapshot: Mapping[str, object],
+    parent_path: str | Path | None = None,
+    parent_sha256: str | None = None,
+) -> LoadedCampaign:
+    path = Path(path)
+    if (parent_path is None) != (parent_sha256 is None):
+        raise ValueError("parent_path and exact parent SHA-256 are both required")
+    header: dict[str, object] = {
+        "type": "campaign_header",
+        "protocol": LEDGER_PROTOCOL,
+        "campaign_id": campaign_id,
+        "identity_snapshot": dict(identity_snapshot),
+    }
+    carries: list[dict[str, object]]
+    if parent_path is None:
+        carries = _seed_evidence()
+    else:
+        parent_path = Path(parent_path).resolve()
+        actual_sha = _sha256(parent_path)
+        if actual_sha != parent_sha256:
+            raise ValueError(f"parent SHA-256 mismatch for {parent_path}")
+        parent = load_campaign(parent_path, allow_stopped_for_summary=True)
+        if not parent.stopped:
+            raise ValueError("parent campaign must be stopped before evidence can be imported")
+        header.update(parent_path=str(parent_path), parent_sha256=parent_sha256)
+        carries = []
+        for evidence, line_number in zip(parent.evidence, parent.evidence_lines):
+            carries.append(
+                {
+                    "type": "carry_result",
+                    "stage": evidence["stage"],
+                    "player": evidence["player"],
+                    "color": evidence["color"],
+                    "outcome": evidence["outcome"],
+                    "conclusive": evidence["conclusive"],
+                    "origin_result_id": evidence["origin_result_id"],
+                    "direct_parent_sha256": parent_sha256,
+                    "direct_parent_line": line_number,
+                }
+            )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("x", encoding="utf-8") as handle:
+            handle.write(_json_line(header))
+            for carry in carries:
+                handle.write(_json_line(carry))
+            handle.flush()
+            os.fsync(handle.fileno())
+    except FileExistsError as exc:
+        raise ValueError(f"campaign ledger already exists: {path}") from exc
+    return load_campaign(path)
+
+
+def append_reservation(path: str | Path, attempt_id: int, request: GameRequest) -> None:
+    loaded = load_campaign(path)
+    if type(attempt_id) is not int or attempt_id <= 0:
+        raise ValueError("attempt_id must be a positive plain integer")
+    if any(row.get("attempt_id") == attempt_id for row in loaded.records if row.get("type") == "reservation"):
+        raise ValueError(f"attempt_id {attempt_id} is already reserved")
+    if not isinstance(request, GameRequest):
+        raise ValueError("reservation request must be a GameRequest")
+    if request != loaded.action:
+        raise ValueError("reservation request does not match the next expected Task 1 request")
+    _append_row(
+        Path(path),
+        {
+            "type": "reservation",
+            "attempt_id": attempt_id,
+            "stage": request.stage,
+            "player": request.player,
+            "color": request.color,
+            "target_valid": request.target_valid,
+            "phase": request.phase,
+        },
+    )
+
+
+def append_result(path: str | Path, attempt_id: int, outcome: str, conclusive: bool | None = None) -> None:
+    if type(attempt_id) is not int or attempt_id <= 0:
+        raise ValueError("attempt_id must be a positive plain integer")
+    loaded = load_campaign(path, allow_stopped_for_summary=True)
+    if loaded.stopped:
+        raise ValueError("cannot append a result after campaign stopped")
+    reservations = [
+        row for row in loaded.records if row.get("type") == "reservation" and row.get("attempt_id") == attempt_id
+    ]
+    completed = [row for row in loaded.records if row.get("type") == "result" and row.get("attempt_id") == attempt_id]
+    if len(reservations) != 1 or completed:
+        raise ValueError(f"attempt_id {attempt_id} does not have one unmatched reservation")
+    if outcome not in {"win", "loss", "inconclusive"}:
+        raise ValueError("invalid result outcome")
+    if conclusive is None:
+        conclusive = outcome != "inconclusive"
+    if type(conclusive) is not bool or (outcome == "inconclusive") == conclusive:
+        raise ValueError("outcome and conclusive flag are inconsistent")
+    reservation = reservations[0]
+    _append_row(
+        Path(path),
+        {
+            "type": "result",
+            "attempt_id": attempt_id,
+            "stage": reservation["stage"],
+            "player": reservation["player"],
+            "color": reservation["color"],
+            "outcome": outcome,
+            "conclusive": conclusive,
+            "origin_result_id": f"{loaded.header['campaign_id']}:{attempt_id}",
+        },
+    )
+
+
+def append_stop(
+    path: str | Path,
+    reason: str,
+    event_type: str = "campaign_stopped",
+    attempt_id: int | None = None,
+) -> None:
+    loaded = load_campaign(path, allow_stopped_for_summary=True)
+    if loaded.stopped:
+        has_campaign_stop = any(row.get("type") == "campaign_stopped" for row in loaded.records)
+        if event_type != "campaign_stopped" or has_campaign_stop:
+            raise ValueError("campaign ledger is already stopped")
+    if event_type not in {"campaign_stopped", "stopped"}:
+        raise ValueError("stop event type must be campaign_stopped or stopped")
+    if attempt_id is not None:
+        if event_type != "stopped" or type(attempt_id) is not int:
+            raise ValueError("only a stopped game may reference a plain integer attempt_id")
+        reservations = [
+            row for row in loaded.records if row.get("type") == "reservation" and row.get("attempt_id") == attempt_id
+        ]
+        if len(reservations) != 1 or attempt_id not in loaded.unknown_charged_attempts:
+            raise ValueError(f"attempt_id {attempt_id} does not have one unmatched reservation")
+    row: dict[str, object] = {"type": event_type, "reason": reason}
+    if attempt_id is not None:
+        row["attempt_id"] = attempt_id
+    _append_row(Path(path), row)
+
+
+def append_stage_event(path: str | Path, event_type: str, stage: str) -> None:
+    load_campaign(path)
+    if event_type not in {"stage_started", "stage_completed"} or stage not in STAGE_ORDER:
+        raise ValueError("invalid stage event")
+    _append_row(Path(path), {"type": event_type, "stage": stage})
+
+
+def replay_campaign(path: str | Path) -> GameRequest | CampaignDecision:
+    return load_campaign(path).action
+
+
+def campaign_summary(path: str | Path) -> LoadedCampaign:
+    return load_campaign(path, allow_stopped_for_summary=True)

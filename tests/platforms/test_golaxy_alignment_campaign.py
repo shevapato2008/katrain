@@ -1,4 +1,7 @@
 import dataclasses
+import hashlib
+import json
+import os
 import sys
 import typing
 from pathlib import Path
@@ -268,3 +271,390 @@ def test_all_quasi_stages_use_the_supplied_lower_rank_profile_and_campaign_termi
     terminal = campaign.next_action(records)
     assert terminal.status == "completed"
     assert tuple(item.stage for item in terminal.stages) == campaign.STAGE_ORDER
+
+
+def ledger_sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def append_raw(path, row):
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def finish_request(path, attempt_id, outcome="win"):
+    request = campaign.replay_campaign(path)
+    campaign.append_reservation(path, attempt_id, request)
+    campaign.append_result(path, attempt_id, outcome)
+
+
+def test_initialize_writes_valid_append_only_header_seeds_exact_frozen_evidence_and_fsyncs(tmp_path, monkeypatch):
+    fsync_calls = []
+    monkeypatch.setattr(os, "fsync", lambda fd: fsync_calls.append(fd))
+    path = tmp_path / "campaign.jsonl"
+
+    campaign.initialize_campaign(path, "campaign-a", {"engine": "snapshot-a"})
+
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    assert rows[0] == {
+        "type": "campaign_header",
+        "protocol": campaign.LEDGER_PROTOCOL,
+        "campaign_id": "campaign-a",
+        "identity_snapshot": {"engine": "snapshot-a"},
+    }
+    assert len(rows) == 8
+    assert {row["origin_result_id"] for row in rows[1:]} == {
+        f"legacy:{campaign.SEED_SHA256}:{line}" for line in (2, 3, 4, 5, 12, 14, 16)
+    }
+    assert all(row["stage"] == "seven_d" and row["player"] == "rank_7d@1s" for row in rows[1:])
+    assert fsync_calls
+    assert campaign.replay_campaign(path) == campaign.GameRequest("seven_d", "rank_7d@1s", "W", 10, "confirm")
+
+    fsync_calls.clear()
+    campaign.append_reservation(path, 1, campaign.replay_campaign(path))
+    campaign.append_result(path, 1, "win")
+    assert len(fsync_calls) == 2
+
+
+def test_load_rejects_invalid_or_nonfirst_header(tmp_path):
+    missing_protocol = tmp_path / "missing.jsonl"
+    missing_protocol.write_text('{"type":"campaign_header","campaign_id":"x","identity_snapshot":{}}\n')
+    with pytest.raises(ValueError, match="header"):
+        campaign.load_campaign(missing_protocol)
+
+    duplicate = tmp_path / "duplicate.jsonl"
+    campaign.initialize_campaign(duplicate, "duplicate", {})
+    append_raw(duplicate, json.loads(duplicate.read_text().splitlines()[0]))
+    with pytest.raises(ValueError, match="header"):
+        campaign.load_campaign(duplicate)
+
+
+def test_load_rejects_missing_root_or_child_carries(tmp_path):
+    root = tmp_path / "root.jsonl"
+    campaign.initialize_campaign(root, "root", {})
+    root.write_text("\n".join(root.read_text().splitlines()[:-1]) + "\n")
+    with pytest.raises(ValueError, match="complete.*carry|carry.*complete"):
+        campaign.load_campaign(root)
+
+    campaign.initialize_campaign(root := tmp_path / "complete-root.jsonl", "complete-root", {})
+    campaign.append_stop(root, "rotate")
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child", {}, root, ledger_sha(root))
+    child.write_text("\n".join(child.read_text().splitlines()[:-1]) + "\n")
+    with pytest.raises(ValueError, match="complete.*carry|carry.*complete"):
+        campaign.load_campaign(child)
+
+
+def test_load_rejects_reordered_carries_that_would_change_first_four_replay(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    campaign.initialize_campaign(parent, "parent", {})
+    for attempt, outcome in enumerate(["win", "win", "win", "win", "win", "win", "loss", "loss"], 1):
+        finish_request(parent, attempt, outcome)
+    assert campaign.replay_campaign(parent).stage == "one_star_b18_1"
+    campaign.append_stop(parent, "rotate")
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child", {}, parent, ledger_sha(parent))
+    rows = [json.loads(line) for line in child.read_text().splitlines()]
+    carries = rows[1:]
+    seven_d = [row for row in carries if row["stage"] == "seven_d"]
+    b18 = [row for row in carries if row["stage"] == "one_star_b18_1"]
+    reordered = seven_d + sorted(b18, key=lambda row: row["outcome"] == "win")
+    child.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in [rows[0], *reordered]))
+
+    with pytest.raises(ValueError, match="order|sequence|prefix"):
+        campaign.load_campaign(child)
+
+
+def test_reservation_result_pairing_is_validated_and_new_result_has_immutable_origin(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign-a", {})
+    request = campaign.replay_campaign(path)
+    campaign.append_reservation(path, 1, request)
+    campaign.append_result(path, 1, "win")
+
+    loaded = campaign.load_campaign(path)
+    result = loaded.records[-1]
+    assert result["origin_result_id"] == "campaign-a:1"
+    assert (result["stage"], result["player"], result["color"]) == (request.stage, request.player, request.color)
+
+    append_raw(
+        path,
+        {
+            "type": "result",
+            "attempt_id": 99,
+            "origin_result_id": "campaign-a:99",
+            "stage": request.stage,
+            "player": request.player,
+            "color": request.color,
+            "outcome": "loss",
+            "conclusive": True,
+        },
+    )
+    with pytest.raises(ValueError, match="reservation"):
+        campaign.load_campaign(path)
+
+
+def test_reservation_must_match_the_unique_replayed_task1_request(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    future = campaign.GameRequest("quasi_9d", "rank_8d@8", "B", 4, "screen")
+    with pytest.raises(ValueError, match="expected|next"):
+        campaign.append_reservation(path, 1, future)
+
+    append_raw(
+        path,
+        {
+            "type": "reservation",
+            "attempt_id": 1,
+            "stage": future.stage,
+            "player": future.player,
+            "color": future.color,
+            "target_valid": future.target_valid,
+            "phase": future.phase,
+        },
+    )
+    append_raw(
+        path,
+        {
+            "type": "result",
+            "attempt_id": 1,
+            "origin_result_id": "campaign:1",
+            "stage": future.stage,
+            "player": future.player,
+            "color": future.color,
+            "outcome": "win",
+            "conclusive": True,
+        },
+    )
+    with pytest.raises(ValueError, match="expected|next"):
+        campaign.load_campaign(path)
+
+
+def test_same_ledger_resume_refuses_stop_stopped_and_unmatched_reservation(tmp_path):
+    for stop_type in ("campaign_stopped", "stopped"):
+        path = tmp_path / f"{stop_type}.jsonl"
+        campaign.initialize_campaign(path, stop_type, {})
+        append_raw(path, {"type": stop_type, "reason": "operator"})
+        with pytest.raises(ValueError, match="stopped"):
+            campaign.load_campaign(path)
+        assert campaign.load_campaign(path, allow_stopped_for_summary=True).stopped
+
+    unmatched = tmp_path / "unmatched.jsonl"
+    campaign.initialize_campaign(unmatched, "unmatched", {})
+    campaign.append_reservation(unmatched, 1, campaign.replay_campaign(unmatched))
+    with pytest.raises(ValueError, match="unmatched reservation"):
+        campaign.load_campaign(unmatched)
+    summary = campaign.load_campaign(unmatched, allow_stopped_for_summary=True)
+    assert summary.unknown_charged_attempts == (1,)
+
+
+def test_stopped_game_pairs_its_reservation_but_is_never_evidence(tmp_path):
+    path = tmp_path / "stopped-game.jsonl"
+    campaign.initialize_campaign(path, "stopped-game", {})
+    campaign.append_reservation(path, 1, campaign.replay_campaign(path))
+    campaign.append_stop(path, "remote error", event_type="stopped", attempt_id=1)
+
+    summary = campaign.load_campaign(path, allow_stopped_for_summary=True)
+    assert summary.unknown_charged_attempts == ()
+    assert len(summary.evidence) == 7
+
+
+def test_stop_is_terminal_except_for_the_companion_campaign_stop(tmp_path):
+    path = tmp_path / "stopped.jsonl"
+    campaign.initialize_campaign(path, "stopped", {})
+    campaign.append_reservation(path, 1, campaign.replay_campaign(path))
+    campaign.append_stop(path, "remote error", event_type="stopped", attempt_id=1)
+    campaign.append_stop(path, "remote error", event_type="campaign_stopped")
+    append_raw(path, {"type": "stage_started", "stage": "seven_d"})
+
+    with pytest.raises(ValueError, match="after stop"):
+        campaign.load_campaign(path, allow_stopped_for_summary=True)
+
+    reverse = tmp_path / "reverse.jsonl"
+    campaign.initialize_campaign(reverse, "reverse", {})
+    campaign.append_reservation(reverse, 1, campaign.replay_campaign(reverse))
+    campaign.append_stop(reverse, "preflight", event_type="campaign_stopped")
+    append_raw(reverse, {"type": "stopped", "attempt_id": 1, "reason": "late"})
+    with pytest.raises(ValueError, match="after stop"):
+        campaign.load_campaign(reverse, allow_stopped_for_summary=True)
+
+
+def test_new_child_imports_only_completed_parent_evidence_with_explicit_exact_sha(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    campaign.initialize_campaign(parent, "parent", {})
+    finish_request(parent, 1)
+    append_raw(parent, {"type": "stage_completed", "stage": "quasi_9d"})
+    campaign.append_reservation(parent, 2, campaign.replay_campaign(parent))
+    campaign.append_stop(parent, "remote failure", event_type="stopped")
+    parent_sha = ledger_sha(parent)
+
+    with pytest.raises(ValueError, match="SHA-256"):
+        campaign.initialize_campaign(tmp_path / "bad.jsonl", "bad", {}, parent, "0" * 64)
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child", {}, parent, parent_sha)
+    loaded = campaign.load_campaign(child)
+
+    assert len(loaded.evidence) == 8
+    assert loaded.unknown_charged_attempts == ()
+    inherited = next(row for row in loaded.evidence if row["origin_result_id"] == "parent:1")
+    assert inherited["type"] == "carry_result"
+    assert inherited["direct_parent_sha256"] == parent_sha
+    assert inherited["direct_parent_line"] == 10
+    assert not any(row.get("origin_result_id") == "parent:2" for row in loaded.evidence)
+    assert not any(row["type"] in {"stage_started", "stage_completed"} for row in loaded.records)
+
+
+def test_root_seed_carry_must_exactly_match_its_sha_validated_source_line(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    rows[1]["outcome"] = "win"
+    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows))
+
+    with pytest.raises(ValueError, match="seed"):
+        campaign.load_campaign(path)
+
+
+def test_recursive_chain_preserves_origins_and_rejects_tampered_intermediate_sha(tmp_path):
+    root = tmp_path / "root.jsonl"
+    campaign.initialize_campaign(root, "root", {})
+    finish_request(root, 1)
+    campaign.append_stop(root, "rotate")
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child", {}, root, ledger_sha(root))
+    finish_request(child, 1)
+    campaign.append_stop(child, "rotate")
+    child_sha = ledger_sha(child)
+    grandchild = tmp_path / "grandchild.jsonl"
+    campaign.initialize_campaign(grandchild, "grandchild", {}, child, child_sha)
+
+    loaded = campaign.load_campaign(grandchild)
+    assert {"root:1", "child:1"} <= {row["origin_result_id"] for row in loaded.evidence}
+    assert (
+        next(row for row in loaded.evidence if row["origin_result_id"] == "root:1")["direct_parent_sha256"] == child_sha
+    )
+
+    append_raw(child, {"type": "stage_completed", "stage": "seven_d"})
+    with pytest.raises(ValueError, match="SHA-256"):
+        campaign.load_campaign(grandchild)
+
+
+def test_generation_three_duplicate_origin_is_rejected_across_result_and_carry(tmp_path):
+    root = tmp_path / "root.jsonl"
+    campaign.initialize_campaign(root, "root", {})
+    finish_request(root, 1)
+    campaign.append_stop(root, "rotate")
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child", {}, root, ledger_sha(root))
+    campaign.append_stop(child, "rotate")
+    child_sha = ledger_sha(child)
+    grandchild = tmp_path / "grandchild.jsonl"
+    campaign.initialize_campaign(grandchild, "grandchild", {}, child, child_sha)
+    duplicate = dict(
+        next(row for row in campaign.load_campaign(grandchild).evidence if row["origin_result_id"] == "root:1")
+    )
+    duplicate.update(type="result", attempt_id=999)
+    append_raw(grandchild, duplicate)
+    with pytest.raises(ValueError, match="duplicate origin_result_id"):
+        campaign.load_campaign(grandchild, allow_stopped_for_summary=True)
+
+
+def test_control_rows_are_ignored_and_resume_is_reconstructed_from_evidence(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    append_raw(path, {"type": "stage_started", "stage": "quasi_9d"})
+    append_raw(path, {"type": "stage_completed", "stage": "seven_d"})
+    assert campaign.replay_campaign(path).stage == "seven_d"
+
+
+@pytest.mark.parametrize(
+    ("completed_outcomes", "expected_stage"),
+    [
+        ([], "seven_d"),
+        (["win", "win", "win"], "one_star_b18_1"),
+        (["win", "win", "win", "loss", "loss", "loss", "win"], "quasi_5d"),
+    ],
+)
+def test_fresh_load_reconstructs_unique_resume_stage_from_evidence(tmp_path, completed_outcomes, expected_stage):
+    path = tmp_path / f"{expected_stage}.jsonl"
+    campaign.initialize_campaign(path, expected_stage, {})
+    for attempt, outcome in enumerate(completed_outcomes, 1):
+        finish_request(path, attempt, outcome)
+
+    loaded = campaign.load_campaign(path)
+    assert loaded.action.stage == expected_stage
+
+
+def test_load_rejects_more_than_ten_replayed_candidate_results(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    for attempt in range(1, 5):
+        color = "W" if attempt % 2 else "B"
+        append_raw(
+            path,
+            {
+                "type": "reservation",
+                "attempt_id": attempt,
+                "stage": "seven_d",
+                "player": "rank_7d@1s",
+                "color": color,
+                "target_valid": 10,
+                "phase": "confirm",
+            },
+        )
+        append_raw(
+            path,
+            {
+                "type": "result",
+                "attempt_id": attempt,
+                "origin_result_id": f"campaign:{attempt}",
+                "stage": "seven_d",
+                "player": "rank_7d@1s",
+                "color": color,
+                "outcome": "win",
+                "conclusive": True,
+            },
+        )
+    with pytest.raises(ValueError, match="more than 10 valid"):
+        campaign.load_campaign(path)
+
+
+def test_load_rejects_more_than_ten_results_hidden_in_a_later_stage(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    for attempt in range(1, 12):
+        append_raw(
+            path,
+            {
+                "type": "reservation",
+                "attempt_id": attempt,
+                "stage": "quasi_9d",
+                "player": "rank_8d@1s",
+                "color": "B" if attempt % 2 else "W",
+            },
+        )
+        append_raw(
+            path,
+            {
+                "type": "result",
+                "attempt_id": attempt,
+                "origin_result_id": f"campaign:{attempt}",
+                "stage": "quasi_9d",
+                "player": "rank_8d@1s",
+                "color": "B" if attempt % 2 else "W",
+                "outcome": "win",
+                "conclusive": True,
+            },
+        )
+    with pytest.raises(ValueError, match="more than 10 valid"):
+        campaign.load_campaign(path)
+
+
+def test_append_result_rejects_boolean_attempt_without_corrupting_ledger(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    campaign.append_reservation(path, 1, campaign.replay_campaign(path))
+
+    with pytest.raises(ValueError, match="attempt_id"):
+        campaign.append_result(path, True, "win")
+    assert campaign.campaign_summary(path).unknown_charged_attempts == (1,)

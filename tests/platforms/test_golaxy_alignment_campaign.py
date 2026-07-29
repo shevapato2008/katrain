@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import hashlib
 import importlib
@@ -7,6 +8,7 @@ import stat
 import sys
 import typing
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -1201,3 +1203,251 @@ def test_append_result_rejects_boolean_attempt_without_corrupting_ledger(tmp_pat
     with pytest.raises(ValueError, match="attempt_id"):
         campaign.append_result(path, True, "win")
     assert campaign.campaign_summary(path).unknown_charged_attempts == (1,)
+
+
+def _campaign_at_nine_seven_d_results(path):
+    campaign.initialize_campaign(path, "serial-test", campaign_health())
+    finish_request(path, 1, "loss")
+    finish_request(path, 2, "win")
+    assert campaign.replay_campaign(path).stage == "seven_d"
+    assert campaign.replay_campaign(path).color == "W"
+
+
+@pytest.mark.asyncio
+async def test_serial_loop_reserves_before_request_persists_results_and_repeats_inconclusive_color(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    _campaign_at_nine_seven_d_results(path)
+    calls = []
+    sleeps = []
+    outcomes = iter(
+        [
+            SimpleNamespace(conclusive=False, result="inconclusive_score", our_win=False),
+            SimpleNamespace(conclusive=True, result="our_win", our_win=True),
+        ]
+    )
+
+    async def preflight(request, _snapshot):
+        calls.append(("preflight", request.stage, request.player, request.color))
+
+    async def play(request, _snapshot):
+        rows = [json.loads(line) for line in path.read_text().splitlines()]
+        assert rows[-1]["type"] == "reservation"
+        assert rows[-1]["color"] == request.color
+        calls.append(("play", request.stage, request.player, request.color))
+        return next(outcomes)
+
+    async def sleep(seconds):
+        sleeps.append(seconds)
+
+    async def stop_on_next_stage(request, _snapshot):
+        if request.stage != "seven_d":
+            raise RuntimeError("local probe failed")
+        await preflight(request, _snapshot)
+
+    with pytest.raises(runner.CampaignStopped, match="local probe failed"):
+        await runner.execute_serial_campaign(
+            path,
+            preflight_player=stop_on_next_stage,
+            play_game=play,
+            sleep=sleep,
+            emit=lambda _event: None,
+        )
+
+    summary = campaign.campaign_summary(path)
+    new_results = [row for row in summary.records if row.get("type") == "result"][-2:]
+    assert [(row["color"], row["outcome"]) for row in new_results] == [
+        ("W", "inconclusive"),
+        ("W", "win"),
+    ]
+    assert sleeps == [5.0]
+    stage_rows = [row for row in summary.records if row["type"].startswith("stage_")]
+    assert [(row["type"], row["stage"]) for row in stage_rows] == [
+        ("stage_started", "seven_d"),
+        ("stage_completed", "seven_d"),
+        ("stage_started", "one_star_b18_1"),
+    ]
+    assert summary.records[-1]["type"] == "campaign_stopped"
+
+
+@pytest.mark.asyncio
+async def test_preflight_failure_stops_before_reservation_or_golaxy_call(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "preflight-stop", campaign_health())
+    played = False
+
+    async def fail_preflight(_request, _snapshot):
+        raise RuntimeError("identity mismatch")
+
+    async def play(*_args):
+        nonlocal played
+        played = True
+
+    with pytest.raises(runner.CampaignStopped, match="identity mismatch"):
+        await runner.execute_serial_campaign(
+            path,
+            preflight_player=fail_preflight,
+            play_game=play,
+            sleep=asyncio.sleep,
+            emit=lambda _event: None,
+        )
+
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    assert not played
+    assert not any(row["type"] == "reservation" for row in rows)
+    assert [row["type"] for row in rows[-2:]] == ["stage_started", "campaign_stopped"]
+
+
+@pytest.mark.asyncio
+async def test_stopped_ledger_refuses_before_any_local_or_golaxy_access(tmp_path):
+    path = tmp_path / "stopped.jsonl"
+    campaign.initialize_campaign(path, "stopped-live", campaign_health())
+    campaign.append_stop(path, "prior remote error")
+    touched = []
+
+    async def touch(*_args):
+        touched.append(True)
+
+    with pytest.raises(ValueError, match="stopped"):
+        await runner.execute_serial_campaign(
+            path,
+            preflight_player=touch,
+            play_game=touch,
+            sleep=touch,
+            emit=lambda _event: None,
+        )
+    assert touched == []
+
+
+@pytest.mark.asyncio
+async def test_remote_error_closes_reserved_attempt_and_stops_without_retry(tmp_path):
+    path = tmp_path / "remote-stop.jsonl"
+    campaign.initialize_campaign(path, "remote-stop", campaign_health())
+    plays = 0
+
+    async def preflight(*_args):
+        return None
+
+    async def play(*_args):
+        nonlocal plays
+        plays += 1
+        raise RuntimeError("Golaxy 7002")
+
+    with pytest.raises(runner.CampaignStopped, match="7002"):
+        await runner.execute_serial_campaign(
+            path,
+            preflight_player=preflight,
+            play_game=play,
+            sleep=asyncio.sleep,
+            emit=lambda _event: None,
+        )
+
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    assert plays == 1
+    assert [row["type"] for row in rows[-3:]] == ["reservation", "stopped", "campaign_stopped"]
+    assert rows[-2]["attempt_id"] == rows[-3]["attempt_id"]
+
+
+@pytest.mark.asyncio
+async def test_child_recovery_rebuilds_completed_predecessor_from_evidence_not_control_rows(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    _campaign_at_nine_seven_d_results(parent)
+    finish_request(parent, 3, "win")
+    campaign.append_stop(parent, "operator recovery")
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child-live", campaign_health(), parent, ledger_sha(parent))
+
+    async def fail_after_recovery(request, _snapshot):
+        assert request.stage == "one_star_b18_1"
+        raise RuntimeError("probe after recovery")
+
+    with pytest.raises(runner.CampaignStopped, match="probe after recovery"):
+        await runner.execute_serial_campaign(
+            child,
+            preflight_player=fail_after_recovery,
+            play_game=lambda *_args: pytest.fail("game must not start"),
+            emit=lambda _event: None,
+        )
+
+    rows = [json.loads(line) for line in child.read_text().splitlines()]
+    assert not any(row["type"] == "stage_completed" for row in rows)
+    assert [(row["type"], row.get("stage")) for row in rows[-2:]] == [
+        ("stage_started", "one_star_b18_1"),
+        ("campaign_stopped", None),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_serial_loop_resumes_a_persisted_open_stage_without_duplicate_start(tmp_path):
+    path = tmp_path / "open-stage.jsonl"
+    campaign.initialize_campaign(path, "open-stage", campaign_health())
+    campaign.append_stage_event(path, "stage_started", "seven_d")
+
+    async def fail_preflight(*_args):
+        raise RuntimeError("stop after resumed start")
+
+    with pytest.raises(runner.CampaignStopped):
+        await runner.execute_serial_campaign(
+            path,
+            preflight_player=fail_preflight,
+            play_game=lambda *_args: pytest.fail("game must not start"),
+            emit=lambda _event: None,
+        )
+    rows = [row for row in map(json.loads, path.read_text().splitlines()) if row["type"] == "stage_started"]
+    assert len(rows) == 1
+
+
+def test_output_lock_rejects_a_second_process_writer(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    with runner.campaign_output_lock(path):
+        with pytest.raises(RuntimeError, match="locked"):
+            with runner.campaign_output_lock(path):
+                pass
+
+
+def test_live_cli_requires_exact_parent_pair_and_a_new_output(tmp_path):
+    parser = runner.build_parser()
+    parent = tmp_path / "parent.jsonl"
+    campaign.initialize_campaign(parent, "parent-cli", campaign_health())
+    campaign.append_stop(parent, "rotate")
+    sha = hashlib.sha256(parent.read_bytes()).hexdigest()
+
+    with pytest.raises(ValueError, match="both"):
+        runner.validate_args(parser.parse_args(["--out", str(tmp_path / "child.jsonl"), "--parent", str(parent)]))
+    args = parser.parse_args(["--out", str(tmp_path / "child.jsonl"), "--parent", str(parent), "--parent-sha256", sha])
+    assert runner.validate_args(args) == "live"
+    with pytest.raises(ValueError, match="different output"):
+        args = parser.parse_args(["--out", str(parent), "--parent", str(parent), "--parent-sha256", sha])
+        runner.validate_args(args)
+    with pytest.raises(ValueError, match="SHA-256"):
+        runner.validate_args(
+            parser.parse_args(
+                [
+                    "--out",
+                    str(tmp_path / "bad-sha-child.jsonl"),
+                    "--parent",
+                    str(parent),
+                    "--parent-sha256",
+                    "not-a-sha",
+                ]
+            )
+        )
+
+
+def test_read_only_summary_validates_control_order_without_network(tmp_path, monkeypatch):
+    path = tmp_path / "summary.jsonl"
+    _campaign_at_nine_seven_d_results(path)
+    campaign.append_stage_event(path, "stage_started", "seven_d")
+    finish_request(path, 3, "win")
+    campaign.append_stage_event(path, "stage_completed", "seven_d")
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda *args, **kwargs: pytest.fail("summary opened network client"))
+    summary = runner.summarize_campaign(path)
+    assert summary["next_action"]["stage"] == "one_star_b18_1"
+    assert summary["stages"][0]["status"] == "completed_at_10"
+    assert summary["origin_result_ids_unique"] is True
+
+    bad = tmp_path / "bad-order.jsonl"
+    campaign.initialize_campaign(bad, "bad-order", campaign_health())
+    campaign.append_stage_event(bad, "stage_started", "one_star_b18_1")
+    with pytest.raises(ValueError, match="stage_started"):
+        runner.summarize_campaign(bad)

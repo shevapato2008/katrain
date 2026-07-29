@@ -1,5 +1,6 @@
 import dataclasses
 import hashlib
+import importlib
 import json
 import os
 import stat
@@ -14,6 +15,239 @@ CALIBRATION = Path(__file__).resolve().parents[2] / "superpowers/tracks/golaxy-a
 sys.path.insert(0, str(CALIBRATION))
 
 import golaxy_alignment_campaign as campaign
+
+
+runner = importlib.import_module("run_golaxy_alignment_campaign")
+
+
+def campaign_health():
+    return {
+        "status": "ok",
+        "capability_schema": 1,
+        "katago_version": "KataGo v1.16.3",
+        "default_model": "b28",
+        "models": {
+            alias: {
+                "running": True,
+                "model_path": f"/models/{alias}.bin.gz",
+                "model_sha256": f"{alias}-sha",
+                "model_sha256_verified": True,
+                "has_human_model": True,
+                "human_model_path": "/models/humanv0.bin.gz",
+                "human_model_sha256": "humanv0-sha",
+                "human_model_sha256_verified": True,
+            }
+            for alias in ("b18", "b28")
+        },
+    }
+
+
+def campaign_wrapper(alias="b18", **changes):
+    wrapper = {
+        "selected_model": alias,
+        "model_path": f"/models/{alias}.bin.gz",
+        "model_sha256": f"{alias}-sha",
+        "human_model_path": "/models/humanv0.bin.gz",
+        "human_model_sha256": "humanv0-sha",
+        "katago_version": "KataGo v1.16.3",
+    }
+    wrapper.update(changes)
+    return wrapper
+
+
+@pytest.mark.parametrize(
+    ("stage", "name", "api_level"),
+    [
+        ("quasi_5d", "准5段", 2000),
+        ("quasi_6d", "准6段", 2200),
+        ("quasi_7d", "准7段", 2400),
+        ("quasi_8d", "准8段", 2600),
+        ("quasi_9d", "准9段", 2900),
+        ("seven_d", "7段", 2500),
+        ("one_star_b18_1", "星阵1星", 3100),
+    ],
+)
+def test_campaign_opponents_are_exact_validated_ladder_descriptors(stage, name, api_level):
+    rung = runner.opponent_for_stage(stage)
+
+    assert isinstance(rung, runner.LadderRung)
+    assert (rung.golaxy_level_name, rung.golaxy_api_level) == (name, api_level)
+    assert runner.resolve_opponent(rung) is rung
+
+
+def test_campaign_lower_profiles_are_frozen_one_rank_below():
+    assert runner.QUASI_PROFILES == {
+        "quasi_5d": "rank_4d",
+        "quasi_6d": "rank_5d",
+        "quasi_7d": "rank_6d",
+        "quasi_8d": "rank_7d",
+        "quasi_9d": "rank_8d",
+    }
+
+
+def test_identity_snapshot_is_serializable_and_freezes_default_b18_and_attached_humanv0():
+    snapshot = runner.build_identity_snapshot(campaign_health())
+
+    assert json.loads(json.dumps(snapshot)) == snapshot
+    assert snapshot == {
+        "status": "ok",
+        "capability_schema": 1,
+        "katago_version": "KataGo v1.16.3",
+        "default_model": "b28",
+        "models": {
+            "b28": {
+                "running": True,
+                "model_path": "/models/b28.bin.gz",
+                "model_sha256": "b28-sha",
+                "model_sha256_verified": True,
+                "human_model": "humanv0",
+                "human_model_path": "/models/humanv0.bin.gz",
+                "human_model_sha256": "humanv0-sha",
+                "human_model_sha256_verified": True,
+            },
+            "b18": {
+                "running": True,
+                "model_path": "/models/b18.bin.gz",
+                "model_sha256": "b18-sha",
+                "model_sha256_verified": True,
+                "human_model": "humanv0",
+                "human_model_path": "/models/humanv0.bin.gz",
+                "human_model_sha256": "humanv0-sha",
+                "human_model_sha256_verified": True,
+            },
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda health: health.update(status="starting"),
+        lambda health: health.update(capability_schema=2),
+        lambda health: health["models"]["b18"].update(running=False),
+        lambda health: health["models"]["b18"].update(model_sha256_verified=False),
+        lambda health: health["models"]["b28"].update(human_model_sha256_verified=False),
+        lambda health: health["models"]["b18"].update(human_model_path=""),
+        lambda health: health.update(katago_version=""),
+    ],
+)
+def test_identity_snapshot_rejects_unhealthy_or_unverified_process_identity(mutate):
+    health = campaign_health()
+    mutate(health)
+    with pytest.raises(ValueError, match="status|schema|running|verified|identity|human|katago"):
+        runner.build_identity_snapshot(health)
+
+
+def test_native_one_second_player_omits_model_and_uses_human_policy_argmax_only():
+    player = runner.make_campaign_player("rank_4d@1s")
+    query = runner.build_player_query([], player)
+    human_policy = [0.0] * 362
+    human_policy[0] = 0.8
+    analysis = {
+        "humanPolicy": human_policy,
+        "moveInfos": [{"move": "Q16", "order": 0}],
+        "_wrapper": {"selected_model": "untrusted"},
+    }
+
+    assert player.selection == "argmax_human"
+    assert "model" not in query["overrideSettings"]
+    assert runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health())) == (0, 18)
+
+
+@pytest.mark.parametrize("analysis", [{}, {"humanPolicy": []}, {"humanPolicy": [0.0] * 361 + [float("nan")]}])
+def test_native_one_second_requires_valid_human_policy_without_requiring_wrapper(analysis):
+    player = runner.make_campaign_player("rank_8d@1s")
+    with pytest.raises(runner.LadderMoveError, match="humanPolicy"):
+        runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health()))
+
+
+@pytest.mark.parametrize("visits", [4, 8, 16, 32, 64])
+def test_humansl_search_query_routes_b18_with_profile_and_full_canonical_pikl(visits):
+    player = runner.make_campaign_player(f"rank_6d@{visits}")
+    query = runner.build_player_query([], player)
+
+    assert player.selection == "search"
+    assert query["maxVisits"] == visits
+    assert query["overrideSettings"] == {
+        "reportAnalysisWinratesAs": "BLACK",
+        "humanSLProfile": "rank_6d",
+        "ignorePreRootHistory": False,
+        **runner.HUMANSL_PIKL_BASELINE,
+        "wideRootNoise": 0.04,
+        "model": "b18",
+    }
+
+
+@pytest.mark.parametrize("wrapper", [None, campaign_wrapper("b28")])
+def test_humansl_search_fails_closed_without_exact_b18_response_attestation(wrapper):
+    player = runner.make_campaign_player("rank_6d@4")
+    analysis = {"moveInfos": [{"move": "Q16", "order": 0}], "_wrapper": wrapper}
+
+    with pytest.raises(runner.LadderMoveError, match="attestation|selected_model"):
+        runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health()))
+
+
+def test_humansl_search_validates_frozen_b18_and_humanv0_identity():
+    player = runner.make_campaign_player("rank_6d@4")
+    analysis = {"moveInfos": [{"move": "Q16", "order": 0}], "_wrapper": campaign_wrapper()}
+    snapshot = runner.build_identity_snapshot(campaign_health())
+
+    assert runner.select_player_move(analysis, player, snapshot) == (15, 15)
+    for drift in ("model_path", "model_sha256", "human_model_path", "human_model_sha256", "katago_version"):
+        bad = {"moveInfos": analysis["moveInfos"], "_wrapper": campaign_wrapper(**{drift: "drifted"})}
+        with pytest.raises(runner.LadderMoveError, match=drift):
+            runner.select_player_move(bad, player, snapshot)
+
+
+def test_pure_b18_one_visit_is_direct_search_without_humansl_controls():
+    player = runner.make_campaign_player("b18@1")
+    query = runner.build_player_query([], player)
+
+    assert (player.rung.net, player.rung.mechanism, player.rung.max_visits, player.selection) == (
+        "b18",
+        "net_search",
+        1,
+        "search",
+    )
+    assert query["maxVisits"] == 1
+    assert query["overrideSettings"] == {
+        "reportAnalysisWinratesAs": "BLACK",
+        "wideRootNoise": 0.04,
+        "model": "b18",
+    }
+    assert not any(key.startswith("humanSL") for key in query["overrideSettings"])
+
+
+@pytest.mark.parametrize("wrapper", [None, campaign_wrapper("b28")])
+def test_pure_b18_fails_closed_on_missing_or_b28_wrapper(wrapper):
+    player = runner.make_campaign_player("b18@1")
+    analysis = {"moveInfos": [{"move": "Q16", "order": 0}], "_wrapper": wrapper}
+    with pytest.raises(runner.LadderMoveError, match="attestation|selected_model"):
+        runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health()))
+
+
+def test_pure_b18_allows_mounted_human_model_but_requires_nonempty_search_moves():
+    player = runner.make_campaign_player("b18@1")
+    snapshot = runner.build_identity_snapshot(campaign_health())
+    analysis = {"moveInfos": [{"move": "D4", "order": 0}], "_wrapper": campaign_wrapper()}
+
+    assert runner.select_player_move(analysis, player, snapshot) == (3, 3)
+    with pytest.raises(runner.LadderMoveError, match="moveInfos|move"):
+        runner.select_player_move({"moveInfos": [], "_wrapper": campaign_wrapper()}, player, snapshot)
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["http://localhost:8000", "http://127.0.0.1:8001", "http://127.0.0.1:8000/", "https://127.0.0.1:8000"],
+)
+def test_campaign_base_url_rejects_every_nonliteral_alias(url):
+    with pytest.raises(ValueError, match="exactly"):
+        runner.validate_base_url(url)
+
+
+def test_campaign_base_url_is_fixed_exactly():
+    assert runner.BASE_URL == "http://127.0.0.1:8000"
+    assert runner.validate_base_url(runner.BASE_URL) == runner.BASE_URL
 
 
 def results(stage, player, outcomes):

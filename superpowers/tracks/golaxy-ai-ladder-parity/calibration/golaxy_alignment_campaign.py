@@ -1,4 +1,8 @@
-"""Pure scheduling protocol for the serial Golaxy alignment campaign."""
+"""Pure scheduling and append-only recovery for a single-writer Golaxy campaign.
+
+Callers must serialize all mutations to a ledger. Cross-process file locking is intentionally
+left to the live-runner layer; the append API guarantees validation, flush, and fsync durability.
+"""
 
 from __future__ import annotations
 
@@ -79,6 +83,7 @@ class LoadedCampaign:
     evidence_lines: tuple[int, ...]
     stopped: bool
     unknown_charged_attempts: tuple[int, ...]
+    ancestor_campaign_ids: tuple[str, ...]
     action: GameRequest | CampaignDecision
 
 
@@ -262,7 +267,25 @@ def _sha256(path: Path) -> str:
 
 
 def _json_line(row: Mapping[str, object]) -> str:
-    return json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+    return json.dumps(row, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
+
+
+def _validate_campaign_id(campaign_id: object) -> str:
+    if type(campaign_id) is not str or not campaign_id or campaign_id != campaign_id.strip() or ":" in campaign_id:
+        raise ValueError("campaign_id must be a nonempty plain string without whitespace padding or ':'")
+    return campaign_id
+
+
+def _fsync_directory(directory: Path) -> None:
+    """Durably persist a new directory entry, failing closed on unsupported POSIX filesystems."""
+    if os.name == "nt":  # Windows does not support opening directories for fsync.
+        return
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    directory_fd = os.open(directory, flags)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 
 
 def _append_row(path: Path, row: Mapping[str, object]) -> None:
@@ -298,8 +321,7 @@ def _validate_header(header: Mapping[str, object], records: Sequence[Mapping[str
         raise ValueError("invalid campaign header fields")
     if header.get("type") != "campaign_header" or header.get("protocol") != LEDGER_PROTOCOL:
         raise ValueError("invalid campaign header protocol")
-    if not isinstance(header.get("campaign_id"), str) or not header["campaign_id"]:
-        raise ValueError("invalid campaign header campaign_id")
+    _validate_campaign_id(header.get("campaign_id"))
     if not isinstance(header.get("identity_snapshot"), dict):
         raise ValueError("invalid campaign header identity_snapshot")
     has_parent_path = "parent_path" in header
@@ -416,6 +438,12 @@ def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: froze
         elif row_type in {"campaign_stopped", "stopped"}:
             if row_type in stop_types:
                 raise ValueError(f"duplicate {row_type} row on line {line_number}")
+            allowed_fields = {"type", "reason"} | ({"attempt_id"} if row_type == "stopped" else set())
+            if not {"type", "reason"} <= set(row) or set(row) - allowed_fields:
+                raise ValueError(f"stop row on line {line_number} has invalid fields")
+            reason = row.get("reason")
+            if type(reason) is not str or not reason.strip():
+                raise ValueError(f"stop row on line {line_number} requires a nonempty plain-string reason")
             attempt_id = row.get("attempt_id")
             if attempt_id is not None:
                 if (
@@ -429,6 +457,8 @@ def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: froze
             stopped = True
             stop_types.add(str(row_type))
         elif row_type in {"stage_started", "stage_completed"}:
+            if set(row) != {"type", "stage"} or type(row.get("stage")) is not str or row["stage"] not in STAGE_ORDER:
+                raise ValueError(f"stage control on line {line_number} has invalid stage")
             continue
         elif row_type != "reservation":
             raise ValueError(f"unknown ledger row type {row_type!r} on line {line_number}")
@@ -489,6 +519,7 @@ def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: froze
         tuple(evidence_lines),
         stopped,
         unmatched,
+        (() if parent is None else (str(parent.header["campaign_id"]), *parent.ancestor_campaign_ids)),
         action,
     )
     if not allow_stopped_for_summary:
@@ -536,13 +567,18 @@ def initialize_campaign(
     parent_sha256: str | None = None,
 ) -> LoadedCampaign:
     path = Path(path)
+    campaign_id = _validate_campaign_id(campaign_id)
     if (parent_path is None) != (parent_sha256 is None):
         raise ValueError("parent_path and exact parent SHA-256 are both required")
+    try:
+        frozen_identity = dict(identity_snapshot)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("identity_snapshot must be a JSON-serializable mapping") from exc
     header: dict[str, object] = {
         "type": "campaign_header",
         "protocol": LEDGER_PROTOCOL,
         "campaign_id": campaign_id,
-        "identity_snapshot": dict(identity_snapshot),
+        "identity_snapshot": frozen_identity,
     }
     carries: list[dict[str, object]]
     if parent_path is None:
@@ -555,6 +591,8 @@ def initialize_campaign(
         parent = load_campaign(parent_path, allow_stopped_for_summary=True)
         if not parent.stopped:
             raise ValueError("parent campaign must be stopped before evidence can be imported")
+        if campaign_id in (parent.header["campaign_id"], *parent.ancestor_campaign_ids):
+            raise ValueError(f"campaign_id {campaign_id!r} duplicates an ancestor campaign_id")
         header.update(parent_path=str(parent_path), parent_sha256=parent_sha256)
         carries = []
         for evidence, line_number in zip(parent.evidence, parent.evidence_lines):
@@ -571,14 +609,17 @@ def initialize_campaign(
                     "direct_parent_line": line_number,
                 }
             )
+    try:
+        serialized_ledger = _json_line(header) + "".join(_json_line(carry) for carry in carries)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("campaign header and carries must be JSON serializable") from exc
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("x", encoding="utf-8") as handle:
-            handle.write(_json_line(header))
-            for carry in carries:
-                handle.write(_json_line(carry))
+            handle.write(serialized_ledger)
             handle.flush()
             os.fsync(handle.fileno())
+        _fsync_directory(path.parent)
     except FileExistsError as exc:
         raise ValueError(f"campaign ledger already exists: {path}") from exc
     return load_campaign(path)
@@ -627,6 +668,9 @@ def append_result(path: str | Path, attempt_id: int, outcome: str, conclusive: b
     if type(conclusive) is not bool or (outcome == "inconclusive") == conclusive:
         raise ValueError("outcome and conclusive flag are inconsistent")
     reservation = reservations[0]
+    origin_result_id = f"{loaded.header['campaign_id']}:{attempt_id}"
+    if any(row.get("origin_result_id") == origin_result_id for row in loaded.evidence):
+        raise ValueError(f"origin_result_id {origin_result_id} already exists in campaign evidence")
     _append_row(
         Path(path),
         {
@@ -637,7 +681,7 @@ def append_result(path: str | Path, attempt_id: int, outcome: str, conclusive: b
             "color": reservation["color"],
             "outcome": outcome,
             "conclusive": conclusive,
-            "origin_result_id": f"{loaded.header['campaign_id']}:{attempt_id}",
+            "origin_result_id": origin_result_id,
         },
     )
 
@@ -655,6 +699,8 @@ def append_stop(
             raise ValueError("campaign ledger is already stopped")
     if event_type not in {"campaign_stopped", "stopped"}:
         raise ValueError("stop event type must be campaign_stopped or stopped")
+    if type(reason) is not str or not reason.strip():
+        raise ValueError("stop reason must be a nonempty plain string")
     if attempt_id is not None:
         if event_type != "stopped" or type(attempt_id) is not int:
             raise ValueError("only a stopped game may reference a plain integer attempt_id")
@@ -671,7 +717,12 @@ def append_stop(
 
 def append_stage_event(path: str | Path, event_type: str, stage: str) -> None:
     load_campaign(path)
-    if event_type not in {"stage_started", "stage_completed"} or stage not in STAGE_ORDER:
+    if (
+        type(event_type) is not str
+        or event_type not in {"stage_started", "stage_completed"}
+        or type(stage) is not str
+        or stage not in STAGE_ORDER
+    ):
         raise ValueError("invalid stage event")
     _append_row(Path(path), {"type": event_type, "stage": stage})
 

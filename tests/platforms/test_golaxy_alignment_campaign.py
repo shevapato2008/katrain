@@ -2,6 +2,7 @@ import dataclasses
 import hashlib
 import json
 import os
+import stat
 import sys
 import typing
 from pathlib import Path
@@ -290,7 +291,11 @@ def finish_request(path, attempt_id, outcome="win"):
 
 def test_initialize_writes_valid_append_only_header_seeds_exact_frozen_evidence_and_fsyncs(tmp_path, monkeypatch):
     fsync_calls = []
-    monkeypatch.setattr(os, "fsync", lambda fd: fsync_calls.append(fd))
+
+    def record_fsync(fd):
+        fsync_calls.append(os.fstat(fd).st_mode)
+
+    monkeypatch.setattr(os, "fsync", record_fsync)
     path = tmp_path / "campaign.jsonl"
 
     campaign.initialize_campaign(path, "campaign-a", {"engine": "snapshot-a"})
@@ -307,13 +312,56 @@ def test_initialize_writes_valid_append_only_header_seeds_exact_frozen_evidence_
         f"legacy:{campaign.SEED_SHA256}:{line}" for line in (2, 3, 4, 5, 12, 14, 16)
     }
     assert all(row["stage"] == "seven_d" and row["player"] == "rank_7d@1s" for row in rows[1:])
-    assert fsync_calls
+    assert any(stat.S_ISREG(mode) for mode in fsync_calls)
+    assert any(stat.S_ISDIR(mode) for mode in fsync_calls)
     assert campaign.replay_campaign(path) == campaign.GameRequest("seven_d", "rank_7d@1s", "W", 10, "confirm")
 
     fsync_calls.clear()
     campaign.append_reservation(path, 1, campaign.replay_campaign(path))
     campaign.append_result(path, 1, "win")
     assert len(fsync_calls) == 2
+    assert all(stat.S_ISREG(mode) for mode in fsync_calls)
+
+
+@pytest.mark.parametrize(
+    ("campaign_id", "identity_snapshot"),
+    [
+        ("", {}),
+        ("   ", {}),
+        (True, {}),
+        (7, {}),
+        ("bad:delimiter", {}),
+        ("valid-after-fix", {"not_json": {object()}}),
+    ],
+)
+def test_invalid_header_input_never_creates_destination_and_corrected_retry_succeeds(
+    tmp_path, campaign_id, identity_snapshot
+):
+    path = tmp_path / "campaign.jsonl"
+    with pytest.raises(ValueError, match="campaign_id|JSON|identity"):
+        campaign.initialize_campaign(path, campaign_id, identity_snapshot)
+    assert not path.exists()
+
+    campaign.initialize_campaign(path, "corrected", {"engine": "valid"})
+    assert campaign.load_campaign(path).header["campaign_id"] == "corrected"
+
+
+def test_child_rejects_reused_ancestor_campaign_id_before_creating_destination(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    campaign.initialize_campaign(parent, "same-id", {})
+    campaign.append_stop(parent, "rotate")
+    child = tmp_path / "child.jsonl"
+
+    with pytest.raises(ValueError, match="ancestor|campaign_id"):
+        campaign.initialize_campaign(child, "same-id", {}, parent, ledger_sha(parent))
+    assert not child.exists()
+
+    campaign.initialize_campaign(child, "unique-child", {}, parent, ledger_sha(parent))
+    campaign.append_stop(child, "rotate")
+    grandchild = tmp_path / "grandchild.jsonl"
+    with pytest.raises(ValueError, match="ancestor|campaign_id"):
+        campaign.initialize_campaign(grandchild, "same-id", {}, child, ledger_sha(child))
+    assert not grandchild.exists()
 
 
 def test_load_rejects_invalid_or_nonfirst_header(tmp_path):
@@ -392,6 +440,25 @@ def test_reservation_result_pairing_is_validated_and_new_result_has_immutable_or
     )
     with pytest.raises(ValueError, match="reservation"):
         campaign.load_campaign(path)
+
+
+def test_append_result_defensively_rejects_existing_generated_origin_without_appending(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    campaign.initialize_campaign(parent, "parent", {})
+    finish_request(parent, 1)
+    campaign.append_stop(parent, "rotate")
+    child = tmp_path / "child.jsonl"
+    campaign.initialize_campaign(child, "child", {}, parent, ledger_sha(parent))
+    rows = [json.loads(line) for line in child.read_text().splitlines()]
+    rows[0]["campaign_id"] = "parent"
+    child.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows))
+    campaign.append_reservation(child, 1, campaign.replay_campaign(child))
+    before = child.read_bytes()
+
+    with pytest.raises(ValueError, match="origin_result_id|already"):
+        campaign.append_result(child, 1, "win")
+    assert child.read_bytes() == before
+    assert campaign.campaign_summary(child).unknown_charged_attempts == (1,)
 
 
 def test_reservation_must_match_the_unique_replayed_task1_request(tmp_path):
@@ -565,6 +632,48 @@ def test_control_rows_are_ignored_and_resume_is_reconstructed_from_evidence(tmp_
     append_raw(path, {"type": "stage_started", "stage": "quasi_9d"})
     append_raw(path, {"type": "stage_completed", "stage": "seven_d"})
     assert campaign.replay_campaign(path).stage == "seven_d"
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        {"type": "stage_started", "stage": True},
+        {"type": "stage_completed", "stage": "not_a_stage"},
+        {"type": "stopped", "reason": ""},
+        {"type": "stopped", "reason": 7},
+        {"type": "stopped", "reason": "error", "attempt_id": True},
+        {"type": "campaign_stopped", "reason": "error", "attempt_id": 1},
+        {"type": "campaign_stopped", "reason": "error", "attempt_id": None},
+        {"type": "campaign_stopped", "reason": "   "},
+        {"type": "campaign_stopped", "reason": "error", "extra": "field"},
+        {"type": "stopped", "reason": "error", "extra": "field"},
+        {"type": "stage_started", "stage": "seven_d", "extra": "field"},
+    ],
+)
+def test_loader_strictly_validates_control_and_stop_record_schema(tmp_path, row):
+    path = tmp_path / "campaign.jsonl"
+    campaign.initialize_campaign(path, "campaign", {})
+    append_raw(path, row)
+    with pytest.raises(ValueError, match="stage|stop|reason|attempt"):
+        campaign.load_campaign(path, allow_stopped_for_summary=True)
+
+
+def test_loader_rejects_explicit_parent_cycle(tmp_path, monkeypatch):
+    path = tmp_path / "cycle.jsonl"
+    append_raw(
+        path,
+        {
+            "type": "campaign_header",
+            "protocol": campaign.LEDGER_PROTOCOL,
+            "campaign_id": "cycle",
+            "identity_snapshot": {},
+            "parent_path": str(path),
+            "parent_sha256": "0" * 64,
+        },
+    )
+    monkeypatch.setattr(campaign, "_sha256", lambda _path: "0" * 64)
+    with pytest.raises(ValueError, match="cycle"):
+        campaign.load_campaign(path)
 
 
 @pytest.mark.parametrize(

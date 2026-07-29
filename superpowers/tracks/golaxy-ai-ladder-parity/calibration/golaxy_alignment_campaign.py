@@ -65,8 +65,10 @@ def _player(stage: str, candidate_index: int | None = None) -> str:
         return "rank_7d@1s"
     if stage == "one_star_b18_1":
         return "b18@1"
-    if stage not in QUASI_PROFILES or candidate_index is None:
+    if stage not in QUASI_PROFILES:
         raise ValueError(f"unknown campaign stage: {stage}")
+    if type(candidate_index) is not int or not 0 <= candidate_index < len(GRID):
+        raise ValueError(f"candidate_index must be a plain integer from 0 through {len(GRID) - 1}")
     return f"{QUASI_PROFILES[stage]}@{GRID[candidate_index]}"
 
 
@@ -91,6 +93,8 @@ def summarize_candidate(
 ) -> Candidate:
     player = _player(stage, candidate_index)
     outcomes, inconclusive = _outcomes(records, stage, player)
+    if len(outcomes) > 10:
+        raise ValueError(f"candidate {player} has more than 10 valid results")
     first_four = outcomes[:4]
     classification = None
     if len(first_four) == 4:
@@ -147,13 +151,13 @@ def stage_decision(records: Sequence[Mapping[str, object]], stage: str) -> Stage
 
     if stage == "one_star_b18_1":
         candidate = summarize_candidate(records, stage)
+        if candidate.classification == "weak":
+            return StageDecision(stage, "weak_screen", candidate.player, candidate, evidence)
         if candidate.valid >= 10:
             status = (
                 "weak_at_10" if candidate.wins <= 3 else "aligned_at_10" if candidate.wins <= 6 else "overstrong_at_10"
             )
             return StageDecision(stage, status, candidate.player, candidate, evidence)
-        if candidate.valid >= 4 and candidate.wins <= 2:
-            return StageDecision(stage, "weak_screen", candidate.player, candidate, evidence)
         return None
 
     if stage not in QUASI_PROFILES:
@@ -221,7 +225,7 @@ def _request(records: Sequence[Mapping[str, object]], stage: str) -> GameRequest
     return GameRequest(stage, candidate.player, "B" if candidate.valid % 2 == 0 else "W", 10, phase)
 
 
-def next_action(records: Sequence[Mapping[str, object]]) -> GameRequest | StageDecision | CampaignDecision:
+def next_action(records: Sequence[Mapping[str, object]]) -> GameRequest | CampaignDecision:
     decisions: list[StageDecision] = []
     for stage in STAGE_ORDER:
         decision = stage_decision(records, stage)

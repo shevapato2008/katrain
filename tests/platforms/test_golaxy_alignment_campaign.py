@@ -1,5 +1,6 @@
 import dataclasses
 import sys
+import typing
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,15 @@ def wins(count, total):
     return ["win"] * count + ["loss"] * (total - count)
 
 
+def b18_history(screen_wins, ten_wins=None):
+    outcomes = wins(screen_wins, 4)
+    if ten_wins is not None:
+        added_wins = ten_wins - screen_wins
+        assert 0 <= added_wins <= 6
+        outcomes += wins(added_wins, 6)
+    return outcomes
+
+
 def completed_prefix():
     return results("seven_d", "rank_7d@1s", wins(5, 10)) + results("one_star_b18_1", "b18@1", wins(2, 4))
 
@@ -52,6 +62,29 @@ def test_public_records_are_frozen_and_stage_and_grid_order_are_fixed():
     assert campaign.GRID == ("1s", "4", "8", "16", "32", "64")
 
 
+@pytest.mark.parametrize("candidate_index", [-1, True, False, 6, 99])
+def test_candidate_index_must_be_a_plain_in_range_integer(candidate_index):
+    with pytest.raises(ValueError, match="candidate_index"):
+        campaign.summarize_candidate([], "quasi_5d", candidate_index)
+
+
+@pytest.mark.parametrize(
+    ("stage", "player", "candidate_index"),
+    [
+        ("seven_d", "rank_7d@1s", None),
+        ("one_star_b18_1", "b18@1", None),
+        ("quasi_5d", "rank_4d@8", 2),
+    ],
+)
+def test_candidate_rejects_more_than_ten_valid_results(stage, player, candidate_index):
+    with pytest.raises(ValueError, match="more than 10 valid"):
+        campaign.summarize_candidate(results(stage, player, wins(6, 11)), stage, candidate_index)
+
+
+def test_next_action_return_annotation_matches_runtime_variants():
+    assert typing.get_type_hints(campaign.next_action)["return"] == campaign.GameRequest | campaign.CampaignDecision
+
+
 def test_seven_d_reuses_seven_valid_results_and_completes_at_ten():
     records = results("seven_d", "rank_7d@1s", wins(4, 7))
     assert campaign.next_action(records) == campaign.GameRequest("seven_d", "rank_7d@1s", "W", 10, "confirm")
@@ -65,7 +98,6 @@ def test_seven_d_reuses_seven_valid_results_and_completes_at_ten():
     [
         (0, None, "weak_screen"),
         (2, None, "weak_screen"),
-        (3, 0, "weak_at_10"),
         (3, 3, "weak_at_10"),
         (3, 4, "aligned_at_10"),
         (4, 6, "aligned_at_10"),
@@ -75,11 +107,15 @@ def test_seven_d_reuses_seven_valid_results_and_completes_at_ten():
 )
 def test_b18_fixed_point_terminal_statuses(screen_wins, ten_wins, status):
     records = results("seven_d", "rank_7d@1s", wins(5, 10))
-    total = 4 if ten_wins is None else 10
-    final_wins = screen_wins if ten_wins is None else ten_wins
-    records += results("one_star_b18_1", "b18@1", wins(final_wins, total))
+    records += results("one_star_b18_1", "b18@1", b18_history(screen_wins, ten_wins))
     decision = campaign.stage_decision(records, "one_star_b18_1")
     assert (decision.status, decision.selected_player) == (status, "b18@1")
+
+
+def test_b18_weak_first_four_remains_weak_screen_when_trailing_evidence_exists():
+    records = results("one_star_b18_1", "b18@1", b18_history(2, 8))
+    decision = campaign.stage_decision(records, "one_star_b18_1")
+    assert (decision.status, decision.selected_player) == ("weak_screen", "b18@1")
 
 
 def test_b18_strong_screen_is_extended_to_ten():

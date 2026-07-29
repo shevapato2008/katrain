@@ -9,6 +9,7 @@ import dataclasses
 import fcntl
 import json
 import math
+import os
 import re
 import sys
 import uuid
@@ -20,7 +21,14 @@ from typing import Awaitable, Callable, Mapping
 
 import httpx
 
-sys.path.insert(0, str(Path(__file__).parent))
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPT_DIR.parents[3]
+for _bootstrap_path in (str(_REPO_ROOT), str(_SCRIPT_DIR)):
+    while _bootstrap_path in sys.path:
+        sys.path.remove(_bootstrap_path)
+sys.path[:0] = [str(_REPO_ROOT), str(_SCRIPT_DIR)]
+os.environ.setdefault("KIVY_NO_ARGS", "1")
+
 import adapters  # noqa: E402
 import golaxy_alignment_campaign  # noqa: E402
 import run_golaxy_9d_alignment  # noqa: E402

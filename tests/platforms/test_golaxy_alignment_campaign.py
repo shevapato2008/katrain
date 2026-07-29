@@ -5,6 +5,7 @@ import importlib
 import json
 import os
 import stat
+import subprocess
 import sys
 import typing
 from pathlib import Path
@@ -1728,3 +1729,29 @@ async def test_initial_health_failure_creates_permanently_stopped_new_or_child_l
     assert loaded.records[-1]["type"] == "campaign_stopped"
     assert not any(row["type"] == "reservation" for row in loaded.records)
     assert events[-1]["event"] == "campaign_stopped"
+
+
+def test_direct_cli_pins_current_repo_katrain_before_poisoned_pythonpath_and_disables_kivy_args(tmp_path):
+    poison = tmp_path / "poison"
+    fake_katrain = poison / "katrain"
+    fake_katrain.mkdir(parents=True)
+    (fake_katrain / "__init__.py").write_text("raise RuntimeError('POISON_KATRAIN')\n", encoding="utf-8")
+    script = CALIBRATION / "run_golaxy_alignment_campaign.py"
+    python = Path(__file__).resolve().parents[2] / ".venv/bin/python"
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(poison)
+    env.pop("KIVY_NO_ARGS", None)
+
+    completed = subprocess.run(
+        [str(python), str(script), "--help"],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--parent-sha256" in completed.stdout
+    assert "Kivy Usage" not in completed.stdout
+    assert "POISON_KATRAIN" not in completed.stderr

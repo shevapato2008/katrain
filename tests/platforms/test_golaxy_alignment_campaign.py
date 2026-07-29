@@ -193,6 +193,18 @@ def test_native_one_second_requires_valid_human_policy_without_requiring_wrapper
         runner.select_player_move(analysis, player, runner.build_identity_snapshot(campaign_health()))
 
 
+def test_native_one_second_rejects_boolean_in_human_policy():
+    player = runner.make_campaign_player("rank_8d@1s")
+    human_policy = [0.0] * 362
+    human_policy[0] = 0.8
+    human_policy[1] = True
+
+    with pytest.raises(runner.LadderMoveError, match="humanPolicy"):
+        runner.select_player_move(
+            {"humanPolicy": human_policy}, player, runner.build_identity_snapshot(campaign_health())
+        )
+
+
 @pytest.mark.parametrize("visits", [4, 8, 16, 32, 64])
 def test_humansl_search_query_routes_b18_with_profile_and_full_canonical_pikl(visits):
     player = runner.make_campaign_player(f"rank_6d@{visits}")
@@ -285,6 +297,31 @@ def test_pure_b18_rejects_policy_when_root_visits_are_not_exactly_one(captured_b
 
     with pytest.raises(runner.LadderMoveError, match="rootInfo.visits.*exactly 1"):
         runner.select_player_move(wrong_visits, player, snapshot)
+
+
+def test_pure_b18_rejects_boolean_in_native_policy(captured_b18_one_visit_response):
+    player = runner.make_campaign_player("b18@1")
+    snapshot = runner.build_identity_snapshot(campaign_health())
+    policy = list(captured_b18_one_visit_response["policy"])
+    policy[1] = False
+    response = dict(captured_b18_one_visit_response, policy=policy)
+
+    with pytest.raises(runner.LadderMoveError, match="native policy"):
+        runner.select_player_move(response, player, snapshot)
+
+
+def test_campaign_policy_validation_retains_finite_negative_sentinels(captured_b18_one_visit_response):
+    snapshot = runner.build_identity_snapshot(campaign_health())
+    human_policy = [0.0] * 362
+    human_policy[0], human_policy[1] = 0.8, -1.0
+    assert runner.select_player_move(
+        {"humanPolicy": human_policy}, runner.make_campaign_player("rank_8d@1s"), snapshot
+    ) == (0, 18)
+
+    native_policy = list(captured_b18_one_visit_response["policy"])
+    native_policy[1] = -1.0
+    response = dict(captured_b18_one_visit_response, policy=native_policy)
+    assert runner.select_player_move(response, runner.make_campaign_player("b18@1"), snapshot) == (3, 15)
 
 
 @pytest.mark.parametrize(

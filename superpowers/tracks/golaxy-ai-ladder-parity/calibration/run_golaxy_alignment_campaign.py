@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass
@@ -328,6 +329,15 @@ def _snapshot_identity(snapshot: Mapping[str, object], alias: str) -> Mapping[st
     return models[alias]
 
 
+def _valid_campaign_policy(policy: object) -> bool:
+    return bool(
+        isinstance(policy, list)
+        and len(policy) == BOARD_SIZE * BOARD_SIZE + 1
+        and all(type(value) in (int, float) and math.isfinite(value) for value in policy)
+        and sum(value for value in policy if value > 0) > 0
+    )
+
+
 def _validate_explicit_b18_attestation(
     analysis: object, snapshot: Mapping[str, object], *, require_human: bool
 ) -> None:
@@ -367,7 +377,7 @@ def select_player_move(analysis: object, player: CampaignPlayer, identity_snapsh
         if not isinstance(analysis, Mapping):
             raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
         human_policy = analysis.get("humanPolicy")
-        if not run_selfplay._valid_policy(human_policy, BOARD_SIZE * BOARD_SIZE + 1):
+        if not _valid_campaign_policy(human_policy):
             raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
         # `_wrapper` and moveInfos are intentionally untouched: neither may influence native @1s.
         return run_selfplay._pick_argmax_human(human_policy, (BOARD_SIZE, BOARD_SIZE))
@@ -385,7 +395,7 @@ def select_player_move(analysis: object, player: CampaignPlayer, identity_snapsh
         if not isinstance(analysis, Mapping) or analysis.get("moveInfos") != []:
             raise LadderMoveError("b18@1 requires exactly empty moveInfos")
         policy = analysis.get("policy")
-        if not run_selfplay._valid_policy(policy, BOARD_SIZE * BOARD_SIZE + 1):
+        if not _valid_campaign_policy(policy):
             raise LadderMoveError("b18@1 requires a valid 362-entry native policy")
         return run_selfplay._pick_argmax_human(policy, (BOARD_SIZE, BOARD_SIZE))
     return pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), player.rung.mechanism)

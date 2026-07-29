@@ -1036,6 +1036,36 @@ b28 的 wiring bug。
 `selfplay_summary.json` SHA-256 为
 `166a46f2b99d977f8e3cae87ffc3212a07991cea9f9837353a6433a5df3c9cdd`。
 
+### C29. 星阵1星与准5D–准9D串行对标续跑完成（2026-07-30）
+
+本轮以 §C26 的停止账本作为只读父账本，并绑定父文件 SHA-256
+`da354ddadf07a2bd2963c99cab94798c87be3f62822207c69338364410952699` 创建 v2 child ledger。为满足用户
+明确要求，v2 将星阵1星 `b18@1` 从原先4盘筛选改为无条件累计10个有效结果；v1 的历史重放语义保持不变，
+避免用新规则解释旧账本。准5D–准9D继续采用低一段 HumanSL profile 和
+`@1s/@4/@8/@16/@32/@64` 网格，复用同配置历史结果，不重复对局。
+
+全部新对局严格单盘串行、盘间冷却5秒；出现7002或任何远端错误即停止且不重试。本轮新增41条
+reservation，全部由41条 result 闭合，没有 stopped、7002或其他远端错误。连同74条继承结果，离线重放
+共校验115条唯一来源证据，最终状态为 `completed`，未知计费尝试为空。
+
+| 星阵等级 | 候选路径与证据 | 最终选定档 | 10盘战绩 | 不可判定 | 结论 |
+|---|---|---|---:|---:|---|
+| 1星 | `b18@1` 原2–2，续跑4–2 | `b18@1` | **6–4** | 0 | 10盘对齐完成 |
+| 准5D | `rank_4d@8` 3–1；`rank_4d@1s` 9–1 | `rank_4d@1s` | **9–1** | 0 | 网格下界仍过强 |
+| 准6D | `rank_5d@8` 4–0；`rank_5d@1s` 10–0 | `rank_5d@1s` | **10–0** | 0 | 网格下界仍过强 |
+| 准7D | `rank_6d@8` 4–0；`rank_6d@1s` 9–1 | `rank_6d@1s` | **9–1** | 0 | 网格下界仍过强 |
+| 准8D | `rank_7d@8` 4–0；`@4` 10–0；`@1s` 7–3 | `rank_7d@1s` | **7–3** | 4 | 已确认候选中最接近5–5 |
+| 准9D | `rank_8d@8` 4–0；`@4` 9–1；`@1s` 6–4 | `rank_8d@1s` | **6–4** | 1 | 已确认候选中最接近5–5 |
+
+准5D–准7D的 `@1s` 已是预声明网格下界，因此状态记为 `overstrong_at_grid_floor`，不虚称五五开；准8D、
+准9D分别选取已补满10个有效结果且更接近5–5的 `rank_7d@1s` 与 `rank_8d@1s`。不可判定局不进入
+10盘有效样本分母。
+
+正式 append-only v2 账本包含1条 header、74条 carry result、41条 reservation、41条 result、
+3条 stage started和3条 stage completed：
+`calibration/results/golaxy_alignment_campaign_20260730/campaign_v2.jsonl`，SHA-256
+`4eff5434cd864215a35171d635e4268d06f31f45ca6be27e82e4e0a1105f64d5`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -1063,10 +1093,10 @@ b28 的 wiring bug。
   用户决定直接保留，8D采用 `rank_8d@1s`（6–4），9D现有最佳五五开证据为 `rank_9d@4`（5–5）。
   7D `rank_7d@1s` 在 §C25 补至4–3后遇7002，尚差3个有效结果；9D `rank_9d@6` 追加赛未启动，
   保持历史4–1。待软封禁解除后只能从新账本人工审计续跑，不得自动重试 stopped 账本。
-- [ ] **准5D–准9D低一段 HumanSL 对标**:§C26 已完成准5D `rank_4d@1s` 9–1、准6D
-  `rank_5d@1s` 10–0、准7D `rank_6d@1s` 9–1；准8D最低强侧 `rank_7d@4` 已10–0，但相邻弱侧
-  `rank_7d@1s` 仅2–2，补样首盘遇7002。准9D尚未启动。只能在软封禁解除后以新 child ledger、
-  精确父 SHA 恢复，不得续写或自动重试已停止账本。
+- [x] **星阵1星 `b18@1` 与准5D–准9D低一段 HumanSL 对标**:§C29 已从精确绑定 §C26 父 SHA 的
+  新 child ledger 恢复并完成。1星 `b18@1` 为6–4；准5D–准7D的网格下界 `@1s` 分别为9–1、
+  10–0、9–1，仍明显过强；准8D `rank_7d@1s` 为7–3，准9D `rank_8d@1s` 为6–4。全程串行，
+  41条新 reservation 全部闭合且无远端错误。
 - [x] **星阵3星 HumanSL visits 固定筛选**:§C20 的 `rank_9d@8/@16/@32/@64` 各完成5个有效结果，
   四档均为 **0–5**，合计0–20；因 `@8` 非5–0，按条件协议未运行 `@4/@2`。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
@@ -1091,6 +1121,7 @@ b28 的 wiring bug。
 | 星阵8D `rank_8d@4` 固定筛选 | `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl` |
 | 星阵7D `rank_7d@4` 固定筛选 | `calibration/results/golaxy_7d_rank_7d_4_20260724/fixed_screen.jsonl` |
 | 7D、1星与准5D–准9D串行活动 | `calibration/results/golaxy_alignment_campaign_20260729/campaign_v1.jsonl` |
+| 1星与准5D–准9D串行续跑完成 | `calibration/results/golaxy_alignment_campaign_20260730/campaign_v2.jsonl` |
 | 同段位 HumanSL `@1` vs `@1s`（1D–9D） | `calibration/results/selfplay_v2_same_rank_sampling_vs_argmax_20260729/` |
 | 低一段 HumanSL `@1s` vs 高一段 `@1`（1D–9D接缝） | `calibration/results/selfplay_v2_adjacent_argmax_vs_sampling_20260729/` |
 | 星阵3星 `rank_9d@8/@16/@32/@64` 固定筛选 | `calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl` |

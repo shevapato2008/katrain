@@ -178,8 +178,6 @@ def stage_decision(records: Sequence[Mapping[str, object]], stage: str) -> Stage
 
     if stage == "one_star_b18_1":
         candidate = summarize_candidate(records, stage)
-        if candidate.classification == "weak":
-            return StageDecision(stage, "weak_screen", candidate.player, candidate, evidence)
         if candidate.valid >= 10:
             status = (
                 "weak_at_10" if candidate.wins <= 3 else "aligned_at_10" if candidate.wins <= 6 else "overstrong_at_10"

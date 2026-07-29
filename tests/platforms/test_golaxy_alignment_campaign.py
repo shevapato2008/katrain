@@ -480,7 +480,7 @@ def b18_history(screen_wins, ten_wins=None):
 
 
 def completed_prefix():
-    return results("seven_d", "rank_7d@1s", wins(5, 10)) + results("one_star_b18_1", "b18@1", wins(2, 4))
+    return results("seven_d", "rank_7d@1s", wins(5, 10)) + results("one_star_b18_1", "b18@1", wins(5, 10))
 
 
 def test_public_records_are_frozen_and_stage_and_grid_order_are_fixed():
@@ -537,8 +537,6 @@ def test_seven_d_reuses_seven_valid_results_and_completes_at_ten():
 @pytest.mark.parametrize(
     ("screen_wins", "ten_wins", "status"),
     [
-        (0, None, "weak_screen"),
-        (2, None, "weak_screen"),
         (3, 3, "weak_at_10"),
         (3, 4, "aligned_at_10"),
         (4, 6, "aligned_at_10"),
@@ -553,10 +551,18 @@ def test_b18_fixed_point_terminal_statuses(screen_wins, ten_wins, status):
     assert (decision.status, decision.selected_player) == (status, "b18@1")
 
 
-def test_b18_weak_first_four_remains_weak_screen_when_trailing_evidence_exists():
+@pytest.mark.parametrize("screen_wins", [0, 2])
+def test_b18_weak_screen_is_extended_to_ten(screen_wins):
+    records = results("seven_d", "rank_7d@1s", wins(5, 10))
+    records += results("one_star_b18_1", "b18@1", wins(screen_wins, 4))
+    assert campaign.stage_decision(records, "one_star_b18_1") is None
+    assert campaign.next_action(records) == campaign.GameRequest("one_star_b18_1", "b18@1", "B", 10, "confirm")
+
+
+def test_b18_weak_first_four_uses_all_ten_results_for_terminal_status():
     records = results("one_star_b18_1", "b18@1", b18_history(2, 8))
     decision = campaign.stage_decision(records, "one_star_b18_1")
-    assert (decision.status, decision.selected_player) == ("weak_screen", "b18@1")
+    assert (decision.status, decision.selected_player) == ("overstrong_at_10", "b18@1")
 
 
 def test_b18_strong_screen_is_extended_to_ten():
@@ -1118,7 +1124,7 @@ def test_loader_rejects_explicit_parent_cycle(tmp_path, monkeypatch):
     [
         ([], "seven_d"),
         (["win", "win", "win"], "one_star_b18_1"),
-        (["win", "win", "win", "loss", "loss", "loss", "win"], "quasi_5d"),
+        (["win", "win", "win", *wins(5, 10)], "quasi_5d"),
     ],
 )
 def test_fresh_load_reconstructs_unique_resume_stage_from_evidence(tmp_path, completed_outcomes, expected_stage):

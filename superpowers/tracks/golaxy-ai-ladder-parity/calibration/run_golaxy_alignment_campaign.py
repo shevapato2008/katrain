@@ -46,6 +46,7 @@ COOLDOWN_SECONDS = 5.0
 REFEREE_VISITS = 200
 STABILITY_VISITS = 800
 STABILITY_DELTA = 1.0
+UNAVAILABLE_IDENTITY_SNAPSHOT = {"status": "unavailable", "reason": "health_bootstrap_failed"}
 QUASI_PROFILES = dict(golaxy_alignment_campaign.QUASI_PROFILES)
 _GRID_VISITS = {4, 8, 16, 32, 64}
 _PROFILE_RE = re.compile(r"rank_[4-8]d")
@@ -794,10 +795,26 @@ async def _run_live(args: argparse.Namespace) -> dict:
                     raise ValueError(f"parent SHA-256 mismatch for {parent}")
                 if not golaxy_alignment_campaign.campaign_summary(parent).stopped:
                     raise ValueError("parent campaign must be stopped before recovery")
-            async with httpx.AsyncClient(follow_redirects=False, trust_env=False) as local_client:
-                response = await local_client.get(f"{BASE_URL}/health", timeout=httpx.Timeout(30.0, connect=10.0))
-                health = dict(run_golaxy_9d_alignment._json_response(response, "/health"))
-                snapshot = build_identity_snapshot(health)
+            try:
+                async with httpx.AsyncClient(follow_redirects=False, trust_env=False) as local_client:
+                    response = await local_client.get(f"{BASE_URL}/health", timeout=httpx.Timeout(30.0, connect=10.0))
+                    health = dict(run_golaxy_9d_alignment._json_response(response, "/health"))
+                    snapshot = build_identity_snapshot(health)
+            except Exception as exc:
+                # No trustworthy engine identity exists to freeze. Persist an explicitly unusable
+                # header so this charged campaign lineage has a durable terminal audit record,
+                # while successful ledgers continue to contain only the actual attested snapshot.
+                golaxy_alignment_campaign.initialize_campaign(
+                    path,
+                    f"campaign-{uuid.uuid4().hex}",
+                    UNAVAILABLE_IDENTITY_SNAPSHOT,
+                    args.parent,
+                    args.parent_sha256,
+                )
+                reason = f"health bootstrap failed: {exc}"
+                golaxy_alignment_campaign.append_stop(path, reason)
+                _emit_default({"event": "campaign_stopped", "reason": reason})
+                raise CampaignStopped(reason) from exc
             loaded = golaxy_alignment_campaign.initialize_campaign(
                 path,
                 f"campaign-{uuid.uuid4().hex}",

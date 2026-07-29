@@ -1679,5 +1679,52 @@ async def test_run_live_persists_and_emits_outer_preflight_failure_for_new_and_c
         await runner._run_live(args)
     loaded = campaign.campaign_summary(out)
     assert loaded.stopped is True
+    assert loaded.header["identity_snapshot"] == runner.build_identity_snapshot(campaign_health())
     assert loaded.records[-1]["type"] == "campaign_stopped"
+    assert events[-1]["event"] == "campaign_stopped"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("recover", [False, True])
+@pytest.mark.parametrize("failure", ["network", "parse", "identity"])
+async def test_initial_health_failure_creates_permanently_stopped_new_or_child_ledger(
+    tmp_path, monkeypatch, recover, failure
+):
+    out = tmp_path / f"{failure}-out.jsonl"
+    argv = ["--out", str(out)]
+    if recover:
+        parent = tmp_path / f"{failure}-parent.jsonl"
+        campaign.initialize_campaign(parent, f"{failure}-parent", campaign_health())
+        campaign.append_stop(parent, "rotate")
+        argv += ["--parent", str(parent), "--parent-sha256", ledger_sha(parent)]
+    args = runner.build_parser().parse_args(argv)
+    events = []
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def get(self, url, **_kwargs):
+            request = httpx.Request("GET", url)
+            if failure == "network":
+                raise httpx.ConnectError("health unavailable", request=request)
+            if failure == "parse":
+                return httpx.Response(200, text="not-json", request=request)
+            unhealthy = campaign_health()
+            unhealthy["models"]["b18"]["model_sha256_verified"] = False
+            return httpx.Response(200, json=unhealthy, request=request)
+
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: Client())
+    monkeypatch.setattr(runner, "_emit_default", events.append)
+
+    with pytest.raises(runner.CampaignStopped, match="health bootstrap failed"):
+        await runner._run_live(args)
+    loaded = campaign.campaign_summary(out)
+    assert loaded.stopped is True
+    assert loaded.header["identity_snapshot"] == runner.UNAVAILABLE_IDENTITY_SNAPSHOT
+    assert loaded.records[-1]["type"] == "campaign_stopped"
+    assert not any(row["type"] == "reservation" for row in loaded.records)
     assert events[-1]["event"] == "campaign_stopped"

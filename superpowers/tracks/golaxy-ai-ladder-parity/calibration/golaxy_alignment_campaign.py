@@ -31,7 +31,9 @@ QUASI_PROFILES = {
     "quasi_8d": "rank_7d",
     "quasi_9d": "rank_8d",
 }
-LEDGER_PROTOCOL = "golaxy-alignment-campaign-v1"
+LEGACY_LEDGER_PROTOCOL = "golaxy-alignment-campaign-v1"
+LEDGER_PROTOCOL = "golaxy-alignment-campaign-v2"
+SUPPORTED_LEDGER_PROTOCOLS = frozenset({LEGACY_LEDGER_PROTOCOL, LEDGER_PROTOCOL})
 SEED_SHA256 = "c3a782609b47f812df26c1aacf871c72c2661581687773b2059eac642b4efbc2"
 SEED_PATH = (
     Path(__file__).resolve().parent / "results/golaxy_humansl_rank7_rank9_refinement_20260728/refinement_v1.jsonl"
@@ -168,7 +170,14 @@ def _binary_boundary(records: Sequence[Mapping[str, object]], stage: str) -> tup
     return lo, hi, None
 
 
-def stage_decision(records: Sequence[Mapping[str, object]], stage: str) -> StageDecision | None:
+def stage_decision(
+    records: Sequence[Mapping[str, object]],
+    stage: str,
+    *,
+    protocol: str = LEDGER_PROTOCOL,
+) -> StageDecision | None:
+    if protocol not in SUPPORTED_LEDGER_PROTOCOLS:
+        raise ValueError(f"unsupported campaign protocol: {protocol!r}")
     evidence = _stage_evidence(records, stage)
     if stage == "seven_d":
         candidate = summarize_candidate(records, stage)
@@ -178,6 +187,8 @@ def stage_decision(records: Sequence[Mapping[str, object]], stage: str) -> Stage
 
     if stage == "one_star_b18_1":
         candidate = summarize_candidate(records, stage)
+        if protocol == LEGACY_LEDGER_PROTOCOL and candidate.classification == "weak":
+            return StageDecision(stage, "weak_screen", candidate.player, candidate, evidence)
         if candidate.valid >= 10:
             status = (
                 "weak_at_10" if candidate.wins <= 3 else "aligned_at_10" if candidate.wins <= 6 else "overstrong_at_10"
@@ -250,10 +261,12 @@ def _request(records: Sequence[Mapping[str, object]], stage: str) -> GameRequest
     return GameRequest(stage, candidate.player, "B" if candidate.valid % 2 == 0 else "W", 10, phase)
 
 
-def next_action(records: Sequence[Mapping[str, object]]) -> GameRequest | CampaignDecision:
+def next_action(
+    records: Sequence[Mapping[str, object]], *, protocol: str = LEDGER_PROTOCOL
+) -> GameRequest | CampaignDecision:
     decisions: list[StageDecision] = []
     for stage in STAGE_ORDER:
-        decision = stage_decision(records, stage)
+        decision = stage_decision(records, stage, protocol=protocol)
         if decision is None:
             return _request(records, stage)
         decisions.append(decision)
@@ -317,7 +330,7 @@ def _validate_header(header: Mapping[str, object], records: Sequence[Mapping[str
     optional = {"parent_path", "parent_sha256"}
     if not required <= set(header) or set(header) - required - optional:
         raise ValueError("invalid campaign header fields")
-    if header.get("type") != "campaign_header" or header.get("protocol") != LEDGER_PROTOCOL:
+    if header.get("type") != "campaign_header" or header.get("protocol") not in SUPPORTED_LEDGER_PROTOCOLS:
         raise ValueError("invalid campaign header protocol")
     _validate_campaign_id(header.get("campaign_id"))
     if not isinstance(header.get("identity_snapshot"), dict):
@@ -362,6 +375,7 @@ def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: froze
     rows = _read_rows(path)
     header, records = rows[0], rows[1:]
     _validate_header(header, records)
+    protocol = str(header["protocol"])
 
     parent: LoadedCampaign | None = None
     parent_sha: str | None = None
@@ -491,7 +505,7 @@ def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: froze
         elif row.get("type") == "reservation":
             if open_attempt is not None:
                 raise ValueError(f"reservation on line {line_number} overlaps unmatched reservation {open_attempt}")
-            expected = next_action(replayed)
+            expected = next_action(replayed, protocol=protocol)
             if not isinstance(expected, GameRequest) or any(
                 row.get(key) != getattr(expected, key) for key in request_keys
             ):
@@ -508,7 +522,7 @@ def _load_campaign(path: Path, allow_stopped_for_summary: bool, ancestors: froze
             open_attempt = None
 
     unmatched = tuple(sorted(set(reservations) - completed_attempts))
-    action = next_action(evidence)
+    action = next_action(evidence, protocol=protocol)
     loaded = LoadedCampaign(
         path,
         header,

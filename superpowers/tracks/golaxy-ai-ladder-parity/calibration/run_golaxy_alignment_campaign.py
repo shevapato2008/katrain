@@ -653,12 +653,13 @@ async def execute_serial_campaign(
 def _validate_summary_control_flow(loaded: golaxy_alignment_campaign.LoadedCampaign) -> None:
     replayed: list[Mapping[str, object]] = []
     active_stage: str | None = None
+    protocol = str(loaded.header["protocol"])
     for line_number, row in enumerate(loaded.records, 2):
         row_type = row.get("type")
         if row_type == "carry_result":
             replayed.append(row)
         elif row_type == "stage_started":
-            expected = golaxy_alignment_campaign.next_action(replayed)
+            expected = golaxy_alignment_campaign.next_action(replayed, protocol=protocol)
             if (
                 active_stage is not None
                 or not isinstance(expected, golaxy_alignment_campaign.GameRequest)
@@ -675,7 +676,10 @@ def _validate_summary_control_flow(loaded: golaxy_alignment_campaign.LoadedCampa
             replayed.append(row)
         elif row_type == "stage_completed":
             stage = row.get("stage")
-            if active_stage != stage or golaxy_alignment_campaign.stage_decision(replayed, str(stage)) is None:
+            if (
+                active_stage != stage
+                or golaxy_alignment_campaign.stage_decision(replayed, str(stage), protocol=protocol) is None
+            ):
                 raise ValueError(f"invalid stage_completed ordering on line {line_number}")
             active_stage = None
 
@@ -685,8 +689,9 @@ def summarize_campaign(path: str | Path) -> dict:
     loaded = golaxy_alignment_campaign.campaign_summary(path)
     _validate_summary_control_flow(loaded)
     decisions = []
+    protocol = str(loaded.header["protocol"])
     for stage in golaxy_alignment_campaign.STAGE_ORDER:
-        decision = golaxy_alignment_campaign.stage_decision(loaded.evidence, stage)
+        decision = golaxy_alignment_campaign.stage_decision(loaded.evidence, stage, protocol=protocol)
         if decision is None:
             break
         decisions.append(dataclasses.asdict(decision))

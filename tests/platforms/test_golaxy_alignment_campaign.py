@@ -807,6 +807,54 @@ def test_child_rejects_reused_ancestor_campaign_id_before_creating_destination(t
     assert not grandchild.exists()
 
 
+def test_legacy_v1_weak_screen_parent_seeds_v2_ten_game_child(tmp_path):
+    parent = tmp_path / "legacy-v1.jsonl"
+    campaign.initialize_campaign(parent, "legacy-v1", {})
+    rows = [json.loads(line) for line in parent.read_text().splitlines()]
+    rows[0]["protocol"] = "golaxy-alignment-campaign-v1"
+    parent.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows))
+
+    for attempt, outcome in enumerate(["win", "win", "win", "loss", "loss", "win", "win"], 1):
+        finish_request(parent, attempt, outcome)
+    append_raw(
+        parent,
+        {
+            "type": "reservation",
+            "attempt_id": 8,
+            "stage": "quasi_5d",
+            "player": "rank_4d@8",
+            "color": "B",
+            "target_valid": 4,
+            "phase": "screen",
+        },
+    )
+    append_raw(
+        parent,
+        {
+            "type": "result",
+            "attempt_id": 8,
+            "stage": "quasi_5d",
+            "player": "rank_4d@8",
+            "color": "B",
+            "outcome": "win",
+            "conclusive": True,
+            "origin_result_id": "legacy-v1:8",
+        },
+    )
+    append_raw(parent, {"type": "campaign_stopped", "reason": "rotate"})
+
+    legacy = campaign.campaign_summary(parent)
+    assert legacy.action.stage == "quasi_5d"
+    assert campaign.stage_decision(
+        legacy.evidence, "one_star_b18_1", protocol=str(legacy.header["protocol"])
+    ).status == "weak_screen"
+
+    child = tmp_path / "v2-child.jsonl"
+    loaded = campaign.initialize_campaign(child, "v2-child", {}, parent, ledger_sha(parent))
+    assert loaded.header["protocol"] == "golaxy-alignment-campaign-v2"
+    assert loaded.action == campaign.GameRequest("one_star_b18_1", "b18@1", "B", 10, "confirm")
+
+
 def test_load_rejects_invalid_or_nonfirst_header(tmp_path):
     missing_protocol = tmp_path / "missing.jsonl"
     missing_protocol.write_text('{"type":"campaign_header","campaign_id":"x","identity_snapshot":{}}\n')

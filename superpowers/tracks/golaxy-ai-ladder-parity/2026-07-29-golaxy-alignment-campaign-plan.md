@@ -114,8 +114,9 @@
     selection is argmax-only, and `_wrapper` is neither required nor trusted for move selection;
   - `@4+`: query explicitly routes b18, includes humanv0 profile + canonical PIKL, and every response must attest
     `_wrapper.selected_model=b18` plus frozen b18/humanv0 paths and SHAs;
-  - pure `b18@1`: query explicitly routes b18, contains no HumanSL/PIKL controls, selects non-empty `moveInfos`, and every
-    response must attest actual b18 identity. A b28 or missing-wrapper response fails closed for both explicit-b18 modes.
+  - pure `b18@1`: query explicitly routes b18, contains no HumanSL/PIKL controls, requires empty `moveInfos` plus a valid
+    362-entry native b18 `policy`, selects its deterministic argmax, and every response must attest actual b18 identity.
+    A b28 or missing-wrapper response fails closed for both explicit-b18 modes.
 
 - [ ] **Step 2: Verify RED**
 
@@ -125,10 +126,12 @@
 
 - [ ] **Step 3: Implement adapters and preflight**
 
-  Reuse `run_golaxy_9d_alignment.common_preflight` and `play_alignment_game`. Construct pure b18 directly as a
-  `LadderRung`; validate exact effective queries. Persist the `/health` snapshot for default model, b18, and attached humanv0
-  into the campaign header before any stage starts. Apply per-response `_wrapper` attestation only to explicitly routed b18;
-  validate native `@1s` through the frozen default-process humanv0 mount, humanPolicy presence, and argmax-only selection.
+  Reuse lower-level transport/adjudication pieces, but implement campaign-specific preflight and move callbacks because the old
+  alignment helper assumes PIKL for every search selection and wrapper attestation for native `@1s`. Construct pure b18 directly
+  as a `LadderRung`; validate exact effective queries. Persist the `/health` snapshot for default model, b18, and attached
+  humanv0 into the campaign header before any stage starts. Apply per-response `_wrapper` attestation only to explicitly routed
+  b18; validate native `@1s` through the frozen default-process humanv0 mount, humanPolicy presence, and argmax-only selection.
+  Add async MockTransport coverage for campaign-specific preflight and per-move behavior in all three modes.
 
 - [ ] **Step 4: Verify GREEN**
 

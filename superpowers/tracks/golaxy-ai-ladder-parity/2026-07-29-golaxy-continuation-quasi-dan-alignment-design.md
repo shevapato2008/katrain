@@ -26,7 +26,8 @@
 
 - `@1s` 必须是 humanv0 `humanPolicy` 单 visit、确定性 argmax；wrapper可运行默认主模型，但不得使用主模型结果选点。
 - `@4` 及以上必须显式请求 b18 主网 + humanv0 + canonical PIKL，并逐请求校验模型路径、SHA和有效查询参数。
-- `b18@1` 必须显式请求纯 b18、1 visit、无 human model/profile/PIKL；不得回落到默认 b28。
+- `b18@1` 必须显式请求纯 b18、1 visit、无 human profile/PIKL；不得回落到默认 b28。KataGo单visit
+  只评估根节点、`moveInfos`为空，因此该档固定从b18原生 `policy` 取确定性argmax，不虚构搜索首选手。
 
 ## 调度与判定
 
@@ -84,9 +85,10 @@ result/stopped的本地崩溃视为 `unknown_charged_attempt`，不得自动续�
 |---|---|---|
 | `rank_Nd@1s` | 请求省略 `model`；服务端可回显已冻结的默认主模型，但其 `human_model_path/SHA` 必须是humanv0 | 只取返回的 `humanPolicy` argmax，绝不取 `moveInfos` |
 | `rank_Nd@4+` | 请求显式 `model=b18`；响应 `_wrapper.selected_model=b18`，b18主模型和humanv0路径/SHA均匹配 | `moveInfos`，且请求含正确profile和完整canonical PIKL |
-| `b18@1` | 请求显式 `model=b18`；响应实际b18路径/SHA匹配；服务进程即使挂载humanv0也允许回显 | `moveInfos`；请求必须无 `humanSLProfile` 和全部PIKL字段 |
+| `b18@1` | 请求显式 `model=b18`；响应实际b18路径/SHA匹配；服务进程即使挂载humanv0也允许回显 | b18原生 `policy` argmax；请求必须无 `humanSLProfile` 和全部PIKL字段 |
 
-因此“空值”要求作用于请求语义字段，而不是要求服务进程卸载human模型。每次显式b18分析都必须校验响应中的
+因此“空值”要求作用于请求语义字段，而不是要求服务进程卸载human模型。`b18@1` 响应必须有长度362的合法
+`policy` 且 `moveInfos` 为空。每次显式b18分析都必须校验响应中的
 实际 `_wrapper` 身份；`@1s` 则校验冻结默认进程挂载的humanv0身份、合法humanPolicy和argmax选择算法。任何
 回显缺失、显式b18请求回显为b28、或选点来源漂移都 fail closed，从而防止历史默认路由bug。
 

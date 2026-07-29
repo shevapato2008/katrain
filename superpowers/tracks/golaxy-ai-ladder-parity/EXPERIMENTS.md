@@ -980,6 +980,36 @@ campaign stopped；所有74个有效结果均有唯一 origin ID。账本：
 `calibration/results/golaxy_alignment_campaign_20260729/campaign_v1.jsonl`，SHA-256
 `da354ddadf07a2bd2963c99cab94798c87be3f62822207c69338364410952699`。
 
+### C27. 同段位 HumanSL `@1` 加权采样 vs `@1s` argmax（2026-07-29）
+
+修复前仅有9D、7D、5D各10盘的旧结果，且位于禁止复用的旧 namespace。本轮在修复后 harness 中
+重新覆盖 `n=9...1`：A方为 `rank_nd@1`（同一 `humanPolicy` 的加权采样），B方为
+`rank_nd@1s`（同一 `humanPolicy` 的确定性 argmax）。每组使用10个冻结开局，每个开局交换黑白，
+恰好取得10个完整 pair、20盘有效结果。这里两方都只从 humanv0 `humanPolicy` 选点；health/header 中
+主进程显示 b28 是原生 HumanSL 附载 humanv0 的预期路由，不是旧 `humansl_search` 错把搜索结果取自
+b28 的 wiring bug。
+
+| HumanSL profile | `@1` 加权采样 | `@1s` argmax | 完整 pair | 不可判定 pair |
+|---|---:|---:|---:|---:|
+| `rank_9d` | **0** | **20** | 10 | 0 |
+| `rank_8d` | **1** | **19** | 10 | 0 |
+| `rank_7d` | **0** | **20** | 10 | 0 |
+| `rank_6d` | **2** | **18** | 10 | 0 |
+| `rank_5d` | **2** | **18** | 10 | 0 |
+| `rank_4d` | **0** | **20** | 10 | 2 |
+| `rank_3d` | **3** | **17** | 10 | 2 |
+| `rank_2d` | **5** | **15** | 10 | 1 |
+| `rank_1d` | **2** | **18** | 10 | 1 |
+| **合计** | **15** | **165** | **90** | **6** |
+
+九组全部为 `screen_complete`。4D、3D、2D、1D为补足完整 pair 实际分别运行24、24、22、22盘；
+若一个 pair 任一颜色不可判定，则该 pair 两盘都不进入上表20盘有效样本。结果显示差异主要来自选点
+规则而非搜索：同一 profile、同一1 visit 下，argmax 在180盘有效样本中取得91.7%胜率。
+
+目录：`calibration/results/selfplay_v2_same_rank_sampling_vs_argmax_20260729/`；汇总文件
+`selfplay_summary.json` SHA-256 为
+`a81d49c4df13f7e165ece0f6064d1caa47114b4d7e48b48e6696ba5e29252f74`。
+
 ---
 
 ## D. 待办 / 开放项
@@ -1035,6 +1065,7 @@ campaign stopped；所有74个有效结果均有唯一 origin ID。账本：
 | 星阵8D `rank_8d@4` 固定筛选 | `calibration/results/golaxy_8d_rank_8d_4_20260724/fixed_screen.jsonl` |
 | 星阵7D `rank_7d@4` 固定筛选 | `calibration/results/golaxy_7d_rank_7d_4_20260724/fixed_screen.jsonl` |
 | 7D、1星与准5D–准9D串行活动 | `calibration/results/golaxy_alignment_campaign_20260729/campaign_v1.jsonl` |
+| 同段位 HumanSL `@1` vs `@1s`（1D–9D） | `calibration/results/selfplay_v2_same_rank_sampling_vs_argmax_20260729/` |
 | 星阵3星 `rank_9d@8/@16/@32/@64` 固定筛选 | `calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |

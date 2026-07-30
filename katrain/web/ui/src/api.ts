@@ -271,8 +271,8 @@ export const API = {
     apiPost("/api/game/setup", { session_id: sessionId, mode, settings }),
   aiMove: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/ai-move", { session_id: sessionId }),
-  navigate: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
-    apiPost("/api/nav", { session_id: sessionId, node_id: nodeId }),
+  navigate: (sessionId: string, nodeId?: number, token?: string): Promise<SessionResponse> =>
+    apiPost("/api/nav", { session_id: sessionId, node_id: nodeId }, token),
   loadSGF: (sessionId: string, sgf: string, skipAnalysis: boolean = false): Promise<SessionResponse> =>
     apiPost("/api/sgf/load", { session_id: sessionId, sgf, skip_analysis: skipAnalysis }),
   saveSGF: async (sessionId: string): Promise<{ sgf: string }> => {

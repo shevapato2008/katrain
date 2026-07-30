@@ -329,7 +329,7 @@ function ZenModeApp() {
   const handleNavigate = async (nodeId: number) => {
     if (!sessionId) return;
     try {
-      const data = await API.navigate(sessionId, nodeId);
+      const data = await API.navigate(sessionId, nodeId, token ?? undefined);
       setGameState(data.state);
     } catch (error) {
       console.error("Navigation failed", error);

@@ -83,7 +83,7 @@ git commit -m "fix: ignore occupied board taps outside review"
 
 - [ ] **Step 1: Add a failing kiosk live-page wiring test**
 
-Change the existing Board mock to capture its props and assert that the rendered Kiosk live board has no `onNavigate` prop. Add a TypeScript-AST contract test that parses the four live-page source files and asserts that no `Board` or `Board3D` JSX element has an `onNavigate` attribute. The same test parses Galaxy and Kiosk research pages and asserts they still opt into board navigation. AST inspection is used instead of a loose regex, so multiline JSX and unrelated sidebar callbacks cannot create false results.
+Change the existing Board mock to capture its props and assert that the rendered Kiosk live board has no `onNavigate` prop. Add a TypeScript-AST contract test that parses the four live-page source files and asserts that no `Board` or `Board3D` JSX element has an `onNavigate` attribute. Existing Galaxy and Kiosk research pages also omit this prop, so leave them untouched rather than introducing a new interaction. AST inspection is used instead of a loose regex, so multiline JSX and unrelated sidebar callbacks cannot create false results.
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
@@ -99,7 +99,7 @@ Remove the prop from 2D/3D boards in Galaxy AI play and Galaxy multiplayer, from
 
 From `katrain/web/ui`, run: `npm test -- --run src/kiosk/__tests__/GamePage.test.tsx src/components/liveBoardWiring.test.ts`
 
-Expected: both tests PASS; the AST contract proves Galaxy AI, Galaxy multiplayer, Kiosk, and Zen live boards omit the prop while both research pages retain it.
+Expected: both tests PASS; the AST contract proves Galaxy AI, Galaxy multiplayer, Kiosk, and Zen live boards omit the prop.
 
 - [ ] **Step 5: Commit live-page wiring**
 

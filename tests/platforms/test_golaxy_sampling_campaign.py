@@ -1,6 +1,7 @@
 import dataclasses
 import hashlib
 import importlib
+import json
 import math
 import struct
 import sys
@@ -268,7 +269,10 @@ def test_weighted_golden_selection_differs_from_argmax_and_records_exact_audit()
 
     assert max(range(362), key=policy.__getitem__) == 0
     assert audit.algorithm == "golaxy-humansl-weighted-v1"
-    assert audit.u == expected_u == Fraction(0xF9BAC4199EF8C424, 2**64)
+    assert expected_u == Fraction(0xF9BAC4199EF8C424, 2**64)
+    assert audit.u == f"{0xF9BAC4199EF8C424}/{2**64}"
+    assert audit.u_raw == 0xF9BAC4199EF8C424
+    assert audit.u_denominator == 2**64
     assert audit.index == 20
     assert audit.move == (1, 17)
     assert audit.policy_sha256 == expected_policy_sha256(policy)
@@ -341,8 +345,22 @@ def test_maximum_uint64_digest_is_exactly_below_one_and_selects_unique_candidate
     assert campaign.derive_uniform(0, "maximum", 0) == expected_u
     assert campaign.derive_uniform(0, "maximum", 0) < 1
     audit = campaign.sample_human_policy(policy, [361], 0, "maximum", 0)
-    assert audit.u == expected_u
+    assert audit.u == f"{2**64 - 1}/{2**64}"
+    assert audit.u_raw == 2**64 - 1
+    assert audit.u_denominator == 2**64
     assert audit.index == 361
+
+
+def test_sampling_audit_round_trips_through_standard_json():
+    policy = [0.0] * 362
+    policy[361] = 1.0
+    audit = campaign.sample_human_policy(policy, [361], 3, "json-audit", 4)
+
+    native_audit = dataclasses.asdict(audit)
+    restored = json.loads(json.dumps(native_audit))
+
+    assert restored == native_audit
+    assert restored["u"] == f"{restored['u_raw']}/{restored['u_denominator']}"
 
 
 def test_reservation_id_must_be_a_plain_string():

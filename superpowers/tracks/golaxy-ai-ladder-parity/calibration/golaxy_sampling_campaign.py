@@ -14,6 +14,7 @@ from typing import Mapping, Sequence
 
 SAMPLING_ALGORITHM = "golaxy-humansl-weighted-v1"
 _SAMPLING_DOMAIN = SAMPLING_ALGORITHM.encode("ascii") + b"\0"
+_UNIFORM_DENOMINATOR = 2**64
 
 STAGES = (
     ("sampling_quasi_5d", "rank_5d@1", 25),
@@ -61,7 +62,9 @@ class CampaignDecision:
 @dataclass(frozen=True)
 class SamplingAudit:
     algorithm: str
-    u: Fraction
+    u: str
+    u_raw: int
+    u_denominator: int
     index: int
     move: tuple[int, int] | str
     policy_sha256: str
@@ -95,7 +98,7 @@ def _sampling_payload(seed: object, reservation_id: object, ply: object) -> byte
 def derive_uniform(seed: int, reservation_id: str, ply: int) -> Fraction:
     digest = hashlib.sha256(_sampling_payload(seed, reservation_id, ply)).digest()
     raw = int.from_bytes(digest[:8], "big")
-    return Fraction(raw, 2**64)
+    return Fraction(raw, _UNIFORM_DENOMINATOR)
 
 
 def _validated_policy(policy: object) -> tuple[list[float], str]:
@@ -150,11 +153,17 @@ def sample_human_policy(
         raise ValueError("legal policy must have positive finite mass")
 
     target = u * Fraction.from_float(positive_total)
+    unscaled_raw = u * _UNIFORM_DENOMINATOR
+    if unscaled_raw.denominator != 1:
+        raise ValueError("uniform value does not have the expected denominator")
+    u_raw = unscaled_raw.numerator
     for position, (index, _weight) in enumerate(candidates):
         if Fraction.from_float(bounds[position + 1]) > target:
             return SamplingAudit(
                 algorithm=SAMPLING_ALGORITHM,
-                u=u,
+                u=f"{u_raw}/{_UNIFORM_DENOMINATOR}",
+                u_raw=u_raw,
+                u_denominator=_UNIFORM_DENOMINATOR,
                 index=index,
                 move="pass" if index == 361 else (index % 19, 18 - index // 19),
                 policy_sha256=policy_sha256,

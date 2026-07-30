@@ -117,6 +117,99 @@ def _same_json_value(left: object, right: object) -> bool:
     )
 
 
+def _validate_move_audits(
+    move_audits: object,
+    *,
+    seed: int,
+    reservation_id: str,
+    color: str,
+) -> list[dict[str, object]]:
+    fields = {
+        "ply",
+        "position_sha256",
+        "algorithm",
+        "u",
+        "u_raw",
+        "u_denominator",
+        "index",
+        "move",
+        "policy_sha256",
+        "positive_total",
+        "interval_low",
+        "interval_high",
+        "final_move",
+    }
+    if type(move_audits) is not list:
+        raise ValueError("move audits must be a list")
+    validated: list[dict[str, object]] = []
+    previous_ply = -1
+    for audit in move_audits:
+        if type(audit) is not dict or set(audit) != fields:
+            raise ValueError("move audit has invalid or extra fields")
+        ply = audit.get("ply")
+        u_raw = audit.get("u_raw")
+        denominator = audit.get("u_denominator")
+        index = audit.get("index")
+        positive_total = audit.get("positive_total")
+        interval_low = audit.get("interval_low")
+        interval_high = audit.get("interval_high")
+        move = audit.get("move")
+        final_move = audit.get("final_move")
+        if type(ply) is not int or ply <= previous_ply:
+            raise ValueError("move audit plies must be strictly increasing nonnegative integers")
+        previous_ply = ply
+        expected_parity = 0 if color == "B" else 1
+        if ply % 2 != expected_parity:
+            raise ValueError("move audit ply does not match the reserved HumanSL color")
+        if (
+            type(audit.get("position_sha256")) is not str
+            or len(audit["position_sha256"]) != 64
+            or any(character not in "0123456789abcdef" for character in audit["position_sha256"])
+            or type(audit.get("policy_sha256")) is not str
+            or len(audit["policy_sha256"]) != 64
+            or any(character not in "0123456789abcdef" for character in audit["policy_sha256"])
+        ):
+            raise ValueError("move audit SHA-256 fields must be lowercase hex")
+        if audit.get("algorithm") != SAMPLING_ALGORITHM:
+            raise ValueError("move audit has the wrong sampling algorithm")
+        if (
+            type(u_raw) is not int
+            or not 0 <= u_raw < _UNIFORM_DENOMINATOR
+            or type(denominator) is not int
+            or denominator != _UNIFORM_DENOMINATOR
+            or audit.get("u") != f"{u_raw}/{denominator}"
+        ):
+            raise ValueError("move audit has an invalid exact random value")
+        expected_u_raw = int(derive_uniform(seed, reservation_id, ply) * _UNIFORM_DENOMINATOR)
+        if u_raw != expected_u_raw:
+            raise ValueError("move audit random value does not match seed, reservation, and ply")
+        if type(index) is not int or not 0 <= index <= 361:
+            raise ValueError("move audit policy index is invalid")
+        if index == 361:
+            if move != "pass" or final_move != "pass":
+                raise ValueError("move audit pass mapping is invalid")
+        else:
+            expected_move = [index % 19, 18 - index // 19]
+            if move not in (expected_move, tuple(expected_move)) or type(final_move) is not int or final_move != index:
+                raise ValueError("move audit board mapping is invalid")
+        if any(
+            type(value) not in (int, float) or not math.isfinite(value)
+            for value in (positive_total, interval_low, interval_high)
+        ):
+            raise ValueError("move audit interval values must be finite")
+        if not (positive_total > 0 and 0 <= interval_low < interval_high <= positive_total):
+            raise ValueError("move audit interval is invalid")
+        target = Fraction(u_raw, denominator) * Fraction.from_float(float(positive_total))
+        if not Fraction.from_float(float(interval_low)) <= target < Fraction.from_float(float(interval_high)):
+            raise ValueError("move audit random target is outside the selected interval")
+        try:
+            frozen = json.loads(json.dumps(audit, sort_keys=True, separators=(",", ":"), allow_nan=False))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("move audit is not strict JSON") from exc
+        validated.append(frozen)
+    return validated
+
+
 def _validate_campaign_id(campaign_id: object) -> str:
     if type(campaign_id) is not str or not campaign_id or campaign_id != campaign_id.strip():
         raise ValueError("campaign_id must be a nonempty plain string without whitespace padding")
@@ -272,8 +365,8 @@ def load_campaign(path: str | Path, allow_stopped_for_summary: bool = False) -> 
     stopped = False
     request_fields = ("stage", "player", "golaxy_api_level", "slot", "color")
     reservation_fields = {"type", "sequence", "attempt_id", *request_fields}
-    result_fields = reservation_fields | {"origin_id", "outcome", "conclusive"}
-    stop_fields = {"type", "sequence", "attempt_id", "reason"}
+    result_fields = reservation_fields | {"origin_id", "outcome", "conclusive", "move_audits"}
+    stop_fields = {"type", "sequence", "attempt_id", "reason", "move_audits"}
     for expected_sequence, row in enumerate(records, 1):
         if type(row.get("sequence")) is not int or row["sequence"] != expected_sequence:
             raise ValueError(f"sampling ledger sequence is not continuous at line {expected_sequence + 1}")
@@ -315,6 +408,12 @@ def load_campaign(path: str | Path, allow_stopped_for_summary: bool = False) -> 
             if type(origin_id) is not str or not origin_id or origin_id != expected_origin or origin_id in origins:
                 raise ValueError("result has invalid or duplicate origin_id")
             origins.add(origin_id)
+            _validate_move_audits(
+                row["move_audits"],
+                seed=header["seed"],
+                reservation_id=expected_origin,
+                color=reservation["color"],
+            )
             evidence.append(row)
             completed_attempts.add(attempt_id)
             open_attempt = None
@@ -331,6 +430,13 @@ def load_campaign(path: str | Path, allow_stopped_for_summary: bool = False) -> 
                 or not reason.strip()
             ):
                 raise ValueError("stopped row must close the unique open reservation with a reason")
+            reservation = reservations[attempt_id]
+            _validate_move_audits(
+                row["move_audits"],
+                seed=header["seed"],
+                reservation_id=f"{header['campaign_id']}:{attempt_id}",
+                color=reservation["color"],
+            )
             completed_attempts.add(attempt_id)
             open_attempt = None
             stopped = True
@@ -432,6 +538,8 @@ def _append_result_unlocked(
     attempt_id: int,
     outcome: str,
     conclusive: bool | None = None,
+    *,
+    move_audits: object,
 ) -> None:
     path = Path(path)
     if type(attempt_id) is not int or attempt_id <= 0:
@@ -466,11 +574,23 @@ def _append_result_unlocked(
         "outcome": outcome,
         "conclusive": conclusive,
     }
+    row["move_audits"] = _validate_move_audits(
+        move_audits,
+        seed=loaded.header["seed"],
+        reservation_id=origin_id,
+        color=reservation["color"],
+    )
     _append_row(path, row)
     load_campaign(path)
 
 
-def _append_stop_unlocked(path: str | Path, reason: str, attempt_id: int | None = None) -> None:
+def _append_stop_unlocked(
+    path: str | Path,
+    reason: str,
+    attempt_id: int | None = None,
+    *,
+    move_audits: object,
+) -> None:
     path = Path(path)
     loaded = campaign_summary(path)
     if loaded.stopped:
@@ -484,6 +604,10 @@ def _append_stop_unlocked(path: str | Path, reason: str, attempt_id: int | None 
         attempt_id = open_attempt
     if type(attempt_id) is not int or attempt_id != open_attempt:
         raise ValueError("attempt_id does not identify the unique open reservation")
+    reservation = next(
+        row for row in loaded.records if row.get("type") == "reservation" and row.get("attempt_id") == attempt_id
+    )
+    origin_id = f"{loaded.header['campaign_id']}:{attempt_id}"
     _append_row(
         path,
         {
@@ -491,6 +615,12 @@ def _append_stop_unlocked(path: str | Path, reason: str, attempt_id: int | None 
             "sequence": len(loaded.records) + 1,
             "attempt_id": attempt_id,
             "reason": reason,
+            "move_audits": _validate_move_audits(
+                move_audits,
+                seed=loaded.header["seed"],
+                reservation_id=origin_id,
+                color=reservation["color"],
+            ),
         },
     )
     campaign_summary(path)
@@ -506,14 +636,16 @@ def append_result(
     attempt_id: int,
     outcome: str,
     conclusive: bool | None = None,
+    *,
+    move_audits: object,
 ) -> None:
     with _mutation_lock(path):
-        _append_result_unlocked(path, attempt_id, outcome, conclusive)
+        _append_result_unlocked(path, attempt_id, outcome, conclusive, move_audits=move_audits)
 
 
-def append_stop(path: str | Path, reason: str, attempt_id: int | None = None) -> None:
+def append_stop(path: str | Path, reason: str, attempt_id: int | None = None, *, move_audits: object) -> None:
     with _mutation_lock(path):
-        _append_stop_unlocked(path, reason, attempt_id)
+        _append_stop_unlocked(path, reason, attempt_id, move_audits=move_audits)
 
 
 def replay_campaign(path: str | Path) -> GameRequest | CampaignDecision:

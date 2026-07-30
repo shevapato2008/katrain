@@ -82,17 +82,21 @@ def test_empty_campaign_requests_humansl_as_black_in_first_slot():
     )
 
 
-def test_conclusive_slots_alternate_to_five_games_per_color():
-    records = []
+@pytest.mark.parametrize("stage_index", range(len(campaign.STAGES)), ids=campaign.STAGE_ORDER)
+def test_each_stage_alternates_ten_conclusive_slots_and_advances_exactly(stage_index):
+    records = [row for prefix_index in range(stage_index) for row in completed_stage(prefix_index)]
+    stage, player, api_level = campaign.STAGES[stage_index]
     requested_colors = []
     for slot in range(10):
         action = campaign.next_action(records)
-        assert isinstance(action, campaign.GameRequest)
-        assert action.slot == slot
+        expected_color = "B" if slot % 2 == 0 else "W"
+        assert action == campaign.GameRequest(stage, player, api_level, slot, expected_color)
         requested_colors.append(action.color)
         records.append(
             result(
-                f"game-{slot}",
+                f"{stage}-game-{slot}",
+                stage=stage,
+                player=player,
                 slot=action.slot,
                 color=action.color,
                 outcome="win" if slot % 3 else "loss",
@@ -100,15 +104,23 @@ def test_conclusive_slots_alternate_to_five_games_per_color():
         )
 
     assert requested_colors == ["B", "W"] * 5
-    assert campaign.summarize_candidate(records, "sampling_quasi_5d") == campaign.CandidateSummary(
-        stage="sampling_quasi_5d",
-        player="rank_5d@1",
-        golaxy_api_level=25,
+    assert campaign.summarize_candidate(records, stage) == campaign.CandidateSummary(
+        stage=stage,
+        player=player,
+        golaxy_api_level=api_level,
         valid=10,
         wins=6,
         losses=4,
         inconclusive=0,
     )
+
+    action = campaign.next_action(records)
+    if stage_index + 1 < len(campaign.STAGES):
+        next_stage, next_player, next_api_level = campaign.STAGES[stage_index + 1]
+        assert action == campaign.GameRequest(next_stage, next_player, next_api_level, 0, "B")
+    else:
+        assert isinstance(action, campaign.CampaignDecision)
+        assert action.status == "completed"
 
 
 def test_inconclusive_does_not_enter_denominator_and_retries_same_slot_and_color():

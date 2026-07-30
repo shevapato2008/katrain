@@ -3,16 +3,40 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
+import os
 import struct
+import tempfile
+import threading
 from collections.abc import Sequence as SequenceABC
 from collections.abc import Set as SetABC
+from contextlib import contextmanager
 from dataclasses import dataclass
 from fractions import Fraction
+from pathlib import Path
 from typing import Mapping, Sequence
 
 
 SAMPLING_ALGORITHM = "golaxy-humansl-weighted-v1"
+LEDGER_PROTOCOL = "golaxy-humansl-sampling-v1"
+ADJUDICATION_PROTOCOL = "golaxy-sampling-adjudication-v1"
+ADJUDICATION = {
+    "protocol": ADJUDICATION_PROTOCOL,
+    "board_size": 19,
+    "rules": "Chinese",
+    "komi": 7.5,
+    "move_cap": 400,
+    "referee_visits": 200,
+    "stability_visits": 800,
+    "stability_delta": 1.0,
+}
+VALID_SLOTS_PER_STAGE = 10
+FIRST_HUMANSL_COLOR = "B"
+COOLDOWN_SECONDS = 5.0
+PARENT_PATH = Path(__file__).resolve().parent / "results/golaxy_alignment_campaign_20260730/campaign_v2.jsonl"
+PARENT_SHA256 = "4eff5434cd864215a35171d635e4268d06f31f45ca6be27e82e4e0a1105f64d5"
+_OUTPUT_LOCK_STATE = threading.local()
 _SAMPLING_DOMAIN = SAMPLING_ALGORITHM.encode("ascii") + b"\0"
 _UNIFORM_DENOMINATOR = 2**64
 
@@ -71,6 +95,464 @@ class SamplingAudit:
     positive_total: float
     interval_low: float
     interval_high: float
+
+
+@dataclass(frozen=True)
+class LoadedSamplingCampaign:
+    path: Path
+    header: Mapping[str, object]
+    records: tuple[Mapping[str, object], ...]
+    action: GameRequest | CampaignDecision
+    stopped: bool
+    unknown_charged_attempts: tuple[int, ...]
+
+
+def _json_line(row: Mapping[str, object]) -> str:
+    return json.dumps(row, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
+
+
+def _same_json_value(left: object, right: object) -> bool:
+    return json.dumps(left, sort_keys=True, separators=(",", ":"), allow_nan=False) == json.dumps(
+        right, sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
+
+
+def _validate_campaign_id(campaign_id: object) -> str:
+    if type(campaign_id) is not str or not campaign_id or campaign_id != campaign_id.strip():
+        raise ValueError("campaign_id must be a nonempty plain string without whitespace padding")
+    return campaign_id
+
+
+def _validate_seed(seed: object) -> int:
+    if type(seed) is not int or not 0 <= seed < 2**64:
+        raise ValueError("seed must be a plain uint64 integer")
+    return seed
+
+
+def _fsync_directory(directory: Path) -> None:
+    if os.name == "nt":
+        return
+    descriptor = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _read_parent() -> Mapping[str, object]:
+    parent_path = Path(PARENT_PATH).resolve()
+    try:
+        parent_bytes = parent_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"cannot read parent campaign {parent_path}: {exc}") from exc
+    if hashlib.sha256(parent_bytes).hexdigest() != PARENT_SHA256:
+        raise ValueError(f"parent SHA-256 mismatch for {parent_path}")
+    try:
+        import golaxy_alignment_campaign as alignment_campaign
+
+        with tempfile.TemporaryDirectory(prefix="golaxy-sampling-parent-") as snapshot_directory:
+            snapshot_path = Path(snapshot_directory) / parent_path.name
+            snapshot_path.write_bytes(parent_bytes)
+            parent = alignment_campaign.campaign_summary(snapshot_path)
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"invalid parent campaign {parent_path}: {exc}") from exc
+    if parent.header.get("protocol") != "golaxy-alignment-campaign-v2":
+        raise ValueError("parent campaign must use golaxy-alignment-campaign-v2")
+    if (
+        parent.stopped
+        or not isinstance(parent.action, alignment_campaign.CampaignDecision)
+        or parent.action.status != "completed"
+    ):
+        raise ValueError("parent campaign must be completed and not stopped")
+    identity = parent.header.get("identity_snapshot")
+    if not isinstance(identity, dict):
+        raise ValueError("parent campaign lacks a valid identity_snapshot")
+    return identity
+
+
+def _read_rows(path: Path) -> list[dict[str, object]]:
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"cannot read sampling ledger {path}: {exc}") from exc
+    if not payload or not payload.endswith(b"\n"):
+        raise ValueError("sampling ledger is empty or truncated")
+    if b"\r" in payload:
+        raise ValueError("sampling ledger is not canonical LF-delimited JSONL")
+    try:
+        lines = payload.decode("utf-8").splitlines()
+    except UnicodeDecodeError as exc:
+        raise ValueError("sampling ledger is not valid UTF-8") from exc
+    rows: list[dict[str, object]] = []
+    for line_number, line in enumerate(lines, 1):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"invalid JSON on sampling ledger line {line_number}") from exc
+        if not isinstance(row, dict):
+            raise ValueError(f"sampling ledger line {line_number} must be a JSON object")
+        try:
+            canonical = _json_line(row).removesuffix("\n")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"sampling ledger line {line_number} is not canonical JSON") from exc
+        if line != canonical:
+            raise ValueError(f"sampling ledger line {line_number} is not canonical JSON")
+        rows.append(row)
+    return rows
+
+
+def _append_row(path: Path, row: Mapping[str, object]) -> None:
+    try:
+        line = _json_line(row)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("sampling ledger row is not JSON serializable") from exc
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def load_campaign(path: str | Path, allow_stopped_for_summary: bool = False) -> LoadedSamplingCampaign:
+    path = Path(path).resolve()
+    rows = _read_rows(path)
+    header, records = rows[0], rows[1:]
+    expected_header_fields = {
+        "type",
+        "sequence",
+        "protocol",
+        "campaign_id",
+        "sampler",
+        "adjudication",
+        "stages",
+        "valid_slots_per_stage",
+        "first_humansl_color",
+        "cooldown_seconds",
+        "seed",
+        "parent_path",
+        "parent_sha256",
+        "identity_snapshot",
+    }
+    if set(header) != expected_header_fields:
+        raise ValueError("invalid sampling campaign header fields")
+    if (
+        header.get("type") != "campaign_header"
+        or type(header.get("sequence")) is not int
+        or header.get("sequence") != 0
+        or header.get("protocol") != LEDGER_PROTOCOL
+        or header.get("sampler") != SAMPLING_ALGORITHM
+        or not _same_json_value(header.get("adjudication"), ADJUDICATION)
+        or not _same_json_value(
+            header.get("stages"),
+            [{"stage": stage, "player": player, "golaxy_api_level": level} for stage, player, level in STAGES],
+        )
+        or type(header.get("valid_slots_per_stage")) is not int
+        or header.get("valid_slots_per_stage") != VALID_SLOTS_PER_STAGE
+        or header.get("first_humansl_color") != FIRST_HUMANSL_COLOR
+        or type(header.get("cooldown_seconds")) is not float
+        or header.get("cooldown_seconds") != COOLDOWN_SECONDS
+        or header.get("parent_sha256") != PARENT_SHA256
+    ):
+        raise ValueError("invalid frozen sampling campaign header")
+    _validate_campaign_id(header.get("campaign_id"))
+    _validate_seed(header.get("seed"))
+    if type(header.get("parent_path")) is not str or not header["parent_path"]:
+        raise ValueError("invalid parent_path in sampling campaign header")
+    if not isinstance(header.get("identity_snapshot"), dict):
+        raise ValueError("invalid identity_snapshot in sampling campaign header")
+    if header["parent_path"] != str(Path(PARENT_PATH).resolve()):
+        raise ValueError("sampling campaign header has invalid frozen parent_path")
+    if not _same_json_value(header["identity_snapshot"], _read_parent()):
+        raise ValueError("sampling campaign identity_snapshot does not match the frozen parent")
+
+    evidence: list[Mapping[str, object]] = []
+    reservations: dict[int, Mapping[str, object]] = {}
+    completed_attempts: set[int] = set()
+    origins: set[str] = set()
+    open_attempt: int | None = None
+    stopped = False
+    request_fields = ("stage", "player", "golaxy_api_level", "slot", "color")
+    reservation_fields = {"type", "sequence", "attempt_id", *request_fields}
+    result_fields = reservation_fields | {"origin_id", "outcome", "conclusive"}
+    stop_fields = {"type", "sequence", "attempt_id", "reason"}
+    for expected_sequence, row in enumerate(records, 1):
+        if type(row.get("sequence")) is not int or row["sequence"] != expected_sequence:
+            raise ValueError(f"sampling ledger sequence is not continuous at line {expected_sequence + 1}")
+        if stopped:
+            raise ValueError(f"sampling ledger row occurs after stopped at line {expected_sequence + 1}")
+        row_type = row.get("type")
+        if row_type == "reservation":
+            if set(row) != reservation_fields:
+                raise ValueError("reservation has invalid or extra fields")
+            attempt_id = row.get("attempt_id")
+            if type(attempt_id) is not int or attempt_id != len(reservations) + 1 or attempt_id in reservations:
+                raise ValueError("reservation attempt_id order must be continuous and unique")
+            if open_attempt is not None:
+                raise ValueError("reservation overlaps an open reservation")
+            expected = next_action(evidence)
+            if not isinstance(expected, GameRequest) or any(
+                not _same_json_value(row.get(key), getattr(expected, key)) for key in request_fields
+            ):
+                raise ValueError("reservation does not match the unique next action")
+            reservations[attempt_id] = row
+            open_attempt = attempt_id
+        elif row_type == "result":
+            if set(row) != result_fields:
+                raise ValueError("result has invalid or extra fields")
+            attempt_id = row.get("attempt_id")
+            if type(attempt_id) is not int or attempt_id != open_attempt or attempt_id in completed_attempts:
+                raise ValueError("result has no unique open reservation")
+            reservation = reservations[attempt_id]
+            if any(not _same_json_value(row.get(key), reservation.get(key)) for key in request_fields):
+                raise ValueError("result does not match its reservation")
+            outcome = row.get("outcome")
+            conclusive = row.get("conclusive")
+            if outcome not in {"win", "loss", "inconclusive"} or type(conclusive) is not bool:
+                raise ValueError("invalid result outcome or conclusive flag")
+            if (outcome == "inconclusive") == conclusive:
+                raise ValueError("result outcome and conclusive flag are inconsistent")
+            origin_id = row.get("origin_id")
+            expected_origin = f"{header['campaign_id']}:{attempt_id}"
+            if type(origin_id) is not str or not origin_id or origin_id != expected_origin or origin_id in origins:
+                raise ValueError("result has invalid or duplicate origin_id")
+            origins.add(origin_id)
+            evidence.append(row)
+            completed_attempts.add(attempt_id)
+            open_attempt = None
+        elif row_type == "stopped":
+            if set(row) != stop_fields:
+                raise ValueError("stopped row has invalid or extra fields")
+            attempt_id = row.get("attempt_id")
+            reason = row.get("reason")
+            if (
+                type(attempt_id) is not int
+                or attempt_id != open_attempt
+                or attempt_id in completed_attempts
+                or type(reason) is not str
+                or not reason.strip()
+            ):
+                raise ValueError("stopped row must close the unique open reservation with a reason")
+            completed_attempts.add(attempt_id)
+            open_attempt = None
+            stopped = True
+        elif row_type == "campaign_header":
+            raise ValueError("campaign header must occur exactly once and first")
+        else:
+            raise ValueError(f"unknown sampling campaign record type: {row_type!r}")
+
+    unmatched = () if open_attempt is None else (open_attempt,)
+    if stopped:
+        action: GameRequest | CampaignDecision = CampaignDecision("stopped", _completed_stages(evidence))
+    else:
+        action = next_action(evidence)
+    loaded = LoadedSamplingCampaign(path, header, tuple(records), action, stopped, unmatched)
+    if not allow_stopped_for_summary:
+        if stopped:
+            raise ValueError("sampling campaign ledger is stopped and has no next action")
+        if unmatched:
+            raise ValueError(f"sampling campaign ledger has open reservation(s) with unknown charge: {unmatched}")
+    return loaded
+
+
+def initialize_campaign(path: str | Path, campaign_id: str, seed: int) -> LoadedSamplingCampaign:
+    path = Path(path)
+    campaign_id = _validate_campaign_id(campaign_id)
+    seed = _validate_seed(seed)
+    identity = _read_parent()
+    header = {
+        "type": "campaign_header",
+        "sequence": 0,
+        "protocol": LEDGER_PROTOCOL,
+        "campaign_id": campaign_id,
+        "sampler": SAMPLING_ALGORITHM,
+        "adjudication": dict(ADJUDICATION),
+        "stages": [{"stage": stage, "player": player, "golaxy_api_level": level} for stage, player, level in STAGES],
+        "valid_slots_per_stage": VALID_SLOTS_PER_STAGE,
+        "first_humansl_color": FIRST_HUMANSL_COLOR,
+        "cooldown_seconds": COOLDOWN_SECONDS,
+        "seed": seed,
+        "parent_path": str(Path(PARENT_PATH).resolve()),
+        "parent_sha256": PARENT_SHA256,
+        "identity_snapshot": identity,
+    }
+    try:
+        serialized = _json_line(header)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("sampling campaign header is not JSON serializable") from exc
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("x", encoding="utf-8") as handle:
+            handle.write(serialized)
+            handle.flush()
+            os.fsync(handle.fileno())
+        _fsync_directory(path.parent)
+    except FileExistsError as exc:
+        raise ValueError(f"sampling campaign ledger already exists: {path}") from exc
+    return load_campaign(path)
+
+
+@contextmanager
+def _mutation_lock(path: str | Path):
+    canonical = Path(path).resolve()
+    active = getattr(_OUTPUT_LOCK_STATE, "paths", set())
+    if canonical in active:
+        yield
+    else:
+        with output_lock(canonical):
+            yield
+
+
+def _append_reservation_unlocked(path: str | Path, attempt_id: int, request: GameRequest) -> None:
+    path = Path(path)
+    loaded = load_campaign(path)
+    if type(attempt_id) is not int or attempt_id != 1 + sum(row.get("type") == "reservation" for row in loaded.records):
+        raise ValueError("attempt_id must be the next positive plain integer")
+    request_fields = ("stage", "player", "golaxy_api_level", "slot", "color")
+    if (
+        not isinstance(request, GameRequest)
+        or not isinstance(loaded.action, GameRequest)
+        or any(not _same_json_value(getattr(request, key), getattr(loaded.action, key)) for key in request_fields)
+    ):
+        raise ValueError("reservation request must match the unique next action")
+    row = {
+        "type": "reservation",
+        "sequence": len(loaded.records) + 1,
+        "attempt_id": attempt_id,
+        "stage": request.stage,
+        "player": request.player,
+        "golaxy_api_level": request.golaxy_api_level,
+        "slot": request.slot,
+        "color": request.color,
+    }
+    _append_row(path, row)
+    campaign_summary(path)
+
+
+def _append_result_unlocked(
+    path: str | Path,
+    attempt_id: int,
+    outcome: str,
+    conclusive: bool | None = None,
+) -> None:
+    path = Path(path)
+    if type(attempt_id) is not int or attempt_id <= 0:
+        raise ValueError("attempt_id must be a positive plain integer")
+    loaded = campaign_summary(path)
+    if loaded.stopped:
+        raise ValueError("sampling campaign ledger is stopped")
+    if loaded.unknown_charged_attempts != (attempt_id,):
+        raise ValueError("attempt_id does not identify the unique open reservation")
+    if outcome not in {"win", "loss", "inconclusive"}:
+        raise ValueError("invalid result outcome")
+    if conclusive is None:
+        conclusive = outcome != "inconclusive"
+    if type(conclusive) is not bool or (outcome == "inconclusive") == conclusive:
+        raise ValueError("result outcome and conclusive flag are inconsistent")
+    reservation = next(
+        row for row in loaded.records if row.get("type") == "reservation" and row.get("attempt_id") == attempt_id
+    )
+    origin_id = f"{loaded.header['campaign_id']}:{attempt_id}"
+    if any(row.get("origin_id") == origin_id for row in loaded.records):
+        raise ValueError(f"origin_id {origin_id!r} already exists")
+    row = {
+        "type": "result",
+        "sequence": len(loaded.records) + 1,
+        "attempt_id": attempt_id,
+        "origin_id": origin_id,
+        "stage": reservation["stage"],
+        "player": reservation["player"],
+        "golaxy_api_level": reservation["golaxy_api_level"],
+        "slot": reservation["slot"],
+        "color": reservation["color"],
+        "outcome": outcome,
+        "conclusive": conclusive,
+    }
+    _append_row(path, row)
+    load_campaign(path)
+
+
+def _append_stop_unlocked(path: str | Path, reason: str, attempt_id: int | None = None) -> None:
+    path = Path(path)
+    loaded = campaign_summary(path)
+    if loaded.stopped:
+        raise ValueError("sampling campaign ledger is already stopped")
+    if type(reason) is not str or not reason.strip():
+        raise ValueError("stop reason must be a nonempty plain string")
+    if len(loaded.unknown_charged_attempts) != 1:
+        raise ValueError("append_stop requires exactly one open reservation")
+    open_attempt = loaded.unknown_charged_attempts[0]
+    if attempt_id is None:
+        attempt_id = open_attempt
+    if type(attempt_id) is not int or attempt_id != open_attempt:
+        raise ValueError("attempt_id does not identify the unique open reservation")
+    _append_row(
+        path,
+        {
+            "type": "stopped",
+            "sequence": len(loaded.records) + 1,
+            "attempt_id": attempt_id,
+            "reason": reason,
+        },
+    )
+    campaign_summary(path)
+
+
+def append_reservation(path: str | Path, attempt_id: int, request: GameRequest) -> None:
+    with _mutation_lock(path):
+        _append_reservation_unlocked(path, attempt_id, request)
+
+
+def append_result(
+    path: str | Path,
+    attempt_id: int,
+    outcome: str,
+    conclusive: bool | None = None,
+) -> None:
+    with _mutation_lock(path):
+        _append_result_unlocked(path, attempt_id, outcome, conclusive)
+
+
+def append_stop(path: str | Path, reason: str, attempt_id: int | None = None) -> None:
+    with _mutation_lock(path):
+        _append_stop_unlocked(path, reason, attempt_id)
+
+
+def replay_campaign(path: str | Path) -> GameRequest | CampaignDecision:
+    return load_campaign(path).action
+
+
+def campaign_summary(path: str | Path) -> LoadedSamplingCampaign:
+    return load_campaign(path, allow_stopped_for_summary=True)
+
+
+@contextmanager
+def output_lock(path: str | Path):
+    if os.name == "nt":
+        raise RuntimeError("sampling campaign output locking is unavailable on Windows; refusing concurrent writes")
+    try:
+        import fcntl
+    except ImportError as exc:
+        raise RuntimeError("sampling campaign output locking requires fcntl") from exc
+
+    canonical = Path(path).resolve()
+    active = getattr(_OUTPUT_LOCK_STATE, "paths", None)
+    if active is None:
+        active = set()
+        _OUTPUT_LOCK_STATE.paths = active
+    if canonical in active:
+        raise RuntimeError(f"sampling campaign output is already locked by this writer: {canonical}")
+    canonical.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = canonical.with_name(canonical.name + ".lock")
+    with lock_path.open("a", encoding="utf-8") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (BlockingIOError, OSError) as exc:
+            raise RuntimeError(f"sampling campaign output is already locked by another writer: {canonical}") from exc
+        active.add(canonical)
+        try:
+            yield
+        finally:
+            active.remove(canonical)
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _sampling_payload(seed: object, reservation_id: object, ply: object) -> bytes:

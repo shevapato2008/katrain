@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
+import { resolveBoardIntersectionAction } from './boardInteraction';
 
 // Golaxy-engine analysis overlay (kiosk engineMode: 领地/支招/变化图). Optional and
 // additive — when absent, rendering is byte-for-byte identical to before this prop existed.
@@ -642,20 +643,11 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     const gridY = boardSize - 1 - invertedY;
 
     if (gridX >= 0 && gridX < boardSize && gridY >= 0 && gridY < boardSize) {
-      // Check for existing stone
-      const clickedStone = gameState.stones.find(s => s[1] && s[1][0] === gridX && s[1][1] === gridY);
-      
-      if (clickedStone && onNavigate) {
-        const moveNumber = clickedStone[3];
-        if (moveNumber !== null && moveNumber !== undefined) {
-          // moveNumber corresponds to history index
-          if (moveNumber >= 0 && moveNumber < gameState.history.length) {
-            const nodeId = gameState.history[moveNumber].node_id;
-            onNavigate(nodeId);
-          }
-        }
-      } else {
-        onMove(gridX, gridY);
+      const action = resolveBoardIntersectionAction(gameState, gridX, gridY, Boolean(onNavigate));
+      if (action.kind === 'move') {
+        onMove(action.x, action.y);
+      } else if (action.kind === 'navigate') {
+        onNavigate?.(action.nodeId);
       }
     }
   };

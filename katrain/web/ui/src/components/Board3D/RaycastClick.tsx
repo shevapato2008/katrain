@@ -2,6 +2,7 @@ import { useCallback, memo } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { getBoardDimensions, worldToGrid, BOARD_SURFACE_Y, OVERLAY_OFFSET } from './constants';
 import type { GameState } from '../../api';
+import { resolveBoardIntersectionAction } from '../boardInteraction';
 
 interface RaycastClickProps {
   gameState: GameState;
@@ -26,19 +27,11 @@ const RaycastClick = ({
     if (!grid) return;
 
     const { col, row } = grid;
-
-    // Check for existing stone → navigate to that move
-    const clickedStone = gameState.stones.find(
-      s => s[1] && s[1][0] === col && s[1][1] === row
-    );
-
-    if (clickedStone && onNavigate) {
-      const moveNumber = clickedStone[3];
-      if (moveNumber != null && moveNumber >= 0 && moveNumber < gameState.history.length) {
-        onNavigate(gameState.history[moveNumber].node_id);
-      }
-    } else if (!clickedStone) {
-      onMove(col, row);
+    const action = resolveBoardIntersectionAction(gameState, col, row, Boolean(onNavigate));
+    if (action.kind === 'move') {
+      onMove(action.x, action.y);
+    } else if (action.kind === 'navigate') {
+      onNavigate?.(action.nodeId);
     }
   }, [gameState.end_result, gameState.player_to_move, gameState.stones, gameState.history, boardSize, onMove, onNavigate, playerColor]);
 

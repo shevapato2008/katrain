@@ -327,7 +327,6 @@ const GamePage = () => {
                         <Board
                             gameState={gameState}
                             onMove={onMove}
-                            onNavigate={onNavigate}
                             analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                             playerColor={humanColor}
                         />
@@ -336,7 +335,6 @@ const GamePage = () => {
                         <Board3D
                             gameState={gameState}
                             onMove={onMove}
-                            onNavigate={onNavigate}
                             analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                             playerColor={humanColor}
                         />

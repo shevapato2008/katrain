@@ -479,7 +479,6 @@ function ZenModeApp() {
                     handleMove(x, y);
                  }
               }}
-              onNavigate={handleNavigate}
               analysisToggles={analysisToggles}
             />
               )}

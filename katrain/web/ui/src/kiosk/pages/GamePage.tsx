@@ -566,7 +566,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Board
             gameState={gameState}
             onMove={handleBoardMove}
-            onNavigate={session.onNavigate}
             analysisToggles={boardAnalysisToggles}
             playerColor={humanColor}
             engineOverlay={engineOverlay}

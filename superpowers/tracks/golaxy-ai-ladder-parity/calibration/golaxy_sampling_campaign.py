@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
+import math
+import struct
+from collections.abc import Sequence as SequenceABC
+from collections.abc import Set as SetABC
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
+
+SAMPLING_ALGORITHM = "golaxy-humansl-weighted-v1"
+_SAMPLING_DOMAIN = SAMPLING_ALGORITHM.encode("ascii") + b"\0"
 
 STAGES = (
     ("sampling_quasi_5d", "rank_5d@1", 25),
@@ -47,6 +55,113 @@ class StageDecision:
 class CampaignDecision:
     status: str
     stages: tuple[StageDecision, ...]
+
+
+@dataclass(frozen=True)
+class SamplingAudit:
+    algorithm: str
+    u: float
+    index: int
+    move: tuple[int, int] | str
+    policy_sha256: str
+    positive_total: float
+    interval_low: float
+    interval_high: float
+
+
+def _sampling_payload(seed: object, reservation_id: object, ply: object) -> bytes:
+    if type(seed) is not int or not 0 <= seed < 2**64:
+        raise ValueError("seed must be a plain uint64 integer")
+    if not isinstance(reservation_id, str) or not reservation_id:
+        raise ValueError("reservation_id must be a nonempty string")
+    try:
+        reservation_bytes = str.encode(reservation_id, "utf-8")
+    except UnicodeEncodeError as error:
+        raise ValueError("reservation_id must be valid UTF-8") from error
+    if len(reservation_bytes) > 65535:
+        raise ValueError("reservation_id UTF-8 encoding exceeds 65535 bytes")
+    if type(ply) is not int or not 0 <= ply < 2**32:
+        raise ValueError("ply must be a plain uint32 integer")
+    return (
+        _SAMPLING_DOMAIN
+        + struct.pack(">Q", seed)
+        + struct.pack(">H", len(reservation_bytes))
+        + reservation_bytes
+        + struct.pack(">I", ply)
+    )
+
+
+def derive_uniform(seed: int, reservation_id: str, ply: int) -> float:
+    digest = hashlib.sha256(_sampling_payload(seed, reservation_id, ply)).digest()
+    raw = int.from_bytes(digest[:8], "big")
+    return min(raw / 2**64, math.nextafter(1.0, 0.0))
+
+
+def _validated_policy(policy: object) -> tuple[list[float], str]:
+    if type(policy) is not list or len(policy) != 362:
+        raise ValueError("policy must be a list of exactly 362 values")
+
+    weights: list[float] = []
+    encoded = bytearray()
+    for value in policy:
+        if type(value) not in {int, float}:
+            raise ValueError("policy values must be plain integers or floats")
+        try:
+            weight = float(value)
+            packed = struct.pack(">d", weight)
+        except (OverflowError, struct.error) as error:
+            raise ValueError("policy values must be representable as binary64") from error
+        if not math.isfinite(weight):
+            raise ValueError("policy values must be finite")
+        weights.append(weight)
+        encoded.extend(packed)
+    return weights, hashlib.sha256(encoded).hexdigest()
+
+
+def _validated_legal_indices(legal_indices: object) -> set[int]:
+    if not isinstance(legal_indices, (SequenceABC, SetABC)):
+        raise ValueError("legal_indices must be a sequence or set")
+
+    validated: set[int] = set()
+    for index in legal_indices:
+        if type(index) is not int or not 0 <= index < 362:
+            raise ValueError("legal indices must be plain integers from 0 through 361")
+        if index in validated:
+            raise ValueError("legal indices must not contain duplicates")
+        validated.add(index)
+    return validated
+
+
+def sample_human_policy(
+    policy: list[int | float], legal_indices: Sequence[int] | set[int], seed: int, reservation_id: str, ply: int
+) -> SamplingAudit:
+    weights, policy_sha256 = _validated_policy(policy)
+    legal = _validated_legal_indices(legal_indices)
+    u = derive_uniform(seed, reservation_id, ply)
+    candidates = [(index, weights[index]) for index in range(362) if index in legal and weights[index] > 0.0]
+    candidate_weights = [weight for _index, weight in candidates]
+    try:
+        positive_total = math.fsum(candidate_weights)
+        bounds = [math.fsum(candidate_weights[:end]) for end in range(len(candidate_weights) + 1)]
+    except (OverflowError, ValueError) as error:
+        raise ValueError("positive policy mass must be finite") from error
+    if not math.isfinite(positive_total) or positive_total <= 0.0:
+        raise ValueError("legal policy must have positive finite mass")
+
+    target = u * positive_total
+    for position, (index, _weight) in enumerate(candidates):
+        if bounds[position + 1] > target:
+            return SamplingAudit(
+                algorithm=SAMPLING_ALGORITHM,
+                u=u,
+                index=index,
+                move="pass" if index == 361 else (index % 19, 18 - index // 19),
+                policy_sha256=policy_sha256,
+                positive_total=positive_total,
+                interval_low=bounds[position],
+                interval_high=bounds[position + 1],
+            )
+    raise ValueError("no candidate interval contains the sampled target")
 
 
 def _stage_spec(stage: object) -> tuple[str, str, int]:

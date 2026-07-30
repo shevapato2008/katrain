@@ -1,5 +1,8 @@
 import dataclasses
+import hashlib
 import importlib
+import math
+import struct
 import sys
 from pathlib import Path
 
@@ -10,6 +13,24 @@ CALIBRATION = Path(__file__).resolve().parents[2] / "superpowers/tracks/golaxy-a
 sys.path.insert(0, str(CALIBRATION))
 
 campaign = importlib.import_module("golaxy_sampling_campaign")
+
+
+def expected_uniform(seed, reservation_id, ply):
+    reservation_bytes = reservation_id.encode("utf-8")
+    payload = (
+        b"golaxy-humansl-weighted-v1\0"
+        + struct.pack(">Q", seed)
+        + struct.pack(">H", len(reservation_bytes))
+        + reservation_bytes
+        + struct.pack(">I", ply)
+    )
+    digest = hashlib.sha256(payload).digest()
+    return int.from_bytes(digest[:8], "big") / 2**64, digest.hex()
+
+
+def expected_policy_sha256(policy):
+    payload = b"".join(struct.pack(">d", float(weight)) for weight in policy)
+    return hashlib.sha256(payload).hexdigest()
 
 
 def result(
@@ -207,3 +228,207 @@ def test_any_stopped_record_stops_campaign_without_a_game_request(records):
 
     assert isinstance(decision, campaign.CampaignDecision)
     assert decision.status == "stopped"
+
+
+@pytest.mark.parametrize(
+    ("seed", "reservation_id", "ply", "expected_digest", "expected_u"),
+    [
+        (
+            0,
+            "reservation-α",
+            0,
+            "f26ef0bfa15d4ceadc16f430c95954cd09ae213ede3dde92c419317eb74ae416",
+            0.9470053165290342,
+        ),
+        (
+            2**64 - 1,
+            "x",
+            2**32 - 1,
+            "353ca81f116996e9268fcffb090e440d207e044bab4fb66e4b074c1a1c2b8e47",
+            0.20795679815765875,
+        ),
+    ],
+)
+def test_derive_uniform_uses_frozen_domain_separated_binary_protocol(
+    seed, reservation_id, ply, expected_digest, expected_u
+):
+    independently_derived_u, independently_derived_digest = expected_uniform(seed, reservation_id, ply)
+
+    assert campaign.SAMPLING_ALGORITHM == "golaxy-humansl-weighted-v1"
+    assert independently_derived_digest == expected_digest
+    assert independently_derived_u == expected_u
+    assert campaign.derive_uniform(seed, reservation_id, ply) == expected_u
+    assert 0.0 <= campaign.derive_uniform(seed, reservation_id, ply) < 1.0
+
+
+def test_weighted_golden_selection_differs_from_argmax_and_records_exact_audit():
+    policy = [0.0] * 362
+    policy[0] = 9.0
+    policy[20] = 1.0
+    expected_u, _digest = expected_uniform(1, "golden", 17)
+
+    audit = campaign.sample_human_policy(policy, [20, 0], 1, "golden", 17)
+
+    assert max(range(362), key=policy.__getitem__) == 0
+    assert audit.algorithm == "golaxy-humansl-weighted-v1"
+    assert audit.u == expected_u == 0.9755060732413511
+    assert audit.index == 20
+    assert audit.move == (1, 17)
+    assert audit.policy_sha256 == expected_policy_sha256(policy)
+    assert audit.policy_sha256 == "b1b6a80c7fdcc036764b697e9956d1fff6062e1d69e9a48cdfd73b723eacb4be"
+    assert audit.positive_total == math.fsum([9.0, 1.0])
+    assert audit.interval_low == math.fsum([9.0])
+    assert audit.interval_high == math.fsum([9.0, 1.0])
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        audit.index = 0
+
+
+def test_candidates_use_index_order_and_independent_fsum_cumulative_bounds():
+    policy = [0.0] * 362
+    policy[2] = 0.1
+    policy[19] = 0.2
+    policy[361] = 0.3
+    expected_u, _digest = expected_uniform(5, "bounds", 9)
+    expected_weights = [policy[index] for index in (2, 19, 361)]
+    expected_total = math.fsum(expected_weights)
+    expected_bounds = [math.fsum(expected_weights[:end]) for end in range(4)]
+    expected_position = next(
+        position for position, upper in enumerate(expected_bounds[1:]) if upper > expected_u * expected_total
+    )
+
+    audit = campaign.sample_human_policy(policy, {361, 19, 2}, 5, "bounds", 9)
+
+    expected_index = (2, 19, 361)[expected_position]
+    assert audit.index == expected_index
+    assert audit.positive_total == expected_total
+    assert audit.interval_low == expected_bounds[expected_position]
+    assert audit.interval_high == expected_bounds[expected_position + 1]
+
+
+def test_target_on_a_cumulative_boundary_uses_strict_upper_comparison():
+    expected_u, _digest = expected_uniform(0, "strict", 0)
+    policy = [0.0] * 362
+    policy[0] = expected_u
+    policy[1] = 1.0 - expected_u
+    expected_total = math.fsum([policy[0], policy[1]])
+    assert expected_u * expected_total == math.fsum([policy[0]])
+
+    audit = campaign.sample_human_policy(policy, [1, 0], 0, "strict", 0)
+
+    assert audit.index == 1
+    assert audit.interval_low == math.fsum([policy[0]])
+    assert audit.interval_high == math.fsum([policy[0], policy[1]])
+
+
+def test_pass_is_sampled_like_any_other_positive_legal_candidate():
+    policy = [0.0] * 362
+    policy[361] = 2.5
+
+    audit = campaign.sample_human_policy(policy, {361}, 0, "pass-only", 0)
+
+    assert audit.index == 361
+    assert audit.move == "pass"
+    assert audit.interval_low == 0.0
+    assert audit.interval_high == audit.positive_total == 2.5
+
+
+def test_illegal_points_and_nonpositive_weights_are_ignored_without_argmax_fallback():
+    policy = [0.0] * 362
+    policy[0] = 1000.0  # Illegal, despite being the global argmax.
+    policy[1] = -7.0
+    policy[2] = -0.0
+    policy[360] = 4.0
+
+    audit = campaign.sample_human_policy(policy, [360, 2, 1], 7, "filtered", 3)
+
+    assert audit.index == 360
+    assert audit.move == (18, 0)
+    assert audit.positive_total == 4.0
+    assert audit.interval_low == 0.0
+    assert audit.interval_high == 4.0
+    assert audit.policy_sha256 == expected_policy_sha256(policy)
+
+
+@pytest.mark.parametrize(
+    "policy",
+    [
+        [0.0] * 361,
+        [0.0] * 363,
+        tuple([0.0] * 362),
+        [False] + [0.0] * 361,
+        ["0"] + [0.0] * 361,
+        [float("nan")] + [0.0] * 361,
+        [float("inf")] + [0.0] * 361,
+        [float("-inf")] + [0.0] * 361,
+        [10**1000] + [0.0] * 361,
+    ],
+)
+def test_policy_shape_type_and_binary64_values_fail_closed(policy):
+    with pytest.raises(ValueError):
+        campaign.sample_human_policy(policy, [0], 0, "reservation", 0)
+
+
+@pytest.mark.parametrize(
+    ("policy", "legal_indices"),
+    [
+        ([0.0] * 362, []),
+        ([-1.0] * 362, range(362)),
+        ([1.0] + [0.0] * 361, [1]),
+    ],
+)
+def test_zero_legal_positive_mass_fails_closed(policy, legal_indices):
+    with pytest.raises(ValueError, match="positive"):
+        campaign.sample_human_policy(policy, legal_indices, 0, "reservation", 0)
+
+
+@pytest.mark.parametrize(
+    "legal_indices",
+    [
+        [0, 0],
+        [True],
+        [-1],
+        [362],
+        [1.0],
+        ["1"],
+        {0: "not-a-set"},
+        (index for index in [0]),
+    ],
+)
+def test_invalid_legal_indices_fail_closed(legal_indices):
+    policy = [1.0] + [0.0] * 361
+
+    with pytest.raises(ValueError):
+        campaign.sample_human_policy(policy, legal_indices, 0, "reservation", 0)
+
+
+@pytest.mark.parametrize(
+    ("seed", "reservation_id", "ply"),
+    [
+        (True, "reservation", 0),
+        (-1, "reservation", 0),
+        (2**64, "reservation", 0),
+        (0, b"reservation", 0),
+        (0, "", 0),
+        (0, "a" * 65536, 0),
+        (0, "\ud800", 0),
+        (0, "reservation", True),
+        (0, "reservation", -1),
+        (0, "reservation", 2**32),
+    ],
+)
+def test_uniform_seed_reservation_id_and_ply_boundaries_fail_closed(seed, reservation_id, ply):
+    with pytest.raises(ValueError):
+        campaign.derive_uniform(seed, reservation_id, ply)
+
+    policy = [1.0] + [0.0] * 361
+    with pytest.raises(ValueError):
+        campaign.sample_human_policy(policy, [0], seed, reservation_id, ply)
+
+
+def test_reservation_id_limit_is_measured_in_utf8_bytes():
+    valid_id = "é" * 32767 + "a"
+    invalid_id = valid_id + "a"
+
+    assert campaign.derive_uniform(0, valid_id, 0) == expected_uniform(0, valid_id, 0)[0]
+    with pytest.raises(ValueError):
+        campaign.derive_uniform(0, invalid_id, 0)

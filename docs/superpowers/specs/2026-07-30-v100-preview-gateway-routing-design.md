@@ -108,7 +108,8 @@ After activation, verify:
 
 - public DNS resolves the preview hostname to `8.130.171.106`;
 - HTTPS certificate validation succeeds;
-- `/api/v1/health` and `/galaxy/` return success through the preview hostname;
+- `/api/v1/health` returns HTTP 200 with `engines.local == "reachable"`, and
+  `/galaxy/` returns success through the preview hostname;
 - WebSocket upgrade works;
 - media requests use the preview hostname and V100 MinIO;
 - preview registration is rejected while an existing tester can authenticate;

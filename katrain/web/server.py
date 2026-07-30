@@ -759,6 +759,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         session = _get_session_or_404(manager, request.session_id)
         with session.lock:
+            session.game_ended = False
             # A new game is starting: clear the "already recorded" guard from any
             # previous game on this (possibly reused) session so it becomes recordable again.
             session._recorded = False
@@ -791,6 +792,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         mode = request.mode
         settings = request.settings
         with session.lock:
+            session.game_ended = False
             # A (re)configured game is starting: clear the "already recorded" guard from
             # any previous game on this (possibly reused) session so it becomes recordable again.
             session._recorded = False
@@ -1292,6 +1294,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Set end state on the current node (game.end_result reads from current_node.end_state)
         session.katrain.game.game_result = result
         session.katrain.game.current_node.end_state = result
+        session.game_ended = True
 
         # Record multiplayer game result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None

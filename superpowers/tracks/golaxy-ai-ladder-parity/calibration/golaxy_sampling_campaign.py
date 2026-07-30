@@ -8,6 +8,7 @@ import struct
 from collections.abc import Sequence as SequenceABC
 from collections.abc import Set as SetABC
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Mapping, Sequence
 
 
@@ -60,7 +61,7 @@ class CampaignDecision:
 @dataclass(frozen=True)
 class SamplingAudit:
     algorithm: str
-    u: float
+    u: Fraction
     index: int
     move: tuple[int, int] | str
     policy_sha256: str
@@ -72,8 +73,8 @@ class SamplingAudit:
 def _sampling_payload(seed: object, reservation_id: object, ply: object) -> bytes:
     if type(seed) is not int or not 0 <= seed < 2**64:
         raise ValueError("seed must be a plain uint64 integer")
-    if not isinstance(reservation_id, str) or not reservation_id:
-        raise ValueError("reservation_id must be a nonempty string")
+    if type(reservation_id) is not str or not reservation_id:
+        raise ValueError("reservation_id must be a nonempty plain string")
     try:
         reservation_bytes = str.encode(reservation_id, "utf-8")
     except UnicodeEncodeError as error:
@@ -91,10 +92,10 @@ def _sampling_payload(seed: object, reservation_id: object, ply: object) -> byte
     )
 
 
-def derive_uniform(seed: int, reservation_id: str, ply: int) -> float:
+def derive_uniform(seed: int, reservation_id: str, ply: int) -> Fraction:
     digest = hashlib.sha256(_sampling_payload(seed, reservation_id, ply)).digest()
     raw = int.from_bytes(digest[:8], "big")
-    return min(raw / 2**64, math.nextafter(1.0, 0.0))
+    return Fraction(raw, 2**64)
 
 
 def _validated_policy(policy: object) -> tuple[list[float], str]:
@@ -148,9 +149,9 @@ def sample_human_policy(
     if not math.isfinite(positive_total) or positive_total <= 0.0:
         raise ValueError("legal policy must have positive finite mass")
 
-    target = u * positive_total
+    target = u * Fraction.from_float(positive_total)
     for position, (index, _weight) in enumerate(candidates):
-        if bounds[position + 1] > target:
+        if Fraction.from_float(bounds[position + 1]) > target:
             return SamplingAudit(
                 algorithm=SAMPLING_ALGORITHM,
                 u=u,

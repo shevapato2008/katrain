@@ -4,6 +4,7 @@ import importlib
 import math
 import struct
 import sys
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,7 @@ def expected_uniform(seed, reservation_id, ply):
         + struct.pack(">I", ply)
     )
     digest = hashlib.sha256(payload).digest()
-    return int.from_bytes(digest[:8], "big") / 2**64, digest.hex()
+    return Fraction(int.from_bytes(digest[:8], "big"), 2**64), digest.hex()
 
 
 def expected_policy_sha256(policy):
@@ -231,34 +232,30 @@ def test_any_stopped_record_stops_campaign_without_a_game_request(records):
 
 
 @pytest.mark.parametrize(
-    ("seed", "reservation_id", "ply", "expected_digest", "expected_u"),
+    ("seed", "reservation_id", "ply", "expected_digest"),
     [
         (
             0,
             "reservation-α",
             0,
             "f26ef0bfa15d4ceadc16f430c95954cd09ae213ede3dde92c419317eb74ae416",
-            0.9470053165290342,
         ),
         (
             2**64 - 1,
             "x",
             2**32 - 1,
             "353ca81f116996e9268fcffb090e440d207e044bab4fb66e4b074c1a1c2b8e47",
-            0.20795679815765875,
         ),
     ],
 )
-def test_derive_uniform_uses_frozen_domain_separated_binary_protocol(
-    seed, reservation_id, ply, expected_digest, expected_u
-):
+def test_derive_uniform_uses_frozen_domain_separated_binary_protocol(seed, reservation_id, ply, expected_digest):
     independently_derived_u, independently_derived_digest = expected_uniform(seed, reservation_id, ply)
 
     assert campaign.SAMPLING_ALGORITHM == "golaxy-humansl-weighted-v1"
     assert independently_derived_digest == expected_digest
-    assert independently_derived_u == expected_u
-    assert campaign.derive_uniform(seed, reservation_id, ply) == expected_u
-    assert 0.0 <= campaign.derive_uniform(seed, reservation_id, ply) < 1.0
+    assert campaign.derive_uniform(seed, reservation_id, ply) == independently_derived_u
+    assert isinstance(campaign.derive_uniform(seed, reservation_id, ply), Fraction)
+    assert Fraction(0) <= campaign.derive_uniform(seed, reservation_id, ply) < Fraction(1)
 
 
 def test_weighted_golden_selection_differs_from_argmax_and_records_exact_audit():
@@ -271,7 +268,7 @@ def test_weighted_golden_selection_differs_from_argmax_and_records_exact_audit()
 
     assert max(range(362), key=policy.__getitem__) == 0
     assert audit.algorithm == "golaxy-humansl-weighted-v1"
-    assert audit.u == expected_u == 0.9755060732413511
+    assert audit.u == expected_u == Fraction(0xF9BAC4199EF8C424, 2**64)
     assert audit.index == 20
     assert audit.move == (1, 17)
     assert audit.policy_sha256 == expected_policy_sha256(policy)
@@ -292,8 +289,9 @@ def test_candidates_use_index_order_and_independent_fsum_cumulative_bounds():
     expected_weights = [policy[index] for index in (2, 19, 361)]
     expected_total = math.fsum(expected_weights)
     expected_bounds = [math.fsum(expected_weights[:end]) for end in range(4)]
+    expected_target = expected_u * Fraction.from_float(expected_total)
     expected_position = next(
-        position for position, upper in enumerate(expected_bounds[1:]) if upper > expected_u * expected_total
+        position for position, upper in enumerate(expected_bounds[1:]) if Fraction.from_float(upper) > expected_target
     )
 
     audit = campaign.sample_human_policy(policy, {361, 19, 2}, 5, "bounds", 9)
@@ -306,18 +304,58 @@ def test_candidates_use_index_order_and_independent_fsum_cumulative_bounds():
 
 
 def test_target_on_a_cumulative_boundary_uses_strict_upper_comparison():
-    expected_u, _digest = expected_uniform(0, "strict", 0)
+    expected_u, _digest = expected_uniform(0, "strict-753", 0)
     policy = [0.0] * 362
-    policy[0] = expected_u
-    policy[1] = 1.0 - expected_u
+    policy[0] = float(expected_u)
+    policy[1] = 1.0 - policy[0]
     expected_total = math.fsum([policy[0], policy[1]])
-    assert expected_u * expected_total == math.fsum([policy[0]])
+    expected_target = expected_u * Fraction.from_float(expected_total)
+    assert expected_target == Fraction.from_float(math.fsum([policy[0]]))
 
-    audit = campaign.sample_human_policy(policy, [1, 0], 0, "strict", 0)
+    audit = campaign.sample_human_policy(policy, [1, 0], 0, "strict-753", 0)
 
     assert audit.index == 1
     assert audit.interval_low == math.fsum([policy[0]])
     assert audit.interval_high == math.fsum([policy[0], policy[1]])
+
+
+def test_maximum_uint64_digest_is_exactly_below_one_and_selects_unique_candidate(monkeypatch):
+    original_sha256 = campaign.hashlib.sha256
+    domain = b"golaxy-humansl-weighted-v1\0"
+
+    class MaximumPrefixDigest:
+        @staticmethod
+        def digest():
+            return b"\xff" * 8 + b"\0" * 24
+
+    def sha256_with_maximum_uniform(payload):
+        if bytes(payload).startswith(domain):
+            return MaximumPrefixDigest()
+        return original_sha256(payload)
+
+    monkeypatch.setattr(campaign.hashlib, "sha256", sha256_with_maximum_uniform)
+    expected_u = Fraction(2**64 - 1, 2**64)
+    policy = [0.0] * 362
+    policy[361] = math.ulp(0.0)
+
+    assert campaign.derive_uniform(0, "maximum", 0) == expected_u
+    assert campaign.derive_uniform(0, "maximum", 0) < 1
+    audit = campaign.sample_human_policy(policy, [361], 0, "maximum", 0)
+    assert audit.u == expected_u
+    assert audit.index == 361
+
+
+def test_reservation_id_must_be_a_plain_string():
+    class ReservationId(str):
+        pass
+
+    reservation_id = ReservationId("subclass")
+    policy = [1.0] + [0.0] * 361
+
+    with pytest.raises(ValueError):
+        campaign.derive_uniform(0, reservation_id, 0)
+    with pytest.raises(ValueError):
+        campaign.sample_human_policy(policy, [0], 0, reservation_id, 0)
 
 
 def test_pass_is_sampled_like_any_other_positive_legal_candidate():

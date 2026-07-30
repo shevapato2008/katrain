@@ -940,10 +940,23 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/nav")
-    def navigate(request: NavRequest):
+    def navigate(request: NavRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         _guard_engine_move_pending(app, request.session_id)
+        gateway = getattr(app.state, "platform_gateway", None)
+        is_platform_game = gateway and gateway.is_platform_game(request.session_id)
+        is_native_multiplayer = not is_platform_game and (
+            isinstance(session.player_b_id, int) or isinstance(session.player_w_id, int)
+        )
         with session.lock:
+            if is_native_multiplayer:
+                if not session.game_ended:
+                    current_state = session.katrain.get_state()
+                    session.game_ended = bool(current_state.get("end_result"))
+                if not session.game_ended:
+                    raise HTTPException(status_code=409, detail="navigation disabled during active multiplayer game")
+                if current_user is None:
+                    raise HTTPException(status_code=401, detail="Authentication required for multiplayer navigation")
             session.katrain("nav", request.node_id)
             state = session.katrain.get_state()
             session.last_state = state

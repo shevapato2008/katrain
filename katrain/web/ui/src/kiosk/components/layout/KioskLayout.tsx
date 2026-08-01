@@ -17,7 +17,13 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
   const showDock = !immersive && isL1; // Dock only on first-level pages
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', bgcolor: 'background.default' }}>
-      {!immersive && <Header username={username} />}
+      {!immersive && (
+        <Header
+          username={username}
+          showHome={isL1}
+          onHome={() => window.location.assign('http://127.0.0.1:8080/launcher')}
+        />
+      )}
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {showConsole && <SmartBoardConsole />}
         <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>

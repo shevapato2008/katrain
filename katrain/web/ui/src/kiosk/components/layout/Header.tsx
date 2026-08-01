@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip } from '@mui/material';
-import { Videocam, GridOn, SettingsOutlined } from '@mui/icons-material';
+import { Box, Typography, IconButton, Tooltip, Button } from '@mui/material';
+import { Videocam, GridOn, HomeOutlined, SettingsOutlined } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
@@ -8,6 +8,8 @@ import { useTranslation } from '../../../hooks/useTranslation';
 
 interface HeaderProps {
   username?: string;
+  showHome?: boolean;
+  onHome?: () => void;
 }
 
 /** Resolve board-pose sync state to a status color */
@@ -103,7 +105,7 @@ const GeometryIndicator = () => {
   );
 };
 
-const Header = ({ username }: HeaderProps) => {
+const Header = ({ username, showHome = false, onHome }: HeaderProps) => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -123,7 +125,7 @@ const Header = ({ username }: HeaderProps) => {
     <Box
       component="header"
       sx={{
-        height: 50,
+        height: 56,
         flexShrink: 0,
         display: 'flex',
         alignItems: 'center',
@@ -168,8 +170,31 @@ const Header = ({ username }: HeaderProps) => {
         <GeometryIndicator />
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {showHome && (
+          <Button
+            type="button"
+            variant="outlined"
+            color="inherit"
+            startIcon={<HomeOutlined />}
+            aria-label="返回智星盒主页"
+            data-testid="kiosk-home-action"
+            onClick={onHome}
+            sx={{
+              minWidth: 88,
+              minHeight: 48,
+              gap: 1,
+              flex: '0 0 auto',
+              touchAction: 'manipulation',
+              fontFamily: "'Newsreader','Noto Serif SC',serif",
+              fontSize: 14,
+              '& .MuiButton-startIcon': { margin: 0 },
+            }}
+          >
+            主页
+          </Button>
+        )}
         {username && (
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography data-testid="header-username" variant="body2" sx={{ color: 'text.secondary' }}>
             {username}
           </Typography>
         )}

@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import hashlib
 import importlib
@@ -604,6 +605,426 @@ def test_replay_rejects_nonstandard_json_constants_in_tampered_elapsed(tmp_path,
 
     with pytest.raises(ValueError, match="non-standard JSON constant"):
         extension.load_campaign(path, summary=True)
+
+
+def _runner():
+    return importlib.import_module("run_golaxy_b18_20game_extension")
+
+
+def _live_health():
+    health = {
+        "status": "ok",
+        "capability_schema": 1,
+        "katago_version": "KataGo v1.16.3",
+        "default_model": "b18",
+        "models": {},
+    }
+    for alias, sha in (("b18", extension.MODEL_SHA256), ("b28", extension.REFEREE_MODEL_SHA256)):
+        health["models"][alias] = {
+            "running": True,
+            "model_path": f"/models/{alias}.bin.gz",
+            "model_sha256": sha,
+            "model_sha256_verified": True,
+            "has_human_model": False,
+            "human_model_path": None,
+            "human_model_sha256": None,
+            "human_model_sha256_verified": False,
+        }
+    return health
+
+
+def _wrapper(alias):
+    health = _live_health()
+    model = health["models"][alias]
+    return {
+        "selected_model": alias,
+        "model_path": model["model_path"],
+        "model_sha256": model["model_sha256"],
+        "human_model_path": None,
+        "human_model_sha256": None,
+        "katago_version": health["katago_version"],
+    }
+
+
+def test_live_player_and_query_are_exact_pure_b18():
+    runner = _runner()
+    player = runner.make_player(32)
+    query = runner.build_player_query([0], 32)
+    assert (player.net, player.mechanism, player.max_visits, player.human_sl_profile) == ("b18", "net_search", 32, None)
+    assert player.human_sl_params == {}
+    assert query == {
+        "rules": "chinese",
+        "komi": 7.5,
+        "boardXSize": 19,
+        "boardYSize": 19,
+        "moves": [["B", "A19"]],
+        "analyzeTurns": [1],
+        "maxVisits": 32,
+        "includePolicy": True,
+        "includeOwnership": False,
+        "overrideSettings": {"reportAnalysisWinratesAs": "BLACK", "wideRootNoise": 0.04, "model": "b18"},
+    }
+
+
+def test_complete_health_is_canonical_and_rejects_either_identity_drift():
+    runner = _runner()
+    health = _live_health()
+    canonical, digest = runner.validate_complete_health(health)
+    assert json.loads(canonical) == health
+    assert hashlib.sha256(canonical.encode()).hexdigest() == digest
+    for alias in ("b18", "b28"):
+        changed = json.loads(json.dumps(health))
+        changed["models"][alias]["model_sha256"] = "0" * 64
+        with pytest.raises(ValueError, match=alias):
+            runner.validate_complete_health(changed)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda health: health.update(katago_version="different"),
+        lambda health: health["models"]["b18"].update(model_path="/different/b18.bin.gz"),
+        lambda health: health.update(default_model="missing"),
+        lambda health: health["models"]["b18"].update(running=False),
+        lambda health: health["models"]["b28"].update(running=False),
+    ],
+)
+def test_complete_health_rejects_version_path_default_and_running_drift(mutate):
+    runner = _runner()
+    baseline = _live_health()
+    canonical, _digest = runner.validate_complete_health(baseline)
+    changed = json.loads(json.dumps(baseline))
+    mutate(changed)
+    if changed["katago_version"] == "different" or changed["models"]["b18"]["model_path"].startswith("/different"):
+        # Each value can be valid in isolation, but canonical live/header comparison must detect it.
+        assert runner.validate_complete_health(changed)[0] != canonical
+    else:
+        with pytest.raises(ValueError):
+            runner.validate_complete_health(changed)
+
+
+def test_analysis_validates_attestation_and_never_falls_back():
+    runner = _runner()
+    analysis = {
+        "rootInfo": {"visits": 32},
+        "moveInfos": [{"move": "D4", "visits": 32, "order": 0}],
+        "policy": [0.0] * 362,
+        "_wrapper": _wrapper("b18"),
+    }
+    assert runner.select_player_move(analysis, 32, _live_health()) == 288
+    analysis["_wrapper"]["model_sha256"] = "bad"
+    with pytest.raises(Exception, match="attestation"):
+        runner.select_player_move(analysis, 32, _live_health())
+
+
+def test_preflight_finishes_every_gate_in_order_and_returns_frozen_proof():
+    runner = _runner()
+    calls, health = [], _live_health()
+
+    async def health_fetch(_client):
+        calls.append("health")
+        return health
+
+    async def player_probe(_client, visits, _identity):
+        calls.append(f"b18:{visits}")
+        return visits
+
+    async def referee_probe(_client, visits, _identity):
+        calls.append(f"b28:{visits}")
+        return visits
+
+    proof = asyncio.run(
+        runner.preflight_campaign(
+            object(),
+            expected_health=health,
+            fetch_health=health_fetch,
+            probe_player=player_probe,
+            probe_referee=referee_probe,
+            token_loader=lambda _env: calls.append("token") or "secret",
+            smoke_loader=lambda _path: calls.append("smoke") or {"pass_code": 361, "resign_code": 362},
+        )
+    )
+    assert calls == ["health", "b18:32", "b18:64", "b28:200", "b28:800", "token", "smoke"]
+    assert dataclasses.is_dataclass(proof) and proof.__dataclass_params__.frozen
+    assert proof.token == "secret" and proof.pass_code != proof.resign_code
+
+
+def _proof(runner):
+    canonical, digest = runner.validate_complete_health(_live_health())
+    health = _live_health()
+    return runner.PreflightProof(
+        canonical,
+        digest,
+        "token",
+        361,
+        362,
+        runner._canonical_json(runner._identity(health, "b18")),
+        runner._canonical_json(runner._identity(health, "b28")),
+    )
+
+
+def test_executor_rejects_mutated_proof_identity_before_reservation(tmp_path):
+    runner = _runner()
+    path = tmp_path / "proof.jsonl"
+    extension.initialize_v6_campaign(path, "proof", _live_health())
+    bad = dataclasses.replace(_proof(runner), b18_identity_canonical="{}")
+
+    async def never(*_args):
+        raise AssertionError("play must not run")
+
+    with pytest.raises(ValueError, match="proof"):
+        asyncio.run(runner.execute_serial_campaign(path, bad, never, emit=lambda _event: None))
+    assert not any(row["type"] == "reservation" for row in extension.load_campaign(path).records)
+
+
+def test_game_wrapper_uses_exact_contract_and_stability_recheck(monkeypatch):
+    runner = _runner()
+    calls = []
+
+    async def fake_play_one_game(**kwargs):
+        calls.append((kwargs["board_size"], kwargs["move_cap"], kwargs["our_color"]))
+        history = []
+        assert await kwargs["our_move"](history) == 17
+        history.append(17)
+        assert await kwargs["golaxy_move"](history) == "pass"
+        assert await kwargs["adjudicate"](history) == (3.5, True)
+        return GameOutcome("B", "our_win", True, 1, 3.5, True, "golaxy_pass")
+
+    async def fake_our(_client, history, visits, health):
+        calls.append(("our", list(history), visits, health["status"]))
+        return 17
+
+    async def fake_golaxy(_client, history, **kwargs):
+        calls.append(("golaxy", list(history), kwargs["rung"].golaxy_api_level, kwargs["token"]))
+        return "pass"
+
+    async def fake_adjudicate(_client, _url, history, **kwargs):
+        calls.append(("referee", list(history), kwargs["visits"], kwargs["strict_identity"]))
+        return (3.5, True)
+
+    monkeypatch.setattr(runner, "play_one_game", fake_play_one_game)
+    monkeypatch.setattr(runner, "analyze_player_move", fake_our)
+    monkeypatch.setattr(runner.adapters, "golaxy_move", fake_golaxy)
+    monkeypatch.setattr(runner.adapters, "adjudicate", fake_adjudicate)
+    outcome = asyncio.run(
+        runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner))
+    )
+    assert outcome.result == "our_win"
+    assert calls[0] == (19, 400, "B")
+    assert [call[2] for call in calls if call[0] == "referee"] == [200, 800]
+    assert any(call[:3] == ("golaxy", [17], 3300) for call in calls)
+
+
+def test_game_wrapper_converts_unstable_and_stops_engine_terminal(monkeypatch):
+    runner = _runner()
+
+    async def conclusive(**_kwargs):
+        return GameOutcome("B", "our_win", True, 10, 3.5, True, "move_cap")
+
+    async def unstable(*_args, **_kwargs):
+        return (4.5, True)
+
+    monkeypatch.setattr(runner, "play_one_game", conclusive)
+    monkeypatch.setattr(runner.adapters, "adjudicate", unstable)
+    outcome = asyncio.run(
+        runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner))
+    )
+    assert outcome.result == "inconclusive_unstable" and outcome.conclusive is False
+
+    async def terminal(**_kwargs):
+        return GameOutcome("B", "inconclusive_terminal", False, 10, None, False, "golaxy_terminal")
+
+    monkeypatch.setattr(runner, "play_one_game", terminal)
+    with pytest.raises(RuntimeError, match="definite runtime stop"):
+        asyncio.run(runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner)))
+
+
+def test_game_wrapper_rejects_nonfinite_stability_score(monkeypatch):
+    runner = _runner()
+
+    async def conclusive(**_kwargs):
+        return GameOutcome("B", "our_win", True, 10, 3.5, True, "move_cap")
+
+    async def nonfinite(*_args, **_kwargs):
+        return (float("nan"), True)
+
+    monkeypatch.setattr(runner, "play_one_game", conclusive)
+    monkeypatch.setattr(runner.adapters, "adjudicate", nonfinite)
+    outcome = asyncio.run(
+        runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner))
+    )
+    assert outcome.result == "inconclusive_unstable" and outcome.conclusive is False
+
+
+def test_executor_cools_down_serially_and_play_failure_closes_attempt(tmp_path):
+    runner = _runner()
+    path = tmp_path / "live.jsonl"
+    extension.initialize_v6_campaign(path, "live", _live_health())
+    sleeps, active, calls = [], 0, 0
+
+    async def play(request, _proof_value):
+        nonlocal active, calls
+        active += 1
+        calls += 1
+        assert active == 1
+        active -= 1
+        if calls == 2:
+            raise RuntimeError("business 7002")
+        return GameOutcome(request.color, "our_win", True, 10, 2.5 if request.color == "B" else -2.5, True)
+
+    async def sleep(value):
+        sleeps.append(value)
+
+    with pytest.raises(runner.CampaignStopped, match="7002"):
+        asyncio.run(runner.execute_serial_campaign(path, _proof(runner), play, sleep=sleep, emit=lambda _event: None))
+    loaded = extension.load_campaign(path, summary=True)
+    assert loaded.stopped and sleeps == [5.0]
+    assert [row["type"] for row in loaded.records[-4:]] == ["reservation", "result", "reservation", "stopped"]
+
+
+def test_executor_emit_and_result_append_faults_never_compensate(tmp_path, monkeypatch):
+    runner = _runner()
+
+    async def play(request, _proof_value):
+        return GameOutcome(request.color, "our_win", True, 10, 2.5, True)
+
+    emit_path = tmp_path / "emit.jsonl"
+    extension.initialize_v6_campaign(emit_path, "emit", _live_health())
+    with pytest.raises(RuntimeError, match="emit"):
+        asyncio.run(
+            runner.execute_serial_campaign(
+                emit_path, _proof(runner), play, emit=lambda _event: (_ for _ in ()).throw(RuntimeError("emit"))
+            )
+        )
+    emitted = extension.load_campaign(emit_path, summary=True)
+    assert emitted.open_attempt == 1 and not emitted.stopped
+
+    result_path = tmp_path / "result.jsonl"
+    extension.initialize_v6_campaign(result_path, "result", _live_health())
+    monkeypatch.setattr(
+        runner.protocol, "append_result", lambda *_args: (_ for _ in ()).throw(OSError("partial write"))
+    )
+    with pytest.raises(OSError, match="partial write"):
+        asyncio.run(runner.execute_serial_campaign(result_path, _proof(runner), play, emit=lambda _event: None))
+    failed = extension.load_campaign(result_path, summary=True)
+    assert failed.open_attempt == 1 and not failed.stopped
+
+
+def test_executor_reservation_stop_and_base_exception_faults_do_not_compensate(tmp_path, monkeypatch):
+    runner = _runner()
+
+    async def winning(request, _proof_value):
+        return GameOutcome(request.color, "our_win", True, 10, 2.5, True)
+
+    reservation_path = tmp_path / "reservation.jsonl"
+    extension.initialize_v6_campaign(reservation_path, "reservation", _live_health())
+    original_reservation = runner.protocol.append_reservation
+    monkeypatch.setattr(runner.protocol, "append_reservation", lambda *_args: (_ for _ in ()).throw(OSError("fsync")))
+    with pytest.raises(OSError, match="fsync"):
+        asyncio.run(runner.execute_serial_campaign(reservation_path, _proof(runner), winning, emit=lambda _event: None))
+    assert not any(
+        row["type"] in {"reservation", "stopped"} for row in extension.load_campaign(reservation_path).records
+    )
+    monkeypatch.setattr(runner.protocol, "append_reservation", original_reservation)
+
+    stop_path = tmp_path / "stop.jsonl"
+    extension.initialize_v6_campaign(stop_path, "stop", _live_health())
+
+    async def failing(*_args):
+        raise RuntimeError("quota")
+
+    monkeypatch.setattr(runner.protocol, "append_stop", lambda *_args: (_ for _ in ()).throw(OSError("stop fsync")))
+    with pytest.raises(OSError, match="stop fsync"):
+        asyncio.run(runner.execute_serial_campaign(stop_path, _proof(runner), failing, emit=lambda _event: None))
+    stopped = extension.load_campaign(stop_path, summary=True)
+    assert stopped.open_attempt == 1 and not stopped.stopped
+
+    class InjectedInterrupt(BaseException):
+        pass
+
+    interrupt_path = tmp_path / "interrupt.jsonl"
+    extension.initialize_v6_campaign(interrupt_path, "interrupt", _live_health())
+
+    async def interrupted(*_args):
+        raise InjectedInterrupt()
+
+    with pytest.raises(InjectedInterrupt):
+        asyncio.run(
+            runner.execute_serial_campaign(interrupt_path, _proof(runner), interrupted, emit=lambda _event: None)
+        )
+    interrupted_state = extension.load_campaign(interrupt_path, summary=True)
+    assert interrupted_state.open_attempt == 1 and not interrupted_state.stopped
+
+
+def test_cli_modes_are_strict_and_summary_is_offline(tmp_path, monkeypatch, capsys):
+    runner = _runner()
+    parser = runner.build_parser()
+    assert runner.validate_args(parser.parse_args(["--audit-parent"])) == "audit"
+    assert runner.validate_args(parser.parse_args(["--initialize", "--out", "x"])) == "initialize"
+    assert runner.validate_args(parser.parse_args(["--summary", "--out", "x"])) == "summary"
+    assert runner.validate_args(parser.parse_args(["--out", "x"])) == "live"
+    with pytest.raises(ValueError):
+        runner.validate_args(parser.parse_args(["--summary", "--out", "x", "--parent", "p"]))
+    with pytest.raises(ValueError, match="SHA"):
+        runner.validate_args(
+            parser.parse_args(["--authorize-continuation", "--parent", "p", "--parent-sha256", "bad", "--out", "new"])
+        )
+    with pytest.raises(ValueError, match="differ"):
+        runner.validate_args(
+            parser.parse_args(
+                ["--authorize-continuation", "--parent", "same", "--parent-sha256", "0" * 64, "--out", "same"]
+            )
+        )
+    path = tmp_path / "summary.jsonl"
+    extension.initialize_v6_campaign(path, "summary", _live_health())
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: (_ for _ in ()).throw(AssertionError("network")))
+    assert runner.main(["--summary", "--out", str(path)]) == 0
+    assert json.loads(capsys.readouterr().out)["protocol"] == extension.V6_PROTOCOL
+
+
+def test_output_lock_rejects_file_and_directory_symlink_aliases(tmp_path):
+    runner = _runner()
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    real = real_dir / "campaign.jsonl"
+    real.write_text("x")
+    file_alias = tmp_path / "alias.jsonl"
+    file_alias.symlink_to(real)
+    with pytest.raises(ValueError, match="symlink"):
+        with runner.campaign_output_lock(file_alias):
+            pass
+    dir_alias = tmp_path / "alias-dir"
+    dir_alias.symlink_to(real_dir, target_is_directory=True)
+    with pytest.raises(ValueError, match="symlink"):
+        with runner.campaign_output_lock(dir_alias / "campaign.jsonl"):
+            pass
+
+
+def test_output_lock_rejects_actual_second_writer(tmp_path):
+    runner = _runner()
+    path = tmp_path / "campaign.jsonl"
+    with runner.campaign_output_lock(path):
+        with pytest.raises(RuntimeError, match="locked"):
+            with runner.campaign_output_lock(path):
+                pass
+
+
+def test_live_requires_existing_strict_ledger_before_health_network(tmp_path, monkeypatch):
+    runner = _runner()
+    calls = []
+
+    class Client:
+        async def __aenter__(self):
+            calls.append("network")
+            return self
+
+        async def __aexit__(self, *_args):
+            pass
+
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: Client())
+    with pytest.raises(ValueError, match="ledger"):
+        asyncio.run(runner._run_network_mode(SimpleNamespace(out=str(tmp_path / "missing")), "live"))
+    assert calls == []
 
 
 @pytest.mark.parametrize("elapsed", [True, float("nan"), float("inf"), float("-inf")])

@@ -647,6 +647,25 @@ def _wrapper(alias):
     }
 
 
+def _referee_analysis(visits, *, score=3.5, ownership=None):
+    return {
+        "rootInfo": {"visits": visits, "scoreLead": score},
+        "moveInfos": [{"move": "D4", "visits": visits, "order": 0}],
+        "ownership": [1.0] * 361 if ownership is None else ownership,
+        "_wrapper": _wrapper("b28"),
+    }
+
+
+class _AnalysisClient:
+    def __init__(self, analyses):
+        self.analyses = list(analyses)
+        self.queries = []
+
+    async def post(self, url, *, json, timeout):
+        self.queries.append(json)
+        return httpx.Response(200, json=self.analyses.pop(0), request=httpx.Request("POST", url))
+
+
 def test_live_player_and_query_are_exact_pure_b18():
     runner = _runner()
     player = runner.make_player(32)
@@ -757,6 +776,109 @@ def test_b18_probe_and_live_http_path_accepts_only_exact_reported_visits(visits)
     invalid = Client(visits - 1)
     with pytest.raises(ValueError, match="equal requested"):
         asyncio.run(runner._probe_player(invalid, visits, _live_health()))
+
+
+@pytest.mark.parametrize("visits", [200, 800])
+def test_shared_strict_referee_probe_uses_exact_live_query_and_response(visits):
+    runner = _runner()
+    client = _AnalysisClient([_referee_analysis(visits)])
+    probe = asyncio.run(runner._probe_referee(client, visits, _live_health()))
+    assert probe["requested_visits"] == probe["reported_visits"] == visits
+    assert probe["score"] == 3.5 and probe["settled"] is True
+    assert client.queries == [
+        {
+            "rules": "chinese",
+            "komi": 7.5,
+            "boardXSize": 19,
+            "boardYSize": 19,
+            "moves": [],
+            "analyzeTurns": [0],
+            "maxVisits": visits,
+            "includeOwnership": True,
+            "includePolicy": False,
+            "overrideSettings": {"reportAnalysisWinratesAs": "BLACK", "model": "b28"},
+        }
+    ]
+
+
+@pytest.mark.parametrize("requested", [200, 800])
+@pytest.mark.parametrize("reported_kind", ["missing", "lower", "bool", "float", "plus1", "plus7"])
+def test_shared_referee_probe_rejects_every_nonexact_reported_visit(requested, reported_kind):
+    runner = _runner()
+    reported = {
+        "missing": None,
+        "lower": requested - 1,
+        "bool": True,
+        "float": float(requested),
+        "plus1": requested + 1,
+        "plus7": requested + 7,
+    }[reported_kind]
+    client = _AnalysisClient([_referee_analysis(reported)])
+    with pytest.raises(ValueError, match="visits"):
+        asyncio.run(runner._probe_referee(client, requested, _live_health()))
+
+
+@pytest.mark.parametrize(
+    ("score", "ownership"),
+    [
+        (True, [1.0] * 361),
+        (float("nan"), [1.0] * 361),
+        (None, [1.0] * 361),
+        (3.5, [True] + [1.0] * 360),
+        (3.5, [float("inf")] + [1.0] * 360),
+        (3.5, [1.0] * 360),
+        (3.5, "not ownership"),
+    ],
+)
+def test_shared_referee_rejects_malformed_score_and_ownership_as_schema_errors(score, ownership):
+    runner = _runner()
+    client = _AnalysisClient([_referee_analysis(200, score=score, ownership=ownership)])
+    with pytest.raises(ValueError, match="scoreLead|ownership"):
+        asyncio.run(runner._probe_referee(client, 200, _live_health()))
+
+
+def test_live_initial_and_stability_adjudication_share_strict_referee_path(monkeypatch):
+    runner = _runner()
+    client = _AnalysisClient([_referee_analysis(200), _referee_analysis(800)])
+
+    async def play(**kwargs):
+        assert await kwargs["adjudicate"]([]) == (3.5, True)
+        return GameOutcome("B", "our_win", True, 0, 3.5, True, "move_cap")
+
+    monkeypatch.setattr(runner, "play_one_game", play)
+    outcome = asyncio.run(runner.play_extension_game(client, object(), extension.GameRequest(32, "B"), _proof(runner)))
+    assert outcome.result == "our_win"
+    assert [query["maxVisits"] for query in client.queries] == [200, 800]
+
+
+@pytest.mark.parametrize(
+    "malformed",
+    ["visits", "score_bool", "score_nonfinite", "ownership_bool", "ownership_nonfinite", "ownership_missing"],
+)
+def test_live_malformed_referee_schema_raises_definite_error(monkeypatch, malformed):
+    runner = _runner()
+    analysis = _referee_analysis(200)
+    if malformed == "visits":
+        analysis["rootInfo"]["visits"] = 201
+    elif malformed == "score_bool":
+        analysis["rootInfo"]["scoreLead"] = True
+    elif malformed == "score_nonfinite":
+        analysis["rootInfo"]["scoreLead"] = float("inf")
+    elif malformed == "ownership_bool":
+        analysis["ownership"][0] = False
+    elif malformed == "ownership_nonfinite":
+        analysis["ownership"][0] = float("nan")
+    else:
+        del analysis["ownership"]
+    client = _AnalysisClient([analysis])
+
+    async def play(**kwargs):
+        await kwargs["adjudicate"]([])
+        raise AssertionError("unreachable")
+
+    monkeypatch.setattr(runner, "play_one_game", play)
+    with pytest.raises(ValueError, match="visits|scoreLead|ownership"):
+        asyncio.run(runner.play_extension_game(client, object(), extension.GameRequest(32, "B"), _proof(runner)))
 
 
 def test_preflight_finishes_every_gate_in_order_and_returns_frozen_proof():
@@ -934,14 +1056,14 @@ def test_game_wrapper_uses_exact_contract_and_stability_recheck(monkeypatch):
         calls.append(("golaxy", list(history), kwargs["rung"].golaxy_api_level, kwargs["token"]))
         return "pass"
 
-    async def fake_adjudicate(_client, _url, history, **kwargs):
-        calls.append(("referee", list(history), kwargs["visits"], kwargs["strict_identity"]))
+    async def fake_adjudicate(_client, history, visits, _health):
+        calls.append(("referee", list(history), visits, True))
         return (3.5, True)
 
     monkeypatch.setattr(runner, "play_one_game", fake_play_one_game)
     monkeypatch.setattr(runner, "analyze_player_move", fake_our)
     monkeypatch.setattr(runner.adapters, "golaxy_move", fake_golaxy)
-    monkeypatch.setattr(runner.adapters, "adjudicate", fake_adjudicate)
+    monkeypatch.setattr(runner, "strict_referee", fake_adjudicate)
     outcome = asyncio.run(
         runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner))
     )
@@ -961,7 +1083,7 @@ def test_game_wrapper_converts_unstable_and_stops_engine_terminal(monkeypatch):
         return (4.5, True)
 
     monkeypatch.setattr(runner, "play_one_game", conclusive)
-    monkeypatch.setattr(runner.adapters, "adjudicate", unstable)
+    monkeypatch.setattr(runner, "strict_referee", unstable)
     outcome = asyncio.run(
         runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner))
     )
@@ -982,14 +1104,12 @@ def test_game_wrapper_rejects_nonfinite_stability_score(monkeypatch):
         return GameOutcome("B", "our_win", True, 10, 3.5, True, "move_cap")
 
     async def nonfinite(*_args, **_kwargs):
-        return (float("nan"), True)
+        raise ValueError("referee scoreLead must be finite")
 
     monkeypatch.setattr(runner, "play_one_game", conclusive)
-    monkeypatch.setattr(runner.adapters, "adjudicate", nonfinite)
-    outcome = asyncio.run(
-        runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner))
-    )
-    assert outcome.result == "inconclusive_unstable" and outcome.conclusive is False
+    monkeypatch.setattr(runner, "strict_referee", nonfinite)
+    with pytest.raises(ValueError, match="scoreLead"):
+        asyncio.run(runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner)))
 
 
 def test_executor_cools_down_serially_and_play_failure_closes_attempt(tmp_path):

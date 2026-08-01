@@ -18,7 +18,6 @@ import time
 import uuid
 from contextlib import contextmanager, redirect_stdout
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import Awaitable, Callable, Mapping
 
@@ -38,12 +37,15 @@ with redirect_stdout(io.StringIO()):
     import golaxy_b18_20game_extension as protocol  # noqa: E402
     import run_golaxy_9d_alignment  # noqa: E402
 
+from katrain.core.engine import BaseEngine  # noqa: E402
 from katrain.core.ladder import (
     LadderMoveError,
     LadderRung,
+    LadderStrengthSpec,
     colrow_to_golaxy,
     pick_ladder_move,
     rung_strength_spec,
+    validate_analysis_attestation,
 )  # noqa: E402
 from katrain.core.ladder_calibration import GameOutcome, play_one_game  # noqa: E402
 
@@ -201,8 +203,64 @@ async def _probe_player(client, visits: int, health: Mapping[str, object]) -> in
     return await analyze_player_move(client, [], visits, health)
 
 
+def build_referee_query(history: list, visits: int) -> dict:
+    if type(visits) is not int or visits not in {REFEREE_VISITS, STABILITY_VISITS}:
+        raise ValueError("referee visits must be exactly 200 or 800")
+    return {
+        "rules": BaseEngine.get_rules(RULES),
+        "komi": KOMI,
+        "boardXSize": BOARD_SIZE,
+        "boardYSize": BOARD_SIZE,
+        "moves": adapters._golaxy_history_to_gtp(history, BOARD_SIZE),
+        "analyzeTurns": [len(history)],
+        "maxVisits": visits,
+        "includeOwnership": True,
+        "includePolicy": False,
+        "overrideSettings": {"reportAnalysisWinratesAs": "BLACK", "model": "b28"},
+    }
+
+
+async def strict_referee(client, history: list, visits: int, health: Mapping[str, object]) -> tuple[float, bool]:
+    query = build_referee_query(history, visits)
+    response = await client.post(f"{BASE_URL}/analyze", json=query, timeout=httpx.Timeout(180.0, connect=10.0))
+    analysis = run_golaxy_9d_alignment._json_response(response, f"referee b28@{visits} /analyze")
+    spec = LadderStrengthSpec(
+        visits=visits,
+        main_model="b28",
+        human_model=None,
+        override_settings={"reportAnalysisWinratesAs": "BLACK"},
+    )
+    validate_analysis_attestation(analysis, spec, _identity(health, "b28"))
+    root = analysis.get("rootInfo")
+    if not isinstance(root, Mapping):
+        raise ValueError("referee rootInfo is missing or malformed")
+    reported = run_golaxy_9d_alignment.validate_reported_visits(root.get("visits"), visits)
+    if reported != visits:
+        raise ValueError(f"referee reported visits must equal requested visits {visits}, got {reported}")
+    score = root.get("scoreLead")
+    if type(score) not in (int, float) or not math.isfinite(score):
+        raise ValueError("referee scoreLead must be a finite plain int or float")
+    ownership = analysis.get("ownership")
+    if (
+        type(ownership) is not list
+        or len(ownership) != BOARD_SIZE * BOARD_SIZE
+        or any(type(value) not in (int, float) or not math.isfinite(value) for value in ownership)
+    ):
+        raise ValueError("referee ownership must contain exactly 361 finite plain numeric values")
+    score = float(score)
+    return score, adapters._is_settled(dict(analysis), BOARD_SIZE, score)
+
+
 async def _probe_referee(client, visits: int, health: Mapping[str, object]) -> dict:
-    return await run_golaxy_9d_alignment._probe_referee(client, BASE_URL, health, visits)
+    score, settled = await strict_referee(client, [], visits, health)
+    return {
+        "requested_visits": visits,
+        "reported_visits": visits,
+        "score": score,
+        "settled": settled,
+        "identity": _identity(health, "b28"),
+        "effective_query": build_referee_query([], visits),
+    }
 
 
 async def preflight_campaign(
@@ -296,17 +354,10 @@ async def play_extension_game(
             resign_code=proof.resign_code,
         )
 
-    adjudicate = partial(
-        adapters.adjudicate,
-        local_client,
-        BASE_URL,
-        board_size=BOARD_SIZE,
-        komi=KOMI,
-        rules=RULES,
-        visits=REFEREE_VISITS,
-        capabilities=health,
-        strict_identity=True,
-    )
+    async def adjudicate(history):
+        history_holder["history"] = history
+        return await strict_referee(local_client, history, REFEREE_VISITS, health)
+
     outcome = await play_one_game(
         our_move=our_move,
         golaxy_move=golaxy_move,
@@ -319,24 +370,8 @@ async def play_extension_game(
         raise RuntimeError(f"definite runtime stop: {outcome.result}")
     if outcome.conclusive and outcome.end_reason != "golaxy_resign":
         history = history_holder["history"]
-        score, settled = await adapters.adjudicate(
-            local_client,
-            BASE_URL,
-            history,
-            board_size=BOARD_SIZE,
-            komi=KOMI,
-            rules=RULES,
-            visits=STABILITY_VISITS,
-            capabilities=health,
-            strict_identity=True,
-        )
-        valid_score = type(score) in (int, float) and math.isfinite(score)
-        if (
-            outcome.black_score is None
-            or not valid_score
-            or not settled
-            or abs(score - outcome.black_score) >= STABILITY_DELTA
-        ):
+        score, settled = await strict_referee(local_client, history, STABILITY_VISITS, health)
+        if outcome.black_score is None or not settled or abs(score - outcome.black_score) >= STABILITY_DELTA:
             outcome = dataclasses.replace(outcome, result="inconclusive_unstable", our_win=False, conclusive=False)
     return outcome
 

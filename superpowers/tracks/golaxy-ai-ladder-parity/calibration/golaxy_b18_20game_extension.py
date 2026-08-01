@@ -58,16 +58,17 @@ class CampaignDecision:
 def _validate_source_row(row: Mapping[str, object], line_number: int) -> None:
     expected_fields = {
         "type": "carry_result",
-        "level": GOLAXY_LEVEL,
         "level_name": GOLAXY_LEVEL_NAME,
-        "api_level": GOLAXY_API_LEVEL,
     }
     for field, expected in expected_fields.items():
         if row.get(field) != expected:
             raise ValueError(f"parent line {line_number} has wrong {field}")
-    if "rung" in row and row["rung"] != GOLAXY_LEVEL:
+    for field, expected in (("level", GOLAXY_LEVEL), ("api_level", GOLAXY_API_LEVEL)):
+        if type(row.get(field)) is not int or row[field] != expected:
+            raise ValueError(f"parent line {line_number} has wrong {field}")
+    if "rung" in row and (type(row["rung"]) is not int or row["rung"] != GOLAXY_LEVEL):
         raise ValueError(f"parent line {line_number} has wrong rung")
-    if row.get("visits") not in CANDIDATE_VISITS:
+    if type(row.get("visits")) is not int or row["visits"] not in CANDIDATE_VISITS:
         raise ValueError(f"parent line {line_number} has wrong visits")
     if row.get("color") not in {"B", "W"}:
         raise ValueError(f"parent line {line_number} has wrong color")
@@ -161,7 +162,7 @@ def _validate_evidence(evidence: Sequence[Mapping[str, object]]) -> tuple[Mappin
         if not isinstance(row, Mapping):
             raise ValueError(f"evidence row {index} is not an object")
         visits = row.get("visits")
-        if visits not in CANDIDATE_VISITS:
+        if type(visits) is not int or visits not in CANDIDATE_VISITS:
             raise ValueError(f"evidence row {index} has invalid visits")
         result = row.get("result", row.get("outcome"))
         if result not in _ACCEPTED_OUTCOMES or (
@@ -171,6 +172,16 @@ def _validate_evidence(evidence: Sequence[Mapping[str, object]]) -> tuple[Mappin
         conclusive = row.get("conclusive")
         if conclusive is not (result in _CONCLUSIVE_OUTCOMES):
             raise ValueError(f"evidence row {index} has inconsistent conclusive status")
+        if conclusive and conclusive_counts[visits] >= TARGET_CONCLUSIVE:
+            raise ValueError(f"candidate {visits} has more than {TARGET_CONCLUSIVE} conclusive results")
+
+        if row.get("type") != "carry_result":
+            active_visits = next(
+                (candidate for candidate in CANDIDATE_VISITS if conclusive_counts[candidate] < TARGET_CONCLUSIVE),
+                None,
+            )
+            if visits != active_visits:
+                raise ValueError(f"evidence row {index} does not match active candidate {active_visits}")
 
         expected_color = "B" if conclusive_counts[visits] % 2 == 0 else "W"
         if row.get("color") != expected_color:

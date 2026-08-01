@@ -63,6 +63,7 @@ def test_constants_freeze_approved_campaign():
     assert extension.GOLAXY_API_LEVEL == 3300
     assert extension.CANDIDATE_VISITS == (32, 64)
     assert extension.TARGET_CONCLUSIVE == 20
+    assert extension.PARENT_PATH == PARENT
     assert extension.PARENT_SHA256 == "9a5796b624924266efa6eb6937a4cb4833468bfa0270e5f115fc6d2714fc4082"
 
 
@@ -129,6 +130,26 @@ def test_load_frozen_carries_rejects_wrong_inherited_color_balance(tmp_path):
         extension.load_frozen_carries(changed, _sha256(changed))
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("level", 36.0),
+        ("level", True),
+        ("rung", 36.0),
+        ("rung", True),
+        ("api_level", 3300.0),
+        ("api_level", True),
+        ("visits", 64.0),
+        ("visits", True),
+    ],
+)
+def test_load_frozen_carries_rejects_non_plain_integer_protocol_numerics(tmp_path, field, value):
+    changed = _write_parent(tmp_path, lambda rows: rows[1].__setitem__(field, value))
+
+    with pytest.raises(ValueError, match=field):
+        extension.load_frozen_carries(changed, _sha256(changed))
+
+
 def test_scheduler_finishes_32_before_replenishing_64_and_alternates_conclusive_colors():
     inherited = extension.load_frozen_carries(PARENT, extension.PARENT_SHA256)
     assert extension.next_action(inherited) == extension.GameRequest(32, "B")
@@ -144,6 +165,13 @@ def test_scheduler_finishes_32_before_replenishing_64_and_alternates_conclusive_
             extension.CandidateSummary(64, 20, 13, 7, 0, 10, 10),
         ),
     )
+
+
+def test_scheduler_rejects_live_64_result_before_32_is_complete():
+    inherited = extension.load_frozen_carries(PARENT, extension.PARENT_SHA256)
+
+    with pytest.raises(ValueError, match="active candidate"):
+        extension.next_action([*inherited, _result(64, "B", "our_win")])
 
 
 @pytest.mark.parametrize(
@@ -164,9 +192,27 @@ def test_scheduler_rejects_unknown_candidate(visits):
         extension.next_action([_result(visits, "B", "our_win")])
 
 
+@pytest.mark.parametrize("visits", [32.0, True])
+def test_scheduler_rejects_non_plain_integer_visits(visits):
+    with pytest.raises(ValueError, match="visits"):
+        extension.next_action([_result(visits, "B", "our_win")])
+
+
 def test_scheduler_rejects_more_than_target_conclusive():
     with pytest.raises(ValueError, match="more than 20"):
         extension.next_action(_conclusive_sequence(32, 21))
+
+
+def test_scheduler_rejects_duplicate_or_empty_origin_result_ids():
+    duplicate = [
+        _result(32, "B", "our_win", result_id="same"),
+        _result(32, "W", "our_loss", result_id="same"),
+    ]
+    with pytest.raises(ValueError, match="duplicate"):
+        extension.next_action(duplicate)
+
+    with pytest.raises(ValueError, match="origin_result_id"):
+        extension.next_action([_result(32, "B", "our_win", result_id="")])
 
 
 @pytest.mark.parametrize(

@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -28,6 +29,9 @@ _CARRY_LINES = (2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 23, 24, 25)
 _CONCLUSIVE_OUTCOMES = frozenset(("our_win", "our_loss"))
 _INCONCLUSIVE_OUTCOMES = frozenset(("inconclusive_score", "inconclusive_unsettled", "inconclusive_unstable"))
 _ACCEPTED_OUTCOMES = _CONCLUSIVE_OUTCOMES | _INCONCLUSIVE_OUTCOMES
+_ACCEPTED_END_REASONS = frozenset(("our_pass", "golaxy_pass", "golaxy_resign", "move_cap"))
+_SCORED_END_REASONS = _ACCEPTED_END_REASONS - {"golaxy_resign"}
+_UTC_RFC3339 = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+00:00)\Z")
 V6_PROTOCOL = "golaxy-b18-three-star-20game-extension-v6"
 V7_PROTOCOL = "golaxy-b18-three-star-20game-extension-v7"
 CONTINUATION_AUTHORIZATION = "explicit_user_continue"
@@ -60,6 +64,18 @@ GAME_CONTRACT = {
 
 def _reject_json_constant(value: str) -> None:
     raise ValueError(f"non-standard JSON constant: {value}")
+
+
+def _validate_utc_rfc3339(value: object, field: str) -> str:
+    if type(value) is not str or not _UTC_RFC3339.fullmatch(value):
+        raise ValueError(f"{field} must be a nonempty UTC RFC3339 timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field} must be a nonempty UTC RFC3339 timestamp") from exc
+    if parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise ValueError(f"{field} must be a nonempty UTC RFC3339 timestamp")
+    return value
 
 
 @dataclass(frozen=True)
@@ -403,11 +419,10 @@ def _validate_base_header(header: Mapping[str, object], protocol: str) -> None:
         extra.add("excluded_uncertain_reservation")
     if set(header) != common | extra:
         raise ValueError("campaign header has invalid or extra fields")
+    _validate_utc_rfc3339(header.get("created_at"), "created_at")
     if (
         header.get("type") != "campaign_header"
         or header.get("protocol") != protocol
-        or type(header.get("created_at")) is not str
-        or not header["created_at"]
         or header.get("source_v5_path") != str(PARENT_PATH.resolve())
         or header.get("source_v5_sha256") != PARENT_SHA256
         or type(header.get("target_valid")) is not int
@@ -420,19 +435,6 @@ def _validate_base_header(header: Mapping[str, object], protocol: str) -> None:
     _validate_campaign_id(header.get("campaign_id"))
 
 
-_CARRY_FIELDS = {
-    "type",
-    "visits",
-    "color",
-    "outcome",
-    "result",
-    "conclusive",
-    "origin_result_id",
-    "direct_parent_sha256",
-    "direct_parent_line",
-    "source_outcome",
-}
-_V7_CARRY_REQUIRED = _CARRY_FIELDS - {"source_outcome"}
 _RESERVATION_FIELDS = {"type", "attempt_id", "request_id", "visits", "color", "target_valid", "created_at"}
 _OUTCOME_FIELDS = {"our_color", "result", "our_win", "num_moves", "black_score", "conclusive", "end_reason"}
 _RESULT_FIELDS = (_RESERVATION_FIELDS | _OUTCOME_FIELDS | {"origin_result_id", "elapsed_seconds", "completed_at"}) - {
@@ -503,8 +505,22 @@ def _validate_outcome_values(row: Mapping[str, object], color: str) -> None:
         raise ValueError("inconclusive_score requires black_score=None")
     if result in {"inconclusive_unsettled", "inconclusive_unstable"} and score is None:
         raise ValueError(f"{result} requires a finite numeric black_score")
-    if type(row.get("end_reason")) is not str or not row["end_reason"]:
+    end_reason = row.get("end_reason")
+    if end_reason not in _ACCEPTED_END_REASONS:
         raise ValueError("GameOutcome end_reason is invalid")
+    if end_reason == "golaxy_resign":
+        if result != "our_win" or our_win is not True or conclusive is not True or score is not None:
+            raise ValueError("golaxy_resign is coherent only with a scoreless conclusive our_win")
+        return
+    if end_reason not in _SCORED_END_REASONS:
+        raise ValueError("accepted non-resign outcomes require a scored end reason")
+    if result in _CONCLUSIVE_OUTCOMES:
+        if score is None:
+            raise ValueError("non-resign conclusive outcomes require a finite numeric black_score")
+        winner = "B" if score > 0 else "W"
+        expected_win = winner == color
+        if result != ("our_win" if expected_win else "our_loss") or our_win is not expected_win:
+            raise ValueError("conclusive outcome contradicts black_score winner semantics")
 
 
 def _expected_v7_carries(header: Mapping[str, object]) -> tuple[dict[str, object], ...]:
@@ -602,11 +618,9 @@ def load_campaign(path: str | Path, *, summary: bool = False) -> LoadedCampaign:
                 )
             ):
                 raise ValueError("reservation does not match the unique next action")
-            if (
-                row.get("request_id") != f"{header['campaign_id']}:{attempt_id}"
-                or type(row.get("created_at")) is not str
-            ):
+            if row.get("request_id") != f"{header['campaign_id']}:{attempt_id}":
                 raise ValueError("reservation identity is invalid")
+            _validate_utc_rfc3339(row.get("created_at"), "created_at")
             reservations[attempt_id] = row
             open_attempt = attempt_id
         elif row_type == "result":
@@ -624,13 +638,9 @@ def load_campaign(path: str | Path, *, summary: bool = False) -> LoadedCampaign:
                 raise ValueError("result origin_result_id is invalid or duplicate")
             _validate_outcome_values(row, str(reservation["color"]))
             elapsed = row.get("elapsed_seconds")
-            if (
-                type(elapsed) not in (int, float)
-                or not math.isfinite(elapsed)
-                or elapsed < 0
-                or type(row.get("completed_at")) is not str
-            ):
+            if type(elapsed) not in (int, float) or not math.isfinite(elapsed) or elapsed < 0:
                 raise ValueError("result timing is invalid")
+            _validate_utc_rfc3339(row.get("completed_at"), "completed_at")
             origins.add(str(origin))
             evidence.append(row)
             completed.add(attempt_id)
@@ -643,12 +653,9 @@ def load_campaign(path: str | Path, *, summary: bool = False) -> LoadedCampaign:
                 raise ValueError("stopped does not close the unique open reservation")
             if row.get("request_id") != reservations[attempt_id]["request_id"]:
                 raise ValueError("stopped request_id does not match its reservation")
-            if (
-                type(row.get("reason")) is not str
-                or not row["reason"].strip()
-                or type(row.get("stopped_at")) is not str
-            ):
-                raise ValueError("stopped reason or timestamp is invalid")
+            if type(row.get("reason")) is not str or not row["reason"].strip():
+                raise ValueError("stopped reason is invalid")
+            _validate_utc_rfc3339(row.get("stopped_at"), "stopped_at")
             completed.add(attempt_id)
             open_attempt = None
             stopped = True

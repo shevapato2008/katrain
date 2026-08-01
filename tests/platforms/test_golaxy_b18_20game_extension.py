@@ -617,3 +617,72 @@ def test_append_result_rejects_nonfinite_or_nonplain_elapsed_without_mutation(tm
         extension.append_result(path, 1, GameOutcome("B", "our_win", True, 1, 1.0, True), elapsed)
 
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        GameOutcome("B", "our_win", True, 10, None, True, "arbitrary"),
+        GameOutcome("B", "our_loss", False, 10, None, True, "golaxy_resign"),
+        GameOutcome("B", "our_win", True, 10, 1.0, True, "golaxy_resign"),
+        GameOutcome("B", "our_win", True, 10, None, True, "move_cap"),
+        GameOutcome("B", "our_win", True, 10, -1.0, True, "move_cap"),
+        GameOutcome("B", "our_loss", False, 10, 1.0, True, "our_pass"),
+        GameOutcome("B", "inconclusive_score", False, 10, None, False, "golaxy_resign"),
+        GameOutcome("B", "inconclusive_unsettled", False, 10, 1.0, False, "golaxy_resign"),
+    ],
+)
+def test_append_result_rejects_contradictory_game_outcomes_without_mutation(tmp_path, outcome):
+    path = tmp_path / "contradiction.jsonl"
+    extension.initialize_v6_campaign(path, "contradiction", HEALTH)
+    extension.append_reservation(path, 1, extension.load_campaign(path).action)
+    before = path.read_bytes()
+
+    with pytest.raises(ValueError):
+        extension.append_result(path, 1, outcome, 1.0)
+
+    assert path.read_bytes() == before
+
+
+def test_replay_rejects_tampered_game_outcome_contradiction(tmp_path):
+    path = tmp_path / "tampered-outcome.jsonl"
+    extension.initialize_v6_campaign(path, "tampered-outcome", HEALTH)
+    extension.append_reservation(path, 1, extension.load_campaign(path).action)
+    extension.append_result(path, 1, GameOutcome("B", "our_win", True, 10, None, True, "golaxy_resign"), 1.0)
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    rows[-1]["result"] = "our_loss"
+    rows[-1]["our_win"] = False
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+    with pytest.raises(ValueError):
+        extension.load_campaign(path, summary=True)
+
+
+@pytest.mark.parametrize(
+    ("terminal", "timestamp_field", "timestamp_value"),
+    [
+        ("header", "created_at", ""),
+        ("header", "created_at", "2026-08-01T12:00:00+08:00"),
+        ("reservation", "created_at", "not-a-timestamp"),
+        ("result", "completed_at", "2026-08-01 12:00:00Z"),
+        ("stopped", "stopped_at", "2026-13-01T12:00:00Z"),
+    ],
+)
+def test_replay_rejects_empty_or_malformed_non_utc_rfc3339_timestamps(
+    tmp_path, terminal, timestamp_field, timestamp_value
+):
+    path = tmp_path / f"bad-time-{terminal}.jsonl"
+    extension.initialize_v6_campaign(path, f"bad-time-{terminal}", HEALTH)
+    if terminal != "header":
+        extension.append_reservation(path, 1, extension.load_campaign(path).action)
+    if terminal == "result":
+        extension.append_result(path, 1, GameOutcome("B", "our_win", True, 10, None, True, "golaxy_resign"), 1.0)
+    elif terminal == "stopped":
+        extension.append_stop(path, 1, "engine stopped")
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    target = {"header": 0, "reservation": -1, "result": -1, "stopped": -1}[terminal]
+    rows[target][timestamp_field] = timestamp_value
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+    with pytest.raises(ValueError, match="RFC3339"):
+        extension.load_campaign(path, summary=True)

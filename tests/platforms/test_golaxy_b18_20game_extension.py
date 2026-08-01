@@ -174,6 +174,40 @@ def test_scheduler_rejects_live_64_result_before_32_is_complete():
         extension.next_action([*inherited, _result(64, "B", "our_win")])
 
 
+def test_scheduler_rejects_reordered_or_spoofed_carry_rows():
+    inherited = list(extension.load_frozen_carries(PARENT, extension.PARENT_SHA256))
+    reordered = [inherited[1], inherited[0], *inherited[2:]]
+    with pytest.raises(ValueError, match="frozen carry prefix"):
+        extension.next_action(reordered)
+
+    spoofed = _result(64, "B", "our_win")
+    spoofed["type"] = "carry_result"
+    with pytest.raises(ValueError, match="frozen carry prefix"):
+        extension.next_action([*inherited, spoofed])
+
+
+def test_scheduler_rejects_carry_after_live_evidence():
+    inherited = list(extension.load_frozen_carries(PARENT, extension.PARENT_SHA256))
+    live = _result(32, "B", "our_win")
+
+    with pytest.raises(ValueError, match="carry_result after live evidence"):
+        extension.next_action([*inherited, live, inherited[0]])
+
+
+def test_scheduler_rejects_spoofed_carry_provenance_or_preserved_outcome():
+    inherited = list(extension.load_frozen_carries(PARENT, extension.PARENT_SHA256))
+    for field, value in (
+        ("direct_parent_sha256", "0" * 64),
+        ("direct_parent_line", 99),
+        ("origin_result_id", "legacy:spoofed:2"),
+        ("source_outcome", {"result": "our_loss"}),
+    ):
+        spoofed = [dict(row) for row in inherited]
+        spoofed[0][field] = value
+        with pytest.raises(ValueError, match="frozen carry prefix"):
+            extension.next_action(spoofed)
+
+
 @pytest.mark.parametrize(
     "outcome",
     ["inconclusive_score", "inconclusive_unsettled", "inconclusive_unstable"],
@@ -196,6 +230,12 @@ def test_scheduler_rejects_unknown_candidate(visits):
 def test_scheduler_rejects_non_plain_integer_visits(visits):
     with pytest.raises(ValueError, match="visits"):
         extension.next_action([_result(visits, "B", "our_win")])
+
+
+@pytest.mark.parametrize("visits", [32.0, True])
+def test_summarize_candidate_rejects_non_plain_integer_visits(visits):
+    with pytest.raises(ValueError, match="visits"):
+        extension.summarize_candidate([], visits)
 
 
 def test_scheduler_rejects_more_than_target_conclusive():

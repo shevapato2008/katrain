@@ -154,7 +154,32 @@ def load_frozen_carries(parent_path: Path, expected_sha256: str) -> tuple[dict, 
     return tuple(carries)
 
 
+def _same_json_value(left: object, right: object) -> bool:
+    return json.dumps(left, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False) == json.dumps(
+        right, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
+
+
+def _validate_carry_prefix(evidence: Sequence[Mapping[str, object]]) -> None:
+    if not any(isinstance(row, Mapping) and row.get("type") == "carry_result" for row in evidence):
+        return
+
+    frozen = load_frozen_carries(PARENT_PATH, PARENT_SHA256)
+    if len(evidence) < len(frozen):
+        raise ValueError("evidence does not contain the exact frozen carry prefix")
+    for index, expected in enumerate(frozen):
+        if not isinstance(evidence[index], Mapping) or not _same_json_value(evidence[index], expected):
+            raise ValueError(f"evidence row {index + 1} does not match the exact frozen carry prefix")
+    seen_live = False
+    for index, row in enumerate(evidence[len(frozen) :], len(frozen) + 1):
+        if isinstance(row, Mapping) and row.get("type") == "carry_result":
+            detail = "carry_result after live evidence" if seen_live else "extra carry_result"
+            raise ValueError(f"invalid frozen carry prefix: {detail} at row {index}")
+        seen_live = True
+
+
 def _validate_evidence(evidence: Sequence[Mapping[str, object]]) -> tuple[Mapping[str, object], ...]:
+    _validate_carry_prefix(evidence)
     validated: list[Mapping[str, object]] = []
     conclusive_counts = {visits: 0 for visits in CANDIDATE_VISITS}
     seen_result_ids: set[str] = set()
@@ -203,7 +228,7 @@ def _validate_evidence(evidence: Sequence[Mapping[str, object]]) -> tuple[Mappin
 
 
 def summarize_candidate(evidence: Sequence[Mapping[str, object]], visits: int) -> CandidateSummary:
-    if visits not in CANDIDATE_VISITS:
+    if type(visits) is not int or visits not in CANDIDATE_VISITS:
         raise ValueError(f"invalid candidate visits: {visits}")
     validated = _validate_evidence(evidence)
     rows = [row for row in validated if row["visits"] == visits]

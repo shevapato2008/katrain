@@ -4,6 +4,7 @@ import importlib
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -267,3 +268,281 @@ def test_scheduler_rejects_duplicate_or_empty_origin_result_ids():
 def test_scheduler_rejects_invalid_outcome_or_color_sequence(row):
     with pytest.raises(ValueError):
         extension.next_action([row])
+
+
+HEALTH = {"status": "ok", "models": {"b18": {"running": True}, "b28": {"running": True}}}
+
+
+def _outcome(color="B", result="our_win", *, score=3.5, conclusive=True, our_win=True):
+    return SimpleNamespace(
+        our_color=color,
+        result=result,
+        our_win=our_win,
+        num_moves=123,
+        black_score=score,
+        conclusive=conclusive,
+        end_reason="move_cap",
+    )
+
+
+def test_v6_ledger_round_trip_uses_exact_schemas_and_append_only_rows(tmp_path):
+    path = tmp_path / "campaign-v6.jsonl"
+    loaded = extension.initialize_v6_campaign(path, "campaign-v6", HEALTH)
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    assert set(rows[0]) == {
+        "type",
+        "protocol",
+        "campaign_id",
+        "created_at",
+        "source_v5_path",
+        "source_v5_sha256",
+        "target_valid",
+        "candidate_order",
+        "game_contract",
+        "complete_health_response",
+    }
+    assert rows[0]["protocol"] == "golaxy-b18-three-star-20game-extension-v6"
+    assert rows[0]["complete_health_response"] == HEALTH
+    assert rows[1:] == list(extension.load_frozen_carries(PARENT, extension.PARENT_SHA256))
+    assert loaded.action == extension.GameRequest(32, "B")
+
+    extension.append_reservation(path, 1, loaded.action)
+    reservation = json.loads(path.read_text().splitlines()[-1])
+    assert set(reservation) == {"type", "attempt_id", "request_id", "visits", "color", "target_valid", "created_at"}
+    assert reservation["request_id"] == "campaign-v6:1"
+    extension.append_result(path, 1, _outcome(), 12.25)
+    result = json.loads(path.read_text().splitlines()[-1])
+    assert set(result) == {
+        "type",
+        "attempt_id",
+        "request_id",
+        "visits",
+        "color",
+        "target_valid",
+        "origin_result_id",
+        "our_color",
+        "result",
+        "our_win",
+        "num_moves",
+        "black_score",
+        "conclusive",
+        "end_reason",
+        "elapsed_seconds",
+        "completed_at",
+    }
+    assert result["origin_result_id"] == "campaign-v6:1"
+    assert extension.load_campaign(path).action == extension.GameRequest(32, "W")
+
+
+def test_init_is_exclusive_health_is_serializable_and_mutations_require_open_reservation(tmp_path):
+    path = tmp_path / "campaign.jsonl"
+    extension.initialize_v6_campaign(path, "campaign", HEALTH)
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="already exists"):
+        extension.initialize_v6_campaign(path, "other", HEALTH)
+    assert path.read_bytes() == before
+    with pytest.raises(ValueError, match="serializable"):
+        extension.initialize_v6_campaign(tmp_path / "bad.jsonl", "bad", {"bad": object()})
+    assert not (tmp_path / "bad.jsonl").exists()
+    with pytest.raises(ValueError, match="open reservation"):
+        extension.append_result(path, 1, _outcome(), 1.0)
+
+
+def test_unmatched_and_stopped_ledgers_are_inspectable_but_not_resumable(tmp_path):
+    unmatched = tmp_path / "unmatched.jsonl"
+    extension.initialize_v6_campaign(unmatched, "unmatched", HEALTH)
+    extension.append_reservation(unmatched, 1, extension.load_campaign(unmatched).action)
+    with pytest.raises(ValueError, match="open reservation"):
+        extension.load_campaign(unmatched)
+    assert extension.load_campaign(unmatched, summary=True).open_attempt == 1
+
+    stopped = tmp_path / "stopped.jsonl"
+    extension.initialize_v6_campaign(stopped, "stopped", HEALTH)
+    extension.append_reservation(stopped, 1, extension.load_campaign(stopped).action)
+    extension.append_stop(stopped, 1, "engine unavailable")
+    with pytest.raises(ValueError, match="stopped"):
+        extension.load_campaign(stopped)
+    assert extension.load_campaign(stopped, summary=True).stopped is True
+    with pytest.raises(ValueError, match="stopped"):
+        extension.append_result(stopped, 1, _outcome(), 1.0)
+
+
+@pytest.mark.parametrize("parent_state", ["stopped", "unmatched"])
+def test_v7_continuation_requires_exact_hash_authorization_and_health(tmp_path, parent_state):
+    parent = tmp_path / "parent.jsonl"
+    extension.initialize_v6_campaign(parent, "parent", HEALTH)
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    if parent_state == "stopped":
+        extension.append_stop(parent, 1, "terminal engine failure")
+    parent_sha = _sha256(parent)
+    child = tmp_path / "child.jsonl"
+    loaded = extension.initialize_v7_continuation(
+        child,
+        "child",
+        HEALTH,
+        parent_path=parent,
+        parent_sha256=parent_sha,
+        authorization="explicit_user_continue",
+    )
+    header = loaded.header
+    assert header["protocol"] == "golaxy-b18-three-star-20game-extension-v7"
+    assert header["parent_path"] == str(parent.resolve())
+    assert header["parent_sha256"] == parent_sha
+    assert header["authorization"] == "explicit_user_continue"
+    if parent_state == "unmatched":
+        assert header["excluded_uncertain_reservation"]["direct_parent_line"] == 16
+        assert header["excluded_uncertain_reservation"]["reservation"]["request_id"] == "parent:1"
+    else:
+        assert "excluded_uncertain_reservation" not in header
+
+
+def test_v7_rejections_do_not_create_output(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    extension.initialize_v6_campaign(parent, "parent", HEALTH)
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    sha = _sha256(parent)
+    cases = [
+        ("bad-auth", HEALTH, sha, "no"),
+        ("bad-sha", HEALTH, "0" * 64, "explicit_user_continue"),
+        ("health-drift", {"status": "drift"}, sha, "explicit_user_continue"),
+    ]
+    for name, health, parent_sha, auth in cases:
+        output = tmp_path / f"{name}.jsonl"
+        with pytest.raises(ValueError):
+            extension.initialize_v7_continuation(
+                output, name, health, parent_path=parent, parent_sha256=parent_sha, authorization=auth
+            )
+        assert not output.exists()
+
+
+def test_result_acceptance_is_strict_and_preserves_all_game_outcome_fields(tmp_path):
+    for index, bad in enumerate(
+        (
+            _outcome(result="inconclusive_terminal", conclusive=False, our_win=False, score=None),
+            _outcome(result="our_win", conclusive=False),
+            _outcome(result="inconclusive_score", conclusive=False, our_win=False, score="3.5"),
+        )
+    ):
+        path = tmp_path / f"bad-{index}.jsonl"
+        extension.initialize_v6_campaign(path, f"bad-{index}", HEALTH)
+        extension.append_reservation(path, 1, extension.load_campaign(path).action)
+        before = path.read_bytes()
+        with pytest.raises(ValueError):
+            extension.append_result(path, 1, bad, 1.0)
+        assert path.read_bytes() == before
+
+
+def test_v7_replay_rederives_uncertainty_and_health_from_sha_validated_parent(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    extension.initialize_v6_campaign(parent, "parent", HEALTH)
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    child = tmp_path / "child.jsonl"
+    extension.initialize_v7_continuation(
+        child,
+        "child",
+        HEALTH,
+        parent_path=parent,
+        parent_sha256=_sha256(parent),
+        authorization="explicit_user_continue",
+    )
+    original = child.read_text()
+    rows = [json.loads(line) for line in original.splitlines()]
+    rows[0]["excluded_uncertain_reservation"]["reservation"]["visits"] = 64
+    child.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(ValueError, match="uncertain"):
+        extension.load_campaign(child, summary=True)
+
+    rows = [json.loads(line) for line in original.splitlines()]
+    rows[0]["complete_health_response"] = {"status": "drift"}
+    child.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(ValueError, match="health"):
+        extension.load_campaign(child, summary=True)
+
+
+def test_v7_carries_only_closed_evidence_and_summary_counts_lineage_attempts(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    extension.initialize_v6_campaign(parent, "parent", HEALTH)
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    extension.append_result(parent, 1, _outcome(), 1.0)
+    extension.append_reservation(parent, 2, extension.load_campaign(parent).action)
+    extension.append_stop(parent, 2, "terminal engine failure")
+
+    child = tmp_path / "child.jsonl"
+    extension.initialize_v7_continuation(
+        child,
+        "child",
+        HEALTH,
+        parent_path=parent,
+        parent_sha256=_sha256(parent),
+        authorization="explicit_user_continue",
+    )
+    rows = [json.loads(line) for line in child.read_text().splitlines()]
+    assert all(row["type"] == "carry_result" for row in rows[1:])
+    carried = rows[-1]
+    assert carried["origin_result_id"] == "parent:1"
+    assert carried["direct_parent_line"] == 17
+    assert all(row.get("request_id") != "parent:2" for row in rows[1:])
+
+    extension.append_reservation(child, 1, extension.load_campaign(child).action)
+    extension.append_result(child, 1, _outcome(color="W", result="our_loss", our_win=False), 2.0)
+    summary = extension.campaign_summary(child)
+    assert set(summary) == {
+        "path",
+        "sha256",
+        "protocol",
+        "stopped",
+        "open_attempt",
+        "completion_status",
+        "next_action",
+        "candidates",
+        "total_attempts",
+        "inconclusive",
+        "warning",
+    }
+    assert summary["total_attempts"] == 3
+    assert summary["candidates"]["32"]["inherited"] == {"wins": 1, "losses": 3, "black": 2, "white": 2}
+    assert summary["candidates"]["32"]["new"] == {"wins": 1, "losses": 1, "black": 1, "white": 1}
+
+
+def test_v7_replay_rejects_campaign_id_reused_from_parent(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    extension.initialize_v6_campaign(parent, "parent", HEALTH)
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    extension.append_stop(parent, 1, "terminal engine failure")
+    child = tmp_path / "child.jsonl"
+    extension.initialize_v7_continuation(
+        child,
+        "child",
+        HEALTH,
+        parent_path=parent,
+        parent_sha256=_sha256(parent),
+        authorization="explicit_user_continue",
+    )
+    rows = [json.loads(line) for line in child.read_text().splitlines()]
+    rows[0]["campaign_id"] = "parent"
+    child.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+    with pytest.raises(ValueError, match="campaign_id"):
+        extension.load_campaign(child, summary=True)
+
+
+def test_stopped_parent_v7_header_forbids_even_null_uncertainty_descriptor(tmp_path):
+    parent = tmp_path / "parent.jsonl"
+    extension.initialize_v6_campaign(parent, "parent", HEALTH)
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    extension.append_stop(parent, 1, "terminal engine failure")
+    child = tmp_path / "child.jsonl"
+    extension.initialize_v7_continuation(
+        child,
+        "child",
+        HEALTH,
+        parent_path=parent,
+        parent_sha256=_sha256(parent),
+        authorization="explicit_user_continue",
+    )
+    rows = [json.loads(line) for line in child.read_text().splitlines()]
+    rows[0]["excluded_uncertain_reservation"] = None
+    child.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+    with pytest.raises(ValueError, match="uncertain"):
+        extension.load_campaign(child, summary=True)

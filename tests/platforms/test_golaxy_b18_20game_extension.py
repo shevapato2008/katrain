@@ -106,6 +106,7 @@ def test_load_frozen_carries_rejects_changed_parent_bytes(tmp_path):
     [
         (lambda rows: rows[0].__setitem__("model", "b28"), "model"),
         (lambda rows: rows[1].__setitem__("level", 35), "level"),
+        (lambda rows: rows[1].__setitem__("rung", 35), "rung"),
         (lambda rows: rows[1].__setitem__("level_name", "星阵2星"), "level_name"),
         (lambda rows: rows[1].__setitem__("api_level", 3200), "api_level"),
         (lambda rows: rows[1].__setitem__("visits", 32), "visits"),
@@ -145,9 +146,13 @@ def test_scheduler_finishes_32_before_replenishing_64_and_alternates_conclusive_
     )
 
 
-def test_inconclusive_is_replenishable_and_repeats_color():
+@pytest.mark.parametrize(
+    "outcome",
+    ["inconclusive_score", "inconclusive_unsettled", "inconclusive_unstable"],
+)
+def test_inconclusive_is_replenishable_and_repeats_color(outcome):
     evidence = _conclusive_sequence(32, 4)
-    evidence.append(_result(32, "B", "inconclusive_unsettled", conclusive=False))
+    evidence.append(_result(32, "B", outcome, conclusive=False))
 
     assert extension.summarize_candidate(evidence, 32) == extension.CandidateSummary(32, 4, 2, 2, 1, 2, 2)
     assert extension.next_action(evidence) == extension.GameRequest(32, "B")

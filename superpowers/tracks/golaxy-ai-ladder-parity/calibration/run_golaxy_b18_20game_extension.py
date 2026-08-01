@@ -173,6 +173,11 @@ def select_player_move(analysis: object, visits: int, health: Mapping[str, objec
         from katrain.core.ladder import validate_analysis_attestation
 
         validate_analysis_attestation(analysis, rung_strength_spec(rung), _identity(health, "b18"))
+        root_info = analysis.get("rootInfo")
+        reported_visits = root_info.get("visits") if isinstance(root_info, Mapping) else None
+        reported_visits = run_golaxy_9d_alignment.validate_reported_visits(reported_visits, visits)
+        if reported_visits != visits:
+            raise ValueError(f"reported visits must equal requested visits {visits}, got {reported_visits}")
         picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), rung.mechanism)
     except LadderMoveError as exc:
         raise LadderMoveError(f"analysis attestation or legal move validation failed: {exc}") from exc

@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from katrain.core.ladder_calibration import GameOutcome
@@ -717,6 +718,47 @@ def test_analysis_validates_attestation_and_never_falls_back():
         runner.select_player_move(analysis, 32, _live_health())
 
 
+@pytest.mark.parametrize("requested", [32, 64])
+@pytest.mark.parametrize("reported", [None, 31, True, 32.0])
+def test_b18_probe_and_live_selection_require_exact_plain_reported_visits(requested, reported):
+    runner = _runner()
+    analysis = {
+        "rootInfo": {"visits": reported},
+        "moveInfos": [{"move": "D4", "visits": requested, "order": 0}],
+        "policy": [0.0] * 362,
+        "_wrapper": _wrapper("b18"),
+    }
+    with pytest.raises(ValueError, match="visits"):
+        runner.select_player_move(analysis, requested, _live_health())
+
+
+@pytest.mark.parametrize("visits", [32, 64])
+def test_b18_probe_and_live_http_path_accepts_only_exact_reported_visits(visits):
+    runner = _runner()
+
+    class Client:
+        def __init__(self, reported):
+            self.reported = reported
+            self.queries = []
+
+        async def post(self, url, *, json, timeout):
+            self.queries.append((url, json, timeout))
+            analysis = {
+                "rootInfo": {"visits": self.reported},
+                "moveInfos": [{"move": "D4", "visits": visits, "order": 0}],
+                "policy": [0.0] * 362,
+                "_wrapper": _wrapper("b18"),
+            }
+            return httpx.Response(200, json=analysis, request=httpx.Request("POST", url))
+
+    valid = Client(visits)
+    assert asyncio.run(runner.analyze_player_move(valid, [], visits, _live_health())) == 288
+    assert valid.queries[0][1]["maxVisits"] == visits
+    invalid = Client(visits - 1)
+    with pytest.raises(ValueError, match="equal requested"):
+        asyncio.run(runner._probe_player(invalid, visits, _live_health()))
+
+
 def test_preflight_finishes_every_gate_in_order_and_returns_frozen_proof():
     runner = _runner()
     calls, health = [], _live_health()
@@ -747,6 +789,100 @@ def test_preflight_finishes_every_gate_in_order_and_returns_frozen_proof():
     assert calls == ["health", "b18:32", "b18:64", "b28:200", "b28:800", "token", "smoke"]
     assert dataclasses.is_dataclass(proof) and proof.__dataclass_params__.frozen
     assert proof.token == "secret" and proof.pass_code != proof.resign_code
+
+
+@pytest.mark.parametrize("gate", ["health", "b18:32", "b18:64", "b28:200", "b28:800", "rung", "token", "smoke"])
+def test_each_preflight_gate_failure_leaves_initialized_ledger_reservation_free(tmp_path, monkeypatch, gate):
+    runner = _runner()
+    path = tmp_path / f"{gate.replace(':', '-')}.jsonl"
+    health = _live_health()
+    extension.initialize_v6_campaign(path, gate.replace(":", "-"), health)
+
+    async def fetch(_client):
+        if gate == "health":
+            raise RuntimeError("health gate")
+        return health
+
+    async def player(_client, visits, _health):
+        if gate == f"b18:{visits}":
+            raise RuntimeError(gate)
+
+    async def referee(_client, visits, _health):
+        if gate == f"b28:{visits}":
+            raise RuntimeError(gate)
+
+    if gate == "rung":
+        monkeypatch.setattr(
+            runner.run_golaxy_9d_alignment,
+            "get_rung",
+            lambda _rung: SimpleNamespace(golaxy_api_level=3200, golaxy_level_name="drift"),
+        )
+    original_preflight = runner.preflight_campaign
+
+    async def integrated_preflight(client, *, expected_health):
+        return await original_preflight(
+            client,
+            expected_health=expected_health,
+            fetch_health=fetch,
+            probe_player=player,
+            probe_referee=referee,
+            token_loader=lambda _env: (_ for _ in ()).throw(RuntimeError("token")) if gate == "token" else "token",
+            smoke_loader=lambda _path: (
+                (_ for _ in ()).throw(RuntimeError("smoke"))
+                if gate == "smoke"
+                else {"pass_code": 361, "resign_code": 362}
+            ),
+        )
+
+    monkeypatch.setattr(runner, "preflight_campaign", integrated_preflight)
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+    monkeypatch.setattr(
+        runner,
+        "_execute_serial_campaign_unlocked",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("executor must not run")),
+    )
+    with pytest.raises(Exception):
+        asyncio.run(runner._run_network_mode(SimpleNamespace(out=str(path)), "live"))
+    loaded = extension.load_campaign(path)
+    assert not any(row["type"] in {"reservation", "stopped"} for row in loaded.records)
+
+
+@pytest.mark.parametrize("drift", ["version", "path", "default", "running", "b18", "b28"])
+def test_each_header_current_health_drift_class_leaves_zero_reservations(tmp_path, drift, monkeypatch):
+    runner = _runner()
+    header_health = _live_health()
+    path = tmp_path / f"drift-{drift}.jsonl"
+    extension.initialize_v6_campaign(path, drift, header_health)
+    current = json.loads(json.dumps(header_health))
+    if drift == "version":
+        current["katago_version"] = "KataGo drift"
+    elif drift == "path":
+        current["models"]["b18"]["model_path"] = "/models/drift.bin.gz"
+    elif drift == "default":
+        current["default_model"] = "b28"
+    elif drift == "running":
+        current["models"]["b18"]["running"] = False
+    else:
+        current["models"][drift]["model_sha256"] = "0" * 64
+
+    async def fetch(_client):
+        return current
+
+    original_preflight = runner.preflight_campaign
+
+    async def integrated_preflight(client, *, expected_health):
+        return await original_preflight(client, expected_health=expected_health, fetch_health=fetch)
+
+    monkeypatch.setattr(runner, "preflight_campaign", integrated_preflight)
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+    monkeypatch.setattr(
+        runner,
+        "_execute_serial_campaign_unlocked",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("executor must not run")),
+    )
+    with pytest.raises(ValueError):
+        asyncio.run(runner._run_network_mode(SimpleNamespace(out=str(path)), "live"))
+    assert not any(row["type"] in {"reservation", "stopped"} for row in extension.load_campaign(path).records)
 
 
 def _proof(runner):
@@ -882,6 +1018,108 @@ def test_executor_cools_down_serially_and_play_failure_closes_attempt(tmp_path):
     assert [row["type"] for row in loaded.records[-4:]] == ["reservation", "result", "reservation", "stopped"]
 
 
+def test_executor_reaches_exact_20_20_completion_without_extra_reservation(tmp_path):
+    runner = _runner()
+    path = tmp_path / "complete.jsonl"
+    extension.initialize_v6_campaign(path, "complete", _live_health())
+    requests = []
+
+    async def play(request, _proof_value):
+        requests.append(request)
+        score = 2.5 if request.color == "B" else -2.5
+        return GameOutcome(request.color, "our_win", True, 10, score, True)
+
+    result = asyncio.run(
+        runner.execute_serial_campaign(
+            path, _proof(runner), play, sleep=lambda _value: asyncio.sleep(0), emit=lambda _e: None
+        )
+    )
+    loaded = extension.load_campaign(path)
+    assert result["completion_status"] == "completed"
+    assert [(v, sum(row["visits"] == v and row["conclusive"] for row in loaded.evidence)) for v in (32, 64)] == [
+        (32, 20),
+        (64, 20),
+    ]
+    assert len(requests) == 26
+    assert sum(row["type"] == "reservation" for row in loaded.records) == 26
+
+
+def test_executor_replenishes_inconclusive_with_same_color(tmp_path):
+    runner = _runner()
+    path = tmp_path / "replenish.jsonl"
+    extension.initialize_v6_campaign(path, "replenish", _live_health())
+    requests = []
+
+    async def play(request, _proof_value):
+        requests.append(request)
+        if len(requests) == 1:
+            return GameOutcome(request.color, "inconclusive_unsettled", False, 10, 0.5, False)
+        raise RuntimeError("stop after proving continuation")
+
+    with pytest.raises(runner.CampaignStopped):
+        asyncio.run(
+            runner.execute_serial_campaign(
+                path, _proof(runner), play, sleep=lambda _value: asyncio.sleep(0), emit=lambda _e: None
+            )
+        )
+    assert requests == [extension.GameRequest(32, "B"), extension.GameRequest(32, "B")]
+
+
+@pytest.mark.parametrize(
+    ("source", "reason"),
+    [
+        ("golaxy", "business 7002"),
+        ("golaxy", "quota exhausted"),
+        ("golaxy", "rate limit"),
+        ("local", "malformed response"),
+        ("local", "identity drift"),
+    ],
+)
+def test_each_definite_real_game_wrapper_failure_durably_stops(tmp_path, monkeypatch, source, reason):
+    runner = _runner()
+    path = tmp_path / f"failure-{reason.replace(' ', '-')}.jsonl"
+    extension.initialize_v6_campaign(path, reason, _live_health())
+
+    class LocalClient:
+        async def post(self, url, **_kwargs):
+            if reason == "malformed response":
+                return SimpleNamespace(
+                    status_code=200,
+                    raise_for_status=lambda: None,
+                    json=lambda: (_ for _ in ()).throw(ValueError("malformed response")),
+                )
+            analysis = {
+                "rootInfo": {"visits": 32},
+                "moveInfos": [{"move": "D4", "visits": 32, "order": 0}],
+                "policy": [0.0] * 362,
+                "_wrapper": _wrapper("b18"),
+            }
+            analysis["_wrapper"]["model_sha256"] = "identity drift"
+            return httpx.Response(200, json=analysis, request=httpx.Request("POST", url))
+
+    async def golaxy_failure(*_args, **_kwargs):
+        raise RuntimeError(reason)
+
+    monkeypatch.setattr(runner.adapters, "golaxy_move", golaxy_failure)
+
+    async def drive_one_move(**kwargs):
+        if source == "local":
+            await kwargs["our_move"]([])
+        else:
+            await kwargs["golaxy_move"]([])
+        raise AssertionError("unreachable")
+
+    monkeypatch.setattr(runner, "play_one_game", drive_one_move)
+
+    async def play(request, proof):
+        return await runner.play_extension_game(LocalClient(), object(), request, proof)
+
+    with pytest.raises(runner.CampaignStopped, match=reason):
+        asyncio.run(runner.execute_serial_campaign(path, _proof(runner), play, emit=lambda _event: None))
+    loaded = extension.load_campaign(path, summary=True)
+    assert loaded.stopped and loaded.open_attempt is None and reason in loaded.records[-1]["reason"]
+
+
 def test_executor_emit_and_result_append_faults_never_compensate(tmp_path, monkeypatch):
     runner = _runner()
 
@@ -939,21 +1177,93 @@ def test_executor_reservation_stop_and_base_exception_faults_do_not_compensate(t
     stopped = extension.load_campaign(stop_path, summary=True)
     assert stopped.open_attempt == 1 and not stopped.stopped
 
-    class InjectedInterrupt(BaseException):
-        pass
-
     interrupt_path = tmp_path / "interrupt.jsonl"
     extension.initialize_v6_campaign(interrupt_path, "interrupt", _live_health())
 
     async def interrupted(*_args):
-        raise InjectedInterrupt()
+        raise KeyboardInterrupt("injected interrupt")
 
-    with pytest.raises(InjectedInterrupt):
+    with pytest.raises(KeyboardInterrupt, match="injected interrupt"):
         asyncio.run(
             runner.execute_serial_campaign(interrupt_path, _proof(runner), interrupted, emit=lambda _event: None)
         )
     interrupted_state = extension.load_campaign(interrupt_path, summary=True)
     assert interrupted_state.open_attempt == 1 and not interrupted_state.stopped
+
+
+@pytest.mark.parametrize("boundary", ["reservation", "result", "stop"])
+def test_executor_fsync_failure_at_each_ledger_boundary_never_compensates(tmp_path, monkeypatch, boundary):
+    runner = _runner()
+    path = tmp_path / f"fsync-{boundary}.jsonl"
+    extension.initialize_v6_campaign(path, f"fsync-{boundary}", _live_health())
+
+    async def play(request, _proof_value):
+        if boundary == "stop":
+            raise RuntimeError("play failed")
+        return GameOutcome(request.color, "our_win", True, 10, 2.5, True)
+
+    fsync_calls = 0
+
+    def fail_target_fsync(_fd):
+        nonlocal fsync_calls
+        fsync_calls += 1
+        target = 1 if boundary == "reservation" else 2
+        if fsync_calls == target:
+            raise OSError(f"{boundary} fsync")
+
+    monkeypatch.setattr(runner.protocol.os, "fsync", fail_target_fsync)
+    with pytest.raises(OSError, match=f"{boundary} fsync"):
+        asyncio.run(runner.execute_serial_campaign(path, _proof(runner), play, emit=lambda _event: None))
+    loaded = extension.load_campaign(path, summary=True)
+    tail_types = [row["type"] for row in loaded.records[-2:]]
+    if boundary == "reservation":
+        assert loaded.open_attempt == 1 and tail_types[-1] == "reservation"
+    elif boundary == "result":
+        assert loaded.open_attempt is None and tail_types == ["reservation", "result"]
+    else:
+        assert loaded.stopped and tail_types == ["reservation", "stopped"]
+
+
+@pytest.mark.parametrize("boundary", ["reservation", "result", "stop"])
+def test_executor_partial_write_at_each_ledger_boundary_freezes_replay_without_compensation(
+    tmp_path, monkeypatch, boundary
+):
+    runner = _runner()
+    path = tmp_path / f"partial-{boundary}.jsonl"
+    extension.initialize_v6_campaign(path, f"partial-{boundary}", _live_health())
+
+    def partial(*_args):
+        with path.open("ab") as handle:
+            handle.write(b'{"type":')
+            handle.flush()
+        raise OSError(f"{boundary} partial")
+
+    monkeypatch.setattr(runner.protocol, f"append_{boundary}", partial)
+
+    async def play(request, _proof_value):
+        if boundary == "stop":
+            raise RuntimeError("play failed")
+        return GameOutcome(request.color, "our_win", True, 10, 2.5, True)
+
+    with pytest.raises(OSError, match=f"{boundary} partial"):
+        asyncio.run(runner.execute_serial_campaign(path, _proof(runner), play, emit=lambda _event: None))
+    with pytest.raises(ValueError, match="JSONL"):
+        extension.load_campaign(path, summary=True)
+    assert path.read_bytes().endswith(b'{"type":')
+
+
+def test_executor_actual_async_cancellation_leaves_unmatched_without_stop(tmp_path):
+    runner = _runner()
+    path = tmp_path / "cancel.jsonl"
+    extension.initialize_v6_campaign(path, "cancel", _live_health())
+
+    async def cancelled(*_args):
+        raise asyncio.CancelledError()
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(runner.execute_serial_campaign(path, _proof(runner), cancelled, emit=lambda _event: None))
+    loaded = extension.load_campaign(path, summary=True)
+    assert loaded.open_attempt == 1 and not loaded.stopped
 
 
 def test_cli_modes_are_strict_and_summary_is_offline(tmp_path, monkeypatch, capsys):
@@ -1025,6 +1335,112 @@ def test_live_requires_existing_strict_ledger_before_health_network(tmp_path, mo
     with pytest.raises(ValueError, match="ledger"):
         asyncio.run(runner._run_network_mode(SimpleNamespace(out=str(tmp_path / "missing")), "live"))
     assert calls == []
+
+
+class _NoopAsyncClient:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_args):
+        return None
+
+
+def test_initialize_health_failure_creates_no_output(tmp_path, monkeypatch):
+    runner = _runner()
+    out = tmp_path / "initialize.jsonl"
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+
+    async def fail_health(_client):
+        raise RuntimeError("health failed")
+
+    monkeypatch.setattr(runner, "fetch_complete_health", fail_health)
+    with pytest.raises(RuntimeError, match="health failed"):
+        asyncio.run(runner._run_network_mode(SimpleNamespace(out=str(out)), "initialize"))
+    assert not out.exists() and not Path(f"{out}.lock").exists()
+
+
+def test_initialize_later_preflight_failure_leaves_header_carries_and_zero_reservations(tmp_path, monkeypatch):
+    runner = _runner()
+    out = tmp_path / "initialize-probe.jsonl"
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+
+    async def health(_client):
+        return _live_health()
+
+    async def fail_preflight(*_args, **_kwargs):
+        raise RuntimeError("probe failed")
+
+    monkeypatch.setattr(runner, "fetch_complete_health", health)
+    monkeypatch.setattr(runner, "_preflight_for_header", fail_preflight)
+    with pytest.raises(RuntimeError, match="probe failed"):
+        asyncio.run(runner._run_network_mode(SimpleNamespace(out=str(out)), "initialize"))
+    loaded = extension.load_campaign(out)
+    assert len(loaded.records) == 14 and not any(row["type"] == "reservation" for row in loaded.records)
+
+
+def _uncertain_parent(tmp_path):
+    parent = tmp_path / "parent-v6.jsonl"
+    extension.initialize_v6_campaign(parent, "parent-v6", _live_health())
+    extension.append_reservation(parent, 1, extension.load_campaign(parent).action)
+    return parent
+
+
+def test_continuation_health_drift_creates_no_output(tmp_path, monkeypatch):
+    runner = _runner()
+    parent = _uncertain_parent(tmp_path)
+    out = tmp_path / "continuation.jsonl"
+    current = _live_health()
+    current["models"]["b18"]["model_path"] = "/models/drift-b18.bin.gz"
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+
+    async def health(_client):
+        return current
+
+    monkeypatch.setattr(runner, "fetch_complete_health", health)
+    args = SimpleNamespace(out=str(out), parent=str(parent), parent_sha256=_sha256(parent))
+    with pytest.raises(ValueError, match="health response drifted"):
+        asyncio.run(runner._run_network_mode(args, "continue"))
+    assert not out.exists()
+
+
+def test_continuation_later_preflight_failure_leaves_v7_reservation_free(tmp_path, monkeypatch):
+    runner = _runner()
+    parent = _uncertain_parent(tmp_path)
+    out = tmp_path / "continuation-probe.jsonl"
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+
+    async def health(_client):
+        return _live_health()
+
+    async def fail_preflight(*_args, **_kwargs):
+        raise RuntimeError("referee probe failed")
+
+    monkeypatch.setattr(runner, "fetch_complete_health", health)
+    monkeypatch.setattr(runner, "_preflight_for_header", fail_preflight)
+    args = SimpleNamespace(out=str(out), parent=str(parent), parent_sha256=_sha256(parent))
+    with pytest.raises(RuntimeError, match="referee probe failed"):
+        asyncio.run(runner._run_network_mode(args, "continue"))
+    loaded = extension.load_campaign(out)
+    assert loaded.header["protocol"] == extension.V7_PROTOCOL
+    assert not any(row["type"] == "reservation" for row in loaded.records)
+
+
+@pytest.mark.parametrize("mode", ["initialize", "continue"])
+def test_initialize_and_continuation_reject_existing_output(tmp_path, monkeypatch, mode):
+    runner = _runner()
+    parent = _uncertain_parent(tmp_path)
+    out = tmp_path / f"existing-{mode}.jsonl"
+    out.write_text("do not overwrite", encoding="utf-8")
+    monkeypatch.setattr(runner.httpx, "AsyncClient", lambda **_kwargs: _NoopAsyncClient())
+
+    async def health(_client):
+        return _live_health()
+
+    monkeypatch.setattr(runner, "fetch_complete_health", health)
+    args = SimpleNamespace(out=str(out), parent=str(parent), parent_sha256=_sha256(parent))
+    with pytest.raises(ValueError, match="already exists"):
+        asyncio.run(runner._run_network_mode(args, mode))
+    assert out.read_text(encoding="utf-8") == "do not overwrite"
 
 
 @pytest.mark.parametrize("elapsed", [True, float("nan"), float("inf"), float("-inf")])

@@ -218,7 +218,7 @@ def build_referee_query(history: list, visits: int) -> dict:
     }
 
 
-async def strict_referee(client, history: list, visits: int, health: Mapping[str, object]) -> tuple[float, bool]:
+async def strict_referee(client, history: list, visits: int, health: Mapping[str, object]) -> tuple[float | None, bool]:
     query = build_referee_query(history, visits)
     response = await client.post(f"{BASE_URL}/analyze", json=query, timeout=httpx.Timeout(180.0, connect=10.0))
     analysis = run_golaxy_9d_alignment._json_response(response, f"referee b28@{visits} /analyze")
@@ -234,16 +234,25 @@ async def strict_referee(client, history: list, visits: int, health: Mapping[str
         raise ValueError("referee rootInfo is missing or malformed")
     run_golaxy_9d_alignment.validate_reported_visits(root.get("visits"), visits)
     score = root.get("scoreLead")
-    if type(score) not in (int, float) or not math.isfinite(score):
-        raise ValueError("referee scoreLead must be a finite plain int or float")
-    ownership = analysis.get("ownership")
-    if (
-        type(ownership) is not list
-        or len(ownership) != BOARD_SIZE * BOARD_SIZE
-        or any(type(value) not in (int, float) or not math.isfinite(value) for value in ownership)
-    ):
-        raise ValueError("referee ownership must contain exactly 361 finite plain numeric values")
+    if score is None:
+        return None, False
+    if type(score) not in (int, float):
+        raise ValueError("referee scoreLead must be a plain int or float when present")
+    if not math.isfinite(score):
+        return None, False
     score = float(score)
+    ownership = analysis.get("ownership")
+    if ownership is None:
+        return score, False
+    if type(ownership) is not list:
+        raise ValueError("referee ownership must be a list when present")
+    if len(ownership) != BOARD_SIZE * BOARD_SIZE:
+        return score, False
+    for value in ownership:
+        if type(value) not in (int, float):
+            raise ValueError("referee ownership values must be plain numeric values")
+        if not math.isfinite(value):
+            return score, False
     return score, adapters._is_settled(dict(analysis), BOARD_SIZE, score)
 
 
@@ -367,7 +376,12 @@ async def play_extension_game(
     if outcome.conclusive and outcome.end_reason != "golaxy_resign":
         history = history_holder["history"]
         score, settled = await strict_referee(local_client, history, STABILITY_VISITS, health)
-        if outcome.black_score is None or not settled or abs(score - outcome.black_score) >= STABILITY_DELTA:
+        if (
+            score is None
+            or outcome.black_score is None
+            or not settled
+            or abs(score - outcome.black_score) >= STABILITY_DELTA
+        ):
             outcome = dataclasses.replace(outcome, result="inconclusive_unstable", our_win=False, conclusive=False)
     return outcome
 

@@ -879,19 +879,83 @@ def test_shared_referee_accepts_thread_overshoot_without_broadening_query_budget
     ("score", "ownership"),
     [
         (True, [1.0] * 361),
-        (float("nan"), [1.0] * 361),
-        (None, [1.0] * 361),
+        ("3.5", [1.0] * 361),
         (3.5, [True] + [1.0] * 360),
-        (3.5, [float("inf")] + [1.0] * 360),
-        (3.5, [1.0] * 360),
+        (3.5, ["1.0"] + [1.0] * 360),
         (3.5, "not ownership"),
     ],
 )
-def test_shared_referee_rejects_malformed_score_and_ownership_as_schema_errors(score, ownership):
+def test_shared_referee_rejects_true_numeric_type_violations(score, ownership):
     runner = _runner()
     client = _AnalysisClient([_referee_analysis(200, score=score, ownership=ownership)])
     with pytest.raises(ValueError, match="scoreLead|ownership"):
         asyncio.run(runner._probe_referee(client, 200, _live_health()))
+
+
+@pytest.mark.parametrize(
+    "uncertainty", ["score_missing", "score_nan", "ownership_missing", "ownership_short", "ownership_nan", "unsettled"]
+)
+def test_live_b28_200_maps_numeric_uncertainty_to_replenishable_outcomes(monkeypatch, uncertainty):
+    runner = _runner()
+    analysis = _referee_analysis(200)
+    if uncertainty == "score_missing":
+        del analysis["rootInfo"]["scoreLead"]
+    elif uncertainty == "score_nan":
+        analysis["rootInfo"]["scoreLead"] = float("nan")
+    elif uncertainty == "ownership_missing":
+        del analysis["ownership"]
+    elif uncertainty == "ownership_short":
+        analysis["ownership"] = [1.0] * 360
+    elif uncertainty == "ownership_nan":
+        analysis["ownership"][0] = float("nan")
+    else:
+        analysis["ownership"] = [0.0] * 361
+    client = _AnalysisClient([analysis])
+
+    async def pass_move(*_args, **_kwargs):
+        return "pass"
+
+    monkeypatch.setattr(runner, "analyze_player_move", pass_move)
+    outcome = asyncio.run(runner.play_extension_game(client, object(), extension.GameRequest(32, "B"), _proof(runner)))
+    expected = "inconclusive_score" if uncertainty.startswith("score_") else "inconclusive_unsettled"
+    assert outcome.result == expected and outcome.conclusive is False
+
+
+@pytest.mark.parametrize(
+    "uncertainty", ["score_missing", "score_inf", "ownership_missing", "ownership_short", "ownership_inf", "unsettled"]
+)
+def test_live_b28_800_maps_all_numeric_uncertainty_to_unstable(monkeypatch, uncertainty):
+    runner = _runner()
+    stability = _referee_analysis(800)
+    if uncertainty == "score_missing":
+        del stability["rootInfo"]["scoreLead"]
+    elif uncertainty == "score_inf":
+        stability["rootInfo"]["scoreLead"] = float("inf")
+    elif uncertainty == "ownership_missing":
+        del stability["ownership"]
+    elif uncertainty == "ownership_short":
+        stability["ownership"] = [1.0] * 360
+    elif uncertainty == "ownership_inf":
+        stability["ownership"][0] = float("inf")
+    else:
+        stability["ownership"] = [0.0] * 361
+    client = _AnalysisClient([_referee_analysis(200), stability])
+
+    async def pass_move(*_args, **_kwargs):
+        return "pass"
+
+    monkeypatch.setattr(runner, "analyze_player_move", pass_move)
+    outcome = asyncio.run(runner.play_extension_game(client, object(), extension.GameRequest(32, "B"), _proof(runner)))
+    assert outcome.result == "inconclusive_unstable" and outcome.conclusive is False
+
+
+@pytest.mark.parametrize("visits", [200, 800])
+def test_preflight_referee_accepts_unsettled_or_missing_numeric_evidence(visits):
+    runner = _runner()
+    analysis = _referee_analysis(visits)
+    del analysis["ownership"]
+    probe = asyncio.run(runner._probe_referee(_AnalysisClient([analysis]), visits, _live_health()))
+    assert probe["score"] == 3.5 and probe["settled"] is False
 
 
 def test_live_initial_and_stability_adjudication_share_strict_referee_path(monkeypatch):
@@ -910,23 +974,21 @@ def test_live_initial_and_stability_adjudication_share_strict_referee_path(monke
 
 @pytest.mark.parametrize(
     "malformed",
-    ["visits", "score_bool", "score_nonfinite", "ownership_bool", "ownership_nonfinite", "ownership_missing"],
+    ["visits", "score_bool", "score_string", "ownership_bool", "ownership_string"],
 )
-def test_live_malformed_referee_schema_raises_definite_error(monkeypatch, malformed):
+def test_live_true_referee_type_violation_raises_definite_error(monkeypatch, malformed):
     runner = _runner()
     analysis = _referee_analysis(200)
     if malformed == "visits":
         analysis["rootInfo"]["visits"] = 208
     elif malformed == "score_bool":
         analysis["rootInfo"]["scoreLead"] = True
-    elif malformed == "score_nonfinite":
-        analysis["rootInfo"]["scoreLead"] = float("inf")
+    elif malformed == "score_string":
+        analysis["rootInfo"]["scoreLead"] = "3.5"
     elif malformed == "ownership_bool":
         analysis["ownership"][0] = False
-    elif malformed == "ownership_nonfinite":
-        analysis["ownership"][0] = float("nan")
     else:
-        del analysis["ownership"]
+        analysis["ownership"][0] = "1.0"
     client = _AnalysisClient([analysis])
 
     async def play(**kwargs):

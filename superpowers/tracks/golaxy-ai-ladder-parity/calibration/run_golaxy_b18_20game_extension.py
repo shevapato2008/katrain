@@ -218,7 +218,9 @@ def build_referee_query(history: list, visits: int) -> dict:
     }
 
 
-async def strict_referee(client, history: list, visits: int, health: Mapping[str, object]) -> tuple[float | None, bool]:
+async def _strict_referee_result(
+    client, history: list, visits: int, health: Mapping[str, object]
+) -> tuple[float | None, bool, int]:
     query = build_referee_query(history, visits)
     response = await client.post(f"{BASE_URL}/analyze", json=query, timeout=httpx.Timeout(180.0, connect=10.0))
     analysis = run_golaxy_9d_alignment._json_response(response, f"referee b28@{visits} /analyze")
@@ -232,35 +234,40 @@ async def strict_referee(client, history: list, visits: int, health: Mapping[str
     root = analysis.get("rootInfo")
     if not isinstance(root, Mapping):
         raise ValueError("referee rootInfo is missing or malformed")
-    run_golaxy_9d_alignment.validate_reported_visits(root.get("visits"), visits)
+    reported_visits = run_golaxy_9d_alignment.validate_reported_visits(root.get("visits"), visits)
     score = root.get("scoreLead")
     if score is None:
-        return None, False
+        return None, False, reported_visits
     if type(score) not in (int, float):
         raise ValueError("referee scoreLead must be a plain int or float when present")
     if not math.isfinite(score):
-        return None, False
+        return None, False, reported_visits
     score = float(score)
     ownership = analysis.get("ownership")
     if ownership is None:
-        return score, False
+        return score, False, reported_visits
     if type(ownership) is not list:
         raise ValueError("referee ownership must be a list when present")
     if len(ownership) != BOARD_SIZE * BOARD_SIZE:
-        return score, False
+        return score, False, reported_visits
     for value in ownership:
         if type(value) not in (int, float):
             raise ValueError("referee ownership values must be plain numeric values")
         if not math.isfinite(value):
-            return score, False
-    return score, adapters._is_settled(dict(analysis), BOARD_SIZE, score)
+            return score, False, reported_visits
+    return score, adapters._is_settled(dict(analysis), BOARD_SIZE, score), reported_visits
+
+
+async def strict_referee(client, history: list, visits: int, health: Mapping[str, object]) -> tuple[float | None, bool]:
+    score, settled, _reported_visits = await _strict_referee_result(client, history, visits, health)
+    return score, settled
 
 
 async def _probe_referee(client, visits: int, health: Mapping[str, object]) -> dict:
-    score, settled = await strict_referee(client, [], visits, health)
+    score, settled, reported_visits = await _strict_referee_result(client, [], visits, health)
     return {
         "requested_visits": visits,
-        "reported_visits": visits,
+        "reported_visits": reported_visits,
         "score": score,
         "settled": settled,
         "identity": _identity(health, "b28"),

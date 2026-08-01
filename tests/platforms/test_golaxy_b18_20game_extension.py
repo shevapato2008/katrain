@@ -847,6 +847,13 @@ def test_shared_strict_referee_probe_uses_exact_live_query_and_response(visits):
     ]
 
 
+def test_referee_probe_reports_validated_observed_thread_visits():
+    runner = _runner()
+    probe = asyncio.run(runner._probe_referee(_AnalysisClient([_referee_analysis(207)]), 200, _live_health()))
+    assert probe["requested_visits"] == 200
+    assert probe["reported_visits"] == 207
+
+
 @pytest.mark.parametrize("requested", [200, 800])
 @pytest.mark.parametrize("reported_kind", ["missing", "bool", "float", "zero", "negative", "plus8"])
 def test_shared_referee_probe_rejects_invalid_reported_visits(requested, reported_kind):
@@ -1216,18 +1223,18 @@ def test_game_wrapper_converts_unstable_and_stops_engine_terminal(monkeypatch):
         asyncio.run(runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner)))
 
 
-def test_game_wrapper_rejects_nonfinite_stability_score(monkeypatch):
+def test_game_wrapper_propagates_true_referee_schema_error(monkeypatch):
     runner = _runner()
 
     async def conclusive(**_kwargs):
         return GameOutcome("B", "our_win", True, 10, 3.5, True, "move_cap")
 
-    async def nonfinite(*_args, **_kwargs):
-        raise ValueError("referee scoreLead must be finite")
+    async def schema_error(*_args, **_kwargs):
+        raise ValueError("referee ownership value has wrong JSON type")
 
     monkeypatch.setattr(runner, "play_one_game", conclusive)
-    monkeypatch.setattr(runner, "strict_referee", nonfinite)
-    with pytest.raises(ValueError, match="scoreLead"):
+    monkeypatch.setattr(runner, "strict_referee", schema_error)
+    with pytest.raises(ValueError, match="wrong JSON type"):
         asyncio.run(runner.play_extension_game(object(), object(), extension.GameRequest(32, "B"), _proof(runner)))
 
 

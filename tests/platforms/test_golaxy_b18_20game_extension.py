@@ -8,6 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from katrain.core.ladder_calibration import GameOutcome
+
 CALIBRATION = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladder-parity/calibration"
 sys.path.insert(0, str(CALIBRATION))
 
@@ -546,3 +548,72 @@ def test_stopped_parent_v7_header_forbids_even_null_uncertainty_descriptor(tmp_p
 
     with pytest.raises(ValueError, match="uncertain"):
         extension.load_campaign(child, summary=True)
+
+
+@pytest.mark.parametrize(
+    ("result", "black_score"),
+    [
+        ("inconclusive_score", None),
+        ("inconclusive_unsettled", 1.25),
+        ("inconclusive_unstable", -0.5),
+    ],
+)
+def test_all_accepted_real_game_outcome_inconclusives_append_and_replay(tmp_path, result, black_score):
+    path = tmp_path / f"{result}.jsonl"
+    extension.initialize_v6_campaign(path, result, HEALTH)
+    extension.append_reservation(path, 1, extension.load_campaign(path).action)
+    outcome = GameOutcome("B", result, False, 400, black_score, False, "move_cap")
+
+    extension.append_result(path, 1, outcome, 3.0)
+
+    loaded = extension.load_campaign(path)
+    assert loaded.action == extension.GameRequest(32, "B")
+    assert loaded.evidence[-1]["result"] == result
+    assert loaded.evidence[-1]["black_score"] == black_score
+
+
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_replay_rejects_nonstandard_json_constants_in_tampered_elapsed(tmp_path, constant):
+    path = tmp_path / f"tampered-{constant}.jsonl"
+    extension.initialize_v6_campaign(path, f"tampered-{constant}", HEALTH)
+    extension.append_reservation(path, 1, extension.load_campaign(path).action)
+    reservation = json.loads(path.read_text().splitlines()[-1])
+    row = {
+        "type": "result",
+        "attempt_id": 1,
+        "request_id": reservation["request_id"],
+        "visits": 32,
+        "color": "B",
+        "target_valid": 20,
+        "origin_result_id": f"tampered-{constant}:1",
+        "our_color": "B",
+        "result": "our_win",
+        "our_win": True,
+        "num_moves": 1,
+        "black_score": 1.0,
+        "conclusive": True,
+        "end_reason": "move_cap",
+        "elapsed_seconds": 1.0,
+        "completed_at": "now",
+    }
+    serialized = json.dumps(row, separators=(",", ":")).replace(
+        '"elapsed_seconds":1.0', f'"elapsed_seconds":{constant}'
+    )
+    with path.open("a") as handle:
+        handle.write(serialized + "\n")
+
+    with pytest.raises(ValueError, match="non-standard JSON constant"):
+        extension.load_campaign(path, summary=True)
+
+
+@pytest.mark.parametrize("elapsed", [True, float("nan"), float("inf"), float("-inf")])
+def test_append_result_rejects_nonfinite_or_nonplain_elapsed_without_mutation(tmp_path, elapsed):
+    path = tmp_path / "nonfinite.jsonl"
+    extension.initialize_v6_campaign(path, "nonfinite", HEALTH)
+    extension.append_reservation(path, 1, extension.load_campaign(path).action)
+    before = path.read_bytes()
+
+    with pytest.raises(ValueError, match="finite"):
+        extension.append_result(path, 1, GameOutcome("B", "our_win", True, 1, 1.0, True), elapsed)
+
+    assert path.read_bytes() == before

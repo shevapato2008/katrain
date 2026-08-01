@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -55,6 +56,10 @@ GAME_CONTRACT = {
     "target_valid": TARGET_CONCLUSIVE,
     "candidate_order": list(CANDIDATE_VISITS),
 }
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-standard JSON constant: {value}")
 
 
 @dataclass(frozen=True)
@@ -133,8 +138,8 @@ def load_frozen_carries(parent_path: Path, expected_sha256: str) -> tuple[dict, 
         raise ValueError(f"parent SHA256 mismatch: expected {expected_sha256}, got {actual_sha256}")
 
     try:
-        rows = [json.loads(line) for line in raw.decode("utf-8").splitlines()]
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        rows = [json.loads(line, parse_constant=_reject_json_constant) for line in raw.decode("utf-8").splitlines()]
+    except (UnicodeDecodeError, ValueError) as exc:
         raise ValueError("parent is not valid UTF-8 JSONL") from exc
     if not rows or not isinstance(rows[0], Mapping) or rows[0].get("model") != MODEL:
         raise ValueError("parent header has wrong model")
@@ -351,8 +356,12 @@ def _read_rows(path: Path) -> list[dict[str, object]]:
         lines = text.splitlines()
         if not lines:
             raise ValueError("campaign ledger is empty")
-        rows = [json.loads(line) for line in lines]
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        rows = [json.loads(line, parse_constant=_reject_json_constant) for line in lines]
+    except ValueError as exc:
+        if "non-standard JSON constant" in str(exc):
+            raise ValueError(str(exc)) from exc
+        raise ValueError("campaign ledger is not valid UTF-8 JSONL") from exc
+    except (OSError, UnicodeDecodeError) as exc:
         raise ValueError("campaign ledger is not valid UTF-8 JSONL") from exc
     if any(not isinstance(row, dict) for row in rows):
         raise ValueError("campaign ledger rows must be JSON objects")
@@ -490,8 +499,10 @@ def _validate_outcome_values(row: Mapping[str, object], color: str) -> None:
     score = row.get("black_score")
     if score is not None and (type(score) not in (int, float) or not (-float("inf") < score < float("inf"))):
         raise ValueError("GameOutcome black_score is invalid")
-    if result == "inconclusive_score" and score is None:
-        raise ValueError("inconclusive_score requires a numeric black_score")
+    if result == "inconclusive_score" and score is not None:
+        raise ValueError("inconclusive_score requires black_score=None")
+    if result in {"inconclusive_unsettled", "inconclusive_unstable"} and score is None:
+        raise ValueError(f"{result} requires a finite numeric black_score")
     if type(row.get("end_reason")) is not str or not row["end_reason"]:
         raise ValueError("GameOutcome end_reason is invalid")
 
@@ -613,7 +624,12 @@ def load_campaign(path: str | Path, *, summary: bool = False) -> LoadedCampaign:
                 raise ValueError("result origin_result_id is invalid or duplicate")
             _validate_outcome_values(row, str(reservation["color"]))
             elapsed = row.get("elapsed_seconds")
-            if type(elapsed) not in (int, float) or elapsed < 0 or type(row.get("completed_at")) is not str:
+            if (
+                type(elapsed) not in (int, float)
+                or not math.isfinite(elapsed)
+                or elapsed < 0
+                or type(row.get("completed_at")) is not str
+            ):
                 raise ValueError("result timing is invalid")
             origins.add(str(origin))
             evidence.append(row)
@@ -765,8 +781,8 @@ def append_result(path: str | Path, attempt_id: int, outcome: object, elapsed_se
         raise ValueError("campaign ledger is stopped")
     if loaded.open_attempt != attempt_id:
         raise ValueError("attempt_id does not identify the unique open reservation")
-    if type(elapsed_seconds) not in (int, float) or elapsed_seconds < 0:
-        raise ValueError("elapsed_seconds must be a nonnegative number")
+    if type(elapsed_seconds) not in (int, float) or not math.isfinite(elapsed_seconds) or elapsed_seconds < 0:
+        raise ValueError("elapsed_seconds must be a finite nonnegative plain int or float")
     reservation = next(
         row for row in loaded.records if row.get("type") == "reservation" and row.get("attempt_id") == attempt_id
     )

@@ -177,9 +177,7 @@ def select_player_move(analysis: object, visits: int, health: Mapping[str, objec
         validate_analysis_attestation(analysis, rung_strength_spec(rung), _identity(health, "b18"))
         root_info = analysis.get("rootInfo")
         reported_visits = root_info.get("visits") if isinstance(root_info, Mapping) else None
-        reported_visits = run_golaxy_9d_alignment.validate_reported_visits(reported_visits, visits)
-        if reported_visits != visits:
-            raise ValueError(f"reported visits must equal requested visits {visits}, got {reported_visits}")
+        run_golaxy_9d_alignment.validate_reported_visits(reported_visits, visits)
         picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), rung.mechanism)
     except LadderMoveError as exc:
         raise LadderMoveError(f"analysis attestation or legal move validation failed: {exc}") from exc
@@ -234,9 +232,7 @@ async def strict_referee(client, history: list, visits: int, health: Mapping[str
     root = analysis.get("rootInfo")
     if not isinstance(root, Mapping):
         raise ValueError("referee rootInfo is missing or malformed")
-    reported = run_golaxy_9d_alignment.validate_reported_visits(root.get("visits"), visits)
-    if reported != visits:
-        raise ValueError(f"referee reported visits must equal requested visits {visits}, got {reported}")
+    run_golaxy_9d_alignment.validate_reported_visits(root.get("visits"), visits)
     score = root.get("scoreLead")
     if type(score) not in (int, float) or not math.isfinite(score):
         raise ValueError("referee scoreLead must be a finite plain int or float")

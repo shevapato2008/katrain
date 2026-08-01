@@ -738,9 +738,17 @@ def test_analysis_validates_attestation_and_never_falls_back():
 
 
 @pytest.mark.parametrize("requested", [32, 64])
-@pytest.mark.parametrize("reported", [None, 31, True, 32.0])
-def test_b18_probe_and_live_selection_require_exact_plain_reported_visits(requested, reported):
+@pytest.mark.parametrize("reported_kind", ["missing", "bool", "float", "zero", "negative", "plus8"])
+def test_b18_probe_and_live_selection_reject_invalid_reported_visits(requested, reported_kind):
     runner = _runner()
+    reported = {
+        "missing": None,
+        "bool": True,
+        "float": float(requested),
+        "zero": 0,
+        "negative": -1,
+        "plus8": requested + 8,
+    }[reported_kind]
     analysis = {
         "rootInfo": {"visits": reported},
         "moveInfos": [{"move": "D4", "visits": requested, "order": 0}],
@@ -751,8 +759,23 @@ def test_b18_probe_and_live_selection_require_exact_plain_reported_visits(reques
         runner.select_player_move(analysis, requested, _live_health())
 
 
+@pytest.mark.parametrize(
+    ("requested", "reported"),
+    [(requested, requested + extra) for requested in (32, 64) for extra in range(1, 8)],
+)
+def test_b18_accepts_katago_thread_visit_overshoot_through_plus_seven(requested, reported):
+    runner = _runner()
+    analysis = {
+        "rootInfo": {"visits": reported},
+        "moveInfos": [{"move": "D4", "visits": reported, "order": 0}],
+        "policy": [0.0] * 362,
+        "_wrapper": _wrapper("b18"),
+    }
+    assert runner.select_player_move(analysis, requested, _live_health()) == 288
+
+
 @pytest.mark.parametrize("visits", [32, 64])
-def test_b18_probe_and_live_http_path_accepts_only_exact_reported_visits(visits):
+def test_b18_probe_and_live_http_path_enforces_reported_visit_upper_bound(visits):
     runner = _runner()
 
     class Client:
@@ -773,9 +796,32 @@ def test_b18_probe_and_live_http_path_accepts_only_exact_reported_visits(visits)
     valid = Client(visits)
     assert asyncio.run(runner.analyze_player_move(valid, [], visits, _live_health())) == 288
     assert valid.queries[0][1]["maxVisits"] == visits
-    invalid = Client(visits - 1)
-    with pytest.raises(ValueError, match="equal requested"):
+    invalid = Client(visits + 8)
+    with pytest.raises(ValueError, match="no greater"):
         asyncio.run(runner._probe_player(invalid, visits, _live_health()))
+
+
+@pytest.mark.parametrize(("requested", "reported"), [(32, 35), (64, 71)])
+def test_b18_http_query_budget_stays_exact_while_observed_visits_overshoot(requested, reported):
+    runner = _runner()
+
+    class Client:
+        def __init__(self):
+            self.query = None
+
+        async def post(self, url, *, json, timeout):
+            self.query = json
+            analysis = {
+                "rootInfo": {"visits": reported},
+                "moveInfos": [{"move": "D4", "visits": reported, "order": 0}],
+                "policy": [0.0] * 362,
+                "_wrapper": _wrapper("b18"),
+            }
+            return httpx.Response(200, json=analysis, request=httpx.Request("POST", url))
+
+    client = Client()
+    assert asyncio.run(runner.analyze_player_move(client, [], requested, _live_health())) == 288
+    assert client.query["maxVisits"] == requested
 
 
 @pytest.mark.parametrize("visits", [200, 800])
@@ -802,20 +848,31 @@ def test_shared_strict_referee_probe_uses_exact_live_query_and_response(visits):
 
 
 @pytest.mark.parametrize("requested", [200, 800])
-@pytest.mark.parametrize("reported_kind", ["missing", "lower", "bool", "float", "plus1", "plus7"])
-def test_shared_referee_probe_rejects_every_nonexact_reported_visit(requested, reported_kind):
+@pytest.mark.parametrize("reported_kind", ["missing", "bool", "float", "zero", "negative", "plus8"])
+def test_shared_referee_probe_rejects_invalid_reported_visits(requested, reported_kind):
     runner = _runner()
     reported = {
         "missing": None,
-        "lower": requested - 1,
         "bool": True,
         "float": float(requested),
-        "plus1": requested + 1,
-        "plus7": requested + 7,
+        "zero": 0,
+        "negative": -1,
+        "plus8": requested + 8,
     }[reported_kind]
     client = _AnalysisClient([_referee_analysis(reported)])
     with pytest.raises(ValueError, match="visits"):
         asyncio.run(runner._probe_referee(client, requested, _live_health()))
+
+
+@pytest.mark.parametrize(
+    ("requested", "reported"),
+    [(requested, requested + extra) for requested in (200, 800) for extra in range(1, 8)],
+)
+def test_shared_referee_accepts_thread_overshoot_without_broadening_query_budget(requested, reported):
+    runner = _runner()
+    client = _AnalysisClient([_referee_analysis(reported)])
+    assert asyncio.run(runner.strict_referee(client, [], requested, _live_health())) == (3.5, True)
+    assert client.queries[0]["maxVisits"] == requested
 
 
 @pytest.mark.parametrize(
@@ -859,7 +916,7 @@ def test_live_malformed_referee_schema_raises_definite_error(monkeypatch, malfor
     runner = _runner()
     analysis = _referee_analysis(200)
     if malformed == "visits":
-        analysis["rootInfo"]["visits"] = 201
+        analysis["rootInfo"]["visits"] = 208
     elif malformed == "score_bool":
         analysis["rootInfo"]["scoreLead"] = True
     elif malformed == "score_nonfinite":

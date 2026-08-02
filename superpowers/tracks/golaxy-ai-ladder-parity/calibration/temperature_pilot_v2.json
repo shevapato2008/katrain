@@ -1,0 +1,524 @@
+{
+  "implementation_base_revision": "052b4253289bbf149f46150cf141b1157d016403",
+  "manifest_digest_contract": {
+    "algorithm": "sha256",
+    "allow_nan": false,
+    "encoding": "utf-8",
+    "ensure_ascii": false,
+    "excluded_top_level_field": "manifest_sha256",
+    "file_byte_digest": false,
+    "item_separator": ",",
+    "key_separator": ":",
+    "sort_keys": true
+  },
+  "manifest_sha256": "573bb59d0242c1916fef220d355849de1ef4afd665d4ab66ebfce40fd2be7f7a",
+  "matchups": [
+    {
+      "a": {
+        "canonical_label": "rank_1d@1t1",
+        "profile": "rank_1d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "1"
+      },
+      "b": {
+        "canonical_label": "rank_1d@1t2",
+        "profile": "rank_1d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "2"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_1d@1t1__vs__rank_1d@1t2",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_1d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_1d@1t0.4",
+        "profile": "rank_1d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "0.4"
+      },
+      "b": {
+        "canonical_label": "rank_1d@1t1",
+        "profile": "rank_1d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "1"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_1d@1t0.4__vs__rank_1d@1t1",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_1d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_1d@1s",
+        "profile": "rank_1d",
+        "selection": "argmax_human",
+        "selection_algorithm": "policy-argmax-v1"
+      },
+      "b": {
+        "canonical_label": "rank_1d@1t0.4",
+        "profile": "rank_1d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "0.4"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_1d@1s__vs__rank_1d@1t0.4",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_1d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_5d@1t1",
+        "profile": "rank_5d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "1"
+      },
+      "b": {
+        "canonical_label": "rank_5d@1t2",
+        "profile": "rank_5d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "2"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_5d@1t1__vs__rank_5d@1t2",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_5d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_5d@1t0.4",
+        "profile": "rank_5d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "0.4"
+      },
+      "b": {
+        "canonical_label": "rank_5d@1t1",
+        "profile": "rank_5d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "1"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_5d@1t0.4__vs__rank_5d@1t1",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_5d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_5d@1s",
+        "profile": "rank_5d",
+        "selection": "argmax_human",
+        "selection_algorithm": "policy-argmax-v1"
+      },
+      "b": {
+        "canonical_label": "rank_5d@1t0.4",
+        "profile": "rank_5d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "0.4"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_5d@1s__vs__rank_5d@1t0.4",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_5d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_9d@1t1",
+        "profile": "rank_9d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "1"
+      },
+      "b": {
+        "canonical_label": "rank_9d@1t2",
+        "profile": "rank_9d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "2"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_9d@1t1__vs__rank_9d@1t2",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_9d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_9d@1t0.4",
+        "profile": "rank_9d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "0.4"
+      },
+      "b": {
+        "canonical_label": "rank_9d@1t1",
+        "profile": "rank_9d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "1"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_9d@1t0.4__vs__rank_9d@1t1",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_9d",
+      "target_complete_pairs": 10
+    },
+    {
+      "a": {
+        "canonical_label": "rank_9d@1s",
+        "profile": "rank_9d",
+        "selection": "argmax_human",
+        "selection_algorithm": "policy-argmax-v1"
+      },
+      "b": {
+        "canonical_label": "rank_9d@1t0.4",
+        "profile": "rank_9d",
+        "selection": "temperature_weighted",
+        "selection_algorithm": "temperature-inverse-cdf-v1",
+        "temperature": "0.4"
+      },
+      "expected_stronger": "A",
+      "matchup_id": "rank_9d@1s__vs__rank_9d@1t0.4",
+      "max_pair_attempts": 20,
+      "phase": "screen",
+      "profile": "rank_9d",
+      "target_complete_pairs": 10
+    }
+  ],
+  "opening_suite": {
+    "allocations": [
+      {
+        "attempt": 0,
+        "id": "o001",
+        "moves": [
+          313,
+          94,
+          193,
+          360,
+          203,
+          206,
+          141,
+          239
+        ]
+      },
+      {
+        "attempt": 1,
+        "id": "o002",
+        "moves": [
+          3,
+          106,
+          227,
+          296,
+          64,
+          325,
+          88,
+          122
+        ]
+      },
+      {
+        "attempt": 2,
+        "id": "o003",
+        "moves": [
+          199,
+          308,
+          48,
+          306,
+          285,
+          188,
+          146,
+          251
+        ]
+      },
+      {
+        "attempt": 3,
+        "id": "o004",
+        "moves": [
+          4,
+          266,
+          354,
+          88,
+          298,
+          136,
+          87,
+          42
+        ]
+      },
+      {
+        "attempt": 4,
+        "id": "o005",
+        "moves": [
+          82,
+          203,
+          215,
+          6,
+          305,
+          96,
+          307,
+          170
+        ]
+      },
+      {
+        "attempt": 5,
+        "id": "o006",
+        "moves": [
+          270,
+          2,
+          145,
+          257,
+          25,
+          283,
+          135,
+          181
+        ]
+      },
+      {
+        "attempt": 6,
+        "id": "o007",
+        "moves": [
+          340,
+          185,
+          220,
+          273,
+          243,
+          24,
+          80,
+          343
+        ]
+      },
+      {
+        "attempt": 7,
+        "id": "o008",
+        "moves": [
+          99,
+          57,
+          294,
+          16,
+          183,
+          239,
+          328,
+          23
+        ]
+      },
+      {
+        "attempt": 8,
+        "id": "o009",
+        "moves": [
+          308,
+          82,
+          76,
+          160,
+          10,
+          106,
+          4,
+          123
+        ]
+      },
+      {
+        "attempt": 9,
+        "id": "o010",
+        "moves": [
+          193,
+          295,
+          9,
+          336,
+          47,
+          144,
+          162,
+          91
+        ]
+      },
+      {
+        "attempt": 10,
+        "id": "o011",
+        "moves": [
+          15,
+          82,
+          213,
+          314,
+          317,
+          197,
+          89,
+          19
+        ]
+      },
+      {
+        "attempt": 11,
+        "id": "o012",
+        "moves": [
+          321,
+          347,
+          157,
+          275,
+          272,
+          18,
+          231,
+          281
+        ]
+      },
+      {
+        "attempt": 12,
+        "id": "o013",
+        "moves": [
+          212,
+          220,
+          282,
+          55,
+          30,
+          224,
+          4,
+          135
+        ]
+      },
+      {
+        "attempt": 13,
+        "id": "o014",
+        "moves": [
+          349,
+          120,
+          246,
+          184,
+          218,
+          28,
+          347,
+          259
+        ]
+      },
+      {
+        "attempt": 14,
+        "id": "o015",
+        "moves": [
+          44,
+          69,
+          15,
+          214,
+          208,
+          71,
+          335,
+          145
+        ]
+      },
+      {
+        "attempt": 15,
+        "id": "o016",
+        "moves": [
+          290,
+          243,
+          225,
+          223,
+          72,
+          55,
+          59,
+          269
+        ]
+      },
+      {
+        "attempt": 16,
+        "id": "o017",
+        "moves": [
+          121,
+          281,
+          255,
+          38,
+          65,
+          148,
+          250,
+          178
+        ]
+      },
+      {
+        "attempt": 17,
+        "id": "o018",
+        "moves": [
+          209,
+          126,
+          155,
+          30,
+          284,
+          105,
+          84,
+          218
+        ]
+      },
+      {
+        "attempt": 18,
+        "id": "o019",
+        "moves": [
+          33,
+          168,
+          78,
+          9,
+          167,
+          359,
+          292,
+          197
+        ]
+      },
+      {
+        "attempt": 19,
+        "id": "o020",
+        "moves": [
+          305,
+          16,
+          134,
+          241,
+          132,
+          296,
+          352,
+          329
+        ]
+      }
+    ],
+    "checksum": "db5bf2f7b1944a26bf6e027d6a32efc13c848f4dcb3d22eb1afd274383fe033e",
+    "cycle": false,
+    "file_sha256": "c90118a1271b889713f3c1efb7197f1891e83d2eb27f0b5ed1e1169df3685425",
+    "path": "superpowers/tracks/golaxy-ai-ladder-parity/calibration/opening_suite_v1.json"
+  },
+  "protocol": "humansl-temperature-pilot-v1",
+  "runtime_sources": {
+    "katrain/core/ladder.py": "e9333108bed591596795a5544530f6517648cdc4e87464cccbfa5916ab7a7af1",
+    "katrain/core/ladder_calibration.py": "6a8fe2eec1564872fcc7afbbce588c8b75bc901559516980c0053f43175dd9d3",
+    "superpowers/tracks/golaxy-ai-ladder-parity/calibration/adapters.py": "b3df68bfc2116cc1a2e38bb1a8c3fa6c020fbc4fc0c20b1522067a2e4a78549e",
+    "superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py": "b6605adf974f134b4f383401a24157867d16c9c3c8dae4ef51615ed29a0daa37",
+    "superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_temperature_pilot.py": "bf499e1ace9c52fecd6ce1043cce4ddc95352bf4010007bba449c27c8d72efee",
+    "superpowers/tracks/golaxy-ai-ladder-parity/calibration/temperature_pilot.py": "d021ac835cfaee1b942edaace8a972a28c9a697c8142840228e243e3971c2e96"
+  },
+  "schema_version": 2,
+  "versions": {
+    "adjudication": "b28-settled-score-v1",
+    "checkpoint_schema": 3,
+    "draw": "temperature-draw-sha256-u64-v1",
+    "komi": "7.5",
+    "move_cap": 400,
+    "referee": "b28@200",
+    "rules": "chinese",
+    "selection": "temperature-inverse-cdf-v1",
+    "symmetry": {
+      "mode": "katago-default",
+      "requested_symmetry": null
+    }
+  }
+}

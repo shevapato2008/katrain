@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 import math
@@ -10,6 +9,7 @@ import re
 import struct
 import subprocess
 from decimal import Decimal, InvalidOperation
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -47,33 +47,59 @@ _TEMPERATURE_RE = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?\Z")
 _WILSON_Z95 = 1.959963984540054
 
 
-def _temperature_identity(profile: str, temperature: str) -> dict:
-    return {
-        "canonical_label": f"{profile}@1t{temperature}",
-        "profile": profile,
-        "selection_algorithm": SELECTION_ALGORITHM_VERSION,
-        "temperature": temperature,
+@dataclass(frozen=True)
+class PlayerIdentity:
+    canonical_label: str
+    profile: str
+    selection_algorithm: str
+    temperature: str | None = None
+
+
+@dataclass(frozen=True)
+class Matchup:
+    matchup_id: str
+    profile: str
+    a: PlayerIdentity
+    b: PlayerIdentity
+    expected_stronger: str = "A"
+    phase: str = "screen"
+    target_complete_pairs: int = 10
+    max_pair_attempts: int = 20
+
+
+def _temperature_identity(profile: str, temperature: str) -> PlayerIdentity:
+    return PlayerIdentity(f"{profile}@1t{temperature}", profile, SELECTION_ALGORITHM_VERSION, temperature)
+
+
+def _argmax_identity(profile: str) -> PlayerIdentity:
+    return PlayerIdentity(f"{profile}@1s", profile, ARGMAX_SELECTION_ALGORITHM_VERSION)
+
+
+def _matchup(profile: str, a: PlayerIdentity, b: PlayerIdentity) -> Matchup:
+    return Matchup(f"{a.canonical_label}__vs__{b.canonical_label}", profile, a, b)
+
+
+def _identity_projection(identity: PlayerIdentity) -> dict:
+    projected = {
+        "canonical_label": identity.canonical_label,
+        "profile": identity.profile,
+        "selection_algorithm": identity.selection_algorithm,
     }
+    if identity.temperature is not None:
+        projected["temperature"] = identity.temperature
+    return projected
 
 
-def _argmax_identity(profile: str) -> dict:
+def _matchup_projection(matchup: Matchup) -> dict:
     return {
-        "canonical_label": f"{profile}@1s",
-        "profile": profile,
-        "selection_algorithm": ARGMAX_SELECTION_ALGORITHM_VERSION,
-    }
-
-
-def _matchup(profile: str, a: Mapping[str, object], b: Mapping[str, object]) -> dict:
-    return {
-        "matchup_id": f"{a['canonical_label']}__vs__{b['canonical_label']}",
-        "profile": profile,
-        "a": dict(a),
-        "b": dict(b),
-        "expected_stronger": "A",
-        "phase": "screen",
-        "target_complete_pairs": 10,
-        "max_pair_attempts": 20,
+        "matchup_id": matchup.matchup_id,
+        "profile": matchup.profile,
+        "a": _identity_projection(matchup.a),
+        "b": _identity_projection(matchup.b),
+        "expected_stronger": matchup.expected_stronger,
+        "phase": matchup.phase,
+        "target_complete_pairs": matchup.target_complete_pairs,
+        "max_pair_attempts": matchup.max_pair_attempts,
     }
 
 
@@ -86,14 +112,14 @@ MATCHUPS = tuple(
         _matchup(profile, _argmax_identity(profile), _temperature_identity(profile, "0.4")),
     )
 )
-CANONICAL_MATCHUP_IDS = tuple(matchup["matchup_id"] for matchup in MATCHUPS)
+CANONICAL_MATCHUP_IDS = tuple(matchup.matchup_id for matchup in MATCHUPS)
 
 
 def _plain_nonnegative_int(value: object) -> bool:
     return type(value) is int and value >= 0
 
 
-def _frozen_matchup(canonical_matchup_id: object) -> Mapping[str, object]:
+def _frozen_matchup(canonical_matchup_id: object) -> Matchup:
     if not isinstance(canonical_matchup_id, str) or canonical_matchup_id not in CANONICAL_MATCHUP_IDS:
         raise ValueError("canonical_matchup_id must be one of the nine frozen matchups")
     return MATCHUPS[CANONICAL_MATCHUP_IDS.index(canonical_matchup_id)]
@@ -112,8 +138,8 @@ def _validate_trace_temperature(canonical_matchup_id: str, player: str, temperat
     if temperature != canonical or not Decimal("0.05") <= value <= Decimal("10"):
         raise ValueError("temperature must be canonical and in the closed range [0.05, 10]")
     matchup = _frozen_matchup(canonical_matchup_id)
-    identity = matchup["a" if player == "A" else "b"]
-    if identity.get("selection_algorithm") != SELECTION_ALGORITHM_VERSION or identity.get("temperature") != temperature:
+    identity = matchup.a if player == "A" else matchup.b
+    if identity.selection_algorithm != SELECTION_ALGORITHM_VERSION or identity.temperature != temperature:
         raise ValueError("sampling trace must match the temperature player on its A/B side")
     return temperature
 
@@ -178,6 +204,33 @@ def policy_digest(policy: Iterable[object]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _validated_trace_policy(policy: Iterable[object], selected_index: object) -> list[float]:
+    try:
+        raw_values = list(policy)
+    except TypeError as exc:
+        raise ValueError("sampling trace policy must contain exactly 362 entries") from exc
+    if len(raw_values) != 362:
+        raise ValueError("sampling trace policy must contain exactly 362 entries")
+    values = []
+    for value in raw_values:
+        if isinstance(value, bool):
+            raise ValueError("sampling trace policy entries must be finite numbers")
+        try:
+            number = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("sampling trace policy entries must be finite numbers") from exc
+        if not math.isfinite(number):
+            raise ValueError("sampling trace policy entries must be finite numbers")
+        values.append(number)
+    if not any(value > 0 for value in values):
+        raise ValueError("sampling trace policy must contain at least one positive entry")
+    if type(selected_index) is not int or not 0 <= selected_index < len(values):
+        raise ValueError("sampling trace selected index is outside the policy vector")
+    if values[selected_index] <= 0:
+        raise ValueError("sampling trace selected policy weight must be positive")
+    return values
+
+
 def build_sampling_trace(
     *,
     manifest_sha256: str,
@@ -192,6 +245,7 @@ def build_sampling_trace(
     policy: Iterable[object],
 ) -> dict:
     _validate_trace_temperature(canonical_matchup_id, player, temperature)
+    policy_values = _validated_trace_policy(policy, selected_index)
     expected_draw = derive_draw(
         manifest_sha256=manifest_sha256,
         canonical_matchup_id=canonical_matchup_id,
@@ -210,7 +264,7 @@ def build_sampling_trace(
         "draw_u64": draw_u64,
         "selected_index": selected_index,
         "selected_move": move,
-        "policy_sha256": policy_digest(policy),
+        "policy_sha256": policy_digest(policy_values),
     }
 
 
@@ -279,7 +333,7 @@ def _validate_base_ancestry(repo_root: Path, implementation_base_revision: str) 
 def _load_opening_binding(repo_root: Path) -> dict:
     suite_path = repo_root / OPENING_SUITE_PATH
     try:
-        suite = json.loads(suite_path.read_text())
+        suite = json.loads(suite_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot load opening suite: {exc}") from exc
     if not isinstance(suite, dict) or set(suite) != {
@@ -340,6 +394,15 @@ def _bound_sources(repo_root: Path, base: str) -> dict:
         path = repo_root / relative
         if not path.is_file():
             raise ValueError(f"bound runtime source is missing: {relative}")
+        status = _git(repo_root, "status", "--porcelain=v1", "--untracked-files=all", "--", relative)
+        if status:
+            raise ValueError(f"source drift in Git index or worktree: {relative}")
+        for comparison in (("diff", "--cached", "--quiet", base), ("diff", "--quiet")):
+            result = subprocess.run(["git", *comparison, "--", relative], cwd=repo_root, text=True, capture_output=True)
+            if result.returncode == 1:
+                raise ValueError(f"source drift in Git index or worktree: {relative}")
+            if result.returncode != 0:
+                raise ValueError(f"git source-drift validation failed for {relative}: {result.stderr.strip()}")
         current = path.read_bytes()
         try:
             committed = subprocess.run(
@@ -360,7 +423,7 @@ def build_manifest(repo_root: Path | str, implementation_base_revision: str) -> 
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "protocol": PROTOCOL_VERSION,
         "implementation_base_revision": base,
-        "matchups": [copy.deepcopy(matchup) for matchup in MATCHUPS],
+        "matchups": [_matchup_projection(matchup) for matchup in MATCHUPS],
         "opening_suite": _load_opening_binding(root),
         "runtime_sources": _bound_sources(root, base),
         "versions": {
@@ -405,7 +468,7 @@ def validate_manifest(manifest: object, repo_root: Path | str) -> dict:
 
 def validate_manifest_file(manifest_path: Path | str, repo_root: Path | str) -> dict:
     try:
-        manifest = json.loads(Path(manifest_path).read_text())
+        manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot load manifest: {exc}") from exc
     return validate_manifest(manifest, repo_root)
@@ -450,14 +513,14 @@ def classify_pilot(results: object) -> dict:
         return {"status": "incomplete", "reasons": ["missing_matchup_evidence"]}
     classified = []
     for expected, row in zip(MATCHUPS, results):
-        if not isinstance(row, dict) or row.get("matchup_id") != expected["matchup_id"]:
+        if not isinstance(row, dict) or row.get("matchup_id") != expected.matchup_id:
             return {"status": "incomplete", "reasons": ["invalid_evidence_identity"]}
         result = classify_matchup(
             row.get("a_wins"),
             complete_pairs=row.get("complete_pairs"),
             identity_valid=row.get("identity_valid") is True,
         )
-        classified.append({"matchup_id": expected["matchup_id"], "profile": expected["profile"], **result})
+        classified.append({"matchup_id": expected.matchup_id, "profile": expected.profile, **result})
     if any(row["classification"] == "incomplete" for row in classified):
         return {"status": "incomplete", "reasons": ["incomplete_or_invalid_evidence"], "matchups": classified}
 

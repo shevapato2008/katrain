@@ -1,8 +1,10 @@
 import hashlib
 import importlib
 import json
+import stat
 import subprocess
 import sys
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
@@ -11,6 +13,12 @@ import pytest
 CALIBRATION_DIR = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladder-parity/calibration"
 sys.path.insert(0, str(CALIBRATION_DIR))
 pilot = importlib.import_module("temperature_pilot")
+
+
+def _valid_policy(selected_index=0):
+    policy = [0.0] * 362
+    policy[selected_index] = 1.0
+    return policy
 
 
 def test_draw_has_frozen_canonical_json_sha256_and_u64_vector():
@@ -54,6 +62,7 @@ def test_trace_uses_exact_policy_index_gtp_mapping(index, gtp):
         "pair_attempt": 3,
         "color_index": 1,
     }
+    policy = _valid_policy(index)
     trace = pilot.build_sampling_trace(
         **context,
         ply=27,
@@ -61,7 +70,7 @@ def test_trace_uses_exact_policy_index_gtp_mapping(index, gtp):
         temperature="1",
         draw_u64=pilot.derive_draw(**context, ply=27, player="A"),
         selected_index=index,
-        policy=[0.0, 0.5, 0.25],
+        policy=policy,
     )
     assert trace == {
         "ply": 27,
@@ -70,7 +79,7 @@ def test_trace_uses_exact_policy_index_gtp_mapping(index, gtp):
         "draw_u64": 616295429160571065,
         "selected_index": index,
         "selected_move": gtp,
-        "policy_sha256": "fb301ab028076826473bbed19094af4b74c68eeef68b3e62a4e1f46e2a32960a",
+        "policy_sha256": pilot.policy_digest(policy),
     }
     assert pilot.validate_sampling_trace(trace, **context) == trace
 
@@ -99,7 +108,7 @@ def test_trace_validation_fails_closed_on_shape_draw_bounds_mapping_and_digest(m
         temperature="1",
         draw_u64=pilot.derive_draw(**context, ply=27, player="A"),
         selected_index=0,
-        policy=[1.0],
+        policy=_valid_policy(),
     )
     mutation(trace)
     with pytest.raises(ValueError, match=match):
@@ -122,7 +131,7 @@ def test_trace_rejects_noncanonical_or_out_of_range_temperature(temperature):
             temperature=temperature,
             draw_u64=pilot.derive_draw(**context, ply=8, player="A"),
             selected_index=0,
-            policy=[1.0],
+            policy=_valid_policy(),
         )
 
 
@@ -149,7 +158,7 @@ def test_trace_temperature_must_match_the_temperature_player_on_that_side(matchu
             temperature=temperature,
             draw_u64=pilot.derive_draw(**context, ply=8, player=player),
             selected_index=0,
-            policy=[1.0],
+            policy=_valid_policy(),
         )
 
 
@@ -167,11 +176,41 @@ def test_trace_validation_rechecks_the_temperature_side_binding():
         temperature="1",
         draw_u64=pilot.derive_draw(**context, ply=8, player="A"),
         selected_index=0,
-        policy=[1.0],
+        policy=_valid_policy(),
     )
     trace["temperature"] = "2"
     with pytest.raises(ValueError, match="temperature player"):
         pilot.validate_sampling_trace(trace, **context)
+
+
+@pytest.mark.parametrize(
+    ("policy", "selected_index", "match"),
+    [
+        ([], 0, "362"),
+        ([1.0] * 361, 0, "362"),
+        ([1.0] + [float("nan")] + [0.0] * 360, 0, "finite"),
+        ([1.0] + [float("inf")] + [0.0] * 360, 0, "finite"),
+        ([0.0] * 362, 0, "positive"),
+        ([0.0, 1.0] + [0.0] * 360, 0, "selected.*positive"),
+    ],
+)
+def test_trace_builder_rejects_malformed_or_unusable_policy(policy, selected_index, match):
+    context = {
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": "rank_1d@1t1__vs__rank_1d@1t2",
+        "pair_attempt": 0,
+        "color_index": 0,
+    }
+    with pytest.raises(ValueError, match=match):
+        pilot.build_sampling_trace(
+            **context,
+            ply=8,
+            player="A",
+            temperature="1",
+            draw_u64=pilot.derive_draw(**context, ply=8, player="A"),
+            selected_index=selected_index,
+            policy=policy,
+        )
 
 
 def test_protocol_helpers_do_not_import_selfplay():
@@ -195,25 +234,32 @@ def test_ordered_matchups_and_evidence_identities_are_frozen():
                 f"{profile}@1s__vs__{profile}@1t0.4",
             ]
         )
-    assert [matchup["matchup_id"] for matchup in pilot.MATCHUPS] == expected
+    assert [matchup.matchup_id for matchup in pilot.MATCHUPS] == expected
     assert all(
-        (m["phase"], m["target_complete_pairs"], m["max_pair_attempts"], m["expected_stronger"])
-        == ("screen", 10, 20, "A")
+        (m.phase, m.target_complete_pairs, m.max_pair_attempts, m.expected_stronger) == ("screen", 10, 20, "A")
         for m in pilot.MATCHUPS
     )
     first = pilot.MATCHUPS[0]
-    assert first["a"] == {
-        "canonical_label": "rank_1d@1t1",
-        "profile": "rank_1d",
-        "selection_algorithm": "temperature-inverse-cdf-v1",
-        "temperature": "1",
-    }
-    assert first["b"]["temperature"] == "2"
-    assert pilot.MATCHUPS[2]["a"] == {
-        "canonical_label": "rank_1d@1s",
-        "profile": "rank_1d",
-        "selection_algorithm": "policy-argmax-v1",
-    }
+    assert (first.a.canonical_label, first.a.profile, first.a.selection_algorithm, first.a.temperature) == (
+        "rank_1d@1t1",
+        "rank_1d",
+        "temperature-inverse-cdf-v1",
+        "1",
+    )
+    assert first.b.temperature == "2"
+    assert (
+        pilot.MATCHUPS[2].a.canonical_label,
+        pilot.MATCHUPS[2].a.profile,
+        pilot.MATCHUPS[2].a.selection_algorithm,
+        pilot.MATCHUPS[2].a.temperature,
+    ) == ("rank_1d@1s", "rank_1d", "policy-argmax-v1", None)
+
+
+def test_canonical_matchup_protocol_is_deeply_immutable():
+    with pytest.raises(FrozenInstanceError):
+        pilot.MATCHUPS[0].matchup_id = "mutated"
+    with pytest.raises(FrozenInstanceError):
+        pilot.MATCHUPS[0].a.canonical_label = "mutated"
 
 
 def _git(root, *args):
@@ -229,7 +275,7 @@ def _fixture_repository(tmp_path):
         path.write_text(f"fixture for {relative}\n")
     suite_path = root / pilot.OPENING_SUITE_PATH
     suite_path.parent.mkdir(parents=True, exist_ok=True)
-    suite = json.loads((CALIBRATION_DIR / "opening_suite_v1.json").read_text())
+    suite = json.loads((CALIBRATION_DIR / "opening_suite_v1.json").read_text(encoding="utf-8"))
     suite_path.write_text(json.dumps(suite))
     _git(root, "init", "-q")
     _git(root, "config", "user.email", "test@example.invalid")
@@ -275,7 +321,7 @@ def test_manifest_binds_exact_sources_ancestry_opening_allocation_and_self_diges
 def test_manifest_rejects_altered_suite_even_with_a_recalculated_internal_checksum(tmp_path):
     root, base, _ = _fixture_repository(tmp_path)
     suite_path = root / pilot.OPENING_SUITE_PATH
-    suite = json.loads(suite_path.read_text())
+    suite = json.loads(suite_path.read_text(encoding="utf-8"))
     suite["openings"][0]["moves"][0] += 1
     suite["checksum"] = pilot.canonical_digest(suite, exclude="checksum")
     suite_path.write_text(json.dumps(suite))
@@ -285,22 +331,20 @@ def test_manifest_rejects_altered_suite_even_with_a_recalculated_internal_checks
 
 def test_manifest_matchups_do_not_alias_mutable_global_protocol_state(tmp_path):
     root, base, _ = _fixture_repository(tmp_path)
-    original_label = pilot.MATCHUPS[0]["a"]["canonical_label"]
+    original_label = pilot.MATCHUPS[0].a.canonical_label
     first = pilot.build_manifest(root, base)
     first["matchups"][0]["a"]["canonical_label"] = "mutated"
-    try:
-        assert pilot.MATCHUPS[0]["a"]["canonical_label"] == original_label
-    finally:
-        first["matchups"][0]["a"]["canonical_label"] = original_label
+    assert pilot.MATCHUPS[0].a.canonical_label == original_label
     second = pilot.build_manifest(root, base)
     assert second["matchups"][0]["a"]["canonical_label"] == original_label
+    assert pilot.classify_pilot(_results([11] * 9))["status"] == "pass"
 
 
 def test_manifest_creation_is_exclusive_and_validation_rejects_bound_file_drift(tmp_path):
     root, base, _ = _fixture_repository(tmp_path)
     path = root / "manifest.json"
     created = pilot.create_manifest(path, root, base)
-    assert json.loads(path.read_text()) == created
+    assert json.loads(path.read_text(encoding="utf-8")) == created
     with pytest.raises(FileExistsError):
         pilot.create_manifest(path, root, base)
     (root / pilot.RUNTIME_SOURCE_PATHS[0]).write_text("drift\n")
@@ -320,6 +364,60 @@ def test_manifest_validation_rejects_nonancestor_base_and_bad_self_digest(tmp_pa
         pilot.build_manifest(root, unrelated)
 
 
+def test_manifest_rejects_staged_only_bound_source_drift(tmp_path):
+    root, base, _ = _fixture_repository(tmp_path)
+    relative = pilot.RUNTIME_SOURCE_PATHS[0]
+    path = root / relative
+    original = path.read_text()
+    path.write_text("staged drift\n")
+    _git(root, "add", relative)
+    path.write_text(original)
+    with pytest.raises(ValueError, match="source drift"):
+        pilot.build_manifest(root, base)
+
+
+def test_manifest_rejects_bound_source_mode_change_and_deletion(tmp_path):
+    root, base, _ = _fixture_repository(tmp_path)
+    mode_path = root / pilot.RUNTIME_SOURCE_PATHS[0]
+    mode_path.chmod(mode_path.stat().st_mode | stat.S_IXUSR)
+    with pytest.raises(ValueError, match="source drift"):
+        pilot.build_manifest(root, base)
+
+    deletion_root = tmp_path / "deletion"
+    deletion_root.mkdir()
+    root, base, _ = _fixture_repository(deletion_root)
+    (root / pilot.RUNTIME_SOURCE_PATHS[0]).unlink()
+    with pytest.raises(ValueError, match="source.*missing"):
+        pilot.build_manifest(root, base)
+
+
+def test_manifest_rejects_committed_descendant_bound_source_drift(tmp_path):
+    root, base, _ = _fixture_repository(tmp_path)
+    relative = pilot.RUNTIME_SOURCE_PATHS[0]
+    (root / relative).write_text("committed descendant drift\n")
+    _git(root, "add", relative)
+    _git(root, "commit", "-qm", "change bound source")
+    with pytest.raises(ValueError, match="source drift"):
+        pilot.build_manifest(root, base)
+
+
+def test_protocol_json_reads_are_explicit_utf8(tmp_path, monkeypatch):
+    root, base, _ = _fixture_repository(tmp_path)
+    manifest_path = root / "manifest.json"
+    pilot.create_manifest(manifest_path, root, base)
+    original_read_text = Path.read_text
+    encodings = []
+
+    def recording_read_text(path, *args, **kwargs):
+        if path.suffix == ".json":
+            encodings.append(kwargs.get("encoding"))
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", recording_read_text)
+    pilot.validate_manifest_file(manifest_path, root)
+    assert encodings and set(encodings) == {"utf-8"}
+
+
 @pytest.mark.parametrize(
     ("wins", "expected"),
     [
@@ -336,7 +434,7 @@ def test_per_match_classification_covers_every_category(wins, expected):
 
 def _results(wins):
     return [
-        {"matchup_id": matchup["matchup_id"], "a_wins": score, "complete_pairs": 10, "identity_valid": True}
+        {"matchup_id": matchup.matchup_id, "a_wins": score, "complete_pairs": 10, "identity_valid": True}
         for matchup, score in zip(pilot.MATCHUPS, wins)
     ]
 

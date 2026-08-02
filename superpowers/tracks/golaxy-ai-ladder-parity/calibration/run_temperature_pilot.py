@@ -27,6 +27,7 @@ import temperature_pilot as pilot
 LAUNCH_SNAPSHOT_NAME = "launch_snapshot.json"
 SUMMARY_NAME = "summary.json"
 REPORT_NAME = "report.md"
+SUMMARY_GENERATION_NAME = "summary_generation.json"
 
 
 def checkpoint_path(results_dir: Path | str, matchup: Mapping[str, object]) -> Path:
@@ -98,15 +99,29 @@ def ensure_launch_snapshot(results_dir: Path | str, capabilities: Mapping[str, o
     results.mkdir(parents=True, exist_ok=True)
     path = results / LAUNCH_SNAPSHOT_NAME
     expected = _snapshot_payload(capabilities, manifest_sha256)
-    try:
-        with path.open("xb") as output:
-            output.write(_json_bytes(expected))
-            output.flush()
-    except FileExistsError:
+    if path.exists():
         frozen = _load_launch_snapshot(path, manifest_sha256)
         if frozen != expected:
             raise ValueError("live health identity does not match frozen launch snapshot")
         return frozen
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".launch_snapshot.", suffix=".tmp", dir=results)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(_json_bytes(expected))
+            output.flush()
+            os.fsync(output.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            frozen = _load_launch_snapshot(path, manifest_sha256)
+            if frozen != expected:
+                raise ValueError("live health identity does not match frozen launch snapshot")
+            return frozen
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+        _fsync_directory(results)
     return expected
 
 
@@ -184,13 +199,6 @@ def _validated_checkpoint_evidence(
     launch: Mapping[str, object],
     manifest_path: Path | str,
 ) -> dict:
-    if not path.is_file():
-        return {
-            "matchup_id": matchup["matchup_id"],
-            "a_wins": 0,
-            "complete_pairs": 0,
-            "identity_valid": False,
-        }
     capabilities = adapters.retain_health_snapshot(launch["capability_snapshot"])
     players = {
         "A": run_selfplay.make_player(matchup["a"]["canonical_label"]),
@@ -223,10 +231,19 @@ def _validated_checkpoint_evidence(
         pilot_context=context,
     )
     fingerprint = run_selfplay._configuration_fingerprint(configuration)
-    run_selfplay._already_done(path, fingerprint, configuration)
-    records = run_selfplay._parse_strict_jsonl(path.read_bytes(), context="temperature pilot checkpoint")
-    _validate_exact_checkpoint_schedule(records[1:], matchup, manifest)
-    sample = run_selfplay.complete_pair_sample(records[1:], phase=matchup["phase"])
+    with run_selfplay._checkpoint_lock(path):
+        if not run_selfplay._pilot_checkpoint_exists(path):
+            return {
+                "matchup_id": matchup["matchup_id"],
+                "a_wins": 0,
+                "complete_pairs": 0,
+                "identity_valid": False,
+            }
+        snapshot = run_selfplay._read_bounded_checkpoint(path)
+        records = run_selfplay._validated_checkpoint_records(snapshot, fingerprint, configuration)
+        _validate_exact_checkpoint_schedule(records[1:], matchup, manifest)
+        sample = run_selfplay.complete_pair_sample(records[1:], phase=matchup["phase"])
+        checkpoint_sha256 = hashlib.sha256(snapshot).hexdigest()
     return {
         "matchup_id": matchup["matchup_id"],
         "a_wins": sample["a_wins"],
@@ -235,7 +252,7 @@ def _validated_checkpoint_evidence(
         "decision_games": sample["games"],
         "inconclusive_pairs": sample["inconclusive_pairs"],
         "checkpoint": str(path),
-        "checkpoint_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "checkpoint_sha256": checkpoint_sha256,
     }
 
 
@@ -297,7 +314,16 @@ def check_pilot(
             "planned_games": sum(2 * row["target_complete_pairs"] for row in manifest["matchups"]),
         }
     _manifest, evidence = _collect_evidence(manifest_path, results_dir, repo_root=repo_root)
+    _validate_summary_generation(Path(results_dir), current_evidence=evidence)
     return pilot.classify_pilot(evidence)
+
+
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
@@ -310,9 +336,70 @@ def _atomic_write(path: Path, data: bytes) -> None:
             output.flush()
             os.fsync(output.fileno())
         os.replace(temporary, path)
+        _fsync_directory(path.parent)
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def _validate_summary_generation(
+    results_dir: Path | str, *, current_evidence: list[Mapping[str, object]] | None = None
+) -> dict | None:
+    results = Path(results_dir)
+    paths = {
+        "summary": results / SUMMARY_NAME,
+        "report": results / REPORT_NAME,
+        "generation": results / SUMMARY_GENERATION_NAME,
+    }
+    present = {name for name, path in paths.items() if path.exists()}
+    if not present:
+        return None
+    if present != set(paths):
+        raise ValueError("summary generation is incomplete")
+    try:
+        summary_bytes = paths["summary"].read_bytes()
+        report_bytes = paths["report"].read_bytes()
+        marker = run_selfplay._strict_json_loads(
+            paths["generation"].read_bytes(), context="temperature pilot summary generation"
+        )
+        summary = run_selfplay._strict_json_loads(summary_bytes, context="temperature pilot summary")
+        report = report_bytes.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"cannot validate summary generation: {exc}") from exc
+    if (
+        not isinstance(marker, dict)
+        or marker.get("schema_version") != 1
+        or marker.get("protocol") != pilot.PROTOCOL_VERSION
+        or marker.get("marker_sha256") != pilot.canonical_digest(marker, exclude="marker_sha256")
+        or marker.get("summary_sha256") != hashlib.sha256(summary_bytes).hexdigest()
+        or marker.get("report_sha256") != hashlib.sha256(report_bytes).hexdigest()
+        or not isinstance(summary, dict)
+        or summary.get("generation") != marker.get("generation")
+        or summary.get("summary_digest") != marker.get("summary_digest")
+        or summary.get("summary_digest") != pilot.canonical_digest(summary, exclude="summary_digest")
+        or f"generation: {marker.get('generation')}" not in report
+        or f"summary_digest: {marker.get('summary_digest')}" not in report
+    ):
+        raise ValueError("summary generation digest mismatch")
+    if current_evidence is not None:
+        stored_evidence = summary.get("evidence")
+        comparison_fields = (
+            "matchup_id",
+            "a_wins",
+            "complete_pairs",
+            "identity_valid",
+            "decision_games",
+            "inconclusive_pairs",
+            "checkpoint_sha256",
+        )
+        if not isinstance(stored_evidence, list) or len(stored_evidence) != len(current_evidence):
+            raise ValueError("summary generation does not match current checkpoint evidence")
+        for stored, current in zip(stored_evidence, current_evidence):
+            if not isinstance(stored, Mapping) or any(
+                field in current and stored.get(field) != current.get(field) for field in comparison_fields
+            ):
+                raise ValueError("summary generation does not match current checkpoint evidence")
+    return marker
 
 
 def summarize_pilot(
@@ -355,12 +442,16 @@ def summarize_pilot(
         **gate,
         "evidence": enriched_evidence,
     }
+    summary["generation"] = pilot.canonical_digest(summary)
+    summary["summary_digest"] = pilot.canonical_digest(summary, exclude="summary_digest")
     report_lines = [
         "# HumanSL temperature pilot",
         "",
         f"overall: {summary['status']}",
         f"manifest_sha256: {manifest['manifest_sha256']}",
         f"launch_snapshot_sha256: {summary['launch_snapshot_sha256']}",
+        f"generation: {summary['generation']}",
+        f"summary_digest: {summary['summary_digest']}",
         f"model_identities: {json.dumps(summary['model_identities'], sort_keys=True, ensure_ascii=False)}",
         "runtime_sources:",
         *[f"- {source}: {digest}" for source, digest in summary["runtime_sources"].items()],
@@ -375,8 +466,21 @@ def summarize_pilot(
             f"identity_valid={row.get('identity_valid') is True}, checkpoint={row['checkpoint']}, "
             f"checkpoint_sha256={row['checkpoint_sha256']}"
         )
-    _atomic_write(results / SUMMARY_NAME, _json_bytes(summary))
-    _atomic_write(results / REPORT_NAME, ("\n".join(report_lines) + "\n").encode("utf-8"))
+    summary_bytes = _json_bytes(summary)
+    report_bytes = ("\n".join(report_lines) + "\n").encode("utf-8")
+    marker = {
+        "schema_version": 1,
+        "protocol": pilot.PROTOCOL_VERSION,
+        "generation": summary["generation"],
+        "summary_digest": summary["summary_digest"],
+        "summary_sha256": hashlib.sha256(summary_bytes).hexdigest(),
+        "report_sha256": hashlib.sha256(report_bytes).hexdigest(),
+    }
+    marker["marker_sha256"] = pilot.canonical_digest(marker, exclude="marker_sha256")
+    _atomic_write(results / SUMMARY_NAME, summary_bytes)
+    _atomic_write(results / REPORT_NAME, report_bytes)
+    _atomic_write(results / SUMMARY_GENERATION_NAME, _json_bytes(marker))
+    _validate_summary_generation(results)
     return summary
 
 

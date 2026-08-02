@@ -5,6 +5,7 @@ import os
 import stat
 import subprocess
 import sys
+from contextlib import contextmanager
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -107,6 +108,293 @@ def test_launch_snapshot_is_exclusive_reused_byte_for_byte_and_rejects_live_iden
     drifted["models"]["b28"]["human_model_sha256"] = "different-human"
     with pytest.raises(ValueError, match="live health identity.*frozen launch snapshot"):
         runner.ensure_launch_snapshot(results_dir, selfplay.adapters.retain_health_snapshot(drifted), "ab" * 32)
+
+
+def test_launch_snapshot_torn_publication_leaves_no_final_or_temp_file(tmp_path, monkeypatch):
+    results_dir = tmp_path / "results"
+
+    def interrupted_link(_source, _destination):
+        raise OSError("injected publication interruption")
+
+    monkeypatch.setattr(runner.os, "link", interrupted_link)
+    with pytest.raises(OSError, match="injected"):
+        runner.ensure_launch_snapshot(results_dir, _health_snapshot(), "ab" * 32)
+
+    assert not (results_dir / "launch_snapshot.json").exists()
+    assert list(results_dir.iterdir()) == []
+
+
+def test_launch_snapshot_concurrent_winner_is_validated_and_reused(tmp_path, monkeypatch):
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    original_link = os.link
+    publications = []
+
+    def concurrent_link(source, destination):
+        publications.append(Path(source).read_bytes())
+        original_link(source, destination)
+        raise FileExistsError(destination)
+
+    monkeypatch.setattr(runner.os, "link", concurrent_link)
+    snapshot = runner.ensure_launch_snapshot(results_dir, _health_snapshot(), "ab" * 32)
+
+    assert (results_dir / "launch_snapshot.json").read_bytes() == publications[0]
+    assert snapshot["snapshot_sha256"] == pilot.canonical_digest(snapshot, exclude="snapshot_sha256")
+    assert not any(path.name.startswith(".launch_snapshot") for path in results_dir.iterdir())
+
+
+def test_checkpoint_reader_rejects_total_and_line_limits_before_json(tmp_path):
+    checkpoint = tmp_path / "checkpoint.jsonl"
+    with checkpoint.open("wb") as output:
+        output.truncate(selfplay.PILOT_CHECKPOINT_MAX_BYTES + 1)
+    with pytest.raises(ValueError, match="total byte limit"):
+        selfplay._read_bounded_checkpoint(checkpoint)
+
+    checkpoint.write_bytes(b"x" * (selfplay.PILOT_CHECKPOINT_MAX_LINE_BYTES + 1))
+    with pytest.raises(ValueError, match="line byte limit"):
+        selfplay._read_bounded_checkpoint(checkpoint)
+
+
+def test_atomic_pilot_checkpoint_interruption_preserves_old_complete_snapshot(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "pilot.jsonl"
+    configuration = {"temperature_pilot": {"protocol_version": pilot.PROTOCOL_VERSION}}
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    old_snapshot = (
+        json.dumps(
+            {
+                "record_type": "header",
+                "schema": selfplay.CHECKPOINT_SCHEMA,
+                "fingerprint": fingerprint,
+                "configuration": configuration,
+            }
+        ).encode("utf-8")
+        + b"\n"
+    )
+    checkpoint.write_bytes(old_snapshot)
+
+    def interrupted_replace(_source, _destination):
+        raise OSError("injected checkpoint interruption")
+
+    monkeypatch.setattr(selfplay.os, "replace", interrupted_replace)
+    with pytest.raises(OSError, match="injected"):
+        selfplay._atomic_replace_checkpoint(checkpoint, old_snapshot + b'{"record_type":"game"}\n')
+
+    assert selfplay._read_bounded_checkpoint(checkpoint) == old_snapshot
+    assert selfplay._already_done(checkpoint, fingerprint, configuration) == 0
+    assert not any(path.name.startswith(".pilot.jsonl") for path in tmp_path.iterdir())
+
+
+def test_atomic_pilot_checkpoint_refuses_unresumable_oversized_row(tmp_path):
+    checkpoint = tmp_path / "pilot.jsonl"
+    old_snapshot = b'{"record_type":"header"}\n'
+    checkpoint.write_bytes(old_snapshot)
+
+    with pytest.raises(ValueError, match="line byte limit"):
+        selfplay._atomic_replace_checkpoint(
+            checkpoint,
+            old_snapshot + b"x" * (selfplay.PILOT_CHECKPOINT_MAX_LINE_BYTES + 1),
+        )
+
+    assert checkpoint.read_bytes() == old_snapshot
+
+
+def test_legacy_checkpoint_header_keeps_non_atomic_creation_path(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "legacy.jsonl"
+    configuration = {"legacy": True}
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    monkeypatch.setattr(
+        selfplay,
+        "_atomic_replace_checkpoint",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("legacy checkpoint used pilot persistence")),
+    )
+
+    selfplay._prepare_checkpoint(checkpoint, fingerprint, configuration)
+
+    assert checkpoint.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_pilot_checkpoint_exclusive_header_creation_never_overwrites_unbound_evidence(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "pilot.jsonl"
+    configuration = {"temperature_pilot": {"protocol_version": pilot.PROTOCOL_VERSION}}
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    unbound = b'{"unbound":"evidence"}\n'
+
+    def concurrent_link(_source, destination):
+        Path(destination).write_bytes(unbound)
+        raise FileExistsError(destination)
+
+    monkeypatch.setattr(selfplay.os, "link", concurrent_link)
+    with pytest.raises(ValueError, match="schema-3 header"):
+        selfplay._prepare_checkpoint(checkpoint, fingerprint, configuration, atomic=True)
+
+    assert checkpoint.read_bytes() == unbound
+    assert not any(path.name.startswith(".pilot.jsonl") for path in tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("occupant", ["fifo", "broken_symlink"])
+def test_pilot_checkpoint_rejects_nonregular_unbound_occupants(tmp_path, occupant):
+    checkpoint = tmp_path / "pilot.jsonl"
+    if occupant == "fifo":
+        os.mkfifo(checkpoint)
+    else:
+        checkpoint.symlink_to(tmp_path / "missing-target")
+    configuration = {"temperature_pilot": {"protocol_version": pilot.PROTOCOL_VERSION}}
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+
+    with pytest.raises(ValueError, match="regular file"):
+        selfplay._prepare_checkpoint(checkpoint, fingerprint, configuration, atomic=True)
+
+    assert checkpoint.is_symlink() if occupant == "broken_symlink" else stat.S_ISFIFO(checkpoint.lstat().st_mode)
+
+
+def test_legacy_checkpoint_read_error_keeps_value_error_contract(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "legacy.jsonl"
+    checkpoint.write_text("{}\n", encoding="utf-8")
+
+    def unreadable(path):
+        if path == checkpoint:
+            raise PermissionError("injected unreadable checkpoint")
+        return original_read_bytes(path)
+
+    original_read_bytes = Path.read_bytes
+    monkeypatch.setattr(Path, "read_bytes", unreadable)
+    with pytest.raises(ValueError, match="cannot read self-play checkpoint"):
+        selfplay._already_done(checkpoint, "unused", {"legacy": True})
+
+
+@pytest.mark.asyncio
+async def test_legacy_second_checkpoint_read_error_keeps_value_error_contract(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "legacy.jsonl"
+    configuration = {"legacy": True}
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    checkpoint.write_text(
+        json.dumps(
+            {
+                "record_type": "header",
+                "schema": selfplay.CHECKPOINT_SCHEMA,
+                "fingerprint": fingerprint,
+                "configuration": configuration,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    original_read_bytes = Path.read_bytes
+    reads = 0
+
+    def fail_second_read(path):
+        nonlocal reads
+        if path == checkpoint:
+            reads += 1
+            if reads == 2:
+                raise PermissionError("injected second-read failure")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", fail_second_read)
+    with pytest.raises(ValueError, match="cannot read self-play checkpoint"):
+        await selfplay._run_matchup_checkpoint(
+            labelA="A",
+            rungA=None,
+            selA=None,
+            labelB="B",
+            rungB=None,
+            selB=None,
+            target_pairs=1,
+            max_pair_attempts=1,
+            phase="screen",
+            experiment4=False,
+            openings=[{"id": "o001", "moves": [0]}],
+            cycle_openings=False,
+            client=None,
+            base_url="http://unused",
+            wrn=0.04,
+            capabilities={},
+            configuration=configuration,
+            fingerprint=fingerprint,
+            ckpt=checkpoint,
+        )
+
+    assert reads == 2
+
+
+def test_runner_locks_and_validates_one_bounded_immutable_checkpoint_snapshot(tmp_path, monkeypatch):
+    manifest = _runner_manifest()
+    matchup = manifest["matchups"][0]
+    checkpoint = runner.checkpoint_path(tmp_path, matchup)
+    checkpoint.write_bytes(b"immutable checkpoint snapshot\n")
+    launch = runner.ensure_launch_snapshot(tmp_path, _health_snapshot(), manifest["manifest_sha256"])
+    snapshot = checkpoint.read_bytes()
+    calls = {"locks": 0, "reads": 0, "validations": 0}
+    original_lock = selfplay._checkpoint_lock
+
+    @contextmanager
+    def recording_lock(path):
+        calls["locks"] += 1
+        with original_lock(path):
+            yield
+
+    def bounded_read(path):
+        calls["reads"] += 1
+        assert path == checkpoint
+        return snapshot
+
+    def validated_records(data, fingerprint, configuration):
+        calls["validations"] += 1
+        assert data is snapshot
+        return [{"record_type": "header"}]
+
+    monkeypatch.setattr(selfplay, "_checkpoint_lock", recording_lock)
+    monkeypatch.setattr(selfplay, "_read_bounded_checkpoint", bounded_read)
+    monkeypatch.setattr(selfplay, "_validated_checkpoint_records", validated_records)
+    monkeypatch.setattr(runner, "_validate_exact_checkpoint_schedule", lambda records, *_args: None)
+    monkeypatch.setattr(
+        selfplay,
+        "complete_pair_sample",
+        lambda records, phase: {"a_wins": 0, "complete_pairs": 0, "games": 0, "inconclusive_pairs": 0},
+    )
+
+    evidence = runner._validated_checkpoint_evidence(checkpoint, matchup, manifest, launch, tmp_path / "manifest.json")
+
+    assert calls == {"locks": 1, "reads": 1, "validations": 1}
+    assert evidence["checkpoint_sha256"] == hashlib.sha256(snapshot).hexdigest()
+
+
+def test_runner_decides_missing_checkpoint_only_after_acquiring_its_lock(tmp_path, monkeypatch):
+    manifest = _runner_manifest()
+    matchup = manifest["matchups"][0]
+    checkpoint = runner.checkpoint_path(tmp_path, matchup)
+    launch = runner.ensure_launch_snapshot(tmp_path, _health_snapshot(), manifest["manifest_sha256"])
+    snapshot = b"published while waiting for checkpoint lock\n"
+    calls = {"locks": 0, "reads": 0}
+
+    @contextmanager
+    def publishing_lock(path):
+        calls["locks"] += 1
+        path.write_bytes(snapshot)
+        yield
+
+    monkeypatch.setattr(selfplay, "_checkpoint_lock", publishing_lock)
+    monkeypatch.setattr(
+        selfplay,
+        "_read_bounded_checkpoint",
+        lambda path: calls.__setitem__("reads", calls["reads"] + 1) or snapshot,
+    )
+    monkeypatch.setattr(
+        selfplay,
+        "_validated_checkpoint_records",
+        lambda data, fingerprint, configuration: [{"record_type": "header"}],
+    )
+    monkeypatch.setattr(runner, "_validate_exact_checkpoint_schedule", lambda records, *_args: None)
+    monkeypatch.setattr(
+        selfplay,
+        "complete_pair_sample",
+        lambda records, phase: {"a_wins": 0, "complete_pairs": 0, "games": 0, "inconclusive_pairs": 0},
+    )
+
+    evidence = runner._validated_checkpoint_evidence(checkpoint, matchup, manifest, launch, tmp_path / "manifest.json")
+
+    assert calls == {"locks": 1, "reads": 1}
+    assert evidence["checkpoint_sha256"] == hashlib.sha256(snapshot).hexdigest()
 
 
 @pytest.mark.asyncio
@@ -235,6 +523,71 @@ def test_summarize_and_check_use_all_nine_validated_checkpoints_and_report_gate(
         )
     )
     assert not list(results_dir.glob("*.tmp"))
+    generation = json.loads((results_dir / "summary_generation.json").read_text(encoding="utf-8"))
+    assert generation["summary_sha256"] == hashlib.sha256((results_dir / "summary.json").read_bytes()).hexdigest()
+    assert generation["report_sha256"] == hashlib.sha256((results_dir / "report.md").read_bytes()).hexdigest()
+    assert generation["generation"] in report
+    assert runner._validate_summary_generation(results_dir) == generation
+
+
+def test_atomic_write_fsyncs_file_and_containing_directory(tmp_path, monkeypatch):
+    fsynced_modes = []
+    original_fsync = runner.os.fsync
+
+    def recording_fsync(fd):
+        fsynced_modes.append(stat.S_IFMT(os.fstat(fd).st_mode))
+        return original_fsync(fd)
+
+    monkeypatch.setattr(runner.os, "fsync", recording_fsync)
+    runner._atomic_write(tmp_path / "artifact.json", b"{}\n")
+
+    assert stat.S_IFREG in fsynced_modes
+    assert stat.S_IFDIR in fsynced_modes
+
+
+def test_interrupted_summary_generation_is_detected_and_can_be_regenerated(tmp_path, monkeypatch):
+    manifest = _runner_manifest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("fixture\n", encoding="utf-8")
+    results_dir = tmp_path / "results"
+    runner.ensure_launch_snapshot(results_dir, _health_snapshot(), manifest["manifest_sha256"])
+    monkeypatch.setattr(runner.pilot, "validate_manifest_file", lambda path, root: manifest)
+    score = {"wins": 11}
+
+    def validated(path, matchup, manifest_arg, launch, manifest_path_arg):
+        return {
+            "matchup_id": matchup["matchup_id"],
+            "a_wins": score["wins"],
+            "complete_pairs": 10,
+            "identity_valid": True,
+            "decision_games": 20,
+            "inconclusive_pairs": 0,
+            "checkpoint": str(path),
+            "checkpoint_sha256": "34" * 32,
+        }
+
+    monkeypatch.setattr(runner, "_validated_checkpoint_evidence", validated)
+    runner.summarize_pilot(manifest_path, results_dir, repo_root=tmp_path)
+    score["wins"] = 12
+    with pytest.raises(ValueError, match="checkpoint evidence"):
+        runner.check_pilot(manifest_path, results_dir, repo_root=tmp_path)
+    original_atomic_write = runner._atomic_write
+
+    def interrupt_report(path, data):
+        if Path(path).name == "report.md":
+            raise OSError("injected summary interruption")
+        return original_atomic_write(path, data)
+
+    monkeypatch.setattr(runner, "_atomic_write", interrupt_report)
+    with pytest.raises(OSError, match="injected"):
+        runner.summarize_pilot(manifest_path, results_dir, repo_root=tmp_path)
+    with pytest.raises(ValueError, match="summary generation"):
+        runner.check_pilot(manifest_path, results_dir, repo_root=tmp_path)
+
+    monkeypatch.setattr(runner, "_atomic_write", original_atomic_write)
+    regenerated = runner.summarize_pilot(manifest_path, results_dir, repo_root=tmp_path)
+    assert regenerated["evidence"][0]["a_wins"] == 12
+    assert runner.check_pilot(manifest_path, results_dir, repo_root=tmp_path)["status"] in {"pass", "fail"}
 
 
 def test_check_without_results_only_validates_manifest_and_missing_results_are_incomplete(tmp_path, monkeypatch):
@@ -341,6 +694,7 @@ def test_pilot_configuration_records_argmax_identity_without_temperature_entries
 @pytest.mark.asyncio
 async def test_pilot_matchup_persists_and_resume_validates_sampling_traces(tmp_path, monkeypatch):
     calls = []
+    atomic_writes = []
     opening = {"id": "o001", "moves": list(range(8))}
     context = {
         "protocol_version": pilot.PROTOCOL_VERSION,
@@ -362,6 +716,13 @@ async def test_pilot_matchup_persists_and_resume_validates_sampling_traces(tmp_p
 
     monkeypatch.setattr(selfplay, "play_one_game", fake_game)
     monkeypatch.setattr(selfplay, "required_conclusive_pairs", lambda *_args, **_kwargs: 1)
+    original_atomic_replace = selfplay._atomic_replace_checkpoint
+
+    def recording_atomic_replace(path, data):
+        atomic_writes.append(bytes(data))
+        return original_atomic_replace(path, data)
+
+    monkeypatch.setattr(selfplay, "_atomic_replace_checkpoint", recording_atomic_replace)
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
         kwargs = dict(
             client=client,
@@ -384,6 +745,8 @@ async def test_pilot_matchup_persists_and_resume_validates_sampling_traces(tmp_p
         await selfplay.run_matchup("rank_1d@1t1", "rank_1d@1t2", 1, **kwargs)
 
     assert calls == [("W", opening["moves"])]
+    assert len(atomic_writes) == 3  # two initial games, then the resumed missing color
+    assert all(write.endswith(b"\n") for write in atomic_writes)
     records = [json.loads(line) for line in checkpoint.read_text(encoding="utf-8").splitlines()]
     assert records[0]["configuration"]["temperature_pilot"] == context
     assert records[0]["configuration"]["players"]["A"]["selection_algorithm_version"] == (

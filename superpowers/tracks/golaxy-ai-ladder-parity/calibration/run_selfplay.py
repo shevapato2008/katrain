@@ -45,8 +45,10 @@ import logging
 import math
 import os
 import re
+import stat as stat_module
 import subprocess
 import sys
+import tempfile
 import time
 from contextlib import contextmanager
 from functools import partial
@@ -98,6 +100,8 @@ _RANK_TOKEN = r"(?:[1-9]d|(?:[1-9]|1[0-9]|20)k)"
 _RANK_PROFILE_RE = re.compile(rf"(?:rank|preaz)_{_RANK_TOKEN}(?:_{_RANK_TOKEN})?\Z")
 _PROYEAR_PROFILE_RE = re.compile(r"proyear_([0-9]{4})\Z")
 CHECKPOINT_SCHEMA = 3
+PILOT_CHECKPOINT_MAX_BYTES = 32 * 1024 * 1024
+PILOT_CHECKPOINT_MAX_LINE_BYTES = 4 * 1024 * 1024
 SELECTION_ALGORITHM_VERSION = "selfplay-selection-v1"
 SYMMETRY_SETTINGS = {"mode": "katago-default", "requested_symmetry": None}
 OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_v1.json"
@@ -1425,13 +1429,33 @@ def _validate_game_record(
                 raise ValueError(f"pilot checkpoint sampling trace is invalid: {exc}") from exc
 
 
-def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
-    if not path.is_file():
-        return 0
+def _validate_checkpoint_byte_bounds(data: bytes) -> bytes:
+    if len(data) > PILOT_CHECKPOINT_MAX_BYTES:
+        raise ValueError("pilot checkpoint exceeds total byte limit")
+    line_start = 0
+    for index, byte in enumerate(data):
+        if byte == 0x0A:
+            if index + 1 - line_start > PILOT_CHECKPOINT_MAX_LINE_BYTES:
+                raise ValueError("pilot checkpoint exceeds per-line byte limit")
+            line_start = index + 1
+    if len(data) - line_start > PILOT_CHECKPOINT_MAX_LINE_BYTES:
+        raise ValueError("pilot checkpoint exceeds per-line byte limit")
+    return data
+
+
+def _read_bounded_checkpoint(path: Path) -> bytes:
     try:
-        records = _parse_strict_jsonl(path.read_bytes(), context="self-play checkpoint game stream")
+        if path.stat().st_size > PILOT_CHECKPOINT_MAX_BYTES:
+            raise ValueError("pilot checkpoint exceeds total byte limit")
+        with path.open("rb") as checkpoint:
+            data = checkpoint.read(PILOT_CHECKPOINT_MAX_BYTES + 1)
     except OSError as exc:
         raise ValueError(f"cannot read self-play checkpoint: {exc}") from exc
+    return _validate_checkpoint_byte_bounds(data)
+
+
+def _validated_checkpoint_records(data: bytes, fingerprint: str, configuration: Mapping[str, object]) -> List[dict]:
+    records = _parse_strict_jsonl(data, context="self-play checkpoint game stream")
     if not records:
         raise ValueError(f"checkpoint exists without a schema-{CHECKPOINT_SCHEMA} header")
     header = records[0]
@@ -1449,11 +1473,87 @@ def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, obje
         if record.get("fingerprint") != fingerprint:
             raise ValueError("checkpoint game fingerprint does not match this run")
         _validate_game_record(record, expected_index, configuration)
+    return records
+
+
+def _read_checkpoint_snapshot(path: Path, *, pilot: bool) -> bytes:
+    if pilot:
+        return _read_bounded_checkpoint(path)
+    try:
+        return path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"cannot read self-play checkpoint: {exc}") from exc
+
+
+def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
+    if configuration.get("temperature_pilot") is not None:
+        if not _pilot_checkpoint_exists(path):
+            return 0
+        data = _read_checkpoint_snapshot(path, pilot=True)
+    else:
+        if not path.is_file():
+            return 0
+        data = _read_checkpoint_snapshot(path, pilot=False)
+    records = _validated_checkpoint_records(data, fingerprint, configuration)
     return len(records) - 1
 
 
-def _prepare_checkpoint(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
-    if path.exists():
+def _pilot_checkpoint_exists(path: Path) -> bool:
+    try:
+        status = path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise ValueError(f"cannot inspect pilot checkpoint: {exc}") from exc
+    if not stat_module.S_ISREG(status.st_mode):
+        raise ValueError("pilot checkpoint occupant must be a regular file, not a symlink or special file")
+    return True
+
+
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _atomic_replace_checkpoint(path: Path, data: bytes) -> None:
+    _validate_checkpoint_byte_bounds(data)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(data)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, path)
+        _fsync_directory(path.parent)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def _atomic_create_checkpoint(path: Path, data: bytes) -> None:
+    _validate_checkpoint_byte_bounds(data)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(data)
+            output.flush()
+            os.fsync(output.fileno())
+        os.link(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+        _fsync_directory(path.parent)
+
+
+def _prepare_checkpoint(
+    path: Path, fingerprint: str, configuration: Mapping[str, object], *, atomic: bool = False
+) -> int:
+    if (atomic and _pilot_checkpoint_exists(path)) or (not atomic and path.exists()):
         return _already_done(path, fingerprint, configuration)
     header = {
         "record_type": "header",
@@ -1461,9 +1561,16 @@ def _prepare_checkpoint(path: Path, fingerprint: str, configuration: Mapping[str
         "fingerprint": fingerprint,
         "configuration": _json_value(configuration),
     }
-    with path.open("x") as f:
-        f.write(json.dumps(header, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n")
-        f.flush()
+    encoded = (json.dumps(header, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
+    if atomic:
+        try:
+            _atomic_create_checkpoint(path, encoded)
+        except FileExistsError:
+            return _already_done(path, fingerprint, configuration)
+    else:
+        with path.open("x") as f:
+            f.write(encoded.decode("utf-8"))
+            f.flush()
     return 0
 
 
@@ -1659,14 +1766,14 @@ async def _run_matchup_checkpoint(
     ckpt,
     pilot_context=None,
 ) -> dict:
-    _prepare_checkpoint(ckpt, fingerprint, configuration)
+    pilot_mode = pilot_context is not None
+    _prepare_checkpoint(ckpt, fingerprint, configuration, atomic=pilot_mode)
     records = []
     reason_counts: dict = {}
+    checkpoint_bytes = b""
     if ckpt.is_file():
-        try:
-            checkpoint_records = _parse_strict_jsonl(ckpt.read_bytes(), context="self-play checkpoint game stream")
-        except OSError as exc:
-            raise ValueError(f"cannot read self-play checkpoint: {exc}") from exc
+        checkpoint_bytes = _read_checkpoint_snapshot(ckpt, pilot=pilot_mode)
+        checkpoint_records = _validated_checkpoint_records(checkpoint_bytes, fingerprint, configuration)
         for rec in checkpoint_records:
             if rec.get("record_type") == "header":
                 continue
@@ -1689,7 +1796,8 @@ async def _run_matchup_checkpoint(
         visits=REFEREE_VISITS,
         capabilities=capabilities,
     )
-    with ckpt.open("a") as f:
+    append_file = None if pilot_mode else ckpt.open("a")
+    try:
         scheduled = schedule_pair_games(
             records,
             openings,
@@ -1780,8 +1888,15 @@ async def _run_matchup_checkpoint(
             }
             if sampling_trace is not None:
                 rec["sampling_trace"] = sampling_trace
-            f.write(json.dumps(rec, ensure_ascii=False, allow_nan=False) + "\n")
-            f.flush()
+            encoded_record = (json.dumps(rec, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
+            if pilot_mode:
+                next_checkpoint_bytes = checkpoint_bytes + encoded_record
+                _validate_checkpoint_byte_bounds(next_checkpoint_bytes)
+                _atomic_replace_checkpoint(ckpt, next_checkpoint_bytes)
+                checkpoint_bytes = next_checkpoint_bytes
+            else:
+                append_file.write(encoded_record.decode("utf-8"))
+                append_file.flush()
             records.append(rec)
             log.info(
                 "  %s vs %s game %d/%d: A_%s (%s, end=%s, conclusive=%s, moves=%d, score=%s)",
@@ -1796,6 +1911,9 @@ async def _run_matchup_checkpoint(
                 outcome.num_moves,
                 outcome.black_score,
             )
+    finally:
+        if append_file is not None:
+            append_file.close()
 
     sample = complete_pair_sample(records, phase=phase)
     winsA, conclusive = sample["a_wins"], sample["games"]

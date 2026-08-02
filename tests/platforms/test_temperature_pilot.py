@@ -29,6 +29,18 @@ def test_draw_has_frozen_canonical_json_sha256_and_u64_vector():
     assert draw == 616295429160571065
 
 
+def test_draw_rejects_matchup_ids_outside_the_exact_frozen_nine():
+    with pytest.raises(ValueError, match="frozen matchup"):
+        pilot.derive_draw(
+            manifest_sha256="ab" * 32,
+            canonical_matchup_id="rank_2d@1t1__vs__rank_2d@1t2",
+            pair_attempt=0,
+            color_index=0,
+            ply=8,
+            player="A",
+        )
+
+
 def test_policy_digest_has_frozen_count_and_binary64_vector_with_final_pass_entry():
     policy = [0.0] * 361 + [0.25]
     assert pilot.policy_digest(policy) == "ba08745956e76568164c75022ed57da172c75366e0607eb4a73abeddd9f0a69b"
@@ -94,6 +106,74 @@ def test_trace_validation_fails_closed_on_shape_draw_bounds_mapping_and_digest(m
         pilot.validate_sampling_trace(trace, **context)
 
 
+@pytest.mark.parametrize("temperature", ["1.0", "01", "0.04", "10.01"])
+def test_trace_rejects_noncanonical_or_out_of_range_temperature(temperature):
+    context = {
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": "rank_1d@1t1__vs__rank_1d@1t2",
+        "pair_attempt": 0,
+        "color_index": 0,
+    }
+    with pytest.raises(ValueError, match="temperature"):
+        pilot.build_sampling_trace(
+            **context,
+            ply=8,
+            player="A",
+            temperature=temperature,
+            draw_u64=pilot.derive_draw(**context, ply=8, player="A"),
+            selected_index=0,
+            policy=[1.0],
+        )
+
+
+@pytest.mark.parametrize(
+    ("matchup_id", "player", "temperature"),
+    [
+        ("rank_1d@1t1__vs__rank_1d@1t2", "A", "2"),
+        ("rank_1d@1t1__vs__rank_1d@1t2", "B", "1"),
+        ("rank_1d@1s__vs__rank_1d@1t0.4", "A", "0.4"),
+    ],
+)
+def test_trace_temperature_must_match_the_temperature_player_on_that_side(matchup_id, player, temperature):
+    context = {
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": matchup_id,
+        "pair_attempt": 0,
+        "color_index": 0,
+    }
+    with pytest.raises(ValueError, match="temperature player"):
+        pilot.build_sampling_trace(
+            **context,
+            ply=8,
+            player=player,
+            temperature=temperature,
+            draw_u64=pilot.derive_draw(**context, ply=8, player=player),
+            selected_index=0,
+            policy=[1.0],
+        )
+
+
+def test_trace_validation_rechecks_the_temperature_side_binding():
+    context = {
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": "rank_1d@1t1__vs__rank_1d@1t2",
+        "pair_attempt": 0,
+        "color_index": 0,
+    }
+    trace = pilot.build_sampling_trace(
+        **context,
+        ply=8,
+        player="A",
+        temperature="1",
+        draw_u64=pilot.derive_draw(**context, ply=8, player="A"),
+        selected_index=0,
+        policy=[1.0],
+    )
+    trace["temperature"] = "2"
+    with pytest.raises(ValueError, match="temperature player"):
+        pilot.validate_sampling_trace(trace, **context)
+
+
 def test_protocol_helpers_do_not_import_selfplay():
     script = (
         "import importlib,sys; "
@@ -149,13 +229,7 @@ def _fixture_repository(tmp_path):
         path.write_text(f"fixture for {relative}\n")
     suite_path = root / pilot.OPENING_SUITE_PATH
     suite_path.parent.mkdir(parents=True, exist_ok=True)
-    suite = {
-        "suite_id": "humansl-opening-suite-v1",
-        "seed": 20260721,
-        "board_size": 19,
-        "openings": [{"id": f"o{i:03d}", "moves": [i - 1, i + 30]} for i in range(1, 25)],
-    }
-    suite["checksum"] = pilot.canonical_digest(suite, exclude="checksum")
+    suite = json.loads((CALIBRATION_DIR / "opening_suite_v1.json").read_text())
     suite_path.write_text(json.dumps(suite))
     _git(root, "init", "-q")
     _git(root, "config", "user.email", "test@example.invalid")
@@ -196,6 +270,30 @@ def test_manifest_binds_exact_sources_ancestry_opening_allocation_and_self_diges
     }
     assert manifest["manifest_sha256"] == pilot.canonical_digest(manifest, exclude="manifest_sha256")
     pilot.validate_manifest(manifest, root)
+
+
+def test_manifest_rejects_altered_suite_even_with_a_recalculated_internal_checksum(tmp_path):
+    root, base, _ = _fixture_repository(tmp_path)
+    suite_path = root / pilot.OPENING_SUITE_PATH
+    suite = json.loads(suite_path.read_text())
+    suite["openings"][0]["moves"][0] += 1
+    suite["checksum"] = pilot.canonical_digest(suite, exclude="checksum")
+    suite_path.write_text(json.dumps(suite))
+    with pytest.raises(ValueError, match="frozen opening suite"):
+        pilot.build_manifest(root, base)
+
+
+def test_manifest_matchups_do_not_alias_mutable_global_protocol_state(tmp_path):
+    root, base, _ = _fixture_repository(tmp_path)
+    original_label = pilot.MATCHUPS[0]["a"]["canonical_label"]
+    first = pilot.build_manifest(root, base)
+    first["matchups"][0]["a"]["canonical_label"] = "mutated"
+    try:
+        assert pilot.MATCHUPS[0]["a"]["canonical_label"] == original_label
+    finally:
+        first["matchups"][0]["a"]["canonical_label"] = original_label
+    second = pilot.build_manifest(root, base)
+    assert second["matchups"][0]["a"]["canonical_label"] == original_label
 
 
 def test_manifest_creation_is_exclusive_and_validation_rejects_bound_file_drift(tmp_path):

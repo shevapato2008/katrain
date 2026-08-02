@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
 import re
 import struct
 import subprocess
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -20,6 +22,15 @@ SELECTION_ALGORITHM_VERSION = "temperature-inverse-cdf-v1"
 ARGMAX_SELECTION_ALGORITHM_VERSION = "policy-argmax-v1"
 DRAW_ALGORITHM_VERSION = "temperature-draw-sha256-u64-v1"
 OPENING_SUITE_PATH = "superpowers/tracks/golaxy-ai-ladder-parity/calibration/opening_suite_v1.json"
+OPENING_SUITE_ID = "humansl-opening-suite-v1"
+OPENING_SUITE_SEED = 20260721
+OPENING_SUITE_GENERATION = (
+    "Generated once with Python random.Random(20260721); eight distinct legal intersections were sampled without "
+    "replacement per prefix, then frozen here. Runtime generation is forbidden."
+)
+OPENING_SUITE_BOARD_SIZE = 19
+OPENING_SUITE_ENTRY_COUNT = 24
+OPENING_SUITE_CHECKSUM = "db5bf2f7b1944a26bf6e027d6a32efc13c848f4dcb3d22eb1afd274383fe033e"
 RUNTIME_SOURCE_PATHS = (
     "katrain/core/ladder.py",
     "katrain/core/ladder_calibration.py",
@@ -75,10 +86,36 @@ MATCHUPS = tuple(
         _matchup(profile, _argmax_identity(profile), _temperature_identity(profile, "0.4")),
     )
 )
+CANONICAL_MATCHUP_IDS = tuple(matchup["matchup_id"] for matchup in MATCHUPS)
 
 
 def _plain_nonnegative_int(value: object) -> bool:
     return type(value) is int and value >= 0
+
+
+def _frozen_matchup(canonical_matchup_id: object) -> Mapping[str, object]:
+    if not isinstance(canonical_matchup_id, str) or canonical_matchup_id not in CANONICAL_MATCHUP_IDS:
+        raise ValueError("canonical_matchup_id must be one of the nine frozen matchups")
+    return MATCHUPS[CANONICAL_MATCHUP_IDS.index(canonical_matchup_id)]
+
+
+def _validate_trace_temperature(canonical_matchup_id: str, player: str, temperature: object) -> str:
+    if player not in ("A", "B"):
+        raise ValueError("player must be A or B")
+    if not isinstance(temperature, str) or not _TEMPERATURE_RE.fullmatch(temperature):
+        raise ValueError("temperature must be a canonical decimal string")
+    try:
+        value = Decimal(temperature)
+    except InvalidOperation as exc:  # pragma: no cover - regex excludes these spellings
+        raise ValueError("temperature must be a canonical decimal string") from exc
+    canonical = format(value.normalize(), "f")
+    if temperature != canonical or not Decimal("0.05") <= value <= Decimal("10"):
+        raise ValueError("temperature must be canonical and in the closed range [0.05, 10]")
+    matchup = _frozen_matchup(canonical_matchup_id)
+    identity = matchup["a" if player == "A" else "b"]
+    if identity.get("selection_algorithm") != SELECTION_ALGORITHM_VERSION or identity.get("temperature") != temperature:
+        raise ValueError("sampling trace must match the temperature player on its A/B side")
+    return temperature
 
 
 def canonical_digest(payload: Mapping[str, object], *, exclude: str | None = None) -> str:
@@ -105,12 +142,7 @@ def derive_draw(
     """Derive one stateless unsigned 64-bit draw from the exact protocol JSON array."""
     if not isinstance(manifest_sha256, str) or not _SHA256_RE.fullmatch(manifest_sha256):
         raise ValueError("manifest_sha256 must be a lowercase SHA-256 digest")
-    if (
-        not isinstance(canonical_matchup_id, str)
-        or canonical_matchup_id.count("__vs__") != 1
-        or any(not label for label in canonical_matchup_id.split("__vs__"))
-    ):
-        raise ValueError("canonical_matchup_id is invalid")
+    _frozen_matchup(canonical_matchup_id)
     if not _plain_nonnegative_int(pair_attempt):
         raise ValueError("pair_attempt must be a non-negative plain integer")
     if type(color_index) is not int or color_index not in (0, 1):
@@ -159,8 +191,7 @@ def build_sampling_trace(
     selected_index: int,
     policy: Iterable[object],
 ) -> dict:
-    if not isinstance(temperature, str) or not _TEMPERATURE_RE.fullmatch(temperature):
-        raise ValueError("temperature must be a canonical decimal string")
+    _validate_trace_temperature(canonical_matchup_id, player, temperature)
     expected_draw = derive_draw(
         manifest_sha256=manifest_sha256,
         canonical_matchup_id=canonical_matchup_id,
@@ -196,8 +227,7 @@ def validate_sampling_trace(
         raise ValueError("sampling trace shape is invalid")
     if not _plain_nonnegative_int(trace["ply"]) or trace["player"] not in ("A", "B"):
         raise ValueError("sampling trace shape has invalid ply or player")
-    if not isinstance(trace["temperature"], str) or not _TEMPERATURE_RE.fullmatch(trace["temperature"]):
-        raise ValueError("sampling trace shape has invalid temperature")
+    _validate_trace_temperature(canonical_matchup_id, trace["player"], trace["temperature"])
     expected_draw = derive_draw(
         manifest_sha256=manifest_sha256,
         canonical_matchup_id=canonical_matchup_id,
@@ -252,28 +282,49 @@ def _load_opening_binding(repo_root: Path) -> dict:
         suite = json.loads(suite_path.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot load opening suite: {exc}") from exc
-    if not isinstance(suite, dict) or suite.get("suite_id") != "humansl-opening-suite-v1":
-        raise ValueError("opening suite identity is invalid")
+    if not isinstance(suite, dict) or set(suite) != {
+        "suite_id",
+        "seed",
+        "generation",
+        "board_size",
+        "openings",
+        "checksum",
+    }:
+        raise ValueError("frozen opening suite structure is invalid")
     if suite.get("checksum") != canonical_digest(suite, exclude="checksum"):
         raise ValueError("opening suite internal checksum mismatch")
+    if (
+        suite.get("suite_id") != OPENING_SUITE_ID
+        or type(suite.get("seed")) is not int
+        or suite["seed"] != OPENING_SUITE_SEED
+        or suite.get("generation") != OPENING_SUITE_GENERATION
+        or type(suite.get("board_size")) is not int
+        or suite["board_size"] != OPENING_SUITE_BOARD_SIZE
+        or suite.get("checksum") != OPENING_SUITE_CHECKSUM
+    ):
+        raise ValueError("frozen opening suite metadata or content is invalid")
     openings = suite.get("openings")
-    if not isinstance(openings, list) or len(openings) < 20:
-        raise ValueError("opening suite must contain at least 20 entries")
+    if not isinstance(openings, list) or len(openings) != OPENING_SUITE_ENTRY_COUNT:
+        raise ValueError("frozen opening suite must contain exactly 24 entries")
     allocations = []
     seen_ids = set()
-    for attempt, opening in enumerate(openings[:20]):
+    seen_moves = set()
+    for index, opening in enumerate(openings):
         if (
             not isinstance(opening, dict)
             or set(opening) != {"id", "moves"}
-            or not isinstance(opening["id"], str)
+            or opening["id"] != f"o{index + 1:03d}"
             or not isinstance(opening["moves"], list)
-            or not opening["moves"]
+            or len(opening["moves"]) != 8
             or any(type(move) is not int or not 0 <= move < 361 for move in opening["moves"])
             or opening["id"] in seen_ids
+            or tuple(opening["moves"]) in seen_moves
         ):
-            raise ValueError("opening allocation is malformed")
+            raise ValueError("frozen opening suite entry is malformed")
         seen_ids.add(opening["id"])
-        allocations.append({"attempt": attempt, "id": opening["id"], "moves": list(opening["moves"])})
+        seen_moves.add(tuple(opening["moves"]))
+        if index < 20:
+            allocations.append({"attempt": index, "id": opening["id"], "moves": list(opening["moves"])})
     return {
         "path": OPENING_SUITE_PATH,
         "file_sha256": _sha256_file(suite_path),
@@ -309,7 +360,7 @@ def build_manifest(repo_root: Path | str, implementation_base_revision: str) -> 
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "protocol": PROTOCOL_VERSION,
         "implementation_base_revision": base,
-        "matchups": [dict(matchup) for matchup in MATCHUPS],
+        "matchups": [copy.deepcopy(matchup) for matchup in MATCHUPS],
         "opening_suite": _load_opening_binding(root),
         "runtime_sources": _bound_sources(root, base),
         "versions": {

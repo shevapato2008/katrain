@@ -18,12 +18,17 @@ from katrain.core.ladder import policy_index_to_gtp
 
 
 PROTOCOL_VERSION = "humansl-temperature-pilot-v1"
-MANIFEST_SCHEMA_VERSION = 1
+MANIFEST_SCHEMA_VERSION = 2
 MANIFEST_DIGEST_CONTRACT = MappingProxyType(
     {
         "algorithm": "sha256",
-        "bytes": "canonical-json-utf8",
         "excluded_top_level_field": "manifest_sha256",
+        "encoding": "utf-8",
+        "sort_keys": True,
+        "item_separator": ",",
+        "key_separator": ":",
+        "ensure_ascii": False,
+        "allow_nan": False,
         "file_byte_digest": False,
     }
 )

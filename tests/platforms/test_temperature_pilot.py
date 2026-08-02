@@ -14,6 +14,7 @@ import pytest
 
 
 CALIBRATION_DIR = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladder-parity/calibration"
+FROZEN_V2_MANIFEST = CALIBRATION_DIR / "temperature_pilot_v2.json"
 sys.path.insert(0, str(CALIBRATION_DIR))
 pilot = importlib.import_module("temperature_pilot")
 selfplay = importlib.import_module("run_selfplay")
@@ -50,7 +51,7 @@ def _health_snapshot():
 
 def _runner_manifest():
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "protocol": pilot.PROTOCOL_VERSION,
         "manifest_sha256": "ab" * 32,
         "runtime_sources": {"runtime.py": "12" * 32},
@@ -721,6 +722,36 @@ print(" ".join(os.environ[name] for name in {names!r}))
     assert result.stderr == ""
 
 
+@pytest.mark.parametrize("command", ["check", "dry-run"])
+def test_frozen_v2_manifest_cli_is_silent_and_side_effect_free(tmp_path, command):
+    if not FROZEN_V2_MANIFEST.is_file():
+        pytest.skip("temperature_pilot_v2.json has not been frozen yet")
+    home = tmp_path / "home"
+    home.mkdir()
+    results_dir = tmp_path / "results"
+    environment = dict(os.environ)
+    environment["HOME"] = str(home)
+    for name in ("KIVY_NO_ARGS", "KIVY_NO_CONFIG", "KIVY_NO_FILELOG", "KIVY_NO_CONSOLELOG"):
+        environment.pop(name, None)
+    argv = [
+        sys.executable,
+        str(CALIBRATION_DIR / "run_temperature_pilot.py"),
+        command,
+        "--manifest",
+        str(FROZEN_V2_MANIFEST),
+    ]
+    if command == "dry-run":
+        argv += ["--results-dir", str(results_dir)]
+
+    result = subprocess.run(argv, cwd=tmp_path, text=True, capture_output=True, env=environment)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == ""
+    assert list(home.iterdir()) == []
+    assert not results_dir.exists()
+    assert set(tmp_path.iterdir()) == {home}
+
+
 def test_pilot_configuration_records_argmax_identity_without_temperature_entries():
     matchup = pilot.MATCHUPS[2]
     players = {
@@ -759,7 +790,7 @@ async def test_pilot_matchup_persists_and_resume_validates_sampling_traces(tmp_p
     opening = {"id": "o001", "moves": list(range(8))}
     context = {
         "protocol_version": pilot.PROTOCOL_VERSION,
-        "manifest_path": "calibration/temperature_pilot_v1.json",
+        "manifest_path": "calibration/temperature_pilot_v2.json",
         "manifest_sha256": "ab" * 32,
         "canonical_matchup_id": pilot.MATCHUPS[0].matchup_id,
         "launch_snapshot_sha256": "ef" * 32,
@@ -1339,13 +1370,18 @@ def _fixture_repository(tmp_path):
 def test_manifest_binds_exact_sources_ancestry_opening_allocation_and_self_digest(tmp_path):
     root, base, suite = _fixture_repository(tmp_path)
     manifest = pilot.build_manifest(root, base)
-    assert manifest["schema_version"] == 1
+    assert manifest["schema_version"] == 2
     assert manifest["protocol"] == "humansl-temperature-pilot-v1"
     assert manifest["implementation_base_revision"] == base
     assert manifest["manifest_digest_contract"] == {
         "algorithm": "sha256",
-        "bytes": "canonical-json-utf8",
         "excluded_top_level_field": "manifest_sha256",
+        "encoding": "utf-8",
+        "sort_keys": True,
+        "item_separator": ",",
+        "key_separator": ":",
+        "ensure_ascii": False,
+        "allow_nan": False,
         "file_byte_digest": False,
     }
     assert tuple(manifest["runtime_sources"]) == pilot.RUNTIME_SOURCE_PATHS

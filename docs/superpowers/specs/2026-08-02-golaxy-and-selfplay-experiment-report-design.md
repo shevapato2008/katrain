@@ -56,7 +56,7 @@
 - `experiment_family`：例如 HumanSL native sampling、argmax、PIKL boundary、b18 star calibration。
 - `player_a`、`player_b`：完整模型/等级/访问数/选择语义。
 - Golaxy 记录额外包含 `golaxy_level`、wire level 和产品等级别名（若适用）。
-- `planned_games`、`observed_games`、`missing_games`、`wins`、`losses`、`decision_games`、`inconclusive_games`。
+- `planned_games`、`raw_observed_games`、`eligible_games`、`missing_games`、`wins`、`losses`、`decision_games`、`inconclusive_games`、`pair_invalidated_games`。
 - `player_a_black_games`、`player_a_white_games`、`complete_pairs`、`incomplete_pairs` 和按原因分组的未定盘。
 - `inclusion_status`：included 或 excluded。
 - `completion_status`：completed、partial 或 stopped。
@@ -68,22 +68,30 @@
 
 ### 统计层级与守恒
 
-- **game/result** 是比分原子：一次已落盘 result 对应一盘，结论为 win、loss 或 inconclusive；reservation 不是 result。
-- **pair** 是同 opening/slot、双方互换黑白的两盘。两盘都 observed 才是 `complete_pair`；只有一盘时是 `incomplete_pair`。pair 完整性不改变单盘胜负是否计分。
-- **experiment** 是同一汇总匹配键下的 game 集合。必须满足 `observed_games = decision_games + inconclusive_games`、`decision_games = wins + losses`、`planned_games = observed_games + missing_games`。若 runner 允许超过原计划重试，额外尝试必须单独记录为 replacement，不能令等式失真。
+- **game/result** 是原始观测原子：一次已落盘 result 对应一盘，结论为 win、loss 或 inconclusive；reservation 不是 result。
+- **pair** 是同 opening/slot、双方互换黑白的两盘。两盘都产生合格结论才是 `complete_pair`；缺盘或任一盘 inconclusive 时是 `incomplete/inconclusive_pair`。
+- **segment/campaign** 是一段原始账本或续跑贡献；**experiment** 是同一汇总匹配键下所有 included segment 的累计。主表显示 experiment 累计，去重明细显示各 segment 的计划、观测、比分、缺失和停止点。
+- Golaxy 协议按单盘计分：每个 conclusive result 都是 eligible，颜色配对完整性只作为质量提示。内部自对弈协议按完整颜色对计分：只要 pair 任一盘 inconclusive，该 pair 两盘都不进入 eligible/胜负分母，并计入 `pair_invalidated_games`；runner 的 replacement pair 作为新 pair 参与目标数。
+- 每层必须满足 `raw_observed_games = eligible_games + inconclusive_games + pair_invalidated_games`、`decision_games = wins + losses = eligible_games`。对按单盘计分的 Golaxy，`pair_invalidated_games=0`；对按 pair 计分的 selfplay，inconclusive pair 中原本 conclusive 的另一盘计入 `pair_invalidated_games`，真正 inconclusive 的盘计入 `inconclusive_games`。
+- `planned_games` 描述目标合格样本，不包含 replacement 尝试；因此完成进度满足 `planned_games = eligible_games + missing_games`，而 raw observed 可因 inconclusive/replacement 超过 planned。未闭合 reservation 不计 raw observed，只形成 missing/停止审计项。
 - 黑白统计永远以 `player_a` 视角计算；inconclusive 仍计入 observed 和黑白盘数，但不计入胜负分母。
 - `completion_status=completed` 要求 missing 为 0 且不存在未闭合 reservation；`partial` 表示仍可续跑或计划盘缺失；`stopped` 表示 runner 已明确停止但已有结果可计。是否进入正文只由 `inclusion_status=included` 决定，exploratory 仅限制结论强度。
-- 59/60 等缺盘以 `planned_games=60, observed_games=59, missing_games=1` 表达，并保留最后一个未闭合 reservation/停止原因。
+- rank_1d..rank_6d 的扩充 segment 以 `planned_games=60, eligible_games=59, missing_games=1` 表达；与父 campaign 合并后的 experiment 累计以 `planned_games=100, eligible_games=99, missing_games=1` 表达。两层都保留，主表默认显示 99/100，segment 明细明确显示 59/60 和最后一个未闭合 reservation/停止原因。
 
 ## 去重与续跑规则
 
-- canonical game id 的优先级为：账本自带不可变 `origin_result_id`；否则 `campaign_id + stage + slot/opening + attempt + player_a_color`；旧 schema 最后才使用 `source_raw_sha256 + result_line_number`。键的作用域是整个报告，不是单个文件。
+- canonical game id 的已知 schema 映射和优先级为：
+  1. `origin_result_id` 与旧 schema 的 `origin_id` 统一规范为 `origin:<value>`；两字段同时存在时必须相等。
+  2. carry 仅有父引用时使用 `parent:<parent_raw_sha256>:<parent_result_line>`；父原件相同行也生成同一 id，不能使用子文件 SHA。
+  3. 原生 campaign result 使用 `campaign:<campaign_id>:<stage>:<slot/opening>:<attempt>:<player_a_color>`。
+  4. 没有上述字段的受支持旧 schema 最后使用 `legacy:<source_raw_sha256>:<result_line_number>`。
+  键的作用域是整个报告，不是单个文件；未知映射不能临时退化为路径键。
 - raw JSONL、gzip 归档、manifest 和 summary 指向相同 raw SHA 时，只计一份对局；manifest/summary 作为验证与元数据来源。相同 canonical id 的规范化内容必须完全一致，否则生成失败，不能择优覆盖。
 - 星阵追加式 campaign 的 reservation/result 不跨账本复制；续跑链按父 SHA 排序后汇总已完成 result。
 - carry evidence 若来自已冻结父账本，按 origin id 或父账本行号计一次。
 - 同一 matchup 在不同协议、访问数、选择方式或执行阶段下保持为不同实验，不因双方名称相似而合并。
 - 汇总匹配键固定包含 category、双方规范化模型身份、双方 rank/profile、访问数、选择语义、PIKL 配方指纹、棋盘/规则/贴目、开局集、裁判算法、Golaxy wire level 和协议版本。键完全相同的扩充实验可以在“汇总比分”中合并，同时在明细中保留各段账本贡献与停止点。
-- 不完整颜色对、inconclusive pair 和未产生 result 的 reservation 不进入胜负分母。
+- selfplay 的不完整颜色对、inconclusive pair 和所有协议中未产生 result 的 reservation 不进入胜负分母；Golaxy 已产生的 conclusive 单盘不因另一颜色缺失而失效。
 - continuation 必须形成无环 DAG；每个 child 的 parent path/SHA 必须匹配 inventory，孤儿、循环或多父冲突均失败。输出按汇总键、父子拓扑、canonical game id 确定性排序。
 
 ## 报告结构
@@ -161,10 +169,10 @@
 
 1. 单元测试覆盖修复边界、JSONL 解析、gzip/manifest 去重、续跑链合并、颜色配平、inconclusive 分母和比分视角。
 2. 黄金数据测试固定下列关键结果和状态：
-   - rank_1d@1 对星阵准1段、1段均 10–0；rank_2d@1 对准2段 9–1、对2段 10–0；rank_3d@1 对准3段、3段均 9–1；rank_4d@1 对准4段 9–1、对4段 8–2；rank_5d@1 对5段 8–2；rank_6d@1 对6段 6–3，整个扩充链 59/60、partial、missing 1。
-   - b18 对星阵3星的 @32 与 @64 扩充由 `calibration/results/golaxy_b18_three_star_20game_20260801/` 的 parent/extension 链重算，各自目标 20 盘，准确比分以 inventory 冻结的原始结果为唯一权威，不从旧摘要抄录。
+   - rank_1d@1 对星阵准1段、1段均 10–0；rank_2d@1 对准2段 9–1、对2段 10–0；rank_3d@1 对准3段、3段均 9–1；rank_4d@1 对准4段 9–1、对4段 8–2；rank_5d@1 对5段 8–2；rank_6d@1 对6段 6–3。扩充 segment 为 59/60、missing 1；与父 campaign 合并后的累计 experiment 为 99/100、partial、missing 1。
+   - b18 对星阵3星的 @32 累计 7–7、eligible 14/20、missing 6、stopped；@64 累计 7–3、eligible 10/20、missing 10、stopped。来源是 `calibration/results/golaxy_b18_three_star_20game_20260801/` 的 parent/extension 链；`extension_v6` 新增 @32 的 6–4，`extension_v7` 因 Golaxy `7002 illegal query` 未新增有效盘。黄金测试必须断言这些人工冻结值，而非只用同一解析器重算。
    - 相邻 `@1s` 八组：1d–2d 7–13、2d–3d 7–13、3d–4d 4–16、4d–5d 9–11、5d–6d 6–14、6d–7d 9–11、7d–8d 6–14、8d–9d 7–13；每组 20 个 decision game 与 10 个完整颜色对。
-3. source inventory 测试证明扫描到的每个候选源恰好属于 included、excluded 或 superseded；included 的每个 canonical game 只计一次，所有统计守恒，附录保留续跑边和停止原因。
+3. source inventory 测试证明扫描到的每个候选源恰好属于 included、excluded 或 superseded；included 的每个 canonical game 只计一次，所有统计守恒，附录保留续跑边和停止原因。另用最小 fixture 证明父原件、`origin_id` carry、`origin_result_id` carry 和 `parent SHA + line` carry 归并为同一 canonical id；内容冲突时失败。
 4. 生成器连续运行两次得到字节一致 HTML；产物只含固定 `data_as_of`，不含当前时钟。
 5. HTML 结构校验：无外部资源、无缺失章节、所有主表行数与规范化数据一致；59/60 缺盘与 partial 状态可见。
 6. 浏览器在桌面与移动 viewport 检查搜索、筛选、筛选后计数、表头、横向表格和打印样式；无控制台错误。

@@ -78,7 +78,10 @@ def canonical_temperature(temperature: str) -> str:
         raise ValueError("temperature must be a plain unsigned decimal") from exc
     if not Decimal("0.05") <= value <= Decimal("10"):
         raise ValueError("temperature must be in the closed range [0.05, 10]")
-    return format(value.normalize(), "f")
+    integer, dot, fraction = temperature.partition(".")
+    integer = integer.lstrip("0") or "0"
+    fraction = fraction.rstrip("0")
+    return f"{integer}.{fraction}" if dot and fraction else integer
 
 
 def temperature_player_identity(profile: str, temperature: str) -> PlayerIdentity:

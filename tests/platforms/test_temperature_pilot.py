@@ -66,6 +66,22 @@ def test_temperature_evidence_identity_is_canonical_and_complete():
     assert identity.temperature == "2"
 
 
+def test_temperature_identity_preserves_more_than_decimal_context_precision():
+    raw = "0009.9999999999999999999999999999100"
+    identity = pilot.temperature_player_identity("rank_1d", raw)
+
+    assert identity.temperature == "9.99999999999999999999999999991"
+    assert identity.canonical_label == "rank_1d@1t9.99999999999999999999999999991"
+
+
+def test_distinct_long_temperature_decimals_have_distinct_evidence_identities():
+    first = pilot.temperature_player_identity("rank_1d", "9.99999999999999999999999999991")
+    second = pilot.temperature_player_identity("rank_1d", "9.99999999999999999999999999992")
+
+    assert first.temperature != second.temperature
+    assert first.canonical_label != second.canonical_label
+
+
 @pytest.mark.asyncio
 async def test_temperature_player_move_uses_audited_draw_and_appends_valid_trace(monkeypatch):
     label, rung, selection = selfplay.make_player("rank_1d@1t2.0")

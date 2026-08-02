@@ -82,6 +82,15 @@ def test_player_accepts_and_canonicalizes_explicit_temperature_players(spec, lab
     assert "rootPolicyTemperature" not in query["overrideSettings"]
 
 
+def test_player_preserves_exact_long_temperature_label_identity():
+    first_label, _, _ = selfplay.make_player("rank_1d@1t9.99999999999999999999999999991")
+    second_label, _, _ = selfplay.make_player("rank_1d@1t9.99999999999999999999999999992")
+
+    assert first_label == "rank_1d@1t9.99999999999999999999999999991"
+    assert second_label == "rank_1d@1t9.99999999999999999999999999992"
+    assert first_label != second_label
+
+
 @pytest.mark.parametrize(
     "spec",
     [

@@ -34,7 +34,7 @@
 
 证据时间早于 KaTrain 基线、执行身份无法证明、仅为语义探针而非真实对局，或已被后续账本明确 supersede 的数据不进入正文比分。
 
-修复后的停机或部分完成账本中，已经落盘且结论明确的对局仍计入，同时将实验标记为“未完整闭环”。inconclusive 不计入胜负比分，但显示数量与原因。星阵 rank_1d..rank_6d `@1` 扩充目前为 59/60，必须显示最后一盘缺失状态。
+修复后的停机或部分完成账本中，已经落盘的结果按所属 protocol 的 eligibility 规则统计，同时将实验标记为“未完整闭环”：Golaxy 的明确单盘结论计入；selfplay 只有完整颜色对中的明确结果计入。inconclusive 和因半对/未定对而被配对规则剔除的结果不计入胜负比分，但分别显示数量与原因。星阵 rank_1d..rank_6d `@1` 扩充目前为 59/60，必须显示最后一盘缺失状态。
 
 ## 数据单元与边界
 
@@ -71,21 +71,21 @@
 - **game/result** 是原始观测原子：一次已落盘 result 对应一盘，结论为 win、loss 或 inconclusive；reservation 不是 result。
 - **pair** 是同 opening/slot、双方互换黑白的两盘。两盘都产生合格结论才是 `complete_pair`；缺盘或任一盘 inconclusive 时是 `incomplete/inconclusive_pair`。
 - **segment/campaign** 是一段原始账本或续跑贡献；**experiment** 是同一汇总匹配键下所有 included segment 的累计。主表显示 experiment 累计，去重明细显示各 segment 的计划、观测、比分、缺失和停止点。
-- Golaxy 协议按单盘计分：每个 conclusive result 都是 eligible，颜色配对完整性只作为质量提示。内部自对弈协议按完整颜色对计分：只要 pair 任一盘 inconclusive，该 pair 两盘都不进入 eligible/胜负分母，并计入 `pair_invalidated_games`；runner 的 replacement pair 作为新 pair 参与目标数。
+- Golaxy 协议按单盘计分：每个 conclusive result 都是 eligible，颜色配对完整性只作为质量提示。内部自对弈协议按完整颜色对计分：只要 pair 缺失一盘或任一盘 inconclusive，该 pair 中所有已落盘的 conclusive result 都不进入 eligible/胜负分母，并计入 `pair_invalidated_games`；runner 的 replacement pair 作为新 pair 参与目标数。
 - 每层必须满足 `raw_observed_games = eligible_games + inconclusive_games + pair_invalidated_games`、`decision_games = wins + losses = eligible_games`。对按单盘计分的 Golaxy，`pair_invalidated_games=0`；对按 pair 计分的 selfplay，inconclusive pair 中原本 conclusive 的另一盘计入 `pair_invalidated_games`，真正 inconclusive 的盘计入 `inconclusive_games`。
-- `planned_games` 描述目标合格样本，不包含 replacement 尝试；因此完成进度满足 `planned_games = eligible_games + missing_games`，而 raw observed 可因 inconclusive/replacement 超过 planned。未闭合 reservation 不计 raw observed，只形成 missing/停止审计项。
+- `planned_games` 描述目标合格样本，不包含 replacement 尝试；因此完成进度满足 `planned_games = eligible_games + missing_games`，而 raw observed 可因 inconclusive/replacement 超过 planned。这里的 `missing_games` 是距离目标 eligible 样本的缺口，不等同于物理上未产生 result 的盘数；物理缺失和未闭合 reservation 另在 segment 审计字段记录，均不计 raw observed。
 - 黑白统计永远以 `player_a` 视角计算；inconclusive 仍计入 observed 和黑白盘数，但不计入胜负分母。
 - `completion_status=completed` 要求 missing 为 0 且不存在未闭合 reservation；`partial` 表示仍可续跑或计划盘缺失；`stopped` 表示 runner 已明确停止但已有结果可计。是否进入正文只由 `inclusion_status=included` 决定，exploratory 仅限制结论强度。
 - rank_1d..rank_6d 的扩充 segment 以 `planned_games=60, eligible_games=59, missing_games=1` 表达；与父 campaign 合并后的 experiment 累计以 `planned_games=100, eligible_games=99, missing_games=1` 表达。两层都保留，主表默认显示 99/100，segment 明细明确显示 59/60 和最后一个未闭合 reservation/停止原因。
 
 ## 去重与续跑规则
 
-- canonical game id 的已知 schema 映射和优先级为：
-  1. `origin_result_id` 与旧 schema 的 `origin_id` 统一规范为 `origin:<value>`；两字段同时存在时必须相等。
-  2. carry 仅有父引用时使用 `parent:<parent_raw_sha256>:<parent_result_line>`；父原件相同行也生成同一 id，不能使用子文件 SHA。
-  3. 原生 campaign result 使用 `campaign:<campaign_id>:<stage>:<slot/opening>:<attempt>:<player_a_color>`。
-  4. 没有上述字段的受支持旧 schema 最后使用 `legacy:<source_raw_sha256>:<result_line_number>`。
-  键的作用域是整个报告，不是单个文件；未知映射不能临时退化为路径键。
+- canonical game id 使用统一 namespace，先解析引用、再选择身份，不能简单给原字段加不同前缀：
+  1. 父账本行身份统一为 `source:<raw_sha256>:<result_line_number>`。父原件、`parent_raw_sha256 + parent_result_line` carry，以及值形如 `legacy:<sha>:<line>` 或 `source:<sha>:<line>` 的 `origin_id`/`origin_result_id` 全部规范为同一个 `source:<sha>:<line>`。
+  2. 其他不可变 `origin_result_id` 与旧 schema `origin_id` 统一规范为 `origin:<value>`；两字段同时存在时必须解析到同一 canonical id。
+  3. 没有 origin/父引用的原生 campaign result 使用 `campaign:<campaign_id>:<stage>:<slot/opening>:<attempt>:<player_a_color>`。
+  4. 没有上述字段的受支持旧父原件使用自身 `source:<source_raw_sha256>:<result_line_number>`，因此未来 carry 可稳定引用它。
+  键的作用域是整个报告，不是单个文件；未知引用格式、引用不存在的父行或同一 canonical id 内容不一致都必须失败。
 - raw JSONL、gzip 归档、manifest 和 summary 指向相同 raw SHA 时，只计一份对局；manifest/summary 作为验证与元数据来源。相同 canonical id 的规范化内容必须完全一致，否则生成失败，不能择优覆盖。
 - 星阵追加式 campaign 的 reservation/result 不跨账本复制；续跑链按父 SHA 排序后汇总已完成 result。
 - carry evidence 若来自已冻结父账本，按 origin id 或父账本行号计一次。

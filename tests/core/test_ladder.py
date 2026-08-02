@@ -129,12 +129,41 @@ def test_temperature_picker_exact_inverse_cdf_edge_draws():
     assert pick_temperature_policy(policy, (19, 19), 1.0, U64_MAX) == ((0, 18), 0)
 
 
+def test_temperature_picker_known_answer_uses_transformed_not_original_weights():
+    policy = [0.0] * 362
+    policy[342], policy[0] = 0.9, 0.1  # canonical candidates A1, then A19
+    draw = 17_524_406_870_024_074_035  # u ~= 0.95
+
+    assert pick_temperature_policy(policy, (19, 19), 1.0, draw) == ((0, 18), 0)
+    assert pick_temperature_policy(policy, (19, 19), 0.5, draw) == ((0, 0), 342)
+
+
 @pytest.mark.parametrize("draw", [False, True, -1, 1.0, U64_MAX + 1])
 def test_temperature_picker_rejects_invalid_u64_draw(draw):
     policy = [0.0] * 362
     policy[0] = 1.0
     with pytest.raises(LadderMoveError):
         pick_temperature_policy(policy, (19, 19), 1.0, draw)
+
+
+@pytest.mark.parametrize(
+    "board_size",
+    [None, [19, 19], "19x19", (19,), (19, 19, 19), (True, 19), (19, False), (0, 19), (-1, 19), (19.0, 19)],
+)
+def test_temperature_picker_exposes_invalid_board_size_as_ladder_move_error(board_size):
+    policy = [0.0] * 362
+    policy[0] = 1.0
+    with pytest.raises(LadderMoveError):
+        pick_temperature_policy(policy, board_size, 1.0, 0)
+
+
+def test_temperature_picker_handles_arbitrarily_large_integer_values_without_overflow():
+    policy = [0] * 362
+    policy[0] = 10**400
+    assert pick_temperature_policy(policy, (19, 19), 1.0, 0) == ((0, 18), 0)
+
+    with pytest.raises(LadderMoveError):
+        pick_temperature_policy(policy, (19, 19), 10**400, 0)
 
 
 @pytest.mark.parametrize(

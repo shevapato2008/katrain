@@ -1152,6 +1152,8 @@ def _matchup_configuration(
     boundary_protocol_version: Optional[str] = None,
     boundary: Optional[Mapping[str, object]] = None,
     boundary_source_snapshot: Optional[Mapping[str, object]] = None,
+    exact_openings: Optional[List[Mapping[str, object]]] = None,
+    pilot_context: Optional[Mapping[str, object]] = None,
 ) -> dict:
     if type(experimental_min_humansl_search_visits) is not int or experimental_min_humansl_search_visits < 2:
         raise ValueError("experimental HumanSL search minimum must be a plain int of at least 2")
@@ -1178,6 +1180,20 @@ def _matchup_configuration(
             "selection_algorithm_version": SELECTION_ALGORITHM_VERSION,
             "identity": dict(identities[side]),
         }
+        if pilot_context is not None:
+            try:
+                pilot_identity = temperature_pilot.matchup_player_identity(pilot_context["canonical_matchup_id"], side)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"pilot selection identity is invalid: {exc}") from exc
+            if (
+                pilot_identity.canonical_label != label
+                or pilot_identity.profile != rung.human_sl_profile
+                or pilot_identity.selection != selection
+            ):
+                raise ValueError("pilot selection identity does not match the configured player")
+            configured_players[side]["selection_algorithm_version"] = pilot_identity.selection_algorithm
+            if pilot_identity.temperature is not None:
+                configured_players[side]["temperature"] = pilot_identity.temperature
     configuration = {
         "capability_schema": capabilities.get("capability_schema"),
         "katago_version": capabilities.get("katago_version"),
@@ -1216,6 +1232,14 @@ def _matchup_configuration(
             "checksum": suite["checksum"],
         },
     }
+    if exact_openings is not None:
+        configuration["opening_suite"]["cycle"] = False
+        configuration["opening_suite"]["allocations"] = [
+            {"attempt": attempt, "id": opening["id"], "moves": list(opening["moves"])}
+            for attempt, opening in enumerate(exact_openings)
+        ]
+    if pilot_context is not None:
+        configuration["temperature_pilot"] = dict(pilot_context)
     if boundary is not None:
         configuration["boundary"] = dict(boundary)
     if boundary_protocol_version is not None:
@@ -1374,6 +1398,31 @@ def _validate_game_record(
     expected_attested = num_moves - opening_length + (1 if accepted_pass else 0)
     if record.get("attested_turn_count") != expected_attested:
         raise ValueError("checkpoint game attested turn count is inconsistent with its ending")
+    pilot_context = configuration.get("temperature_pilot")
+    if pilot_context is not None:
+        traces = record.get("sampling_trace")
+        if not isinstance(traces, list):
+            raise ValueError("pilot checkpoint game has no sampling trace")
+        expected_temperature_turns = [
+            (attestation["ply"], attestation["player"])
+            for attestation in record["move_attestations"]
+            if players[attestation["player"]].get("selection") == "temperature_weighted"
+        ]
+        if [
+            (trace.get("ply"), trace.get("player")) for trace in traces if isinstance(trace, Mapping)
+        ] != expected_temperature_turns:
+            raise ValueError("pilot checkpoint sampling trace does not cover exactly the temperature-selected turns")
+        for trace in traces:
+            try:
+                temperature_pilot.validate_sampling_trace(
+                    trace,
+                    manifest_sha256=pilot_context["manifest_sha256"],
+                    canonical_matchup_id=pilot_context["canonical_matchup_id"],
+                    pair_attempt=record["pair_attempt"],
+                    color_index=record["color_index"],
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"pilot checkpoint sampling trace is invalid: {exc}") from exc
 
 
 def _already_done(path: Path, fingerprint: str, configuration: Mapping[str, object]) -> int:
@@ -1477,6 +1526,8 @@ async def run_matchup(
     boundary_protocol: Optional[str] = None,
     expected_source_revision: Optional[str] = None,
     boundary_source_snapshot: Optional[Mapping[str, object]] = None,
+    exact_openings: Optional[List[Mapping[str, object]]] = None,
+    pilot_context: Optional[Mapping[str, object]] = None,
 ) -> dict:
     required = required_conclusive_pairs(phase, experiment4=experiment4)
     if type(target_pairs) is not int or target_pairs < required or (phase == "screen" and target_pairs != required):
@@ -1486,6 +1537,8 @@ async def run_matchup(
         max_pair_attempts = max(target_pairs * 2, target_pairs + 10)
     elif type(max_pair_attempts) is not int or max_pair_attempts <= 0:
         raise ValueError("maximum pair attempts must be a positive plain int")
+    if (exact_openings is None) != (pilot_context is None):
+        raise ValueError("exact openings and pilot context must be supplied together")
     boundary_inputs = None
     if boundary_protocol is not None:
         if boundary_source_snapshot is None:
@@ -1505,6 +1558,26 @@ async def run_matchup(
         )
         opening_suite = boundary_inputs["suite"]
         openings = boundary_inputs["openings"]
+    elif exact_openings is not None:
+        if expected_source_revision is not None or boundary_source_snapshot is not None:
+            raise ValueError("pilot exact openings cannot include boundary source arguments")
+        required_context_fields = {
+            "protocol_version",
+            "manifest_path",
+            "manifest_sha256",
+            "canonical_matchup_id",
+            "launch_snapshot_sha256",
+        }
+        if not isinstance(pilot_context, Mapping) or set(pilot_context) != required_context_fields:
+            raise ValueError("pilot context shape is invalid")
+        if pilot_context.get("protocol_version") != temperature_pilot.PROTOCOL_VERSION:
+            raise ValueError("pilot context protocol is invalid")
+        for digest_field in ("manifest_sha256", "launch_snapshot_sha256"):
+            digest = pilot_context.get(digest_field)
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                raise ValueError(f"pilot context {digest_field} is invalid")
+        opening_suite = load_opening_suite()
+        openings = [dict(opening) for opening in exact_openings]
     else:
         if expected_source_revision is not None or boundary_source_snapshot is not None:
             raise ValueError("--expected-source-revision is only valid with --boundary-protocol")
@@ -1515,6 +1588,8 @@ async def run_matchup(
     labelA, rungA, selA = playerA
     labelB, rungB, selB = playerB
     players = {"A": playerA, "B": playerB}
+    if pilot_context is not None and pilot_context["canonical_matchup_id"] != f"{labelA}__vs__{labelB}":
+        raise ValueError("pilot context matchup identity does not match the players")
     identities = _preflight_capabilities(capabilities, players)
     configuration = _matchup_configuration(
         players,
@@ -1530,6 +1605,8 @@ async def run_matchup(
         boundary_protocol_version=boundary_protocol,
         boundary=boundary_inputs["fingerprint"] if boundary_inputs else None,
         boundary_source_snapshot=boundary_source_snapshot,
+        exact_openings=openings if exact_openings is not None else None,
+        pilot_context=pilot_context,
     )
     fingerprint = _configuration_fingerprint(configuration)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1547,7 +1624,7 @@ async def run_matchup(
             phase=phase,
             experiment4=experiment4,
             openings=openings,
-            cycle_openings=boundary_inputs is None,
+            cycle_openings=boundary_inputs is None and exact_openings is None,
             client=client,
             base_url=base_url,
             wrn=wrn,
@@ -1555,6 +1632,7 @@ async def run_matchup(
             configuration=configuration,
             fingerprint=fingerprint,
             ckpt=ckpt,
+            pilot_context=pilot_context,
         )
 
 
@@ -1579,6 +1657,7 @@ async def _run_matchup_checkpoint(
     configuration,
     fingerprint,
     ckpt,
+    pilot_context=None,
 ) -> dict:
     _prepare_checkpoint(ckpt, fingerprint, configuration)
     records = []
@@ -1626,6 +1705,19 @@ async def _run_matchup_checkpoint(
             a_color = scheduled_game["a_color"]
             initial_history = scheduled_game["initial_history"]
             move_attestations = []
+            sampling_trace = [] if pilot_context is not None else None
+
+            def selection_context(player):
+                if pilot_context is None:
+                    return None
+                return {
+                    "protocol_version": pilot_context["protocol_version"],
+                    "manifest_sha256": pilot_context["manifest_sha256"],
+                    "canonical_matchup_id": pilot_context["canonical_matchup_id"],
+                    "pair_attempt": scheduled_game["pair_attempt"],
+                    "color_index": scheduled_game["color_index"],
+                    "player": player,
+                }
 
             async def a_move(history):
                 return await _player_move(
@@ -1638,6 +1730,8 @@ async def _run_matchup_checkpoint(
                     capabilities=capabilities,
                     attestations=move_attestations,
                     player="A",
+                    temperature_context=selection_context("A"),
+                    sampling_trace=sampling_trace,
                 )
 
             async def b_move(history):
@@ -1651,6 +1745,8 @@ async def _run_matchup_checkpoint(
                     capabilities=capabilities,
                     attestations=move_attestations,
                     player="B",
+                    temperature_context=selection_context("B"),
+                    sampling_trace=sampling_trace,
                 )
 
             # A occupies play_one_game's "our" slot, B the "golaxy" slot; both return int|'pass'|
@@ -1682,6 +1778,8 @@ async def _run_matchup_checkpoint(
                 "move_attestations": move_attestations,
                 "ts": time.time(),
             }
+            if sampling_trace is not None:
+                rec["sampling_trace"] = sampling_trace
             f.write(json.dumps(rec, ensure_ascii=False, allow_nan=False) + "\n")
             f.flush()
             records.append(rec)

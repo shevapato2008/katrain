@@ -1,6 +1,7 @@
 import hashlib
 import importlib
 import json
+import os
 import stat
 import subprocess
 import sys
@@ -15,6 +16,7 @@ CALIBRATION_DIR = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladd
 sys.path.insert(0, str(CALIBRATION_DIR))
 pilot = importlib.import_module("temperature_pilot")
 selfplay = importlib.import_module("run_selfplay")
+runner = importlib.import_module("run_temperature_pilot")
 
 
 def _valid_policy(selected_index=0):
@@ -43,6 +45,376 @@ def _health_snapshot():
             },
         }
     )
+
+
+def _runner_manifest():
+    return {
+        "schema_version": 1,
+        "protocol": pilot.PROTOCOL_VERSION,
+        "manifest_sha256": "ab" * 32,
+        "runtime_sources": {"runtime.py": "12" * 32},
+        "opening_suite": {
+            "path": pilot.OPENING_SUITE_PATH,
+            "file_sha256": "cd" * 32,
+            "checksum": pilot.OPENING_SUITE_CHECKSUM,
+            "cycle": False,
+            "allocations": [
+                {"attempt": attempt, "id": f"o{attempt + 1:03d}", "moves": list(range(8))} for attempt in range(20)
+            ],
+        },
+        "matchups": [pilot._matchup_projection(matchup) for matchup in pilot.MATCHUPS],
+    }
+
+
+def test_dry_run_prints_exact_serial_schedule_without_network_or_result_files(tmp_path, monkeypatch, capsys):
+    manifest = _runner_manifest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("manifest fixture\n", encoding="utf-8")
+    results_dir = tmp_path / "results"
+    monkeypatch.setattr(runner.pilot, "validate_manifest_file", lambda path, root: manifest)
+
+    runner.dry_run(manifest_path, results_dir, repo_root=tmp_path)
+
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0] == f"manifest_sha256 {manifest['manifest_sha256']}"
+    assert len(lines) == 1 + 9 * 22
+    for matchup_index, matchup in enumerate(pilot.MATCHUPS):
+        offset = 1 + matchup_index * 22
+        checkpoint = results_dir / (
+            f"selfplay_screen_{selfplay._fname(matchup.a.canonical_label)}"
+            f"__vs__{selfplay._fname(matchup.b.canonical_label)}.jsonl"
+        )
+        assert lines[offset] == f"matchup {matchup_index + 1}/9 {matchup.matchup_id}"
+        assert lines[offset + 1] == f"checkpoint {checkpoint}"
+        assert lines[offset + 2 : offset + 22] == [
+            f"attempt {attempt} opening o{attempt + 1:03d} moves 0,1,2,3,4,5,6,7" for attempt in range(20)
+        ]
+    assert not results_dir.exists()
+
+
+def test_launch_snapshot_is_exclusive_reused_byte_for_byte_and_rejects_live_identity_drift(tmp_path):
+    results_dir = tmp_path / "results"
+    first = runner.ensure_launch_snapshot(results_dir, _health_snapshot(), "ab" * 32)
+    snapshot_path = results_dir / "launch_snapshot.json"
+    original_bytes = snapshot_path.read_bytes()
+
+    second = runner.ensure_launch_snapshot(results_dir, _health_snapshot(), "ab" * 32)
+
+    assert second == first
+    assert snapshot_path.read_bytes() == original_bytes
+    assert first["snapshot_sha256"] == pilot.canonical_digest(first, exclude="snapshot_sha256")
+    drifted = json.loads(json.dumps(selfplay._json_value(_health_snapshot())))
+    drifted["models"]["b28"]["human_model_sha256"] = "different-human"
+    with pytest.raises(ValueError, match="live health identity.*frozen launch snapshot"):
+        runner.ensure_launch_snapshot(results_dir, selfplay.adapters.retain_health_snapshot(drifted), "ab" * 32)
+
+
+@pytest.mark.asyncio
+async def test_live_runner_is_strictly_serial_runs_all_completed_inversions_and_binds_launch_digest(
+    tmp_path, monkeypatch
+):
+    manifest = _runner_manifest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("fixture\n", encoding="utf-8")
+    monkeypatch.setattr(runner.pilot, "validate_manifest_file", lambda path, root: manifest)
+    monkeypatch.setattr(
+        runner.adapters, "fetch_health_snapshot", lambda client, base_url: _async_value(_health_snapshot())
+    )
+    active = 0
+    calls = []
+
+    async def fake_run_matchup(spec_a, spec_b, target_pairs, **kwargs):
+        nonlocal active
+        assert active == 0
+        active += 1
+        calls.append((spec_a, spec_b, target_pairs, kwargs))
+        await _async_value(None)
+        active -= 1
+        # Every matchup is complete; these include both point and persuasive inversions.
+        score = 5 if len(calls) == 1 else 9 if len(calls) == 2 else 11
+        return {"complete_pairs": 10, "a_wins": score, "decision_games": 20}
+
+    monkeypatch.setattr(runner.run_selfplay, "run_matchup", fake_run_matchup)
+    summary = await runner.run_pilot(manifest_path, "http://engine", tmp_path / "results", repo_root=tmp_path)
+
+    assert len(calls) == 9
+    assert summary["status"] == "fail"
+    launch = json.loads((tmp_path / "results/launch_snapshot.json").read_text(encoding="utf-8"))
+    for matchup, (spec_a, spec_b, target_pairs, kwargs) in zip(pilot.MATCHUPS, calls):
+        assert (spec_a, spec_b, target_pairs, kwargs["max_pair_attempts"], kwargs["phase"]) == (
+            matchup.a.canonical_label,
+            matchup.b.canonical_label,
+            10,
+            20,
+            "screen",
+        )
+        assert kwargs["pilot_context"]["launch_snapshot_sha256"] == launch["snapshot_sha256"]
+        assert kwargs["pilot_context"]["canonical_matchup_id"] == matchup.matchup_id
+        assert kwargs["exact_openings"] == [
+            {"id": allocation["id"], "moves": allocation["moves"]}
+            for allocation in manifest["opening_suite"]["allocations"]
+        ]
+
+
+@pytest.mark.asyncio
+async def test_live_runner_stops_on_first_incomplete_matchup(tmp_path, monkeypatch):
+    manifest = _runner_manifest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("fixture\n", encoding="utf-8")
+    monkeypatch.setattr(runner.pilot, "validate_manifest_file", lambda path, root: manifest)
+    monkeypatch.setattr(
+        runner.adapters, "fetch_health_snapshot", lambda client, base_url: _async_value(_health_snapshot())
+    )
+    calls = []
+
+    async def fake_run_matchup(*args, **kwargs):
+        calls.append(args)
+        complete_pairs = 9 if len(calls) == 3 else 10
+        return {"complete_pairs": complete_pairs, "a_wins": 11, "decision_games": 2 * complete_pairs}
+
+    monkeypatch.setattr(runner.run_selfplay, "run_matchup", fake_run_matchup)
+    summary = await runner.run_pilot(manifest_path, "http://engine", tmp_path / "results", repo_root=tmp_path)
+
+    assert len(calls) == 3
+    assert summary["status"] == "incomplete"
+
+
+async def _async_value(value):
+    return value
+
+
+def test_summarize_and_check_use_all_nine_validated_checkpoints_and_report_gate(tmp_path, monkeypatch):
+    manifest = _runner_manifest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("fixture\n", encoding="utf-8")
+    results_dir = tmp_path / "results"
+    runner.ensure_launch_snapshot(results_dir, _health_snapshot(), manifest["manifest_sha256"])
+    monkeypatch.setattr(runner.pilot, "validate_manifest_file", lambda path, root: manifest)
+    calls = []
+
+    def validated(path, matchup, manifest_arg, launch, manifest_path_arg):
+        calls.append(path)
+        return {
+            "matchup_id": matchup["matchup_id"],
+            "a_wins": 11,
+            "complete_pairs": 10,
+            "identity_valid": True,
+            "decision_games": 20,
+            "inconclusive_pairs": 0,
+            "checkpoint": str(path),
+            "checkpoint_sha256": "34" * 32,
+        }
+
+    monkeypatch.setattr(runner, "_validated_checkpoint_evidence", validated)
+    checked = runner.check_pilot(manifest_path, results_dir, repo_root=tmp_path)
+    assert checked["status"] == "pass"
+    assert calls == [runner.checkpoint_path(results_dir, matchup) for matchup in manifest["matchups"]]
+
+    calls.clear()
+    summarized = runner.summarize_pilot(manifest_path, results_dir, repo_root=tmp_path)
+    assert summarized["status"] == "pass"
+    frozen_summary = json.loads((results_dir / "summary.json").read_text(encoding="utf-8"))
+    assert frozen_summary["status"] == "pass"
+    assert frozen_summary["runtime_sources"] == manifest["runtime_sources"]
+    assert frozen_summary["launch_snapshot_sha256"]
+    assert frozen_summary["model_identities"]
+    assert frozen_summary["evidence"][0]["checkpoint_sha256"] == "34" * 32
+    assert frozen_summary["evidence"][0]["a_losses"] == 9
+    assert frozen_summary["evidence"][0]["target_games"] == 20
+    assert frozen_summary["evidence"][0]["classification"] == "direction_supported"
+    report = (results_dir / "report.md").read_text(encoding="utf-8")
+    assert all(
+        token in report
+        for token in (
+            "overall: pass",
+            "launch_snapshot_sha256",
+            "runtime.py",
+            "11-9/20",
+            "direction_supported",
+            "checkpoint_sha256",
+        )
+    )
+    assert not list(results_dir.glob("*.tmp"))
+
+
+def test_check_without_results_only_validates_manifest_and_missing_results_are_incomplete(tmp_path, monkeypatch):
+    manifest = _runner_manifest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("fixture\n", encoding="utf-8")
+    monkeypatch.setattr(runner.pilot, "validate_manifest_file", lambda path, root: manifest)
+
+    assert runner.check_pilot(manifest_path, repo_root=tmp_path) == {
+        "status": "valid",
+        "manifest_sha256": manifest["manifest_sha256"],
+        "matchups": 9,
+        "planned_games": 180,
+    }
+    result = runner.check_pilot(manifest_path, tmp_path / "missing", repo_root=tmp_path)
+    assert result["status"] == "incomplete"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda row: row.update(pair_attempt=20, index=40),
+        lambda row: row.update(opening_id="wrong"),
+        lambda row: row.update(opening_moves=[99]),
+    ],
+)
+def test_standalone_checkpoint_validation_rejects_attempt_or_frozen_opening_drift(mutation):
+    manifest = _runner_manifest()
+    matchup = manifest["matchups"][0]
+    record = {
+        "phase": "screen",
+        "pair_attempt": 0,
+        "color_index": 0,
+        "index": 0,
+        "opening_id": "o001",
+        "opening_moves": list(range(8)),
+    }
+    mutation(record)
+    with pytest.raises(ValueError, match="attempt|opening"):
+        runner._validate_exact_checkpoint_schedule([record], matchup, manifest)
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["create-manifest", "--implementation-base", "a" * 40, "--out", "manifest.json"],
+        ["check", "--manifest", "manifest.json"],
+        ["check", "--manifest", "manifest.json", "--results-dir", "results"],
+        ["dry-run", "--manifest", "manifest.json", "--results-dir", "results"],
+        ["run", "--manifest", "manifest.json", "--base-url", "http://engine", "--results-dir", "results"],
+        ["summarize", "--manifest", "manifest.json", "--results-dir", "results"],
+    ],
+)
+def test_cli_exposes_only_the_narrow_temperature_pilot_commands(argv):
+    args = runner.build_arg_parser().parse_args(argv)
+    assert args.command == argv[0]
+
+
+def test_executable_disables_kivy_argument_interception():
+    environment = dict(os.environ)
+    environment.pop("KIVY_NO_ARGS", None)
+    result = subprocess.run(
+        [sys.executable, str(CALIBRATION_DIR / "run_temperature_pilot.py"), "--help"],
+        text=True,
+        capture_output=True,
+        env=environment,
+        check=True,
+    )
+    assert "{create-manifest,check,dry-run,run,summarize}" in result.stdout
+    assert "KIVY OPTION" not in result.stdout
+
+
+def test_pilot_configuration_records_argmax_identity_without_temperature_entries():
+    matchup = pilot.MATCHUPS[2]
+    players = {
+        "A": selfplay.make_player(matchup.a.canonical_label),
+        "B": selfplay.make_player(matchup.b.canonical_label),
+    }
+    capabilities = _health_snapshot()
+    configuration = selfplay._matchup_configuration(
+        players,
+        selfplay._preflight_capabilities(capabilities, players),
+        capabilities=capabilities,
+        wide_root_noise=0.04,
+        target_pairs=10,
+        max_pair_attempts=20,
+        phase="screen",
+        exact_openings=[{"id": f"o{index + 1:03d}", "moves": list(range(8))} for index in range(20)],
+        pilot_context={
+            "protocol_version": pilot.PROTOCOL_VERSION,
+            "manifest_path": "manifest.json",
+            "manifest_sha256": "ab" * 32,
+            "canonical_matchup_id": matchup.matchup_id,
+            "launch_snapshot_sha256": "ef" * 32,
+        },
+    )
+
+    assert configuration["players"]["A"]["selection_algorithm_version"] == (pilot.ARGMAX_SELECTION_ALGORITHM_VERSION)
+    assert "temperature" not in configuration["players"]["A"]
+    assert configuration["players"]["B"]["selection_algorithm_version"] == pilot.SELECTION_ALGORITHM_VERSION
+    assert configuration["players"]["B"]["temperature"] == "0.4"
+
+
+@pytest.mark.asyncio
+async def test_pilot_matchup_persists_and_resume_validates_sampling_traces(tmp_path, monkeypatch):
+    calls = []
+    opening = {"id": "o001", "moves": list(range(8))}
+    context = {
+        "protocol_version": pilot.PROTOCOL_VERSION,
+        "manifest_path": "calibration/temperature_pilot_v1.json",
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": pilot.MATCHUPS[0].matchup_id,
+        "launch_snapshot_sha256": "ef" * 32,
+    }
+
+    async def fake_game(*, our_move, golaxy_move, our_color, initial_history, **_kwargs):
+        calls.append((our_color, list(initial_history)))
+        first, second = (our_move, golaxy_move) if our_color == "B" else (golaxy_move, our_move)
+        assert await first(initial_history) in range(362)
+        assert await second(initial_history + [20]) in range(362)
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history) + 2, 1.0, True, "move_cap")
+
+    def handler(_request):
+        return httpx.Response(200, json={"humanPolicy": _valid_policy(), "_wrapper": _attestation()})
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_game)
+    monkeypatch.setattr(selfplay, "required_conclusive_pairs", lambda *_args, **_kwargs: 1)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        kwargs = dict(
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+            phase="screen",
+            max_pair_attempts=1,
+            exact_openings=[opening],
+            pilot_context=context,
+        )
+        await selfplay.run_matchup("rank_1d@1t1", "rank_1d@1t2", 1, **kwargs)
+        checkpoint = next(tmp_path.glob("*.jsonl"))
+        checkpoint.write_text(
+            "\n".join(checkpoint.read_text(encoding="utf-8").splitlines()[:2]) + "\n", encoding="utf-8"
+        )
+        calls.clear()
+        await selfplay.run_matchup("rank_1d@1t1", "rank_1d@1t2", 1, **kwargs)
+        await selfplay.run_matchup("rank_1d@1t1", "rank_1d@1t2", 1, **kwargs)
+
+    assert calls == [("W", opening["moves"])]
+    records = [json.loads(line) for line in checkpoint.read_text(encoding="utf-8").splitlines()]
+    assert records[0]["configuration"]["temperature_pilot"] == context
+    assert records[0]["configuration"]["players"]["A"]["selection_algorithm_version"] == (
+        pilot.SELECTION_ALGORITHM_VERSION
+    )
+    assert records[0]["configuration"]["players"]["A"]["temperature"] == "1"
+    assert records[0]["configuration"]["players"]["B"]["selection_algorithm_version"] == (
+        pilot.SELECTION_ALGORITHM_VERSION
+    )
+    assert records[0]["configuration"]["players"]["B"]["temperature"] == "2"
+    assert [trace["player"] for trace in records[1]["sampling_trace"]] == ["A", "B"]
+    assert [trace["ply"] for trace in records[1]["sampling_trace"]] == [8, 9]
+
+    records[1]["sampling_trace"][0]["draw_u64"] = 0
+    checkpoint.write_text("\n".join(json.dumps(record) for record in records) + "\n", encoding="utf-8")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(ValueError, match="sampling trace"):
+            await selfplay.run_matchup(
+                "rank_1d@1t1",
+                "rank_1d@1t2",
+                1,
+                client=client,
+                base_url="http://engine",
+                wrn=0.04,
+                out_dir=tmp_path,
+                capabilities=_health_snapshot(),
+                phase="screen",
+                max_pair_attempts=1,
+                exact_openings=[opening],
+                pilot_context=context,
+            )
 
 
 def _attestation():

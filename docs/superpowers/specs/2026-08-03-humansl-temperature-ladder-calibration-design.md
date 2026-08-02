@@ -94,9 +94,9 @@ Temperature players use stateless draws under `temperature-draw-sha256-u64-v1`. 
  pair_attempt, color_index, ply, player]
 ```
 
-Take SHA-256, interpret the first eight digest bytes as an unsigned big-endian integer, and use that integer as the draw. `player` is exactly `A` or `B`; `ply` includes the frozen opening length. The two color legs and any later replenishment attempt therefore have distinct draws. There is no retry-generation concept: the existing monotonically increasing `pair_attempt` is the replenishment identity.
+`canonical_matchup_id` is exactly `<canonical-A-label>__vs__<canonical-B-label>` with the literal ASCII separator `__vs__` and no escaping; the accepted label grammar contains no underscore sequences that make this ambiguous. Take SHA-256, interpret the first eight digest bytes as an unsigned big-endian integer, and use that integer as the draw. `player` is exactly `A` or `B`; `ply` includes the frozen opening length. The two color legs and any later replenishment attempt therefore have distinct draws. There is no retry-generation concept: the existing monotonically increasing `pair_attempt` is the replenishment identity.
 
-Each game record stores a compact sampling trace for temperature-player turns: `ply`, `player`, canonical temperature, derived `draw_u64`, selected policy index, and SHA-256 of the exact IEEE-754 binary64 policy vector received for that move. This binds the selected move to the observed response without claiming that reissuing a nondeterministic engine query recreates the same policy. Known-answer vectors in tests freeze JSON encoding, digest, draw, candidate order, and inverse-CDF selection across Python versions.
+Each game record stores a compact sampling trace for temperature-player turns: `ply`, `player`, canonical temperature, derived `draw_u64`, selected policy index, and a policy digest. To form the digest, convert every policy entry with Python `float(value)`, prefix the vector with its element count as one unsigned big-endian 32-bit integer, append every element as IEEE-754 binary64 big-endian bytes (`struct.pack('>I', count)` followed by `struct.pack('>d', value)` for each element), and SHA-256 the concatenation. This binds the trace to the observed response without storing the large vector or claiming that a resume validator can recompute the historical inverse-CDF choice. Resume validation recalculates the stateless draw and validates trace shape, policy-digest syntax, selected-index bounds, and selected move/index agreement; mathematical correctness of inverse-CDF selection is frozen by unit known-answer vectors, not retroactively proven from the compact ledger. Reissuing a nondeterministic engine query is not expected to recreate the same policy.
 
 Production callers are not switched to deterministic draws in this slice.
 
@@ -123,11 +123,11 @@ The pilot reuses the post-fix self-play transport, model identity attestation, r
 - `protocol=humansl-temperature-pilot-v1` and ordered nine-matchup list;
 - exact canonical players, expected stronger side A, target ten pairs, cap twenty attempts;
 - opening suite path, file SHA-256, internal checksum, and allocated opening IDs/moves for attempts 0–19;
-- source revision plus SHA-256 of every implementation/test source file allowed to affect selection or scheduling, so a dirty relevant file fails preflight even when Git HEAD matches;
+- the implementation-base revision plus SHA-256 of these runtime sources: `katrain/core/ladder.py`, `katrain/core/ladder_calibration.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/adapters.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py`, and the new temperature pilot protocol/manifest modules named by the implementation plan; a changed or dirty bound file fails preflight even when Git HEAD is a descendant of the base;
 - selection, draw, referee, adjudication, symmetry, rules, komi, move-cap, and checkpoint schema versions;
 - expected b28/humanv0 model identities obtained from the live preflight and written to a separate launch snapshot rather than mutating the committed manifest.
 
-The manifest has a canonical SHA-256 calculated over the object without its `manifest_sha256` field, then stores that digest in the field. Every checkpoint header includes the manifest path and digest. Creation fails if the target manifest already exists; launch and resume recalculate all bound digests, require exact checkpoint configuration equality, and fail closed on unknown rows or relevant source drift. The launch snapshot is created once with exclusive semantics and is bound into all nine checkpoint configurations.
+The lifecycle is two commits and is deliberately non-self-referential. First commit all implementation and tests. The manifest generator binds `implementation_base_revision` to that commit and hashes the files as they exist in it. Then generate and commit the manifest in a later commit. Launch permits HEAD to equal or descend from the base but requires every bound file byte to retain its frozen hash. The manifest has a canonical SHA-256 calculated over the object without its `manifest_sha256` field, then stores that digest in the field. Every checkpoint header includes the manifest path and digest. Creation fails if the target manifest already exists; launch and resume recalculate all bound digests, require exact checkpoint configuration equality, and fail closed on unknown rows or relevant source drift. The launch snapshot is created once with exclusive semantics and is bound into all nine checkpoint configurations.
 
 ## 6. Evidence gates
 
@@ -138,7 +138,7 @@ For representative policies, automated tests must establish:
 - `T=1` preserves the normalized original distribution within floating-point tolerance;
 - increasing `T` increases Shannon entropy for a non-uniform positive distribution and decreases its top-move probability;
 - decreasing `T` does the converse;
-- identical explicit RNG seeds reproduce the same selection sequence;
+- the frozen unsigned-draw known-answer vectors reproduce the same transformed distribution and selection;
 - finite negative and zero policy entries are excluded, matching the existing contract; a mixed vector remains usable when at least one finite entry is positive;
 - wrong vector length, any NaN/infinity entry, boolean/nonfinite/out-of-range temperature, and an all-nonpositive vector raise `LadderMoveError` before selection;
 - pass remains the final policy index and participates in the same transformed distribution;
@@ -183,7 +183,7 @@ The 41-tier product ladder does not require b28 as a playing model based on curr
 
 ## 9. Failure handling and auditability
 
-- Missing/malformed `humanPolicy`, invalid temperature, invalid model identity, selection drift, malformed ledger rows, digest drift, or non-reproducible completed selections fail closed.
+- Missing/malformed `humanPolicy`, invalid temperature, invalid model identity, selection drift, malformed ledger rows, bound-file/manifest digest drift, or a sampling trace whose stateless draw, shape, index bounds, or selected move/index mapping is inconsistent fails closed. Compact traces do not claim to re-prove historical inverse-CDF selection without the original policy vector.
 - Engine/referee inconclusives follow existing complete-pair replenishment; they never enter the win/loss denominator.
 - A stopped run resumes only from its validated append-only ledger and immutable manifest.
 - Existing post-fix results are read-only evidence and are never rewritten into the new pilot as newly played games.

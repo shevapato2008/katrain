@@ -13,13 +13,24 @@
 - 不依赖网络字体、CDN、构建工具或后端服务。
 - 本次不修改应用运行时，也不把报告接入 Galaxy 或 kiosk 页面。
 
+## 已确认决策
+
+采用用户确认的**方案 A**：一份表格优先、可搜索筛选、可离线审计的自包含 HTML。正文只展示修复后、去重且身份可证明的有效证据；旧数据、重复表示、superseded、停机/续跑和语义探针统一进入审计附录。此次不采用多页面站点、只输出静态 Markdown，也不重新运行或补齐实验。
+
 ## 修复后证据边界
 
 只有能证明包含以下修复基线的真实对局才进入正文统计：
 
 - KaTrain：`e45531b3`，2026-07-22 13:45 +0800，合并 HumanSL 搜索路由修复。
 - KataGo 实时服务：`e1b68dd0` 与 `d11d80ea`，分别加入模型路由身份认证和严格身份检查。
-- 模型身份：固定 b28、b18 与 humanv0 SHA；账本或 manifest 必须提供可核验的身份快照、配置指纹或修复后来源提交。
+- 模型身份固定为：
+  - b28：`798da8fe3e9819f09535240b1bc29cb3047a4fa981433c56c491e57007a3d3f0`
+  - b18：`9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d`
+  - humanv0：`637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5`
+
+生成器使用一份纳入版本控制的权威 source inventory，而不是按文件名或日期猜测。inventory 每项包含仓库相对路径、文件 SHA-256、schema、实验族、`included/excluded/superseded` disposition、理由、父源（若有）和预期身份。数据截止点固定为 inventory 中最后一个获准结果的时间。每个扫描到的候选证据必须恰好进入一个 disposition；未知文件不能被静默忽略。
+
+正文源必须同时满足：inventory 标为 `included`；文件 SHA 匹配；账本 header/manifest 记录的 KaTrain 运行代码版本包含 `e45531b3` 或来自明确列入 inventory 的修复后 runner；所有实际参与落子/裁判的模型 SHA 与上述冻结值相符；使用显式 b18 搜索时，每次响应身份认证和 capability snapshot 证明服务具备 `e1b68dd0`、`d11d80ea` 引入的严格路由语义。缺失任一证明即标为 `excluded`，理由为 `unproven_post_fix_identity`。显式列入 inventory 的旧文件只校验存在性与 SHA，不按当前 schema 强制解析。
 
 证据时间早于 KaTrain 基线、执行身份无法证明、仅为语义探针而非真实对局，或已被后续账本明确 supersede 的数据不进入正文比分。
 
@@ -27,11 +38,13 @@
 
 ## 数据单元与边界
 
-实现分为三个独立单元：
+实现分为三个逻辑单元，不要求拆成三个独立程序：
 
 1. **数据提取器**：只读取 `calibration/results` 下获准的 JSONL、JSON、manifest 和 gzip 证据，验证格式与身份后输出规范化记录。它不负责视觉或结论措辞。
 2. **证据归并器**：按原始账本 SHA、origin/result id、manifest raw SHA 和续跑父子关系去重，计算比分、有效盘、inconclusive、颜色配平、完成状态和证据等级。它输出一份确定性的报告数据对象。
-3. **HTML 渲染器**：只消费规范化报告数据，生成最终单文件 HTML；不重新解释原始账本。
+3. **HTML 渲染器**：只消费规范化报告对象，生成最终单文件 HTML；不重新解释原始账本。
+
+规范化报告对象包含 `experiments`、`audit_items`、`continuation_edges`、`source_inventory`、`known_empty_families`、`validation_summary` 和 `data_as_of`。渲染器据此同时生成正文与附录。
 
 实现脚本放在 `superpowers/tracks/golaxy-ai-ladder-parity/calibration/`，便于以后重新生成报告，但脚本不是产品运行时依赖。
 
@@ -43,23 +56,35 @@
 - `experiment_family`：例如 HumanSL native sampling、argmax、PIKL boundary、b18 star calibration。
 - `player_a`、`player_b`：完整模型/等级/访问数/选择语义。
 - Golaxy 记录额外包含 `golaxy_level`、wire level 和产品等级别名（若适用）。
-- `wins`、`losses`、`decision_games`、`inconclusive_games`。
-- `black_games`、`white_games` 或完整颜色配对数。
-- `status`：completed、partial、stopped、exploratory、excluded。
-- `evidence_class`：formal、descriptive、exploratory。
+- `planned_games`、`observed_games`、`missing_games`、`wins`、`losses`、`decision_games`、`inconclusive_games`。
+- `player_a_black_games`、`player_a_white_games`、`complete_pairs`、`incomplete_pairs` 和按原因分组的未定盘。
+- `inclusion_status`：included 或 excluded。
+- `completion_status`：completed、partial 或 stopped。
+- `evidence_class`：formal、descriptive 或 exploratory。
 - `source_paths`、父子 SHA/原始 SHA、执行日期和身份摘要。
 - `notes`：停止原因、协议限制、是否仅能支持描述性结论。
 
 比分始终以前列玩家为视角。表头和方法说明必须明确这一规则。
 
+### 统计层级与守恒
+
+- **game/result** 是比分原子：一次已落盘 result 对应一盘，结论为 win、loss 或 inconclusive；reservation 不是 result。
+- **pair** 是同 opening/slot、双方互换黑白的两盘。两盘都 observed 才是 `complete_pair`；只有一盘时是 `incomplete_pair`。pair 完整性不改变单盘胜负是否计分。
+- **experiment** 是同一汇总匹配键下的 game 集合。必须满足 `observed_games = decision_games + inconclusive_games`、`decision_games = wins + losses`、`planned_games = observed_games + missing_games`。若 runner 允许超过原计划重试，额外尝试必须单独记录为 replacement，不能令等式失真。
+- 黑白统计永远以 `player_a` 视角计算；inconclusive 仍计入 observed 和黑白盘数，但不计入胜负分母。
+- `completion_status=completed` 要求 missing 为 0 且不存在未闭合 reservation；`partial` 表示仍可续跑或计划盘缺失；`stopped` 表示 runner 已明确停止但已有结果可计。是否进入正文只由 `inclusion_status=included` 决定，exploratory 仅限制结论强度。
+- 59/60 等缺盘以 `planned_games=60, observed_games=59, missing_games=1` 表达，并保留最后一个未闭合 reservation/停止原因。
+
 ## 去重与续跑规则
 
-- raw JSONL、gzip 归档、manifest 和 summary 指向相同 raw SHA 时，只计一份对局；manifest/summary 作为验证与元数据来源。
+- canonical game id 的优先级为：账本自带不可变 `origin_result_id`；否则 `campaign_id + stage + slot/opening + attempt + player_a_color`；旧 schema 最后才使用 `source_raw_sha256 + result_line_number`。键的作用域是整个报告，不是单个文件。
+- raw JSONL、gzip 归档、manifest 和 summary 指向相同 raw SHA 时，只计一份对局；manifest/summary 作为验证与元数据来源。相同 canonical id 的规范化内容必须完全一致，否则生成失败，不能择优覆盖。
 - 星阵追加式 campaign 的 reservation/result 不跨账本复制；续跑链按父 SHA 排序后汇总已完成 result。
 - carry evidence 若来自已冻结父账本，按 origin id 或父账本行号计一次。
 - 同一 matchup 在不同协议、访问数、选择方式或执行阶段下保持为不同实验，不因双方名称相似而合并。
-- 同一配置的扩充实验可以在“汇总比分”中合并，同时在明细中保留各段账本贡献与停止点。
+- 汇总匹配键固定包含 category、双方规范化模型身份、双方 rank/profile、访问数、选择语义、PIKL 配方指纹、棋盘/规则/贴目、开局集、裁判算法、Golaxy wire level 和协议版本。键完全相同的扩充实验可以在“汇总比分”中合并，同时在明细中保留各段账本贡献与停止点。
 - 不完整颜色对、inconclusive pair 和未产生 result 的 reservation 不进入胜负分母。
+- continuation 必须形成无环 DAG；每个 child 的 parent path/SHA 必须匹配 inventory，孤儿、循环或多父冲突均失败。输出按汇总键、父子拓扑、canonical game id 确定性排序。
 
 ## 报告结构
 
@@ -103,7 +128,7 @@
 
 ### 6. 审计附录
 
-分别列出：修复前排除、superseded、重复表示、停机/续跑链、身份无法证明和非对局语义探针。每项给出路径与排除理由，但不把原始大体积 JSON 嵌入 HTML。
+分别列出：修复前排除、superseded、重复表示、停机/续跑链、身份无法证明和非对局语义探针。每项来自 `audit_items` 或 `continuation_edges`，给出路径、SHA 与排除理由，但不把原始大体积 JSON 嵌入 HTML。
 
 ### 7. 方法与术语
 
@@ -126,20 +151,24 @@
 
 ## 异常与诚实状态
 
-- 解析器遇到未知 schema、重复 result id、父 SHA 不匹配或非法数值时必须失败，不生成“部分看似成功”的报告。
-- 允许显式列入排除清单的损坏/旧文件，但必须记录排除原因。
-- 报告顶部显示生成时间、数据截止时间、修复基线和校验摘要。
+- 先用 inventory 分类来源；纳入源遇到未知 schema、重复 result id、父 SHA 不匹配或非法数值时必须失败，不生成“部分看似成功”的报告。
+- 显式列为 excluded/superseded 的损坏或旧文件只验证存在性与 SHA，并记录排除原因，不进入严格业务 schema 解析。
+- 报告顶部显示确定性的数据截止时间 `data_as_of`、修复基线和校验摘要。真实运行时钟不嵌入产物；若命令行需要显示本次生成时间，只输出到终端日志。
 - 如果某个已知实验族没有任何合格记录，显示“无修复后有效证据”，而不是省略该实验族。
 - 不推断未实测模型的星阵对标等级；候选对标备注必须能回指直接比分。
 
 ## 验证与验收
 
 1. 单元测试覆盖修复边界、JSONL 解析、gzip/manifest 去重、续跑链合并、颜色配平、inconclusive 分母和比分视角。
-2. 黄金数据测试固定关键已知结果，包括 rank_1d..rank_6d `@1` 对星阵的扩充链、b18 星阵3星 20盘扩充、以及八组相邻 `@1s` 内部对局。
-3. 生成器连续运行两次得到字节一致 HTML（生成时间使用固定的数据截止值，而非当前时钟）。
-4. HTML 结构校验：无外部资源、无缺失章节、所有主表行数与规范化数据一致。
-5. 浏览器在桌面与移动 viewport 检查搜索、筛选、表头、横向表格和打印样式；无控制台错误。
-6. 最终报告展示修复后证据总数与独立重算一致，排除项不会进入正文有效盘总数。
+2. 黄金数据测试固定下列关键结果和状态：
+   - rank_1d@1 对星阵准1段、1段均 10–0；rank_2d@1 对准2段 9–1、对2段 10–0；rank_3d@1 对准3段、3段均 9–1；rank_4d@1 对准4段 9–1、对4段 8–2；rank_5d@1 对5段 8–2；rank_6d@1 对6段 6–3，整个扩充链 59/60、partial、missing 1。
+   - b18 对星阵3星的 @32 与 @64 扩充由 `calibration/results/golaxy_b18_three_star_20game_20260801/` 的 parent/extension 链重算，各自目标 20 盘，准确比分以 inventory 冻结的原始结果为唯一权威，不从旧摘要抄录。
+   - 相邻 `@1s` 八组：1d–2d 7–13、2d–3d 7–13、3d–4d 4–16、4d–5d 9–11、5d–6d 6–14、6d–7d 9–11、7d–8d 6–14、8d–9d 7–13；每组 20 个 decision game 与 10 个完整颜色对。
+3. source inventory 测试证明扫描到的每个候选源恰好属于 included、excluded 或 superseded；included 的每个 canonical game 只计一次，所有统计守恒，附录保留续跑边和停止原因。
+4. 生成器连续运行两次得到字节一致 HTML；产物只含固定 `data_as_of`，不含当前时钟。
+5. HTML 结构校验：无外部资源、无缺失章节、所有主表行数与规范化数据一致；59/60 缺盘与 partial 状态可见。
+6. 浏览器在桌面与移动 viewport 检查搜索、筛选、筛选后计数、表头、横向表格和打印样式；无控制台错误。
+7. 最终报告展示修复后证据总数与独立重算一致，排除项不会进入正文有效盘总数，每个 source inventory 项都能在正文来源或附录中回查。
 
 ## 非目标
 

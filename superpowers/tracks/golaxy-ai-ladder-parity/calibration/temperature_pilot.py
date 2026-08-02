@@ -11,6 +11,7 @@ import subprocess
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Iterable, Mapping
 
 from katrain.core.ladder import policy_index_to_gtp
@@ -18,6 +19,14 @@ from katrain.core.ladder import policy_index_to_gtp
 
 PROTOCOL_VERSION = "humansl-temperature-pilot-v1"
 MANIFEST_SCHEMA_VERSION = 1
+MANIFEST_DIGEST_CONTRACT = MappingProxyType(
+    {
+        "algorithm": "sha256",
+        "bytes": "canonical-json-utf8",
+        "excluded_top_level_field": "manifest_sha256",
+        "file_byte_digest": False,
+    }
+)
 SELECTION_ALGORITHM_VERSION = "temperature-inverse-cdf-v1"
 ARGMAX_SELECTION_ALGORITHM_VERSION = "policy-argmax-v1"
 DRAW_ALGORITHM_VERSION = "temperature-draw-sha256-u64-v1"
@@ -447,6 +456,7 @@ def build_manifest(repo_root: Path | str, implementation_base_revision: str) -> 
     manifest = {
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "protocol": PROTOCOL_VERSION,
+        "manifest_digest_contract": dict(MANIFEST_DIGEST_CONTRACT),
         "implementation_base_revision": base,
         "matchups": [_matchup_projection(matchup) for matchup in MATCHUPS],
         "opening_suite": _load_opening_binding(root),

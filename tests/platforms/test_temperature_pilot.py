@@ -660,6 +660,67 @@ def test_executable_disables_kivy_argument_interception():
     assert "KIVY OPTION" not in result.stdout
 
 
+@pytest.mark.parametrize("command", ["check", "dry-run"])
+def test_non_running_cli_startup_is_silent_and_home_side_effect_free(tmp_path, command):
+    home = tmp_path / "home"
+    home.mkdir()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("fixture\n", encoding="utf-8")
+    results_dir = tmp_path / "results"
+    manifest = _runner_manifest()
+    script = f"""
+import json
+import socket
+import sys
+sys.path.insert(0, {str(CALIBRATION_DIR)!r})
+socket.socket.connect = lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network access"))
+import run_temperature_pilot as runner
+runner.pilot.validate_manifest_file = lambda path, root: json.loads({json.dumps(manifest)!r})
+sys.argv = ["run_temperature_pilot.py", {command!r}, "--manifest", {str(manifest_path)!r}]
+if {command!r} == "dry-run":
+    sys.argv += ["--results-dir", {str(results_dir)!r}]
+exit_code = runner.main()
+assert "run_selfplay" not in sys.modules
+assert "adapters" not in sys.modules
+raise SystemExit(exit_code)
+"""
+    environment = dict(os.environ)
+    environment["HOME"] = str(home)
+    for name in ("KIVY_NO_ARGS", "KIVY_NO_CONFIG", "KIVY_NO_FILELOG", "KIVY_NO_CONSOLELOG"):
+        environment.pop(name, None)
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        env=environment,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == ""
+    assert list(home.iterdir()) == []
+    assert not results_dir.exists()
+
+
+def test_runner_overrides_conflicting_kivy_suppression_environment():
+    environment = dict(os.environ)
+    names = ("KIVY_NO_ARGS", "KIVY_NO_CONFIG", "KIVY_NO_FILELOG", "KIVY_NO_CONSOLELOG")
+    environment.update({name: "0" for name in names})
+    script = f"""
+import os
+import sys
+sys.path.insert(0, {str(CALIBRATION_DIR)!r})
+import run_temperature_pilot
+print(" ".join(os.environ[name] for name in {names!r}))
+"""
+
+    result = subprocess.run([sys.executable, "-c", script], text=True, capture_output=True, env=environment, check=True)
+
+    assert result.stdout == "1 1 1 1\n"
+    assert result.stderr == ""
+
+
 def test_pilot_configuration_records_argmax_identity_without_temperature_entries():
     matchup = pilot.MATCHUPS[2]
     players = {
@@ -1281,6 +1342,12 @@ def test_manifest_binds_exact_sources_ancestry_opening_allocation_and_self_diges
     assert manifest["schema_version"] == 1
     assert manifest["protocol"] == "humansl-temperature-pilot-v1"
     assert manifest["implementation_base_revision"] == base
+    assert manifest["manifest_digest_contract"] == {
+        "algorithm": "sha256",
+        "bytes": "canonical-json-utf8",
+        "excluded_top_level_field": "manifest_sha256",
+        "file_byte_digest": False,
+    }
     assert tuple(manifest["runtime_sources"]) == pilot.RUNTIME_SOURCE_PATHS
     assert manifest["opening_suite"] == {
         "path": pilot.OPENING_SUITE_PATH,
@@ -1301,6 +1368,8 @@ def test_manifest_binds_exact_sources_ancestry_opening_allocation_and_self_diges
         "checkpoint_schema": 3,
     }
     assert manifest["manifest_sha256"] == pilot.canonical_digest(manifest, exclude="manifest_sha256")
+    serialized = (json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    assert manifest["manifest_sha256"] != hashlib.sha256(serialized).hexdigest()
     pilot.validate_manifest(manifest, root)
 
 

@@ -6,21 +6,22 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import importlib
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
 from typing import Mapping
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-os.environ.setdefault("KIVY_NO_ARGS", "1")
+os.environ["KIVY_NO_ARGS"] = "1"
+os.environ["KIVY_NO_CONFIG"] = "1"
+os.environ["KIVY_NO_FILELOG"] = "1"
+os.environ["KIVY_NO_CONSOLELOG"] = "1"
 sys.path.insert(0, str(REPO_ROOT))
 
-import httpx
-
-import adapters
-import run_selfplay
 import temperature_pilot as pilot
 
 
@@ -28,11 +29,29 @@ LAUNCH_SNAPSHOT_NAME = "launch_snapshot.json"
 SUMMARY_NAME = "summary.json"
 REPORT_NAME = "report.md"
 SUMMARY_GENERATION_NAME = "summary_generation.json"
+_RUNTIME_MODULE_NAMES = frozenset({"adapters", "httpx", "run_selfplay"})
+
+
+def _runtime_module(name: str):
+    if name not in _RUNTIME_MODULE_NAMES:
+        raise AttributeError(name)
+    module = importlib.import_module(name)
+    globals()[name] = module
+    return module
+
+
+def __getattr__(name: str):
+    return _runtime_module(name)
+
+
+def _load_runtime_modules(*names: str) -> None:
+    for name in names:
+        _runtime_module(name)
 
 
 def checkpoint_path(results_dir: Path | str, matchup: Mapping[str, object]) -> Path:
-    player_a = run_selfplay._fname(matchup["a"]["canonical_label"])
-    player_b = run_selfplay._fname(matchup["b"]["canonical_label"])
+    player_a = re.sub(r"[^0-9A-Za-z]+", "-", matchup["a"]["canonical_label"])
+    player_b = re.sub(r"[^0-9A-Za-z]+", "-", matchup["b"]["canonical_label"])
     return Path(results_dir) / f"selfplay_{matchup['phase']}_{player_a}__vs__{player_b}.jsonl"
 
 
@@ -41,6 +60,7 @@ def _json_bytes(value: object) -> bytes:
 
 
 def _snapshot_payload(capabilities: Mapping[str, object], manifest_sha256: str) -> dict:
+    _load_runtime_modules("run_selfplay")
     if not isinstance(manifest_sha256, str) or len(manifest_sha256) != 64:
         raise ValueError("manifest digest is invalid")
     health = run_selfplay._json_value(capabilities)
@@ -75,6 +95,7 @@ def _snapshot_payload(capabilities: Mapping[str, object], manifest_sha256: str) 
 
 
 def _load_launch_snapshot(path: Path, manifest_sha256: str) -> dict:
+    _load_runtime_modules("adapters", "run_selfplay")
     try:
         snapshot = run_selfplay._strict_json_loads(path.read_bytes(), context="temperature pilot launch snapshot")
     except OSError as exc:
@@ -137,6 +158,7 @@ def dry_run(manifest_path: Path | str, results_dir: Path | str, *, repo_root: Pa
 
 
 def _wide_root_noise() -> float:
+    _load_runtime_modules("adapters", "run_selfplay")
     engine = dict(run_selfplay._MockKaTrainForConfig(force_package_config=True).config("engine"))
     return adapters.load_engine_wide_root_noise(engine)
 
@@ -148,6 +170,7 @@ async def run_pilot(
     *,
     repo_root: Path | str = REPO_ROOT,
 ) -> dict:
+    _load_runtime_modules("adapters", "httpx", "run_selfplay")
     manifest = pilot.validate_manifest_file(manifest_path, repo_root)
     evidence = []
     openings = [
@@ -199,6 +222,7 @@ def _validated_checkpoint_evidence(
     launch: Mapping[str, object],
     manifest_path: Path | str,
 ) -> dict:
+    _load_runtime_modules("adapters", "run_selfplay")
     capabilities = adapters.retain_health_snapshot(launch["capability_snapshot"])
     players = {
         "A": run_selfplay.make_player(matchup["a"]["canonical_label"]),
@@ -259,6 +283,7 @@ def _validated_checkpoint_evidence(
 def _validate_exact_checkpoint_schedule(
     records: list[Mapping[str, object]], matchup: Mapping[str, object], manifest: Mapping[str, object]
 ) -> None:
+    _load_runtime_modules("run_selfplay")
     openings = [
         {"id": allocation["id"], "moves": list(allocation["moves"])}
         for allocation in manifest["opening_suite"]["allocations"]
@@ -356,6 +381,7 @@ def _validate_summary_generation(
         return None
     if present != set(paths):
         raise ValueError("summary generation is incomplete")
+    _load_runtime_modules("run_selfplay")
     try:
         summary_bytes = paths["summary"].read_bytes()
         report_bytes = paths["report"].read_bytes()

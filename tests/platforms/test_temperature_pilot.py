@@ -7,18 +7,220 @@ import sys
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
+import httpx
 import pytest
 
 
 CALIBRATION_DIR = Path(__file__).parents[2] / "superpowers/tracks/golaxy-ai-ladder-parity/calibration"
 sys.path.insert(0, str(CALIBRATION_DIR))
 pilot = importlib.import_module("temperature_pilot")
+selfplay = importlib.import_module("run_selfplay")
 
 
 def _valid_policy(selected_index=0):
     policy = [0.0] * 362
     policy[selected_index] = 1.0
     return policy
+
+
+def _health_snapshot():
+    return selfplay.adapters.retain_health_snapshot(
+        {
+            "capability_schema": 1,
+            "katago_version": "KataGo v1.16.3",
+            "default_model": "b28",
+            "models": {
+                "b28": {
+                    "running": True,
+                    "model_path": "/models/b28.bin.gz",
+                    "model_sha256": "b28-sha",
+                    "model_sha256_verified": True,
+                    "has_human_model": True,
+                    "human_model_path": "/models/human.bin.gz",
+                    "human_model_sha256": "human-sha",
+                    "human_model_sha256_verified": True,
+                }
+            },
+        }
+    )
+
+
+def _attestation():
+    return {
+        "selected_model": "b28",
+        "model_path": "/models/b28.bin.gz",
+        "model_sha256": "b28-sha",
+        "human_model_path": "/models/human.bin.gz",
+        "human_model_sha256": "human-sha",
+        "katago_version": "KataGo v1.16.3",
+    }
+
+
+def test_temperature_evidence_identity_is_canonical_and_complete():
+    identity = pilot.temperature_player_identity("rank_1d", "002.000")
+
+    assert identity.canonical_label == "rank_1d@1t2"
+    assert identity.profile == "rank_1d"
+    assert identity.selection == "temperature_weighted"
+    assert identity.selection_algorithm == "temperature-inverse-cdf-v1"
+    assert identity.temperature == "2"
+
+
+@pytest.mark.asyncio
+async def test_temperature_player_move_uses_audited_draw_and_appends_valid_trace(monkeypatch):
+    label, rung, selection = selfplay.make_player("rank_1d@1t2.0")
+    matchup_id = "rank_1d@1t1__vs__rank_1d@1t2"
+    context = {
+        "protocol_version": pilot.PROTOCOL_VERSION,
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": matchup_id,
+        "pair_attempt": 3,
+        "color_index": 1,
+        "player": "B",
+    }
+    history = [0, 1, 2]
+    policy = [0.0] * 362
+    policy[0] = 0.25
+    policy[342] = 0.75
+    expected_draw = pilot.derive_draw(
+        manifest_sha256=context["manifest_sha256"],
+        canonical_matchup_id=matchup_id,
+        pair_attempt=3,
+        color_index=1,
+        ply=len(history),
+        player="B",
+    )
+    expected_pick = selfplay.pick_temperature_policy(policy, (19, 19), 2.0, expected_draw)
+    assert expected_draw == 9451441004411297038
+    assert expected_pick == ((0, 0), 342)
+    calls = []
+    original_pick = selfplay.pick_temperature_policy
+
+    def recording_pick(*args):
+        calls.append(args)
+        return original_pick(*args)
+
+    monkeypatch.setattr(selfplay, "pick_temperature_policy", recording_pick)
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert label == "rank_1d@1t2"
+        assert body["maxVisits"] == 1
+        assert body["overrideSettings"].get("model") is None
+        assert "human_policy_temperature" not in body["overrideSettings"]
+        assert "rootPolicyTemperature" not in body["overrideSettings"]
+        return httpx.Response(200, json={"humanPolicy": policy, "_wrapper": _attestation()})
+
+    traces = []
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        move = await selfplay._player_move(
+            client,
+            "http://engine",
+            history,
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=_health_snapshot(),
+            temperature_context=context,
+            sampling_trace=traces,
+        )
+
+    assert calls == [(policy, (19, 19), 2.0, expected_draw)]
+    assert move == 342
+    assert traces == [
+        pilot.build_sampling_trace(
+            manifest_sha256=context["manifest_sha256"],
+            canonical_matchup_id=matchup_id,
+            pair_attempt=3,
+            color_index=1,
+            ply=len(history),
+            player="B",
+            temperature="2",
+            draw_u64=expected_draw,
+            selected_index=expected_pick[1],
+            policy=policy,
+        )
+    ]
+    assert pilot.validate_sampling_trace(
+        traces[0], **{k: context[k] for k in context if k not in ("protocol_version", "player")}
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "context_mutation",
+    [
+        lambda context: context.pop("protocol_version"),
+        lambda context: context.update(protocol_version="wrong"),
+        lambda context: context.pop("manifest_sha256"),
+        lambda context: context.update(canonical_matchup_id="not-frozen"),
+        lambda context: context.update(pair_attempt=-1),
+        lambda context: context.update(color_index=2),
+        lambda context: context.update(player="C"),
+    ],
+)
+async def test_temperature_player_move_fails_closed_for_incomplete_or_invalid_context(context_mutation):
+    _, rung, selection = selfplay.make_player("rank_1d@1t1")
+    context = {
+        "protocol_version": pilot.PROTOCOL_VERSION,
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": "rank_1d@1t1__vs__rank_1d@1t2",
+        "pair_attempt": 0,
+        "color_index": 0,
+        "player": "A",
+    }
+    context_mutation(context)
+
+    def handler(_request):
+        return httpx.Response(200, json={"humanPolicy": _valid_policy(), "_wrapper": _attestation()})
+
+    traces = []
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        move = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=_health_snapshot(),
+            temperature_context=context,
+            sampling_trace=traces,
+        )
+
+    assert move == "unavailable"
+    assert traces == []
+
+
+@pytest.mark.asyncio
+async def test_temperature_player_move_fails_closed_for_malformed_policy():
+    _, rung, selection = selfplay.make_player("rank_1d@1t1")
+    context = {
+        "protocol_version": pilot.PROTOCOL_VERSION,
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": "rank_1d@1t1__vs__rank_1d@1t2",
+        "pair_attempt": 0,
+        "color_index": 0,
+        "player": "A",
+    }
+
+    def handler(_request):
+        return httpx.Response(200, json={"humanPolicy": [1.0], "_wrapper": _attestation()})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        move = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=_health_snapshot(),
+            temperature_context=context,
+            sampling_trace=[],
+        )
+
+    assert move == "unavailable"
 
 
 def test_draw_has_frozen_canonical_json_sha256_and_u64_vector():

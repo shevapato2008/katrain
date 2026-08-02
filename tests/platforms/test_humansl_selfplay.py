@@ -53,6 +53,61 @@ def test_player_preserves_native_and_pure_search_modes(spec, mechanism, net, sel
     assert actual_selection == selection
 
 
+@pytest.mark.parametrize(
+    ("spec", "label", "temperature"),
+    [
+        ("rank_1d@1t2.0", "rank_1d@1t2", 2.0),
+        ("rank_1d@1t0.40", "rank_1d@1t0.4", 0.4),
+        ("rank_1d@1t002.000", "rank_1d@1t2", 2.0),
+        ("rank_1d@1t1", "rank_1d@1t1", 1.0),
+    ],
+)
+def test_player_accepts_and_canonicalizes_explicit_temperature_players(spec, label, temperature):
+    actual_label, rung, selection = selfplay.make_player(spec)
+
+    assert actual_label == label
+    assert rung.mechanism == "humansl"
+    assert rung.net == "humanv0"
+    assert rung.max_visits == 1
+    assert rung.human_sl_profile == "rank_1d"
+    assert rung.human_policy_temperature == temperature
+    assert selection == "temperature_weighted"
+    assert actual_label != "rank_1d@1"
+
+    strength = selfplay.rung_strength_spec(rung)
+    query = selfplay.adapters.build_ladder_analysis_query([], rung, 19, 7.5, "chinese", 0.04)
+    assert "human_policy_temperature" not in strength.override_settings
+    assert "rootPolicyTemperature" not in strength.override_settings
+    assert "human_policy_temperature" not in query["overrideSettings"]
+    assert "rootPolicyTemperature" not in query["overrideSettings"]
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "rank_1d@1t+1",
+        "rank_1d@1t-1",
+        "rank_1d@1t1e0",
+        "rank_1d@1t 1",
+        "rank_1d@1t1 ",
+        "rank_1d@1t.5",
+        "rank_1d@1t1.",
+        "rank_1d@1t1..0",
+        "rank_1d@1t0.049",
+        "rank_1d@1t10.001",
+        "rank_1d@1st1",
+        "rank_1d@2t1",
+        "rank_1d@01t1",
+        "rank_1d@1t1s",
+        "b18@1t1",
+        "b28@1t1",
+    ],
+)
+def test_player_rejects_noncanonical_temperature_grammar(spec):
+    with pytest.raises(ValueError, match="temperature|player spec|profile"):
+        selfplay.make_player(spec)
+
+
 @pytest.mark.parametrize("visits", [2, 7, 16, 32, 39])
 def test_player_rejects_unsupported_humansl_search_visits(visits):
     with pytest.raises(ValueError, match=r"HumanSL search.*minimum.*40"):

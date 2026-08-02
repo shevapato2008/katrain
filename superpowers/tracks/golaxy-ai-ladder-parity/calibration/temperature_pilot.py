@@ -43,7 +43,7 @@ TRACE_FIELDS = frozenset(
     {"ply", "player", "temperature", "draw_u64", "selected_index", "selected_move", "policy_sha256"}
 )
 _SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
-_TEMPERATURE_RE = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?\Z")
+_PLAIN_DECIMAL_RE = re.compile(r"[0-9]+(?:\.[0-9]+)?\Z")
 _WILSON_Z95 = 1.959963984540054
 
 
@@ -51,6 +51,7 @@ _WILSON_Z95 = 1.959963984540054
 class PlayerIdentity:
     canonical_label: str
     profile: str
+    selection: str
     selection_algorithm: str
     temperature: str | None = None
 
@@ -67,12 +68,39 @@ class Matchup:
     max_pair_attempts: int = 20
 
 
+def canonical_temperature(temperature: str) -> str:
+    """Canonicalize one plain unsigned decimal in the pilot's closed temperature range."""
+    if not isinstance(temperature, str) or not _PLAIN_DECIMAL_RE.fullmatch(temperature):
+        raise ValueError("temperature must be a plain unsigned decimal")
+    try:
+        value = Decimal(temperature)
+    except InvalidOperation as exc:  # pragma: no cover - regex excludes these spellings
+        raise ValueError("temperature must be a plain unsigned decimal") from exc
+    if not Decimal("0.05") <= value <= Decimal("10"):
+        raise ValueError("temperature must be in the closed range [0.05, 10]")
+    return format(value.normalize(), "f")
+
+
+def temperature_player_identity(profile: str, temperature: str) -> PlayerIdentity:
+    canonical = canonical_temperature(temperature)
+    return PlayerIdentity(
+        f"{profile}@1t{canonical}", profile, "temperature_weighted", SELECTION_ALGORITHM_VERSION, canonical
+    )
+
+
+def matchup_player_identity(canonical_matchup_id: str, player: str) -> PlayerIdentity:
+    matchup = _frozen_matchup(canonical_matchup_id)
+    if player not in ("A", "B"):
+        raise ValueError("player must be A or B")
+    return matchup.a if player == "A" else matchup.b
+
+
 def _temperature_identity(profile: str, temperature: str) -> PlayerIdentity:
-    return PlayerIdentity(f"{profile}@1t{temperature}", profile, SELECTION_ALGORITHM_VERSION, temperature)
+    return temperature_player_identity(profile, temperature)
 
 
 def _argmax_identity(profile: str) -> PlayerIdentity:
-    return PlayerIdentity(f"{profile}@1s", profile, ARGMAX_SELECTION_ALGORITHM_VERSION)
+    return PlayerIdentity(f"{profile}@1s", profile, "argmax_human", ARGMAX_SELECTION_ALGORITHM_VERSION)
 
 
 def _matchup(profile: str, a: PlayerIdentity, b: PlayerIdentity) -> Matchup:
@@ -83,6 +111,7 @@ def _identity_projection(identity: PlayerIdentity) -> dict:
     projected = {
         "canonical_label": identity.canonical_label,
         "profile": identity.profile,
+        "selection": identity.selection,
         "selection_algorithm": identity.selection_algorithm,
     }
     if identity.temperature is not None:
@@ -128,17 +157,10 @@ def _frozen_matchup(canonical_matchup_id: object) -> Matchup:
 def _validate_trace_temperature(canonical_matchup_id: str, player: str, temperature: object) -> str:
     if player not in ("A", "B"):
         raise ValueError("player must be A or B")
-    if not isinstance(temperature, str) or not _TEMPERATURE_RE.fullmatch(temperature):
-        raise ValueError("temperature must be a canonical decimal string")
-    try:
-        value = Decimal(temperature)
-    except InvalidOperation as exc:  # pragma: no cover - regex excludes these spellings
-        raise ValueError("temperature must be a canonical decimal string") from exc
-    canonical = format(value.normalize(), "f")
-    if temperature != canonical or not Decimal("0.05") <= value <= Decimal("10"):
+    canonical = canonical_temperature(temperature)
+    if temperature != canonical:
         raise ValueError("temperature must be canonical and in the closed range [0.05, 10]")
-    matchup = _frozen_matchup(canonical_matchup_id)
-    identity = matchup.a if player == "A" else matchup.b
+    identity = matchup_player_identity(canonical_matchup_id, player)
     if identity.selection_algorithm != SELECTION_ALGORITHM_VERSION or identity.temperature != temperature:
         raise ValueError("sampling trace must match the temperature player on its A/B side")
     return temperature

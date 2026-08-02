@@ -69,6 +69,7 @@ os.environ.setdefault("KIVY_NO_ARGS", "1")  # keep Kivy from hijacking our argv 
 
 sys.path.insert(0, str(Path(__file__).parent))
 import adapters  # noqa: E402
+import temperature_pilot  # noqa: E402
 
 from katrain.core.base_katrain import KaTrainBase  # noqa: E402
 from katrain.core.ladder import (  # noqa: E402
@@ -79,6 +80,7 @@ from katrain.core.ladder import (  # noqa: E402
     colrow_to_golaxy,
     golaxy_to_colrow,
     pick_ladder_move,
+    pick_temperature_policy,
     rung_strength_spec,
     validate_analysis_attestation,
 )
@@ -746,6 +748,13 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
     if type(experimental_min_humansl_search_visits) is not int or experimental_min_humansl_search_visits < 2:
         raise ValueError("experimental HumanSL search minimum must be a plain int of at least 2")
     prof, sep, vs = spec.partition("@")
+    temperature = None
+    if sep and vs.startswith("1t"):
+        if not _valid_humansl_profile(prof):
+            raise ValueError("temperature players require a HumanSL profile")
+        identity = temperature_pilot.temperature_player_identity(prof, vs[2:])
+        temperature = float(identity.temperature)
+        vs = "1"
     force_search = vs.endswith("s")  # trailing 's' -> argmax_human @1 (see docstring)
     if force_search:
         vs = vs[:-1]
@@ -760,7 +769,9 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
             raise ValueError("the 's' suffix is only supported by HumanSL '<profile>@1s'")
         mech, net, profile, label, selection = "net_search", "b28", None, f"b28@{visits}", "search"
     elif _valid_humansl_profile(prof):
-        if visits == 1 and force_search:
+        if temperature is not None:
+            mech, selection, label = "humansl", "temperature_weighted", identity.canonical_label
+        elif visits == 1 and force_search:
             mech, selection, label = "humansl", "argmax_human", f"{prof}@1s"  # argmax humanPolicy @1
         elif visits == 1:
             mech, selection, label = "humansl", "weighted", f"{prof}@1"  # vanilla weighted humanSL
@@ -791,6 +802,7 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
         human_sl_params=dict(HUMANSL_PIKL_BASELINE) if mech == "humansl_search" else {},
         backend_hint="server",
         root_policy_temperature=1.0,
+        human_policy_temperature=temperature,
     )
     return label, rung, selection
 
@@ -821,6 +833,8 @@ async def _player_move_certified(
     capabilities: Mapping[str, object],
     attestations: Optional[list] = None,
     player: Optional[str] = None,
+    temperature_context: Optional[Mapping[str, object]] = None,
+    sampling_trace: Optional[list] = None,
 ):
     """Shared attested move implementation; callers define their permitted selection modes."""
     try:
@@ -854,6 +868,62 @@ async def _player_move_certified(
         if not _valid_policy(hp, BOARD_SIZE * BOARD_SIZE + 1):
             raise LadderMoveError("argmax HumanSL requires a valid humanPolicy")
         picked = _pick_argmax_human(hp, (BOARD_SIZE, BOARD_SIZE))
+    elif selection == "temperature_weighted":
+        hp = analysis.get("humanPolicy")
+        if not _valid_policy(hp, BOARD_SIZE * BOARD_SIZE + 1):
+            raise LadderMoveError("temperature HumanSL requires a valid humanPolicy")
+        if not isinstance(temperature_context, Mapping) or not isinstance(sampling_trace, list):
+            raise LadderMoveError("temperature HumanSL requires audit context and sampling trace")
+        required = {
+            "protocol_version",
+            "manifest_sha256",
+            "canonical_matchup_id",
+            "pair_attempt",
+            "color_index",
+            "player",
+        }
+        if (
+            set(temperature_context) != required
+            or temperature_context["protocol_version"] != temperature_pilot.PROTOCOL_VERSION
+        ):
+            raise LadderMoveError("temperature HumanSL audit context is incomplete or invalid")
+        if player is not None and temperature_context["player"] != player:
+            raise LadderMoveError("temperature HumanSL audit player does not match the move player")
+        try:
+            identity = temperature_pilot.matchup_player_identity(
+                temperature_context["canonical_matchup_id"], temperature_context["player"]
+            )
+            if (
+                identity.selection != selection
+                or rung.human_policy_temperature is None
+                or float(identity.temperature) != rung.human_policy_temperature
+            ):
+                raise ValueError("temperature player identity does not match the frozen matchup")
+            trace_context = {
+                key: temperature_context[key]
+                for key in ("manifest_sha256", "canonical_matchup_id", "pair_attempt", "color_index")
+            }
+            draw_u64 = temperature_pilot.derive_draw(
+                **trace_context,
+                ply=len(history),
+                player=temperature_context["player"],
+            )
+            picked, selected_index = pick_temperature_policy(
+                hp, (BOARD_SIZE, BOARD_SIZE), rung.human_policy_temperature, draw_u64
+            )
+            trace = temperature_pilot.build_sampling_trace(
+                **trace_context,
+                ply=len(history),
+                player=temperature_context["player"],
+                temperature=identity.temperature,
+                draw_u64=draw_u64,
+                selected_index=selected_index,
+                policy=hp,
+            )
+            temperature_pilot.validate_sampling_trace(trace, **trace_context)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise LadderMoveError(f"invalid temperature sampling evidence: {exc}") from exc
+        sampling_trace.append(trace)
     else:
         raise LadderMoveError(f"unknown self-play selection {selection!r}")
     if attestations is not None:
@@ -874,6 +944,8 @@ async def player_move_strict(
     capabilities: Mapping[str, object],
     attestations: Optional[list] = None,
     player: Optional[str] = None,
+    temperature_context: Optional[Mapping[str, object]] = None,
+    sampling_trace: Optional[list] = None,
 ):
     """Return one alignment-safe move, raising ``LadderMoveError`` on any drift."""
     expected_selection = "argmax_human" if rung.mechanism == "humansl" else "search"
@@ -889,6 +961,8 @@ async def player_move_strict(
         capabilities=capabilities,
         attestations=attestations,
         player=player,
+        temperature_context=temperature_context,
+        sampling_trace=sampling_trace,
     )
 
 
@@ -903,6 +977,8 @@ async def _player_move(
     capabilities: Mapping[str, object],
     attestations: Optional[list] = None,
     player: Optional[str] = None,
+    temperature_context: Optional[Mapping[str, object]] = None,
+    sampling_trace: Optional[list] = None,
 ):
     """Backward-compatible self-play move wrapper: typed certification failures are unavailable."""
     try:
@@ -916,6 +992,8 @@ async def _player_move(
             capabilities=capabilities,
             attestations=attestations,
             player=player,
+            temperature_context=temperature_context,
+            sampling_trace=sampling_trace,
         )
     except LadderMoveError:
         return "unavailable"  # -> harness marks inconclusive_engine (never a fabricated move)

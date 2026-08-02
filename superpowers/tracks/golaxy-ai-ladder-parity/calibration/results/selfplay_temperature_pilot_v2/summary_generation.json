@@ -1,0 +1,9 @@
+{
+  "generation": "4a4197fb954b8649bf9ce8499be19b79fbf5064af32da15c5326e87ee34f1ecc",
+  "marker_sha256": "bc13991bf1606ea65587ff81f0219a4eb0436c2084785d70f096f535342576a0",
+  "protocol": "humansl-temperature-pilot-v1",
+  "report_sha256": "56f05fd4cc6344deb78d193e985cd4001dbf35ca5771f00917f708e6f9cea72c",
+  "schema_version": 1,
+  "summary_digest": "524b8cfa4b2114024b214a7b15b9de307260174d120c93e2d073d445adc2df07",
+  "summary_sha256": "e6ffc35a329931abba07b745bb51e2f87bda4002241268508c6f1bd9c052a7a3"
+}

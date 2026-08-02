@@ -1066,6 +1066,51 @@ reservation，全部由41条 result 闭合，没有 stopped、7002或其他远�
 `calibration/results/golaxy_alignment_campaign_20260730/campaign_v2.jsonl`，SHA-256
 `4eff5434cd864215a35171d635e4268d06f31f45ca6be27e82e4e0a1105f64d5`。
 
+### C30. HumanSL policy temperature 单调性试验（2026-08-03）
+
+本轮只验证 41 档 AI 后续拟合所需的选点温度理论，不改生产 ladder。显式 `@1tT` 对 HumanSL
+`humanPolicy` 使用 `p^(1/T)` 重新加权，再用绑定到 manifest、对局身份、开局、颜色和手数的确定性
+SHA-256/u64 draw 做 inverse-CDF 采样；旧 `@1` 加权采样和 `@1s` argmax 语义均保持不变。
+
+实验由 schema 2 manifest `calibration/temperature_pilot_v2.json` 冻结：实现基线
+`052b4253289bbf149f46150cf141b1157d016403`，manifest 提交
+`edf1bc8d13a463187bd11d61595debf667e3c765`，canonical self-digest
+`573bb59d0242c1916fef220d355849de1ef4afd665d4ab66ebfce40fd2be7f7a`。使用 b28 主模型 SHA
+`798da8fe...3d3f0` 与 humanv0 SHA `637746e4...4ab5`，9 组严格串行；每组 10 个完整颜色 pair、
+20 盘有效结果，不可判定 pair 整对剔除并按冻结上限补样。
+
+| HumanSL profile | A（预期更强） | B | A胜–负 | 95% Wilson CI | 分类 |
+|---|---|---|---:|---:|---|
+| `rank_1d` | `@1t1` | `@1t2` | **19–1** | 76.4%–99.1% | persuasive direction |
+| `rank_1d` | `@1t0.4` | `@1t1` | **18–2** | 69.9%–97.2% | persuasive direction |
+| `rank_1d` | `@1s` argmax | `@1t0.4` | **7–13** | 18.1%–56.7% | point inversion |
+| `rank_5d` | `@1t1` | `@1t2` | **20–0** | 83.9%–100% | persuasive direction |
+| `rank_5d` | `@1t0.4` | `@1t1` | **15–5** | 53.1%–88.8% | persuasive direction |
+| `rank_5d` | `@1s` argmax | `@1t0.4` | **8–12** | 21.9%–61.3% | point inversion |
+| `rank_9d` | `@1t1` | `@1t2` | **20–0** | 83.9%–100% | persuasive direction |
+| `rank_9d` | `@1t0.4` | `@1t1` | **20–0** | 83.9%–100% | persuasive direction |
+| `rank_9d` | `@1s` argmax | `@1t0.4` | **12–8** | 38.7%–78.1% | direction supported |
+
+冻结总门槛要求至少 8/9 组 A 的点估计胜率高于 50%；实际为 **7/9**，因此正式状态为
+`fail: fewer_than_8_direction_matchups`。不过六组纯采样温度比较全部方向正确，A 合计
+**112–8（93.3%）**；失败完全来自把 argmax 当作 `T→0` 单调端点的假设。三组 argmax 边界合计
+**27–33**，且 1D、5D 都发生点估计反转。产品结论是：argmax 不得纳入同一条单调温度轴；由于总
+gate 失败，本轮证据也不得用于拟合或发布 41 档配置。下一步只能先用单独冻结、独立审核的诊断协议
+解释 argmax 边界与有限正温度区间，诊断通过后再另行决定是否开展产品温度拟合。
+
+证据目录：`calibration/results/selfplay_temperature_pilot_v2/`。`summary.json` 文件 SHA-256 为
+`e6ffc35a329931abba07b745bb51e2f87bda4002241268508c6f1bd9c052a7a3`，其内部 summary digest 为
+`524b8cfa4b2114024b214a7b15b9de307260174d120c93e2d073d445adc2df07`；`report.md` 文件 SHA-256 为
+`56f05fd4cc6344deb78d193e985cd4001dbf35ca5771f00917f708e6f9cea72c`。
+
+审计限制：原始 checkpoint/launch/summary 为保持摘要链不可变，原样保留了操作者机器上的模型绝对路径，
+因此这些文件不是环境中立的公开数据格式。KataGo 运行身份报告为 commit
+`342d2a7b5ac9de9ed11b62065761276585744406-dirty`；实验后复核的可执行文件 SHA-256 为
+`1bc697889072048dc82ee42af5d4529628cd00a4696e8ec5f4e67aaa21fb069e`，但该 executable SHA 未在开跑前
+写入 launch snapshot，故不能宣称可从 Git revision 唯一重建引擎二进制。模型权重、HumanSL 权重、
+运行源文件、manifest、开局与逐手选择仍由各自 SHA/attestation 绑定。零字节 `.jsonl.lock` 仅是运行期
+互斥残留，不属于证据链，不提交。
+
 ---
 
 ## D. 待办 / 开放项
@@ -1097,6 +1142,10 @@ reservation，全部由41条 result 闭合，没有 stopped、7002或其他远�
   新 child ledger 恢复并完成。1星 `b18@1` 为6–4；准5D–准7D的网格下界 `@1s` 分别为9–1、
   10–0、9–1，仍明显过强；准8D `rank_7d@1s` 为7–3，准9D `rank_8d@1s` 为6–4。全程串行，
   41条新 reservation 全部闭合且无远端错误。
+- [x] **HumanSL policy temperature 单调性 pilot**:§C30 已完成 1D/5D/9D 共9组、180盘有效样本。
+  六组有限正温度比较全部方向正确；argmax 边界仅1/3方向正确，总门槛7/9，正式状态为 fail。
+- [ ] **温度 gate 失败诊断**:先冻结并独立审核单独的诊断协议，解释 argmax 边界反转以及有限正温度
+  区间能否单调复现；在诊断通过并另行批准产品拟合前，不拟合 41 档候选、不写入生产 ladder。
 - [x] **星阵3星 HumanSL visits 固定筛选**:§C20 的 `rank_9d@8/@16/@32/@64` 各完成5个有效结果，
   四档均为 **0–5**，合计0–20；因 `@8` 非5–0，按条件协议未运行 `@4/@2`。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits
@@ -1124,6 +1173,7 @@ reservation，全部由41条 result 闭合，没有 stopped、7002或其他远�
 | 1星与准5D–准9D串行续跑完成 | `calibration/results/golaxy_alignment_campaign_20260730/campaign_v2.jsonl` |
 | 同段位 HumanSL `@1` vs `@1s`（1D–9D） | `calibration/results/selfplay_v2_same_rank_sampling_vs_argmax_20260729/` |
 | 低一段 HumanSL `@1s` vs 高一段 `@1`（1D–9D接缝） | `calibration/results/selfplay_v2_adjacent_argmax_vs_sampling_20260729/` |
+| HumanSL policy temperature 单调性 pilot | `calibration/results/selfplay_temperature_pilot_v2/` |
 | 星阵3星 `rank_9d@8/@16/@32/@64` 固定筛选 | `calibration/results/golaxy_3star_rank_9d_conditional_20260725/fixed_screen.jsonl` |
 | 旧自对弈全部接缝(**仅作历史 b28 诊断;HumanSL 结论无效**) | `calibration/results/selfplay/selfplay_rank-<Xd>-<V>__vs__rank-<Xd>-<V'>.jsonl` |
 | 旧自对弈汇总(**不得续跑或并入修复后样本**) | `calibration/results/selfplay/selfplay_summary.json` |

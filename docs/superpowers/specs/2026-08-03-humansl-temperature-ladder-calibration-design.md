@@ -83,7 +83,7 @@ rank_9d@1t0.4
 
 The numeric grammar is plain unsigned decimal (`0.4`, `1`, `2.0`), with no sign, exponent, whitespace, leading-dot, trailing-dot, NaN, or infinity. The accepted closed range is `[0.05, 10]`. Canonical labels remove leading integer zeroes and trailing fractional zeroes, so `t2.0` becomes `t2`. Explicit `t1` remains the distinct canonical temperature-selection identity `rank_nd@1t1`; it does not alias legacy `rank_nd@1` because the sampling algorithm and audit contract differ. Existing `rank_nd@1` remains legacy native sampling; existing `rank_nd@1s` remains argmax. Temperature syntax is valid only for native HumanSL one-visit players and cannot be combined with `s`, PIKL visits, `b18`, or `b28` players.
 
-The parsed selection is `temperature_weighted`. Its immutable evidence identity contains the canonical label, profile, `temperature-inverse-cdf-v1`, and normalized decimal temperature. `_player_move_certified` receives the `LadderRung` plus an explicit per-game selection context, derives a draw for each temperature-selected move, and passes both temperature and draw to the core picker. The engine request remains native HumanSL at one visit and contains neither local temperature field.
+The parsed selection is `temperature_weighted`. Its immutable evidence identity contains the canonical label, profile, `temperature-inverse-cdf-v1`, and temperature as the canonical decimal string used in the label (never a JSON number). `_player_move_certified` receives the `LadderRung` plus an explicit per-game selection context, derives a draw for each temperature-selected move, and passes both temperature and draw to the core picker. The engine request remains native HumanSL at one visit and contains neither local temperature field.
 
 ### 5.3 Reproducible experiment RNG
 
@@ -96,7 +96,7 @@ Temperature players use stateless draws under `temperature-draw-sha256-u64-v1`. 
 
 `canonical_matchup_id` is exactly `<canonical-A-label>__vs__<canonical-B-label>` with the literal ASCII separator `__vs__` and no escaping; the accepted label grammar contains no underscore sequences that make this ambiguous. Take SHA-256, interpret the first eight digest bytes as an unsigned big-endian integer, and use that integer as the draw. `player` is exactly `A` or `B`; `ply` includes the frozen opening length. The two color legs and any later replenishment attempt therefore have distinct draws. There is no retry-generation concept: the existing monotonically increasing `pair_attempt` is the replenishment identity.
 
-Each game record stores a compact sampling trace for temperature-player turns: `ply`, `player`, canonical temperature, derived `draw_u64`, selected policy index, and a policy digest. To form the digest, convert every policy entry with Python `float(value)`, prefix the vector with its element count as one unsigned big-endian 32-bit integer, append every element as IEEE-754 binary64 big-endian bytes (`struct.pack('>I', count)` followed by `struct.pack('>d', value)` for each element), and SHA-256 the concatenation. This binds the trace to the observed response without storing the large vector or claiming that a resume validator can recompute the historical inverse-CDF choice. Resume validation recalculates the stateless draw and validates trace shape, policy-digest syntax, selected-index bounds, and selected move/index agreement; mathematical correctness of inverse-CDF selection is frozen by unit known-answer vectors, not retroactively proven from the compact ledger. Reissuing a nondeterministic engine query is not expected to recreate the same policy.
+Each game record stores a compact sampling trace for temperature-player turns: `ply`, `player`, canonical temperature string, derived `draw_u64`, selected policy index, selected move (`pass` or canonical uppercase GTP), and a policy digest. To form the digest, convert every policy entry with Python `float(value)`, prefix the vector with its element count as one unsigned big-endian 32-bit integer, append every element as IEEE-754 binary64 big-endian bytes (`struct.pack('>I', count)` followed by `struct.pack('>d', value)` for each element), and SHA-256 the concatenation. This binds the trace to the observed response without storing the large vector or claiming that a resume validator can recompute the historical inverse-CDF choice. Resume validation recalculates the stateless draw and validates trace shape, policy-digest syntax, selected-index bounds, and the deterministic 19x19 index-to-GTP/pass mapping. Mathematical correctness of inverse-CDF selection is frozen by unit known-answer vectors, not retroactively proven from the compact ledger. Reissuing a nondeterministic engine query is not expected to recreate the same policy.
 
 Production callers are not switched to deterministic draws in this slice.
 
@@ -116,14 +116,14 @@ The pilot freezes three representative profiles and three contrasts per profile:
 | `rank_9d` | `T=0.4` | `T=1.0` |
 | `rank_9d` | argmax | `T=0.4` |
 
-Every matchup targets ten complete color pairs and twenty eligible games, with a hard cap of twenty pair attempts. The exact allocation is the first twenty entries of the existing 24-entry `opening_suite_v1.json`, in file order, shared identically by all nine matchups. Attempt `i` uses allocation `i`; there is no cycling. Both colors of an attempt use the same opening. If either color leg is inconclusive, exclude the whole pair and advance to the next allocated attempt. Total planned eligible games are 180.
+Every matchup runs with the existing harness `phase="screen"`, which requires exactly ten complete color pairs, but the temperature report classifies it as formal fixed pilot evidence rather than using the generic `screen_complete` result as a strength conclusion. Each matchup targets twenty eligible games, with a hard cap of twenty pair attempts. The exact allocation is the first twenty entries of the existing 24-entry `opening_suite_v1.json`, in file order, shared identically by all nine matchups. Attempt `i` uses allocation `i`; there is no cycling. Both colors of an attempt use the same opening. If either color leg is inconclusive, exclude the whole pair and advance to the next allocated attempt. Total planned eligible games are 180.
 
 The pilot reuses the post-fix self-play transport, model identity attestation, referee, append-only checkpointing, and pair accounting. A committed schema-1 manifest freezes:
 
 - `protocol=humansl-temperature-pilot-v1` and ordered nine-matchup list;
 - exact canonical players, expected stronger side A, target ten pairs, cap twenty attempts;
 - opening suite path, file SHA-256, internal checksum, and allocated opening IDs/moves for attempts 0–19;
-- the implementation-base revision plus SHA-256 of these runtime sources: `katrain/core/ladder.py`, `katrain/core/ladder_calibration.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/adapters.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py`, and the new temperature pilot protocol/manifest modules named by the implementation plan; a changed or dirty bound file fails preflight even when Git HEAD is a descendant of the base;
+- the implementation-base revision plus SHA-256 of these exact runtime sources: `katrain/core/ladder.py`, `katrain/core/ladder_calibration.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/adapters.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py`, `superpowers/tracks/golaxy-ai-ladder-parity/calibration/temperature_pilot.py`, and `superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_temperature_pilot.py`; a changed or dirty bound file fails preflight even when Git HEAD is a descendant of the base;
 - selection, draw, referee, adjudication, symmetry, rules, komi, move-cap, and checkpoint schema versions;
 - expected b28/humanv0 model identities obtained from the live preflight and written to a separate launch snapshot rather than mutating the committed manifest.
 
@@ -193,7 +193,7 @@ The 41-tier product ladder does not require b28 as a playing model based on curr
 
 The slice is complete when it provides:
 
-1. focused unit tests for temperature transformation, sampling, validation, canonical parsing, deterministic seeds, and unchanged legacy semantics;
+1. focused unit tests for temperature transformation, sampling, validation, canonical parsing, stateless draw known-answer vectors, and unchanged legacy semantics;
 2. an immutable pilot manifest and a dry-run/preflight that reports the exact nine-matchup schedule without issuing engine requests;
 3. relevant core/platform regression tests passing;
 4. a live health/model-identity preflight;

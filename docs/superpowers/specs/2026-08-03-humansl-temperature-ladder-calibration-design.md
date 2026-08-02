@@ -46,7 +46,7 @@ and sample one legal move from `q`.
 - `T > 1`: flatten the distribution; lower-probability HumanSL moves become more likely.
 - `0 < T < 1`: sharpen the distribution; high-probability HumanSL moves become more likely.
 - `T -> 0`: approaches HumanSL argmax but remains a separate finite-temperature mechanism.
-- Zero or negative policy entries remain unselectable. Temperature never makes an illegal move legal.
+- Zero or negative policy entries remain unselectable. The transformer selects a positive-policy board coordinate; it does not independently prove board legality because it receives no board state. The existing engine contract is responsible for assigning nonpositive policy to unavailable moves. A downstream illegal move remains a fail-closed inconclusive game.
 
 This is post-processing of the returned `humanPolicy`. It must not set KataGo's `rootPolicyTemperature`, change the engine query, run an additional model inference, or modify PIKL/search behavior.
 
@@ -61,13 +61,17 @@ A small pure unit in `katrain/core/ladder.py` owns HumanSL policy validation, st
 - the returned HumanSL policy vector;
 - board dimensions;
 - a temperature;
-- an optional random-number source exposing the sampling primitive needed by the implementation.
+- one explicit unsigned 64-bit draw.
 
-It returns the same `(column, bottom-origin row)` or `pass` representation as the existing picker. Existing callers that omit temperature retain exact `T=1` behavior and compatible randomness.
+It returns the same `(column, bottom-origin row)` or `pass` representation as the existing picker. It iterates candidates in the current canonical order (`x` outer, bottom-origin `y` inner, then pass), maps the draw to `u=(draw+0.5)/2**64`, and chooses the first cumulative transformed weight strictly greater than `u * total_weight`, with the last positive candidate as the floating-point fallback.
+
+Existing callers that omit temperature retain the exact legacy weighted-key sampler. Temperature players use the new inverse-CDF sampler, including explicit `T=1`; the two algorithms have the same target distribution but different evidence identities and random sequences.
 
 The unit exposes a separate pure normalized-distribution helper so deterministic tests and the experiment manifest can inspect the mathematical transformation without sampling.
 
 ### 5.2 Calibration player identity
+
+`LadderRung` gains a separate optional `human_policy_temperature` field. `None` means the legacy picker; a finite value means the temperature picker. This field is consumed only by local move selection and is never emitted by `rung_strength_spec`, `ladder_override_settings`, or the engine query. The existing `root_policy_temperature` field remains an engine-side setting and must not be reused.
 
 The self-play calibration parser gains a canonical temperature-player syntax:
 
@@ -77,17 +81,24 @@ rank_5d@1t1.3
 rank_9d@1t0.4
 ```
 
-Canonical labels normalize temperature with a stable decimal representation, so aliases such as `t2.0` cannot create distinct evidence identities. Existing `rank_nd@1` remains native `T=1`; existing `rank_nd@1s` remains argmax. Temperature syntax is valid only for native HumanSL one-visit players and cannot be combined with `s`, PIKL visits, `b18`, or `b28` players.
+The numeric grammar is plain unsigned decimal (`0.4`, `1`, `2.0`), with no sign, exponent, whitespace, leading-dot, trailing-dot, NaN, or infinity. The accepted closed range is `[0.05, 10]`. Canonical labels remove leading integer zeroes and trailing fractional zeroes, so `t2.0` becomes `t2`. Explicit `t1` remains the distinct canonical temperature-selection identity `rank_nd@1t1`; it does not alias legacy `rank_nd@1` because the sampling algorithm and audit contract differ. Existing `rank_nd@1` remains legacy native sampling; existing `rank_nd@1s` remains argmax. Temperature syntax is valid only for native HumanSL one-visit players and cannot be combined with `s`, PIKL visits, `b18`, or `b28` players.
 
-The parsed selection is `temperature_weighted`. Its immutable evidence identity contains the canonical label, profile, selection algorithm version, and normalized temperature. The engine request remains native HumanSL at one visit.
+The parsed selection is `temperature_weighted`. Its immutable evidence identity contains the canonical label, profile, `temperature-inverse-cdf-v1`, and normalized decimal temperature. `_player_move_certified` receives the `LadderRung` plus an explicit per-game selection context, derives a draw for each temperature-selected move, and passes both temperature and draw to the core picker. The engine request remains native HumanSL at one visit and contains neither local temperature field.
 
 ### 5.3 Reproducible experiment RNG
 
-Each decision game receives a deterministic seed derived from the immutable experiment identity, matchup, opening-pair index, color leg, and retry generation. The ledger records the seed derivation version, not a mutable global RNG state.
+Temperature players use stateless draws under `temperature-draw-sha256-u64-v1`. For every temperature-selected move, encode this exact JSON array with UTF-8, `ensure_ascii=False`, and separators `(',', ':')`:
 
-The two color legs use distinct seeds. Retrying an inconclusive color pair uses a new recorded generation and therefore a new deterministic seed, while replaying the same completed ledger reproduces every selected move.
+```text
+[protocol_version, manifest_sha256, canonical_matchup_id,
+ pair_attempt, color_index, ply, player]
+```
 
-Production callers are not switched to deterministic seeds in this slice.
+Take SHA-256, interpret the first eight digest bytes as an unsigned big-endian integer, and use that integer as the draw. `player` is exactly `A` or `B`; `ply` includes the frozen opening length. The two color legs and any later replenishment attempt therefore have distinct draws. There is no retry-generation concept: the existing monotonically increasing `pair_attempt` is the replenishment identity.
+
+Each game record stores a compact sampling trace for temperature-player turns: `ply`, `player`, canonical temperature, derived `draw_u64`, selected policy index, and SHA-256 of the exact IEEE-754 binary64 policy vector received for that move. This binds the selected move to the observed response without claiming that reissuing a nondeterministic engine query recreates the same policy. Known-answer vectors in tests freeze JSON encoding, digest, draw, candidate order, and inverse-CDF selection across Python versions.
+
+Production callers are not switched to deterministic draws in this slice.
 
 ### 5.4 Pilot protocol
 
@@ -105,9 +116,18 @@ The pilot freezes three representative profiles and three contrasts per profile:
 | `rank_9d` | `T=0.4` | `T=1.0` |
 | `rank_9d` | argmax | `T=0.4` |
 
-Every matchup uses ten frozen openings with colors swapped: ten complete pairs and twenty eligible games. If either color leg is inconclusive, exclude the whole pair and replenish it, subject to the existing bounded-attempt rules. Total planned eligible games are 180.
+Every matchup targets ten complete color pairs and twenty eligible games, with a hard cap of twenty pair attempts. The exact allocation is the first twenty entries of the existing 24-entry `opening_suite_v1.json`, in file order, shared identically by all nine matchups. Attempt `i` uses allocation `i`; there is no cycling. Both colors of an attempt use the same opening. If either color leg is inconclusive, exclude the whole pair and advance to the next allocated attempt. Total planned eligible games are 180.
 
-The pilot reuses the post-fix self-play transport, model identity attestation, referee, opening allocation, append-only checkpointing, and pair accounting. A new immutable manifest freezes exact player identities, opening allocation digest, model digests, source revision, seed derivation version, target pair count, and attempt cap before any game runs.
+The pilot reuses the post-fix self-play transport, model identity attestation, referee, append-only checkpointing, and pair accounting. A committed schema-1 manifest freezes:
+
+- `protocol=humansl-temperature-pilot-v1` and ordered nine-matchup list;
+- exact canonical players, expected stronger side A, target ten pairs, cap twenty attempts;
+- opening suite path, file SHA-256, internal checksum, and allocated opening IDs/moves for attempts 0–19;
+- source revision plus SHA-256 of every implementation/test source file allowed to affect selection or scheduling, so a dirty relevant file fails preflight even when Git HEAD matches;
+- selection, draw, referee, adjudication, symmetry, rules, komi, move-cap, and checkpoint schema versions;
+- expected b28/humanv0 model identities obtained from the live preflight and written to a separate launch snapshot rather than mutating the committed manifest.
+
+The manifest has a canonical SHA-256 calculated over the object without its `manifest_sha256` field, then stores that digest in the field. Every checkpoint header includes the manifest path and digest. Creation fails if the target manifest already exists; launch and resume recalculate all bound digests, require exact checkpoint configuration equality, and fail closed on unknown rows or relevant source drift. The launch snapshot is created once with exclusive semantics and is bound into all nine checkpoint configurations.
 
 ## 6. Evidence gates
 
@@ -119,23 +139,27 @@ For representative policies, automated tests must establish:
 - increasing `T` increases Shannon entropy for a non-uniform positive distribution and decreases its top-move probability;
 - decreasing `T` does the converse;
 - identical explicit RNG seeds reproduce the same selection sequence;
-- zero/negative entries, pass indexing, malformed length, NaN/infinity, invalid temperature, and all-nonpositive input fail or behave according to the existing strict policy contract;
+- finite negative and zero policy entries are excluded, matching the existing contract; a mixed vector remains usable when at least one finite entry is positive;
+- wrong vector length, any NaN/infinity entry, boolean/nonfinite/out-of-range temperature, and an all-nonpositive vector raise `LadderMoveError` before selection;
+- pass remains the final policy index and participates in the same transformed distribution;
 - the transform does not mutate the engine response.
 
 ### 6.2 Pilot direction gate
 
 The pilot supports proceeding to full-rank fitting when:
 
-1. at least eight of nine matchup point estimates favor the predeclared stronger side;
-2. the aggregate result within each of `rank_1d`, `rank_5d`, and `rank_9d` favors the lower-temperature/argmax direction;
+1. at least eight of nine completed matchups have A wins greater than 10 of 20; a 10–10 score is a tie, not a direction win;
+2. within each of `rank_1d`, `rank_5d`, and `rank_9d`, the predeclared A sides total more than 30 wins across the three 20-game matchups;
 3. no completed contrast has a statistically persuasive inversion, defined as a Wilson 95% interval wholly below 50% for the predeclared stronger side;
 4. all result rows retain verified engine/model identity and exact selection identity.
 
-A 10–10 or 11–9 contrast near argmax is not a protocol failure; it means that finite temperature is empirically close to argmax. The report must distinguish “direction supported,” “indistinguishable at this sample,” and “inversion.” No adaptive extra games are appended after inspecting scores.
+A completed matchup is classified as `direction_supported` when A wins exceed 10 and the Wilson interval crosses 50%, `persuasive_direction` when its lower bound exceeds 50%, `point_tie` at 10–10, `point_inversion` below 10 wins while its interval crosses 50%, and `persuasive_inversion` when its upper bound is below 50%. No adaptive extra games are appended after inspecting scores.
+
+The overall pilot is `incomplete` if any matchup has fewer than ten complete pairs or any checkpoint/launch identity is invalid. Otherwise it is `fail` if any persuasive inversion exists, fewer than eight matchups favor A, or any profile aggregate is at most 30. It is `pass` only when all completion conditions hold and none of those failure conditions holds.
 
 If the gate fails, the system must not fit product temperatures. It records the completed evidence and diagnoses implementation, seed coupling, or non-monotonic empirical behavior under a separate reviewed protocol.
 
-## 7. Follow-on 41-tier fitting rule
+## 7. Follow-on 41-tier fitting rule (non-implementing in this slice)
 
 This section fixes how the pilot evidence will be used, without prematurely assigning unmeasured production values.
 
@@ -173,8 +197,8 @@ The slice is complete when it provides:
 2. an immutable pilot manifest and a dry-run/preflight that reports the exact nine-matchup schedule without issuing engine requests;
 3. relevant core/platform regression tests passing;
 4. a live health/model-identity preflight;
-5. the 180-game internal pilot completed or a truthful stopped ledger if an external/runtime failure occurs;
+5. all 180 eligible pilot games completed and the overall gate classified as `pass` or `fail`;
 6. a generated clean summary artifact with the gate classification and source digests;
 7. no change to the production 37-rung provisional table or user-visible promotion/relegation behavior in this slice.
 
-The next slice may begin only after the pilot gate is classified. A passing result starts full-rank temperature fitting; a failing result starts diagnosis rather than product integration.
+A runtime stop must preserve a truthful resumable ledger and report `incomplete`, but it does not complete this slice. The agent continues from the validated checkpoint when the in-scope runtime is recoverable. The next slice may begin only after the pilot gate is classified. A passing result starts full-rank temperature fitting; a failing result starts diagnosis rather than product integration.

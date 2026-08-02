@@ -1111,6 +1111,13 @@ gate 失败，本轮证据也不得用于拟合或发布 41 档配置。下一�
 运行源文件、manifest、开局与逐手选择仍由各自 SHA/attestation 绑定。零字节 `.jsonl.lock` 仅是运行期
 互斥残留，不属于证据链，不提交。
 
+最终代码复审另发现冻结 runner 的 strict gate 未拒绝“第10个完整 pair 后追加的行”。为避免修改六个
+已绑定运行源导致 v2 source drift，提交 `4a9c978d` 新增独立只读
+`calibration/audit_temperature_pilot_v2.py`：先复用冻结 strict gate，再对同一 checkpoint snapshot 强制
+验证 EOF 半 pair、pair-attempt 上限，以及第10个完整 pair 必须恰为账本终点。post-freeze audit 对9个
+checkpoint 全部返回 `audit_status=pass`，且不改变原始 `fail` gate；追加完整 inconclusive pair、半 pair
+或超上限记录的回归样本均被拒绝。
+
 ---
 
 ## D. 待办 / 开放项

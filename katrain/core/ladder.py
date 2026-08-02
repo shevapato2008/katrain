@@ -408,21 +408,24 @@ def pick_temperature_policy(human_policy, board_size, temperature: float, draw_u
 
     Returns ``((column, bottom-origin-row), policy_index)`` or ``("pass", policy_index)``.
     """
-    if not _is_plain_int(draw_u64) or not 0 <= draw_u64 <= _U64_MAX:
-        raise ValueError(f"draw_u64 must be a plain unsigned 64-bit integer: {draw_u64!r}")
-    if (
-        not isinstance(board_size, tuple)
-        or len(board_size) != 2
-        or any(not _is_plain_int(size) or size <= 0 for size in board_size)
-    ):
-        raise ValueError(f"board_size must be a pair of positive plain ints: {board_size!r}")
-    bx, by = board_size
-    if not isinstance(human_policy, list):
-        raise ValueError("human_policy must be a list")
-    if len(human_policy) != bx * by + 1:
-        raise ValueError(f"human_policy must have exactly {bx * by + 1} entries")
+    try:
+        if not _is_plain_int(draw_u64) or not 0 <= draw_u64 <= _U64_MAX:
+            raise ValueError(f"draw_u64 must be a plain unsigned 64-bit integer: {draw_u64!r}")
+        if (
+            not isinstance(board_size, tuple)
+            or len(board_size) != 2
+            or any(not _is_plain_int(size) or size <= 0 for size in board_size)
+        ):
+            raise ValueError(f"board_size must be a pair of positive plain ints: {board_size!r}")
+        bx, by = board_size
+        if not isinstance(human_policy, list):
+            raise ValueError("human_policy must be a list")
+        if len(human_policy) != bx * by + 1:
+            raise ValueError(f"human_policy must have exactly {bx * by + 1} entries")
+        weights = temperature_policy_distribution(human_policy, temperature)
+    except ValueError as exc:
+        raise LadderMoveError(f"temperature policy selection: {exc}") from exc
 
-    weights = temperature_policy_distribution(human_policy, temperature)
     candidates = []
     for x in range(bx):
         for y in range(by):

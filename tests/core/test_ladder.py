@@ -1,6 +1,9 @@
+import math
+
 import pytest
 from katrain.core.ladder import (
     LADDER_RUNGS,
+    LadderMoveError,
     TEMPERATURE_MAX,
     TEMPERATURE_MIN,
     get_rung,
@@ -44,6 +47,11 @@ def test_temperature_distribution_flattens_and_sharpens():
     assert sum(cold) == pytest.approx(1.0)
     assert sum(hot) == pytest.approx(1.0)
 
+    def entropy(distribution):
+        return -sum(probability * math.log(probability) for probability in distribution if probability)
+
+    assert entropy(cold) < entropy(native) < entropy(hot)
+
 
 def test_temperature_distribution_excludes_nonpositive_entries():
     assert temperature_policy_distribution([-3.0, 0.0, 2.0, 8.0], 2.0) == pytest.approx([0.0, 0.0, 1 / 3, 2 / 3])
@@ -81,8 +89,28 @@ def test_temperature_distribution_is_stable_across_extreme_finite_weights():
 
 
 def test_temperature_picker_rejects_wrong_policy_length():
-    with pytest.raises(ValueError):
+    with pytest.raises(LadderMoveError):
         pick_temperature_policy([1.0] * 361, (19, 19), 1.0, 0)
+
+
+@pytest.mark.parametrize(
+    "policy",
+    [None, [0.0] * 362, [float("nan")] + [0.0] * 361, [float("inf")] + [0.0] * 361],
+)
+def test_temperature_picker_exposes_invalid_policy_as_ladder_move_error(policy):
+    with pytest.raises(LadderMoveError):
+        pick_temperature_policy(policy, (19, 19), 1.0, 0)
+
+
+@pytest.mark.parametrize(
+    "temperature",
+    [False, 0, float("nan"), float("inf"), "1.0", TEMPERATURE_MIN - 0.001, TEMPERATURE_MAX + 0.001],
+)
+def test_temperature_picker_exposes_invalid_temperature_as_ladder_move_error(temperature):
+    policy = [0.0] * 362
+    policy[0] = 1.0
+    with pytest.raises(LadderMoveError):
+        pick_temperature_policy(policy, (19, 19), temperature, 0)
 
 
 def test_temperature_picker_can_select_pass_and_returns_policy_index():
@@ -105,7 +133,7 @@ def test_temperature_picker_exact_inverse_cdf_edge_draws():
 def test_temperature_picker_rejects_invalid_u64_draw(draw):
     policy = [0.0] * 362
     policy[0] = 1.0
-    with pytest.raises(ValueError):
+    with pytest.raises(LadderMoveError):
         pick_temperature_policy(policy, (19, 19), 1.0, draw)
 
 

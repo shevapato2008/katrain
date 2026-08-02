@@ -22,11 +22,15 @@ from __future__ import annotations
 import math
 from copy import deepcopy
 from dataclasses import dataclass, field
+from fractions import Fraction
 from types import MappingProxyType
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 MECHANISMS = ("humansl", "humansl_search", "net_search")
 _COLS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"  # GTP columns, 'I' skipped
+TEMPERATURE_MIN = 0.05
+TEMPERATURE_MAX = 10.0
+_U64_MAX = 2**64 - 1
 
 # Bumped by calibration/bake_results.py's bump_ladder_version() every time a REAL measured-Elo
 # bake overwrites the table below. "v1" = PROVISIONAL, never yet measured against live Golaxy
@@ -56,6 +60,7 @@ class LadderRung:
     human_sl_params: Dict = field(default_factory=dict)
     backend_hint: str = "server"
     root_policy_temperature: float = 1.0
+    human_policy_temperature: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -227,6 +232,10 @@ def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
         raise ValueError(f"rung net must be a nonempty model name: {rung.net!r}")
     if not _finite_number(rung.root_policy_temperature) or rung.root_policy_temperature <= 0:
         raise ValueError(f"root_policy_temperature must be a positive finite number: {rung.root_policy_temperature!r}")
+    if rung.human_policy_temperature is not None:
+        _validate_temperature(rung.human_policy_temperature)
+        if rung.mechanism != "humansl":
+            raise ValueError("human_policy_temperature is only valid for the humansl mechanism")
     if not isinstance(rung.human_sl_params, Mapping):
         raise ValueError("human_sl_params must be a mapping")
     params = deepcopy(dict(rung.human_sl_params))
@@ -356,6 +365,84 @@ def golaxy_to_colrow(coord: int, bs: int = 19) -> Union[Tuple[int, int], str]:
     if not (0 <= coord < bs * bs):
         return "unknown"  # out-of-board wire value; caller treats as inconclusive terminal
     return (coord % bs, bs - 1 - coord // bs)
+
+
+def _validate_temperature(temperature: float) -> None:
+    if not _finite_number(temperature) or not TEMPERATURE_MIN <= temperature <= TEMPERATURE_MAX:
+        raise ValueError(
+            f"temperature must be a finite non-boolean number in [{TEMPERATURE_MIN}, {TEMPERATURE_MAX}]: "
+            f"{temperature!r}"
+        )
+
+
+def temperature_policy_distribution(human_policy, temperature: float) -> List[float]:
+    """Return normalized HumanSL policy weights transformed by ``p ** (1 / temperature)``."""
+    _validate_temperature(temperature)
+    if not isinstance(human_policy, list) or not human_policy:
+        raise ValueError("human_policy must be a nonempty list")
+    if any(not _finite_number(value) for value in human_policy):
+        raise ValueError("human_policy entries must be finite non-boolean numbers")
+
+    positive_logs = [math.log(value) for value in human_policy if value > 0]
+    if not positive_logs:
+        raise ValueError("human_policy must contain at least one positive entry")
+    max_scaled_log = max(positive_logs) / temperature
+    weights = [math.exp(math.log(value) / temperature - max_scaled_log) if value > 0 else 0.0 for value in human_policy]
+    total = math.fsum(weights)
+    return [weight / total for weight in weights]
+
+
+def policy_index_to_gtp(index: int) -> str:
+    """Convert a 19x19 KataGo policy index to canonical uppercase GTP (or ``pass``)."""
+    if not _is_plain_int(index) or not 0 <= index <= 361:
+        raise ValueError(f"policy index must be a plain int in 0..361: {index!r}")
+    if index == 361:
+        return "pass"
+    x = index % 19
+    row0 = 18 - index // 19
+    return colrow_to_gtp(x, row0)
+
+
+def pick_temperature_policy(human_policy, board_size, temperature: float, draw_u64: int):
+    """Select from a temperature-adjusted HumanSL policy with one explicit unsigned 64-bit draw.
+
+    Returns ``((column, bottom-origin-row), policy_index)`` or ``("pass", policy_index)``.
+    """
+    if not _is_plain_int(draw_u64) or not 0 <= draw_u64 <= _U64_MAX:
+        raise ValueError(f"draw_u64 must be a plain unsigned 64-bit integer: {draw_u64!r}")
+    if (
+        not isinstance(board_size, tuple)
+        or len(board_size) != 2
+        or any(not _is_plain_int(size) or size <= 0 for size in board_size)
+    ):
+        raise ValueError(f"board_size must be a pair of positive plain ints: {board_size!r}")
+    bx, by = board_size
+    if not isinstance(human_policy, list):
+        raise ValueError("human_policy must be a list")
+    if len(human_policy) != bx * by + 1:
+        raise ValueError(f"human_policy must have exactly {bx * by + 1} entries")
+
+    weights = temperature_policy_distribution(human_policy, temperature)
+    candidates = []
+    for x in range(bx):
+        for y in range(by):
+            index = (by - y - 1) * bx + x
+            if weights[index] > 0:
+                candidates.append(((x, y), index, weights[index]))
+    if weights[-1] > 0:
+        candidates.append(("pass", len(weights) - 1, weights[-1]))
+
+    total = math.fsum(weight for _, _, weight in candidates)
+    target = Fraction(2 * draw_u64 + 1, 2**65) * Fraction.from_float(total)
+    cumulative = 0.0
+    for move, index, weight in candidates:
+        cumulative += weight
+        # Algebraically equivalent to cumulative > ((draw + 0.5) / 2**64) * total,
+        # without rounding the half-step away at exact inverse-CDF boundaries.
+        if Fraction.from_float(cumulative) > target:
+            return move, index
+    move, index, _ = candidates[-1]
+    return move, index
 
 
 def _weighted_policy_pick(human_policy, board_size):

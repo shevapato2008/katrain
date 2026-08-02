@@ -1,16 +1,161 @@
 import pytest
 from katrain.core.ladder import (
     LADDER_RUNGS,
+    TEMPERATURE_MAX,
+    TEMPERATURE_MIN,
     get_rung,
     rung_engine_params,
     ladder_override_settings,
     pick_ladder_move,
+    pick_temperature_policy,
+    policy_index_to_gtp,
+    temperature_policy_distribution,
     gtp_to_colrow,
     colrow_to_golaxy,
     golaxy_to_colrow,
     config_sanity_key,
     MECHANISMS,
 )
+
+
+U64_MAX = 2**64 - 1
+
+
+def test_temperature_distribution_t1_normalizes_without_mutating_input():
+    policy = [7.0, 2.0, 1.0]
+    original = policy.copy()
+
+    transformed = temperature_policy_distribution(policy, 1.0)
+
+    assert transformed == pytest.approx([0.7, 0.2, 0.1])
+    assert policy == original
+    assert transformed is not policy
+
+
+def test_temperature_distribution_flattens_and_sharpens():
+    policy = [0.7, 0.2, 0.1]
+    cold = temperature_policy_distribution(policy, 0.5)
+    native = temperature_policy_distribution(policy, 1.0)
+    hot = temperature_policy_distribution(policy, 2.0)
+
+    assert native == pytest.approx(policy)
+    assert cold[0] > native[0] > hot[0]
+    assert cold[2] < native[2] < hot[2]
+    assert sum(cold) == pytest.approx(1.0)
+    assert sum(hot) == pytest.approx(1.0)
+
+
+def test_temperature_distribution_excludes_nonpositive_entries():
+    assert temperature_policy_distribution([-3.0, 0.0, 2.0, 8.0], 2.0) == pytest.approx([0.0, 0.0, 1 / 3, 2 / 3])
+
+
+@pytest.mark.parametrize("policy", [[0.0, -1.0], [-1.0, -2.0]])
+def test_temperature_distribution_rejects_all_nonpositive(policy):
+    with pytest.raises(ValueError):
+        temperature_policy_distribution(policy, 1.0)
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_temperature_distribution_rejects_nonfinite_entries(bad):
+    with pytest.raises(ValueError):
+        temperature_policy_distribution([1.0, bad], 1.0)
+
+
+@pytest.mark.parametrize(
+    "temperature",
+    [False, True, 0, -1, float("nan"), float("inf"), TEMPERATURE_MIN - 0.001, TEMPERATURE_MAX + 0.001],
+)
+def test_temperature_distribution_rejects_invalid_temperature(temperature):
+    with pytest.raises(ValueError):
+        temperature_policy_distribution([1.0], temperature)
+
+
+def test_temperature_distribution_accepts_temperature_boundaries():
+    assert temperature_policy_distribution([1.0], TEMPERATURE_MIN) == [1.0]
+    assert temperature_policy_distribution([1.0], TEMPERATURE_MAX) == [1.0]
+
+
+def test_temperature_distribution_is_stable_across_extreme_finite_weights():
+    transformed = temperature_policy_distribution([1e-300, 1e300], TEMPERATURE_MIN)
+    assert transformed == [0.0, 1.0]
+
+
+def test_temperature_picker_rejects_wrong_policy_length():
+    with pytest.raises(ValueError):
+        pick_temperature_policy([1.0] * 361, (19, 19), 1.0, 0)
+
+
+def test_temperature_picker_can_select_pass_and_returns_policy_index():
+    policy = [0.0] * 362
+    policy[361] = 1.0
+    assert pick_temperature_policy(policy, (19, 19), 1.0, 0) == ("pass", 361)
+
+
+def test_temperature_picker_exact_inverse_cdf_edge_draws():
+    policy = [0.0] * 362
+    policy[342] = policy[0] = 1.0  # canonical order is A1, then A19
+
+    assert pick_temperature_policy(policy, (19, 19), 1.0, 0) == ((0, 0), 342)
+    assert pick_temperature_policy(policy, (19, 19), 1.0, 2**63 - 1) == ((0, 0), 342)
+    assert pick_temperature_policy(policy, (19, 19), 1.0, 2**63) == ((0, 18), 0)
+    assert pick_temperature_policy(policy, (19, 19), 1.0, U64_MAX) == ((0, 18), 0)
+
+
+@pytest.mark.parametrize("draw", [False, True, -1, 1.0, U64_MAX + 1])
+def test_temperature_picker_rejects_invalid_u64_draw(draw):
+    policy = [0.0] * 362
+    policy[0] = 1.0
+    with pytest.raises(ValueError):
+        pick_temperature_policy(policy, (19, 19), 1.0, draw)
+
+
+@pytest.mark.parametrize(
+    "index,gtp",
+    [(0, "A19"), (18, "T19"), (342, "A1"), (360, "T1"), (361, "pass")],
+)
+def test_policy_index_to_gtp_frozen_19x19_mapping(index, gtp):
+    assert policy_index_to_gtp(index) == gtp
+
+
+def test_production_rungs_and_local_temperature_default_are_unchanged():
+    assert [
+        (r.rung, r.rank_name, r.mechanism, r.net, r.human_sl_profile, r.max_visits, r.root_policy_temperature)
+        for r in LADDER_RUNGS
+    ] == [
+        *[(n, f"{21 - n}K", "humansl", "humanv0", f"rank_{21 - n}k", 1, 1.1 if n <= 5 else 1.0) for n in range(1, 21)],
+        *[(n, f"{n - 20}D", "humansl", "humanv0", f"rank_{n - 20}d", 1, 1.0) for n in range(21, 26)],
+        (26, "准6D", "net_search", "b28", None, 4, 1.0),
+        (27, "6D", "net_search", "b28", None, 8, 1.0),
+        (28, "准7D", "net_search", "b28", None, 16, 1.0),
+        (29, "7D", "net_search", "b28", None, 24, 1.0),
+        (30, "准8D", "net_search", "b28", None, 40, 1.0),
+        (31, "8D", "net_search", "b28", None, 64, 1.0),
+        (32, "准9D", "net_search", "b28", None, 100, 1.0),
+        (33, "9D", "net_search", "b28", None, 160, 1.0),
+        (34, "职业", "net_search", "b28", None, 250, 1.0),
+        (35, "职业顶尖", "net_search", "b28", None, 350, 1.0),
+        (36, "超职业", "net_search", "b28", None, 450, 1.0),
+        (37, "KataGo中等", "net_search", "b28", None, 500, 1.0),
+    ]
+    assert all(r.human_policy_temperature is None for r in LADDER_RUNGS)
+
+
+def test_legacy_weighted_picker_behavior_is_unchanged(monkeypatch):
+    import katrain.core.ai as ai
+
+    policy = [0.0] * 362
+    policy[342], policy[0], policy[361] = 1.0, 2.0, 3.0
+    seen = []
+
+    def fake_weighted_picker(moves, count):
+        seen.extend(moves)
+        assert count == 1
+        return [moves[1]]
+
+    monkeypatch.setattr(ai, "weighted_selection_without_replacement", fake_weighted_picker)
+    assert pick_ladder_move({"humanPolicy": policy}, (19, 19), "humansl") == (0, 18)
+    assert seen == [((0, 0), 1.0), ((0, 18), 2.0), ("pass", 3.0)]
+
 
 def test_thirty_seven_rungs():
     assert len(LADDER_RUNGS) == 37 and [r.rung for r in LADDER_RUNGS] == list(range(1, 38))
@@ -278,6 +423,41 @@ def test_humansl_search_core_spec_does_not_impose_experiment_visit_floor():
     from katrain.core.ladder import rung_strength_spec
 
     assert rung_strength_spec(_humansl_search_rung(max_visits=1)).visits == 1
+
+
+def test_human_policy_temperature_is_validated_but_not_projected_to_engine():
+    from dataclasses import replace
+
+    from katrain.core.ladder import rung_strength_spec
+
+    rung = replace(get_rung(21), human_policy_temperature=1.3)
+    assert "human_policy_temperature" not in rung_strength_spec(rung).override_settings
+    assert "humanPolicyTemperature" not in ladder_override_settings(rung)
+    assert "humanPolicyTemperature" not in rung_engine_params(rung)["extra_settings"]
+
+
+@pytest.mark.parametrize(
+    "temperature",
+    [False, True, 0, -1, float("nan"), float("inf"), TEMPERATURE_MIN - 0.001, TEMPERATURE_MAX + 0.001],
+)
+def test_invalid_local_human_policy_temperature_is_rejected(temperature):
+    from dataclasses import replace
+
+    from katrain.core.ladder import rung_strength_spec
+
+    with pytest.raises(ValueError):
+        rung_strength_spec(replace(get_rung(21), human_policy_temperature=temperature))
+
+
+def test_local_human_policy_temperature_is_rejected_for_non_humansl_mechanisms():
+    from dataclasses import replace
+
+    from katrain.core.ladder import rung_strength_spec
+
+    with pytest.raises(ValueError):
+        rung_strength_spec(replace(get_rung(26), human_policy_temperature=1.0))
+    with pytest.raises(ValueError):
+        rung_strength_spec(_humansl_search_rung(human_policy_temperature=1.0))
 
 
 def test_native_rungs_retain_humansl_and_net_search_semantics():

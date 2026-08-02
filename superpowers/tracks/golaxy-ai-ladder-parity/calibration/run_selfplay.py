@@ -822,6 +822,56 @@ def _pick_argmax_human(hp: list, board_size: Tuple[int, int]) -> object:
     return best if best is not None else "pass"
 
 
+def _temperature_audit_preflight(
+    history,
+    rung: LadderRung,
+    selection: str,
+    temperature_context: Optional[Mapping[str, object]],
+    sampling_trace: Optional[list],
+    player: Optional[str],
+):
+    required = {
+        "protocol_version",
+        "manifest_sha256",
+        "canonical_matchup_id",
+        "pair_attempt",
+        "color_index",
+        "player",
+    }
+    if not isinstance(temperature_context, Mapping) or not isinstance(sampling_trace, list):
+        raise LadderMoveError("temperature HumanSL requires audit context and sampling trace")
+    if (
+        set(temperature_context) != required
+        or temperature_context["protocol_version"] != temperature_pilot.PROTOCOL_VERSION
+    ):
+        raise LadderMoveError("temperature HumanSL audit context is incomplete or invalid")
+    if player is not None and (player not in {"A", "B"} or temperature_context["player"] != player):
+        raise LadderMoveError("temperature HumanSL audit player does not match the move player")
+    try:
+        identity = temperature_pilot.matchup_player_identity(
+            temperature_context["canonical_matchup_id"], temperature_context["player"]
+        )
+        if rung.human_sl_profile is None or rung.human_policy_temperature is None:
+            raise ValueError("temperature rung is missing its HumanSL profile or local temperature")
+        expected_identity = temperature_pilot.temperature_player_identity(
+            rung.human_sl_profile, str(rung.human_policy_temperature)
+        )
+        if identity != expected_identity or selection != expected_identity.selection:
+            raise ValueError("temperature player identity does not match the frozen matchup")
+        trace_context = {
+            key: temperature_context[key]
+            for key in ("manifest_sha256", "canonical_matchup_id", "pair_attempt", "color_index")
+        }
+        draw_u64 = temperature_pilot.derive_draw(
+            **trace_context,
+            ply=len(history),
+            player=temperature_context["player"],
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LadderMoveError(f"invalid temperature sampling evidence: {exc}") from exc
+    return identity, trace_context, draw_u64
+
+
 async def _player_move_certified(
     client,
     base_url,
@@ -846,6 +896,11 @@ async def _player_move_certified(
         if isinstance(exc, LadderMoveError):
             raise
         raise LadderMoveError(f"invalid self-play strength specification: {exc}") from exc
+    temperature_preflight = None
+    if selection == "temperature_weighted":
+        temperature_preflight = _temperature_audit_preflight(
+            history, rung, selection, temperature_context, sampling_trace, player
+        )
     q = adapters.build_ladder_analysis_query(history, rung, BOARD_SIZE, KOMI, RULES, wrn)
     r = await client.post(f"{base_url}/analyze", json=q, timeout=httpx.Timeout(180.0, connect=10.0))
     r.raise_for_status()
@@ -872,42 +927,8 @@ async def _player_move_certified(
         hp = analysis.get("humanPolicy")
         if not _valid_policy(hp, BOARD_SIZE * BOARD_SIZE + 1):
             raise LadderMoveError("temperature HumanSL requires a valid humanPolicy")
-        if not isinstance(temperature_context, Mapping) or not isinstance(sampling_trace, list):
-            raise LadderMoveError("temperature HumanSL requires audit context and sampling trace")
-        required = {
-            "protocol_version",
-            "manifest_sha256",
-            "canonical_matchup_id",
-            "pair_attempt",
-            "color_index",
-            "player",
-        }
-        if (
-            set(temperature_context) != required
-            or temperature_context["protocol_version"] != temperature_pilot.PROTOCOL_VERSION
-        ):
-            raise LadderMoveError("temperature HumanSL audit context is incomplete or invalid")
-        if player is not None and temperature_context["player"] != player:
-            raise LadderMoveError("temperature HumanSL audit player does not match the move player")
+        identity, trace_context, draw_u64 = temperature_preflight
         try:
-            identity = temperature_pilot.matchup_player_identity(
-                temperature_context["canonical_matchup_id"], temperature_context["player"]
-            )
-            if (
-                identity.selection != selection
-                or rung.human_policy_temperature is None
-                or float(identity.temperature) != rung.human_policy_temperature
-            ):
-                raise ValueError("temperature player identity does not match the frozen matchup")
-            trace_context = {
-                key: temperature_context[key]
-                for key in ("manifest_sha256", "canonical_matchup_id", "pair_attempt", "color_index")
-            }
-            draw_u64 = temperature_pilot.derive_draw(
-                **trace_context,
-                ply=len(history),
-                player=temperature_context["player"],
-            )
             picked, selected_index = pick_temperature_policy(
                 hp, (BOARD_SIZE, BOARD_SIZE), rung.human_policy_temperature, draw_u64
             )

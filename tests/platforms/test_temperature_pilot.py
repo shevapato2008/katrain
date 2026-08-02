@@ -139,6 +139,7 @@ async def test_temperature_player_move_uses_audited_draw_and_appends_valid_trace
             capabilities=_health_snapshot(),
             temperature_context=context,
             sampling_trace=traces,
+            player="B",
         )
 
     assert calls == [(policy, (19, 19), 2.0, expected_draw)]
@@ -188,7 +189,7 @@ async def test_temperature_player_move_fails_closed_for_incomplete_or_invalid_co
     context_mutation(context)
 
     def handler(_request):
-        return httpx.Response(200, json={"humanPolicy": _valid_policy(), "_wrapper": _attestation()})
+        raise AssertionError("invalid static temperature context must fail before /analyze")
 
     traces = []
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
@@ -206,6 +207,38 @@ async def test_temperature_player_move_fails_closed_for_incomplete_or_invalid_co
 
     assert move == "unavailable"
     assert traces == []
+
+
+@pytest.mark.asyncio
+async def test_temperature_player_move_rejects_cross_profile_context_before_analyze():
+    _, rung, selection = selfplay.make_player("rank_1d@1t1")
+    context = {
+        "protocol_version": pilot.PROTOCOL_VERSION,
+        "manifest_sha256": "ab" * 32,
+        "canonical_matchup_id": "rank_5d@1t1__vs__rank_5d@1t2",
+        "pair_attempt": 0,
+        "color_index": 0,
+        "player": "A",
+    }
+
+    def handler(_request):
+        raise AssertionError("cross-profile context must fail before /analyze")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        move = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=_health_snapshot(),
+            temperature_context=context,
+            sampling_trace=[],
+            player="A",
+        )
+
+    assert move == "unavailable"
 
 
 @pytest.mark.asyncio

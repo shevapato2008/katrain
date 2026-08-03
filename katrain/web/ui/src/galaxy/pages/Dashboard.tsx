@@ -1,14 +1,25 @@
 import { Box, Card, Typography, CardActionArea } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ScienceIcon from '@mui/icons-material/Science';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import ExtensionIcon from '@mui/icons-material/Extension';
+import type { ReactNode } from 'react';
 import { useSettings } from '../../context/SettingsContext';
+import AiLadderStatusCard from '../../features/aiLadder/AiLadderStatusCard';
+import { getAiLadderGalaxyDemo } from '../../features/aiLadder/__fixtures__/galaxyDemo';
 import { i18n } from '../../i18n';
 
-const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
+interface ModuleCardProps {
+    title: string;
+    desc: string;
+    icon: ReactNode;
+    path: string;
+    disabled?: boolean;
+}
+
+const ModuleCard = ({ title, desc, icon, path, disabled }: ModuleCardProps) => {
     const navigate = useNavigate();
     return (
         <Card sx={{ height: '100%', bgcolor: 'background.paper', opacity: disabled ? 0.5 : 1 }}>
@@ -33,6 +44,11 @@ const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
 
 const Dashboard = () => {
     useSettings(); // Subscribe to translation changes for re-render
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const aiLadderDemo = import.meta.env.DEV
+        ? getAiLadderGalaxyDemo(searchParams.get('ai-ladder-demo'))
+        : null;
     const modules = [
         { 
             title: i18n.t('btn:Play', 'Play'), 
@@ -77,6 +93,20 @@ const Dashboard = () => {
                     {i18n.t('dashboard:tagline', '棋道导航者')}
                 </Typography>
             </Box>
+
+            {aiLadderDemo && (
+                <Box sx={{ mb: 4 }}>
+                    <AiLadderStatusCard
+                        status={aiLadderDemo}
+                        onPrimaryAction={() => navigate('/galaxy/play/ai?mode=ai_ladder_ranked')}
+                        onRetry={() => {
+                            const nextSearchParams = new URLSearchParams(searchParams);
+                            nextSearchParams.set('ai-ladder-demo', 'placement');
+                            setSearchParams(nextSearchParams, { replace: true });
+                        }}
+                    />
+                </Box>
+            )}
 
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
                 {modules.map((m) => (

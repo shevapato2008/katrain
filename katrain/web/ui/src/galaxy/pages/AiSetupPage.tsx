@@ -159,7 +159,7 @@ const AiSetupPage = () => {
                     byo_length: byoLength,
                     byo_periods: byoPeriods,
                 }, token || undefined);
-                saveAiLadderBefore(session.session_id, session.status);
+                saveAiLadderBefore(session.session_id, session.status, String(user?.id ?? user?.username ?? 'anonymous'));
                 navigate(`/galaxy/play/game/${session.session_id}?mode=rated`);
                 return;
             }

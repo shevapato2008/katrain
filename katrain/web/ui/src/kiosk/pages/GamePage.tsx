@@ -127,7 +127,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
   // B2/D5 (engine-move commit protocol): while a Golaxy 人机对弈 move is in flight
   // (genmove tunnel, up to ~180s), the backend already 409s undo/redo/nav — this
@@ -156,6 +156,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [countError, setCountError] = useState<string | null>(null);
+  const [resignError, setResignError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [resyncError, setResyncError] = useState(false);
@@ -325,6 +326,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const settlementFeedback = useAiLadderSettlement(
     sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
+    String(user?.id ?? user?.username ?? 'anonymous'),
   );
 
   if (!session.gameState) {
@@ -631,9 +633,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
           <Button
             color="error"
-            onClick={() => {
-              setShowResignConfirm(false);
-              session.handleAction('resign');
+            onClick={async () => {
+              try {
+                await session.handleAction('resign');
+                setShowResignConfirm(false);
+              } catch (error) {
+                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                return;
+              }
               // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
               // not it was reached via EngineMoveErrorDialog's 认输 button — so the
               // physical engine-error recovery dialog (if open) is now irrelevant.
@@ -653,8 +660,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
           <Button
             color="error"
-            onClick={() => {
-              session.handleAction('resign');
+            onClick={async () => {
+              try {
+                await session.handleAction('resign');
+              } catch (error) {
+                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                return;
+              }
               // Same as the resign-confirm dialog above: this is another path that
               // confirms a resign, so the engine-error recovery dialog (if open) must
               // close too — no-op if it wasn't open.
@@ -748,6 +760,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       <Snackbar open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
+      </Snackbar>
+      <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
+        <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
       </Snackbar>
 
       {/* Re-sync (重置识别) failure toast */}

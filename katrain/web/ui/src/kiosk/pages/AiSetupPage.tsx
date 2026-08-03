@@ -32,7 +32,7 @@ const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const isRanked = mode === 'ranked';
   const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token ?? undefined, isRanked);
 
@@ -89,7 +89,7 @@ const AiSetupPage = () => {
           byo_length: byoyomiTime,
           byo_periods: byoyomiPeriods,
         }, token ?? undefined);
-        saveAiLadderBefore(session_id, status);
+        saveAiLadderBefore(session_id, status, String(user?.id ?? user?.username ?? 'anonymous'));
         writeActiveSession({
           kind: 'game', label: t('Ranked Game', '升降级对弈'),
           route: `/kiosk/play/ai/game/${session_id}`, ts: Date.now(),

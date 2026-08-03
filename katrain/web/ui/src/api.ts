@@ -8,7 +8,7 @@ export interface PlayerInfo {
   main_time_used: number;
 }
 
-export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | (string & {});
+export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online';
 
 export interface GameState {
   game_id: string;

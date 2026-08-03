@@ -21,10 +21,11 @@ type Board3DComponent = React.ComponentType<BoardProps>;
 const GamePage = () => {
     const { sessionId } = useParams();
     const [searchParams] = useSearchParams();
+    const [resignError, setResignError] = useState<string | null>(null);
     const navigate = useNavigate();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const routeIsRated = mode === 'rated';
@@ -44,7 +45,7 @@ const GamePage = () => {
         handleAction
     } = useGameSession({ token: token || undefined });
     const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
-    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined);
+    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, String(user?.id ?? user?.username ?? 'anonymous'));
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -221,8 +222,12 @@ const GamePage = () => {
     };
 
     const confirmResign = async () => {
-        setShowResignConfirm(false);
-        await handleAction('resign');
+        try {
+            await handleAction('resign');
+            setShowResignConfirm(false);
+        } catch (error) {
+            setResignError(error instanceof Error ? error.message : '认输失败，请重试');
+        }
     };
 
     const handleLeaveRequest = () => {
@@ -234,8 +239,13 @@ const GamePage = () => {
     };
 
     const handleConfirmLeave = async () => {
-        await handleAction('resign');
-        navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
+        try {
+            await handleAction('resign');
+            setShowLeaveConfirm(false);
+            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
+        } catch (error) {
+            setResignError(error instanceof Error ? error.message : '认输失败，请重试');
+        }
     };
 
     // Determine which color the human player controls (if any)
@@ -250,6 +260,7 @@ const GamePage = () => {
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
                 <AiLadderSettlementAlert feedback={settlementFeedback} />
+                {resignError && <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>}
             </Box>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>

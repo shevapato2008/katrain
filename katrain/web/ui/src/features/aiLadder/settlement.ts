@@ -1,19 +1,37 @@
-import { createElement, useEffect, useState } from 'react';
-import { Alert } from '@mui/material';
+import { createElement, useEffect, useRef, useState } from 'react';
+import { Alert, Button } from '@mui/material';
 import { getAiLadderStatus } from './api';
 import type { AiLadderReadyStatus } from './types';
 
-export type SettlementFeedbackKind = 'placement_progress' | 'placement_complete' | 'promotion' | 'demotion' | 'score_change' | 'no_change' | 'authoritative_complete';
-export interface SettlementFeedback { kind: SettlementFeedbackKind; message: string; status?: AiLadderReadyStatus }
+export type SettlementFeedbackKind = 'placement_progress' | 'placement_complete' | 'promotion' | 'demotion' | 'score_change' | 'no_change' | 'authoritative_complete' | 'pending' | 'error';
+export interface SettlementFeedback { kind: SettlementFeedbackKind; message: string; status?: AiLadderReadyStatus; retry?: () => void }
 
 const keyFor = (sessionId: string) => `ai-ladder-before:${sessionId}`;
-export const saveAiLadderBefore = (sessionId: string, status: AiLadderReadyStatus) => {
-  try { sessionStorage.setItem(keyFor(sessionId), JSON.stringify(status)); } catch { /* storage unavailable */ }
+const isReadyStatus = (value: unknown): value is AiLadderReadyStatus => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<AiLadderReadyStatus>;
+  const placement = candidate.placement_state;
+  return candidate.view_state === 'ready'
+    && typeof candidate.net_score === 'number'
+    && Array.isArray(candidate.recent_ranked_results)
+    && typeof candidate.pending_settlement === 'boolean'
+    && !!placement && typeof placement === 'object'
+    && (placement.phase === 'placement'
+      ? typeof placement.completed_games === 'number' && placement.total_games === 5
+      : placement.phase === 'placed' && typeof placement.rung?.rung === 'number' && typeof placement.rung.rank_name === 'string');
 };
-const takeAiLadderBefore = (sessionId: string): AiLadderReadyStatus | null => {
+
+export const saveAiLadderBefore = (sessionId: string, status: AiLadderReadyStatus, identity: string) => {
+  if (!sessionId || !identity || !isReadyStatus(status)) return;
+  try { sessionStorage.setItem(keyFor(sessionId), JSON.stringify({ identity, status })); } catch { /* storage unavailable */ }
+};
+const takeAiLadderBefore = (sessionId: string, identity: string): AiLadderReadyStatus | null => {
   try {
     const value = sessionStorage.getItem(keyFor(sessionId));
-    return value ? JSON.parse(value) as AiLadderReadyStatus : null;
+    sessionStorage.removeItem(keyFor(sessionId));
+    if (!value) return null;
+    const parsed = JSON.parse(value) as { identity?: unknown; status?: unknown };
+    return parsed.identity === identity && isReadyStatus(parsed.status) ? parsed.status : null;
   } catch { return null; }
 };
 const clearAiLadderBefore = (sessionId: string) => { try { sessionStorage.removeItem(keyFor(sessionId)); } catch { /* noop */ } };
@@ -48,29 +66,42 @@ export const pollAiLadderSettlement = async (
   return status!;
 };
 
-export const useAiLadderSettlement = (sessionId: string | undefined, gameType: string | undefined, endResult: string | null | undefined, token?: string) => {
+export const useAiLadderSettlement = (
+  sessionId: string | undefined, gameType: string | undefined, endResult: string | null | undefined,
+  token?: string, identity = '', wait?: () => Promise<void>,
+) => {
   const [feedback, setFeedback] = useState<SettlementFeedback | null>(null);
+  const [retryGeneration, setRetryGeneration] = useState(0);
+  const beforeRef = useRef<{ key: string; value: AiLadderReadyStatus | null } | null>(null);
   useEffect(() => {
-    if (!sessionId || gameType !== 'ai_ladder_ranked' || !endResult) return;
+    if (!sessionId || gameType !== 'ai_ladder_ranked' || !endResult) {
+      setFeedback(null);
+      beforeRef.current = null;
+      return;
+    }
     const controller = new AbortController();
-    const before = takeAiLadderBefore(sessionId);
-    void pollAiLadderSettlement(getAiLadderStatus, token, controller.signal).then((after) => {
+    const snapshotKey = `${sessionId}:${identity}`;
+    if (beforeRef.current?.key !== snapshotKey) beforeRef.current = { key: snapshotKey, value: takeAiLadderBefore(sessionId, identity) };
+    const before = beforeRef.current.value;
+    const retry = () => setRetryGeneration((value) => value + 1);
+    void pollAiLadderSettlement(getAiLadderStatus, token, controller.signal, 5, wait).then((after) => {
       if (controller.signal.aborted) return;
       if (after.pending_settlement) {
-        setFeedback({ kind: 'authoritative_complete', message: '升降级结算处理中，请稍后重试', status: after });
+        setFeedback({ kind: 'pending', message: '升降级结算仍在处理中', status: after, retry });
       } else {
         clearAiLadderBefore(sessionId);
         setFeedback(deriveSettlementFeedback(before, after));
       }
     }).catch((error) => {
-      if (!controller.signal.aborted) setFeedback({ kind: 'authoritative_complete', message: error instanceof Error ? error.message : '结算状态暂不可用', status: before ?? undefined });
+      if (!controller.signal.aborted) setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '结算状态暂不可用', status: before ?? undefined, retry });
     });
     return () => controller.abort();
-  }, [endResult, gameType, sessionId, token]);
+  }, [endResult, gameType, identity, retryGeneration, sessionId, token, wait]);
   return feedback;
 };
 
 export const AiLadderSettlementAlert = ({ feedback }: { feedback: SettlementFeedback | null }) =>
   feedback ? createElement(Alert, {
-    severity: feedback.kind === 'demotion' ? 'warning' : 'success',
+    severity: feedback.kind === 'error' ? 'error' : feedback.kind === 'pending' || feedback.kind === 'demotion' ? 'warning' : 'success',
+    action: feedback.retry ? createElement(Button, { color: 'inherit', size: 'small', onClick: feedback.retry }, '重试') : undefined,
   }, feedback.message) : null;

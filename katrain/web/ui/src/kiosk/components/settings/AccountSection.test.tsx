@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import AccountSection from './AccountSection';
@@ -13,9 +13,13 @@ describe('AccountSection ladder summary', () => {
     render(<MemoryRouter><AccountSection /></MemoryRouter>);
     expect(screen.getByText('定级进度 3/5')).toBeInTheDocument();
     expect(screen.getByText('累计净胜分：+1')).toBeInTheDocument();
-    expect(screen.getByText('最近5盘仅供展示，升降段只看累计净胜分')).toBeInTheDocument();
     expect(screen.getByText('服务器对弈')).toBeInTheDocument();
     expect(screen.getByText('已认证')).toBeInTheDocument();
+    expect(screen.getByTestId('ai-ladder-account-summary')).toHaveStyle({ maxHeight: '132px', overflow: 'hidden' });
+    expect(screen.queryByText('最近5盘仅供展示，升降段只看累计净胜分')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '查看AI段位详情' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('最近5盘仅供展示，升降段只看累计净胜分')).toBeInTheDocument();
   });
 
   it('does not request or leave a loading ladder card for a guest', () => {

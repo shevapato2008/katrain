@@ -4,11 +4,13 @@ from dataclasses import replace
 import pytest
 from katrain.core.ladder import (
     HUMAN_ARGMAX,
+    HUMANSL_PIKL_BASELINE,
     HUMAN_TEMPERATURE,
     HUMAN_WEIGHTED,
     LADDER_SELECTIONS,
     LADDER_RUNGS,
     LadderMoveError,
+    LadderRung,
     NATIVE_POLICY_ARGMAX,
     SEARCH,
     TEMPERATURE_MAX,
@@ -623,6 +625,99 @@ def test_versioned_pikl_and_pure_b18_endpoint_digests_bind_effective_strength():
     assert digest != rung_endpoint_digest(replace(pikl, max_visits=3), identity_a)
     assert digest != rung_endpoint_digest(pikl, {**identity_a, "model_sha256": "changed"})
     assert digest != rung_endpoint_digest(pure, identity_a)
+
+
+def test_endpoint_digest_uses_effective_projected_root_temperature():
+    identity = {"model_sha256": "abc"}
+    exact_default = replace(get_rung(26), root_policy_temperature=1.0)
+    within_projection_tolerance = replace(get_rung(26), root_policy_temperature=1.0000000005)
+    assert ladder_override_settings(exact_default) == ladder_override_settings(within_projection_tolerance)
+    assert rung_endpoint_digest(exact_default, identity) == rung_endpoint_digest(within_projection_tolerance, identity)
+
+
+@pytest.mark.parametrize(
+    "identity",
+    [
+        {1: "x"},
+        {"nested": {1: "x"}},
+        {"nested": {True: "x"}},
+        {"tuple_is_not_json": (1, 2)},
+        {"nonfinite": float("nan")},
+        {"unsupported": {1, 2}},
+    ],
+)
+def test_endpoint_digest_rejects_non_strict_json_identity(identity):
+    with pytest.raises(ValueError):
+        rung_endpoint_digest(get_rung(26), identity)
+
+
+def test_endpoint_digest_rejects_non_string_effective_override_key():
+    params = dict(HUMANSL_PIKL_BASELINE)
+    params[1] = "x"
+    with pytest.raises(ValueError):
+        rung_endpoint_digest(_humansl_search_rung(human_sl_params=params), {"model_sha256": "abc"})
+
+
+def test_endpoint_digest_keeps_bool_and_number_identities_distinct():
+    rung = get_rung(26)
+    assert rung_endpoint_digest(rung, {"value": True}) != rung_endpoint_digest(rung, {"value": 1})
+    assert rung_endpoint_digest(rung, {"value": 1}) == rung_endpoint_digest(rung, {"value": 1.0})
+
+
+def test_ladder_rung_defensively_freezes_human_sl_params_and_serializes_explicitly():
+    original = dict(HUMANSL_PIKL_BASELINE)
+    rung = _humansl_search_rung(human_sl_params=original)
+    spec = rung_strength_spec(rung)
+    digest = rung_endpoint_digest(rung, {"model_sha256": "abc"})
+
+    original["humanSLCpuctPermanent"] = 99.0
+    assert rung.human_sl_params["humanSLCpuctPermanent"] == 2.0
+    assert rung_strength_spec(rung) == spec
+    assert rung_endpoint_digest(rung, {"model_sha256": "abc"}) == digest
+    with pytest.raises(TypeError):
+        rung.human_sl_params["humanSLCpuctPermanent"] = 3.0
+
+    replaced = replace(rung, max_visits=3)
+    assert replaced.max_visits == 3 and replaced.human_sl_params == rung.human_sl_params
+    serialized = rung.to_dict()
+    assert serialized["human_sl_params"] == dict(rung.human_sl_params)
+    serialized["human_sl_params"]["humanSLCpuctPermanent"] = 4.0
+    assert rung.human_sl_params["humanSLCpuctPermanent"] == 2.0
+
+
+def test_versioned_pikl_baseline_and_alias_are_the_same_immutable_mapping():
+    from katrain.core.ladder import HUMANSL_PIKL_BASELINE_V1
+
+    assert HUMANSL_PIKL_BASELINE is HUMANSL_PIKL_BASELINE_V1
+    key = "humanSLCpuctPermanent"
+    with pytest.raises(TypeError):
+        HUMANSL_PIKL_BASELINE_V1[key] = 3.0
+    with pytest.raises(TypeError):
+        HUMANSL_PIKL_BASELINE[key] = 4.0
+
+
+def test_ladder_rung_old_positional_arguments_retain_their_bindings():
+    rung = LadderRung(
+        0,
+        None,
+        None,
+        None,
+        "b18",
+        "b18",
+        "b18",
+        "net_search",
+        None,
+        2,
+        {},
+        "client",
+        1.25,
+        None,
+    )
+    assert rung.human_sl_params == {}
+    assert rung.backend_hint == "client"
+    assert rung.root_policy_temperature == 1.25
+    assert rung.human_policy_temperature is None
+    assert rung.selection is None
 
 
 def test_unresolved_or_unknown_selection_fails_closed_on_executable_paths():

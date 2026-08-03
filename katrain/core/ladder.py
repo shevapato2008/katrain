@@ -23,7 +23,7 @@ import hashlib
 import json
 import math
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from fractions import Fraction
 from types import MappingProxyType
 from typing import Dict, List, Mapping, Optional, Tuple, Union
@@ -65,11 +65,27 @@ class LadderRung:
     mechanism: str
     human_sl_profile: Optional[str]
     max_visits: int
-    selection: Optional[str] = None
-    human_sl_params: Dict = field(default_factory=dict)
+    human_sl_params: Mapping[str, object] = field(default_factory=dict)
     backend_hint: str = "server"
     root_policy_temperature: float = 1.0
     human_policy_temperature: Optional[float] = None
+    selection: Optional[str] = None
+
+    def __post_init__(self):
+        if not isinstance(self.human_sl_params, Mapping):
+            raise TypeError("human_sl_params must be a mapping")
+        object.__setattr__(self, "human_sl_params", MappingProxyType(deepcopy(dict(self.human_sl_params))))
+
+    def to_dict(self) -> Dict[str, object]:
+        """Return a mutable serialization without exposing the frozen recipe mapping."""
+        return {
+            item.name: (
+                deepcopy(dict(self.human_sl_params))
+                if item.name == "human_sl_params"
+                else deepcopy(getattr(self, item.name))
+            )
+            for item in fields(self)
+        }
 
 
 @dataclass(frozen=True)
@@ -88,15 +104,17 @@ class LadderStrengthSpec:
         object.__setattr__(self, "override_settings", MappingProxyType(settings))
 
 
-HUMANSL_PIKL_BASELINE_V1 = {
-    "humanSLChosenMoveProp": 1.0,
-    "humanSLChosenMovePiklLambda": 0.08,
-    "humanSLRootExploreProbWeightless": 0.8,
-    "humanSLCpuctPermanent": 2.0,
-    "useUncertainty": False,
-    "subtreeValueBiasFactor": 0.0,
-    "useNoisePruning": False,
-}
+HUMANSL_PIKL_BASELINE_V1 = MappingProxyType(
+    {
+        "humanSLChosenMoveProp": 1.0,
+        "humanSLChosenMovePiklLambda": 0.08,
+        "humanSLRootExploreProbWeightless": 0.8,
+        "humanSLCpuctPermanent": 2.0,
+        "useUncertainty": False,
+        "subtreeValueBiasFactor": 0.0,
+        "useNoisePruning": False,
+    }
+)
 HUMANSL_PIKL_BASELINE = HUMANSL_PIKL_BASELINE_V1
 
 _PIKL_NUMERIC_SETTINGS = {
@@ -348,28 +366,49 @@ def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
     return LadderStrengthSpec(rung.max_visits, main_model, human_model, ov)
 
 
+def _strict_canonical_json_value(value, path="root"):
+    if value is None or type(value) in (bool, int, str):
+        return value
+    if type(value) is float:
+        if not math.isfinite(value):
+            raise ValueError(f"{path} contains a nonfinite number")
+        if value == 0 or value.is_integer():
+            return int(value)
+        return value
+    if isinstance(value, list):
+        return [_strict_canonical_json_value(item, f"{path}[{index}]") for index, item in enumerate(value)]
+    if isinstance(value, Mapping):
+        normalized = {}
+        for key, item in value.items():
+            if type(key) is not str:
+                raise ValueError(f"{path} contains a non-string mapping key: {key!r}")
+            normalized[key] = _strict_canonical_json_value(item, f"{path}.{key}")
+        return normalized
+    raise ValueError(f"{path} contains an unsupported strict JSON value: {type(value).__name__}")
+
+
 def rung_endpoint_digest(rung: LadderRung, model_identity: Mapping[str, object]) -> str:
-    """Digest the fully resolved strength and selection recipe using canonical JSON."""
+    """Digest the fully resolved effective strength and selection recipe using canonical JSON."""
     spec = rung_strength_spec(rung)
     if not isinstance(model_identity, Mapping):
         raise ValueError("model_identity must be a mapping")
-    payload = {
-        "schema": "ladder-endpoint-v1",
-        "model_identity": deepcopy(dict(model_identity)),
-        "mechanism": rung.mechanism,
-        "selection": rung.selection,
-        "visits": spec.visits,
-        "main_model": spec.main_model,
-        "human_model": spec.human_model,
-        "human_sl_profile": rung.human_sl_profile,
-        "human_policy_temperature": rung.human_policy_temperature,
-        "root_policy_temperature": rung.root_policy_temperature,
-        "override_settings": deepcopy(dict(spec.override_settings)),
-    }
-    try:
-        canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"endpoint identity is not strict canonical JSON: {exc}") from exc
+    effective_overrides = dict(spec.override_settings)
+    payload = _strict_canonical_json_value(
+        {
+            "schema": "ladder-endpoint-v1",
+            "model_identity": model_identity,
+            "mechanism": rung.mechanism,
+            "selection": rung.selection,
+            "visits": spec.visits,
+            "main_model": spec.main_model,
+            "human_model": spec.human_model,
+            "human_sl_profile": effective_overrides.get("humanSLProfile"),
+            "human_policy_temperature": rung.human_policy_temperature,
+            "root_policy_temperature": effective_overrides.get("rootPolicyTemperature", 1.0),
+            "override_settings": effective_overrides,
+        }
+    )
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 

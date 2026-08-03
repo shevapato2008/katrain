@@ -3,6 +3,7 @@ import copy
 import json
 import math
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
@@ -512,7 +513,9 @@ async def test_strict_player_move_rejects_recognized_but_wrong_selection_mode(pl
 @pytest.mark.asyncio
 async def test_strict_player_move_rejects_post_construction_pikl_drift_while_default_is_fail_soft():
     _, rung, selection = selfplay.make_player("rank_9d@8", experimental_min_humansl_search_visits=2)
-    rung.human_sl_params["humanSLCpuctPermanent"] += 0.5
+    drifted_params = dict(rung.human_sl_params)
+    drifted_params["humanSLCpuctPermanent"] += 0.5
+    rung = replace(rung, human_sl_params=drifted_params)
 
     def handler(_request):
         pytest.fail("PIKL drift must be rejected before an engine request")

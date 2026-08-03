@@ -4,19 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAiLadderStatus } from '../../../features/aiLadder/useAiLadderStatus';
+import AiLadderStatusCard from '../../../features/aiLadder/AiLadderStatusCard';
 
 export default function AccountSection() {
   const { user, logout, token } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { status } = useAiLadderStatus(token ?? undefined, Boolean(user));
-  const ladderSummary = status.view_state === 'ready'
-    ? status.placement_state.phase === 'placement'
-      ? `定级中 ${status.placement_state.completed_games}/${status.placement_state.total_games}`
-      : `AI段位 ${status.placement_state.rung.rank_name}`
-    : status.view_state === 'loading' ? 'AI段位加载中' : 'AI段位暂不可用';
-  const opponentSummary = status.view_state === 'ready' && status.current_opponent
-    ? `当前对手 ${status.current_opponent.rank_name}` : null;
+  const { status, retry } = useAiLadderStatus(token ?? undefined, Boolean(user));
 
   const handleLogout = async () => {
     await logout();
@@ -46,14 +40,9 @@ export default function AccountSection() {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {t('Signed in', '已登录')} · {t('StellaBox account', '智星盒账户')}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 700 }}>
-            {ladderSummary}
-          </Typography>
-          {opponentSummary && (
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{opponentSummary}</Typography>
-          )}
         </Box>
       </Box>
+      {user && <Box sx={{ mb: 1 }}><AiLadderStatusCard status={status} onRetry={retry} compact /></Box>}
       <Button
         variant="outlined"
         color="error"

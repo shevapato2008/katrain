@@ -31,6 +31,7 @@ interface AiLadderStatusCardProps {
   status: AiLadderStatus;
   onPrimaryAction?: () => void;
   onRetry?: () => void;
+  compact?: boolean;
 }
 
 const RouteChip = ({ entry }: { entry: AiLadderCatalogEntry }) => {
@@ -126,7 +127,7 @@ const NetScoreMeter = ({ score }: { score: number }) => {
   );
 };
 
-const CardFrame = ({ children }: { children: React.ReactNode }) => (
+const CardFrame = ({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) => (
   <Card
     component="section"
     aria-labelledby="ai-ladder-card-title"
@@ -138,8 +139,8 @@ const CardFrame = ({ children }: { children: React.ReactNode }) => (
       overflow: 'hidden',
     }}
   >
-    <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
-      <Typography id="ai-ladder-card-title" component="h2" variant="h5" fontWeight={800} gutterBottom>
+    <CardContent sx={{ p: compact ? 1.25 : { xs: 2, sm: 3 }, '&:last-child': { pb: compact ? 1.25 : { xs: 2, sm: 3 } } }}>
+      <Typography id="ai-ladder-card-title" component="h2" variant={compact ? 'body1' : 'h5'} fontWeight={800} gutterBottom>
         {AI_LADDER_COPY.title}
       </Typography>
       {children}
@@ -147,10 +148,10 @@ const CardFrame = ({ children }: { children: React.ReactNode }) => (
   </Card>
 );
 
-const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry }: AiLadderStatusCardProps) => {
+const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry, compact = false }: AiLadderStatusCardProps) => {
   if (status.view_state === 'loading') {
     return (
-      <CardFrame>
+      <CardFrame compact={compact}>
         <Stack role="status" aria-live="polite" spacing={1.5}>
           <Typography color="text.secondary">{AI_LADDER_COPY.loading}</Typography>
           <Skeleton variant="rounded" height={44} />
@@ -162,7 +163,7 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry }: AiLadderStatus
 
   if (status.view_state === 'error') {
     return (
-      <CardFrame>
+      <CardFrame compact={compact}>
         <Alert severity="error" role="alert" sx={{ mb: 2 }}>
           {status.message || AI_LADDER_COPY.loadError}
         </Alert>
@@ -187,8 +188,8 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry }: AiLadderStatus
         : AI_LADDER_COPY.startRankedCta;
 
   return (
-    <CardFrame>
-      <Stack spacing={2.5}>
+    <CardFrame compact={compact}>
+      <Stack spacing={compact ? 1 : 2.5}>
         {placementState.phase === 'placement' ? (
           <Stack spacing={1}>
             <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={2}>
@@ -273,14 +274,14 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry }: AiLadderStatus
           </Stack>
         )}
 
-        <Button
+        {!compact && <Button
           variant="contained"
           onClick={onPrimaryAction}
           disabled={status.pending_settlement || unavailable || !onPrimaryAction}
           sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' }, minHeight: 44 }}
         >
           {actionLabel}
-        </Button>
+        </Button>}
       </Stack>
     </CardFrame>
   );

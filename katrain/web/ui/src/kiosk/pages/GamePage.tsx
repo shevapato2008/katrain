@@ -24,6 +24,7 @@ import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
+import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -322,6 +323,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     void refreshItemCounts();
   }, [refreshItemCounts]);
 
+  const settlementFeedback = useAiLadderSettlement(
+    sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
+  );
+
   if (!session.gameState) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -467,6 +472,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
+      <Box sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 90, minWidth: 300 }}>
+        <AiLadderSettlementAlert feedback={settlementFeedback} />
+      </Box>
       {/* Persistent AI-move banner: physical board player needs a coordinate hint.
           Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
       {isVisionEnabled && aiColor !== null && aiMoveBanner && (

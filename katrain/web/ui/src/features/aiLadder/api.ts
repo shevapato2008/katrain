@@ -25,10 +25,11 @@ const parseResponse = async <T,>(response: Response): Promise<T> => {
   throw new AiLadderApiError(response.status, detail);
 };
 
-export const getAiLadderStatus = async (token?: string): Promise<AiLadderReadyStatus> =>
+export const getAiLadderStatus = async (token?: string, signal?: AbortSignal): Promise<AiLadderReadyStatus> =>
   parseResponse(await fetch('/api/v1/ai-ladder/status', {
     headers: authHeaders(token),
     credentials: 'same-origin',
+    signal,
   }));
 
 export const startAiLadderGame = async (

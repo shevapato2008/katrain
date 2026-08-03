@@ -28,4 +28,19 @@ describe('useAiLadderStatus', () => {
     renderHook(() => useAiLadderStatus('token', false));
     expect(getStatus).not.toHaveBeenCalled();
   });
+
+  it('does not let an older token response overwrite the current user', async () => {
+    let resolveOld!: (value: any) => void;
+    const oldRequest = new Promise((resolve) => { resolveOld = resolve; });
+    const fresh = { view_state: 'ready', placement_state: { phase: 'placed', rung: { rung: 2, rank_name: '19级', certification_status: 'certified', availability: 'available', route: 'server' } }, current_opponent: null, recent_ranked_results: [], net_score: 0, pending_settlement: false };
+    getStatus.mockReturnValueOnce(oldRequest).mockResolvedValueOnce(fresh);
+    const { result, rerender } = renderHook(({ token }) => useAiLadderStatus(token, true), { initialProps: { token: 'old' } });
+    rerender({ token: 'new' });
+    await waitFor(() => expect(result.current.status).toEqual(fresh));
+    resolveOld({ ...fresh, placement_state: { phase: 'placed', rung: { ...fresh.placement_state.rung, rank_name: '错误旧用户' } } });
+    await Promise.resolve();
+    expect(result.current.status).toEqual(fresh);
+    expect(getStatus.mock.calls[0][1]).toBeInstanceOf(AbortSignal);
+    expect(getStatus.mock.calls[0][1].aborted).toBe(true);
+  });
 });

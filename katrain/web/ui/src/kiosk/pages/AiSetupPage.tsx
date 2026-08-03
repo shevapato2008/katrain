@@ -13,6 +13,7 @@ import { writeActiveSession } from '../utils/activeSession';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
 import { startAiLadderGame } from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
+import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -77,7 +78,7 @@ const AiSetupPage = () => {
     setLoading(true);
     try {
       if (isRanked) {
-        const { session_id } = await startAiLadderGame({
+        const { session_id, status } = await startAiLadderGame({
           board_size: boardSize as 9 | 13 | 19,
           rules,
           color,
@@ -88,6 +89,7 @@ const AiSetupPage = () => {
           byo_length: byoyomiTime,
           byo_periods: byoyomiPeriods,
         }, token ?? undefined);
+        saveAiLadderBefore(session_id, status);
         writeActiveSession({
           kind: 'game', label: t('Ranked Game', '升降级对弈'),
           route: `/kiosk/play/ai/game/${session_id}`, ts: Date.now(),

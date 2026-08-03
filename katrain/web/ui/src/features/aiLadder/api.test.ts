@@ -40,4 +40,14 @@ describe('ai ladder API', () => {
         message: 'AI rung is provisional and unavailable',
       }));
   });
+
+  it('starts cookie-only without an Authorization header', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ session_id: 's1' }), { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await startAiLadderGame({ board_size: 19, rules: 'chinese', komi: 7.5, handicap: 0,
+      color: 'black', time_enabled: false, main_time: 0, byo_length: 30, byo_periods: 3 });
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/ai-ladder/start', expect.objectContaining({
+      credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+    }));
+  });
 });

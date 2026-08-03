@@ -13,6 +13,7 @@ import { API } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
+import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -43,6 +44,7 @@ const GamePage = () => {
         handleAction
     } = useGameSession({ token: token || undefined });
     const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
+    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined);
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -245,7 +247,10 @@ const GamePage = () => {
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+            <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
+                <AiLadderSettlementAlert feedback={settlementFeedback} />
+            </Box>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>

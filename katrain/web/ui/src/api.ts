@@ -8,6 +8,8 @@ export interface PlayerInfo {
   main_time_used: number;
 }
 
+export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | (string & {});
+
 export interface GameState {
   game_id: string;
   board_size: [number, number];
@@ -70,7 +72,7 @@ export interface GameState {
     fast_visits?: number;
     max_visits?: number;
   };
-  game_type?: "free" | "ranked" | "rated" | "ai_ladder_ranked" | string;
+  game_type?: GameType;
   analysis_allowed?: boolean;
   // "B" | "W" = the color the REMOTE ENGINE plays in an engine-play game (Golaxy
   // 人机对弈 genmove tunnel); null/absent for every other game shape (local HvAI,

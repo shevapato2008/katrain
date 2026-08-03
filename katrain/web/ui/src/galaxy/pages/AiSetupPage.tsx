@@ -10,6 +10,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
 import { startAiLadderGame } from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
+import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -158,6 +159,7 @@ const AiSetupPage = () => {
                     byo_length: byoLength,
                     byo_periods: byoPeriods,
                 }, token || undefined);
+                saveAiLadderBefore(session.session_id, session.status);
                 navigate(`/galaxy/play/game/${session.session_id}?mode=rated`);
                 return;
             }

@@ -82,6 +82,7 @@ from katrain.core.ladder import (  # noqa: E402
     colrow_to_golaxy,
     golaxy_to_colrow,
     pick_ladder_move,
+    pick_ladder_rung_move,
     pick_temperature_policy,
     rung_strength_spec,
     validate_analysis_attestation,
@@ -736,7 +737,7 @@ def _valid_humansl_profile(profile: str) -> bool:
 
 
 def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) -> Tuple[str, LadderRung, str]:
-    """'rank_9d@40' / 'rank_9d@1s' / 'b28@20' -> (label, minimal LadderRung, selection).
+    """'rank_9d@40' / 'rank_9d@1s' / 'b18@12' / 'b28@20' -> player recipe.
 
     selection drives HOW the move is picked from the engine reply:
       * 'search'       -- top (min-order) moveInfo. net_search uses pure b28; humansl_search uses
@@ -746,6 +747,7 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
                           the faithful 'humansl_search@1': a 1-visit SEARCH returns EMPTY moveInfos
                           (only the root is evaluated), so search-move-picking is impossible at V=1;
                           argmax over the (present) humanPolicy is the real "argmax@1" the spec means.
+      * 'policy_argmax' -- ARGMAX of the pure network policy for b18@1.
 
     A trailing 's' is valid only for argmax_human at 1 visit ('rank_9d@1s'); plain 'rank_9d@1' is
     weighted vanilla HumanSL. HumanSL search requires at least the explicitly supplied experimental
@@ -769,10 +771,11 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
             "argmax@1, e.g. 'rank_9d@1s' = argmax humanPolicy @1 vs 'rank_9d@1' = weighted@1)"
         )
     visits = int(vs)
-    if prof == "b28":
+    if prof in {"b18", "b28"}:
         if force_search:
             raise ValueError("the 's' suffix is only supported by HumanSL '<profile>@1s'")
-        mech, net, profile, label, selection = "net_search", "b28", None, f"b28@{visits}", "search"
+        mech, net, profile, label = "net_search", prof, None, f"{prof}@{visits}"
+        selection = "policy_argmax" if prof == "b18" and visits == 1 else "search"
     elif _valid_humansl_profile(prof):
         if temperature is not None:
             mech, selection, label = "humansl", "temperature_weighted", identity.canonical_label
@@ -792,7 +795,7 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
         net = "humanv0" if visits == 1 else "b18"
         profile = prof
     else:
-        raise ValueError(f"bad player profile {prof!r} (want 'b28' or a humanSL profile like 'rank_9d')")
+        raise ValueError(f"bad player profile {prof!r} (want 'b18', 'b28', or a humanSL profile like 'rank_9d')")
     rung = LadderRung(
         rung=0,
         golaxy_level_name=None,
@@ -806,6 +809,7 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
             "weighted": "human_weighted",
             "temperature_weighted": "human_temperature",
             "argmax_human": "human_argmax",
+            "policy_argmax": "native_policy_argmax",
             "search": "search",
         }[selection],
         human_sl_profile=profile,
@@ -1024,6 +1028,8 @@ async def _player_move_certified(
     validate_analysis_attestation(analysis, attested_spec, capability_identity)
     if selection == "search":
         picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), rung.mechanism)
+    elif selection == "policy_argmax":
+        picked = pick_ladder_rung_move(analysis, rung, (BOARD_SIZE, BOARD_SIZE))
     elif selection == "weighted":
         picked = pick_ladder_move(analysis, (BOARD_SIZE, BOARD_SIZE), "humansl")
     elif selection == "argmax_human":
@@ -1087,7 +1093,13 @@ async def player_move_strict(
     sampling_trace: Optional[list] = None,
 ):
     """Return one alignment-safe move, raising ``LadderMoveError`` on any drift."""
-    expected_selection = "argmax_human" if rung.mechanism == "humansl" else "search"
+    expected_selection = (
+        "argmax_human"
+        if rung.mechanism == "humansl"
+        else "policy_argmax"
+        if rung.selection == "native_policy_argmax"
+        else "search"
+    )
     if selection != expected_selection:
         raise LadderMoveError(f"strict self-play selection drift: expected {expected_selection!r}, got {selection!r}")
     return await _player_move_certified(

@@ -42,6 +42,8 @@ def test_player_gives_each_humansl_search_player_a_fresh_recipe():
     [
         ("rank_9d@1", "humansl", "humanv0", "weighted"),
         ("rank_9d@1s", "humansl", "humanv0", "argmax_human"),
+        ("b18@1", "net_search", "b18", "policy_argmax"),
+        ("b18@12", "net_search", "b18", "search"),
         ("b28@20", "net_search", "b28", "search"),
     ],
 )
@@ -52,6 +54,48 @@ def test_player_preserves_native_and_pure_search_modes(spec, mechanism, net, sel
     assert rung.net == net
     assert rung.human_sl_params == {}
     assert actual_selection == selection
+
+
+@pytest.mark.asyncio
+async def test_pure_b18_one_visit_uses_native_policy_argmax_and_attests_route():
+    _, rung, selection = selfplay.make_player("b18@1")
+    capabilities = _health_snapshot()
+    expected_identity = _attestation(
+        selected_model="b18",
+        model_path="/models/b18.bin.gz",
+        model_sha256="b18-sha",
+    )
+
+    def handler(request):
+        query = json.loads(request.content)
+        assert query["maxVisits"] == 1
+        assert query["overrideSettings"]["model"] == "b18"
+        assert "humanSLProfile" not in query["overrideSettings"]
+        policy = [0.0] * 362
+        policy[0] = 1.0
+        return httpx.Response(
+            200,
+            json={
+                "rootInfo": {"visits": 1},
+                "moveInfos": [],
+                "policy": policy,
+                "_wrapper": expected_identity,
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await selfplay._player_move(
+            client,
+            "http://engine",
+            [],
+            rung=rung,
+            selection=selection,
+            wrn=0.04,
+            capabilities=capabilities,
+            player="A",
+        )
+
+    assert result == 0
 
 
 @pytest.mark.parametrize(

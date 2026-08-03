@@ -124,7 +124,7 @@ class AiLadderProfile(Base):
 
 
 class AiLadderGameLedger(Base):
-    """Append-only ledger of accepted ranked-AI settlements."""
+    """Append-only, globally idempotent decision for every settlement attempt."""
 
     __tablename__ = "ai_ladder_game_ledger"
 
@@ -133,38 +133,6 @@ class AiLadderGameLedger(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user_color = Column(String(1), nullable=False)
     result = Column(String(16), nullable=False)
-    game_type = Column(String(32), nullable=False)
-    opponent_rung = Column(Integer, nullable=False)
-    opponent_rank_name = Column(String(64), nullable=False)
-    opponent_config_snapshot = Column(JSON, nullable=False)
-    opponent_certification_status = Column(String(16), nullable=False)
-    opponent_availability = Column(String(16), nullable=False)
-    opponent_route = Column(String(16), nullable=False)
-    settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-
-    user = relationship("User", backref="ai_ladder_game_ledger")
-
-    __table_args__ = (
-        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_ledger_user_color"),
-        CheckConstraint("result IN ('win', 'loss')", name="ck_ai_ladder_ledger_result"),
-        CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_ledger_game_type"),
-        CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_ledger_opponent_rung"),
-        CheckConstraint("opponent_certification_status = 'certified'", name="ck_ai_ladder_ledger_certification"),
-        CheckConstraint("opponent_availability = 'available'", name="ck_ai_ladder_ledger_availability"),
-        CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_ledger_route"),
-    )
-
-
-class AiLadderSettlementReceipt(Base):
-    """Immutable idempotency receipt for every ranked-AI settlement decision."""
-
-    __tablename__ = "ai_ladder_settlement_receipts"
-
-    id = Column(Integer, primary_key=True, index=True)
-    game_id = Column(String(64), nullable=False, unique=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    user_color = Column(String(1), nullable=False)
-    result = Column(String(32), nullable=False)
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=True)
     opponent_rank_name = Column(String(64), nullable=True)
@@ -176,25 +144,26 @@ class AiLadderSettlementReceipt(Base):
     reason = Column(String(32), nullable=True)
     settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    user = relationship("User", backref="ai_ladder_settlement_receipts")
+    user = relationship("User", backref="ai_ladder_game_ledger")
 
     __table_args__ = (
-        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_receipt_user_color"),
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_ledger_user_color"),
         CheckConstraint(
             "opponent_rung IS NULL OR opponent_rung BETWEEN 1 AND 41",
-            name="ck_ai_ladder_receipt_opponent_rung",
+            name="ck_ai_ladder_ledger_opponent_rung",
         ),
         CheckConstraint(
             "opponent_route IS NULL OR opponent_route IN ('local', 'server')",
-            name="ck_ai_ladder_receipt_route",
+            name="ck_ai_ladder_ledger_route",
         ),
         CheckConstraint(
             "(counted = FALSE AND reason IS NOT NULL) OR "
             "(counted = TRUE AND reason IS NULL AND opponent_rung IS NOT NULL "
             "AND opponent_rank_name IS NOT NULL AND opponent_config_snapshot IS NOT NULL "
-            "AND opponent_certification_status IS NOT NULL AND opponent_availability IS NOT NULL "
-            "AND opponent_route IS NOT NULL)",
-            name="ck_ai_ladder_receipt_decision",
+            "AND opponent_certification_status = 'certified' AND opponent_availability = 'available' "
+            "AND opponent_route IS NOT NULL AND result IN ('win', 'loss') "
+            "AND game_type = 'ai_ladder_ranked')",
+            name="ck_ai_ladder_ledger_decision",
         ),
     )
 

@@ -20,7 +20,7 @@ BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"}
 
 # These tables hold authoritative player rank state and its immutable
 # idempotency ledger. Like billing data, schema drift must never rebuild them.
-AI_LADDER_TABLES = {"ai_ladder_profiles", "ai_ladder_game_ledger", "ai_ladder_settlement_receipts"}
+AI_LADDER_TABLES = {"ai_ladder_profiles", "ai_ladder_game_ledger"}
 PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES
 
 
@@ -88,3 +88,49 @@ def create_missing_indexes(engine) -> None:
                 unique = "UNIQUE " if index.unique else ""
                 conn.execute(text(f'CREATE {unique}INDEX IF NOT EXISTS "{index.name}" ON "{table.name}" ({cols})'))
                 logger.info(f"migrate: created index {index.name} on {table.name}")
+
+
+def backfill_ai_ladder_decisions(engine) -> None:
+    """Mark rows from the pre-decision ledger schema as counted valid games.
+
+    The old table admitted only certified, available ``ai_ladder_ranked``
+    win/loss rows. ``add_missing_columns`` adds ``counted`` as FALSE and
+    ``reason`` as NULL; this idempotent update restores their original meaning
+    without rebuilding or dropping the protected ledger.
+    """
+
+    inspector = inspect(engine)
+    table_name = "ai_ladder_game_ledger"
+    if table_name not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns(table_name)}
+    required = {
+        "counted",
+        "reason",
+        "result",
+        "game_type",
+        "opponent_rung",
+        "opponent_rank_name",
+        "opponent_config_snapshot",
+        "opponent_certification_status",
+        "opponent_availability",
+        "opponent_route",
+    }
+    if not required.issubset(columns):
+        return
+
+    with engine.begin() as conn:
+        result = conn.execute(
+            text(
+                "UPDATE ai_ladder_game_ledger SET counted = TRUE "
+                "WHERE counted = FALSE AND reason IS NULL "
+                "AND result IN ('win', 'loss') AND game_type = 'ai_ladder_ranked' "
+                "AND opponent_rung BETWEEN 1 AND 41 AND opponent_rank_name IS NOT NULL "
+                "AND opponent_config_snapshot IS NOT NULL "
+                "AND opponent_certification_status = 'certified' "
+                "AND opponent_availability = 'available' "
+                "AND opponent_route IN ('local', 'server')"
+            )
+        )
+        if result.rowcount:
+            logger.info("migrate: marked %s legacy AI ladder decisions counted", result.rowcount)

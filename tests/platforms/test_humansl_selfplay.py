@@ -1914,3 +1914,189 @@ async def test_interrupted_pair_resume_runs_only_missing_color_then_continues(tm
 
     assert calls[0] == "W"
     assert len(calls) == 19
+
+
+def _generic_temperature_checkpoint_payload():
+    players = {
+        "A": selfplay.make_player("rank_1d@1t1"),
+        "B": selfplay.make_player("rank_1d@1t2"),
+    }
+    identities = selfplay._preflight_capabilities(_health_snapshot(), players)
+    configuration = selfplay._matchup_configuration(
+        players,
+        identities,
+        capabilities=_health_snapshot(),
+        wide_root_noise=0.04,
+        target_pairs=10,
+        max_pair_attempts=20,
+        phase="screen",
+    )
+    fingerprint = selfplay._configuration_fingerprint(configuration)
+    matchup_id = "rank_1d@1t1__vs__rank_1d@1t2"
+    policy = [0.0] * 362
+    policy[0] = 1.0
+    traces = []
+    for ply, player, temperature in ((0, "A", "1"), (1, "B", "2")):
+        draw = selfplay._derive_generic_temperature_draw(
+            manifest_sha256=fingerprint,
+            canonical_matchup_id=matchup_id,
+            pair_attempt=0,
+            color_index=0,
+            ply=ply,
+            player=player,
+        )
+        traces.append(
+            selfplay._build_generic_sampling_trace(
+                manifest_sha256=fingerprint,
+                canonical_matchup_id=matchup_id,
+                pair_attempt=0,
+                color_index=0,
+                ply=ply,
+                player=player,
+                temperature=temperature,
+                draw_u64=draw,
+                selected_index=0,
+                policy=policy,
+            )
+        )
+    header = {
+        "record_type": "header",
+        "schema": selfplay.CHECKPOINT_SCHEMA,
+        "fingerprint": fingerprint,
+        "configuration": configuration,
+    }
+    game = {
+        "record_type": "game",
+        "fingerprint": fingerprint,
+        "index": 0,
+        "phase": "screen",
+        "opening_id": "o001",
+        "opening_moves": [],
+        "pair_attempt": 0,
+        "color_index": 0,
+        "a_color": "B",
+        "conclusive": True,
+        "our_win": True,
+        "result": "our_win",
+        "player_a": players["A"][0],
+        "player_b": players["B"][0],
+        "num_moves": 2,
+        "attested_turn_count": 2,
+        "black_score": 1.5,
+        "end_reason": "move_cap",
+        "our_color": "B",
+        "ts": 1.0,
+        "move_attestations": [
+            {"ply": 0, "player": "A", "identity": dict(identities["A"])},
+            {"ply": 1, "player": "B", "identity": dict(identities["B"])},
+        ],
+        "sampling_trace": traces,
+    }
+    return configuration, fingerprint, header, game
+
+
+@pytest.mark.asyncio
+async def test_generic_temperature_checkpoint_selects_moves_traces_and_resumes(tmp_path, monkeypatch):
+    calls = []
+
+    async def fake_game(*, our_move, golaxy_move, our_color, initial_history, **_kwargs):
+        calls.append(our_color)
+        first, second = (our_move, golaxy_move) if our_color == "B" else (golaxy_move, our_move)
+        assert await first(initial_history) != "unavailable"
+        assert await second(initial_history + [20]) != "unavailable"
+        return selfplay.GameOutcome(our_color, "our_win", True, len(initial_history) + 2, 1.0, True, "move_cap")
+
+    def handler(_request):
+        policy = [0.0] * 362
+        policy[0] = 1.0
+        return httpx.Response(200, json={"humanPolicy": policy, "_wrapper": _attestation()})
+
+    monkeypatch.setattr(selfplay, "play_one_game", fake_game)
+    monkeypatch.setattr(selfplay, "required_conclusive_pairs", lambda *_args, **_kwargs: 1)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        kwargs = dict(
+            client=client,
+            base_url="http://engine",
+            wrn=0.04,
+            out_dir=tmp_path,
+            capabilities=_health_snapshot(),
+            phase="screen",
+            max_pair_attempts=1,
+        )
+        await selfplay.run_matchup("rank_1d@1t1.15", "rank_1k@1", 1, **kwargs)
+        checkpoint = next(tmp_path.glob("*.jsonl"))
+        records = [json.loads(line) for line in checkpoint.read_text().splitlines()]
+        assert [(trace["ply"], trace["player"]) for trace in records[1]["sampling_trace"]] == [
+            (8, "A"),
+        ]
+        checkpoint.write_text("\n".join(json.dumps(record) for record in records[:2]) + "\n")
+        calls.clear()
+        await selfplay.run_matchup("rank_1d@1t1.15", "rank_1k@1", 1, **kwargs)
+
+    assert calls == ["W"]
+    final_records = [json.loads(line) for line in checkpoint.read_text().splitlines()]
+    assert (
+        selfplay._already_done(
+            checkpoint,
+            final_records[0]["fingerprint"],
+            final_records[0]["configuration"],
+        )
+        == 2
+    )
+
+
+def test_generic_temperature_draw_is_stable_and_domain_separated():
+    base = {
+        "manifest_sha256": selfplay._configuration_fingerprint({"configuration": "first"}),
+        "canonical_matchup_id": "rank_1d@1t1.15__vs__rank_1k@1",
+        "pair_attempt": 3,
+        "color_index": 1,
+        "ply": 27,
+        "player": "A",
+    }
+    derive = selfplay._derive_generic_temperature_draw
+    expected = derive(**base)
+    encoded, digest, audited_draw = derive(**base, include_audit=True)
+    variants = []
+    for field, value in (
+        ("manifest_sha256", selfplay._configuration_fingerprint({"configuration": "second"})),
+        ("canonical_matchup_id", "rank_5d@1t1__vs__rank_5d@1t2"),
+        ("pair_attempt", 4),
+        ("color_index", 0),
+        ("ply", 28),
+        ("player", "B"),
+    ):
+        variants.append(derive(**{**base, field: value}))
+
+    assert derive(**base) == expected
+    assert encoded == (
+        b'["humansl-temperature-generic-v1","0e0395db6d87f217f2700de3c99ef51d06a2b3ad281c81d362f82b711ffa74ff",'
+        b'"rank_1d@1t1.15__vs__rank_1k@1",3,1,27,"A"]'
+    )
+    assert digest == "39b465b9496ea86b96120c4d54c88185659244b82168c6dcebe408154c3f5e4d"
+    assert audited_draw == expected == 4158060202445154411
+    assert len({expected, *variants}) == 7
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra", "tampered"])
+def test_generic_temperature_checkpoint_requires_exact_valid_trace_coverage(tmp_path, mutation):
+    configuration, fingerprint, header, game = _generic_temperature_checkpoint_payload()
+    if mutation == "missing":
+        game.pop("sampling_trace")
+    elif mutation == "extra":
+        game["sampling_trace"].append(copy.deepcopy(game["sampling_trace"][0]))
+    else:
+        game["sampling_trace"][0]["draw_u64"] ^= 1
+    checkpoint = tmp_path / "temperature.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    with pytest.raises(ValueError, match="sampling trace"):
+        selfplay._already_done(checkpoint, fingerprint, configuration)
+
+
+def test_generic_temperature_checkpoint_accepts_fingerprint_seeded_trace(tmp_path):
+    configuration, fingerprint, header, game = _generic_temperature_checkpoint_payload()
+    checkpoint = tmp_path / "temperature.jsonl"
+    checkpoint.write_text(json.dumps(header) + "\n" + json.dumps(game) + "\n")
+
+    assert selfplay._already_done(checkpoint, fingerprint, configuration) == 1

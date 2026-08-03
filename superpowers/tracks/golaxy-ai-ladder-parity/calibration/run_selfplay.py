@@ -103,6 +103,7 @@ CHECKPOINT_SCHEMA = 3
 PILOT_CHECKPOINT_MAX_BYTES = 32 * 1024 * 1024
 PILOT_CHECKPOINT_MAX_LINE_BYTES = 4 * 1024 * 1024
 SELECTION_ALGORITHM_VERSION = "selfplay-selection-v1"
+GENERIC_TEMPERATURE_PROTOCOL_VERSION = "humansl-temperature-generic-v1"
 SYMMETRY_SETTINGS = {"mode": "katago-default", "requested_symmetry": None}
 OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_v1.json"
 BOUNDARY_OPENING_SUITE_PATH = Path(__file__).parent / "opening_suite_boundary_v1.json"
@@ -832,6 +833,95 @@ def _pick_argmax_human(hp: list, board_size: Tuple[int, int]) -> object:
     return best if best is not None else "pass"
 
 
+def _generic_temperature_player_identity(canonical_matchup_id: str, player: str):
+    if not isinstance(canonical_matchup_id, str) or canonical_matchup_id.count("__vs__") != 1:
+        raise ValueError("generic canonical matchup ID is invalid")
+    if player not in {"A", "B"}:
+        raise ValueError("player must be A or B")
+    label = canonical_matchup_id.split("__vs__")[0 if player == "A" else 1]
+    profile, separator, temperature = label.partition("@1t")
+    if not separator:
+        raise ValueError("generic temperature side is not a temperature player")
+    identity = temperature_pilot.temperature_player_identity(profile, temperature)
+    if identity.canonical_label != label:
+        raise ValueError("generic temperature label is not canonical")
+    return identity
+
+
+def _derive_generic_temperature_draw(
+    *, manifest_sha256, canonical_matchup_id, pair_attempt, color_index, ply, player, include_audit=False
+):
+    """Freeze the pilot SHA256-u64 serialization for a non-preregistered generic matchup."""
+    if not isinstance(manifest_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", manifest_sha256):
+        raise ValueError("manifest_sha256 must be a lowercase SHA-256 digest")
+    if not isinstance(canonical_matchup_id, str) or canonical_matchup_id.count("__vs__") != 1:
+        raise ValueError("generic canonical matchup ID is invalid")
+    if type(pair_attempt) is not int or pair_attempt < 0 or type(ply) is not int or ply < 0:
+        raise ValueError("generic temperature pair attempt and ply must be non-negative plain integers")
+    if type(color_index) is not int or color_index not in {0, 1} or player not in {"A", "B"}:
+        raise ValueError("generic temperature color or player is invalid")
+    payload = [
+        GENERIC_TEMPERATURE_PROTOCOL_VERSION,
+        manifest_sha256,
+        canonical_matchup_id,
+        pair_attempt,
+        color_index,
+        ply,
+        player,
+    ]
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    digest = hashlib.sha256(encoded).digest()
+    draw = int.from_bytes(digest[:8], "big", signed=False)
+    return (encoded, digest.hex(), draw) if include_audit else draw
+
+
+def _build_generic_sampling_trace(*, temperature, draw_u64, selected_index, policy, **context):
+    identity = _generic_temperature_player_identity(context["canonical_matchup_id"], context["player"])
+    if temperature != identity.temperature:
+        raise ValueError("sampling trace must match the generic temperature player")
+    if not _valid_policy(policy, BOARD_SIZE * BOARD_SIZE + 1):
+        raise ValueError("sampling trace policy must contain exactly 362 valid entries")
+    if type(selected_index) is not int or not 0 <= selected_index < len(policy) or policy[selected_index] <= 0:
+        raise ValueError("sampling trace selected index is invalid")
+    if draw_u64 != _derive_generic_temperature_draw(**context):
+        raise ValueError("draw_u64 does not match the stateless generic draw")
+    return {
+        "ply": context["ply"],
+        "player": context["player"],
+        "temperature": temperature,
+        "draw_u64": draw_u64,
+        "selected_index": selected_index,
+        "selected_move": temperature_pilot.policy_index_to_gtp(selected_index),
+        "policy_sha256": temperature_pilot.policy_digest(policy),
+    }
+
+
+def _validate_generic_sampling_trace(trace, *, manifest_sha256, canonical_matchup_id, pair_attempt, color_index):
+    if not isinstance(trace, dict) or set(trace) != temperature_pilot.TRACE_FIELDS:
+        raise ValueError("sampling trace shape is invalid")
+    identity = _generic_temperature_player_identity(canonical_matchup_id, trace.get("player"))
+    if trace.get("temperature") != identity.temperature:
+        raise ValueError("sampling trace temperature does not match its generic player")
+    expected_draw = _derive_generic_temperature_draw(
+        manifest_sha256=manifest_sha256,
+        canonical_matchup_id=canonical_matchup_id,
+        pair_attempt=pair_attempt,
+        color_index=color_index,
+        ply=trace.get("ply"),
+        player=trace.get("player"),
+    )
+    if type(trace.get("draw_u64")) is not int or trace["draw_u64"] != expected_draw:
+        raise ValueError("sampling trace draw does not match")
+    index = trace.get("selected_index")
+    if type(index) is not int or not 0 <= index <= BOARD_SIZE * BOARD_SIZE:
+        raise ValueError("sampling trace selected index is outside 0..361")
+    if trace.get("selected_move") != temperature_pilot.policy_index_to_gtp(index):
+        raise ValueError("sampling trace selected move does not match its index")
+    if not isinstance(trace.get("policy_sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", trace["policy_sha256"]):
+        raise ValueError("sampling trace policy digest is invalid")
+    return trace
+
+
 def _temperature_audit_preflight(
     history,
     rung: LadderRung,
@@ -850,16 +940,23 @@ def _temperature_audit_preflight(
     }
     if not isinstance(temperature_context, Mapping) or not isinstance(sampling_trace, list):
         raise LadderMoveError("temperature HumanSL requires audit context and sampling trace")
-    if (
-        set(temperature_context) != required
-        or temperature_context["protocol_version"] != temperature_pilot.PROTOCOL_VERSION
-    ):
+    if set(temperature_context) != required or temperature_context["protocol_version"] not in {
+        temperature_pilot.PROTOCOL_VERSION,
+        GENERIC_TEMPERATURE_PROTOCOL_VERSION,
+    }:
         raise LadderMoveError("temperature HumanSL audit context is incomplete or invalid")
     if player is not None and (player not in {"A", "B"} or temperature_context["player"] != player):
         raise LadderMoveError("temperature HumanSL audit player does not match the move player")
     try:
-        identity = temperature_pilot.matchup_player_identity(
-            temperature_context["canonical_matchup_id"], temperature_context["player"]
+        generic_protocol = temperature_context["protocol_version"] == GENERIC_TEMPERATURE_PROTOCOL_VERSION
+        identity = (
+            _generic_temperature_player_identity(
+                temperature_context["canonical_matchup_id"], temperature_context["player"]
+            )
+            if generic_protocol
+            else temperature_pilot.matchup_player_identity(
+                temperature_context["canonical_matchup_id"], temperature_context["player"]
+            )
         )
         if rung.human_sl_profile is None or rung.human_policy_temperature is None:
             raise ValueError("temperature rung is missing its HumanSL profile or local temperature")
@@ -872,7 +969,8 @@ def _temperature_audit_preflight(
             key: temperature_context[key]
             for key in ("manifest_sha256", "canonical_matchup_id", "pair_attempt", "color_index")
         }
-        draw_u64 = temperature_pilot.derive_draw(
+        derive_draw = _derive_generic_temperature_draw if generic_protocol else temperature_pilot.derive_draw
+        draw_u64 = derive_draw(
             **trace_context,
             ply=len(history),
             player=temperature_context["player"],
@@ -942,7 +1040,12 @@ async def _player_move_certified(
             picked, selected_index = pick_temperature_policy(
                 hp, (BOARD_SIZE, BOARD_SIZE), rung.human_policy_temperature, draw_u64
             )
-            trace = temperature_pilot.build_sampling_trace(
+            build_trace = (
+                _build_generic_sampling_trace
+                if temperature_context["protocol_version"] == GENERIC_TEMPERATURE_PROTOCOL_VERSION
+                else temperature_pilot.build_sampling_trace
+            )
+            trace = build_trace(
                 **trace_context,
                 ply=len(history),
                 player=temperature_context["player"],
@@ -951,7 +1054,12 @@ async def _player_move_certified(
                 selected_index=selected_index,
                 policy=hp,
             )
-            temperature_pilot.validate_sampling_trace(trace, **trace_context)
+            validate_trace = (
+                _validate_generic_sampling_trace
+                if temperature_context["protocol_version"] == GENERIC_TEMPERATURE_PROTOCOL_VERSION
+                else temperature_pilot.validate_sampling_trace
+            )
+            validate_trace(trace, **trace_context)
         except (KeyError, TypeError, ValueError) as exc:
             raise LadderMoveError(f"invalid temperature sampling evidence: {exc}") from exc
         sampling_trace.append(trace)
@@ -1409,30 +1517,44 @@ def _validate_game_record(
     if record.get("attested_turn_count") != expected_attested:
         raise ValueError("checkpoint game attested turn count is inconsistent with its ending")
     pilot_context = configuration.get("temperature_pilot")
-    if pilot_context is not None:
+    temperature_players = {side for side in ("A", "B") if players[side].get("selection") == "temperature_weighted"}
+    if temperature_players:
         traces = record.get("sampling_trace")
         if not isinstance(traces, list):
-            raise ValueError("pilot checkpoint game has no sampling trace")
+            raise ValueError("temperature checkpoint game has no sampling trace")
         expected_temperature_turns = [
             (attestation["ply"], attestation["player"])
             for attestation in record["move_attestations"]
-            if players[attestation["player"]].get("selection") == "temperature_weighted"
+            if attestation["player"] in temperature_players
         ]
         if [
             (trace.get("ply"), trace.get("player")) for trace in traces if isinstance(trace, Mapping)
         ] != expected_temperature_turns:
-            raise ValueError("pilot checkpoint sampling trace does not cover exactly the temperature-selected turns")
+            raise ValueError("checkpoint sampling trace does not cover exactly the temperature-selected turns")
+        trace_seed = pilot_context["manifest_sha256"] if pilot_context is not None else record["fingerprint"]
+        canonical_matchup_id = (
+            pilot_context["canonical_matchup_id"]
+            if pilot_context is not None
+            else f"{players['A']['label']}__vs__{players['B']['label']}"
+        )
         for trace in traces:
             try:
-                temperature_pilot.validate_sampling_trace(
+                validate_trace = (
+                    temperature_pilot.validate_sampling_trace
+                    if pilot_context is not None
+                    else _validate_generic_sampling_trace
+                )
+                validate_trace(
                     trace,
-                    manifest_sha256=pilot_context["manifest_sha256"],
-                    canonical_matchup_id=pilot_context["canonical_matchup_id"],
+                    # The existing trace schema calls this manifest_sha256. Generic runs use the
+                    # checkpoint configuration fingerprint as the compatible deterministic seed.
+                    manifest_sha256=trace_seed,
+                    canonical_matchup_id=canonical_matchup_id,
                     pair_attempt=record["pair_attempt"],
                     color_index=record["color_index"],
                 )
             except (KeyError, TypeError, ValueError) as exc:
-                raise ValueError(f"pilot checkpoint sampling trace is invalid: {exc}") from exc
+                raise ValueError(f"checkpoint sampling trace is invalid: {exc}") from exc
 
 
 def _validate_checkpoint_byte_bounds(data: bytes) -> bytes:
@@ -1819,15 +1941,26 @@ async def _run_matchup_checkpoint(
             a_color = scheduled_game["a_color"]
             initial_history = scheduled_game["initial_history"]
             move_attestations = []
-            sampling_trace = [] if pilot_context is not None else None
+            temperature_mode = selA == "temperature_weighted" or selB == "temperature_weighted"
+            sampling_trace = [] if temperature_mode else None
 
             def selection_context(player):
-                if pilot_context is None:
+                if not temperature_mode:
                     return None
                 return {
-                    "protocol_version": pilot_context["protocol_version"],
-                    "manifest_sha256": pilot_context["manifest_sha256"],
-                    "canonical_matchup_id": pilot_context["canonical_matchup_id"],
+                    "protocol_version": (
+                        pilot_context["protocol_version"]
+                        if pilot_context is not None
+                        else GENERIC_TEMPERATURE_PROTOCOL_VERSION
+                    ),
+                    # Compatibility: generic runs seed the existing pilot trace schema with the
+                    # checkpoint configuration fingerprint in its manifest_sha256 field.
+                    "manifest_sha256": pilot_context["manifest_sha256"] if pilot_context is not None else fingerprint,
+                    "canonical_matchup_id": (
+                        pilot_context["canonical_matchup_id"]
+                        if pilot_context is not None
+                        else f"{labelA}__vs__{labelB}"
+                    ),
                     "pair_attempt": scheduled_game["pair_attempt"],
                     "color_index": scheduled_game["color_index"],
                     "player": player,

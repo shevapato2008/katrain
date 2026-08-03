@@ -172,6 +172,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             }
         } catch (e) {
             console.error(e);
+            const message = e instanceof Error ? e.message : 'Game action failed';
+            setError(message);
+            throw e;
         }
     }, [sessionId, token]);
 

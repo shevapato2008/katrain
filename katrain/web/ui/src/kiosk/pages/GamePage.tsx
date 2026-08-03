@@ -385,7 +385,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       }
       return;
     }
-    session.handleAction(action);
+    void (async () => { try { await session.handleAction(action); } catch { /* surfaced by session.error */ } })();
   };
 
   const handleBoardMove = async (x: number, y: number) => {

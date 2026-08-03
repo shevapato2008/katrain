@@ -97,7 +97,7 @@ const GamePage = () => {
     const handleTimeout = useCallback(async () => {
         if (!gameState?.end_result) {
             console.log('Timer expired - triggering timeout');
-            await handleAction('timeout');
+            try { await handleAction('timeout'); } catch { /* hook error state is authoritative */ }
         }
     }, [gameState?.end_result, handleAction]);
 
@@ -200,7 +200,7 @@ const GamePage = () => {
                 setShowCountConfirm(true);
             }
         } else {
-            handleAction(action);
+            void (async () => { try { await handleAction(action); } catch { /* surfaced by hook */ } })();
         }
     };
 

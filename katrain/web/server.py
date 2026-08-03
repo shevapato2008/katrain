@@ -16,6 +16,12 @@ from contextlib import asynccontextmanager
 from katrain.web.api.v1.api import api_router
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
+from katrain.web.core.ranked_session_guard import (
+    guard_ai_ladder_ranked_human_action,
+    guard_ai_ladder_ranked_session,
+    guard_ai_ladder_ranked_ui_toggle,
+    is_ai_ladder_ranked_session,
+)
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
 
@@ -649,6 +655,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def delete_session(session_id: str, current_user: User = Depends(get_current_user_optional)):
         try:
             session = manager.get_session(session_id)
+            guard_ai_ladder_ranked_session(session, "delete-session")
             # Only allow owner to delete research sessions
             if session.mode == "research" and current_user and session.user_id != current_user.id:
                 raise HTTPException(status_code=403, detail="Not authorized")
@@ -668,6 +675,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/move")
     async def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
 
         # Skip turn validation for research sessions
         # Enforce Multiplayer Turns (only if this is a multiplayer session)
@@ -703,6 +711,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 raise HTTPException(status_code=409, detail=str(e))
 
         with session.lock:
+            guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
             session.katrain("play", None if coords is None else tuple(coords))
             state = session.katrain.get_state()
             session.last_state = state
@@ -717,9 +726,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/undo")
     def undo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
-        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in (
-            "rated", "ranked", "ai_ladder_ranked"
-        ):
+        guard_ai_ladder_ranked_session(session, "undo")
+        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
@@ -731,9 +739,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/redo")
     def redo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
-        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in (
-            "rated", "ranked", "ai_ladder_ranked"
-        ):
+        guard_ai_ladder_ranked_session(session, "redo")
+        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="redo not allowed in ranked games")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
@@ -752,6 +759,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/sgf/load")
     def load_sgf(request: LoadSGFRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "load-sgf")
         with session.lock:
             session.katrain("load_sgf", request.sgf, skip_initial_analysis=request.skip_analysis)
             state = session.katrain.get_state()
@@ -760,6 +768,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/new-game")
     def new_game(request: NewGameRequest):
+        session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "new-game")
         # Task 4: validate the rung BEFORE touching the session, so an out-of-range value
         # 422s cleanly instead of partially mutating game state.
         if request.ladder_rung is not None:
@@ -770,7 +780,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             except (ValueError, TypeError):
                 raise HTTPException(status_code=422, detail=f"invalid ladder_rung: {request.ladder_rung}")
 
-        session = _get_session_or_404(manager, request.session_id)
         with session.lock:
             # A new game is starting: clear the "already recorded" guard from any
             # previous game on this (possibly reused) session so it becomes recordable again.
@@ -801,6 +810,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/game/setup")
     def game_setup(request: GameSettingsRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "game-setup")
         mode = request.mode
         settings = request.settings
         with session.lock:
@@ -942,6 +952,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/edit-game")
     def edit_game(request: EditGameRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "edit-game")
         with session.lock:
             session.katrain(
                 "edit_game", size=request.size, handicap=request.handicap, komi=request.komi, rules=request.rules
@@ -953,6 +964,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav")
     def navigate(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "navigate")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("nav", request.node_id)
@@ -963,6 +975,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ai-move")
     def ai_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "ai-move")
         # Unconditional (not just while pending): this path bypasses the Golaxy
         # genmove tunnel entirely and triggers local KataGo directly, which is never
         # valid for an engine-play game (review D5/Task 0 inventory).
@@ -985,6 +998,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/config")
     def update_config(request: ConfigUpdateRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "update-config")
         with session.lock:
             session.katrain.update_config(request.setting, request.value)
             state = session.katrain.get_state()
@@ -994,6 +1008,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/config/bulk")
     def update_config_bulk(request: ConfigBulkUpdateRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "update-config-bulk")
         with session.lock:
             for setting, value in request.updates.items():
                 session.katrain.update_config(setting, value)
@@ -1004,6 +1019,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/player")
     def update_player(request: UpdatePlayerRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "update-player")
         with session.lock:
             session.katrain(
                 "update_player",
@@ -1019,6 +1035,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/player/swap")
     def swap_players(request: ToggleAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "swap-players")
         with session.lock:
             session.katrain("swap_players")
             state = session.katrain.get_state()
@@ -1028,6 +1045,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/continuous")
     def toggle_continuous_analysis(request: ToggleAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "continuous-analysis")
         with session.lock:
             session.katrain.pondering = not session.katrain.pondering
             session.katrain.update_state()
@@ -1042,6 +1060,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         analysis itself streams back asynchronously over the game WebSocket, so this returns
         the current (possibly not-yet-analyzed) state immediately."""
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "current-analysis")
         with session.lock:
             session.katrain("analyze_current")
             state = session.katrain.get_state()
@@ -1051,6 +1070,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/extra")
     def analyze_extra(request: AnalyzeExtraRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "extra-analysis")
         with session.lock:
             kwargs = request.kwargs or {}
             session.katrain("analyze_extra", mode=request.mode, **kwargs)
@@ -1061,6 +1081,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/show-pv")
     def show_pv(request: PVRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "show-analysis-pv")
         with session.lock:
             session.katrain("_do_show_pv", request.pv)
             state = session.katrain.get_state()
@@ -1070,6 +1091,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/clear-pv")
     def clear_pv(request: ToggleAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "clear-analysis-pv")
         with session.lock:
             session.katrain("_do_clear_pv")
             state = session.katrain.get_state()
@@ -1079,6 +1101,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/mode")
     def set_mode(request: ModeRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "set-mode")
         with session.lock:
             session.katrain.play_analyze_mode = request.mode
             session.katrain.update_state()
@@ -1089,6 +1112,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "find-mistake")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("find_mistake", fn=request.fn)
@@ -1099,6 +1123,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/branch")
     def switch_branch(request: SwitchBranchRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "switch-branch")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
             session.katrain("switch_branch", direction=request.direction)
@@ -1109,6 +1134,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/tsumego")
     def tsumego_frame(request: TsumegoRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "tsumego-analysis")
         with session.lock:
             session.katrain("tsumego_frame", ko=request.ko, margin=request.margin)
             state = session.katrain.get_state()
@@ -1118,6 +1144,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/selfplay")
     def selfplay(request: SelfPlayRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "selfplay-analysis")
         with session.lock:
             session.katrain(
                 "selfplay_setup", until_move=request.until_move, target_b_advantage=request.target_b_advantage
@@ -1129,6 +1156,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/region")
     def set_region(request: SelectBoxRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "region-analysis")
         with session.lock:
             session.katrain("select_box", coords=request.coords)
             state = session.katrain.get_state()
@@ -1235,6 +1263,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     raise ValueError("ranked AI runtime rung mismatch")
                 if getattr(session, "ai_ladder_ai_subtype", None) != snapshot.ai_subtype:
                     raise ValueError("ranked AI subtype mismatch")
+                _validate_ai_ladder_ranked_players(snapshot, players_info)
                 if getattr(session, "ai_ladder_runtime_identity", None) != snapshot.execution_identity:
                     raise ValueError("ranked AI runtime configuration mismatch")
                 if (
@@ -1316,6 +1345,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_human_action(session, current_user, "resign")
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
@@ -1333,6 +1363,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         if not (gateway and gateway.is_platform_game(request.session_id)):
             with session.lock:
+                guard_ai_ladder_ranked_human_action(session, current_user, "resign")
                 session.katrain("resign")
                 state = session.katrain.get_state()
                 session.last_state = state
@@ -1422,6 +1453,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
 
         # Verify move count >= configured minimum
         state = session.katrain.get_state()
@@ -1478,6 +1510,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         else:
             # HvAI / pvp_local: complete immediately
             with session.lock:
+                guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
                 result, needs_record = _complete_count(session, app, current_user)
                 state = session.katrain.get_state()
                 session.last_state = state
@@ -1530,11 +1563,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
 
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
         with session.lock:
+            guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
             session.katrain("timeout")
             state = session.katrain.get_state()
             session.last_state = state
@@ -1613,6 +1648,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/timer/pause")
     def pause_timer(request: ToggleAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "pause-timer")
         with session.lock:
             session.katrain.timer_paused = not session.katrain.timer_paused
             state = session.katrain.get_state()
@@ -1631,6 +1667,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/node/delete")
     def delete_node(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "delete-node")
         with session.lock:
             session.katrain("delete_node", node_id=request.node_id)
             state = session.katrain.get_state()
@@ -1640,6 +1677,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/node/prune")
     def prune_branch(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "prune-branch")
         with session.lock:
             session.katrain("prune_branch", node_id=request.node_id)
             state = session.katrain.get_state()
@@ -1649,6 +1687,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/node/make-main")
     def make_main_branch(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "make-main-branch")
         with session.lock:
             session.katrain("make_main_branch", node_id=request.node_id)
             state = session.katrain.get_state()
@@ -1658,6 +1697,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/node/toggle-collapse")
     def toggle_collapse(request: NavRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "toggle-node-collapse")
         with session.lock:
             session.katrain("toggle_collapse", node_id=request.node_id)
             state = session.katrain.get_state()
@@ -1667,6 +1707,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ui/toggle")
     def toggle_ui(request: UIToggleRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_ui_toggle(session, request.setting)
         with session.lock:
             session.katrain("toggle_ui", setting=request.setting)
             state = session.katrain.get_state()
@@ -1803,6 +1844,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/game")
     def analyze_game(request: GameAnalysisRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "game-analysis")
         with session.lock:
             kwargs = {
                 "visits": request.visits,
@@ -1819,6 +1861,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/scan")
     def analysis_scan(request: AnalysisScanRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "analysis-scan")
         with session.lock:
             session.katrain("analysis_scan", visits=request.visits or 500)
             state = session.katrain.get_state()
@@ -1828,6 +1871,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.get("/api/analysis/progress")
     def analysis_progress(session_id: str):
         session = _get_session_or_404(manager, session_id)
+        guard_ai_ladder_ranked_session(session, "analysis-progress")
         with session.lock:
             progress = session.katrain._do_analysis_progress()
         return {"session_id": session.session_id, **progress}
@@ -1835,6 +1879,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/report")
     def get_game_report(request: GameReportRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "analysis-report")
         with session.lock:
             report = session.katrain._do_game_report(depth_filter=request.depth_filter)
         return {"session_id": session.session_id, "report": report}
@@ -1842,6 +1887,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/mode/insert")
     def set_insert_mode(request: InsertModeRequest):
         session = _get_session_or_404(manager, request.session_id)
+        guard_ai_ladder_ranked_session(session, "insert-mode")
         with session.lock:
             session.katrain("insert_mode", mode=request.mode)
             state = session.katrain.get_state()
@@ -2176,6 +2222,25 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
+def _validate_ai_ladder_ranked_players(snapshot, players_info) -> None:
+    """Verify actual player seats still match the server-issued ranked snapshot."""
+
+    ai_color = "W" if snapshot.user_color == "B" else "B"
+    human = players_info.get(snapshot.user_color)
+    ai_player = players_info.get(ai_color)
+    if (
+        human is None
+        or not bool(getattr(human, "human", False))
+        or bool(getattr(human, "ai", False))
+        or getattr(human, "player_subtype", None) != "player:human"
+        or ai_player is None
+        or not bool(getattr(ai_player, "ai", False))
+        or bool(getattr(ai_player, "human", False))
+        or getattr(ai_player, "player_subtype", None) != snapshot.ai_subtype
+    ):
+        raise ValueError("ranked AI player seats do not match the authoritative snapshot")
+
+
 def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
     """409 while an engine-play (Golaxy 人机对弈 genmove tunnel) move is in flight.
 
@@ -2336,6 +2401,17 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         game_state = session.katrain.get_state()
         if game_state and "stones" in game_state:
             vision.set_expected_from_stones(game_state["stones"])
+
+    if is_ai_ladder_ranked_session(session):
+        log.error("Ignoring vision mutation for ranked AI session %s", session_id)
+        if tracker is not None:
+            tracker.clear()
+        if getattr(vision, "bound_session_id", None) == session_id and hasattr(vision, "unbind_session"):
+            vision.unbind_session()
+        orchestrator = getattr(app.state, "physical_play", None)
+        if orchestrator is not None:
+            orchestrator.on_unbind()
+        return 0.0
 
     # R1.3: only the side to move may inject (color check).
     expected_player = (session.last_state or {}).get("player_to_move")

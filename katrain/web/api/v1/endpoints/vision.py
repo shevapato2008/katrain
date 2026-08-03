@@ -8,6 +8,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -71,6 +72,14 @@ def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest
     user/session-cookie auth here, consistent with the rest of this file's vision
     endpoints -- they're all trusted-kiosk-LAN, session_id-scoped)."""
     vision = _get_vision(request)
+    manager = getattr(request.app.state, "session_manager", None)
+    if manager is not None:
+        try:
+            session = manager.get_session(body.session_id)
+        except KeyError:
+            session = None
+        if session is not None:
+            guard_ai_ladder_ranked_session(session, "engine-move-recovery")
     tracker = getattr(request.app.state, "engine_recovery", None)
     if tracker is None or vision.bound_session_id != body.session_id:
         raise HTTPException(status_code=409, detail="No active engine-move recovery for this session")
@@ -169,6 +178,7 @@ async def bind_session(request: Request, body: BindRequest):
         session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
+    guard_ai_ladder_ranked_session(session, "bind-vision")
 
     vision.bind_session(body.session_id)
     _drain_stale_move_queue(request)

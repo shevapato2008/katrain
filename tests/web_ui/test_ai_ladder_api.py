@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import threading
 from types import SimpleNamespace
 
@@ -96,9 +97,10 @@ class FakeKaTrain:
             "ruleset": "chinese",
             "history": [{"move": [3, 3]}],
             "end_result": None,
+            "player_to_move": "B",
         }
 
-    def __call__(self, action, **kwargs):
+    def __call__(self, action, *args, **kwargs):
         self.calls.append((action, kwargs))
         if action == "update_player":
             info = self.players_info[kwargs["bw"]]
@@ -118,12 +120,24 @@ class FakeKaTrain:
                 ruleset=kwargs.get("rules", "chinese"),
             )
         elif action == "resign":
-            self.game.end_result = "B+R"
-            self.game.current_node.end_state = "B+R"
-            self._state["end_result"] = "B+R"
+            self.game.end_result = "W+R"
+            self.game.current_node.end_state = "W+R"
+            self._state["end_result"] = "W+R"
+        elif action == "timeout":
+            self.game.end_result = "W+T"
+            self.game.current_node.end_state = "W+T"
+            self._state["end_result"] = "W+T"
+        elif action == "play":
+            self._state["history"].append({"move": args[0]})
+            self._state["player_to_move"] = "W"
 
     def update_config(self, setting, value):
         self.config_updates.append((setting, value))
+
+    def config(self, setting, default=None):
+        if setting == "game/count_min_moves":
+            return 0
+        return default
 
     def get_state(self):
         return dict(self._state)
@@ -365,6 +379,260 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
         assert pending["execution_identity"] == snapshot.execution_identity
         assert pending["game_saved"] in (False, 0)
         assert pending["saved_result"] is None
+
+
+RANKED_FORBIDDEN_SESSION_ACTIONS = (
+    ("delete", "/api/session/{session_id}", {}),
+    ("post", "/api/player", {"bw": "W", "player_type": "player:human", "player_subtype": "player:human"}),
+    ("post", "/api/player/swap", {}),
+    ("post", "/api/nav", {"node_id": 0}),
+    ("post", "/api/nav/mistake", {"fn": "redo"}),
+    ("post", "/api/nav/branch", {"direction": 1}),
+    ("post", "/api/new-game", {"size": 13, "komi": 6.5, "rules": "japanese"}),
+    ("post", "/api/game/setup", {"mode": "newgame", "settings": {"size": 13}}),
+    ("post", "/api/edit-game", {"size": 13}),
+    ("post", "/api/sgf/load", {"sgf": "(;FF[4]SZ[9])"}),
+    ("post", "/api/config", {"setting": "timer/main_time", "value": 999}),
+    ("post", "/api/config/bulk", {"updates": {"timer/main_time": 999}}),
+    ("post", "/api/mode", {"mode": "analyze"}),
+    ("post", "/api/mode/insert", {"mode": "toggle"}),
+    ("post", "/api/ai-move", {"n_times": 1}),
+    ("post", "/api/undo", {"n_times": 1}),
+    ("post", "/api/redo", {"n_times": 1}),
+    ("post", "/api/node/delete", {"node_id": 0}),
+    ("post", "/api/node/prune", {"node_id": 0}),
+    ("post", "/api/node/make-main", {"node_id": 0}),
+    ("post", "/api/node/toggle-collapse", {"node_id": 0}),
+    ("post", "/api/ui/toggle", {"setting": "ownership"}),
+    ("post", "/api/analysis/continuous", {}),
+    ("post", "/api/analysis/current", {}),
+    ("post", "/api/analysis/extra", {"mode": "ownership"}),
+    ("post", "/api/analysis/show-pv", {"pv": "D4 Q16"}),
+    ("post", "/api/analysis/clear-pv", {}),
+    ("post", "/api/analysis/tsumego", {"ko": False}),
+    ("post", "/api/analysis/selfplay", {"until_move": 10}),
+    ("post", "/api/analysis/region", {"coords": [0, 0, 3, 3]}),
+    ("post", "/api/analysis/game", {"visits": 50}),
+    ("post", "/api/analysis/scan", {"visits": 50}),
+    ("get", "/api/analysis/progress", {}),
+    ("post", "/api/analysis/report", {}),
+    ("post", "/api/timer/pause", {}),
+    ("post", "/api/v1/analysis/analyze", {"payload": {"maxVisits": 50}}),
+    ("post", "/api/v1/hint", {"top_n": 3}),
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method,path,payload", RANKED_FORBIDDEN_SESSION_ACTIONS)
+async def test_ranked_session_rejects_canonical_mutation_and_analysis_endpoints(api_app, client, method, path, payload):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        session_id = started.json()["session_id"]
+        resolved_path = path.format(session_id=session_id)
+        if method == "get":
+            response = await ac.get(
+                resolved_path, headers=api_app.state._test_headers, params={"session_id": session_id, **payload}
+            )
+        elif method == "delete":
+            response = await ac.delete(resolved_path, headers=api_app.state._test_headers)
+        else:
+            response = await ac.post(
+                resolved_path, headers=api_app.state._test_headers, json={"session_id": session_id, **payload}
+            )
+
+    assert response.status_code == 403, (path, response.text)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path,payload",
+    (
+        ("/api/ui/toggle", {"setting": "coords"}),
+        ("/api/ui/toggle", {"setting": "numbers"}),
+        ("/api/ui/toggle", {"setting": "zen_mode"}),
+        ("/api/language", {"lang": "en"}),
+        ("/api/theme", {"theme": "dark"}),
+    ),
+)
+async def test_ranked_session_keeps_cosmetic_controls_available(api_app, client, path, payload):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        response = await ac.post(
+            path,
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"], **payload},
+        )
+
+    assert response.status_code == 200, (path, response.text)
+
+
+@pytest.mark.asyncio
+async def test_free_session_canonical_mutations_remain_available(api_app, client):
+    session = api_app.state.session_manager.create_session()
+    session.game_type = "free"
+    session.katrain.game_type = "free"
+    async with client as ac:
+        responses = (
+            await ac.post(
+                "/api/player",
+                json={
+                    "session_id": session.session_id,
+                    "bw": "W",
+                    "player_type": "player:human",
+                    "player_subtype": "player:human",
+                },
+            ),
+            await ac.post(
+                "/api/config",
+                json={"session_id": session.session_id, "setting": "timer/main_time", "value": 10},
+            ),
+            await ac.post("/api/nav", json={"session_id": session.session_id, "node_id": 0}),
+            await ac.post("/api/analysis/current", json={"session_id": session.session_id}),
+            await ac.post(
+                "/api/new-game",
+                json={"session_id": session.session_id, "size": 19, "komi": 7.5, "rules": "chinese"},
+            ),
+        )
+
+    assert [response.status_code for response in responses] == [200, 200, 200, 200, 200]
+
+
+@pytest.mark.asyncio
+async def test_ranked_session_cannot_be_used_to_extract_saved_analysis(api_app, client):
+    game_id = "free-analysis-source"
+    api_app.state.user_game_repo.create(
+        user_id=api_app.state._test_user_id,
+        game_id=game_id,
+        sgf_content="(;FF[4]SZ[19])",
+        source="import",
+        game_type="free",
+    )
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        response = await ac.post(
+            f"/api/v1/user-games/{game_id}/analysis/save",
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"], "game_id": game_id},
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("payload", [{"coords": [3, 3]}, {"pass_move": True}])
+async def test_ranked_session_still_allows_human_move_and_pass(api_app, client, payload):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        session_id = started.json()["session_id"]
+        response = await ac.post(
+            "/api/move",
+            headers=api_app.state._test_headers,
+            json={"session_id": session_id, **payload},
+        )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_concurrent_ranked_human_moves_recheck_turn_inside_session_lock(api_app, client, monkeypatch):
+    import katrain.web.server as server_module
+
+    observed_lock_states = []
+    original_guard = server_module.guard_ai_ladder_ranked_human_action
+
+    def observing_guard(session, current_user, action):
+        observed_lock_states.append(session.lock.locked())
+        return original_guard(session, current_user, action)
+
+    monkeypatch.setattr(server_module, "guard_ai_ladder_ranked_human_action", observing_guard)
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        body = {"session_id": started.json()["session_id"], "coords": [3, 3]}
+        first, second = await asyncio.gather(
+            ac.post("/api/move", headers=api_app.state._test_headers, json=body),
+            ac.post("/api/move", headers=api_app.state._test_headers, json=body),
+        )
+
+    assert sorted((first.status_code, second.status_code)) == [200, 403]
+    assert True in observed_lock_states
+    session = api_app.state._test_created_sessions[0]
+    assert len(session.katrain._state["history"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_vision_cannot_bind_ranked_session(api_app, client):
+    vision = SimpleNamespace(bound_session_id=None)
+
+    def bind_session(session_id):
+        vision.bound_session_id = session_id
+
+    vision.bind_session = bind_session
+    api_app.state.vision = vision
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        response = await ac.post(
+            "/api/v1/vision/bind",
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 403
+    assert vision.bound_session_id is None
+
+
+@pytest.mark.asyncio
+async def test_confirmed_vision_move_is_ignored_and_unbound_for_ranked_session(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+    session_id = started.json()["session_id"]
+    vision = SimpleNamespace(bound_session_id=session_id)
+    vision.unbind_session = lambda: setattr(vision, "bound_session_id", None)
+    history_before = list(api_app.state._test_created_sessions[0].katrain._state["history"])
+
+    delay = await __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move(
+        api_app,
+        vision,
+        session_id,
+        SimpleNamespace(col=3, row=3, color=1),
+        logging.getLogger("test-ranked-vision"),
+    )
+
+    assert delay == 0.0
+    assert vision.bound_session_id is None
+    assert api_app.state._test_created_sessions[0].katrain._state["history"] == history_before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("path", ["/api/resign", "/api/count/request", "/api/timeout"])
+async def test_ranked_session_allows_human_turn_terminal_actions(api_app, client, path):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        response = await ac.post(
+            path,
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 200, (path, response.text)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("path", ["/api/resign", "/api/timeout"])
+async def test_ranked_session_rejects_public_terminal_action_during_ai_turn(api_app, client, path):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        session = api_app.state._test_created_sessions[0]
+        session.katrain._state["player_to_move"] = "W"
+        response = await ac.post(
+            path,
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 403
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderPendingGame).count() == 1
 
 
 @pytest.mark.asyncio
@@ -613,6 +881,26 @@ async def test_snapshot_runtime_identity_tampering_is_rejected_without_saving(ap
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.UserGame).count() == 0
         assert db.query(models_db.AiLadderGameLedger).count() == 0
+    assert session.ai_ladder_settlement_pending is True
+    assert session._recorded is False
+
+
+@pytest.mark.asyncio
+async def test_ranked_settlement_rejects_player_seat_tampering(api_app, client):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        session = api_app.state._test_created_sessions[0]
+        session.katrain.players_info["W"].player_subtype = "ai:default"
+        session.katrain.game.end_result = "B+R"
+        session.katrain._state["end_result"] = "B+R"
+        await __import__("katrain.web.server", fromlist=["_RECORD_FN"])._RECORD_FN(
+            session, api_app, SimpleNamespace(id=api_app.state._test_user_id, username="ladder-user"), "B+R"
+        )
+
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderPendingGame).count() == 1
     assert session.ai_ladder_settlement_pending is True
     assert session._recorded is False
 

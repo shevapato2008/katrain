@@ -8,6 +8,7 @@ from katrain.web.models import User
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.api.v1.endpoints.reports import _dispatch_remote_only
 from katrain.web.core.user_game_repo import ProtectedRankedGameError, ReservedAiLadderGameIdError
+from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session
 
 router = APIRouter()
 
@@ -272,6 +273,7 @@ async def save_analysis_from_session(
     session = manager.get_session(body.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    guard_ai_ladder_ranked_session(session, "save-session-analysis")
 
     with session.lock:
         analysis_data = session.katrain._do_extract_analysis()

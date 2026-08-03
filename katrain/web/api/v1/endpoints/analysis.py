@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session
 from katrain.web.models import User, AnalyzeRequest
 
 router = APIRouter()
@@ -9,15 +10,16 @@ router = APIRouter()
 
 @router.post("/analyze")
 async def analyze(request: Request, data: AnalyzeRequest, current_user: User = Depends(get_current_user)) -> Any:
-    router_instance = getattr(request.app.state, "router", None)
-    if not router_instance:
-        raise HTTPException(status_code=503, detail="Routing engine not initialized")
-
     manager = request.app.state.session_manager
     try:
         session = manager.get_session(data.session_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Session not found")
+    guard_ai_ladder_ranked_session(session, "routed-analysis")
+
+    router_instance = getattr(request.app.state, "router", None)
+    if not router_instance:
+        raise HTTPException(status_code=503, detail="Routing engine not initialized")
 
     try:
         result = await router_instance.route(data.payload)

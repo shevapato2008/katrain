@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from katrain.web.api.v1.endpoints.auth import get_current_user
-from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session
+from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
 from katrain.web.models import User, AnalyzeRequest
 
 router = APIRouter()
@@ -40,8 +40,11 @@ class QuickAnalyzeRequest(BaseModel):
 
 
 @router.post("/quick-analyze")
-async def quick_analyze(request: Request, data: QuickAnalyzeRequest) -> Any:
+async def quick_analyze(
+    request: Request, data: QuickAnalyzeRequest, current_user: User = Depends(get_current_user)
+) -> Any:
     """Lightweight position analysis without a session — returns top moves + ownership."""
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "analysis")
     router_instance = getattr(request.app.state, "router", None)
     if not router_instance:
         raise HTTPException(status_code=503, detail="Routing engine not initialized")
@@ -61,6 +64,7 @@ async def quick_analyze(request: Request, data: QuickAnalyzeRequest) -> Any:
 
     try:
         result = await router_instance.route(payload)
-        return result
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "analysis")
+    return result

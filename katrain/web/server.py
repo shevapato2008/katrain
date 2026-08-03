@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, List, Optional, Union, Dict
 
 import numpy as np
@@ -17,10 +18,13 @@ from katrain.web.api.v1.api import api_router
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.ranked_session_guard import (
+    guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
     guard_ai_ladder_ranked_session,
     guard_ai_ladder_ranked_ui_toggle,
+    guard_ranked_vision_binding,
     is_ai_ladder_ranked_session,
+    validate_ai_ladder_ranked_players,
 )
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
@@ -750,8 +754,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.get("/api/sgf/save")
-    def save_sgf(session_id: str):
+    def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, session_id)
+        if is_ai_ladder_ranked_session(session):
+            guard_ai_ladder_ranked_owner(session, current_user, "save-sgf")
+            if not getattr(session, "_recorded", False) or getattr(session, "ai_ladder_settlement_pending", False):
+                raise HTTPException(status_code=403, detail="SGF is unavailable until ranked settlement completes")
         with session.lock:
             sgf = session.katrain.get_sgf()
         return {"sgf": sgf}
@@ -1263,7 +1271,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     raise ValueError("ranked AI runtime rung mismatch")
                 if getattr(session, "ai_ladder_ai_subtype", None) != snapshot.ai_subtype:
                     raise ValueError("ranked AI subtype mismatch")
-                _validate_ai_ladder_ranked_players(snapshot, players_info)
+                validate_ai_ladder_ranked_players(snapshot, players_info)
                 if getattr(session, "ai_ladder_runtime_identity", None) != snapshot.execution_identity:
                     raise ValueError("ranked AI runtime configuration mismatch")
                 if (
@@ -1345,11 +1353,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
-        guard_ai_ladder_ranked_human_action(session, current_user, "resign")
+        ranked_ai = is_ai_ladder_ranked_session(session)
+        if ranked_ai:
+            guard_ai_ladder_ranked_owner(session, current_user, "resign")
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
-        if gateway and gateway.is_platform_game(request.session_id):
+        platform_game = bool(not ranked_ai and gateway and gateway.is_platform_game(request.session_id))
+        if platform_game:
             from katrain.web.platforms.gateway import PlatformMoveRejectedError
 
             try:
@@ -1361,10 +1372,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
-        if not (gateway and gateway.is_platform_game(request.session_id)):
+        if not platform_game:
             with session.lock:
-                guard_ai_ladder_ranked_human_action(session, current_user, "resign")
-                session.katrain("resign")
+                if ranked_ai:
+                    snapshot = guard_ai_ladder_ranked_owner(session, current_user, "resign")
+                    winner = "W" if snapshot.user_color == "B" else "B"
+                    result = f"{winner}+R"
+                    session.katrain.game.game_result = result
+                    session.katrain.game.current_node.end_state = result
+                    if hasattr(session.katrain, "_state"):
+                        session.katrain._state["end_result"] = result
+                else:
+                    session.katrain("resign")
                 state = session.katrain.get_state()
                 session.last_state = state
         else:
@@ -1392,7 +1411,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
         elif not is_multiplayer and current_user and session.user_id:
-            result = session.katrain.game.end_result
+            result = state.get("end_result") or session.katrain.game.end_result
             if result:
                 await _record_ai_game(session, app, current_user, result)
 
@@ -2222,25 +2241,6 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 
-def _validate_ai_ladder_ranked_players(snapshot, players_info) -> None:
-    """Verify actual player seats still match the server-issued ranked snapshot."""
-
-    ai_color = "W" if snapshot.user_color == "B" else "B"
-    human = players_info.get(snapshot.user_color)
-    ai_player = players_info.get(ai_color)
-    if (
-        human is None
-        or not bool(getattr(human, "human", False))
-        or bool(getattr(human, "ai", False))
-        or getattr(human, "player_subtype", None) != "player:human"
-        or ai_player is None
-        or not bool(getattr(ai_player, "ai", False))
-        or bool(getattr(ai_player, "human", False))
-        or getattr(ai_player, "player_subtype", None) != snapshot.ai_subtype
-    ):
-        raise ValueError("ranked AI player seats do not match the authoritative snapshot")
-
-
 def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
     """409 while an engine-play (Golaxy 人机对弈 genmove tunnel) move is in flight.
 
@@ -2403,14 +2403,27 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
             vision.set_expected_from_stones(game_state["stones"])
 
     if is_ai_ladder_ranked_session(session):
-        log.error("Ignoring vision mutation for ranked AI session %s", session_id)
-        if tracker is not None:
-            tracker.clear()
-        if getattr(vision, "bound_session_id", None) == session_id and hasattr(vision, "unbind_session"):
-            vision.unbind_session()
+        move_player = "B" if move_data.color == 1 else "W"
+        try:
+            with session.lock:
+                if getattr(vision, "bound_session_id", None) != session_id:
+                    raise HTTPException(status_code=403, detail="vision is no longer bound to this session")
+                binding = getattr(app.state, "ranked_vision_binding", None)
+                snapshot = guard_ranked_vision_binding(session, binding, "physical-play")
+                if move_player != snapshot.user_color:
+                    raise HTTPException(status_code=403, detail="physical move color does not match the human seat")
+                guard_ai_ladder_ranked_human_action(session, SimpleNamespace(id=binding.user_id), "physical-play")
+                move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
+                session.katrain("play", move.coords)
+        except (HTTPException, ValueError) as exc:
+            log.info("Ranked vision move rejected for session %s: %s", session_id, exc)
+            _rearm_detection()
+            return 0.5
+
+        log.info("Ranked vision move submitted: col=%d row=%d color=%d", move_data.col, move_data.row, move_data.color)
         orchestrator = getattr(app.state, "physical_play", None)
-        if orchestrator is not None:
-            orchestrator.on_unbind()
+        if orchestrator is None:
+            _rearm_detection()
         return 0.0
 
     # R1.3: only the side to move may inject (color check).

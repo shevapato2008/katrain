@@ -303,6 +303,9 @@ async def engine_analysis(
     outcome (not a server error) — it comes back as `{ok:false}` at HTTP 200,
     not a 5xx. Genuine failures (AuthExpired/Retryable/Fatal) are not caught
     here and surface as 5xx, same as other routes."""
+    from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game
+
+    guard_user_has_no_pending_ranked_game(request.app, user, "platform analysis")
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -324,6 +327,7 @@ async def engine_analysis(
     except KeyError:
         raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
 
+    guard_user_has_no_pending_ranked_game(request.app, user, "platform analysis")
     if req.kind == "options":
         _maybe_show_hint(request.app.state, req.session_id, position_token, result)
 

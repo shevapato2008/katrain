@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
+import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
+import { getAiLadderDemoStatus } from '../../features/aiLadder/__fixtures__/galaxyDemo';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -18,13 +20,16 @@ const valueToRank = (val: number) => {
 };
 
 const AiSetupPage = () => {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user, token } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
+    const aiLadderDemo = import.meta.env.DEV && isRated
+        ? getAiLadderDemoStatus(searchParams.get('ai-ladder-demo'))
+        : null;
 
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -325,86 +330,97 @@ const AiSetupPage = () => {
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
                     <Typography variant="h6" gutterBottom>{t('Opponent & Time', 'Opponent & Time')}</Typography>
 
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('aistrategy', 'AI Strategy')}</InputLabel>
-                        <Select value={opponent} label={t('aistrategy', 'AI Strategy')} onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
-                            {aiConstants?.strategies?.map((s: string) => {
-                                // Extract strategy key: remove 'ai:' or 'ai:p:' prefix
-                                let strategyKey = s;
-                                if (strategyKey.startsWith('ai:p:')) {
-                                    strategyKey = strategyKey.substring(5);
-                                } else if (strategyKey.startsWith('ai:')) {
-                                    strategyKey = strategyKey.substring(3);
-                                }
-                                // Use the same getStrategyDisplay logic for consistency
-                                const displayName = getStrategyDisplay(strategyKey);
-                                return (
-                                    <MenuItem key={s} value={s}>
-                                        {displayName}
-                                    </MenuItem>
-                                );
-                            })}
-                        </Select>
-                    </FormControl>
-
-                    {opponent === 'ai:human' || isRated ? (
-                        <Box sx={{ mt: 2, px: 1 }}>
-                            <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>{t('Rank', 'Rank')}:</span>
-                                <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
-                            </Typography>
-                            <Slider
-                                value={rankValue} min={0} max={28} step={1}
-                                onChange={(_, v) => setRankValue(v as number)}
-                                valueLabelFormat={valueToRank}
-                                valueLabelDisplay="auto"
-                            />
-                            <Stack direction="row" justifyContent="space-between" sx={{ mt: -1 }}>
-                                <Typography variant="caption" color="text.secondary">20k</Typography>
-                                <Typography variant="caption" color="text.secondary">9d</Typography>
-                            </Stack>
-                        </Box>
-                    ) : isLadder ? (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('ai:golaxy_parity', '棋力阶梯')}
-                            </Typography>
-                            <FormControl fullWidth margin="dense" size="small">
-                                <InputLabel>{t('ai:golaxy_parity_rung', '棋力等级')}</InputLabel>
-                                <Select
-                                    value={ladderRung}
-                                    label={t('ai:golaxy_parity_rung', '棋力等级')}
-                                    onChange={(e) => setLadderRung(Number(e.target.value))}
-                                >
-                                    {ladderRungs.map((r) => (
-                                        <MenuItem key={r.rung} value={r.rung}>
-                                            {r.rank_name}
-                                        </MenuItem>
-                                    ))}
+                    {aiLadderDemo ? (
+                        <AiLadderSetupOpponent
+                            status={aiLadderDemo}
+                            onRetry={() => {
+                                const nextSearchParams = new URLSearchParams(searchParams);
+                                nextSearchParams.set('ai-ladder-demo', 'placement');
+                                setSearchParams(nextSearchParams, { replace: true });
+                            }}
+                        />
+                    ) : (
+                        <>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('aistrategy', 'AI Strategy')}</InputLabel>
+                                <Select value={opponent} label={t('aistrategy', 'AI Strategy')} onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
+                                    {aiConstants?.strategies?.map((s: string) => {
+                                        let strategyKey = s;
+                                        if (strategyKey.startsWith('ai:p:')) {
+                                            strategyKey = strategyKey.substring(5);
+                                        } else if (strategyKey.startsWith('ai:')) {
+                                            strategyKey = strategyKey.substring(3);
+                                        }
+                                        const displayName = getStrategyDisplay(strategyKey);
+                                        return (
+                                            <MenuItem key={s} value={s}>
+                                                {displayName}
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
-                        </Box>
-                    ) : (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom color="primary">{t('menu:aisettings', 'AI Settings')}</Typography>
-                            {aiLoading ? <CircularProgress size={24} /> : (
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                        <Typography variant="caption">{t('estimated strength', 'Est. Strength')}:</Typography>
-                                        <Typography variant="caption" fontWeight="bold">{estimatedRank}</Typography>
-                                    </Box>
-                                    {Object.keys(strategySettings).length === 0 ? (
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                            {t('no ai settings', 'No configurable settings for this strategy')}
-                                        </Typography>
-                                    ) : (
-                                        Object.keys(strategySettings).map(k =>
-                                            strategyOptions[k] && renderOption(k, strategySettings[k], strategyOptions[k])
-                                        )
+
+                            {opponent === 'ai:human' || isRated ? (
+                                <Box sx={{ mt: 2, px: 1 }}>
+                                    <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>{t('Rank', 'Rank')}:</span>
+                                        <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
+                                    </Typography>
+                                    <Slider
+                                        value={rankValue} min={0} max={28} step={1}
+                                        onChange={(_, v) => setRankValue(v as number)}
+                                        valueLabelFormat={valueToRank}
+                                        valueLabelDisplay="auto"
+                                    />
+                                    <Stack direction="row" justifyContent="space-between" sx={{ mt: -1 }}>
+                                        <Typography variant="caption" color="text.secondary">20k</Typography>
+                                        <Typography variant="caption" color="text.secondary">9d</Typography>
+                                    </Stack>
+                                </Box>
+                            ) : isLadder ? (
+                                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" gutterBottom color="primary">
+                                        {t('ai:golaxy_parity', '棋力阶梯')}
+                                    </Typography>
+                                    <FormControl fullWidth margin="dense" size="small">
+                                        <InputLabel>{t('ai:golaxy_parity_rung', '棋力等级')}</InputLabel>
+                                        <Select
+                                            value={ladderRung}
+                                            label={t('ai:golaxy_parity_rung', '棋力等级')}
+                                            onChange={(e) => setLadderRung(Number(e.target.value))}
+                                        >
+                                            {ladderRungs.map((r) => (
+                                                <MenuItem key={r.rung} value={r.rung}>
+                                                    {r.rank_name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+                            ) : (
+                                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" gutterBottom color="primary">{t('menu:aisettings', 'AI Settings')}</Typography>
+                                    {aiLoading ? <CircularProgress size={24} /> : (
+                                        <Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                <Typography variant="caption">{t('estimated strength', 'Est. Strength')}:</Typography>
+                                                <Typography variant="caption" fontWeight="bold">{estimatedRank}</Typography>
+                                            </Box>
+                                            {Object.keys(strategySettings).length === 0 ? (
+                                                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                                    {t('no ai settings', 'No configurable settings for this strategy')}
+                                                </Typography>
+                                            ) : (
+                                                Object.keys(strategySettings).map(k =>
+                                                    strategyOptions[k] && renderOption(k, strategySettings[k], strategyOptions[k])
+                                                )
+                                            )}
+                                        </Box>
                                     )}
                                 </Box>
                             )}
-                        </Box>
+                        </>
                     )}
 
                     <Divider sx={{ my: 3 }} />
@@ -445,7 +461,7 @@ const AiSetupPage = () => {
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button onClick={() => navigate('/galaxy/play')}>{t('cancel', 'Cancel')}</Button>
-                <Button variant="contained" size="large" onClick={handleStartGame} disabled={loading}>
+                <Button variant="contained" size="large" onClick={handleStartGame} disabled={loading || Boolean(aiLadderDemo)}>
                     {t('btn:Play', 'Start Game')}
                 </Button>
             </Box>

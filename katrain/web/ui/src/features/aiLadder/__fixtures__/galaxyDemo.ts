@@ -60,7 +60,7 @@ export const AI_LADDER_GALAXY_DEMO: Record<AiLadderDemoState, AiLadderStatus> = 
   error: { view_state: 'error' },
 };
 
-export const getAiLadderGalaxyDemo = (state: string | null): AiLadderStatus | null => {
+export const getAiLadderDemoStatus = (state: string | null): AiLadderStatus | null => {
   if (!state || !Object.prototype.hasOwnProperty.call(AI_LADDER_GALAXY_DEMO, state)) return null;
   return AI_LADDER_GALAXY_DEMO[state as AiLadderDemoState];
 };

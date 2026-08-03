@@ -16,6 +16,27 @@
 
 ## Chunk 1: Galaxy visual slice (stop for user confirmation)
 
+### Task 0: Correct the approved information architecture
+
+The supplied production reference establishes that ranked AI is the existing `/galaxy/play/ai?mode=rated` child flow under 对局. The 41-rung contract replaces the rated flow's HumanSL rank control; it is not a standalone Dashboard module. This correction supersedes the Dashboard mounting point in Task 2 while preserving the shared card and removable fixture.
+
+**Files:**
+- Modify: `katrain/web/ui/src/galaxy/pages/Dashboard.tsx`
+- Delete: `katrain/web/ui/src/galaxy/pages/Dashboard.aiLadder.test.tsx`
+- Modify: `katrain/web/ui/src/galaxy/pages/AiSetupPage.tsx`
+- Modify: `katrain/web/ui/src/galaxy/pages/AiSetupPage.test.tsx`
+- Create: `katrain/web/ui/src/features/aiLadder/AiLadderSetupOpponent.tsx`
+- Create: `katrain/web/ui/src/features/aiLadder/AiLadderSetupOpponent.test.tsx`
+- Modify: `katrain/web/ui/src/features/aiLadder/copy.ts`
+- Modify: `docs/superpowers/visual-reviews/2026-08-03-ai-ladder-galaxy.md`
+
+- [x] Write failing tests proving the rated preview stays at `mode=rated`, replaces the HumanSL strategy/rank slider with the 41-rung status, disables the legacy start action, and leaves free play plus rated-without-preview unchanged.
+- [x] Add a compact setup opponent summary using the shared status contract and mount it only for `DEV + mode=rated + ai-ladder-demo=<supported-state>` inside the existing 对手与时间 panel; keep the full net-score/recent-five card for the personal profile.
+- [x] Restore Dashboard to its pre-slice behavior and delete its obsolete fixture test; keep the fixture isolated for the rated setup preview only.
+- [x] Capture the supplied production setup reference and corrected implementation at the same content viewport; regenerate implementation, side-by-side, overlay, and difference evidence for all six states.
+- [x] Run the focused/regression suites, scoped ESLint, production build, and fixture-absence check; request independent spec and quality reviews.
+- [x] Commit the correction separately from `6435ee63`, exclude `output/`, report both SHAs in cherry-pick order, and stop again for visual approval.
+
 ### Task 1: Shared presentation contract and status card
 
 **Files:**
@@ -30,6 +51,8 @@
 - [x] Re-run the focused test and confirm it passes.
 
 ### Task 2: Isolated demo fixture and Galaxy mounting point
+
+> Superseded by Task 0: the fixture is mounted in the existing rated AiSetup child flow, not Dashboard.
 
 **Files:**
 - Create: `katrain/web/ui/src/features/aiLadder/__fixtures__/galaxyDemo.ts`

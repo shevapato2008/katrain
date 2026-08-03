@@ -1,102 +1,73 @@
-# Galaxy AI升降级对弈 Visual Review — 2026-08-03
+# Galaxy 升降级对局设置 Visual Review — 2026-08-03
 
-## Scope and verdict
+## Scope and corrected information architecture
 
-This review covers the removable Galaxy dashboard fixture slice only. The final 1440×900 evidence shows the existing Dashboard unchanged without the demo query and the AI升降级对弈 card mounted between the welcome header and module grid for `placement`, `placed`, `pending`, `unavailable`, `error`, and `loading`.
+The user-supplied production screenshot establishes `/galaxy/play/ai?mode=rated` as the authoritative reference. 升降级对弈 is a child flow under 对局; its 41 server-defined AI levels replace the rated page's HumanSL (`拟人`) strategy and `20k…9d` rank slider. The earlier standalone Dashboard preview is superseded and removed.
 
-No blocking card-level visual defect remains in the captured states. The final captures use the confirmed product wording `AI升降级对弈` / `开始升降级对弈`, and the placed/pending states expose the public rank name (`5段`) without the internal `第N档` field. This is ready for explicit visual confirmation; it is not approval to begin authoritative backend or AiSetup integration.
+The corrected visual slice keeps the existing board/rules, color, timer, cancel, and play layout. In the right-side 对手与时间 panel, a compact `41档升降级AI` summary now shows the server-decided placement/current opponent, placement progress, certification, route, pending settlement, unavailable, loading, and retry states. The full cumulative net-score/recent-five card remains the personal-profile presentation and is deliberately not duplicated in the setup form.
 
-## Capture environment
+This remains a removable DEV fixture. The bottom 对局 action is disabled in preview so it cannot start the legacy HumanSL path. Real ranked start is deferred until the authoritative API slice after explicit visual confirmation.
+
+## Reference and capture environment
 
 - Worktree: `/private/tmp/katrain-ai-ladder-ranked-module`
-- Frontend only: Vite on `http://127.0.0.1:5174`
-- Browser viewport: exactly 1440×900 CSS pixels
-- Browser state: anonymous, Chinese locale preference, empty translation payloads so checked-in fallback copy is visible
-- Network isolation: final captures intercepted only exact-origin `http://127.0.0.1:5174/api/**` and `/assets/**` requests. Auth returned an anonymous 204 response; translation endpoints returned empty translation maps. No backend or KataGo service was started.
-- Local logo limitation: `logo-white.png` is not in the Vite asset graph. The final capture session fulfilled `/assets/**` with a transparent 84×84 SVG, so the stable sidebar brand text remains but the bitmap logo is intentionally absent in both reference and implementation. This keeps comparisons honest and backend-free; it does not approve the production logo asset.
-- Setup correction: an initial discarded interception used the broad pattern `**/api/**`, which also matched `/src/api/live.ts` and produced a blank page. Before the final `/assets/**` interception was added, discarded captures also exposed Vite's configured asset proxy and received 502 responses from port 8001. Port 8000 and KataGo were never contacted. Every evidence PNG listed below was recaptured after both interception rules were corrected; the final page loads reported 0 errors and only the two existing React Router future-flag warnings.
+- Reference source: user-provided 3456×2062 Retina browser screenshot of `https://go.sailorvoyage.top/galaxy/play/ai?mode=rated`
+- Reference preparation: crop the 242 px browser chrome, then scale the 3456×1820 page content to its 1728×910 CSS-pixel viewport
+- Implementation: frontend-only Vite on `http://127.0.0.1:5175`
+- Final browser viewport: exactly 1728×910 CSS pixels
+- Network isolation: exact-origin `/api/**` routes were intercepted. AI constants/catalog used isolated preview responses, auth returned anonymous 401, and Chinese labels used a minimal translation response. `/assets/**` used a transparent logo placeholder because the production bitmap is not in the Vite asset graph.
+- Because that isolated translation response intentionally contains only the current slice's labels, existing sidebar entries such as `Research`, `Review`, `Live`, `Settings`, and `Sign In` fall back to English in the implementation captures while the production reference shows Chinese. This is a capture-fixture difference outside the opponent panel, not a proposed copy change or evidence of full-page copy parity.
+- The initial discarded page load occurred before route interception and let Vite attempt its configured port 8001 proxy; every request was refused because no service was listening. Routes were then installed and the page reloaded before any retained screenshot. Port 8000 and the KataGo experiment were never contacted; no backend state, calibration output, or database was changed.
+- Final console: the expected anonymous `/api/v1/auth/me` 401 plus the two existing React Router future warnings; no feature runtime exception.
 
-Commands used:
-
-```bash
-cd /private/tmp/katrain-ai-ladder-ranked-module/katrain/web/ui
-npm run dev -- --host 127.0.0.1 --port 5174
-
-cd /private/tmp/katrain-ai-ladder-ranked-module/output/playwright/ai-ladder-galaxy
-/Users/fan/.codex/skills/playwright/scripts/playwright_cli.sh --session ai-ladder-galaxy open about:blank
-/Users/fan/.codex/skills/playwright/scripts/playwright_cli.sh --session ai-ladder-galaxy resize 1440 900
-# page.route intercepted the exact /api/** and /assets/** origin paths before navigation.
-# Each URL below was opened, snapshotted, and captured with `screenshot --filename ...`.
-
-for state_name in placement placed pending unavailable error loading; do
-  ffmpeg -loglevel error -y -i reference.png -i "implementation-${state_name}.png" \
-    -filter_complex "[0:v][1:v]hstack=inputs=2" "side-by-side-${state_name}.png"
-  ffmpeg -loglevel error -y -i reference.png -i "implementation-${state_name}.png" \
-    -filter_complex "[0:v][1:v]blend=all_expr='A*0.5+B*0.5'" "overlay-${state_name}.png"
-  ffmpeg -loglevel error -y -i reference.png -i "implementation-${state_name}.png" \
-    -filter_complex "[0:v][1:v]blend=all_mode=difference" "diff-${state_name}.png"
-done
-```
-
-`sips -g pixelWidth -g pixelHeight` confirmed the reference and all six implementation/overlay/diff images are 1440×900; side-by-side images are two equal 1440×900 sources placed horizontally, so their result is 2880×900. `ffmpeg` completed all 18 state-comparison files without errors.
+The reference includes the user's green arrow annotation over the old HumanSL selector. That annotation remains in reference/overlay/difference evidence and is not part of the product UI.
 
 ## Evidence index
 
-All evidence is local and intentionally uncommitted under `output/playwright/ai-ladder-galaxy/`.
+All 25 PNGs are local and intentionally uncommitted under `output/playwright/ai-ladder-rated-setup/`.
 
 | State | Implementation | Side by side | 50% overlay | Pixel difference |
 | --- | --- | --- | --- | --- |
-| Existing Dashboard | [`reference.png`](../../../output/playwright/ai-ladder-galaxy/reference.png) | — | — | — |
-| Placement | [`implementation-placement.png`](../../../output/playwright/ai-ladder-galaxy/implementation-placement.png) | [`side-by-side-placement.png`](../../../output/playwright/ai-ladder-galaxy/side-by-side-placement.png) | [`overlay-placement.png`](../../../output/playwright/ai-ladder-galaxy/overlay-placement.png) | [`diff-placement.png`](../../../output/playwright/ai-ladder-galaxy/diff-placement.png) |
-| Placed | [`implementation-placed.png`](../../../output/playwright/ai-ladder-galaxy/implementation-placed.png) | [`side-by-side-placed.png`](../../../output/playwright/ai-ladder-galaxy/side-by-side-placed.png) | [`overlay-placed.png`](../../../output/playwright/ai-ladder-galaxy/overlay-placed.png) | [`diff-placed.png`](../../../output/playwright/ai-ladder-galaxy/diff-placed.png) |
-| Pending settlement | [`implementation-pending.png`](../../../output/playwright/ai-ladder-galaxy/implementation-pending.png) | [`side-by-side-pending.png`](../../../output/playwright/ai-ladder-galaxy/side-by-side-pending.png) | [`overlay-pending.png`](../../../output/playwright/ai-ladder-galaxy/overlay-pending.png) | [`diff-pending.png`](../../../output/playwright/ai-ladder-galaxy/diff-pending.png) |
-| Unavailable/provisional | [`implementation-unavailable.png`](../../../output/playwright/ai-ladder-galaxy/implementation-unavailable.png) | [`side-by-side-unavailable.png`](../../../output/playwright/ai-ladder-galaxy/side-by-side-unavailable.png) | [`overlay-unavailable.png`](../../../output/playwright/ai-ladder-galaxy/overlay-unavailable.png) | [`diff-unavailable.png`](../../../output/playwright/ai-ladder-galaxy/diff-unavailable.png) |
-| Error | [`implementation-error.png`](../../../output/playwright/ai-ladder-galaxy/implementation-error.png) | [`side-by-side-error.png`](../../../output/playwright/ai-ladder-galaxy/side-by-side-error.png) | [`overlay-error.png`](../../../output/playwright/ai-ladder-galaxy/overlay-error.png) | [`diff-error.png`](../../../output/playwright/ai-ladder-galaxy/diff-error.png) |
-| Loading | [`implementation-loading.png`](../../../output/playwright/ai-ladder-galaxy/implementation-loading.png) | [`side-by-side-loading.png`](../../../output/playwright/ai-ladder-galaxy/side-by-side-loading.png) | [`overlay-loading.png`](../../../output/playwright/ai-ladder-galaxy/overlay-loading.png) | [`diff-loading.png`](../../../output/playwright/ai-ladder-galaxy/diff-loading.png) |
+| Production HumanSL reference | [`reference.png`](../../../output/playwright/ai-ladder-rated-setup/reference.png) | — | — | — |
+| Placement | [`implementation-placement.png`](../../../output/playwright/ai-ladder-rated-setup/implementation-placement.png) | [`side-by-side-placement.png`](../../../output/playwright/ai-ladder-rated-setup/side-by-side-placement.png) | [`overlay-placement.png`](../../../output/playwright/ai-ladder-rated-setup/overlay-placement.png) | [`diff-placement.png`](../../../output/playwright/ai-ladder-rated-setup/diff-placement.png) |
+| Placed | [`implementation-placed.png`](../../../output/playwright/ai-ladder-rated-setup/implementation-placed.png) | [`side-by-side-placed.png`](../../../output/playwright/ai-ladder-rated-setup/side-by-side-placed.png) | [`overlay-placed.png`](../../../output/playwright/ai-ladder-rated-setup/overlay-placed.png) | [`diff-placed.png`](../../../output/playwright/ai-ladder-rated-setup/diff-placed.png) |
+| Pending settlement | [`implementation-pending.png`](../../../output/playwright/ai-ladder-rated-setup/implementation-pending.png) | [`side-by-side-pending.png`](../../../output/playwright/ai-ladder-rated-setup/side-by-side-pending.png) | [`overlay-pending.png`](../../../output/playwright/ai-ladder-rated-setup/overlay-pending.png) | [`diff-pending.png`](../../../output/playwright/ai-ladder-rated-setup/diff-pending.png) |
+| Unavailable/provisional | [`implementation-unavailable.png`](../../../output/playwright/ai-ladder-rated-setup/implementation-unavailable.png) | [`side-by-side-unavailable.png`](../../../output/playwright/ai-ladder-rated-setup/side-by-side-unavailable.png) | [`overlay-unavailable.png`](../../../output/playwright/ai-ladder-rated-setup/overlay-unavailable.png) | [`diff-unavailable.png`](../../../output/playwright/ai-ladder-rated-setup/diff-unavailable.png) |
+| Error/retry | [`implementation-error.png`](../../../output/playwright/ai-ladder-rated-setup/implementation-error.png) | [`side-by-side-error.png`](../../../output/playwright/ai-ladder-rated-setup/side-by-side-error.png) | [`overlay-error.png`](../../../output/playwright/ai-ladder-rated-setup/overlay-error.png) | [`diff-error.png`](../../../output/playwright/ai-ladder-rated-setup/diff-error.png) |
+| Loading | [`implementation-loading.png`](../../../output/playwright/ai-ladder-rated-setup/implementation-loading.png) | [`side-by-side-loading.png`](../../../output/playwright/ai-ladder-rated-setup/side-by-side-loading.png) | [`overlay-loading.png`](../../../output/playwright/ai-ladder-rated-setup/overlay-loading.png) | [`diff-loading.png`](../../../output/playwright/ai-ladder-rated-setup/diff-loading.png) |
+
+Reference, implementation, overlay, and difference images are 1728×910. Side-by-side images are 3456×910 from equal-size sources.
 
 ## Visual findings
 
 ### Composition and geometry
 
-- The reference preserves the existing 240 px fixed sidebar and the Dashboard's 1200 px maximum outer width. At 1440×900, main content begins at x=240 and uses 48 px page padding; the visible content aligns at x≈288 with an inner width of ≈1104 px.
-- The welcome heading/tagline remain at the exact reference position. The card occupies the module grid's former top edge at y≈216 and spans the same ≈1104 px content width, so it reads as a dashboard status module rather than a separate page.
-- The module cards retain their three-column geometry, 32 px gaps, icon blocks, and widths. The AI card pushes the grid downward without changing column sizing. A consistent ≈32 px gap separates card and grid.
-- Approximate inspected card heights are 455 px placement, 449 px placed, 496 px pending, 503 px unavailable, 209 px error, and 235 px loading. The main pane scrolls; no content is clipped horizontally. At 900 px height, the first module row remains visible in every state, while lower rows naturally continue below the fold for taller states.
-- The overlays and difference images localize all movement to the main content below the unchanged header: sidebar/header pixels remain aligned, and the module grid moves vertically as one unit. There is no lateral drift or viewport-size mismatch.
+- Sidebar, page title, two-column grid, board/rules controls, timer controls, and bottom actions retain the reference geometry.
+- The replacement occurs exactly in the reference arrow's target region: the old disabled `拟人` selector and `20k…9d` slider are absent only in the explicit preview.
+- The compact summary preserves the right panel's overall height closely enough that 取消/对局 remain visible at 1728×910. The earlier full profile card pushed actions below the fold and was rejected during visual inspection.
+- The left panel and all fixed rated-game rules remain unchanged. There is no horizontal overflow.
 
-### Hierarchy, typography, color, and material
+### Hierarchy, material, and semantics
 
-- `AI升降级对弈` is the card's strongest internal heading, followed by current placement/rank, chips, net-score meter, recent-five history, state message, and CTA. The order is consistent across ready states.
-- Typography follows the existing MUI/Manrope theme: bold white headings, 16 px body copy, and secondary gray explanatory text. Numeric score and thresholds are readable and do not jump between states.
-- Material is consistent with the Dashboard: deep charcoal `#0f0f0f` background, `#252525` paper, muted jade `#4a6b5c` primary action, subtle divider border, and rounded surfaces. The status card adds hierarchy without introducing a competing visual language.
-- Semantic colors use the shared theme: green `#30a06e` for certified/win/promotion direction, amber `#e89639` for pending/provisional/unavailable, and coral `#e16b5c` for loss/demotion/error. Every color-coded meaning is accompanied by text and an icon or explicit label.
+- `41档升降级AI` identifies the new strength system without exposing rung numbers, model names, temperatures, visits, recipes, or 星阵 naming.
+- Placement shows `定级对手：4级` and `定级进度 3/5`; placed shows `本局对手：5段`. These are server-decided summaries, not user-selectable strength controls.
+- Certified/route state uses the existing jade/outlined-chip language. Pending and unavailable use amber plus icon and text; error uses an alert plus a 44 px retry action.
+- The summary uses existing MUI typography, charcoal paper, rounded borders, shared icons, and theme tokens. ui-ux-pro-max guidance influenced the explicit progress indicator, visible labels, text-plus-color semantics, and disabled-state clarity; the repository's existing visual system takes precedence over generated style suggestions.
 
-### Icons and assets
+### Loading, retry, and fail-closed behavior
 
-- Route, win/loss, pending, unavailable, and error semantics use the same MUI icon family as the existing sidebar/module cards. Outlined/filled differences correspond to role rather than appearing decorative.
-- Win/loss pills are independently text-labelled (`胜`/`负`), so recent outcomes do not rely on green/red alone.
-- The local bitmap-logo limitation is isolated to the capture environment as described above and affects reference/implementation equally. No AI-ladder-specific asset is missing.
-
-### Copy and state semantics
-
-- Placement shows `定级进度 3/5`, `当前对手：4级`, `已认证`, `服务器对弈`, score 0, three recent outcomes, and `继续定级`.
-- Placed shows only the public rank `当前段位：5段`, score `+2`, five distinct recent outcomes, and `开始升降级对弈`. The internal rung number is absent.
-- Pending keeps rank/history visible, adds the amber `本盘成绩结算中` status, and presents a clearly disabled `成绩结算中` button.
-- Unavailable combines `暂定`, `该档位暂不可挑战`, and a disabled `暂不可挑战` button. This fails closed while still explaining why.
-- The copy consistently distinguishes the cumulative score from the recent-five display: `最近5盘仅供展示，升降段只看累计净胜分`. No provider, recipe, model, temperature, visits, or 星阵 naming appears.
-
-### Loading, error, and retry
-
-- Loading reserves card space with two skeleton bars and the live status `正在加载升降级对弈状态…`; it exposes no misleading action.
-- Error uses a full-width dark error alert with `升降级对弈状态加载失败` and a subordinate outlined `重试` control. It remains compact enough to keep the existing dashboard grid prominent.
-- A live Playwright check clicked `重试`; the URL changed from `?ai-ladder-demo=error` to `?ai-ladder-demo=placement` and the placement content appeared immediately. No extra screenshot was needed because the resulting pixels are already captured as `implementation-placement.png`.
+- Loading reserves the replacement region with a labelled skeleton.
+- Error keeps timer controls visible and offers retry in the exact replaced region.
+- A live Playwright click changed `ai-ladder-demo=error` to `ai-ladder-demo=placement` while preserving `mode=rated`, then rendered `定级对手：4级` and `定级进度 3/5`.
+- Provisional/unavailable and pending settlement states keep the bottom 对局 action disabled. No adjacent or HumanSL fallback is presented.
 
 ## Fixture deletion and deferred integration
 
-- The fixture remains isolated in `src/features/aiLadder/__fixtures__/galaxyDemo.ts` and must be deleted when the authoritative status API replaces the visual fixture. Production behavior remains query-free because the mount is gated by `import.meta.env.DEV` and a supported `ai-ladder-demo` query.
-- Real authenticated status loading, durable placement/rank, settlement refresh, and unavailable/error retry against the server are deferred until the authoritative API slice.
-- The CTA currently demonstrates routing to `/galaxy/play/ai?mode=ai_ladder_ranked`. Real Galaxy `AiSetupPage` consumption and server-issued ranked game start are deliberately deferred; this visual review does not claim that integration is complete.
+- Fixture: `src/features/aiLadder/__fixtures__/galaxyDemo.ts`; delete it when the authoritative status/start API replaces the visual preview.
+- Preview gate: `DEV + mode=rated + ai-ladder-demo=<supported-state>`.
+- Rated without an explicit preview query and all free-play flows remain unchanged in this visual slice.
+- After visual approval, the real API must replace HumanSL for rated play, issue the immutable opponent/config snapshot, enable 对局 only when the selected rung is certified/available and settlement allows it, and remove all fixture paths.
 
 ## Confirmation gate
 
-Proceed to backend/API integration only after explicit user confirmation of the reference and the stable-state side-by-side/overlay/difference evidence. Until then, this remains a removable visual fixture slice.
+Proceed to authoritative database/API/AiSetup integration only after explicit confirmation of this corrected setup-page evidence. The full personal-profile status card will be integrated with the same contract in that later slice.

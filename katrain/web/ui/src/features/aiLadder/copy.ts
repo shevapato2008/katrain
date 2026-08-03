@@ -6,6 +6,9 @@ import type {
 
 export const AI_LADDER_COPY = {
   title: 'AI升降级对弈',
+  setupTitle: '41档升降级AI',
+  placementOpponentPrefix: '定级对手：',
+  rankedOpponentPrefix: '本局对手：',
   loading: '正在加载升降级对弈状态…',
   loadError: '升降级对弈状态加载失败',
   retry: '重试',

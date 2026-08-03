@@ -63,14 +63,17 @@ vi.mock('../../context/SettingsContext', () => ({
   useSettings: () => ({ language: 'cn', setLanguage: vi.fn(), languages: [] }),
 }));
 
-const renderPage = (mode = 'free') =>
-  render(
-    <MemoryRouter initialEntries={[`/galaxy/play/ai/setup?mode=${mode}`]}>
+const renderPage = (mode = 'free', demoState?: string) => {
+  const params = new URLSearchParams({ mode });
+  if (demoState) params.set('ai-ladder-demo', demoState);
+  return render(
+    <MemoryRouter initialEntries={[`/galaxy/play/ai/setup?${params.toString()}`]}>
       <Routes>
         <Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} />
       </Routes>
     </MemoryRouter>
   );
+};
 
 // Locate a Select's combobox by its <label> text (no labelId wiring on this page's Selects,
 // so getByRole('combobox', { name }) can't resolve; the label text also appears in the
@@ -140,5 +143,64 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     // must never fire).
     const ladderConfigCalls = mockUpdateConfig.mock.calls.filter(([, setting]) => setting === 'ai/ai:ladder');
     expect(ladderConfigCalls).toHaveLength(0);
+  });
+});
+
+describe('AiSetupPage — rated AI ladder visual slice', () => {
+  beforeEach(() => {
+    mockNavigate.mockReset();
+  });
+
+  it('replaces the rated HumanSL controls with the server-decided placement opponent', async () => {
+    renderPage('rated', 'placement');
+
+    expect(await screen.findByRole('heading', { name: '41档升降级AI' })).toBeInTheDocument();
+    expect(screen.getByText('定级进度 3/5')).toBeInTheDocument();
+    expect(screen.getByText('定级对手：4级')).toBeInTheDocument();
+    expect(screen.queryByText('20k')).not.toBeInTheDocument();
+    expect(screen.queryByText('9d')).not.toBeInTheDocument();
+    expect(screen.queryByText('Human-like')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start Game' })).toBeDisabled();
+    expect(screen.queryByText('累计净胜分：0')).not.toBeInTheDocument();
+  });
+
+  it('shows the current public 41-rung rank without an internal rung number', async () => {
+    renderPage('rated', 'placed');
+
+    expect(await screen.findByText('本局对手：5段')).toBeInTheDocument();
+    expect(screen.queryByText('第30档')).not.toBeInTheDocument();
+  });
+
+  it('retries a failed ranked-status load inside the rated setup flow', async () => {
+    const user = userEvent.setup();
+    renderPage('rated', 'error');
+
+    await user.click(await screen.findByRole('button', { name: '重试' }));
+
+    expect(await screen.findByText('定级进度 3/5')).toBeInTheDocument();
+  });
+
+  it.each(['toString', 'constructor', 'unknown'])('ignores unsupported demo state %s', async (state) => {
+    renderPage('rated', state);
+
+    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();
+    expect(screen.getByText('20k')).toBeInTheDocument();
+  });
+
+  it('keeps rated setup unchanged when no explicit preview state is requested', async () => {
+    renderPage('rated');
+
+    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
+    expect(screen.getByText('20k')).toBeInTheDocument();
+    expect(screen.getByText('9d')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();
+  });
+
+  it('does not mount the ranked preview in free play', async () => {
+    renderPage('free', 'placement');
+
+    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();
   });
 });

@@ -69,6 +69,52 @@ class UserGameRepository:
         finally:
             session.close()
 
+    def create_ai_ladder_ranked(self, *, user_id: int, game_id: str, sgf_content: str, **kwargs) -> Dict[str, Any]:
+        """Persist one server-issued ranked game id without SGF hash deduplication.
+
+        A retry may return the same owner's existing ranked row. Reusing a game id
+        across users or for a different game type fails closed.
+        """
+
+        session = self.session_factory()
+        try:
+            existing = session.get(models_db.UserGame, game_id)
+            if existing is not None:
+                if existing.user_id != user_id:
+                    raise ValueError("game_id belongs to another user")
+                if existing.game_type != "ai_ladder_ranked":
+                    raise ValueError("game_id is not an authoritative ranked AI game")
+                return self._to_dict(existing, include_sgf=True)
+
+            db_game = models_db.UserGame(
+                id=game_id,
+                user_id=user_id,
+                sgf_content=sgf_content,
+                source=kwargs.get("source", "play_ai"),
+                sgf_hash=hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None,
+                title=kwargs.get("title"),
+                player_black=kwargs.get("player_black"),
+                player_white=kwargs.get("player_white"),
+                black_rank=kwargs.get("black_rank"),
+                white_rank=kwargs.get("white_rank"),
+                result=kwargs.get("result"),
+                board_size=kwargs.get("board_size", 19),
+                rules=kwargs.get("rules", "chinese"),
+                komi=kwargs.get("komi", 7.5),
+                move_count=kwargs.get("move_count", 0),
+                category=kwargs.get("category", "game"),
+                game_type="ai_ladder_ranked",
+                event=kwargs.get("event"),
+                round_name=kwargs.get("round_name"),
+                game_date=kwargs.get("game_date"),
+            )
+            session.add(db_game)
+            session.commit()
+            session.refresh(db_game)
+            return self._to_dict(db_game, include_sgf=True)
+        finally:
+            session.close()
+
     def get(self, game_id: str, user_id: int) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:

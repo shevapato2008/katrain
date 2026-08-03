@@ -111,6 +111,7 @@ async def _lifespan_server(app: FastAPI, log):
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+    from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
     from katrain.web.core.db import SessionLocal
 
     repo = SQLAlchemyUserRepository(SessionLocal)
@@ -119,6 +120,7 @@ async def _lifespan_server(app: FastAPI, log):
     game_repo = GameRepository(SessionLocal)
     user_game_repo = UserGameRepository(SessionLocal)
     user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
+    ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
 
     # Create default admin user if no users exist
     if not repo.list_users():
@@ -162,6 +164,8 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
     app.state.user_game_analysis_repo = user_game_analysis_repo
+    app.state.ai_ladder_repo = ai_ladder_repo
+    app.state.ai_ladder_authoritative = True
     app.state.report_session_factory = SessionLocal
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
@@ -271,6 +275,7 @@ async def _lifespan_board(app: FastAPI, log):
 
     from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+    from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
     from katrain.web.core.tsumego_progress_repo import LocalTsumegoProgressRepository
     from katrain.web.core.db import SessionLocal
     from katrain.web.core.remote_client import RemoteAPIClient
@@ -296,6 +301,8 @@ async def _lifespan_board(app: FastAPI, log):
     local_tsumego_progress_repo = LocalTsumegoProgressRepository(SessionLocal)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
+    app.state.ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
+    app.state.ai_ladder_authoritative = False
     app.state.tsumego_progress_repo = local_tsumego_progress_repo
     app.state.report_session_factory = SessionLocal
 
@@ -1127,9 +1134,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         dispatcher, else local). source = play_local when both seats are human, else play_ai.
 
         Idempotent within a session: the natural (two-pass) game-end hook in `play_move`
-        and the resign/count/timeout paths can all race to record the same finished game;
-        `session._recorded` ensures only the first successful write actually persists."""
-        if getattr(session, "_recorded", False):
+        and the resign/count/timeout paths can all race to record the same finished game.
+        Ranked AI games keep `_recorded` false until both the authoritative game row and
+        ladder settlement succeed, so a transient settlement failure remains retryable."""
+        if getattr(session, "_recorded", False) is True:
             return
         try:
             sgf_content = session.katrain.get_sgf()
@@ -1158,17 +1166,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     else:
                         player_white = player_white or name
 
-            # Extract ranks
-            black_rank = (
-                getattr(players_info["B"], "calculated_rank", None)
-                or getattr(players_info["B"], "sgf_rank", None)
-                or ""
-            )
-            white_rank = (
-                getattr(players_info["W"], "calculated_rank", None)
-                or getattr(players_info["W"], "sgf_rank", None)
-                or ""
-            )
+            # Extract only serializable rank labels. Some session adapters omit SGF
+            # rank attributes entirely, and test doubles may synthesize attributes.
+            def player_rank(info):
+                for attribute in ("calculated_rank", "sgf_rank"):
+                    value = getattr(info, attribute, None)
+                    if isinstance(value, str) and value:
+                        return value
+                return ""
+
+            black_rank = player_rank(players_info["B"])
+            white_rank = player_rank(players_info["W"])
 
             board_size_val = state.get("board_size", [19, 19])
             board_size = board_size_val[0] if isinstance(board_size_val, (list, tuple)) else board_size_val
@@ -1200,6 +1208,71 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "game_date": game_date,
             }
 
+            if game_type == "ai_ladder_ranked":
+                from katrain.web.core.ai_ladder_catalog import AiLadderSessionSnapshot, build_opponent_snapshot
+
+                snapshot = getattr(session, "ai_ladder_snapshot", None)
+                if not isinstance(snapshot, AiLadderSessionSnapshot):
+                    raise ValueError("missing authoritative ranked AI snapshot")
+                if current_user is None or current_user.id != session.user_id or current_user.id != snapshot.user_id:
+                    raise ValueError("ranked AI session owner mismatch")
+                if snapshot.session_id != session.session_id or snapshot.game_type != game_type:
+                    raise ValueError("ranked AI session identity mismatch")
+                if getattr(session.katrain, "game_type", None) != game_type:
+                    raise ValueError("ranked AI runtime game type mismatch")
+                if getattr(session.katrain, "ladder_rung", None) != {"rung": snapshot.opponent.rung}:
+                    raise ValueError("ranked AI runtime rung mismatch")
+                if getattr(session, "ai_ladder_ai_subtype", None) != snapshot.ai_subtype:
+                    raise ValueError("ranked AI subtype mismatch")
+                if getattr(session, "ai_ladder_runtime_identity", None) != snapshot.execution_identity:
+                    raise ValueError("ranked AI runtime configuration mismatch")
+                config_identity = snapshot.opponent.config_snapshot.get("recipe_identity")
+                if config_identity != snapshot.execution_identity:
+                    raise ValueError("ranked AI snapshot configuration mismatch")
+                current_opponent, current_identity = build_opponent_snapshot(snapshot.opponent.rung)
+                if current_identity != snapshot.execution_identity or current_opponent != snapshot.opponent:
+                    raise ValueError("ranked AI catalog configuration changed during the game")
+
+                actual_result = state.get("end_result") or getattr(session.katrain.game, "end_result", None)
+                if not isinstance(actual_result, str) or not actual_result.strip():
+                    raise ValueError("ranked AI game has no authoritative end result")
+                winner = actual_result.strip().upper()[:1]
+                if winner in {"B", "W"} and "+" in actual_result:
+                    ladder_result = "win" if winner == snapshot.user_color else "loss"
+                else:
+                    ladder_result = "inconclusive"
+                data["result"] = actual_result
+
+                if getattr(app.state, "repository_dispatcher", None) is not None or not getattr(
+                    app.state, "ai_ladder_authoritative", False
+                ):
+                    raise RuntimeError("ranked AI settlement is unavailable on this node")
+
+                saved = app.state.user_game_repo.create_ai_ladder_ranked(
+                    user_id=current_user.id,
+                    game_id=snapshot.game_id,
+                    **data,
+                )
+                confirmed = app.state.user_game_repo.get(snapshot.game_id, current_user.id)
+                if (
+                    saved.get("id") != snapshot.game_id
+                    or confirmed is None
+                    or confirmed.get("game_type") != "ai_ladder_ranked"
+                ):
+                    raise RuntimeError("authoritative ranked AI game row was not confirmed")
+
+                app.state.ai_ladder_repo.settle_game(
+                    user_id=current_user.id,
+                    game_id=snapshot.game_id,
+                    user_color=snapshot.user_color,
+                    result=ladder_result,
+                    game_type=game_type,
+                    opponent=snapshot.opponent,
+                )
+                session.ai_ladder_settlement_pending = False
+                session._recorded = True
+                return
+
             dispatcher = getattr(app.state, "repository_dispatcher", None)
             if dispatcher is not None:
                 await dispatcher.user_games_create(user_id=current_user.id, data=data)
@@ -1207,6 +1280,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 app.state.user_game_repo.create(user_id=current_user.id, **data)
             session._recorded = True
         except Exception as e:
+            if getattr(session, "game_type", None) == "ai_ladder_ranked":
+                session.ai_ladder_settlement_pending = True
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 
     globals()["_RECORD_FN"] = _record_ai_game
@@ -1673,20 +1748,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.get("/api/ladder-rungs")
     def get_ladder_rungs():
-        from katrain.core.ladder import LADDER_LEVELS
+        from katrain.web.core.ai_ladder_catalog import catalog_projection
 
-        return {
-            "rungs": [
-                {
-                    "rung": level.rung,
-                    "rank_name": level.rank_name,
-                    "certification_status": level.certification_status,
-                    "availability": level.availability,
-                    "route": level.route,
-                }
-                for level in LADDER_LEVELS
-            ]
-        }
+        return catalog_projection()
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):

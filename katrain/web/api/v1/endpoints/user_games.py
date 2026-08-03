@@ -90,6 +90,9 @@ async def create_user_game(
     game_in: UserGameCreate,
     current_user: User = Depends(get_current_user),
 ):
+    if game_in.game_type == "ai_ladder_ranked":
+        raise HTTPException(status_code=400, detail="Ranked AI games can only be recorded by the game server")
+
     # Board mode: route through dispatcher (online → remote, offline → local + sync queue)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:

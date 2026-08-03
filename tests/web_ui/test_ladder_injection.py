@@ -12,6 +12,7 @@ Covers:
 
 import sys
 import threading
+from dataclasses import replace
 
 import pytest
 
@@ -111,16 +112,29 @@ def _make_ladder_player(wkt, bw):
     wkt.update_player(bw, player_type=PLAYER_AI, player_subtype=AI_LADDER)
 
 
+def _certify_fixture_rungs(monkeypatch, *rungs):
+    """Keep lifecycle tests independent from the still-changing production certifications."""
+    from katrain.core import ladder
+
+    levels = list(ladder.LADDER_LEVELS)
+    for rung in rungs:
+        assert levels[rung - 1].recipe is not None
+        levels[rung - 1] = replace(levels[rung - 1], certification_status="certified", availability="available")
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", tuple(levels))
+
+
 # --- Step 4a/b: lifecycle (set + reset) ---------------------------------------------
 
 
-def test_new_game_sets_injected_rung():
+def test_new_game_sets_injected_rung(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 5)
     wkt = _make_katrain()
     wkt("new_game", ladder_rung=5)
     assert wkt.ladder_rung == {"rung": 5}
 
 
-def test_new_game_without_rung_resets_to_none():
+def test_new_game_without_rung_resets_to_none(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 5)
     wkt = _make_katrain()
     wkt("new_game", ladder_rung=5)
     assert wkt.ladder_rung == {"rung": 5}
@@ -131,7 +145,8 @@ def test_new_game_without_rung_resets_to_none():
     assert wkt.ladder_rung is None
 
 
-def test_load_sgf_without_rung_resets_to_none():
+def test_load_sgf_without_rung_resets_to_none(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 7)
     wkt = _make_katrain()
     wkt._do_new_game(ladder_rung=7)
     assert wkt.ladder_rung == {"rung": 7}
@@ -217,6 +232,7 @@ def test_new_game_serialized_against_inflight_ai_move(monkeypatch):
     """_do_new_game must block on ai_lock while an ai:ladder generation is in flight, and
     the in-flight generation must use its OWN (game, rung) snapshot -- not whatever
     _do_new_game swaps self.game/self.ladder_rung to concurrently."""
+    _certify_fixture_rungs(monkeypatch, 5, 20)
     wkt = _make_katrain()
     next_bw = wkt.game.current_node.next_player
     _make_ladder_player(wkt, next_bw)
@@ -396,7 +412,7 @@ def test_get_state_emits_rank_display_for_ladder_ai():
 
     state = wkt.get_state()
     w = state["players_info"]["W"]
-    assert w["rank_display"] == "超职业"  # the rung's rank_name
+    assert w["rank_display"] == "8段"  # the 41-tier catalog's rung 36 rank_name
     assert w["calculated_rank"] is None  # 段位 rides rank_display, not calculated_rank
     b = state["players_info"]["B"]
     assert b["rank_display"] is None  # human player: no ladder rank_display

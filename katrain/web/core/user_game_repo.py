@@ -7,6 +7,18 @@ from sqlalchemy.sql import func
 from katrain.web.core import models_db
 
 
+class ReservedAiLadderGameIdError(ValueError):
+    pass
+
+
+class ProtectedRankedGameError(ValueError):
+    pass
+
+
+class InvalidAuthoritativeRankedGameError(ValueError):
+    pass
+
+
 class UserGameRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -16,6 +28,8 @@ class UserGameRepository:
     ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
+            if game_id and session.get(models_db.AiLadderPendingGame, game_id) is not None:
+                raise ReservedAiLadderGameIdError("game_id is reserved for a pending ranked AI game")
             # Idempotent creation: if client provides an id that already exists, return existing record
             if game_id:
                 existing = session.query(models_db.UserGame).filter(models_db.UserGame.id == game_id).first()
@@ -76,6 +90,8 @@ class UserGameRepository:
         across users or for a different game type fails closed.
         """
 
+        if kwargs.get("source", "play_ai") != "play_ai":
+            raise InvalidAuthoritativeRankedGameError("authoritative ranked AI games require source=play_ai")
         session = self.session_factory()
         try:
             existing = session.get(models_db.UserGame, game_id)
@@ -97,6 +113,8 @@ class UserGameRepository:
                     "player_white": kwargs.get("player_white"),
                     "black_rank": kwargs.get("black_rank"),
                     "white_rank": kwargs.get("white_rank"),
+                    "source": "play_ai",
+                    "category": kwargs.get("category", "game"),
                 }
                 if any(getattr(existing, field) != value for field, value in immutable_fields.items()):
                     raise ValueError("authoritative ranked AI game is immutable")
@@ -106,7 +124,7 @@ class UserGameRepository:
                 id=game_id,
                 user_id=user_id,
                 sgf_content=sgf_content,
-                source=kwargs.get("source", "play_ai"),
+                source="play_ai",
                 sgf_hash=hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None,
                 title=kwargs.get("title"),
                 player_black=kwargs.get("player_black"),
@@ -145,6 +163,41 @@ class UserGameRepository:
             if game:
                 return self._to_dict(game, include_sgf=True)
             return None
+        finally:
+            session.close()
+
+    def is_ai_ladder_game_id_reserved(self, game_id: str) -> bool:
+        session = self.session_factory()
+        try:
+            return session.get(models_db.AiLadderPendingGame, game_id) is not None
+        finally:
+            session.close()
+
+    def get_authoritative_ai_ladder_ranked(self, game_id: str, user_id: int) -> Optional[Dict[str, Any]]:
+        """Load a trusted ranked row for recovery, rejecting lookalikes without mutating them."""
+
+        session = self.session_factory()
+        try:
+            game = session.get(models_db.UserGame, game_id)
+            if game is None:
+                return None
+            if game.user_id != user_id or game.game_type != "ai_ladder_ranked" or game.source != "play_ai":
+                raise InvalidAuthoritativeRankedGameError("UserGame is not an authoritative ranked AI game")
+            expected_hash = hashlib.sha256(game.sgf_content.encode()).hexdigest() if game.sgf_content else None
+            if (
+                not game.sgf_content
+                or game.sgf_hash != expected_hash
+                or not isinstance(game.result, str)
+                or not game.result.strip()
+                or game.category != "game"
+                or game.board_size is None
+                or not game.rules
+                or game.komi is None
+                or game.move_count is None
+                or game.move_count < 0
+            ):
+                raise InvalidAuthoritativeRankedGameError("UserGame failed authoritative ranked AI validation")
+            return self._to_dict(game, include_sgf=True)
         finally:
             session.close()
 
@@ -210,6 +263,8 @@ class UserGameRepository:
             )
             if not game:
                 return None
+            if game.game_type == "ai_ladder_ranked":
+                raise ProtectedRankedGameError("authoritative ranked AI games are protected from generic updates")
 
             # Optimistic lock: if updated_at provided, check it matches
             if updated_at and game.updated_at and str(game.updated_at) != updated_at:
@@ -241,6 +296,8 @@ class UserGameRepository:
             )
             if not game:
                 return False
+            if game.game_type == "ai_ladder_ranked":
+                raise ProtectedRankedGameError("authoritative ranked AI games are protected from generic deletion")
             session.delete(game)
             session.commit()
             return True

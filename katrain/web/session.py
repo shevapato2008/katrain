@@ -19,6 +19,7 @@ class WebSession:
     player_w_id: Optional[int] = None  # For HvH
     mode: str = "play"  # "play" or "research"
     lock: threading.Lock = field(default_factory=threading.Lock)
+    record_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
     last_state: Optional[Dict] = None

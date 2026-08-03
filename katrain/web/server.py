@@ -1129,7 +1129,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    async def _record_ai_game(session, app, current_user, result):
+    async def _record_ai_game_locked(session, app, current_user, result):
         """Record a completed single-player/local game to user_games (remote-first via
         dispatcher, else local). source = play_local when both seats are human, else play_ai.
 
@@ -1258,7 +1258,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     game_id=snapshot.game_id,
                     **data,
                 )
-                confirmed = app.state.user_game_repo.get(snapshot.game_id, current_user.id)
+                confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                    snapshot.game_id, current_user.id
+                )
                 if (
                     saved.get("id") != snapshot.game_id
                     or confirmed is None
@@ -1294,6 +1296,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             if getattr(session, "game_type", None) == "ai_ladder_ranked":
                 session.ai_ladder_settlement_pending = True
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
+
+    async def _record_ai_game(session, app, current_user, result):
+        record_lock = getattr(session, "record_game_lock", None)
+        if not isinstance(record_lock, asyncio.Lock):
+            record_lock = asyncio.Lock()
+            session.record_game_lock = record_lock
+        async with record_lock:
+            await _record_ai_game_locked(session, app, current_user, result)
 
     globals()["_RECORD_FN"] = _record_ai_game
 

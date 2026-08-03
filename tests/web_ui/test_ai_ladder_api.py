@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import threading
 from types import SimpleNamespace
 
@@ -403,6 +405,113 @@ async def test_generic_user_games_endpoint_rejects_ranked_ai_forgery(api_app, cl
     assert response.status_code == 400
 
 
+@pytest.mark.asyncio
+async def test_generic_user_games_cannot_claim_pending_server_game_id(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        game_id = started.json()["game_id"]
+        response = await ac.post(
+            "/api/v1/user-games/",
+            headers=api_app.state._test_headers,
+            json={
+                "id": game_id,
+                "sgf_content": "(;FF[4]SZ[19])",
+                "source": "import",
+                "game_type": "free",
+                "result": "B+R",
+            },
+        )
+
+    assert response.status_code == 409
+    with pytest.raises(ValueError, match="reserved"):
+        api_app.state.user_game_repo.create(
+            user_id=api_app.state._test_user_id,
+            game_id=game_id,
+            sgf_content="(;FF[4]SZ[19])",
+            source="import",
+            game_type="free",
+            result="B+R",
+        )
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("invalid_field", ["game_type", "source", "owner", "sgf_hash"])
+async def test_recovery_rejects_non_authoritative_user_game_using_pending_id(api_app, client, caplog, invalid_field):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        game_id = started.json()["game_id"]
+        with api_app.state._test_session_factory() as db:
+            owner_id = api_app.state._test_user_id
+            if invalid_field == "owner":
+                other = models_db.User(username="recovery-attacker", hashed_password="x", rank="20k")
+                db.add(other)
+                db.flush()
+                owner_id = other.id
+            db.add(
+                models_db.UserGame(
+                    id=game_id,
+                    user_id=owner_id,
+                    sgf_content="(;FF[4]SZ[19])",
+                    sgf_hash=(
+                        "forged"
+                        if invalid_field == "sgf_hash"
+                        else hashlib.sha256("(;FF[4]SZ[19])".encode()).hexdigest()
+                    ),
+                    source="import" if invalid_field == "source" else "play_ai",
+                    result="B+R",
+                    board_size=19,
+                    rules="chinese",
+                    komi=7.5,
+                    move_count=0,
+                    category="game",
+                    game_type="free" if invalid_field == "game_type" else "ai_ladder_ranked",
+                )
+            )
+            db.commit()
+        api_app.state.session_manager._sessions.clear()
+        status_response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert status_response.json()["pending_settlement"] is True
+    assert "authoritative ranked AI" in caplog.text
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+        assert db.query(models_db.AiLadderPendingGame).count() == 1
+
+
+@pytest.mark.asyncio
+async def test_ranked_user_game_cannot_be_updated_or_deleted_through_generic_crud(api_app, client):
+    game_id = "protected-ranked-game"
+    original_sgf = "(;FF[4]SZ[19];B[pd])"
+    api_app.state.user_game_repo.create_ai_ladder_ranked(
+        user_id=api_app.state._test_user_id,
+        game_id=game_id,
+        sgf_content=original_sgf,
+        source="play_ai",
+        result="B+R",
+    )
+
+    async with client as ac:
+        updated = await ac.put(
+            f"/api/v1/user-games/{game_id}",
+            headers=api_app.state._test_headers,
+            json={"sgf_content": "(;FF[4]SZ[19];W[dd])", "result": "W+R"},
+        )
+        deleted = await ac.delete(f"/api/v1/user-games/{game_id}", headers=api_app.state._test_headers)
+
+    assert updated.status_code == 403
+    assert deleted.status_code == 403
+    with pytest.raises(ValueError, match="protected"):
+        api_app.state.user_game_repo.update(game_id, api_app.state._test_user_id, result="W+R")
+    with pytest.raises(ValueError, match="protected"):
+        api_app.state.user_game_repo.delete(game_id, api_app.state._test_user_id)
+    saved = api_app.state.user_game_repo.get(game_id, api_app.state._test_user_id)
+    assert saved["sgf_content"] == original_sgf
+    assert saved["result"] == "B+R"
+
+
 def test_authoritative_ranked_save_uses_game_id_not_sgf_hash_and_checks_owner(api_app):
     repo = api_app.state.user_game_repo
     common = {
@@ -467,6 +576,26 @@ async def test_ranked_natural_result_saves_once_then_settles_once(api_app, clien
         assert profile.placement_completed == 1
     assert session._recorded is True
     assert session.ai_ladder_settlement_pending is False
+
+
+@pytest.mark.asyncio
+async def test_concurrent_ranked_terminal_callbacks_are_serialized(api_app, client):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        session = api_app.state._test_created_sessions[0]
+        session.katrain.game.end_result = "B+R"
+        session.katrain._state["end_result"] = "B+R"
+        record = __import__("katrain.web.server", fromlist=["_RECORD_FN"])._RECORD_FN
+        user = SimpleNamespace(id=api_app.state._test_user_id, username="ladder-user")
+        await asyncio.gather(record(session, api_app, user, "B+R"), record(session, api_app, user, "B+R"))
+
+    assert isinstance(session.record_game_lock, asyncio.Lock)
+    assert session._recorded is True
+    assert session.ai_ladder_settlement_pending is False
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        assert db.query(models_db.AiLadderPendingGame).count() == 0
 
 
 @pytest.mark.asyncio

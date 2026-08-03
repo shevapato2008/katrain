@@ -70,12 +70,12 @@ def _recover_pending(request: Request, user_id: int) -> None:
     pending = repo.get_pending_game(user_id)
     if pending is None:
         return
-    game = request.app.state.user_game_repo.get(pending["game_id"], user_id)
-    if game is None:
-        if not _active_session(request, pending["session_id"]):
-            repo.clear_pending_game(user_id=user_id, game_id=pending["game_id"])
-        return
     try:
+        game = request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(pending["game_id"], user_id)
+        if game is None:
+            if not _active_session(request, pending["session_id"]):
+                repo.clear_pending_game(user_id=user_id, game_id=pending["game_id"])
+            return
         snapshot = session_snapshot_from_pending(pending)
         repo.mark_pending_game_saved(user_id=user_id, game_id=snapshot.game_id, result=game["result"])
         repo.settle_game(

@@ -84,7 +84,15 @@ def test_backfill_ai_ladder_decisions_preserves_old_valid_history(tmp_path):
                 "game_type VARCHAR(32) NOT NULL, opponent_rung INTEGER NOT NULL, opponent_rank_name VARCHAR(64) NOT NULL, "
                 "opponent_config_snapshot JSON NOT NULL, opponent_certification_status VARCHAR(16) NOT NULL, "
                 "opponent_availability VARCHAR(16) NOT NULL, opponent_route VARCHAR(16) NOT NULL, "
-                "settled_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+                "settled_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                "CONSTRAINT ck_ai_ladder_ledger_user_color CHECK (user_color IN ('B', 'W')), "
+                "CONSTRAINT ck_ai_ladder_ledger_result CHECK (result IN ('win', 'loss')), "
+                "CONSTRAINT ck_ai_ladder_ledger_game_type CHECK (game_type = 'ai_ladder_ranked'), "
+                "CONSTRAINT ck_ai_ladder_ledger_opponent_rung CHECK (opponent_rung BETWEEN 1 AND 41), "
+                "CONSTRAINT ck_ai_ladder_ledger_certification CHECK "
+                "(opponent_certification_status = 'certified'), "
+                "CONSTRAINT ck_ai_ladder_ledger_availability CHECK (opponent_availability = 'available'), "
+                "CONSTRAINT ck_ai_ladder_ledger_route CHECK (opponent_route IN ('local', 'server')))"
             )
         )
         conn.execute(
@@ -111,9 +119,10 @@ def test_backfill_ai_ladder_decisions_preserves_old_valid_history(tmp_path):
             )
         )
 
-    models_db.Base.metadata.create_all(bind=engine)
+    migrations.migrate_ai_ladder_decision_schema(engine)
     migrations.add_missing_columns(engine)
     migrations.backfill_ai_ladder_decisions(engine)
+    migrations.create_missing_indexes(engine)
 
     with engine.connect() as conn:
         row = conn.execute(
@@ -141,6 +150,173 @@ def test_backfill_ai_ladder_decisions_preserves_old_valid_history(tmp_path):
     )
     assert (replay.counted, replay.replayed, replay.net_score) == (True, True, 1)
     assert repo.recent_counted_results(1) == ["win"]
+
+    excluded = [
+        repo.settle_game(
+            user_id=1,
+            game_id="old-pvp",
+            user_color="B",
+            result="win",
+            game_type="pvp",
+            opponent=None,
+        ),
+        repo.settle_game(
+            user_id=1,
+            game_id="old-inconclusive",
+            user_color="B",
+            result="inconclusive",
+            game_type="ai_ladder_ranked",
+            opponent=AiLadderOpponentSnapshot(
+                rung=20,
+                rank_name="1级",
+                config_snapshot={"config_digest": "digest", "config_version": "v1"},
+                certification_status="certified",
+                availability="available",
+                route="server",
+            ),
+        ),
+        repo.settle_game(
+            user_id=1,
+            game_id="old-unavailable",
+            user_color="B",
+            result="loss",
+            game_type="ai_ladder_ranked",
+            opponent=AiLadderOpponentSnapshot(
+                rung=20,
+                rank_name="1级",
+                config_snapshot={"config_digest": "digest", "config_version": "v1"},
+                certification_status="certified",
+                availability="unavailable",
+                route="server",
+            ),
+        ),
+    ]
+    assert [decision.counted for decision in excluded] == [False, False, False]
+    assert [decision.reason for decision in excluded] == [
+        "invalid_game_type",
+        "inconclusive",
+        "opponent_not_eligible",
+    ]
+
+    with sessions() as session:
+        profile = session.get(models_db.AiLadderProfile, 1)
+        assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (20, 1, 1)
+        assert session.query(models_db.AiLadderGameLedger).count() == 4
+
+    migrations.migrate_ai_ladder_decision_schema(engine)
+    migrations.add_missing_columns(engine)
+    migrations.backfill_ai_ladder_decisions(engine)
+    migrations.create_missing_indexes(engine)
+
+    inspector = inspect(engine)
+    assert migrations.AI_LADDER_LEGACY_TABLE in inspector.get_table_names()
+    with engine.connect() as conn:
+        assert conn.execute(text(f"SELECT COUNT(*) FROM {migrations.AI_LADDER_LEGACY_TABLE}")).scalar_one() == 1
+        assert conn.execute(text("SELECT COUNT(*) FROM ai_ladder_game_ledger")).scalar_one() == 4
+
+
+def test_postgres_ai_ladder_migration_ddl_is_non_destructive():
+    statements = migrations.postgres_ai_ladder_decision_statements(
+        existing_columns={
+            "id",
+            "game_id",
+            "user_id",
+            "user_color",
+            "result",
+            "game_type",
+            "opponent_rung",
+            "opponent_rank_name",
+            "opponent_config_snapshot",
+            "opponent_certification_status",
+            "opponent_availability",
+            "opponent_route",
+            "settled_at",
+        },
+        existing_checks={
+            "ck_ai_ladder_ledger_result",
+            "ck_ai_ladder_ledger_game_type",
+            "ck_ai_ladder_ledger_opponent_rung",
+            "ck_ai_ladder_ledger_certification",
+            "ck_ai_ladder_ledger_availability",
+            "ck_ai_ladder_ledger_route",
+        },
+    )
+    sql = "\n".join(statements)
+    assert "ADD COLUMN IF NOT EXISTS counted BOOLEAN" in sql
+    assert "ADD COLUMN IF NOT EXISTS reason VARCHAR(32)" in sql
+    assert "SET counted = TRUE" in sql
+    assert "counted = FALSE AND reason IS NULL" in sql
+    assert "counted IS NULL OR (counted = FALSE AND reason IS NULL)" in sql
+    assert "ALTER COLUMN opponent_rung DROP NOT NULL" in sql
+    assert "DROP CONSTRAINT IF EXISTS ck_ai_ladder_ledger_result" in sql
+    assert "ADD CONSTRAINT ck_ai_ladder_ledger_decision" in sql
+    assert "DROP TABLE" not in sql
+    assert "DELETE" not in sql
+
+
+def test_ai_ladder_migration_fails_closed_when_backup_history_is_missing():
+    engine = create_engine("sqlite:///:memory:")
+    models_db.Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                f'CREATE TABLE "{migrations.AI_LADDER_LEGACY_TABLE}" AS ' "SELECT * FROM ai_ladder_game_ledger WHERE 0"
+            )
+        )
+        conn.execute(
+            text(
+                f'INSERT INTO "{migrations.AI_LADDER_LEGACY_TABLE}" '
+                "(id, game_id, user_id, user_color, result, game_type, opponent_rung, opponent_rank_name, "
+                "opponent_config_snapshot, opponent_certification_status, opponent_availability, opponent_route, "
+                "counted, reason, settled_at) VALUES "
+                "(1, 'missing-history', 1, 'B', 'win', 'ai_ladder_ranked', 1, '20级', "
+                '\'{"config_digest":"d","config_version":"v"}\', '
+                "'certified', 'available', 'server', TRUE, NULL, CURRENT_TIMESTAMP)"
+            )
+        )
+
+    with pytest.raises(RuntimeError, match="legacy decision.*missing"):
+        migrations.migrate_ai_ladder_decision_schema(engine)
+
+
+def test_ai_ladder_migration_fails_closed_when_only_backup_exists():
+    engine = create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text(f'CREATE TABLE "{migrations.AI_LADDER_LEGACY_TABLE}" (game_id VARCHAR(64))'))
+
+    with pytest.raises(RuntimeError, match="backup exists without final"):
+        migrations.migrate_ai_ladder_decision_schema(engine)
+
+
+@pytest.mark.parametrize(
+    "tamper_sql",
+    [
+        "UPDATE ai_ladder_game_ledger SET opponent_rank_name = 'tampered' WHERE game_id = 'legacy-game'",
+        "UPDATE ai_ladder_game_ledger SET counted = FALSE, reason = 'tampered' WHERE game_id = 'legacy-game'",
+    ],
+)
+def test_ai_ladder_migration_fails_closed_when_backup_history_differs(tamper_sql):
+    engine = create_engine("sqlite:///:memory:")
+    models_db.Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO ai_ladder_game_ledger "
+                "(id, game_id, user_id, user_color, result, game_type, opponent_rung, opponent_rank_name, "
+                "opponent_config_snapshot, opponent_certification_status, opponent_availability, opponent_route, "
+                "counted, reason, settled_at) VALUES "
+                "(1, 'legacy-game', 1, 'B', 'win', 'ai_ladder_ranked', 1, '20级', "
+                '\'{"config_digest":"d","config_version":"v"}\', '
+                "'certified', 'available', 'server', TRUE, NULL, CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(
+            text(f'CREATE TABLE "{migrations.AI_LADDER_LEGACY_TABLE}" AS ' "SELECT * FROM ai_ladder_game_ledger")
+        )
+        conn.execute(text(tamper_sql))
+
+    with pytest.raises(RuntimeError, match="legacy decision.*inconsistent"):
+        migrations.migrate_ai_ladder_decision_schema(engine)
 
 
 if __name__ == "__main__":

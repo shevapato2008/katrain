@@ -117,6 +117,7 @@ class SQLAlchemyUserRepository(UserRepository):
         # Lightweight, non-destructive migration (all dialects): ADD COLUMN / CREATE
         # INDEX for anything missing (e.g. users.is_admin, billing indexes). Runs
         # BEFORE the SQLite drift-rebuild so a simple new column never drops data.
+        migrations.migrate_ai_ladder_decision_schema(engine)
         migrations.add_missing_columns(engine)
         migrations.backfill_ai_ladder_decisions(engine)
         migrations.create_missing_indexes(engine)

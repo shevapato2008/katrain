@@ -1,15 +1,23 @@
 import math
+from dataclasses import replace
 
 import pytest
 from katrain.core.ladder import (
+    HUMAN_ARGMAX,
+    HUMAN_TEMPERATURE,
+    HUMAN_WEIGHTED,
+    LADDER_SELECTIONS,
     LADDER_RUNGS,
     LadderMoveError,
+    NATIVE_POLICY_ARGMAX,
+    SEARCH,
     TEMPERATURE_MAX,
     TEMPERATURE_MIN,
     get_rung,
     rung_engine_params,
     ladder_override_settings,
     pick_ladder_move,
+    pick_ladder_rung_move,
     pick_temperature_policy,
     policy_index_to_gtp,
     temperature_policy_distribution,
@@ -18,8 +26,9 @@ from katrain.core.ladder import (
     golaxy_to_colrow,
     config_sanity_key,
     MECHANISMS,
+    rung_endpoint_digest,
+    rung_strength_spec,
 )
-
 
 U64_MAX = 2**64 - 1
 
@@ -195,6 +204,8 @@ def test_production_rungs_and_local_temperature_default_are_unchanged():
         (37, "KataGo中等", "net_search", "b28", None, 500, 1.0),
     ]
     assert all(r.human_policy_temperature is None for r in LADDER_RUNGS)
+    assert all(r.selection == HUMAN_WEIGHTED for r in LADDER_RUNGS[:25])
+    assert all(r.selection == SEARCH for r in LADDER_RUNGS[25:])
 
 
 def test_legacy_weighted_picker_behavior_is_unchanged(monkeypatch):
@@ -212,6 +223,12 @@ def test_legacy_weighted_picker_behavior_is_unchanged(monkeypatch):
     monkeypatch.setattr(ai, "weighted_selection_without_replacement", fake_weighted_picker)
     assert pick_ladder_move({"humanPolicy": policy}, (19, 19), "humansl") == (0, 18)
     assert seen == [((0, 0), 1.0), ((0, 18), 2.0), ("pass", 3.0)]
+
+
+def test_legacy_weighted_picker_retains_bool_weight_compatibility():
+    policy = [False] * 362
+    policy[342] = True
+    assert pick_ladder_move({"humanPolicy": policy}, (19, 19), "humansl") == (0, 0)
 
 
 def test_thirty_seven_rungs():
@@ -232,7 +249,17 @@ def test_band_b_golaxy_aligned_strong_tiers():
     # rungs 26..36 = net_search @ default b28, mapped 1:1 to Golaxy 准6段..星阵3星
     band_b = LADDER_RUNGS[25:36]
     assert [r.rank_name for r in band_b] == [
-        "准6D", "6D", "准7D", "7D", "准8D", "8D", "准9D", "9D", "职业", "职业顶尖", "超职业",
+        "准6D",
+        "6D",
+        "准7D",
+        "7D",
+        "准8D",
+        "8D",
+        "准9D",
+        "9D",
+        "职业",
+        "职业顶尖",
+        "超职业",
     ]
     for r in band_b:
         assert r.mechanism == "net_search" and r.net == "b28" and r.human_sl_profile is None
@@ -410,6 +437,7 @@ def test_band_a_rank_name_is_the_humansl_rank():
 
 def test_pro_tiers_and_ceiling_rank_names():
     from katrain.core.ladder import get_rung
+
     assert get_rung(34).rank_name == "职业"
     assert get_rung(35).rank_name == "职业顶尖"
     assert get_rung(36).rank_name == "超职业"
@@ -419,6 +447,7 @@ def test_pro_tiers_and_ceiling_rank_names():
 def test_golaxy_level_name_kept_internally_for_calibration():
     # Band B keeps its Golaxy counterpart internally (calibration metadata), never shown as label.
     from katrain.core.ladder import get_rung
+
     assert get_rung(34).golaxy_level_name == "星阵1星"  # displayed as "职业"
     assert get_rung(36).golaxy_level_name == "星阵3星"  # displayed as "超职业"
     assert get_rung(37).golaxy_level_name is None
@@ -445,6 +474,7 @@ def _humansl_search_rung(**overrides):
         rank_name="rank_9d",
         net="b18",
         mechanism="humansl_search",
+        selection="search",
         human_sl_profile="rank_9d",
         max_visits=40,
         human_sl_params=dict(HUMANSL_PIKL_BASELINE),
@@ -453,6 +483,158 @@ def _humansl_search_rung(**overrides):
     )
     values.update(overrides)
     return LadderRung(**values)
+
+
+def _policy(*weighted_indexes):
+    policy = [0.0] * 362
+    for index, weight in weighted_indexes:
+        policy[index] = weight
+    return policy
+
+
+def test_ladder_selections_are_the_exact_supported_values():
+    assert (
+        HUMAN_WEIGHTED,
+        HUMAN_TEMPERATURE,
+        HUMAN_ARGMAX,
+        SEARCH,
+        NATIVE_POLICY_ARGMAX,
+    ) == (
+        "human_weighted",
+        "human_temperature",
+        "human_argmax",
+        "search",
+        "native_policy_argmax",
+    )
+    assert LADDER_SELECTIONS == {
+        "human_weighted",
+        "human_temperature",
+        "human_argmax",
+        "search",
+        "native_policy_argmax",
+    }
+
+
+def test_human_argmax_uses_only_valid_human_policy_with_canonical_ties():
+    rung = replace(get_rung(21), selection=HUMAN_ARGMAX)
+    analysis = {
+        "humanPolicy": _policy((342, 1.0), (343, 1.0), (361, 1.0)),
+        "moveInfos": [{"move": "Q16", "order": 0}],
+    }
+    assert pick_ladder_rung_move(analysis, rung, (19, 19)) == (0, 0)
+
+    bool_policy = [0.0] * 362
+    bool_policy[342] = True
+    for malformed in (None, [1.0] * 361, _policy(), _policy((0, float("nan"))), bool_policy):
+        with pytest.raises(LadderMoveError):
+            pick_ladder_rung_move({"humanPolicy": malformed, "moveInfos": analysis["moveInfos"]}, rung, (19, 19))
+
+
+def test_native_policy_argmax_requires_exact_one_visit_root_only_response():
+    rung = replace(get_rung(26), net="b18", max_visits=1, selection=NATIVE_POLICY_ARGMAX)
+    analysis = {
+        "rootInfo": {"visits": 1},
+        "moveInfos": [],
+        "policy": _policy((342, 2.0), (343, 2.0), (361, 2.0)),
+    }
+    assert pick_ladder_rung_move(analysis, rung, (19, 19)) == (0, 0)
+
+    for update in (
+        {"rootInfo": {"visits": True}},
+        {"rootInfo": {"visits": 1.0}},
+        {"rootInfo": {"visits": 2}},
+        {"moveInfos": [{"move": "D4", "order": 0}]},
+        {"policy": [1.0] * 361},
+    ):
+        with pytest.raises(LadderMoveError):
+            pick_ladder_rung_move({**analysis, **update}, rung, (19, 19))
+
+
+def test_search_requires_nonempty_fully_valid_move_infos():
+    rung = replace(get_rung(26), selection=SEARCH)
+    assert pick_ladder_rung_move(
+        {"moveInfos": [{"move": "Q16", "order": 1}, {"move": "D4", "order": 0}]}, rung, (19, 19)
+    ) == (3, 3)
+    for infos in ([], [{"move": "D4", "order": 0}, {"move": "II9", "order": 1}]):
+        with pytest.raises(LadderMoveError):
+            pick_ladder_rung_move({"moveInfos": infos}, rung, (19, 19))
+
+
+@pytest.mark.parametrize("selection", [HUMAN_WEIGHTED, HUMAN_TEMPERATURE])
+@pytest.mark.parametrize("draw", [None, False, True, -1, 1.0, U64_MAX + 1])
+def test_sampled_ladder_selections_require_explicit_plain_u64(selection, draw):
+    temperature = 1.5 if selection == HUMAN_TEMPERATURE else None
+    rung = replace(get_rung(21), selection=selection, human_policy_temperature=temperature)
+    with pytest.raises(LadderMoveError):
+        pick_ladder_rung_move({"humanPolicy": _policy((342, 1.0))}, rung, (19, 19), draw_u64=draw)
+
+
+def test_sampled_ladder_selections_use_inverse_cdf_and_rung_temperature():
+    policy = _policy((342, 0.9), (0, 0.1))
+    draw = 17_524_406_870_024_074_035
+    weighted = replace(get_rung(21), selection=HUMAN_WEIGHTED)
+    hot = replace(get_rung(21), selection=HUMAN_TEMPERATURE, human_policy_temperature=0.5)
+    assert pick_ladder_rung_move({"humanPolicy": policy}, weighted, (19, 19), draw_u64=draw) == (0, 18)
+    assert pick_ladder_rung_move({"humanPolicy": policy}, hot, (19, 19), draw_u64=draw) == (0, 0)
+
+
+def test_ladder_response_fields_are_not_interchangeable():
+    human = replace(get_rung(21), selection=HUMAN_ARGMAX)
+    native = replace(get_rung(26), net="b18", max_visits=1, selection=NATIVE_POLICY_ARGMAX)
+    search = replace(get_rung(26), selection=SEARCH)
+    with pytest.raises(LadderMoveError):
+        pick_ladder_rung_move({"policy": _policy((342, 1.0))}, human, (19, 19))
+    with pytest.raises(LadderMoveError):
+        pick_ladder_rung_move(
+            {"rootInfo": {"visits": 1}, "moveInfos": [], "humanPolicy": _policy((342, 1.0))}, native, (19, 19)
+        )
+    with pytest.raises(LadderMoveError):
+        pick_ladder_rung_move({"policy": _policy((342, 1.0))}, search, (19, 19))
+
+
+def test_versioned_pikl_and_pure_b18_endpoint_digests_bind_effective_strength():
+    from katrain.core.ladder import HUMANSL_PIKL_BASELINE, HUMANSL_PIKL_BASELINE_V1
+
+    assert HUMANSL_PIKL_BASELINE is HUMANSL_PIKL_BASELINE_V1
+    pikl = _humansl_search_rung(max_visits=2, selection=SEARCH)
+    pure = replace(
+        pikl,
+        mechanism="net_search",
+        human_sl_profile=None,
+        human_sl_params={},
+        selection=SEARCH,
+    )
+    pikl_spec = rung_strength_spec(pikl)
+    pure_spec = rung_strength_spec(pure)
+    assert (pikl_spec.main_model, pikl_spec.human_model, pikl.human_sl_profile, dict(pikl.human_sl_params)) == (
+        "b18",
+        "humanv0",
+        "rank_9d",
+        dict(HUMANSL_PIKL_BASELINE_V1),
+    )
+    assert pure_spec.main_model == "b18" and pure_spec.human_model is None
+    assert pure.human_sl_profile is None and pure.human_sl_params == {}
+
+    identity_a = {"model_sha256": "abc", "katago_version": "1.16.3"}
+    identity_b = {"katago_version": "1.16.3", "model_sha256": "abc"}
+    digest = rung_endpoint_digest(pikl, identity_a)
+    assert digest == rung_endpoint_digest(pikl, identity_b)
+    assert len(digest) == 64
+    assert digest != rung_endpoint_digest(replace(pikl, max_visits=3), identity_a)
+    assert digest != rung_endpoint_digest(pikl, {**identity_a, "model_sha256": "changed"})
+    assert digest != rung_endpoint_digest(pure, identity_a)
+
+
+def test_unresolved_or_unknown_selection_fails_closed_on_executable_paths():
+    legacy = replace(get_rung(21), selection=None)
+    assert legacy.selection is None
+    for rung in (legacy, replace(legacy, selection="weighted")):
+        with pytest.raises(ValueError):
+            rung_strength_spec(rung)
+        with pytest.raises(ValueError):
+            rung_endpoint_digest(rung, {"model": "humanv0"})
+        with pytest.raises(LadderMoveError):
+            pick_ladder_rung_move({"humanPolicy": _policy((342, 1.0))}, rung, (19, 19), draw_u64=0)
 
 
 def test_humansl_search_strength_spec_is_b18_plus_humanv0():
@@ -487,7 +669,7 @@ def test_human_policy_temperature_is_validated_but_not_projected_to_engine():
 
     from katrain.core.ladder import rung_strength_spec
 
-    rung = replace(get_rung(21), human_policy_temperature=1.3)
+    rung = replace(get_rung(21), selection=HUMAN_TEMPERATURE, human_policy_temperature=1.3)
     assert "human_policy_temperature" not in rung_strength_spec(rung).override_settings
     assert "humanPolicyTemperature" not in ladder_override_settings(rung)
     assert "humanPolicyTemperature" not in rung_engine_params(rung)["extra_settings"]

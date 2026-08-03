@@ -102,6 +102,7 @@ def _canonical_pikl_spec(probe, pikl_lambda):
         rank_name=probe.LOCKED_PROFILE,
         net="b18",
         mechanism="humansl_search",
+        selection="search",
         human_sl_profile=probe.LOCKED_PROFILE,
         max_visits=probe.LOCKED_VISITS,
         human_sl_params=params,

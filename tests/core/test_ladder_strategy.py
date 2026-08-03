@@ -192,6 +192,7 @@ def test_humansl_search_requires_human_attestation(monkeypatch):
         rank_name="9D search",
         net="b18",
         mechanism="humansl_search",
+        selection="search",
         human_sl_profile="rank_9d",
         max_visits=40,
         human_sl_params=dict(HUMANSL_PIKL_BASELINE),

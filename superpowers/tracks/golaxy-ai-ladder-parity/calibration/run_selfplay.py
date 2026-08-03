@@ -801,6 +801,12 @@ def make_player(spec: str, *, experimental_min_humansl_search_visits: int = 40) 
         rank_name=prof,
         net=net,
         mechanism=mech,
+        selection={
+            "weighted": "human_weighted",
+            "temperature_weighted": "human_temperature",
+            "argmax_human": "human_argmax",
+            "search": "search",
+        }[selection],
         human_sl_profile=profile,
         max_visits=visits,
         human_sl_params=dict(HUMANSL_PIKL_BASELINE) if mech == "humansl_search" else {},

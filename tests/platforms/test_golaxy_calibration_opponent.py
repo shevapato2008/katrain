@@ -108,6 +108,7 @@ async def test_golaxy_move_decodes_and_rejects_bad_api_level():
         rank_name="测试",
         net="b18",
         mechanism="net_search",
+        selection="native_policy_argmax",
         human_sl_profile=None,
         max_visits=1,
         human_sl_params={},

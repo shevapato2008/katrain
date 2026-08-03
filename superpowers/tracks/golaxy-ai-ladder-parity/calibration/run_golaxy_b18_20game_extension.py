@@ -97,6 +97,7 @@ def make_player(visits: int) -> LadderRung:
         rank_name=f"b18@{visits}",
         net=protocol.MODEL,
         mechanism="net_search",
+        selection="search",
         human_sl_profile=None,
         max_visits=visits,
         human_sl_params={},

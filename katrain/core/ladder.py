@@ -19,6 +19,8 @@ games. Band B visits are PROVISIONAL until calibrated."""
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -27,6 +29,12 @@ from types import MappingProxyType
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 MECHANISMS = ("humansl", "humansl_search", "net_search")
+HUMAN_WEIGHTED = "human_weighted"
+HUMAN_TEMPERATURE = "human_temperature"
+HUMAN_ARGMAX = "human_argmax"
+SEARCH = "search"
+NATIVE_POLICY_ARGMAX = "native_policy_argmax"
+LADDER_SELECTIONS = {HUMAN_WEIGHTED, HUMAN_TEMPERATURE, HUMAN_ARGMAX, SEARCH, NATIVE_POLICY_ARGMAX}
 _COLS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"  # GTP columns, 'I' skipped
 TEMPERATURE_MIN = 0.05
 TEMPERATURE_MAX = 10.0
@@ -57,6 +65,7 @@ class LadderRung:
     mechanism: str
     human_sl_profile: Optional[str]
     max_visits: int
+    selection: Optional[str] = None
     human_sl_params: Dict = field(default_factory=dict)
     backend_hint: str = "server"
     root_policy_temperature: float = 1.0
@@ -79,7 +88,7 @@ class LadderStrengthSpec:
         object.__setattr__(self, "override_settings", MappingProxyType(settings))
 
 
-HUMANSL_PIKL_BASELINE = {
+HUMANSL_PIKL_BASELINE_V1 = {
     "humanSLChosenMoveProp": 1.0,
     "humanSLChosenMovePiklLambda": 0.08,
     "humanSLRootExploreProbWeightless": 0.8,
@@ -88,6 +97,7 @@ HUMANSL_PIKL_BASELINE = {
     "subtreeValueBiasFactor": 0.0,
     "useNoisePruning": False,
 }
+HUMANSL_PIKL_BASELINE = HUMANSL_PIKL_BASELINE_V1
 
 _PIKL_NUMERIC_SETTINGS = {
     "humanSLChosenMoveProp",
@@ -106,12 +116,31 @@ _RESERVED_OVERRIDE_SETTINGS = {"model", "maxVisits"}
 # display_elo = None). The deepest kyu get a temperature bump (looser, weaker play).
 _HUMANSL_NATIVE = [
     # (rank_name, humanSLProfile)
-    ("20K", "rank_20k"), ("19K", "rank_19k"), ("18K", "rank_18k"), ("17K", "rank_17k"),
-    ("16K", "rank_16k"), ("15K", "rank_15k"), ("14K", "rank_14k"), ("13K", "rank_13k"),
-    ("12K", "rank_12k"), ("11K", "rank_11k"), ("10K", "rank_10k"), ("9K", "rank_9k"),
-    ("8K", "rank_8k"), ("7K", "rank_7k"), ("6K", "rank_6k"), ("5K", "rank_5k"),
-    ("4K", "rank_4k"), ("3K", "rank_3k"), ("2K", "rank_2k"), ("1K", "rank_1k"),
-    ("1D", "rank_1d"), ("2D", "rank_2d"), ("3D", "rank_3d"), ("4D", "rank_4d"), ("5D", "rank_5d"),
+    ("20K", "rank_20k"),
+    ("19K", "rank_19k"),
+    ("18K", "rank_18k"),
+    ("17K", "rank_17k"),
+    ("16K", "rank_16k"),
+    ("15K", "rank_15k"),
+    ("14K", "rank_14k"),
+    ("13K", "rank_13k"),
+    ("12K", "rank_12k"),
+    ("11K", "rank_11k"),
+    ("10K", "rank_10k"),
+    ("9K", "rank_9k"),
+    ("8K", "rank_8k"),
+    ("7K", "rank_7k"),
+    ("6K", "rank_6k"),
+    ("5K", "rank_5k"),
+    ("4K", "rank_4k"),
+    ("3K", "rank_3k"),
+    ("2K", "rank_2k"),
+    ("1K", "rank_1k"),
+    ("1D", "rank_1d"),
+    ("2D", "rank_2d"),
+    ("3D", "rank_3d"),
+    ("4D", "rank_4d"),
+    ("5D", "rank_5d"),
 ]
 _DEEP_KYU_TEMP = {"rank_20k", "rank_19k", "rank_18k", "rank_17k", "rank_16k"}  # looser weak play
 
@@ -151,10 +180,20 @@ def _build_ladder() -> List[LadderRung]:
         temp = 1.1 if profile in _DEEP_KYU_TEMP else 1.0
         rungs.append(
             LadderRung(
-                rung=n, golaxy_level_name=None, golaxy_api_level=None, display_elo=None,
-                ref_rank=rank_name, rank_name=rank_name, net="humanv0", mechanism="humansl",
-                human_sl_profile=profile, max_visits=1, human_sl_params={},
-                backend_hint="server", root_policy_temperature=temp,
+                rung=n,
+                golaxy_level_name=None,
+                golaxy_api_level=None,
+                display_elo=None,
+                ref_rank=rank_name,
+                rank_name=rank_name,
+                net="humanv0",
+                mechanism="humansl",
+                human_sl_profile=profile,
+                max_visits=1,
+                selection=HUMAN_WEIGHTED,
+                human_sl_params={},
+                backend_hint="server",
+                root_policy_temperature=temp,
             )
         )
     # Band B — Golaxy-aligned strong tiers (net_search @ default b28, provisional visits)
@@ -162,20 +201,40 @@ def _build_ladder() -> List[LadderRung]:
         n += 1
         rungs.append(
             LadderRung(
-                rung=n, golaxy_level_name=gname, golaxy_api_level=api, display_elo=disp,
-                ref_rank=ref, rank_name=rank_name, net="b28", mechanism="net_search",
-                human_sl_profile=None, max_visits=visits, human_sl_params={},
-                backend_hint="server", root_policy_temperature=1.0,
+                rung=n,
+                golaxy_level_name=gname,
+                golaxy_api_level=api,
+                display_elo=disp,
+                ref_rank=ref,
+                rank_name=rank_name,
+                net="b28",
+                mechanism="net_search",
+                human_sl_profile=None,
+                max_visits=visits,
+                selection=SEARCH,
+                human_sl_params={},
+                backend_hint="server",
+                root_policy_temperature=1.0,
             )
         )
     # Ceiling — rung 37 (b28 @ 500)
     n += 1
     rungs.append(
         LadderRung(
-            rung=n, golaxy_level_name=None, golaxy_api_level=None, display_elo=None,
-            ref_rank="天花板", rank_name="KataGo中等", net="b28", mechanism="net_search",
-            human_sl_profile=None, max_visits=_CEILING_VISITS, human_sl_params={},
-            backend_hint="server", root_policy_temperature=1.0,
+            rung=n,
+            golaxy_level_name=None,
+            golaxy_api_level=None,
+            display_elo=None,
+            ref_rank="天花板",
+            rank_name="KataGo中等",
+            net="b28",
+            mechanism="net_search",
+            human_sl_profile=None,
+            max_visits=_CEILING_VISITS,
+            selection=SEARCH,
+            human_sl_params={},
+            backend_hint="server",
+            root_policy_temperature=1.0,
         )
     )
     return rungs
@@ -226,6 +285,8 @@ def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
     """Return a validated, immutable description of the engine strength request."""
     if rung.mechanism not in MECHANISMS:
         raise ValueError(f"invalid ladder mechanism: {rung.mechanism!r}")
+    if rung.selection not in LADDER_SELECTIONS:
+        raise ValueError(f"invalid or unresolved ladder selection: {rung.selection!r}")
     if not _is_plain_int(rung.max_visits) or rung.max_visits <= 0:
         raise ValueError(f"max_visits must be a positive plain int: {rung.max_visits!r}")
     if not _nonempty_string(rung.net):
@@ -234,8 +295,8 @@ def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
         raise ValueError(f"root_policy_temperature must be a positive finite number: {rung.root_policy_temperature!r}")
     if rung.human_policy_temperature is not None:
         _validate_temperature(rung.human_policy_temperature)
-        if rung.mechanism != "humansl":
-            raise ValueError("human_policy_temperature is only valid for the humansl mechanism")
+        if rung.mechanism != "humansl" or rung.selection != HUMAN_TEMPERATURE:
+            raise ValueError("human_policy_temperature is only valid for humansl human_temperature selection")
     if not isinstance(rung.human_sl_params, Mapping):
         raise ValueError("human_sl_params must be a mapping")
     params = deepcopy(dict(rung.human_sl_params))
@@ -254,16 +315,26 @@ def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
             raise ValueError("humansl requires humanv0 at exactly one visit")
         if params:
             raise ValueError("humansl requires empty human_sl_params")
+        if rung.selection not in (HUMAN_WEIGHTED, HUMAN_TEMPERATURE, HUMAN_ARGMAX):
+            raise ValueError("humansl requires a human-policy selection")
+        if rung.selection == HUMAN_TEMPERATURE and rung.human_policy_temperature is None:
+            raise ValueError("human_temperature requires human_policy_temperature")
         main_model, human_model = None, "humanv0"
     elif rung.mechanism == "net_search":
         if rung.human_sl_profile is not None or params:
             raise ValueError("net_search must not carry a HumanSL profile or parameters")
+        if rung.selection not in (SEARCH, NATIVE_POLICY_ARGMAX):
+            raise ValueError("net_search requires search or native_policy_argmax selection")
+        if rung.selection == NATIVE_POLICY_ARGMAX and rung.max_visits != 1:
+            raise ValueError("native_policy_argmax requires a pure main-model one-visit recipe")
         main_model, human_model = rung.net, None
     else:
         if not _nonempty_string(rung.human_sl_profile):
             raise ValueError("humansl_search requires a nonempty HumanSL profile")
         if rung.net == "humanv0":
             raise ValueError("humansl_search must use a non-human main search model")
+        if rung.selection != SEARCH:
+            raise ValueError("humansl_search requires search selection")
         _validate_humansl_search_recipe(params)
         main_model, human_model = rung.net, "humanv0"
 
@@ -275,6 +346,31 @@ def rung_strength_spec(rung: LadderRung) -> LadderStrengthSpec:
         ov["rootPolicyTemperature"] = rung.root_policy_temperature
     ov.update(params)
     return LadderStrengthSpec(rung.max_visits, main_model, human_model, ov)
+
+
+def rung_endpoint_digest(rung: LadderRung, model_identity: Mapping[str, object]) -> str:
+    """Digest the fully resolved strength and selection recipe using canonical JSON."""
+    spec = rung_strength_spec(rung)
+    if not isinstance(model_identity, Mapping):
+        raise ValueError("model_identity must be a mapping")
+    payload = {
+        "schema": "ladder-endpoint-v1",
+        "model_identity": deepcopy(dict(model_identity)),
+        "mechanism": rung.mechanism,
+        "selection": rung.selection,
+        "visits": spec.visits,
+        "main_model": spec.main_model,
+        "human_model": spec.human_model,
+        "human_sl_profile": rung.human_sl_profile,
+        "human_policy_temperature": rung.human_policy_temperature,
+        "root_policy_temperature": rung.root_policy_temperature,
+        "override_settings": deepcopy(dict(spec.override_settings)),
+    }
+    try:
+        canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"endpoint identity is not strict canonical JSON: {exc}") from exc
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def ladder_override_settings(rung: LadderRung) -> Dict:
@@ -474,6 +570,15 @@ def _valid_policy(hp, expected_len) -> bool:
     )
 
 
+def _valid_ladder_policy(policy, expected_len) -> bool:
+    return (
+        isinstance(policy, list)
+        and len(policy) == expected_len
+        and all(_finite_number(value) for value in policy)
+        and sum(value for value in policy if value > 0) > 0
+    )
+
+
 def _is_plain_int(x) -> bool:
     return type(x) is int  # excludes bool (a subclass of int) and float
 
@@ -511,6 +616,54 @@ def _pick_search_move(analysis, board_size):
         _validate_gtp_on_board(mv, board_size)  # parse + bounds-check EVERY entry, not just best
     best = min(infos, key=lambda mi: mi["order"])
     return _validate_gtp_on_board(best["move"], board_size)  # already validated -> safe re-parse
+
+
+def _pick_policy_argmax(policy, board_size, field_name):
+    try:
+        if (
+            not isinstance(board_size, tuple)
+            or len(board_size) != 2
+            or any(not _is_plain_int(size) or size <= 0 for size in board_size)
+        ):
+            raise ValueError(f"board_size must be a pair of positive plain ints: {board_size!r}")
+        bx, by = board_size
+        if not _valid_ladder_policy(policy, bx * by + 1):
+            raise ValueError(f"{field_name} must be a valid {bx * by + 1}-entry policy")
+    except ValueError as exc:
+        raise LadderMoveError(f"{field_name} argmax selection: {exc}") from exc
+
+    candidates = []
+    for x in range(bx):
+        for y in range(by):
+            index = (by - y - 1) * bx + x
+            candidates.append((policy[index], (x, y)))
+    candidates.append((policy[-1], "pass"))
+    return max(candidates, key=lambda candidate: candidate[0])[1]
+
+
+def pick_ladder_rung_move(analysis, rung: LadderRung, board_size, *, draw_u64=None):
+    """Pick one certified move using the selection semantics bound into ``rung``."""
+    try:
+        rung_strength_spec(rung)
+    except ValueError as exc:
+        raise LadderMoveError(f"invalid ladder rung recipe: {exc}") from exc
+    if not isinstance(analysis, dict):
+        raise LadderMoveError(f"analysis is not a dict: {type(analysis).__name__}")
+
+    if rung.selection in (HUMAN_WEIGHTED, HUMAN_TEMPERATURE):
+        temperature = 1.0 if rung.selection == HUMAN_WEIGHTED else rung.human_policy_temperature
+        move, _ = pick_temperature_policy(analysis.get("humanPolicy"), board_size, temperature, draw_u64)
+        return move
+    if rung.selection == HUMAN_ARGMAX:
+        return _pick_policy_argmax(analysis.get("humanPolicy"), board_size, "humanPolicy")
+    if rung.selection == NATIVE_POLICY_ARGMAX:
+        root_info = analysis.get("rootInfo")
+        if not isinstance(root_info, dict) or not _is_plain_int(root_info.get("visits")) or root_info["visits"] != 1:
+            raise LadderMoveError("native_policy_argmax requires rootInfo.visits exactly plain int 1")
+        if analysis.get("moveInfos") != [] or not isinstance(analysis.get("moveInfos"), list):
+            raise LadderMoveError("native_policy_argmax requires moveInfos exactly []")
+        return _pick_policy_argmax(analysis.get("policy"), board_size, "policy")
+    return _pick_search_move(analysis, board_size)
 
 
 def pick_ladder_move(analysis: Dict, board_size: Tuple[int, int], mechanism: str) -> Union[Tuple[int, int], str]:

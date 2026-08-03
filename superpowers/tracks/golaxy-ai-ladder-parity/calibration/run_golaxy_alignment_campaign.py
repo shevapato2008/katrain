@@ -138,6 +138,7 @@ def _pure_b18_player() -> CampaignPlayer:
         rank_name="b18",
         net="b18",
         mechanism="net_search",
+        selection="native_policy_argmax",
         human_sl_profile=None,
         max_visits=1,
         human_sl_params={},

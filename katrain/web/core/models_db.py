@@ -155,6 +155,50 @@ class AiLadderGameLedger(Base):
     )
 
 
+class AiLadderSettlementReceipt(Base):
+    """Immutable idempotency receipt for every ranked-AI settlement decision."""
+
+    __tablename__ = "ai_ladder_settlement_receipts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(String(64), nullable=False, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_color = Column(String(1), nullable=False)
+    result = Column(String(32), nullable=False)
+    game_type = Column(String(32), nullable=False)
+    opponent_rung = Column(Integer, nullable=True)
+    opponent_rank_name = Column(String(64), nullable=True)
+    opponent_config_snapshot = Column(JSON, nullable=True)
+    opponent_certification_status = Column(String(16), nullable=True)
+    opponent_availability = Column(String(16), nullable=True)
+    opponent_route = Column(String(16), nullable=True)
+    counted = Column(Boolean, nullable=False)
+    reason = Column(String(32), nullable=True)
+    settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    user = relationship("User", backref="ai_ladder_settlement_receipts")
+
+    __table_args__ = (
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_receipt_user_color"),
+        CheckConstraint(
+            "opponent_rung IS NULL OR opponent_rung BETWEEN 1 AND 41",
+            name="ck_ai_ladder_receipt_opponent_rung",
+        ),
+        CheckConstraint(
+            "opponent_route IS NULL OR opponent_route IN ('local', 'server')",
+            name="ck_ai_ladder_receipt_route",
+        ),
+        CheckConstraint(
+            "(counted = FALSE AND reason IS NOT NULL) OR "
+            "(counted = TRUE AND reason IS NULL AND opponent_rung IS NOT NULL "
+            "AND opponent_rank_name IS NOT NULL AND opponent_config_snapshot IS NOT NULL "
+            "AND opponent_certification_status IS NOT NULL AND opponent_availability IS NOT NULL "
+            "AND opponent_route IS NOT NULL)",
+            name="ck_ai_ladder_receipt_decision",
+        ),
+    )
+
+
 class LiveMatchDB(Base):
     """Database model for live/historical matches from external sources."""
 

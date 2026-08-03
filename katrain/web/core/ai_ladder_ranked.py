@@ -30,6 +30,14 @@ class AiLadderOpponentSnapshot:
             raise ValueError("opponent rank_name must be non-empty")
         if not isinstance(self.config_snapshot, Mapping):
             raise ValueError("opponent config_snapshot must be a mapping")
+        config = deepcopy(dict(self.config_snapshot))
+        digest = config.get("config_digest")
+        identity = config.get("config_version") or config.get("recipe_identity")
+        if not isinstance(digest, str) or not digest.strip() or not isinstance(identity, str) or not identity.strip():
+            raise ValueError(
+                "opponent config_snapshot requires nonempty config_digest and config_version or recipe_identity"
+            )
+        object.__setattr__(self, "config_snapshot", config)
         if self.route not in {"local", "server"}:
             raise ValueError("opponent route must be local or server")
 
@@ -84,11 +92,8 @@ class AiLadderRankedRepository:
         user_color: str,
         result: str,
         game_type: str,
-        opponent: AiLadderOpponentSnapshot,
+        opponent: Optional[AiLadderOpponentSnapshot],
     ) -> AiLadderSettlementResult:
-        ignored_reason = self._ignored_reason(game_type=game_type, result=result, opponent=opponent)
-        if ignored_reason is not None:
-            return self._ignored(ignored_reason)
         if user_color not in {"B", "W"}:
             raise ValueError("user_color must be B or W")
         if not isinstance(game_id, str) or not game_id.strip():
@@ -97,47 +102,62 @@ class AiLadderRankedRepository:
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
-            existing = (
-                session.query(models_db.AiLadderGameLedger)
-                .filter(models_db.AiLadderGameLedger.game_id == game_id)
-                .one_or_none()
-            )
-            if existing is not None:
-                return self._replay_result(session, existing, user_id)
+            replay = self._find_replay_result(session, game_id, user_id)
+            if replay is not None:
+                return replay
 
             user = session.query(models_db.User).filter(models_db.User.id == user_id).with_for_update().one_or_none()
             if user is None:
                 raise ValueError(f"unknown user_id: {user_id}")
 
-            profile = (
-                session.query(models_db.AiLadderProfile)
-                .filter(models_db.AiLadderProfile.user_id == user_id)
-                .with_for_update()
-                .one_or_none()
+            ignored_reason = self._ignored_reason(game_type=game_type, result=result, opponent=opponent)
+            profile = None
+            if ignored_reason is None:
+                assert opponent is not None
+                profile = (
+                    session.query(models_db.AiLadderProfile)
+                    .filter(models_db.AiLadderProfile.user_id == user_id)
+                    .with_for_update()
+                    .one_or_none()
+                )
+                if profile is None:
+                    lo, hi = initial_placement_window(user.rank)
+                    expected_opponent_rung = (lo + hi) // 2
+                    if opponent.rung != expected_opponent_rung:
+                        ignored_reason = "opponent_rung_mismatch"
+                    else:
+                        profile = models_db.AiLadderProfile(
+                            user_id=user_id,
+                            ai_ladder_rung=None,
+                            placement_lo=lo,
+                            placement_hi=hi,
+                            placement_completed=0,
+                            net_score=0,
+                            version=0,
+                        )
+                        session.add(profile)
+                else:
+                    expected_opponent_rung = (
+                        profile.ai_ladder_rung
+                        if profile.ai_ladder_rung is not None
+                        else (profile.placement_lo + profile.placement_hi) // 2
+                    )
+                    if opponent.rung != expected_opponent_rung:
+                        ignored_reason = "opponent_rung_mismatch"
+
+            receipt = self._new_receipt(
+                user_id=user_id,
+                game_id=game_id,
+                user_color=user_color,
+                result=result,
+                game_type=game_type,
+                opponent=opponent,
+                reason=ignored_reason,
             )
-            if profile is None:
-                lo, hi = initial_placement_window(user.rank)
-                expected_opponent_rung = (lo + hi) // 2
-                if opponent.rung != expected_opponent_rung:
-                    return self._ignored("opponent_rung_mismatch")
-                profile = models_db.AiLadderProfile(
-                    user_id=user_id,
-                    ai_ladder_rung=None,
-                    placement_lo=lo,
-                    placement_hi=hi,
-                    placement_completed=0,
-                    net_score=0,
-                    version=0,
-                )
-                session.add(profile)
-            else:
-                expected_opponent_rung = (
-                    profile.ai_ladder_rung
-                    if profile.ai_ladder_rung is not None
-                    else (profile.placement_lo + profile.placement_hi) // 2
-                )
-                if opponent.rung != expected_opponent_rung:
-                    return self._ignored("opponent_rung_mismatch")
+            session.add(receipt)
+            if ignored_reason is not None:
+                session.commit()
+                return self._ignored(ignored_reason)
 
             ledger = models_db.AiLadderGameLedger(
                 game_id=game_id,
@@ -160,14 +180,10 @@ class AiLadderRankedRepository:
             return self._counted_result(profile)
         except IntegrityError:
             session.rollback()
-            existing = (
-                session.query(models_db.AiLadderGameLedger)
-                .filter(models_db.AiLadderGameLedger.game_id == game_id)
-                .one_or_none()
-            )
-            if existing is None:
+            replay = self._find_replay_result(session, game_id, user_id)
+            if replay is None:
                 raise
-            return self._replay_result(session, existing, user_id)
+            return replay
         except Exception:
             session.rollback()
             raise
@@ -187,11 +203,13 @@ class AiLadderRankedRepository:
             session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
     @staticmethod
-    def _ignored_reason(*, game_type: str, result: str, opponent: AiLadderOpponentSnapshot) -> Optional[str]:
+    def _ignored_reason(*, game_type: str, result: str, opponent: Optional[AiLadderOpponentSnapshot]) -> Optional[str]:
         if game_type != AI_LADDER_GAME_TYPE:
             return "invalid_game_type"
         if result not in {"win", "loss"}:
             return "inconclusive"
+        if opponent is None:
+            return "opponent_not_eligible"
         if opponent.certification_status != "certified" or opponent.availability != "available":
             return "opponent_not_eligible"
         return None
@@ -232,6 +250,33 @@ class AiLadderRankedRepository:
         )
 
     @staticmethod
+    def _new_receipt(
+        *,
+        user_id: int,
+        game_id: str,
+        user_color: str,
+        result: str,
+        game_type: str,
+        opponent: Optional[AiLadderOpponentSnapshot],
+        reason: Optional[str],
+    ) -> models_db.AiLadderSettlementReceipt:
+        return models_db.AiLadderSettlementReceipt(
+            game_id=game_id,
+            user_id=user_id,
+            user_color=user_color,
+            result=result,
+            game_type=game_type,
+            opponent_rung=opponent.rung if opponent is not None else None,
+            opponent_rank_name=opponent.rank_name if opponent is not None else None,
+            opponent_config_snapshot=(deepcopy(dict(opponent.config_snapshot)) if opponent is not None else None),
+            opponent_certification_status=opponent.certification_status if opponent is not None else None,
+            opponent_availability=opponent.availability if opponent is not None else None,
+            opponent_route=opponent.route if opponent is not None else None,
+            counted=reason is None,
+            reason=reason,
+        )
+
+    @staticmethod
     def _counted_result(profile: models_db.AiLadderProfile, *, replayed: bool = False) -> AiLadderSettlementResult:
         return AiLadderSettlementResult(
             counted=True,
@@ -244,10 +289,54 @@ class AiLadderRankedRepository:
             net_score=profile.net_score,
         )
 
-    def _replay_result(self, session, ledger: models_db.AiLadderGameLedger, user_id: int) -> AiLadderSettlementResult:
+    def _replay_result(
+        self, session, receipt: models_db.AiLadderSettlementReceipt, user_id: int
+    ) -> AiLadderSettlementResult:
+        if receipt.user_id != user_id:
+            raise ValueError("game_id belongs to another user")
+        if not receipt.counted:
+            return AiLadderSettlementResult(
+                counted=False,
+                replayed=True,
+                reason=receipt.reason,
+                ai_ladder_rung=None,
+                placement_lo=None,
+                placement_hi=None,
+                placement_completed=None,
+                net_score=None,
+            )
+        profile = session.get(models_db.AiLadderProfile, user_id)
+        if profile is None:
+            raise RuntimeError("settled game has no AI ladder profile")
+        return self._counted_result(profile, replayed=True)
+
+    def _legacy_replay_result(
+        self, session, ledger: models_db.AiLadderGameLedger, user_id: int
+    ) -> AiLadderSettlementResult:
         if ledger.user_id != user_id:
             raise ValueError("game_id belongs to another user")
         profile = session.get(models_db.AiLadderProfile, user_id)
         if profile is None:
             raise RuntimeError("settled game has no AI ladder profile")
         return self._counted_result(profile, replayed=True)
+
+    def _find_replay_result(self, session, game_id: str, user_id: int) -> Optional[AiLadderSettlementResult]:
+        receipt = (
+            session.query(models_db.AiLadderSettlementReceipt)
+            .filter(models_db.AiLadderSettlementReceipt.game_id == game_id)
+            .one_or_none()
+        )
+        if receipt is not None:
+            return self._replay_result(session, receipt, user_id)
+
+        # Compatibility for a database that received the original valid-only
+        # ledger before settlement receipts were introduced. This lookup is
+        # intentionally shared by the normal and unique-conflict replay paths.
+        ledger = (
+            session.query(models_db.AiLadderGameLedger)
+            .filter(models_db.AiLadderGameLedger.game_id == game_id)
+            .one_or_none()
+        )
+        if ledger is not None:
+            return self._legacy_replay_result(session, ledger, user_id)
+        return None

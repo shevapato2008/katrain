@@ -99,6 +99,25 @@ def guard_ranked_vision_binding(session, binding, action: str):
     return snapshot
 
 
+def guard_ai_ladder_ranked_not_ended(session, action: str) -> None:
+    """Reject every ranked mutation once any authoritative terminal marker exists."""
+
+    if not is_ai_ladder_ranked_session(session):
+        return
+    runtime = getattr(session, "katrain", None)
+    state = runtime.get_state() if runtime is not None else {}
+    game = getattr(runtime, "game", None)
+    current_node = getattr(game, "current_node", None)
+    end_result = state.get("end_result") if isinstance(state, dict) else None
+    if (
+        end_result
+        or getattr(current_node, "end_state", None)
+        or getattr(session, "_recorded", False)
+        or getattr(game, "end_result", None)
+    ):
+        raise HTTPException(status_code=403, detail=f"{action} is not allowed after the ranked game has ended")
+
+
 def guard_ai_ladder_ranked_human_action(session, current_user, action: str) -> None:
     """Allow public play/terminal actions only for the owner on the human turn."""
 
@@ -108,14 +127,8 @@ def guard_ai_ladder_ranked_human_action(session, current_user, action: str) -> N
 
     snapshot = guard_ai_ladder_ranked_owner(session, current_user, action)
 
+    guard_ai_ladder_ranked_not_ended(session, action)
     state = runtime.get_state() if runtime is not None else {}
-    end_result = state.get("end_result") if isinstance(state, dict) else None
-    if (
-        end_result
-        or getattr(session, "_recorded", False)
-        or getattr(getattr(runtime, "game", None), "end_result", None)
-    ):
-        raise HTTPException(status_code=403, detail=f"{action} is not allowed after the ranked game has ended")
     player_to_move = state.get("player_to_move") if isinstance(state, dict) else None
     if player_to_move not in {"B", "W"} or player_to_move != getattr(snapshot, "user_color", None):
         raise HTTPException(status_code=403, detail=f"{action} is only allowed on the human turn")

@@ -20,6 +20,7 @@ from katrain.web.core.config import settings
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
+    guard_ai_ladder_ranked_not_ended,
     guard_ai_ladder_ranked_session,
     guard_ai_ladder_ranked_ui_toggle,
     guard_ranked_vision_binding,
@@ -1376,6 +1377,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             with session.lock:
                 if ranked_ai:
                     snapshot = guard_ai_ladder_ranked_owner(session, current_user, "resign")
+                    guard_ai_ladder_ranked_not_ended(session, "resign")
                     winner = "W" if snapshot.user_color == "B" else "B"
                     result = f"{winner}+R"
                     session.katrain.game.game_result = result

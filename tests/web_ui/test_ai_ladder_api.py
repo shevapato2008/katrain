@@ -902,6 +902,31 @@ async def test_ranked_resign_supports_real_game_read_only_end_result(api_app, cl
 
 
 @pytest.mark.asyncio
+async def test_repeated_ranked_resign_is_rejected_without_changing_authoritative_result(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        session_id = started.json()["session_id"]
+        first = await ac.post("/api/resign", headers=api_app.state._test_headers, json={"session_id": session_id})
+        sgf_before = (
+            await ac.get("/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id})
+        ).json()["sgf"]
+        second = await ac.post("/api/resign", headers=api_app.state._test_headers, json={"session_id": session_id})
+        sgf_after = (
+            await ac.get("/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id})
+        ).json()["sgf"]
+
+    assert first.status_code == 200
+    assert second.status_code == 403
+    assert sgf_after == sgf_before
+    session = api_app.state._test_created_sessions[0]
+    assert session.katrain.game.current_node.end_state == "W+R"
+    with api_app.state._test_session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).all()
+        assert len(ledger) == 1
+        assert ledger[0].result == "loss"
+
+
+@pytest.mark.asyncio
 async def test_ranked_non_owner_cannot_resign(api_app, client):
     with api_app.state._test_session_factory() as db:
         db.add(models_db.User(username="resign-other", hashed_password="x", rank="20k"))

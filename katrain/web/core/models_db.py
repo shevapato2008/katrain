@@ -67,6 +67,7 @@ class User(Base):
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
+    ai_ladder_profile = relationship("AiLadderProfile", back_populates="user", uselist=False)
 
 
 class Relationship(Base):
@@ -93,6 +94,65 @@ class RatingHistory(Base):
 
     game = relationship("UserGame")
     user = relationship("User")
+
+
+class AiLadderProfile(Base):
+    """Authoritative ranked-AI state, independent from the legacy human ladder."""
+
+    __tablename__ = "ai_ladder_profiles"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    ai_ladder_rung = Column(Integer, nullable=True)
+    placement_lo = Column(Integer, nullable=False)
+    placement_hi = Column(Integer, nullable=False)
+    placement_completed = Column(Integer, nullable=False, default=0)
+    net_score = Column(Integer, nullable=False, default=0)
+    version = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="ai_ladder_profile")
+
+    __table_args__ = (
+        CheckConstraint("ai_ladder_rung IS NULL OR ai_ladder_rung BETWEEN 1 AND 41", name="ck_ai_ladder_rung"),
+        CheckConstraint("placement_lo BETWEEN 1 AND 41", name="ck_ai_ladder_placement_lo"),
+        CheckConstraint("placement_hi BETWEEN 1 AND 41", name="ck_ai_ladder_placement_hi"),
+        CheckConstraint("placement_lo <= placement_hi", name="ck_ai_ladder_placement_window"),
+        CheckConstraint("placement_completed BETWEEN 0 AND 5", name="ck_ai_ladder_placement_completed"),
+        CheckConstraint("net_score BETWEEN -2 AND 2", name="ck_ai_ladder_net_score"),
+    )
+
+
+class AiLadderGameLedger(Base):
+    """Append-only ledger of accepted ranked-AI settlements."""
+
+    __tablename__ = "ai_ladder_game_ledger"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(String(64), nullable=False, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_color = Column(String(1), nullable=False)
+    result = Column(String(16), nullable=False)
+    game_type = Column(String(32), nullable=False)
+    opponent_rung = Column(Integer, nullable=False)
+    opponent_rank_name = Column(String(64), nullable=False)
+    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_certification_status = Column(String(16), nullable=False)
+    opponent_availability = Column(String(16), nullable=False)
+    opponent_route = Column(String(16), nullable=False)
+    settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    user = relationship("User", backref="ai_ladder_game_ledger")
+
+    __table_args__ = (
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_ledger_user_color"),
+        CheckConstraint("result IN ('win', 'loss')", name="ck_ai_ladder_ledger_result"),
+        CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_ledger_game_type"),
+        CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_ledger_opponent_rung"),
+        CheckConstraint("opponent_certification_status = 'certified'", name="ck_ai_ladder_ledger_certification"),
+        CheckConstraint("opponent_availability = 'available'", name="ck_ai_ladder_ledger_availability"),
+        CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_ledger_route"),
+    )
 
 
 class LiveMatchDB(Base):

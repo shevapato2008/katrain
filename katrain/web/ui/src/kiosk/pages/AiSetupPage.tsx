@@ -136,9 +136,9 @@ const AiSetupPage = () => {
             Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
         <Box
           sx={{
-            width: 322, flexShrink: 0, overflow: 'hidden', m: 2, mr: 0,
+            width: isRanked ? 290 : 322, flexShrink: 0, overflow: 'hidden', m: isRanked ? 1.5 : 2, mr: 0,
             bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-            borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
+            borderRadius: 3, p: isRanked ? 1.5 : 2, display: 'flex', flexDirection: 'column',
           }}
         >
           <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
@@ -155,17 +155,17 @@ const AiSetupPage = () => {
         </Box>
 
         {/* Right: compact 2-column settings form — structurally no-scroll (overflow:hidden). */}
-        <Box sx={{ flex: 1, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, alignContent: 'start' }}>
+        <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, p: isRanked ? 2 : 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isRanked ? 1.25 : 2, alignContent: 'start' }}>
             {/* Board size — segmented, spans both columns */}
-            <Box sx={{ gridColumn: '1 / -1' }}>
+            {!isRanked && <Box sx={{ gridColumn: '1 / -1' }}>
               <OptionChips
                 label={t('Board', '棋盘')}
                 options={[{ value: 9, label: t('9x9', '9路') }, { value: 13, label: t('13x13', '13路') }, { value: 19, label: t('19x19', '19路') }]}
                 value={boardSize}
                 onChange={setBoardSize}
               />
-            </Box>
+            </Box>}
 
             {/* My color — segmented, spans both columns */}
             <Box sx={{ gridColumn: '1 / -1' }}>
@@ -178,8 +178,8 @@ const AiSetupPage = () => {
             </Box>
 
             {isRanked && (
-              <Box sx={{ gridColumn: '1 / -1', '& section': { mt: 0, py: 1.25 } }}>
-                <AiLadderSetupOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <AiLadderSetupOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} compact />
               </Box>
             )}
 
@@ -285,7 +285,7 @@ const AiSetupPage = () => {
             </FormControl>
           </Box>
 
-          <Box sx={{ mt: 'auto', pt: 2 }}>
+          <Box data-testid={isRanked ? 'ranked-start-action' : undefined} sx={{ mt: 'auto', pt: isRanked ? 1 : 2, flexShrink: 0 }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <Button
               variant="contained"
@@ -301,7 +301,7 @@ const AiSetupPage = () => {
               ))}
               onClick={handleStart}
               sx={{
-                minHeight: 56, py: 2, fontSize: '1.1rem',
+                minHeight: isRanked ? 48 : 56, py: isRanked ? 1 : 2, fontSize: isRanked ? '1rem' : '1.1rem',
                 bgcolor: 'primary.main',
                 '&:hover': { bgcolor: 'primary.dark' },
               }}

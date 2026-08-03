@@ -9,6 +9,7 @@ import type { AiLadderCatalogEntry, AiLadderStatus } from './types';
 interface AiLadderSetupOpponentProps {
   status: AiLadderStatus;
   onRetry?: () => void;
+  compact?: boolean;
 }
 
 const StatusChips = ({ entry }: { entry: AiLadderCatalogEntry }) => {
@@ -31,23 +32,23 @@ const StatusChips = ({ entry }: { entry: AiLadderCatalogEntry }) => {
   );
 };
 
-const Frame = ({ children }: { children: React.ReactNode }) => (
+const Frame = ({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) => (
   <Box
     component="section"
     aria-labelledby="ai-ladder-setup-opponent-title"
-    sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mt: 2, p: 2 }}
+    sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mt: compact ? 0 : 2, p: compact ? 1.25 : 2 }}
   >
-    <Typography id="ai-ladder-setup-opponent-title" component="h2" variant="h6" fontWeight={800} gutterBottom>
+    <Typography id="ai-ladder-setup-opponent-title" component="h2" variant={compact ? 'body1' : 'h6'} fontWeight={800} gutterBottom={!compact}>
       {AI_LADDER_COPY.setupTitle}
     </Typography>
     {children}
   </Box>
 );
 
-const AiLadderSetupOpponent = ({ status, onRetry }: AiLadderSetupOpponentProps) => {
+const AiLadderSetupOpponent = ({ status, onRetry, compact = false }: AiLadderSetupOpponentProps) => {
   if (status.view_state === 'loading') {
     return (
-      <Frame>
+      <Frame compact={compact}>
         <Stack role="status" aria-live="polite" spacing={1}>
           <Typography color="text.secondary" variant="body2">
             {AI_LADDER_COPY.loading}
@@ -60,7 +61,7 @@ const AiLadderSetupOpponent = ({ status, onRetry }: AiLadderSetupOpponentProps) 
 
   if (status.view_state === 'error') {
     return (
-      <Frame>
+      <Frame compact={compact}>
         <Alert severity="error" role="alert" sx={{ mb: 1.5 }}>
           {status.message || AI_LADDER_COPY.loadError}
         </Alert>
@@ -77,8 +78,8 @@ const AiLadderSetupOpponent = ({ status, onRetry }: AiLadderSetupOpponentProps) 
     !activeEntry || activeEntry.certification_status !== 'certified' || activeEntry.availability === 'unavailable';
 
   return (
-    <Frame>
-      <Stack spacing={1.5}>
+    <Frame compact={compact}>
+      <Stack spacing={compact ? 0.5 : 1.5}>
         {placementState.phase === 'placement' ? (
           <>
             <Typography fontWeight={700}>

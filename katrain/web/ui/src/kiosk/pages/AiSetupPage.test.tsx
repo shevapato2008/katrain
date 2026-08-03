@@ -98,6 +98,26 @@ describe('AiSetupPage', () => {
     expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
   });
 
+  it('uses the rated-only 1024x600 no-scroll geometry with every required control and CTA visible', () => {
+    renderPage('ranked');
+    const panel = screen.getByTestId('ranked-settings-panel');
+    expect(panel).toHaveStyle({ padding: '16px', overflow: 'hidden' });
+    expect(screen.queryByText('9路')).not.toBeInTheDocument();
+    expect(screen.queryByText('13路')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '规则' })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: '让子' })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: '用时' })).toBeVisible();
+    expect(screen.getByRole('button', { name: /开始对弈/i })).toHaveStyle({ minHeight: '48px' });
+    expect(screen.getByTestId('ranked-start-action')).toHaveStyle({ flexShrink: '0' });
+  });
+
+  it('keeps the free setup board-size choices unchanged', () => {
+    renderPage('free');
+    expect(screen.getByText('9路')).toBeInTheDocument();
+    expect(screen.getByText('13路')).toBeInTheDocument();
+    expect(screen.getByText('19路')).toBeInTheDocument();
+  });
+
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
     renderPage('free');
     expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();

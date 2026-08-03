@@ -3,6 +3,7 @@ import heapq
 import logging
 import math
 import random
+import secrets
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -1841,13 +1842,15 @@ class LadderStrategy(AIStrategy):
     ValueError; missing model / analysis error -> LadderUnavailable (NO PolicyStrategy or
     cached-top-policy fallback — those are uncalibrated and would silently mislabel
     strength). Pure-visits (time_limit=False) for hardware-independent strength. Shares
-    rung_engine_params + pick_ladder_move with the calibration harness."""
+    rung_engine_params + pick_ladder_rung_move with the calibration harness."""
 
     def generate_move(self) -> Tuple[Move, str]:
         from katrain.core.ladder import (
+            HUMAN_TEMPERATURE,
+            HUMAN_WEIGHTED,
             LadderMoveError,
             get_rung,
-            pick_ladder_move,
+            pick_ladder_rung_move,
             rung_engine_params,
             rung_strength_spec,
             validate_analysis_attestation,
@@ -1910,7 +1913,8 @@ class LadderStrategy(AIStrategy):
 
         try:
             validate_analysis_attestation(analysis, spec, capability_identity)
-            picked = pick_ladder_move(analysis, self.game.board_size, rung.mechanism)
+            draw_u64 = secrets.randbits(64) if rung.selection in (HUMAN_WEIGHTED, HUMAN_TEMPERATURE) else None
+            picked = pick_ladder_rung_move(analysis, rung, self.game.board_size, draw_u64=draw_u64)
         except LadderMoveError as e:
             # e.g. a humanSL rung whose response lacks humanPolicy: do NOT play a search move.
             raise LadderUnavailable(f"rung {rung.rung}: {e}") from e

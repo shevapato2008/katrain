@@ -21,6 +21,13 @@ def _search_analysis(move="Q16", identity=B28_IDENTITY):
     return analysis
 
 
+def _policy(*entries):
+    policy = [0.0] * (19 * 19 + 1)
+    for index, value in entries:
+        policy[index] = value
+    return policy
+
+
 class FakeEngine:
     def __init__(
         self,
@@ -122,6 +129,123 @@ def test_humansl_rung_pure_visits_and_profile():
         eng.last["extra"]["humanSLProfile"] == "rank_20k" and eng.last["extra"]["reportAnalysisWinratesAs"] == "BLACK"
     )
     assert move.gtp() == "D4"
+
+
+def test_human_weighted_rung_uses_one_u64_draw_in_shared_picker(monkeypatch):
+    import secrets
+
+    draw = 17_524_406_870_024_074_035
+    calls = []
+    monkeypatch.setattr(secrets, "randbits", lambda bits: calls.append(bits) or draw)
+
+    strategy, _ = _mk(1, {"humanPolicy": _policy((342, 0.9), (0, 0.1))})
+    move, _ = strategy.generate_move()
+
+    assert move.gtp() == "A19"
+    assert calls == [64]
+
+
+def test_human_temperature_rung_uses_rung_temperature_and_one_u64_draw(monkeypatch):
+    import secrets
+    from dataclasses import replace
+
+    import katrain.core.ladder as ladder
+
+    draw = 17_524_406_870_024_074_035
+    calls = []
+    rung = replace(
+        ladder.get_rung(1),
+        selection=ladder.HUMAN_TEMPERATURE,
+        human_policy_temperature=0.5,
+    )
+    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    monkeypatch.setattr(secrets, "randbits", lambda bits: calls.append(bits) or draw)
+
+    strategy, _ = _mk(rung.rung, {"humanPolicy": _policy((342, 0.9), (0, 0.1))})
+    move, _ = strategy.generate_move()
+
+    assert move.gtp() == "A1"
+    assert calls == [64]
+
+
+@pytest.mark.parametrize(
+    ("selection", "analysis", "expected_gtp"),
+    [
+        ("human_argmax", {"humanPolicy": _policy((342, 0.9), (0, 0.1))}, "A1"),
+        ("search", _search_analysis("Q16"), "Q16"),
+        (
+            "native_policy_argmax",
+            {
+                "rootInfo": {"visits": 1},
+                "moveInfos": [],
+                "policy": _policy((0, 1.0)),
+                "_wrapper": dict(B28_IDENTITY),
+            },
+            "A19",
+        ),
+    ],
+)
+def test_deterministic_rung_selection_never_draws_randomness(monkeypatch, selection, analysis, expected_gtp):
+    import secrets
+    from dataclasses import replace
+
+    import katrain.core.ladder as ladder
+
+    base = ladder.get_rung(1 if selection == ladder.HUMAN_ARGMAX else 36)
+    changes = {"selection": selection}
+    if selection == ladder.NATIVE_POLICY_ARGMAX:
+        changes["max_visits"] = 1
+    rung = replace(base, **changes)
+    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    monkeypatch.setattr(secrets, "randbits", lambda bits: pytest.fail(f"unexpected {bits}-bit random draw"))
+
+    strategy, _ = _mk(rung.rung, analysis)
+    move, _ = strategy.generate_move()
+
+    assert move.gtp() == expected_gtp
+
+
+def test_cross_mechanism_response_fails_closed_without_search_fallback(monkeypatch):
+    from dataclasses import replace
+
+    import katrain.core.ladder as ladder
+    from katrain.core.ai import LadderUnavailable
+
+    rung = replace(ladder.get_rung(36), max_visits=1, selection=ladder.NATIVE_POLICY_ARGMAX)
+    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    analysis = {
+        "rootInfo": {"visits": 1},
+        "moveInfos": [{"move": "Q16", "order": 0}],
+        "policy": _policy((0, 1.0)),
+        "_wrapper": dict(B28_IDENTITY),
+    }
+    strategy, _ = _mk(rung.rung, analysis)
+
+    with pytest.raises(LadderUnavailable, match="native_policy_argmax"):
+        strategy.generate_move()
+
+
+def test_runtime_passes_complete_rung_to_shared_picker(monkeypatch):
+    from dataclasses import replace
+
+    import katrain.core.ladder as ladder
+
+    rung = replace(ladder.get_rung(36), rank_name="spy rung")
+    calls = []
+
+    def picker(analysis, received_rung, board_size, *, draw_u64=None):
+        calls.append((analysis, received_rung, board_size, draw_u64))
+        return "pass"
+
+    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    monkeypatch.setattr(ladder, "pick_ladder_rung_move", picker)
+    analysis = _search_analysis()
+    strategy, _ = _mk(rung.rung, analysis)
+
+    move, _ = strategy.generate_move()
+
+    assert move.gtp() == "pass"
+    assert calls == [(analysis, rung, (19, 19), None)]
 
 
 def test_search_rung_high_visits_top_move():
@@ -322,8 +446,8 @@ def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     with caplog.at_level(logging.DEBUG, logger="katrain.core.ai"):
         move, node = generate_ai_move(game, AI_LADDER, {"rung": 36})  # rung 36 == 超职业
 
-    assert node.ai_thoughts == "棋力阶梯 超职业"            # clean user-visible thought (SGF + TopBar)
+    assert node.ai_thoughts == "棋力阶梯 超职业"  # clean user-visible thought (SGF + TopBar)
     joined = " ".join(seen)
-    for banned in ("星阵", "rung", "visits", "36"):           # per codex round 5 recommendation
+    for banned in ("星阵", "rung", "visits", "36"):  # per codex round 5 recommendation
         assert banned not in joined
-    assert "visits=" in caplog.text                            # observability preserved server-side
+    assert "visits=" in caplog.text  # observability preserved server-side

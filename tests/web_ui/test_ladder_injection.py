@@ -45,12 +45,17 @@ def test_ladder_rungs_endpoint(client):
     resp = client.get("/api/ladder-rungs")
     assert resp.status_code == 200
     rungs = resp.json()["rungs"]
-    assert len(rungs) == 37
-    # New star阵-free wire schema: only rung + rank_name.
-    assert set(rungs[0].keys()) == {"rung", "rank_name"}
-    assert rungs[0] == {"rung": 1, "rank_name": "20K"}
-    assert rungs[35] == {"rung": 36, "rank_name": "超职业"}
-    assert rungs[36] == {"rung": 37, "rank_name": "KataGo中等"}
+    assert len(rungs) == 41
+    assert set(rungs[0].keys()) == {"rung", "rank_name", "certification_status", "availability", "route"}
+    assert rungs[0] == {
+        "rung": 1,
+        "rank_name": "20级",
+        "certification_status": "provisional",
+        "availability": "unavailable",
+        "route": "server",
+    }
+    assert rungs[-1]["rank_name"] == "超越人类"
+    assert all(rung["availability"] == "unavailable" for rung in rungs)
     # No internal 星阵/elo fields leak to the browser.
     for r in rungs:
         assert "golaxy_level_name" not in r
@@ -61,21 +66,24 @@ def test_ai_constants_ladder_default(client):
     assert client.get("/api/ai-constants").json()["strategy_defaults"]["ai:ladder"] == {}
 
 
-def test_new_game_invalid_ladder_rung_returns_422(client):
+def test_new_game_unavailable_ladder_level_returns_422_before_game_mutation(client):
     session_resp = client.post("/api/session")
     assert session_resp.status_code == 200
     session_id = session_resp.json()["session_id"]
 
-    resp = client.post("/api/new-game", json={"session_id": session_id, "ladder_rung": 41})
+    before = client.get("/api/state", params={"session_id": session_id}).json()["state"]
+    resp = client.post("/api/new-game", json={"session_id": session_id, "ladder_rung": 1})
     assert resp.status_code == 422
+    after = client.get("/api/state", params={"session_id": session_id}).json()["state"]
+    assert after == before
 
 
 # --- Step 1/2: resolve_ladder_rung unit tests -------------------------------------
 
 
-def test_resolve_valid():
-    s = resolve_ladder_rung(1)
-    assert s == {"rung": 1}
+def test_resolve_unavailable_level_raises():
+    with pytest.raises(ValueError):
+        resolve_ladder_rung(1)
 
 
 def test_resolve_absent_is_none():
@@ -86,7 +94,7 @@ def test_resolve_invalid_raises():
     with pytest.raises(ValueError):
         resolve_ladder_rung(0)
     with pytest.raises(ValueError):
-        resolve_ladder_rung(41)
+        resolve_ladder_rung(42)
 
 
 # --- helpers -----------------------------------------------------------------------

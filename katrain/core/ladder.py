@@ -53,6 +53,29 @@ class LadderMoveError(Exception):
     to LadderUnavailable (no move); the calibration harness converts it to an inconclusive game."""
 
 
+class LadderUnavailable(ValueError):
+    """The requested product level has no certified, available executable recipe."""
+
+
+class _FrozenMapping(Mapping[str, object]):
+    """Small immutable mapping which remains compatible with dataclasses.asdict()."""
+
+    def __init__(self, values):
+        self._values = deepcopy(dict(values))
+
+    def __getitem__(self, key):
+        return self._values[key]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def __len__(self):
+        return len(self._values)
+
+    def __deepcopy__(self, memo):
+        return deepcopy(self._values, memo)
+
+
 @dataclass(frozen=True)
 class LadderRung:
     rung: int
@@ -74,7 +97,7 @@ class LadderRung:
     def __post_init__(self):
         if not isinstance(self.human_sl_params, Mapping):
             raise TypeError("human_sl_params must be a mapping")
-        object.__setattr__(self, "human_sl_params", MappingProxyType(deepcopy(dict(self.human_sl_params))))
+        object.__setattr__(self, "human_sl_params", _FrozenMapping(self.human_sl_params))
 
     def to_dict(self) -> Dict[str, object]:
         """Return a mutable serialization without exposing the frozen recipe mapping."""
@@ -86,6 +109,46 @@ class LadderRung:
             )
             for item in fields(self)
         }
+
+
+@dataclass(frozen=True)
+class LadderLevel:
+    rung: int
+    rank_name: str
+    recipe: Optional[LadderRung]
+    candidate_labels: Tuple[str, ...]
+    certification_status: str
+    availability: str
+    route: str
+    external_status: str
+
+    def __post_init__(self):
+        allowed = {
+            "certification_status": {"provisional", "certified"},
+            "availability": {"available", "unavailable"},
+            "route": {"local", "server"},
+            "external_status": {
+                "not_applicable",
+                "untested",
+                "screened",
+                "aligned",
+                "overstrong",
+                "understrong",
+                "incomplete",
+            },
+        }
+        for field_name, values in allowed.items():
+            value = getattr(self, field_name)
+            if value not in values:
+                raise ValueError(f"invalid {field_name}: {value!r}; expected one of {sorted(values)}")
+        if type(self.rung) is not int or not 1 <= self.rung <= 41:
+            raise ValueError(f"level rung out of range 1..41: {self.rung!r}")
+        if not _nonempty_string(self.rank_name):
+            raise ValueError("level rank_name must be a nonempty string")
+        if type(self.candidate_labels) is not tuple or any(
+            not _nonempty_string(label) for label in self.candidate_labels
+        ):
+            raise ValueError("candidate_labels must be a tuple of nonempty strings")
 
 
 @dataclass(frozen=True)
@@ -274,6 +337,177 @@ def _nonempty_string(value) -> bool:
 
 def _finite_number(value) -> bool:
     return type(value) is int or (type(value) is float and math.isfinite(value))
+
+
+_LEVEL_NAMES = (
+    *(f"{rank}级" for rank in range(20, 0, -1)),
+    *(label for rank in range(1, 10) for label in (f"准{rank}段", f"{rank}段")),
+    "职业水平",
+    "职业顶尖",
+    "超越人类",
+)
+_TEMPERATURE_CANDIDATES = ("t1.15", "t1.3", "t1.6", "t2", "t2.5", "t3")
+_QUASI_9_CANDIDATES = ("rank_9d@1", "rank_9d@1s", "rank_9d@2", "rank_9d@3")
+_PRO_TOP_CANDIDATES = ("b18@12", "b18@10", "b18@14", "b18@8", "b18@16")
+
+
+def _recipe(
+    rung: int,
+    rank_name: str,
+    *,
+    net: str,
+    mechanism: str,
+    profile: Optional[str],
+    visits: int,
+    selection: str,
+    human_sl_params: Mapping[str, object] = MappingProxyType({}),
+    golaxy_level_name: Optional[str] = None,
+    golaxy_api_level: Optional[int] = None,
+) -> LadderRung:
+    return LadderRung(
+        rung=rung,
+        golaxy_level_name=golaxy_level_name,
+        golaxy_api_level=golaxy_api_level,
+        display_elo=golaxy_api_level,
+        ref_rank=profile or rank_name,
+        rank_name=rank_name,
+        net=net,
+        mechanism=mechanism,
+        human_sl_profile=profile,
+        max_visits=visits,
+        human_sl_params=human_sl_params,
+        backend_hint="server",
+        root_policy_temperature=1.0,
+        selection=selection,
+    )
+
+
+def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
+    if 1 <= rung <= 20:
+        rank = 21 - rung
+        api_level = None if rank >= 19 else (220 if rank == 18 else 1100 - (rank - 1) * 100)
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile=f"rank_{rank}k",
+            visits=1,
+            selection=HUMAN_WEIGHTED,
+            golaxy_level_name=rank_name if api_level is not None else None,
+            golaxy_api_level=api_level,
+        )
+    if rung in (22, 24, 26, 28, 30, 32):
+        rank = (rung - 20) // 2
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile=f"rank_{rank}d",
+            visits=1,
+            selection=HUMAN_WEIGHTED,
+            golaxy_level_name=rank_name,
+            golaxy_api_level=1100 + rank * 200,
+        )
+    if rung in (34, 36):
+        rank = 7 if rung == 34 else 8
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile=f"rank_{rank}d",
+            visits=1,
+            selection=HUMAN_ARGMAX,
+            golaxy_level_name=rank_name,
+            golaxy_api_level=2500 if rank == 7 else 2800,
+        )
+    if rung == 38:
+        return _recipe(
+            rung,
+            rank_name,
+            net="b18",
+            mechanism="humansl_search",
+            profile="rank_9d",
+            visits=4,
+            selection=SEARCH,
+            human_sl_params=HUMANSL_PIKL_BASELINE_V1,
+            golaxy_level_name="9段",
+            golaxy_api_level=3000,
+        )
+    if rung == 39:
+        return _recipe(
+            rung,
+            rank_name,
+            net="b18",
+            mechanism="net_search",
+            profile=None,
+            visits=1,
+            selection=NATIVE_POLICY_ARGMAX,
+            golaxy_level_name="星阵1星",
+            golaxy_api_level=3100,
+        )
+    if rung == 41:
+        return _recipe(
+            rung,
+            rank_name,
+            net="b18",
+            mechanism="net_search",
+            profile=None,
+            visits=64,
+            selection=SEARCH,
+            golaxy_level_name="星阵3星",
+            golaxy_api_level=3300,
+        )
+    return None
+
+
+def _candidate_labels(rung: int) -> Tuple[str, ...]:
+    if rung in (21, 23, 25, 27, 29, 31, 33, 35):
+        return _TEMPERATURE_CANDIDATES
+    if rung == 37:
+        return _QUASI_9_CANDIDATES
+    if rung == 40:
+        return _PRO_TOP_CANDIDATES
+    return ()
+
+
+LADDER_LEVELS = tuple(
+    LadderLevel(
+        rung=rung,
+        rank_name=rank_name,
+        recipe=_fixed_product_recipe(rung, rank_name),
+        candidate_labels=_candidate_labels(rung),
+        certification_status="provisional",
+        availability="unavailable",
+        route="server",
+        external_status="not_applicable" if rung <= 2 else "untested",
+    )
+    for rung, rank_name in enumerate(_LEVEL_NAMES, start=1)
+)
+
+
+def get_level(n: int) -> LadderLevel:
+    if type(n) is not int or not 1 <= n <= len(LADDER_LEVELS):
+        raise ValueError(f"level out of range 1..41: {n!r}")
+    return LADDER_LEVELS[n - 1]
+
+
+def get_recipe_for_calibration(n: int) -> LadderRung:
+    level = get_level(n)
+    if level.recipe is None:
+        raise LadderUnavailable(f"level {n} ({level.rank_name}) has an unresolved recipe")
+    return level.recipe
+
+
+def resolve_available_rung(n: int) -> LadderRung:
+    level = get_level(n)
+    if level.recipe is None:
+        raise LadderUnavailable(f"level {n} ({level.rank_name}) has an unresolved recipe")
+    if level.certification_status != "certified" or level.availability != "available":
+        raise LadderUnavailable(f"level {n} ({level.rank_name}) is not certified and available")
+    return level.recipe
 
 
 def _validate_humansl_search_recipe(params: Mapping[str, object]) -> None:

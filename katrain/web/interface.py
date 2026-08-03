@@ -109,17 +109,13 @@ class WebGame(Game):
 
 
 def resolve_ladder_rung(n):
-    """Validate a rung number for per-game injection (Task 4).
-
-    None -> None (absent; caller/`_do_new_game` treats this as "no ladder rung this game").
-    Invalid (out of range 1..37, or not int-able) -> ValueError (caller/REST layer 422s).
-    Valid -> {'rung': int}. Never silently downgrades or substitutes a default rung."""
+    """Resolve a certified, available product level for per-game injection."""
     if n is None:
         return None
-    from katrain.core.ladder import get_rung
+    from katrain.core.ladder import resolve_available_rung
 
-    get_rung(int(n))  # raises ValueError if out of range 1..37
-    return {"rung": int(n)}
+    resolve_available_rung(n)
+    return {"rung": n}
 
 
 class WebKaTrain(KaTrainBase):
@@ -356,9 +352,9 @@ class WebKaTrain(KaTrainBase):
         if p.ai and p.player_subtype == AI_LADDER:
             rung_info = getattr(self, "ladder_rung", None)
             if rung_info:
-                from katrain.core.ladder import get_rung
+                from katrain.core.ladder import get_level
 
-                return get_rung(rung_info["rung"]).rank_name
+                return get_level(rung_info["rung"]).rank_name
         return None
 
     def get_state(self):

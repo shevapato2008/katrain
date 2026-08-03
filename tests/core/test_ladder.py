@@ -1,7 +1,8 @@
 import math
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, asdict, replace
 
 import pytest
+import katrain.core.ladder as ladder
 from katrain.core.ladder import (
     HUMAN_ARGMAX,
     HUMANSL_PIKL_BASELINE,
@@ -33,6 +34,131 @@ from katrain.core.ladder import (
 )
 
 U64_MAX = 2**64 - 1
+
+
+def test_product_catalog_has_exact_41_weak_to_strong_chinese_names():
+    expected = [f"{rank}级" for rank in range(20, 0, -1)]
+    expected += [label for rank in range(1, 10) for label in (f"准{rank}段", f"{rank}段")]
+    expected += ["职业水平", "职业顶尖", "超越人类"]
+
+    assert [level.rank_name for level in getattr(ladder, "LADDER_LEVELS", ())] == expected
+
+
+def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candidates():
+    levels = ladder.LADDER_LEVELS
+    for rung in range(1, 21):
+        recipe = levels[rung - 1].recipe
+        assert (recipe.human_sl_profile, recipe.max_visits, recipe.selection) == (
+            f"rank_{21 - rung}k",
+            1,
+            HUMAN_WEIGHTED,
+        )
+    for level_number, rank in zip((22, 24, 26, 28, 30, 32), range(1, 7)):
+        recipe = levels[level_number - 1].recipe
+        assert (recipe.human_sl_profile, recipe.max_visits, recipe.selection) == (
+            f"rank_{rank}d",
+            1,
+            HUMAN_WEIGHTED,
+        )
+    assert (levels[33].recipe.human_sl_profile, levels[33].recipe.selection) == ("rank_7d", HUMAN_ARGMAX)
+    assert (levels[35].recipe.human_sl_profile, levels[35].recipe.selection) == ("rank_8d", HUMAN_ARGMAX)
+    nine_d = levels[37].recipe
+    assert (
+        nine_d.net,
+        nine_d.mechanism,
+        nine_d.human_sl_profile,
+        nine_d.max_visits,
+        nine_d.selection,
+        dict(nine_d.human_sl_params),
+    ) == ("b18", "humansl_search", "rank_9d", 4, SEARCH, dict(HUMANSL_PIKL_BASELINE))
+    assert (levels[38].recipe.net, levels[38].recipe.max_visits, levels[38].recipe.selection) == (
+        "b18",
+        1,
+        NATIVE_POLICY_ARGMAX,
+    )
+    assert (levels[40].recipe.net, levels[40].recipe.max_visits, levels[40].recipe.selection) == (
+        "b18",
+        64,
+        SEARCH,
+    )
+
+    temperatures = ("t1.15", "t1.3", "t1.6", "t2", "t2.5", "t3")
+    for level_number in (21, 23, 25, 27, 29, 31, 33, 35):
+        assert levels[level_number - 1].recipe is None
+        assert levels[level_number - 1].candidate_labels == temperatures
+    assert levels[36].recipe is None and levels[36].candidate_labels == (
+        "rank_9d@1",
+        "rank_9d@1s",
+        "rank_9d@2",
+        "rank_9d@3",
+    )
+    assert levels[39].recipe is None and levels[39].candidate_labels == (
+        "b18@12",
+        "b18@10",
+        "b18@14",
+        "b18@8",
+        "b18@16",
+    )
+
+
+def test_catalog_metadata_is_frozen_validated_and_initially_unavailable():
+    assert all(
+        (level.certification_status, level.availability, level.route) == ("provisional", "unavailable", "server")
+        for level in ladder.LADDER_LEVELS
+    )
+    assert [level.external_status for level in ladder.LADDER_LEVELS[:2]] == ["not_applicable", "not_applicable"]
+    assert all(level.external_status == "untested" for level in ladder.LADDER_LEVELS[2:])
+    with pytest.raises(FrozenInstanceError):
+        ladder.LADDER_LEVELS[0].availability = "available"
+    assert asdict(ladder.LADDER_LEVELS[20])["candidate_labels"] == (
+        "t1.15",
+        "t1.3",
+        "t1.6",
+        "t2",
+        "t2.5",
+        "t3",
+    )
+    certified = replace(ladder.LADDER_LEVELS[0], certification_status="certified", availability="available")
+    assert (certified.certification_status, certified.availability) == ("certified", "available")
+    for field, value in (
+        ("certification_status", "unknown"),
+        ("availability", "hidden"),
+        ("route", "browser"),
+        ("external_status", "unknown"),
+    ):
+        with pytest.raises(ValueError):
+            replace(ladder.LADDER_LEVELS[0], **{field: value})
+
+
+def test_catalog_resolvers_separate_calibration_from_production_availability():
+    assert ladder.get_level(1) is ladder.LADDER_LEVELS[0]
+    assert ladder.get_recipe_for_calibration(1) is ladder.LADDER_LEVELS[0].recipe
+    for invalid in (True, False, 0, 42, 1.0, "1", None):
+        with pytest.raises(ValueError):
+            ladder.get_level(invalid)
+    with pytest.raises(ValueError, match="unresolved"):
+        ladder.get_recipe_for_calibration(21)
+    for level_number in (1, 21):
+        with pytest.raises(ladder.LadderUnavailable):
+            ladder.resolve_available_rung(level_number)
+
+
+def test_resolved_product_recipes_have_no_duplicate_effective_configs():
+    recipes = [level.recipe for level in ladder.LADDER_LEVELS if level.recipe is not None]
+    assert len(recipes) == 31
+    signatures = [
+        (
+            recipe.net,
+            recipe.mechanism,
+            recipe.human_sl_profile,
+            recipe.max_visits,
+            recipe.selection,
+            recipe.human_policy_temperature,
+            tuple(sorted(recipe.human_sl_params.items())),
+        )
+        for recipe in recipes
+    ]
+    assert len(signatures) == len(set(signatures))
 
 
 def test_temperature_distribution_t1_normalizes_without_mutating_input():

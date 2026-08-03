@@ -750,10 +750,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Task 4: validate the rung BEFORE touching the session, so an out-of-range value
         # 422s cleanly instead of partially mutating game state.
         if request.ladder_rung is not None:
-            from katrain.core.ladder import get_rung
+            from katrain.core.ladder import resolve_available_rung
 
             try:
-                get_rung(int(request.ladder_rung))
+                resolve_available_rung(request.ladder_rung)
             except (ValueError, TypeError):
                 raise HTTPException(status_code=422, detail=f"invalid ladder_rung: {request.ladder_rung}")
 
@@ -1673,11 +1673,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.get("/api/ladder-rungs")
     def get_ladder_rungs():
-        from katrain.core.ladder import LADDER_RUNGS
+        from katrain.core.ladder import LADDER_LEVELS
 
-        # UI-facing subset only. star阵-free: internal golaxy_level_name / golaxy_api_level /
-        # display_elo / ref_rank / humanSL knobs are NOT exposed to the browser.
-        return {"rungs": [{"rung": r.rung, "rank_name": r.rank_name} for r in LADDER_RUNGS]}
+        return {
+            "rungs": [
+                {
+                    "rung": level.rung,
+                    "rank_name": level.rank_name,
+                    "certification_status": level.certification_status,
+                    "availability": level.availability,
+                    "route": level.route,
+                }
+                for level in LADDER_LEVELS
+            ]
+        }
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):

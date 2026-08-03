@@ -47,6 +47,7 @@ from katrain.core.constants import (
     AI_RESIGNATION_MIN_ABSOLUTE_MOVES,
 )
 from katrain.core.game import Game, GameNode, Move
+from katrain.core.ladder import LadderUnavailable
 from katrain.core.utils import var_to_grid, weighted_selection_without_replacement, evaluation_class
 
 # Rung 37 @ 500 visits on the GPU finishes in <5s; 60s is generous while bounding how long a
@@ -1824,12 +1825,6 @@ class HumanStyleStrategy(AIStrategy):
         return move, ai_thoughts
 
 
-class LadderUnavailable(Exception):
-    """Raised when a ladder rung cannot be played at its certified strength (missing human
-    model, or analysis failure). The caller must NOT play an uncalibrated fallback move —
-    it fails closed (no move) so the '棋力阶梯' strength label is never silently violated."""
-
-
 def _ladder_thought_label(rung) -> str:
     # User-visible: becomes played_node.ai_thoughts -> SGF comment + ZenMode TopBar log.
     # rank_name ONLY: star阵-free and free of rung index / visits / debug prefix.
@@ -1849,8 +1844,8 @@ class LadderStrategy(AIStrategy):
             HUMAN_TEMPERATURE,
             HUMAN_WEIGHTED,
             LadderMoveError,
-            get_rung,
             pick_ladder_rung_move,
+            resolve_available_rung,
             rung_engine_params,
             rung_strength_spec,
             validate_analysis_attestation,
@@ -1858,7 +1853,7 @@ class LadderStrategy(AIStrategy):
 
         if "rung" not in self.settings or self.settings.get("rung") is None:
             raise ValueError("LadderStrategy invoked without an injected rung (fail closed)")
-        rung = get_rung(int(self.settings["rung"]))  # raises ValueError if out of range
+        rung = resolve_available_rung(self.settings["rung"])
         spec = rung_strength_spec(rung)
         params = rung_engine_params(rung)
         engine = self.game.engines[self.cn.player]

@@ -160,11 +160,19 @@ class PlatformManager:
         bot_name = f"[{platform}] {gs.opponent.username}"
         if gs.my_color == "B":
             session = self._session_manager.create_multiplayer_session(
-                player_b_id=user_id, player_w_id=-1, b_name="Me", w_name=bot_name
+                player_b_id=user_id,
+                player_w_id=-1,
+                b_name="Me",
+                w_name=bot_name,
+                skip_initial_analysis=True,
             )
         else:
             session = self._session_manager.create_multiplayer_session(
-                player_b_id=-1, player_w_id=user_id, b_name=bot_name, w_name="Me"
+                player_b_id=-1,
+                player_w_id=user_id,
+                b_name=bot_name,
+                w_name="Me",
+                skip_initial_analysis=True,
             )
 
         # Explicitly configure the local game to match the engine game parameters, and

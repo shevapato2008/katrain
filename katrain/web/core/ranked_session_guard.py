@@ -1,6 +1,8 @@
 """Central fail-closed guard for public actions on ranked-AI sessions."""
 
 from dataclasses import dataclass
+from contextlib import contextmanager
+from threading import RLock
 from types import SimpleNamespace
 
 from fastapi import HTTPException
@@ -14,6 +16,119 @@ class RankedVisionBinding:
     user_id: int
     user_color: str
     game_id: str
+
+
+class RankedAnalysisActivity:
+    """Coordinates persistent free-session analysis with ranked start per user."""
+
+    def __init__(self):
+        self.lock = RLock()
+        self._background: dict[int, dict[str, dict[str, int]]] = {}
+        self._temporary: dict[int, dict[str, dict[str, int]]] = {}
+        self._ranked_starting: set[int] = set()
+
+    @staticmethod
+    def _increment(store, user_id: int, session_id: str, kind: str) -> None:
+        kinds = store.setdefault(user_id, {}).setdefault(session_id, {})
+        kinds[kind] = kinds.get(kind, 0) + 1
+
+    @staticmethod
+    def _decrement(store, user_id: int, session_id: str, kind: str) -> None:
+        sessions = store.get(user_id)
+        if sessions is None:
+            return
+        kinds = sessions.get(session_id)
+        if kinds is not None:
+            remaining = kinds.get(kind, 0) - 1
+            if remaining > 0:
+                kinds[kind] = remaining
+            else:
+                kinds.pop(kind, None)
+            if not kinds:
+                sessions.pop(session_id, None)
+        if not sessions:
+            store.pop(user_id, None)
+
+    def begin_background(self, user_id: int, session_id: str, kind: str) -> None:
+        with self.lock:
+            if user_id in self._ranked_starting:
+                raise HTTPException(status_code=409, detail="ranked game start is in progress")
+            self._increment(self._background, user_id, session_id, kind)
+
+    def begin_temporary(self, user_id: int, session_id: str, kind: str) -> None:
+        with self.lock:
+            if user_id in self._ranked_starting:
+                raise HTTPException(status_code=409, detail="ranked game start is in progress")
+            self._increment(self._temporary, user_id, session_id, kind)
+
+    def end_temporary(self, user_id: int, session_id: str, kind: str) -> None:
+        with self.lock:
+            self._decrement(self._temporary, user_id, session_id, kind)
+
+    def end_background(self, user_id: int, session_id: str, kind: str | None = None) -> None:
+        with self.lock:
+            sessions = self._background.get(user_id)
+            if sessions is None:
+                return
+            if kind is None:
+                sessions.pop(session_id, None)
+            else:
+                self._decrement(self._background, user_id, session_id, kind)
+                return
+            if not sessions:
+                self._background.pop(user_id, None)
+
+    def end_session(self, session_id: str) -> None:
+        """Drop every user's leases for a reset or deleted shared session."""
+
+        with self.lock:
+            empty_users = []
+            for user_id, sessions in self._background.items():
+                sessions.pop(session_id, None)
+                if not sessions:
+                    empty_users.append(user_id)
+            for user_id in empty_users:
+                self._background.pop(user_id, None)
+
+    def reserve_ranked_start(self, user_id: int, active_check=None) -> bool:
+        with self.lock:
+            if self._temporary.get(user_id):
+                return False
+            sessions = self._background.get(user_id, {})
+            if active_check is not None:
+                stale = [session_id for session_id, kinds in sessions.items() if not active_check(session_id, kinds)]
+                for session_id in stale:
+                    sessions.pop(session_id, None)
+                if not sessions:
+                    self._background.pop(user_id, None)
+            if self._background.get(user_id) or user_id in self._ranked_starting:
+                return False
+            self._ranked_starting.add(user_id)
+            return True
+
+    def release_ranked_start(self, user_id: int) -> None:
+        with self.lock:
+            self._ranked_starting.discard(user_id)
+
+
+@contextmanager
+def temporary_analysis_lease(app, current_user, session_id: str, kind: str, action: str):
+    """Block ranked start for the complete lifetime of an awaited analysis call."""
+
+    activity = getattr(app.state, "ranked_analysis_activity", None)
+    if activity is None:
+        guard_user_has_no_pending_ranked_game(app, current_user, action)
+        yield
+        guard_user_has_no_pending_ranked_game(app, current_user, action)
+        return
+    with activity.lock:
+        guard_user_has_no_pending_ranked_game(app, current_user, action)
+        activity.begin_temporary(current_user.id, session_id, kind)
+    try:
+        yield
+        guard_user_has_no_pending_ranked_game(app, current_user, action)
+    finally:
+        activity.end_temporary(current_user.id, session_id, kind)
 
 
 def is_ai_ladder_ranked_session(session) -> bool:

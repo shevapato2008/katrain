@@ -2,7 +2,11 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from katrain.web.api.v1.endpoints.auth import get_current_user
-from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
+from katrain.web.core.ranked_session_guard import (
+    guard_ai_ladder_ranked_session,
+    guard_user_has_no_pending_ranked_game,
+    temporary_analysis_lease,
+)
 from katrain.web.models import User, AnalyzeRequest
 
 router = APIRouter()
@@ -10,6 +14,7 @@ router = APIRouter()
 
 @router.post("/analyze")
 async def analyze(request: Request, data: AnalyzeRequest, current_user: User = Depends(get_current_user)) -> Any:
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "analysis")
     manager = request.app.state.session_manager
     try:
         session = manager.get_session(data.session_id)
@@ -21,13 +26,14 @@ async def analyze(request: Request, data: AnalyzeRequest, current_user: User = D
     if not router_instance:
         raise HTTPException(status_code=503, detail="Routing engine not initialized")
 
-    try:
-        result = await router_instance.route(data.payload)
+    with temporary_analysis_lease(request.app, current_user, data.session_id, "v1-analysis", "analysis"):
+        try:
+            result = await router_instance.route(data.payload)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=str(e))
         session.katrain.last_engine = result.get("engine")
         session.katrain.update_state()  # Broadcast new state with engine info
         return result
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
 
 
 class QuickAnalyzeRequest(BaseModel):
@@ -62,9 +68,9 @@ async def quick_analyze(
         "initialStones": data.initial_stones or [],
     }
 
-    try:
-        result = await router_instance.route(payload)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
-    guard_user_has_no_pending_ranked_game(request.app, current_user, "analysis")
-    return result
+    lease_id = f"quick:{current_user.id}"
+    with temporary_analysis_lease(request.app, current_user, lease_id, "quick-analysis", "analysis"):
+        try:
+            return await router_instance.route(payload)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=str(e))

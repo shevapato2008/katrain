@@ -45,9 +45,15 @@ class MockSessionManager:
         self.create_calls = []
         self.broadcasts = []
 
-    def create_multiplayer_session(self, player_b_id, player_w_id, b_name, w_name):
+    def create_multiplayer_session(self, player_b_id, player_w_id, b_name, w_name, skip_initial_analysis=False):
         self.create_calls.append(
-            {"player_b_id": player_b_id, "player_w_id": player_w_id, "b_name": b_name, "w_name": w_name}
+            {
+                "player_b_id": player_b_id,
+                "player_w_id": player_w_id,
+                "b_name": b_name,
+                "w_name": w_name,
+                "skip_initial_analysis": skip_initial_analysis,
+            }
         )
         return self.session
 
@@ -124,6 +130,7 @@ class TestStartEngineGame:
         # Player names preserved via create_multiplayer_session (human=Black=Me).
         assert sm.create_calls[0]["b_name"] == "Me"
         assert sm.create_calls[0]["w_name"] == "[golaxy] 星阵-7"
+        assert sm.create_calls[0]["skip_initial_analysis"] is True
 
     @pytest.mark.asyncio
     async def test_human_white_start_plays_ai_opening(self, setup):

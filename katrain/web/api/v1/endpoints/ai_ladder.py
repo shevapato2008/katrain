@@ -159,9 +159,38 @@ def start_ranked_game(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     manager = request.app.state.session_manager
+    activity = getattr(request.app.state, "ranked_analysis_activity", None)
+
+    def analysis_is_active(session_id: str, kinds: dict[str, int]) -> bool:
+        if any(kind.startswith(("quick-analysis", "platform:")) for kind in kinds):
+            return True
+        try:
+            analysis_session = manager.get_session(session_id)
+        except KeyError:
+            return False
+        if set(kinds) == {"continuous"}:
+            return bool(getattr(analysis_session.katrain, "pondering", False))
+        # One-shot and tree-wide analysis can outlive the initiating HTTP call and
+        # may touch nodes other than current_node. Conservatively keep the lease
+        # until the session is reset/deleted; this is safer than guessing completion.
+        return True
+
+    if activity is not None and not activity.reserve_ranked_start(current_user.id, analysis_is_active):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Stop active analysis before starting a ranked AI game",
+        )
+
     try:
-        session = manager.create_session(katago_uuid=current_user.uuid)
+        session = manager.create_session(
+            katago_uuid=current_user.uuid,
+            user_id=current_user.id,
+            initial_game_type=AI_LADDER_GAME_TYPE,
+            skip_initial_analysis=True,
+        )
     except Exception as exc:
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not create game session"
         ) from exc
@@ -183,6 +212,8 @@ def start_ranked_game(
 
     try:
         request.app.state.ai_ladder_repo.create_pending_game(snapshot)
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
         with session.lock:
             session.user_id = current_user.id
             session.game_type = AI_LADDER_GAME_TYPE
@@ -223,10 +254,13 @@ def start_ranked_game(
                 game_type=AI_LADDER_GAME_TYPE,
                 ladder_rung=opponent.rung,
                 frozen_ladder_recipe=frozen_recipe,
+                skip_initial_analysis=True,
             )
             session.katrain.game_type = AI_LADDER_GAME_TYPE
             session.last_state = session.katrain.get_state()
     except Exception as exc:
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
         try:
             request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=game_id)
         except Exception:

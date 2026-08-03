@@ -8,7 +8,7 @@ from katrain.web.models import User
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.api.v1.endpoints.reports import _dispatch_remote_only
 from katrain.web.core.user_game_repo import ProtectedRankedGameError, ReservedAiLadderGameIdError
-from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session
+from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
 
 router = APIRouter()
 
@@ -216,6 +216,7 @@ async def get_analysis(
     limit: int = 400,
     current_user: User = Depends(get_current_user),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "saved analysis")
     # Verify ownership
     game_repo = request.app.state.user_game_repo
     game = game_repo.get(game_id, current_user.id)
@@ -233,6 +234,7 @@ async def get_move_analysis(
     move_number: int,
     current_user: User = Depends(get_current_user),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "saved analysis")
     # Verify ownership
     game_repo = request.app.state.user_game_repo
     game = game_repo.get(game_id, current_user.id)
@@ -262,6 +264,7 @@ async def save_analysis_from_session(
     current_user: User = Depends(get_current_user),
 ):
     """Extract analysis from an active research session and persist to user_game_analysis."""
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "save session analysis")
     # Verify game ownership
     game_repo = request.app.state.user_game_repo
     game = game_repo.get(game_id, current_user.id)

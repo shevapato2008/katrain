@@ -18,6 +18,7 @@ from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
 from katrain.web.core.db import Base
 from katrain.web.core.engine_recovery import EngineRecoveryConfig, EngineRecoveryTracker
+from katrain.web.core.ranked_session_guard import RankedAnalysisActivity
 from katrain.web.core.user_game_repo import UserGameAnalysisRepository, UserGameRepository
 from katrain.web.server import create_app
 
@@ -135,6 +136,12 @@ class FakeKaTrain:
     def update_config(self, setting, value):
         self.config_updates.append((setting, value))
 
+    def update_state(self):
+        return None
+
+    def shutdown(self):
+        return None
+
     def config(self, setting, default=None):
         if setting == "game/count_min_moves":
             return 0
@@ -174,11 +181,12 @@ def api_app(tmp_path, monkeypatch):
 
     created_sessions = []
 
-    def create_session(katago_uuid=None):
+    def create_session(katago_uuid=None, **kwargs):
+        app.state._test_last_create_kwargs = {"katago_uuid": katago_uuid, **kwargs}
         session_id = f"session-{len(created_sessions) + 1}"
         session = SimpleNamespace(
             session_id=session_id,
-            user_id=None,
+            user_id=kwargs.get("user_id"),
             player_b_id=None,
             player_w_id=None,
             mode="play",
@@ -357,6 +365,14 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
     assert session.katrain.ladder_rung == {"rung": 16}
     assert session.katrain.frozen_ladder_recipe.rung == 16
     assert session.katrain.frozen_ladder_recipe.max_visits == 16
+    assert api_app.state._test_last_create_kwargs == {
+        "katago_uuid": api_app.state._test_user_uuid,
+        "user_id": api_app.state._test_user_id,
+        "initial_game_type": "ai_ladder_ranked",
+        "skip_initial_analysis": True,
+    }
+    ranked_new_game = next(kwargs for action, kwargs in session.katrain.calls if action == "new_game")
+    assert ranked_new_game["skip_initial_analysis"] is True
 
     with api_app.state._test_session_factory() as db:
         assert "ai_ladder_pending_games" in inspect(db.get_bind()).get_table_names()
@@ -470,7 +486,7 @@ async def test_ranked_session_keeps_cosmetic_controls_available(api_app, client,
 
 @pytest.mark.asyncio
 async def test_free_session_canonical_mutations_remain_available(api_app, client):
-    session = api_app.state.session_manager.create_session()
+    session = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
     session.game_type = "free"
     session.katrain.game_type = "free"
     async with client as ac:
@@ -488,10 +504,17 @@ async def test_free_session_canonical_mutations_remain_available(api_app, client
                 "/api/config",
                 json={"session_id": session.session_id, "setting": "timer/main_time", "value": 10},
             ),
-            await ac.post("/api/nav", json={"session_id": session.session_id, "node_id": 0}),
-            await ac.post("/api/analysis/current", json={"session_id": session.session_id}),
+            await ac.post(
+                "/api/nav", headers=api_app.state._test_headers, json={"session_id": session.session_id, "node_id": 0}
+            ),
+            await ac.post(
+                "/api/analysis/current",
+                headers=api_app.state._test_headers,
+                json={"session_id": session.session_id},
+            ),
             await ac.post(
                 "/api/new-game",
+                headers=api_app.state._test_headers,
                 json={"session_id": session.session_id, "size": 19, "komi": 7.5, "rules": "chinese"},
             ),
         )
@@ -518,6 +541,269 @@ async def test_ranked_session_cannot_be_used_to_extract_saved_analysis(api_app, 
         )
 
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path,payload",
+    (
+        ("/api/analysis/current", {}),
+        ("/api/analysis/extra", {"mode": "ownership"}),
+        ("/api/analysis/show-pv", {"pv": "D4 Q16"}),
+        ("/api/analysis/region", {"coords": [0, 0, 3, 3]}),
+        ("/api/analysis/game", {"visits": 50}),
+        ("/api/nav/mistake", {"fn": "redo"}),
+        ("/api/nav", {"node_id": 0}),
+        ("/api/mode", {"mode": "analyze"}),
+        ("/api/ui/toggle", {"setting": "ownership"}),
+        ("/api/v1/analysis/analyze", {"payload": {"maxVisits": 50}}),
+        ("/api/v1/hint", {"top_n": 3}),
+    ),
+)
+async def test_pending_ranked_user_cannot_analyze_a_second_free_session(api_app, client, path, payload):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        free = api_app.state.session_manager.create_session()
+        free.user_id = api_app.state._test_user_id
+        response = await ac.post(
+            path,
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id, **payload},
+        )
+
+    assert response.status_code == 403, (path, response.text)
+
+
+@pytest.mark.asyncio
+async def test_pending_ranked_user_cannot_read_second_free_session_state(api_app, client):
+    free = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
+    async with client as ac:
+        anonymous = await ac.get("/api/state", params={"session_id": free.session_id})
+        await start_ranked(api_app, ac)
+        pending = await ac.get(
+            "/api/state", headers=api_app.state._test_headers, params={"session_id": free.session_id}
+        )
+
+    assert anonymous.status_code == 401
+    assert pending.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_ranked_owner_can_read_analysis_free_ranked_state(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        response = await ac.get(
+            "/api/state",
+            headers=api_app.state._test_headers,
+            params={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["session_id"] == started.json()["session_id"]
+
+
+@pytest.mark.asyncio
+async def test_other_user_cannot_read_free_session_state(api_app, client):
+    with api_app.state._test_session_factory() as db:
+        db.add(models_db.User(username="state-other", hashed_password="x", rank="20k"))
+        db.commit()
+    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': 'state-other'})}"}
+    free = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
+
+    async with client as ac:
+        response = await ac.get("/api/state", headers=other_headers, params={"session_id": free.session_id})
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_free_session_creation_registers_auto_analysis_before_ranked_start(api_app, client):
+    async with client as ac:
+        created = await ac.post("/api/session", headers=api_app.state._test_headers)
+        started = await start_ranked(api_app, ac)
+
+    assert created.status_code == 200
+    assert started.status_code == 409
+    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path,payload",
+    (
+        ("/api/new-game", {"size": 19, "komi": 7.5, "rules": "chinese"}),
+        ("/api/move", {"coords": [3, 3]}),
+    ),
+)
+async def test_free_auto_eval_lifecycle_blocks_ranked_start(api_app, client, path, payload):
+    free = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
+    async with client as ac:
+        mutation = await ac.post(
+            path,
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id, **payload},
+        )
+        started = await start_ranked(api_app, ac)
+
+    assert mutation.status_code == 200
+    assert started.status_code == 409
+
+
+def test_activity_end_session_clears_all_users_for_reset_session():
+    activity = RankedAnalysisActivity()
+    activity.begin_background(1, "shared", "current")
+    activity.begin_background(2, "shared", "scan")
+
+    activity.end_session("shared")
+
+    assert activity.reserve_ranked_start(1)
+    assert activity.reserve_ranked_start(2)
+
+
+@pytest.mark.asyncio
+async def test_legacy_analysis_requires_auth_but_other_user_free_session_remains_available(api_app, client):
+    with api_app.state._test_session_factory() as db:
+        db.add(models_db.User(username="analysis-other", hashed_password="x", rank="20k"))
+        db.commit()
+    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': 'analysis-other'})}"}
+    free = api_app.state.session_manager.create_session()
+    async with client as ac:
+        anonymous = await ac.post("/api/analysis/current", json={"session_id": free.session_id})
+        await start_ranked(api_app, ac)
+        other = await ac.post("/api/analysis/current", headers=other_headers, json={"session_id": free.session_id})
+
+    assert anonymous.status_code == 401
+    assert other.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_v1_session_analysis_in_flight_does_not_return_after_ranked_game_starts(api_app, client):
+    entered = asyncio.Event()
+    release = asyncio.Event()
+
+    class BlockingRouter:
+        async def route(self, payload):
+            entered.set()
+            await release.wait()
+            return {"engine": "fixture", "moveInfos": [{"move": "D4"}]}
+
+    api_app.state.router = BlockingRouter()
+    free = api_app.state.session_manager.create_session()
+    free.user_id = api_app.state._test_user_id
+    async with client as ac:
+        analysis_task = asyncio.create_task(
+            ac.post(
+                "/api/v1/analysis/analyze",
+                headers=api_app.state._test_headers,
+                json={"session_id": free.session_id, "payload": {"maxVisits": 50}},
+            )
+        )
+        await entered.wait()
+        started = await start_ranked(api_app, ac)
+        release.set()
+        analysis = await analysis_task
+
+    assert started.status_code == 409
+    assert analysis.status_code == 200
+    assert analysis.json()["moveInfos"][0]["move"] == "D4"
+    assert free.katrain.last_engine == "fixture"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "analysis_path,payload",
+    (
+        ("/api/analysis/current", {}),
+        ("/api/analysis/continuous", {}),
+        ("/api/analysis/scan", {"visits": 50}),
+        ("/api/analysis/game", {"visits": 50}),
+        ("/api/analysis/selfplay", {"until_move": 10}),
+        ("/api/nav", {"node_id": 0}),
+    ),
+)
+async def test_ranked_start_rejects_preexisting_background_analysis(api_app, client, analysis_path, payload):
+    free = api_app.state.session_manager.create_session()
+    free.user_id = api_app.state._test_user_id
+    free.katrain.pondering = False
+    free.katrain.update_state = lambda: None
+    async with client as ac:
+        analysis = await ac.post(
+            analysis_path,
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id, **payload},
+        )
+        started = await start_ranked(api_app, ac)
+
+    assert analysis.status_code == 200
+    assert started.status_code == 409
+    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_pending_ranked_user_navigation_does_not_trigger_free_session_analysis(api_app, client):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        free = api_app.state.session_manager.create_session()
+        calls_before = list(free.katrain.calls)
+        response = await ac.post(
+            "/api/nav",
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id, "node_id": 0},
+        )
+
+    assert response.status_code == 403
+    assert free.katrain.calls == calls_before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path,payload",
+    (
+        ("/api/sgf/load", {"sgf": "(;FF[4]SZ[19])", "skip_analysis": False}),
+        ("/api/game/setup", {"mode": "newgame", "settings": {"size": 19}}),
+        ("/api/edit-game", {"size": 13}),
+        ("/api/undo", {}),
+        ("/api/redo", {}),
+        ("/api/ai-move", {}),
+    ),
+)
+async def test_pending_ranked_user_cannot_trigger_legacy_auto_analysis_mutations(api_app, client, path, payload):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        free = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
+        calls_before = list(free.katrain.calls)
+        response = await ac.post(
+            path,
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id, **payload},
+        )
+
+    assert response.status_code == 403
+    assert free.katrain.calls == calls_before
+
+
+@pytest.mark.asyncio
+async def test_stopping_continuous_analysis_releases_ranked_start(api_app, client):
+    free = api_app.state.session_manager.create_session()
+    free.user_id = api_app.state._test_user_id
+    free.katrain.pondering = False
+    free.katrain.update_state = lambda: None
+    async with client as ac:
+        first = await ac.post(
+            "/api/analysis/continuous",
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id},
+        )
+        stopped = await ac.post(
+            "/api/analysis/continuous",
+            headers=api_app.state._test_headers,
+            json={"session_id": free.session_id},
+        )
+        started = await start_ranked(api_app, ac)
+
+    assert first.status_code == 200 and first.json()["pondering"] is True
+    assert stopped.status_code == 200 and stopped.json()["pondering"] is False
+    assert started.status_code == 201
 
 
 @pytest.mark.asyncio
@@ -557,9 +843,89 @@ async def test_quick_analysis_in_flight_does_not_return_after_ranked_game_starts
         release.set()
         analysis = await analysis_task
 
-    assert started.status_code == 201
-    assert analysis.status_code == 403
-    assert "D4" not in analysis.text
+    assert started.status_code == 409
+    assert analysis.status_code == 200
+    assert analysis.json()["moveInfos"][0]["move"] == "D4"
+
+
+@pytest.mark.asyncio
+async def test_concurrent_quick_analysis_leases_are_reference_counted(api_app, client):
+    entered = asyncio.Queue()
+    releases = [asyncio.Event(), asyncio.Event()]
+
+    class TwiceBlockingRouter:
+        def __init__(self):
+            self.next_index = 0
+
+        async def route(self, payload):
+            index = self.next_index
+            self.next_index += 1
+            await entered.put(index)
+            await releases[index].wait()
+            return {"moveInfos": [{"move": "D4"}]}
+
+    api_app.state.router = TwiceBlockingRouter()
+    async with client as ac:
+        tasks = [
+            asyncio.create_task(
+                ac.post("/api/v1/analysis/quick-analyze", headers=api_app.state._test_headers, json={"moves": []})
+            )
+            for _ in range(2)
+        ]
+        await entered.get()
+        await entered.get()
+        releases[0].set()
+        assert (await tasks[0]).status_code == 200
+        while_first_finished = await start_ranked(api_app, ac)
+        releases[1].set()
+        assert (await tasks[1]).status_code == 200
+        after_both_finished = await start_ranked(api_app, ac)
+
+    assert while_first_finished.status_code == 409
+    assert after_both_finished.status_code == 201
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("interrupt", ["invalid-reset", "delete"])
+async def test_session_reset_or_delete_cannot_clear_inflight_temporary_analysis_lease(api_app, client, interrupt):
+    entered = asyncio.Event()
+    release = asyncio.Event()
+
+    class BlockingRouter:
+        async def route(self, payload):
+            entered.set()
+            await release.wait()
+            return {"engine": "fixture", "moveInfos": [{"move": "D4"}]}
+
+    api_app.state.router = BlockingRouter()
+    free = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
+    async with client as ac:
+        analysis_task = asyncio.create_task(
+            ac.post(
+                "/api/v1/analysis/analyze",
+                headers=api_app.state._test_headers,
+                json={"session_id": free.session_id, "payload": {"maxVisits": 50}},
+            )
+        )
+        await entered.wait()
+        if interrupt == "invalid-reset":
+            interrupted = await ac.post(
+                "/api/new-game",
+                headers=api_app.state._test_headers,
+                json={"session_id": free.session_id, "ladder_rung": 999},
+            )
+            assert interrupted.status_code == 422
+        else:
+            interrupted = await ac.delete(f"/api/session/{free.session_id}", headers=api_app.state._test_headers)
+            assert interrupted.status_code == 200
+
+        while_analysis_runs = await start_ranked(api_app, ac)
+        release.set()
+        assert (await analysis_task).status_code == 200
+        after_analysis = await start_ranked(api_app, ac)
+
+    assert while_analysis_runs.status_code == 409
+    assert after_analysis.status_code == 201
 
 
 @pytest.mark.asyncio

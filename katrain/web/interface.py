@@ -293,7 +293,7 @@ class WebKaTrain(KaTrainBase):
             self.log(f"Remote analysis engine unavailable ({exc}); using local for analysis", OUTPUT_ERROR)
             self.analysis_engine_instance = None
 
-    def start(self):
+    def start(self, game_type="free", skip_initial_analysis=False):
         """Initializes the engine and starts a new game."""
         if self.engine:
             return
@@ -319,7 +319,7 @@ class WebKaTrain(KaTrainBase):
         self._init_analysis_engine()
 
         # Start a new game
-        self._do_new_game()
+        self._do_new_game(game_type=game_type, skip_initial_analysis=skip_initial_analysis)
 
     def log(self, message, level=OUTPUT_INFO):
         """Redirect logs to Python logger."""
@@ -621,7 +621,9 @@ class WebKaTrain(KaTrainBase):
                 sgf_filename=sgf_filename,
                 game_properties=game_properties,
                 user_id=self.user_id,
-                skip_initial_analysis=skip_initial_analysis or self.should_suppress_auto_eval(),
+                skip_initial_analysis=skip_initial_analysis
+                or self.should_suppress_auto_eval()
+                or not self.analysis_allowed,
             )
 
             # Ensure handicap stones are placed if handicap is set

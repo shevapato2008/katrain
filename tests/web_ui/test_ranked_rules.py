@@ -55,13 +55,13 @@ class TestRankedUndo:
         r = client.post("/api/undo", json={"session_id": session.session_id, "n_times": 1})
         assert r.status_code == 403
 
-    def test_free_undo_ok(self, client):
+    def test_anonymous_free_undo_requires_auth(self, client):
         app = client.app
         session = _make_mock_session("free")
         app.state.session_manager._sessions[session.session_id] = session
 
         r = client.post("/api/undo", json={"session_id": session.session_id, "n_times": 1})
-        assert r.status_code == 200
+        assert r.status_code == 401
 
     @pytest.mark.parametrize("endpoint", ["undo", "redo"])
     def test_ai_ladder_ranked_tree_mutation_403(self, client, endpoint):

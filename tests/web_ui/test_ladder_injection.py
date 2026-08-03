@@ -13,6 +13,7 @@ Covers:
 import sys
 import threading
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 
@@ -27,9 +28,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 sys.modules.pop("katrain.web.interface", None)
 
 from katrain.core.constants import AI_LADDER, AI_POLICY, PLAYER_AI  # noqa: E402
-from katrain.core.game import Move  # noqa: E402
+from katrain.core.game import Game, Move  # noqa: E402
 from katrain.web.interface import WebKaTrain, resolve_ladder_rung  # noqa: E402
+from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional  # noqa: E402
 from katrain.web.server import create_app  # noqa: E402
+from katrain.web.session import SessionManager  # noqa: E402
 
 
 # --- Task 5: /api/ladder-rungs + ai:ladder default (HTTP surface) -------------------
@@ -38,6 +41,9 @@ from katrain.web.server import create_app  # noqa: E402
 @pytest.fixture
 def client():
     app = create_app(enable_engine=False)
+    user = SimpleNamespace(id=987654, uuid="ladder-injection-user", username="ladder-injection-user")
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_current_user_optional] = lambda: user
     with TestClient(app) as c:
         yield c
 
@@ -65,6 +71,23 @@ def test_ladder_rungs_endpoint(client):
 
 def test_ai_constants_ladder_default(client):
     assert client.get("/api/ai-constants").json()["strategy_defaults"]["ai:ladder"] == {}
+
+
+def test_ranked_session_never_starts_initial_or_replacement_game_analysis(monkeypatch):
+    analyzed = threading.Event()
+    monkeypatch.setattr(Game, "analyze_all_nodes", lambda *_args, **_kwargs: analyzed.set())
+    manager = SessionManager(enable_engine=False)
+
+    session = manager.create_session(
+        user_id=1,
+        initial_game_type="ai_ladder_ranked",
+        skip_initial_analysis=True,
+    )
+    assert not analyzed.wait(0.05)
+
+    session.katrain("new_game", game_type="ai_ladder_ranked")
+    assert not analyzed.wait(0.05)
+    manager.remove_session(session.session_id)
 
 
 def test_new_game_unavailable_ladder_level_returns_422_before_game_mutation(client):

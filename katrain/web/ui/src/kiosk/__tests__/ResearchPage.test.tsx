@@ -13,9 +13,8 @@ vi.mock('../context/ImmersiveContext', () => ({
   useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
 }));
 
-vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
-}));
+const { authState } = vi.hoisted(() => ({ authState: { current: { token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() } as any } }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => authState.current }));
 
 vi.mock('../../api/userGamesApi', () => ({
   UserGamesAPI: { get: vi.fn(), list: vi.fn() },
@@ -128,6 +127,15 @@ describe('ResearchPage', () => {
     mockGameState = null;
     vi.mocked(API.quickAnalyze).mockResolvedValue({ turnInfos: [{ moveInfos: [], ownership: null }] });
     vi.mocked(API.analysisScan).mockResolvedValue({});
+    authState.current = { token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() };
+  });
+
+  it('keeps strict kiosk quick analysis on the cookie-only path when token is null', async () => {
+    authState.current = { ...authState.current, token: null };
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByText('建议').parentElement!);
+    await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalledWith(expect.any(Object), undefined));
   });
 
   // ── Step 2: L1 renders editable board + setup, no size picker ──

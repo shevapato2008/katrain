@@ -335,8 +335,8 @@ export const API = {
     apiPost("/api/analysis/scan", { session_id: sessionId, visits }),
   quickAnalyze: (params: {
     moves: string[][]; initial_stones?: string[][]; board_size?: number; komi?: number; rules?: string; max_visits?: number;
-  }): Promise<any> =>
-    apiPost("/api/v1/analysis/quick-analyze", params),
+  }, token?: string): Promise<any> =>
+    apiPost("/api/v1/analysis/quick-analyze", params, token),
   // On-demand analysis of the current position (kiosk 领地/图表 in board mode, where per-move
   // auto-eval is suppressed). Result streams back over the game WebSocket, not this response.
   analyzeCurrent: (sessionId: string): Promise<any> =>

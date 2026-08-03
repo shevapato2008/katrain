@@ -23,6 +23,7 @@ import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, ty
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
+import { isRankedGameType } from '../../features/aiLadder/gameType';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -262,7 +263,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
-    if (gs.game_type === 'ranked' || gs.game_type === 'rated') return;
+    if (isRankedGameType(gs.game_type)) return;
     API.analyzeCurrent(sessionId).catch(() => undefined);
   }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
 
@@ -333,7 +334,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
   const isGameOver = !!gameState.end_result;
   // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
-  const isRanked = gameState.game_type === 'ranked' || gameState.game_type === 'rated';
+  const isRanked = isRankedGameType(gameState.game_type);
 
 
   // Determine which color the human plays (for turn enforcement). deriveHumanColor now
@@ -394,7 +395,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (!isGameOver) {
       setShowExitConfirm(true);
     } else {
-      navigate('/kiosk/play');
+      navigate(gameState.game_type === 'ai_ladder_ranked' ? '/kiosk/play/ai/setup/ranked' : '/kiosk/play');
     }
   };
 

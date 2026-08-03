@@ -12,6 +12,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
+import { isRankedGameType } from '../../features/aiLadder/gameType';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -25,7 +26,7 @@ const GamePage = () => {
     const { token } = useAuth();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
-    const isRated = mode === 'rated';
+    const routeIsRated = mode === 'rated';
 
     // Dynamic Board3D import — loaded once, then cached
     const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
@@ -41,6 +42,7 @@ const GamePage = () => {
         onNavigate,
         handleAction
     } = useGameSession({ token: token || undefined });
+    const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -225,13 +227,13 @@ const GamePage = () => {
         if (!gameState?.end_result) {
             setShowLeaveConfirm(true);
         } else {
-            navigate('/galaxy/play/ai');
+            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
         }
     };
 
     const handleConfirmLeave = async () => {
         await handleAction('resign');
-        navigate('/galaxy/play/ai');
+        navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
     };
 
     // Determine which color the human player controls (if any)

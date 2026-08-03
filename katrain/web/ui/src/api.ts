@@ -70,7 +70,7 @@ export interface GameState {
     fast_visits?: number;
     max_visits?: number;
   };
-  game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
+  game_type?: "free" | "ranked" | "rated" | "ai_ladder_ranked" | string;
   analysis_allowed?: boolean;
   // "B" | "W" = the color the REMOTE ENGINE plays in an engine-play game (Golaxy
   // 人机对弈 genmove tunnel); null/absent for every other game shape (local HvAI,

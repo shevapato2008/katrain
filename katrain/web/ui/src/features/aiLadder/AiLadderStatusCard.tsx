@@ -164,7 +164,7 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry }: AiLadderStatus
     return (
       <CardFrame>
         <Alert severity="error" role="alert" sx={{ mb: 2 }}>
-          {AI_LADDER_COPY.loadError}
+          {status.message || AI_LADDER_COPY.loadError}
         </Alert>
         <Button variant="outlined" onClick={onRetry} disabled={!onRetry} sx={{ minHeight: 44 }}>
           {AI_LADDER_COPY.retry}

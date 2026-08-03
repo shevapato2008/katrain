@@ -8,7 +8,8 @@ import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
-import { getAiLadderDemoStatus } from '../../features/aiLadder/__fixtures__/galaxyDemo';
+import { startAiLadderGame } from '../../features/aiLadder/api';
+import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -20,16 +21,14 @@ const valueToRank = (val: number) => {
 };
 
 const AiSetupPage = () => {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user, token } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
-    const aiLadderDemo = import.meta.env.DEV && isRated
-        ? getAiLadderDemoStatus(searchParams.get('ai-ladder-demo'))
-        : null;
+    const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token || undefined, isRated);
 
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -71,15 +70,17 @@ const AiSetupPage = () => {
     ];
 
     useEffect(() => {
+        if (isRated) {
+            setOpponent('ai:human');
+            setTimerEnabled(true);
+            setRules('japanese');
+            setLoading(false);
+            return;
+        }
         const fetchConstants = async () => {
             try {
                 const constants = await API.getAIConstants();
                 setAiConstants(constants);
-                if (isRated) {
-                    setOpponent('ai:human');
-                    setTimerEnabled(true);
-                    setRules('japanese');
-                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load AI settings');
@@ -145,6 +146,21 @@ const AiSetupPage = () => {
     const handleStartGame = async () => {
         setLoading(true);
         try {
+            if (isRated) {
+                const session = await startAiLadderGame({
+                    board_size: boardSize as 9 | 13 | 19,
+                    rules,
+                    komi,
+                    handicap,
+                    color: color === 'B' ? 'black' : 'white',
+                    time_enabled: timerEnabled,
+                    main_time: mainTime,
+                    byo_length: byoLength,
+                    byo_periods: byoPeriods,
+                }, token || undefined);
+                navigate(`/galaxy/play/game/${session.session_id}?mode=rated`);
+                return;
+            }
             const session = await API.createSession(token || undefined);
             const humanKyuRank = sliderToHumanKyuRankFixed(rankValue);
 
@@ -330,14 +346,10 @@ const AiSetupPage = () => {
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
                     <Typography variant="h6" gutterBottom>{t('Opponent & Time', 'Opponent & Time')}</Typography>
 
-                    {aiLadderDemo ? (
+                    {isRated ? (
                         <AiLadderSetupOpponent
-                            status={aiLadderDemo}
-                            onRetry={() => {
-                                const nextSearchParams = new URLSearchParams(searchParams);
-                                nextSearchParams.set('ai-ladder-demo', 'placement');
-                                setSearchParams(nextSearchParams, { replace: true });
-                            }}
+                            status={aiLadderStatus}
+                            onRetry={retryAiLadderStatus}
                         />
                     ) : (
                         <>
@@ -461,7 +473,18 @@ const AiSetupPage = () => {
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button onClick={() => navigate('/galaxy/play')}>{t('cancel', 'Cancel')}</Button>
-                <Button variant="contained" size="large" onClick={handleStartGame} disabled={loading || Boolean(aiLadderDemo)}>
+                <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleStartGame}
+                    disabled={loading || (isRated && (
+                        aiLadderStatus.view_state !== 'ready'
+                        || aiLadderStatus.pending_settlement
+                        || !aiLadderStatus.current_opponent
+                        || aiLadderStatus.current_opponent.certification_status !== 'certified'
+                        || aiLadderStatus.current_opponent.availability !== 'available'
+                    ))}
+                >
                     {t('btn:Play', 'Start Game')}
                 </Button>
             </Box>

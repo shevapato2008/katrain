@@ -62,7 +62,7 @@ const AiLadderSetupOpponent = ({ status, onRetry }: AiLadderSetupOpponentProps) 
     return (
       <Frame>
         <Alert severity="error" role="alert" sx={{ mb: 1.5 }}>
-          {AI_LADDER_COPY.loadError}
+          {status.message || AI_LADDER_COPY.loadError}
         </Alert>
         <Button variant="outlined" onClick={onRetry} disabled={!onRetry} sx={{ minHeight: 44 }}>
           {AI_LADDER_COPY.retry}

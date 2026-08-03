@@ -10,6 +10,9 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import LiveBoard from '../../components/live/LiveBoard';
 import { writeActiveSession } from '../utils/activeSession';
+import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
+import { startAiLadderGame } from '../../features/aiLadder/api';
+import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -30,6 +33,7 @@ const AiSetupPage = () => {
   const { t } = useTranslation();
   const { token } = useAuth();
   const isRanked = mode === 'ranked';
+  const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token ?? undefined, isRanked);
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -53,7 +57,7 @@ const AiSetupPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const showRankSlider = isRanked || aiStrategy === 'ai:human';
+  const showRankSlider = !isRanked && aiStrategy === 'ai:human';
 
   const timePresets = TIME_PRESETS(t);
   const currentTimeKey = !isRanked && !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
@@ -72,6 +76,25 @@ const AiSetupPage = () => {
     setError('');
     setLoading(true);
     try {
+      if (isRanked) {
+        const { session_id } = await startAiLadderGame({
+          board_size: boardSize as 9 | 13 | 19,
+          rules,
+          color,
+          handicap,
+          komi,
+          time_enabled: true,
+          main_time: mainTime,
+          byo_length: byoyomiTime,
+          byo_periods: byoyomiPeriods,
+        }, token ?? undefined);
+        writeActiveSession({
+          kind: 'game', label: t('Ranked Game', '升降级对弈'),
+          route: `/kiosk/play/ai/game/${session_id}`, ts: Date.now(),
+        });
+        navigate(`/kiosk/play/ai/game/${session_id}`);
+        return;
+      }
       const { session_id } = await API.createSession(token ?? undefined);
       await API.gameSetup(session_id, isRanked ? 'ranked' : 'free', {
         board_size: boardSize,
@@ -151,6 +174,12 @@ const AiSetupPage = () => {
                 onChange={setColor}
               />
             </Box>
+
+            {isRanked && (
+              <Box sx={{ gridColumn: '1 / -1', '& section': { mt: 0, py: 1.25 } }}>
+                <AiLadderSetupOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />
+              </Box>
+            )}
 
             {/* Ruleset — dropdown */}
             <FormControl size="small" fullWidth>
@@ -261,7 +290,13 @@ const AiSetupPage = () => {
               fullWidth
               size="large"
               startIcon={<PlayArrow />}
-              disabled={loading}
+              disabled={loading || (isRanked && (
+                aiLadderStatus.view_state !== 'ready'
+                || aiLadderStatus.pending_settlement
+                || !aiLadderStatus.current_opponent
+                || aiLadderStatus.current_opponent.certification_status !== 'certified'
+                || aiLadderStatus.current_opponent.availability !== 'available'
+              ))}
               onClick={handleStart}
               sx={{
                 minHeight: 56, py: 2, fontSize: '1.1rem',

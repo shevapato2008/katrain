@@ -35,6 +35,26 @@ export interface AiLadderLoadingStatus {
 
 export interface AiLadderErrorStatus {
   view_state: 'error';
+  message?: string;
+}
+
+export interface AiLadderStartPreferences {
+  board_size: 9 | 13 | 19;
+  rules: string;
+  komi: number;
+  handicap: number;
+  color: 'black' | 'white';
+  time_enabled: boolean;
+  main_time: number;
+  byo_length: number;
+  byo_periods: number;
+}
+
+export interface AiLadderStartResponse {
+  session_id: string;
+  game_id: string;
+  opponent: AiLadderCatalogEntry;
+  status: AiLadderReadyStatus;
 }
 
 export interface AiLadderReadyStatus {

@@ -12,12 +12,22 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+const { startRanked, rankedState, retryRanked, createSession, gameSetup } = vi.hoisted(() => ({
+  startRanked: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }),
+  retryRanked: vi.fn(),
+  createSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+  gameSetup: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+  rankedState: { current: { view_state: 'ready', placement_state: { phase: 'placement', completed_games: 2, total_games: 5 }, current_opponent: { rung: 12, rank_name: '9级', certification_status: 'certified', availability: 'available', route: 'server' }, recent_ranked_results: [], net_score: 0, pending_settlement: false } as any },
+}));
+
 vi.mock('../../api', () => ({
   API: {
-    createSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
-    gameSetup: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+    createSession,
+    gameSetup,
   },
 }));
+vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: startRanked }));
+vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({ useAiLadderStatus: () => ({ status: rankedState.current, retry: retryRanked }) }));
 
 const { writeActiveSession } = vi.hoisted(() => ({ writeActiveSession: vi.fn() }));
 vi.mock('../utils/activeSession', () => ({ writeActiveSession }));
@@ -41,6 +51,9 @@ describe('AiSetupPage', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
     writeActiveSession.mockReset();
+    startRanked.mockClear();
+    createSession.mockClear();
+    gameSetup.mockClear();
   });
 
   it('renders the board-preview console header (盘面预览)', () => {
@@ -71,9 +84,18 @@ describe('AiSetupPage', () => {
 
     await waitFor(() => {
       expect(writeActiveSession).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'game', label: '升降级对弈', route: '/kiosk/play/ai/game/s1' })
+        expect.objectContaining({ kind: 'game', label: '升降级对弈', route: '/kiosk/play/ai/game/ranked-s1' })
       );
+      expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ board_size: 19, color: 'black' }), 'test-token');
+      expect(createSession).not.toHaveBeenCalled();
+      expect(gameSetup).not.toHaveBeenCalled();
     });
+  });
+
+  it('shows the server-selected ranked opponent instead of HumanSL strength', () => {
+    renderPage('ranked');
+    expect(screen.getByText('定级对手：9级')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
   });
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {

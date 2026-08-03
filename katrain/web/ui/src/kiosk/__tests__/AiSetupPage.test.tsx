@@ -13,6 +13,9 @@ vi.mock('../../api', () => ({
   },
 }));
 
+vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }) }));
+vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({ useAiLadderStatus: () => ({ status: { view_state: 'ready', placement_state: { phase: 'placement', completed_games: 2, total_games: 5 }, current_opponent: { rung: 12, rank_name: '9级', certification_status: 'certified', availability: 'available', route: 'server' }, recent_ranked_results: [], net_score: 0, pending_settlement: false }, retry: vi.fn() }) }));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
@@ -96,9 +99,10 @@ describe('AiSetupPage', () => {
     expect(screen.queryByRole('combobox', { name: 'AI 策略' })).not.toBeInTheDocument();
   });
 
-  it('shows AI strength selector for ranked mode', () => {
+  it('shows the authoritative ladder opponent for ranked mode', () => {
     renderPage('ranked');
-    expect(screen.getByRole('combobox', { name: 'AI 棋力' })).toBeInTheDocument();
+    expect(screen.getByText('定级对手：9级')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
   });
 
   it('renders handicap selector defaulting to none', () => {

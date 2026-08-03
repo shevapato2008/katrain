@@ -21,7 +21,7 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-const { mockAiConstants, mockRungsResponse, mockNewGame, mockUpdateConfig } = vi.hoisted(() => ({
+const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mockUpdateConfig, mockStartRanked, rankedState, mockRetry } = vi.hoisted(() => ({
   mockAiConstants: {
     strategies: ['ai:human', 'ai:ladder'],
     options: {},
@@ -38,13 +38,17 @@ const { mockAiConstants, mockRungsResponse, mockNewGame, mockUpdateConfig } = vi
       { rung: 37, rank_name: 'KataGo中等' },
     ],
   },
+  mockCreateSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
   mockNewGame: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
   mockUpdateConfig: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+  mockStartRanked: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }),
+  mockRetry: vi.fn(),
+  rankedState: { current: null as any },
 }));
 
 vi.mock('../../api', () => ({
   API: {
-    createSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+    createSession: mockCreateSession,
     getAIConstants: vi.fn().mockResolvedValue(mockAiConstants),
     getLadderRungs: vi.fn().mockResolvedValue(mockRungsResponse),
     newGame: mockNewGame,
@@ -55,6 +59,11 @@ vi.mock('../../api', () => ({
   },
 }));
 
+vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: mockStartRanked }));
+vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({
+  useAiLadderStatus: () => ({ status: rankedState.current, retry: mockRetry }),
+}));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
@@ -63,9 +72,8 @@ vi.mock('../../context/SettingsContext', () => ({
   useSettings: () => ({ language: 'cn', setLanguage: vi.fn(), languages: [] }),
 }));
 
-const renderPage = (mode = 'free', demoState?: string) => {
+const renderPage = (mode = 'free') => {
   const params = new URLSearchParams({ mode });
-  if (demoState) params.set('ai-ladder-demo', demoState);
   return render(
     <MemoryRouter initialEntries={[`/galaxy/play/ai/setup?${params.toString()}`]}>
       <Routes>
@@ -149,10 +157,20 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
 describe('AiSetupPage — rated AI ladder visual slice', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
+    mockStartRanked.mockClear();
+    mockCreateSession.mockClear();
+    mockNewGame.mockClear();
+    mockRetry.mockClear();
+    rankedState.current = {
+      view_state: 'ready',
+      placement_state: { phase: 'placement', completed_games: 3, total_games: 5 },
+      current_opponent: { rung: 17, rank_name: '4级', certification_status: 'certified', availability: 'available', route: 'server' },
+      recent_ranked_results: [], net_score: 0, pending_settlement: false,
+    };
   });
 
   it('replaces the rated HumanSL controls with the server-decided placement opponent', async () => {
-    renderPage('rated', 'placement');
+    renderPage('rated');
 
     expect(await screen.findByRole('heading', { name: '41档升降级AI' })).toBeInTheDocument();
     expect(screen.getByText('定级进度 3/5')).toBeInTheDocument();
@@ -160,12 +178,13 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(screen.queryByText('20k')).not.toBeInTheDocument();
     expect(screen.queryByText('9d')).not.toBeInTheDocument();
     expect(screen.queryByText('Human-like')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Start Game' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Start Game' })).toBeEnabled();
     expect(screen.queryByText('累计净胜分：0')).not.toBeInTheDocument();
   });
 
   it('shows the current public 41-rung rank without an internal rung number', async () => {
-    renderPage('rated', 'placed');
+    rankedState.current = { ...rankedState.current, placement_state: { phase: 'placed', rung: { rung: 30, rank_name: '5段', certification_status: 'certified', availability: 'available', route: 'server' } } };
+    renderPage('rated');
 
     expect(await screen.findByText('本局对手：5段')).toBeInTheDocument();
     expect(screen.queryByText('第30档')).not.toBeInTheDocument();
@@ -173,32 +192,29 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
 
   it('retries a failed ranked-status load inside the rated setup flow', async () => {
     const user = userEvent.setup();
-    renderPage('rated', 'error');
+    rankedState.current = { view_state: 'error', message: '服务暂时不可用' };
+    renderPage('rated');
 
     await user.click(await screen.findByRole('button', { name: '重试' }));
 
-    expect(await screen.findByText('定级进度 3/5')).toBeInTheDocument();
+    expect(mockRetry).toHaveBeenCalledTimes(1);
   });
 
-  it.each(['toString', 'constructor', 'unknown'])('ignores unsupported demo state %s', async (state) => {
-    renderPage('rated', state);
-
-    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
-    expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();
-    expect(screen.getByText('20k')).toBeInTheDocument();
-  });
-
-  it('keeps rated setup unchanged when no explicit preview state is requested', async () => {
+  it('starts rated play only through the authoritative endpoint', async () => {
     renderPage('rated');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Start Game' }));
 
-    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
-    expect(screen.getByText('20k')).toBeInTheDocument();
-    expect(screen.getByText('9d')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();
+    await waitFor(() => expect(mockStartRanked).toHaveBeenCalledWith(expect.objectContaining({
+      board_size: 19, rules: 'japanese', color: 'black',
+    }), 'test-token'));
+    expect(mockCreateSession).not.toHaveBeenCalled();
+    expect(mockNewGame).not.toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/ranked-s1?mode=rated');
   });
 
-  it('does not mount the ranked preview in free play', async () => {
-    renderPage('free', 'placement');
+  it('does not mount ranked status in free play', async () => {
+    renderPage('free');
 
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
     expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();

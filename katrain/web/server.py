@@ -1209,7 +1209,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             }
 
             if game_type == "ai_ladder_ranked":
-                from katrain.web.core.ai_ladder_catalog import AiLadderSessionSnapshot, build_opponent_snapshot
+                from katrain.web.core.ai_ladder_catalog import (
+                    AiLadderSessionSnapshot,
+                    frozen_recipe_identity,
+                    result_for_user,
+                    session_snapshot_from_pending,
+                )
 
                 snapshot = getattr(session, "ai_ladder_snapshot", None)
                 if not isinstance(snapshot, AiLadderSessionSnapshot):
@@ -1226,21 +1231,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     raise ValueError("ranked AI subtype mismatch")
                 if getattr(session, "ai_ladder_runtime_identity", None) != snapshot.execution_identity:
                     raise ValueError("ranked AI runtime configuration mismatch")
+                if (
+                    frozen_recipe_identity(getattr(session.katrain, "frozen_ladder_recipe", None))
+                    != snapshot.execution_identity
+                ):
+                    raise ValueError("ranked AI frozen recipe mismatch")
                 config_identity = snapshot.opponent.config_snapshot.get("recipe_identity")
                 if config_identity != snapshot.execution_identity:
                     raise ValueError("ranked AI snapshot configuration mismatch")
-                current_opponent, current_identity = build_opponent_snapshot(snapshot.opponent.rung)
-                if current_identity != snapshot.execution_identity or current_opponent != snapshot.opponent:
-                    raise ValueError("ranked AI catalog configuration changed during the game")
+                pending = app.state.ai_ladder_repo.get_pending_game(current_user.id)
+                if pending is None or session_snapshot_from_pending(pending) != snapshot:
+                    raise ValueError("ranked AI persistent snapshot mismatch")
 
                 actual_result = state.get("end_result") or getattr(session.katrain.game, "end_result", None)
                 if not isinstance(actual_result, str) or not actual_result.strip():
                     raise ValueError("ranked AI game has no authoritative end result")
-                winner = actual_result.strip().upper()[:1]
-                if winner in {"B", "W"} and "+" in actual_result:
-                    ladder_result = "win" if winner == snapshot.user_color else "loss"
-                else:
-                    ladder_result = "inconclusive"
                 data["result"] = actual_result
 
                 if getattr(app.state, "repository_dispatcher", None) is not None or not getattr(
@@ -1260,15 +1265,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     or confirmed.get("game_type") != "ai_ladder_ranked"
                 ):
                     raise RuntimeError("authoritative ranked AI game row was not confirmed")
+                app.state.ai_ladder_repo.mark_pending_game_saved(
+                    user_id=current_user.id,
+                    game_id=snapshot.game_id,
+                    result=confirmed["result"],
+                )
 
                 app.state.ai_ladder_repo.settle_game(
                     user_id=current_user.id,
                     game_id=snapshot.game_id,
                     user_color=snapshot.user_color,
-                    result=ladder_result,
+                    result=result_for_user(confirmed["result"], snapshot.user_color),
                     game_type=game_type,
                     opponent=snapshot.opponent,
                 )
+                app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
                 session.ai_ladder_settlement_pending = False
                 session._recorded = True
                 return

@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import models_db
@@ -29,9 +29,19 @@ class FixtureRecipe:
     def to_dict(self):
         return {
             "rung": self.rung,
+            "golaxy_level_name": None,
+            "golaxy_api_level": None,
+            "display_elo": None,
+            "ref_rank": "",
+            "rank_name": f"fixture-{self.rung}",
             "net": self.net,
             "mechanism": self.mechanism,
+            "human_sl_profile": None,
             "max_visits": self.max_visits,
+            "human_sl_params": {},
+            "backend_hint": "server",
+            "root_policy_temperature": 1.0,
+            "human_policy_temperature": None,
             "selection": self.selection,
         }
 
@@ -98,6 +108,7 @@ class FakeKaTrain:
                 info.name = kwargs["name"]
         elif action == "new_game":
             self.ladder_rung = {"rung": kwargs.get("ladder_rung")} if kwargs.get("ladder_rung") else None
+            self.frozen_ladder_recipe = kwargs.get("frozen_ladder_recipe")
             self.game_type = kwargs.get("game_type", "free")
             self._state.update(
                 board_size=[kwargs.get("size", 19), kwargs.get("size", 19)],
@@ -327,6 +338,31 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
     assert session.game_type == "ai_ladder_ranked"
     assert session.katrain.game_type == "ai_ladder_ranked"
     assert session.katrain.ladder_rung == {"rung": 16}
+    assert session.katrain.frozen_ladder_recipe.rung == 16
+    assert session.katrain.frozen_ladder_recipe.max_visits == 16
+
+    with api_app.state._test_session_factory() as db:
+        assert "ai_ladder_pending_games" in inspect(db.get_bind()).get_table_names()
+        pending = (
+            db.execute(
+                text(
+                    "SELECT game_id, user_id, session_id, user_color, opponent_rung, opponent_rank_name, "
+                    "opponent_config_snapshot, execution_identity, game_saved, saved_result "
+                    "FROM ai_ladder_pending_games"
+                )
+            )
+            .mappings()
+            .one()
+        )
+        assert pending["game_id"] == payload["game_id"]
+        assert pending["user_id"] == api_app.state._test_user_id
+        assert pending["session_id"] == session.session_id
+        assert pending["user_color"] == "B"
+        assert pending["opponent_rung"] == 16
+        assert pending["opponent_rank_name"] == "fixture-16"
+        assert pending["execution_identity"] == snapshot.execution_identity
+        assert pending["game_saved"] in (False, 0)
+        assert pending["saved_result"] is None
 
 
 @pytest.mark.asyncio
@@ -387,6 +423,22 @@ def test_authoritative_ranked_save_uses_game_id_not_sgf_hash_and_checks_owner(ap
     with pytest.raises(ValueError, match="another user"):
         repo.create_ai_ladder_ranked(user_id=other_id, game_id="ranked-save-1", **common)
 
+    for changed in (
+        {"sgf_content": "(;FF[4]SZ[19];W[dd])"},
+        {"result": "W+R"},
+        {"board_size": 13},
+        {"rules": "japanese"},
+        {"komi": 6.5},
+        {"move_count": 99},
+        {"player_black": "forged"},
+    ):
+        with pytest.raises(ValueError, match="immutable"):
+            repo.create_ai_ladder_ranked(
+                user_id=api_app.state._test_user_id,
+                game_id="ranked-save-1",
+                **{**common, **changed},
+            )
+
 
 @pytest.mark.asyncio
 async def test_ranked_natural_result_saves_once_then_settles_once(api_app, client):
@@ -437,13 +489,13 @@ async def test_snapshot_runtime_identity_tampering_is_rejected_without_saving(ap
 
 
 @pytest.mark.asyncio
-async def test_catalog_recipe_identity_change_before_settlement_is_rejected(api_app, client):
-    from katrain.core import ladder
+async def test_frozen_execution_recipe_tampering_is_rejected_without_saving(api_app, client):
+    from dataclasses import replace
 
     async with client as ac:
         await start_ranked(api_app, ac)
         session = api_app.state._test_created_sessions[0]
-        ladder.LADDER_LEVELS[15].recipe.max_visits = 999
+        session.katrain.frozen_ladder_recipe = replace(session.katrain.frozen_ladder_recipe, max_visits=999)
         session.katrain.game.end_result = "B+R"
         session.katrain._state["end_result"] = "B+R"
         await __import__("katrain.web.server", fromlist=["_RECORD_FN"])._RECORD_FN(
@@ -454,7 +506,29 @@ async def test_catalog_recipe_identity_change_before_settlement_is_rejected(api_
         assert db.query(models_db.UserGame).count() == 0
         assert db.query(models_db.AiLadderGameLedger).count() == 0
     assert session.ai_ladder_settlement_pending is True
-    assert session._recorded is False
+
+
+@pytest.mark.asyncio
+async def test_catalog_change_does_not_change_frozen_runtime_or_block_settlement(api_app, client):
+    from katrain.core import ladder
+
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        session = api_app.state._test_created_sessions[0]
+        ladder.LADDER_LEVELS[15].recipe.max_visits = 999
+        assert session.katrain.frozen_ladder_recipe.max_visits == 16
+        session.katrain.game.end_result = "B+R"
+        session.katrain._state["end_result"] = "B+R"
+        await __import__("katrain.web.server", fromlist=["_RECORD_FN"])._RECORD_FN(
+            session, api_app, SimpleNamespace(id=api_app.state._test_user_id, username="ladder-user"), "B+R"
+        )
+
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        assert db.get(models_db.AiLadderProfile, api_app.state._test_user_id).placement_completed == 1
+    assert session.ai_ladder_settlement_pending is False
+    assert session._recorded is True
 
 
 @pytest.mark.asyncio
@@ -498,23 +572,79 @@ async def test_settlement_failure_remains_pending_and_retries_same_saved_game(ap
         assert blocked_start.status_code == 409
         assert len(api_app.state._test_created_sessions) == 1
 
-        # Pending settlement is also derivable from the authoritative game row,
-        # so a process/session restart cannot make the UI claim it disappeared.
+        # Simulate a restart: discard the only session and restore the real repository
+        # method. Recovery must use only the database snapshot + saved UserGame.
         api_app.state.session_manager._sessions.clear()
-        durable_pending = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
-        assert durable_pending.json()["pending_settlement"] is True
-        api_app.state.session_manager._sessions[session.session_id] = session
-
         monkeypatch.setattr(api_app.state.ai_ladder_repo, "settle_game", original_settle)
-        await record(session, api_app, user, "B+R")
+        recovered = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+        assert recovered.json()["pending_settlement"] is False
 
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.UserGame).count() == 1
         assert db.query(models_db.UserGame).one().id == started.json()["game_id"]
         assert db.query(models_db.AiLadderGameLedger).count() == 1
         assert db.get(models_db.AiLadderProfile, user.id).placement_completed == 1
-    assert session.ai_ladder_settlement_pending is False
-    assert session._recorded is True
+        assert db.execute(text("SELECT COUNT(*) FROM ai_ladder_pending_games")).scalar_one() == 0
+
+
+@pytest.mark.asyncio
+async def test_orphan_pending_without_saved_game_is_abandoned_after_restart(api_app, client):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        api_app.state.session_manager._sessions.clear()
+        status_response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+        restarted = await start_ranked(api_app, ac)
+
+    assert status_response.json()["pending_settlement"] is False
+    assert restarted.status_code == 201
+    with api_app.state._test_session_factory() as db:
+        assert db.execute(text("SELECT COUNT(*) FROM ai_ladder_pending_games")).scalar_one() == 1
+
+
+@pytest.mark.asyncio
+async def test_pending_is_not_abandoned_while_its_session_is_still_being_configured(api_app, client):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        session = api_app.state._test_created_sessions[0]
+        session.user_id = None
+        status_response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert status_response.json()["pending_settlement"] is True
+    with api_app.state._test_session_factory() as db:
+        assert db.execute(text("SELECT COUNT(*) FROM ai_ladder_pending_games")).scalar_one() == 1
+
+
+@pytest.mark.asyncio
+async def test_conflicting_retry_after_saved_result_is_rejected_without_settlement(api_app, client, monkeypatch):
+    async with client as ac:
+        await start_ranked(api_app, ac)
+        session = api_app.state._test_created_sessions[0]
+        record = __import__("katrain.web.server", fromlist=["_RECORD_FN"])._RECORD_FN
+        user = SimpleNamespace(id=api_app.state._test_user_id, username="ladder-user")
+        session.katrain.game.end_result = "B+R"
+        session.katrain._state["end_result"] = "B+R"
+        original_settle = api_app.state.ai_ladder_repo.settle_game
+        monkeypatch.setattr(
+            api_app.state.ai_ladder_repo,
+            "settle_game",
+            lambda **kwargs: (_ for _ in ()).throw(RuntimeError("first settle fails")),
+        )
+        await record(session, api_app, user, "B+R")
+
+        session.katrain.game.end_result = "W+R"
+        session.katrain._state["end_result"] = "W+R"
+        session.katrain.get_sgf = lambda: "(;FF[4]SZ[19];W[dd])"
+        monkeypatch.setattr(api_app.state.ai_ladder_repo, "settle_game", original_settle)
+        await record(session, api_app, user, "W+R")
+
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        assert db.query(models_db.UserGame).one().result == "B+R"
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+        pending = db.execute(text("SELECT game_saved, saved_result FROM ai_ladder_pending_games")).one()
+        assert pending[0] in (True, 1)
+        assert pending[1] == "B+R"
 
 
 @pytest.mark.asyncio

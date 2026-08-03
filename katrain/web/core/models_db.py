@@ -123,6 +123,42 @@ class AiLadderProfile(Base):
     )
 
 
+class AiLadderPendingGame(Base):
+    """Durable frozen start/settlement handoff for one active ranked game per user."""
+
+    __tablename__ = "ai_ladder_pending_games"
+
+    game_id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    session_id = Column(String(64), nullable=False, unique=True)
+    user_color = Column(String(1), nullable=False)
+    game_type = Column(String(32), nullable=False)
+    opponent_rung = Column(Integer, nullable=False)
+    opponent_rank_name = Column(String(64), nullable=False)
+    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_certification_status = Column(String(16), nullable=False)
+    opponent_availability = Column(String(16), nullable=False)
+    opponent_route = Column(String(16), nullable=False)
+    ai_subtype = Column(String(32), nullable=False)
+    execution_identity = Column(String(64), nullable=False)
+    game_saved = Column(Boolean, nullable=False, default=False)
+    saved_result = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_ai_ladder_pending_user"),
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_pending_user_color"),
+        CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_pending_game_type"),
+        CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_pending_rung"),
+        CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_pending_route"),
+        CheckConstraint(
+            "(game_saved = FALSE AND saved_result IS NULL) OR (game_saved = TRUE AND saved_result IS NOT NULL)",
+            name="ck_ai_ladder_pending_saved_state",
+        ),
+    )
+
+
 class AiLadderGameLedger(Base):
     """Append-only, globally idempotent decision for every settlement attempt."""
 

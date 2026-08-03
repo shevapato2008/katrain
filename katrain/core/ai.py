@@ -1831,6 +1831,20 @@ def _ladder_thought_label(rung) -> str:
     return f"棋力阶梯 {rung.rank_name}"
 
 
+def _resolve_ladder_strategy_rung(settings):
+    """Use a server-frozen recipe when present; legacy callers still resolve the catalog."""
+
+    from katrain.core.ladder import LadderRung, resolve_available_rung
+
+    rung_number = settings.get("rung")
+    frozen = settings.get("frozen_rung")
+    if frozen is None:
+        return resolve_available_rung(rung_number)
+    if not isinstance(frozen, LadderRung) or frozen.rung != rung_number:
+        raise ValueError("frozen ladder recipe does not match injected rung")
+    return frozen
+
+
 @register_strategy(AI_LADDER)
 class LadderStrategy(AIStrategy):
     """Golaxy-parity ladder opponent. Fail-closed on every uncertainty: no valid rung ->
@@ -1845,7 +1859,6 @@ class LadderStrategy(AIStrategy):
             HUMAN_WEIGHTED,
             LadderMoveError,
             pick_ladder_rung_move,
-            resolve_available_rung,
             rung_engine_params,
             rung_strength_spec,
             validate_analysis_attestation,
@@ -1853,7 +1866,7 @@ class LadderStrategy(AIStrategy):
 
         if "rung" not in self.settings or self.settings.get("rung") is None:
             raise ValueError("LadderStrategy invoked without an injected rung (fail closed)")
-        rung = resolve_available_rung(self.settings["rung"])
+        rung = _resolve_ladder_strategy_rung(self.settings)
         spec = rung_strength_spec(rung)
         params = rung_engine_params(rung)
         engine = self.game.engines[self.cn.player]

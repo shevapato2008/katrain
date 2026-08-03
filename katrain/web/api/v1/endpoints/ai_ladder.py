@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -15,6 +16,9 @@ from katrain.web.core.ai_ladder_catalog import (
     build_opponent_snapshot,
     catalog_entry,
     catalog_projection,
+    frozen_recipe_from_snapshot,
+    result_for_user,
+    session_snapshot_from_pending,
 )
 from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE, PLACEMENT_GAMES, initial_placement_window
 from katrain.web.models import User
@@ -47,44 +51,48 @@ def _require_authority(request: Request) -> None:
 
 
 def _pending_settlement(request: Request, user_id: int) -> bool:
+    return request.app.state.ai_ladder_repo.get_pending_game(user_id) is not None
+
+
+def _active_session(request: Request, session_id: str) -> bool:
     manager = request.app.state.session_manager
     lock = getattr(manager, "_lock", None)
     if lock is None:
-        sessions = list(getattr(manager, "_sessions", {}).values())
+        session = getattr(manager, "_sessions", {}).get(session_id)
     else:
         with lock:
-            sessions = list(manager._sessions.values())
-    in_memory_pending = any(
-        getattr(session, "user_id", None) == user_id
-        and getattr(session, "game_type", None) == AI_LADDER_GAME_TYPE
-        and bool(getattr(session, "ai_ladder_settlement_pending", False))
-        for session in sessions
-    )
-    if in_memory_pending:
-        return True
+            session = manager._sessions.get(session_id)
+    return session is not None
 
+
+def _recover_pending(request: Request, user_id: int) -> None:
     repo = request.app.state.ai_ladder_repo
-    db = repo.session_factory()
+    pending = repo.get_pending_game(user_id)
+    if pending is None:
+        return
+    game = request.app.state.user_game_repo.get(pending["game_id"], user_id)
+    if game is None:
+        if not _active_session(request, pending["session_id"]):
+            repo.clear_pending_game(user_id=user_id, game_id=pending["game_id"])
+        return
     try:
-        return (
-            db.query(models_db.UserGame.id)
-            .outerjoin(
-                models_db.AiLadderGameLedger,
-                models_db.AiLadderGameLedger.game_id == models_db.UserGame.id,
-            )
-            .filter(
-                models_db.UserGame.user_id == user_id,
-                models_db.UserGame.game_type == AI_LADDER_GAME_TYPE,
-                models_db.AiLadderGameLedger.id.is_(None),
-            )
-            .first()
-            is not None
+        snapshot = session_snapshot_from_pending(pending)
+        repo.mark_pending_game_saved(user_id=user_id, game_id=snapshot.game_id, result=game["result"])
+        repo.settle_game(
+            user_id=user_id,
+            game_id=snapshot.game_id,
+            user_color=snapshot.user_color,
+            result=result_for_user(game["result"], snapshot.user_color),
+            game_type=snapshot.game_type,
+            opponent=snapshot.opponent,
         )
-    finally:
-        db.close()
+        repo.clear_pending_game(user_id=user_id, game_id=snapshot.game_id)
+    except Exception as exc:
+        logging.getLogger("katrain_web").error("Failed to recover ranked AI settlement: %s", exc)
 
 
 def _status_payload(request: Request, current_user: User) -> dict[str, object]:
+    _recover_pending(request, current_user.id)
     repo = request.app.state.ai_ladder_repo
     db = repo.session_factory()
     try:
@@ -171,8 +179,10 @@ def start_ranked_game(
         ai_subtype="ai:ladder",
         execution_identity=execution_identity,
     )
+    frozen_recipe = frozen_recipe_from_snapshot(opponent)
 
     try:
+        request.app.state.ai_ladder_repo.create_pending_game(snapshot)
         with session.lock:
             session.user_id = current_user.id
             session.game_type = AI_LADDER_GAME_TYPE
@@ -212,17 +222,21 @@ def start_ranked_game(
                 rules=body.rules,
                 game_type=AI_LADDER_GAME_TYPE,
                 ladder_rung=opponent.rung,
+                frozen_ladder_recipe=frozen_recipe,
             )
             session.katrain.game_type = AI_LADDER_GAME_TYPE
             session.last_state = session.katrain.get_state()
     except Exception as exc:
         try:
+            request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=game_id)
+        except Exception:
+            pass
+        try:
             manager.remove_session(session.session_id)
         except Exception:
             pass
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not configure ranked game"
-        ) from exc
+        code = status.HTTP_409_CONFLICT if isinstance(exc, ValueError) else status.HTTP_503_SERVICE_UNAVAILABLE
+        raise HTTPException(status_code=code, detail="Could not configure ranked game") from exc
 
     return {
         "session_id": session.session_id,

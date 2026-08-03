@@ -7,6 +7,7 @@ dropping data, and that billing tables are protected.
 
 import pytest
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import migrations, models_db
@@ -55,6 +56,64 @@ def test_create_missing_indexes(legacy_engine):
 
 def test_billing_tables_are_protected_constant():
     assert {"credit_transactions", "redeem_codes", "recharge_orders"} == migrations.BILLING_TABLES
+
+
+def test_pending_ai_ladder_table_is_protected_and_has_one_pending_per_user_constraint():
+    engine = create_engine("sqlite:///:memory:")
+    models_db.Base.metadata.create_all(bind=engine)
+
+    assert "ai_ladder_pending_games" in migrations.AI_LADDER_TABLES
+    uniques = inspect(engine).get_unique_constraints("ai_ladder_pending_games")
+    assert any(constraint["column_names"] == ["user_id"] for constraint in uniques)
+
+
+def test_pending_ai_ladder_unique_violation_rolls_back_without_losing_existing_row():
+    engine = create_engine("sqlite:///:memory:")
+    models_db.Base.metadata.create_all(bind=engine)
+    sessions = sessionmaker(bind=engine, expire_on_commit=False)
+    with sessions() as db:
+        db.add(models_db.User(id=1, username="pending-owner", hashed_password="x", rank="20k"))
+        db.add(
+            models_db.AiLadderPendingGame(
+                game_id="a" * 32,
+                user_id=1,
+                session_id="session-a",
+                user_color="B",
+                game_type="ai_ladder_ranked",
+                opponent_rung=16,
+                opponent_rank_name="5级",
+                opponent_config_snapshot={"config_digest": "d", "config_version": "v"},
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                ai_subtype="ai:ladder",
+                execution_identity="d",
+                game_saved=False,
+            )
+        )
+        db.commit()
+        db.add(
+            models_db.AiLadderPendingGame(
+                game_id="b" * 32,
+                user_id=1,
+                session_id="session-b",
+                user_color="B",
+                game_type="ai_ladder_ranked",
+                opponent_rung=16,
+                opponent_rank_name="5级",
+                opponent_config_snapshot={"config_digest": "d", "config_version": "v"},
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                ai_subtype="ai:ladder",
+                execution_identity="d",
+                game_saved=False,
+            )
+        )
+        with pytest.raises(IntegrityError):
+            db.commit()
+        db.rollback()
+        assert [row.game_id for row in db.query(models_db.AiLadderPendingGame).all()] == ["a" * 32]
 
 
 def test_backfill_ai_ladder_decisions_preserves_old_valid_history(tmp_path):

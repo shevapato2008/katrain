@@ -155,6 +155,38 @@ def test_load_sgf_without_rung_resets_to_none(monkeypatch):
     assert wkt.ladder_rung is None
 
 
+def test_ranked_session_uses_frozen_recipe_after_global_catalog_changes(monkeypatch):
+    from copy import deepcopy
+    from katrain.core import ladder
+
+    _certify_fixture_rungs(monkeypatch, 5)
+    frozen = deepcopy(ladder.LADDER_LEVELS[4].recipe)
+    original_visits = frozen.max_visits
+    wkt = _make_katrain()
+    wkt._do_new_game(ladder_rung=5, frozen_ladder_recipe=frozen)
+    _make_ladder_player(wkt, wkt.game.current_node.next_player)
+
+    levels = list(ladder.LADDER_LEVELS)
+    levels[4] = replace(levels[4], recipe=replace(frozen, max_visits=original_visits + 999))
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", tuple(levels))
+    captured = {}
+
+    def fake_generate_ai_move(game, mode, settings):
+        captured.update(settings)
+        node = game.play(Move((3, 3), player=game.current_node.next_player))
+        return node.move, node
+
+    import katrain.core.ai as ai_mod
+
+    monkeypatch.setattr(ai_mod, "generate_ai_move", fake_generate_ai_move)
+    wkt._do_ai_move()
+
+    assert captured["rung"] == 5
+    assert captured["frozen_rung"] is frozen
+    assert captured["frozen_rung"].max_visits == original_visits
+    assert ai_mod._resolve_ladder_strategy_rung(captured) is frozen
+
+
 def test_new_game_invalid_rung_raises():
     wkt = _make_katrain()
     with pytest.raises(ValueError):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Mapping
 
@@ -39,6 +40,16 @@ def catalog_entry(rung: int) -> dict[str, object]:
     return entry
 
 
+def frozen_recipe_identity(recipe: object) -> str:
+    """Return the stable identity for the exact recipe used by the running game."""
+
+    to_dict = getattr(recipe, "to_dict", None)
+    if not callable(to_dict):
+        raise ValueError("ranked AI runtime has no frozen recipe")
+    canonical = json.dumps(to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def build_opponent_snapshot(rung: int) -> tuple[AiLadderOpponentSnapshot, str]:
     """Resolve exactly one rung and freeze its recipe identity without any fallback."""
 
@@ -53,8 +64,7 @@ def build_opponent_snapshot(rung: int) -> tuple[AiLadderOpponentSnapshot, str]:
         raise ValueError("selected AI ladder opponent is not certified and available")
 
     recipe = level.recipe.to_dict()
-    canonical = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    identity = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    identity = frozen_recipe_identity(level.recipe)
     config: Mapping[str, Any] = {
         "config_digest": identity,
         "config_version": ladder.LADDER_VERSION,
@@ -99,3 +109,49 @@ class AiLadderSessionSnapshot:
             raise ValueError("ranked AI sessions require ai:ladder")
         if not self.execution_identity:
             raise ValueError("execution identity must be non-empty")
+
+
+def frozen_recipe_from_snapshot(opponent: AiLadderOpponentSnapshot):
+    """Rebuild the immutable LadderRung that the game must use for every move."""
+
+    from katrain.core.ladder import LadderRung
+
+    recipe = opponent.config_snapshot.get("recipe")
+    if not isinstance(recipe, Mapping):
+        raise ValueError("opponent snapshot has no frozen recipe")
+    frozen = LadderRung(**deepcopy(dict(recipe)))
+    if frozen.rung != opponent.rung or frozen.rank_name != opponent.rank_name:
+        raise ValueError("frozen recipe identity does not match opponent snapshot")
+    return frozen
+
+
+def result_for_user(saved_result: str, user_color: str) -> str:
+    """Derive the ladder result exclusively from a persisted authoritative result."""
+
+    if not isinstance(saved_result, str) or not saved_result.strip():
+        raise ValueError("ranked AI game has no authoritative saved result")
+    winner = saved_result.strip().upper()[:1]
+    if winner in {"B", "W"} and "+" in saved_result:
+        return "win" if winner == user_color else "loss"
+    return "inconclusive"
+
+
+def session_snapshot_from_pending(pending: Mapping[str, Any]) -> AiLadderSessionSnapshot:
+    opponent = AiLadderOpponentSnapshot(
+        rung=pending["opponent_rung"],
+        rank_name=pending["opponent_rank_name"],
+        config_snapshot=pending["opponent_config_snapshot"],
+        certification_status=pending["opponent_certification_status"],
+        availability=pending["opponent_availability"],
+        route=pending["opponent_route"],
+    )
+    return AiLadderSessionSnapshot(
+        game_id=pending["game_id"],
+        session_id=pending["session_id"],
+        user_id=pending["user_id"],
+        user_color=pending["user_color"],
+        game_type=pending["game_type"],
+        opponent=opponent,
+        ai_subtype=pending["ai_subtype"],
+        execution_identity=pending["execution_identity"],
+    )

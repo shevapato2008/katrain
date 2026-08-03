@@ -84,6 +84,22 @@ class UserGameRepository:
                     raise ValueError("game_id belongs to another user")
                 if existing.game_type != "ai_ladder_ranked":
                     raise ValueError("game_id is not an authoritative ranked AI game")
+                incoming_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
+                immutable_fields = {
+                    "sgf_content": sgf_content,
+                    "sgf_hash": incoming_hash,
+                    "result": kwargs.get("result"),
+                    "board_size": kwargs.get("board_size", 19),
+                    "rules": kwargs.get("rules", "chinese"),
+                    "komi": kwargs.get("komi", 7.5),
+                    "move_count": kwargs.get("move_count", 0),
+                    "player_black": kwargs.get("player_black"),
+                    "player_white": kwargs.get("player_white"),
+                    "black_rank": kwargs.get("black_rank"),
+                    "white_rank": kwargs.get("white_rank"),
+                }
+                if any(getattr(existing, field) != value for field, value in immutable_fields.items()):
+                    raise ValueError("authoritative ranked AI game is immutable")
                 return self._to_dict(existing, include_sgf=True)
 
             db_game = models_db.UserGame(

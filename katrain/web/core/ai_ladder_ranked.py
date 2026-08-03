@@ -106,6 +106,117 @@ class AiLadderRankedRepository:
         finally:
             session.close()
 
+    def create_pending_game(self, snapshot) -> None:
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            session.add(
+                models_db.AiLadderPendingGame(
+                    game_id=snapshot.game_id,
+                    user_id=snapshot.user_id,
+                    session_id=snapshot.session_id,
+                    user_color=snapshot.user_color,
+                    game_type=snapshot.game_type,
+                    opponent_rung=snapshot.opponent.rung,
+                    opponent_rank_name=snapshot.opponent.rank_name,
+                    opponent_config_snapshot=deepcopy(dict(snapshot.opponent.config_snapshot)),
+                    opponent_certification_status=snapshot.opponent.certification_status,
+                    opponent_availability=snapshot.opponent.availability,
+                    opponent_route=snapshot.opponent.route,
+                    ai_subtype=snapshot.ai_subtype,
+                    execution_identity=snapshot.execution_identity,
+                    game_saved=False,
+                    saved_result=None,
+                )
+            )
+            session.commit()
+        except IntegrityError as exc:
+            session.rollback()
+            raise ValueError("user already has a pending ranked AI game") from exc
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def get_pending_game(self, user_id: int) -> Optional[dict[str, Any]]:
+        session = self.session_factory()
+        try:
+            row = (
+                session.query(models_db.AiLadderPendingGame)
+                .filter(models_db.AiLadderPendingGame.user_id == user_id)
+                .one_or_none()
+            )
+            if row is None:
+                return None
+            return {
+                "game_id": row.game_id,
+                "user_id": row.user_id,
+                "session_id": row.session_id,
+                "user_color": row.user_color,
+                "game_type": row.game_type,
+                "opponent_rung": row.opponent_rung,
+                "opponent_rank_name": row.opponent_rank_name,
+                "opponent_config_snapshot": deepcopy(dict(row.opponent_config_snapshot)),
+                "opponent_certification_status": row.opponent_certification_status,
+                "opponent_availability": row.opponent_availability,
+                "opponent_route": row.opponent_route,
+                "ai_subtype": row.ai_subtype,
+                "execution_identity": row.execution_identity,
+                "game_saved": row.game_saved,
+                "saved_result": row.saved_result,
+            }
+        finally:
+            session.close()
+
+    def mark_pending_game_saved(self, *, user_id: int, game_id: str, result: str) -> None:
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = (
+                session.query(models_db.AiLadderPendingGame)
+                .filter(
+                    models_db.AiLadderPendingGame.user_id == user_id,
+                    models_db.AiLadderPendingGame.game_id == game_id,
+                )
+                .with_for_update()
+                .one_or_none()
+            )
+            if row is None:
+                raise ValueError("pending ranked AI game not found")
+            if row.game_saved and row.saved_result != result:
+                raise ValueError("pending ranked AI saved result is immutable")
+            row.game_saved = True
+            row.saved_result = result
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def clear_pending_game(self, *, user_id: int, game_id: str) -> None:
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = (
+                session.query(models_db.AiLadderPendingGame)
+                .filter(
+                    models_db.AiLadderPendingGame.user_id == user_id,
+                    models_db.AiLadderPendingGame.game_id == game_id,
+                )
+                .with_for_update()
+                .one_or_none()
+            )
+            if row is not None:
+                session.delete(row)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
     def settle_game(
         self,
         *,

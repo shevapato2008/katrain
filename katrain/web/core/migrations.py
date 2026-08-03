@@ -20,7 +20,7 @@ BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"}
 
 # These tables hold authoritative player rank state and its immutable
 # idempotency ledger. Like billing data, schema drift must never rebuild them.
-AI_LADDER_TABLES = {"ai_ladder_profiles", "ai_ladder_game_ledger"}
+AI_LADDER_TABLES = {"ai_ladder_profiles", "ai_ladder_game_ledger", "ai_ladder_pending_games"}
 AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
 PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | {AI_LADDER_LEGACY_TABLE}
 

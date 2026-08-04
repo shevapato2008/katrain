@@ -26,10 +26,10 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
 
-const renderPage = (mode = 'free') =>
+const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={[`/kiosk/play/ai/setup/${mode}`]}>
+      <MemoryRouter initialEntries={['/kiosk/play/ai/setup/free']}>
         <Routes>
           <Route path="/kiosk/play/ai/setup/:mode" element={<AiSetupPage />} />
         </Routes>
@@ -48,8 +48,8 @@ describe('AiSetupPage', () => {
     expect(screen.getByText('盘面预览')).toBeInTheDocument();
   });
 
-  it('writes the active session and navigates to the game route on Start (free mode)', async () => {
-    renderPage('free');
+  it('writes the active session and navigates to the game route on Start', async () => {
+    renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /开始对弈/i }));
 
@@ -64,26 +64,17 @@ describe('AiSetupPage', () => {
     });
   });
 
-  it('writes the ranked label on Start (ranked mode)', async () => {
-    renderPage('ranked');
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
-
-    await waitFor(() => {
-      expect(writeActiveSession).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'game', label: '升降级对弈', route: '/kiosk/play/ai/game/s1' })
-      );
-    });
-  });
+  // 升降级对弈 no longer routes here: it has its own page whose opponent comes
+  // from the ledger, so there is no `ranked` mode left on this one to test.
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
-    renderPage('free');
+    renderPage();
     expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /返回|back/i })).toBeInTheDocument();
   });
 
   it('rules render as a dropdown trigger, not 4 separate chips', () => {
-    renderPage('free');
+    renderPage();
     // Compact form shows the current rule value as one control; the Japanese/Korean/AGA
     // options are behind the dropdown (not all visible at once).
     expect(screen.queryByText('AGA')).not.toBeInTheDocument();

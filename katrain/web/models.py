@@ -40,20 +40,25 @@ class NewGameRequest(BaseModel):
 
 
 class LadderStartGameRequest(BaseModel):
-    """Start a 升降级对弈 game. Deliberately carries NO rung and NO game_type.
+    """Start a 升降级对弈 game. Deliberately carries NO rung, NO game_type, and no
+    board setup.
 
     The opponent tier comes from the player's own ladder state and the scoring
     game type is issued by the server, so neither can be chosen by a client that
-    would like an easier opponent or a game that counts when it should not.
+    would like an easier opponent or a game that counts when it should not. Board
+    size, ruleset and komi are fixed by the ladder for the same reason -- they are
+    the conditions the rungs were measured under (ladder_repo.LADDER_BOARD_SIZE
+    and friends). What is left is what is genuinely the player's: which seat, and
+    how long they get to think.
     """
 
     session_id: str
-    size: int = 19
-    komi: float = 6.5
-    rules: str = "japanese"
     color: str = "B"
-    main_time: int = 600
-    byo_length: int = 30
+    #: Units are in the names on purpose. `timer/main_time` is stored in MINUTES
+    #: (every consumer multiplies it by 60 -- katrain/web/interface.py:820), and a
+    #: caller that read this field as seconds handed out 10-hour games.
+    main_time_minutes: int = 10
+    byo_length_seconds: int = 30
     byo_periods: int = 3
 
 

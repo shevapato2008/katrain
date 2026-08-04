@@ -128,7 +128,7 @@ const PlayPage = () => {
         />
         <ModeCard
           title={t('Ranked Game', '升降级对弈')}
-          subtitle={t('Auto-match AI difficulty based on your skill', '根据实力自动匹配AI难度')}
+          subtitle={t('The ladder picks your opponent; wins and losses move your rank', '对手由段位决定，胜负计入升降级')}
           icon={<SportsEsports fontSize="inherit" />}
           to="/kiosk/play/ai/setup/ranked"
         />

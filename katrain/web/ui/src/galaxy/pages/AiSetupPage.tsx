@@ -4,6 +4,7 @@ import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Butt
 import { API, type LadderRung, type LadderMe } from '../../api';
 import LadderRankCard from '../components/play/LadderRankCard';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
+import { formatLadderSetup } from '../../utils/ladderSetup';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -170,14 +171,14 @@ const AiSetupPage = () => {
             // server-side so none of them can be talked into something easier.
             if (isRated) {
                 if (!token) throw new Error(t('ladder:need_login', '登录后才能参加升降级对弈。'));
+                // mainTime is already in minutes, which is the unit
+                // `timer/main_time` is stored in. It used to be multiplied by 60
+                // here, which handed every rated game a 10-hour main time.
                 await API.startLadderGame(token, {
                     session_id: session.session_id,
-                    size: boardSize,
-                    komi,
-                    rules,
                     color,
-                    main_time: mainTime * 60,
-                    byo_length: byoLength,
+                    main_time_minutes: mainTime,
+                    byo_length_seconds: byoLength,
                     byo_periods: byoPeriods,
                 });
                 navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
@@ -390,21 +391,39 @@ const AiSetupPage = () => {
                         {isRated ? t('Game Settings', '对局设置') : t('Board & Rules', 'Board & Rules')}
                     </Typography>
 
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('board size', 'Board Size')}</InputLabel>
-                        <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
-                            <MenuItem value={19}>19x19 ({t('Standard', 'Standard')})</MenuItem>
-                            <MenuItem value={13}>13x13</MenuItem>
-                            <MenuItem value={9}>9x9</MenuItem>
-                        </Select>
-                    </FormControl>
+                    {/* 升降级对弈 fixes the board, the ruleset and the komi at the
+                        conditions the rungs were measured under. These used to be two
+                        disabled dropdowns showing 19x19 / Japanese -- and the server
+                        then dealt a Chinese-rules game. Read it out from the server
+                        instead of letting the page claim a setup it does not decide. */}
+                    {isRated ? (
+                        <Box sx={{ mt: 2, mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {t('ladder:fixed_setup', '本局设定')}
+                            </Typography>
+                            <Typography sx={{ mt: 0.5, fontSize: 17, fontWeight: 600 }}>
+                                {ladderMe ? formatLadderSetup(ladderMe.game_setup, t) : '—'}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('board size', 'Board Size')}</InputLabel>
+                                <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))}>
+                                    <MenuItem value={19}>19x19 ({t('Standard', 'Standard')})</MenuItem>
+                                    <MenuItem value={13}>13x13</MenuItem>
+                                    <MenuItem value={9}>9x9</MenuItem>
+                                </Select>
+                            </FormControl>
 
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('ruleset', 'Ruleset')}</InputLabel>
-                        <Select value={rules} label={t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)} disabled={isRated}>
-                            {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{t(r.id, r.name)}</MenuItem>)}
-                        </Select>
-                    </FormControl>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('ruleset', 'Ruleset')}</InputLabel>
+                                <Select value={rules} label={t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)}>
+                                    {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{t(r.id, r.name)}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                        </>
+                    )}
 
                     <FormControl fullWidth margin="normal">
                         <InputLabel>{t('Your Color', 'Your Color')}</InputLabel>

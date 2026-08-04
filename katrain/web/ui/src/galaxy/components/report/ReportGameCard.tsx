@@ -17,6 +17,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
 import type { UserGameSummary } from '../../../api/userGamesApi';
 import type { ReportGameStatus } from '../../../features/report/reportModel';
+import { isScoringGame } from '../../../utils/gameTypes';
 
 export type { ReportGameStatus } from '../../../features/report/reportModel';
 
@@ -37,7 +38,7 @@ function reportBadgeColor(reportType: 'normal' | 'deep') {
 
 function getGameDisplayTitle(game: UserGameSummary, t: (key: string, fallback?: string) => string): string {
   if (game.source === 'play_ai') {
-    return game.game_type === 'ranked'
+    return isScoringGame(game.game_type)
       ? t('report:title_ai_ranked', 'AI Ranked Play')
       : t('report:title_ai_free', 'AI Free Play');
   }

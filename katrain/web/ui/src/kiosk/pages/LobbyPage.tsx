@@ -142,16 +142,14 @@ const LobbyPage = () => {
     // Rated PvP needs a ladder rank. The old check read `user.rank === '20k'`, the
     // registration default that nothing ever moved, and then sent the player to the
     // kiosk 拟人 setup page — which does not produce a ladder rank either. That was a
-    // closed loop with no exit. 升降级对弈 has no kiosk UI yet, so say that plainly and
-    // stay put rather than teleporting the player somewhere that cannot help.
+    // closed loop with no exit. Now there IS a kiosk page that produces one, so send
+    // them there.
     if (gameType === 'rated' && ladderRank === null) {
       setSnackbar({
-        message: i18n.t(
-          'lobby:placement_required_kiosk',
-          '人人排位需要先有段位。升降级对弈目前只在网页版，定级完成后这里即可排位。',
-        ),
+        message: i18n.t('lobby:placement_required', '先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。'),
         severity: 'info',
       });
+      navigate('/kiosk/play/ai/setup/ranked');
       return;
     }
 

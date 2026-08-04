@@ -145,7 +145,16 @@ export interface LadderOpponent extends LadderTierRef {
   route: 'local' | 'server';
 }
 
+// The conditions every rung was calibrated under. Reported by the server, not
+// chosen by the client — the setup page shows them, start-game applies them.
+export interface LadderGameSetup {
+  size: number;
+  rules: string;
+  komi: number;
+}
+
 export interface LadderMe {
+  game_setup: LadderGameSetup;
   rung: number | null;         // null = not yet placed
   rank_name: string | null;
   rung_above: LadderTierRef | null;   // null at rung 41
@@ -439,11 +448,15 @@ export const API = {
     return res.json();
   },
 
+  // Board size, ruleset and komi are NOT in this body: the ladder fixes them at
+  // the conditions its rungs were measured under (19x19, Chinese, 7.5). Sending
+  // them would let a client seat a rung in a game its rank name doesn't describe.
   startLadderGame: async (
     token: string,
     body: {
-      session_id: string; size: number; komi: number; rules: string; color: string;
-      main_time: number; byo_length: number; byo_periods: number;
+      session_id: string; color: string;
+      // Units are in the names: `timer/main_time` is stored in minutes.
+      main_time_minutes: number; byo_length_seconds: number; byo_periods: number;
     },
   ): Promise<SessionResponse> => {
     const res = await fetch("/api/ladder/start-game", {

@@ -837,8 +837,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     komi=settings.get("komi"),
                     rules=settings.get("rules"),
                 )
-            elif mode in ("free", "ranked"):
-                # Kiosk human-vs-AI game setup
+            elif mode == "free":
+                # Kiosk human-vs-AI free play. There is no "ranked" mode here any
+                # more: it let the client choose the AI's strength and then stored
+                # the game as game_type "ranked", which moved no rank -- 升降级对弈
+                # goes through POST /api/ladder/start-game instead, where the
+                # opponent comes from the player's own ledger.
                 color = settings.get("color", "black")
                 human_bw = "B" if color == "black" else "W"
                 ai_bw = "W" if color == "black" else "B"
@@ -1798,9 +1802,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     def _ladder_state_payload(state) -> dict:
         from katrain.core.ladder import get_level
+        from katrain.web.core.ladder_repo import LADDER_BOARD_SIZE, LADDER_KOMI, LADDER_RULES
 
         opponent = get_level(state.opponent_rung)
         return {
+            # What the game will be, reported rather than chosen. The setup page
+            # shows these; start-game fixes them. One source of truth, so the
+            # screen cannot promise a board the server won't hand out.
+            "game_setup": {"size": LADDER_BOARD_SIZE, "rules": LADDER_RULES, "komi": LADDER_KOMI},
             "rung": state.rung,
             "rank_name": state.rank_name,
             "rung_above": None if state.rung_above is None else {
@@ -1847,7 +1856,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ladder/start-game")
     def start_ladder_game(request: LadderStartGameRequest, current_user: User = Depends(get_current_user)):
         from katrain.web.core.db import SessionLocal
-        from katrain.web.core.ladder_repo import LADDER_GAME_TYPE, read_state
+        from katrain.web.core.ladder_repo import (
+            LADDER_BOARD_SIZE,
+            LADDER_GAME_TYPE,
+            LADDER_KOMI,
+            LADDER_RULES,
+            read_state,
+        )
 
         session = manager.get_session(request.session_id)
         if not session:
@@ -1879,8 +1894,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session._recorded = False
         session.ladder_result = None
 
-        session.katrain.update_config("timer/main_time", request.main_time)
-        session.katrain.update_config("timer/byo_length", request.byo_length)
+        session.katrain.update_config("timer/main_time", request.main_time_minutes)
+        session.katrain.update_config("timer/byo_length", request.byo_length_seconds)
         session.katrain.update_config("timer/byo_periods", request.byo_periods)
         session.katrain.update_config("timer/paused", False)
 
@@ -1890,10 +1905,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # burns an engine query for nothing.
         session.katrain(
             "new_game",
-            size=request.size,
+            size=LADDER_BOARD_SIZE,
             handicap=0,
-            komi=request.komi,
-            rules=request.rules,
+            komi=LADDER_KOMI,
+            rules=LADDER_RULES,
             game_type=LADDER_GAME_TYPE,
             ladder_rung=state.opponent_rung,
         )
@@ -1904,7 +1919,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             "update_player", bw=human_bw, player_type="player:human", player_subtype="player:human",
             name=current_user.username,
         )
-        session.katrain("update_player", bw=ai_bw, player_type="player:ai", player_subtype="ai:ladder")
+        # Name the AI seat after the rung it is seated at. Without this the player
+        # card reads "白棋 · 无级别" for an opponent whose whole point is its rank.
+        from katrain.core.ladder import get_level
+
+        session.katrain(
+            "update_player",
+            bw=ai_bw,
+            player_type="player:ai",
+            player_subtype="ai:ladder",
+            name=f"AI {get_level(state.opponent_rung).rank_name}",
+        )
         return {"session_id": request.session_id, "state": session.katrain.get_state()}
 
     @app.get("/api/ladder/session-result/{session_id}")

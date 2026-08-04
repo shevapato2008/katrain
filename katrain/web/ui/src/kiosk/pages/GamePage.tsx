@@ -23,6 +23,9 @@ import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, ty
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
+import { isLadderGame, isScoringGame } from '../../utils/gameTypes';
+import LadderSettlementNote from '../components/play/LadderSettlementNote';
+import type { LadderSettlement } from '../../api';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -86,6 +89,9 @@ interface EndgameCardProps {
   t: (key: string, fallback?: string) => string;
   onExit: () => void;
   onReview: () => void;
+  /** 升降级对弈 only: what this game did to the player's rank. null while it is
+      still being fetched, and on every non-ladder game. */
+  settlement: LadderSettlement | null;
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
@@ -98,7 +104,7 @@ interface EndgameCardProps {
 // avoids a useEffect + setState, keeping this repo's react-hooks/set-state-in-effect gate clean).
 // DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a kiosk-only
 // overlay (Gate S); not shipped in this cut, and shared Board.tsx is left untouched.
-const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
+const EndgameCard = ({ gameState, t, onExit, onReview, settlement }: EndgameCardProps) => {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
@@ -112,6 +118,7 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
         {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('Black', '黑')} {gameState.prisoner_count.B} / {t('White', '白')} {gameState.prisoner_count.W}
       </Typography>
+      {settlement && <LadderSettlementNote result={settlement} />}
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
         <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
@@ -141,6 +148,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  // 升降级结算: what this game did to the player's rank. Asked once, when the game
+  // ends, and only for a server-issued ladder game. The answer comes from the
+  // server rather than from diffing two /api/ladder/me reads, because a game that
+  // did not score has to be able to say so.
+  const [settlement, setSettlement] = useState<LadderSettlement | null>(null);
+  const settlementAskedRef = useRef(false);
   const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
@@ -262,9 +275,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
-    if (gs.game_type === 'ranked' || gs.game_type === 'rated') return;
+    if (isScoringGame(gs.game_type)) return;
     API.analyzeCurrent(sessionId).catch(() => undefined);
   }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
+
+  const ladderGameEnded = isLadderGame(gs?.game_type) && !!gs?.end_result;
+  useEffect(() => {
+    if (!ladderGameEnded || !sessionId || !token) return;
+    if (settlementAskedRef.current) return;
+    settlementAskedRef.current = true;
+    API.getLadderSessionResult(token, sessionId)
+      .then(setSettlement)
+      .catch((e) => {
+        // The rank may well have moved — we just could not read the receipt.
+        // Say that, rather than silently showing nothing.
+        console.error('ladder settlement lookup failed:', e);
+        setSettlement({ settled: false, reason: 'error' });
+      });
+  }, [ladderGameEnded, sessionId, token]);
 
   const closeHint = useCallback(() => {
     setHint(null);
@@ -332,8 +360,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gameState = session.gameState;
   const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
   const isGameOver = !!gameState.end_result;
-  // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
-  const isRanked = gameState.game_type === 'ranked' || gameState.game_type === 'rated';
+  // Scoring games forbid undo server-side (anti-cheat); hide the controls too.
+  const isRanked = isScoringGame(gameState.game_type);
 
 
   // Determine which color the human plays (for turn enforcement). deriveHumanColor now
@@ -603,6 +631,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           key={sessionId}
           gameState={gameState}
           t={t}
+          settlement={settlement}
           onExit={handleExit}
           onReview={async () => {
             if (!sessionId) return;

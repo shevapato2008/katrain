@@ -17,6 +17,7 @@ import type { UserGameSummary } from '../../../api/userGamesApi';
 import type { ReportGameStatus } from '../../../features/report/reportModel';
 import { useTranslation } from '../../../hooks/useTranslation';
 import KioskResultBadge from '../game/KioskResultBadge';
+import { isScoringGame } from '../../../utils/gameTypes';
 
 export type { ReportGameStatus } from '../../../features/report/reportModel';
 
@@ -35,7 +36,7 @@ type TFunction = (key: string, fallback?: string) => string;
 
 function sourceTitle(game: UserGameSummary, t: TFunction): string {
   if (game.source === 'play_ai') {
-    return game.game_type === 'ranked'
+    return isScoringGame(game.game_type)
       ? t('report:title_ai_ranked', 'AI 排位对局')
       : t('report:title_ai_free', 'AI 自由对局');
   }

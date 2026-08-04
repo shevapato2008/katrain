@@ -44,6 +44,18 @@ logger = logging.getLogger("katrain_web")
 #: supplied by a client.
 LADDER_GAME_TYPE = "ai_ladder_ranked"
 
+#: The board every rung was measured on. Fixed here rather than taken from the
+#: request, for the same reason the rung is: a rung's rank name describes its
+#: strength in a 19x19 Chinese-rules 7.5-komi game and nothing else (every
+#: calibration campaign ran exactly that -- see
+#: superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py), so a
+#: client that could ask for 9x9 would be seating an opponent whose measured
+#: strength no longer describes the game being played, and banking the result.
+#: The player still chooses their seat and their clock.
+LADDER_BOARD_SIZE = 19
+LADDER_RULES = "chinese"
+LADDER_KOMI = 7.5
+
 RECENT_GAMES = 5
 
 

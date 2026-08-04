@@ -160,13 +160,17 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             else if (action === 'forward-10') result = await API.redo(sessionId, 10);
             else if (action === 'end') result = await API.redo(sessionId, 9999);
             else if (action === 'ai-move') await API.aiMove(sessionId);
-            else if (action === 'resign') await API.resign(sessionId, token);
-            else if (action === 'timeout') await API.timeout(sessionId, token);
+            // Resign/timeout apply their response like undo/redo do. Both endpoints
+            // already return the finished state; relying on the broadcast instead left
+            // the acting client sitting in a game the server had already ended (and,
+            // for 升降级对弈, never showing the settlement that follows it).
+            else if (action === 'resign') result = await API.resign(sessionId, token);
+            else if (action === 'timeout') result = await API.timeout(sessionId, token);
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');
             else if (action === 'mistake-next') result = await API.findMistake(sessionId, 'redo');
-            // For undo/redo/navigate actions, apply state from HTTP response immediately
-            // (WebSocket broadcast may also arrive, but this ensures instant UI update)
+            // Apply state from the HTTP response immediately (a WebSocket broadcast may
+            // also arrive, but this ensures the acting client updates without waiting)
             if (result?.state) {
                 setGameState(result.state);
             }

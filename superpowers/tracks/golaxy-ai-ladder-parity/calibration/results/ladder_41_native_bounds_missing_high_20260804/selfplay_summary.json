@@ -1,0 +1,94 @@
+{
+  "matchups": [
+    {
+      "player_a": "rank_7d@1",
+      "player_b": "rank_6d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 30,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 15,
+      "a_winrate": 0.75,
+      "a_elo_vs_b": 190.848501887865,
+      "a_elo_ci95": [
+        42.05194438637407,
+        477.3024656182133
+      ],
+      "wilson_ci95": [
+        0.531299122381256,
+        0.8881382985923343
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 15,
+        "our_loss": 5
+      }
+    },
+    {
+      "player_a": "rank_8d@1",
+      "player_b": "rank_7d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 30,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 10,
+      "a_winrate": 0.5,
+      "a_elo_vs_b": -0.0,
+      "a_elo_ci95": [
+        -163.32483041631045,
+        163.32483041631045
+      ],
+      "wilson_ci95": [
+        0.29929800819821234,
+        0.7007019918017876
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 10,
+        "our_loss": 11,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_9d@1",
+      "player_b": "rank_8d@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 30,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 15,
+      "a_winrate": 0.75,
+      "a_elo_vs_b": 190.848501887865,
+      "a_elo_ci95": [
+        42.05194438637407,
+        477.3024656182133
+      ],
+      "wilson_ci95": [
+        0.531299122381256,
+        0.8881382985923343
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 5,
+        "our_win": 16,
+        "inconclusive_unsettled": 1
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

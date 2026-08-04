@@ -87,7 +87,7 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    def count_completed_rated_games(self, user_id: int) -> int:
+    def has_completed_placement(self, user_id: int) -> bool:
         pass
 
 
@@ -270,19 +270,21 @@ class SQLAlchemyUserRepository(UserRepository):
         finally:
             session.close()
 
-    def count_completed_rated_games(self, user_id: int) -> int:
+    def has_completed_placement(self, user_id: int) -> bool:
+        """Whether the user has a ladder rank yet -- the prerequisite for rated PvP.
+
+        This replaces a count of completed `game_type == "rated"` games, which was
+        unreachable: nothing ever wrote that value for an AI game, so the counter sat
+        at 0 forever while the lobby told players to go earn it.
+        """
         session = self.session_factory()
         try:
-            count = (
-                session.query(models_db.UserGame)
-                .filter(
-                    models_db.UserGame.user_id == user_id,
-                    models_db.UserGame.game_type == "rated",
-                    models_db.UserGame.result.isnot(None),
-                )
-                .count()
+            rung = (
+                session.query(models_db.User.ai_ladder_rung)
+                .filter(models_db.User.id == user_id)
+                .scalar()
             )
-            return count
+            return rung is not None
         finally:
             session.close()
 

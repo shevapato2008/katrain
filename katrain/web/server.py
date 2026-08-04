@@ -764,6 +764,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # A new game is starting: clear the "already recorded" guard from any
             # previous game on this (possibly reused) session so it becomes recordable again.
             session._recorded = False
+            # This endpoint carries no game_type, so the game it starts is a free one.
+            # Leaving the previous game's type on the session is how a casual game
+            # played right after a 升降级对弈 game would be stored as rated and settled
+            # into the promotion ledger. `_do_new_game` resets its own copy the same way.
+            session.game_type = "free"
+            session.ladder_opponent_rung = None
+            session.ladder_result = None
             if request.players:
                 for bw, p in request.players.items():
                     session.katrain(
@@ -2036,15 +2043,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         f"User {current_user.username} (ID: {current_user.id}) started matchmaking for {game_type}"
                     )
 
-                    # Prerequisite Check for Rated Games
+                    # Prerequisite for rated PvP: you must have a ladder rank, so the
+                    # pairing has something to pair on. Formerly a count of completed
+                    # `game_type == "rated"` games, which nothing ever wrote for an AI
+                    # game -- the counter sat at 0 forever and the lobby sent players to
+                    # a page that could not move it.
                     if game_type == "rated":
-                        count = app.state.user_repo.count_completed_rated_games(current_user.id)
-                        if count < 3:
+                        if not app.state.user_repo.has_completed_placement(current_user.id):
                             await websocket.send_json(
                                 {
                                     "type": "error",
-                                    "code": "PREREQUISITE_FAILED",
-                                    "message": f"You must complete 3 rated AI games before playing rated PvP. (Completed: {count}/3)",
+                                    "code": "PLACEMENT_REQUIRED",
+                                    "message": "Finish your 5-game 定级赛 in 升降级对弈 before playing rated PvP.",
                                 }
                             )
                             continue

@@ -278,7 +278,8 @@ availability = "available" if certified else "unavailable"
 |---|---|---|---|
 | **S1** | 新用户进升降级 → 打完 5 局定级赛 → 拿到段位 | 真机走完 5 局，`ai_ladder_rung` 写入，账本 5 行，界面全程显示第 N/5 | **已完成** 2026-08-04（`fef7d166` + `9221d69a`） |
 | **S2** | 已定级用户打常规升降级 → 净胜 ±3 升降一档 | 真机连胜 3 局升一档、账本归零；连败 3 局降一档 | **已完成** 2026-08-05 |
-| **S3** | 旧 game_type 乱帐理清 + PvP 段位解耦 | galaxy 调 `/api/game/setup`；kiosk/galaxy 字符串统一；PvP 不再改段位；rated PvP 门槛改为「已定级」；§1.2 死循环消失 | 待做 |
+| **S3** | 旧 game_type 乱帐理清 + PvP 段位解耦 | game_type 词表收口；PvP 不再改段位；rated PvP 门槛改为「已定级」；§1.2 死循环消失 | **已完成** 2026-08-05 |
+| **S4** | kiosk 升降级对弈 | kiosk 上能定级、能升降级，与网页版同一份账本 | 用户 2026-08-05 追加要求 |
 
 ### S1 实际验收记录（2026-08-04）
 
@@ -335,6 +336,43 @@ Chromium 算出的 `scrollHeight/clientHeight`、**真实滚轮**之后读回的
 以及滚到底后按钮盒相对裁切框的位置；把 paper 改成 `overflow: hidden` 它会变红（已验）。
 
 S3 排最后：它改的是既有人人对弈行为，风险边界与 S1/S2 不重叠，且不阻塞前两片。
+
+### S3 实际验收记录（2026-08-05）
+
+四件事：
+
+1. **game_type 词表收口。** `WebKaTrain.GAME_TYPES` 列全 5 个取值并各写一行含义，
+   `SCORING_GAME_TYPES`（禁分析禁悔棋）与 `RANK_MOVING_GAME_TYPES`（会动段位）
+   从它派生。`RANK_MOVING_GAME_TYPES` **只有 `ai_ladder_ranked` 一项**——多一项就是
+   又造了第二套段位，测试钉死这一条。**没有重命名任何已入库的取值**：kiosk 的
+   `ranked` 与 PvP 的 `rated` 保持原样（既有行、报告卡文案、kiosk 判断都读它），
+   它们本来就不动段位，收口后这件事在代码里说得出口了。
+2. **人人对弈不再动段位。** `record_multiplayer_game` 里的 Elo/净胜更新整段删除，
+   `katrain/web/core/ranking.py` 随之删掉（无其他引用）。`rating_history` 表与
+   `users.rank/net_wins/elo_points` 三列保留但不再写入；`users.rank` 仅剩一个用途——
+   给定级赛开窗做种子。
+3. **rated PvP 门槛：`count_completed_rated_games` → `has_completed_placement`。**
+   旧门槛数的是 `game_type == "rated"` 的对局，而 AI 对局从来不写这个值，计数永远是 0，
+   大厅却把人送去一个改不动它的页面（§1.2 的活死循环）。两个大厅前端同步改掉。
+   kiosk 目前还没有升降级 UI，所以它如实说明并**留在原地**，不再把人传送到死路。
+4. **`/api/new-game` 不再继承上一局的 game_type。** 之前在打完一局升降级的 session 上
+   开一局自由对弈，会继承 `ai_ladder_ranked`——挑一个弱 AI 赢一盘就能推段位。
+   `_do_new_game` 和 `/api/new-game` 各自复位，与 `ladder_rung` 的失败关闭规则一致。
+
+真机（本地 PostgreSQL，一次性账号，验完连数据删除）：未定级 → 拒绝且理由是
+`PLACEMENT_REQUIRED`；打完 5 局定级赛 → 不再拒绝（**死循环有出口了**）；
+一局 rated PvP 胜局后 `rank/net_wins/elo_points/ai_ladder_rung/ai_ladder_net_wins`
+五个值全部不变、账本不增行、对局照常入库；同一 session 上 `new-game` → `free` +
+恢复可分析，之后那局不进账本、段位不动、以 `free` 入库，`session-result` 回
+`{"settled": false, "reason": "not_a_ladder_game"}`。
+
+两点限制，如实记下：
+
+- **`/ws/lobby` 这一段没跑通传输层**：本机 uvicorn 没装 WebSocket 库
+  （`Unsupported upgrade request`），大厅 socket 在这里根本连不上。验的是
+  handler 调用的同一个 `has_completed_placement`，数据来自真 API 打出来的真行。
+- 全量测试相对 S1 基线**零新增失败**（前后各跑一次全量对比，唯一差异是一条引擎超时日志）。
+  仓库既有的 29 个采集错误（缺 cv2）与 74 条红测试均为存量。
 
 ---
 

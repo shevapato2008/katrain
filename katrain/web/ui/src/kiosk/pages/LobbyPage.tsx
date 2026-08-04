@@ -10,6 +10,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../../context/AuthContext';
 import { i18n } from '../../i18n';
+import { API } from '../../api';
 import SubPageBar from '../components/layout/SubPageBar';
 
 interface OnlineUser {
@@ -42,6 +43,16 @@ const LobbyPage = () => {
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'info' | 'error' | 'success' } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // null = no ladder rank yet. Rated PvP needs one; the server enforces the same
+  // thing, this only avoids queueing just to be refused.
+  const [ladderRank, setLadderRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    API.getLadderMe(token)
+      .then((me) => setLadderRank(me.rung))
+      .catch(() => setLadderRank(null));
+  }, [token]);
 
   if (!token) {
     return (
@@ -128,9 +139,19 @@ const LobbyPage = () => {
   const startMatchmaking = (gameType: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
-    if (gameType === 'rated' && user?.rank === '20k') {
-      alert(i18n.t('lobby:rank_required', '请先完成AI定级赛（3局）后再进行排位对局'));
-      navigate('/kiosk/play/ai/setup/ranked');
+    // Rated PvP needs a ladder rank. The old check read `user.rank === '20k'`, the
+    // registration default that nothing ever moved, and then sent the player to the
+    // kiosk 拟人 setup page — which does not produce a ladder rank either. That was a
+    // closed loop with no exit. 升降级对弈 has no kiosk UI yet, so say that plainly and
+    // stay put rather than teleporting the player somewhere that cannot help.
+    if (gameType === 'rated' && ladderRank === null) {
+      setSnackbar({
+        message: i18n.t(
+          'lobby:placement_required_kiosk',
+          '人人排位需要先有段位。升降级对弈目前只在网页版，定级完成后这里即可排位。',
+        ),
+        severity: 'info',
+      });
       return;
     }
 

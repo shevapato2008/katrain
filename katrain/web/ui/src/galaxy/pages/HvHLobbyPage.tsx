@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import FriendsPanel from '../components/FriendsPanel';
 import { i18n } from '../../i18n';
+import { API } from '../../api';
 
 interface OnlineUser {
     id: number;
@@ -39,6 +40,16 @@ const HvHLobbyPage = () => {
     const [snackbar, setSnackbar] = useState<{message: string, severity: 'info' | 'error' | 'success'} | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // null = not placed yet (or not loaded). The rated-PvP prerequisite; the server
+    // enforces the same thing, this just avoids queueing only to be refused.
+    const [ladderRank, setLadderRank] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (!token) return;
+        API.getLadderMe(token)
+            .then((me) => setLadderRank(me.rung))
+            .catch(() => setLadderRank(null));
+    }, [token]);
 
     const fetchOnlineUsers = async () => {
         if (!token) return;
@@ -122,9 +133,16 @@ const HvHLobbyPage = () => {
 
     const startMatchmaking = (gameType: string) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-        
-        if (gameType === 'rated' && user?.rank === '20k') {
-            alert("You must complete your AI Rating series (3 games) before playing Rated HvH matches.");
+
+        // Rated PvP needs a ladder rank. The old check read `user.rank === '20k'`,
+        // the registration default — but nothing on the AI side ever moved it, so
+        // every player failed it forever and got sent to a page that could not fix
+        // it. `ladderRank` comes from GET /api/ladder/me, the one rank there is.
+        if (gameType === 'rated' && ladderRank === null) {
+            setSnackbar({
+                message: i18n.t('lobby:placement_required', '先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。'),
+                severity: 'info',
+            });
             navigate('/galaxy/play/ai?mode=rated');
             return;
         }

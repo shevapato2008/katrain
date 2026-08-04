@@ -1223,6 +1223,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         Deliberately narrow: only a server-issued LADDER_GAME_TYPE session, only a
         conclusive B+/W+ result, only when the seated rung is known.
+
+        Every exit stores a `session.ladder_result` so GET /api/ladder/session-result
+        can tell the user what happened -- including the cases where nothing happened.
+        A silent no-op would read on screen as "your win didn't count", with no reason.
         """
         from katrain.web.core.ladder_repo import LADDER_GAME_TYPE, settle_game
 
@@ -1231,33 +1235,73 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         opponent_rung = getattr(session, "ladder_opponent_rung", None)
         if opponent_rung is None:
             logging.getLogger("katrain_web").error("ladder game finished with no seated rung; not scoring")
+            session.ladder_result = {"settled": False, "reason": "no_seated_rung"}
             return
 
         # Inconclusive games (no winner recorded, e.g. an abandoned or void game)
         # never touch the ladder.
         winner = (result or "")[:1]
         if winner not in ("B", "W"):
+            session.ladder_result = {"settled": False, "reason": "inconclusive"}
             return
         players_info = session.katrain.players_info
         human_color = next((bw for bw, info in players_info.items() if info.human), None)
         if human_color is None:
+            session.ladder_result = {"settled": False, "reason": "no_human_seat"}
             return
 
         game_id = (recorded or {}).get("id")
         if not game_id:
             logging.getLogger("katrain_web").error("ladder game has no recorded id; not scoring")
+            session.ladder_result = {"settled": False, "reason": "not_recorded"}
             return
 
         from katrain.web.core.db import SessionLocal
 
         db = SessionLocal()
         try:
-            settle_game(db, current_user.id, str(game_id), int(opponent_rung), won=(winner == human_color))
+            outcome = settle_game(db, current_user.id, str(game_id), int(opponent_rung), won=(winner == human_color))
         except Exception as e:
             db.rollback()
             logging.getLogger("katrain_web").error(f"Failed to settle ladder game {game_id}: {e}")
+            session.ladder_result = {"settled": False, "reason": "error"}
+            return
         finally:
             db.close()
+
+        if outcome is None:
+            # The UNIQUE constraint rejected a replay: this game was already scored,
+            # so the rank is right but this call has no delta to report.
+            session.ladder_result = {"settled": False, "reason": "already_settled"}
+            return
+        session.ladder_result = _settlement_payload(outcome)
+
+    def _settlement_payload(outcome) -> dict:
+        from katrain.core.ladder import get_level
+
+        def tier(rung):
+            if rung is None:
+                return None
+            level = get_level(rung)
+            return {"rung": level.rung, "rank_name": level.rank_name}
+
+        return {
+            "settled": True,
+            "won": outcome.won,
+            "is_placement": outcome.is_placement,
+            "net_wins_before": outcome.net_wins_before,
+            "net_wins_after": outcome.net_wins_after,
+            "threshold": outcome.threshold,
+            "rung_before": tier(outcome.rung_before),
+            "rung_after": tier(outcome.rung_after),
+            "moved": outcome.moved,
+            "placement": None
+            if not outcome.is_placement
+            else {
+                "games_done": outcome.placement_games_done,
+                "games_total": outcome.placement_games_total,
+            },
+        }
 
     globals()["_RECORD_FN"] = _record_ai_game
 
@@ -1821,6 +1865,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # cannot ask for a rung -- both are decided here.
         session.game_type = LADDER_GAME_TYPE
         session.ladder_opponent_rung = state.opponent_rung
+        # A session is reused across games. `_record_ai_game` refuses to write twice
+        # for the same session, so without this reset the SECOND ladder game on a
+        # session would never be recorded and therefore never settle -- the whole
+        # promotion journey is three games long, so this is on the main path.
+        session._recorded = False
+        session.ladder_result = None
 
         session.katrain.update_config("timer/main_time", request.main_time)
         session.katrain.update_config("timer/byo_length", request.byo_length)
@@ -1849,6 +1899,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         )
         session.katrain("update_player", bw=ai_bw, player_type="player:ai", player_subtype="ai:ladder")
         return {"session_id": request.session_id, "state": session.katrain.get_state()}
+
+    @app.get("/api/ladder/session-result/{session_id}")
+    def get_ladder_session_result(session_id: str, current_user: User = Depends(get_current_user)):
+        """What the game just played on this session did to the caller's rank.
+
+        Scoped to the session rather than to a game id because the client never
+        learns the recorded game's id. `start-game` clears it, so this can only ever
+        describe the current game. `settled: false` always carries a reason -- an
+        unscored game must say so rather than leave the previous state on screen.
+        """
+        session = manager.get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        if session.user_id is not None and session.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="not your session")
+        from katrain.web.core.ladder_repo import LADDER_GAME_TYPE
+
+        if getattr(session, "game_type", None) != LADDER_GAME_TYPE:
+            return {"settled": False, "reason": "not_a_ladder_game"}
+        return getattr(session, "ladder_result", None) or {"settled": False, "reason": "in_progress"}
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):

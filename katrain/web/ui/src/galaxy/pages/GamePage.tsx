@@ -10,8 +10,13 @@ import { useSettings } from '../../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
+import type { LadderSettlement } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
+import LadderSettlementDialog from '../components/play/LadderSettlementDialog';
+
+// Server-issued game_type for 升降级对弈 (katrain/web/core/ladder_repo.py).
+const LADDER_GAME_TYPE = 'ai_ladder_ranked';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -77,6 +82,28 @@ const GamePage = () => {
     const [showCountConfirm, setShowCountConfirm] = useState(false);
     const [countResult, setCountResult] = useState<string | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
+
+    // 升降级结算：what this game did to the player's rank. Asked for once, when
+    // the game ends, and only for a server-issued ladder game. The answer comes
+    // from the server rather than from diffing two /api/ladder/me reads, because
+    // a game that did not score has to be able to say so.
+    const [settlement, setSettlement] = useState<LadderSettlement | null>(null);
+    const settlementAskedRef = useRef(false);
+    const isLadderGame = gameState?.game_type === LADDER_GAME_TYPE;
+
+    useEffect(() => {
+        if (!isLadderGame || !gameState?.end_result || !sessionId || !token) return;
+        if (settlementAskedRef.current) return;
+        settlementAskedRef.current = true;
+        API.getLadderSessionResult(token, sessionId)
+            .then(setSettlement)
+            .catch((e) => {
+                // The rank may well have moved -- we just could not read the
+                // receipt. Say that, rather than silently showing nothing.
+                console.error('ladder settlement lookup failed:', e);
+                setSettlement({ settled: false, reason: 'error' });
+            });
+    }, [isLadderGame, gameState?.end_result, sessionId, token]);
 
     // Sound playing callback
     const handlePlaySound = useCallback((soundName: string) => {
@@ -285,6 +312,11 @@ const GamePage = () => {
                     <Button onClick={confirmCount} color="primary" variant="contained">{t('COUNT', 'Count')}</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* 升降级结算 — only for a server-issued ladder game, only once it ends. */}
+            {settlement && (
+                <LadderSettlementDialog result={settlement} onClose={() => setSettlement(null)} />
+            )}
 
             {/* Count Result Dialog */}
             <Dialog open={!!countResult} onClose={() => setCountResult(null)} maxWidth="xs" fullWidth>

@@ -159,6 +159,36 @@ export interface LadderMe {
   blocked_reason: 'not_certified' | 'engine_unavailable' | null;
 }
 
+// Served by GET /api/ladder/session-result/{session_id} — what the game just
+// finished on this session did to the caller's rank. The frontend NEVER derives
+// this by diffing two /api/ladder/me reads: a game that did not score has to say
+// so, and a diff of zero cannot tell "you drew even" from "it wasn't counted".
+export type LadderSettlement =
+  | {
+      settled: true;
+      won: boolean;
+      is_placement: boolean;
+      net_wins_before: number;
+      net_wins_after: number;
+      threshold: number;
+      rung_before: LadderTierRef | null;  // null during placement
+      rung_after: LadderTierRef | null;   // null until placement resolves
+      moved: 1 | 0 | -1;                  // promoted / stayed / demoted
+      placement: { games_done: number; games_total: number } | null;
+    }
+  | {
+      settled: false;
+      reason:
+        | 'not_a_ladder_game'
+        | 'in_progress'
+        | 'inconclusive'
+        | 'already_settled'
+        | 'no_seated_rung'
+        | 'no_human_seat'
+        | 'not_recorded'
+        | 'error';
+    };
+
 export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
 }
@@ -428,6 +458,14 @@ export const API = {
       try { detail = (await res.json())?.detail; } catch { /* non-JSON error body */ }
       throw new Error(detail?.blocked_reason || detail?.error || `start-game failed: ${res.status}`);
     }
+    return res.json();
+  },
+
+  getLadderSessionResult: async (token: string, sessionId: string): Promise<LadderSettlement> => {
+    const res = await fetch(`/api/ladder/session-result/${sessionId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`ladder/session-result failed: ${res.status}`);
     return res.json();
   },
 

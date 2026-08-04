@@ -124,10 +124,10 @@ def test_the_bottom_tier_cannot_be_demoted_below_the_ladder(db):
 def test_replaying_a_settlement_moves_nothing(db):
     user = make_user(db)
     place_at(db, user, 10)
-    assert settle_game(db, user.id, "same-game", rung_at(10), won=True) is True
+    assert settle_game(db, user.id, "same-game", rung_at(10), won=True) is not None
     after_first = read_state(db, user.id)
 
-    assert settle_game(db, user.id, "same-game", rung_at(10), won=True) is False
+    assert settle_game(db, user.id, "same-game", rung_at(10), won=True) is None
     after_replay = read_state(db, user.id)
 
     assert (after_replay.rung, after_replay.net_wins) == (after_first.rung, after_first.net_wins)
@@ -143,6 +143,62 @@ def test_recent_form_is_ledger_derived_and_capped(db):
     state = read_state(db, user.id)
     assert len(state.recent) == 5
     assert [g.won for g in state.recent] == pattern[-5:], "oldest first, most recent last"
+
+
+def test_a_settlement_reports_the_move_it_made(db):
+    """The player is told what happened by the settlement itself, not by diffing
+    two reads -- so `settle_game` has to hand back the before AND the after."""
+    user = make_user(db)
+    place_at(db, user, 10)
+    first = settle_game(db, user.id, "s1", rung_at(10), won=True)
+    assert (first.won, first.is_placement) == (True, False)
+    assert (first.net_wins_before, first.net_wins_after) == (0, 1)
+    assert first.rung_before == first.rung_after == rung_at(10)
+    assert first.moved == 0
+
+    settle_game(db, user.id, "s2", rung_at(10), won=True)
+    third = settle_game(db, user.id, "s3", rung_at(10), won=True)
+    assert third.moved == 1, "the third net win is the promotion"
+    assert third.rung_before == rung_at(10) and third.rung_after == rung_at(11)
+    assert (third.net_wins_before, third.net_wins_after) == (2, 0), "counter resets on promotion"
+
+
+def test_a_demotion_reports_moved_minus_one(db):
+    user = make_user(db)
+    place_at(db, user, 10)
+    for i in range(NET_WIN_THRESHOLD - 1):
+        settle_game(db, user.id, f"d{i}", rung_at(10), won=False)
+    last = settle_game(db, user.id, "d-last", rung_at(10), won=False)
+    assert last.moved == -1
+    assert last.rung_before == rung_at(10) and last.rung_after == rung_at(9)
+    assert last.net_wins_after == 0
+
+
+def test_a_saturated_promotion_reports_no_move(db):
+    """At the top the position cannot rise, so `moved` must stay 0 -- a dialog
+    announcing 升段 into the same rung would be a lie."""
+    user = make_user(db)
+    place_at(db, user, position_count())
+    for i in range(NET_WIN_THRESHOLD - 1):
+        settle_game(db, user.id, f"t{i}", rung_at(position_count()), won=True)
+    last = settle_game(db, user.id, "t-last", rung_at(position_count()), won=True)
+    assert last.moved == 0
+    assert last.rung_before == last.rung_after == rung_at(position_count())
+    assert last.net_wins_after == 0, "the counter still resets, so no credit is banked"
+
+
+def test_placement_settlements_report_placement_progress(db):
+    user = make_user(db)
+    seen = []
+    for i in range(PLACEMENT_GAMES):
+        state = read_state(db, user.id)
+        seen.append(settle_game(db, user.id, f"p{i}", state.opponent_rung, won=(i % 2 == 0)))
+    assert [s.is_placement for s in seen] == [True] * PLACEMENT_GAMES
+    assert [s.placement_games_done for s in seen] == [1, 2, 3, 4, 5]
+    assert all(s.rung_before is None for s in seen)
+    assert all(s.rung_after is None for s in seen[:-1]), "no rank exists until the search collapses"
+    assert seen[-1].rung_after is not None
+    assert all(s.moved == 0 for s in seen), "placement never counts as a promotion"
 
 
 def test_an_uncertified_opponent_is_reported_as_not_playable(db):

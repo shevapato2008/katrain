@@ -21,7 +21,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 // Zen Precision tokens (katrain/web/ui/src/theme.ts + styles/theme.css). Written
 // literally rather than through the palette because several of these (fg-3,
 // rail grey, the amber wash) have no MUI palette slot.
-const C = {
+export const C = {
     fg: '#f5f3f0',
     fg2: '#b8b5b0',
     fg3: '#7a7772',
@@ -64,7 +64,7 @@ const RungRail = ({ above, now, below }: { above: string | null; now: string; be
  * weight. `threshold` segments each side of a zero tick; filled from the centre
  * outward toward the current value.
  */
-const NetWinBar = ({ netWins, threshold }: { netWins: number; threshold: number }) => {
+export const NetWinBar = ({ netWins, threshold }: { netWins: number; threshold: number }) => {
     const cell = (side: -1 | 1, i: number) => {
         // i counts outward from the centre, 0-based.
         const lit = side > 0 ? netWins > i : netWins < -i;
@@ -90,7 +90,7 @@ const NetWinBar = ({ netWins, threshold }: { netWins: number; threshold: number 
 };
 
 /** The 5-game binary placement. A real sequence, so the step numbering earns its place. */
-const PlacementSteps = ({ done, total }: { done: number; total: number }) => (
+export const PlacementSteps = ({ done, total }: { done: number; total: number }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', m: '20px 0 6px' }}>
         {Array.from({ length: total }, (_, i) => {
             const state = i < done ? 'done' : i === done ? 'now' : 'todo';

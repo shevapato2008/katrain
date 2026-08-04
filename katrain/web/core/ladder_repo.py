@@ -69,6 +69,35 @@ class PlacementState:
 
 
 @dataclass(frozen=True)
+class Settlement:
+    """What one settled game did to the rank. Returned by `settle_game` so the
+    caller can tell the user, rather than re-deriving a delta from two reads.
+
+    `rung_before` is None during placement (there is no rank yet); `rung_after` is
+    None during placement until the search collapses on the last game.
+    """
+
+    won: bool
+    is_placement: bool
+    net_wins_before: int
+    net_wins_after: int
+    threshold: int
+    rung_before: Optional[int]
+    rung_after: Optional[int]
+    placement_games_done: Optional[int]
+    placement_games_total: Optional[int]
+
+    @property
+    def moved(self) -> int:
+        """+1 promoted, -1 demoted, 0 stayed. Placement games never 'move'."""
+        if self.is_placement or self.rung_before is None or self.rung_after is None:
+            return 0
+        return (position_of(self.rung_after) > position_of(self.rung_before)) - (
+            position_of(self.rung_after) < position_of(self.rung_before)
+        )
+
+
+@dataclass(frozen=True)
 class LadderState:
     """Everything GET /api/ladder/me reports, plus the opponent the server picked."""
 
@@ -178,9 +207,9 @@ def _recent_games(session, user_id: int) -> List[RecentGame]:
     ]
 
 
-def settle_game(session, user_id: int, game_id: str, opponent_rung: int, won: bool) -> bool:
-    """Record one conclusive ladder game and move the rank. Returns False if this
-    game_id was already settled.
+def settle_game(session, user_id: int, game_id: str, opponent_rung: int, won: bool) -> Optional[Settlement]:
+    """Record one conclusive ladder game and move the rank. Returns what it did,
+    or None if this game_id was already settled.
 
     The ledger row and the users update commit together: a rank that moved without
     a ledger row would be underivable, and a ledger row without the move would
@@ -197,6 +226,7 @@ def settle_game(session, user_id: int, game_id: str, opponent_rung: int, won: bo
         won=won,
         net_wins_before=user.ai_ladder_net_wins or 0,
     )
+    rung_before = user.ai_ladder_rung
 
     if user.ai_ladder_rung is None:
         lo, hi = _effective_window(user)
@@ -234,8 +264,18 @@ def settle_game(session, user_id: int, game_id: str, opponent_rung: int, won: bo
     except IntegrityError:
         session.rollback()
         logger.info("ladder settlement for game %s already recorded; ignoring replay", game_id)
-        return False
-    return True
+        return None
+    return Settlement(
+        won=won,
+        is_placement=entry.is_placement,
+        net_wins_before=entry.net_wins_before,
+        net_wins_after=entry.net_wins_after,
+        threshold=NET_WIN_THRESHOLD,
+        rung_before=rung_before,
+        rung_after=entry.rung_after,
+        placement_games_done=user.ai_ladder_placement_games if entry.is_placement else None,
+        placement_games_total=PLACEMENT_GAMES if entry.is_placement else None,
+    )
 
 
 def rung_display_name(rung: int) -> str:

@@ -277,7 +277,7 @@ availability = "available" if certified else "unavailable"
 | 切片 | 用户旅程 | 完成判据 | 状态 |
 |---|---|---|---|
 | **S1** | 新用户进升降级 → 打完 5 局定级赛 → 拿到段位 | 真机走完 5 局，`ai_ladder_rung` 写入，账本 5 行，界面全程显示第 N/5 | **已完成** 2026-08-04（`fef7d166` + `9221d69a`） |
-| **S2** | 已定级用户打常规升降级 → 净胜 ±3 升降一档 | 真机连胜 3 局升一档、账本归零；连败 3 局降一档 | 待做 |
+| **S2** | 已定级用户打常规升降级 → 净胜 ±3 升降一档 | 真机连胜 3 局升一档、账本归零；连败 3 局降一档 | **已完成** 2026-08-05 |
 | **S3** | 旧 game_type 乱帐理清 + PvP 段位解耦 | galaxy 调 `/api/game/setup`；kiosk/galaxy 字符串统一；PvP 不再改段位；rated PvP 门槛改为「已定级」；§1.2 死循环消失 | 待做 |
 
 ### S1 实际验收记录（2026-08-04）
@@ -300,6 +300,39 @@ S1 期间发现并修复的两个缺陷：
 
 S1 先于 S2，因为「新用户第一次打开升降级对弈」是真实的第一个旅程，且 S1 跑通后 S2 天然有数据可测，
 不需要造段位 fixture。
+
+### S2 实际验收记录（2026-08-05）
+
+S2 补上了一件设计里没写、但旅程必需的东西：**对局结束后的段位结算反馈**。
+升降级的全部意义就是档位会动，而在 S1 结束时，用户升了档在当场是看不见的——
+只有回到设置页才会发现。新增 `GET /api/ladder/session-result/{session_id}` +
+`LadderSettlementDialog`，六种状态：升段 / 降段 / 未升降（净胜条）/ 定级赛第 N 局 /
+定级完成 / **本局未计入**（带原因）。
+
+结算结论由服务端给，前端**不做两次 `/api/ladder/me` 相减**：差值为 0 分不出
+「打平」和「这局没算」，而不可判定局必须能说出自己没算。
+
+真机（本地 PostgreSQL + 一次性账号，11 局全部在**同一个 session** 上打完，验完连数据删除）：
+
+- 定级 5 局 → `2段`(rung 24)，账本 5 行 `is_placement`
+- 连胜 3 局：净胜 `0→1→2→0`，第 3 局 `moved=1`，`2段 → 3段`（**跳过 rung 25 准3段这个洞**）
+- 连败 3 局：净胜 `0→-1→-2→0`，第 3 局 `moved=-1`，退回 `2段`
+- 账本 11 行、`game_id` 全唯一；11 局全部以 `ai_ladder_ranked` 落库
+
+S2 期间发现并修复的缺陷：
+
+1. **`POST /api/ladder/start-game` 没有重置 `session._recorded`。** 一个 session 上的
+   第二局永远不会落库，因此永远不会结算——而「连胜 3 局」这条旅程天生就是同一个
+   session 上的连续三局，也就是说 S1 之后升降级实际上**一局都升不了**。
+   `/api/new-game` 和 `/api/game/setup` 都有这个重置，start-game 漏了。
+   验收脚本因此刻意把 11 局全打在一个 session 上。
+
+一次读错：中途把 `.MuiDialog-container` 的 `overflow-y: visible` 读成「弹窗不能滚」，
+实际 `.MuiDialog-paper` 自带 `overflow-y: auto`（scroll="paper" 默认），量到的
+`-101px` 只是 `scrollTop=0` 时按钮在折叠线以下而已。没有这个缺陷，多加的 override 已撤回。
+真浏览器几何闸仍然保留（`tests/ladder-settlement-geometry.spec.ts`）：它断言的是
+Chromium 算出的 `scrollHeight/clientHeight`、**真实滚轮**之后读回的 `scrollTop`、
+以及滚到底后按钮盒相对裁切框的位置；把 paper 改成 `overflow: hidden` 它会变红（已验）。
 
 S3 排最后：它改的是既有人人对弈行为，风险边界与 S1/S2 不重叠，且不阻塞前两片。
 

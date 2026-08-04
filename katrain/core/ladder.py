@@ -22,11 +22,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from fractions import Fraction
 from types import MappingProxyType
-from typing import Dict, List, Mapping, Optional, Tuple, Union
+from typing import Dict, FrozenSet, List, Mapping, Optional, Tuple, Union
 
 MECHANISMS = ("humansl", "humansl_search", "net_search")
 HUMAN_WEIGHTED = "human_weighted"
@@ -473,19 +474,49 @@ def _candidate_labels(rung: int) -> Tuple[str, ...]:
     return ()
 
 
-LADDER_LEVELS = tuple(
-    LadderLevel(
-        rung=rung,
-        rank_name=rank_name,
-        recipe=_fixed_product_recipe(rung, rank_name),
-        candidate_labels=_candidate_labels(rung),
-        certification_status="provisional",
-        availability="unavailable",
-        route="server",
-        external_status="not_applicable" if rung <= 2 else "untested",
-    )
-    for rung, rank_name in enumerate(_LEVEL_NAMES, start=1)
-)
+#: Rungs whose strength configuration has passed formal adjacent verification.
+#: Empty until it has. Adding a rung here is a product claim: it says this level's
+#: recipe was verified against its neighbours under a frozen batch, and every entry
+#: must cite the EXPERIMENTS.md section that verified it. Never widen this set to
+#: make something playable -- that is what LADDER_ALLOW_PROVISIONAL_ENV is for, and
+#: that switch never touches what the API reports.
+_CERTIFIED_RUNGS: FrozenSet[int] = frozenset()
+
+#: Development-only escape hatch. When set to "1", `resolve_available_rung` will
+#: hand back the recipe for a provisional rung so the rated-play pipeline can be
+#: exercised end to end before calibration lands. It deliberately does NOT alter
+#: `certification_status` / `availability`: the API keeps reporting the truth and
+#: the UI keeps showing the 未标定 badge. An environment variable rather than a
+#: config key, because `--ui web` rewrites ~/.katrain/config.json on exit.
+LADDER_ALLOW_PROVISIONAL_ENV = "KATRAIN_LADDER_ALLOW_PROVISIONAL"
+
+
+def _level_certification(rung: int, recipe: Optional[LadderRung]) -> Tuple[str, str]:
+    certified = recipe is not None and rung in _CERTIFIED_RUNGS
+    return ("certified", "available") if certified else ("provisional", "unavailable")
+
+
+def _build_levels() -> Tuple[LadderLevel, ...]:
+    levels = []
+    for rung, rank_name in enumerate(_LEVEL_NAMES, start=1):
+        recipe = _fixed_product_recipe(rung, rank_name)
+        certification_status, availability = _level_certification(rung, recipe)
+        levels.append(
+            LadderLevel(
+                rung=rung,
+                rank_name=rank_name,
+                recipe=recipe,
+                candidate_labels=_candidate_labels(rung),
+                certification_status=certification_status,
+                availability=availability,
+                route="server",
+                external_status="not_applicable" if rung <= 2 else "untested",
+            )
+        )
+    return tuple(levels)
+
+
+LADDER_LEVELS = _build_levels()
 
 
 def get_level(n: int) -> LadderLevel:
@@ -501,12 +532,20 @@ def get_recipe_for_calibration(n: int) -> LadderRung:
     return level.recipe
 
 
+def provisional_play_allowed() -> bool:
+    """Whether uncertified rungs may be seated. Read per call, never cached, so a
+    deployment can never end up permanently permissive from a stale import."""
+    return os.environ.get(LADDER_ALLOW_PROVISIONAL_ENV) == "1"
+
+
 def resolve_available_rung(n: int) -> LadderRung:
     level = get_level(n)
     if level.recipe is None:
+        # No amount of dev switching conjures a recipe that was never fitted.
         raise LadderUnavailable(f"level {n} ({level.rank_name}) has an unresolved recipe")
     if level.certification_status != "certified" or level.availability != "available":
-        raise LadderUnavailable(f"level {n} ({level.rank_name}) is not certified and available")
+        if not provisional_play_allowed():
+            raise LadderUnavailable(f"level {n} ({level.rank_name}) is not certified and available")
     return level.recipe
 
 

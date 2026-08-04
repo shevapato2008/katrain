@@ -53,9 +53,24 @@ class User(Base):
     )  # Unique UUID assigned at registration
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    # Legacy human-vs-human rank. No longer written: since the 41-tier ladder
+    # landed, a user has exactly one rank and it moves only on ladder games
+    # against the AI. Kept so historical rows survive, and read once per account
+    # to seed the placement window (katrain/web/core/ladder_progress.py).
     rank = Column(String, default="20k")
     net_wins = Column(Integer, default=0)
     elo_points = Column(Integer, default=0)
+
+    # --- 41-tier ladder: the authoritative rank ---
+    # NULL rung == not yet placed. While placing, the binary-search window lives
+    # in the three placement columns and `ai_ladder_rung` stays NULL until it
+    # collapses. Every change to these is accompanied by an ai_ladder_ledger row
+    # written in the same transaction.
+    ai_ladder_rung = Column(Integer, nullable=True)
+    ai_ladder_net_wins = Column(Integer, default=0, nullable=False)
+    ai_ladder_placement_lo = Column(Integer, nullable=True)
+    ai_ladder_placement_hi = Column(Integer, nullable=True)
+    ai_ladder_placement_games = Column(Integer, default=0, nullable=False)
     credits = Column(
         Integer, default=10000, nullable=False
     )  # integer credit balance (single pool); server-authoritative
@@ -92,6 +107,43 @@ class RatingHistory(Base):
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
 
     game = relationship("UserGame")
+    user = relationship("User")
+
+
+class AiLadderLedger(Base):
+    """Append-only record of every rated ladder game that moved (or held) a rank.
+
+    This is the sole derivation of `users.ai_ladder_rung`, which is why
+    migrations.PROTECTED_TABLES forbids dropping it to fix schema drift.
+
+    `game_id` carries a UNIQUE constraint and is the whole idempotency story: a
+    replayed settlement violates it, the transaction rolls back, and the rank does
+    not move. It is deliberately NOT a foreign key to user_games.id -- when the
+    repository dispatcher is online the game row is written to the remote service
+    and has no local counterpart (katrain/web/core/repository.py).
+
+    Inconclusive games never produce a row.
+    """
+
+    __tablename__ = "ai_ladder_ledger"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    game_id = Column(String(32), unique=True, index=True, nullable=False)
+
+    is_placement = Column(Boolean, default=False, nullable=False)
+    opponent_rung = Column(Integer, nullable=False)
+    won = Column(Boolean, nullable=False)
+
+    rung_before = Column(Integer, nullable=True)  # NULL for placement games
+    rung_after = Column(Integer, nullable=True)  # NULL until placement resolves
+    net_wins_before = Column(Integer, default=0, nullable=False)
+    net_wins_after = Column(Integer, default=0, nullable=False)
+    placement_lo_after = Column(Integer, nullable=True)
+    placement_hi_after = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
     user = relationship("User")
 
 

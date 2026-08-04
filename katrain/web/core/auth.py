@@ -133,13 +133,14 @@ class SQLAlchemyUserRepository(UserRepository):
                 expected_cols = {c.name for c in table.columns}
                 if not expected_cols.issubset(existing_cols):
                     drift_tables.append(table.name)
-            # Only rebuild non-billing tables; refuse to drop asset tables.
-            rebuildable = [t for t in drift_tables if t not in migrations.BILLING_TABLES]
-            if any(t in migrations.BILLING_TABLES for t in drift_tables):
+            # Only rebuild unprotected tables; refuse to drop asset tables
+            # (credits, and the ladder ledger that every 段位 is derived from).
+            rebuildable = [t for t in drift_tables if t not in migrations.PROTECTED_TABLES]
+            if any(t in migrations.PROTECTED_TABLES for t in drift_tables):
                 import logging
 
                 logging.getLogger("katrain_web").error(
-                    f"Schema drift in billing table(s) {set(drift_tables) & migrations.BILLING_TABLES}; "
+                    f"Schema drift in protected table(s) {set(drift_tables) & migrations.PROTECTED_TABLES}; "
                     "refusing to drop. Resolve manually."
                 )
             if rebuildable:

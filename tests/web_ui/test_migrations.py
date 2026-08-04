@@ -51,8 +51,20 @@ def test_create_missing_indexes(legacy_engine):
     assert "ix_credit_tx_user_status" in idx
 
 
-def test_billing_tables_are_protected_constant():
-    assert {"credit_transactions", "redeem_codes", "recharge_orders"} == migrations.BILLING_TABLES
+def test_asset_tables_are_protected_from_the_drift_rebuild():
+    """Tables the SQLite drift fallback must never drop and recreate.
+
+    Credits are money. ai_ladder_ledger is the sole derivation of every user's
+    段位, so rebuilding it would silently reset the whole ladder.
+    """
+    assert {
+        "credit_transactions",
+        "redeem_codes",
+        "recharge_orders",
+        "ai_ladder_ledger",
+    } == migrations.PROTECTED_TABLES
+    # Older name kept as an alias; both must name the same set.
+    assert migrations.BILLING_TABLES is migrations.PROTECTED_TABLES
 
 
 if __name__ == "__main__":

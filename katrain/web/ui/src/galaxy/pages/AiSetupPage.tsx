@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
-import { API, type LadderRung } from '../../api';
+import { API, type LadderRung, type LadderMe } from '../../api';
 import LadderRankCard from '../components/play/LadderRankCard';
-// TEMPORARY: stands in for GET /api/ladder/me until S1 step 6 wires the endpoint.
-// See the deletion condition at the top of the fixture file.
-import { LADDER_ME_FIXTURE } from './__fixtures__/ladderMe.fixture';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -54,6 +51,11 @@ const AiSetupPage = () => {
     const [ladderRung, setLadderRung] = useState<number>(18);
     const isLadder = opponent === 'ai:ladder';
 
+    // 升降级对弈: the player's own ladder state. Server-authoritative, including the
+    // opponent tier -- there is nothing here for the client to choose.
+    const [ladderMe, setLadderMe] = useState<LadderMe | null>(null);
+    const [ladderError, setLadderError] = useState<string | null>(null);
+
     // Time Settings
     const [timerEnabled, setTimerEnabled] = useState(isRated); 
     const [mainTime, setMainTime] = useState(10); 
@@ -92,6 +94,23 @@ const AiSetupPage = () => {
             .then((data) => setLadderRungs(data.rungs))
             .catch((err) => console.error('Failed to load ladder rungs', err));
     }, [isRated]);
+
+    useEffect(() => {
+        if (!isRated) return;
+        if (!token) {
+            setLadderMe(null);
+            setLadderError('unauthenticated');
+            return;
+        }
+        setLadderError(null);
+        API.getLadderMe(token)
+            .then(setLadderMe)
+            .catch((err) => {
+                console.error('Failed to load ladder state', err);
+                setLadderMe(null);
+                setLadderError(err?.message || 'unavailable');
+            });
+    }, [isRated, token]);
 
     // Load strategy default settings when opponent changes (Free mode)
     useEffect(() => {
@@ -145,6 +164,26 @@ const AiSetupPage = () => {
         setLoading(true);
         try {
             const session = await API.createSession(token || undefined);
+
+            // 升降级对弈 is one server call, not a client-assembled sequence: the
+            // opponent tier, the players and the scoring game type are all decided
+            // server-side so none of them can be talked into something easier.
+            if (isRated) {
+                if (!token) throw new Error(t('ladder:need_login', '登录后才能参加升降级对弈。'));
+                await API.startLadderGame(token, {
+                    session_id: session.session_id,
+                    size: boardSize,
+                    komi,
+                    rules,
+                    color,
+                    main_time: mainTime * 60,
+                    byo_length: byoLength,
+                    byo_periods: byoPeriods,
+                });
+                navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
+                return;
+            }
+
             const humanKyuRank = sliderToHumanKyuRankFixed(rankValue);
 
             const aiColor = color === 'B' ? 'W' : 'B';
@@ -401,7 +440,47 @@ const AiSetupPage = () => {
                 </Paper>
 
                 {isRated ? (
-                    <LadderRankCard me={LADDER_ME_FIXTURE} />
+                    ladderMe ? (
+                        <LadderRankCard me={ladderMe} />
+                    ) : (
+                        // Loading, signed out, and failed are three different things and
+                        // none of them is a playable card. Never render a placeholder rank.
+                        <Paper sx={{ p: 4, borderRadius: 4 }}>
+                            <Typography variant="h6" gutterBottom>{t('ladder:your_rank', '你的段位')}</Typography>
+                            {ladderError === null ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                                    <CircularProgress size={20} />
+                                    <Typography variant="body2" color="text.secondary">
+                                        {t('ladder:loading', '正在读取你的段位…')}
+                                    </Typography>
+                                </Box>
+                            ) : ladderError === 'unauthenticated' ? (
+                                <Alert severity="info" sx={{ mt: 2 }}>
+                                    {t('ladder:need_login', '登录后才能参加升降级对弈。')}
+                                </Alert>
+                            ) : (
+                                <Alert
+                                    severity="error"
+                                    sx={{ mt: 2 }}
+                                    action={
+                                        <Button color="inherit" size="small" onClick={() => {
+                                            setLadderError(null);
+                                            if (token) {
+                                                API.getLadderMe(token).then(setLadderMe).catch((e) => {
+                                                    setLadderMe(null);
+                                                    setLadderError(e?.message || 'unavailable');
+                                                });
+                                            }
+                                        }}>
+                                            {t('retry', '重试')}
+                                        </Button>
+                                    }
+                                >
+                                    {t('ladder:load_failed', '读取段位失败，暂时开不了局。')}
+                                </Alert>
+                            )}
+                        </Paper>
+                    )
                 ) : (
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
                     <Typography variant="h6" gutterBottom>{t('Opponent & Time', 'Opponent & Time')}</Typography>
@@ -504,7 +583,7 @@ const AiSetupPage = () => {
                     variant="contained"
                     size="large"
                     onClick={handleStartGame}
-                    disabled={loading || (isRated && !LADDER_ME_FIXTURE.playable)}
+                    disabled={loading || (isRated && !ladderMe?.playable)}
                 >
                     {t('btn:Play', 'Start Game')}
                 </Button>

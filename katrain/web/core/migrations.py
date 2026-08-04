@@ -15,8 +15,13 @@ from katrain.web.core import models_db
 
 logger = logging.getLogger("katrain_web")
 
-# Tables holding financial/asset data — never drop these to "fix" schema drift.
-BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"}
+# Tables holding user assets — never drop these to "fix" schema drift. Credits are
+# money; ai_ladder_ledger is the sole record of how every rank was earned, and
+# rebuilding it would silently reset every user's 段位.
+PROTECTED_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders", "ai_ladder_ledger"}
+
+# Kept so existing imports keep working; prefer PROTECTED_TABLES.
+BILLING_TABLES = PROTECTED_TABLES
 
 
 def add_missing_columns(engine) -> None:

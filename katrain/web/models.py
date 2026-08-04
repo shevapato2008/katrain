@@ -33,10 +33,28 @@ class NewGameRequest(BaseModel):
     rules: Optional[str] = "japanese"
     clear_cache: bool = False
     players: Optional[Dict[str, PlayerSetupInfo]] = None
-    # Task 4: per-game strength-ladder rung (1..37), injected non-persisted for this
-    # game only. None = no rung this game (an ai:ladder player then fails closed). Range
+    # Per-game strength-ladder rung (1..41), injected non-persisted for this game
+    # only. None = no rung this game (an ai:ladder player then fails closed). Range
     # validated server-side (see new_game handler) -> 422 on out-of-range values.
     ladder_rung: Optional[int] = None
+
+
+class LadderStartGameRequest(BaseModel):
+    """Start a 升降级对弈 game. Deliberately carries NO rung and NO game_type.
+
+    The opponent tier comes from the player's own ladder state and the scoring
+    game type is issued by the server, so neither can be chosen by a client that
+    would like an easier opponent or a game that counts when it should not.
+    """
+
+    session_id: str
+    size: int = 19
+    komi: float = 6.5
+    rules: str = "japanese"
+    color: str = "B"
+    main_time: int = 600
+    byo_length: int = 30
+    byo_periods: int = 3
 
 
 class EditGameRequest(BaseModel):

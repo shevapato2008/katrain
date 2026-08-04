@@ -398,6 +398,39 @@ export const API = {
   },
   estimateRank: (strategy: string, settings: any): Promise<{ rank: string }> =>
     apiPost("/api/ai/estimate-rank", { strategy, settings }),
+  // 升降级对弈. The rung is never sent: the server reads it off the player's own
+  // ladder state, which is the whole basis for the promotion ledger meaning
+  // anything.
+  getLadderMe: async (token: string): Promise<LadderMe> => {
+    const res = await fetch("/api/ladder/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`ladder/me failed: ${res.status}`);
+    return res.json();
+  },
+
+  startLadderGame: async (
+    token: string,
+    body: {
+      session_id: string; size: number; komi: number; rules: string; color: string;
+      main_time: number; byo_length: number; byo_periods: number;
+    },
+  ): Promise<SessionResponse> => {
+    const res = await fetch("/api/ladder/start-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      // 409 carries {detail: {error, blocked_reason, rung}} when no legal
+      // opponent can be seated. Surface it rather than retrying with a weaker AI.
+      let detail: any = null;
+      try { detail = (await res.json())?.detail; } catch { /* non-JSON error body */ }
+      throw new Error(detail?.blocked_reason || detail?.error || `start-game failed: ${res.status}`);
+    }
+    return res.json();
+  },
+
   getLadderRungs: async (): Promise<{ rungs: LadderRung[] }> => {
     const response = await fetch('/api/ladder-rungs');
     if (!response.ok) throw new Error("Failed to fetch ladder rungs");

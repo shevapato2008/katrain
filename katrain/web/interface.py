@@ -229,10 +229,14 @@ class WebKaTrain(KaTrainBase):
         """
         return getattr(self, "suppress_auto_eval", False) and self.play_analyze_mode == MODE_PLAY
 
+    #: Game types whose result changes a rank, so analysis during play would be
+    #: cheating. `ai_ladder_ranked` is issued only by POST /api/ladder/start-game.
+    SCORING_GAME_TYPES = ("rated", "ranked", "ai_ladder_ranked")
+
     @property
     def analysis_allowed(self):
-        """R3/R5: rated/ranked games forbid ALL analysis (anti-cheat). Free games allow it."""
-        return getattr(self, "game_type", "free") not in ("rated", "ranked")
+        """R3/R5: games that move a rank forbid ALL analysis (anti-cheat). Free games allow it."""
+        return getattr(self, "game_type", "free") not in self.SCORING_GAME_TYPES
 
     def analysis_engine(self):
         """R6: engine used for analysis/review. The remote strong engine when configured

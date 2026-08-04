@@ -710,7 +710,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/undo")
     def undo_move(request: UndoRedoRequest):
         session = _get_session_or_404(manager, request.session_id)
-        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
+        from katrain.web.interface import WebKaTrain
+
+        if session.mode == "play" and getattr(session.katrain, "game_type", "free") in WebKaTrain.SCORING_GAME_TYPES:
             raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
@@ -1202,12 +1204,60 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             dispatcher = getattr(app.state, "repository_dispatcher", None)
             if dispatcher is not None:
-                await dispatcher.user_games_create(user_id=current_user.id, data=data)
+                recorded = await dispatcher.user_games_create(user_id=current_user.id, data=data)
             else:
-                app.state.user_game_repo.create(user_id=current_user.id, **data)
+                recorded = app.state.user_game_repo.create(user_id=current_user.id, **data)
             session._recorded = True
+
+            _settle_ladder_game(session, current_user, recorded, result)
         except Exception as e:
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
+
+    def _settle_ladder_game(session, current_user, recorded, result):
+        """Move the ladder rank, if this was a 升降级对弈 game that produced a winner.
+
+        Runs after the game row exists so the ledger can key on its id. The rank
+        move and its ledger row commit together inside `settle_game`; the game row
+        itself may live on a remote service, which is why the two are not one
+        transaction and why the ledger keys on a plain unique string.
+
+        Deliberately narrow: only a server-issued LADDER_GAME_TYPE session, only a
+        conclusive B+/W+ result, only when the seated rung is known.
+        """
+        from katrain.web.core.ladder_repo import LADDER_GAME_TYPE, settle_game
+
+        if getattr(session, "game_type", None) != LADDER_GAME_TYPE:
+            return
+        opponent_rung = getattr(session, "ladder_opponent_rung", None)
+        if opponent_rung is None:
+            logging.getLogger("katrain_web").error("ladder game finished with no seated rung; not scoring")
+            return
+
+        # Inconclusive games (no winner recorded, e.g. an abandoned or void game)
+        # never touch the ladder.
+        winner = (result or "")[:1]
+        if winner not in ("B", "W"):
+            return
+        players_info = session.katrain.players_info
+        human_color = next((bw for bw, info in players_info.items() if info.human), None)
+        if human_color is None:
+            return
+
+        game_id = (recorded or {}).get("id")
+        if not game_id:
+            logging.getLogger("katrain_web").error("ladder game has no recorded id; not scoring")
+            return
+
+        from katrain.web.core.db import SessionLocal
+
+        db = SessionLocal()
+        try:
+            settle_game(db, current_user.id, str(game_id), int(opponent_rung), won=(winner == human_color))
+        except Exception as e:
+            db.rollback()
+            logging.getLogger("katrain_web").error(f"Failed to settle ladder game {game_id}: {e}")
+        finally:
+            db.close()
 
     globals()["_RECORD_FN"] = _record_ai_game
 
@@ -1687,6 +1737,118 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 for level in LADDER_LEVELS
             ]
         }
+
+    # --- 升降级对弈 (rated play on the strength ladder) -----------------------
+    #
+    # The user's rung is the server's business, not the client's: the whole point
+    # of a promotion ledger is that you cannot pick your own opponent. Neither
+    # endpoint below accepts a rung, and `game_type` is issued here rather than
+    # echoed back from the request.
+
+    def _ladder_state_payload(state) -> dict:
+        from katrain.core.ladder import get_level
+
+        opponent = get_level(state.opponent_rung)
+        return {
+            "rung": state.rung,
+            "rank_name": state.rank_name,
+            "rung_above": None if state.rung_above is None else {
+                "rung": state.rung_above.rung, "rank_name": state.rung_above.rank_name},
+            "rung_below": None if state.rung_below is None else {
+                "rung": state.rung_below.rung, "rank_name": state.rung_below.rank_name},
+            "net_wins": state.net_wins,
+            "threshold": state.threshold,
+            "placement": None if state.placement is None else {
+                "games_done": state.placement.games_done,
+                "games_total": state.placement.games_total,
+                "lo": state.placement.lo,
+                "hi": state.placement.hi,
+            },
+            "recent": [
+                {"won": g.won, "opponent_rung": g.opponent_rung, "opponent_rank_name": g.opponent_rank_name}
+                for g in state.recent
+            ],
+            "next_opponent": {
+                "rung": opponent.rung,
+                "rank_name": opponent.rank_name,
+                # Reported straight off the catalogue. KATRAIN_LADDER_ALLOW_PROVISIONAL
+                # may let an uncertified rung be seated, but it never changes what
+                # this says -- the badge in the UI depends on the truth.
+                "certification_status": opponent.certification_status,
+                "availability": opponent.availability,
+                "route": opponent.route,
+            },
+            "playable": state.playable,
+            "blocked_reason": state.blocked_reason,
+        }
+
+    @app.get("/api/ladder/me")
+    def get_ladder_me(current_user: User = Depends(get_current_user)):
+        from katrain.web.core.db import SessionLocal
+        from katrain.web.core.ladder_repo import read_state
+
+        db = SessionLocal()
+        try:
+            return _ladder_state_payload(read_state(db, current_user.id))
+        finally:
+            db.close()
+
+    @app.post("/api/ladder/start-game")
+    def start_ladder_game(request: LadderStartGameRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.db import SessionLocal
+        from katrain.web.core.ladder_repo import LADDER_GAME_TYPE, read_state
+
+        session = manager.get_session(request.session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        db = SessionLocal()
+        try:
+            state = read_state(db, current_user.id)
+        finally:
+            db.close()
+
+        if not state.playable:
+            # 409, not 422: the request is well formed, the ladder just has no
+            # legal opponent to seat right now. Never substitute another AI.
+            raise HTTPException(
+                status_code=409,
+                detail={"error": "ladder_unavailable", "blocked_reason": state.blocked_reason,
+                        "rung": state.opponent_rung},
+            )
+
+        # Server-issued. The client cannot ask for a scoring game type, and it
+        # cannot ask for a rung -- both are decided here.
+        session.game_type = LADDER_GAME_TYPE
+        session.ladder_opponent_rung = state.opponent_rung
+
+        session.katrain.update_config("timer/main_time", request.main_time)
+        session.katrain.update_config("timer/byo_length", request.byo_length)
+        session.katrain.update_config("timer/byo_periods", request.byo_periods)
+        session.katrain.update_config("timer/paused", False)
+
+        # new_game FIRST so the rung is injected before an ai:ladder seat can exist.
+        # Seating the AI first leaves a window where it has no rung; it fails closed
+        # rather than playing an uncalibrated move, but it still logs an error and
+        # burns an engine query for nothing.
+        session.katrain(
+            "new_game",
+            size=request.size,
+            handicap=0,
+            komi=request.komi,
+            rules=request.rules,
+            game_type=LADDER_GAME_TYPE,
+            ladder_rung=state.opponent_rung,
+        )
+
+        human_bw = "B" if request.color == "B" else "W"
+        ai_bw = "W" if human_bw == "B" else "B"
+        session.katrain(
+            "update_player", bw=human_bw, player_type="player:human", player_subtype="player:human",
+            name=current_user.username,
+        )
+        session.katrain("update_player", bw=ai_bw, player_type="player:ai", player_subtype="ai:ladder")
+        return {"session_id": request.session_id, "state": session.katrain.get_state()}
 
     @app.post("/api/ai/estimate-rank")
     def estimate_rank(request: RankEstimationRequest):

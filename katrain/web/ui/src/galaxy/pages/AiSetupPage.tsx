@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
 import { API, type LadderRung } from '../../api';
+import LadderRankCard from '../components/play/LadderRankCard';
+// TEMPORARY: stands in for GET /api/ladder/me until S1 step 6 wires the endpoint.
+// See the deletion condition at the top of the fixture file.
+import { LADDER_ME_FIXTURE } from './__fixtures__/ladderMe.fixture';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -268,6 +272,71 @@ const AiSetupPage = () => {
 
     const strategyOptions = aiConstants?.options || {};
 
+    // Time controls. In rated play the on/off switch is locked open but the three
+    // values stay editable, so this block has to travel with the settings card
+    // rather than the opponent card.
+    const timeControls = (
+        <>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={timerEnabled}
+                            onChange={(e) => setTimerEnabled(e.target.checked)}
+                            disabled={isRated}
+                            // Locked open, not switched off. MUI's disabled palette drains
+                            // the track to near-invisible grey, which reads as "off" — the
+                            // opposite of what is true here. Keep the on-state colour and
+                            // let the adjacent caption carry the "you can't change this".
+                            sx={isRated ? {
+                                '& .Mui-disabled .MuiSwitch-thumb': { color: 'primary.main' },
+                                '& .Mui-disabled + .MuiSwitch-track': { bgcolor: 'primary.main', opacity: 0.5 },
+                            } : undefined}
+                        />
+                    }
+                    label={t('Enable Timer', 'Enable Timer')}
+                    sx={isRated ? { '& .MuiFormControlLabel-label.Mui-disabled': { color: 'text.secondary' } } : undefined}
+                />
+                {isRated && (
+                    <Typography variant="caption" color="text.disabled" sx={{ ml: 'auto' }}>
+                        {t('ladder:timer_locked', '升降级对局固定开启')}
+                    </Typography>
+                )}
+            </Box>
+
+            {timerEnabled && (
+                <Box sx={{ mt: 1 }}>
+                    {/* The unit lives in the value, so these labels must NOT carry one.
+                        The older `main time` / `byoyomi length` keys bake "(分钟)" /
+                        "(秒)" into the msgstr and would render it twice; they stay in
+                        use by components/TimeSettingsDialog.tsx, where the label is the
+                        only place the unit appears. Hence separate keys here. */}
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{t('time:main_time', '保留时间')}</span>
+                            <strong>{mainTime} {t('time:minutes', '分钟')}</strong>
+                        </Typography>
+                        <Slider value={mainTime} min={0} max={60} step={1} onChange={(_, v) => setMainTime(v as number)} />
+                    </Box>
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{t('time:byoyomi_length', '每步读秒')}</span>
+                            <strong>{byoLength} {t('time:seconds', '秒')}</strong>
+                        </Typography>
+                        <Slider value={byoLength} min={5} max={60} step={5} onChange={(_, v) => setByoLength(v as number)} />
+                    </Box>
+                    <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{t('time:byoyomi_periods', '读秒次数')}</span>
+                            <strong>{byoPeriods} {t('time:times', '次')}</strong>
+                        </Typography>
+                        <Slider value={byoPeriods} min={1} max={10} step={1} onChange={(_, v) => setByoPeriods(v as number)} />
+                    </Box>
+                </Box>
+            )}
+        </>
+    );
+
     return (
         <Box sx={{ p: 4, maxWidth: 1000, mx: 'auto' }}>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -276,10 +345,12 @@ const AiSetupPage = () => {
             
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, alignItems: 'start' }}>
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
-                    <Typography variant="h6" gutterBottom>{t('Board & Rules', 'Board & Rules')}</Typography>
-                    
+                    <Typography variant="h6" gutterBottom>
+                        {isRated ? t('Game Settings', '对局设置') : t('Board & Rules', 'Board & Rules')}
+                    </Typography>
+
                     <FormControl fullWidth margin="normal">
                         <InputLabel>{t('board size', 'Board Size')}</InputLabel>
                         <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
@@ -320,8 +391,18 @@ const AiSetupPage = () => {
                             />
                         </Box>
                     )}
+
+                    {isRated && (
+                        <>
+                            <Divider sx={{ my: 3 }} />
+                            {timeControls}
+                        </>
+                    )}
                 </Paper>
 
+                {isRated ? (
+                    <LadderRankCard me={LADDER_ME_FIXTURE} />
+                ) : (
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
                     <Typography variant="h6" gutterBottom>{t('Opponent & Time', 'Opponent & Time')}</Typography>
 
@@ -347,7 +428,7 @@ const AiSetupPage = () => {
                         </Select>
                     </FormControl>
 
-                    {opponent === 'ai:human' || isRated ? (
+                    {opponent === 'ai:human' ? (
                         <Box sx={{ mt: 2, px: 1 }}>
                             <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span>{t('Rank', 'Rank')}:</span>
@@ -408,44 +489,23 @@ const AiSetupPage = () => {
                     )}
 
                     <Divider sx={{ my: 3 }} />
-                    
-                    <FormControlLabel
-                        control={<Switch checked={timerEnabled} onChange={(e) => setTimerEnabled(e.target.checked)} disabled={isRated} />}
-                        label={t('Enable Timer', 'Enable Timer')}
-                        sx={{ mb: 1 }}
-                    />
 
-                    {timerEnabled && (
-                        <Box sx={{ mt: 1 }}>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="caption" color="text.secondary">{t('main time', 'Main Time')} ({t('Minutes', 'Minutes')}): {mainTime}</Typography>
-                                <Slider 
-                                    value={mainTime} min={0} max={60} step={1} 
-                                    onChange={(_, v) => setMainTime(v as number)}
-                                />
-                            </Box>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="caption" color="text.secondary">{t('byoyomi length', 'Byo-yomi')} ({t('Seconds', 'Seconds')}): {byoLength}</Typography>
-                                <Slider 
-                                    value={byoLength} min={5} max={60} step={5} 
-                                    onChange={(_, v) => setByoLength(v as number)}
-                                />
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color="text.secondary">{t('byoyomi periods', 'Periods')}: {byoPeriods}</Typography>
-                                <Slider 
-                                    value={byoPeriods} min={1} max={10} step={1} 
-                                    onChange={(_, v) => setByoPeriods(v as number)}
-                                />
-                            </Box>
-                        </Box>
-                    )}
+                    {timeControls}
                 </Paper>
+                )}
             </Box>
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button onClick={() => navigate('/galaxy/play')}>{t('cancel', 'Cancel')}</Button>
-                <Button variant="contained" size="large" onClick={handleStartGame} disabled={loading}>
+                {/* An uncertified rung has no legal opponent to seat, so the start
+                    button must be dead — the card explains why. Never fall back to
+                    another AI. */}
+                <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleStartGame}
+                    disabled={loading || (isRated && !LADDER_ME_FIXTURE.playable)}
+                >
                     {t('btn:Play', 'Start Game')}
                 </Button>
             </Box>

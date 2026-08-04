@@ -107,11 +107,56 @@ export interface EngineLevel {
   ref_rank: string;
 }
 
-// One rung of the local 棋力阶梯 (strength-ladder) 37-rung opponent — the UI-facing
+// One rung of the local 棋力阶梯 (strength-ladder) 41-rung opponent — the UI-facing
 // subset served by GET /api/ladder-rungs (see katrain/web/server.py). star阵-free.
 export interface LadderRung {
   rung: number;
   rank_name: string;
+}
+
+// --- 升降级对弈 (rated play on the 41-tier ladder) ---
+// Served by GET /api/ladder/me. This is the ONLY rank a user has: it moves on
+// ladder games against the AI and on nothing else. The opponent rung is decided
+// server-side and is deliberately absent from the start-game request body.
+
+export interface LadderTierRef {
+  rung: number;
+  rank_name: string;
+}
+
+export interface LadderRecentGame {
+  won: boolean;
+  opponent_rung: number;
+  opponent_rank_name: string;
+}
+
+export interface LadderPlacement {
+  games_done: number;   // valid results so far, 0..games_total-1 while in progress
+  games_total: number;  // 5 — resolves exactly the 32-rung candidate window
+  lo: number;           // current binary-search window, inclusive
+  hi: number;
+}
+
+export interface LadderOpponent extends LadderTierRef {
+  // Reported verbatim from katrain/core/ladder.py. A dev-only server switch may
+  // let a provisional rung be played, but these two fields never lie about it.
+  certification_status: 'provisional' | 'certified';
+  availability: 'available' | 'unavailable';
+  route: 'local' | 'server';
+}
+
+export interface LadderMe {
+  rung: number | null;         // null = not yet placed
+  rank_name: string | null;
+  rung_above: LadderTierRef | null;   // null at rung 41
+  rung_below: LadderTierRef | null;   // null at rung 1
+  net_wins: number;            // running total, resets to 0 on promotion/demotion
+  threshold: number;           // |net_wins| that moves a rung (3)
+  placement: LadderPlacement | null;  // non-null exactly while placing
+  recent: LadderRecentGame[];  // up to 5, oldest first; ledger-derived only
+  next_opponent: LadderOpponent;
+  playable: boolean;           // false => start button disabled, no AI substitution
+  blocked_reason: 'not_certified' | 'engine_unavailable' | null;
 }
 
 export interface PlatformStatusResponse {

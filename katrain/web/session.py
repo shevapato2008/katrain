@@ -25,6 +25,7 @@ class WebSession:
     last_state: Optional[Dict] = None
     pending_count_request: Optional[int] = None  # User ID that initiated count request
     pending_count_timestamp: Optional[float] = None  # Timestamp of count request
+    game_ended: bool = False
 
     def touch(self):
         self.last_access = time.time()
@@ -147,6 +148,8 @@ class SessionManager:
             session = self.get_session(session_id)
         except KeyError:
             return
+        if state.get("end_result"):
+            session.game_ended = True
         session.last_state = state
         state["sockets_count"] = len(session.sockets)
         self._schedule_broadcast(session, {"type": "game_update", "state": state})

@@ -309,7 +309,6 @@ const GameRoomPage = () => {
                         <Board
                             gameState={gameState}
                             onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
-                            onNavigate={onNavigate}
                             analysisToggles={{ coords: true, numbers: false }}
                         />
                     </div>
@@ -317,7 +316,6 @@ const GameRoomPage = () => {
                         <Board3D
                             gameState={gameState}
                             onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
-                            onNavigate={onNavigate}
                             analysisToggles={{ coords: true, numbers: false }}
                         />
                     )}

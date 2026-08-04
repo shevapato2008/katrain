@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -45,6 +45,31 @@ describe('Header', () => {
   it('renders current time', () => {
     renderWithTheme(<Header username="张三" />);
     expect(screen.getByTestId('clock')).toBeInTheDocument();
+  });
+
+  it('renders the native home action before identity when enabled', () => {
+    const onHome = vi.fn();
+    const { container } = renderWithTheme(<Header username="张三" showHome onHome={onHome} />);
+
+    const home = screen.getByRole('button', { name: '返回智星盒主页' });
+    expect(home).toHaveTextContent('主页');
+    expect(home).toHaveStyle({ minWidth: '88px', minHeight: '48px', fontSize: '14px' });
+    expect(home.compareDocumentPosition(screen.getByTestId('header-username')) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
+
+    fireEvent.click(home);
+    expect(onHome).toHaveBeenCalledOnce();
+    expect(container.querySelector('#smartbox-home-btn')).not.toBeInTheDocument();
+  });
+
+  it('uses a 56px header so the 48px home action is not clipped', () => {
+    const { container } = renderWithTheme(<Header username="张三" showHome />);
+    expect(container.querySelector('header')).toHaveStyle({ height: '56px' });
+  });
+
+  it('does not render the native home action when disabled', () => {
+    renderWithTheme(<Header username="张三" showHome={false} />);
+    expect(screen.queryByRole('button', { name: '返回智星盒主页' })).not.toBeInTheDocument();
   });
 
   it('renders a translated 48 by 48 Settings button', () => {

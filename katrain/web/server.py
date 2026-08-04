@@ -864,6 +864,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         app.state.ranked_analysis_activity.end_session(session.session_id)
         with persistent_analysis_activity(current_user, session, "new-game", "new game analysis"):
             with session.lock:
+                session.game_ended = False
                 # A new game is starting: clear the "already recorded" guard from any
                 # previous game on this (possibly reused) session so it becomes recordable again.
                 session._recorded = False
@@ -878,7 +879,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         )
                         if p.name:
                             session.katrain.game.root.set_property("P" + bw, p.name)
-
                 if request.clear_cache:
                     session.katrain.engine.on_new_game()
 
@@ -904,6 +904,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         mode = request.mode
         settings = request.settings
         with session.lock:
+            session.game_ended = False
             # A (re)configured game is starting: clear the "already recorded" guard from
             # any previous game on this (possibly reused) session so it becomes recordable again.
             session._recorded = False
@@ -1054,15 +1055,47 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/nav")
-    def navigate(request: NavRequest, current_user: User = Depends(get_current_user)):
+    def navigate(request: NavRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "navigate")
         _guard_engine_move_pending(app, request.session_id)
-        with persistent_analysis_activity(current_user, session, "nav", "navigation analysis"):
+        gateway = getattr(app.state, "platform_gateway", None)
+        is_platform_game = gateway and gateway.is_platform_game(request.session_id)
+        is_native_multiplayer = not is_platform_game and (
+            isinstance(session.player_b_id, int) or isinstance(session.player_w_id, int)
+        )
+
+        with session.lock:
+            if is_native_multiplayer:
+                if not session.game_ended:
+                    current_state = session.katrain.get_state()
+                    session.game_ended = bool(current_state.get("end_result"))
+                if not session.game_ended:
+                    raise HTTPException(status_code=409, detail="navigation disabled during active multiplayer game")
+                if current_user is None:
+                    raise HTTPException(status_code=401, detail="Authentication required for multiplayer navigation")
+
+        # Anonymous sessions are created without initial analysis and remain usable for
+        # legacy/plain navigation. Authenticated navigation retains the ranked-analysis
+        # lease so an in-flight free-session analysis cannot race a ranked start.
+        if current_user is None:
             with session.lock:
                 session.katrain("nav", request.node_id)
                 state = session.katrain.get_state()
                 session.last_state = state
+        else:
+            allowed_user_ids = {
+                user_id
+                for user_id in (session.user_id, session.player_b_id, session.player_w_id)
+                if isinstance(user_id, int) and user_id > 0
+            }
+            if allowed_user_ids and current_user.id not in allowed_user_ids:
+                raise HTTPException(status_code=403, detail="navigation is restricted to a session participant")
+            with persistent_analysis_activity(current_user, session, "nav", "navigation analysis"):
+                with session.lock:
+                    session.katrain("nav", request.node_id)
+                    state = session.katrain.get_state()
+                    session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/ai-move")
@@ -1557,6 +1590,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Set end state on the current node (game.end_result reads from current_node.end_state)
         session.katrain.game.game_result = result
         session.katrain.game.current_node.end_state = result
+        session.game_ended = True
 
         # Record multiplayer game result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None

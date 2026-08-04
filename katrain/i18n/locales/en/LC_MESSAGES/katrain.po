@@ -2689,3 +2689,206 @@ msgstr "Strength Ladder"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "Rank Level"
+
+msgid "ladder:your_rank"
+msgstr "Your rank"
+
+msgid "ladder:net_wins"
+msgstr "Net wins"
+
+msgid "ladder:to_promote"
+msgstr "{n} more wins to reach {rank}"
+
+msgid "ladder:to_demote"
+msgstr "{n} more losses drop you to {rank}"
+
+msgid "ladder:to_promote_plain"
+msgstr "{n} more wins to move up a tier."
+
+msgid "ladder:to_demote_plain"
+msgstr "{n} more losses drop you a tier."
+
+msgid "ladder:top_rung"
+msgstr "Top tier reached"
+
+msgid "ladder:promote_one"
+msgstr "Up a tier"
+
+msgid "ladder:demote_one"
+msgstr "Down a tier"
+
+msgid "ladder:recent_n"
+msgstr "Last {n} games"
+
+msgid "ladder:recent_none"
+msgstr "No settled games yet"
+
+msgid "ladder:recent_note"
+msgstr "Ranked ladder games only"
+
+msgid "ladder:win"
+msgstr "W"
+
+msgid "ladder:loss"
+msgstr "L"
+
+msgid "ladder:this_game_win"
+msgstr "You won this game"
+
+msgid "ladder:this_game_loss"
+msgstr "You lost this game"
+
+msgid "ladder:placement"
+msgstr "Placement"
+
+msgid "ladder:placement_progress"
+msgstr "Progress"
+
+msgid "ladder:placement_game_n"
+msgstr "Game {n}"
+
+msgid "ladder:placement_of_total"
+msgstr "of {n}"
+
+msgid "ladder:placement_note"
+msgstr "Each result narrows the range."
+
+msgid "ladder:placement_left"
+msgstr "{n} more games to set your rank."
+
+msgid "ladder:placement_game_done"
+msgstr "Placement game {n}"
+
+msgid "ladder:placement_done"
+msgstr "Placement complete"
+
+msgid "ladder:placement_done_note"
+msgstr "From now on, ±{n} net wins move you a tier."
+
+msgid "ladder:start_placement"
+msgstr "Start placement game"
+
+msgid "ladder:promoted"
+msgstr "Promoted"
+
+msgid "ladder:demoted"
+msgstr "Demoted"
+
+msgid "ladder:promoted_note"
+msgstr "Net wins +{n} — up one tier, counter reset."
+
+msgid "ladder:demoted_note"
+msgstr "Net wins -{n} — down one tier, counter reset."
+
+msgid "ladder:this_game_opponent"
+msgstr "This game's opponent"
+
+msgid "ladder:fixed_setup"
+msgstr "This game"
+
+msgid "ladder:setup_size"
+msgstr "{n}×{n}"
+
+msgid "ladder:setup_komi"
+msgstr "komi {n}"
+
+msgid "ladder:rules_chinese"
+msgstr "Chinese rules"
+
+msgid "ladder:rules_japanese"
+msgstr "Japanese rules"
+
+msgid "ladder:rules_korean"
+msgstr "Korean rules"
+
+msgid "ladder:rules_aga"
+msgstr "AGA rules"
+
+msgid "ladder:timer_locked"
+msgstr "Always on for ranked games"
+
+msgid "ladder:uncertified"
+msgstr "Uncalibrated"
+
+msgid "ladder:blocked_uncertified"
+msgstr ""
+"The strength profile for {rank} is still being calibrated, so no game can "
+"start."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "You can play once calibration is done."
+
+msgid "ladder:blocked_engine"
+msgstr "The engine is unavailable, so no game can start."
+
+msgid "ladder:blocked_engine_2"
+msgstr "You can play once the engine is back."
+
+msgid "ladder:cannot_start"
+msgstr "Cannot start yet"
+
+msgid "ladder:loading"
+msgstr "Loading your rank…"
+
+msgid "ladder:load_failed"
+msgstr "Could not load your rank, so no game can start."
+
+msgid "ladder:need_login"
+msgstr "Sign in to play ranked ladder games."
+
+msgid "ladder:unscored"
+msgstr "This game did not count"
+
+msgid "ladder:unscored_inconclusive"
+msgstr ""
+"This game had no winner, so it does not count and does not use up a "
+"placement game."
+
+msgid "ladder:unscored_already"
+msgstr "This game was already settled; your rank did not change again."
+
+msgid "ladder:unscored_in_progress"
+msgstr "This game is not finished yet."
+
+msgid "ladder:unscored_error"
+msgstr ""
+"This game could not be written to the ladder ledger, so your rank did not "
+"change. Please report it to us."
+
+msgid "ladder:got_it"
+msgstr "Got it"
+
+msgid "lobby:placement_required"
+msgstr ""
+"Finish the 5 placement games in Ranked Play before joining ranked human "
+"matchmaking."
+
+msgid "My Color"
+msgstr "My colour"
+
+msgid "Black Stone"
+msgstr "● Black"
+
+msgid "White Stone"
+msgstr "○ White"
+
+msgid "Byoyomi only 30s x3"
+msgstr "Byo-yomi only"
+
+msgid "10 min + 3x30s"
+msgstr "10 min + 3×30s"
+
+msgid "20 min + 3x30s"
+msgstr "20 min + 3×30s"
+
+msgid "30 min + 3x30s"
+msgstr "30 min + 3×30s"
+
+msgid "Ranked Game"
+msgstr "Ranked Play"
+
+msgid "Free Game"
+msgstr "Free Play"
+
+msgid "retry"
+msgstr "Retry"

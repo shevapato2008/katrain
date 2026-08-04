@@ -137,11 +137,10 @@ const LadderRankBand = ({ me }: { me: LadderMe }) => {
                         <SegLabel>{t('ladder:placement_progress', '进度')}</SegLabel>
                         <PlacementSteps done={me.placement!.games_done} total={me.placement!.games_total} />
                         <Typography sx={{ fontSize: 11.5, color: 'text.disabled', mt: '12px' }}>
-                            {t('ladder:placement_note', '每一局的胜负都会缩小范围。')}
-                            {/* Both keys are whole sentences ending in 。 — joining them with
-                                a middle dot produced "范围。 · 再打". They sit next to each
-                                other unseparated instead, which reads correctly in any
-                                language whose sentences carry their own terminator. */}
+                            {t('ladder:placement_note', '每一局的胜负都会缩小范围。')}{' '}
+                            {/* Both keys are whole sentences with their own terminator, so
+                                they are joined by a plain space. A middle dot produced
+                                "范围。 · 再打"; no separator at all produced "range.5 more". */}
                             {/* "再打 N 局" counts the game you are about to start; "还剩 N 局"
                                 leaves that ambiguous. N is games_total - games_done. */}
                             {t('ladder:placement_left', '再打 {n} 局定下你的段位。').replace(

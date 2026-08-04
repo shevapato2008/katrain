@@ -2512,3 +2512,198 @@ msgstr "棋力阶梯"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "棋力等级"
+
+msgid "ladder:your_rank"
+msgstr "你的段位"
+
+msgid "ladder:net_wins"
+msgstr "净胜"
+
+msgid "ladder:to_promote"
+msgstr "再胜 {n} 局升 {rank}"
+
+msgid "ladder:to_demote"
+msgstr "再负 {n} 局降 {rank}"
+
+msgid "ladder:to_promote_plain"
+msgstr "再胜 {n} 局升一档。"
+
+msgid "ladder:to_demote_plain"
+msgstr "再负 {n} 局降一档。"
+
+msgid "ladder:top_rung"
+msgstr "已是最高档"
+
+msgid "ladder:promote_one"
+msgstr "升一档"
+
+msgid "ladder:demote_one"
+msgstr "降一档"
+
+msgid "ladder:recent_n"
+msgstr "最近 {n} 局"
+
+msgid "ladder:recent_none"
+msgstr "还没有已结算的对局"
+
+msgid "ladder:recent_note"
+msgstr "只统计升降级对弈"
+
+msgid "ladder:win"
+msgstr "胜"
+
+msgid "ladder:loss"
+msgstr "负"
+
+msgid "ladder:this_game_win"
+msgstr "本局胜"
+
+msgid "ladder:this_game_loss"
+msgstr "本局负"
+
+msgid "ladder:placement"
+msgstr "定级赛"
+
+msgid "ladder:placement_progress"
+msgstr "进度"
+
+msgid "ladder:placement_game_n"
+msgstr "第 {n} 局"
+
+msgid "ladder:placement_of_total"
+msgstr "/ 共 {n} 局"
+
+msgid "ladder:placement_note"
+msgstr "每一局的胜负都会缩小范围。"
+
+msgid "ladder:placement_left"
+msgstr "再打 {n} 局定下你的段位。"
+
+msgid "ladder:placement_game_done"
+msgstr "定级赛 第 {n} 局"
+
+msgid "ladder:placement_done"
+msgstr "定级完成"
+
+msgid "ladder:placement_done_note"
+msgstr "之后每一局都按净胜 ±{n} 升降一档。"
+
+msgid "ladder:start_placement"
+msgstr "开始定级赛"
+
+msgid "ladder:promoted"
+msgstr "升段"
+
+msgid "ladder:demoted"
+msgstr "降段"
+
+msgid "ladder:promoted_note"
+msgstr "净胜 +{n}，升一档，计数归零。"
+
+msgid "ladder:demoted_note"
+msgstr "净胜 -{n}，降一档，计数归零。"
+
+msgid "ladder:this_game_opponent"
+msgstr "本局对手"
+
+msgid "ladder:fixed_setup"
+msgstr "本局设定"
+
+msgid "ladder:setup_size"
+msgstr "{n} 路"
+
+msgid "ladder:setup_komi"
+msgstr "贴 {n} 目"
+
+msgid "ladder:rules_chinese"
+msgstr "中国规则"
+
+msgid "ladder:rules_japanese"
+msgstr "日本规则"
+
+msgid "ladder:rules_korean"
+msgstr "韩国规则"
+
+msgid "ladder:rules_aga"
+msgstr "AGA 规则"
+
+msgid "ladder:timer_locked"
+msgstr "升降级对局固定开启"
+
+msgid "ladder:uncertified"
+msgstr "未标定"
+
+msgid "ladder:blocked_uncertified"
+msgstr "{rank} 的棋力配置还在标定中，现在开不了局。"
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "标定完成后即可对局。"
+
+msgid "ladder:blocked_engine"
+msgstr "引擎当前不可用，暂时开不了局。"
+
+msgid "ladder:blocked_engine_2"
+msgstr "引擎恢复后即可对局。"
+
+msgid "ladder:cannot_start"
+msgstr "暂时开不了局"
+
+msgid "ladder:loading"
+msgstr "正在读取你的段位…"
+
+msgid "ladder:load_failed"
+msgstr "读取段位失败，暂时开不了局。"
+
+msgid "ladder:need_login"
+msgstr "登录后才能参加升降级对弈。"
+
+msgid "ladder:unscored"
+msgstr "本局未计入升降级"
+
+msgid "ladder:unscored_inconclusive"
+msgstr "这局没有分出胜负，不计入升降级，也不占定级赛的局数。"
+
+msgid "ladder:unscored_already"
+msgstr "这局已经结算过了，段位没有再变。"
+
+msgid "ladder:unscored_in_progress"
+msgstr "这局还没结束。"
+
+msgid "ladder:unscored_error"
+msgstr "这局没能记进升降级账本，段位没有变动。请把这一局报给我们。"
+
+msgid "ladder:got_it"
+msgstr "知道了"
+
+msgid "lobby:placement_required"
+msgstr "先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。"
+
+msgid "My Color"
+msgstr "我执"
+
+msgid "Black Stone"
+msgstr "● 黑"
+
+msgid "White Stone"
+msgstr "○ 白"
+
+msgid "Byoyomi only 30s x3"
+msgstr "仅读秒"
+
+msgid "10 min + 3x30s"
+msgstr "10分+3×30秒"
+
+msgid "20 min + 3x30s"
+msgstr "20分+3×30秒"
+
+msgid "30 min + 3x30s"
+msgstr "30分+3×30秒"
+
+msgid "Ranked Game"
+msgstr "升降级对弈"
+
+msgid "Free Game"
+msgstr "自由对弈"
+
+msgid "retry"
+msgstr "重试"

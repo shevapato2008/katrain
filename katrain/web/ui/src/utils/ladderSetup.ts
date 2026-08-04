@@ -24,7 +24,9 @@ export const formatLadderSetup = (
         korean: t('ladder:rules_korean', '韩国规则'),
         aga: t('ladder:rules_aga', 'AGA 规则'),
     };
-    const size = t('ladder:setup_size', '{n} 路').replace('{n}', String(setup.size));
-    const komi = t('ladder:setup_komi', '贴 {n} 目').replace('{n}', String(setup.komi));
+    // replaceAll, not replace: the English form of this one is "{n}×{n}", and a
+    // single replace would render "19×{n}".
+    const size = t('ladder:setup_size', '{n} 路').replaceAll('{n}', String(setup.size));
+    const komi = t('ladder:setup_komi', '贴 {n} 目').replaceAll('{n}', String(setup.komi));
     return `${size} · ${rules[setup.rules] ?? setup.rules} · ${komi}`;
 };

@@ -2680,3 +2680,198 @@ msgstr "棋力ステップ"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "棋力レベル"
+
+msgid "ladder:your_rank"
+msgstr "あなたの段位"
+
+msgid "ladder:net_wins"
+msgstr "純勝ち"
+
+msgid "ladder:to_promote"
+msgstr "あと {n} 勝で {rank} に昇段"
+
+msgid "ladder:to_demote"
+msgstr "あと {n} 敗で {rank} に降段"
+
+msgid "ladder:to_promote_plain"
+msgstr "あと {n} 勝で 1 段位昇格。"
+
+msgid "ladder:to_demote_plain"
+msgstr "あと {n} 敗で 1 段位降格。"
+
+msgid "ladder:top_rung"
+msgstr "最高段位です"
+
+msgid "ladder:promote_one"
+msgstr "1 段位昇格"
+
+msgid "ladder:demote_one"
+msgstr "1 段位降格"
+
+msgid "ladder:recent_n"
+msgstr "直近 {n} 局"
+
+msgid "ladder:recent_none"
+msgstr "確定した対局はまだありません"
+
+msgid "ladder:recent_note"
+msgstr "昇降級戦のみ集計"
+
+msgid "ladder:win"
+msgstr "勝"
+
+msgid "ladder:loss"
+msgstr "敗"
+
+msgid "ladder:this_game_win"
+msgstr "この局は勝ち"
+
+msgid "ladder:this_game_loss"
+msgstr "この局は負け"
+
+msgid "ladder:placement"
+msgstr "認定戦"
+
+msgid "ladder:placement_progress"
+msgstr "進捗"
+
+msgid "ladder:placement_game_n"
+msgstr "第 {n} 局"
+
+msgid "ladder:placement_of_total"
+msgstr "/ 全 {n} 局"
+
+msgid "ladder:placement_note"
+msgstr "一局ごとの勝敗で範囲が絞られます。"
+
+msgid "ladder:placement_left"
+msgstr "あと {n} 局で段位が決まります。"
+
+msgid "ladder:placement_game_done"
+msgstr "認定戦 第 {n} 局"
+
+msgid "ladder:placement_done"
+msgstr "認定完了"
+
+msgid "ladder:placement_done_note"
+msgstr "以降は純勝ち ±{n} で 1 段位昇降します。"
+
+msgid "ladder:start_placement"
+msgstr "認定戦を開始"
+
+msgid "ladder:promoted"
+msgstr "昇段"
+
+msgid "ladder:demoted"
+msgstr "降段"
+
+msgid "ladder:promoted_note"
+msgstr "純勝ち +{n}、1 段位昇格、カウントはリセット。"
+
+msgid "ladder:demoted_note"
+msgstr "純勝ち -{n}、1 段位降格、カウントはリセット。"
+
+msgid "ladder:this_game_opponent"
+msgstr "この局の相手"
+
+msgid "ladder:fixed_setup"
+msgstr "この局の設定"
+
+msgid "ladder:setup_size"
+msgstr "{n} 路"
+
+msgid "ladder:setup_komi"
+msgstr "コミ {n} 目"
+
+msgid "ladder:rules_chinese"
+msgstr "中国ルール"
+
+msgid "ladder:rules_japanese"
+msgstr "日本ルール"
+
+msgid "ladder:rules_korean"
+msgstr "韓国ルール"
+
+msgid "ladder:rules_aga"
+msgstr "AGA ルール"
+
+msgid "ladder:timer_locked"
+msgstr "昇降級戦では常にオン"
+
+msgid "ladder:uncertified"
+msgstr "未較正"
+
+msgid "ladder:blocked_uncertified"
+msgstr "{rank} の棋力設定は較正中のため、今は対局を開始できません。"
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "較正が完了すれば対局できます。"
+
+msgid "ladder:blocked_engine"
+msgstr "エンジンが利用できないため、今は対局を開始できません。"
+
+msgid "ladder:blocked_engine_2"
+msgstr "エンジンが復旧すれば対局できます。"
+
+msgid "ladder:cannot_start"
+msgstr "今は開始できません"
+
+msgid "ladder:loading"
+msgstr "段位を読み込み中…"
+
+msgid "ladder:load_failed"
+msgstr "段位を読み込めなかったため、対局を開始できません。"
+
+msgid "ladder:need_login"
+msgstr "昇降級戦に参加するにはログインしてください。"
+
+msgid "ladder:unscored"
+msgstr "この局は昇降級に計上されません"
+
+msgid "ladder:unscored_inconclusive"
+msgstr "この局は勝敗がつかなかったため、昇降級に計上されず、認定戦の局数も消費しません。"
+
+msgid "ladder:unscored_already"
+msgstr "この局は既に精算済みで、段位はそれ以上変わりません。"
+
+msgid "ladder:unscored_in_progress"
+msgstr "この局はまだ終わっていません。"
+
+msgid "ladder:unscored_error"
+msgstr "この局を昇降級の記録に書き込めなかったため、段位は変わっていません。この対局をご報告ください。"
+
+msgid "ladder:got_it"
+msgstr "了解"
+
+msgid "lobby:placement_required"
+msgstr "「昇降級戦」で認定戦 5 局を終えてから、対人ランク戦に参加できます。"
+
+msgid "My Color"
+msgstr "自分の石"
+
+msgid "Black Stone"
+msgstr "● 黒"
+
+msgid "White Stone"
+msgstr "○ 白"
+
+msgid "Byoyomi only 30s x3"
+msgstr "秒読みのみ"
+
+msgid "10 min + 3x30s"
+msgstr "10分+3×30秒"
+
+msgid "20 min + 3x30s"
+msgstr "20分+3×30秒"
+
+msgid "30 min + 3x30s"
+msgstr "30分+3×30秒"
+
+msgid "Ranked Game"
+msgstr "昇降級戦"
+
+msgid "Free Game"
+msgstr "自由対局"
+
+msgid "retry"
+msgstr "再試行"

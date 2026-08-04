@@ -2725,3 +2725,208 @@ msgstr "Stärkeleiter"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "Rangstufe"
+
+msgid "ladder:your_rank"
+msgstr "Dein Rang"
+
+msgid "ladder:net_wins"
+msgstr "Netto-Siege"
+
+msgid "ladder:to_promote"
+msgstr "Noch {n} Siege bis {rank}"
+
+msgid "ladder:to_demote"
+msgstr "Noch {n} Niederlagen bis {rank}"
+
+msgid "ladder:to_promote_plain"
+msgstr "Noch {n} Siege für eine Stufe nach oben."
+
+msgid "ladder:to_demote_plain"
+msgstr "Noch {n} Niederlagen für eine Stufe nach unten."
+
+msgid "ladder:top_rung"
+msgstr "Höchste Stufe erreicht"
+
+msgid "ladder:promote_one"
+msgstr "Eine Stufe hoch"
+
+msgid "ladder:demote_one"
+msgstr "Eine Stufe runter"
+
+msgid "ladder:recent_n"
+msgstr "Letzte {n} Partien"
+
+msgid "ladder:recent_none"
+msgstr "Noch keine gewerteten Partien"
+
+msgid "ladder:recent_note"
+msgstr "Nur Ranglistenpartien"
+
+msgid "ladder:win"
+msgstr "S"
+
+msgid "ladder:loss"
+msgstr "N"
+
+msgid "ladder:this_game_win"
+msgstr "Diese Partie gewonnen"
+
+msgid "ladder:this_game_loss"
+msgstr "Diese Partie verloren"
+
+msgid "ladder:placement"
+msgstr "Einstufung"
+
+msgid "ladder:placement_progress"
+msgstr "Fortschritt"
+
+msgid "ladder:placement_game_n"
+msgstr "Partie {n}"
+
+msgid "ladder:placement_of_total"
+msgstr "von {n}"
+
+msgid "ladder:placement_note"
+msgstr "Jedes Ergebnis grenzt den Bereich ein."
+
+msgid "ladder:placement_left"
+msgstr "Noch {n} Partien bis zu deinem Rang."
+
+msgid "ladder:placement_game_done"
+msgstr "Einstufungspartie {n}"
+
+msgid "ladder:placement_done"
+msgstr "Einstufung abgeschlossen"
+
+msgid "ladder:placement_done_note"
+msgstr "Ab jetzt bewegen ±{n} Netto-Siege eine Stufe."
+
+msgid "ladder:start_placement"
+msgstr "Einstufungspartie starten"
+
+msgid "ladder:promoted"
+msgstr "Aufgestiegen"
+
+msgid "ladder:demoted"
+msgstr "Abgestiegen"
+
+msgid "ladder:promoted_note"
+msgstr "Netto +{n} — eine Stufe hoch, Zähler zurückgesetzt."
+
+msgid "ladder:demoted_note"
+msgstr "Netto -{n} — eine Stufe runter, Zähler zurückgesetzt."
+
+msgid "ladder:this_game_opponent"
+msgstr "Gegner dieser Partie"
+
+msgid "ladder:fixed_setup"
+msgstr "Diese Partie"
+
+msgid "ladder:setup_size"
+msgstr "{n}×{n}"
+
+msgid "ladder:setup_komi"
+msgstr "Komi {n}"
+
+msgid "ladder:rules_chinese"
+msgstr "Chinesische Regeln"
+
+msgid "ladder:rules_japanese"
+msgstr "Japanische Regeln"
+
+msgid "ladder:rules_korean"
+msgstr "Koreanische Regeln"
+
+msgid "ladder:rules_aga"
+msgstr "AGA-Regeln"
+
+msgid "ladder:timer_locked"
+msgstr "Bei Ranglistenpartien immer an"
+
+msgid "ladder:uncertified"
+msgstr "Nicht kalibriert"
+
+msgid "ladder:blocked_uncertified"
+msgstr ""
+"Das Stärkeprofil für {rank} wird noch kalibriert, daher kann keine Partie "
+"starten."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "Nach der Kalibrierung kannst du spielen."
+
+msgid "ladder:blocked_engine"
+msgstr "Die Engine ist nicht verfügbar, daher kann keine Partie starten."
+
+msgid "ladder:blocked_engine_2"
+msgstr "Sobald die Engine wieder da ist, kannst du spielen."
+
+msgid "ladder:cannot_start"
+msgstr "Start noch nicht möglich"
+
+msgid "ladder:loading"
+msgstr "Rang wird geladen …"
+
+msgid "ladder:load_failed"
+msgstr "Rang konnte nicht geladen werden, daher kann keine Partie starten."
+
+msgid "ladder:need_login"
+msgstr "Melde dich an, um Ranglistenpartien zu spielen."
+
+msgid "ladder:unscored"
+msgstr "Diese Partie zählte nicht"
+
+msgid "ladder:unscored_inconclusive"
+msgstr ""
+"Diese Partie hatte keinen Sieger, zählt daher nicht und verbraucht keine "
+"Einstufungspartie."
+
+msgid "ladder:unscored_already"
+msgstr ""
+"Diese Partie wurde bereits gewertet; dein Rang hat sich nicht erneut "
+"geändert."
+
+msgid "ladder:unscored_in_progress"
+msgstr "Diese Partie ist noch nicht beendet."
+
+msgid "ladder:unscored_error"
+msgstr ""
+"Diese Partie konnte nicht ins Ranglisten-Journal geschrieben werden, dein "
+"Rang blieb unverändert. Bitte melde sie uns."
+
+msgid "ladder:got_it"
+msgstr "Verstanden"
+
+msgid "lobby:placement_required"
+msgstr ""
+"Spiele erst die 5 Einstufungspartien im Ranglistenmodus, bevor du an der "
+"Ranglisten-Suche teilnimmst."
+
+msgid "My Color"
+msgstr "Meine Farbe"
+
+msgid "Black Stone"
+msgstr "● Schwarz"
+
+msgid "White Stone"
+msgstr "○ Weiß"
+
+msgid "Byoyomi only 30s x3"
+msgstr "Nur Byo-yomi"
+
+msgid "10 min + 3x30s"
+msgstr "10 Min + 3×30 s"
+
+msgid "20 min + 3x30s"
+msgstr "20 Min + 3×30 s"
+
+msgid "30 min + 3x30s"
+msgstr "30 Min + 3×30 s"
+
+msgid "Ranked Game"
+msgstr "Ranglistenpartie"
+
+msgid "Free Game"
+msgstr "Freies Spiel"
+
+msgid "retry"
+msgstr "Erneut versuchen"

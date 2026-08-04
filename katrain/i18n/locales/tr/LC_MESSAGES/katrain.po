@@ -2755,3 +2755,202 @@ msgstr "Güç Merdiveni"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "Derece Seviyesi"
+
+msgid "ladder:your_rank"
+msgstr "Rütbeniz"
+
+msgid "ladder:net_wins"
+msgstr "Net galibiyet"
+
+msgid "ladder:to_promote"
+msgstr "{rank} için {n} galibiyet daha"
+
+msgid "ladder:to_demote"
+msgstr "{n} yenilgi daha {rank} seviyesine düşürür"
+
+msgid "ladder:to_promote_plain"
+msgstr "Bir kademe yükselmek için {n} galibiyet daha."
+
+msgid "ladder:to_demote_plain"
+msgstr "{n} yenilgi daha bir kademe düşürür."
+
+msgid "ladder:top_rung"
+msgstr "En üst kademe"
+
+msgid "ladder:promote_one"
+msgstr "Bir kademe yukarı"
+
+msgid "ladder:demote_one"
+msgstr "Bir kademe aşağı"
+
+msgid "ladder:recent_n"
+msgstr "Son {n} oyun"
+
+msgid "ladder:recent_none"
+msgstr "Henüz hesaplanan oyun yok"
+
+msgid "ladder:recent_note"
+msgstr "Yalnızca dereceli oyunlar"
+
+msgid "ladder:win"
+msgstr "G"
+
+msgid "ladder:loss"
+msgstr "M"
+
+msgid "ladder:this_game_win"
+msgstr "Bu oyunu kazandınız"
+
+msgid "ladder:this_game_loss"
+msgstr "Bu oyunu kaybettiniz"
+
+msgid "ladder:placement"
+msgstr "Yerleştirme"
+
+msgid "ladder:placement_progress"
+msgstr "İlerleme"
+
+msgid "ladder:placement_game_n"
+msgstr "{n}. oyun"
+
+msgid "ladder:placement_of_total"
+msgstr "/ {n} oyundan"
+
+msgid "ladder:placement_note"
+msgstr "Her sonuç aralığı daraltır."
+
+msgid "ladder:placement_left"
+msgstr "Rütbeniz için {n} oyun daha."
+
+msgid "ladder:placement_game_done"
+msgstr "Yerleştirme oyunu {n}"
+
+msgid "ladder:placement_done"
+msgstr "Yerleştirme tamamlandı"
+
+msgid "ladder:placement_done_note"
+msgstr "Bundan sonra ±{n} net galibiyet bir kademe oynatır."
+
+msgid "ladder:start_placement"
+msgstr "Yerleştirmeyi başlat"
+
+msgid "ladder:promoted"
+msgstr "Yükseldiniz"
+
+msgid "ladder:demoted"
+msgstr "Düştünüz"
+
+msgid "ladder:promoted_note"
+msgstr "Net +{n} — bir kademe yukarı, sayaç sıfırlandı."
+
+msgid "ladder:demoted_note"
+msgstr "Net -{n} — bir kademe aşağı, sayaç sıfırlandı."
+
+msgid "ladder:this_game_opponent"
+msgstr "Bu oyundaki rakip"
+
+msgid "ladder:fixed_setup"
+msgstr "Bu oyun"
+
+msgid "ladder:setup_size"
+msgstr "{n}×{n}"
+
+msgid "ladder:setup_komi"
+msgstr "komi {n}"
+
+msgid "ladder:rules_chinese"
+msgstr "Çin kuralları"
+
+msgid "ladder:rules_japanese"
+msgstr "Japon kuralları"
+
+msgid "ladder:rules_korean"
+msgstr "Kore kuralları"
+
+msgid "ladder:rules_aga"
+msgstr "AGA kuralları"
+
+msgid "ladder:timer_locked"
+msgstr "Dereceli oyunlarda hep açık"
+
+msgid "ladder:uncertified"
+msgstr "Kalibre edilmemiş"
+
+msgid "ladder:blocked_uncertified"
+msgstr "{rank} için güç profili hâlâ kalibre ediliyor, oyun başlatılamaz."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "Kalibrasyon bitince oynayabilirsiniz."
+
+msgid "ladder:blocked_engine"
+msgstr "Motor kullanılamıyor, oyun başlatılamaz."
+
+msgid "ladder:blocked_engine_2"
+msgstr "Motor geri gelince oynayabilirsiniz."
+
+msgid "ladder:cannot_start"
+msgstr "Henüz başlatılamaz"
+
+msgid "ladder:loading"
+msgstr "Rütbeniz yükleniyor…"
+
+msgid "ladder:load_failed"
+msgstr "Rütbeniz yüklenemedi, oyun başlatılamaz."
+
+msgid "ladder:need_login"
+msgstr "Dereceli oyunlar için giriş yapın."
+
+msgid "ladder:unscored"
+msgstr "Bu oyun sayılmadı"
+
+msgid "ladder:unscored_inconclusive"
+msgstr "Bu oyunda kazanan olmadı; sayılmaz ve bir yerleştirme oyunu harcamaz."
+
+msgid "ladder:unscored_already"
+msgstr "Bu oyun zaten hesaplanmıştı; rütbeniz tekrar değişmedi."
+
+msgid "ladder:unscored_in_progress"
+msgstr "Bu oyun henüz bitmedi."
+
+msgid "ladder:unscored_error"
+msgstr ""
+"Bu oyun sıralama defterine yazılamadı, rütbeniz değişmedi. Lütfen bize "
+"bildirin."
+
+msgid "ladder:got_it"
+msgstr "Anladım"
+
+msgid "lobby:placement_required"
+msgstr ""
+"Dereceli insan eşleşmesine katılmadan önce Dereceli Oyun'da 5 yerleştirme "
+"oyununu tamamlayın."
+
+msgid "My Color"
+msgstr "Rengim"
+
+msgid "Black Stone"
+msgstr "● Siyah"
+
+msgid "White Stone"
+msgstr "○ Beyaz"
+
+msgid "Byoyomi only 30s x3"
+msgstr "Yalnızca byo-yomi"
+
+msgid "10 min + 3x30s"
+msgstr "10 dk + 3×30 sn"
+
+msgid "20 min + 3x30s"
+msgstr "20 dk + 3×30 sn"
+
+msgid "30 min + 3x30s"
+msgstr "30 dk + 3×30 sn"
+
+msgid "Ranked Game"
+msgstr "Dereceli oyun"
+
+msgid "Free Game"
+msgstr "Serbest oyun"
+
+msgid "retry"
+msgstr "Yeniden dene"

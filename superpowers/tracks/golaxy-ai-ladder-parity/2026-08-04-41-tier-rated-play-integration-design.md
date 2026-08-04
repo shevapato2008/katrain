@@ -279,7 +279,67 @@ availability = "available" if certified else "unavailable"
 | **S1** | 新用户进升降级 → 打完 5 局定级赛 → 拿到段位 | 真机走完 5 局，`ai_ladder_rung` 写入，账本 5 行，界面全程显示第 N/5 | **已完成** 2026-08-04（`fef7d166` + `9221d69a`） |
 | **S2** | 已定级用户打常规升降级 → 净胜 ±3 升降一档 | 真机连胜 3 局升一档、账本归零；连败 3 局降一档 | **已完成** 2026-08-05 |
 | **S3** | 旧 game_type 乱帐理清 + PvP 段位解耦 | game_type 词表收口；PvP 不再改段位；rated PvP 门槛改为「已定级」；§1.2 死循环消失 | **已完成** 2026-08-05 |
-| **S4** | kiosk 升降级对弈 | kiosk 上能定级、能升降级，与网页版同一份账本 | 用户 2026-08-05 追加要求 |
+| **S4** | kiosk 升降级对弈 | kiosk 上能定级、能升降级，与网页版同一份账本 | **已完成** 2026-08-05（`0b35b861`） |
+
+### S4 实际验收记录（2026-08-05）
+
+kiosk 的「升降级对弈」入口原本是假的：`/kiosk/play/ai/setup/ranked` 走的是通用
+AI 设置页的 `ranked` 分支，让玩家自己在 20k→9d 下拉框里挑对手，用 `ai:human` 开局，
+落库写 `game_type="ranked"`——而这个值不在 `RANK_MOVING_GAME_TYPES` 里，段位永远不动。
+现在它和网页版共用 `/api/ladder/*` 与同一本 `ai_ladder_ledger`。
+
+**版式决策**：设置页骨架（左 322px 面板 + 右表单 + 底部 CTA）是为盘面预览留的，
+而升降级对局的盘面永远是同一张 19 路空盘。照搬骨架（变体 A）在 1024×600 下左右两列
+各空出约 180px；改成横向三段（变体 B：段位 → 本局 → 用时 → 开始）后填满横屏，
+定级赛的 5 步进度条也终于铺得开。两个变体都存档在
+`artifacts/kiosk-ladder-setup.html`，A 标注为否决。
+
+**契约收紧**（本切片新增，网页版同步生效）：
+
+- `POST /api/ladder/start-game` 不再接受 `size` / `komi` / `rules`。每一档的棋力都是在
+  19 路 · 中国规则 · 贴 7.5 下量出来的（`calibration/run_selfplay.py:119-121`），
+  客户端能挑 9 路，就等于让一个档位在它的档名不再成立的局面里计分。三者由
+  `ladder_repo.LADDER_BOARD_SIZE / LADDER_RULES / LADDER_KOMI` 固定，并经
+  `GET /api/ladder/me` 的 `game_setup` 报给页面显示——页面只读出，不参与决定。
+  顺带修掉网页版那两个禁用下拉框：它们显示 19x19 / Japanese，而服务端发的是中国规则。
+- `main_time` → `main_time_minutes`、`byo_length` → `byo_length_seconds`。
+  `timer/main_time` 存的是分钟（每个消费方都乘 60），而 S1 的网页版传的是 `mainTime * 60`，
+  于是每一局升降级都发了 600 分钟主时间。单位进名字，这个错就再犯不了。
+- `POST /api/game/setup` 删掉 `"ranked"` 分支——已无调用方，留着只是给下一个人一个
+  写出假排位局的机会。
+- 阶梯 AI 落座时带档名（`AI 5级`），否则对局页棋手卡写着「白棋 · 无级别」，
+  而这一局的全部意义就是对手的段位。
+
+**本机验收（20 项全过）**：19 路/中国/7.5 固定 · 请求里多塞 `size=9` 被忽略 ·
+`game_type` 服务端签发 · `analysis_allowed=false` · `ai:ladder` 落座 · 主时间 10 分钟 ·
+`/api/game/setup` 的 ranked 已死 · 认输后账本走到定级 1/5 · 对手档位随败绩由 16 降到 8。
+浏览器实机再走一局：设置页 → 开局 → 认输 → 终局卡内出现「定级赛 第 3 局 / 本局负 /
+再打 2 局定下你的段位」。计分局下悔棋与回退按钮消失（`nav-controls` 子节点 6 → 3）。
+
+**承重结构实测 @1024×600**（关系式先写死，再读数）：
+
+| 量 | 期望 | 实测 |
+|---|---|---|
+| 该滚的是谁 | 页面自己的 `ladder-setup-scroll`，不是外壳 | `main.scrollHeight === clientHeight`，外壳不溢出 ✓ |
+| 能不能滚 | 最高态（已定级 + 未标定 + 最近 5 局）内容 ≤ 内容盒 | band padding 16px 时 524 > 481，**开始按钮被压到折线下**；改 12px 后 481 = 481 ✓ |
+| 手指拨得动 | 真滚轮派发后 scrollTop ≠ 0 | 溢出时成立（Chromium 异步应用，须 poll；立即读会误报 0） |
+| 终局卡不被裁 | 卡片 bottom ≤ 600 且确认终局按钮在视区内 | 成立；已反证（给结算条加 `pb:400px` 时该断言变红） |
+
+闸门留在 `tests/ladder-kiosk-setup.spec.ts`，四条关系式各一条断言。
+
+**S4 期间发现并修复的真缺陷**：`useGameSession` 的 resign/timeout 只等 WebSocket 广播，
+不应用 HTTP 已经返回的终局 state。认输之后当前这台机器还停在一局服务端已经结束的棋里——
+对升降级来说就是结算永远不出现。改成与 undo/redo 一致后，WebSocket 断着也能立刻出终局卡。
+
+**i18n**：`ladder:*` 54 键 + `lobby:placement_required` 补齐 10 个启用语种
+（`es` 在 `i18n.py` 的 `INACTIVE_LANGS` 里，.po 已写入但不编译 .mo）。
+顺带补了三处 kiosk 设置页一直在漏中文的共享键（`My Color` / `Black Stone` /
+`White Stone` / 四个用时预设 / `Ranked Game` / `Free Game` / `retry`）。
+占位符 `{n}` `{rank}` 前端用 `String.replace` 只替换第一处，故每条译文里各只出现一次；
+唯一的例外 `ladder:setup_size`（英文 `{n}×{n}`）改用 `replaceAll` 渲染。
+
+**未做**：RK3562/RK3576 触屏设备走查——本机没有设备。档名 `5级` / `5段` 在任何语种下
+都保持中文，这是 41 档目录自己的命名，不是漏翻。
 
 ### S1 实际验收记录（2026-08-04）
 

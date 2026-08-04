@@ -2607,3 +2607,198 @@ msgstr "실력 사다리"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "실력 등급"
+
+msgid "ladder:your_rank"
+msgstr "내 단급"
+
+msgid "ladder:net_wins"
+msgstr "순승"
+
+msgid "ladder:to_promote"
+msgstr "{n}승 더하면 {rank}로 승급"
+
+msgid "ladder:to_demote"
+msgstr "{n}패 더하면 {rank}로 강등"
+
+msgid "ladder:to_promote_plain"
+msgstr "{n}승 더하면 한 단계 승급합니다."
+
+msgid "ladder:to_demote_plain"
+msgstr "{n}패 더하면 한 단계 강등됩니다."
+
+msgid "ladder:top_rung"
+msgstr "최고 단계입니다"
+
+msgid "ladder:promote_one"
+msgstr "한 단계 승급"
+
+msgid "ladder:demote_one"
+msgstr "한 단계 강등"
+
+msgid "ladder:recent_n"
+msgstr "최근 {n}국"
+
+msgid "ladder:recent_none"
+msgstr "아직 정산된 대국이 없습니다"
+
+msgid "ladder:recent_note"
+msgstr "승강 대국만 집계"
+
+msgid "ladder:win"
+msgstr "승"
+
+msgid "ladder:loss"
+msgstr "패"
+
+msgid "ladder:this_game_win"
+msgstr "이 대국 승"
+
+msgid "ladder:this_game_loss"
+msgstr "이 대국 패"
+
+msgid "ladder:placement"
+msgstr "배치 대국"
+
+msgid "ladder:placement_progress"
+msgstr "진행"
+
+msgid "ladder:placement_game_n"
+msgstr "{n}국"
+
+msgid "ladder:placement_of_total"
+msgstr "/ 총 {n}국"
+
+msgid "ladder:placement_note"
+msgstr "매 대국의 승패가 범위를 좁힙니다."
+
+msgid "ladder:placement_left"
+msgstr "{n}국 더 두면 단급이 정해집니다."
+
+msgid "ladder:placement_game_done"
+msgstr "배치 {n}국"
+
+msgid "ladder:placement_done"
+msgstr "배치 완료"
+
+msgid "ladder:placement_done_note"
+msgstr "이제부터 순승 ±{n}마다 한 단계 오르내립니다."
+
+msgid "ladder:start_placement"
+msgstr "배치 대국 시작"
+
+msgid "ladder:promoted"
+msgstr "승급"
+
+msgid "ladder:demoted"
+msgstr "강등"
+
+msgid "ladder:promoted_note"
+msgstr "순승 +{n}, 한 단계 승급, 카운터 초기화."
+
+msgid "ladder:demoted_note"
+msgstr "순승 -{n}, 한 단계 강등, 카운터 초기화."
+
+msgid "ladder:this_game_opponent"
+msgstr "이번 대국 상대"
+
+msgid "ladder:fixed_setup"
+msgstr "이번 대국 설정"
+
+msgid "ladder:setup_size"
+msgstr "{n}로"
+
+msgid "ladder:setup_komi"
+msgstr "덤 {n}집"
+
+msgid "ladder:rules_chinese"
+msgstr "중국 규칙"
+
+msgid "ladder:rules_japanese"
+msgstr "일본 규칙"
+
+msgid "ladder:rules_korean"
+msgstr "한국 규칙"
+
+msgid "ladder:rules_aga"
+msgstr "AGA 규칙"
+
+msgid "ladder:timer_locked"
+msgstr "승강 대국에서는 항상 켜짐"
+
+msgid "ladder:uncertified"
+msgstr "미보정"
+
+msgid "ladder:blocked_uncertified"
+msgstr "{rank}의 기력 설정을 보정 중이라 지금은 대국을 시작할 수 없습니다."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "보정이 끝나면 대국할 수 있습니다."
+
+msgid "ladder:blocked_engine"
+msgstr "엔진을 사용할 수 없어 지금은 대국을 시작할 수 없습니다."
+
+msgid "ladder:blocked_engine_2"
+msgstr "엔진이 복구되면 대국할 수 있습니다."
+
+msgid "ladder:cannot_start"
+msgstr "지금은 시작할 수 없습니다"
+
+msgid "ladder:loading"
+msgstr "단급을 불러오는 중…"
+
+msgid "ladder:load_failed"
+msgstr "단급을 불러오지 못해 대국을 시작할 수 없습니다."
+
+msgid "ladder:need_login"
+msgstr "승강 대국에 참여하려면 로그인하세요."
+
+msgid "ladder:unscored"
+msgstr "이 대국은 승강에 반영되지 않았습니다"
+
+msgid "ladder:unscored_inconclusive"
+msgstr "이 대국은 승패가 나지 않아 승강에 반영되지 않고 배치 대국 수도 소모하지 않습니다."
+
+msgid "ladder:unscored_already"
+msgstr "이 대국은 이미 정산되어 단급이 더 바뀌지 않았습니다."
+
+msgid "ladder:unscored_in_progress"
+msgstr "이 대국은 아직 끝나지 않았습니다."
+
+msgid "ladder:unscored_error"
+msgstr "이 대국을 승강 기록에 기록하지 못해 단급이 바뀌지 않았습니다. 이 대국을 알려주세요."
+
+msgid "ladder:got_it"
+msgstr "확인"
+
+msgid "lobby:placement_required"
+msgstr "「승강 대국」에서 배치 5국을 마쳐야 대인 랭크전에 참여할 수 있습니다."
+
+msgid "My Color"
+msgstr "내 돌"
+
+msgid "Black Stone"
+msgstr "● 흑"
+
+msgid "White Stone"
+msgstr "○ 백"
+
+msgid "Byoyomi only 30s x3"
+msgstr "초읽기만"
+
+msgid "10 min + 3x30s"
+msgstr "10분+3×30초"
+
+msgid "20 min + 3x30s"
+msgstr "20분+3×30초"
+
+msgid "30 min + 3x30s"
+msgstr "30분+3×30초"
+
+msgid "Ranked Game"
+msgstr "승강 대국"
+
+msgid "Free Game"
+msgstr "자유 대국"
+
+msgid "retry"
+msgstr "다시 시도"

@@ -2654,3 +2654,204 @@ msgstr "Лестница силы"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "Уровень ранга"
+
+msgid "ladder:your_rank"
+msgstr "Ваш ранг"
+
+msgid "ladder:net_wins"
+msgstr "Чистые победы"
+
+msgid "ladder:to_promote"
+msgstr "Ещё {n} побед до {rank}"
+
+msgid "ladder:to_demote"
+msgstr "Ещё {n} поражений — и вы на {rank}"
+
+msgid "ladder:to_promote_plain"
+msgstr "Ещё {n} побед — на ступень вверх."
+
+msgid "ladder:to_demote_plain"
+msgstr "Ещё {n} поражений — на ступень вниз."
+
+msgid "ladder:top_rung"
+msgstr "Высшая ступень"
+
+msgid "ladder:promote_one"
+msgstr "Ступень вверх"
+
+msgid "ladder:demote_one"
+msgstr "Ступень вниз"
+
+msgid "ladder:recent_n"
+msgstr "Последние {n} партий"
+
+msgid "ladder:recent_none"
+msgstr "Пока нет зачтённых партий"
+
+msgid "ladder:recent_note"
+msgstr "Только рейтинговые партии"
+
+msgid "ladder:win"
+msgstr "В"
+
+msgid "ladder:loss"
+msgstr "П"
+
+msgid "ladder:this_game_win"
+msgstr "Партия выиграна"
+
+msgid "ladder:this_game_loss"
+msgstr "Партия проиграна"
+
+msgid "ladder:placement"
+msgstr "Квалификация"
+
+msgid "ladder:placement_progress"
+msgstr "Прогресс"
+
+msgid "ladder:placement_game_n"
+msgstr "Партия {n}"
+
+msgid "ladder:placement_of_total"
+msgstr "из {n}"
+
+msgid "ladder:placement_note"
+msgstr "Каждый результат сужает диапазон."
+
+msgid "ladder:placement_left"
+msgstr "Ещё {n} партий до определения ранга."
+
+msgid "ladder:placement_game_done"
+msgstr "Квалификационная партия {n}"
+
+msgid "ladder:placement_done"
+msgstr "Квалификация завершена"
+
+msgid "ladder:placement_done_note"
+msgstr "Далее ±{n} чистых побед меняют ступень."
+
+msgid "ladder:start_placement"
+msgstr "Начать квалификацию"
+
+msgid "ladder:promoted"
+msgstr "Повышение"
+
+msgid "ladder:demoted"
+msgstr "Понижение"
+
+msgid "ladder:promoted_note"
+msgstr "Чистых +{n} — ступень вверх, счётчик обнулён."
+
+msgid "ladder:demoted_note"
+msgstr "Чистых -{n} — ступень вниз, счётчик обнулён."
+
+msgid "ladder:this_game_opponent"
+msgstr "Соперник этой партии"
+
+msgid "ladder:fixed_setup"
+msgstr "Эта партия"
+
+msgid "ladder:setup_size"
+msgstr "{n}×{n}"
+
+msgid "ladder:setup_komi"
+msgstr "коми {n}"
+
+msgid "ladder:rules_chinese"
+msgstr "Китайские правила"
+
+msgid "ladder:rules_japanese"
+msgstr "Японские правила"
+
+msgid "ladder:rules_korean"
+msgstr "Корейские правила"
+
+msgid "ladder:rules_aga"
+msgstr "Правила AGA"
+
+msgid "ladder:timer_locked"
+msgstr "Всегда включено в рейтинговых партиях"
+
+msgid "ladder:uncertified"
+msgstr "Не откалибровано"
+
+msgid "ladder:blocked_uncertified"
+msgstr "Профиль силы {rank} ещё калибруется, партия не может начаться."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "Играть можно будет после калибровки."
+
+msgid "ladder:blocked_engine"
+msgstr "Движок недоступен, партия не может начаться."
+
+msgid "ladder:blocked_engine_2"
+msgstr "Играть можно будет после восстановления движка."
+
+msgid "ladder:cannot_start"
+msgstr "Пока начать нельзя"
+
+msgid "ladder:loading"
+msgstr "Загрузка вашего ранга…"
+
+msgid "ladder:load_failed"
+msgstr "Не удалось загрузить ранг, партия не может начаться."
+
+msgid "ladder:need_login"
+msgstr "Войдите, чтобы играть рейтинговые партии."
+
+msgid "ladder:unscored"
+msgstr "Эта партия не засчитана"
+
+msgid "ladder:unscored_inconclusive"
+msgstr ""
+"В этой партии нет победителя, поэтому она не засчитана и не расходует "
+"квалификационную партию."
+
+msgid "ladder:unscored_already"
+msgstr "Эта партия уже зачтена, ранг больше не изменился."
+
+msgid "ladder:unscored_in_progress"
+msgstr "Эта партия ещё не окончена."
+
+msgid "ladder:unscored_error"
+msgstr ""
+"Эту партию не удалось записать в журнал рейтинга, ранг не изменился. "
+"Сообщите нам о ней."
+
+msgid "ladder:got_it"
+msgstr "Понятно"
+
+msgid "lobby:placement_required"
+msgstr ""
+"Сначала сыграйте 5 квалификационных партий в рейтинговом режиме, затем можно"
+" в рейтинговый поиск."
+
+msgid "My Color"
+msgstr "Мой цвет"
+
+msgid "Black Stone"
+msgstr "● Чёрные"
+
+msgid "White Stone"
+msgstr "○ Белые"
+
+msgid "Byoyomi only 30s x3"
+msgstr "Только бё-ёми"
+
+msgid "10 min + 3x30s"
+msgstr "10 мин + 3×30 с"
+
+msgid "20 min + 3x30s"
+msgstr "20 мин + 3×30 с"
+
+msgid "30 min + 3x30s"
+msgstr "30 мин + 3×30 с"
+
+msgid "Ranked Game"
+msgstr "Рейтинговая партия"
+
+msgid "Free Game"
+msgstr "Свободная партия"
+
+msgid "retry"
+msgstr "Повторить"

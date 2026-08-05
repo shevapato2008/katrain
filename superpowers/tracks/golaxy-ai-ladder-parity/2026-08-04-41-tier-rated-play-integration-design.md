@@ -338,8 +338,73 @@ AI 设置页的 `ranked` 分支，让玩家自己在 20k→9d 下拉框里挑对
 占位符 `{n}` `{rank}` 前端用 `String.replace` 只替换第一处，故每条译文里各只出现一次；
 唯一的例外 `ladder:setup_size`（英文 `{n}×{n}`）改用 `replaceAll` 渲染。
 
-**未做**：RK3562/RK3576 触屏设备走查——本机没有设备。档名 `5级` / `5段` 在任何语种下
-都保持中文，这是 41 档目录自己的命名，不是漏翻。
+档名 `5级` / `5段` 在任何语种下都保持中文，这是 41 档目录自己的命名，不是漏翻。
+
+### S4 设备走查（RK3562，2026-08-05）
+
+网线直连、`ssh rk3562-direct`。**不动生产部署**：本分支比 `origin/develop` 落后 37 个
+提交、14 个文件重叠，覆盖 `vendor/katrain` 会把设备回退到分叉点，所以整棵树 rsync 到
+`/mnt/data/ladder-walkthrough/` 独立跑（独立端口 8091 / 独立 SQLite / `HOME` 隔离，
+免得 `--ui web` 退出时改到设备的 `config.json`），走完全部删除。生产树 mtime、
+`/mnt/data/weiqi/weiqi-web.db`、launcher 的 `mode: idle` 走查前后一致。
+
+驱动的是**设备自己的 Chromium**（kiosk unit 已开 `--remote-debugging-port=9222`，
+经 ssh 隧道打 CDP），不是 Mac 上的 headless——面板实测 `1024×600 / dpr 1 /
+maxTouchPoints 16`，就是目标 viewport 本身。Chromium 120 会以 Origin 头拒绝 CDP
+握手，客户端需 `suppress_origin`。
+
+- **20 项 API 验收**：设备上全过（与本机同一份脚本）。定级对手 = 位置 16 = `5级`，
+  落在 Band A（humanSL 原生、humanv0 单 visit），正是设备 realtime_api 已有的配置。
+- **承重实测（真机）**：最高状态（已定级 + 上下档 + 净胜条 + 最近 5 局）下
+  `ladder-setup-scroll` 的 `scrollHeight 481 = clientHeight 481`，不溢出；开始按钮
+  `top 532 / bottom 588`，完整落在其最近裁切祖先（`DIV.ladder-setup-scroll`，
+  `top 119 / bottom 600`）内。与 Mac 上量的一字不差。定级中/已定级/未标定三态各量一次。
+- **横划不再退出 app**：kiosk unit 里 2026-08-04 记的那条连环故障（横向拖动被当成
+  overscroll → history back → 掉出整个 app）入口是难度滑条，本切片已删。真机上左右
+  各拖一次，`location.pathname` 不变。
+- **board 模式无分析泄漏**：server 模式下这局的 state 里带着 `analysis`
+  （winrate/score），kiosk 图表面板会显示——但那是 `KATRAIN_MODE=board` 才关掉的
+  每手自动评估（`interface.py:156`）。设备按生产配置跑 board 模式，实测显示
+  `黑棋胜率: --%`，`analysis present: False`。`AI支招` 在升降级局里是灰的。
+- **时钟单位**：真机上人类 `10:00` 起跳、正常倒数——S1 那个 600 分钟的 bug 在设备上
+  也确认修掉了。
+
+**走查抓到的真缺陷**（已修，见下一节）：设备的 HTTP 引擎不宣告 certified ladder
+能力，`ai:ladder` 按设计一手不下，而画面停在「AI 思考中…」不动。
+
+**仍未做**：RK3576 未走查（手上只有 RK3562）。board 模式下账号仍走云端
+（`register`/`login` 无条件转发 remote），本轮是本地建号 + 本地签 JWT 注入
+`localStorage` 绕过的；SSO 桥那条路没走。
+
+### 引擎开不了局时的两个缺陷（设备走查发现，2026-08-05 修复）
+
+`_CERTIFIED_RUNGS` 是空集、设备的 realtime_api 又不宣告 certified ladder 能力，
+所以 `ai:ladder` 走 fail-closed 分支：**一手不下**。这条分支本身是对的（宁可不下，
+也不能用没标定的强度落子还把结果记进账本），错的是它之后发生的事。
+
+1. **假的加载态。** `interface._surface_ladder_unavailable` 早就置了
+   `last_ladder_error`，注释里明写「User surface is the generic last_ladder_error
+   flag」——但前端从来没有人读它（`grep last_ladder_error src/` 零命中）。屏幕停在
+   绿色的「AI 思考中…」，而没有任何东西在思考，也永远不会有落子。
+2. **凭空发出去的升段额度。** 对手的钟照走。galaxy 的 `PlayerCard` 到点自动
+   `onTimeout` → 这局以「人类获胜」结算 → 写进升降级账本。kiosk 没接 `onTimeout`，
+   所以那边只是永远卡住。
+
+修法（服务端是权威，客户端只负责说实话）：
+
+- `server.py _settle_ladder_game`：会话带着 `last_ladder_error` 时拒绝结算，
+  `reason=engine_unavailable`。无论这局怎么结束（认输、超时、退出）都不进账本。
+  标志由下一手成功的 AI 落子清除，所以中途卡一下又恢复的对局照常结算。
+- kiosk / galaxy 同一句琥珀色横幅：「阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，
+  请退出本局」。`deriveAiTurnState` 新增 `ladderStalled`，与 `showThinking` 互斥。
+- 终局卡/对话框新增 `engine_unavailable` 文案：「段位没有变动，也不占定级赛的局数」。
+- galaxy `handleTimeout` 在该标志下直接返回——服务端已经不记分了，但那句「你赢了」
+  也不该出现在屏幕上。
+
+设备上按同一条链复验：横幅正确、thinking 横幅关闭、认输后终局卡显示未计入、
+账本 6 行仍是 5 条种子 + 另一用户的 1 条，`laddertest` 一行未加。
+`tests/web_ui/test_ladder_stalled_not_scored.py` 复现整条链，去掉服务端守卫即失败
+（`assert True is False`）。
 
 ### S1 实际验收记录（2026-08-04）
 

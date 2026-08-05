@@ -35,7 +35,15 @@ RUN rm -rf \
 
 FROM python:3.11-slim-bookworm@sha256:b18992999dbe963a45a8a4da40ac2b1975be1a776d939d098c647482bcad5cba AS runtime
 
-RUN apt-get update && \
+# Same story as PIP_INDEX_URL above: deb.debian.org stalls mid-download from
+# mainland China build hosts (UCloud 2026-08-05 sat on one 8MB ffmpeg dependency
+# for six minutes and never finished). Point at the mirror develop's Dockerfile
+# already uses. Set APT_MIRROR=deb.debian.org to build against upstream.
+ARG APT_MIRROR=mirrors.tuna.tsinghua.edu.cn
+RUN for f in /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources; do \
+        [ -f "$f" ] && sed -i "s|deb.debian.org|${APT_MIRROR}|g; s|security.debian.org|${APT_MIRROR}|g" "$f" || true; \
+    done && \
+    apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl ffmpeg libglib2.0-0 libgomp1 && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 10001 katrain && \

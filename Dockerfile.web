@@ -8,6 +8,15 @@ RUN npm run build
 
 FROM python:3.11-slim-bookworm@sha256:b18992999dbe963a45a8a4da40ac2b1975be1a776d939d098c647482bcad5cba AS python-builder
 
+# Build hosts in mainland China cannot reach pypi.org reliably: the index answers
+# for small packages and then times out on larger ones, which pip reports as the
+# misleading "from versions: none" (observed twice on UCloud 2026-08-05, on a
+# different package each time). Same mirror develop's Dockerfile.web already uses.
+# Hash pinning still holds — tuna serves the same artifacts, so --require-hashes
+# fails loudly if it ever does not.
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
+
 RUN python -m venv /opt/venv
 COPY requirements-web-runtime.txt /tmp/requirements-web-runtime.txt
 RUN /opt/venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/requirements-web-runtime.txt

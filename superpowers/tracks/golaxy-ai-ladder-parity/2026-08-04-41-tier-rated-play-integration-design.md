@@ -1,5 +1,26 @@
 # 41 档 AI 阶梯接入升降级对弈 — 设计
 
+> **⚠️ 2026-08-05 结局：本文描述的 S1–S4 实现已从分支上撤下，不再是代码现状。**
+>
+> `origin/develop` 上同期有一套独立完成的同功能实现（`codex/ai-ladder-ranked-module`，
+> 37 个提交里占 19 个），两者共用同一个 `game_type='ai_ladder_ranked'`，并存会让
+> 同一局棋被两条结算路径各记一次账。逐条对照见
+> `artifacts/ladder-implementations-compare.html`；用户拍板**以 develop 那套为准**
+> （它在结算正确性上更深：待结算对局落库、冻结对手配置快照、行锁+乐观锁、
+> 数据库层约束、旧账本迁移）。合并提交 `ce941d28`。
+>
+> 本文以下内容仍然有效的部分：**产品决策**（六条锁定项）、**标定条件为什么必须固定**、
+> **各状态的文案与语义**、以及 S1–S4 各次验收里记录的事实（尤其 RK3562 设备走查）。
+> 失效的部分：`ladder_repo` / `ladder_progress` / `ladder_catalog`、`/api/ladder/*`、
+> `users.ai_ladder_*` 列与 `ai_ladder_ledger` 表、以及 kiosk/galaxy 那几个自建组件——
+> 这些文件都已删除，对应能力现由 `katrain/web/core/ai_ladder_ranked.py`、
+> `/api/v1/ai-ladder/*`、`src/features/aiLadder/` 承担。
+>
+> 撤下时移植到 develop 那套上的三项（提交 `8bafb160`）：引擎失联不入账
+> （`settle_game(engine_stalled=...)` → `reason=engine_unavailable`）、盘面条件收归服务端
+> （`AiLadderStartRequest` 不再收 board_size/rules/komi/handicap；此前 kiosk 实发 komi 6.5、
+> galaxy 实发 6.5+日本规则）、大厅闸改读段位而非数 rated 局数。
+
 **日期：** 2026-08-04
 **状态：** 待用户批准
 **范围：** 用 41 档阶梯替换升降级对弈中的拟人 AI，并把升降级账本真正接通

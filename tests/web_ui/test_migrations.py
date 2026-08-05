@@ -54,8 +54,24 @@ def test_create_missing_indexes(legacy_engine):
     assert "ix_credit_tx_user_status" in idx
 
 
-def test_billing_tables_are_protected_constant():
-    assert {"credit_transactions", "redeem_codes", "recharge_orders"} == migrations.BILLING_TABLES
+def test_asset_tables_are_protected_from_the_drift_rebuild():
+    """Tables the SQLite drift fallback must never drop and recreate.
+
+    Credits are money. The ai_ladder tables are the sole derivation of every
+    user's 段位 -- profile, decision ledger, the in-flight game, and the retained
+    legacy ledger -- so rebuilding any of them would silently reset the ladder.
+    """
+    assert {
+        "credit_transactions",
+        "redeem_codes",
+        "recharge_orders",
+        "ai_ladder_profiles",
+        "ai_ladder_game_ledger",
+        "ai_ladder_pending_games",
+        "ai_ladder_game_ledger_legacy_v1",
+    } == migrations.PROTECTED_TABLES
+    # Billing is a strict subset: the drift rebuild must refuse both groups.
+    assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES
 
 
 def test_pending_ai_ladder_table_is_protected_and_has_one_pending_per_user_constraint():

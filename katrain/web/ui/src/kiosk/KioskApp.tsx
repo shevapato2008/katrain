@@ -64,6 +64,9 @@ const KioskRoutes = () => {
         <Route element={<KioskLayout username={user?.username} />}>
           <Route index element={<Navigate to="play" replace />} />
           <Route path="play" element={<PlayPage />} />
+          {/* 升降级对弈 has its own page: nothing about the opponent is chosen here,
+              so it shares no controls with free play. Static path wins over the
+              dynamic :mode below in v6 best-match. */}
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />

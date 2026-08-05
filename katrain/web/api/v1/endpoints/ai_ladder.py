@@ -26,15 +26,27 @@ from katrain.web.models import User
 router = APIRouter()
 
 
+#: The board every rung was measured on. Fixed here rather than taken from the
+#: request, for the same reason the rung is: a rung's rank name describes its
+#: strength in a 19x19 Chinese-rules 7.5-komi even game and nothing else (every
+#: calibration campaign ran exactly that -- see
+#: superpowers/tracks/golaxy-ai-ladder-parity/calibration/run_selfplay.py), so a
+#: client that could ask for 9x9, or for 6.5 komi, would be seating an opponent
+#: whose measured strength no longer describes the game being played -- and then
+#: banking the result. The player still chooses their seat and their clock.
+LADDER_BOARD_SIZE = 19
+LADDER_RULES = "chinese"
+LADDER_KOMI = 7.5
+LADDER_HANDICAP = 0
+
+
 class AiLadderStartRequest(BaseModel):
-    """Game preferences only. Strength, result, and configuration are server-owned."""
+    """Seat and clock only. Strength, board conditions, result and configuration
+    are all server-owned; `extra="forbid"` means a client that still sends
+    board_size/rules/komi/handicap is told so rather than silently ignored."""
 
     model_config = ConfigDict(extra="forbid")
 
-    board_size: Literal[9, 13, 19] = 19
-    rules: str = Field(default="chinese", min_length=1, max_length=64)
-    komi: float = 7.5
-    handicap: int = Field(default=0, ge=0, le=9)
     color: Literal["black", "white"] = "black"
     time_enabled: bool = False
     main_time: int = Field(default=0, ge=0, le=86400)
@@ -247,10 +259,10 @@ def start_ranked_game(
                 session.katrain.update_config("timer/paused", True)
             session.katrain(
                 "new_game",
-                size=body.board_size,
-                handicap=body.handicap,
-                komi=body.komi,
-                rules=body.rules,
+                size=LADDER_BOARD_SIZE,
+                handicap=LADDER_HANDICAP,
+                komi=LADDER_KOMI,
+                rules=LADDER_RULES,
                 game_type=AI_LADDER_GAME_TYPE,
                 ladder_rung=opponent.rung,
                 frozen_ladder_recipe=frozen_recipe,

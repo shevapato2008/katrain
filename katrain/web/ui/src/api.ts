@@ -74,6 +74,12 @@ export interface GameState {
   };
   game_type?: GameType;
   analysis_allowed?: boolean;
+  // True once an ai:ladder player refused to move because the engine cannot serve the
+  // seated rung at its calibrated strength (interface._surface_ladder_unavailable).
+  // It is a terminal condition for the current turn, not a transient one: nothing will
+  // arrive later, so the UI must stop saying "AI 思考中…" and say what happened.
+  // Cleared by the next successful AI move and by every new game.
+  last_ladder_error?: boolean;
   // "B" | "W" = the color the REMOTE ENGINE plays in an engine-play game (Golaxy
   // 人机对弈 genmove tunnel); null/absent for every other game shape (local HvAI,
   // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —

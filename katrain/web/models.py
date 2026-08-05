@@ -33,8 +33,8 @@ class NewGameRequest(BaseModel):
     rules: Optional[str] = "japanese"
     clear_cache: bool = False
     players: Optional[Dict[str, PlayerSetupInfo]] = None
-    # Task 4: per-game strength-ladder rung (1..37), injected non-persisted for this
-    # game only. None = no rung this game (an ai:ladder player then fails closed). Range
+    # Per-game strength-ladder rung (1..41), injected non-persisted for this game
+    # only. None = no rung this game (an ai:ladder player then fails closed). Range
     # validated server-side (see new_game handler) -> 422 on out-of-range values.
     ladder_rung: Optional[int] = None
 

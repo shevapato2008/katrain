@@ -1,0 +1,432 @@
+<title>升降级对弈 · 两套实现并排对照</title>
+<style>
+:root{
+  --ground:#f4f6f4; --card:#ffffff; --sunk:#ecefec;
+  --ink:#141a17; --sub:#5b6862; --dim:#8b968f; --hair:#dbe1dd;
+  --jade:#2f7d55; --jade-soft:#e4f0e9;
+  --indigo:#4a5fae; --indigo-soft:#e6e9f6;
+  --amber:#9a6a15; --amber-soft:#f7edd8;
+  --red:#b1443a; --red-soft:#f8e4e2;
+  --sans:'PingFang SC','Hiragino Sans GB','Noto Sans SC',system-ui,-apple-system,sans-serif;
+  --serif:'Songti SC','Noto Serif CJK SC',Georgia,serif;
+  --mono:ui-monospace,'SF Mono',Menlo,'Cascadia Code',monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#0f1416; --card:#151d1c; --sunk:#111818;
+    --ink:#eef3f1; --sub:#93a49d; --dim:#5f716b; --hair:#26332e;
+    --jade:#58b57a; --jade-soft:#172b22;
+    --indigo:#8ba3e4; --indigo-soft:#1a1f33;
+    --amber:#e0a24a; --amber-soft:#2c2416;
+    --red:#e2685c; --red-soft:#2e1b19;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0f1416; --card:#151d1c; --sunk:#111818;
+  --ink:#eef3f1; --sub:#93a49d; --dim:#5f716b; --hair:#26332e;
+  --jade:#58b57a; --jade-soft:#172b22;
+  --indigo:#8ba3e4; --indigo-soft:#1a1f33;
+  --amber:#e0a24a; --amber-soft:#2c2416;
+  --red:#e2685c; --red-soft:#2e1b19;
+}
+:root[data-theme="light"]{
+  --ground:#f4f6f4; --card:#ffffff; --sunk:#ecefec;
+  --ink:#141a17; --sub:#5b6862; --dim:#8b968f; --hair:#dbe1dd;
+  --jade:#2f7d55; --jade-soft:#e4f0e9;
+  --indigo:#4a5fae; --indigo-soft:#e6e9f6;
+  --amber:#9a6a15; --amber-soft:#f7edd8;
+  --red:#b1443a; --red-soft:#f8e4e2;
+}
+
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;line-height:1.65;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:56px 24px 96px;
+  display:flex;flex-direction:column;gap:44px}
+
+/* ---- masthead ---- */
+.mast{display:flex;flex-direction:column;gap:10px}
+.kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  font-family:var(--mono)}
+h1{font-family:var(--serif);font-size:clamp(28px,4.4vw,40px);font-weight:600;
+  margin:0;letter-spacing:-.01em;text-wrap:balance;line-height:1.25}
+.standfirst{color:var(--sub);font-size:15.5px;max-width:64ch;margin:0}
+
+/* ---- section ---- */
+section{display:flex;flex-direction:column;gap:16px}
+.shead{display:flex;align-items:baseline;gap:12px}
+.shead h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:0;letter-spacing:-.005em}
+.shead .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair),transparent)}
+.snote{color:var(--sub);font-size:14px;margin:0;max-width:70ch}
+
+/* ---- verdict ---- */
+.verdict{background:var(--card);border:1px solid var(--hair);border-radius:12px;
+  padding:22px 24px;display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.verdict .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.verdict h2{font-family:var(--serif);font-size:19px;margin:0;font-weight:600}
+.verdict p{margin:0;font-size:14.5px;color:var(--sub);max-width:74ch}
+.verdict p strong{color:var(--ink);font-weight:600}
+
+/* ---- identity chips ---- */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;
+  font-size:11.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;
+  font-family:var(--mono)}
+.chip.dev{background:var(--jade-soft);color:var(--jade);border:1px solid color-mix(in srgb,var(--jade) 28%,transparent)}
+.chip.mine{background:var(--indigo-soft);color:var(--indigo);border:1px solid color-mix(in srgb,var(--indigo) 28%,transparent)}
+.chip.bad{background:var(--red-soft);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 28%,transparent)}
+.chip.warn{background:var(--amber-soft);color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent)}
+
+/* ---- comparison table ---- */
+.tscroll{overflow-x:auto;border:1px solid var(--hair);border-radius:12px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13.5px}
+thead th{text-align:left;padding:12px 16px;font-weight:600;font-size:12px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
+  border-bottom:1px solid var(--hair);background:var(--sunk);white-space:nowrap}
+thead th.c-dev{color:var(--jade);border-top:2px solid var(--jade)}
+thead th.c-mine{color:var(--indigo);border-top:2px solid var(--indigo)}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--hair);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.lab{color:var(--sub);font-weight:600;white-space:nowrap;width:1%}
+code{font-family:var(--mono);font-size:.9em;background:var(--sunk);
+  padding:1px 5px;border-radius:4px;color:var(--ink);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.same{color:var(--dim);font-style:italic}
+
+/* ---- two-up capability lists ---- */
+.twoup{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.twoup{grid-template-columns:1fr}table{min-width:600px}}
+.pane{background:var(--card);border:1px solid var(--hair);border-radius:12px;
+  padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.pane.dev{border-top:2px solid var(--jade)}
+.pane.mine{border-top:2px solid var(--indigo)}
+.pane h3{margin:0;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.pane ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.pane li{font-size:13.5px;color:var(--sub);padding-left:14px;position:relative;line-height:1.55}
+.pane li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;
+  border-radius:50%;background:var(--dim)}
+.pane li b{color:var(--ink);font-weight:600}
+.pane.dev li::before{background:var(--jade)}
+.pane.mine li::before{background:var(--indigo)}
+
+/* ---- defect list ---- */
+.defect{display:flex;flex-direction:column;gap:8px}
+.defect .d{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;
+  border:1px solid var(--hair);border-radius:10px;background:var(--card)}
+.defect .d.sev-both{border-left:3px solid var(--red)}
+.defect .d.sev-one{border-left:3px solid var(--amber)}
+.defect .body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.defect .t{font-size:14px;font-weight:600}
+.defect .x{font-size:13px;color:var(--sub)}
+
+/* ---- cost ---- */
+.cost{display:flex;flex-direction:column;gap:10px}
+.step{display:flex;gap:14px;align-items:baseline;padding:12px 16px;background:var(--card);
+  border:1px solid var(--hair);border-radius:10px}
+.step .v{font-family:var(--mono);font-size:11.5px;color:var(--dim);white-space:nowrap;
+  letter-spacing:.04em;padding-top:2px}
+.step .txt{font-size:13.5px;color:var(--sub);min-width:0}
+.step .txt b{color:var(--ink);font-weight:600}
+
+footer{color:var(--dim);font-size:12.5px;border-top:1px solid var(--hair);padding-top:18px;
+  display:flex;flex-direction:column;gap:5px}
+a{color:var(--jade)}
+:focus-visible{outline:2px solid var(--jade);outline-offset:2px;border-radius:3px}
+</style>
+
+<div class="wrap">
+
+<div class="mast">
+  <div class="kicker">决策文档 · 2026-08-05</div>
+  <h1>升降级对弈：两套并行实现的取舍</h1>
+  <p class="standfirst">
+    <code>origin/develop</code> 上已有一套完整的升降级对弈实现（来自 <code>codex/ai-ladder-ranked-module</code>，
+    37 个提交里占 19 个），与本分支 S1–S4 相互独立地做了同一件事。两者共用同一个
+    <code>game_type = 'ai_ladder_ranked'</code>。本文逐条对照，供你决定以哪一套为准。
+  </p>
+</div>
+
+<div class="verdict">
+  <div class="row">
+    <h2>建议：以 develop 为准</h2>
+    <span class="chip dev">保留</span>
+    <span class="chip mine">移植 3 项后删除</span>
+  </div>
+  <p>
+    develop 那套在<strong>结算正确性</strong>上做得更深：待结算对局落库、对手配置冻结快照、
+    行锁与显式事务、结算时二次校验档位与认证状态、数据库层约束、旧账本迁移。这些都是难补的地基。
+    本分支独有的是三项<strong>契约与诚实性</strong>的收紧，落点明确、移植成本低：
+    引擎不可用时的账本守卫（develop 同样缺）、盘面条件服务端固定、逐局权威结算回执。
+  </p>
+</div>
+
+<section>
+  <div class="shead"><h2>为什么不能两套并存</h2><span class="rule"></span></div>
+  <p class="snote">
+    只有 10 个文件会产生文本冲突。真正的风险在<strong>干净合并的那部分</strong>——
+    两套实现的文件名几乎完全不重叠，git 会把它们并排合进来，然后：
+  </p>
+  <div class="defect">
+    <div class="d sev-both">
+      <span class="chip bad">阻断</span>
+      <div class="body">
+        <div class="t">同一局棋会被结算两次</div>
+        <div class="x">两条结算路径都挂在 <code>game_type = 'ai_ladder_ranked'</code> 上。
+          <code>ladder_repo.settle_game</code> 与 <code>ai_ladder_ranked.settle_game</code> 各自幂等，
+          但彼此之间没有任何互斥——一局棋会在两本账上各记一次，两套段位各走一步。</div>
+      </div>
+    </div>
+    <div class="d sev-both">
+      <span class="chip bad">阻断</span>
+      <div class="body">
+        <div class="t">两套 schema 描述同一个概念</div>
+        <div class="x"><code>users</code> 上的 5 个 <code>ai_ladder_*</code> 列 + <code>ai_ladder_ledger</code>，
+          与 <code>ai_ladder_profiles</code> + <code>ai_ladder_pending_games</code> + <code>ai_ladder_game_ledger</code>
+          同时建表。哪一张是段位的真相，代码里没有答案。</div>
+      </div>
+    </div>
+    <div class="d sev-one">
+      <span class="chip warn">次生</span>
+      <div class="body">
+        <div class="t">两套 UI 抢同一个入口</div>
+        <div class="x">kiosk 的 <code>/kiosk/play/ai/setup/ranked</code> 在本分支是独立的
+          <code>LadderSetupPage</code>，在 develop 是 <code>AiSetupPage</code> 的 <code>isRanked</code> 分支。
+          路由表里只能有一个赢。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><h2>数据模型</h2><span class="rule"></span></div>
+  <p class="snote">升降级规则本身两边一致：5 局定级赛、净胜 ±3 升降一档（存储值域 −2…2）、档位 1–41。差别全在持久化与并发。</p>
+  <div class="tscroll"><table>
+    <thead><tr>
+      <th>项目</th>
+      <th class="c-dev">develop</th>
+      <th class="c-mine">本分支 S1–S4</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="lab">段位存放</td>
+        <td><code>ai_ladder_profiles</code> 独立表<br>（<code>version</code> 乐观锁列、<code>created_at</code>/<code>updated_at</code>）</td>
+        <td><code>users</code> 上加 5 列<br><code>ai_ladder_rung</code>/<code>net_wins</code>/<code>placement_lo</code>/<code>hi</code>/<code>games</code></td></tr>
+      <tr><td class="lab">数据库约束</td>
+        <td class="num">6 条 <code>CheckConstraint</code>：档位 1–41、<code>lo ≤ hi</code>、定级 0–5、净胜 −2…2</td>
+        <td>无，全靠 Python 层保证</td></tr>
+      <tr><td class="lab">账本</td>
+        <td><code>ai_ladder_game_ledger</code> append-only<br>记录<em>每一次结算尝试</em>的决定，含被忽略的原因</td>
+        <td><code>ai_ladder_ledger</code><br>只记录真正改动了段位的对局</td></tr>
+      <tr><td class="lab">幂等</td>
+        <td><code>game_id</code> 全局 UNIQUE + 命中即返回<em>重放结果</em></td>
+        <td><code>game_id</code> UNIQUE，<code>IntegrityError</code> 回滚后返回 <code>None</code></td></tr>
+      <tr><td class="lab">并发</td>
+        <td><code>SELECT … FOR UPDATE</code> 行锁 + 显式写事务 + <code>version</code> 列</td>
+        <td>单次 <code>commit()</code>，靠 UNIQUE 兜底</td></tr>
+      <tr><td class="lab">进行中的对局</td>
+        <td><code>ai_ladder_pending_games</code> 落库：冻结对手配置快照
+          （<code>config_digest</code>、<code>execution_identity</code>、认证状态、可用性、路由），每用户唯一</td>
+        <td>只在内存 session 上：<code>ladder_opponent_rung</code> / <code>ladder_result</code></td></tr>
+      <tr><td class="lab">旧账本迁移</td>
+        <td>有（<code>33c9787d</code>）</td>
+        <td>无（本就是新表）</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="shead"><h2>API 契约</h2><span class="rule"></span></div>
+  <div class="tscroll"><table>
+    <thead><tr>
+      <th>项目</th>
+      <th class="c-dev">develop</th>
+      <th class="c-mine">本分支 S1–S4</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="lab">路由</td>
+        <td><code>/api/v1/ai-ladder/catalog</code><br><code>/status</code> · <code>/start</code></td>
+        <td><code>/api/ladder/me</code><br><code>/start-game</code> · <code>/session-result/{sid}</code></td></tr>
+      <tr><td class="lab">开局入参</td>
+        <td><code>board_size(9|13|19)</code>、<code>rules</code>、<code>komi</code>、<code>handicap(0–9)</code>、
+          <code>color</code>、<code>time_enabled</code>、<code>main_time</code>、<code>byo_*</code></td>
+        <td><code>session_id</code>、<code>color</code>、<code>main_time_minutes</code>、
+          <code>byo_length_seconds</code>、<code>byo_periods</code><br><b>没有</b>盘面参数</td></tr>
+      <tr><td class="lab">盘面条件</td>
+        <td>客户端提供，服务端<b>不校验</b>，结算时也不看</td>
+        <td>服务端固定 19 路 · 中国规则 · 贴 7.5<br>（<code>ladder_repo.LADDER_BOARD_SIZE</code>，标定条件）</td></tr>
+      <tr><td class="lab">时钟单位</td>
+        <td><code>main_time</code> 分钟（<code>le=86400</code> 上界与单位不符，但取值正确）</td>
+        <td><code>main_time_minutes</code> / <code>byo_length_seconds</code>，单位写进字段名</td></tr>
+      <tr><td class="lab">结算校验</td>
+        <td>game_type + win/loss + 对手非空 + <b>认证 certified 且 available</b> +
+          <b>对手档位必须等于 profile 期望值</b>（否则 <code>opponent_rung_mismatch</code>）</td>
+        <td>game_type + 有档位 + 结果为 B+/W+ + 已落库 + <b>引擎未失联</b></td></tr>
+      <tr><td class="lab">逐局回执</td>
+        <td>无专门端点</td>
+        <td><code>GET /session-result</code> 权威回执：<code>settled</code> + <code>reason</code>
+          （<code>inconclusive</code> / <code>already_settled</code> / <code>engine_unavailable</code> / …）</td></tr>
+      <tr><td class="lab">节点权威</td>
+        <td><code>ai_ladder_authoritative</code> 标志，非权威节点返回 503</td>
+        <td>无（假定单节点）</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="shead"><h2>前端结构</h2><span class="rule"></span></div>
+  <div class="tscroll"><table>
+    <thead><tr>
+      <th>项目</th>
+      <th class="c-dev">develop</th>
+      <th class="c-mine">本分支 S1–S4</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="lab">组织方式</td>
+        <td>共享模块 <code>src/features/aiLadder/</code>（types/api/copy/settlement/gameType/hook + 2 组件），
+          kiosk 与 galaxy 复用 <span class="num">·约 1 236 行含测试</span></td>
+        <td>kiosk 与 galaxy 各写各的组件 + <code>utils/gameTypes.ts</code>、<code>utils/ladderSetup.ts</code>
+          <span class="num">·约 1 217 行</span></td></tr>
+      <tr><td class="lab">kiosk 设置页</td>
+        <td>复用 <code>AiSetupPage</code>，<code>isRanked</code> 分支收紧间距（左栏 290px）</td>
+        <td>独立 <code>LadderSetupPage</code>：横向三段（档位轨 / 净胜条 / 最近 5 局）</td></tr>
+      <tr><td class="lab">结算展示</td>
+        <td><code>deriveSettlementFeedback(before, after)</code>——开局前把 status 存进
+          <code>sessionStorage</code>，局后再取一次做 diff</td>
+        <td>终局卡内的 <code>LadderSettlementNote</code> 条，数据来自服务端逐局回执</td></tr>
+      <tr><td class="lab">未计入时</td>
+        <td>丢了 <code>before</code> 即退化为「升降级结算已完成，当前状态已更新」；
+          「没变」与「没计入」无法区分</td>
+        <td>必须带 <code>reason</code>，逐条给出人话解释</td></tr>
+      <tr><td class="lab">段位滑块</td>
+        <td colspan="2" class="same">两边都已移除（<code>showRankSlider = !isRanked && …</code>）——用户决策一致</td></tr>
+      <tr><td class="lab">最近 N 局</td>
+        <td colspan="2" class="same">两边都是胜/负文字，不是圆点——用户决策一致</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="shead"><h2>各自独有能力</h2><span class="rule"></span></div>
+  <div class="twoup">
+    <div class="pane dev">
+      <h3><span class="chip dev">develop</span> 独有</h3>
+      <ul>
+        <li><b>待结算对局持久化</b>——服务端重启 / 会话过期后仍能把已结束的对局结算掉</li>
+        <li><b>冻结对手配置快照</b>——结算时能证明当时打的是哪一档的哪一份配置（<code>config_digest</code> + <code>execution_identity</code>）</li>
+        <li><b>数据库层约束</b>——档位越界、定级局数越界在 DB 就被拒</li>
+        <li><b>行锁 + 显式事务 + 乐观锁列</b></li>
+        <li><b>结算时二次校验</b>认证状态与对手档位是否匹配 profile 期望</li>
+        <li><b>旧账本安全迁移</b>、<b>节点权威标志</b></li>
+        <li>跨会话 ranked 分析封锁、重复认输冻结、trusted ranked 实体对局</li>
+        <li>测试体量：<span class="num">test_ai_ladder_api 1 748 行 + test_ai_ladder_ranked 599 行</span></li>
+      </ul>
+    </div>
+    <div class="pane mine">
+      <h3><span class="chip mine">S1–S4</span> 独有</h3>
+      <ul>
+        <li><b>引擎不可用时的诚实状态 + 账本守卫</b>——develop 同样缺这一条</li>
+        <li><b>盘面/规则/贴目服务端固定</b>在标定条件上，客户端无从更改</li>
+        <li><b>逐局权威结算回执</b>（<code>settled</code> + <code>reason</code>），不靠前后 diff 猜</li>
+        <li><b>RK3562 真机承重实测</b>：最高状态 <span class="num">481 = 481</span> 不溢出，开始按钮完整可见</li>
+        <li>横向拖动不再退出 app（真机验证）</li>
+        <li>10 个启用语种的 i18n 补齐</li>
+        <li>测试体量：<span class="num">ladder_repo 224 + progress 189 + game_types 52 + stalled 133 行</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><h2>各自现存缺陷</h2><span class="rule"></span></div>
+  <div class="defect">
+    <div class="d sev-both">
+      <span class="chip bad">两边都有</span>
+      <div class="body">
+        <div class="t">引擎开不了局时，界面假装在思考，账本可能凭空发出升段额度</div>
+        <div class="x"><code>last_ladder_error</code> 在两个分支上都<b>没有任何前端消费者</b>，
+          两边的 <code>settle_game</code> 也都没有引擎不可用的守卫。RK3562 上实测复现：AI 一手不下、
+          横幅停在「AI 思考中…」、对手时钟走完后 galaxy 自动判负 → 人类"获胜"入账。
+          本分支已修（<code>d7fca9b3</code>），develop 未修。</div>
+      </div>
+    </div>
+    <div class="d sev-one">
+      <span class="chip dev">develop</span>
+      <div class="body">
+        <div class="t">9 路让 9 子赢一局，也会升段</div>
+        <div class="x"><code>/start</code> 接受 <code>board_size</code>、<code>rules</code>、<code>komi</code>、
+          <code>handicap</code>，而 <code>_ignored_reason</code> 只校验 game_type / 胜负 / 认证 / 档位匹配，
+          从不看盘面条件。档名描述的是 19 路中国规则贴 7.5 下的棋力，别的条件下这个名字不成立。
+          当前 UI 在 ranked 分支隐藏了这些控件，但契约仍然敞着。</div>
+      </div>
+    </div>
+    <div class="d sev-one">
+      <span class="chip dev">develop</span>
+      <div class="body">
+        <div class="t">结算反馈依赖 sessionStorage，丢了就说不清</div>
+        <div class="x">换标签页、刷新、kiosk 重启都会丢掉 <code>before</code>，
+          此时只剩一句「当前状态已更新」；而「净胜没变」与「这局根本没计入」本就该是两句不同的话。</div>
+      </div>
+    </div>
+    <div class="d sev-one">
+      <span class="chip mine">S1–S4</span>
+      <div class="body">
+        <div class="t">已结束但未结算的对局会随进程丢失</div>
+        <div class="x">对手档位只存在内存 session 上，服务端重启即消失，没有 develop 的
+          <code>pending_games</code> 兜底。</div>
+      </div>
+    </div>
+    <div class="d sev-one">
+      <span class="chip mine">S1–S4</span>
+      <div class="body">
+        <div class="t">结算时不复核对手档位与认证状态</div>
+        <div class="x">只信开局时写进 session 的档位；没有 develop 的
+          <code>opponent_rung_mismatch</code> 这一层。也没有数据库约束与行锁。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><h2>迁移成本</h2><span class="rule"></span></div>
+
+  <p class="snote"><b>方向 A · 以 develop 为准</b>（建议）</p>
+  <div class="cost">
+    <div class="step"><span class="v">删除</span><span class="txt">
+      <b>后端</b> <code>ladder_repo.py</code> · <code>ladder_progress.py</code> · <code>ladder_catalog.py</code> ·
+      <code>/api/ladder/*</code>（server.py 约 292 行）·<code>users</code> 上的 5 列与 <code>ai_ladder_ledger</code>；
+      <b>前端</b> <code>LadderSetupPage</code> · <code>LadderRankBand</code> · <code>LadderSettlementNote</code> ·
+      <code>LadderRankCard</code> · <code>LadderSettlementDialog</code> · <code>utils/ladderSetup.ts</code> ·
+      <code>utils/gameTypes.ts</code>；对应 3 个测试文件</span></div>
+    <div class="step"><span class="v">移植 1</span><span class="txt">
+      <b>引擎不可用守卫</b>——在 <code>ai_ladder_ranked._ignored_reason</code> 增加
+      <code>engine_unavailable</code> 分支，前端在 <code>features/aiLadder</code> 里加诚实横幅
+      + galaxy 的 <code>handleTimeout</code> 短路。<span class="num">现成的实现与两条回归测试可直接改写。</span></span></div>
+    <div class="step"><span class="v">移植 2</span><span class="txt">
+      <b>盘面条件收紧</b>——把 <code>board_size</code>/<code>rules</code>/<code>komi</code>/<code>handicap</code>
+      从 <code>AiLadderStartRequest</code> 移除（或服务端强制覆盖），并在结算侧一并校验。</span></div>
+    <div class="step"><span class="v">移植 3</span><span class="txt">
+      <b>逐局回执</b>（可选）——develop 的 append-only 账本已经记下了每次结算尝试与忽略原因，
+      加一个按 <code>game_id</code>/会话反查的端点即可，比重做一套便宜。</span></div>
+    <div class="step"><span class="v">冲突</span><span class="txt">
+      10 个文件仍需手工合并，但规则简单：ladder 相关一律取 develop 侧，
+      本分支只保留 <code>useGameSession</code> 的 resign/timeout 修复等非 ladder 改动。</span></div>
+  </div>
+
+  <p class="snote" style="margin-top:18px"><b>方向 B · 以本分支为准</b></p>
+  <div class="cost">
+    <div class="step"><span class="v">代价</span><span class="txt">
+      需要撤销 develop 上 19 个已合入主干的提交，并丢掉待结算持久化、配置冻结快照、
+      DB 约束、行锁、旧账本迁移与 <span class="num">2 300+</span> 行测试。</span></div>
+    <div class="step"><span class="v">连带</span><span class="txt">
+      主干上已有其他工作依赖 <code>features/aiLadder</code>（如 kiosk 账户页的段位展示 <code>80cbaab7</code>），
+      撤销会一并断掉。</span></div>
+    <div class="step"><span class="v">结论</span><span class="txt">
+      成本高于方向 A，且与主干协作方向相反。除非你认为 develop 那套的结算语义有根本问题——
+      我没有发现这样的问题。</span></div>
+  </div>
+</section>
+
+<footer>
+  <div>本页未改动任何代码，未合并、未推送、未部署。</div>
+  <div>依据：<code>origin/develop</code> @ <code>2af3c5e2</code> 与本分支 <code>4999359d</code>，分叉点 <code>2ad24de2</code>。</div>
+</footer>
+
+</div>

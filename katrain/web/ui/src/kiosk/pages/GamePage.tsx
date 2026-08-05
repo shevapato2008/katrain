@@ -33,6 +33,7 @@ export interface AiTurnState {
   aiThinking: boolean;
   physicalConfirming: boolean;
   showThinking: boolean;
+  ladderStalled: boolean;
 }
 
 // Single-color human-seat derivation, shared by humanColor (turn enforcement / board
@@ -79,8 +80,12 @@ export function deriveAiTurnState(gameState: GameState, latestEventType: string 
   // One owner for the AI-turn indicator: while the physical layer is confirming a
   // move (chip shows 确认中), suppress the 思考中 banner so they never stack.
   const physicalConfirming = latestEventType === 'move_pending';
-  const showThinking = aiThinking && !physicalConfirming;
-  return { aiColor, aiThinking, physicalConfirming, showThinking };
+  // A 升降级对弈 AI that refused to move is NOT thinking, and no move is coming. Saying
+  // "AI 思考中…" over a permanently stalled turn is the loading state lying about a
+  // failure; the banner below says what actually happened instead.
+  const ladderStalled = aiThinking && !!gameState.last_ladder_error;
+  const showThinking = aiThinking && !physicalConfirming && !ladderStalled;
+  return { aiColor, aiThinking, physicalConfirming, showThinking, ladderStalled };
 }
 
 interface EndgameCardProps {
@@ -88,6 +93,8 @@ interface EndgameCardProps {
   t: (key: string, fallback?: string) => string;
   onExit: () => void;
   onReview: () => void;
+  /** 升降级对弈 only: what this game did to the player's rank. null while it is
+      still being fetched, and on every non-ladder game. */
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
@@ -143,6 +150,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  // 升降级结算: what this game did to the player's rank. Asked once, when the game
+  // ends, and only for a server-issued ladder game. The answer comes from the
+  // server rather than from diffing two /api/ladder/me reads, because a game that
+  // did not score has to be able to say so.
   const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
@@ -269,6 +280,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     API.analyzeCurrent(sessionId).catch(() => undefined);
   }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
 
+
   const closeHint = useCallback(() => {
     setHint(null);
     API.hintDismiss().catch(() => undefined);
@@ -353,7 +365,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // aiColor also gates the persistent move banner above; physicalConfirming is folded
   // into showThinking already (see deriveAiTurnState) so PhysicalPlayStatusChip's 确认中
   // chip and the ai-thinking banner never stack.
-  const { aiColor, showThinking } = deriveAiTurnState(gameState, visionSync.latestEvent?.type ?? null);
+  const { aiColor, showThinking, ladderStalled } = deriveAiTurnState(
+    gameState,
+    visionSync.latestEvent?.type ?? null,
+  );
 
   // Board-loss precedence (state B + consolidation, B1.4): escalation is the ceiling —
   // PhysicalSyncEscalationDialog needs no suppression prop and always wins. Below it,
@@ -509,6 +524,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                 bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'primary.main' }}>
           <CircularProgress size={16} sx={{ color: 'primary.main' }} />
           <Typography sx={{ color: 'primary.main' }}>{t('AI is thinking…', 'AI 思考中…')}</Typography>
+        </Box>
+      )}
+
+      {/* The ladder AI refused to move: the engine cannot serve this rung at the strength
+          its rank name promises, so it plays nothing rather than an uncalibrated move.
+          Occupies the same slot as the thinking banner (they are mutually exclusive by
+          construction — see deriveAiTurnState) and says the two things the player needs:
+          no move is coming, and this game will not touch their rank. */}
+      {ladderStalled && (
+        <Box data-testid="ladder-stalled"
+          sx={{ position: 'absolute', top: 44, left: '50%', transform: 'translateX(-50%)', zIndex: 55,
+                maxWidth: 620, px: 2, py: 0.75, borderRadius: 2,
+                bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'warning.main' }}>
+          <Typography sx={{ color: 'warning.main', fontSize: 14, textAlign: 'center' }}>
+            {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
+          </Typography>
         </Box>
       )}
 

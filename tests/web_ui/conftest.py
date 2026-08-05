@@ -79,4 +79,12 @@ sys.modules["kivy.config"].Config = MagicMock()
 
 # Mock katrain.web.interface to prevent kivy/lang import chain triggered
 # by katrain/web/__init__.py → katrain/web/interface.py → katrain.core...
+#
+# sys.modules is process-global and conftest runs at collection, so this stub
+# leaks into every other test collected in the same run. It has to be an
+# unconditional assignment: tests in this directory poke at it as a MagicMock
+# (WebKaTrain.return_value), so a setdefault that lost the race to a real import
+# breaks them. Tests elsewhere that need the REAL WebKaTrain must therefore not
+# import it by name -- see tests/web/test_game_types.py, which loads the module
+# from disk under its own name so it cannot be handed the stub.
 sys.modules["katrain.web.interface"] = MagicMock()

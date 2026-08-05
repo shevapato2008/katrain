@@ -79,11 +79,7 @@ const AiSetupPage = () => {
     try {
       if (isRanked) {
         const { session_id, status } = await startAiLadderGame({
-          board_size: boardSize as 9 | 13 | 19,
-          rules,
           color,
-          handicap,
-          komi,
           time_enabled: true,
           main_time: mainTime,
           byo_length: byoyomiTime,
@@ -183,8 +179,19 @@ const AiSetupPage = () => {
               </Box>
             )}
 
-            {/* Ruleset — dropdown */}
-            <FormControl size="small" fullWidth>
+            {/* The conditions every rung was calibrated under. Server-owned, so this is
+                a read-out, not a control — a ruleset dropdown that the server overrides
+                would be a knob that does nothing. */}
+            {isRanked && (
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {t('ladder:fixed_setup', '19 路 · 中国规则 · 贴 7.5 目 · 不让子')}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Ruleset — dropdown, free mode only */}
+            {!isRanked && <FormControl size="small" fullWidth>
               <InputLabel id="ai-setup-rules-label">{t('Rules', '规则')}</InputLabel>
               <Select
                 labelId="ai-setup-rules-label"
@@ -197,7 +204,7 @@ const AiSetupPage = () => {
                 <MenuItem value="korean">{t('Korean', '韩国')}</MenuItem>
                 <MenuItem value="aga">AGA</MenuItem>
               </Select>
-            </FormControl>
+            </FormControl>}
 
             {/* AI strategy — dropdown, free mode only */}
             {!isRanked && (
@@ -235,8 +242,8 @@ const AiSetupPage = () => {
               </FormControl>
             )}
 
-            {/* Handicap — dropdown */}
-            <FormControl size="small" fullWidth>
+            {/* Handicap — dropdown, free mode only (ranked is always an even game) */}
+            {!isRanked && <FormControl size="small" fullWidth>
               <InputLabel id="ai-setup-handicap-label">{t('Handicap', '让子')}</InputLabel>
               <Select
                 labelId="ai-setup-handicap-label"
@@ -248,7 +255,7 @@ const AiSetupPage = () => {
                   <MenuItem key={v} value={v}>{v === 0 ? t('None', '无') : `${v}${t('stones', '子')}`}</MenuItem>
                 ))}
               </Select>
-            </FormControl>
+            </FormControl>}
 
             {/* Komi — dropdown, free mode with no handicap only */}
             {!isRanked && handicap === 0 && (

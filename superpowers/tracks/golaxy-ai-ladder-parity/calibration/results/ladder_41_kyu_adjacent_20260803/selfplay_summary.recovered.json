@@ -1,0 +1,364 @@
+{
+  "note": "Re-derived from the raw selfplay_*.jsonl checkpoints in this directory. selfplay_summary.json is written as a full overwrite containing only the matchups of the final invocation, so it retains 4 of the 12 matchups actually run here. Rebuilt with run_selfplay.complete_pair_sample / elo_from_winrate / wilson_interval; the 4 rows still present in selfplay_summary.json reproduce exactly.",
+  "source": "recovered from raw checkpoints 2026-08-04",
+  "matchups": [
+    {
+      "player_a": "rank_8k@1",
+      "player_b": "rank_9k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 11,
+      "a_winrate": 0.55,
+      "a_elo_vs_b": 34.86007028756008,
+      "a_elo_ci95": [
+        -121.48373567760711,
+        207.98462484032095
+      ],
+      "wilson_ci95": [
+        0.3420853424503424,
+        0.7418021417443758
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 12,
+        "our_loss": 9,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_9k@1",
+      "player_b": "rank_10k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 8,
+        "our_win": 12
+      }
+    },
+    {
+      "player_a": "rank_10k@1",
+      "player_b": "rank_11k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 8,
+        "our_win": 12
+      }
+    },
+    {
+      "player_a": "rank_11k@1",
+      "player_b": "rank_12k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 14,
+      "a_winrate": 0.7,
+      "a_elo_vs_b": 147.19071411783776,
+      "a_elo_ci95": [
+        -0.5838556369023904,
+        383.32491456508194
+      ],
+      "wilson_ci95": [
+        0.4810271816464765,
+        0.8545227551323956
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 14,
+        "our_loss": 6
+      }
+    },
+    {
+      "player_a": "rank_12k@1",
+      "player_b": "rank_13k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 8,
+        "our_win": 13,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_13k@1",
+      "player_b": "rank_14k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 9,
+        "our_win": 12,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_14k@1",
+      "player_b": "rank_15k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 12,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 11,
+      "a_winrate": 0.55,
+      "a_elo_vs_b": 34.86007028756008,
+      "a_elo_ci95": [
+        -121.48373567760711,
+        207.98462484032095
+      ],
+      "wilson_ci95": [
+        0.3420853424503424,
+        0.7418021417443758
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 9,
+        "our_win": 13,
+        "inconclusive_unsettled": 2
+      }
+    },
+    {
+      "player_a": "rank_15k@1",
+      "player_b": "rank_16k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 12,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 13,
+        "our_loss": 9,
+        "inconclusive_unsettled": 2
+      }
+    },
+    {
+      "player_a": "rank_16k@1",
+      "player_b": "rank_17k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 12,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 10,
+      "a_winrate": 0.5,
+      "a_elo_vs_b": -0.0,
+      "a_elo_ci95": [
+        -163.32483041631045,
+        163.32483041631045
+      ],
+      "wilson_ci95": [
+        0.29929800819821234,
+        0.7007019918017876
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 11,
+        "our_loss": 11,
+        "inconclusive_unsettled": 2
+      }
+    },
+    {
+      "player_a": "rank_17k@1",
+      "player_b": "rank_18k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 12,
+        "our_loss": 9,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_18k@1",
+      "player_b": "rank_19k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 12,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 12,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -81.15099384571364,
+        257.25725308938144
+      ],
+      "wilson_ci95": [
+        0.38658150076225317,
+        0.7811934676271829
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 13,
+        "inconclusive_unsettled": 2,
+        "our_loss": 9
+      }
+    },
+    {
+      "player_a": "rank_19k@1",
+      "player_b": "rank_20k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 16,
+      "inconclusive_pairs": 6,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 14,
+      "a_winrate": 0.7,
+      "a_elo_vs_b": 147.19071411783776,
+      "a_elo_ci95": [
+        -0.5838556369023904,
+        383.32491456508194
+      ],
+      "wilson_ci95": [
+        0.4810271816464765,
+        0.8545227551323956
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 20,
+        "our_loss": 6,
+        "inconclusive_unsettled": 6
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

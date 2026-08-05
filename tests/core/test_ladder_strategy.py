@@ -2,19 +2,56 @@ import pytest
 from katrain.core.constants import AI_LADDER
 from katrain.core.ai import STRATEGY_REGISTRY
 from katrain.core.game import Move
+from katrain.core.ladder import LADDER_ALLOW_PROVISIONAL_ENV, LadderUnavailable, resolve_available_rung
 
 
-B28_IDENTITY = {
-    "selected_model": "b28",
-    "model_path": "/models/b28.bin.gz",
-    "model_sha256": "b28-sha",
+@pytest.fixture(autouse=True)
+def allow_provisional_rungs(monkeypatch):
+    """Every test in this file is about how a ladder move is GENERATED -- the picker,
+    the attestation, the fail-closed paths -- not about whether a rung has passed
+    calibration. `_CERTIFIED_RUNGS` is empty today, so without this every one of
+    them would just raise LadderUnavailable in the constructor and test nothing.
+
+    The certification gate itself is covered by tests/core/test_ladder.py and by
+    `test_the_certification_gate_still_applies_when_the_switch_is_off` below, so
+    turning it off here cannot hide a regression in it.
+    """
+    monkeypatch.setenv(LADDER_ALLOW_PROVISIONAL_ENV, "1")
+
+
+def test_the_certification_gate_still_applies_when_the_switch_is_off(monkeypatch):
+    """Guards the fixture above: it must be the dev switch doing this, not a rung
+    that quietly became certified."""
+    monkeypatch.delenv(LADDER_ALLOW_PROVISIONAL_ENV, raising=False)
+    with pytest.raises(LadderUnavailable):
+        resolve_available_rung(41)
+
+
+# The identity a healthy engine attests for a net_search rung. Every net_search
+# rung in the 41-tier catalogue runs on b18 (see _fixed_product_recipe), so an
+# identity naming any other model is what "drift" means in these tests.
+B18_IDENTITY = {
+    "selected_model": "b18",
+    "model_path": "/models/b18.bin.gz",
+    "model_sha256": "b18-sha",
     "human_model_path": "/models/humanv0.bin.gz",
     "human_model_sha256": "human-sha",
     "katago_version": "KataGo v1.16.3",
 }
 
 
-def _search_analysis(move="Q16", identity=B28_IDENTITY):
+#: Rungs picked by MECHANISM, not by number: these tests are about how each
+#: mechanism generates a move. Re-derive them from the catalogue if it changes
+#: shape again -- 41 is the only pure net_search rung that really searches, and 36
+#: the only human_argmax one. native_policy_argmax is synthesised from 41 rather
+#: than taken from rung 39, so the attested identity stays the same across the
+#: parametrised cases.
+HUMAN_WEIGHTED_RUNG = 1     # 20级
+HUMAN_ARGMAX_RUNG = 36      # 8段
+NET_SEARCH_RUNG = 41        # 超越人类, 64 visits
+
+
+def _search_analysis(move="Q16", identity=B18_IDENTITY):
     analysis = {"moveInfos": [{"move": move, "order": 0}]}
     if identity is not None:
         analysis["_wrapper"] = dict(identity)
@@ -35,7 +72,7 @@ class FakeEngine:
         has_human_model=True,
         alive=True,
         call_back=True,
-        capability=B28_IDENTITY,
+        capability=B18_IDENTITY,
         reject_routing=False,
     ):
         self._a, self.has_human_model, self._alive, self._cb = analysis, has_human_model, alive, call_back
@@ -122,7 +159,7 @@ def test_registered():
 def test_humansl_rung_pure_visits_and_profile():
     hp = [0.0] * (19 * 19 + 1)
     hp[(19 - 3 - 1) * 19 + 3] = 1.0
-    s, eng = _mk(1, {"humanPolicy": hp})
+    s, eng = _mk(HUMAN_WEIGHTED_RUNG, {"humanPolicy": hp})
     move, _ = s.generate_move()
     assert eng.last["visits"] == 1 and eng.last["time_limit"] is False
     assert (
@@ -138,7 +175,7 @@ def test_human_weighted_rung_uses_one_u64_draw_in_shared_picker(monkeypatch):
     calls = []
     monkeypatch.setattr(secrets, "randbits", lambda bits: calls.append(bits) or draw)
 
-    strategy, _ = _mk(1, {"humanPolicy": _policy((342, 0.9), (0, 0.1))})
+    strategy, _ = _mk(HUMAN_WEIGHTED_RUNG, {"humanPolicy": _policy((342, 0.9), (0, 0.1))})
     move, _ = strategy.generate_move()
 
     assert move.gtp() == "A19"
@@ -154,11 +191,11 @@ def test_human_temperature_rung_uses_rung_temperature_and_one_u64_draw(monkeypat
     draw = 17_524_406_870_024_074_035
     calls = []
     rung = replace(
-        ladder.get_rung(1),
+        ladder.get_level(HUMAN_WEIGHTED_RUNG).recipe,
         selection=ladder.HUMAN_TEMPERATURE,
         human_policy_temperature=0.5,
     )
-    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    monkeypatch.setattr(ladder, "resolve_available_rung", lambda _: rung)
     monkeypatch.setattr(secrets, "randbits", lambda bits: calls.append(bits) or draw)
 
     strategy, _ = _mk(rung.rung, {"humanPolicy": _policy((342, 0.9), (0, 0.1))})
@@ -179,7 +216,7 @@ def test_human_temperature_rung_uses_rung_temperature_and_one_u64_draw(monkeypat
                 "rootInfo": {"visits": 1},
                 "moveInfos": [],
                 "policy": _policy((0, 1.0)),
-                "_wrapper": dict(B28_IDENTITY),
+                "_wrapper": dict(B18_IDENTITY),
             },
             "A19",
         ),
@@ -191,12 +228,12 @@ def test_deterministic_rung_selection_never_draws_randomness(monkeypatch, select
 
     import katrain.core.ladder as ladder
 
-    base = ladder.get_rung(1 if selection == ladder.HUMAN_ARGMAX else 36)
+    base = ladder.get_level(HUMAN_ARGMAX_RUNG if selection == ladder.HUMAN_ARGMAX else NET_SEARCH_RUNG).recipe
     changes = {"selection": selection}
     if selection == ladder.NATIVE_POLICY_ARGMAX:
         changes["max_visits"] = 1
     rung = replace(base, **changes)
-    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    monkeypatch.setattr(ladder, "resolve_available_rung", lambda _: rung)
     monkeypatch.setattr(secrets, "randbits", lambda bits: pytest.fail(f"unexpected {bits}-bit random draw"))
 
     strategy, _ = _mk(rung.rung, analysis)
@@ -211,13 +248,13 @@ def test_cross_mechanism_response_fails_closed_without_search_fallback(monkeypat
     import katrain.core.ladder as ladder
     from katrain.core.ai import LadderUnavailable
 
-    rung = replace(ladder.get_rung(36), max_visits=1, selection=ladder.NATIVE_POLICY_ARGMAX)
-    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    rung = replace(ladder.get_level(NET_SEARCH_RUNG).recipe, max_visits=1, selection=ladder.NATIVE_POLICY_ARGMAX)
+    monkeypatch.setattr(ladder, "resolve_available_rung", lambda _: rung)
     analysis = {
         "rootInfo": {"visits": 1},
         "moveInfos": [{"move": "Q16", "order": 0}],
         "policy": _policy((0, 1.0)),
-        "_wrapper": dict(B28_IDENTITY),
+        "_wrapper": dict(B18_IDENTITY),
     }
     strategy, _ = _mk(rung.rung, analysis)
 
@@ -230,14 +267,14 @@ def test_runtime_passes_complete_rung_to_shared_picker(monkeypatch):
 
     import katrain.core.ladder as ladder
 
-    rung = replace(ladder.get_rung(36), rank_name="spy rung")
+    rung = replace(ladder.get_level(NET_SEARCH_RUNG).recipe, rank_name="spy rung")
     calls = []
 
     def picker(analysis, received_rung, board_size, *, draw_u64=None):
         calls.append((analysis, received_rung, board_size, draw_u64))
         return "pass"
 
-    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
+    monkeypatch.setattr(ladder, "resolve_available_rung", lambda _: rung)
     monkeypatch.setattr(ladder, "pick_ladder_rung_move", picker)
     analysis = _search_analysis()
     strategy, _ = _mk(rung.rung, analysis)
@@ -249,10 +286,15 @@ def test_runtime_passes_complete_rung_to_shared_picker(monkeypatch):
 
 
 def test_search_rung_high_visits_top_move():
-    s, eng = _mk(36, _search_analysis())
+    from katrain.core.ladder import get_level
+
+    s, eng = _mk(NET_SEARCH_RUNG, _search_analysis())
     move, _ = s.generate_move()
-    assert eng.last["visits"] >= 100
-    assert eng.last["extra"]["model"] == "b28"
+    # The rung's own configured visits, read from the catalogue rather than
+    # hard-coded: the point is that a search rung searches, not that it searches
+    # some particular number that calibration is free to change.
+    assert eng.last["visits"] == get_level(NET_SEARCH_RUNG).recipe.max_visits > 1
+    assert eng.last["extra"]["model"] == "b18"
     assert eng.last["extra"].get("humanSLProfile") is None
     assert move.gtp() == "Q16"
 
@@ -260,9 +302,9 @@ def test_search_rung_high_visits_top_move():
 def test_search_rung_rejects_wrong_or_missing_attestation():
     from katrain.core.ai import LadderUnavailable
 
-    wrong = dict(B28_IDENTITY, selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha")
+    wrong = dict(B18_IDENTITY, selected_model="b28", model_path="/models/b28.bin.gz", model_sha256="b28-sha")
     for analysis in (_search_analysis(identity=wrong), _search_analysis(identity=None)):
-        strategy, _ = _mk(36, analysis)
+        strategy, _ = _mk(NET_SEARCH_RUNG, analysis)
         with pytest.raises(LadderUnavailable, match="attestation"):
             strategy.generate_move()
 
@@ -270,7 +312,7 @@ def test_search_rung_rejects_wrong_or_missing_attestation():
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("selected_model", "b18"),
+        ("selected_model", "b28"),
         ("model_path", "/models/other.bin.gz"),
         ("model_sha256", "other-sha"),
         ("human_model_sha256", "other-human-sha"),
@@ -280,9 +322,9 @@ def test_search_rung_rejects_wrong_or_missing_attestation():
 def test_search_rung_rejects_response_identity_drift_from_startup(field, value):
     from katrain.core.ai import LadderUnavailable
 
-    response_identity = dict(B28_IDENTITY)
+    response_identity = dict(B18_IDENTITY)
     response_identity[field] = value
-    strategy, _ = _mk(36, _search_analysis(identity=response_identity))
+    strategy, _ = _mk(NET_SEARCH_RUNG, _search_analysis(identity=response_identity))
     with pytest.raises(LadderUnavailable, match=field):
         strategy.generate_move()
 
@@ -291,12 +333,12 @@ def test_search_rung_rejects_startup_capability_for_another_model():
     from katrain.core.ai import LadderUnavailable
 
     capability = dict(
-        B28_IDENTITY,
-        selected_model="b18",
-        model_path="/models/b18.bin.gz",
-        model_sha256="b18-sha",
+        B18_IDENTITY,
+        selected_model="b28",
+        model_path="/models/b28.bin.gz",
+        model_sha256="b28-sha",
     )
-    strategy, _ = _mk(36, _search_analysis())
+    strategy, _ = _mk(NET_SEARCH_RUNG, _search_analysis())
     strategy.game.engines["B"].capability = capability
     with pytest.raises(LadderUnavailable, match="selected_model"):
         strategy.generate_move()
@@ -321,8 +363,8 @@ def test_humansl_search_requires_human_attestation(monkeypatch):
         max_visits=40,
         human_sl_params=dict(HUMANSL_PIKL_BASELINE),
     )
-    monkeypatch.setattr(ladder, "get_rung", lambda _: rung)
-    identity = dict(B28_IDENTITY, selected_model="b18", model_path="/models/b18.bin.gz", model_sha256="b18-sha")
+    monkeypatch.setattr(ladder, "resolve_available_rung", lambda _: rung)
+    identity = dict(B18_IDENTITY)
     identity["human_model_path"] = None
     identity["human_model_sha256"] = None
     capability = dict(identity, human_model_path="/models/humanv0.bin.gz", human_model_sha256="human-sha")
@@ -336,7 +378,7 @@ def test_explicit_model_route_rejection_is_unavailable_before_io():
     from katrain.core.ai import LadderUnavailable
 
     engine = FakeEngine(_search_analysis(), reject_routing=True)
-    strategy = STRATEGY_REGISTRY[AI_LADDER](FakeGame(engine), {"rung": 36})
+    strategy = STRATEGY_REGISTRY[AI_LADDER](FakeGame(engine), {"rung": NET_SEARCH_RUNG})
     with pytest.raises(LadderUnavailable, match="routing unsupported"):
         strategy.generate_move()
     assert engine.request_count == 0
@@ -357,7 +399,7 @@ def test_invalid_rung_fails_closed():
 def test_humansl_no_human_model_raises_unavailable():
     from katrain.core.ai import LadderUnavailable
 
-    s, eng = _mk(1, {"moveInfos": [{"move": "Q16", "order": 0}]}, hhm=False)
+    s, eng = _mk(HUMAN_WEIGHTED_RUNG, {"moveInfos": [{"move": "Q16", "order": 0}]}, hhm=False)
     with pytest.raises(LadderUnavailable):  # NO silent PolicyStrategy fallback (uncalibrated strength)
         s.generate_move()
 
@@ -371,7 +413,7 @@ def test_analysis_error_raises_unavailable():
         error_callback("boom")
 
     eng.request_analysis = boom
-    s = STRATEGY_REGISTRY[AI_LADDER](FakeGame(eng), {"rung": 1})
+    s = STRATEGY_REGISTRY[AI_LADDER](FakeGame(eng), {"rung": HUMAN_WEIGHTED_RUNG})
     with pytest.raises(LadderUnavailable):  # NO cached-top-policy fallback either
         s.generate_move()
 
@@ -381,7 +423,7 @@ def test_humansl_degraded_response_raises_unavailable():
     # move under the humanSL label -> LadderUnavailable (H2, no cross-mechanism fallback).
     from katrain.core.ai import LadderUnavailable
 
-    s, eng = _mk(1, {"moveInfos": [{"move": "Q16", "order": 0}]})  # has_human_model True, but degraded output
+    s, eng = _mk(HUMAN_WEIGHTED_RUNG, {"moveInfos": [{"move": "Q16", "order": 0}]})  # has_human_model True, but degraded output
     with pytest.raises(LadderUnavailable):
         s.generate_move()
 
@@ -394,7 +436,7 @@ def test_dead_engine_raises_unavailable_no_hang(monkeypatch):
 
     monkeypatch.setattr(ai, "LADDER_ANALYSIS_TIMEOUT_S", 0.2, raising=False)
     eng = FakeEngine(_search_analysis(), alive=False, call_back=False)
-    s = STRATEGY_REGISTRY[AI_LADDER](FakeGame(eng), {"rung": 36})  # net_search, no human model needed
+    s = STRATEGY_REGISTRY[AI_LADDER](FakeGame(eng), {"rung": NET_SEARCH_RUNG})  # net_search, no human model needed
     with pytest.raises(LadderUnavailable):
         s.generate_move()
 
@@ -404,10 +446,13 @@ def test_empty_completed_analysis_raises_unavailable_no_hang():
     # the explicit `done` flag fires, then `not analysis` -> LadderUnavailable (M2).
     from katrain.core.ai import LadderUnavailable
 
-    s, eng = _mk(36, {})  # net_search rung, callback delivers {} synchronously, alive=True
+    from katrain.core.ladder import get_level
+
+    s, eng = _mk(NET_SEARCH_RUNG, {})  # net_search rung, callback delivers {} synchronously, alive=True
     with pytest.raises(LadderUnavailable):
         s.generate_move()
-    assert eng.last["visits"] >= 100  # it DID issue the query, then failed closed on empty payload
+    # it DID issue the query, then failed closed on the empty payload
+    assert eng.last["visits"] == get_level(NET_SEARCH_RUNG).recipe.max_visits
 
 
 def test_ladder_never_global_resigns(monkeypatch):
@@ -419,7 +464,7 @@ def test_ladder_never_global_resigns(monkeypatch):
     monkeypatch.setattr(ai, "should_ai_resign", lambda *a, **k: True)
     eng = FakeEngine(_search_analysis())
     game = FakeGame(eng)
-    result = ai.generate_ai_move(game, AI_LADDER, {"rung": 36})
+    result = ai.generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
     assert result is not None
     move, played_node = result
     assert move.gtp() == "Q16"
@@ -430,7 +475,7 @@ def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     # katrain.log is the WS-broadcast channel: WebKaTrain.log forwards EVERY level via
     # message_callback -> SessionManager WS -> ZenModeApp TopBar (codex round 3/5, verified).
     # NOTHING on the ladder path may push the rung index / visits / 星阵 through it:
-    #   - AIStrategy.__init__ settings-dump ({'rung': 36})  -> routed to stdlib logger (round 5 fix)
+    #   - AIStrategy.__init__ settings-dump ({'rung': N})   -> routed to stdlib logger (round 5 fix)
     #   - LadderStrategy success detail (rung · visits)     -> routed to stdlib logger (round 3 fix)
     #   - the returned ai_thoughts                          -> clean 段位 label only
     # The spy is installed BEFORE generate_ai_move so it sees the construction-time init log.
@@ -444,10 +489,10 @@ def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     game.katrain.log = lambda *a, **k: seen.append(str(a[0]) if a else "")
 
     with caplog.at_level(logging.DEBUG, logger="katrain.core.ai"):
-        move, node = generate_ai_move(game, AI_LADDER, {"rung": 36})  # rung 36 == 超职业
+        move, node = generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})  # 41 == 超越人类
 
-    assert node.ai_thoughts == "棋力阶梯 超职业"  # clean user-visible thought (SGF + TopBar)
+    assert node.ai_thoughts == "棋力阶梯 超越人类"  # clean user-visible thought (SGF + TopBar)
     joined = " ".join(seen)
-    for banned in ("星阵", "rung", "visits", "36"):  # per codex round 5 recommendation
+    for banned in ("星阵", "rung", "visits", str(NET_SEARCH_RUNG)):  # per codex round 5 recommendation
         assert banned not in joined
     assert "visits=" in caplog.text  # observability preserved server-side

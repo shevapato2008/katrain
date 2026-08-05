@@ -1,0 +1,123 @@
+{
+  "matchups": [
+    {
+      "player_a": "rank_7k@1",
+      "player_b": "rank_8k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 13,
+      "a_winrate": 0.65,
+      "a_elo_vs_b": 107.53812491703204,
+      "a_elo_ci95": [
+        -41.218281331875126,
+        313.9686398195119
+      ],
+      "wilson_ci95": [
+        0.4328542766852363,
+        0.8188081758989179
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 7,
+        "our_win": 14,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_6k@1",
+      "player_b": "rank_7k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 14,
+      "a_winrate": 0.7,
+      "a_elo_vs_b": 147.19071411783776,
+      "a_elo_ci95": [
+        -0.5838556369023904,
+        383.32491456508194
+      ],
+      "wilson_ci95": [
+        0.4810271816464765,
+        0.8545227551323956
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 14,
+        "our_loss": 6
+      }
+    },
+    {
+      "player_a": "rank_5k@1",
+      "player_b": "rank_6k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 11,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 11,
+      "a_winrate": 0.55,
+      "a_elo_vs_b": 34.86007028756008,
+      "a_elo_ci95": [
+        -121.48373567760711,
+        207.98462484032095
+      ],
+      "wilson_ci95": [
+        0.3420853424503424,
+        0.7418021417443758
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_loss": 10,
+        "our_win": 11,
+        "inconclusive_unsettled": 1
+      }
+    },
+    {
+      "player_a": "rank_4k@1",
+      "player_b": "rank_5k@1",
+      "phase": "screen",
+      "target_complete_pairs": 10,
+      "complete_pairs": 10,
+      "decision_games": 20,
+      "pair_attempts": 10,
+      "inconclusive_pairs": 0,
+      "max_pair_attempts": 20,
+      "max_attempts_reached": false,
+      "conclusive": 20,
+      "a_wins": 16,
+      "a_winrate": 0.8,
+      "a_elo_vs_b": 240.82399653118495,
+      "a_elo_ci95": [
+        88.51144944084176,
+        638.6322555967002
+      ],
+      "wilson_ci95": [
+        0.5839825677481064,
+        0.919342337420202
+      ],
+      "classification": "screen_complete",
+      "reason_counts": {
+        "our_win": 16,
+        "our_loss": 4
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

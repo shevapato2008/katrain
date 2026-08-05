@@ -10,6 +10,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../../context/AuthContext';
 import { i18n } from '../../i18n';
+import { getAiLadderStatus } from '../../features/aiLadder/api';
 import SubPageBar from '../components/layout/SubPageBar';
 
 interface OnlineUser {
@@ -42,6 +43,18 @@ const LobbyPage = () => {
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'info' | 'error' | 'success' } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // null = no ladder rank yet. Rated PvP needs one; the server enforces the same
+  // thing, this only avoids queueing just to be refused.
+  const [ladderRank, setLadderRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    getAiLadderStatus(token)
+      // A non-ready status (loading/error) has no placement_state at all — treat it as
+      // "no rank" rather than reading through it; this is only a pre-check anyway.
+      .then((s) => setLadderRank(s?.placement_state?.phase === 'placed' ? s.placement_state.rung.rung : null))
+      .catch(() => setLadderRank(null));
+  }, [token]);
 
   if (!token) {
     return (
@@ -128,8 +141,16 @@ const LobbyPage = () => {
   const startMatchmaking = (gameType: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
-    if (gameType === 'rated' && user?.rank === '20k') {
-      alert(i18n.t('lobby:rank_required', '请先完成AI定级赛（3局）后再进行排位对局'));
+    // Rated PvP needs a ladder rank. The old check read `user.rank === '20k'`, the
+    // registration default that nothing ever moved, and then sent the player to the
+    // kiosk 拟人 setup page — which does not produce a ladder rank either. That was a
+    // closed loop with no exit. Now there IS a kiosk page that produces one, so send
+    // them there.
+    if (gameType === 'rated' && ladderRank === null) {
+      setSnackbar({
+        message: i18n.t('lobby:placement_required', '先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。'),
+        severity: 'info',
+      });
       navigate('/kiosk/play/ai/setup/ranked');
       return;
     }

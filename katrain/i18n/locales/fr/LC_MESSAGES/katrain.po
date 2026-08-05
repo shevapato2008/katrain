@@ -2695,3 +2695,219 @@ msgstr "Échelle de Force"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "Niveau de Rang"
+
+msgid "ladder:your_rank"
+msgstr "Votre rang"
+
+msgid "ladder:net_wins"
+msgstr "Victoires nettes"
+
+msgid "ladder:to_promote"
+msgstr "Encore {n} victoires pour {rank}"
+
+msgid "ladder:to_demote"
+msgstr "Encore {n} défaites et vous descendez à {rank}"
+
+msgid "ladder:to_promote_plain"
+msgstr "Encore {n} victoires pour monter d'un palier."
+
+msgid "ladder:to_demote_plain"
+msgstr "Encore {n} défaites et vous descendez d'un palier."
+
+msgid "ladder:top_rung"
+msgstr "Palier maximal atteint"
+
+msgid "ladder:promote_one"
+msgstr "Monter d'un palier"
+
+msgid "ladder:demote_one"
+msgstr "Descendre d'un palier"
+
+msgid "ladder:recent_n"
+msgstr "{n} dernières parties"
+
+msgid "ladder:recent_none"
+msgstr "Aucune partie comptabilisée"
+
+msgid "ladder:recent_note"
+msgstr "Parties classées uniquement"
+
+msgid "ladder:win"
+msgstr "V"
+
+msgid "ladder:loss"
+msgstr "D"
+
+msgid "ladder:this_game_win"
+msgstr "Partie gagnée"
+
+msgid "ladder:this_game_loss"
+msgstr "Partie perdue"
+
+msgid "ladder:placement"
+msgstr "Placement"
+
+msgid "ladder:placement_progress"
+msgstr "Progression"
+
+msgid "ladder:placement_game_n"
+msgstr "Partie {n}"
+
+msgid "ladder:placement_of_total"
+msgstr "sur {n}"
+
+msgid "ladder:placement_note"
+msgstr "Chaque résultat réduit la fourchette."
+
+msgid "ladder:placement_left"
+msgstr "Encore {n} parties pour fixer votre rang."
+
+msgid "ladder:placement_game_done"
+msgstr "Partie de placement {n}"
+
+msgid "ladder:placement_done"
+msgstr "Placement terminé"
+
+msgid "ladder:placement_done_note"
+msgstr "Désormais, ±{n} victoires nettes changent d'un palier."
+
+msgid "ladder:start_placement"
+msgstr "Commencer le placement"
+
+msgid "ladder:promoted"
+msgstr "Promu"
+
+msgid "ladder:demoted"
+msgstr "Rétrogradé"
+
+msgid "ladder:promoted_note"
+msgstr "Net +{n} — un palier de plus, compteur remis à zéro."
+
+msgid "ladder:demoted_note"
+msgstr "Net -{n} — un palier de moins, compteur remis à zéro."
+
+msgid "ladder:this_game_opponent"
+msgstr "Adversaire de cette partie"
+
+msgid "ladder:fixed_setup"
+msgstr "19x19 · règles chinoises · komi 7,5 · sans handicap"
+
+msgid "ladder:setup_size"
+msgstr "{n}×{n}"
+
+msgid "ladder:setup_komi"
+msgstr "komi {n}"
+
+msgid "ladder:rules_chinese"
+msgstr "Règles chinoises"
+
+msgid "ladder:rules_japanese"
+msgstr "Règles japonaises"
+
+msgid "ladder:rules_korean"
+msgstr "Règles coréennes"
+
+msgid "ladder:rules_aga"
+msgstr "Règles AGA"
+
+msgid "ladder:timer_locked"
+msgstr "Toujours actif en partie classée"
+
+msgid "ladder:uncertified"
+msgstr "Non calibré"
+
+msgid "ladder:blocked_uncertified"
+msgstr ""
+"Le profil de force de {rank} est en cours de calibration, la partie ne peut "
+"pas commencer."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "Vous pourrez jouer une fois la calibration terminée."
+
+msgid "ladder:blocked_engine"
+msgstr "Le moteur est indisponible, la partie ne peut pas commencer."
+
+msgid "ladder:blocked_engine_2"
+msgstr "Vous pourrez jouer dès le retour du moteur."
+
+msgid "ladder:cannot_start"
+msgstr "Impossible de commencer"
+
+msgid "ladder:loading"
+msgstr "Chargement de votre rang…"
+
+msgid "ladder:load_failed"
+msgstr "Impossible de charger votre rang, la partie ne peut pas commencer."
+
+msgid "ladder:need_login"
+msgstr "Connectez-vous pour jouer des parties classées."
+
+msgid "ladder:unscored"
+msgstr "Cette partie n'a pas compté"
+
+msgid "ladder:unscored_inconclusive"
+msgstr ""
+"Cette partie n'a pas eu de vainqueur : elle ne compte pas et ne consomme pas"
+" de partie de placement."
+
+msgid "ladder:unscored_already"
+msgstr ""
+"Cette partie a déjà été comptabilisée ; votre rang n'a pas changé de "
+"nouveau."
+
+msgid "ladder:unscored_in_progress"
+msgstr "Cette partie n'est pas encore terminée."
+
+msgid "ladder:unscored_error"
+msgstr ""
+"Cette partie n'a pas pu être inscrite au journal du classement, votre rang "
+"n'a pas changé. Merci de nous la signaler."
+
+msgid "ladder:got_it"
+msgstr "Compris"
+
+msgid "lobby:placement_required"
+msgstr ""
+"Terminez les 5 parties de placement en partie classée avant de rejoindre la "
+"file classée."
+
+msgid "My Color"
+msgstr "Ma couleur"
+
+msgid "Black Stone"
+msgstr "● Noir"
+
+msgid "White Stone"
+msgstr "○ Blanc"
+
+msgid "Byoyomi only 30s x3"
+msgstr "Byo-yomi seul"
+
+msgid "10 min + 3x30s"
+msgstr "10 min + 3×30 s"
+
+msgid "20 min + 3x30s"
+msgstr "20 min + 3×30 s"
+
+msgid "30 min + 3x30s"
+msgstr "30 min + 3×30 s"
+
+msgid "Ranked Game"
+msgstr "Partie classée"
+
+msgid "Free Game"
+msgstr "Partie libre"
+
+msgid "retry"
+msgstr "Réessayer"
+
+msgid "ladder:engine_stalled"
+msgstr ""
+"Moteur de l'échelle indisponible — l'IA ne peut pas jouer. Cette partie ne "
+"compte pas ; veuillez la quitter."
+
+msgid "ladder:unscored_engine"
+msgstr ""
+"Votre adversaire n'a pas pu jouer à sa force calibrée : cette partie ne "
+"compte pas — votre rang est inchangé et aucune partie de classement n'est "
+"consommée."

@@ -1,0 +1,95 @@
+{
+  "matchups": [
+    {
+      "player_a": "rank_1d@1t1.1",
+      "player_b": "rank_1k@1t1",
+      "phase": "confirm",
+      "target_complete_pairs": 20,
+      "complete_pairs": 20,
+      "decision_games": 40,
+      "pair_attempts": 22,
+      "inconclusive_pairs": 2,
+      "max_pair_attempts": 60,
+      "max_attempts_reached": false,
+      "conclusive": 40,
+      "a_wins": 24,
+      "a_winrate": 0.6,
+      "a_elo_vs_b": 70.43650362227247,
+      "a_elo_ci95": [
+        -36.13865114714456,
+        192.53971962826907
+      ],
+      "wilson_ci95": [
+        0.44595893660346186,
+        0.7365167431570808
+      ],
+      "classification": "inconclusive",
+      "reason_counts": {
+        "our_win": 24,
+        "inconclusive_unsettled": 2,
+        "our_loss": 18
+      }
+    },
+    {
+      "player_a": "rank_1d@1t1.1",
+      "player_b": "rank_1d@1t1.15",
+      "phase": "confirm",
+      "target_complete_pairs": 20,
+      "complete_pairs": 20,
+      "decision_games": 40,
+      "pair_attempts": 23,
+      "inconclusive_pairs": 3,
+      "max_pair_attempts": 60,
+      "max_attempts_reached": false,
+      "conclusive": 40,
+      "a_wins": 19,
+      "a_winrate": 0.475,
+      "a_elo_vs_b": -17.386277512436106,
+      "a_elo_ci95": [
+        -130.75025133892356,
+        92.2750509497644
+      ],
+      "wilson_ci95": [
+        0.329354701126789,
+        0.6250263789330753
+      ],
+      "classification": "inconclusive",
+      "reason_counts": {
+        "our_win": 20,
+        "our_loss": 23,
+        "inconclusive_unsettled": 3
+      }
+    },
+    {
+      "player_a": "rank_1d@1t1",
+      "player_b": "rank_1d@1t1.1",
+      "phase": "confirm",
+      "target_complete_pairs": 20,
+      "complete_pairs": 20,
+      "decision_games": 40,
+      "pair_attempts": 21,
+      "inconclusive_pairs": 1,
+      "max_pair_attempts": 60,
+      "max_attempts_reached": false,
+      "conclusive": 40,
+      "a_wins": 28,
+      "a_winrate": 0.7,
+      "a_elo_vs_b": 147.19071411783776,
+      "a_elo_ci95": [
+        40.47386002279614,
+        290.6822321527773
+      ],
+      "wilson_ci95": [
+        0.5456998118185507,
+        0.8192515477025347
+      ],
+      "classification": "a_stronger",
+      "reason_counts": {
+        "our_win": 28,
+        "our_loss": 13,
+        "inconclusive_unsettled": 1
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

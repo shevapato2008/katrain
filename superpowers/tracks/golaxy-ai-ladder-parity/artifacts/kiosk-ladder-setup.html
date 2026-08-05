@@ -1,0 +1,509 @@
+<title>智星盒 StellaBox · 升降级对弈设置页（kiosk 1024×600）</title>
+<style>
+@import url("../../kiosk-ui-redesign/artifacts/fonts.css");
+:root{
+  --slate:#0f1416; --raise:#18211f; --raise2:#1d2725; --hair:#2b3a35;
+  --ice:#eef3f1; --sub:#93a49d; --dim:#5f716b;
+  --jade:#58b57a; --jade-d:#26463a; --amber:#e0a24a; --red:#e2685c;
+  --sans:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;
+  --serif:'Newsreader','Songti SC',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080b0b;font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ice)}
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 24px 70px}
+.cap{color:#7c8a85;font-size:12.5px;text-align:center;max-width:1024px}.cap b{color:#c2ccc8;font-weight:600}
+.flowlabel{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:13px;margin-top:14px}
+.flowlabel .n{font-family:var(--serif);font-style:italic;color:var(--jade)}
+.flowlabel .rule{width:60px;height:1px;background:linear-gradient(90deg,var(--jade-d),transparent)}
+
+.screen{width:1024px;height:600px;background:
+  radial-gradient(90% 80% at 20% 0%, rgba(88,181,122,.08), transparent 55%),
+  linear-gradient(180deg,#111817,#0d1211);
+  border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  border:1px solid #223029;box-shadow:0 30px 80px -30px #000}
+
+/* ---- shared header (same as every kiosk screen) ---- */
+.hdr{height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;border-bottom:1px solid var(--hair)}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;object-fit:contain;flex-shrink:0}
+.wname{font-family:var(--serif);font-size:20px;font-weight:600}
+.wname small{font-family:var(--serif);font-style:italic;font-weight:500;font-size:12px;color:var(--sub);margin-left:7px}
+.hdr .r{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--sub)}
+.hdr .who{display:flex;align-items:center;gap:8px;color:var(--ice)}
+.hdr .ava{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#26463a,#58b57a);display:grid;place-items:center;font-size:12px;font-weight:700;color:#0c130f}
+
+/* ---- sub page bar ---- */
+.subbar{height:68px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--hair)}
+.back{width:48px;height:48px;border-radius:12px;border:1px solid var(--hair);background:var(--raise2);display:grid;place-items:center;flex-shrink:0}
+.back svg{width:20px;height:20px;fill:var(--ice)}
+.subbar h1{font-size:17px;font-weight:600}
+
+/* ---- body: rank panel (left) + this-game column (right) ---- */
+.main{flex:1;min-height:0;display:flex;gap:20px;padding:16px 20px}
+
+.rankpanel{width:322px;flex-shrink:0;background:var(--raise);border:1px solid var(--hair);
+  border-radius:18px;padding:16px 18px;display:flex;flex-direction:column}
+.rankpanel .ph{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--sub);text-transform:uppercase}
+
+/* the signature: three rungs threaded on one rail */
+.rail{margin-top:14px;position:relative;padding-left:24px}
+.rail .line{position:absolute;left:4px;top:10px;bottom:10px;width:2px;background:#33433d}
+.rail .nb{font-size:15px;color:var(--dim);line-height:22px;letter-spacing:.5px}
+.rail .now{position:relative;margin:3px 0}
+.rail .now .dot{position:absolute;left:-24px;top:13px;width:11px;height:11px;border-radius:50%;
+  background:var(--jade);box-shadow:0 0 0 4px rgba(88,181,122,.20)}
+.rail .now b{font-size:32px;font-weight:700;line-height:40px;letter-spacing:.5px}
+
+.hr{height:1px;background:var(--hair);margin:16px 0}
+
+.netrow{display:flex;align-items:baseline;gap:9px}
+.netrow .k{font-size:12px;color:var(--sub);letter-spacing:.5px}
+.netrow .v{font-size:23px;font-weight:700;line-height:23px;color:var(--jade)}
+.netrow .v.neg{color:var(--amber)}
+.nethint{font-size:12px;color:var(--ice);margin-top:6px}
+.bar{display:flex;align-items:stretch;height:14px;gap:5px;margin-top:9px}
+.bar i{flex:1;border-radius:3px;background:#2f3d38}
+.bar i.win{background:var(--jade)}
+.bar i.lose{background:var(--amber)}
+.bar .zero{width:2px;flex:none;background:#4e605a;border-radius:1px;margin:-4px 4px}
+.barlab{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:7px}
+
+.recent{margin-top:auto;padding-top:14px;border-top:1px solid var(--hair);display:flex;align-items:baseline;gap:11px}
+.recent .k{font-size:12px;color:var(--dim)}
+.recent .g{display:flex;gap:9px;font-size:13px}
+.recent .g .w{color:var(--jade)}
+.recent .g .l{color:var(--dim)}
+
+/* placement variant */
+.pgame{margin-top:14px}
+.pgame b{font-size:27px;font-weight:700}
+.pgame span{font-size:14px;color:var(--dim);margin-left:6px}
+.steps{display:flex;align-items:center;margin:16px 0 4px}
+.steps .s{width:13px;height:13px;border-radius:50%;flex:none;border:2px solid #45534e}
+.steps .s.done{background:var(--jade);border-color:var(--jade)}
+.steps .s.now{background:var(--ice);border-color:var(--ice);box-shadow:0 0 0 4px rgba(88,181,122,.25)}
+.steps .c{height:2px;flex:1;background:#2f3d38}
+.steps .c.done{background:var(--jade)}
+.pnote{font-size:12px;color:var(--dim);line-height:1.65;margin-top:auto;padding-top:14px;border-top:1px solid var(--hair)}
+
+/* ---- right column ---- */
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.oppcard{background:var(--raise);border:1px solid var(--hair);border-radius:14px;padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between}
+.oppcard.blocked{border-color:rgba(224,162,74,.4);background:linear-gradient(90deg,rgba(224,162,74,.09),var(--raise))}
+.oppcard .k{font-size:12.5px;color:var(--sub);letter-spacing:.5px}
+.oppcard .set{font-size:12px;color:var(--dim);margin-top:5px}
+.oppcard .v{font-size:30px;font-weight:700;text-align:right;line-height:34px}
+.tag{display:inline-block;margin-left:10px;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:600;
+  letter-spacing:.5px;color:var(--amber);border:1px solid rgba(224,162,74,.45);vertical-align:7px}
+
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:11.5px;color:var(--sub);letter-spacing:.3px}
+.chips{display:flex;gap:7px}
+.chip{flex:1;text-align:center;padding:9px 4px;border-radius:10px;border:1px solid var(--hair);background:var(--raise2);
+  font-size:13px;color:var(--sub);white-space:nowrap}
+.chip.on{background:var(--jade-d);border-color:var(--jade);color:var(--ice);font-weight:600}
+
+.warnbox{border:1px solid rgba(224,162,74,.3);background:rgba(224,162,74,.08);border-radius:11px;
+  padding:12px 14px;font-size:13px;color:var(--amber);line-height:1.6}
+
+.cta{margin-top:auto;height:54px;border-radius:13px;background:var(--jade);color:#0c130f;font-size:16.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 12px 28px -12px var(--jade)}
+.cta.off{background:#25302d;color:#5f716b;box-shadow:none;border:1px solid var(--hair)}
+.cta svg{width:19px;height:19px;fill:currentColor}
+
+/* ---- variant B: horizontal bands (1024x600 is a landscape screen; the two-column
+   skeleton leaves ~180px of void in both columns because this page has no board
+   preview to fill the left panel) ---- */
+.bmain{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:12px 20px}
+.band{background:var(--raise);border:1px solid var(--hair);border-radius:16px;display:flex}
+.band .seg{padding:12px 20px;display:flex;flex-direction:column;justify-content:center}
+.band .seg + .seg{border-left:1px solid var(--hair)}
+.bh{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--sub);margin-bottom:8px}
+
+.seg.rankseg{width:262px;flex:none}
+.brail{position:relative;padding-left:24px}
+.brail .line{position:absolute;left:4px;top:9px;bottom:9px;width:2px;background:#33433d}
+.brail .nb{font-size:14px;color:var(--dim);line-height:21px;letter-spacing:.5px}
+.brail .now{position:relative;margin:2px 0}
+.brail .now .dot{position:absolute;left:-24px;top:12px;width:11px;height:11px;border-radius:50%;
+  background:var(--jade);box-shadow:0 0 0 4px rgba(88,181,122,.20)}
+.brail .now b{font-size:31px;font-weight:700;line-height:38px;letter-spacing:.5px}
+
+.seg.netseg{flex:1;min-width:0}
+.seg.recseg{width:230px;flex:none}
+.recwrap{display:flex;gap:11px;font-size:16px}
+.recwrap .w{color:var(--jade);font-weight:600}
+.recwrap .l{color:var(--dim)}
+.recnote{font-size:11.5px;color:var(--dim);margin-top:9px}
+
+.seg.pseg{flex:1;min-width:0}
+.bsteps{display:flex;align-items:center;max-width:420px;margin-top:2px}
+.bsteps .s{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid #45534e}
+.bsteps .s.done{background:var(--jade);border-color:var(--jade)}
+.bsteps .s.now{background:var(--ice);border-color:var(--ice);box-shadow:0 0 0 4px rgba(88,181,122,.25)}
+.bsteps .c{height:2px;flex:1;background:#2f3d38}
+.bsteps .c.done{background:var(--jade)}
+
+.brow{display:flex;gap:12px}
+.brow .band:first-child{flex:1;min-width:0}
+.brow .band:last-child{flex:none}
+.seg.oppseg{flex:1;min-width:0;flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
+.seg.colorseg{width:236px;flex:none}
+.seg.timeseg{flex:1;min-width:0}
+.bchips{display:flex;gap:7px}
+.bchip{flex:1;text-align:center;padding:9px 6px;border-radius:10px;border:1px solid var(--hair);background:var(--raise2);
+  font-size:13px;color:var(--sub);white-space:nowrap}
+.bchip.on{background:var(--jade-d);border-color:var(--jade);color:var(--ice);font-weight:600}
+.bcta{margin-top:auto;height:56px;border-radius:13px;background:var(--jade);color:#0c130f;font-size:17px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 12px 28px -12px var(--jade)}
+.bcta.off{background:#25302d;color:#5f716b;box-shadow:none;border:1px solid var(--hair)}
+.bcta svg{width:20px;height:20px;fill:currentColor}
+</style>
+
+<div class="stage">
+  <div class="cap">
+    <b>升降级对弈 · 设置页</b> — 复用设置页骨架（左侧 322px 面板 + 右侧表单 + 底部 CTA），但左面板换成「你的阶梯段位」：
+    这一局的棋盘永远是 19 路空盘，盘面预览无话可说，而段位是这一屏唯一值得看的东西。
+    对手档位由服务端账本决定，页面上没有任何可以把对手调弱的控件。7″ 1024×600
+  </div>
+
+  <div class="flowlabel"><span class="n">01</span> 已定级 · 净胜 +2 <span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="../../../../katrain/img/logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:40</div></div>
+    </div>
+    <div class="subbar">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <h1>升降级对弈</h1>
+    </div>
+    <div class="main">
+      <div class="rankpanel">
+        <div class="ph">你的段位</div>
+        <div class="rail">
+          <div class="line"></div>
+          <div class="nb">6段</div>
+          <div class="now"><div class="dot"></div><b>5段</b></div>
+          <div class="nb">4段</div>
+        </div>
+        <div class="hr"></div>
+        <div class="netrow"><span class="k">净胜</span><span class="v">+2</span></div>
+        <div class="nethint">再胜 1 局升 6段</div>
+        <div class="bar">
+          <i></i><i></i><i></i><span class="zero"></span><i class="win"></i><i class="win"></i><i></i>
+        </div>
+        <div class="barlab"><span>降一档</span><span>升一档</span></div>
+        <div class="recent">
+          <span class="k">最近 5 局</span>
+          <span class="g"><span class="l">负</span><span class="w">胜</span><span class="l">负</span><span class="w">胜</span><span class="w">胜</span></span>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="oppcard">
+          <div><div class="k">本局对手</div><div class="set">19 路 · 中国规则 · 贴 7.5 目</div></div>
+          <div class="v">5段</div>
+        </div>
+        <div class="field">
+          <label>我执</label>
+          <div class="chips"><span class="chip on">● 黑</span><span class="chip">○ 白</span></div>
+        </div>
+        <div class="field">
+          <label>用时</label>
+          <div class="chips"><span class="chip">仅读秒</span><span class="chip on">10分+3×30秒</span><span class="chip">20分+3×30秒</span><span class="chip">30分+3×30秒</span></div>
+        </div>
+        <div class="cta"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>开始对弈</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flowlabel"><span class="n">02</span> 定级赛进行中 · 第 3 局 / 共 5 局 <span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="../../../../katrain/img/logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:41</div></div>
+    </div>
+    <div class="subbar">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <h1>升降级对弈</h1>
+    </div>
+    <div class="main">
+      <div class="rankpanel">
+        <div class="ph">定级赛</div>
+        <div class="pgame"><b>第 3 局</b><span>/ 共 5 局</span></div>
+        <div class="steps">
+          <span class="s done"></span><span class="c done"></span>
+          <span class="s done"></span><span class="c done"></span>
+          <span class="s now"></span><span class="c"></span>
+          <span class="s"></span><span class="c"></span>
+          <span class="s"></span>
+        </div>
+        <div class="pnote">每一局的胜负都会缩小范围。<br>再打 3 局定下你的段位。</div>
+      </div>
+
+      <div class="col">
+        <div class="oppcard">
+          <div><div class="k">本局对手</div><div class="set">19 路 · 中国规则 · 贴 7.5 目</div></div>
+          <div class="v">2段</div>
+        </div>
+        <div class="field">
+          <label>我执</label>
+          <div class="chips"><span class="chip on">● 黑</span><span class="chip">○ 白</span></div>
+        </div>
+        <div class="field">
+          <label>用时</label>
+          <div class="chips"><span class="chip">仅读秒</span><span class="chip on">10分+3×30秒</span><span class="chip">20分+3×30秒</span><span class="chip">30分+3×30秒</span></div>
+        </div>
+        <div class="cta"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>开始定级赛</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flowlabel"><span class="n">03</span> 对手档位未标定 · 诚实地开不了局 <span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="../../../../katrain/img/logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:42</div></div>
+    </div>
+    <div class="subbar">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <h1>升降级对弈</h1>
+    </div>
+    <div class="main">
+      <div class="rankpanel">
+        <div class="ph">你的段位</div>
+        <div class="rail">
+          <div class="line"></div>
+          <div class="nb">6段</div>
+          <div class="now"><div class="dot"></div><b>5段</b></div>
+          <div class="nb">4段</div>
+        </div>
+        <div class="hr"></div>
+        <div class="netrow"><span class="k">净胜</span><span class="v neg">−1</span></div>
+        <div class="nethint">再负 2 局降 4段</div>
+        <div class="bar">
+          <i></i><i></i><i class="lose"></i><span class="zero"></span><i></i><i></i><i></i>
+        </div>
+        <div class="barlab"><span>降一档</span><span>升一档</span></div>
+        <div class="recent">
+          <span class="k">最近 3 局</span>
+          <span class="g"><span class="w">胜</span><span class="l">负</span><span class="l">负</span></span>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="oppcard blocked">
+          <div><div class="k">本局对手</div><div class="set">19 路 · 中国规则 · 贴 7.5 目</div></div>
+          <div class="v">5段<span class="tag">未标定</span></div>
+        </div>
+        <div class="warnbox">5段 的棋力配置还在标定中，现在开不了局。<br>标定完成后即可对局。</div>
+        <div class="field">
+          <label>我执</label>
+          <div class="chips"><span class="chip on">● 黑</span><span class="chip">○ 白</span></div>
+        </div>
+        <div class="field">
+          <label>用时</label>
+          <div class="chips"><span class="chip">仅读秒</span><span class="chip on">10分+3×30秒</span><span class="chip">20分+3×30秒</span><span class="chip">30分+3×30秒</span></div>
+        </div>
+        <div class="cta off"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>暂时开不了局</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="flowlabel"><span class="n">04</span> 变体 B · 横向三段（已定级） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="../../../../katrain/img/logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:40</div></div>
+    </div>
+    <div class="subbar">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <h1>升降级对弈</h1>
+    </div>
+    <div class="bmain">
+      <div class="band">
+        <div class="seg rankseg">
+          <div class="bh">你的段位</div>
+          <div class="brail">
+            <div class="line"></div>
+            <div class="nb">6段</div>
+            <div class="now"><div class="dot"></div><b>5段</b></div>
+            <div class="nb">4段</div>
+          </div>
+        </div>
+        <div class="seg netseg">
+          <div class="bh">净胜</div>
+          <div class="netrow"><span class="v">+2</span><span class="nethint" style="margin-top:0">再胜 1 局升 6段</span></div>
+          <div class="bar" style="max-width:340px">
+            <i></i><i></i><i></i><span class="zero"></span><i class="win"></i><i class="win"></i><i></i>
+          </div>
+          <div class="barlab" style="max-width:340px"><span>降一档</span><span>升一档</span></div>
+        </div>
+        <div class="seg recseg">
+          <div class="bh">最近 5 局</div>
+          <div class="recwrap"><span class="l">负</span><span class="w">胜</span><span class="l">负</span><span class="w">胜</span><span class="w">胜</span></div>
+          <div class="recnote">只统计升降级对弈</div>
+        </div>
+      </div>
+
+      <div class="brow">
+        <div class="band">
+          <div class="seg oppseg">
+            <div><div class="bh" style="margin-bottom:5px">本局对手</div><div style="font-size:12px;color:var(--dim)">19 路 · 中国规则 · 贴 7.5 目</div></div>
+            <div style="font-size:30px;font-weight:700;line-height:34px">5段</div>
+          </div>
+        </div>
+        <div class="band">
+          <div class="seg colorseg">
+            <div class="bh">我执</div>
+            <div class="bchips"><span class="bchip on">● 黑</span><span class="bchip">○ 白</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="seg timeseg">
+          <div class="bh">用时</div>
+          <div class="bchips"><span class="bchip">仅读秒</span><span class="bchip on">10分+3×30秒</span><span class="bchip">20分+3×30秒</span><span class="bchip">30分+3×30秒</span></div>
+        </div>
+      </div>
+
+      <div class="bcta"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>开始对弈</div>
+    </div>
+  </div>
+
+  <div class="flowlabel"><span class="n">05</span> 变体 B · 横向三段（定级赛进行中） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="../../../../katrain/img/logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:40</div></div>
+    </div>
+    <div class="subbar">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <h1>升降级对弈</h1>
+    </div>
+    <div class="bmain">
+      <div class="band">
+        <div class="seg rankseg">
+          <div class="bh">定级赛</div>
+          <div style="font-size:29px;font-weight:700;line-height:34px">第 3 局<span style="font-size:14px;color:var(--dim);font-weight:400;margin-left:7px">/ 共 5 局</span></div>
+        </div>
+        <div class="seg pseg">
+          <div class="bh">进度</div>
+          <div class="bsteps">
+            <span class="s done"></span><span class="c done"></span>
+            <span class="s done"></span><span class="c done"></span>
+            <span class="s now"></span><span class="c"></span>
+            <span class="s"></span><span class="c"></span>
+            <span class="s"></span>
+          </div>
+          <div class="recnote" style="margin-top:12px">每一局的胜负都会缩小范围 · 再打 3 局定下你的段位</div>
+        </div>
+      </div>
+
+      <div class="brow">
+        <div class="band">
+          <div class="seg oppseg">
+            <div><div class="bh" style="margin-bottom:5px">本局对手</div><div style="font-size:12px;color:var(--dim)">19 路 · 中国规则 · 贴 7.5 目</div></div>
+            <div style="font-size:30px;font-weight:700;line-height:34px">2段</div>
+          </div>
+        </div>
+        <div class="band">
+          <div class="seg colorseg">
+            <div class="bh">我执</div>
+            <div class="bchips"><span class="bchip on">● 黑</span><span class="bchip">○ 白</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="seg timeseg">
+          <div class="bh">用时</div>
+          <div class="bchips"><span class="bchip">仅读秒</span><span class="bchip on">10分+3×30秒</span><span class="bchip">20分+3×30秒</span><span class="bchip">30分+3×30秒</span></div>
+        </div>
+      </div>
+
+      <div class="bcta"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>开始定级赛</div>
+    </div>
+  </div>
+
+  <div class="flowlabel"><span class="n">06</span> 变体 B · 横向三段（未标定，开不了局） <span class="rule"></span></div>
+  <div class="screen">
+    <div class="hdr">
+      <div class="brand"><img class="logo" src="../../../../katrain/img/logo-white.png" alt=""/><div class="wname">智星盒<small>StellaBox</small></div></div>
+      <div class="r"><div class="who"><div class="ava">F</div>fan</div><div>22:40</div></div>
+    </div>
+    <div class="subbar">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div>
+      <h1>升降级对弈</h1>
+    </div>
+    <div class="bmain">
+      <div class="band">
+        <div class="seg rankseg">
+          <div class="bh">你的段位</div>
+          <div class="brail">
+            <div class="line"></div>
+            <div class="nb">6段</div>
+            <div class="now"><div class="dot"></div><b>5段</b></div>
+            <div class="nb">4段</div>
+          </div>
+        </div>
+        <div class="seg netseg">
+          <div class="bh">净胜</div>
+          <div class="netrow"><span class="v neg">−1</span><span class="nethint" style="margin-top:0">再负 2 局降 4段</span></div>
+          <div class="bar" style="max-width:340px">
+            <i></i><i></i><i class="lose"></i><span class="zero"></span><i></i><i></i><i></i>
+          </div>
+          <div class="barlab" style="max-width:340px"><span>降一档</span><span>升一档</span></div>
+        </div>
+        <div class="seg recseg">
+          <div class="bh">最近 3 局</div>
+          <div class="recwrap"><span class="w">胜</span><span class="l">负</span><span class="l">负</span></div>
+          <div class="recnote">只统计升降级对弈</div>
+        </div>
+      </div>
+
+      <div class="brow">
+        <div class="band" style="border-color:rgba(224,162,74,.4);background:linear-gradient(90deg,rgba(224,162,74,.08),var(--raise))">
+          <div class="seg oppseg">
+            <div><div class="bh" style="margin-bottom:5px">本局对手</div><div style="font-size:12px;color:var(--dim)">19 路 · 中国规则 · 贴 7.5 目</div></div>
+            <div style="font-size:30px;font-weight:700;line-height:34px">5段<span class="tag">未标定</span></div>
+          </div>
+        </div>
+        <div class="band">
+          <div class="seg colorseg">
+            <div class="bh">我执</div>
+            <div class="bchips"><span class="bchip on">● 黑</span><span class="bchip">○ 白</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="seg timeseg">
+          <div class="bh">用时</div>
+          <div class="bchips"><span class="bchip">仅读秒</span><span class="bchip on">10分+3×30秒</span><span class="bchip">20分+3×30秒</span><span class="bchip">30分+3×30秒</span></div>
+        </div>
+      </div>
+
+      <div class="warnbox">5段 的棋力配置还在标定中，现在开不了局。标定完成后即可对局。</div>
+
+      <div class="bcta off"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>暂时开不了局</div>
+    </div>
+  </div>
+
+  <div class="cap" style="margin-top:8px">
+    <b>结论：采用变体 B（04–06），01–03 存档备查。</b>
+    变体 A 照搬「左 322 面板 + 右表单」的设置页骨架，但那个骨架的左面板是为盘面预览留的——升降级对局的盘面永远是同一张 19 路空盘，
+    于是左右两列各空出约 180px。变体 B 改成横向三段（段位 → 本局 → 用时 → 开始），既填满 1024×600 的横屏，
+    定级赛的 5 步进度条也终于有横向空间可以铺开。<b>两个变体都没有任何可以把对手调弱的控件</b>——未标定就是开不了局，
+    说清楚原因，按钮明着禁用。
+  </div>
+</div>
+<script>
+  function fit(){var s=Math.min(1,(innerWidth-48)/1024);
+    document.querySelectorAll('.screen').forEach(function(e){e.style.transform='scale('+s+')';e.style.transformOrigin='top center';e.style.marginBottom=(600*s-600)+'px';});}
+  addEventListener('resize',fit);fit();
+</script>

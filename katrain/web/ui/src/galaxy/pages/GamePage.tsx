@@ -83,6 +83,8 @@ const GamePage = () => {
     const [countResult, setCountResult] = useState<string | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
+    // 升降级结算：what this game did to the player's rank. Asked for once, when
+
     // Sound playing callback
     const handlePlaySound = useCallback((soundName: string) => {
         if (!audioCache.current[soundName]) {
@@ -95,11 +97,16 @@ const GamePage = () => {
 
     // Timeout handler - auto-forfeit when time runs out
     const handleTimeout = useCallback(async () => {
+        // A ladder AI that refused to move still has a clock, and that clock still runs
+        // out. Forfeiting it would end the game "won by the human" over a board the
+        // engine never played on. The server refuses to score such a game either way
+        // (server.py _settle_ladder_game), but the win must not appear on screen at all.
+        if (gameState?.last_ladder_error) return;
         if (!gameState?.end_result) {
             console.log('Timer expired - triggering timeout');
             try { await handleAction('timeout'); } catch { /* hook error state is authoritative */ }
         }
-    }, [gameState?.end_result, handleAction]);
+    }, [gameState?.end_result, gameState?.last_ladder_error, handleAction]);
 
     useEffect(() => {
         if (sessionId && sessionId !== currentSessionId) {
@@ -260,6 +267,15 @@ const GamePage = () => {
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
                 <AiLadderSettlementAlert feedback={settlementFeedback} />
+                {/* The ladder AI refused to move (the engine cannot serve the seated rung at
+                    its calibrated strength). No move is coming and the clock keeps running,
+                    so say so — an empty board with a ticking opponent clock reads as
+                    "still thinking". */}
+                {gameState.last_ladder_error && !gameState.end_result && (
+                    <Alert severity="warning" data-testid="ladder-stalled">
+                        {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
+                    </Alert>
+                )}
                 {resignError && <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>}
             </Box>
             {/* Leave Confirmation Dialog */}
@@ -303,6 +319,7 @@ const GamePage = () => {
                     <Button onClick={confirmCount} color="primary" variant="contained">{t('COUNT', 'Count')}</Button>
                 </DialogActions>
             </Dialog>
+
 
             {/* Count Result Dialog */}
             <Dialog open={!!countResult} onClose={() => setCountResult(null)} maxWidth="xs" fullWidth>

@@ -2735,3 +2735,214 @@ msgstr "Драбина сили"
 
 msgid "ai:golaxy_parity_rung"
 msgstr "Рівень рангу"
+
+msgid "ladder:your_rank"
+msgstr "Ваш ранг"
+
+msgid "ladder:net_wins"
+msgstr "Чисті перемоги"
+
+msgid "ladder:to_promote"
+msgstr "Ще {n} перемог до {rank}"
+
+msgid "ladder:to_demote"
+msgstr "Ще {n} поразок — і ви на {rank}"
+
+msgid "ladder:to_promote_plain"
+msgstr "Ще {n} перемог — на щабель вище."
+
+msgid "ladder:to_demote_plain"
+msgstr "Ще {n} поразок — на щабель нижче."
+
+msgid "ladder:top_rung"
+msgstr "Найвищий щабель"
+
+msgid "ladder:promote_one"
+msgstr "Щабель вгору"
+
+msgid "ladder:demote_one"
+msgstr "Щабель вниз"
+
+msgid "ladder:recent_n"
+msgstr "Останні {n} партій"
+
+msgid "ladder:recent_none"
+msgstr "Поки немає зарахованих партій"
+
+msgid "ladder:recent_note"
+msgstr "Лише рейтингові партії"
+
+msgid "ladder:win"
+msgstr "В"
+
+msgid "ladder:loss"
+msgstr "П"
+
+msgid "ladder:this_game_win"
+msgstr "Партію виграно"
+
+msgid "ladder:this_game_loss"
+msgstr "Партію програно"
+
+msgid "ladder:placement"
+msgstr "Кваліфікація"
+
+msgid "ladder:placement_progress"
+msgstr "Прогрес"
+
+msgid "ladder:placement_game_n"
+msgstr "Партія {n}"
+
+msgid "ladder:placement_of_total"
+msgstr "з {n}"
+
+msgid "ladder:placement_note"
+msgstr "Кожен результат звужує діапазон."
+
+msgid "ladder:placement_left"
+msgstr "Ще {n} партій до визначення рангу."
+
+msgid "ladder:placement_game_done"
+msgstr "Кваліфікаційна партія {n}"
+
+msgid "ladder:placement_done"
+msgstr "Кваліфікацію завершено"
+
+msgid "ladder:placement_done_note"
+msgstr "Надалі ±{n} чистих перемог змінюють щабель."
+
+msgid "ladder:start_placement"
+msgstr "Почати кваліфікацію"
+
+msgid "ladder:promoted"
+msgstr "Підвищення"
+
+msgid "ladder:demoted"
+msgstr "Пониження"
+
+msgid "ladder:promoted_note"
+msgstr "Чистих +{n} — щабель вгору, лічильник обнулено."
+
+msgid "ladder:demoted_note"
+msgstr "Чистих -{n} — щабель вниз, лічильник обнулено."
+
+msgid "ladder:this_game_opponent"
+msgstr "Суперник цієї партії"
+
+msgid "ladder:fixed_setup"
+msgstr "19x19 · китайські правила · комі 7,5 · без фори"
+
+msgid "ladder:setup_size"
+msgstr "{n}×{n}"
+
+msgid "ladder:setup_komi"
+msgstr "комі {n}"
+
+msgid "ladder:rules_chinese"
+msgstr "Китайські правила"
+
+msgid "ladder:rules_japanese"
+msgstr "Японські правила"
+
+msgid "ladder:rules_korean"
+msgstr "Корейські правила"
+
+msgid "ladder:rules_aga"
+msgstr "Правила AGA"
+
+msgid "ladder:timer_locked"
+msgstr "Завжди увімкнено в рейтингових партіях"
+
+msgid "ladder:uncertified"
+msgstr "Не відкалібровано"
+
+msgid "ladder:blocked_uncertified"
+msgstr "Профіль сили {rank} ще калібрується, партію не можна почати."
+
+msgid "ladder:blocked_uncertified_2"
+msgstr "Грати можна буде після калібрування."
+
+msgid "ladder:blocked_engine"
+msgstr "Рушій недоступний, партію не можна почати."
+
+msgid "ladder:blocked_engine_2"
+msgstr "Грати можна буде після відновлення рушія."
+
+msgid "ladder:cannot_start"
+msgstr "Поки почати не можна"
+
+msgid "ladder:loading"
+msgstr "Завантаження вашого рангу…"
+
+msgid "ladder:load_failed"
+msgstr "Не вдалося завантажити ранг, партію не можна почати."
+
+msgid "ladder:need_login"
+msgstr "Увійдіть, щоб грати рейтингові партії."
+
+msgid "ladder:unscored"
+msgstr "Ця партія не зарахована"
+
+msgid "ladder:unscored_inconclusive"
+msgstr ""
+"У цій партії немає переможця, тож вона не зарахована й не витрачає "
+"кваліфікаційну партію."
+
+msgid "ladder:unscored_already"
+msgstr "Цю партію вже зараховано, ранг більше не змінився."
+
+msgid "ladder:unscored_in_progress"
+msgstr "Ця партія ще не завершена."
+
+msgid "ladder:unscored_error"
+msgstr ""
+"Цю партію не вдалося записати в журнал рейтингу, ранг не змінився. Повідомте"
+" нам про неї."
+
+msgid "ladder:got_it"
+msgstr "Зрозуміло"
+
+msgid "lobby:placement_required"
+msgstr ""
+"Спочатку зіграйте 5 кваліфікаційних партій у рейтинговому режимі, потім — "
+"рейтинговий пошук."
+
+msgid "My Color"
+msgstr "Мій колір"
+
+msgid "Black Stone"
+msgstr "● Чорні"
+
+msgid "White Stone"
+msgstr "○ Білі"
+
+msgid "Byoyomi only 30s x3"
+msgstr "Лише бйо-йомі"
+
+msgid "10 min + 3x30s"
+msgstr "10 хв + 3×30 с"
+
+msgid "20 min + 3x30s"
+msgstr "20 хв + 3×30 с"
+
+msgid "30 min + 3x30s"
+msgstr "30 хв + 3×30 с"
+
+msgid "Ranked Game"
+msgstr "Рейтингова партія"
+
+msgid "Free Game"
+msgstr "Вільна партія"
+
+msgid "retry"
+msgstr "Повторити"
+
+msgid "ladder:engine_stalled"
+msgstr ""
+"Рушій драбини недоступний — ШІ не може ходити. Ця партія не зараховується; "
+"будь ласка, вийдіть із неї."
+
+msgid "ladder:unscored_engine"
+msgstr ""
+"Суперник не зміг грати у відкаліброваній силі, тож ця партія не "
+"зараховується — ранг не змінився і кваліфікаційна партія не витрачена."

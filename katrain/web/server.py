@@ -868,6 +868,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 # A new game is starting: clear the "already recorded" guard from any
                 # previous game on this (possibly reused) session so it becomes recordable again.
                 session._recorded = False
+                # This endpoint carries no game_type, so the game it starts is a free one.
+                # Leaving the previous game's type on the session is how a casual game
+                # played right after a 升降级对弈 game would keep forbidding analysis and
+                # undo. `_do_new_game` resets its own copy the same way.
+                session.game_type = "free"
                 if request.players:
                     for bw, p in request.players.items():
                         session.katrain(
@@ -1468,6 +1473,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     result=result_for_user(confirmed["result"], snapshot.user_color),
                     game_type=game_type,
                     opponent=snapshot.opponent,
+                    # The AI refused to move because the engine could not seat the rung
+                    # at its calibrated strength. The ledger still gets a row -- it just
+                    # says engine_unavailable instead of moving the rank. Cleared by the
+                    # next successful AI move, so a game that stalled and recovered
+                    # settles normally.
+                    engine_stalled=bool(getattr(session.katrain, "last_ladder_error", False)),
                 )
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
                 session.ai_ladder_settlement_pending = False
@@ -1476,10 +1487,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             dispatcher = getattr(app.state, "repository_dispatcher", None)
             if dispatcher is not None:
-                await dispatcher.user_games_create(user_id=current_user.id, data=data)
+                recorded = await dispatcher.user_games_create(user_id=current_user.id, data=data)
             else:
-                app.state.user_game_repo.create(user_id=current_user.id, **data)
+                recorded = app.state.user_game_repo.create(user_id=current_user.id, **data)
             session._recorded = True
+
+            _settle_ladder_game(session, current_user, recorded, result)
         except Exception as e:
             if getattr(session, "game_type", None) == "ai_ladder_ranked":
                 session.ai_ladder_settlement_pending = True
@@ -2122,15 +2135,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         f"User {current_user.username} (ID: {current_user.id}) started matchmaking for {game_type}"
                     )
 
-                    # Prerequisite Check for Rated Games
+                    # Prerequisite for rated PvP: you must have a ladder rank, so the
+                    # pairing has something to pair on. Formerly a count of finished
+                    # `game_type == "rated"` games, which nothing ever wrote for an AI
+                    # game -- the counter sat at 0 forever and the lobby sent players to
+                    # a page that could not move it.
                     if game_type == "rated":
-                        count = app.state.user_repo.count_completed_rated_games(current_user.id)
-                        if count < 3:
+                        if not app.state.ai_ladder_repo.has_ladder_rank(current_user.id):
                             await websocket.send_json(
                                 {
                                     "type": "error",
-                                    "code": "PREREQUISITE_FAILED",
-                                    "message": f"You must complete 3 rated AI games before playing rated PvP. (Completed: {count}/3)",
+                                    "code": "PLACEMENT_REQUIRED",
+                                    "message": "Finish your 5-game 定级赛 in 升降级对弈 before playing rated PvP.",
                                 }
                             )
                             continue

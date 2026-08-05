@@ -230,10 +230,35 @@ class WebKaTrain(KaTrainBase):
         """
         return getattr(self, "suppress_auto_eval", False) and self.play_analyze_mode == MODE_PLAY
 
+    #: Every value that may appear in `user_games.game_type`, and what it means.
+    #: This tuple is the whole vocabulary -- there is no other place that decides
+    #: what a game "counts as".
+    #:
+    #:   free              自由对弈 (AI or human). Analysis allowed, nothing scored.
+    #:   ai_ladder_ranked  升降级对弈 against the 41-tier ladder. Server-issued by
+    #:                     POST /api/ladder/start-game. THE ONLY type that moves a rank.
+    #:   rated             人人排位 (matchmaking). Anti-cheat only: since the ladder
+    #:                     became the single rank, human-vs-human results move nothing.
+    #:   ranked            kiosk AI 排位 (the legacy 拟人 flow). Anti-cheat only; it
+    #:                     never fed a rank, and still does not. Kept because rows
+    #:                     already exist with this value and the kiosk report card
+    #:                     labels off it.
+    #:   pvp_local         同板双人 on one kiosk.
+    GAME_TYPES = ("free", "ai_ladder_ranked", "rated", "ranked", "pvp_local")
+
+    #: Games where analysis during play would be cheating, so every analysis action
+    #: is refused at the dispatch chokepoint and /api/undo returns 403.
+    SCORING_GAME_TYPES = ("rated", "ranked", "ai_ladder_ranked")
+
+    #: Games whose result moves the player's rank. Exactly one, by design: the user's
+    #: rank is defined as "what your 升降级对弈 games against the AI say it is", so
+    #: adding a second entry here would silently create a second rank system again.
+    RANK_MOVING_GAME_TYPES = ("ai_ladder_ranked",)
+
     @property
     def analysis_allowed(self):
-        """R3/R5: rated/ranked games forbid ALL analysis (anti-cheat). Free games allow it."""
-        return getattr(self, "game_type", "free") not in ("rated", "ranked", "ai_ladder_ranked")
+        """R3/R5: games that move a rank forbid ALL analysis (anti-cheat). Free games allow it."""
+        return getattr(self, "game_type", "free") not in self.SCORING_GAME_TYPES
 
     def analysis_engine(self):
         """R6: engine used for analysis/review. The remote strong engine when configured
@@ -569,8 +594,12 @@ class WebKaTrain(KaTrainBase):
         # AI thread itself, so acquiring ai_lock here cannot self-deadlock.
         with self.ai_lock:
             # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
-            if game_type is not None:
-                self.game_type = game_type
+            # Same fail-closed lifecycle rule as ladder_rung below: a new game that does
+            # not declare a type IS a free game. Without the reset, POST /api/new-game on
+            # a session that just finished a 升降级对弈 game inherits ai_ladder_ranked, so
+            # a casual game against a hand-picked weak AI would be stored as a rated one
+            # and settled into the promotion ledger.
+            self.game_type = game_type if game_type is not None else "free"
             # G1/G2: a brand new game is never engine-controlled until a platform explicitly
             # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
             # a session that finishes an engine game and then starts a plain local game (same

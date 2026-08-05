@@ -20,3 +20,11 @@ Use a 100vh vertical root. Keep the existing sidebar and main content in a flex:
 - Roll back MainLayout.tsx and rebuild the prior image if tests or visual checks fail.
 
 The public-security filing number is out of scope until it is issued.
+
+## Review amendments
+- AppRouter routes the public home experience into GalaxyApp, whose normal routes are nested under MainLayout. Kiosk routes remain excluded. Verify this route mapping before editing.
+- Use a 100vh fallback with 100dvh where supported. Keep the content row flex:1/min-height:0 and the footer flex-shrink:0.
+- Footer height is min-height:28px rather than a hard height. Keep one line with safe hidden overflow and text ellipsis. Verify 320px width and 200% text zoom.
+- Automated checks assert text, href, target="_blank", and rel. Visual checks cover home, a board route, expanded sidebar, long content, desktop viewport, and mobile viewport; confirm the main region still scrolls.
+- Before deployment, record the current container image digest. After deployment, confirm the new image identity, HTTP status, visible filing text, and final link in a real browser.
+- Rollback restores the recorded immutable image digest, then rechecks HTTP and the page.

@@ -2830,7 +2830,7 @@ msgid "ladder:this_game_opponent"
 msgstr "Суперник цієї партії"
 
 msgid "ladder:fixed_setup"
-msgstr "Ця партія"
+msgstr "19x19 · китайські правила · комі 7,5 · без фори"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

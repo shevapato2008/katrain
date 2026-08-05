@@ -2790,7 +2790,7 @@ msgid "ladder:this_game_opponent"
 msgstr "Adversaire de cette partie"
 
 msgid "ladder:fixed_setup"
-msgstr "Cette partie"
+msgstr "19x19 · règles chinoises · komi 7,5 · sans handicap"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

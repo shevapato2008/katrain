@@ -2654,7 +2654,7 @@ msgid "ladder:this_game_opponent"
 msgstr "Rival de esta partida"
 
 msgid "ladder:fixed_setup"
-msgstr "Esta partida"
+msgstr "19x19 · reglas chinas · komi 7,5 · sin hándicap"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

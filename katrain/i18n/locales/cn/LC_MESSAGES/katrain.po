@@ -2607,7 +2607,7 @@ msgid "ladder:this_game_opponent"
 msgstr "本局对手"
 
 msgid "ladder:fixed_setup"
-msgstr "本局设定"
+msgstr "19 路 · 中国规则 · 贴 7.5 目 · 不让子"
 
 msgid "ladder:setup_size"
 msgstr "{n} 路"

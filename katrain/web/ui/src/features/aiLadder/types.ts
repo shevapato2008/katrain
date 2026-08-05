@@ -38,11 +38,11 @@ export interface AiLadderErrorStatus {
   message?: string;
 }
 
+// Seat and clock only. Board size, ruleset, komi and handicap are fixed server-side
+// at the conditions every rung was calibrated under (19x19, Chinese, 7.5, no handicap
+// — katrain/web/api/v1/endpoints/ai_ladder.py). The request model forbids extras, so
+// sending them is a 422 rather than a silently-ignored field.
 export interface AiLadderStartPreferences {
-  board_size: 9 | 13 | 19;
-  rules: string;
-  komi: number;
-  handicap: number;
   color: 'black' | 'white';
   time_enabled: boolean;
   main_time: number;

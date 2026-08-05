@@ -2820,7 +2820,7 @@ msgid "ladder:this_game_opponent"
 msgstr "Gegner dieser Partie"
 
 msgid "ladder:fixed_setup"
-msgstr "Diese Partie"
+msgstr "19x19 · chinesische Regeln · 7,5 Komi · ohne Vorgabe"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

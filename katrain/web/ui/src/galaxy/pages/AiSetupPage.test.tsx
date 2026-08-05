@@ -205,9 +205,16 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Start Game' }));
 
+    // Board size, ruleset, komi and handicap are server-owned (the calibration
+    // conditions) and the request model forbids extras — the page sends seat + clock.
     await waitFor(() => expect(mockStartRanked).toHaveBeenCalledWith(expect.objectContaining({
-      board_size: 19, rules: 'japanese', color: 'black',
+      color: 'black',
     }), 'test-token'));
+    const sent = mockStartRanked.mock.calls[0][0];
+    expect(sent).not.toHaveProperty('board_size');
+    expect(sent).not.toHaveProperty('rules');
+    expect(sent).not.toHaveProperty('komi');
+    expect(sent).not.toHaveProperty('handicap');
     expect(mockCreateSession).not.toHaveBeenCalled();
     expect(mockNewGame).not.toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/ranked-s1?mode=rated');

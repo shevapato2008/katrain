@@ -2784,7 +2784,7 @@ msgid "ladder:this_game_opponent"
 msgstr "This game's opponent"
 
 msgid "ladder:fixed_setup"
-msgstr "This game"
+msgstr "19x19 · Chinese rules · 7.5 komi · no handicap"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

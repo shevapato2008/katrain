@@ -74,7 +74,14 @@ const AiSetupPage = () => {
         if (isRated) {
             setOpponent('ai:human');
             setTimerEnabled(true);
-            setRules('japanese');
+            // The conditions every rung was calibrated under, and what the server will
+            // actually deal (katrain/web/api/v1/endpoints/ai_ladder.py). The controls
+            // below are disabled in rated mode, so they must not sit there displaying
+            // a ruleset and komi the game will not be played under.
+            setBoardSize(19);
+            setRules('chinese');
+            setKomi(7.5);
+            setHandicap(0);
             setLoading(false);
             return;
         }
@@ -149,10 +156,6 @@ const AiSetupPage = () => {
         try {
             if (isRated) {
                 const session = await startAiLadderGame({
-                    board_size: boardSize as 9 | 13 | 19,
-                    rules,
-                    komi,
-                    handicap,
                     color: color === 'B' ? 'black' : 'white',
                     time_enabled: timerEnabled,
                     main_time: mainTime,

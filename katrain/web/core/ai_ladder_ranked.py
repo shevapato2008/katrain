@@ -244,6 +244,7 @@ class AiLadderRankedRepository:
         result: str,
         game_type: str,
         opponent: Optional[AiLadderOpponentSnapshot],
+        engine_stalled: bool = False,
     ) -> AiLadderSettlementResult:
         if user_color not in {"B", "W"}:
             raise ValueError("user_color must be B or W")
@@ -265,7 +266,9 @@ class AiLadderRankedRepository:
             if user is None:
                 raise ValueError(f"unknown user_id: {user_id}")
 
-            ignored_reason = self._ignored_reason(game_type=game_type, result=result, opponent=opponent)
+            ignored_reason = self._ignored_reason(
+                game_type=game_type, result=result, opponent=opponent, engine_stalled=engine_stalled
+            )
             profile = None
             if ignored_reason is None:
                 assert opponent is not None
@@ -348,9 +351,24 @@ class AiLadderRankedRepository:
             session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
     @staticmethod
-    def _ignored_reason(*, game_type: str, result: str, opponent: Optional[AiLadderOpponentSnapshot]) -> Optional[str]:
+    def _ignored_reason(
+        *,
+        game_type: str,
+        result: str,
+        opponent: Optional[AiLadderOpponentSnapshot],
+        engine_stalled: bool = False,
+    ) -> Optional[str]:
         if game_type != AI_LADDER_GAME_TYPE:
             return "invalid_game_type"
+        # The seated rung could not be played at its calibrated strength, so the AI
+        # refused to move at all (interface._surface_ladder_unavailable). Whatever
+        # ended the game after that -- the player giving up on a board that will
+        # never answer, or the AI's own clock expiring -- is an artefact of our
+        # engine, not a result. Checked before `result` so a conclusive-looking
+        # B+T/W+R over a stalled board cannot bank a promotion for a game nobody
+        # played. Observed on an RK3562 kiosk, 2026-08-05.
+        if engine_stalled:
+            return "engine_unavailable"
         if result not in {"win", "loss"}:
             return "inconclusive"
         if opponent is None:

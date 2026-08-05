@@ -2702,7 +2702,7 @@ msgid "ladder:this_game_opponent"
 msgstr "이번 대국 상대"
 
 msgid "ladder:fixed_setup"
-msgstr "이번 대국 설정"
+msgstr "19로 · 중국 룰 · 덤 7.5 · 접바둑 없음"
 
 msgid "ladder:setup_size"
 msgstr "{n}로"

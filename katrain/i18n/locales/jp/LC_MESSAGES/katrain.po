@@ -2775,7 +2775,7 @@ msgid "ladder:this_game_opponent"
 msgstr "この局の相手"
 
 msgid "ladder:fixed_setup"
-msgstr "この局の設定"
+msgstr "19 路 · 中国ルール · コミ 7.5 · 置石なし"
 
 msgid "ladder:setup_size"
 msgstr "{n} 路"

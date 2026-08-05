@@ -86,7 +86,8 @@ describe('AiSetupPage', () => {
       expect(writeActiveSession).toHaveBeenCalledWith(
         expect.objectContaining({ kind: 'game', label: '升降级对弈', route: '/kiosk/play/ai/game/ranked-s1' })
       );
-      expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ board_size: 19, color: 'black' }), 'test-token');
+      expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ color: 'black' }), 'test-token');
+      expect(startRanked.mock.calls[0][0]).not.toHaveProperty('board_size');
       expect(createSession).not.toHaveBeenCalled();
       expect(gameSetup).not.toHaveBeenCalled();
     });
@@ -104,8 +105,11 @@ describe('AiSetupPage', () => {
     expect(panel).toHaveStyle({ padding: '16px', overflow: 'hidden' });
     expect(screen.queryByText('9路')).not.toBeInTheDocument();
     expect(screen.queryByText('13路')).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: '规则' })).toBeVisible();
-    expect(screen.getByRole('combobox', { name: '让子' })).toBeVisible();
+    // 规则/让子/贴目 are server-owned in ranked play, so the panel states them
+    // instead of offering knobs that the server would override.
+    expect(screen.queryByRole('combobox', { name: '规则' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '让子' })).not.toBeInTheDocument();
+    expect(screen.getByText('19 路 · 中国规则 · 贴 7.5 目 · 不让子')).toBeVisible();
     expect(screen.getByRole('combobox', { name: '用时' })).toBeVisible();
     expect(screen.getByRole('button', { name: /开始对弈/i })).toHaveStyle({ minHeight: '48px' });
     expect(screen.getByTestId('ranked-start-action')).toHaveStyle({ flexShrink: '0' });

@@ -1473,6 +1473,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     result=result_for_user(confirmed["result"], snapshot.user_color),
                     game_type=game_type,
                     opponent=snapshot.opponent,
+                    # The AI refused to move because the engine could not seat the rung
+                    # at its calibrated strength. The ledger still gets a row -- it just
+                    # says engine_unavailable instead of moving the rank. Cleared by the
+                    # next successful AI move, so a game that stalled and recovered
+                    # settles normally.
+                    engine_stalled=bool(getattr(session.katrain, "last_ladder_error", False)),
                 )
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
                 session.ai_ladder_settlement_pending = False

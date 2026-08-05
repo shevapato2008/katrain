@@ -322,10 +322,10 @@ async def test_status_projects_placed_profile_net_score_and_only_five_counted_re
 
 
 async def start_ranked(api_app, client, **body):
+    # Board size, ruleset, komi and handicap are server-owned (the conditions every
+    # rung was calibrated under) and the request model forbids extras, so the client
+    # sends seat + clock only.
     payload = {
-        "board_size": 19,
-        "rules": "chinese",
-        "komi": 7.5,
         "color": "black",
         "time_enabled": False,
         **body,
@@ -1085,17 +1085,49 @@ async def test_ranked_vision_bind_rejects_unauthenticated_and_non_owner(api_app,
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("board_size", [9, 13])
-async def test_ranked_vision_bind_rejects_unsupported_physical_board_size(api_app, client, board_size):
+@pytest.mark.parametrize("field,value", [("board_size", 9), ("rules", "japanese"), ("komi", 6.5), ("handicap", 4)])
+async def test_start_refuses_to_take_board_conditions_from_the_client(api_app, client, field, value):
+    """A rung's rank name describes its strength at 19x19 / Chinese / 7.5 / no handicap
+    and nothing else. A client that could pick the board would be seating an opponent
+    whose measured strength no longer describes the game -- and then banking it. The
+    request model forbids extras, so this is a 422 rather than a silently dropped field.
+
+    Both shipping clients used to send komi 6.5 here (galaxy also sent Japanese rules),
+    which is how a mismatch this size stayed invisible: the tests sent 7.5.
+    """
+    async with client as ac:
+        response = await start_ranked(api_app, ac, **{field: value})
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_started_ranked_game_is_always_on_the_calibrated_board(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+    assert started.status_code == 201
+    katrain = api_app.state._test_created_sessions[0].katrain
+    new_game = next(kwargs for action, kwargs in katrain.calls if action == "new_game")
+    assert new_game["size"] == 19
+    assert new_game["rules"] == "chinese"
+    assert new_game["komi"] == 7.5
+    assert new_game["handicap"] == 0
+
+
+@pytest.mark.asyncio
+async def test_vision_bind_rejects_unsupported_physical_board_size(api_app, client):
+    """The physical board is 19x19. Ranked games can no longer be anything else (above),
+    so this guard is now exercised through an ordinary session."""
     vision = SimpleNamespace(bound_session_id=None)
     vision.bind_session = lambda session_id: setattr(vision, "bound_session_id", session_id)
     api_app.state.vision = vision
     async with client as ac:
-        started = await start_ranked(api_app, ac, board_size=board_size)
+        started = await start_ranked(api_app, ac)
+        session_id = started.json()["session_id"]
+        api_app.state._test_created_sessions[0].katrain._state["board_size"] = [9, 9]
         response = await ac.post(
             "/api/v1/vision/bind",
             headers=api_app.state._test_headers,
-            json={"session_id": started.json()["session_id"]},
+            json={"session_id": session_id},
         )
 
     assert response.status_code == 409

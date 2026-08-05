@@ -2749,7 +2749,7 @@ msgid "ladder:this_game_opponent"
 msgstr "Соперник этой партии"
 
 msgid "ladder:fixed_setup"
-msgstr "Эта партия"
+msgstr "19x19 · китайские правила · коми 7,5 · без форы"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

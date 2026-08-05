@@ -57,7 +57,7 @@ def opponent():
     )
 
 
-def settle(repo, user_id, game_id, result, opponent, *, game_type=AI_LADDER_GAME_TYPE):
+def settle(repo, user_id, game_id, result, opponent, *, game_type=AI_LADDER_GAME_TYPE, engine_stalled=False):
     return repo.settle_game(
         user_id=user_id,
         game_id=game_id,
@@ -65,6 +65,7 @@ def settle(repo, user_id, game_id, result, opponent, *, game_type=AI_LADDER_GAME
         result=result,
         game_type=game_type,
         opponent=opponent,
+        engine_stalled=engine_stalled,
     )
 
 
@@ -220,6 +221,45 @@ def test_inconclusive_game_records_decision_but_consumes_no_placement_round(sess
         decision = db.query(models_db.AiLadderGameLedger).one()
         assert (decision.game_id, decision.counted, decision.reason) == ("inconclusive", False, "inconclusive")
         assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+@pytest.mark.parametrize("result", ["win", "loss"])
+def test_a_game_the_engine_could_not_play_is_recorded_but_never_counted(session_factory, user, opponent, result):
+    """Found on an RK3562 kiosk (2026-08-05): its HTTP engine does not advertise
+    certified ladder capabilities, so `ai:ladder` fails closed and plays nothing
+    (interface._surface_ladder_unavailable). Whatever ends the game after that is an
+    artefact of our engine, not a result:
+
+      - the player gives up on a board that will never answer -> a *loss* would count
+      - the AI's own clock expires and galaxy auto-forfeits -> a *win* would count,
+        handing out promotion credit for a game nobody played
+
+    Both are silent: the rank moves and nothing says why. The decision row still gets
+    written, so the receipt exists and names the reason.
+    """
+    repo = AiLadderRankedRepository(session_factory)
+
+    outcome = settle(repo, user.id, f"stalled-{result}", result, opponent, engine_stalled=True)
+
+    assert not outcome.counted
+    assert outcome.reason == "engine_unavailable"
+    with session_factory() as db:
+        decision = db.query(models_db.AiLadderGameLedger).one()
+        assert (decision.counted, decision.reason) == (False, "engine_unavailable")
+        # No profile is created, so the stalled game does not even start placement.
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+def test_a_game_whose_engine_recovered_still_counts(session_factory, user, opponent):
+    """The flag is per-turn, not per-game: an engine that hiccuped and then played on
+    must not cost the player the whole game's result."""
+    repo = AiLadderRankedRepository(session_factory)
+    placed_profile(session_factory, user.id, opponent.rung)
+
+    outcome = settle(repo, user.id, "recovered", "win", opponent, engine_stalled=False)
+
+    assert outcome.counted
+    assert outcome.reason is None
 
 
 @pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 21), (20, ["loss"] * 3, 19)])

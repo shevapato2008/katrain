@@ -2850,7 +2850,7 @@ msgid "ladder:this_game_opponent"
 msgstr "Bu oyundaki rakip"
 
 msgid "ladder:fixed_setup"
-msgstr "Bu oyun"
+msgstr "19x19 · Çin kuralları · 7,5 komi · avantajsız"
 
 msgid "ladder:setup_size"
 msgstr "{n}×{n}"

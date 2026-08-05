@@ -28,3 +28,6 @@ The public-security filing number is out of scope until it is issued.
 - Automated checks assert text, href, target="_blank", and rel. Visual checks cover home, a board route, expanded sidebar, long content, desktop viewport, and mobile viewport; confirm the main region still scrolls.
 - Before deployment, record the current container image digest. After deployment, confirm the new image identity, HTTP status, visible filing text, and final link in a real browser.
 - Rollback restores the recorded immutable image digest, then rechecks HTTP and the page.
+
+## Narrow-screen correction
+The filing number must always remain fully visible. Desktop may use one line; narrow screens and enlarged text may wrap and grow the footer height. Do not use ellipsis. The page must not gain horizontal scrolling.

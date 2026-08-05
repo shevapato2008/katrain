@@ -13,6 +13,7 @@ import { writeActiveSession } from '../utils/activeSession';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
 import { startAiLadderGame } from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
+import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
@@ -299,13 +300,7 @@ const AiSetupPage = () => {
               fullWidth
               size="large"
               startIcon={<PlayArrow />}
-              disabled={loading || (isRanked && (
-                aiLadderStatus.view_state !== 'ready'
-                || aiLadderStatus.pending_settlement
-                || !aiLadderStatus.current_opponent
-                || aiLadderStatus.current_opponent.certification_status !== 'certified'
-                || aiLadderStatus.current_opponent.availability !== 'available'
-              ))}
+              disabled={loading || (isRanked && !canStartAiLadderGame(aiLadderStatus))}
               onClick={handleStart}
               sx={{
                 minHeight: isRanked ? 48 : 56, py: isRanked ? 1 : 2, fontSize: isRanked ? '1rem' : '1.1rem',

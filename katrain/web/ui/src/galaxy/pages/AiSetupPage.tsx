@@ -10,6 +10,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
 import { startAiLadderGame } from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
+import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 
 // Map Slider value to Rank label for UI
@@ -482,13 +483,7 @@ const AiSetupPage = () => {
                     variant="contained"
                     size="large"
                     onClick={handleStartGame}
-                    disabled={loading || (isRated && (
-                        aiLadderStatus.view_state !== 'ready'
-                        || aiLadderStatus.pending_settlement
-                        || !aiLadderStatus.current_opponent
-                        || aiLadderStatus.current_opponent.certification_status !== 'certified'
-                        || aiLadderStatus.current_opponent.availability !== 'available'
-                    ))}
+                    disabled={loading || (isRated && !canStartAiLadderGame(aiLadderStatus))}
                 >
                     {t('btn:Play', 'Start Game')}
                 </Button>

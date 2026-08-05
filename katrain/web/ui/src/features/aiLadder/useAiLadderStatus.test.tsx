@@ -1,9 +1,14 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AiLadderApiError } from './api';
+import { AI_LADDER_COPY } from './copy';
 import { useAiLadderStatus } from './useAiLadderStatus';
 
 const { getStatus } = vi.hoisted(() => ({ getStatus: vi.fn() }));
-vi.mock('./api', () => ({ getAiLadderStatus: getStatus }));
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api')>()),
+  getAiLadderStatus: getStatus,
+}));
 
 describe('useAiLadderStatus', () => {
   beforeEach(() => getStatus.mockReset());
@@ -15,13 +20,37 @@ describe('useAiLadderStatus', () => {
     await waitFor(() => expect(result.current.status.view_state).toBe('ready'));
   });
 
-  it('keeps backend detail and retries after an error', async () => {
-    getStatus.mockRejectedValueOnce(new Error('Ranked authority is unavailable'))
+  it('shows a readable message instead of the operator-facing detail, and retries', async () => {
+    // The server's 503 detail is "Ranked AI ladder authority is unavailable on this node"
+    // — English, written for whoever runs the box, and it was reaching the kiosk screen.
+    getStatus.mockRejectedValueOnce(new AiLadderApiError(503, 'Ranked AI ladder authority is unavailable on this node'))
       .mockResolvedValueOnce({ view_state: 'ready', placement_state: { phase: 'placement', completed_games: 0, total_games: 5 }, current_opponent: null, recent_ranked_results: [], net_score: 0, pending_settlement: false });
     const { result } = renderHook(() => useAiLadderStatus(undefined, true));
-    await waitFor(() => expect(result.current.status).toEqual({ view_state: 'error', message: 'Ranked authority is unavailable' }));
+    await waitFor(() => expect(result.current.status).toEqual({
+      view_state: 'error',
+      message: AI_LADDER_COPY.loadErrorNotAuthoritative,
+    }));
+    expect(JSON.stringify(result.current.status)).not.toContain('authority is unavailable');
     result.current.retry();
     await waitFor(() => expect(result.current.status.view_state).toBe('ready'));
+  });
+
+  it('tells an expired login apart from a node that does not keep scores', async () => {
+    getStatus.mockRejectedValueOnce(new AiLadderApiError(401, 'Not authenticated'));
+    const { result } = renderHook(() => useAiLadderStatus(undefined, true));
+    await waitFor(() => expect(result.current.status).toEqual({
+      view_state: 'error',
+      message: AI_LADDER_COPY.loadErrorUnauthorized,
+    }));
+  });
+
+  it('falls back to a generic message for an error it cannot classify', async () => {
+    getStatus.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useAiLadderStatus(undefined, true));
+    await waitFor(() => expect(result.current.status).toEqual({
+      view_state: 'error',
+      message: AI_LADDER_COPY.loadError,
+    }));
   });
 
   it('does not call the ranked endpoint for free play', () => {

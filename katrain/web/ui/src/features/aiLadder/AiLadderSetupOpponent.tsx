@@ -4,6 +4,7 @@ import HourglassTopRoundedIcon from '@mui/icons-material/HourglassTopRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { Alert, Box, Button, Chip, LinearProgress, Skeleton, Stack, Typography } from '@mui/material';
 import { AI_LADDER_COPY, formatPlacementProgress, formatPlacementProgressLabel } from './copy';
+import { aiLadderStartBlock, isProvisionalSeating } from './startGate';
 import type { AiLadderCatalogEntry, AiLadderStatus } from './types';
 
 interface AiLadderSetupOpponentProps {
@@ -74,8 +75,11 @@ const AiLadderSetupOpponent = ({ status, onRetry, compact = false }: AiLadderSet
 
   const placementState = status.placement_state;
   const activeEntry = placementState.phase === 'placement' ? status.current_opponent : placementState.rung;
-  const unavailable =
-    !activeEntry || activeEntry.certification_status !== 'certified' || activeEntry.availability === 'unavailable';
+  // "Cannot be challenged" is the server's answer, not a property of the rung: on a node
+  // switched into provisional play an uncertified rung IS seatable, and saying otherwise
+  // next to an enabled button is the kind of contradiction players rightly distrust.
+  const unavailable = aiLadderStartBlock(status) === 'rung_not_certified' || !activeEntry;
+  const provisionalSeating = isProvisionalSeating(status);
 
   return (
     <Frame compact={compact}>
@@ -124,6 +128,13 @@ const AiLadderSetupOpponent = ({ status, onRetry, compact = false }: AiLadderSet
           <Stack direction="row" alignItems="center" gap={1} color="warning.main">
             <WarningAmberRoundedIcon fontSize="small" />
             <Typography variant="body2" fontWeight={700}>{AI_LADDER_COPY.unavailable}</Typography>
+          </Stack>
+        )}
+
+        {provisionalSeating && !status.pending_settlement && (
+          <Stack direction="row" alignItems="center" gap={1} color="warning.main" data-testid="ladder-provisional-seating">
+            <WarningAmberRoundedIcon fontSize="small" />
+            <Typography variant="body2" fontWeight={700}>{AI_LADDER_COPY.provisionalSeating}</Typography>
           </Stack>
         )}
       </Stack>

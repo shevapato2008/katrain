@@ -64,6 +64,11 @@ export interface AiLadderReadyStatus {
   recent_ranked_results: AiLadderRankedOutcome[];
   net_score: AiLadderNetScore;
   pending_settlement: boolean;
+  // Whether THIS node will seat an uncertified rung (KATRAIN_LADDER_ALLOW_PROVISIONAL).
+  // The rung keeps reporting its own real certification_status/availability; this says
+  // what the server will do about it. Optional so a node that predates the field reads
+  // as "will not", which is the safe direction.
+  provisional_play_allowed?: boolean;
 }
 
 export type AiLadderStatus = AiLadderLoadingStatus | AiLadderErrorStatus | AiLadderReadyStatus;

@@ -11,7 +11,15 @@ export const AI_LADDER_COPY = {
   rankedOpponentPrefix: '本局对手：',
   loading: '正在加载升降级对弈状态…',
   loadError: '升降级对弈状态加载失败',
+  // The backend's `detail` is English and written for operators; it used to be rendered
+  // verbatim on a Chinese kiosk. These say the same thing to the person holding the board.
+  loadErrorNotAuthoritative: '本机不记升降级成绩，暂时无法开始升降级对弈',
+  loadErrorUnauthorized: '登录已失效，请重新登录后再试',
   retry: '重试',
+  // Seating and scoring are separate decisions: this node will let you play an
+  // uncertified rung, but a rank earned against unmeasured strength is not recorded
+  // (the ledger's own CHECK constraint refuses it). Say so before the game, not after.
+  provisionalSeating: '该档位尚未标定，可以试下，但本局不计入升降级',
   currentOpponentPrefix: '当前对手：',
   currentRankPrefix: '当前段位：',
   available: '可挑战',

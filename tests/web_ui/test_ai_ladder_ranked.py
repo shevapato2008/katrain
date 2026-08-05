@@ -349,6 +349,38 @@ def test_only_certified_available_ranked_ai_results_count(
         assert db.query(models_db.AiLadderProfile).count() == 0
 
 
+@pytest.mark.parametrize("snapshot", [{"certification_status": "provisional"}, {"availability": "unavailable"}])
+def test_the_provisional_switch_lets_the_game_be_played_but_never_banked(
+    session_factory, user, opponent, snapshot, monkeypatch
+):
+    """KATRAIN_LADDER_ALLOW_PROVISIONAL decides seating, never scoring.
+
+    A rank earned against unmeasured strength means nothing, and the schema says so:
+    `ck_ai_ladder_ledger_decision` will not store a counted row whose opponent is not
+    certified+available. So the game is recorded with its real reason, and the profile
+    does not move -- with the switch on exactly as with it off.
+    """
+    from katrain.core import ladder
+
+    monkeypatch.setenv(ladder.LADDER_ALLOW_PROVISIONAL_ENV, "1")
+    repo = AiLadderRankedRepository(session_factory)
+    attempted_opponent = replace(opponent, **snapshot)
+    placed_profile(session_factory, user.id, attempted_opponent.rung)
+
+    outcome = settle(repo, user.id, "provisional-not-banked", "loss", attempted_opponent)
+
+    assert not outcome.counted
+    assert outcome.reason == "opponent_not_eligible"
+    with session_factory() as db:
+        decision = db.query(models_db.AiLadderGameLedger).one()
+        assert not decision.counted
+        # The row still names what was actually played, so the record is honest about it.
+        assert decision.opponent_certification_status == attempted_opponent.certification_status
+        assert decision.opponent_availability == attempted_opponent.availability
+        profile = db.query(models_db.AiLadderProfile).one()
+        assert (profile.net_score, profile.ai_ladder_rung) == (0, attempted_opponent.rung)
+
+
 @pytest.mark.parametrize(
     ("first_game_type", "first_result", "first_snapshot", "reason"),
     [

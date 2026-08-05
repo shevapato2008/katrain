@@ -27,10 +27,12 @@ MAX_BACKOFF_SECONDS = 300  # 5 minutes cap
 ORDERED_OPERATIONS = frozenset({"settle_ai_ladder_ranked"})
 
 #: 4xx codes that mean "not now" rather than "not ever", so a revive should try them
-#: again. 404 earns its place the hard way: a board can be running ahead of the server
-#: it syncs to, and an endpoint that does not exist yet is not the same as a request the
-#: server understood and rejected.
-TRANSIENT_CLIENT_STATUSES = frozenset({404, 408, 425, 429})
+#: again. 404 and 405 earn their place the hard way: a board can be running ahead of the
+#: server it syncs to, and a route that does not exist yet is not a request the server
+#: understood and rejected. Measured, not guessed -- a server whose SPA catch-all answers
+#: unknown paths replies 405 to a POST, not 404 (observed against the production cloud on
+#: 2026-08-05, before it had /api/v1/ai-ladder/settlements).
+TRANSIENT_CLIENT_STATUSES = frozenset({404, 405, 408, 425, 429})
 
 
 def _is_permanent_refusal(http_status) -> bool:

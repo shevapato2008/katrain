@@ -2930,3 +2930,14 @@ msgstr "Freies Spiel"
 
 msgid "retry"
 msgstr "Erneut versuchen"
+
+msgid "ladder:engine_stalled"
+msgstr ""
+"Ladder-Engine nicht verfügbar — die KI kann nicht ziehen. Diese Partie zählt"
+" nicht; bitte verlasse sie."
+
+msgid "ladder:unscored_engine"
+msgstr ""
+"Dein Gegner konnte nicht in seiner kalibrierten Stärke spielen, daher zählt "
+"diese Partie nicht — dein Rang bleibt unverändert und es wird keine "
+"Platzierungspartie verbraucht."

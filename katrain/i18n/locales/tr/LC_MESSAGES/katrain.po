@@ -2954,3 +2954,13 @@ msgstr "Serbest oyun"
 
 msgid "retry"
 msgstr "Yeniden dene"
+
+msgid "ladder:engine_stalled"
+msgstr ""
+"Merdiven motoru kullanılamıyor — yapay zekâ hamle yapamıyor. Bu oyun "
+"sayılmayacak; lütfen ayrılın."
+
+msgid "ladder:unscored_engine"
+msgstr ""
+"Rakibin kalibre edilmiş gücünde oynayamadı, bu yüzden bu oyun sayılmıyor — "
+"sıralaman değişmedi ve yerleştirme oyunlarından biri harcanmadı."

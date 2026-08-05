@@ -1243,6 +1243,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         if getattr(session, "game_type", None) != LADDER_GAME_TYPE:
             return
+
+        # The seated rung could not be played at its calibrated strength, so the AI
+        # refused to move (interface._surface_ladder_unavailable). Whatever ended the
+        # game after that -- the player giving up on a board that will never answer,
+        # or the AI's own clock expiring -- is an artefact of our engine, not a result.
+        # Banking it would hand out a promotion for a game nobody played. The flag is
+        # cleared by the next successful AI move, so a game that stalled and recovered
+        # still settles normally.
+        if getattr(session.katrain, "last_ladder_error", False):
+            logging.getLogger("katrain_web").error(
+                "ladder game ended while the engine could not seat the rung; not scoring"
+            )
+            session.ladder_result = {"settled": False, "reason": "engine_unavailable"}
+            return
+
         opponent_rung = getattr(session, "ladder_opponent_rung", None)
         if opponent_rung is None:
             logging.getLogger("katrain_web").error("ladder game finished with no seated rung; not scoring")

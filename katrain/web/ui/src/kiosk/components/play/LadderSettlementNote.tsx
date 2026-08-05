@@ -39,6 +39,11 @@ const LadderSettlementNote = ({ result }: { result: LadderSettlement }) => {
                 return t('ladder:unscored_already', '这局已经结算过了，段位没有再变。');
             case 'in_progress':
                 return t('ladder:unscored_in_progress', '这局还没结束。');
+            case 'engine_unavailable':
+                return t(
+                    'ladder:unscored_engine',
+                    '这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。',
+                );
             default:
                 // no_seated_rung / no_human_seat / not_recorded / error — all mean the
                 // same thing to the player, and all are our fault, so say so.

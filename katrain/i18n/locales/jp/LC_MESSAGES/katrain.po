@@ -2875,3 +2875,9 @@ msgstr "自由対局"
 
 msgid "retry"
 msgstr "再試行"
+
+msgid "ladder:engine_stalled"
+msgstr "ラダーエンジンが利用できず、AI が着手できません · この局は昇降級に加算されません。退出してください"
+
+msgid "ladder:unscored_engine"
+msgstr "この局の相手は校正された強さで着手できなかったため無効です。段位は変わらず、定級戦の局数にも数えません。"

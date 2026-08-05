@@ -2857,3 +2857,9 @@ msgstr "自由對弈"
 
 msgid "retry"
 msgstr "重試"
+
+msgid "ladder:engine_stalled"
+msgstr "階梯引擎不可用，AI 無法落子 · 本局不計入升降級，請退出本局"
+
+msgid "ladder:unscored_engine"
+msgstr "這局的對手沒能以標定強度落子，所以不算數——段位沒有變動，也不佔定級賽的局數。"

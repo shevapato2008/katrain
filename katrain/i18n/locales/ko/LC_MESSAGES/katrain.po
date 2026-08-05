@@ -2802,3 +2802,9 @@ msgstr "자유 대국"
 
 msgid "retry"
 msgstr "다시 시도"
+
+msgid "ladder:engine_stalled"
+msgstr "래더 엔진을 사용할 수 없어 AI가 착수할 수 없습니다 · 이 대국은 승강에 반영되지 않습니다. 나가 주세요"
+
+msgid "ladder:unscored_engine"
+msgstr "이 대국의 상대가 보정된 기력으로 착수하지 못해 무효입니다. 단급은 그대로이며 배치 대국 수에도 들어가지 않습니다."

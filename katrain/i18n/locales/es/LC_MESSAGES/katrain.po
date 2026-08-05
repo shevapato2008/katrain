@@ -2762,3 +2762,13 @@ msgstr "Partida libre"
 
 msgid "retry"
 msgstr "Reintentar"
+
+msgid "ladder:engine_stalled"
+msgstr ""
+"Motor de escalera no disponible: la IA no puede jugar. Esta partida no "
+"cuenta; por favor, sal de ella."
+
+msgid "ladder:unscored_engine"
+msgstr ""
+"Tu rival no pudo jugar con su fuerza calibrada, así que esta partida no "
+"cuenta: tu rango no cambia y no consume una partida de clasificación."

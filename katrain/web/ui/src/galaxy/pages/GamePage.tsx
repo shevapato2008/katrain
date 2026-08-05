@@ -117,11 +117,16 @@ const GamePage = () => {
 
     // Timeout handler - auto-forfeit when time runs out
     const handleTimeout = useCallback(async () => {
+        // A ladder AI that refused to move still has a clock, and that clock still runs
+        // out. Forfeiting it would end the game "won by the human" over a board the
+        // engine never played on. The server refuses to score such a game either way
+        // (server.py _settle_ladder_game), but the win must not appear on screen at all.
+        if (gameState?.last_ladder_error) return;
         if (!gameState?.end_result) {
             console.log('Timer expired - triggering timeout');
             await handleAction('timeout');
         }
-    }, [gameState?.end_result, handleAction]);
+    }, [gameState?.end_result, gameState?.last_ladder_error, handleAction]);
 
     useEffect(() => {
         if (sessionId && sessionId !== currentSessionId) {
@@ -271,6 +276,19 @@ const GamePage = () => {
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+            {/* The ladder AI refused to move (engine cannot serve the seated rung at its
+                calibrated strength). No move is coming and the clock keeps running, so say
+                so — an empty board with a ticking opponent clock reads as "still thinking". */}
+            {gameState.last_ladder_error && !gameState.end_result && (
+                <Alert
+                    severity="warning"
+                    data-testid="ladder-stalled"
+                    sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 1300 }}
+                >
+                    {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
+                </Alert>
+            )}
+
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>

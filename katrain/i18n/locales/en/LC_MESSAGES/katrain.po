@@ -2892,3 +2892,13 @@ msgstr "Free Play"
 
 msgid "retry"
 msgstr "Retry"
+
+msgid "ladder:engine_stalled"
+msgstr ""
+"Ladder engine unavailable — the AI cannot play. This game will not count; "
+"please leave it."
+
+msgid "ladder:unscored_engine"
+msgstr ""
+"Your opponent could not play at its calibrated strength, so this game does "
+"not count — your rank is unchanged and it does not use up a placement game."

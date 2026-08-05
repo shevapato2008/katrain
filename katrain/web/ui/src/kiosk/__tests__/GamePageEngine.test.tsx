@@ -692,6 +692,26 @@ describe('GamePage engine mode', () => {
         expect(aiColor).toBe('W');
         expect(aiThinking).toBe(true);
       });
+
+      // Observed on an RK3562 kiosk (2026-08-05): the ladder AI fails closed when the
+      // engine cannot serve the seated rung, and the banner sat on "AI 思考中…"
+      // indefinitely over a turn where nothing was thinking and no move would arrive.
+      it('last_ladder_error on the AI turn -> stalled, and the thinking banner is off', () => {
+        const state = { ...mockGameState, player_to_move: 'W' as const, last_ladder_error: true };
+        const { aiThinking, showThinking, ladderStalled } = deriveAiTurnState(state, null);
+        expect(aiThinking).toBe(true); // it IS the AI's turn…
+        expect(showThinking).toBe(false); // …but it is not thinking
+        expect(ladderStalled).toBe(true);
+      });
+
+      it('last_ladder_error left over on the human turn -> neither banner', () => {
+        // The flag is cleared by the next successful AI move, but a stale true must not
+        // paint an error over the human's own turn.
+        const state = { ...mockGameState, player_to_move: 'B' as const, last_ladder_error: true };
+        const { showThinking, ladderStalled } = deriveAiTurnState(state, null);
+        expect(showThinking).toBe(false);
+        expect(ladderStalled).toBe(false);
+      });
     });
 
     describe('AI-move banner (render)', () => {

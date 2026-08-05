@@ -368,6 +368,7 @@ def enqueue_sync_item(
     user_id: str = None,
     device_id: str = None,
     coalesce_on_endpoint: bool = False,
+    idempotency_key: str = None,
 ):
     """Helper to insert a sync queue entry.
 
@@ -377,8 +378,14 @@ def enqueue_sync_item(
     same resource to a single latest-wins entry. Latest-wins is safe because
     progress fields are monotonic (completed via OR at both local upsert and
     remote merge; attempts via max).
+
+    ``idempotency_key`` defaults to a random uuid, which identifies the ATTEMPT and
+    nothing else. Pass a key derived from the thing being synced when re-enqueueing the
+    same fact must not create a second one (the column is unique, so the duplicate
+    insert is rejected here rather than discovered on the server).
     """
     from katrain.web.core.models_db import SyncQueueEntry
+    from sqlalchemy.exc import IntegrityError
 
     db = session_factory()
     try:
@@ -393,7 +400,7 @@ def enqueue_sync_item(
                 dedup_q = dedup_q.filter(SyncQueueEntry.user_id == user_id)
             dedup_q.delete(synchronize_session=False)
         entry = SyncQueueEntry(
-            idempotency_key=uuid.uuid4().hex,
+            idempotency_key=idempotency_key or uuid.uuid4().hex,
             operation=operation,
             endpoint=endpoint,
             method=method,
@@ -403,7 +410,14 @@ def enqueue_sync_item(
             device_id=device_id,
         )
         db.add(entry)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Same fact already queued (or already synced). Enqueueing it twice would
+            # hand the server the same event under two names.
+            db.rollback()
+            logger.info(f"Sync item already queued, not duplicating: {operation} [{idempotency_key}]")
+            return
         logger.debug(f"Enqueued sync: {operation} → {endpoint}")
     finally:
         db.close()

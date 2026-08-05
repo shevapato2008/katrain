@@ -19,6 +19,25 @@ logger = logging.getLogger("katrain_web")
 LEASE_TIMEOUT_SECONDS = 300  # 5 minutes
 MAX_BACKOFF_SECONDS = 300  # 5 minutes cap
 
+#: Operations whose meaning depends on the order they are applied in, per user.
+#: A rank is a state machine driven by its games: replaying game 3 before game 2
+#: lands on a different rung, and skipping a stuck game 2 silently loses a result.
+#: Everything else in the queue is order-independent (a kifu) or latest-wins (tsumego
+#: progress), so one stuck item there must not stall the rest of the queue.
+ORDERED_OPERATIONS = frozenset({"settle_ai_ladder_ranked"})
+
+#: 4xx codes that mean "not now" rather than "not ever", so a revive should try them
+#: again. 404 earns its place the hard way: a board can be running ahead of the server
+#: it syncs to, and an endpoint that does not exist yet is not the same as a request the
+#: server understood and rejected.
+TRANSIENT_CLIENT_STATUSES = frozenset({404, 408, 425, 429})
+
+
+def _is_permanent_refusal(http_status) -> bool:
+    if http_status is None:
+        return False  # never got an answer -- that is the network, not a refusal
+    return 400 <= http_status < 500 and http_status not in TRANSIENT_CLIENT_STATUSES
+
 
 class RetryableError(Exception):
     """Server 5xx or network timeout — safe to retry."""
@@ -38,9 +57,13 @@ class SyncWorker:
         self,
         session_factory,
         remote_client: RemoteAPIClient,
+        ai_ladder_repo=None,
     ):
         self._session_factory = session_factory
         self._remote_client = remote_client
+        # Present on a board: lets a synced settlement bring the cloud's answer back,
+        # so an account that also played elsewhere stops showing two different ranks.
+        self._ai_ladder_repo = ai_ladder_repo
         self._sync_lock = asyncio.Lock()
 
     async def run_sync(self) -> int:
@@ -70,10 +93,20 @@ class SyncWorker:
                 .all()
             )
 
+            blocked_users: set = set()
             for item in items:
                 if self._remote_client.auth_required:
                     logger.warning("Auth required — pausing sync queue")
                     break
+
+                if item.operation in ORDERED_OPERATIONS:
+                    if item.user_id in blocked_users:
+                        # An earlier item for this user has not landed. Sending this one
+                        # now would apply their games out of order.
+                        continue
+                    if not self._may_send_for(item):
+                        blocked_users.add(item.user_id)
+                        continue
 
                 item.status = "in_progress"
                 item.locked_at = datetime.utcnow()
@@ -89,11 +122,15 @@ class SyncWorker:
                 except RetryableError as e:
                     self._schedule_retry(item, str(e))
                     db.commit()
+                    if item.operation in ORDERED_OPERATIONS:
+                        blocked_users.add(item.user_id)
                 except PermanentError as e:
                     item.status = "failed"
                     item.last_error = str(e)
                     db.commit()
                     logger.warning(f"Permanent failure: {item.operation} [{item.idempotency_key[:8]}]: {e}")
+                    if item.operation in ORDERED_OPERATIONS:
+                        blocked_users.add(item.user_id)
         finally:
             db.close()
 
@@ -112,6 +149,7 @@ class SyncWorker:
             item.last_http_status = resp.status_code
 
             if 200 <= resp.status_code < 300:
+                self._absorb_response(item, resp)
                 return  # Success
             elif resp.status_code == 409:
                 # Idempotent duplicate — treat as success
@@ -125,6 +163,79 @@ class SyncWorker:
             raise
         except Exception as e:
             raise RetryableError(f"Network error: {e}")
+
+    def _absorb_response(self, item: SyncQueueEntry, resp) -> None:
+        """Take back what the server decided, where the server is the one who decides.
+
+        For a rank, that is the whole point of syncing: the cloud re-ran the settlement
+        against every device's games, so its profile supersedes the local one. A reply
+        we cannot parse is not a reason to fail an item that the server accepted.
+        """
+        if item.operation != "settle_ai_ladder_ranked" or self._ai_ladder_repo is None:
+            return
+        try:
+            body = resp.json()
+            profile = body.get("profile") if isinstance(body, dict) else None
+            if not profile or item.user_id is None:
+                return
+            if self._ai_ladder_repo.adopt_remote_profile(int(item.user_id), profile):
+                logger.info(f"Adopted cloud AI ladder profile for user {item.user_id}")
+        except Exception as e:
+            logger.warning(f"Could not apply sync response for {item.operation}: {e}")
+
+    def _may_send_for(self, item: SyncQueueEntry) -> bool:
+        """Whether the remote session currently belongs to the item's owner.
+
+        A board is a shared device: the remote client holds ONE cloud session, whoever
+        logged in last. Posting a queued rank event under someone else's token would
+        move the wrong person's rank, so an ownerless or mismatched session means wait,
+        not send. Fail closed — an unbound session is not proof of anything.
+        """
+        bound = getattr(self._remote_client, "bound_user_id", None)
+        if bound is None or item.user_id is None:
+            logger.info(
+                "Holding %s [%s]: no bound cloud session to attribute it to",
+                item.operation,
+                item.idempotency_key[:8],
+            )
+            return False
+        if str(bound) != str(item.user_id):
+            logger.info(
+                "Holding %s [%s]: queued for user %s, cloud session is user %s",
+                item.operation,
+                item.idempotency_key[:8],
+                item.user_id,
+                bound,
+            )
+            return False
+        return True
+
+    def revive_retryable_failures(self) -> int:
+        """Put network-failed items back in the queue. Called on reconnection.
+
+        Retry budget exhaustion means "the network was bad for a while", not "this can
+        never work" — but `failed` is terminal, so without this a settlement dropped
+        during an outage stays dropped forever with nothing surfacing it. A 4xx is a
+        different animal: the server understood and refused, so retrying it is noise.
+        """
+        db: Session = self._session_factory()
+        try:
+            revived = 0
+            rows = db.query(SyncQueueEntry).filter(SyncQueueEntry.status == "failed").all()
+            for item in rows:
+                if _is_permanent_refusal(item.last_http_status):
+                    continue  # the server refused it on the merits; retrying changes nothing
+                item.status = "pending"
+                item.retry_count = 0
+                item.next_retry_at = None
+                item.locked_at = None
+                revived += 1
+            if revived:
+                db.commit()
+                logger.info(f"Revived {revived} sync items after reconnection")
+            return revived
+        finally:
+            db.close()
 
     def _schedule_retry(self, item: SyncQueueEntry, error: str):
         """Apply exponential backoff and reschedule item."""

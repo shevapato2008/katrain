@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 import logging
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -20,7 +20,12 @@ from katrain.web.core.ai_ladder_catalog import (
     result_for_user,
     session_snapshot_from_pending,
 )
-from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE, PLACEMENT_GAMES, initial_placement_window
+from katrain.web.core.ai_ladder_ranked import (
+    AI_LADDER_GAME_TYPE,
+    PLACEMENT_GAMES,
+    AiLadderOpponentSnapshot,
+    initial_placement_window,
+)
 from katrain.web.models import User
 
 router = APIRouter()
@@ -296,4 +301,94 @@ def start_ranked_game(
         "game_id": game_id,
         "opponent": catalog_entry(opponent.rung),
         "status": status_payload,
+    }
+
+
+class AiLadderOpponentPayload(BaseModel):
+    """The opponent exactly as the board froze it when the game started."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rung: int = Field(ge=1, le=41)
+    rank_name: str = Field(min_length=1)
+    config_snapshot: dict
+    certification_status: str = Field(min_length=1)
+    availability: str = Field(min_length=1)
+    route: Literal["local", "server"]
+
+
+class AiLadderSettlementSubmission(BaseModel):
+    """One settled game, forwarded by the board that played it.
+
+    The board is the authority for what happened at its own table (which game, which
+    seat, which result, against which frozen rung). It is NOT the authority for the
+    account's rank: this endpoint re-runs the same settlement against the cloud's own
+    profile, so the cloud stays the single place ranks are decided across devices.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    game_id: str = Field(min_length=1, max_length=64)
+    user_color: Literal["B", "W"]
+    result: Literal["win", "loss", "inconclusive"]
+    game_type: str = Field(min_length=1)
+    opponent: Optional[AiLadderOpponentPayload] = None
+    engine_stalled: bool = False
+    device_id: Optional[str] = Field(default=None, max_length=64)
+
+
+@router.post("/settlements")
+def submit_settlement(
+    body: AiLadderSettlementSubmission,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Accept a settled ranked game from a board and apply it to the cloud profile.
+
+    Idempotent by `game_id`: `settle_game` replays the first decision it recorded for a
+    game rather than settling it twice, so a board that retries after a timeout (or
+    after being unsure whether its POST landed) cannot move the rank twice.
+    """
+    _require_authority(request)
+    opponent = None
+    if body.opponent is not None:
+        try:
+            opponent = AiLadderOpponentSnapshot(**body.opponent.model_dump())
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    try:
+        outcome = request.app.state.ai_ladder_repo.settle_game(
+            user_id=current_user.id,
+            game_id=body.game_id,
+            user_color=body.user_color,
+            result=body.result,
+            game_type=body.game_type,
+            opponent=opponent,
+            engine_stalled=body.engine_stalled,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    logging.getLogger("katrain_web").info(
+        "ai-ladder settlement from device %s: game=%s counted=%s reason=%s",
+        body.device_id or "unknown",
+        body.game_id,
+        outcome.counted,
+        outcome.reason,
+    )
+    return {
+        "game_id": body.game_id,
+        "counted": outcome.counted,
+        "replayed": outcome.replayed,
+        "reason": outcome.reason,
+        # The cloud's answer for this account, which is the one that counts across
+        # devices. A board that disagrees is looking at a stale local profile.
+        "profile": {
+            "ai_ladder_rung": outcome.ai_ladder_rung,
+            "placement_lo": outcome.placement_lo,
+            "placement_hi": outcome.placement_hi,
+            "placement_completed": outcome.placement_completed,
+            "net_score": outcome.net_score,
+        },
     }

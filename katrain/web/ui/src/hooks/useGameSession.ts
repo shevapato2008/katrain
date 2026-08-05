@@ -144,8 +144,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
 
     const onNavigate = useCallback(async (nodeId: number) => {
         if (!sessionId) return;
-        await API.navigate(sessionId, nodeId);
-    }, [sessionId]);
+        await API.navigate(sessionId, nodeId, token);
+    }, [sessionId, token]);
 
     const handleAction = useCallback(async (action: string) => {
         if (!sessionId) return;
@@ -176,6 +176,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             }
         } catch (e) {
             console.error(e);
+            const message = e instanceof Error ? e.message : 'Game action failed';
+            setError(message);
+            throw e;
         }
     }, [sessionId, token]);
 

@@ -5,6 +5,10 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import type { GameState } from '../../api';
 
+const { boardProps } = vi.hoisted(() => ({
+  boardProps: [] as Array<Record<string, unknown>>,
+}));
+
 vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
@@ -32,7 +36,10 @@ vi.mock('../../context/AuthContext', () => ({
 
 // Mock Board component (canvas-based, can't render in jsdom)
 vi.mock('../../components/Board', () => ({
-  default: (props: any) => <div data-testid="board">Board</div>,
+  default: (props: Record<string, unknown>) => {
+    boardProps.push(props);
+    return <div data-testid="board">Board</div>;
+  },
 }));
 
 // Mock PlayerCard (uses translations)
@@ -121,11 +128,18 @@ import GamePage from '../pages/GamePage';
 describe('GamePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    boardProps.length = 0;
   });
 
   it('renders Board component', () => {
     renderPage();
     expect(screen.getByTestId('board')).toBeInTheDocument();
+  });
+
+  it('does not enable stone navigation on the live board', () => {
+    renderPage();
+    expect(boardProps).toHaveLength(1);
+    expect(boardProps[0]).not.toHaveProperty('onNavigate');
   });
 
   it('renders player cards with names and ranks', () => {

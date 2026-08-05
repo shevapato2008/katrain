@@ -10,7 +10,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../../context/AuthContext';
 import { i18n } from '../../i18n';
-import { API } from '../../api';
+import { getAiLadderStatus } from '../../features/aiLadder/api';
 import SubPageBar from '../components/layout/SubPageBar';
 
 interface OnlineUser {
@@ -49,8 +49,10 @@ const LobbyPage = () => {
 
   useEffect(() => {
     if (!token) return;
-    API.getLadderMe(token)
-      .then((me) => setLadderRank(me.rung))
+    getAiLadderStatus(token)
+      // A non-ready status (loading/error) has no placement_state at all — treat it as
+      // "no rank" rather than reading through it; this is only a pre-check anyway.
+      .then((s) => setLadderRank(s?.placement_state?.phase === 'placed' ? s.placement_state.rung.rung : null))
       .catch(() => setLadderRank(null));
   }, [token]);
 

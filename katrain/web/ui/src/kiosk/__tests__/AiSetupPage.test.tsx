@@ -13,6 +13,9 @@ vi.mock('../../api', () => ({
   },
 }));
 
+vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }) }));
+vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({ useAiLadderStatus: () => ({ status: { view_state: 'ready', placement_state: { phase: 'placement', completed_games: 2, total_games: 5 }, current_opponent: { rung: 12, rank_name: '9级', certification_status: 'certified', availability: 'available', route: 'server' }, recent_ranked_results: [], net_score: 0, pending_settlement: false }, retry: vi.fn() }) }));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
@@ -91,11 +94,16 @@ describe('AiSetupPage', () => {
     expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
   });
 
-  // The four `renderPage('ranked')` tests that used to sit here described a mode
-  // this page no longer has: 升降级对弈 moved to LadderSetupPage, where the opponent
-  // comes from the ledger rather than from an AI-strength dropdown. What they were
-  // guarding (no strategy picker, time forced on) is now covered by
-  // tests/ladder-kiosk-setup.spec.ts against the real page.
+  it('hides AI strategy selector for ranked mode', () => {
+    renderPage('ranked');
+    expect(screen.queryByRole('combobox', { name: 'AI 策略' })).not.toBeInTheDocument();
+  });
+
+  it('shows the authoritative ladder opponent for ranked mode', () => {
+    renderPage('ranked');
+    expect(screen.getByText('定级对手：9级')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
+  });
 
   it('renders handicap selector defaulting to none', () => {
     renderPage();
@@ -132,6 +140,18 @@ describe('AiSetupPage', () => {
     await user.click(screen.getByRole('combobox', { name: '用时' }));
     expect(screen.getByRole('option', { name: /5分.*3.*30秒/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /10分.*3.*30秒/ })).toBeInTheDocument();
+  });
+
+  it('time selector excludes the untimed preset for ranked mode (time is forced on)', async () => {
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: '用时' }));
+    expect(screen.queryByRole('option', { name: '不限时' })).not.toBeInTheDocument();
+  });
+
+  it('ranked mode defaults to a byoyomi-only preset (30s x3), same as prior slider defaults', () => {
+    renderPage('ranked');
+    expect(screen.getByText(/仅读秒.*30秒.*3/)).toBeInTheDocument();
   });
 
   it('calls API.createSession and gameSetup on start', async () => {

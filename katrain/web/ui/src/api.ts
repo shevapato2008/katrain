@@ -8,6 +8,8 @@ export interface PlayerInfo {
   main_time_used: number;
 }
 
+export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online';
+
 export interface GameState {
   game_id: string;
   board_size: [number, number];
@@ -70,7 +72,7 @@ export interface GameState {
     fast_visits?: number;
     max_visits?: number;
   };
-  game_type?: string; // "free" | "ranked" | "rated" — backend interface.py get_state()
+  game_type?: GameType;
   analysis_allowed?: boolean;
   // True once an ai:ladder player refused to move because the engine cannot serve the
   // seated rung at its calibrated strength (interface._surface_ladder_unavailable).
@@ -113,96 +115,12 @@ export interface EngineLevel {
   ref_rank: string;
 }
 
-// One rung of the local 棋力阶梯 (strength-ladder) 41-rung opponent — the UI-facing
+// One rung of the local 棋力阶梯 (strength-ladder) 37-rung opponent — the UI-facing
 // subset served by GET /api/ladder-rungs (see katrain/web/server.py). star阵-free.
 export interface LadderRung {
   rung: number;
   rank_name: string;
 }
-
-// --- 升降级对弈 (rated play on the 41-tier ladder) ---
-// Served by GET /api/ladder/me. This is the ONLY rank a user has: it moves on
-// ladder games against the AI and on nothing else. The opponent rung is decided
-// server-side and is deliberately absent from the start-game request body.
-
-export interface LadderTierRef {
-  rung: number;
-  rank_name: string;
-}
-
-export interface LadderRecentGame {
-  won: boolean;
-  opponent_rung: number;
-  opponent_rank_name: string;
-}
-
-export interface LadderPlacement {
-  games_done: number;   // valid results so far, 0..games_total-1 while in progress
-  games_total: number;  // 5 — resolves exactly the 32-rung candidate window
-  lo: number;           // current binary-search window, inclusive
-  hi: number;
-}
-
-export interface LadderOpponent extends LadderTierRef {
-  // Reported verbatim from katrain/core/ladder.py. A dev-only server switch may
-  // let a provisional rung be played, but these two fields never lie about it.
-  certification_status: 'provisional' | 'certified';
-  availability: 'available' | 'unavailable';
-  route: 'local' | 'server';
-}
-
-// The conditions every rung was calibrated under. Reported by the server, not
-// chosen by the client — the setup page shows them, start-game applies them.
-export interface LadderGameSetup {
-  size: number;
-  rules: string;
-  komi: number;
-}
-
-export interface LadderMe {
-  game_setup: LadderGameSetup;
-  rung: number | null;         // null = not yet placed
-  rank_name: string | null;
-  rung_above: LadderTierRef | null;   // null at rung 41
-  rung_below: LadderTierRef | null;   // null at rung 1
-  net_wins: number;            // running total, resets to 0 on promotion/demotion
-  threshold: number;           // |net_wins| that moves a rung (3)
-  placement: LadderPlacement | null;  // non-null exactly while placing
-  recent: LadderRecentGame[];  // up to 5, oldest first; ledger-derived only
-  next_opponent: LadderOpponent;
-  playable: boolean;           // false => start button disabled, no AI substitution
-  blocked_reason: 'not_certified' | 'engine_unavailable' | null;
-}
-
-// Served by GET /api/ladder/session-result/{session_id} — what the game just
-// finished on this session did to the caller's rank. The frontend NEVER derives
-// this by diffing two /api/ladder/me reads: a game that did not score has to say
-// so, and a diff of zero cannot tell "you drew even" from "it wasn't counted".
-export type LadderSettlement =
-  | {
-      settled: true;
-      won: boolean;
-      is_placement: boolean;
-      net_wins_before: number;
-      net_wins_after: number;
-      threshold: number;
-      rung_before: LadderTierRef | null;  // null during placement
-      rung_after: LadderTierRef | null;   // null until placement resolves
-      moved: 1 | 0 | -1;                  // promoted / stayed / demoted
-      placement: { games_done: number; games_total: number } | null;
-    }
-  | {
-      settled: false;
-      reason:
-        | 'not_a_ladder_game'
-        | 'in_progress'
-        | 'inconclusive'
-        | 'already_settled'
-        | 'no_seated_rung'
-        | 'no_human_seat'
-        | 'not_recorded'
-        | 'error';
-    };
 
 export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
@@ -361,8 +279,8 @@ export const API = {
     apiPost("/api/game/setup", { session_id: sessionId, mode, settings }),
   aiMove: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/ai-move", { session_id: sessionId }),
-  navigate: (sessionId: string, nodeId?: number): Promise<SessionResponse> =>
-    apiPost("/api/nav", { session_id: sessionId, node_id: nodeId }),
+  navigate: (sessionId: string, nodeId?: number, token?: string): Promise<SessionResponse> =>
+    apiPost("/api/nav", { session_id: sessionId, node_id: nodeId }, token),
   loadSGF: (sessionId: string, sgf: string, skipAnalysis: boolean = false): Promise<SessionResponse> =>
     apiPost("/api/sgf/load", { session_id: sessionId, sgf, skip_analysis: skipAnalysis }),
   saveSGF: async (sessionId: string): Promise<{ sgf: string }> => {
@@ -423,8 +341,8 @@ export const API = {
     apiPost("/api/analysis/scan", { session_id: sessionId, visits }),
   quickAnalyze: (params: {
     moves: string[][]; initial_stones?: string[][]; board_size?: number; komi?: number; rules?: string; max_visits?: number;
-  }): Promise<any> =>
-    apiPost("/api/v1/analysis/quick-analyze", params),
+  }, token?: string): Promise<any> =>
+    apiPost("/api/v1/analysis/quick-analyze", params, token),
   // On-demand analysis of the current position (kiosk 领地/图表 in board mode, where per-move
   // auto-eval is suppressed). Result streams back over the game WebSocket, not this response.
   analyzeCurrent: (sessionId: string): Promise<any> =>
@@ -443,51 +361,6 @@ export const API = {
   },
   estimateRank: (strategy: string, settings: any): Promise<{ rank: string }> =>
     apiPost("/api/ai/estimate-rank", { strategy, settings }),
-  // 升降级对弈. The rung is never sent: the server reads it off the player's own
-  // ladder state, which is the whole basis for the promotion ledger meaning
-  // anything.
-  getLadderMe: async (token: string): Promise<LadderMe> => {
-    const res = await fetch("/api/ladder/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error(`ladder/me failed: ${res.status}`);
-    return res.json();
-  },
-
-  // Board size, ruleset and komi are NOT in this body: the ladder fixes them at
-  // the conditions its rungs were measured under (19x19, Chinese, 7.5). Sending
-  // them would let a client seat a rung in a game its rank name doesn't describe.
-  startLadderGame: async (
-    token: string,
-    body: {
-      session_id: string; color: string;
-      // Units are in the names: `timer/main_time` is stored in minutes.
-      main_time_minutes: number; byo_length_seconds: number; byo_periods: number;
-    },
-  ): Promise<SessionResponse> => {
-    const res = await fetch("/api/ladder/start-game", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      // 409 carries {detail: {error, blocked_reason, rung}} when no legal
-      // opponent can be seated. Surface it rather than retrying with a weaker AI.
-      let detail: any = null;
-      try { detail = (await res.json())?.detail; } catch { /* non-JSON error body */ }
-      throw new Error(detail?.blocked_reason || detail?.error || `start-game failed: ${res.status}`);
-    }
-    return res.json();
-  },
-
-  getLadderSessionResult: async (token: string, sessionId: string): Promise<LadderSettlement> => {
-    const res = await fetch(`/api/ladder/session-result/${sessionId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error(`ladder/session-result failed: ${res.status}`);
-    return res.json();
-  },
-
   getLadderRungs: async (): Promise<{ rungs: LadderRung[] }> => {
     const response = await fetch('/api/ladder-rungs');
     if (!response.ok) throw new Error("Failed to fetch ladder rungs");

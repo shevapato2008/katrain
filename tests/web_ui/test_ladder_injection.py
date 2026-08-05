@@ -12,6 +12,8 @@ Covers:
 
 import sys
 import threading
+from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 
@@ -26,9 +28,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 sys.modules.pop("katrain.web.interface", None)
 
 from katrain.core.constants import AI_LADDER, AI_POLICY, PLAYER_AI  # noqa: E402
-from katrain.core.game import Move  # noqa: E402
+from katrain.core.game import Game, Move  # noqa: E402
 from katrain.web.interface import WebKaTrain, resolve_ladder_rung  # noqa: E402
+from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional  # noqa: E402
 from katrain.web.server import create_app  # noqa: E402
+from katrain.web.session import SessionManager  # noqa: E402
 
 
 # --- Task 5: /api/ladder-rungs + ai:ladder default (HTTP surface) -------------------
@@ -37,6 +41,9 @@ from katrain.web.server import create_app  # noqa: E402
 @pytest.fixture
 def client():
     app = create_app(enable_engine=False)
+    user = SimpleNamespace(id=987654, uuid="ladder-injection-user", username="ladder-injection-user")
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_current_user_optional] = lambda: user
     with TestClient(app) as c:
         yield c
 
@@ -64,6 +71,23 @@ def test_ladder_rungs_endpoint(client):
 
 def test_ai_constants_ladder_default(client):
     assert client.get("/api/ai-constants").json()["strategy_defaults"]["ai:ladder"] == {}
+
+
+def test_ranked_session_never_starts_initial_or_replacement_game_analysis(monkeypatch):
+    analyzed = threading.Event()
+    monkeypatch.setattr(Game, "analyze_all_nodes", lambda *_args, **_kwargs: analyzed.set())
+    manager = SessionManager(enable_engine=False)
+
+    session = manager.create_session(
+        user_id=1,
+        initial_game_type="ai_ladder_ranked",
+        skip_initial_analysis=True,
+    )
+    assert not analyzed.wait(0.05)
+
+    session.katrain("new_game", game_type="ai_ladder_ranked")
+    assert not analyzed.wait(0.05)
+    manager.remove_session(session.session_id)
 
 
 def test_new_game_unavailable_ladder_level_returns_422_before_game_mutation(client):
@@ -111,16 +135,29 @@ def _make_ladder_player(wkt, bw):
     wkt.update_player(bw, player_type=PLAYER_AI, player_subtype=AI_LADDER)
 
 
+def _certify_fixture_rungs(monkeypatch, *rungs):
+    """Keep lifecycle tests independent from the still-changing production certifications."""
+    from katrain.core import ladder
+
+    levels = list(ladder.LADDER_LEVELS)
+    for rung in rungs:
+        assert levels[rung - 1].recipe is not None
+        levels[rung - 1] = replace(levels[rung - 1], certification_status="certified", availability="available")
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", tuple(levels))
+
+
 # --- Step 4a/b: lifecycle (set + reset) ---------------------------------------------
 
 
-def test_new_game_sets_injected_rung():
+def test_new_game_sets_injected_rung(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 5)
     wkt = _make_katrain()
     wkt("new_game", ladder_rung=5)
     assert wkt.ladder_rung == {"rung": 5}
 
 
-def test_new_game_without_rung_resets_to_none():
+def test_new_game_without_rung_resets_to_none(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 5)
     wkt = _make_katrain()
     wkt("new_game", ladder_rung=5)
     assert wkt.ladder_rung == {"rung": 5}
@@ -131,13 +168,46 @@ def test_new_game_without_rung_resets_to_none():
     assert wkt.ladder_rung is None
 
 
-def test_load_sgf_without_rung_resets_to_none():
+def test_load_sgf_without_rung_resets_to_none(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 7)
     wkt = _make_katrain()
     wkt._do_new_game(ladder_rung=7)
     assert wkt.ladder_rung == {"rung": 7}
 
     wkt("load_sgf", "(;GM[1]FF[4]SZ[19])")
     assert wkt.ladder_rung is None
+
+
+def test_ranked_session_uses_frozen_recipe_after_global_catalog_changes(monkeypatch):
+    from copy import deepcopy
+    from katrain.core import ladder
+
+    _certify_fixture_rungs(monkeypatch, 5)
+    frozen = deepcopy(ladder.LADDER_LEVELS[4].recipe)
+    original_visits = frozen.max_visits
+    wkt = _make_katrain()
+    wkt._do_new_game(ladder_rung=5, frozen_ladder_recipe=frozen)
+    _make_ladder_player(wkt, wkt.game.current_node.next_player)
+
+    levels = list(ladder.LADDER_LEVELS)
+    levels[4] = replace(levels[4], recipe=replace(frozen, max_visits=original_visits + 999))
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", tuple(levels))
+    captured = {}
+
+    def fake_generate_ai_move(game, mode, settings):
+        captured.update(settings)
+        node = game.play(Move((3, 3), player=game.current_node.next_player))
+        return node.move, node
+
+    import katrain.core.ai as ai_mod
+
+    monkeypatch.setattr(ai_mod, "generate_ai_move", fake_generate_ai_move)
+    wkt._do_ai_move()
+
+    assert captured["rung"] == 5
+    assert captured["frozen_rung"] is frozen
+    assert captured["frozen_rung"].max_visits == original_visits
+    assert ai_mod._resolve_ladder_strategy_rung(captured) is frozen
 
 
 def test_new_game_invalid_rung_raises():
@@ -217,6 +287,7 @@ def test_new_game_serialized_against_inflight_ai_move(monkeypatch):
     """_do_new_game must block on ai_lock while an ai:ladder generation is in flight, and
     the in-flight generation must use its OWN (game, rung) snapshot -- not whatever
     _do_new_game swaps self.game/self.ladder_rung to concurrently."""
+    _certify_fixture_rungs(monkeypatch, 5, 20)
     wkt = _make_katrain()
     next_bw = wkt.game.current_node.next_player
     _make_ladder_player(wkt, next_bw)
@@ -396,7 +467,7 @@ def test_get_state_emits_rank_display_for_ladder_ai():
 
     state = wkt.get_state()
     w = state["players_info"]["W"]
-    assert w["rank_display"] == "超职业"  # the rung's rank_name
+    assert w["rank_display"] == "8段"  # the 41-tier catalog's rung 36 rank_name
     assert w["calculated_rank"] is None  # 段位 rides rank_display, not calculated_rank
     b = state["players_info"]["B"]
     assert b["rank_display"] is None  # human player: no ladder rank_display

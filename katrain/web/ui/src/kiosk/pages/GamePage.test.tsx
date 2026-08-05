@@ -39,6 +39,8 @@ vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSessio
 
 const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
+const { mockLadderStatus } = vi.hoisted(() => ({ mockLadderStatus: vi.fn() }));
+vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: mockLadderStatus }));
 
 let mockIsVisionEnabled = false;
 let mockPoseLocked = true;
@@ -145,6 +147,24 @@ describe('GamePage', () => {
     mockCalibrate.mockClear().mockResolvedValue({});
     sessionStorage.clear();
     localStorage.clear();
+    mockLadderStatus.mockReset();
+  });
+
+  it('renders authoritative ranked settlement feedback after end_result', async () => {
+    const status = (rung: number) => ({
+      view_state: 'ready' as const,
+      placement_state: { phase: 'placed' as const, rung: { rung, rank_name: `${rung}级`, certification_status: 'certified' as const, availability: 'available' as const, route: 'server' as const } },
+      current_opponent: null, recent_ranked_results: ['win' as const], net_score: 0 as const, pending_settlement: false,
+    });
+    sessionStorage.setItem('ai-ladder-before:test-session', JSON.stringify({ identity: '1', status: status(17) }));
+    mockLadderStatus.mockResolvedValue(status(18));
+    mockGameState = makeGameState({
+      game_type: 'ai_ladder_ranked', end_result: 'B+R',
+      players_info: { B: { ...basePlayer, player_type: 'player:human', name: '张三' }, W: { ...basePlayer, player_type: 'player:ai', name: 'AI' } },
+    });
+    renderPage();
+    expect(await screen.findByText('升级：18级')).toBeInTheDocument();
+    expect(mockLadderStatus).toHaveBeenCalledWith('mock-token', expect.any(AbortSignal));
   });
 
   it('never renders the TEMP DEBUG vision-stream <img>', () => {
@@ -480,6 +500,16 @@ describe('GamePage', () => {
       fireEvent.click(screen.getByText('MOCK_RESIGN'));
       const confirmBtn = screen.getByRole('button', { name: '认输' });
       expect(confirmBtn.className).toMatch(/error/i);
+    });
+
+    it('keeps the dialog open and reports a failed authoritative resign', async () => {
+      mockHandleAction.mockRejectedValueOnce(new Error('认输请求失败'));
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, game_type: 'ai_ladder_ranked' });
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '认输' }));
+      expect(await screen.findByText('认输请求失败')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '认输' })).toBeInTheDocument();
     });
   });
 

@@ -16,7 +16,6 @@ import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
-import LadderSetupPage from './pages/LadderSetupPage';
 import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
 import GamePage from './pages/GamePage';
 import TsumegoPage from './pages/TsumegoPage';
@@ -68,7 +67,6 @@ const KioskRoutes = () => {
           {/* 升降级对弈 has its own page: nothing about the opponent is chosen here,
               so it shares no controls with free play. Static path wins over the
               dynamic :mode below in v6 best-match. */}
-          <Route path="play/ai/setup/ranked" element={<LadderSetupPage />} />
           <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />

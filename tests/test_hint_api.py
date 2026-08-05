@@ -1,5 +1,7 @@
 """Hint gating matrix (PRD D3) + endpoint behaviour with fake router/orchestrator."""
 
+from types import SimpleNamespace
+
 import pytest
 
 pytest.importorskip("fastapi")
@@ -7,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from katrain.web.api.v1.endpoints import hint
+from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.core.hint_gate import DefaultHintGate
 from katrain.web.core.physical_play import PhysicalPlayConfig
 
@@ -101,7 +104,7 @@ class FakeManager:
         return self._s
 
 
-def _client(session, engine="local"):
+def _client(session, engine="local", authenticated=True):
     app = FastAPI()
     app.include_router(hint.router, prefix="/hint")
     app.state.session_manager = FakeManager(session)
@@ -109,10 +112,16 @@ def _client(session, engine="local"):
     app.state.physical_play = FakeOrch()
     app.state.physical_play_config = PhysicalPlayConfig(hint_engine=engine, hint_top_n=3)
     app.state.hint_gate = DefaultHintGate(engine)
+    if authenticated:
+        app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=1)
     return TestClient(app)
 
 
 class TestHintEndpoint:
+    def test_requires_authentication(self):
+        c = _client(FakeSession("free"), authenticated=False)
+        assert c.post("/hint", json={"session_id": "s1"}).status_code == 401
+
     def test_free_game_returns_topn_skipping_pass_and_blinks(self):
         c = _client(FakeSession("free"))
         r = c.post("/hint", json={"session_id": "s1"})

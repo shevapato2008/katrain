@@ -1,8 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ResearchPage from './ResearchPage';
 import { useAuth } from '../../context/AuthContext';
 import { vi, describe, it, expect, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { API } from '../../api';
+
+vi.mock('../../api', () => ({ API: { quickAnalyze: vi.fn().mockResolvedValue({ turnInfos: [{ moveInfos: [] }] }) } }));
 
 // Mock useAuth so authentication state can be toggled per test.
 // NOTE: ResearchPage only reads `token` from useAuth (for cloud-save); it does NOT
@@ -32,7 +35,7 @@ vi.mock('../../components/live/LiveBoard', () => ({
 
 // ResearchSetupPanel is the right-hand setup sidebar on the default (edit) path — stub it.
 vi.mock('../components/research/ResearchSetupPanel', () => ({
-  default: () => <div data-testid="mock-setup-panel">Research Setup Panel</div>,
+  default: ({ onToggleHints }: { onToggleHints: () => void }) => <div data-testid="mock-setup-panel"><button onClick={onToggleHints}>建议</button></div>,
 }));
 
 // Legacy Board (canvas) is only used in the L2 analysis-complete branch, not the default
@@ -70,5 +73,12 @@ describe('ResearchPage', () => {
 
     expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
     expect(screen.getByTestId('mock-setup-panel')).toBeInTheDocument();
+  });
+
+  it('passes the Galaxy access token to quick analysis', async () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '建议' }));
+    await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalledWith(expect.any(Object), 'test-token'));
   });
 });

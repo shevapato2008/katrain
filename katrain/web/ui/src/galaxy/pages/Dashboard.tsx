@@ -5,10 +5,22 @@ import ScienceIcon from '@mui/icons-material/Science';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import ExtensionIcon from '@mui/icons-material/Extension';
+import type { ReactNode } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../i18n';
+import { useAuth } from '../../context/AuthContext';
+import AiLadderStatusCard from '../../features/aiLadder/AiLadderStatusCard';
+import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 
-const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
+interface ModuleCardProps {
+    title: string;
+    desc: string;
+    icon: ReactNode;
+    path: string;
+    disabled?: boolean;
+}
+
+const ModuleCard = ({ title, desc, icon, path, disabled }: ModuleCardProps) => {
     const navigate = useNavigate();
     return (
         <Card sx={{ height: '100%', bgcolor: 'background.paper', opacity: disabled ? 0.5 : 1 }}>
@@ -33,6 +45,9 @@ const ModuleCard = ({ title, desc, icon, path, disabled }: any) => {
 
 const Dashboard = () => {
     useSettings(); // Subscribe to translation changes for re-render
+    const navigate = useNavigate();
+    const { token, user } = useAuth();
+    const { status: aiLadderStatus, retry } = useAiLadderStatus(token || undefined, Boolean(user));
     const modules = [
         { 
             title: i18n.t('btn:Play', 'Play'), 
@@ -77,6 +92,16 @@ const Dashboard = () => {
                     {i18n.t('dashboard:tagline', '棋道导航者')}
                 </Typography>
             </Box>
+
+            {user && (
+                <Box sx={{ mb: 4 }}>
+                    <AiLadderStatusCard
+                        status={aiLadderStatus}
+                        onRetry={retry}
+                        onPrimaryAction={() => navigate('/galaxy/play/ai?mode=rated')}
+                    />
+                </Box>
+            )}
 
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
                 {modules.map((m) => (

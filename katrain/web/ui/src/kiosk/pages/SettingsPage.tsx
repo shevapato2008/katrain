@@ -29,6 +29,8 @@ const columnSx = {
   flexDirection: 'column',
   gap: 1,
   minWidth: 0,
+  minHeight: 0,
+  overflow: 'hidden',
 } as const;
 
 const CardHeader = ({ icon, title, sub }: { icon: ReactNode; title: string; sub?: string }) => (
@@ -117,7 +119,7 @@ const SettingsPage = () => {
         }}
       >
         {/* ── Left column ─────────────────────────────────────────── */}
-        <Box sx={columnSx}>
+        <Box data-testid="settings-left-column" sx={columnSx}>
           {/* Physical board — status + recalibrate */}
           <Box sx={cardSx}>
             <CardHeader
@@ -139,10 +141,28 @@ const SettingsPage = () => {
               label={t('tsumego:autoAdvance', '做对后自动进入下一题')}
             />
           </Box>
+
+          {/* External platforms live in the shorter column so all settings remain
+              reachable inside the fixed 464px kiosk content viewport. */}
+          <Box sx={cardSx}>
+            <CardHeader
+              icon={<PublicOutlinedIcon />}
+              title={t('External Platforms', '外部平台')}
+              sub={t('Coming soon', '敬请期待')}
+            />
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+              {platforms.map((p) => (
+                <Box key={p.name} sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'divider', borderRadius: 1.5, px: 1.25, py: 0.75, opacity: 0.7, pointerEvents: 'none' }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: p.color, flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
         </Box>
 
         {/* ── Right column ────────────────────────────────────────── */}
-        <Box sx={columnSx}>
+        <Box data-testid="settings-right-column" sx={columnSx}>
           {/* Language — shares galaxy's full catalog (11 langs). A compact Select keeps
               the fixed no-scroll dashboard intact where a chip row would overflow. */}
           <Box sx={cardSx}>
@@ -168,48 +188,6 @@ const SettingsPage = () => {
             <AccountSection />
           </Box>
 
-          {/* External platforms — display-only, coming soon */}
-          <Box sx={cardSx}>
-            <CardHeader
-              icon={<PublicOutlinedIcon />}
-              title={t('External Platforms', '外部平台')}
-              sub={t('Coming soon', '敬请期待')}
-            />
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-              {platforms.map((p) => (
-                <Box
-                  key={p.name}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    bgcolor: 'var(--raise2)',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1.5,
-                    px: 1.25,
-                    py: 0.75,
-                    opacity: 0.7,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: p.color, flexShrink: 0 }} />
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      fontWeight: 500,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {p.name}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Box>
         </Box>
       </Box>
     </Box>

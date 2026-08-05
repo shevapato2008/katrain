@@ -5,9 +5,17 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from katrain.web.api.v1.endpoints.auth import get_current_user_optional
+from katrain.web.core.ranked_session_guard import (
+    RankedVisionBinding,
+    guard_ai_ladder_ranked_owner,
+    guard_ranked_vision_binding,
+    is_ai_ladder_ranked_session,
+)
+from katrain.web.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -60,7 +68,7 @@ def _drain_stale_move_queue(request: Request) -> None:
             break
 
 
-def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest"):
+def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest", current_user=None):
     """Task 8 (B4/M5/D8) shared guard for both engine-move/retry and .../cancel:
     validate that an active recovery episode exists for `body.session_id`, that
     vision is currently bound to that same session, and that `body.recovery_token`
@@ -71,6 +79,17 @@ def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest
     user/session-cookie auth here, consistent with the rest of this file's vision
     endpoints -- they're all trusted-kiosk-LAN, session_id-scoped)."""
     vision = _get_vision(request)
+    manager = getattr(request.app.state, "session_manager", None)
+    if manager is not None:
+        try:
+            session = manager.get_session(body.session_id)
+        except KeyError:
+            session = None
+        if session is not None and is_ai_ladder_ranked_session(session):
+            guard_ai_ladder_ranked_owner(session, current_user, "engine-move-recovery")
+            guard_ranked_vision_binding(
+                session, getattr(request.app.state, "ranked_vision_binding", None), "engine-move-recovery"
+            )
     tracker = getattr(request.app.state, "engine_recovery", None)
     if tracker is None or vision.bound_session_id != body.session_id:
         raise HTTPException(status_code=409, detail="No active engine-move recovery for this session")
@@ -157,7 +176,9 @@ async def confirm_pose_lock(request: Request):
 
 
 @router.post("/bind")
-async def bind_session(request: Request, body: BindRequest):
+async def bind_session(
+    request: Request, body: BindRequest, current_user: User | None = Depends(get_current_user_optional)
+):
     """Bind vision to a game session."""
     vision = _get_vision(request)
     manager = request.app.state.session_manager
@@ -169,8 +190,22 @@ async def bind_session(request: Request, body: BindRequest):
         session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
+    ranked_binding = None
+    if is_ai_ladder_ranked_session(session):
+        with session.lock:
+            snapshot = guard_ai_ladder_ranked_owner(session, current_user, "bind-vision")
+            board_size = session.katrain.get_state().get("board_size")
+            if board_size not in ([19, 19], (19, 19), 19):
+                raise HTTPException(status_code=409, detail="physical ranked play currently requires a 19x19 board")
+            ranked_binding = RankedVisionBinding(
+                session_id=session.session_id,
+                user_id=snapshot.user_id,
+                user_color=snapshot.user_color,
+                game_id=snapshot.game_id,
+            )
 
     vision.bind_session(body.session_id)
+    request.app.state.ranked_vision_binding = ranked_binding
     _drain_stale_move_queue(request)
 
     # Set expected board from current game state
@@ -193,6 +228,7 @@ async def unbind_session(request: Request):
     if orchestrator is not None:
         orchestrator.on_unbind()
     vision.unbind_session()
+    request.app.state.ranked_vision_binding = None
     _drain_stale_move_queue(request)
     recovery = getattr(request.app.state, "engine_recovery", None)
     if recovery is not None:
@@ -289,7 +325,11 @@ async def set_expected_board(request: Request, body: ExpectedBoardRequest):
 
 
 @router.post("/engine-move/retry")
-async def retry_engine_move(request: Request, body: EngineMoveRecoveryRequest):
+async def retry_engine_move(
+    request: Request,
+    body: EngineMoveRecoveryRequest,
+    current_user: User | None = Depends(get_current_user_optional),
+):
     """Task 8 (B4/M5/D8): resubmit a stuck engine-tunnel move after Task 7's
     bounded-retry threshold tripped and the recovery dialog came up.
 
@@ -306,7 +346,7 @@ async def retry_engine_move(request: Request, body: EngineMoveRecoveryRequest):
       paused throughout — never resumed mid-retry), HTTP 200 {"ok": false, "detail",
       "recovery_token": <new>}.
     """
-    episode = _consume_recovery_episode(request, body)
+    episode = _consume_recovery_episode(request, body, current_user)
     tracker = request.app.state.engine_recovery
     orchestrator = getattr(request.app.state, "physical_play", None)
     gateway = getattr(request.app.state, "platform_gateway", None)
@@ -329,7 +369,11 @@ async def retry_engine_move(request: Request, body: EngineMoveRecoveryRequest):
 
 
 @router.post("/engine-move/cancel")
-async def cancel_engine_move(request: Request, body: EngineMoveRecoveryRequest):
+async def cancel_engine_move(
+    request: Request,
+    body: EngineMoveRecoveryRequest,
+    current_user: User | None = Depends(get_current_user_optional),
+):
     """Task 8: give up retrying the stuck move and wait for the PHYSICAL stone at
     its coords to be removed instead (awaiting_removal). Detection stays paused
     throughout; the orchestrator's tick loop keeps running a narrow board-equality
@@ -339,7 +383,7 @@ async def cancel_engine_move(request: Request, body: EngineMoveRecoveryRequest):
     Returns immediately — resolution (stone removed + board matches digital for N
     stable ticks) is asynchronous, signaled later via a `physical_engine_error_resolved`
     broadcast that the frontend uses to close the waiting UI."""
-    episode = _consume_recovery_episode(request, body)
+    episode = _consume_recovery_episode(request, body, current_user)
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:
         orchestrator.enter_awaiting_removal(episode.coords)

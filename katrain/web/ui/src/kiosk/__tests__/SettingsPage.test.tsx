@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, type InitialEntry } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -80,6 +80,17 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/外部平台/)).toBeInTheDocument();
     expect(screen.getByText(/野狐围棋/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '重新标定棋盘' })).toBeInTheDocument();
+  });
+
+  it('keeps both 1024x600 columns reachable by placing external platforms in the shorter left column', () => {
+    renderPage();
+    const left = screen.getByTestId('settings-left-column');
+    const right = screen.getByTestId('settings-right-column');
+    expect(within(left).getByText('外部平台')).toBeVisible();
+    expect(within(right).getByText('账户')).toBeVisible();
+    expect(left).toHaveStyle({ overflow: 'hidden' });
+    expect(right).toHaveStyle({ overflow: 'hidden' });
+    expect(screen.getByText('野狐围棋')).toBeVisible();
   });
 
   it('switches language via the persisted setter through the shared catalog', () => {

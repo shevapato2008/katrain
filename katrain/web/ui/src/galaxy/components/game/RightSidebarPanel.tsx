@@ -181,7 +181,7 @@ const RightSidebarPanel = ({
                             label={t('Undo', 'Undo')}
                             active={false}
                             onClick={() => onAction('undo')}
-                            disabled={isGameOver}
+                            disabled={isGameOver || isRated}
                         />
                         <ItemToggle
                             icon={<PanToolAltIcon />}

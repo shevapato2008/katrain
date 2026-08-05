@@ -1,0 +1,599 @@
+"""Transactional domain rules for the independent 41-rung ranked-AI ladder."""
+
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
+from threading import Barrier, BrokenBarrierError
+
+import pytest
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, sessionmaker
+
+from katrain.core.ladder import LADDER_LEVELS
+from katrain.web.core import migrations, models_db
+from katrain.web.core.ai_ladder_ranked import (
+    AI_LADDER_GAME_TYPE,
+    AiLadderOpponentSnapshot,
+    AiLadderRankedRepository,
+    initial_placement_window,
+)
+
+
+EXPECTED_RANK_NAMES = [
+    *(f"{rank}级" for rank in range(20, 0, -1)),
+    *(label for rank in range(1, 10) for label in (f"准{rank}段", f"{rank}段")),
+    "职业水平",
+    "职业顶尖",
+    "超越人类",
+]
+
+
+@pytest.fixture
+def session_factory():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    models_db.Base.metadata.create_all(bind=engine)
+    return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+@pytest.fixture
+def user(session_factory):
+    with session_factory() as db:
+        user = models_db.User(username="fan", hashed_password="x", rank="5d", net_wins=2)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
+
+@pytest.fixture
+def opponent():
+    return AiLadderOpponentSnapshot(
+        rung=16,
+        rank_name="5级",
+        config_snapshot={"config_digest": "fixture-certified-rung-16", "config_version": "fixture-v1"},
+        certification_status="certified",
+        availability="available",
+        route="server",
+    )
+
+
+def settle(repo, user_id, game_id, result, opponent, *, game_type=AI_LADDER_GAME_TYPE):
+    return repo.settle_game(
+        user_id=user_id,
+        game_id=game_id,
+        user_color="B",
+        result=result,
+        game_type=game_type,
+        opponent=opponent,
+    )
+
+
+def placed_profile(session_factory, user_id, rung, *, net_score=0):
+    with session_factory() as db:
+        profile = models_db.AiLadderProfile(
+            user_id=user_id,
+            ai_ladder_rung=rung,
+            placement_lo=rung,
+            placement_hi=rung,
+            placement_completed=5,
+            net_score=net_score,
+        )
+        db.add(profile)
+        db.commit()
+
+
+def file_session_factory(tmp_path):
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'ai-ladder-ranked.sqlite'}",
+        connect_args={"check_same_thread": False, "timeout": 3},
+    )
+    models_db.Base.metadata.create_all(bind=engine)
+    return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def concurrent_repo(session_factory):
+    repo = AiLadderRankedRepository(session_factory)
+    apply_barrier = Barrier(2)
+    original_apply = repo._apply_result
+
+    def synchronized_apply(profile, result):
+        try:
+            apply_barrier.wait(timeout=0.5)
+        except BrokenBarrierError:
+            pass
+        original_apply(profile, result)
+
+    repo._apply_result = synchronized_apply
+    return repo
+
+
+def test_catalog_consumes_the_exact_41_product_names_in_order():
+    assert len(LADDER_LEVELS) == 41
+    assert [level.rung for level in LADDER_LEVELS] == list(range(1, 42))
+    assert [level.rank_name for level in LADDER_LEVELS] == EXPECTED_RANK_NAMES
+    assert all("星阵" not in name for name in EXPECTED_RANK_NAMES)
+
+
+@pytest.mark.parametrize(
+    ("legacy_rank", "expected"),
+    [
+        ("20k", (1, 32)),
+        ("10k", (1, 32)),
+        ("5k", (1, 32)),
+        ("1k", (4, 35)),
+        ("1d", (6, 37)),
+        ("5d", (10, 41)),
+        ("9d", (10, 41)),
+        ("12d", (10, 41)),
+        (None, (1, 32)),
+        ("", (1, 32)),
+    ],
+)
+def test_initial_placement_window_uses_legacy_rank_only_to_choose_32_candidates(legacy_rank, expected):
+    assert initial_placement_window(legacy_rank) == expected
+
+
+@pytest.mark.parametrize(
+    ("legacy_rank", "mapped_rung"),
+    [
+        *((f"{rank}k", 21 - rank) for rank in range(20, 0, -1)),
+        *((f"{rank}d", 20 + 2 * rank) for rank in range(1, 10)),
+        ("10d", 38),
+        ("12d", 38),
+    ],
+)
+def test_old_rank_mapping_is_exact(legacy_rank, mapped_rung):
+    start, end = initial_placement_window(legacy_rank)
+    assert start == max(1, min(mapped_rung - 16, 10))
+    assert end == start + 31
+
+
+@pytest.mark.parametrize(
+    ("results", "expected_rung"),
+    [
+        (["loss"] * 5, 1),
+        (["win"] * 5, 32),
+        (["win", "loss", "win", "loss", "win"], 22),
+    ],
+)
+def test_five_valid_results_deterministically_finish_binary_placement(session_factory, results, expected_rung):
+    with session_factory() as db:
+        user = models_db.User(username=f"u-{expected_rung}", hashed_password="x", rank=None)
+        db.add(user)
+        db.commit()
+        user_id = user.id
+
+    repo = AiLadderRankedRepository(session_factory)
+    lo, hi = 1, 32
+    for round_number, result in enumerate(results, start=1):
+        mid = (lo + hi) // 2
+        snapshot = AiLadderOpponentSnapshot(
+            rung=mid,
+            rank_name=f"fixture-{mid}",
+            config_snapshot={"config_digest": f"fixture-{mid}", "config_version": "fixture-v1"},
+            certification_status="certified",
+            availability="available",
+            route="server",
+        )
+        outcome = settle(repo, user_id, f"placement-{expected_rung}-{round_number}", result, snapshot)
+        if result == "win":
+            lo = mid + 1
+        else:
+            hi = mid
+        assert outcome.placement_completed == round_number
+        assert (outcome.placement_lo, outcome.placement_hi) == (lo, hi)
+
+    assert lo == hi == expected_rung
+    assert outcome.ai_ladder_rung == expected_rung
+    assert outcome.net_score == 0
+
+
+def test_existing_legacy_rank_still_requires_all_five_placement_games(session_factory, user):
+    repo = AiLadderRankedRepository(session_factory)
+    lo, hi = initial_placement_window("5d")
+    assert (lo, hi) == (10, 41)
+
+    for round_number in range(1, 6):
+        mid = (lo + hi) // 2
+        snapshot = AiLadderOpponentSnapshot(
+            rung=mid,
+            rank_name=f"fixture-{mid}",
+            config_snapshot={"config_digest": str(mid), "recipe_identity": f"fixture-recipe-{mid}"},
+            certification_status="certified",
+            availability="available",
+            route="server",
+        )
+        outcome = settle(repo, user.id, f"old-rank-{round_number}", "loss", snapshot)
+        hi = mid
+        assert outcome.placement_completed == round_number
+        assert outcome.ai_ladder_rung is None if round_number < 5 else outcome.ai_ladder_rung == lo
+
+
+def test_inconclusive_game_records_decision_but_consumes_no_placement_round(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+
+    outcome = settle(repo, user.id, "inconclusive", "inconclusive", opponent)
+
+    assert not outcome.counted
+    assert outcome.reason == "inconclusive"
+    with session_factory() as db:
+        decision = db.query(models_db.AiLadderGameLedger).one()
+        assert (decision.game_id, decision.counted, decision.reason) == ("inconclusive", False, "inconclusive")
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+@pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 21), (20, ["loss"] * 3, 19)])
+def test_plus_or_minus_three_changes_exactly_one_rung_and_resets(
+    session_factory, user, opponent, start, results, expected
+):
+    placed_profile(session_factory, user.id, start)
+    repo = AiLadderRankedRepository(session_factory)
+
+    for index, result in enumerate(results):
+        outcome = settle(repo, user.id, f"threshold-{result}-{index}", result, replace(opponent, rung=start))
+
+    assert outcome.ai_ladder_rung == expected
+    assert outcome.net_score == 0
+
+
+@pytest.mark.parametrize(("rung", "result"), [(1, "loss"), (41, "win")])
+def test_rung_boundaries_saturate_and_reset_score(session_factory, user, opponent, rung, result):
+    placed_profile(session_factory, user.id, rung, net_score=-2 if result == "loss" else 2)
+    repo = AiLadderRankedRepository(session_factory)
+
+    outcome = settle(repo, user.id, f"boundary-{rung}", result, replace(opponent, rung=rung))
+
+    assert outcome.ai_ladder_rung == rung
+    assert outcome.net_score == 0
+
+
+def test_three_wins_two_losses_do_not_upgrade_from_recent_form(session_factory, user, opponent):
+    placed_profile(session_factory, user.id, 20)
+    repo = AiLadderRankedRepository(session_factory)
+
+    for index, result in enumerate(["win", "win", "loss", "win", "loss"]):
+        outcome = settle(repo, user.id, f"recent-{index}", result, replace(opponent, rung=20))
+
+    assert outcome.ai_ladder_rung == 20
+    assert outcome.net_score == 1
+
+
+def test_recent_five_returns_only_counted_win_loss_decisions(session_factory, user, opponent):
+    placed_profile(session_factory, user.id, 20)
+    repo = AiLadderRankedRepository(session_factory)
+    expected_valid_results = ["win", "loss", "win", "loss", "win", "loss"]
+
+    settle(repo, user.id, "recent-excluded-free", "win", None, game_type="free")
+    for index, result in enumerate(expected_valid_results):
+        settle(repo, user.id, f"recent-counted-{index}", result, replace(opponent, rung=20))
+        if index == 2:
+            settle(
+                repo,
+                user.id,
+                "recent-excluded-inconclusive",
+                "inconclusive",
+                replace(opponent, rung=20),
+            )
+
+    assert repo.recent_counted_results(user.id) == list(reversed(expected_valid_results[-5:]))
+
+
+@pytest.mark.parametrize(
+    ("game_type", "result", "snapshot", "reason"),
+    [
+        ("rated", "win", None, "invalid_game_type"),
+        ("free", "win", None, "invalid_game_type"),
+        ("pvp_local", "win", None, "invalid_game_type"),
+        (AI_LADDER_GAME_TYPE, "inconclusive", None, "inconclusive"),
+        (AI_LADDER_GAME_TYPE, "win", {"certification_status": "provisional"}, "opponent_not_eligible"),
+        (AI_LADDER_GAME_TYPE, "win", {"availability": "unavailable"}, "opponent_not_eligible"),
+    ],
+)
+def test_only_certified_available_ranked_ai_results_count(
+    session_factory, user, opponent, game_type, result, snapshot, reason
+):
+    repo = AiLadderRankedRepository(session_factory)
+    attempted_opponent = None if game_type == "pvp_local" else replace(opponent, **(snapshot or {}))
+
+    outcome = settle(repo, user.id, f"ignored-{reason}-{game_type}", result, attempted_opponent, game_type=game_type)
+
+    assert not outcome.counted
+    assert outcome.reason == reason
+    with session_factory() as db:
+        decision = db.query(models_db.AiLadderGameLedger).one()
+        assert not decision.counted
+        assert decision.reason == reason
+        if game_type == "pvp_local":
+            assert decision.opponent_rung is None
+            assert decision.opponent_config_snapshot is None
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+@pytest.mark.parametrize(
+    ("first_game_type", "first_result", "first_snapshot", "reason"),
+    [
+        ("free", "win", {}, "invalid_game_type"),
+        ("pvp_local", "win", None, "invalid_game_type"),
+        (AI_LADDER_GAME_TYPE, "inconclusive", {}, "inconclusive"),
+        (AI_LADDER_GAME_TYPE, "win", {"availability": "unavailable"}, "opponent_not_eligible"),
+        (AI_LADDER_GAME_TYPE, "win", {"rung": 24}, "opponent_rung_mismatch"),
+    ],
+)
+def test_excluded_game_id_replays_its_first_decision_even_if_later_parameters_would_count(
+    session_factory,
+    user,
+    opponent,
+    first_game_type,
+    first_result,
+    first_snapshot,
+    reason,
+):
+    repo = AiLadderRankedRepository(session_factory)
+    valid_opponent = replace(opponent, rung=25)
+    first_opponent = None if first_snapshot is None else replace(valid_opponent, **first_snapshot)
+
+    first = settle(
+        repo,
+        user.id,
+        f"excluded-replay-{reason}",
+        first_result,
+        first_opponent,
+        game_type=first_game_type,
+    )
+    replay = settle(repo, user.id, f"excluded-replay-{reason}", "win", valid_opponent)
+
+    assert (first.counted, first.replayed, first.reason) == (False, False, reason)
+    assert (replay.counted, replay.replayed, replay.reason) == (False, True, reason)
+    with session_factory() as db:
+        decision = db.query(models_db.AiLadderGameLedger).one()
+        assert (decision.counted, decision.reason) == (False, reason)
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+def test_single_decision_table_rejects_a_second_valid_row_after_exclusion(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    valid_opponent = replace(opponent, rung=25)
+    first = settle(repo, user.id, "single-table-unique", "win", None, game_type="pvp_local")
+    assert (first.counted, first.reason) == (False, "invalid_game_type")
+
+    with session_factory() as db:
+        db.add(
+            models_db.AiLadderGameLedger(
+                game_id="single-table-unique",
+                user_id=user.id,
+                user_color="B",
+                result="win",
+                game_type=AI_LADDER_GAME_TYPE,
+                opponent_rung=25,
+                opponent_rank_name=valid_opponent.rank_name,
+                opponent_config_snapshot=dict(valid_opponent.config_snapshot),
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                counted=True,
+                reason=None,
+            )
+        )
+        with pytest.raises(IntegrityError):
+            db.commit()
+        db.rollback()
+
+    replay = settle(repo, user.id, "single-table-unique", "win", valid_opponent)
+    assert (replay.counted, replay.replayed, replay.reason) == (False, True, "invalid_game_type")
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+def test_settlement_requires_the_current_placement_or_ranked_opponent(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+
+    placement = settle(repo, user.id, "wrong-placement-opponent", "win", replace(opponent, rung=24))
+    assert not placement.counted
+    assert placement.reason == "opponent_rung_mismatch"
+
+    placed_profile(session_factory, user.id, 20)
+    ranked = settle(repo, user.id, "wrong-ranked-opponent", "win", replace(opponent, rung=19))
+    assert not ranked.counted
+    assert ranked.reason == "opponent_rung_mismatch"
+
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 2
+        profile = db.get(models_db.AiLadderProfile, user.id)
+        assert (profile.ai_ladder_rung, profile.net_score) == (20, 0)
+
+
+def test_ledger_snapshots_opponent_contract_and_replay_is_idempotent(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    opponent = replace(opponent, rung=25)
+
+    first = settle(repo, user.id, "same-game", "win", opponent)
+    replay = settle(repo, user.id, "same-game", "win", opponent)
+
+    assert first.counted and not first.replayed
+    assert replay.counted and replay.replayed
+    assert replay.placement_completed == first.placement_completed == 1
+    with session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (ledger.game_id, ledger.counted, ledger.reason) == ("same-game", True, None)
+        assert ledger.game_id == "same-game"
+        assert ledger.user_id == user.id
+        assert ledger.user_color == "B"
+        assert ledger.result == "win"
+        assert ledger.game_type == AI_LADDER_GAME_TYPE
+        assert ledger.opponent_rung == opponent.rung
+        assert ledger.opponent_rank_name == opponent.rank_name
+        assert ledger.opponent_config_snapshot == opponent.config_snapshot
+        assert ledger.opponent_certification_status == "certified"
+        assert ledger.opponent_availability == "available"
+        assert ledger.opponent_route == "server"
+        assert ledger.settled_at is not None
+
+
+@pytest.mark.parametrize(
+    "config_snapshot",
+    [
+        {},
+        {"config_digest": "digest-only"},
+        {"config_version": "version-only"},
+        {"config_digest": "", "config_version": "v1"},
+        {"config_digest": "digest", "config_version": ""},
+    ],
+)
+def test_opponent_snapshot_requires_a_stable_nonempty_config_identity(config_snapshot):
+    with pytest.raises(ValueError, match="config_snapshot"):
+        AiLadderOpponentSnapshot(
+            rung=1,
+            rank_name="20级",
+            config_snapshot=config_snapshot,
+            certification_status="certified",
+            availability="available",
+            route="server",
+        )
+
+
+def test_callers_cannot_mutate_persisted_config_snapshot_after_settlement(session_factory, user, opponent):
+    mutable_config = {
+        "config_digest": "original-digest",
+        "config_version": "catalog-v1",
+        "recipe": {"identity": "fixture-recipe"},
+    }
+    mutable_opponent = replace(opponent, rung=25, config_snapshot=mutable_config)
+    repo = AiLadderRankedRepository(session_factory)
+
+    settle(repo, user.id, "immutable-config", "win", mutable_opponent)
+    mutable_config["config_digest"] = "mutated-digest"
+    mutable_config["config_version"] = "mutated-version"
+    mutable_config["recipe"]["identity"] = "mutated-recipe"
+
+    with session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        expected = {
+            "config_digest": "original-digest",
+            "config_version": "catalog-v1",
+            "recipe": {"identity": "fixture-recipe"},
+        }
+        assert ledger.opponent_config_snapshot == expected
+
+
+def test_ai_ladder_never_changes_legacy_user_rank_or_net_wins(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+
+    settle(repo, user.id, "legacy-independent", "win", replace(opponent, rung=25))
+
+    with session_factory() as db:
+        unchanged = db.get(models_db.User, user.id)
+        assert unchanged.rank == "5d"
+        assert unchanged.net_wins == 2
+
+
+def test_new_tables_are_created_with_unique_game_id_and_one_to_one_profile(session_factory, user):
+    engine = session_factory.kw["bind"]
+    inspector = inspect(engine)
+    assert {"ai_ladder_profiles", "ai_ladder_game_ledger"}.issubset(inspector.get_table_names())
+    assert "ai_ladder_settlement_receipts" not in inspector.get_table_names()
+    ledger_columns = {column["name"]: column for column in inspector.get_columns("ai_ladder_game_ledger")}
+    assert ledger_columns["opponent_rung"]["nullable"]
+    assert ledger_columns["opponent_config_snapshot"]["nullable"]
+    assert {"counted", "reason"}.issubset(ledger_columns)
+    assert inspector.get_pk_constraint("ai_ladder_profiles")["constrained_columns"] == ["user_id"]
+    assert any(
+        foreign_key["constrained_columns"] == ["user_id"]
+        and foreign_key["referred_table"] == "users"
+        and foreign_key["referred_columns"] == ["id"]
+        for foreign_key in inspector.get_foreign_keys("ai_ladder_profiles")
+    )
+    unique_columns = [
+        constraint["column_names"] for constraint in inspector.get_unique_constraints("ai_ladder_game_ledger")
+    ]
+    unique_columns.extend(
+        index["column_names"] for index in inspector.get_indexes("ai_ladder_game_ledger") if index["unique"]
+    )
+    assert ["game_id"] in unique_columns
+
+    placed_profile(session_factory, user.id, 20)
+    with session_factory() as db:
+        loaded_user = db.get(models_db.User, user.id)
+        assert isinstance(loaded_user.ai_ladder_profile, models_db.AiLadderProfile)
+
+
+def test_rank_state_and_ledger_are_protected_from_schema_drift_rebuilds():
+    assert migrations.AI_LADDER_TABLES == {
+        "ai_ladder_profiles",
+        "ai_ladder_game_ledger",
+        "ai_ladder_pending_games",
+    }
+    assert migrations.AI_LADDER_TABLES < migrations.PROTECTED_TABLES
+    assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES
+
+
+def test_transaction_failure_rolls_back_both_profile_and_ledger(session_factory, user, opponent):
+    rollback_calls = []
+
+    class FailingCommitSession(Session):
+        def commit(self):
+            self.flush()
+            raise RuntimeError("forced commit failure")
+
+        def rollback(self):
+            rollback_calls.append(True)
+            super().rollback()
+
+    placed_profile(session_factory, user.id, 20, net_score=1)
+    failing_factory = sessionmaker(bind=session_factory.kw["bind"], class_=FailingCommitSession)
+    repo = AiLadderRankedRepository(failing_factory)
+
+    with pytest.raises(RuntimeError, match="forced commit failure"):
+        settle(repo, user.id, "rollback", "win", replace(opponent, rung=20))
+
+    assert rollback_calls == [True]
+    with session_factory() as db:
+        profile = db.get(models_db.AiLadderProfile, user.id)
+        assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (20, 1, 0)
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+
+
+def test_sqlite_serializes_concurrent_different_games_for_one_user(tmp_path, opponent):
+    sessions = file_session_factory(tmp_path)
+    with sessions() as db:
+        user = models_db.User(username="concurrent-different", hashed_password="x")
+        db.add(user)
+        db.commit()
+        user_id = user.id
+    placed_profile(sessions, user_id, 20)
+    repo = concurrent_repo(sessions)
+
+    def run(game_id):
+        return settle(repo, user_id, game_id, "win", replace(opponent, rung=20))
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(run, ["concurrent-a", "concurrent-b"]))
+
+    assert all(outcome.counted and not outcome.replayed for outcome in outcomes)
+    with sessions() as db:
+        profile = db.get(models_db.AiLadderProfile, user_id)
+        assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (20, 2, 2)
+        assert db.query(models_db.AiLadderGameLedger).count() == 2
+
+
+def test_sqlite_serializes_concurrent_replay_of_the_same_game(tmp_path, opponent):
+    sessions = file_session_factory(tmp_path)
+    with sessions() as db:
+        user = models_db.User(username="concurrent-replay", hashed_password="x")
+        db.add(user)
+        db.commit()
+        user_id = user.id
+    placed_profile(sessions, user_id, 20)
+    repo = concurrent_repo(sessions)
+
+    def run(_):
+        return settle(repo, user_id, "concurrent-same", "win", replace(opponent, rung=20))
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(run, range(2)))
+
+    assert sorted(outcome.replayed for outcome in outcomes) == [False, True]
+    with sessions() as db:
+        profile = db.get(models_db.AiLadderProfile, user_id)
+        assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (20, 1, 1)
+        assert db.query(models_db.AiLadderGameLedger).count() == 1

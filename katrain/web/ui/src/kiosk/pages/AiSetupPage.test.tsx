@@ -12,12 +12,22 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+const { startRanked, rankedState, retryRanked, createSession, gameSetup } = vi.hoisted(() => ({
+  startRanked: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }),
+  retryRanked: vi.fn(),
+  createSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+  gameSetup: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+  rankedState: { current: { view_state: 'ready', placement_state: { phase: 'placement', completed_games: 2, total_games: 5 }, current_opponent: { rung: 12, rank_name: '9级', certification_status: 'certified', availability: 'available', route: 'server' }, recent_ranked_results: [], net_score: 0, pending_settlement: false } as any },
+}));
+
 vi.mock('../../api', () => ({
   API: {
-    createSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
-    gameSetup: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
+    createSession,
+    gameSetup,
   },
 }));
+vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: startRanked }));
+vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({ useAiLadderStatus: () => ({ status: rankedState.current, retry: retryRanked }) }));
 
 const { writeActiveSession } = vi.hoisted(() => ({ writeActiveSession: vi.fn() }));
 vi.mock('../utils/activeSession', () => ({ writeActiveSession }));
@@ -26,10 +36,10 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
 
-const renderPage = () =>
+const renderPage = (mode = 'free') =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={['/kiosk/play/ai/setup/free']}>
+      <MemoryRouter initialEntries={[`/kiosk/play/ai/setup/${mode}`]}>
         <Routes>
           <Route path="/kiosk/play/ai/setup/:mode" element={<AiSetupPage />} />
         </Routes>
@@ -41,6 +51,9 @@ describe('AiSetupPage', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
     writeActiveSession.mockReset();
+    startRanked.mockClear();
+    createSession.mockClear();
+    gameSetup.mockClear();
   });
 
   it('renders the board-preview console header (盘面预览)', () => {
@@ -48,8 +61,8 @@ describe('AiSetupPage', () => {
     expect(screen.getByText('盘面预览')).toBeInTheDocument();
   });
 
-  it('writes the active session and navigates to the game route on Start', async () => {
-    renderPage();
+  it('writes the active session and navigates to the game route on Start (free mode)', async () => {
+    renderPage('free');
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /开始对弈/i }));
 
@@ -64,17 +77,55 @@ describe('AiSetupPage', () => {
     });
   });
 
-  // 升降级对弈 no longer routes here: it has its own page whose opponent comes
-  // from the ledger, so there is no `ranked` mode left on this one to test.
+  it('writes the ranked label on Start (ranked mode)', async () => {
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+
+    await waitFor(() => {
+      expect(writeActiveSession).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'game', label: '升降级对弈', route: '/kiosk/play/ai/game/ranked-s1' })
+      );
+      expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ board_size: 19, color: 'black' }), 'test-token');
+      expect(createSession).not.toHaveBeenCalled();
+      expect(gameSetup).not.toHaveBeenCalled();
+    });
+  });
+
+  it('shows the server-selected ranked opponent instead of HumanSL strength', () => {
+    renderPage('ranked');
+    expect(screen.getByText('定级对手：9级')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
+  });
+
+  it('uses the rated-only 1024x600 no-scroll geometry with every required control and CTA visible', () => {
+    renderPage('ranked');
+    const panel = screen.getByTestId('ranked-settings-panel');
+    expect(panel).toHaveStyle({ padding: '16px', overflow: 'hidden' });
+    expect(screen.queryByText('9路')).not.toBeInTheDocument();
+    expect(screen.queryByText('13路')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '规则' })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: '让子' })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: '用时' })).toBeVisible();
+    expect(screen.getByRole('button', { name: /开始对弈/i })).toHaveStyle({ minHeight: '48px' });
+    expect(screen.getByTestId('ranked-start-action')).toHaveStyle({ flexShrink: '0' });
+  });
+
+  it('keeps the free setup board-size choices unchanged', () => {
+    renderPage('free');
+    expect(screen.getByText('9路')).toBeInTheDocument();
+    expect(screen.getByText('13路')).toBeInTheDocument();
+    expect(screen.getByText('19路')).toBeInTheDocument();
+  });
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
-    renderPage();
+    renderPage('free');
     expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /返回|back/i })).toBeInTheDocument();
   });
 
   it('rules render as a dropdown trigger, not 4 separate chips', () => {
-    renderPage();
+    renderPage('free');
     // Compact form shows the current rule value as one control; the Japanese/Korean/AGA
     // options are behind the dropdown (not all visible at once).
     expect(screen.queryByText('AGA')).not.toBeInTheDocument();

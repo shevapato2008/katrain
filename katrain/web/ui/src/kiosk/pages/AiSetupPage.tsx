@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PlayArrow } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
 import SubPageBar from '../components/layout/SubPageBar';
@@ -10,6 +10,10 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import LiveBoard from '../../components/live/LiveBoard';
 import { writeActiveSession } from '../utils/activeSession';
+import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
+import { startAiLadderGame } from '../../features/aiLadder/api';
+import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
+import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -24,15 +28,13 @@ const TIME_PRESETS = (t: (en: string, zh: string) => string) => [
 ];
 
 // Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
-//
-// Free play only. 升降级对弈 used to share this page in a `ranked` mode that let the
-// player pick the AI's strength themselves and then stored the game as
-// game_type "ranked", which moved no rank — it now has its own page
-// (LadderSetupPage) where the opponent comes from the ledger instead.
 const AiSetupPage = () => {
+  const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const isRanked = mode === 'ranked';
+  const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token ?? undefined, isRanked);
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -48,7 +50,7 @@ const AiSetupPage = () => {
   const [komi, setKomi] = useState(6.5);
 
   // Time control
-  const [timeEnabled, setTimeEnabled] = useState(false);
+  const [timeEnabled, setTimeEnabled] = useState(isRanked);
   const [mainTime, setMainTime] = useState(0);
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
@@ -56,14 +58,14 @@ const AiSetupPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const showRankSlider = aiStrategy === 'ai:human';
+  const showRankSlider = !isRanked && aiStrategy === 'ai:human';
 
   const timePresets = TIME_PRESETS(t);
-  const currentTimeKey = !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
+  const currentTimeKey = !isRanked && !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
   const applyTimePreset = (key: string) => {
     const preset = timePresets.find((p) => p.key === key);
     if (!preset) return;
-    setTimeEnabled(preset.enabled);
+    if (!isRanked) setTimeEnabled(preset.enabled);
     setMainTime(preset.main);
     setByoyomiTime(preset.byo);
     setByoyomiPeriods(preset.periods);
@@ -75,8 +77,28 @@ const AiSetupPage = () => {
     setError('');
     setLoading(true);
     try {
+      if (isRanked) {
+        const { session_id, status } = await startAiLadderGame({
+          board_size: boardSize as 9 | 13 | 19,
+          rules,
+          color,
+          handicap,
+          komi,
+          time_enabled: true,
+          main_time: mainTime,
+          byo_length: byoyomiTime,
+          byo_periods: byoyomiPeriods,
+        }, token ?? undefined);
+        saveAiLadderBefore(session_id, status, String(user?.id ?? user?.username ?? 'anonymous'));
+        writeActiveSession({
+          kind: 'game', label: t('Ranked Game', '升降级对弈'),
+          route: `/kiosk/play/ai/game/${session_id}`, ts: Date.now(),
+        });
+        navigate(`/kiosk/play/ai/game/${session_id}`);
+        return;
+      }
       const { session_id } = await API.createSession(token ?? undefined);
-      await API.gameSetup(session_id, 'free', {
+      await API.gameSetup(session_id, isRanked ? 'ranked' : 'free', {
         board_size: boardSize,
         rules,
         color,
@@ -84,20 +106,20 @@ const AiSetupPage = () => {
         rank,
         handicap,
         komi,
-        time_enabled: timeEnabled,
+        time_enabled: isRanked || timeEnabled,
         main_time: mainTime,
         byo_length: byoyomiTime,
         byo_periods: byoyomiPeriods,
       });
       writeActiveSession({
         kind: 'game',
-        label: t('Free Game', '自由对弈'),
+        label: isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈'),
         route: `/kiosk/play/ai/game/${session_id}`,
         ts: Date.now(),
       });
       navigate(`/kiosk/play/ai/game/${session_id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
+    } catch (e: any) {
+      setError(e.message || t('Failed to create game', '创建对局失败'));
     } finally {
       setLoading(false);
     }
@@ -105,15 +127,18 @@ const AiSetupPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar title={t('Free Game', '自由对弈')} to="/kiosk/play" />
+      <SubPageBar
+        title={isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}
+        to="/kiosk/play"
+      />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Left: board preview console — fixed 322px width (matches artifact .console).
             Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
         <Box
           sx={{
-            width: 322, flexShrink: 0, overflow: 'hidden', m: 2, mr: 0,
+            width: isRanked ? 290 : 322, flexShrink: 0, overflow: 'hidden', m: isRanked ? 1.5 : 2, mr: 0,
             bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-            borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
+            borderRadius: 3, p: isRanked ? 1.5 : 2, display: 'flex', flexDirection: 'column',
           }}
         >
           <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
@@ -130,17 +155,17 @@ const AiSetupPage = () => {
         </Box>
 
         {/* Right: compact 2-column settings form — structurally no-scroll (overflow:hidden). */}
-        <Box sx={{ flex: 1, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, alignContent: 'start' }}>
+        <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, p: isRanked ? 2 : 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isRanked ? 1.25 : 2, alignContent: 'start' }}>
             {/* Board size — segmented, spans both columns */}
-            <Box sx={{ gridColumn: '1 / -1' }}>
+            {!isRanked && <Box sx={{ gridColumn: '1 / -1' }}>
               <OptionChips
                 label={t('Board', '棋盘')}
                 options={[{ value: 9, label: t('9x9', '9路') }, { value: 13, label: t('13x13', '13路') }, { value: 19, label: t('19x19', '19路') }]}
                 value={boardSize}
                 onChange={setBoardSize}
               />
-            </Box>
+            </Box>}
 
             {/* My color — segmented, spans both columns */}
             <Box sx={{ gridColumn: '1 / -1' }}>
@@ -151,6 +176,12 @@ const AiSetupPage = () => {
                 onChange={setColor}
               />
             </Box>
+
+            {isRanked && (
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <AiLadderSetupOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} compact />
+              </Box>
+            )}
 
             {/* Ruleset — dropdown */}
             <FormControl size="small" fullWidth>
@@ -168,24 +199,26 @@ const AiSetupPage = () => {
               </Select>
             </FormControl>
 
-            {/* AI strategy — dropdown */}
-            <FormControl size="small" fullWidth>
-              <InputLabel id="ai-setup-strategy-label">{t('AI Strategy', 'AI 策略')}</InputLabel>
-              <Select
-                labelId="ai-setup-strategy-label"
-                label={t('AI Strategy', 'AI 策略')}
-                value={aiStrategy}
-                onChange={(e) => setAiStrategy(e.target.value)}
-              >
-                <MenuItem value="ai:human">{t('Human-like', '拟人')}</MenuItem>
-                <MenuItem value="ai:default">KataGo</MenuItem>
-                <MenuItem value="ai:territory">{t('Territory', '实地')}</MenuItem>
-                <MenuItem value="ai:influence">{t('Influence', '厚势')}</MenuItem>
-                <MenuItem value="ai:policy">{t('Policy', '策略')}</MenuItem>
-              </Select>
-            </FormControl>
+            {/* AI strategy — dropdown, free mode only */}
+            {!isRanked && (
+              <FormControl size="small" fullWidth>
+                <InputLabel id="ai-setup-strategy-label">{t('AI Strategy', 'AI 策略')}</InputLabel>
+                <Select
+                  labelId="ai-setup-strategy-label"
+                  label={t('AI Strategy', 'AI 策略')}
+                  value={aiStrategy}
+                  onChange={(e) => setAiStrategy(e.target.value)}
+                >
+                  <MenuItem value="ai:human">{t('Human-like', '拟人')}</MenuItem>
+                  <MenuItem value="ai:default">KataGo</MenuItem>
+                  <MenuItem value="ai:territory">{t('Territory', '实地')}</MenuItem>
+                  <MenuItem value="ai:influence">{t('Influence', '厚势')}</MenuItem>
+                  <MenuItem value="ai:policy">{t('Policy', '策略')}</MenuItem>
+                </Select>
+              </FormControl>
+            )}
 
-            {/* AI strength — dropdown, shown for the human-like strategy */}
+            {/* AI strength — dropdown, shown for free+human or ranked */}
             {showRankSlider && (
               <FormControl size="small" fullWidth>
                 <InputLabel id="ai-setup-rank-label">{t('AI Strength', 'AI 棋力')}</InputLabel>
@@ -217,8 +250,8 @@ const AiSetupPage = () => {
               </Select>
             </FormControl>
 
-            {/* Komi — dropdown, no-handicap games only */}
-            {handicap === 0 && (
+            {/* Komi — dropdown, free mode with no handicap only */}
+            {!isRanked && handicap === 0 && (
               <FormControl size="small" fullWidth>
                 <InputLabel id="ai-setup-komi-label">{t('Komi', '贴目')}</InputLabel>
                 <Select
@@ -243,24 +276,32 @@ const AiSetupPage = () => {
                 value={currentTimeKey}
                 onChange={(e) => applyTimePreset(e.target.value)}
               >
-                {timePresets.map((p) => (
-                  <MenuItem key={p.key} value={p.key}>{p.label}</MenuItem>
-                ))}
+                {timePresets
+                  .filter((p) => !isRanked || p.key !== 'untimed')
+                  .map((p) => (
+                    <MenuItem key={p.key} value={p.key}>{p.label}</MenuItem>
+                  ))}
               </Select>
             </FormControl>
           </Box>
 
-          <Box sx={{ mt: 'auto', pt: 2 }}>
+          <Box data-testid={isRanked ? 'ranked-start-action' : undefined} sx={{ mt: 'auto', pt: isRanked ? 1 : 2, flexShrink: 0 }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <Button
               variant="contained"
               fullWidth
               size="large"
               startIcon={<PlayArrow />}
-              disabled={loading}
+              disabled={loading || (isRanked && (
+                aiLadderStatus.view_state !== 'ready'
+                || aiLadderStatus.pending_settlement
+                || !aiLadderStatus.current_opponent
+                || aiLadderStatus.current_opponent.certification_status !== 'certified'
+                || aiLadderStatus.current_opponent.availability !== 'available'
+              ))}
               onClick={handleStart}
               sx={{
-                minHeight: 56, py: 2, fontSize: '1.1rem',
+                minHeight: isRanked ? 48 : 56, py: isRanked ? 1 : 2, fontSize: isRanked ? '1rem' : '1.1rem',
                 bgcolor: 'primary.main',
                 '&:hover': { bgcolor: 'primary.dark' },
               }}

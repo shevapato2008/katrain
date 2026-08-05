@@ -269,6 +269,8 @@ async def start_engine(
     """Start a human-vs-AI engine game. Client sends level + human_color +
     handicap; komi/rule/board_size are derived/fixed server-side (see
     EngineStartRequest)."""
+    from katrain.web.core.ranked_session_guard import temporary_analysis_lease
+
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -290,8 +292,13 @@ async def start_engine(
         handicap=_handicap_stone_count(req.handicap),
         board_size=19,
     )
-    session_id = await pm.start_engine_game(platform, config, user.id)
-    return {"session_id": session_id, "human_color": color}
+    lease_id = f"platform-start:{user.id}"
+    with temporary_analysis_lease(request.app, user, lease_id, "platform:start", "platform engine game"):
+        session_id = await pm.start_engine_game(platform, config, user.id)
+        activity = getattr(request.app.state, "ranked_analysis_activity", None)
+        if activity is not None:
+            activity.begin_background(user.id, session_id, "platform-game")
+        return {"session_id": session_id, "human_color": color}
 
 
 @router.post("/{platform}/engine/analysis")
@@ -303,6 +310,9 @@ async def engine_analysis(
     outcome (not a server error) — it comes back as `{ok:false}` at HTTP 200,
     not a 5xx. Genuine failures (AuthExpired/Retryable/Fatal) are not caught
     here and surface as 5xx, same as other routes."""
+    from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game, temporary_analysis_lease
+
+    guard_user_has_no_pending_ranked_game(request.app, user, "platform analysis")
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -317,19 +327,19 @@ async def engine_analysis(
     # acquisition for the other kinds.
     position_token = _hint_position_token(request.app.state, req.session_id) if req.kind == "options" else None
 
-    try:
-        result = await pm.engine_analysis(platform, req.session_id, req.kind)
-    except QuotaExhausted:
-        return {"ok": False, "reason": "insufficient", "kind": req.kind}
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
+    with temporary_analysis_lease(request.app, user, req.session_id, f"platform:{req.kind}", "platform analysis"):
+        try:
+            result = await pm.engine_analysis(platform, req.session_id, req.kind)
+        except QuotaExhausted:
+            return {"ok": False, "reason": "insufficient", "kind": req.kind}
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
+        if req.kind == "options":
+            _maybe_show_hint(request.app.state, req.session_id, position_token, result)
 
-    if req.kind == "options":
-        _maybe_show_hint(request.app.state, req.session_id, position_token, result)
+        import dataclasses
 
-    import dataclasses
-
-    return {"ok": True, "kind": req.kind, "data": dataclasses.asdict(result)}
+        return {"ok": True, "kind": req.kind, "data": dataclasses.asdict(result)}
 
 
 @router.get("/{platform}/engine/levels")

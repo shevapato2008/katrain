@@ -154,7 +154,7 @@ const ResearchPage = () => {
       komi: board.komi,
       rules: board.rules,
       max_visits: 200,
-    }).then((result) => {
+    }, token ?? undefined).then((result) => {
       if (l1AnalysisKeyRef.current !== key) return; // stale
       const turnResult = result?.turnInfos?.[0] ?? result;
       const moveInfos: QuickAnalyzeMoveInfo[] = turnResult?.moveInfos ?? [];
@@ -181,7 +181,7 @@ const ResearchPage = () => {
     }).finally(() => {
       if (l1AnalysisKeyRef.current === key) setL1AnalysisPending(false);
     });
-  }, [l1ShowHints, l1ShowTerritory, l1PositionKey, isAnalyzing]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [l1ShowHints, l1ShowTerritory, l1PositionKey, isAnalyzing, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleL1ToggleHints = useCallback(() => setL1ShowHints(prev => !prev), []);
   const handleL1ToggleTerritory = useCallback(() => setL1ShowTerritory(prev => !prev), []);

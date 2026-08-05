@@ -1,0 +1,280 @@
+"""Authenticated status and server-authoritative start API for ranked AI play."""
+
+from __future__ import annotations
+
+import uuid
+import logging
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, ConfigDict, Field
+
+from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.core import models_db
+from katrain.web.core.ai_ladder_catalog import (
+    AiLadderSessionSnapshot,
+    build_opponent_snapshot,
+    catalog_entry,
+    catalog_projection,
+    frozen_recipe_from_snapshot,
+    result_for_user,
+    session_snapshot_from_pending,
+)
+from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE, PLACEMENT_GAMES, initial_placement_window
+from katrain.web.models import User
+
+router = APIRouter()
+
+
+class AiLadderStartRequest(BaseModel):
+    """Game preferences only. Strength, result, and configuration are server-owned."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    board_size: Literal[9, 13, 19] = 19
+    rules: str = Field(default="chinese", min_length=1, max_length=64)
+    komi: float = 7.5
+    handicap: int = Field(default=0, ge=0, le=9)
+    color: Literal["black", "white"] = "black"
+    time_enabled: bool = False
+    main_time: int = Field(default=0, ge=0, le=86400)
+    byo_length: int = Field(default=30, ge=0, le=3600)
+    byo_periods: int = Field(default=3, ge=0, le=100)
+
+
+def _require_authority(request: Request) -> None:
+    if not getattr(request.app.state, "ai_ladder_authoritative", False):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Ranked AI ladder authority is unavailable on this node",
+        )
+
+
+def _pending_settlement(request: Request, user_id: int) -> bool:
+    return request.app.state.ai_ladder_repo.get_pending_game(user_id) is not None
+
+
+def _active_session(request: Request, session_id: str) -> bool:
+    manager = request.app.state.session_manager
+    lock = getattr(manager, "_lock", None)
+    if lock is None:
+        session = getattr(manager, "_sessions", {}).get(session_id)
+    else:
+        with lock:
+            session = manager._sessions.get(session_id)
+    return session is not None
+
+
+def _recover_pending(request: Request, user_id: int) -> None:
+    repo = request.app.state.ai_ladder_repo
+    pending = repo.get_pending_game(user_id)
+    if pending is None:
+        return
+    try:
+        game = request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(pending["game_id"], user_id)
+        if game is None:
+            if not _active_session(request, pending["session_id"]):
+                repo.clear_pending_game(user_id=user_id, game_id=pending["game_id"])
+            return
+        snapshot = session_snapshot_from_pending(pending)
+        repo.mark_pending_game_saved(user_id=user_id, game_id=snapshot.game_id, result=game["result"])
+        repo.settle_game(
+            user_id=user_id,
+            game_id=snapshot.game_id,
+            user_color=snapshot.user_color,
+            result=result_for_user(game["result"], snapshot.user_color),
+            game_type=snapshot.game_type,
+            opponent=snapshot.opponent,
+        )
+        repo.clear_pending_game(user_id=user_id, game_id=snapshot.game_id)
+    except Exception as exc:
+        logging.getLogger("katrain_web").error("Failed to recover ranked AI settlement: %s", exc)
+
+
+def _status_payload(request: Request, current_user: User) -> dict[str, object]:
+    _recover_pending(request, current_user.id)
+    repo = request.app.state.ai_ladder_repo
+    db = repo.session_factory()
+    try:
+        profile = db.get(models_db.AiLadderProfile, current_user.id)
+        if profile is None:
+            lo, hi = initial_placement_window(current_user.rank)
+            completed = 0
+            rung = None
+            net_score = 0
+        else:
+            lo, hi = profile.placement_lo, profile.placement_hi
+            completed = profile.placement_completed
+            rung = profile.ai_ladder_rung
+            net_score = profile.net_score
+    finally:
+        db.close()
+
+    opponent_rung = rung if rung is not None else (lo + hi) // 2
+    opponent = catalog_entry(opponent_rung)
+    placement_state: dict[str, object]
+    if rung is None:
+        placement_state = {"phase": "placement", "completed_games": completed, "total_games": PLACEMENT_GAMES}
+    else:
+        placement_state = {"phase": "placed", "rung": opponent}
+
+    return {
+        "view_state": "ready",
+        "placement_state": placement_state,
+        "current_opponent": opponent,
+        "recent_ranked_results": repo.recent_counted_results(current_user.id, limit=5),
+        "net_score": net_score,
+        "pending_settlement": _pending_settlement(request, current_user.id),
+    }
+
+
+@router.get("/catalog")
+def get_catalog(current_user: User = Depends(get_current_user)):
+    return catalog_projection()
+
+
+@router.get("/status")
+def get_status(request: Request, current_user: User = Depends(get_current_user)):
+    _require_authority(request)
+    return _status_payload(request, current_user)
+
+
+@router.post("/start", status_code=status.HTTP_201_CREATED)
+def start_ranked_game(
+    body: AiLadderStartRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    status_payload = _status_payload(request, current_user)
+    if status_payload["pending_settlement"]:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Previous ranked game settlement is pending")
+    opponent_entry = status_payload["current_opponent"]
+    assert isinstance(opponent_entry, dict)
+    opponent_rung = opponent_entry["rung"]
+    assert isinstance(opponent_rung, int)
+    try:
+        opponent, execution_identity = build_opponent_snapshot(opponent_rung)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    manager = request.app.state.session_manager
+    activity = getattr(request.app.state, "ranked_analysis_activity", None)
+
+    def analysis_is_active(session_id: str, kinds: dict[str, int]) -> bool:
+        if any(kind.startswith(("quick-analysis", "platform:")) for kind in kinds):
+            return True
+        try:
+            analysis_session = manager.get_session(session_id)
+        except KeyError:
+            return False
+        if set(kinds) == {"continuous"}:
+            return bool(getattr(analysis_session.katrain, "pondering", False))
+        # One-shot and tree-wide analysis can outlive the initiating HTTP call and
+        # may touch nodes other than current_node. Conservatively keep the lease
+        # until the session is reset/deleted; this is safer than guessing completion.
+        return True
+
+    if activity is not None and not activity.reserve_ranked_start(current_user.id, analysis_is_active):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Stop active analysis before starting a ranked AI game",
+        )
+
+    try:
+        session = manager.create_session(
+            katago_uuid=current_user.uuid,
+            user_id=current_user.id,
+            initial_game_type=AI_LADDER_GAME_TYPE,
+            skip_initial_analysis=True,
+        )
+    except Exception as exc:
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not create game session"
+        ) from exc
+
+    game_id = uuid.uuid4().hex
+    user_color = "B" if body.color == "black" else "W"
+    ai_color = "W" if user_color == "B" else "B"
+    snapshot = AiLadderSessionSnapshot(
+        game_id=game_id,
+        session_id=session.session_id,
+        user_id=current_user.id,
+        user_color=user_color,
+        game_type=AI_LADDER_GAME_TYPE,
+        opponent=opponent,
+        ai_subtype="ai:ladder",
+        execution_identity=execution_identity,
+    )
+    frozen_recipe = frozen_recipe_from_snapshot(opponent)
+
+    try:
+        request.app.state.ai_ladder_repo.create_pending_game(snapshot)
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
+        with session.lock:
+            session.user_id = current_user.id
+            session.game_type = AI_LADDER_GAME_TYPE
+            session.ai_ladder_snapshot = snapshot
+            session.ai_ladder_runtime_identity = execution_identity
+            session.ai_ladder_ai_subtype = "ai:ladder"
+            session.ai_ladder_settlement_pending = False
+            session._recorded = False
+            session.katrain(
+                "update_player",
+                bw=user_color,
+                player_type="player:human",
+                player_subtype="player:human",
+                name=current_user.username,
+            )
+            session.katrain(
+                "update_player",
+                bw=ai_color,
+                player_type="player:ai",
+                player_subtype="ai:ladder",
+                name=opponent.rank_name,
+            )
+            if body.time_enabled:
+                session.katrain.update_config("timer/main_time", body.main_time)
+                session.katrain.update_config("timer/byo_length", body.byo_length)
+                session.katrain.update_config("timer/byo_periods", body.byo_periods)
+                session.katrain.update_config("timer/paused", False)
+            else:
+                session.katrain.update_config("timer/main_time", 0)
+                session.katrain.update_config("timer/byo_length", 0)
+                session.katrain.update_config("timer/paused", True)
+            session.katrain(
+                "new_game",
+                size=body.board_size,
+                handicap=body.handicap,
+                komi=body.komi,
+                rules=body.rules,
+                game_type=AI_LADDER_GAME_TYPE,
+                ladder_rung=opponent.rung,
+                frozen_ladder_recipe=frozen_recipe,
+                skip_initial_analysis=True,
+            )
+            session.katrain.game_type = AI_LADDER_GAME_TYPE
+            session.last_state = session.katrain.get_state()
+    except Exception as exc:
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
+        try:
+            request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=game_id)
+        except Exception:
+            pass
+        try:
+            manager.remove_session(session.session_id)
+        except Exception:
+            pass
+        code = status.HTTP_409_CONFLICT if isinstance(exc, ValueError) else status.HTTP_503_SERVICE_UNAVAILABLE
+        raise HTTPException(status_code=code, detail="Could not configure ranked game") from exc
+
+    return {
+        "session_id": session.session_id,
+        "game_id": game_id,
+        "opponent": catalog_entry(opponent.rung),
+        "status": status_payload,
+    }

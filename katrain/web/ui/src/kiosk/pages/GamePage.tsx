@@ -23,9 +23,8 @@ import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, ty
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
-import { isLadderGame, isScoringGame } from '../../utils/gameTypes';
-import LadderSettlementNote from '../components/play/LadderSettlementNote';
-import type { LadderSettlement } from '../../api';
+import { isRankedGameType } from '../../features/aiLadder/gameType';
+import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -96,7 +95,6 @@ interface EndgameCardProps {
   onReview: () => void;
   /** 升降级对弈 only: what this game did to the player's rank. null while it is
       still being fetched, and on every non-ladder game. */
-  settlement: LadderSettlement | null;
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
@@ -109,7 +107,7 @@ interface EndgameCardProps {
 // avoids a useEffect + setState, keeping this repo's react-hooks/set-state-in-effect gate clean).
 // DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a kiosk-only
 // overlay (Gate S); not shipped in this cut, and shared Board.tsx is left untouched.
-const EndgameCard = ({ gameState, t, onExit, onReview, settlement }: EndgameCardProps) => {
+const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
@@ -123,7 +121,6 @@ const EndgameCard = ({ gameState, t, onExit, onReview, settlement }: EndgameCard
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
         {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('Black', '黑')} {gameState.prisoner_count.B} / {t('White', '白')} {gameState.prisoner_count.W}
       </Typography>
-      {settlement && <LadderSettlementNote result={settlement} />}
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
         <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
@@ -137,7 +134,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
   // B2/D5 (engine-move commit protocol): while a Golaxy 人机对弈 move is in flight
   // (genmove tunnel, up to ~180s), the backend already 409s undo/redo/nav — this
@@ -157,8 +154,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // ends, and only for a server-issued ladder game. The answer comes from the
   // server rather than from diffing two /api/ladder/me reads, because a game that
   // did not score has to be able to say so.
-  const [settlement, setSettlement] = useState<LadderSettlement | null>(null);
-  const settlementAskedRef = useRef(false);
   const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
@@ -172,6 +167,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [countError, setCountError] = useState<string | null>(null);
+  const [resignError, setResignError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [resyncError, setResyncError] = useState(false);
@@ -280,24 +276,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
-    if (isScoringGame(gs.game_type)) return;
+    if (isRankedGameType(gs.game_type)) return;
     API.analyzeCurrent(sessionId).catch(() => undefined);
   }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
 
-  const ladderGameEnded = isLadderGame(gs?.game_type) && !!gs?.end_result;
-  useEffect(() => {
-    if (!ladderGameEnded || !sessionId || !token) return;
-    if (settlementAskedRef.current) return;
-    settlementAskedRef.current = true;
-    API.getLadderSessionResult(token, sessionId)
-      .then(setSettlement)
-      .catch((e) => {
-        // The rank may well have moved — we just could not read the receipt.
-        // Say that, rather than silently showing nothing.
-        console.error('ladder settlement lookup failed:', e);
-        setSettlement({ settled: false, reason: 'error' });
-      });
-  }, [ladderGameEnded, sessionId, token]);
 
   const closeHint = useCallback(() => {
     setHint(null);
@@ -354,6 +336,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     void refreshItemCounts();
   }, [refreshItemCounts]);
 
+  const settlementFeedback = useAiLadderSettlement(
+    sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
+    String(user?.id ?? user?.username ?? 'anonymous'),
+  );
+
   if (!session.gameState) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -365,8 +352,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gameState = session.gameState;
   const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
   const isGameOver = !!gameState.end_result;
-  // Scoring games forbid undo server-side (anti-cheat); hide the controls too.
-  const isRanked = isScoringGame(gameState.game_type);
+  // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
+  const isRanked = isRankedGameType(gameState.game_type);
 
 
   // Determine which color the human plays (for turn enforcement). deriveHumanColor now
@@ -413,7 +400,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       }
       return;
     }
-    session.handleAction(action);
+    void (async () => { try { await session.handleAction(action); } catch { /* surfaced by session.error */ } })();
   };
 
   const handleBoardMove = async (x: number, y: number) => {
@@ -430,7 +417,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (!isGameOver) {
       setShowExitConfirm(true);
     } else {
-      navigate('/kiosk/play');
+      navigate(gameState.game_type === 'ai_ladder_ranked' ? '/kiosk/play/ai/setup/ranked' : '/kiosk/play');
     }
   };
 
@@ -502,6 +489,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
+      <Box sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 90, minWidth: 300 }}>
+        <AiLadderSettlementAlert feedback={settlementFeedback} />
+      </Box>
       {/* Persistent AI-move banner: physical board player needs a coordinate hint.
           Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
       {isVisionEnabled && aiColor !== null && aiMoveBanner && (
@@ -618,7 +608,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Board
             gameState={gameState}
             onMove={handleBoardMove}
-            onNavigate={session.onNavigate}
             analysisToggles={boardAnalysisToggles}
             playerColor={humanColor}
             engineOverlay={engineOverlay}
@@ -655,7 +644,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           key={sessionId}
           gameState={gameState}
           t={t}
-          settlement={settlement}
           onExit={handleExit}
           onReview={async () => {
             if (!sessionId) return;
@@ -675,9 +663,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
           <Button
             color="error"
-            onClick={() => {
-              setShowResignConfirm(false);
-              session.handleAction('resign');
+            onClick={async () => {
+              try {
+                await session.handleAction('resign');
+                setShowResignConfirm(false);
+              } catch (error) {
+                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                return;
+              }
               // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
               // not it was reached via EngineMoveErrorDialog's 认输 button — so the
               // physical engine-error recovery dialog (if open) is now irrelevant.
@@ -697,8 +690,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
           <Button
             color="error"
-            onClick={() => {
-              session.handleAction('resign');
+            onClick={async () => {
+              try {
+                await session.handleAction('resign');
+              } catch (error) {
+                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                return;
+              }
               // Same as the resign-confirm dialog above: this is another path that
               // confirms a resign, so the engine-error recovery dialog (if open) must
               // close too — no-op if it wasn't open.
@@ -792,6 +790,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       <Snackbar open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
+      </Snackbar>
+      <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
+        <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
       </Snackbar>
 
       {/* Re-sync (重置识别) failure toast */}

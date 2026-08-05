@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from katrain.web.models import User
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.api.v1.endpoints.reports import _dispatch_remote_only
+from katrain.web.core.user_game_repo import ProtectedRankedGameError, ReservedAiLadderGameIdError
+from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session, guard_user_has_no_pending_ranked_game
 
 router = APIRouter()
 
@@ -90,6 +92,13 @@ async def create_user_game(
     game_in: UserGameCreate,
     current_user: User = Depends(get_current_user),
 ):
+    if game_in.game_type == "ai_ladder_ranked":
+        raise HTTPException(status_code=400, detail="Ranked AI games can only be recorded by the game server")
+
+    repo = request.app.state.user_game_repo
+    if game_in.id and repo.is_ai_ladder_game_id_reserved(game_in.id):
+        raise HTTPException(status_code=409, detail="game_id is reserved for a pending ranked AI game")
+
     # Board mode: route through dispatcher (online → remote, offline → local + sync queue)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
@@ -98,27 +107,29 @@ async def create_user_game(
             data=game_in.model_dump(),
         )
 
-    repo = request.app.state.user_game_repo
-    return repo.create(
-        user_id=current_user.id,
-        sgf_content=game_in.sgf_content,
-        source=game_in.source,
-        game_id=game_in.id,
-        title=game_in.title,
-        player_black=game_in.player_black,
-        player_white=game_in.player_white,
-        black_rank=game_in.black_rank,
-        white_rank=game_in.white_rank,
-        result=game_in.result,
-        board_size=game_in.board_size,
-        rules=game_in.rules,
-        komi=game_in.komi,
-        move_count=game_in.move_count,
-        category=game_in.category,
-        game_type=game_in.game_type,
-        event=game_in.event,
-        game_date=game_in.game_date,
-    )
+    try:
+        return repo.create(
+            user_id=current_user.id,
+            sgf_content=game_in.sgf_content,
+            source=game_in.source,
+            game_id=game_in.id,
+            title=game_in.title,
+            player_black=game_in.player_black,
+            player_white=game_in.player_white,
+            black_rank=game_in.black_rank,
+            white_rank=game_in.white_rank,
+            result=game_in.result,
+            board_size=game_in.board_size,
+            rules=game_in.rules,
+            komi=game_in.komi,
+            move_count=game_in.move_count,
+            category=game_in.category,
+            game_type=game_in.game_type,
+            event=game_in.event,
+            game_date=game_in.game_date,
+        )
+    except ReservedAiLadderGameIdError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/{game_id}")
@@ -162,6 +173,8 @@ async def update_user_game(
             result=game_in.result,
             move_count=game_in.move_count,
         )
+    except ProtectedRankedGameError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     if not game:
@@ -180,7 +193,13 @@ async def delete_user_game(
         return await _dispatch_remote_only(lambda: dispatcher.user_games_delete(game_id))
 
     repo = request.app.state.user_game_repo
-    deleted = repo.delete(game_id, current_user.id)
+    existing = repo.get(game_id, current_user.id)
+    if existing and existing.get("game_type") == "ai_ladder_ranked":
+        raise HTTPException(status_code=403, detail="authoritative ranked AI games are protected from generic deletion")
+    try:
+        deleted = repo.delete(game_id, current_user.id)
+    except ProtectedRankedGameError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     if not deleted:
         raise HTTPException(status_code=404, detail="Game not found")
     return {"status": "deleted"}
@@ -197,6 +216,7 @@ async def get_analysis(
     limit: int = 400,
     current_user: User = Depends(get_current_user),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "saved analysis")
     # Verify ownership
     game_repo = request.app.state.user_game_repo
     game = game_repo.get(game_id, current_user.id)
@@ -214,6 +234,7 @@ async def get_move_analysis(
     move_number: int,
     current_user: User = Depends(get_current_user),
 ):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "saved analysis")
     # Verify ownership
     game_repo = request.app.state.user_game_repo
     game = game_repo.get(game_id, current_user.id)
@@ -243,6 +264,7 @@ async def save_analysis_from_session(
     current_user: User = Depends(get_current_user),
 ):
     """Extract analysis from an active research session and persist to user_game_analysis."""
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "save session analysis")
     # Verify game ownership
     game_repo = request.app.state.user_game_repo
     game = game_repo.get(game_id, current_user.id)
@@ -254,6 +276,7 @@ async def save_analysis_from_session(
     session = manager.get_session(body.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    guard_ai_ladder_ranked_session(session, "save-session-analysis")
 
     with session.lock:
         analysis_data = session.katrain._do_extract_analysis()

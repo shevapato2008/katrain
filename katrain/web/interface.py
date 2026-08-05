@@ -171,6 +171,7 @@ class WebKaTrain(KaTrainBase):
         # None by every _do_new_game call that doesn't pass one (see resolve_ladder_rung).
         # `_do_ai_move` fails closed (no move) if an ai:ladder player finds this None.
         self.ladder_rung = None
+        self.frozen_ladder_recipe = None
         # Set when a LadderUnavailable failure suppresses a move; cleared on the next
         # successful AI move or new game. Surfaced via get_state() for the frontend.
         self.last_ladder_error = False
@@ -317,7 +318,7 @@ class WebKaTrain(KaTrainBase):
             self.log(f"Remote analysis engine unavailable ({exc}); using local for analysis", OUTPUT_ERROR)
             self.analysis_engine_instance = None
 
-    def start(self):
+    def start(self, game_type="free", skip_initial_analysis=False):
         """Initializes the engine and starts a new game."""
         if self.engine:
             return
@@ -343,7 +344,7 @@ class WebKaTrain(KaTrainBase):
         self._init_analysis_engine()
 
         # Start a new game
-        self._do_new_game()
+        self._do_new_game(game_type=game_type, skip_initial_analysis=skip_initial_analysis)
 
     def log(self, message, level=OUTPUT_INFO):
         """Redirect logs to Python logger."""
@@ -377,6 +378,9 @@ class WebKaTrain(KaTrainBase):
         if p.ai and p.player_subtype == AI_LADDER:
             rung_info = getattr(self, "ladder_rung", None)
             if rung_info:
+                frozen = getattr(self, "frozen_ladder_recipe", None)
+                if frozen is not None:
+                    return frozen.rank_name
                 from katrain.core.ladder import get_level
 
                 return get_level(rung_info["rung"]).rank_name
@@ -577,6 +581,7 @@ class WebKaTrain(KaTrainBase):
         skip_initial_analysis=False,
         game_type=None,
         ladder_rung=None,
+        frozen_ladder_recipe=None,
     ):
         # Task 4 concurrency invariant: the background AI thread (_do_ai_move) holds
         # ai_lock for the full duration of a move generation and reads self.game/
@@ -607,6 +612,10 @@ class WebKaTrain(KaTrainBase):
             # leftover rung from a previous game, so a stale ai:ladder player then fails
             # closed in _do_ai_move rather than silently continuing at the old strength.
             self.ladder_rung = resolve_ladder_rung(ladder_rung)
+            if frozen_ladder_recipe is not None:
+                if self.ladder_rung is None or frozen_ladder_recipe.rung != self.ladder_rung["rung"]:
+                    raise ValueError("frozen ladder recipe does not match injected rung")
+            self.frozen_ladder_recipe = frozen_ladder_recipe
             self.last_ladder_error = False
             if self.engine:
                 self.engine.on_new_game()
@@ -641,7 +650,9 @@ class WebKaTrain(KaTrainBase):
                 sgf_filename=sgf_filename,
                 game_properties=game_properties,
                 user_id=self.user_id,
-                skip_initial_analysis=skip_initial_analysis or self.should_suppress_auto_eval(),
+                skip_initial_analysis=skip_initial_analysis
+                or self.should_suppress_auto_eval()
+                or not self.analysis_allowed,
             )
 
             # Ensure handicap stones are placed if handicap is set
@@ -1040,6 +1051,9 @@ class WebKaTrain(KaTrainBase):
                         self._surface_ladder_unavailable()
                         return
                     settings = {**(settings or {}), "rung": rung["rung"]}
+                    frozen = getattr(self, "frozen_ladder_recipe", None)
+                    if frozen is not None:
+                        settings["frozen_rung"] = frozen
                 if settings is not None:
                     from katrain.core.ai import generate_ai_move, LadderUnavailable
 

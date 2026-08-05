@@ -10,13 +10,10 @@ import { useSettings } from '../../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
-import type { LadderSettlement } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
-import LadderSettlementDialog from '../components/play/LadderSettlementDialog';
-
-// Server-issued game_type for 升降级对弈 (katrain/web/core/ladder_repo.py).
-const LADDER_GAME_TYPE = 'ai_ladder_ranked';
+import { isRankedGameType } from '../../features/aiLadder/gameType';
+import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -24,13 +21,14 @@ type Board3DComponent = React.ComponentType<BoardProps>;
 const GamePage = () => {
     const { sessionId } = useParams();
     const [searchParams] = useSearchParams();
+    const [resignError, setResignError] = useState<string | null>(null);
     const navigate = useNavigate();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
-    const isRated = mode === 'rated';
+    const routeIsRated = mode === 'rated';
 
     // Dynamic Board3D import — loaded once, then cached
     const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
@@ -46,6 +44,8 @@ const GamePage = () => {
         onNavigate,
         handleAction
     } = useGameSession({ token: token || undefined });
+    const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
+    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, String(user?.id ?? user?.username ?? 'anonymous'));
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -84,26 +84,6 @@ const GamePage = () => {
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
     // 升降级结算：what this game did to the player's rank. Asked for once, when
-    // the game ends, and only for a server-issued ladder game. The answer comes
-    // from the server rather than from diffing two /api/ladder/me reads, because
-    // a game that did not score has to be able to say so.
-    const [settlement, setSettlement] = useState<LadderSettlement | null>(null);
-    const settlementAskedRef = useRef(false);
-    const isLadderGame = gameState?.game_type === LADDER_GAME_TYPE;
-
-    useEffect(() => {
-        if (!isLadderGame || !gameState?.end_result || !sessionId || !token) return;
-        if (settlementAskedRef.current) return;
-        settlementAskedRef.current = true;
-        API.getLadderSessionResult(token, sessionId)
-            .then(setSettlement)
-            .catch((e) => {
-                // The rank may well have moved -- we just could not read the
-                // receipt. Say that, rather than silently showing nothing.
-                console.error('ladder settlement lookup failed:', e);
-                setSettlement({ settled: false, reason: 'error' });
-            });
-    }, [isLadderGame, gameState?.end_result, sessionId, token]);
 
     // Sound playing callback
     const handlePlaySound = useCallback((soundName: string) => {
@@ -124,7 +104,7 @@ const GamePage = () => {
         if (gameState?.last_ladder_error) return;
         if (!gameState?.end_result) {
             console.log('Timer expired - triggering timeout');
-            await handleAction('timeout');
+            try { await handleAction('timeout'); } catch { /* hook error state is authoritative */ }
         }
     }, [gameState?.end_result, gameState?.last_ladder_error, handleAction]);
 
@@ -227,7 +207,7 @@ const GamePage = () => {
                 setShowCountConfirm(true);
             }
         } else {
-            handleAction(action);
+            void (async () => { try { await handleAction(action); } catch { /* surfaced by hook */ } })();
         }
     };
 
@@ -249,21 +229,30 @@ const GamePage = () => {
     };
 
     const confirmResign = async () => {
-        setShowResignConfirm(false);
-        await handleAction('resign');
+        try {
+            await handleAction('resign');
+            setShowResignConfirm(false);
+        } catch (error) {
+            setResignError(error instanceof Error ? error.message : '认输失败，请重试');
+        }
     };
 
     const handleLeaveRequest = () => {
         if (!gameState?.end_result) {
             setShowLeaveConfirm(true);
         } else {
-            navigate('/galaxy/play/ai');
+            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
         }
     };
 
     const handleConfirmLeave = async () => {
-        await handleAction('resign');
-        navigate('/galaxy/play/ai');
+        try {
+            await handleAction('resign');
+            setShowLeaveConfirm(false);
+            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
+        } catch (error) {
+            setResignError(error instanceof Error ? error.message : '认输失败，请重试');
+        }
     };
 
     // Determine which color the human player controls (if any)
@@ -275,20 +264,20 @@ const GamePage = () => {
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-            {/* The ladder AI refused to move (engine cannot serve the seated rung at its
-                calibrated strength). No move is coming and the clock keeps running, so say
-                so — an empty board with a ticking opponent clock reads as "still thinking". */}
-            {gameState.last_ladder_error && !gameState.end_result && (
-                <Alert
-                    severity="warning"
-                    data-testid="ladder-stalled"
-                    sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 1300 }}
-                >
-                    {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
-                </Alert>
-            )}
-
+        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+            <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
+                <AiLadderSettlementAlert feedback={settlementFeedback} />
+                {/* The ladder AI refused to move (the engine cannot serve the seated rung at
+                    its calibrated strength). No move is coming and the clock keeps running,
+                    so say so — an empty board with a ticking opponent clock reads as
+                    "still thinking". */}
+                {gameState.last_ladder_error && !gameState.end_result && (
+                    <Alert severity="warning" data-testid="ladder-stalled">
+                        {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
+                    </Alert>
+                )}
+                {resignError && <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>}
+            </Box>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
@@ -331,10 +320,6 @@ const GamePage = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* 升降级结算 — only for a server-issued ladder game, only once it ends. */}
-            {settlement && (
-                <LadderSettlementDialog result={settlement} onClose={() => setSettlement(null)} />
-            )}
 
             {/* Count Result Dialog */}
             <Dialog open={!!countResult} onClose={() => setCountResult(null)} maxWidth="xs" fullWidth>
@@ -377,7 +362,6 @@ const GamePage = () => {
                         <Board
                             gameState={gameState}
                             onMove={onMove}
-                            onNavigate={onNavigate}
                             analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                             playerColor={humanColor}
                         />
@@ -386,7 +370,6 @@ const GamePage = () => {
                         <Board3D
                             gameState={gameState}
                             onMove={onMove}
-                            onNavigate={onNavigate}
                             analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                             playerColor={humanColor}
                         />

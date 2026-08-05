@@ -3,11 +3,14 @@ physical board, detection suspended while shown (PRD R4)."""
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from katrain.web.core.hint_gate import DefaultHintGate
 from katrain.web.core.physical_play import PhysicalPlayConfig
+from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game, temporary_analysis_lease
+from katrain.web.models import User
 
 router = APIRouter()
 
@@ -46,7 +49,8 @@ def _build_payload_from_game(game, max_visits: int) -> dict:
 
 
 @router.post("")
-async def request_hint(request: Request, body: HintRequest):
+async def request_hint(request: Request, body: HintRequest, current_user: User = Depends(get_current_user)):
+    guard_user_has_no_pending_ranked_game(request.app, current_user, "hint")
     manager = request.app.state.session_manager
     try:
         session = manager.get_session(body.session_id)
@@ -75,39 +79,42 @@ async def request_hint(request: Request, body: HintRequest):
         raise HTTPException(status_code=400, detail=str(e))
     payload["is_analysis"] = decision.engine == "cloud"  # RequestRouter: cloud-preferred routing
     try:
-        result = await router_instance.route(payload)
+        with temporary_analysis_lease(request.app, current_user, body.session_id, "hint", "hint"):
+            result = await router_instance.route(payload)
+            from katrain.core.game import Move
+
+            top_n = body.top_n or config.hint_top_n
+            board_size = katrain.game.board_size[0]
+            moves = []
+            for info in sorted(result.get("moveInfos", []), key=lambda m: m.get("order", 999)):
+                if len(moves) >= top_n:
+                    break
+                gtp = info.get("move", "pass")
+                if gtp.lower() == "pass":
+                    continue
+                x, y = Move.from_gtp(gtp).coords
+                moves.append(
+                    {
+                        "gtp": gtp,
+                        "coords": [x, y],
+                        "vision_rc": [board_size - 1 - y, x],
+                        "winrate": info.get("winrate"),
+                        "score_lead": info.get("scoreLead"),
+                        "visits": info.get("visits"),
+                    }
+                )
+
+            orchestrator = getattr(request.app.state, "physical_play", None)
+            if orchestrator is not None and moves:
+                orchestrator.show_hint([tuple(m["vision_rc"]) for m in moves])
+            gate.settle(decision.charge_ref, success=True)
+            return {"moves": moves, "engine": result.get("engine", decision.engine), "timeout_s": config.hint_timeout_s}
+    except HTTPException:
+        gate.settle(decision.charge_ref, success=False)
+        raise
     except Exception as e:
         gate.settle(decision.charge_ref, success=False)
         raise HTTPException(status_code=502, detail=str(e))
-    gate.settle(decision.charge_ref, success=True)
-
-    from katrain.core.game import Move
-
-    top_n = body.top_n or config.hint_top_n
-    board_size = katrain.game.board_size[0]
-    moves = []
-    for info in sorted(result.get("moveInfos", []), key=lambda m: m.get("order", 999)):
-        if len(moves) >= top_n:
-            break
-        gtp = info.get("move", "pass")
-        if gtp.lower() == "pass":
-            continue
-        x, y = Move.from_gtp(gtp).coords
-        moves.append(
-            {
-                "gtp": gtp,
-                "coords": [x, y],
-                "vision_rc": [board_size - 1 - y, x],
-                "winrate": info.get("winrate"),
-                "score_lead": info.get("scoreLead"),
-                "visits": info.get("visits"),
-            }
-        )
-
-    orchestrator = getattr(request.app.state, "physical_play", None)
-    if orchestrator is not None and moves:
-        orchestrator.show_hint([tuple(m["vision_rc"]) for m in moves])
-    return {"moves": moves, "engine": result.get("engine", decision.engine), "timeout_s": config.hint_timeout_s}
 
 
 @router.post("/dismiss")

@@ -493,6 +493,26 @@ def test_empty_campaign_requests_humansl_as_black_in_first_slot():
     )
 
 
+def test_first_humansl_color_controls_the_alternating_schedule(monkeypatch):
+    monkeypatch.setattr(campaign, "FIRST_HUMANSL_COLOR", "W")
+
+    first = campaign.next_action([])
+    assert first.color == "W"
+    second = campaign.next_action(
+        [
+            result(
+                "white-first",
+                stage=first.stage,
+                player=first.player,
+                slot=first.slot,
+                color=first.color,
+                outcome="win",
+            )
+        ]
+    )
+    assert second.color == "B"
+
+
 @pytest.mark.parametrize("stage_index", range(len(campaign.STAGES)), ids=campaign.STAGE_ORDER)
 def test_each_stage_alternates_ten_conclusive_slots_and_advances_exactly(stage_index):
     records = [row for prefix_index in range(stage_index) for row in completed_stage(prefix_index)]

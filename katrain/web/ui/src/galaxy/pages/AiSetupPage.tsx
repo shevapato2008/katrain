@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
-import { API, type LadderRung, type LadderMe } from '../../api';
-import LadderRankCard from '../components/play/LadderRankCard';
+import { API, type LadderRung } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
-import { formatLadderSetup } from '../../utils/ladderSetup';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
+import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
+import { startAiLadderGame } from '../../features/aiLadder/api';
+import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
+import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -27,6 +29,7 @@ const AiSetupPage = () => {
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
+    const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token || undefined, isRated);
 
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -52,11 +55,6 @@ const AiSetupPage = () => {
     const [ladderRung, setLadderRung] = useState<number>(18);
     const isLadder = opponent === 'ai:ladder';
 
-    // 升降级对弈: the player's own ladder state. Server-authoritative, including the
-    // opponent tier -- there is nothing here for the client to choose.
-    const [ladderMe, setLadderMe] = useState<LadderMe | null>(null);
-    const [ladderError, setLadderError] = useState<string | null>(null);
-
     // Time Settings
     const [timerEnabled, setTimerEnabled] = useState(isRated); 
     const [mainTime, setMainTime] = useState(10); 
@@ -73,15 +71,17 @@ const AiSetupPage = () => {
     ];
 
     useEffect(() => {
+        if (isRated) {
+            setOpponent('ai:human');
+            setTimerEnabled(true);
+            setRules('japanese');
+            setLoading(false);
+            return;
+        }
         const fetchConstants = async () => {
             try {
                 const constants = await API.getAIConstants();
                 setAiConstants(constants);
-                if (isRated) {
-                    setOpponent('ai:human');
-                    setTimerEnabled(true);
-                    setRules('japanese');
-                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load AI settings');
@@ -95,23 +95,6 @@ const AiSetupPage = () => {
             .then((data) => setLadderRungs(data.rungs))
             .catch((err) => console.error('Failed to load ladder rungs', err));
     }, [isRated]);
-
-    useEffect(() => {
-        if (!isRated) return;
-        if (!token) {
-            setLadderMe(null);
-            setLadderError('unauthenticated');
-            return;
-        }
-        setLadderError(null);
-        API.getLadderMe(token)
-            .then(setLadderMe)
-            .catch((err) => {
-                console.error('Failed to load ladder state', err);
-                setLadderMe(null);
-                setLadderError(err?.message || 'unavailable');
-            });
-    }, [isRated, token]);
 
     // Load strategy default settings when opponent changes (Free mode)
     useEffect(() => {
@@ -164,27 +147,23 @@ const AiSetupPage = () => {
     const handleStartGame = async () => {
         setLoading(true);
         try {
-            const session = await API.createSession(token || undefined);
-
-            // 升降级对弈 is one server call, not a client-assembled sequence: the
-            // opponent tier, the players and the scoring game type are all decided
-            // server-side so none of them can be talked into something easier.
             if (isRated) {
-                if (!token) throw new Error(t('ladder:need_login', '登录后才能参加升降级对弈。'));
-                // mainTime is already in minutes, which is the unit
-                // `timer/main_time` is stored in. It used to be multiplied by 60
-                // here, which handed every rated game a 10-hour main time.
-                await API.startLadderGame(token, {
-                    session_id: session.session_id,
-                    color,
-                    main_time_minutes: mainTime,
-                    byo_length_seconds: byoLength,
+                const session = await startAiLadderGame({
+                    board_size: boardSize as 9 | 13 | 19,
+                    rules,
+                    komi,
+                    handicap,
+                    color: color === 'B' ? 'black' : 'white',
+                    time_enabled: timerEnabled,
+                    main_time: mainTime,
+                    byo_length: byoLength,
                     byo_periods: byoPeriods,
-                });
-                navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
+                }, token || undefined);
+                saveAiLadderBefore(session.session_id, session.status, String(user?.id ?? user?.username ?? 'anonymous'));
+                navigate(`/galaxy/play/game/${session.session_id}?mode=rated`);
                 return;
             }
-
+            const session = await API.createSession(token || undefined);
             const humanKyuRank = sliderToHumanKyuRankFixed(rankValue);
 
             const aiColor = color === 'B' ? 'W' : 'B';
@@ -312,71 +291,6 @@ const AiSetupPage = () => {
 
     const strategyOptions = aiConstants?.options || {};
 
-    // Time controls. In rated play the on/off switch is locked open but the three
-    // values stay editable, so this block has to travel with the settings card
-    // rather than the opponent card.
-    const timeControls = (
-        <>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={timerEnabled}
-                            onChange={(e) => setTimerEnabled(e.target.checked)}
-                            disabled={isRated}
-                            // Locked open, not switched off. MUI's disabled palette drains
-                            // the track to near-invisible grey, which reads as "off" — the
-                            // opposite of what is true here. Keep the on-state colour and
-                            // let the adjacent caption carry the "you can't change this".
-                            sx={isRated ? {
-                                '& .Mui-disabled .MuiSwitch-thumb': { color: 'primary.main' },
-                                '& .Mui-disabled + .MuiSwitch-track': { bgcolor: 'primary.main', opacity: 0.5 },
-                            } : undefined}
-                        />
-                    }
-                    label={t('Enable Timer', 'Enable Timer')}
-                    sx={isRated ? { '& .MuiFormControlLabel-label.Mui-disabled': { color: 'text.secondary' } } : undefined}
-                />
-                {isRated && (
-                    <Typography variant="caption" color="text.disabled" sx={{ ml: 'auto' }}>
-                        {t('ladder:timer_locked', '升降级对局固定开启')}
-                    </Typography>
-                )}
-            </Box>
-
-            {timerEnabled && (
-                <Box sx={{ mt: 1 }}>
-                    {/* The unit lives in the value, so these labels must NOT carry one.
-                        The older `main time` / `byoyomi length` keys bake "(分钟)" /
-                        "(秒)" into the msgstr and would render it twice; they stay in
-                        use by components/TimeSettingsDialog.tsx, where the label is the
-                        only place the unit appears. Hence separate keys here. */}
-                    <Box sx={{ mb: 2 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>{t('time:main_time', '保留时间')}</span>
-                            <strong>{mainTime} {t('time:minutes', '分钟')}</strong>
-                        </Typography>
-                        <Slider value={mainTime} min={0} max={60} step={1} onChange={(_, v) => setMainTime(v as number)} />
-                    </Box>
-                    <Box sx={{ mb: 2 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>{t('time:byoyomi_length', '每步读秒')}</span>
-                            <strong>{byoLength} {t('time:seconds', '秒')}</strong>
-                        </Typography>
-                        <Slider value={byoLength} min={5} max={60} step={5} onChange={(_, v) => setByoLength(v as number)} />
-                    </Box>
-                    <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>{t('time:byoyomi_periods', '读秒次数')}</span>
-                            <strong>{byoPeriods} {t('time:times', '次')}</strong>
-                        </Typography>
-                        <Slider value={byoPeriods} min={1} max={10} step={1} onChange={(_, v) => setByoPeriods(v as number)} />
-                    </Box>
-                </Box>
-            )}
-        </>
-    );
-
     return (
         <Box sx={{ p: 4, maxWidth: 1000, mx: 'auto' }}>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -385,45 +299,25 @@ const AiSetupPage = () => {
             
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, alignItems: 'start' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                        {isRated ? t('Game Settings', '对局设置') : t('Board & Rules', 'Board & Rules')}
-                    </Typography>
+                    <Typography variant="h6" gutterBottom>{t('Board & Rules', 'Board & Rules')}</Typography>
+                    
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>{t('board size', 'Board Size')}</InputLabel>
+                        <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))} disabled={isRated}>
+                            <MenuItem value={19}>19x19 ({t('Standard', 'Standard')})</MenuItem>
+                            <MenuItem value={13}>13x13</MenuItem>
+                            <MenuItem value={9}>9x9</MenuItem>
+                        </Select>
+                    </FormControl>
 
-                    {/* 升降级对弈 fixes the board, the ruleset and the komi at the
-                        conditions the rungs were measured under. These used to be two
-                        disabled dropdowns showing 19x19 / Japanese -- and the server
-                        then dealt a Chinese-rules game. Read it out from the server
-                        instead of letting the page claim a setup it does not decide. */}
-                    {isRated ? (
-                        <Box sx={{ mt: 2, mb: 1 }}>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('ladder:fixed_setup', '本局设定')}
-                            </Typography>
-                            <Typography sx={{ mt: 0.5, fontSize: 17, fontWeight: 600 }}>
-                                {ladderMe ? formatLadderSetup(ladderMe.game_setup, t) : '—'}
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <>
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>{t('board size', 'Board Size')}</InputLabel>
-                                <Select value={boardSize} label={t('board size', 'Board Size')} onChange={(e) => setBoardSize(Number(e.target.value))}>
-                                    <MenuItem value={19}>19x19 ({t('Standard', 'Standard')})</MenuItem>
-                                    <MenuItem value={13}>13x13</MenuItem>
-                                    <MenuItem value={9}>9x9</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>{t('ruleset', 'Ruleset')}</InputLabel>
-                                <Select value={rules} label={t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)}>
-                                    {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{t(r.id, r.name)}</MenuItem>)}
-                                </Select>
-                            </FormControl>
-                        </>
-                    )}
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>{t('ruleset', 'Ruleset')}</InputLabel>
+                        <Select value={rules} label={t('ruleset', 'Ruleset')} onChange={(e) => setRules(e.target.value)} disabled={isRated}>
+                            {rulesets.map(r => <MenuItem key={r.id} value={r.id}>{t(r.id, r.name)}</MenuItem>)}
+                        </Select>
+                    </FormControl>
 
                     <FormControl fullWidth margin="normal">
                         <InputLabel>{t('Your Color', 'Your Color')}</InputLabel>
@@ -449,160 +343,149 @@ const AiSetupPage = () => {
                             />
                         </Box>
                     )}
-
-                    {isRated && (
-                        <>
-                            <Divider sx={{ my: 3 }} />
-                            {timeControls}
-                        </>
-                    )}
                 </Paper>
 
-                {isRated ? (
-                    ladderMe ? (
-                        <LadderRankCard me={ladderMe} />
-                    ) : (
-                        // Loading, signed out, and failed are three different things and
-                        // none of them is a playable card. Never render a placeholder rank.
-                        <Paper sx={{ p: 4, borderRadius: 4 }}>
-                            <Typography variant="h6" gutterBottom>{t('ladder:your_rank', '你的段位')}</Typography>
-                            {ladderError === null ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
-                                    <CircularProgress size={20} />
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('ladder:loading', '正在读取你的段位…')}
-                                    </Typography>
-                                </Box>
-                            ) : ladderError === 'unauthenticated' ? (
-                                <Alert severity="info" sx={{ mt: 2 }}>
-                                    {t('ladder:need_login', '登录后才能参加升降级对弈。')}
-                                </Alert>
-                            ) : (
-                                <Alert
-                                    severity="error"
-                                    sx={{ mt: 2 }}
-                                    action={
-                                        <Button color="inherit" size="small" onClick={() => {
-                                            setLadderError(null);
-                                            if (token) {
-                                                API.getLadderMe(token).then(setLadderMe).catch((e) => {
-                                                    setLadderMe(null);
-                                                    setLadderError(e?.message || 'unavailable');
-                                                });
-                                            }
-                                        }}>
-                                            {t('retry', '重试')}
-                                        </Button>
-                                    }
-                                >
-                                    {t('ladder:load_failed', '读取段位失败，暂时开不了局。')}
-                                </Alert>
-                            )}
-                        </Paper>
-                    )
-                ) : (
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
                     <Typography variant="h6" gutterBottom>{t('Opponent & Time', 'Opponent & Time')}</Typography>
 
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>{t('aistrategy', 'AI Strategy')}</InputLabel>
-                        <Select value={opponent} label={t('aistrategy', 'AI Strategy')} onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
-                            {aiConstants?.strategies?.map((s: string) => {
-                                // Extract strategy key: remove 'ai:' or 'ai:p:' prefix
-                                let strategyKey = s;
-                                if (strategyKey.startsWith('ai:p:')) {
-                                    strategyKey = strategyKey.substring(5);
-                                } else if (strategyKey.startsWith('ai:')) {
-                                    strategyKey = strategyKey.substring(3);
-                                }
-                                // Use the same getStrategyDisplay logic for consistency
-                                const displayName = getStrategyDisplay(strategyKey);
-                                return (
-                                    <MenuItem key={s} value={s}>
-                                        {displayName}
-                                    </MenuItem>
-                                );
-                            })}
-                        </Select>
-                    </FormControl>
-
-                    {opponent === 'ai:human' ? (
-                        <Box sx={{ mt: 2, px: 1 }}>
-                            <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>{t('Rank', 'Rank')}:</span>
-                                <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
-                            </Typography>
-                            <Slider
-                                value={rankValue} min={0} max={28} step={1}
-                                onChange={(_, v) => setRankValue(v as number)}
-                                valueLabelFormat={valueToRank}
-                                valueLabelDisplay="auto"
-                            />
-                            <Stack direction="row" justifyContent="space-between" sx={{ mt: -1 }}>
-                                <Typography variant="caption" color="text.secondary">20k</Typography>
-                                <Typography variant="caption" color="text.secondary">9d</Typography>
-                            </Stack>
-                        </Box>
-                    ) : isLadder ? (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('ai:golaxy_parity', '棋力阶梯')}
-                            </Typography>
-                            <FormControl fullWidth margin="dense" size="small">
-                                <InputLabel>{t('ai:golaxy_parity_rung', '棋力等级')}</InputLabel>
-                                <Select
-                                    value={ladderRung}
-                                    label={t('ai:golaxy_parity_rung', '棋力等级')}
-                                    onChange={(e) => setLadderRung(Number(e.target.value))}
-                                >
-                                    {ladderRungs.map((r) => (
-                                        <MenuItem key={r.rung} value={r.rung}>
-                                            {r.rank_name}
-                                        </MenuItem>
-                                    ))}
+                    {isRated ? (
+                        <AiLadderSetupOpponent
+                            status={aiLadderStatus}
+                            onRetry={retryAiLadderStatus}
+                        />
+                    ) : (
+                        <>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>{t('aistrategy', 'AI Strategy')}</InputLabel>
+                                <Select value={opponent} label={t('aistrategy', 'AI Strategy')} onChange={(e) => setOpponent(e.target.value)} disabled={isRated}>
+                                    {aiConstants?.strategies?.map((s: string) => {
+                                        let strategyKey = s;
+                                        if (strategyKey.startsWith('ai:p:')) {
+                                            strategyKey = strategyKey.substring(5);
+                                        } else if (strategyKey.startsWith('ai:')) {
+                                            strategyKey = strategyKey.substring(3);
+                                        }
+                                        const displayName = getStrategyDisplay(strategyKey);
+                                        return (
+                                            <MenuItem key={s} value={s}>
+                                                {displayName}
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
-                        </Box>
-                    ) : (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom color="primary">{t('menu:aisettings', 'AI Settings')}</Typography>
-                            {aiLoading ? <CircularProgress size={24} /> : (
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                        <Typography variant="caption">{t('estimated strength', 'Est. Strength')}:</Typography>
-                                        <Typography variant="caption" fontWeight="bold">{estimatedRank}</Typography>
-                                    </Box>
-                                    {Object.keys(strategySettings).length === 0 ? (
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                            {t('no ai settings', 'No configurable settings for this strategy')}
-                                        </Typography>
-                                    ) : (
-                                        Object.keys(strategySettings).map(k =>
-                                            strategyOptions[k] && renderOption(k, strategySettings[k], strategyOptions[k])
-                                        )
+
+                            {opponent === 'ai:human' || isRated ? (
+                                <Box sx={{ mt: 2, px: 1 }}>
+                                    <Typography gutterBottom sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>{t('Rank', 'Rank')}:</span>
+                                        <strong style={{ color: '#4a6b5c' }}>{valueToRank(rankValue)}</strong>
+                                    </Typography>
+                                    <Slider
+                                        value={rankValue} min={0} max={28} step={1}
+                                        onChange={(_, v) => setRankValue(v as number)}
+                                        valueLabelFormat={valueToRank}
+                                        valueLabelDisplay="auto"
+                                    />
+                                    <Stack direction="row" justifyContent="space-between" sx={{ mt: -1 }}>
+                                        <Typography variant="caption" color="text.secondary">20k</Typography>
+                                        <Typography variant="caption" color="text.secondary">9d</Typography>
+                                    </Stack>
+                                </Box>
+                            ) : isLadder ? (
+                                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" gutterBottom color="primary">
+                                        {t('ai:golaxy_parity', '棋力阶梯')}
+                                    </Typography>
+                                    <FormControl fullWidth margin="dense" size="small">
+                                        <InputLabel>{t('ai:golaxy_parity_rung', '棋力等级')}</InputLabel>
+                                        <Select
+                                            value={ladderRung}
+                                            label={t('ai:golaxy_parity_rung', '棋力等级')}
+                                            onChange={(e) => setLadderRung(Number(e.target.value))}
+                                        >
+                                            {ladderRungs.map((r) => (
+                                                <MenuItem key={r.rung} value={r.rung}>
+                                                    {r.rank_name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+                            ) : (
+                                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" gutterBottom color="primary">{t('menu:aisettings', 'AI Settings')}</Typography>
+                                    {aiLoading ? <CircularProgress size={24} /> : (
+                                        <Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                <Typography variant="caption">{t('estimated strength', 'Est. Strength')}:</Typography>
+                                                <Typography variant="caption" fontWeight="bold">{estimatedRank}</Typography>
+                                            </Box>
+                                            {Object.keys(strategySettings).length === 0 ? (
+                                                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                                    {t('no ai settings', 'No configurable settings for this strategy')}
+                                                </Typography>
+                                            ) : (
+                                                Object.keys(strategySettings).map(k =>
+                                                    strategyOptions[k] && renderOption(k, strategySettings[k], strategyOptions[k])
+                                                )
+                                            )}
+                                        </Box>
                                     )}
                                 </Box>
                             )}
-                        </Box>
+                        </>
                     )}
 
                     <Divider sx={{ my: 3 }} />
+                    
+                    <FormControlLabel
+                        control={<Switch checked={timerEnabled} onChange={(e) => setTimerEnabled(e.target.checked)} disabled={isRated} />}
+                        label={t('Enable Timer', 'Enable Timer')}
+                        sx={{ mb: 1 }}
+                    />
 
-                    {timeControls}
+                    {timerEnabled && (
+                        <Box sx={{ mt: 1 }}>
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="caption" color="text.secondary">{t('main time', 'Main Time')} ({t('Minutes', 'Minutes')}): {mainTime}</Typography>
+                                <Slider 
+                                    value={mainTime} min={0} max={60} step={1} 
+                                    onChange={(_, v) => setMainTime(v as number)}
+                                />
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="caption" color="text.secondary">{t('byoyomi length', 'Byo-yomi')} ({t('Seconds', 'Seconds')}): {byoLength}</Typography>
+                                <Slider 
+                                    value={byoLength} min={5} max={60} step={5} 
+                                    onChange={(_, v) => setByoLength(v as number)}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">{t('byoyomi periods', 'Periods')}: {byoPeriods}</Typography>
+                                <Slider 
+                                    value={byoPeriods} min={1} max={10} step={1} 
+                                    onChange={(_, v) => setByoPeriods(v as number)}
+                                />
+                            </Box>
+                        </Box>
+                    )}
                 </Paper>
-                )}
             </Box>
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button onClick={() => navigate('/galaxy/play')}>{t('cancel', 'Cancel')}</Button>
-                {/* An uncertified rung has no legal opponent to seat, so the start
-                    button must be dead — the card explains why. Never fall back to
-                    another AI. */}
                 <Button
                     variant="contained"
                     size="large"
                     onClick={handleStartGame}
-                    disabled={loading || (isRated && !ladderMe?.playable)}
+                    disabled={loading || (isRated && (
+                        aiLadderStatus.view_state !== 'ready'
+                        || aiLadderStatus.pending_settlement
+                        || !aiLadderStatus.current_opponent
+                        || aiLadderStatus.current_opponent.certification_status !== 'certified'
+                        || aiLadderStatus.current_opponent.availability !== 'available'
+                    ))}
                 >
                     {t('btn:Play', 'Start Game')}
                 </Button>

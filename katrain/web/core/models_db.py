@@ -53,24 +53,9 @@ class User(Base):
     )  # Unique UUID assigned at registration
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    # Legacy human-vs-human rank. No longer written: since the 41-tier ladder
-    # landed, a user has exactly one rank and it moves only on ladder games
-    # against the AI. Kept so historical rows survive, and read once per account
-    # to seed the placement window (katrain/web/core/ladder_progress.py).
     rank = Column(String, default="20k")
     net_wins = Column(Integer, default=0)
     elo_points = Column(Integer, default=0)
-
-    # --- 41-tier ladder: the authoritative rank ---
-    # NULL rung == not yet placed. While placing, the binary-search window lives
-    # in the three placement columns and `ai_ladder_rung` stays NULL until it
-    # collapses. Every change to these is accompanied by an ai_ladder_ledger row
-    # written in the same transaction.
-    ai_ladder_rung = Column(Integer, nullable=True)
-    ai_ladder_net_wins = Column(Integer, default=0, nullable=False)
-    ai_ladder_placement_lo = Column(Integer, nullable=True)
-    ai_ladder_placement_hi = Column(Integer, nullable=True)
-    ai_ladder_placement_games = Column(Integer, default=0, nullable=False)
     credits = Column(
         Integer, default=10000, nullable=False
     )  # integer credit balance (single pool); server-authoritative
@@ -82,6 +67,7 @@ class User(Base):
     followers = relationship("Relationship", foreign_keys="[Relationship.following_id]", back_populates="following")
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
+    ai_ladder_profile = relationship("AiLadderProfile", back_populates="user", uselist=False)
 
 
 class Relationship(Base):
@@ -110,41 +96,112 @@ class RatingHistory(Base):
     user = relationship("User")
 
 
-class AiLadderLedger(Base):
-    """Append-only record of every rated ladder game that moved (or held) a rank.
+class AiLadderProfile(Base):
+    """Authoritative ranked-AI state, independent from the legacy human ladder."""
 
-    This is the sole derivation of `users.ai_ladder_rung`, which is why
-    migrations.PROTECTED_TABLES forbids dropping it to fix schema drift.
+    __tablename__ = "ai_ladder_profiles"
 
-    `game_id` carries a UNIQUE constraint and is the whole idempotency story: a
-    replayed settlement violates it, the transaction rolls back, and the rank does
-    not move. It is deliberately NOT a foreign key to user_games.id -- when the
-    repository dispatcher is online the game row is written to the remote service
-    and has no local counterpart (katrain/web/core/repository.py).
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    ai_ladder_rung = Column(Integer, nullable=True)
+    placement_lo = Column(Integer, nullable=False)
+    placement_hi = Column(Integer, nullable=False)
+    placement_completed = Column(Integer, nullable=False, default=0)
+    net_score = Column(Integer, nullable=False, default=0)
+    version = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    Inconclusive games never produce a row.
-    """
+    user = relationship("User", back_populates="ai_ladder_profile")
 
-    __tablename__ = "ai_ladder_ledger"
+    __table_args__ = (
+        CheckConstraint("ai_ladder_rung IS NULL OR ai_ladder_rung BETWEEN 1 AND 41", name="ck_ai_ladder_rung"),
+        CheckConstraint("placement_lo BETWEEN 1 AND 41", name="ck_ai_ladder_placement_lo"),
+        CheckConstraint("placement_hi BETWEEN 1 AND 41", name="ck_ai_ladder_placement_hi"),
+        CheckConstraint("placement_lo <= placement_hi", name="ck_ai_ladder_placement_window"),
+        CheckConstraint("placement_completed BETWEEN 0 AND 5", name="ck_ai_ladder_placement_completed"),
+        CheckConstraint("net_score BETWEEN -2 AND 2", name="ck_ai_ladder_net_score"),
+    )
+
+
+class AiLadderPendingGame(Base):
+    """Durable frozen start/settlement handoff for one active ranked game per user."""
+
+    __tablename__ = "ai_ladder_pending_games"
+
+    game_id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    session_id = Column(String(64), nullable=False, unique=True)
+    user_color = Column(String(1), nullable=False)
+    game_type = Column(String(32), nullable=False)
+    opponent_rung = Column(Integer, nullable=False)
+    opponent_rank_name = Column(String(64), nullable=False)
+    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_certification_status = Column(String(16), nullable=False)
+    opponent_availability = Column(String(16), nullable=False)
+    opponent_route = Column(String(16), nullable=False)
+    ai_subtype = Column(String(32), nullable=False)
+    execution_identity = Column(String(64), nullable=False)
+    game_saved = Column(Boolean, nullable=False, default=False)
+    saved_result = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_ai_ladder_pending_user"),
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_pending_user_color"),
+        CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_pending_game_type"),
+        CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_pending_rung"),
+        CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_pending_route"),
+        CheckConstraint(
+            "(game_saved = FALSE AND saved_result IS NULL) OR (game_saved = TRUE AND saved_result IS NOT NULL)",
+            name="ck_ai_ladder_pending_saved_state",
+        ),
+    )
+
+
+class AiLadderGameLedger(Base):
+    """Append-only, globally idempotent decision for every settlement attempt."""
+
+    __tablename__ = "ai_ladder_game_ledger"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
-    game_id = Column(String(32), unique=True, index=True, nullable=False)
+    game_id = Column(String(64), nullable=False, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_color = Column(String(1), nullable=False)
+    result = Column(String(16), nullable=False)
+    game_type = Column(String(32), nullable=False)
+    opponent_rung = Column(Integer, nullable=True)
+    opponent_rank_name = Column(String(64), nullable=True)
+    opponent_config_snapshot = Column(JSON, nullable=True)
+    opponent_certification_status = Column(String(16), nullable=True)
+    opponent_availability = Column(String(16), nullable=True)
+    opponent_route = Column(String(16), nullable=True)
+    counted = Column(Boolean, nullable=False)
+    reason = Column(String(32), nullable=True)
+    settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    is_placement = Column(Boolean, default=False, nullable=False)
-    opponent_rung = Column(Integer, nullable=False)
-    won = Column(Boolean, nullable=False)
+    user = relationship("User", backref="ai_ladder_game_ledger")
 
-    rung_before = Column(Integer, nullable=True)  # NULL for placement games
-    rung_after = Column(Integer, nullable=True)  # NULL until placement resolves
-    net_wins_before = Column(Integer, default=0, nullable=False)
-    net_wins_after = Column(Integer, default=0, nullable=False)
-    placement_lo_after = Column(Integer, nullable=True)
-    placement_hi_after = Column(Integer, nullable=True)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    user = relationship("User")
+    __table_args__ = (
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_ledger_user_color"),
+        CheckConstraint(
+            "opponent_rung IS NULL OR opponent_rung BETWEEN 1 AND 41",
+            name="ck_ai_ladder_ledger_opponent_rung",
+        ),
+        CheckConstraint(
+            "opponent_route IS NULL OR opponent_route IN ('local', 'server')",
+            name="ck_ai_ladder_ledger_route",
+        ),
+        CheckConstraint(
+            "(counted = FALSE AND reason IS NOT NULL) OR "
+            "(counted = TRUE AND reason IS NULL AND opponent_rung IS NOT NULL "
+            "AND opponent_rank_name IS NOT NULL AND opponent_config_snapshot IS NOT NULL "
+            "AND opponent_certification_status = 'certified' AND opponent_availability = 'available' "
+            "AND opponent_route IS NOT NULL AND result IN ('win', 'loss') "
+            "AND game_type = 'ai_ladder_ranked')",
+            name="ck_ai_ladder_ledger_decision",
+        ),
+    )
 
 
 class LiveMatchDB(Base):

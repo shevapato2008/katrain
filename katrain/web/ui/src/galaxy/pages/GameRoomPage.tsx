@@ -128,7 +128,7 @@ const GameRoomPage = () => {
                  setShowCountConfirm(true);
              }
         } else {
-             handleAction(action);
+             void (async () => { try { await handleAction(action); } catch { /* surfaced by hook */ } })();
         }
     }, [handleAction, gameState?.end_result]);
 
@@ -160,7 +160,7 @@ const GameRoomPage = () => {
 
     const confirmResign = useCallback(async () => {
         setShowResignConfirm(false);
-        await handleAction('resign');
+        try { await handleAction('resign'); } catch { /* surfaced by hook */ }
     }, [handleAction]);
 
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert><Button onClick={() => navigate('/galaxy/play/human')}>Back to Lobby</Button></Box>;
@@ -309,7 +309,6 @@ const GameRoomPage = () => {
                         <Board
                             gameState={gameState}
                             onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
-                            onNavigate={onNavigate}
                             analysisToggles={{ coords: true, numbers: false }}
                         />
                     </div>
@@ -317,7 +316,6 @@ const GameRoomPage = () => {
                         <Board3D
                             gameState={gameState}
                             onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
-                            onNavigate={onNavigate}
                             analysisToggles={{ coords: true, numbers: false }}
                         />
                     )}

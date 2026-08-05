@@ -87,7 +87,7 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    def has_completed_placement(self, user_id: int) -> bool:
+    def count_completed_rated_games(self, user_id: int) -> int:
         pass
 
 
@@ -117,7 +117,9 @@ class SQLAlchemyUserRepository(UserRepository):
         # Lightweight, non-destructive migration (all dialects): ADD COLUMN / CREATE
         # INDEX for anything missing (e.g. users.is_admin, billing indexes). Runs
         # BEFORE the SQLite drift-rebuild so a simple new column never drops data.
+        migrations.migrate_ai_ladder_decision_schema(engine)
         migrations.add_missing_columns(engine)
+        migrations.backfill_ai_ladder_decisions(engine)
         migrations.create_missing_indexes(engine)
 
         # Schema drift guard (SQLite only): if ORM model columns STILL don't match
@@ -133,8 +135,7 @@ class SQLAlchemyUserRepository(UserRepository):
                 expected_cols = {c.name for c in table.columns}
                 if not expected_cols.issubset(existing_cols):
                     drift_tables.append(table.name)
-            # Only rebuild unprotected tables; refuse to drop asset tables
-            # (credits, and the ladder ledger that every 段位 is derived from).
+            # Only rebuild non-authoritative tables; refuse to drop asset/rank ledgers.
             rebuildable = [t for t in drift_tables if t not in migrations.PROTECTED_TABLES]
             if any(t in migrations.PROTECTED_TABLES for t in drift_tables):
                 import logging
@@ -270,21 +271,19 @@ class SQLAlchemyUserRepository(UserRepository):
         finally:
             session.close()
 
-    def has_completed_placement(self, user_id: int) -> bool:
-        """Whether the user has a ladder rank yet -- the prerequisite for rated PvP.
-
-        This replaces a count of completed `game_type == "rated"` games, which was
-        unreachable: nothing ever wrote that value for an AI game, so the counter sat
-        at 0 forever while the lobby told players to go earn it.
-        """
+    def count_completed_rated_games(self, user_id: int) -> int:
         session = self.session_factory()
         try:
-            rung = (
-                session.query(models_db.User.ai_ladder_rung)
-                .filter(models_db.User.id == user_id)
-                .scalar()
+            count = (
+                session.query(models_db.UserGame)
+                .filter(
+                    models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.game_type == "rated",
+                    models_db.UserGame.result.isnot(None),
+                )
+                .count()
             )
-            return rung is not None
+            return count
         finally:
             session.close()
 

@@ -55,6 +55,13 @@ def test_ranked_game_forbids_analysis_flag():
     assert wk.analysis_allowed is False
 
 
+def test_ai_ladder_ranked_game_forbids_analysis_flag():
+    wk = _wk()
+    wk._do_new_game(size=9, game_type="ai_ladder_ranked")
+    assert wk.analysis_allowed is False
+    assert wk.get_state()["analysis_allowed"] is False
+
+
 # --- dispatch chokepoint ------------------------------------------------------
 
 

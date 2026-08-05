@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import FriendsPanel from '../components/FriendsPanel';
 import { i18n } from '../../i18n';
-import { API } from '../../api';
+import { getAiLadderStatus } from '../../features/aiLadder/api';
 
 interface OnlineUser {
     id: number;
@@ -46,8 +46,10 @@ const HvHLobbyPage = () => {
 
     useEffect(() => {
         if (!token) return;
-        API.getLadderMe(token)
-            .then((me) => setLadderRank(me.rung))
+        getAiLadderStatus(token)
+            // A non-ready status (loading/error) has no placement_state at all — treat it
+            // as "no rank" rather than reading through it; this is only a pre-check.
+            .then((s) => setLadderRank(s?.placement_state?.phase === 'placed' ? s.placement_state.rung.rung : null))
             .catch(() => setLadderRank(null));
     }, [token]);
 
@@ -137,7 +139,7 @@ const HvHLobbyPage = () => {
         // Rated PvP needs a ladder rank. The old check read `user.rank === '20k'`,
         // the registration default — but nothing on the AI side ever moved it, so
         // every player failed it forever and got sent to a page that could not fix
-        // it. `ladderRank` comes from GET /api/ladder/me, the one rank there is.
+        // it. `ladderRank` comes from GET /api/v1/ai-ladder/status, the one rank there is.
         if (gameType === 'rated' && ladderRank === null) {
             setSnackbar({
                 message: i18n.t('lobby:placement_required', '先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。'),

@@ -19,6 +19,7 @@ from katrain.web.api.v1.endpoints import (
     led,
     geometry,
     hint,
+    ai_ladder,
 )
 
 api_router = APIRouter()
@@ -41,3 +42,4 @@ api_router.include_router(baipu.router, prefix="/baipu", tags=["baipu"])
 api_router.include_router(led.router, prefix="/led", tags=["led"])
 api_router.include_router(geometry.router, prefix="/geometry", tags=["geometry"])
 api_router.include_router(hint.router, prefix="/hint", tags=["hint"])
+api_router.include_router(ai_ladder.router, prefix="/ai-ladder", tags=["ai-ladder"])

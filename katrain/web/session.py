@@ -19,11 +19,13 @@ class WebSession:
     player_w_id: Optional[int] = None  # For HvH
     mode: str = "play"  # "play" or "research"
     lock: threading.Lock = field(default_factory=threading.Lock)
+    record_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
     last_state: Optional[Dict] = None
     pending_count_request: Optional[int] = None  # User ID that initiated count request
     pending_count_timestamp: Optional[float] = None  # Timestamp of count request
+    game_ended: bool = False
 
     def touch(self):
         self.last_access = time.time()
@@ -43,7 +45,13 @@ class SessionManager:
         self._loop = loop
         self._loop_thread_id = threading.get_ident()
 
-    def create_session(self, katago_uuid: Optional[str] = None) -> WebSession:
+    def create_session(
+        self,
+        katago_uuid: Optional[str] = None,
+        user_id: Optional[int] = None,
+        initial_game_type: str = "free",
+        skip_initial_analysis: bool = False,
+    ) -> WebSession:
         with self._lock:
             if len(self._sessions) >= self.max_sessions:
                 self._cleanup_locked()
@@ -53,25 +61,31 @@ class SessionManager:
             # Use provided UUID for KataGo requests if available, otherwise session_id
             engine_user_id = katago_uuid or session_id
             katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine, user_id=engine_user_id)
-            session = WebSession(session_id=session_id, katrain=katrain)
+            session = WebSession(session_id=session_id, katrain=katrain, user_id=user_id)
             self._sessions[session_id] = session
 
         session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
-        katrain.start()
+        katrain.start(game_type=initial_game_type, skip_initial_analysis=skip_initial_analysis)
         session.last_state = katrain.get_state()
         return session
 
     def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
-        session = self.create_session(katago_uuid=katago_uuid)
+        session = self.create_session(katago_uuid=katago_uuid, user_id=user_id)
         session.mode = "research"
         session.user_id = user_id
         return session
 
     def create_multiplayer_session(
-        self, player_b_id: int, player_w_id: int, b_name: str = None, w_name: str = None
+        self,
+        player_b_id: int,
+        player_w_id: int,
+        b_name: str = None,
+        w_name: str = None,
+        skip_initial_analysis: bool = False,
     ) -> WebSession:
-        session = self.create_session()
+        primary_user_id = player_b_id if player_b_id >= 0 else player_w_id if player_w_id >= 0 else None
+        session = self.create_session(user_id=primary_user_id, skip_initial_analysis=skip_initial_analysis)
         session.player_b_id = player_b_id
         session.player_w_id = player_w_id
 
@@ -134,6 +148,8 @@ class SessionManager:
             session = self.get_session(session_id)
         except KeyError:
             return
+        if state.get("end_result"):
+            session.game_ended = True
         session.last_state = state
         state["sockets_count"] = len(session.sockets)
         self._schedule_broadcast(session, {"type": "game_update", "state": state})

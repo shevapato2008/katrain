@@ -13,6 +13,7 @@ class Settings(BaseModel):
 
     SESSION_TIMEOUT: int = 3600
     MAX_SESSIONS: int = 100
+    PREVIEW_MODE: bool = False
 
     # Engine Settings
     LOCAL_KATAGO_URL: str = "http://127.0.0.1:8000"
@@ -66,6 +67,7 @@ class Settings(BaseModel):
         data.setdefault("KATRAIN_PORT", int(os.getenv("KATRAIN_PORT", 8001)))
         data.setdefault("SESSION_TIMEOUT", int(os.getenv("KATRAIN_SESSION_TIMEOUT", 3600)))
         data.setdefault("MAX_SESSIONS", int(os.getenv("KATRAIN_MAX_SESSIONS", 100)))
+        data.setdefault("PREVIEW_MODE", os.getenv("KATRAIN_PREVIEW_MODE", "false").lower() in ("1", "true", "yes"))
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))

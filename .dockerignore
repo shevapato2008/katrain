@@ -1,13 +1,42 @@
-.postgres_data
 .git
-__pycache__
-venv
+.github
 .env
+.venv
+venv
+__pycache__
+**/__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+.DS_Store
+.idea
+.vscode
 
-# Training artifacts. home-ubuntu doubles as the YOLO training box and the
-# production build host, so without these the web image bakes in ~3.5GB of
-# checkpoints and datasets that no deployment ever reads (measured 2026-08-05:
-# an 8GB build context producing a 12.3GB image).
+node_modules
+**/node_modules
+katrain/web/static
+katrain/web/static-kiosk-2d
+build
+dist
+
+.postgres_data
+data
+tests
+screenshots
+test-results
+*.dump
+*.tar
+*.tar.gz
+*.bak
+*.backup
+*.mp4
+*.webm
+
+# Training artifacts. home-ubuntu doubles as the YOLO training box and a
+# production build host, so these must stay out of any context built there.
+# `data` above already covers data/go4_*; these two it does not.
 runs/
-data/go4_*
 /yolo*.pt

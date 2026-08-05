@@ -160,18 +160,21 @@ async def _lifespan_server(app: FastAPI, log):
     except Exception as e:  # pragma: no cover - defensive
         log.warning(f"Could not ensure admin flag: {e}")
 
-    # Reconcile any credit reservations stuck after a previous crash.
-    try:
-        from katrain.web.core import billing
-        from katrain.web.core.db import SessionLocal as _SL2
-
-        _s2 = _SL2()
+    if settings.PREVIEW_MODE:
+        log.info("Preview mode: production external effects disabled")
+    else:
+        # Reconcile any credit reservations stuck after a previous crash.
         try:
-            billing.reconcile_stale_reservations(_s2, settings.BILLING_RESERVATION_TTL_SEC)
-        finally:
-            _s2.close()
-    except Exception as e:  # pragma: no cover - defensive
-        log.warning(f"Billing reconcile skipped: {e}")
+            from katrain.web.core import billing
+            from katrain.web.core.db import SessionLocal as _SL2
+
+            _s2 = _SL2()
+            try:
+                billing.reconcile_stale_reservations(_s2, settings.BILLING_RESERVATION_TTL_SEC)
+            finally:
+                _s2.close()
+        except Exception as e:  # pragma: no cover - defensive
+            log.warning(f"Billing reconcile skipped: {e}")
 
     app.state.user_repo = repo
     app.state.game_repo = game_repo
@@ -228,22 +231,24 @@ async def _lifespan_server(app: FastAPI, log):
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
 
-    # Initialize Live Broadcasting Service
-    from katrain.web.live import create_live_service
+    if not settings.PREVIEW_MODE:
+        # Initialize Live Broadcasting Service
+        from katrain.web.live import create_live_service
 
-    live_service = create_live_service()
-    app.state.live_service = live_service
-    try:
-        await live_service.start()
-        log.info("Live broadcasting service started")
-    except Exception as e:
-        log.warning(f"Failed to start live service: {e}")
+        live_service = create_live_service()
+        app.state.live_service = live_service
+        try:
+            await live_service.start()
+            log.info("Live broadcasting service started")
+        except Exception as e:
+            log.warning(f"Failed to start live service: {e}")
 
     # ── Tutorial Module (V2 — database-backed) ─────────────────────────────
     log.info("Tutorial V2: using database-backed tutorials")
 
     # ── Platform Manager (cross-platform online play) ─────────────────────
-    _init_platform_manager(app, manager, log)
+    if not settings.PREVIEW_MODE:
+        _init_platform_manager(app, manager, log)
 
 
 def _init_platform_manager(app, session_manager, log):

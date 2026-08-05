@@ -1,0 +1,6 @@
+services:
+  katrain-web:
+    environment:
+      KATRAIN_PREVIEW_MODE: "0"
+    volumes:
+      - katrain-state-production:/home/katrain/.katrain

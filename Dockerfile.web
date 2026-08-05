@@ -1,23 +1,48 @@
-FROM nvcr.io/nvidia/tensorrt:24.02-py3
-RUN sed -i "s|http://archive.ubuntu.com/ubuntu/|http://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g" /etc/apt/sources.list && \
-    sed -i "s|http://security.ubuntu.com/ubuntu/|http://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g" /etc/apt/sources.list
-RUN apt-get update && apt-get install -y build-essential curl ffmpeg git gstreamer1.0-plugins-base gstreamer1.0-plugins-good libavcodec-dev libavformat-dev libglib2.0-0 libgl1-mesa-dev libgl1-mesa-glx libgstreamer1.0-0 libmtdev1 libportmidi-dev libpulse0 libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libswscale-dev libzip-dev ocl-icd-opencl-dev opencl-headers pkg-config python3-dev python3-pip zlib1g-dev && rm -rf /var/lib/apt/lists/*
+FROM node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3 AS ui-builder
 
-# Install Node.js for frontend build
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+WORKDIR /src/ui
+COPY katrain/web/ui/package.json katrain/web/ui/package-lock.json ./
+RUN npm ci
+COPY katrain/web/ui/ ./
+RUN npm run build
+
+FROM python:3.11-slim-bookworm@sha256:b18992999dbe963a45a8a4da40ac2b1975be1a776d939d098c647482bcad5cba AS python-builder
+
+RUN python -m venv /opt/venv
+COPY requirements-web-runtime.txt /tmp/requirements-web-runtime.txt
+RUN /opt/venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/requirements-web-runtime.txt
+
+FROM python:3.11-slim-bookworm@sha256:b18992999dbe963a45a8a4da40ac2b1975be1a776d939d098c647482bcad5cba AS source-pruner
+
+COPY --from=python-builder /opt/venv /opt/venv
+COPY katrain /app/katrain
+RUN rm -rf \
+        /app/katrain/web/ui \
+        /app/katrain/web/static \
+        /app/katrain/web/static-kiosk-2d && \
+    find /app/katrain -type d -name __pycache__ -prune -exec rm -rf {} + && \
+    find /app/katrain -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete && \
+    /opt/venv/bin/python -c "from pathlib import Path; import polib; [polib.pofile(str(p)).save_as_mofile(str(p.with_suffix('.mo'))) for p in Path('/app/katrain/i18n/locales').rglob('katrain.po')]"
+
+FROM python:3.11-slim-bookworm@sha256:b18992999dbe963a45a8a4da40ac2b1975be1a776d939d098c647482bcad5cba AS runtime
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl ffmpeg libglib2.0-0 libgomp1 && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 10001 katrain && \
+    useradd --uid 10001 --gid 10001 --create-home --home-dir /home/katrain katrain && \
+    mkdir -p /home/katrain/.katrain && \
+    chown -R 10001:10001 /home/katrain
 
 WORKDIR /app
-COPY . /app
+COPY --from=python-builder --chown=10001:10001 /opt/venv /opt/venv
+COPY --from=source-pruner --chown=10001:10001 /app/katrain /app/katrain
+COPY --from=ui-builder --chown=10001:10001 /src/static /app/katrain/web/static
+RUN find /app/katrain/i18n/locales -name katrain.mo -type f | grep -q .
 
-# Install Python dependencies
-RUN python3 -m pip install --trusted-host pypi.tuna.tsinghua.edu.cn -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip && \
-    python3 -m pip install --trusted-host pypi.tuna.tsinghua.edu.cn -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements-web.txt -r requirements-desktop.txt
-
-# Build frontend during Docker build (not at runtime)
-RUN cd katrain/web/ui && npm install && npm run build
-
-ENV PYTHONPATH=/app
+ENV HOME=/home/katrain \
+    PATH=/opt/venv/bin:$PATH \
+    PYTHONPATH=/app
+USER 10001:10001
 EXPOSE 8001
 CMD ["python3", "-m", "katrain", "--ui", "web", "--host", "0.0.0.0", "--port", "8001"]

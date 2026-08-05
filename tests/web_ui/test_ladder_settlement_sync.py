@@ -160,6 +160,7 @@ async def test_an_unordered_operation_does_not_stall_behind_a_failure(factory):
         (None, True),  # never got an answer at all
         (503, True),  # server had a bad moment
         (404, True),  # the cloud does not have this endpoint YET -- boards run ahead
+        (405, True),  # what the real cloud actually answers for an unrouted POST
         (429, True),  # asked to slow down, not to stop
         (422, False),  # the server understood and refused
         (403, False),

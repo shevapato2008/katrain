@@ -374,6 +374,12 @@ class AiLadderRankedRepository:
         if opponent is None:
             return "opponent_not_eligible"
         if opponent.certification_status != "certified" or opponent.availability != "available":
+            # Deliberately NOT relaxed by KATRAIN_LADDER_ALLOW_PROVISIONAL. That switch
+            # decides whether an uncertified rung may be SEATED; whether its result may
+            # move a rank is not a per-node choice -- `ck_ai_ladder_ledger_decision`
+            # refuses to store a counted row whose opponent is not certified+available,
+            # because a rank earned against unmeasured strength does not mean anything.
+            # So a provisional game is played, recorded, and openly not counted.
             return "opponent_not_eligible"
         return None
 

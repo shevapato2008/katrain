@@ -60,8 +60,17 @@ def build_opponent_snapshot(rung: int) -> tuple[AiLadderOpponentSnapshot, str]:
     level = ladder.LADDER_LEVELS[rung - 1]
     if level.rung != rung:
         raise RuntimeError("AI ladder catalog is not ordered by rung")
-    if level.certification_status != "certified" or level.availability != "available" or level.recipe is None:
-        raise ValueError("selected AI ladder opponent is not certified and available")
+    if level.recipe is None:
+        # No amount of dev switching conjures a recipe that was never fitted.
+        raise ValueError("selected AI ladder opponent has no fitted recipe")
+    if level.certification_status != "certified" or level.availability != "available":
+        # KATRAIN_LADDER_ALLOW_PROVISIONAL lets a deployment exercise the whole rated
+        # pipeline before any rung is certified (read per call, never cached — see
+        # ladder.provisional_play_allowed). It does NOT launder the rung: the snapshot
+        # below still carries the real certification_status/availability, so the frozen
+        # opponent record and the ledger say the game was played on an unmeasured rung.
+        if not ladder.provisional_play_allowed():
+            raise ValueError("selected AI ladder opponent is not certified and available")
 
     recipe = level.recipe.to_dict()
     identity = frozen_recipe_identity(level.recipe)

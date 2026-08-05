@@ -270,6 +270,7 @@ async def test_status_projects_uncreated_profile_and_server_selected_midpoint(ap
         "recent_ranked_results": [],
         "net_score": 0,
         "pending_settlement": False,
+        "provisional_play_allowed": False,
     }
 
 
@@ -1361,6 +1362,61 @@ async def test_start_fails_closed_when_exact_server_selected_level_is_ineligible
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("catalog", [fixture_catalog(unavailable_rung=16), fixture_catalog(provisional_rung=16)])
+async def test_provisional_switch_seats_an_uncertified_rung_without_relabelling_it(
+    api_app, client, monkeypatch, catalog
+):
+    """The switch changes what the SERVER will do, never what the rung IS.
+
+    Without it the same catalog is a 409 (the test above). With it the game starts, and
+    the frozen opponent record still says provisional/unavailable -- so the ledger row
+    for this game names an unmeasured rung instead of quietly claiming a certified one.
+    """
+    from katrain.core import ladder
+
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", catalog)
+    monkeypatch.setenv(ladder.LADDER_ALLOW_PROVISIONAL_ENV, "1")
+    async with client as ac:
+        status = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+        response = await start_ranked(api_app, ac)
+
+    assert response.status_code == 201
+    assert status.json()["provisional_play_allowed"] is True
+    # The API keeps reporting the rung's real state next to the started game.
+    opponent = response.json()["opponent"]
+    assert (opponent["certification_status"], opponent["availability"]) == (
+        catalog[15].certification_status,
+        catalog[15].availability,
+    )
+    with api_app.state._test_session_factory() as db:
+        pending = db.query(models_db.AiLadderPendingGame).one()
+    assert pending.opponent_certification_status == catalog[15].certification_status
+    assert pending.opponent_availability == catalog[15].availability
+
+
+@pytest.mark.asyncio
+async def test_status_says_this_node_will_not_seat_uncertified_rungs_by_default(api_app, client):
+    async with client as ac:
+        response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+    assert response.json()["provisional_play_allowed"] is False
+
+
+@pytest.mark.asyncio
+async def test_a_rung_with_no_recipe_is_refused_even_with_the_provisional_switch_on(api_app, client, monkeypatch):
+    """The switch forgives "not measured yet"; it cannot forgive "no recipe exists"."""
+    from katrain.core import ladder
+
+    catalog = list(fixture_catalog(provisional_rung=16))
+    catalog[15] = SimpleNamespace(**{**catalog[15].__dict__, "recipe": None})
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", tuple(catalog))
+    monkeypatch.setenv(ladder.LADDER_ALLOW_PROVISIONAL_ENV, "1")
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+    assert response.status_code == 409
+    assert api_app.state._test_created_sessions == []
+
+
+@pytest.mark.asyncio
 async def test_generic_user_games_endpoint_rejects_ranked_ai_forgery(api_app, client):
     async with client as ac:
         response = await ac.post(
@@ -1778,3 +1834,91 @@ async def test_board_or_remote_dispatch_mode_refuses_local_authoritative_start(a
     assert status.status_code == 503
     assert started.status_code == 503
     assert api_app.state._test_created_sessions == []
+
+
+class RecordingDispatcher:
+    """Stand-in for board mode's online/offline repository dispatcher."""
+
+    def __init__(self):
+        self.calls = []
+
+    async def user_games_create(self, user_id, data):
+        self.calls.append((user_id, data))
+        return {"id": data.get("id"), **data}
+
+
+@pytest.mark.asyncio
+async def test_a_node_with_a_sync_dispatcher_still_settles_its_own_ranked_game(api_app, client):
+    """A board is the authority for the games its own engine played.
+
+    Settlement re-reads the row it just wrote before moving the rank, so the ranked row
+    has to go to this node's authoritative store — never through the dispatcher, which
+    would have sent it to the cloud (online) or queued it (offline), leaving nothing to
+    read back. Free games keep using the dispatcher.
+    """
+    dispatcher = RecordingDispatcher()
+    api_app.state.repository_dispatcher = dispatcher
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        response = await ac.post(
+            "/api/resign",
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 200
+    assert dispatcher.calls == []
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).one().result == "loss"
+        assert db.query(models_db.UserGame).one().game_type == "ai_ladder_ranked"
+        assert db.query(models_db.AiLadderPendingGame).count() == 0
+
+
+@pytest.mark.asyncio
+async def test_a_node_that_is_not_the_ladder_authority_refuses_to_settle(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        api_app.state.ai_ladder_authoritative = False  # e.g. a node demoted mid-game
+        response = await ac.post(
+            "/api/resign",
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 200  # the game still ends; only the ledger abstains
+    session = api_app.state._test_created_sessions[0]
+    assert session.ai_ladder_settlement_pending is True
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderPendingGame).count() == 1
+
+
+@pytest.mark.asyncio
+async def test_finishing_a_free_game_records_it_without_erroring(api_app, client, caplog):
+    """A free game's record path must complete, not just leave a row behind.
+
+    `_record_ai_game_locked` swallows every exception into one log line, so a broken
+    call after the row is written looks exactly like success from the outside: the game
+    is in the database, the request is 200, and only the log says the function blew up.
+    """
+    async with client as ac:
+        created = await ac.post("/api/session", headers=api_app.state._test_headers)
+        session_id = created.json()["session_id"]
+        session = api_app.state.session_manager._sessions[session_id]
+        session.user_id = api_app.state._test_user_id
+        session.game_type = "free"
+        session.katrain.players_info["W"].player_subtype = "ai:policy"
+
+        with caplog.at_level(logging.ERROR, logger="katrain_web"):
+            response = await ac.post(
+                "/api/resign",
+                headers=api_app.state._test_headers,
+                json={"session_id": session_id},
+            )
+
+    assert response.status_code == 200
+    assert [r.message for r in caplog.records if "Failed to record game" in r.message] == []
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        assert db.query(models_db.AiLadderGameLedger).count() == 0

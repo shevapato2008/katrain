@@ -315,7 +315,13 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
     app.state.ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
-    app.state.ai_ladder_authoritative = False
+    # The board settles its own ranked games against its own SQLite. It has to: the game
+    # is played by THIS box's KataGo, and /start creates the session on whichever node
+    # serves it, so "authority elsewhere, engine here" is not a thing this design can
+    # express. Cross-device rank still needs the settlement to reach the cloud — that is
+    # the sync queue's job and is NOT wired yet, so a rank earned here is currently a
+    # rank earned on this box.
+    app.state.ai_ladder_authoritative = True
     app.state.tsumego_progress_repo = local_tsumego_progress_repo
     app.state.report_session_factory = SessionLocal
 
@@ -1441,11 +1447,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     raise ValueError("ranked AI game has no authoritative end result")
                 data["result"] = actual_result
 
-                if getattr(app.state, "repository_dispatcher", None) is not None or not getattr(
-                    app.state, "ai_ladder_authoritative", False
-                ):
+                if not getattr(app.state, "ai_ladder_authoritative", False):
                     raise RuntimeError("ranked AI settlement is unavailable on this node")
 
+                # Deliberately NOT the repository dispatcher, on any node. Settlement only
+                # moves the rank after re-reading the row it just wrote, and the dispatcher
+                # may have sent that row to the cloud (online) or queued it (offline) --
+                # neither is readable here. The ranked row is written to this node's own
+                # authoritative store; getting it to the cloud is the sync queue's job.
                 saved = app.state.user_game_repo.create_ai_ladder_ranked(
                     user_id=current_user.id,
                     game_id=snapshot.game_id,
@@ -1485,14 +1494,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session._recorded = True
                 return
 
+            # Non-ranked games have nothing to settle: the ladder branch above records and
+            # settles under one guard and returns, so reaching here means no rank moves.
             dispatcher = getattr(app.state, "repository_dispatcher", None)
             if dispatcher is not None:
-                recorded = await dispatcher.user_games_create(user_id=current_user.id, data=data)
+                await dispatcher.user_games_create(user_id=current_user.id, data=data)
             else:
-                recorded = app.state.user_game_repo.create(user_id=current_user.id, **data)
+                app.state.user_game_repo.create(user_id=current_user.id, **data)
             session._recorded = True
-
-            _settle_ladder_game(session, current_user, recorded, result)
         except Exception as e:
             if getattr(session, "game_type", None) == "ai_ladder_ranked":
                 session.ai_ladder_settlement_pending = True

@@ -130,6 +130,8 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
     else:
         placement_state = {"phase": "placed", "rung": opponent}
 
+    from katrain.core import ladder
+
     return {
         "view_state": "ready",
         "placement_state": placement_state,
@@ -137,6 +139,11 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
         "recent_ranked_results": repo.recent_counted_results(current_user.id, limit=5),
         "net_score": net_score,
         "pending_settlement": _pending_settlement(request, current_user.id),
+        # Whether THIS node will seat an uncertified rung. The rung's own
+        # certification_status/availability keep telling the truth about the rung; this
+        # says what the server will do about it, so the client can stop guessing why a
+        # start request would be refused (or, here, accepted).
+        "provisional_play_allowed": ladder.provisional_play_allowed(),
     }
 
 

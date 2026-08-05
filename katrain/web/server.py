@@ -349,7 +349,7 @@ async def _lifespan_board(app: FastAPI, log):
             log.debug(f"No saved credentials: {e}")
 
     # Sync worker
-    sync_worker = SyncWorker(SessionLocal, remote_client)
+    sync_worker = SyncWorker(SessionLocal, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
     sync_worker.recover_stale_leases()
     app.state.sync_worker = sync_worker
 
@@ -359,6 +359,10 @@ async def _lifespan_board(app: FastAPI, log):
 
     # Repository dispatcher
     sync_fn = partial(enqueue_sync_item, SessionLocal, device_id=settings.DEVICE_ID)
+    # Also reachable outside the dispatcher: a ranked settlement is written by the
+    # authoritative local path, not by the online/offline repository routing, but it
+    # still has to reach the cloud through the same one queue.
+    app.state.sync_enqueue_fn = sync_fn
     dispatcher = RepositoryDispatcher(
         connectivity_manager=connectivity,
         remote_tsumego=RemoteTsumegoRepository(remote_client),
@@ -1327,6 +1331,48 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    def _enqueue_ladder_settlement_sync(app, current_user, snapshot, raw_result, session):
+        """Hand this board's settled ranked game to the sync queue for the cloud.
+
+        Only on a node that HAS a queue (a board); a cloud server settles in place. The
+        queue entry is keyed by game_id, so a retry — or a second settlement attempt
+        after a crash — re-uses the same entry instead of submitting the game twice.
+        Failure to enqueue must never undo a settlement that already happened locally:
+        the rank moved, the ledger says so, and the worst case here is that the cloud
+        learns about it later.
+        """
+        enqueue = getattr(app.state, "sync_enqueue_fn", None)
+        if enqueue is None:
+            return
+        try:
+            from katrain.web.core.ai_ladder_catalog import result_for_user
+
+            enqueue(
+                operation="settle_ai_ladder_ranked",
+                endpoint="/api/v1/ai-ladder/settlements",
+                method="POST",
+                payload={
+                    "game_id": snapshot.game_id,
+                    "user_color": snapshot.user_color,
+                    "result": result_for_user(raw_result, snapshot.user_color),
+                    "game_type": snapshot.game_type,
+                    "opponent": {
+                        "rung": snapshot.opponent.rung,
+                        "rank_name": snapshot.opponent.rank_name,
+                        "config_snapshot": dict(snapshot.opponent.config_snapshot),
+                        "certification_status": snapshot.opponent.certification_status,
+                        "availability": snapshot.opponent.availability,
+                        "route": snapshot.opponent.route,
+                    },
+                    "engine_stalled": bool(getattr(session.katrain, "last_ladder_error", False)),
+                    "device_id": settings.DEVICE_ID,
+                },
+                user_id=str(current_user.id),
+                idempotency_key=f"ladder-settlement:{snapshot.game_id}",
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
+
     async def _record_ai_game_locked(session, app, current_user, result):
         """Record a completed single-player/local game to user_games (remote-first via
         dispatcher, else local). source = play_local when both seats are human, else play_ai.
@@ -1490,6 +1536,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     engine_stalled=bool(getattr(session.katrain, "last_ladder_error", False)),
                 )
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
+                _enqueue_ladder_settlement_sync(app, current_user, snapshot, confirmed["result"], session)
                 session.ai_ladder_settlement_pending = False
                 session._recorded = True
                 return

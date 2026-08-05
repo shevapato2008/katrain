@@ -20,6 +20,11 @@ RTT_THRESHOLD_MS = 5000  # 5s — above this counts as failure
 FAILURES_TO_OFFLINE = 3  # consecutive failures before switching to offline
 SUCCESSES_TO_ONLINE = 2  # consecutive successes before switching to online
 IN_FLIGHT_TIMEOUT = 10  # seconds to wait for in-flight requests before switching offline
+#: How often to drain the queue while ALREADY online. Reconnection alone is not enough
+#: of a trigger: an item that backs off (server 5xx, or a rank event waiting for its
+#: owner's cloud session) has nothing to wake it, so it would sit until the next time
+#: the device happened to lose and regain the network.
+SYNC_DRAIN_INTERVAL = 60  # seconds
 
 
 class ConnectivityManager:
@@ -71,7 +76,8 @@ class ConnectivityManager:
             logger.info("ConnectivityManager stopped")
 
     async def _health_loop(self):
-        """Periodically check remote server health."""
+        """Periodically check remote server health, and keep the queue moving."""
+        ticks_since_drain = 0
         while True:
             try:
                 result = await self._remote_client.check_health()
@@ -84,7 +90,11 @@ class ConnectivityManager:
                     self._consecutive_failures += 1
                     self._consecutive_successes = 0
 
-                await self._evaluate_state()
+                transitioned = await self._evaluate_state()
+                ticks_since_drain = 0 if transitioned else ticks_since_drain + 1
+                if self._is_online and ticks_since_drain * HEALTH_CHECK_INTERVAL >= SYNC_DRAIN_INTERVAL:
+                    ticks_since_drain = 0
+                    await self._trigger_sync()
 
             except asyncio.CancelledError:
                 raise
@@ -96,8 +106,8 @@ class ConnectivityManager:
 
             await asyncio.sleep(HEALTH_CHECK_INTERVAL)
 
-    async def _evaluate_state(self):
-        """Evaluate whether to transition online/offline based on counters."""
+    async def _evaluate_state(self) -> bool:
+        """Evaluate whether to transition online/offline. Returns True on a transition."""
         was_online = self._is_online
 
         if self._is_online and self._consecutive_failures >= FAILURES_TO_OFFLINE:
@@ -110,8 +120,13 @@ class ConnectivityManager:
             self._is_online = True
             logger.info(f"Switching to ONLINE (consecutive successes: {self._consecutive_successes})")
 
-            # Trigger sync on reconnection
+            # Trigger sync on reconnection, after giving items that died during the
+            # outage another chance -- retry exhaustion described the network, not them.
             if self._sync_worker:
+                try:
+                    self._sync_worker.revive_retryable_failures()
+                except Exception as e:
+                    logger.error(f"Could not revive failed sync items: {e}")
                 asyncio.create_task(self._trigger_sync())
 
         if was_online != self._is_online:
@@ -120,6 +135,8 @@ class ConnectivityManager:
                     cb(self._is_online)
                 except Exception as e:
                     logger.error(f"Status change callback error: {e}")
+            return True
+        return False
 
     async def _trigger_sync(self):
         """Trigger sync worker when coming back online."""

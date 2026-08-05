@@ -124,6 +124,45 @@ class AiLadderRankedRepository:
         finally:
             session.close()
 
+    def adopt_remote_profile(self, user_id: int, profile: Mapping[str, Any]) -> bool:
+        """Overwrite this node's profile with the cloud's answer for the same account.
+
+        A board settles its own games, but an account can play on more than one device,
+        and only one of them can be right about the rank. The cloud is the merge point:
+        it re-ran the settlement against everything it knows, so when it replies with a
+        profile, that is the number to show. Returns whether anything changed.
+
+        A settlement the cloud did not count carries no profile (all fields null), which
+        is not an instruction to reset anyone -- those are ignored.
+        """
+        fields = ("ai_ladder_rung", "placement_lo", "placement_hi", "placement_completed", "net_score")
+        if not isinstance(profile, Mapping):
+            return False
+        values = {name: profile.get(name) for name in fields}
+        if any(values[name] is None for name in fields if name != "ai_ladder_rung"):
+            return False
+        if type(values["placement_lo"]) is not int or type(values["placement_hi"]) is not int:
+            return False
+
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = session.get(models_db.AiLadderProfile, user_id)
+            if row is None:
+                row = models_db.AiLadderProfile(user_id=user_id, version=0, **values)
+                session.add(row)
+                session.commit()
+                return True
+            if all(getattr(row, name) == values[name] for name in fields):
+                return False
+            for name in fields:
+                setattr(row, name, values[name])
+            row.version = (row.version or 0) + 1
+            session.commit()
+            return True
+        finally:
+            session.close()
+
     def create_pending_game(self, snapshot) -> None:
         session = self.session_factory()
         try:

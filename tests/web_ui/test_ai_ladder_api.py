@@ -1836,6 +1836,112 @@ async def test_board_or_remote_dispatch_mode_refuses_local_authoritative_start(a
     assert api_app.state._test_created_sessions == []
 
 
+def settlement_payload(**overrides):
+    return {
+        "game_id": "board-game-1",
+        "user_color": "B",
+        "result": "loss",
+        "game_type": "ai_ladder_ranked",
+        "opponent": {
+            "rung": 16,
+            "rank_name": "fixture-16",
+            "config_snapshot": {"config_digest": "d" * 16, "config_version": "v1"},
+            "certification_status": "certified",
+            "availability": "available",
+            "route": "server",
+        },
+        "engine_stalled": False,
+        "device_id": "rk3562-p04-001",
+        **overrides,
+    }
+
+
+@pytest.mark.asyncio
+async def test_a_board_settlement_moves_the_cloud_profile(api_app, client):
+    """The board played the game; the cloud is where the account's rank lives."""
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/settlements",
+            headers=api_app.state._test_headers,
+            json=settlement_payload(),
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["counted"], body["replayed"], body["reason"]) == (True, False, None)
+    assert body["profile"]["placement_completed"] == 1
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).one().game_id == "board-game-1"
+
+
+@pytest.mark.asyncio
+async def test_resubmitting_the_same_game_replays_instead_of_counting_it_twice(api_app, client):
+    """A board that retries an uncertain POST must not double-move the rank."""
+    async with client as ac:
+        first = await ac.post(
+            "/api/v1/ai-ladder/settlements", headers=api_app.state._test_headers, json=settlement_payload()
+        )
+        second = await ac.post(
+            "/api/v1/ai-ladder/settlements", headers=api_app.state._test_headers, json=settlement_payload()
+        )
+
+    assert (first.status_code, second.status_code) == (200, 200)
+    assert second.json()["replayed"] is True
+    assert first.json()["profile"] == second.json()["profile"]
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        assert db.query(models_db.AiLadderProfile).one().placement_completed == 1
+
+
+@pytest.mark.asyncio
+async def test_a_settlement_submission_is_refused_by_a_node_that_keeps_no_scores(api_app, client):
+    api_app.state.ai_ladder_authoritative = False
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/settlements", headers=api_app.state._test_headers, json=settlement_payload()
+        )
+    assert response.status_code == 503
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"user_color": "X"},
+        {"result": "draw"},
+        {"game_id": ""},
+        {
+            "opponent": {
+                "rung": 99,
+                "rank_name": "x",
+                "config_snapshot": {},
+                "certification_status": "certified",
+                "availability": "available",
+                "route": "server",
+            }
+        },
+        {"extra_field": "nope"},
+    ],
+)
+async def test_a_settlement_submission_is_validated_not_trusted(api_app, client, overrides):
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/settlements",
+            headers=api_app.state._test_headers,
+            json=settlement_payload(**overrides),
+        )
+    assert response.status_code == 422
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+
+
+@pytest.mark.asyncio
+async def test_a_settlement_submission_needs_authentication(client):
+    async with client as ac:
+        response = await ac.post("/api/v1/ai-ladder/settlements", json=settlement_payload())
+    assert response.status_code == 401
+
+
 class RecordingDispatcher:
     """Stand-in for board mode's online/offline repository dispatcher."""
 

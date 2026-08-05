@@ -38,6 +38,10 @@ class RemoteAPIClient:
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._auth_required: bool = False  # True when refresh also fails
+        # Which LOCAL user this cloud session belongs to. A board is shared, so queued
+        # per-user work (a rank event) has to be able to tell "my session is up" from
+        # "somebody's session is up" before it posts anything.
+        self._bound_user_id: Optional[str] = None
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=timeout,
@@ -46,21 +50,35 @@ class RemoteAPIClient:
 
     # ── Token Management ──
 
-    def set_tokens(self, access_token: str, refresh_token: Optional[str] = None):
+    def set_tokens(self, access_token: str, refresh_token: Optional[str] = None, user_id=None):
         self._access_token = access_token
         if refresh_token:
             self._refresh_token = refresh_token
         self._auth_required = False
+        if user_id is not None:
+            self._bound_user_id = str(user_id)
 
     def set_refresh_token(self, refresh_token: str):
         self._refresh_token = refresh_token
         self._auth_required = False
+
+    def bind_user(self, user_id) -> None:
+        """Say which local user the current cloud session speaks for."""
+        self._bound_user_id = None if user_id is None else str(user_id)
+
+    @property
+    def bound_user_id(self) -> Optional[str]:
+        return self._bound_user_id
 
     def clear_tokens(self):
         """Clear all tokens and mark auth as required (used on logout)."""
         self._access_token = None
         self._refresh_token = None
         self._auth_required = True
+        # Drop the binding too: a restored refresh token proves a session exists, not
+        # whose it is, and a stale binding is exactly how one player's game would be
+        # credited to the next player who walks up to the board.
+        self._bound_user_id = None
 
     @property
     def is_authenticated(self) -> bool:

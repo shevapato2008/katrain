@@ -112,9 +112,7 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        if strict_box_sso_enabled() and (
-            box_sso is None or not box_sso.validates(payload.get("box_generation"))
-        ):
+        if strict_box_sso_enabled() and (box_sso is None or not box_sso.validates(payload.get("box_generation"))):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
@@ -140,9 +138,7 @@ async def get_current_user(request: Request, token: Optional[str] = Depends(oaut
     )
 
 
-async def get_current_admin_user(
-    request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)
-) -> User:
+async def get_current_admin_user(request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)) -> User:
     """Require an authenticated user with the is_admin flag. Shadow users never qualify."""
     # Preserve the public/server contract: admin endpoints require an explicit
     # Bearer token there. Strict Box mode has no browser Bearer path, so its
@@ -204,21 +200,18 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     state = _require_bridge(request)
     if isinstance(body.generation, bool) or body.generation <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
-    if (
-        not body.username.strip()
-        or not body.remote_access_token
-        or not body.remote_refresh_token
-    ):
+    if not body.username.strip() or not body.remote_access_token or not body.remote_refresh_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bootstrap payload")
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Board client unavailable")
     remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
     shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username)
+    # Tie the cloud session to this local user so per-user queued work (rank events)
+    # can tell whose session is currently up on a shared board.
+    remote_client.bind_user(shadow_user["id"])
     await state.activate(body.generation)
-    local_access = create_access_token(
-        data={"sub": shadow_user["username"]}, box_generation=body.generation
-    )
+    local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
     return {"access_token": local_access, "token_type": "bearer"}
 
 
@@ -266,6 +259,7 @@ async def login(request: Request, login_data: LoginRequest, response: Response) 
         # Get or create local shadow user (design 5.3)
         repo = request.app.state.user_repo
         shadow_user = _get_or_create_shadow_user(repo, login_data.username)
+        remote_client.bind_user(shadow_user["id"])
 
         # Issue local tokens (design 5.2)
         local_access = create_access_token(data={"sub": shadow_user["username"]})

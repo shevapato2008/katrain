@@ -192,7 +192,9 @@ try {
       const fontFamily = (element) => element ? getComputedStyle(element).fontFamily : null;
       const chineseBody = leafElements.find((element) => /[\u3400-\u9fff]/u.test(element.textContent || '') && !element.closest('.galaxy-brand-cn'));
       const englishLabel = leafElements.find((element) => /[A-Za-z]/.test(element.textContent || '') && !element.closest('.galaxy-brand-latin'));
-      const numericCounter = leafElements.find((element) => /^\s*\d+(?:\s*\/\s*\d+)?\s*$/.test(element.textContent || ''));
+      const numericCounter = leafElements.find((element) =>
+        /^\s*\d+\s*\/\s*\d+(?:\s+.+)?\s*$/.test(element.textContent || ''),
+      );
       const resourceFonts = performance.getEntriesByType('resource')
         .filter((entry) => entry.name.toLowerCase().includes('.woff2'))
         .map((entry) => ({

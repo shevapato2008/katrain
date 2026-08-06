@@ -209,7 +209,13 @@ try {
       return {
         viewport: { width: viewportWidth, height: viewportHeight },
         topBar: rect(topBar),
-        shell: rect(shell),
+        shell: {
+          ...rect(shell),
+          scrollHeight: shell?.scrollHeight ?? null,
+          clientHeight: shell?.clientHeight ?? null,
+          scrollTop: shell?.scrollTop ?? null,
+          overflowY: shell ? getComputedStyle(shell).overflowY : null,
+        },
         boardStage: rect(stage),
         canvas: rect(canvas),
         sidebar: rect(sidebar),
@@ -262,6 +268,35 @@ try {
     const viewportOutput = path.join(outputRoot, viewportName);
     await mkdir(viewportOutput, { recursive: true });
     await page.screenshot({ path: path.join(viewportOutput, `${captureName}.png`), fullPage: true });
+    if (captureName === 'implementation' && width < 900) {
+      measured.scrolledActionRegion = await page.evaluate(() => {
+        const shell = document.querySelector('[data-testid="board-page-shell"]');
+        const actions = document.querySelector('[data-testid="board-rail-actions"]');
+        const bottomNav = document.querySelector('[data-testid="galaxy-bottom-nav"]');
+        if (!(shell instanceof HTMLElement)) throw new Error('Mobile board shell was not found');
+        shell.scrollTop = shell.scrollHeight;
+        const rect = (element) => {
+          if (!element) return null;
+          const value = element.getBoundingClientRect();
+          return { top: value.top, right: value.right, bottom: value.bottom, left: value.left,
+            width: value.width, height: value.height };
+        };
+        return new Promise((resolve) => requestAnimationFrame(() => resolve({
+          shell: {
+            scrollTop: shell.scrollTop,
+            scrollHeight: shell.scrollHeight,
+            clientHeight: shell.clientHeight,
+            maxScrollTop: shell.scrollHeight - shell.clientHeight,
+          },
+          actions: rect(actions),
+          bottomNav: rect(bottomNav),
+          actionsUnobscured: Boolean(
+            actions && bottomNav && actions.getBoundingClientRect().bottom <= bottomNav.getBoundingClientRect().top + 1
+          ),
+        })));
+      });
+      await page.screenshot({ path: path.join(viewportOutput, `${captureName}-scrolled.png`), fullPage: true });
+    }
     geometry.push({ viewportName, url, ...measured });
     await context.close();
   }

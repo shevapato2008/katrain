@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from threading import Barrier
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, event, inspect as sa_inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -126,6 +126,82 @@ def test_first_stable_uuid_creates_one_initial_profile_and_rename_does_not_chang
         same = repository.get_or_create_profile_for_update(session, USER_UUID, now=NOW + timedelta(minutes=1))
         assert same.user_uuid == USER_UUID
         assert session.query(models_db.XiangqiRatingProfile).count() == 1
+
+
+def test_repository_owned_sessions_return_stable_values_with_production_expiration_default(tmp_path):
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'ranked-expiring-session.sqlite'}",
+        connect_args={"check_same_thread": False},
+    )
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_xiangqi_ranked_immutability(engine)
+    sessions = sessionmaker(bind=engine)  # production default: expire_on_commit=True
+    with sessions.begin() as session:
+        session.add(models_db.User(uuid=USER_UUID, username="expiring-owner", hashed_password="x"))
+    repository = XiangqiRankedRepository(sessions)
+
+    statements = []
+    event.listen(engine, "before_cursor_execute", lambda *_args: statements.append(_args[2]))
+    reservation = reserve(repository)
+    count_after_reserve = len(statements)
+    public_reservation_values = (
+        reservation.reservation_id,
+        reservation.game_id,
+        reservation.user_uuid,
+        reservation.device_id,
+        reservation.status,
+        reservation.expected_profile_version,
+        reservation.projection_fingerprint,
+        reservation.frozen_snapshot["rating_hex"],
+        reservation.last_heartbeat_at,
+        reservation.created_at,
+        reservation.materialized_at,
+        reservation.terminal_at,
+    )
+    assert sa_inspect(reservation, raiseerr=False) is None
+    assert public_reservation_values[:5] == (RESERVATION_ID, GAME_ID, USER_UUID, "box-01", "reserved")
+    assert len(statements) == count_after_reserve
+
+    heartbeat = repository.heartbeat(
+        user_uuid=USER_UUID,
+        reservation_id=RESERVATION_ID,
+        device_id="box-01",
+        now=NOW + timedelta(seconds=5),
+    )
+    count_after_heartbeat = len(statements)
+    public_heartbeat_values = (
+        heartbeat.reservation_id,
+        heartbeat.game_id,
+        heartbeat.user_uuid,
+        heartbeat.device_id,
+        heartbeat.status,
+        heartbeat.expected_profile_version,
+        heartbeat.projection_fingerprint,
+        heartbeat.frozen_snapshot["rating_hex"],
+        heartbeat.last_heartbeat_at,
+        heartbeat.created_at,
+        heartbeat.materialized_at,
+        heartbeat.terminal_at,
+    )
+    assert sa_inspect(heartbeat, raiseerr=False) is None
+    assert public_heartbeat_values[0:5] == (RESERVATION_ID, GAME_ID, USER_UUID, "box-01", "reserved")
+    assert len(statements) == count_after_heartbeat
+
+    receipt = settle(repository, now=NOW + timedelta(seconds=10))
+    persisted = repository.get_receipt(user_uuid=USER_UUID, game_id=GAME_ID)
+    device_page = repository.page_device_statuses(
+        user_uuid=USER_UUID,
+        device_id="box-01",
+        after_local_seq=0,
+        through_local_seq=1,
+    )
+    summary_page = repository.page_settlement_summaries(
+        user_uuid=USER_UUID,
+        after_seq=0,
+        snapshot_seq=1,
+    )
+    assert all(sa_inspect(value, raiseerr=False) is None for value in (receipt, persisted, device_page, summary_page))
+    assert receipt == persisted == device_page["items"][0]["receipt"] == summary_page["items"][0]
 
 
 def test_reservation_cas_rejects_stale_profile_and_keeps_database_empty(repo):

@@ -9,7 +9,9 @@ transaction that turns a reservation into an immutable receipt fact.
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 from sqlalchemy import select
@@ -39,6 +41,24 @@ class TerminalConflict(XiangqiRankedConflict):
 FailureHook = Callable[[str], None]
 
 
+@dataclass(frozen=True)
+class XiangqiRankedReservationRecord:
+    """Stable value returned after a repository-owned session is closed."""
+
+    reservation_id: str
+    game_id: str
+    user_uuid: str
+    device_id: str
+    status: str
+    expected_profile_version: int
+    projection_fingerprint: str
+    frozen_snapshot: Mapping[str, Any]
+    last_heartbeat_at: datetime
+    created_at: datetime
+    materialized_at: datetime | None
+    terminal_at: datetime | None
+
+
 def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
@@ -52,6 +72,31 @@ def _copy_canonical_snapshot(value: Mapping[str, Any], field: str) -> dict[str, 
     # values. Exact binary64 fields cross this boundary only as float.hex().
     canonical_json(value)
     return deepcopy(dict(value))
+
+
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json(item) for item in value)
+    return value
+
+
+def _reservation_record(row: models_db.XiangqiRankedReservation) -> XiangqiRankedReservationRecord:
+    return XiangqiRankedReservationRecord(
+        reservation_id=row.reservation_id,
+        game_id=row.game_id,
+        user_uuid=row.user_uuid,
+        device_id=row.device_id,
+        status=row.status,
+        expected_profile_version=row.expected_profile_version,
+        projection_fingerprint=row.projection_fingerprint,
+        frozen_snapshot=_freeze_json(row.frozen_snapshot),
+        last_heartbeat_at=row.last_heartbeat_at,
+        created_at=row.created_at,
+        materialized_at=row.materialized_at,
+        terminal_at=row.terminal_at,
+    )
 
 
 class XiangqiRankedRepository:
@@ -73,7 +118,7 @@ class XiangqiRankedRepository:
         now: datetime,
         active_algo_version: int = SCORING_CONTRACT_VERSION,
     ) -> models_db.XiangqiRatingProfile:
-        """Lock the stable account identity and return its authoritative profile."""
+        """Return a locked ORM row valid only inside the caller-owned session."""
 
         user = session.execute(
             select(models_db.User).where(models_db.User.uuid == user_uuid).with_for_update()
@@ -110,7 +155,7 @@ class XiangqiRankedRepository:
         projection_fingerprint: str,
         frozen_snapshot: Mapping[str, Any],
         now: datetime,
-    ) -> models_db.XiangqiRankedReservation:
+    ) -> XiangqiRankedReservationRecord:
         frozen = _copy_canonical_snapshot(frozen_snapshot, "frozen_snapshot")
         session = self.session_factory()
         try:
@@ -145,8 +190,10 @@ class XiangqiRankedRepository:
                 terminal_at=None,
             )
             session.add(reservation)
+            session.flush()
+            record = _reservation_record(reservation)
             session.commit()
-            return reservation
+            return record
         except (StaleProfile, ReservationConflict):
             session.rollback()
             raise
@@ -166,7 +213,7 @@ class XiangqiRankedRepository:
         reservation_id: str,
         device_id: str,
         now: datetime,
-    ) -> models_db.XiangqiRankedReservation:
+    ) -> XiangqiRankedReservationRecord:
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
@@ -187,8 +234,10 @@ class XiangqiRankedRepository:
             reservation.last_heartbeat_at = now
             if reservation.materialized_at is None:
                 reservation.materialized_at = now
+            session.flush()
+            record = _reservation_record(reservation)
             session.commit()
-            return reservation
+            return record
         except Exception:
             session.rollback()
             raise

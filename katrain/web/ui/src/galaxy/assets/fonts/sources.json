@@ -1,0 +1,282 @@
+{
+  "generator_command": "uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --output $OUT",
+  "generated_total_bytes": 17191810,
+  "outputs": [
+    {
+      "filename": "galaxy-fonts.css",
+      "sha256": "9dd5cd35214f2f3843082772d549029854d965ef920c6b845562f96e5f5f22a8",
+      "bytes": 457866
+    },
+    {
+      "filename": "longcang-brand.woff2",
+      "sha256": "af194d0f187ef8b2becfe659af353ffa5c48869d8b84e8f856595ad68de1105c",
+      "bytes": 1804
+    },
+    {
+      "filename": "wenkai-400-000.woff2",
+      "sha256": "3dc8662e27d8555adfbc139bbabe8b3122310ea9100d8863133d94b64fa1a841",
+      "bytes": 230260
+    },
+    {
+      "filename": "wenkai-400-001.woff2",
+      "sha256": "7e8c66827edb0a47f5b9c1a6bd48884fd62657b6dbebc81c54064c22e69e19aa",
+      "bytes": 336300
+    },
+    {
+      "filename": "wenkai-400-002.woff2",
+      "sha256": "6c53e2b70123a434a51a5512e11171b536838ceb3440d65dbdc31d291ded9590",
+      "bytes": 369680
+    },
+    {
+      "filename": "wenkai-400-003.woff2",
+      "sha256": "e6ac9f6eb3d1c91bc000f4dcf859073a622f256b259218b55e7e1c9b0b52f298",
+      "bytes": 383032
+    },
+    {
+      "filename": "wenkai-400-004.woff2",
+      "sha256": "64129ec4cdf268383b3ac253c5c7bcb6b5b13a59ad2f0ae116a3e0770bcbbee3",
+      "bytes": 404056
+    },
+    {
+      "filename": "wenkai-400-005.woff2",
+      "sha256": "138aa1bee9a9a3efd3070432c8c49ebf678bf6a359096f3c5b4892855551f325",
+      "bytes": 419564
+    },
+    {
+      "filename": "wenkai-400-006.woff2",
+      "sha256": "d5757db961b9a3273727d51e5045104a4921918a222b5701dcf78ac1c2abf9e1",
+      "bytes": 372760
+    },
+    {
+      "filename": "wenkai-400-007.woff2",
+      "sha256": "2c7845cf2fe5d447b43f0f86ce23d7ddf2b453fe997072935ec442a16071ccee",
+      "bytes": 288180
+    },
+    {
+      "filename": "wenkai-400-008.woff2",
+      "sha256": "412f465a9a4ac7fd16d60c0c6d1550c3a4255aef0545e15988ff34359891fa95",
+      "bytes": 322608
+    },
+    {
+      "filename": "wenkai-400-009.woff2",
+      "sha256": "0d6f18013b45d16063d48acc058864e48de99ee01df39f2ff8f420a568557162",
+      "bytes": 327056
+    },
+    {
+      "filename": "wenkai-400-010.woff2",
+      "sha256": "d264d868eaaf1af730683da5b449bf3afd22d870f7d24e3b17a96c1ed9a817c1",
+      "bytes": 318188
+    },
+    {
+      "filename": "wenkai-400-011.woff2",
+      "sha256": "81f675d22051d5825d74d3ed3b480bcc5a7ed3776825b8d58c46ffc36c08e1da",
+      "bytes": 326212
+    },
+    {
+      "filename": "wenkai-400-012.woff2",
+      "sha256": "c4ea1be8474de898fdbf0459a0f29a52256bb8d0a35cb488f0e3736fb2be958f",
+      "bytes": 346384
+    },
+    {
+      "filename": "wenkai-400-013.woff2",
+      "sha256": "aa58702750b47b7ba4589f05ad40f9c095dab5ee2c9615bd7bb3c108df92227f",
+      "bytes": 362476
+    },
+    {
+      "filename": "wenkai-400-014.woff2",
+      "sha256": "ef542fbbcbdbbb412c70bd4559d7016b09ab87d0e2ab24826f3fe354dcae7861",
+      "bytes": 323052
+    },
+    {
+      "filename": "wenkai-400-015.woff2",
+      "sha256": "0af59cfd39931cfd5c4ae9528fe88af90664c94b2a8b3c341ef706f444a1f533",
+      "bytes": 340700
+    },
+    {
+      "filename": "wenkai-400-016.woff2",
+      "sha256": "d2c82281e44666b5ec5a753d20aaadeb77e2e1944600bd3860494a83c2f38ce8",
+      "bytes": 343132
+    },
+    {
+      "filename": "wenkai-400-017.woff2",
+      "sha256": "27779545741819333ba2f3dd56aa2478d9d7efdbe05d8473ce380324f238ace9",
+      "bytes": 351304
+    },
+    {
+      "filename": "wenkai-400-018.woff2",
+      "sha256": "c0d3bf9b0aafba0ed9d269c0be1e36724d9ef0a67c7646bcbf0e74aace98db3a",
+      "bytes": 350996
+    },
+    {
+      "filename": "wenkai-400-019.woff2",
+      "sha256": "7cf0059aa97280ebe8febc00dd20991b9d2570eb6b81b5acd1f9e4db51958d66",
+      "bytes": 339004
+    },
+    {
+      "filename": "wenkai-400-020.woff2",
+      "sha256": "6d98e0a14bcc3c399108c6ac90f9b1415b8bfb638d754fd9b6bae24e5c92250e",
+      "bytes": 354420
+    },
+    {
+      "filename": "wenkai-400-021.woff2",
+      "sha256": "06ee0fc8a13129a9fe41d7d977e56d5f1b8a9b2b366c86d0ab38a77d3a4e5ecb",
+      "bytes": 358332
+    },
+    {
+      "filename": "wenkai-400-022.woff2",
+      "sha256": "b603a4a2f775637069d813fe68cc68c55bbc7da30a0f7bed6965f84ceccd930f",
+      "bytes": 390940
+    },
+    {
+      "filename": "wenkai-400-023.woff2",
+      "sha256": "2977f8751ef8082368f87d5f4a8daac1fe40634677ba31f4ddd408fbaba4b5be",
+      "bytes": 240432
+    },
+    {
+      "filename": "wenkai-500-000.woff2",
+      "sha256": "54f0f43b43f8af2f68b1667305937bb0f2d7bf1f03041b16ca9fbd87d0168b6a",
+      "bytes": 230120
+    },
+    {
+      "filename": "wenkai-500-001.woff2",
+      "sha256": "a8d2e51cd658a1af96fee1bd700e7522adcf2b7d9f9ab0c11b0a4781faecb769",
+      "bytes": 354972
+    },
+    {
+      "filename": "wenkai-500-002.woff2",
+      "sha256": "e33f0a843d21de733f85632532df60d8b608309efb50c2a89aeed89081a2cbcb",
+      "bytes": 393744
+    },
+    {
+      "filename": "wenkai-500-003.woff2",
+      "sha256": "399611022dca70faf3c34c8477f695f88684b2e1d66595fddd1d34171beec321",
+      "bytes": 403592
+    },
+    {
+      "filename": "wenkai-500-004.woff2",
+      "sha256": "6ca3ea85704519d48116a1658cb541c4ee07abb8aefabd65af760dc94e8ee6a7",
+      "bytes": 427140
+    },
+    {
+      "filename": "wenkai-500-005.woff2",
+      "sha256": "1e81eaf432ec573a3ce76ed90117c1cbfa349cc2dcc58692c19736461d2a7e6d",
+      "bytes": 442660
+    },
+    {
+      "filename": "wenkai-500-006.woff2",
+      "sha256": "bf4a6b1c212ee7d5e5faa25ed384da9c4a7e07171d3f5420bc4ea0331f7eca7e",
+      "bytes": 391828
+    },
+    {
+      "filename": "wenkai-500-007.woff2",
+      "sha256": "0f9cd6ad05d97094d386d51debb89769d903695e5b895805cbd1a543354c70ee",
+      "bytes": 290940
+    },
+    {
+      "filename": "wenkai-500-008.woff2",
+      "sha256": "234297991d3e9a10723b17c1ef82702ceef4867412e0ae39d0be1a8ca3a0c5b1",
+      "bytes": 330488
+    },
+    {
+      "filename": "wenkai-500-009.woff2",
+      "sha256": "3a748cacef275a5bd2939f7f35b3272cc93d929f7aa1dc16bc9b475b6ecb9cf2",
+      "bytes": 336372
+    },
+    {
+      "filename": "wenkai-500-010.woff2",
+      "sha256": "4e4548a1b127619ea816b758fab4ccef30ca2cfe182a32a13dc98ae2dc25c826",
+      "bytes": 328256
+    },
+    {
+      "filename": "wenkai-500-011.woff2",
+      "sha256": "6a07d552762eeae3521e22e45db85c6e820f26d9064d282a01f764ec45b944ce",
+      "bytes": 334652
+    },
+    {
+      "filename": "wenkai-500-012.woff2",
+      "sha256": "b002f188f727f935a9efede18eff387bbd24a5c6378607dd8b5c898d18b48d12",
+      "bytes": 354260
+    },
+    {
+      "filename": "wenkai-500-013.woff2",
+      "sha256": "d1e4abf158e73565e9d8176a47a49038cce8599eab44b9ca873c86da89e20515",
+      "bytes": 375928
+    },
+    {
+      "filename": "wenkai-500-014.woff2",
+      "sha256": "47ff716c81e0a82cfd832257fa45f7c553fa4e3f82c26bbb0927cff7f02d02e6",
+      "bytes": 333532
+    },
+    {
+      "filename": "wenkai-500-015.woff2",
+      "sha256": "4b56dcdf5f44f763fc7e2a99f66b97179e36a3de6d95ad9ee96b0b8bb98b592d",
+      "bytes": 357716
+    },
+    {
+      "filename": "wenkai-500-016.woff2",
+      "sha256": "9152f00490c0dbf66a5d4eb837ea3f63649e2ae7b35f237543e1e930f5dfdba6",
+      "bytes": 354476
+    },
+    {
+      "filename": "wenkai-500-017.woff2",
+      "sha256": "5e4d467ee9ac679274d251538da0ad293f669719e0152022c197660f0d436294",
+      "bytes": 365596
+    },
+    {
+      "filename": "wenkai-500-018.woff2",
+      "sha256": "ecdf5c938b2713023ace54c5d88e27766945f4e161a0e2f21189998fd3f66a44",
+      "bytes": 366424
+    },
+    {
+      "filename": "wenkai-500-019.woff2",
+      "sha256": "e8d523d7f4b151921d494d24b010cc04e265cc363e3e0761cba07437172512a5",
+      "bytes": 352048
+    },
+    {
+      "filename": "wenkai-500-020.woff2",
+      "sha256": "5f8170c9ba421264aed405da383779f09530804b6cff427c2e06fd1685f1c592",
+      "bytes": 371172
+    },
+    {
+      "filename": "wenkai-500-021.woff2",
+      "sha256": "86dda0a5755418fa0581ab3845cebf77d11778e9b78ddf936d47ff8aef0c1383",
+      "bytes": 373240
+    },
+    {
+      "filename": "wenkai-500-022.woff2",
+      "sha256": "e9646f26db881b96b75cfec9c8bb524f8df69beb47f166707b44a231b80cbe36",
+      "bytes": 414892
+    },
+    {
+      "filename": "wenkai-500-023.woff2",
+      "sha256": "b33729e092326734e6643866e125045d6d6669a720c167ba06019f15560efe5a",
+      "bytes": 249024
+    }
+  ],
+  "inputs": [
+    {
+      "name": "LXGW WenKai Regular",
+      "url": "https://github.com/lxgw/LxgwWenKai/releases/download/v1.522/LXGWWenKai-Regular.ttf",
+      "version": "v1.522",
+      "filename": "LXGWWenKai-Regular.ttf",
+      "sha256": "39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+      "license": "SIL OFL 1.1"
+    },
+    {
+      "name": "LXGW WenKai Medium",
+      "url": "https://github.com/lxgw/LxgwWenKai/releases/download/v1.522/LXGWWenKai-Medium.ttf",
+      "version": "v1.522",
+      "filename": "LXGWWenKai-Medium.ttf",
+      "sha256": "d4bdeb38a39151d74d084cba5090f8cb7d20bf83eedb78c35939ae70b9f4e3f6",
+      "license": "SIL OFL 1.1"
+    },
+    {
+      "name": "Long Cang Regular",
+      "url": "https://raw.githubusercontent.com/google/fonts/b7b1d76caa907473438546739b2ce3a92631adc3/ofl/longcang/LongCang-Regular.ttf",
+      "version": "b7b1d76caa907473438546739b2ce3a92631adc3",
+      "filename": "LongCang-Regular.ttf",
+      "sha256": "e5bf2c3f24ef2327c6f136d8f73e2f9dfdf44896fdbeb35a9515f44777bb91bc",
+      "license": "SIL OFL 1.1"
+    }
+  ]
+}

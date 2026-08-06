@@ -39,6 +39,16 @@ class TerminalConflict(XiangqiRankedConflict):
 
 
 FailureHook = Callable[[str], None]
+ReservationProposalFactory = Callable[[models_db.XiangqiRatingProfile], "XiangqiRankedReservationDraft"]
+
+
+@dataclass(frozen=True)
+class XiangqiRankedReservationDraft:
+    """Service-computed promise derived only from the transaction-locked profile."""
+
+    expected_profile_version: int
+    projection_fingerprint: str
+    frozen_snapshot: Mapping[str, Any]
 
 
 @dataclass(frozen=True)
@@ -200,6 +210,81 @@ class XiangqiRankedRepository:
         except IntegrityError as exc:
             session.rollback()
             raise ReservationConflict("reservation CAS lost to another writer or game_id already exists") from exc
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def create_reservation_locked(
+        self,
+        *,
+        user_uuid: str,
+        reservation_id: str,
+        game_id: str,
+        device_id: str,
+        capability_jti: str,
+        proposal_factory: ReservationProposalFactory,
+        now: datetime,
+    ) -> XiangqiRankedReservationRecord:
+        """Build and insert one promise while the account profile lock remains held.
+
+        The service callback owns pure catalog/scoring projection and request
+        comparison. This repository owns the profile/barrier locks and makes the
+        reservation plus initial capability JTI visible in one commit.
+        """
+
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            profile = self.get_or_create_profile_for_update(session, user_uuid, now=now)
+            active = session.execute(
+                select(models_db.XiangqiRankedReservation)
+                .where(
+                    models_db.XiangqiRankedReservation.user_uuid == user_uuid,
+                    models_db.XiangqiRankedReservation.status == "reserved",
+                )
+                .with_for_update()
+            ).scalar_one_or_none()
+            if active is not None:
+                raise ReservationConflict("account already has a reserved Xiangqi ranked game")
+            proposal = proposal_factory(profile)
+            if proposal.expected_profile_version != profile.profile_version:
+                raise StaleProfile("reservation proposal does not match the locked profile version")
+            frozen = _copy_canonical_snapshot(proposal.frozen_snapshot, "frozen_snapshot")
+            reservation = models_db.XiangqiRankedReservation(
+                reservation_id=reservation_id,
+                game_id=game_id,
+                user_uuid=user_uuid,
+                device_id=device_id,
+                status="reserved",
+                expected_profile_version=proposal.expected_profile_version,
+                projection_fingerprint=proposal.projection_fingerprint,
+                frozen_snapshot=frozen,
+                last_heartbeat_at=now,
+                created_at=now,
+                materialized_at=None,
+                terminal_at=None,
+            )
+            session.add(reservation)
+            session.add(
+                models_db.XiangqiRankedCapabilityJti(
+                    jti=capability_jti,
+                    reservation_id=reservation_id,
+                    issued_at=now,
+                    revoked_at=None,
+                )
+            )
+            session.flush()
+            record = _reservation_record(reservation)
+            session.commit()
+            return record
+        except (StaleProfile, ReservationConflict):
+            session.rollback()
+            raise
+        except IntegrityError as exc:
+            session.rollback()
+            raise ReservationConflict("reservation or initial capability lost an atomic uniqueness race") from exc
         except Exception:
             session.rollback()
             raise

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -221,6 +222,14 @@ async def test_reservation_freezes_exact_preview_server_color_and_terminal_capab
     assert reserved["code"] == "reserved"
     assert reserved["player_color"] == "red"
     assert reserved["frozen_preview"]["time_control"] == "standard10"
+    assert reserved["frozen_preview"]["profile_version"] == ready["profile"]["profile_version"]
+    assert reserved["frozen_preview"]["projection_fingerprint"] == ready["preview"]["projection_fingerprint"]
+    for outcome in ("win", "draw", "loss"):
+        assert (
+            reserved["frozen_preview"][f"outcome_{outcome}_hex"] == ready["preview"]["outcomes"][outcome]["rating_hex"]
+        )
+        assert reserved["frozen_preview"][f"delta_{outcome}"] == ready["preview"]["outcomes"][outcome]["delta"]
+        assert reserved["frozen_preview"][f"tier_{outcome}"] == ready["preview"]["outcomes"][outcome]["tier"]
     assert reserved["frozen_preview"]["opponent_profile_hash"] == ready["preview"]["opponent"]["profile_hash"]
     assert reserved["terminal_capability"].count(".") == 2
     assert current.status_code == 200
@@ -269,6 +278,9 @@ async def test_profile_change_after_preview_is_stale_and_existing_barrier_is_det
             headers=auth(api_app.state._ranked_owner),
             json=reservation_body(ready),
         )
+        with api_app.state._ranked_sessions() as session:
+            assert session.query(models_db.XiangqiRankedReservation).count() == 0
+            assert session.query(models_db.XiangqiRankedCapabilityJti).count() == 0
         fresh = (await get_preview(client, api_app)).json()
         created = await client.post(
             "/api/v1/xiangqi-ranked/reservations",
@@ -277,10 +289,57 @@ async def test_profile_change_after_preview_is_stale_and_existing_barrier_is_det
         )
         barrier = await get_preview(client, api_app)
     assert stale.status_code == 409 and stale.json()["profile"]["profile_version"] == 1
+    with api_app.state._ranked_sessions() as session:
+        assert session.query(models_db.XiangqiRankedCapabilityJti).count() == 1
     assert created.status_code == 201
     assert barrier.status_code == 409
     assert barrier.json()["code"] == "ranked_reserved_elsewhere"
     assert barrier.json()["reservation"]["device_id"] == "box-01"
+
+
+@pytest.mark.asyncio
+async def test_locked_reserve_recomputes_if_authority_changes_in_the_old_two_phase_seam(api_app, monkeypatch):
+    from katrain.web.core import xiangqi_ranked_service as service_module
+
+    headers = auth(api_app.state._ranked_owner)
+    original_project_three = service_module.project_three
+
+    def changed_project_three(*args, **kwargs):
+        outcomes = original_project_three(*args, **kwargs)
+        win = outcomes["win"]
+        changed_after = replace(win.after, rating=win.after.rating + 1.0)
+        outcomes["win"] = replace(
+            win,
+            after=changed_after,
+            display_after=round(changed_after.rating),
+            display_delta=round(changed_after.rating) - win.display_before,
+        )
+        return outcomes
+
+    original_locked_reserve = api_app.state.xiangqi_ranked_service.repository.create_reservation_locked
+
+    def reserve_after_authority_change(**kwargs):
+        monkeypatch.setattr(service_module, "project_three", changed_project_three)
+        return original_locked_reserve(**kwargs)
+
+    monkeypatch.setattr(
+        api_app.state.xiangqi_ranked_service.repository,
+        "create_reservation_locked",
+        reserve_after_authority_change,
+    )
+    async with AsyncClient(transport=ASGITransport(app=api_app), base_url="http://test") as client:
+        old = (await get_preview(client, api_app)).json()
+        response = await client.post(
+            "/api/v1/xiangqi-ranked/reservations",
+            headers=headers,
+            json=reservation_body(old),
+        )
+    assert response.status_code == 409
+    assert response.json()["code"] == "stale_projection"
+    assert response.json()["preview"]["outcomes"]["win"] != old["preview"]["outcomes"]["win"]
+    with api_app.state._ranked_sessions() as session:
+        assert session.query(models_db.XiangqiRankedReservation).count() == 0
+        assert session.query(models_db.XiangqiRankedCapabilityJti).count() == 0
 
 
 @pytest.mark.asyncio

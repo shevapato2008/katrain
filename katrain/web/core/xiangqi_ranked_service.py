@@ -34,6 +34,7 @@ from katrain.web.core.xiangqi_ranked_repo import (
     StaleProfile,
     TerminalConflict,
     XiangqiRankedRepository,
+    XiangqiRankedReservationDraft,
     XiangqiRankedReservationRecord,
 )
 
@@ -167,10 +168,16 @@ class XiangqiRankedService:
                     "This account already has an active Xiangqi ranked reservation.",
                     reservation=active_summary,
                 )
-            rating = float(profile.rating)
-            rated_games = profile.rated_games
-            profile_version = profile.profile_version
-            settlement_seq = profile.settlement_seq
+            fresh = self._build_preview_from_profile(
+                user_uuid=user_uuid,
+                rating=float(profile.rating),
+                rated_games=profile.rated_games,
+                profile_version=profile.profile_version,
+                settlement_seq=profile.settlement_seq,
+                catalog_version=catalog_version,
+                contract_version=contract_version,
+                active_summary=active_summary,
+            )
             session.commit()
         except RankedServiceError:
             session.rollback()
@@ -181,6 +188,20 @@ class XiangqiRankedService:
         finally:
             session.close()
 
+        return fresh
+
+    @staticmethod
+    def _build_preview_from_profile(
+        *,
+        user_uuid: str,
+        rating: float,
+        rated_games: int,
+        profile_version: int,
+        settlement_seq: int,
+        catalog_version: str,
+        contract_version: int,
+        active_summary: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         opponent_level = pick_level(rating)
         opponent = SUPPORTED_CATALOGS[catalog_version].profile(opponent_level)
         projections = project_three(
@@ -314,67 +335,72 @@ class XiangqiRankedService:
     ) -> dict[str, Any]:
         if time_control not in TIME_CONTROLS:
             raise RankedServiceError(422, "invalid_time_control", "Unsupported ranked time control.")
-        fresh = self._compute_preview(
-            user_uuid=user_uuid,
-            catalog_version=catalog_version,
-            supported_contract_versions=[scoring_contract_version],
-            reject_barrier=False,
-        )
-        if fresh["_reservation"] is not None:
-            raise RankedServiceError(
-                409,
-                "ranked_reserved_elsewhere",
-                "This account already has an active Xiangqi ranked reservation.",
-                reservation=fresh["_reservation"],
-            )
-        preview = fresh["preview"]
-        expected = {
-            "expected_profile_version": fresh["profile"]["profile_version"],
-            "projection_fingerprint": preview["projection_fingerprint"],
-            "scoring_contract_version": preview["scoring_contract_version"],
-            "catalog_version": preview["catalog_version"],
-            "opponent_profile_hash": preview["opponent"]["profile_hash"],
-        }
-        supplied = {
-            "expected_profile_version": expected_profile_version,
-            "projection_fingerprint": projection_fingerprint,
-            "scoring_contract_version": scoring_contract_version,
-            "catalog_version": catalog_version,
-            "opponent_profile_hash": opponent_profile_hash,
-        }
-        if supplied != expected:
-            raise self._stale(fresh)
-
-        player_color = self.color_chooser(("red", "black"))
-        if player_color not in {"red", "black"}:
-            raise RuntimeError("color chooser returned an invalid Xiangqi color")
-        snapshot = self._snapshot_from_preview(
-            fresh,
-            user_uuid=user_uuid,
-            time_control=time_control,
-            player_color=player_color,
-        )
+        catalog_version, negotiated_contract = self._negotiate(catalog_version, [scoring_contract_version])
         reservation_id = self.id_factory()
         now = _utc(self.now())
+        capability = self.capabilities.codec.issue(
+            user_uuid=user_uuid,
+            device_id=device_id,
+            game_id=game_id,
+            reservation_id=reservation_id,
+            now=now,
+        )
+        capability_claims = self.capabilities.codec.verify(capability)
+        locked_result: dict[str, Any] = {}
+
+        def proposal_factory(profile) -> XiangqiRankedReservationDraft:
+            fresh = self._build_preview_from_profile(
+                user_uuid=user_uuid,
+                rating=float(profile.rating),
+                rated_games=profile.rated_games,
+                profile_version=profile.profile_version,
+                settlement_seq=profile.settlement_seq,
+                catalog_version=catalog_version,
+                contract_version=negotiated_contract,
+            )
+            preview = fresh["preview"]
+            expected = {
+                "expected_profile_version": fresh["profile"]["profile_version"],
+                "projection_fingerprint": preview["projection_fingerprint"],
+                "scoring_contract_version": preview["scoring_contract_version"],
+                "catalog_version": preview["catalog_version"],
+                "opponent_profile_hash": preview["opponent"]["profile_hash"],
+            }
+            supplied = {
+                "expected_profile_version": expected_profile_version,
+                "projection_fingerprint": projection_fingerprint,
+                "scoring_contract_version": scoring_contract_version,
+                "catalog_version": catalog_version,
+                "opponent_profile_hash": opponent_profile_hash,
+            }
+            if supplied != expected:
+                raise self._stale(fresh)
+            player_color = self.color_chooser(("red", "black"))
+            if player_color not in {"red", "black"}:
+                raise RuntimeError("color chooser returned an invalid Xiangqi color")
+            snapshot = self._snapshot_from_preview(
+                fresh,
+                user_uuid=user_uuid,
+                time_control=time_control,
+                player_color=player_color,
+            )
+            locked_result["player_color"] = player_color
+            return XiangqiRankedReservationDraft(
+                expected_profile_version=profile.profile_version,
+                projection_fingerprint=preview["projection_fingerprint"],
+                frozen_snapshot=snapshot,
+            )
+
         try:
-            record = self.repository.create_reservation_cas(
+            record = self.repository.create_reservation_locked(
                 user_uuid=user_uuid,
                 reservation_id=reservation_id,
                 game_id=game_id,
                 device_id=device_id,
-                expected_profile_version=expected_profile_version,
-                projection_fingerprint=projection_fingerprint,
-                frozen_snapshot=snapshot,
+                capability_jti=capability_claims.jti,
+                proposal_factory=proposal_factory,
                 now=now,
             )
-        except StaleProfile:
-            latest = self._compute_preview(
-                user_uuid=user_uuid,
-                catalog_version=catalog_version,
-                supported_contract_versions=[scoring_contract_version],
-                reject_barrier=False,
-            )
-            raise self._stale(latest) from None
         except ReservationConflict:
             current = self.current(user_uuid=user_uuid)
             raise RankedServiceError(
@@ -383,30 +409,11 @@ class XiangqiRankedService:
                 "This account already has an active Xiangqi ranked reservation.",
                 reservation=None if current is None else current["reservation"],
             ) from None
-        try:
-            capability = self.capabilities.issue(
-                user_uuid=user_uuid,
-                device_id=device_id,
-                game_id=game_id,
-                reservation_id=reservation_id,
-                now=now,
-            )
-        except TerminalCapabilityError:
-            self.repository.void_unmaterialized(
-                user_uuid=user_uuid,
-                reservation_id=reservation_id,
-                game_id=game_id,
-            )
-            raise RankedServiceError(
-                503,
-                "capability_issue_failed",
-                "The terminal capability could not be issued.",
-            ) from None
         return {
             "code": "reserved",
             "reservation_id": record.reservation_id,
             "game_id": record.game_id,
-            "player_color": player_color,
+            "player_color": locked_result["player_color"],
             "frozen_preview": _plain(record.frozen_snapshot),
             "terminal_capability": capability,
         }

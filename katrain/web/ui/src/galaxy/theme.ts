@@ -16,9 +16,13 @@ export const createGalaxyTheme = (language: string) => {
       h4: { fontFamily },
       h5: { fontFamily },
       h6: { fontFamily },
+      subtitle1: { fontFamily },
+      subtitle2: { fontFamily },
       body1: { fontFamily },
       body2: { fontFamily },
       button: { fontFamily },
+      caption: { fontFamily },
+      overline: { fontFamily },
     },
   });
 };

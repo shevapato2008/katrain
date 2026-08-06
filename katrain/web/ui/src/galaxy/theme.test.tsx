@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { useTheme } from '@mui/material/styles';
+import { ThemeProvider, useTheme } from '@mui/material/styles';
 import { MemoryRouter, Outlet } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import GalaxyApp from '../GalaxyApp';
@@ -7,6 +7,21 @@ import { zenTheme } from '../theme';
 import { CHINESE_UI_FONT, createGalaxyTheme, SYSTEM_UI_FONT } from './theme';
 
 const settings = vi.hoisted(() => ({ language: 'cn' }));
+const typographyVariants = [
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'subtitle1',
+  'subtitle2',
+  'body1',
+  'body2',
+  'button',
+  'caption',
+  'overline',
+] as const;
 
 vi.mock('../context/SettingsContext', () => ({
   useSettings: () => settings,
@@ -35,23 +50,24 @@ describe('createGalaxyTheme', () => {
 
     expect(theme.typography.fontFamily).toBe(CHINESE_UI_FONT);
     expect(theme.typography.fontFamily).toContain('LXGW WenKai');
+    typographyVariants.forEach(variant => {
+      expect(theme.typography[variant].fontFamily).toBe(CHINESE_UI_FONT);
+    });
   });
 
   it.each(['en', 'jp', 'ko', 'de'])('uses the system font stack for the %s locale', language => {
     const theme = createGalaxyTheme(language);
 
     expect(theme.typography.fontFamily).toBe(SYSTEM_UI_FONT);
+    typographyVariants.forEach(variant => {
+      expect(theme.typography[variant].fontFamily).toBe(SYSTEM_UI_FONT);
+    });
   });
 
   it('keeps Manrope out of the system stack and replaces inherited variant fonts', () => {
     const theme = createGalaxyTheme('en');
 
     expect(SYSTEM_UI_FONT).not.toContain('Manrope');
-    expect(theme.typography.h1.fontFamily).toBe(SYSTEM_UI_FONT);
-    expect(theme.typography.h6.fontFamily).toBe(SYSTEM_UI_FONT);
-    expect(theme.typography.body1.fontFamily).toBe(SYSTEM_UI_FONT);
-    expect(theme.typography.body2.fontFamily).toBe(SYSTEM_UI_FONT);
-    expect(theme.typography.button.fontFamily).toBe(SYSTEM_UI_FONT);
     expect(zenTheme.typography.fontFamily).toContain('Manrope');
   });
 });
@@ -61,12 +77,15 @@ describe('GalaxyApp', () => {
     settings.language = 'cn';
 
     const { container } = render(
-      <MemoryRouter>
-        <GalaxyApp />
-      </MemoryRouter>,
+      <ThemeProvider theme={zenTheme}>
+        <MemoryRouter>
+          <GalaxyApp />
+        </MemoryRouter>
+      </ThemeProvider>,
     );
 
     expect(container.querySelector('.galaxy-root')).toHaveAttribute('data-language', 'cn');
+    expect(zenTheme.typography.fontFamily).toContain('Manrope');
     expect(screen.getByTestId('theme-probe')).toHaveAttribute('data-font-family', CHINESE_UI_FONT);
   });
 });

@@ -1,4 +1,5 @@
 import type {
+  AiLadderCountingReason,
   AiLadderGameLifecycle,
   AiLadderReadyStatus,
   AiLadderSettlementReceipt,
@@ -18,6 +19,30 @@ export class AiLadderApiError extends Error {
 
 const authHeaders = (token?: string): Record<string, string> =>
   token ? { Authorization: `Bearer ${token}` } : {};
+
+const aiLadderCountingReasons: readonly AiLadderCountingReason[] = [
+  'invalid_game_type',
+  'engine_unavailable',
+  'inconclusive',
+  'opponent_not_eligible',
+  'opponent_rung_mismatch',
+];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isSettledLifecycle = (
+  value: unknown,
+  gameId: string,
+): value is Extract<AiLadderGameLifecycle, { state: 'settled' }> => {
+  if (!isRecord(value) || value.state !== 'settled' || value.game_id !== gameId || !isRecord(value.receipt)) {
+    return false;
+  }
+  const { counted, reason } = value.receipt;
+  return typeof counted === 'boolean'
+    && (reason === null
+      || (typeof reason === 'string' && aiLadderCountingReasons.includes(reason as AiLadderCountingReason)));
+};
 
 const parseResponse = async <T,>(response: Response): Promise<T> => {
   if (response.ok) return response.json() as Promise<T>;
@@ -72,8 +97,8 @@ export const endAiLadderGame = async (
   });
   if (response.status === 409) {
     try {
-      const lifecycle = await response.clone().json() as AiLadderGameLifecycle;
-      if (lifecycle.state === 'settled') return lifecycle;
+      const lifecycle: unknown = await response.clone().json();
+      if (isSettledLifecycle(lifecycle, gameId)) return lifecycle;
     } catch {
       // Let the shared parser preserve the normal error mapping for invalid responses.
     }

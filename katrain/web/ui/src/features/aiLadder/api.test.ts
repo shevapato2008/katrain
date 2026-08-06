@@ -138,6 +138,20 @@ describe('ai ladder API', () => {
     }));
   });
 
+  it.each([
+    { state: 'settled' },
+    { state: 'settled', game_id: 'another-game', receipt: { counted: true, reason: null } },
+    { state: 'settled', game_id: 'game-1', receipt: null },
+    { state: 'settled', game_id: 'game-1', receipt: { counted: 'yes', reason: null } },
+    { state: 'settled', game_id: 'game-1', receipt: { counted: false, reason: 'unexpected_reason' } },
+  ])('keeps API error mapping for a malformed 409 settled lifecycle: %j', async (body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 409 })));
+
+    await expect(endAiLadderGame('game-1')).rejects.toEqual(expect.objectContaining<Partial<AiLadderApiError>>({
+      status: 409,
+    }));
+  });
+
   it('keeps the existing API error mapping for other failed end requests', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
       JSON.stringify({ detail: 'game is not owned by this user' }),

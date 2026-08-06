@@ -8,8 +8,10 @@ import hashlib
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from threading import Lock
 from typing import Any, Callable, Iterable, Mapping
 
+from jose import JWTError, jwt
 from sqlalchemy import func, select
 
 from smartbox_xiangqi_ranked import (
@@ -47,6 +49,9 @@ TIME_CONTROLS = frozenset({"unlimited", "blitz5", "standard10", "slow20"})
 START_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
 TIME_CONTROL_MS = {"blitz5": 300_000, "standard10": 600_000, "slow20": 1_200_000}
 ENGINE_FAILURE_RETRY_LIMIT = 3
+DEVICE_CURSOR_AUDIENCE = "xiangqi-ranked-device-reconcile"
+HISTORY_CURSOR_AUDIENCE = "xiangqi-ranked-settlement-history"
+CURSOR_TTL = timedelta(minutes=15)
 
 
 @dataclass(frozen=True)
@@ -99,6 +104,8 @@ class XiangqiRankedService:
         self.id_factory = id_factory or (lambda: str(uuid.uuid4()))
         self.color_chooser = color_chooser or secrets.choice
         self.force_resign_threshold = force_resign_threshold
+        self._consumed_device_cursors: set[str] = set()
+        self._cursor_lock = Lock()
 
     @property
     def session_factory(self):
@@ -763,3 +770,223 @@ class XiangqiRankedService:
 
     def health_metrics(self) -> dict[str, Any]:
         return self.repository.health_metrics(now=_utc(self.now()))
+
+    def _profile_snapshot(self, user_uuid: str) -> dict[str, Any]:
+        now = _utc(self.now())
+        session = self.session_factory()
+        try:
+            self.repository._begin_write_transaction(session)
+            profile = self.repository.get_or_create_profile_for_update(session, user_uuid, now=now)
+            result = {
+                "rating_hex": float(profile.rating).hex(),
+                "rating_display": round(float(profile.rating)),
+                "rated_games": profile.rated_games,
+                "profile_version": profile.profile_version,
+                "active_algo_version": profile.active_algo_version,
+                "settlement_seq": profile.settlement_seq,
+            }
+            session.commit()
+            return result
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def _issue_cursor(self, audience: str, cursor_type: str, **claims: Any) -> str:
+        now = _utc(self.now())
+        payload = {
+            "aud": audience,
+            "type": cursor_type,
+            "nonce": secrets.token_urlsafe(16),
+            "iat": int(now.timestamp()),
+            "exp": int((now + CURSOR_TTL).timestamp()),
+            **claims,
+        }
+        return jwt.encode(payload, self.capabilities.codec.secret, algorithm=self.capabilities.codec.algorithm)
+
+    def _verify_cursor(self, token: str, audience: str, cursor_type: str) -> Mapping[str, Any]:
+        try:
+            payload = jwt.decode(
+                token,
+                self.capabilities.codec.secret,
+                algorithms=[self.capabilities.codec.algorithm],
+                audience=audience,
+                options={"verify_exp": False, "verify_iat": False},
+            )
+            if payload.get("type") != cursor_type:
+                raise ValueError("wrong cursor type")
+            current = int(_utc(self.now()).timestamp())
+            if (
+                isinstance(payload.get("iat"), bool)
+                or not isinstance(payload.get("iat"), int)
+                or isinstance(payload.get("exp"), bool)
+                or not isinstance(payload.get("exp"), int)
+                or payload["iat"] > current
+                or payload["exp"] <= current
+            ):
+                raise ValueError("expired cursor")
+            return payload
+        except (JWTError, TypeError, ValueError):
+            raise RankedServiceError(409, "invalid_cursor", "The ranked pagination cursor is invalid.") from None
+
+    def receipt(
+        self,
+        *,
+        game_id: str,
+        user_uuid: str | None,
+        terminal_capability: str | None,
+        payload_hash: str | None = None,
+    ) -> dict[str, Any]:
+        if user_uuid is None:
+            if terminal_capability is None:
+                raise RankedServiceError(401, "ranked_login_required", "Ranked authentication is required.")
+            try:
+                claims = self.capabilities.verify(
+                    terminal_capability,
+                    expected_game_id=game_id,
+                    required_action="receipt",
+                )
+            except TerminalCapabilityError:
+                raise RankedServiceError(401, "invalid_terminal_capability", "Invalid terminal capability.") from None
+            user_uuid = claims.user_uuid
+
+        with self.session_factory() as session:
+            reservation = session.execute(
+                select(models_db.XiangqiRankedReservation).where(
+                    models_db.XiangqiRankedReservation.game_id == game_id,
+                    models_db.XiangqiRankedReservation.user_uuid == user_uuid,
+                )
+            ).scalar_one_or_none()
+        if reservation is None:
+            raise RankedServiceError(404, "not_found", "The ranked game was not found.")
+        original = self.repository.get_receipt(user_uuid=user_uuid, game_id=game_id)
+        if original is None:
+            return {"code": "missing", "game_id": game_id, "payload_hash": None, "receipt": None}
+        original_hash = original.get("payload_hash")
+        if payload_hash is not None and payload_hash != original_hash:
+            return {"code": "conflict", "game_id": game_id, "payload_hash": original_hash, "receipt": original}
+        status = {"settled": "confirmed"}.get(str(original.get("status")), str(original.get("status")))
+        if status not in {"accepted", "confirmed", "resigned", "system_aborted", "conflict"}:
+            status = "conflict"
+        return {"code": status, "game_id": game_id, "payload_hash": original_hash, "receipt": original}
+
+    def reconcile(
+        self,
+        *,
+        user_uuid: str,
+        device_id: str,
+        known_profile_version: int,
+        known_settlement_seq: int,
+        through_local_seq: int,
+        device_cursor: int | None,
+        event_snapshot_token: str | None,
+        events: list[Mapping[str, Any]],
+    ) -> dict[str, Any]:
+        del known_profile_version, known_settlement_seq
+        first_page = device_cursor is None and event_snapshot_token is None
+        if (device_cursor is None) != (event_snapshot_token is None):
+            raise RankedServiceError(
+                409, "invalid_cursor", "The device cursor and snapshot token must advance together."
+            )
+        after = 0 if first_page else int(device_cursor)
+        if not first_page:
+            claims = self._verify_cursor(event_snapshot_token, DEVICE_CURSOR_AUDIENCE, "device_reconcile")
+            expected = {
+                "user_uuid": user_uuid,
+                "device_id": device_id,
+                "through_local_seq": through_local_seq,
+                "cursor": after,
+            }
+            if any(claims.get(field) != value for field, value in expected.items()):
+                raise RankedServiceError(409, "invalid_cursor", "The device cursor does not match this snapshot.")
+        if through_local_seq < after:
+            raise RankedServiceError(422, "invalid_event_page", "The reconcile upper bound precedes its cursor.")
+        seqs = [int(event["local_seq"]) for event in events]
+        if seqs != list(range(after + 1, after + 1 + len(seqs))):
+            raise RankedServiceError(422, "invalid_event_page", "Device event local sequences must be continuous.")
+        if seqs and seqs[-1] > through_local_seq:
+            raise RankedServiceError(422, "invalid_event_page", "A device event exceeds the frozen upper bound.")
+        next_cursor = seqs[-1] if seqs else after
+        if next_cursor < through_local_seq and len(events) != 100:
+            raise RankedServiceError(422, "invalid_event_page", "A non-final reconcile page must contain 100 events.")
+        if not events and next_cursor != through_local_seq:
+            raise RankedServiceError(422, "invalid_event_page", "The reconcile page omits frozen device events.")
+
+        statuses = self.repository.statuses_for_device_events(
+            user_uuid=user_uuid,
+            device_id=device_id,
+            events=[dict(event) for event in events],
+        )
+        if not first_page:
+            cursor_digest = hashlib.sha256(event_snapshot_token.encode("utf-8")).hexdigest()
+            with self._cursor_lock:
+                if cursor_digest in self._consumed_device_cursors:
+                    raise RankedServiceError(409, "cursor_replayed", "The device cursor page was already consumed.")
+                self._consumed_device_cursors.add(cursor_digest)
+        token = self._issue_cursor(
+            DEVICE_CURSOR_AUDIENCE,
+            "device_reconcile",
+            user_uuid=user_uuid,
+            device_id=device_id,
+            through_local_seq=through_local_seq,
+            cursor=next_cursor,
+        )
+        return {
+            "code": "reconciled",
+            "event_snapshot_token": token,
+            "next_device_cursor": next_cursor,
+            "has_more": next_cursor < through_local_seq,
+            "event_statuses": statuses,
+            "profile": self._profile_snapshot(user_uuid),
+        }
+
+    def history(
+        self,
+        *,
+        user_uuid: str,
+        after_seq: int,
+        snapshot_seq: int | None,
+        summary_cursor: str | None,
+    ) -> dict[str, Any]:
+        profile = self._profile_snapshot(user_uuid)
+        if summary_cursor is None:
+            if snapshot_seq is not None:
+                raise RankedServiceError(409, "invalid_cursor", "A snapshot sequence requires its history cursor.")
+            frozen_snapshot = profile["settlement_seq"]
+            cursor = after_seq
+        else:
+            if snapshot_seq is None:
+                raise RankedServiceError(409, "invalid_cursor", "The history cursor requires its snapshot sequence.")
+            claims = self._verify_cursor(summary_cursor, HISTORY_CURSOR_AUDIENCE, "settlement_history")
+            expected = {"user_uuid": user_uuid, "snapshot_seq": snapshot_seq, "after_seq": after_seq}
+            if any(claims.get(field) != value for field, value in expected.items()):
+                raise RankedServiceError(409, "invalid_cursor", "The history cursor does not match this snapshot.")
+            frozen_snapshot = snapshot_seq
+            cursor = claims.get("cursor")
+            if isinstance(cursor, bool) or not isinstance(cursor, int):
+                raise RankedServiceError(409, "invalid_cursor", "The history cursor is invalid.")
+        if after_seq > frozen_snapshot or cursor < after_seq or cursor > frozen_snapshot:
+            raise RankedServiceError(422, "invalid_history_range", "The settlement history range is invalid.")
+        page = self.repository.page_settlement_summaries(
+            user_uuid=user_uuid,
+            after_seq=cursor,
+            snapshot_seq=frozen_snapshot,
+            limit=100,
+        )
+        next_cursor = self._issue_cursor(
+            HISTORY_CURSOR_AUDIENCE,
+            "settlement_history",
+            user_uuid=user_uuid,
+            snapshot_seq=frozen_snapshot,
+            after_seq=after_seq,
+            cursor=page["next_cursor"],
+        )
+        return {
+            "code": "history",
+            "snapshot_seq": frozen_snapshot,
+            "next_summary_cursor": next_cursor,
+            "has_more": page["has_more"],
+            "summaries": page["items"],
+            "profile": profile,
+        }

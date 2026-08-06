@@ -781,6 +781,69 @@ class XiangqiRankedRepository:
         finally:
             session.close()
 
+    def statuses_for_device_events(
+        self,
+        *,
+        user_uuid: str,
+        device_id: str,
+        events: list[Mapping[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Return facts only for the device events named by one reconcile page."""
+
+        game_ids = [event["game_id"] for event in events]
+        session = self.session_factory()
+        try:
+            if not game_ids:
+                return []
+            rows = (
+                session.execute(
+                    select(models_db.XiangqiRankedLedger).where(
+                        models_db.XiangqiRankedLedger.user_uuid == user_uuid,
+                        models_db.XiangqiRankedLedger.device_id == device_id,
+                        models_db.XiangqiRankedLedger.game_id.in_(game_ids),
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            by_game = {row.game_id: row for row in rows}
+            expected_status = {"settle": "settled", "resign": "resigned", "system_abort": "system_aborted"}
+            statuses = []
+            for event in events:
+                row = by_game.get(event["game_id"])
+                if row is None:
+                    statuses.append(
+                        {
+                            "game_id": event["game_id"],
+                            "local_seq": event["local_seq"],
+                            "status": "missing",
+                            "payload_hash": event["payload_hash"],
+                            "receipt": None,
+                        }
+                    )
+                    continue
+                conflict = (
+                    row.payload_hash != event["payload_hash"]
+                    or row.terminal_status != expected_status[event["event_kind"]]
+                    or row.local_seq != event["local_seq"]
+                )
+                statuses.append(
+                    {
+                        "game_id": event["game_id"],
+                        "local_seq": event["local_seq"],
+                        "status": (
+                            "conflict"
+                            if conflict
+                            else {"settled": "confirmed"}.get(row.terminal_status, row.terminal_status)
+                        ),
+                        "payload_hash": row.payload_hash,
+                        "receipt": deepcopy(dict(row.receipt)),
+                    }
+                )
+            return statuses
+        finally:
+            session.close()
+
     def page_settlement_summaries(
         self,
         *,

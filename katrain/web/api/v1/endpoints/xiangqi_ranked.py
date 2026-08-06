@@ -5,13 +5,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel, ConfigDict, Field
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
 from katrain.web.core.box_sso import BRIDGE_KEY_HEADER
 from katrain.web.core.config import settings
 from katrain.web.core.xiangqi_ranked_capabilities import TerminalCapabilityCodec, TerminalCapabilityStore
@@ -100,6 +100,23 @@ class SettlementRequest(StrictModel):
     event_payload: dict[str, object]
     payload_hash: Hash64 = Field(pattern=r"^[0-9a-f]{64}$")
     terminal_capability: str = Field(min_length=1, max_length=4096)
+
+
+class ReconcileEvent(StrictModel):
+    game_id: GameId = Field(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+    event_kind: Literal["settle", "resign", "system_abort"]
+    payload_hash: Hash64 = Field(pattern=r"^[0-9a-f]{64}$")
+    local_seq: int = Field(ge=1)
+
+
+class ReconcileRequest(StrictModel):
+    device_id: DeviceId = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+    known_profile_version: int = Field(ge=0)
+    known_settlement_seq: int = Field(ge=0)
+    through_local_seq: int = Field(ge=0)
+    device_cursor: int | None = Field(default=None, ge=0)
+    event_snapshot_token: str | None = Field(default=None, min_length=1, max_length=4096)
+    events: list[ReconcileEvent] = Field(max_length=100)
 
 
 class VoidRequest(StrictModel):
@@ -227,8 +244,61 @@ def force_resign(
 
 
 @router.post("/settlements")
-def create_settlement(request: Request, body: SettlementRequest):
-    return _call(_service(request).settle, **body.model_dump())
+def create_settlement(request: Request, body: SettlementRequest, response: Response):
+    result = _call(_service(request).settle, **body.model_dump())
+    if result.get("code") == "accepted":
+        response.status_code = 202
+    return result
+
+
+@router.get("/settlements/{game_id}")
+def get_settlement(
+    request: Request,
+    game_id: str = Path(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"),
+    payload_hash: str | None = Query(default=None, pattern=r"^[0-9a-f]{64}$"),
+    authorization: str | None = Header(default=None),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    terminal_capability = None
+    if current_user is None and authorization is not None and authorization.startswith("Bearer "):
+        terminal_capability = authorization.removeprefix("Bearer ")
+    return _call(
+        _service(request).receipt,
+        game_id=game_id,
+        user_uuid=None if current_user is None else current_user.uuid,
+        terminal_capability=terminal_capability,
+        payload_hash=payload_hash,
+    )
+
+
+@router.post("/reconcile")
+def reconcile(
+    request: Request,
+    body: ReconcileRequest,
+    current_user: User = Depends(get_current_user),
+):
+    return _call(
+        _service(request).reconcile,
+        user_uuid=current_user.uuid,
+        **body.model_dump(),
+    )
+
+
+@router.get("/settlements")
+def settlement_history(
+    request: Request,
+    after_seq: int = Query(default=0, ge=0),
+    snapshot_seq: int | None = Query(default=None, ge=0),
+    summary_cursor: str | None = Query(default=None, min_length=1, max_length=4096),
+    current_user: User = Depends(get_current_user),
+):
+    return _call(
+        _service(request).history,
+        user_uuid=current_user.uuid,
+        after_seq=after_seq,
+        snapshot_seq=snapshot_seq,
+        summary_cursor=summary_cursor,
+    )
 
 
 @router.post("/reservations/{reservation_id}/void-unmaterialized")

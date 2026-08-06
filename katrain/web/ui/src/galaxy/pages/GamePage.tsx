@@ -14,6 +14,8 @@ import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import BoardPageShell from '../components/board/BoardPageShell';
+import ModulePlate from '../components/layout/ModulePlate';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -263,8 +265,49 @@ const GamePage = () => {
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
+    const board = (
+        <Box sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0 }}>
+            <div style={{
+                display: (analysisToggles.view3d && Board3D) ? 'none' : 'flex',
+                width: '100%', height: '100%',
+                justifyContent: 'center', alignItems: 'center'
+            }}>
+                <Board
+                    gameState={gameState}
+                    onMove={onMove}
+                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    playerColor={humanColor}
+                />
+            </div>
+            {analysisToggles.view3d && Board3D && (
+                <Board3D
+                    gameState={gameState}
+                    onMove={onMove}
+                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    playerColor={humanColor}
+                />
+            )}
+            {analysisToggles.view3d && !Board3D && <CircularProgress />}
+        </Box>
+    );
+
+    const controls = (embedded = false) => (
+        <RightSidebarPanel
+            gameState={gameState}
+            analysisToggles={analysisToggles}
+            onToggleChange={handleToggleChange}
+            onNavigate={onNavigate}
+            onAction={handleActionWrapper}
+            isRated={isRated}
+            onTimeout={handleTimeout}
+            onPlaySound={handlePlaySound}
+            isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
+            embedded={embedded}
+        />
+    );
+
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
                 <AiLadderSettlementAlert feedback={settlementFeedback} />
                 {/* The ladder AI refused to move (the engine cannot serve the seated rung at
@@ -334,6 +377,20 @@ const GamePage = () => {
                 </DialogActions>
             </Dialog>
 
+            {isRated ? (
+                <BoardPageShell
+                    board={board}
+                    modulePlate={(
+                        <ModulePlate
+                            title={t('rated_play', '升降级对弈')}
+                            backLabel={t('rated_play_short', '升降级')}
+                            backTo="/galaxy/play/ai?mode=rated"
+                        />
+                    )}
+                    railBody={controls(true)}
+                    actions={null}
+                />
+            ) : (<>
             {/* Main Area: Board only */}
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
                 {/* Header */}
@@ -379,17 +436,8 @@ const GamePage = () => {
             </Box>
 
             {/* Right Sidebar with Controls */}
-            <RightSidebarPanel
-                gameState={gameState}
-                analysisToggles={analysisToggles}
-                onToggleChange={handleToggleChange}
-                onNavigate={onNavigate}
-                onAction={handleActionWrapper}
-                isRated={isRated}
-                onTimeout={handleTimeout}
-                onPlaySound={handlePlaySound}
-                isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
-            />
+            {controls()}
+            </>)}
         </Box>
     );
 };

@@ -11,7 +11,9 @@ vi.mock('../../context/SettingsContext', () => ({ useSettings: () => ({}) }));
 vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_en: string, zh: string) => zh }) }));
 vi.mock('../context/GameNavigationContext', () => ({ useGameNavigation: () => ({ registerActiveGame: vi.fn(), unregisterActiveGame: vi.fn() }) }));
 vi.mock('../../components/Board', () => ({ default: () => <div>board</div> }));
-vi.mock('../components/game/RightSidebarPanel', () => ({ default: () => <div>controls</div> }));
+vi.mock('../components/game/RightSidebarPanel', () => ({
+  default: ({ embedded }: { embedded?: boolean }) => <div data-testid="game-controls" data-embedded={String(Boolean(embedded))}>controls</div>,
+}));
 
 const rung = (value: number) => ({ rung: value, rank_name: `${value}级`, certification_status: 'certified' as const, availability: 'available' as const, route: 'server' as const });
 const status = (value: number) => ({ view_state: 'ready' as const, placement_state: { phase: 'placed' as const, rung: rung(value) }, current_opponent: rung(value), recent_ranked_results: [], net_score: 0 as const, pending_settlement: false });
@@ -41,5 +43,18 @@ describe('Galaxy GamePage ranked settlement', () => {
     render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     expect(await screen.findByText('降级：17级')).toBeInTheDocument();
     expect(getStatus).toHaveBeenCalledWith(undefined, expect.any(AbortSignal));
+  });
+
+  it('keeps the rated board clear and puts the named parent action in the right rail', () => {
+    getStatus.mockResolvedValue(status(18));
+    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+
+    const stage = screen.getByTestId('board-stage');
+    const module = screen.getByTestId('board-rail-module');
+    expect(stage).toHaveTextContent('board');
+    expect(stage).not.toHaveTextContent('升降级对弈');
+    expect(module).toHaveTextContent('升降级对弈');
+    expect(module).toContainElement(screen.getByRole('button', { name: '返回升降级' }));
+    expect(screen.getByTestId('game-controls')).toHaveAttribute('data-embedded', 'true');
   });
 });

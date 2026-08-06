@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, Button, IconButton, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
@@ -10,15 +10,27 @@ interface ModulePlateProps {
   status?: ReactNode;
   backTo: string;
   showBack?: boolean;
+  backLabel?: string;
 }
 
-const ModulePlate = ({ title, subtitle, status, backTo, showBack = true }: ModulePlateProps) => {
+const ModulePlate = ({ title, subtitle, status, backTo, showBack = true, backLabel }: ModulePlateProps) => {
   const { t } = useTranslation();
   const { requestNavigation } = useGameNavigation();
 
   return (
-    <Box data-testid="module-plate" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
-      {showBack && (
+    <Box
+      data-testid="module-plate"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: backLabel ? 'space-between' : 'flex-start',
+        gap: 1.5,
+        minWidth: 0,
+        minHeight: 52,
+        px: backLabel ? 2 : 0,
+      }}
+    >
+      {showBack && !backLabel && (
         <IconButton
           aria-label={t('Back', 'Back')}
           onClick={() => requestNavigation(backTo)}
@@ -33,6 +45,16 @@ const ModulePlate = ({ title, subtitle, status, backTo, showBack = true }: Modul
         {subtitle != null && <Typography variant="body2" color="text.secondary" noWrap>{subtitle}</Typography>}
       </Box>
       {status != null && <Box sx={{ flex: 'none' }}>{status}</Box>}
+      {showBack && backLabel && (
+        <Button
+          aria-label={`返回${backLabel}`}
+          onClick={() => requestNavigation(backTo)}
+          startIcon={<ArrowBackIcon />}
+          sx={{ flex: 'none', minHeight: 44, whiteSpace: 'nowrap' }}
+        >
+          {backLabel}
+        </Button>
+      )}
     </Box>
   );
 };

@@ -77,7 +77,9 @@ const BoardPageShell = ({
           minHeight: 0,
           display: 'grid',
           placeItems: 'center',
-          p: '10px',
+          // LiveBoard keeps its existing 4px inner breathing room; 6px here
+          // preserves the approved 10px visible board inset without double-counting it.
+          p: '6px',
           boxSizing: 'border-box',
           '@media (min-width:900px)': {
             width: 'auto',
@@ -90,6 +92,7 @@ const BoardPageShell = ({
       </Box>
 
       <Box
+        data-testid="board-right-rail"
         sx={{
           width: '100%',
           display: 'flex',

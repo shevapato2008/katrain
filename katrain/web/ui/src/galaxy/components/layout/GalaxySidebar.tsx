@@ -55,7 +55,10 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
   };
 
   return (
-    <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
+    <Box
+      data-testid={overlay ? 'galaxy-sidebar-overlay' : undefined}
+      sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}
+    >
       {overlay && (
         <Box sx={{ height: 52, px: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <IconButton
@@ -146,7 +149,9 @@ const GalaxySidebar = ({ sidebarState }: GalaxySidebarProps) => {
       </Box>
       <IconButton
         ref={sidebarState.toggleButtonRef}
+        data-testid="galaxy-sidebar-toggle"
         aria-label={toggleLabel}
+        aria-expanded={overlay ? sidebarState.overlayOpen : sidebarState.dockedExpanded}
         onClick={sidebarState.toggle}
         style={{ width: 44, height: 44, position: 'absolute', left: sidebarState.dockedWidth, top: 4 }}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}

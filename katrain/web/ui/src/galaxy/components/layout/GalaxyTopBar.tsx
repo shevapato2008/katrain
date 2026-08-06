@@ -13,6 +13,7 @@ const GalaxyTopBar = ({ rightSlot }: GalaxyTopBarProps) => {
   return (
     <Box
       component="header"
+      data-testid="galaxy-top-bar"
       sx={{
         boxSizing: 'border-box',
         height: 52,
@@ -45,6 +46,7 @@ const GalaxyTopBar = ({ rightSlot }: GalaxyTopBarProps) => {
         </Box>
         <Box
           component="span"
+          className="galaxy-brand-latin"
           sx={{ fontFamily: SYSTEM_UI_FONT, fontSize: 14, lineHeight: 1, fontWeight: 600, letterSpacing: '0.02em' }}
         >
           StellaBox

@@ -33,6 +33,7 @@ interface DisplayToggleProps {
   onChange: () => void;
   icon: ReactNode;
   disabled?: boolean;
+  testId?: string;
 }
 
 function DisplayToggle({
@@ -44,11 +45,13 @@ function DisplayToggle({
   onChange,
   icon,
   disabled = false,
+  testId,
 }: DisplayToggleProps) {
   return (
     <Tooltip title={tooltip}>
       <span style={{ display: 'block', minWidth: 0 }}>
         <ToggleButton
+          data-testid={testId}
           aria-label={accessibleName}
           value={value}
           selected={selected}
@@ -134,6 +137,7 @@ export default function LiveMatchDisplayControls({
           icon={<TipsAndUpdatesIcon fontSize="small" />}
         />
         <DisplayToggle
+          testId="live-coordinate-toggle"
           label={coordinatesLabel}
           tooltip={coordinatesLabel}
           value="coordinates"

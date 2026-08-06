@@ -81,7 +81,7 @@ describe('BoardPageShell', () => {
       placeItems: 'center',
       minWidth: 0,
       minHeight: 0,
-      padding: '10px',
+      padding: '6px',
     });
   });
 

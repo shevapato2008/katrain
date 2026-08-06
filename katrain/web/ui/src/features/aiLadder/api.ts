@@ -1,4 +1,4 @@
-import type { AiLadderReadyStatus, AiLadderStartPreferences, AiLadderStartResponse } from './types';
+import type { AiLadderReadyStatus, AiLadderSettlementReceipt, AiLadderStartPreferences, AiLadderStartResponse } from './types';
 
 export class AiLadderApiError extends Error {
   readonly status: number;
@@ -27,6 +27,17 @@ const parseResponse = async <T,>(response: Response): Promise<T> => {
 
 export const getAiLadderStatus = async (token?: string, signal?: AbortSignal): Promise<AiLadderReadyStatus> =>
   parseResponse(await fetch('/api/v1/ai-ladder/status', {
+    headers: authHeaders(token),
+    credentials: 'same-origin',
+    signal,
+  }));
+
+export const getAiLadderSettlementReceipt = async (
+  gameId: string,
+  token?: string,
+  signal?: AbortSignal,
+): Promise<AiLadderSettlementReceipt> =>
+  parseResponse(await fetch(`/api/v1/ai-ladder/settlements/${encodeURIComponent(gameId)}`, {
     headers: authHeaders(token),
     credentials: 'same-origin',
     signal,

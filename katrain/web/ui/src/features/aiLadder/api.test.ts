@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getAiLadderStatus, startAiLadderGame, AiLadderApiError } from './api';
+import { getAiLadderSettlementReceipt, getAiLadderStatus, startAiLadderGame, AiLadderApiError } from './api';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -24,6 +24,19 @@ describe('ai ladder API', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/ai-ladder/status', expect.objectContaining({
       credentials: 'same-origin',
       headers: {},
+    }));
+  });
+
+  it('loads the authenticated receipt for one server-issued game id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      state: 'settled', game_id: 'g1', counted: false, reason: 'engine_unavailable',
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getAiLadderSettlementReceipt('g1', 'galaxy-token');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/ai-ladder/settlements/g1', expect.objectContaining({
+      headers: { Authorization: 'Bearer galaxy-token' }, credentials: 'same-origin',
     }));
   });
 

@@ -79,14 +79,14 @@ const AiSetupPage = () => {
     setLoading(true);
     try {
       if (isRanked) {
-        const { session_id, status } = await startAiLadderGame({
+        const { session_id, game_id, status } = await startAiLadderGame({
           color,
           time_enabled: true,
           main_time: mainTime,
           byo_length: byoyomiTime,
           byo_periods: byoyomiPeriods,
         }, token ?? undefined);
-        saveAiLadderBefore(session_id, status, String(user?.id ?? user?.username ?? 'anonymous'));
+        saveAiLadderBefore(session_id, status, String(user?.id ?? user?.username ?? 'anonymous'), game_id);
         writeActiveSession({
           kind: 'game', label: t('Ranked Game', '升降级对弈'),
           route: `/kiosk/play/ai/game/${session_id}`, ts: Date.now(),

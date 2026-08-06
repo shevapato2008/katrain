@@ -100,6 +100,7 @@ const comboboxForLabel = (text: string): HTMLElement => {
 
 describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
   beforeEach(() => {
+    sessionStorage.clear();
     mockNavigate.mockReset();
     mockRequestNavigation.mockReset();
     mockNewGame.mockClear();
@@ -173,6 +174,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
       current_opponent: { rung: 17, rank_name: '4级', certification_status: 'certified', availability: 'available', route: 'server' },
       recent_ranked_results: [], net_score: 0, pending_settlement: false,
     };
+    mockStartRanked.mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1', status: rankedState.current });
   });
 
   it('replaces the rated HumanSL controls with the server-decided placement opponent', async () => {
@@ -224,6 +226,9 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(mockCreateSession).not.toHaveBeenCalled();
     expect(mockNewGame).not.toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/ranked-s1?mode=rated');
+    expect(JSON.parse(sessionStorage.getItem('ai-ladder-before:ranked-s1')!)).toEqual(expect.objectContaining({
+      game_id: 'g1',
+    }));
   });
 
   it('does not mount ranked status in free play', async () => {

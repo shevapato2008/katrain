@@ -4,12 +4,30 @@ export type AiLadderAvailability = 'available' | 'unavailable';
 
 export type AiLadderRoute = 'local' | 'server';
 
+export type AiLadderCountingReason =
+  | 'invalid_game_type'
+  | 'engine_unavailable'
+  | 'inconclusive'
+  | 'opponent_not_eligible'
+  | 'opponent_rung_mismatch';
+
+export type AiLadderSettlementReceipt =
+  | { state: 'pending' }
+  | {
+      state: 'settled';
+      game_id: string;
+      counted: boolean;
+      reason: AiLadderCountingReason | null;
+    };
+
 export interface AiLadderCatalogEntry {
   rung: number;
   rank_name: string;
   certification_status: AiLadderCertificationStatus;
   availability: AiLadderAvailability;
   route: AiLadderRoute;
+  counting_eligibility?: 'eligible' | 'ineligible';
+  counting_reason?: AiLadderCountingReason;
 }
 
 export interface AiLadderPlacementInProgress {

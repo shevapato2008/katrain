@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const screenshotPath = resolve(
   process.cwd(),
-  '../../../superpowers/tracks/galaxy-ai-ladder-journey/visual/game/1440x900/implementation.png',
+  '../../../superpowers/tracks/galaxy-ai-ladder-journey/visual/settlement/1440x900/implementation.png',
 );
 
 const stones = [
@@ -12,11 +12,19 @@ const stones = [
   ['B', [4, 4]], ['W', [14, 14]], ['B', [14, 4]], ['W', [4, 14]],
 ] as const;
 
-test('Galaxy 升降级对弈棋盘页 1440x900', async ({ page }) => {
+test('Galaxy 升降级对弈结算页 1440x900', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.addInitScript(() => {
     localStorage.setItem('token', 'test-token');
     localStorage.setItem('katrain_language', 'cn');
+    sessionStorage.setItem('ai-ladder-before:ranked-demo', JSON.stringify({
+      identity: '1', game_id: 'ranked-demo',
+      status: {
+        view_state: 'ready', placement_state: { phase: 'placed', rung: { rung: 30, rank_name: '5段' } },
+        current_opponent: { rung: 30, rank_name: '5段' }, recent_ranked_results: [], net_score: 0,
+        pending_settlement: false,
+      },
+    }));
   });
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '棋手', rank: '5段', credits: 0 },
@@ -29,6 +37,8 @@ test('Galaxy 升降级对弈棋盘页 1440x900', async ({ page }) => {
       Settings: '设置', Logout: '退出登录', Territory: '领地', Advice: '支招', Graph: '走势',
       Undo: '悔棋', PASS: '停一手', RESIGN: '认输', COUNT: '数子', Coordinates: '坐标',
       'Move Numbers': '手数', Captures: '提子', Komi: '贴目', Rules: '规则', japanese: '日本',
+      'game:black_wins_resign': '黑棋中盘胜', 'live:black_winrate': '黑棋胜率',
+      'live:black_lead': '黑棋领先', 'live:points_unit': '目',
       items_disabled_rated: '升降级对弈进行中，分析与悔棋不可用',
       rated_mode_active: '升降级模式进行中', rated_mode_desc: '本局结果计入段位进度',
     },
@@ -39,11 +49,14 @@ test('Galaxy 升降级对弈棋盘页 1440x900', async ({ page }) => {
   await page.route('**/api/v1/users/following', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/v1/ai-ladder/status', (route) => route.fulfill({
     json: {
-      view_state: 'in_progress',
-      placement_state: { phase: 'placed', rung: { rung: 30, rank_name: '5段' } },
-      current_opponent: { rung: 30, rank_name: '5段' }, recent_ranked_results: [], net_score: 1,
+      view_state: 'ready',
+      placement_state: { phase: 'placed', rung: { rung: 31, rank_name: '6段' } },
+      current_opponent: { rung: 31, rank_name: '6段' }, recent_ranked_results: ['win'], net_score: 0,
       pending_settlement: false,
     },
+  }));
+  await page.route('**/api/v1/ai-ladder/settlements/ranked-demo', (route) => route.fulfill({
+    json: { state: 'settled', game_id: 'ranked-demo', counted: true, reason: null },
   }));
   await page.route('**/api/state?session_id=ranked-demo', (route) => route.fulfill({ json: { state: {
     game_id: 'ranked-demo', board_size: [19, 19], komi: 7.5, handicap: 0, ruleset: 'japanese',
@@ -51,7 +64,7 @@ test('Galaxy 升降级对弈棋盘页 1440x900', async ({ page }) => {
     history: stones.map((_, index) => ({ node_id: index + 1, score: null, winrate: null })),
     player_to_move: 'B', stones: stones.map(([color, point], index) => [color, point, index + 1, null]),
     last_move: [4, 14], prisoner_count: { B: 0, W: 0 }, analysis: null, commentary: '',
-    is_root: false, is_pass: false, end_result: null, children: [], ghost_stones: [], note: '', language: 'cn',
+    is_root: false, is_pass: false, end_result: 'B+R', children: [], ghost_stones: [], note: '', language: 'cn',
     game_type: 'ai_ladder_ranked', count_min_moves: 100,
     players_info: {
       B: { player_type: 'player:human', player_subtype: '', name: '棋手', rank_display: '5段', calculated_rank: null, periods_used: 0, main_time_used: 82 },
@@ -70,6 +83,10 @@ test('Galaxy 升降级对弈棋盘页 1440x900', async ({ page }) => {
   await expect(page.getByTestId('board-page-shell')).toBeVisible();
   await expect(page.getByRole('heading', { name: '升降级对弈' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回升降级' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '本局已结算' })).toBeVisible();
+  await expect(page.getByText('升级：6段')).toBeVisible();
+  await expect(page.getByRole('button', { name: '再来一局' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
   await expect(page.getByTestId('board-stage').locator('canvas')).toBeVisible();
   expect(await page.getByTestId('board-stage').locator('h1,h2,h3,h4,h5,h6,button').count()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

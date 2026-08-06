@@ -13,9 +13,10 @@ import { API } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
-import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import { useAiLadderSettlement } from '../../features/aiLadder/settlement';
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
+import AiLadderSettlementPanel from '../components/aiLadder/AiLadderSettlementPanel';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -309,7 +310,6 @@ const GamePage = () => {
     return (
         <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
-                <AiLadderSettlementAlert feedback={settlementFeedback} />
                 {/* The ladder AI refused to move (the engine cannot serve the seated rung at
                     its calibrated strength). No move is coming and the clock keeps running,
                     so say so — an empty board with a ticking opponent clock reads as
@@ -387,7 +387,18 @@ const GamePage = () => {
                             backTo="/galaxy/play/ai?mode=rated"
                         />
                     )}
-                    railBody={controls(true)}
+                    railBody={(
+                        <>
+                            {gameState.end_result && (
+                                <AiLadderSettlementPanel
+                                    feedback={settlementFeedback ?? { kind: 'pending', message: '正在读取服务器结算结果' }}
+                                    onPlayAgain={() => navigate('/galaxy/play/ai?mode=rated')}
+                                    onReturn={() => navigate('/galaxy/play')}
+                                />
+                            )}
+                            {controls(true)}
+                        </>
+                    )}
                     actions={null}
                 />
             ) : (<>

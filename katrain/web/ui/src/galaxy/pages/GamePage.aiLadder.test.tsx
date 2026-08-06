@@ -42,6 +42,10 @@ describe('Galaxy GamePage ranked settlement', () => {
     getStatus.mockResolvedValue(status(17));
     render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     expect(await screen.findByText('降级：17级')).toBeInTheDocument();
+    const rail = screen.getByTestId('board-rail-scroll');
+    expect(rail).toHaveTextContent('本局已结算');
+    expect(rail).toContainElement(screen.getByRole('button', { name: '再来一局' }));
+    expect(rail).toContainElement(screen.getByRole('button', { name: '返回对局' }));
     expect(getStatus).toHaveBeenCalledWith(undefined, expect.any(AbortSignal));
   });
 

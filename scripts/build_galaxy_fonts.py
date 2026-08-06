@@ -297,7 +297,7 @@ def generate_fonts(output: Path, repo_root: Path, sources: Mapping[str, Path]) -
             destination = output / f"wenkai-{file_weight}-{index:03d}.woff2"
             subset_font(source, destination, codepoints)
             generated.append(destination)
-            faces.append(css_face("Galaxy WenKai", destination.name, css_weight, codepoints))
+            faces.append(css_face("LXGW WenKai", destination.name, css_weight, codepoints))
 
     brand_path = output / "longcang-brand.woff2"
     brand_codepoints = tuple(map(ord, BRAND_TEXT))

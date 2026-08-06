@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, useTheme } from '@mui/material/styles';
 import { MemoryRouter, Outlet } from 'react-router-dom';
@@ -45,6 +47,16 @@ vi.mock('./components/layout/MainLayout', () => ({
 vi.mock('./pages/Dashboard', () => ({ default: () => <div>Dashboard</div> }));
 
 describe('createGalaxyTheme', () => {
+  it('uses the WenKai family registered by the Galaxy font CSS', () => {
+    const fontCssUrl = new URL('src/galaxy/assets/fonts/galaxy-fonts.css', pathToFileURL(`${process.cwd()}/`));
+    const fontCss = readFileSync(fontCssUrl, 'utf8');
+    const registeredFamilies = [...fontCss.matchAll(/font-family: "([^"]+)";[\s\S]*?wenkai-/g)].map(match => match[1]);
+    const preferredThemeFamily = CHINESE_UI_FONT.split(',')[0].replaceAll("'", '');
+
+    expect(new Set(registeredFamilies)).toEqual(new Set(['LXGW WenKai']));
+    expect(preferredThemeFamily).toBe('LXGW WenKai');
+  });
+
   it.each(['cn', 'tw'])('uses LXGW WenKai for the %s locale', language => {
     const theme = createGalaxyTheme(language);
 

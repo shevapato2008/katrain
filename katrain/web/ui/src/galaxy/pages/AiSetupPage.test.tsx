@@ -16,10 +16,15 @@ import AiSetupPage from './AiSetupPage';
 // on the accessible-name computation.
 
 const mockNavigate = vi.fn();
+const mockRequestNavigation = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
+
+vi.mock('../context/GameNavigationContext', () => ({
+  useGameNavigation: () => ({ requestNavigation: mockRequestNavigation }),
+}));
 
 const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mockUpdateConfig, mockStartRanked, rankedState, mockRetry } = vi.hoisted(() => ({
   mockAiConstants: {
@@ -96,6 +101,7 @@ const comboboxForLabel = (text: string): HTMLElement => {
 describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
+    mockRequestNavigation.mockReset();
     mockNewGame.mockClear();
     mockUpdateConfig.mockClear();
   });
@@ -172,13 +178,13 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
   it('replaces the rated HumanSL controls with the server-decided placement opponent', async () => {
     renderPage('rated');
 
-    expect(await screen.findByRole('heading', { name: '41档升降级AI' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '升降级对弈' })).toBeInTheDocument();
     expect(screen.getByText('定级进度 3/5')).toBeInTheDocument();
-    expect(screen.getByText('定级对手：4级')).toBeInTheDocument();
+    expect(screen.getByText('4级')).toBeInTheDocument();
     expect(screen.queryByText('20k')).not.toBeInTheDocument();
     expect(screen.queryByText('9d')).not.toBeInTheDocument();
     expect(screen.queryByText('Human-like')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Start Game' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '开始正式对局' })).toBeEnabled();
     expect(screen.queryByText('累计净胜分：0')).not.toBeInTheDocument();
   });
 
@@ -186,7 +192,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     rankedState.current = { ...rankedState.current, placement_state: { phase: 'placed', rung: { rung: 30, rank_name: '5段', certification_status: 'certified', availability: 'available', route: 'server' } } };
     renderPage('rated');
 
-    expect(await screen.findByText('本局对手：5段')).toBeInTheDocument();
+    expect(await screen.findByText('5段', { selector: '[data-testid="current-rank"]' })).toBeInTheDocument();
     expect(screen.queryByText('第30档')).not.toBeInTheDocument();
   });
 
@@ -203,7 +209,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
   it('starts rated play only through the authoritative endpoint', async () => {
     renderPage('rated');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Start Game' }));
+    await user.click(await screen.findByRole('button', { name: '开始正式对局' }));
 
     // Board size, ruleset, komi and handicap are server-owned (the calibration
     // conditions) and the request model forbids extras — the page sends seat + clock.
@@ -224,6 +230,6 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     renderPage('free');
 
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
-    expect(screen.queryByRole('heading', { name: '41档升降级AI' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '升降级对弈' })).not.toBeInTheDocument();
   });
 });

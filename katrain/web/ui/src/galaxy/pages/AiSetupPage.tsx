@@ -12,6 +12,8 @@ import { startAiLadderGame } from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
+import AiLadderRatedSetup from '../components/aiLadder/AiLadderRatedSetup';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -35,6 +37,7 @@ const AiSetupPage = () => {
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [startPending, setStartPending] = useState(false);
 
     // Game Settings
     const [boardSize, setBoardSize] = useState(19);
@@ -153,7 +156,8 @@ const AiSetupPage = () => {
     };
 
     const handleStartGame = async () => {
-        setLoading(true);
+        if (isRated) setStartPending(true);
+        else setLoading(true);
         try {
             if (isRated) {
                 const session = await startAiLadderGame({
@@ -230,7 +234,8 @@ const AiSetupPage = () => {
             navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
         } catch (err: any) {
             setError(err.message || 'Failed to start game');
-            setLoading(false);
+            if (isRated) setStartPending(false);
+            else setLoading(false);
         }
     };
 
@@ -290,6 +295,30 @@ const AiSetupPage = () => {
             />
         );
     };
+
+    if (isRated) {
+        return (
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2, sm: 3, lg: 4 }, py: { xs: 2, md: 3 } }}>
+                <Box sx={{ width: '100%', maxWidth: 1500, mx: 'auto' }}>
+                    <ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/galaxy/play" />
+                    {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+                    <Box sx={{ mt: 2.5 }}>
+                        <AiLadderRatedSetup
+                            status={aiLadderStatus}
+                            color={color}
+                            mainTime={mainTime}
+                            byoLength={byoLength}
+                            byoPeriods={byoPeriods}
+                            startPending={startPending}
+                            onColorChange={setColor}
+                            onRetry={retryAiLadderStatus}
+                            onStart={handleStartGame}
+                        />
+                    </Box>
+                </Box>
+            </Box>
+        );
+    }
 
     if (loading && !aiConstants) return <Box sx={{ p: 4 }}>Loading...</Box>;
 

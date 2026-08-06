@@ -8,6 +8,7 @@ interface MatchInfoProps {
   match: MatchDetail;
   currentMove?: number;
   analysis?: MoveAnalysis | null;  // KataGo analysis for current position
+  headingMode?: 'full' | 'metadata-only';
 }
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
@@ -16,7 +17,7 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   pandanet: { label: 'IGS', color: '#e65100' },
 };
 
-export default function MatchInfo({ match, analysis }: MatchInfoProps) {
+export default function MatchInfo({ match, analysis, headingMode = 'full' }: MatchInfoProps) {
   const { t } = useTranslation();
   const isLive = match.status === 'live';
   const sourceInfo = SOURCE_LABELS[match.source];
@@ -40,16 +41,18 @@ export default function MatchInfo({ match, analysis }: MatchInfoProps) {
     <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
       {/* Status and tournament */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        {isLive ? (
-          <Chip
-            icon={<FiberManualRecordIcon sx={{ fontSize: 10 }} />}
-            label={t('live:status_live')}
-            size="small"
-            color="error"
-            sx={{ '& .MuiChip-icon': { animation: 'pulse 1.5s infinite' } }}
-          />
-        ) : (
-          <Chip label={t('live:status_finished')} size="small" variant="outlined" />
+        {headingMode === 'full' && (
+          isLive ? (
+            <Chip
+              icon={<FiberManualRecordIcon sx={{ fontSize: 10 }} />}
+              label={t('live:status_live')}
+              size="small"
+              color="error"
+              sx={{ '& .MuiChip-icon': { animation: 'pulse 1.5s infinite' } }}
+            />
+          ) : (
+            <Chip label={t('live:status_finished')} size="small" variant="outlined" />
+          )
         )}
         <Typography variant="caption" color="text.secondary">
           {dateStr}
@@ -68,10 +71,12 @@ export default function MatchInfo({ match, analysis }: MatchInfoProps) {
       </Box>
 
       {/* Tournament name */}
-      <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-        {i18n.translateTournament(match.tournament)}
-        {match.round_name && ` · ${i18n.translateRound(match.round_name)}`}
-      </Typography>
+      {headingMode === 'full' && (
+        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          {i18n.translateTournament(match.tournament)}
+          {match.round_name && ` · ${i18n.translateRound(match.round_name)}`}
+        </Typography>
+      )}
 
       {/* Players */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 2 }}>

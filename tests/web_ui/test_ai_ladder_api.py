@@ -266,12 +266,76 @@ async def test_status_projects_uncreated_profile_and_server_selected_midpoint(ap
             "certification_status": "certified",
             "availability": "available",
             "route": "server",
+            "counting_eligibility": "eligible",
         },
         "recent_ranked_results": [],
         "net_score": 0,
         "pending_settlement": False,
         "provisional_play_allowed": False,
     }
+
+
+@pytest.mark.asyncio
+async def test_status_exposes_public_counting_eligibility_for_the_current_opponent(api_app, client):
+    async with client as ac:
+        response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert response.status_code == 200
+    assert response.json()["current_opponent"] == {
+        "rung": 16,
+        "rank_name": "fixture-16",
+        "certification_status": "certified",
+        "availability": "available",
+        "route": "server",
+        "counting_eligibility": "eligible",
+    }
+
+
+@pytest.mark.asyncio
+async def test_status_explains_when_the_current_opponent_will_not_count(api_app, client, monkeypatch):
+    from katrain.core import ladder
+
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", fixture_catalog(provisional_rung=16))
+    async with client as ac:
+        response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    opponent = response.json()["current_opponent"]
+    assert opponent["counting_eligibility"] == "ineligible"
+    assert opponent["counting_reason"] == "opponent_not_eligible"
+
+
+@pytest.mark.asyncio
+async def test_game_scoped_settlement_receipt_moves_from_pending_to_settled(api_app, client):
+    async with client as ac:
+        started = await start_ranked(api_app, ac)
+        game_id = started.json()["game_id"]
+
+        pending = await ac.get(
+            f"/api/v1/ai-ladder/settlements/{game_id}", headers=api_app.state._test_headers
+        )
+        settled_post = await ac.post(
+            "/api/v1/ai-ladder/settlements",
+            headers=api_app.state._test_headers,
+            json=settlement_payload(game_id=game_id),
+        )
+        settled = await ac.get(
+            f"/api/v1/ai-ladder/settlements/{game_id}", headers=api_app.state._test_headers
+        )
+        missing = await ac.get(
+            "/api/v1/ai-ladder/settlements/not-this-users-game", headers=api_app.state._test_headers
+        )
+
+    assert pending.status_code == 200
+    assert pending.json() == {"state": "pending"}
+    assert settled_post.status_code == 200
+    assert settled.status_code == 200
+    assert settled.json() == {
+        "state": "settled",
+        "game_id": game_id,
+        "counted": True,
+        "reason": None,
+    }
+    assert missing.status_code == 404
 
 
 @pytest.mark.asyncio

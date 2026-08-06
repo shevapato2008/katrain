@@ -129,6 +129,12 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
 
     opponent_rung = rung if rung is not None else (lo + hi) // 2
     opponent = catalog_entry(opponent_rung)
+    current_opponent = dict(opponent)
+    if opponent["certification_status"] == "certified" and opponent["availability"] == "available":
+        current_opponent["counting_eligibility"] = "eligible"
+    else:
+        current_opponent["counting_eligibility"] = "ineligible"
+        current_opponent["counting_reason"] = "opponent_not_eligible"
     placement_state: dict[str, object]
     if rung is None:
         placement_state = {"phase": "placement", "completed_games": completed, "total_games": PLACEMENT_GAMES}
@@ -140,7 +146,7 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
     return {
         "view_state": "ready",
         "placement_state": placement_state,
-        "current_opponent": opponent,
+        "current_opponent": current_opponent,
         "recent_ranked_results": repo.recent_counted_results(current_user.id, limit=5),
         "net_score": net_score,
         "pending_settlement": _pending_settlement(request, current_user.id),
@@ -392,3 +398,19 @@ def submit_settlement(
             "net_score": outcome.net_score,
         },
     }
+
+
+@router.get("/settlements/{game_id}")
+def get_settlement_receipt(
+    game_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    receipt = request.app.state.ai_ladder_repo.get_settlement_receipt(
+        user_id=current_user.id,
+        game_id=game_id,
+    )
+    if receipt is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranked game not found")
+    return receipt

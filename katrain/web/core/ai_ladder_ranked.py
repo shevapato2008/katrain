@@ -226,6 +226,38 @@ class AiLadderRankedRepository:
         finally:
             session.close()
 
+    def get_settlement_receipt(self, *, user_id: int, game_id: str) -> Optional[dict[str, Any]]:
+        """Return only this account's public lifecycle receipt for one ranked game."""
+
+        session = self.session_factory()
+        try:
+            ledger = (
+                session.query(models_db.AiLadderGameLedger)
+                .filter(
+                    models_db.AiLadderGameLedger.user_id == user_id,
+                    models_db.AiLadderGameLedger.game_id == game_id,
+                )
+                .one_or_none()
+            )
+            if ledger is not None:
+                return {
+                    "state": "settled",
+                    "game_id": ledger.game_id,
+                    "counted": ledger.counted,
+                    "reason": ledger.reason,
+                }
+            pending = (
+                session.query(models_db.AiLadderPendingGame.game_id)
+                .filter(
+                    models_db.AiLadderPendingGame.user_id == user_id,
+                    models_db.AiLadderPendingGame.game_id == game_id,
+                )
+                .one_or_none()
+            )
+            return {"state": "pending"} if pending is not None else None
+        finally:
+            session.close()
+
     def mark_pending_game_saved(self, *, user_id: int, game_id: str, result: str) -> None:
         session = self.session_factory()
         try:

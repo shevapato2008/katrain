@@ -1042,7 +1042,7 @@ msgid "Human"
 msgstr "Human"
 
 msgid "dashboard:welcome"
-msgstr "Bienvenido a Galaxy Go"
+msgstr "Bienvenido a StellaBox"
 
 msgid "dashboard:tagline"
 msgstr "Tu plataforma profesional de entrenamiento y análisis de Go."
@@ -1469,7 +1469,7 @@ msgid "tsumego:problemRange"
 msgstr "Problemas {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Iniciar sesión en Galaxy Go"
+msgstr "Iniciar sesión en StellaBox"
 
 msgid "auth:register_title"
 msgstr "Crear cuenta"

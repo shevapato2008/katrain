@@ -1319,7 +1319,7 @@ msgid "lobby:custom_game"
 msgstr "Özel Oyun"
 
 msgid "dashboard:welcome"
-msgstr "Galaxy Go'ya Hoş Geldiniz"
+msgstr "StellaBox'a Hoş Geldiniz"
 
 msgid "game_end:forfeit_loss"
 msgstr "Oyunu kaybettiniz."
@@ -1659,7 +1659,7 @@ msgid "tsumego:problemRange"
 msgstr "Problem {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Galaxy Go'ya Giriş Yap"
+msgstr "StellaBox'a Giriş Yap"
 
 msgid "auth:register_title"
 msgstr "Hesap Oluştur"

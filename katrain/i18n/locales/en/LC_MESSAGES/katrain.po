@@ -83,7 +83,7 @@ msgid "dashboard:tsumego_desc"
 msgstr "Practice life and death problems to sharpen your reading skills."
 
 msgid "dashboard:welcome"
-msgstr "Welcome to Galaxy Go"
+msgstr "Welcome to StellaBox"
 
 msgid "dashboard:tagline"
 msgstr "Your professional Go training and analysis platform."
@@ -1606,7 +1606,7 @@ msgid "tsumego:tryModeDesc"
 msgstr "Free exploration without judgment"
 
 msgid "auth:login_title"
-msgstr "Login to Galaxy Go"
+msgstr "Login to StellaBox"
 
 msgid "auth:register_title"
 msgstr "Create Account"

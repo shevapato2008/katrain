@@ -124,7 +124,7 @@ describe('GalaxySidebar', () => {
     // However, the fact that it didn't crash and the menu interaction worked is a good sign.
   });
 
-  it('renders the brand logo at the selected showcase size', () => {
+  it('leaves the global brand lockup to the top bar', () => {
     (useAuth as Mock).mockReturnValue({ isAuthenticated: false, user: null, login: vi.fn() });
 
     render(
@@ -135,7 +135,7 @@ describe('GalaxySidebar', () => {
       </MemoryRouter>
     );
 
-    const logo = screen.getByAltText('弈航');
-    expect(logo).toHaveStyle({ width: '84px', height: '84px' });
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByText('棋道导航者')).not.toBeInTheDocument();
   });
 });

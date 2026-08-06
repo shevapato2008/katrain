@@ -1282,7 +1282,7 @@ msgid "lobby:custom_game"
 msgstr "Benutzerdefiniertes Spiel"
 
 msgid "dashboard:welcome"
-msgstr "Willkommen bei Galaxy Go"
+msgstr "Willkommen bei StellaBox"
 
 msgid "game_end:forfeit_loss"
 msgstr "Sie haben aufgegeben."
@@ -1624,7 +1624,7 @@ msgid "tsumego:problemRange"
 msgstr "Aufgaben {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Bei Galaxy Go anmelden"
+msgstr "Bei StellaBox anmelden"
 
 msgid "auth:register_title"
 msgstr "Konto erstellen"

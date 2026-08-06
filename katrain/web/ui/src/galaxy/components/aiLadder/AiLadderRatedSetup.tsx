@@ -1,4 +1,3 @@
-import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import { Alert, Box, Button, Chip, CircularProgress, Divider, Paper, Skeleton, Stack, Typography } from '@mui/material';
 import { AI_LADDER_COPY, formatPlacementProgress } from '../../../features/aiLadder/copy';
@@ -144,9 +143,6 @@ const AiLadderRatedSetup = ({
             </Stack>
           </Box>
 
-          <Button startIcon={<HistoryRoundedIcon />} color="inherit" sx={{ mt: 4, px: 0, color: 'primary.light' }} aria-label="查看正式对局记录">
-            查看正式对局记录
-          </Button>
         </Box>
       </Box>
 

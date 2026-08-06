@@ -40,4 +40,22 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.getByRole('button', { name: '开始正式对局' })).toBeEnabled();
     expect(screen.queryByText('30')).not.toBeInTheDocument();
   });
+
+  it('does not expose a ranked-game-specific history entry point', () => {
+    render(
+      <AiLadderRatedSetup
+        status={readyStatus}
+        color="B"
+        mainTime={10}
+        byoLength={30}
+        byoPeriods={3}
+        startPending={false}
+        onColorChange={vi.fn()}
+        onRetry={vi.fn()}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: '查看正式对局记录' })).not.toBeInTheDocument();
+  });
 });

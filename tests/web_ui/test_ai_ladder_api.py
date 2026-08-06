@@ -1663,8 +1663,13 @@ async def test_ranked_natural_result_saves_once_then_settles_once(api_app, clien
         games = db.query(models_db.UserGame).all()
         ledger = db.query(models_db.AiLadderGameLedger).all()
         profile = db.get(models_db.AiLadderProfile, api_app.state._test_user_id)
-        assert [(game.id, game.game_type) for game in games] == [(game_id, "ai_ladder_ranked")]
-        assert [(row.game_id, row.counted) for row in ledger] == [(game_id, True)]
+        assert len(games) == 1
+        assert games[0].id == game_id
+        assert games[0].source == "play_ai"
+        assert games[0].game_type == "ai_ladder_ranked"
+        assert len(ledger) == 1
+        assert ledger[0].game_id == game_id
+        assert ledger[0].counted is True
         assert profile.placement_completed == 1
     assert session._recorded is True
     assert session.ai_ladder_settlement_pending is False

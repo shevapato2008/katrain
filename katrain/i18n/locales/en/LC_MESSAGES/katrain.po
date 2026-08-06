@@ -109,6 +109,9 @@ msgstr "Challenge a friend or find an opponent online."
 msgid "play:choose_mode"
 msgstr "Choose your game mode"
 
+msgid "play:game_records"
+msgstr "Game Records"
+
 msgid "play:rated_ai_setup"
 msgstr "Rated AI Game Setup"
 

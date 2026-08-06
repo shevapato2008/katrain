@@ -1183,6 +1183,9 @@ msgstr "{{name}} 邀请你进行对局。"
 msgid "play:choose_mode"
 msgstr "选择游戏模式"
 
+msgid "play:game_records"
+msgstr "对局记录"
+
 msgid "play:hvh_desc"
 msgstr "挑战好友或在线匹配对手。"
 

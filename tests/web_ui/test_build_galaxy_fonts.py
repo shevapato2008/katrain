@@ -1,8 +1,12 @@
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
+from fontTools.ttLib import TTFont
+
+import scripts.build_galaxy_fonts as fonts
 
 from scripts.build_galaxy_fonts import (
     BRAND_TEXT,
@@ -12,7 +16,12 @@ from scripts.build_galaxy_fonts import (
     catalog_seed_codepoints,
     is_chinese_ui_codepoint,
     prepare_output_directory,
+    unicode_range,
 )
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+FONT_ASSETS = REPO_ROOT / "katrain/web/ui/src/galaxy/assets/fonts"
 
 
 def test_chinese_ui_codepoint_accepts_cjk_and_chinese_punctuation_only():
@@ -48,7 +57,13 @@ def test_manifest_is_deterministic_and_records_provenance(tmp_path):
     second = build_manifest([output])
 
     assert first == second
-    assert first["generator_command"].endswith("--output $OUT")
+    assert set(first) == {"generator_command", "generated_total_bytes", "outputs", "inputs", "toolchain"}
+    assert first["generator_command"] == (
+        "uv run --with fonttools==4.61.1 --with brotli==1.2.0 python scripts/build_galaxy_fonts.py "
+        "--regular /private/tmp/galaxy-font-sources/LXGWWenKai-Regular.ttf "
+        "--medium /private/tmp/galaxy-font-sources/LXGWWenKai-Medium.ttf "
+        "--longcang /private/tmp/galaxy-font-sources/LongCang-Regular.ttf --out $OUT"
+    )
     assert str(tmp_path) not in json.dumps(first, ensure_ascii=False)
     assert first["generated_total_bytes"] == len(b"font bytes")
     assert first["outputs"] == [
@@ -65,6 +80,36 @@ def test_manifest_is_deterministic_and_records_provenance(tmp_path):
         assert item["url"].startswith("https://")
         assert len(item["sha256"]) == 64
     assert first["inputs"] == [source.manifest_entry() for source in INPUTS]
+    assert first["toolchain"] == {"fonttools": "4.61.1", "brotli": "1.2.0"}
+
+
+def test_cli_requires_local_input_files_and_out(tmp_path):
+    paths = [tmp_path / name for name in ("regular.ttf", "medium.ttf", "longcang.ttf")]
+    args = fonts.parse_args(
+        [
+            "--regular",
+            str(paths[0]),
+            "--medium",
+            str(paths[1]),
+            "--longcang",
+            str(paths[2]),
+            "--out",
+            str(tmp_path / "out"),
+        ]
+    )
+
+    assert (args.regular, args.medium, args.longcang, args.out) == (*paths, tmp_path / "out")
+
+
+def test_local_input_hash_mismatch_is_rejected_before_output_changes(tmp_path):
+    inputs = [tmp_path / name for name in ("regular.ttf", "medium.ttf", "longcang.ttf")]
+    for path in inputs:
+        path.write_bytes(b"not an approved font")
+    output = tmp_path / "out"
+
+    with pytest.raises(RuntimeError, match="SHA-256 mismatch.*LXGW WenKai Regular"):
+        fonts.build_fonts(output, tmp_path, regular=inputs[0], medium=inputs[1], longcang=inputs[2])
+    assert not output.exists()
 
 
 def test_nonproduction_output_must_be_absent_or_empty(tmp_path):
@@ -113,3 +158,166 @@ def test_similar_but_not_exact_production_path_fails_closed(tmp_path):
     with pytest.raises(RuntimeError, match="empty"):
         prepare_output_directory(output, repo_root)
     assert stale.read_bytes() == b"must not be deleted"
+
+
+def test_production_output_directory_symlink_is_rejected_without_deleting_external_files(tmp_path):
+    repo_root = tmp_path / "repo"
+    parent = repo_root / "katrain/web/ui/src/galaxy/assets"
+    parent.mkdir(parents=True)
+    external = tmp_path / "external-fonts"
+    external.mkdir()
+    victim = external / "wenkai-400-000.woff2"
+    victim.write_bytes(b"external data")
+    (parent / "fonts").symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(RuntimeError, match="symlink"):
+        prepare_output_directory(parent / "fonts", repo_root)
+    assert victim.read_bytes() == b"external data"
+
+
+def test_production_output_rejects_symlink_in_existing_path_components(tmp_path):
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    external = tmp_path / "external-katrain"
+    output = external / "web/ui/src/galaxy/assets/fonts"
+    output.mkdir(parents=True)
+    victim = output / "wenkai-400-000.woff2"
+    victim.write_bytes(b"external data")
+    (repo_root / "katrain").symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(RuntimeError, match="symlink"):
+        prepare_output_directory(repo_root / "katrain/web/ui/src/galaxy/assets/fonts", repo_root)
+    assert victim.read_bytes() == b"external data"
+
+
+def test_production_output_rejects_generated_name_symlink(tmp_path):
+    repo_root = tmp_path / "repo"
+    output = repo_root / "katrain/web/ui/src/galaxy/assets/fonts"
+    output.mkdir(parents=True)
+    external = tmp_path / "font.woff2"
+    external.write_bytes(b"external data")
+    generated_link = output / "wenkai-400-000.woff2"
+    generated_link.symlink_to(external)
+
+    with pytest.raises(RuntimeError, match="symlink"):
+        prepare_output_directory(output, repo_root)
+    assert generated_link.is_symlink()
+    assert external.read_bytes() == b"external data"
+
+
+def test_unicode_range_compacts_adjacent_codepoints_without_expanding_gaps():
+    assert unicode_range((0x3000, 0x3001, 0x3003, 0x4E00, 0x4E01, 0x4E02)) == (
+        "U+3000-3001, U+3003, U+4E00-4E02"
+    )
+
+
+def test_committed_woff2_cmaps_have_no_ascii_and_brand_is_exact():
+    font_paths = sorted(FONT_ASSETS.glob("*.woff2"))
+    assert font_paths
+    cmaps = {path.name: set(TTFont(path, recalcTimestamp=False).getBestCmap() or {}) for path in font_paths}
+
+    forbidden = set(map(ord, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"))
+    assert all(not (codepoints & forbidden) for codepoints in cmaps.values())
+    assert cmaps["longcang-brand.woff2"] == set(map(ord, BRAND_TEXT))
+
+
+def test_committed_css_references_manifested_outputs_with_matching_hashes_and_bytes():
+    css_path = FONT_ASSETS / "galaxy-fonts.css"
+    css = css_path.read_text(encoding="utf-8")
+    manifest = json.loads((FONT_ASSETS / "sources.json").read_text(encoding="utf-8"))
+    outputs = {item["filename"]: item for item in manifest["outputs"]}
+    references = set(re.findall(r'url\("\./([^"/]+\.woff2)"\)', css))
+
+    assert references
+    assert references == {name for name in outputs if name.endswith(".woff2")}
+    assert set(outputs) == references | {"galaxy-fonts.css"}
+    for filename, metadata in outputs.items():
+        path = FONT_ASSETS / filename
+        assert path.is_file()
+        assert path.stat().st_size == metadata["bytes"]
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == metadata["sha256"]
+
+
+def test_committed_wenkai_chunks_are_disjoint_and_remaining_chunks_are_ordered():
+    for weight in (400, 500):
+        chunks = []
+        for path in sorted(FONT_ASSETS.glob(f"wenkai-{weight}-*.woff2")):
+            chunks.append(set(TTFont(path, recalcTimestamp=False).getBestCmap() or {}))
+        assert chunks
+        seen: set[int] = set()
+        for chunk in chunks:
+            assert not (seen & chunk)
+            seen.update(chunk)
+        remaining = [codepoint for chunk in chunks[1:] for codepoint in sorted(chunk)]
+        assert remaining == sorted(remaining)
+
+
+def test_committed_css_uses_compact_ranges_with_exact_cmap_coverage():
+    css = (FONT_ASSETS / "galaxy-fonts.css").read_text(encoding="utf-8")
+    assert len(css.encode("utf-8")) < 60_000
+    faces = re.findall(r'url\("\./([^"/]+\.woff2)"\).*?unicode-range: ([^;]+);', css, re.DOTALL)
+    assert faces
+    for filename, encoded_ranges in faces:
+        decoded: set[int] = set()
+        for item in encoded_ranges.split(", "):
+            bounds = item.removeprefix("U+").split("-")
+            start = int(bounds[0], 16)
+            end = int(bounds[-1], 16)
+            decoded.update(range(start, end + 1))
+        cmap = set(TTFont(FONT_ASSETS / filename, recalcTimestamp=False).getBestCmap() or {})
+        assert decoded == cmap
+        assert all(is_chinese_ui_codepoint(codepoint) for codepoint in decoded)
+
+
+def test_subset_failure_leaves_existing_production_generated_files_unchanged(tmp_path, monkeypatch):
+    repo_root = tmp_path / "repo"
+    output = repo_root / "katrain/web/ui/src/galaxy/assets/fonts"
+    output.mkdir(parents=True)
+    catalogs = repo_root / "katrain/i18n/locales"
+    for locale in CHINESE_LOCALES:
+        catalog = catalogs / locale / "LC_MESSAGES/katrain.po"
+        catalog.parent.mkdir(parents=True)
+        catalog.write_text('msgstr "棋"\n', encoding="utf-8")
+    existing = {
+        "wenkai-400-000.woff2": b"old regular",
+        "longcang-brand.woff2": b"old brand",
+        "galaxy-fonts.css": b"old css",
+        "sources.json": b"old manifest",
+    }
+    for filename, content in existing.items():
+        (output / filename).write_bytes(content)
+    fake_inputs = [tmp_path / name for name in ("regular.ttf", "medium.ttf", "longcang.ttf")]
+    for path in fake_inputs:
+        path.write_bytes(b"fake")
+    monkeypatch.setattr(
+        fonts,
+        "validate_input_files",
+        lambda regular, medium, longcang: {
+            source.name: path for source, path in zip(INPUTS, fake_inputs, strict=True)
+        },
+    )
+    monkeypatch.setattr(fonts, "font_codepoints", lambda path: {ord("棋")})
+    monkeypatch.setattr(fonts, "subset_font", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    with pytest.raises(RuntimeError, match="boom"):
+        fonts.build_fonts(
+            output,
+            repo_root,
+            regular=fake_inputs[0],
+            medium=fake_inputs[1],
+            longcang=fake_inputs[2],
+        )
+
+    assert {filename: (output / filename).read_bytes() for filename in existing} == existing
+
+
+def test_committed_upstream_license_files_are_unmodified_and_documented():
+    expected = {
+        "OFL-LXGW-WenKai.txt": "c38b1994a5e48ac30ac7d1da7d0409fd8fd8127dfe28a13d6e787d5b1ef34a5e",
+        "OFL-Long-Cang.txt": "603546b7219a94bb59bf8294458194a5010119486354092b66a09a3fd61aeacc",
+    }
+    readme = (FONT_ASSETS / "README.md").read_text(encoding="utf-8")
+    for filename, sha256 in expected.items():
+        path = FONT_ASSETS / filename
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == sha256
+        assert filename in readme

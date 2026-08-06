@@ -1,11 +1,11 @@
 {
-  "generator_command": "uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --output $OUT",
-  "generated_total_bytes": 17191810,
+  "generator_command": "uv run --with fonttools==4.61.1 --with brotli==1.2.0 python scripts/build_galaxy_fonts.py --regular /private/tmp/galaxy-font-sources/LXGWWenKai-Regular.ttf --medium /private/tmp/galaxy-font-sources/LXGWWenKai-Medium.ttf --longcang /private/tmp/galaxy-font-sources/LongCang-Regular.ttf --out $OUT",
+  "generated_total_bytes": 16778204,
   "outputs": [
     {
       "filename": "galaxy-fonts.css",
-      "sha256": "9dd5cd35214f2f3843082772d549029854d965ef920c6b845562f96e5f5f22a8",
-      "bytes": 457866
+      "sha256": "16f9f8559c320e23a537071d6cd9a1dc8b4ab8dd1434571a37a8860126c683e1",
+      "bytes": 44260
     },
     {
       "filename": "longcang-brand.woff2",
@@ -278,5 +278,9 @@
       "sha256": "e5bf2c3f24ef2327c6f136d8f73e2f9dfdf44896fdbeb35a9515f44777bb91bc",
       "license": "SIL OFL 1.1"
     }
-  ]
+  ],
+  "toolchain": {
+    "fonttools": "4.61.1",
+    "brotli": "1.2.0"
+  }
 }

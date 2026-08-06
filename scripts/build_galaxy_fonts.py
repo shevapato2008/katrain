@@ -6,11 +6,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import urllib.request
+import shutil
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
+import brotli
+import fontTools
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
@@ -30,8 +33,13 @@ FULLWIDTH_LATIN_AND_DIGITS = (
     (0xFF41, 0xFF5A),
 )
 CHUNK_SIZE = 1200
-SOURCE_CACHE = Path("/private/tmp/galaxy-font-sources")
-GENERATOR_COMMAND = "uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --output $OUT"
+TOOLCHAIN = {"fonttools": "4.61.1", "brotli": "1.2.0"}
+GENERATOR_COMMAND = (
+    "uv run --with fonttools==4.61.1 --with brotli==1.2.0 python scripts/build_galaxy_fonts.py "
+    "--regular /private/tmp/galaxy-font-sources/LXGWWenKai-Regular.ttf "
+    "--medium /private/tmp/galaxy-font-sources/LXGWWenKai-Medium.ttf "
+    "--longcang /private/tmp/galaxy-font-sources/LongCang-Regular.ttf --out $OUT"
+)
 
 
 @dataclass(frozen=True)
@@ -119,45 +127,80 @@ def build_manifest(output_paths: Sequence[Path]) -> dict[str, object]:
         "generated_total_bytes": sum(item["bytes"] for item in outputs),
         "outputs": outputs,
         "inputs": [source.manifest_entry() for source in INPUTS],
+        "toolchain": TOOLCHAIN,
     }
 
 
 def production_output(repo_root: Path) -> Path:
-    return (repo_root / "katrain/web/ui/src/galaxy/assets/fonts").resolve()
+    return repo_root.absolute() / "katrain/web/ui/src/galaxy/assets/fonts"
+
+
+def reject_symlink_components(repo_root: Path, output: Path) -> None:
+    current = repo_root.absolute()
+    if current.is_symlink():
+        raise RuntimeError(f"Refusing symlink path component: {current}")
+    for component in output.relative_to(current).parts:
+        current = current / component
+        if current.is_symlink():
+            raise RuntimeError(f"Refusing symlink path component: {current}")
+
+
+def is_generated_name(name: str) -> bool:
+    return (name.startswith("wenkai-") and name.endswith(".woff2")) or name in {
+        "longcang-brand.woff2",
+        "galaxy-fonts.css",
+        "sources.json",
+    }
+
+
+def validate_output_directory(output: Path, repo_root: Path) -> bool:
+    output = output.absolute()
+    expected_production = production_output(repo_root)
+    if output == expected_production:
+        reject_symlink_components(repo_root, output)
+        if output.exists() and not output.is_dir():
+            raise RuntimeError(f"Production output must be a directory: {output}")
+        generated_paths = [path for path in output.iterdir() if is_generated_name(path.name)] if output.exists() else []
+        symlinks = [path for path in generated_paths if path.is_symlink()]
+        if symlinks:
+            raise RuntimeError(f"Refusing generated target symlink: {symlinks[0]}")
+        return True
+    if output.is_symlink():
+        raise RuntimeError(f"Non-production output must not be a symlink: {output}")
+    if output.exists() and (not output.is_dir() or any(output.iterdir())):
+        raise RuntimeError(f"Non-production output directory must be absent or empty: {output}")
+    return False
 
 
 def prepare_output_directory(output: Path, repo_root: Path) -> None:
-    output = output.resolve()
-    expected_production = production_output(repo_root)
-    if output == expected_production:
-        output.mkdir(parents=True, exist_ok=True)
-        for path in output.iterdir():
-            if (
-                (path.is_file() and path.name.startswith("wenkai-") and path.name.endswith(".woff2"))
-                or path.name in {"longcang-brand.woff2", "galaxy-fonts.css", "sources.json"}
-            ):
-                path.unlink()
-        return
-    if output.exists() and (not output.is_dir() or any(output.iterdir())):
-        raise RuntimeError(f"Non-production output directory must be absent or empty: {output}")
+    output = output.absolute()
+    production = validate_output_directory(output, repo_root)
     output.mkdir(parents=True, exist_ok=True)
+    if production:
+        generated_paths = [path for path in output.iterdir() if is_generated_name(path.name)]
+        for path in generated_paths:
+            path.unlink()
 
 
-def download_and_verify(source: FontSource) -> Path:
-    SOURCE_CACHE.mkdir(parents=True, exist_ok=True)
-    destination = SOURCE_CACHE / source.filename
-    if not destination.exists() or sha256_file(destination) != source.sha256:
-        temporary = destination.with_suffix(destination.suffix + ".download")
-        urllib.request.urlretrieve(source.url, temporary)
-        actual = sha256_file(temporary)
+def validate_toolchain() -> None:
+    actual = {"fonttools": fontTools.__version__, "brotli": brotli.__version__}
+    if actual != TOOLCHAIN:
+        raise RuntimeError(f"Toolchain mismatch: expected {TOOLCHAIN}, got {actual}")
+
+
+def validate_input_files(regular: Path, medium: Path, longcang: Path) -> dict[str, Path]:
+    paths = (regular, medium, longcang)
+    validated: dict[str, Path] = {}
+    for source, path in zip(INPUTS, paths, strict=True):
+        if path.is_symlink():
+            raise RuntimeError(f"Refusing input symlink for {source.name}: {path}")
+        if not path.is_file():
+            raise RuntimeError(f"Missing local input for {source.name}: {path}")
+        actual = sha256_file(path)
         if actual != source.sha256:
-            temporary.unlink(missing_ok=True)
             raise RuntimeError(f"SHA-256 mismatch for {source.name}: expected {source.sha256}, got {actual}")
-        temporary.replace(destination)
-    actual = sha256_file(destination)
-    if actual != source.sha256:
-        raise RuntimeError(f"SHA-256 mismatch for cached {source.name}: expected {source.sha256}, got {actual}")
-    return destination
+        validated[source.name] = path
+    return validated
 
 
 def font_codepoints(path: Path) -> set[int]:
@@ -187,7 +230,21 @@ def subset_font(source: Path, destination: Path, codepoints: Iterable[int]) -> N
 
 
 def unicode_range(codepoints: Sequence[int]) -> str:
-    return ", ".join(f"U+{codepoint:04X}" for codepoint in codepoints)
+    ordered = sorted(set(codepoints))
+    if not ordered:
+        return ""
+    ranges: list[tuple[int, int]] = []
+    start = previous = ordered[0]
+    for codepoint in ordered[1:]:
+        if codepoint == previous + 1:
+            previous = codepoint
+            continue
+        ranges.append((start, previous))
+        start = previous = codepoint
+    ranges.append((start, previous))
+    return ", ".join(
+        f"U+{start:04X}" if start == end else f"U+{start:04X}-{end:04X}" for start, end in ranges
+    )
 
 
 def css_face(family: str, filename: str, weight: str, codepoints: Sequence[int]) -> str:
@@ -212,9 +269,7 @@ def load_catalogs(repo_root: Path) -> dict[str, str]:
     }
 
 
-def build_fonts(output: Path, repo_root: Path) -> None:
-    prepare_output_directory(output, repo_root)
-    sources = {source.name: download_and_verify(source) for source in INPUTS}
+def generate_fonts(output: Path, repo_root: Path, sources: Mapping[str, Path]) -> None:
     priority = catalog_seed_codepoints(load_catalogs(repo_root))
     generated: list[Path] = []
     faces: list[str] = []
@@ -243,16 +298,54 @@ def build_fonts(output: Path, repo_root: Path) -> None:
     (output / "sources.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
+def publish_staging(staging: Path, output: Path, repo_root: Path) -> None:
+    output = output.absolute()
+    production = validate_output_directory(output, repo_root)
+    if not production:
+        if output.exists():
+            output.rmdir()
+        staging.replace(output)
+        return
+
+    output.mkdir(parents=True, exist_ok=True)
+    for path in [path for path in output.iterdir() if is_generated_name(path.name)]:
+        path.unlink()
+    manifest = staging / "sources.json"
+    for path in sorted(staging.iterdir(), key=lambda item: item.name):
+        if path != manifest:
+            path.replace(output / path.name)
+    manifest.replace(output / manifest.name)
+    staging.rmdir()
+
+
+def build_fonts(output: Path, repo_root: Path, *, regular: Path, medium: Path, longcang: Path) -> None:
+    validate_toolchain()
+    sources = validate_input_files(regular, medium, longcang)
+    output = output.absolute()
+    validate_output_directory(output, repo_root)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".galaxy-fonts-staging-", dir=output.parent))
+    try:
+        generate_fonts(staging, repo_root, sources)
+        publish_staging(staging, output, repo_root)
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, required=True)
-    return parser.parse_args()
+    parser.add_argument("--regular", type=Path, required=True)
+    parser.add_argument("--medium", type=Path, required=True)
+    parser.add_argument("--longcang", type=Path, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    return parser.parse_args(argv)
 
 
 def main() -> None:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
-    build_fonts(args.output, repo_root)
+    build_fonts(args.out, repo_root, regular=args.regular, medium=args.medium, longcang=args.longcang)
 
 
 if __name__ == "__main__":

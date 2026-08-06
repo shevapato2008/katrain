@@ -4,9 +4,8 @@
 
 ## 上游与许可
 
-- LXGW WenKai Regular / Medium：官方 v1.522 release，SIL Open Font License 1.1。
-- Long Cang Regular：Google Fonts 仓库提交 `b7b1d76caa907473438546739b2ce3a92631adc3`，SIL Open Font License 1.1。
-- 本目录中的 Regular、Medium、Long Cang 三种字体均依照 `OFL-1.1.txt` 的 SIL OFL 1.1 分发。
+- LXGW WenKai Regular / Medium：官方 v1.522 release，依照未经修改的 `OFL-LXGW-WenKai.txt`（SIL OFL 1.1）分发。
+- Long Cang Regular：Google Fonts 仓库提交 `b7b1d76caa907473438546739b2ce3a92631adc3`，依照未经修改的 `OFL-Long-Cang.txt`（SIL OFL 1.1）分发。
 
 Long Cang 只保留品牌文字“智星盒”。LXGW WenKai Regular 映射到字重 400；Medium 映射到字重 500–700。中文 gettext catalog 的 cn、tw 字符优先进入第一个分片，其余允许的 CJK 字符按码点顺序稳定分片。ASCII、全角 Latin 字母与数字、kana、hangul 均不进入字体。
 
@@ -16,10 +15,14 @@ Long Cang 只保留品牌文字“智星盒”。LXGW WenKai Regular 映射到�
 
 ```sh
 OUT=katrain/web/ui/src/galaxy/assets/fonts
-uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --output "$OUT"
+uv run --with fonttools==4.61.1 --with brotli==1.2.0 python scripts/build_galaxy_fonts.py \
+  --regular /private/tmp/galaxy-font-sources/LXGWWenKai-Regular.ttf \
+  --medium /private/tmp/galaxy-font-sources/LXGWWenKai-Medium.ttf \
+  --longcang /private/tmp/galaxy-font-sources/LongCang-Regular.ttf \
+  --out "$OUT"
 ```
 
-生成器会把三个固定上游 TTF 缓存到 `/private/tmp/galaxy-font-sources`，逐一校验 SHA-256，且不会把 TTF 写入仓库。生产目录只清理生成器拥有的 WOFF2、CSS 和 manifest；非生产输出目录必须不存在或为空。
+调用者须先把三个固定上游 TTF 放入上述 `/private/tmp/galaxy-font-sources` 路径。生成器在任何输出变更前逐一校验 SHA-256，不下载、不修改也不把 TTF 写入仓库。所有产物先在输出目录同级的私有 staging 目录完成；成功后才替换生成器拥有的 WOFF2、CSS，并最后发布 manifest。非生产输出目录必须不存在或为空。
 
 固定输入及其 `sources.json` 哈希为：
 
@@ -27,4 +30,4 @@ uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --out
 - `LXGWWenKai-Medium.ttf`：`d4bdeb38a39151d74d084cba5090f8cb7d20bf83eedb78c35939ae70b9f4e3f6`
 - `LongCang-Regular.ttf`：`e5bf2c3f24ef2327c6f136d8f73e2f9dfdf44896fdbeb35a9515f44777bb91bc`
 
-`sources.json` 记录固定 URL、版本、许可、每个输入 SHA-256，以及所有生成输出的字节数与 SHA-256。manifest 中命令使用规范化的 `$OUT`，因此不同临时输出路径不会改变产物。
+`sources.json` 记录固定 URL、版本、许可、每个输入 SHA-256，固定工具链 `fonttools==4.61.1` / `brotli==1.2.0`，以及所有生成输出的字节数与 SHA-256。manifest 中命令使用规范化的 `$OUT`，因此不同临时输出路径不会改变产物。

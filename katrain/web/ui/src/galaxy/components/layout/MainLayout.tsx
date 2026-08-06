@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { GameNavigationProvider } from '../../context/GameNavigationContext';
-import GalaxyBottomNav, { GALAXY_BOTTOM_NAV_HEIGHT } from './GalaxyBottomNav';
+import GalaxyBottomNav from './GalaxyBottomNav';
 import GalaxySidebar from './GalaxySidebar';
 import GalaxyTopBar from './GalaxyTopBar';
 import { useGalaxySidebar } from './useGalaxySidebar';
@@ -21,7 +21,7 @@ const MainLayoutChrome = () => {
         <Box
           component="main"
           data-testid="galaxy-main"
-          sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', pb: mobile ? `calc(${GALAXY_BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))` : 0, boxSizing: 'border-box' }}
+          sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', pb: 0, boxSizing: 'border-box' }}
         >
           <Outlet />
         </Box>

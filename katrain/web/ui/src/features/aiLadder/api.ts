@@ -1,4 +1,10 @@
-import type { AiLadderReadyStatus, AiLadderSettlementReceipt, AiLadderStartPreferences, AiLadderStartResponse } from './types';
+import type {
+  AiLadderGameLifecycle,
+  AiLadderReadyStatus,
+  AiLadderSettlementReceipt,
+  AiLadderStartPreferences,
+  AiLadderStartResponse,
+} from './types';
 
 export class AiLadderApiError extends Error {
   readonly status: number;
@@ -53,3 +59,24 @@ export const startAiLadderGame = async (
     credentials: 'same-origin',
     body: JSON.stringify(preferences),
   }));
+
+export const endAiLadderGame = async (
+  gameId: string,
+  token?: string,
+): Promise<AiLadderGameLifecycle> => {
+  const response = await fetch(`/api/v1/ai-ladder/games/${encodeURIComponent(gameId)}/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    credentials: 'same-origin',
+    body: JSON.stringify({ reason: 'user_resigned' }),
+  });
+  if (response.status === 409) {
+    try {
+      const lifecycle = await response.clone().json() as AiLadderGameLifecycle;
+      if (lifecycle.state === 'settled') return lifecycle;
+    } catch {
+      // Let the shared parser preserve the normal error mapping for invalid responses.
+    }
+  }
+  return parseResponse(response);
+};

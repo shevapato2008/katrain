@@ -49,6 +49,7 @@ interface LiveBoardProps {
   // ~292px square — must pass a smaller value, otherwise the 400px floor overflows the
   // parent and the board gets clipped.
   minContainerHeight?: number;
+  minimumCanvasSize?: number; // Defaults to 400; responsive Galaxy pages can opt in to full scaling.
 }
 
 // Convert display coordinate (e.g., "Q16") to board indices
@@ -322,6 +323,7 @@ export default function LiveBoard({
   nextMovePoint,
   capturedPositions,
   minContainerHeight = 400,
+  minimumCanvasSize = 400,
 }: LiveBoardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -362,7 +364,7 @@ export default function LiveBoard({
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         const size = Math.floor(Math.min(width, height) - 8);
-        setCanvasSize(Math.max(400, Math.min(1200, size)));
+        setCanvasSize(Math.max(minimumCanvasSize, Math.min(1200, size)));
       }
     };
 
@@ -372,7 +374,7 @@ export default function LiveBoard({
       observer.observe(containerRef.current);
     }
     return () => observer.disconnect();
-  }, []);
+  }, [minimumCanvasSize]);
 
   // Build board state from moves (with capture handling)
   const buildBoardState = () => {

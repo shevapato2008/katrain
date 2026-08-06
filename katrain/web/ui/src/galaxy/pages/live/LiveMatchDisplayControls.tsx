@@ -94,7 +94,7 @@ export default function LiveMatchDisplayControls({
   const adviceTooltip = showAiMarkers
     ? t('live:hide_advice', 'Hide Advice')
     : t('live:show_advice', 'Show Advice');
-  const coordinatesLabel = t('live:coordinates', 'Coordinates');
+  const coordinatesLabel = t('Coordinates', 'Coordinates');
 
   return (
     <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>

@@ -40,6 +40,10 @@ async function openLive(page: Page, width: number, height: number) {
   return canvas;
 }
 
+async function useChinese(page: Page) {
+  await page.addInitScript(() => localStorage.setItem('katrain_language', 'cn'));
+}
+
 test.describe('Galaxy live template breakpoint geometry', () => {
   for (const target of targets) {
     test(`${target.width}x${target.height}`, async ({ page }) => {
@@ -97,6 +101,37 @@ test.describe('Galaxy live template breakpoint geometry', () => {
         expect(overflow[0].y).not.toBe('auto');
         expect(overflow[1].y).toBe('auto');
         expect(overflow[2].y).not.toBe('auto');
+
+        const trend = page.getByTestId('live-match-trend-region');
+        const controls = page.getByTestId('live-match-display-controls-grid');
+        const [trendRect, controlsRect] = await Promise.all([rect(trend), rect(controls)]);
+        expect(trendRect.bottom).toBeLessThanOrEqual(controlsRect.top + 1);
+        const scrollMetrics = await scroll.evaluate((element) => ({
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+          overflowY: getComputedStyle(element).overflowY,
+        }));
+        expect(scrollMetrics.overflowY).toBe('auto');
+        expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight);
+        await trend.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+        await expect.poll(async () => scroll.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+        const [scrolledTrendRect, scrolledRailRect] = await Promise.all([rect(trend), rect(scroll)]);
+        expect(scrolledTrendRect.top).toBeGreaterThanOrEqual(scrolledRailRect.top - 1);
+        expect(scrolledTrendRect.top).toBeLessThan(scrolledRailRect.bottom);
+
+        const moveCounter = actions.getByTestId('playback-move-counter');
+        const moveCounterRect = await rect(moveCounter);
+        expect(moveCounterRect.left).toBeGreaterThanOrEqual(actionRect.left - 1);
+        expect(moveCounterRect.right).toBeLessThanOrEqual(actionRect.right + 1);
+        expect(moveCounterRect.top).toBeGreaterThanOrEqual(actionRect.top - 1);
+        expect(moveCounterRect.bottom).toBeLessThanOrEqual(actionRect.bottom + 1);
+        const counterText = await moveCounter.evaluate((element) => ({
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          textOverflow: getComputedStyle(element).textOverflow,
+        }));
+        expect(counterText.scrollWidth).toBeLessThanOrEqual(counterText.clientWidth);
+        if (target.rail! <= 340) expect(counterText.textOverflow).not.toBe('ellipsis');
       } else {
         const [moduleRect, scrollRect, actionRect] = await Promise.all([rect(module), rect(scroll), rect(actions)]);
         expect(moduleRect.top).toBeGreaterThanOrEqual(canvasRect.bottom - 1);
@@ -113,6 +148,37 @@ test.describe('Galaxy live template breakpoint geometry', () => {
       }
     });
   }
+});
+
+test.describe('Galaxy live template Chinese labels', () => {
+  test('desktop has no English navigation or coordinate residue', async ({ page }) => {
+    await useChinese(page);
+    await openLive(page, 1200, 800);
+
+    const sidebar = page.getByTestId('galaxy-sidebar-nav');
+    await expect(sidebar.getByRole('button', { name: '首页' })).toBeVisible();
+    await expect(sidebar.getByRole('button', { name: '教程' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '坐标' })).toBeVisible();
+    await expect(sidebar.getByRole('button', { name: 'Home' })).toHaveCount(0);
+    await expect(sidebar.getByRole('button', { name: 'Tutorials' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Coordinates' })).toHaveCount(0);
+  });
+
+  test('mobile has no English bottom navigation, menu, or coordinate residue', async ({ page }) => {
+    await useChinese(page);
+    await openLive(page, 430, 880);
+
+    const bottomNav = page.getByTestId('galaxy-bottom-nav');
+    await expect(bottomNav.getByRole('button', { name: '首页' })).toBeVisible();
+    await expect(bottomNav.getByRole('button', { name: '更多' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '坐标' })).toBeVisible();
+    await bottomNav.getByRole('button', { name: '更多' }).click();
+    await expect(page.getByRole('menuitem', { name: '教程' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Home' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'More' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: 'Tutorials' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Coordinates' })).toHaveCount(0);
+  });
 });
 
 test.describe('Galaxy sidebar journeys', () => {

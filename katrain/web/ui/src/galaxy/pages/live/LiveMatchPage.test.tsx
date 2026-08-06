@@ -106,8 +106,10 @@ describe('LiveMatchPage', () => {
     expect(within(rail).getByText('Alpha')).toBeInTheDocument();
     expect(within(rail).getByText('AI Recommendations')).toBeInTheDocument();
     const controls = within(rail).getByTestId('live-match-display-controls-grid');
+    const trend = within(rail).getByTestId('live-match-trend-region');
     expect(controls).toBeInTheDocument();
     expect(within(controls).getAllByRole('button')).toHaveLength(5);
+    expect(trend).toHaveStyle({ flex: 'none' });
     expect(within(actions).getByText('2 / 3 live:moves')).toBeInTheDocument();
     expect(shell).toBeInTheDocument();
   });
@@ -142,6 +144,13 @@ describe('LiveMatchPage', () => {
     ));
     expect(boardProps.showCoordinates).toBe(true);
     expect(screen.getByRole('button', { name: 'Coordinates' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('keeps the playback move counter as one measurable action-region item', () => {
+    renderPage();
+    const counter = within(screen.getByTestId('board-rail-actions')).getByTestId('playback-move-counter');
+    expect(counter).toHaveTextContent('2 / 3 live:moves');
+    expect(counter).toHaveStyle({ minWidth: '87px', whiteSpace: 'nowrap' });
   });
 
   it('uses requestNavigation for the module back action', async () => {

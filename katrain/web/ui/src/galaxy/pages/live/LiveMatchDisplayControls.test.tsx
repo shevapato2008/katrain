@@ -40,7 +40,7 @@ const names = {
   territory: 'translated:live:territory:Territory',
   moveNumbers: 'translated:live:move_numbers:Move Numbers',
   aiMarkers: 'translated:live:show_advice:Show Advice',
-  coordinates: 'translated:live:coordinates:Coordinates',
+  coordinates: 'translated:Coordinates:Coordinates',
 };
 
 describe('LiveMatchDisplayControls', () => {

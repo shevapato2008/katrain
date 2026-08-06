@@ -173,7 +173,7 @@ export default function LiveMatchPage() {
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <AiAnalysis currentMove={currentMove} analysis={analysis} onMoveHover={setPvMoves} />
           </Box>
-          <Box sx={{ flex: 1, minHeight: 0 }}>
+          <Box data-testid="live-match-trend-region" sx={{ flex: 'none' }}>
             <TrendChart
               analysis={analysis}
               totalMoves={match.move_count}

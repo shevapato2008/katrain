@@ -1246,6 +1246,15 @@ msgstr "领先目数"
 msgid "Coordinates"
 msgstr "坐标"
 
+msgid "Home"
+msgstr "首页"
+
+msgid "Tutorials"
+msgstr "教程"
+
+msgid "More"
+msgstr "更多"
+
 msgid "Move Numbers"
 msgstr "手数"
 

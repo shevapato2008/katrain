@@ -98,6 +98,8 @@ const BoardPageShell = ({
           display: 'flex',
           flexDirection: 'column',
           flex: 'none',
+          containerType: 'inline-size',
+          containerName: 'board-rail',
           '@media (min-width:900px)': {
             minHeight: 0,
             overflow: 'hidden',
@@ -119,6 +121,7 @@ const BoardPageShell = ({
               minHeight: 0,
               overflowX: 'hidden',
               overflowY: 'auto',
+              scrollbarGutter: 'stable',
             },
           }}
         >

@@ -115,25 +115,19 @@ _ACTIVE_PROFILES = (
     _profile(9, "满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0),
 )
 
-# r0 is the last shipped pre-RK3562 snapshot: level 8 used the historical
-# 150k-node budget. It remains complete so old reservations/Outbox rows can be
-# verified. Catalog versions are append-only; never mutate or delete snapshots.
-_R0_PROFILES = tuple(
-    _profile(
-        profile.level,
-        profile.name,
-        profile.anchor,
-        150_000 if profile.level == 8 else profile.nodes,
-        profile.movetime_ms,
-        profile.multipv,
-        profile.window_cp,
-        profile.temp_cp,
-        profile.p,
-        profile.band_lo,
-        profile.band_hi,
-        profile.sharp_gain,
-    )
-    for profile in _ACTIVE_PROFILES
+# r0 is an independent, complete archival source snapshot. The intentional
+# repetition prevents later active-profile construction changes from rewriting
+# the meaning of reservations/Outbox rows already frozen against r0.
+_R0_PROFILES = (
+    _profile(1, "新手", 1010, 10_000, None, 128, 180, 130, 0.30, 200, 700, 2.0),
+    _profile(2, "入门", 1260, 10_000, None, 20, 165, 120, 0.27, 185, 630, 2.0),
+    _profile(3, "初级", 1510, 16_000, None, 12, 130, 88, 0.20, 150, 500, 1.9),
+    _profile(4, "中级", 1760, 24_000, None, 10, 105, 70, 0.155, 125, 410, 1.85),
+    _profile(5, "高级", 1960, 40_000, None, 8, 85, 55, 0.115, 100, 330, 1.75),
+    _profile(6, "精英", 2160, 60_000, None, 6, 66, 42, 0.085, 80, 260, 1.65),
+    _profile(7, "大师", 2360, 100_000, None, 4, 50, 31, 0.06, 60, 200, 1.5),
+    _profile(8, "特级", 2560, 150_000, None, 3, 23, 14, 0.028, 33, 115, 1.35),
+    _profile(9, "满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0),
 )
 
 SUPPORTED_CATALOGS: Mapping[str, EngineCatalog] = MappingProxyType(

@@ -85,7 +85,20 @@ EVENT_V2_IDENTITY = frozenset(
     }
 )
 EVENT_V2_TERMINAL = frozenset(
-    {"clock_revision", "final_fen", "moves", "pgn_sha256", "player_clock_ms", "result", "terminal_kind"}
+    {
+        "clock_revision",
+        "final_fen",
+        "final_position_hash",
+        "moves",
+        "pgn_sha256",
+        "player_clock_ms",
+        "player_color",
+        "result",
+        "terminal_kind",
+    }
+)
+FAULT_EVIDENCE_FIELDS = frozenset(
+    {"fault_kind", "retry_count", "last_complete_revision", "engine_exit_summary", "health_summary"}
 )
 
 
@@ -153,16 +166,6 @@ def _allowlisted(payload: Mapping[str, object], required: frozenset[str]) -> dic
     return {key: payload[key] for key in required}
 
 
-def _without_operational_metadata(value: object) -> object:
-    if isinstance(value, Mapping):
-        return {
-            key: _without_operational_metadata(item) for key, item in value.items() if key not in OPERATIONAL_FIELDS
-        }
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-        return [_without_operational_metadata(item) for item in value]
-    return value
-
-
 def canonical_preview(payload: Mapping[str, object]) -> bytes:
     clean = _allowlisted(payload, PREVIEW_FIELDS)
     if clean["schema"] != "xiangqi-ranked-preview-v1":
@@ -187,15 +190,34 @@ def _event_fields(payload: Mapping[str, object]) -> frozenset[str]:
         raise ValueError("unsupported v1 event kind")
     if schema == "xiangqi-ranked-event-v2":
         if kind in {"settle", "resign"}:
-            fields = EVENT_V2_IDENTITY | EVENT_V2_TERMINAL
-            enriched = {"player_color", "final_position_hash"}
-            if enriched & frozenset(payload):
-                fields |= enriched
-            return fields
+            return EVENT_V2_IDENTITY | EVENT_V2_TERMINAL
         if kind == "system_abort":
             return EVENT_V2_IDENTITY | {"fault_evidence"}
         raise ValueError("unsupported v2 event kind")
     raise ValueError("unsupported event schema")
+
+
+def _validate_fault_evidence(value: object) -> None:
+    if not isinstance(value, Mapping):
+        raise ValueError("fault_evidence must be an object")
+    actual = frozenset(value)
+    missing = FAULT_EVIDENCE_FIELDS - actual
+    extra = actual - FAULT_EVIDENCE_FIELDS
+    if missing:
+        raise ValueError(f"fault_evidence missing fields: {sorted(missing)!r}")
+    if extra:
+        raise ValueError(f"fault_evidence unknown fields: {sorted(extra)!r}")
+
+    if value["fault_kind"] not in {"engine_unavailable", "system_fault"}:
+        raise ValueError("fault_kind must be engine_unavailable or system_fault")
+    for field in ("retry_count", "last_complete_revision"):
+        field_value = value[field]
+        if isinstance(field_value, bool) or not isinstance(field_value, int) or field_value < 0:
+            raise ValueError(f"{field} must be a non-negative integer")
+    for field in ("engine_exit_summary", "health_summary"):
+        field_value = value[field]
+        if not isinstance(field_value, str) or not field_value.strip():
+            raise ValueError(f"{field} must be a non-empty string")
 
 
 def canonical_event(payload: Mapping[str, object]) -> bytes:
@@ -214,10 +236,8 @@ def canonical_event(payload: Mapping[str, object]) -> bytes:
     if kind == "settle" and clean.get("terminal_kind") not in {None, "rules", "timeout"}:
         raise ValueError("settle events require a rules or timeout terminal")
     if kind == "system_abort":
-        evidence = clean["fault_evidence"]
-        if not isinstance(evidence, Mapping) or not evidence:
-            raise ValueError("system_abort requires non-empty fault_evidence")
-    return canonical_json(_without_operational_metadata(clean))
+        _validate_fault_evidence(clean["fault_evidence"])
+    return canonical_json(clean)
 
 
 def hash_event(payload: Mapping[str, object]) -> str:

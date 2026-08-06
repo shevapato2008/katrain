@@ -1,3 +1,5 @@
+import ast
+import inspect
 from dataclasses import replace
 
 import pytest
@@ -30,6 +32,17 @@ EXPECTED_HASHES = {
     6: "2954aa6aaa48de0243138fb3536e28ba8c682c5427f6cbfffdb2078690378916",
     7: "ddd0ead289e8169874238fbb762d0698b7fbaa40ad401c658541c132af879d39",
     8: "cbe47980b2dcb414ec397af38408ec8b02219a0210c67c7658cafe2c58d72685",
+    9: "bbdcd8f399bd4481c96d0bfc665db56ae3ea574d25ec8b20ed013bf9695cee17",
+}
+R0_EXPECTED_HASHES = {
+    1: "0eda775901eb617a0d09b805329d3a4c9c177f9b76faeaadaaec46c9c2bea9ca",
+    2: "57c528bd3c3b39acccb78beac47777ee87285fccae495b14869d08eb858ae37e",
+    3: "e0eb5605101c7968a6721215399c04244da98d6a10ca8e473f67db0ed646b6a2",
+    4: "48a1792fd784400a2ebf24c9d169d719b7193bc5a164313db327a5f2cb8b181f",
+    5: "41c26646b6182b2d87538b26c84fdc0ae219c7b66bef28cb6b4c55b716a2dcba",
+    6: "2954aa6aaa48de0243138fb3536e28ba8c682c5427f6cbfffdb2078690378916",
+    7: "ddd0ead289e8169874238fbb762d0698b7fbaa40ad401c658541c132af879d39",
+    8: "381b636c178f8b56d1c1d529fd682d4130e09122faf35963dd1c4fe90465ae06",
     9: "bbdcd8f399bd4481c96d0bfc665db56ae3ea574d25ec8b20ed013bf9695cee17",
 }
 
@@ -103,6 +116,43 @@ def test_catalog_retains_a_complete_old_snapshot_for_existing_outbox_events():
     assert all(profile_hash(profile) == profile.profile_hash for profile in retained.profiles)
     assert retained.profiles[7].nodes == 150_000
     assert retained.profiles[7].profile_hash != SUPPORTED_CATALOGS[ACTIVE_CATALOG_VERSION].profiles[7].profile_hash
+
+
+def test_r0_is_a_fixed_independent_source_snapshot_not_derived_from_active_profiles():
+    import smartbox_xiangqi_ranked.catalog as catalog_module
+
+    retained = SUPPORTED_CATALOGS["pikafish-r0"]
+    active = SUPPORTED_CATALOGS[ACTIVE_CATALOG_VERSION]
+    assert all(old is not current for old, current in zip(retained.profiles, active.profiles))
+    assert {profile.level: profile.profile_hash for profile in retained.profiles} == R0_EXPECTED_HASHES
+
+    tree = ast.parse(inspect.getsource(catalog_module))
+    assignment = next(
+        node
+        for node in tree.body
+        if isinstance(node, (ast.Assign, ast.AnnAssign))
+        and any(
+            isinstance(target, ast.Name) and target.id == "_R0_PROFILES"
+            for target in ([node.target] if isinstance(node, ast.AnnAssign) else node.targets)
+        )
+    )
+    assert "_ACTIVE_PROFILES" not in {node.id for node in ast.walk(assignment) if isinstance(node, ast.Name)}
+
+
+def test_constructing_a_changed_r1_profile_cannot_change_r0_serialization_or_hashes():
+    from smartbox_xiangqi_ranked.catalog import profile_public_config
+    from smartbox_xiangqi_ranked.canonical import canonical_json
+
+    retained = SUPPORTED_CATALOGS["pikafish-r0"]
+    before = tuple(
+        (canonical_json(profile_public_config(profile)), profile.profile_hash) for profile in retained.profiles
+    )
+    changed_r1 = replace(SUPPORTED_CATALOGS[ACTIVE_CATALOG_VERSION].profiles[0], nodes=999_999)
+    assert profile_hash(changed_r1) != EXPECTED_HASHES[1]
+    after = tuple(
+        (canonical_json(profile_public_config(profile)), profile.profile_hash) for profile in retained.profiles
+    )
+    assert after == before
 
 
 def test_catalog_contains_no_runtime_paths_or_secrets():

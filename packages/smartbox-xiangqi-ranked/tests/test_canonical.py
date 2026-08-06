@@ -36,7 +36,7 @@ LEGACY_V1 = {
     "user_uuid": "0123456789abcdef0123456789abcdef",
 }
 
-EVENT_V2 = {
+INCOMPLETE_EVENT_V2_COMPAT = {
     "catalog_version": "pikafish-r1",
     "clock_revision": 18,
     "device_id": "box-01",
@@ -57,6 +57,7 @@ EVENT_V2 = {
     "time_control": "standard10",
     "user_uuid": "0123456789abcdef0123456789abcdef",
 }
+EVENT_V2 = dict(INCOMPLETE_EVENT_V2_COMPAT, player_color="red", final_position_hash="3" * 64)
 
 
 def test_canonical_json_normalizes_nfc_sorts_unicode_code_points_and_is_compact_utf8():
@@ -137,13 +138,27 @@ def test_legacy_settlement_v1_vector_remains_verifiable():
     )
 
 
-def test_current_event_v2_vector_matches_the_frozen_design():
-    assert hash_event(EVENT_V2) == "4e7fe318a405c70a2efa2e18bfdc8d24a4ebf94fb4a922fb6b06467074064857"
+def test_incomplete_historical_v2_vector_remains_generic_canonical_hash_compatible():
+    assert (
+        canonical_hash(canonical_json(INCOMPLETE_EVENT_V2_COMPAT))
+        == "4e7fe318a405c70a2efa2e18bfdc8d24a4ebf94fb4a922fb6b06467074064857"
+    )
+    with pytest.raises(ValueError, match="player_color"):
+        canonical_event(INCOMPLETE_EVENT_V2_COMPAT)
 
 
-def test_event_v2_can_bind_color_and_final_position_hash_without_changing_the_frozen_base_vector():
-    enriched = dict(EVENT_V2, player_color="red", final_position_hash="3" * 64)
-    assert hash_event(enriched) != hash_event(EVENT_V2)
+@pytest.mark.parametrize("missing", ["player_color", "final_position_hash"])
+def test_current_event_v2_requires_color_and_final_position_hash(missing):
+    incomplete = dict(EVENT_V2)
+    incomplete.pop(missing)
+    with pytest.raises(ValueError, match=missing):
+        canonical_event(incomplete)
+
+
+def test_current_event_v2_hashes_color_and_final_position_hash():
+    assert canonical_event(EVENT_V2)
+    assert hash_event(dict(EVENT_V2, player_color="black")) != hash_event(EVENT_V2)
+    assert hash_event(dict(EVENT_V2, final_position_hash="4" * 64)) != hash_event(EVENT_V2)
 
 
 def test_event_hash_is_insertion_order_independent_and_excludes_operational_metadata():
@@ -152,25 +167,87 @@ def test_event_hash_is_insertion_order_independent_and_excludes_operational_meta
     assert hash_event(reversed_event) == hash_event(EVENT_V2)
 
 
-def test_resign_and_system_fault_have_strict_distinct_shapes():
+def test_resign_has_the_same_complete_evidence_shape_and_forces_a_loss():
     resigned = dict(EVENT_V2, event_kind="resign", terminal_kind="resign", result="loss")
     assert canonical_event(resigned)
 
     with pytest.raises(ValueError):
         canonical_event(dict(resigned, result="win"))
 
-    fault = {
-        key: value
-        for key, value in EVENT_V2.items()
-        if key
-        not in {"result", "terminal_kind", "moves", "final_fen", "clock_revision", "player_clock_ms", "pgn_sha256"}
-    }
-    fault.update(event_kind="system_abort", fault_evidence={"kind": "engine_exit", "retry_count": 2})
-    without_retry_metadata = dict(fault, fault_evidence={"kind": "engine_exit"})
-    assert canonical_event(fault) == canonical_event(without_retry_metadata)
 
-    with pytest.raises(ValueError):
-        canonical_event(dict(fault, result="loss"))
+FAULT_EVIDENCE = {
+    "fault_kind": "engine_unavailable",
+    "retry_count": 2,
+    "last_complete_revision": 17,
+    "engine_exit_summary": "exit status 70",
+    "health_summary": "ready probe failed",
+}
+SYSTEM_ABORT_V2 = {
+    key: value
+    for key, value in EVENT_V2.items()
+    if key
+    in {
+        "catalog_version",
+        "device_id",
+        "event_kind",
+        "game_id",
+        "local_seq",
+        "opponent_profile_hash",
+        "payload_schema",
+        "projection_fingerprint",
+        "reservation_id",
+        "scoring_contract_version",
+        "time_control",
+        "user_uuid",
+    }
+}
+SYSTEM_ABORT_V2.update(event_kind="system_abort", fault_evidence=FAULT_EVIDENCE)
+
+
+def test_system_abort_fault_evidence_has_an_exact_protocol_shape_and_hashes_every_field():
+    baseline = hash_event(SYSTEM_ABORT_V2)
+    changes = {
+        "fault_kind": "system_fault",
+        "retry_count": 3,
+        "last_complete_revision": 18,
+        "engine_exit_summary": "exit status 71",
+        "health_summary": "engine process missing",
+    }
+    for field, value in changes.items():
+        changed = dict(SYSTEM_ABORT_V2, fault_evidence=dict(FAULT_EVIDENCE, **{field: value}))
+        assert hash_event(changed) != baseline
+
+
+@pytest.mark.parametrize("missing", sorted(FAULT_EVIDENCE))
+def test_system_abort_rejects_missing_fault_evidence_fields(missing):
+    evidence = dict(FAULT_EVIDENCE)
+    evidence.pop(missing)
+    with pytest.raises(ValueError, match=missing):
+        canonical_event(dict(SYSTEM_ABORT_V2, fault_evidence=evidence))
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("fault_kind", "network_error"),
+        ("retry_count", -1),
+        ("retry_count", True),
+        ("last_complete_revision", -1),
+        ("last_complete_revision", 1.5),
+        ("engine_exit_summary", ""),
+        ("health_summary", None),
+    ],
+)
+def test_system_abort_rejects_invalid_fault_evidence_values(field, value):
+    with pytest.raises((TypeError, ValueError), match=field):
+        canonical_event(dict(SYSTEM_ABORT_V2, fault_evidence=dict(FAULT_EVIDENCE, **{field: value})))
+
+
+def test_system_abort_rejects_extra_fault_evidence_and_normal_result_fields():
+    with pytest.raises(ValueError, match="debug_dump"):
+        canonical_event(dict(SYSTEM_ABORT_V2, fault_evidence=dict(FAULT_EVIDENCE, debug_dump="secret")))
+    with pytest.raises(ValueError, match="result"):
+        canonical_event(dict(SYSTEM_ABORT_V2, result="loss"))
 
 
 def test_unknown_non_operational_fields_are_rejected_instead_of_silently_hashed_or_dropped():

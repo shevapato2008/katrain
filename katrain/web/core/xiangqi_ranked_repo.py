@@ -8,13 +8,15 @@ transaction that turns a reservation into an immutable receipt fact.
 
 from __future__ import annotations
 
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
+from threading import Lock
 from typing import Any, Callable, Mapping
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from smartbox_xiangqi_ranked import SCORING_CONTRACT_VERSION, canonical_json
@@ -114,6 +116,12 @@ class XiangqiRankedRepository:
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
+        self._terminal_conflicts: Counter[str] = Counter()
+        self._terminal_conflicts_lock = Lock()
+
+    def _record_terminal_conflict(self, kind: str) -> None:
+        with self._terminal_conflicts_lock:
+            self._terminal_conflicts[kind] += 1
 
     @staticmethod
     def _begin_write_transaction(session) -> None:
@@ -658,14 +666,15 @@ class XiangqiRankedRepository:
         if rating_after is None or rating_delta is None or tier_after is None:
             raise ValueError("counted terminal requires complete rating output")
 
-    @staticmethod
-    def _replay_or_conflict(existing, user_uuid: str, terminal_status: str, payload_hash: str) -> dict[str, Any]:
+    def _replay_or_conflict(self, existing, user_uuid: str, terminal_status: str, payload_hash: str) -> dict[str, Any]:
         if (
             existing.user_uuid == user_uuid
             and existing.terminal_status == terminal_status
             and existing.payload_hash == payload_hash
         ):
             return deepcopy(dict(existing.receipt))
+        kind = "reservation_terminal_conflict" if existing.terminal_status != terminal_status else "payload_conflict"
+        self._record_terminal_conflict(kind)
         raise TerminalConflict(
             f"game already has immutable terminal status {existing.terminal_status} and payload {existing.payload_hash}"
         )
@@ -692,6 +701,37 @@ class XiangqiRankedRepository:
             return None if ledger is None else deepcopy(dict(ledger.receipt))
         finally:
             session.close()
+
+    def health_metrics(self, *, now: datetime) -> dict[str, Any]:
+        """Return aggregate barrier telemetry without owner or device identifiers."""
+
+        session = self.session_factory()
+        try:
+            count, oldest_created, oldest_heartbeat = session.execute(
+                select(
+                    func.count(models_db.XiangqiRankedReservation.reservation_id),
+                    func.min(models_db.XiangqiRankedReservation.created_at),
+                    func.min(models_db.XiangqiRankedReservation.last_heartbeat_at),
+                ).where(models_db.XiangqiRankedReservation.status == "reserved")
+            ).one()
+        finally:
+            session.close()
+        current = _as_utc(now)
+
+        def age(value: datetime | None) -> int | None:
+            return None if value is None else max(0, int((current - _as_utc(value)).total_seconds()))
+
+        with self._terminal_conflicts_lock:
+            conflicts = {
+                "payload_conflict": self._terminal_conflicts["payload_conflict"],
+                "reservation_terminal_conflict": self._terminal_conflicts["reservation_terminal_conflict"],
+            }
+        return {
+            "active_reservation_count": int(count),
+            "oldest_reservation_age_seconds": age(oldest_created),
+            "oldest_heartbeat_age_seconds": age(oldest_heartbeat),
+            "terminal_conflict_counts": conflicts,
+        }
 
     def page_device_statuses(
         self,

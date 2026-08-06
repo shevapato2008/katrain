@@ -944,6 +944,7 @@ dependencies = [
     { name = "requests" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'" },
     { name = "smartbox-xiangqi-ranked" },
+    { name = "smartbox-xiangqi-rules" },
     { name = "sqlalchemy" },
     { name = "urllib3" },
 ]
@@ -1042,6 +1043,7 @@ requires-dist = [
     { name = "rknn-toolkit-lite2", marker = "extra == 'vision-rknn'", specifier = ">=2.0.0" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'", specifier = ">=0.8.1,<0.9" },
     { name = "smartbox-xiangqi-ranked", editable = "packages/smartbox-xiangqi-ranked" },
+    { name = "smartbox-xiangqi-rules", editable = "../../xiangqi/rules" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "sqlalchemy", marker = "extra == 'web'", specifier = ">=2.0.0" },
     { name = "torch", marker = "extra == 'classifier'", specifier = ">=2.0" },
@@ -2777,6 +2779,16 @@ source = { editable = "packages/smartbox-xiangqi-ranked" }
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
+name = "smartbox-xiangqi-rules"
+version = "0.1.0"
+source = { editable = "../../xiangqi/rules" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = "==8.4.2" }]
 
 [[package]]
 name = "sniffio"

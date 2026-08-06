@@ -96,6 +96,12 @@ class ForceResignRequest(StrictModel):
     confirm: Literal[True]
 
 
+class SettlementRequest(StrictModel):
+    event_payload: dict[str, object]
+    payload_hash: Hash64 = Field(pattern=r"^[0-9a-f]{64}$")
+    terminal_capability: str = Field(min_length=1, max_length=4096)
+
+
 class VoidRequest(StrictModel):
     user_uuid: str = Field(min_length=32, max_length=36)
     game_id: GameId = Field(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -218,6 +224,11 @@ def force_resign(
         reservation_id=reservation_id,
         confirm=body.confirm,
     )
+
+
+@router.post("/settlements")
+def create_settlement(request: Request, body: SettlementRequest):
+    return _call(_service(request).settle, **body.model_dump())
 
 
 @router.post("/reservations/{reservation_id}/void-unmaterialized")

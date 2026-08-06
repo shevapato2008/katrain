@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 import uuid
+import hashlib
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -21,8 +22,9 @@ from smartbox_xiangqi_ranked import (
     project_three,
     tier_of,
 )
-from smartbox_xiangqi_ranked.canonical import hash_preview
+from smartbox_xiangqi_ranked.canonical import canonical_event, hash_event, hash_preview
 from smartbox_xiangqi_ranked.catalog import profile_public_config
+from xiangqi_rules_core import Move, Position, legal_moves, terminal_status
 
 from katrain.web.core import models_db
 from katrain.web.core.xiangqi_ranked_capabilities import (
@@ -42,6 +44,9 @@ from katrain.web.core.xiangqi_ranked_repo import (
 FORCE_RESIGN_THRESHOLD_VERSION = 1
 FORCE_RESIGN_THRESHOLD = timedelta(minutes=5)
 TIME_CONTROLS = frozenset({"unlimited", "blitz5", "standard10", "slow20"})
+START_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+TIME_CONTROL_MS = {"blitz5": 300_000, "standard10": 600_000, "slow20": 1_200_000}
+ENGINE_FAILURE_RETRY_LIMIT = 3
 
 
 @dataclass(frozen=True)
@@ -573,3 +578,188 @@ class XiangqiRankedService:
         except ReservationConflict:
             raise RankedServiceError(409, "reservation_not_voidable", "The reservation cannot be voided.") from None
         return {"code": "voided", "voided": voided}
+
+    @staticmethod
+    def _position_hash(position: Position) -> str:
+        return hashlib.sha256(position.identity().encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _validate_snapshot(payload: Mapping[str, Any], claims, reservation) -> Mapping[str, Any]:
+        frozen = reservation.frozen_snapshot
+        expected = {
+            "user_uuid": claims.user_uuid,
+            "device_id": claims.device_id,
+            "game_id": claims.game_id,
+            "reservation_id": claims.reservation_id,
+            "projection_fingerprint": reservation.projection_fingerprint,
+            "scoring_contract_version": frozen["scoring_contract_version"],
+            "catalog_version": frozen["catalog_version"],
+            "opponent_profile_hash": frozen["opponent_profile_hash"],
+            "time_control": frozen["time_control"],
+        }
+        if any(payload.get(field) != value for field, value in expected.items()):
+            raise RankedServiceError(
+                422, "invalid_snapshot", "Terminal evidence does not match the frozen reservation."
+            )
+        if payload["event_kind"] != "system_abort" and payload.get("player_color") != frozen["player_color"]:
+            raise RankedServiceError(
+                422, "invalid_snapshot", "Terminal evidence does not match the frozen reservation."
+            )
+        return frozen
+
+    @classmethod
+    def _replay_terminal(cls, payload: Mapping[str, Any]) -> str:
+        if payload["clock_revision"] != len(payload["moves"]):
+            raise ValueError("clock revision is discontinuous")
+        clock_limit = TIME_CONTROL_MS.get(payload["time_control"])
+        if clock_limit is None:
+            if payload["time_control"] == "unlimited" and payload["player_clock_ms"] != 0:
+                raise ValueError("unlimited games use a zero clock value")
+        elif payload["player_clock_ms"] > clock_limit:
+            raise ValueError("remaining clock exceeds the frozen time control")
+
+        position = Position.from_fen(START_FEN)
+        repetitions = {position.identity(): 1}
+        for move_text in payload["moves"]:
+            if (
+                terminal_status(position) != "ongoing"
+                or position.halfmove >= 120
+                or repetitions[position.identity()] >= 3
+            ):
+                raise ValueError("moves continue after a terminal position")
+            move = Move.from_iccs(move_text)
+            if move not in legal_moves(position):
+                raise ValueError("illegal move")
+            position = position.apply(move)
+            repetitions[position.identity()] = repetitions.get(position.identity(), 0) + 1
+
+        if payload["final_fen"] != position.to_fen() or payload["final_position_hash"] != cls._position_hash(position):
+            raise ValueError("final position does not match replay")
+        kind = payload["terminal_kind"]
+        if kind == "resign":
+            if payload["event_kind"] != "resign" or payload["result"] != "loss":
+                raise ValueError("resign must be a player loss")
+            return "loss"
+        if kind == "timeout":
+            if payload["event_kind"] != "settle" or payload["player_clock_ms"] != 0 or payload["result"] != "loss":
+                raise ValueError("timeout must be a player clock loss")
+            return "loss"
+
+        status = terminal_status(position)
+        is_draw = position.halfmove >= 120 or repetitions.get(position.identity(), 0) >= 3
+        if status == "ongoing" and not is_draw:
+            raise ValueError("rules settlement is not terminal")
+        expected_result = "draw" if is_draw else ("loss" if payload["player_color"] == position.side else "win")
+        if payload["result"] != expected_result:
+            raise ValueError("reported result does not match the replayed terminal")
+        return expected_result
+
+    @staticmethod
+    def _validate_fault_evidence(payload: Mapping[str, Any]) -> str:
+        evidence = payload["fault_evidence"]
+        reason = evidence["fault_kind"]
+        if reason == "engine_unavailable" and evidence["retry_count"] < ENGINE_FAILURE_RETRY_LIMIT:
+            raise ValueError("engine retry limit was not reached")
+        if reason == "system_fault" and evidence["retry_count"] < 1:
+            raise ValueError("system fault lacks a server retry observation")
+        return reason
+
+    def settle(
+        self, *, event_payload: Mapping[str, Any], payload_hash: str, terminal_capability: str
+    ) -> dict[str, Any]:
+        event_kind = event_payload.get("event_kind") if isinstance(event_payload, Mapping) else None
+        if event_kind not in {"settle", "resign", "system_abort"}:
+            raise RankedServiceError(422, "invalid_terminal_evidence", "Terminal evidence is invalid.")
+        try:
+            claims = self.capabilities.verify(terminal_capability, required_action=event_kind)
+        except TerminalCapabilityError:
+            raise RankedServiceError(401, "invalid_terminal_capability", "Invalid terminal capability.") from None
+        try:
+            canonical_event(event_payload)
+            computed_hash = hash_event(event_payload)
+        except (TypeError, ValueError):
+            raise RankedServiceError(422, "invalid_terminal_evidence", "Terminal evidence is invalid.") from None
+        if payload_hash != computed_hash:
+            self.repository._record_terminal_conflict("payload_conflict")
+            raise RankedServiceError(
+                409, "payload_conflict", "The supplied payload hash does not match canonical evidence."
+            )
+
+        with self.session_factory() as session:
+            reservation = session.execute(
+                select(models_db.XiangqiRankedReservation).where(
+                    models_db.XiangqiRankedReservation.reservation_id == claims.reservation_id
+                )
+            ).scalar_one_or_none()
+            if reservation is None:
+                raise RankedServiceError(409, "reservation_terminal_conflict", "The reservation is unavailable.")
+            frozen = self._validate_snapshot(event_payload, claims, reservation)
+
+        terminal_state = {
+            "settle": "settled",
+            "resign": "resigned",
+            "system_abort": "system_aborted",
+        }[event_kind]
+        existing = self.repository.get_receipt(user_uuid=claims.user_uuid, game_id=claims.game_id)
+        if existing is not None:
+            if existing["status"] == terminal_state and existing["payload_hash"] == computed_hash:
+                return {"code": "idempotent_replay", "receipt": existing}
+            code = "reservation_terminal_conflict" if existing["status"] != terminal_state else "payload_conflict"
+            self.repository._record_terminal_conflict(code)
+            raise RankedServiceError(409, code, "Another immutable terminal fact already won this reservation.")
+        try:
+            if event_kind == "system_abort":
+                reason = self._validate_fault_evidence(event_payload)
+                result = None
+                counted = False
+                rating_after = None
+                rating_delta = None
+                tier_after = None
+            else:
+                result = self._replay_terminal(event_payload)
+                counted = True
+                reason = None
+                rating_after = float.fromhex(frozen[f"outcome_{result}_hex"])
+                rating_delta = frozen[f"delta_{result}"]
+                tier_after = frozen[f"tier_{result}"]
+        except (KeyError, TypeError, ValueError):
+            raise RankedServiceError(422, "invalid_terminal_evidence", "Terminal evidence is invalid.") from None
+
+        try:
+            receipt = self.repository.settle_terminal(
+                user_uuid=claims.user_uuid,
+                reservation_id=claims.reservation_id,
+                game_id=claims.game_id,
+                device_id=claims.device_id,
+                terminal_status=terminal_state,
+                local_seq=event_payload["local_seq"],
+                payload_hash=computed_hash,
+                canonical_payload=event_payload,
+                result=result,
+                counted=counted,
+                reason=reason,
+                rating_after=rating_after,
+                rating_delta=rating_delta,
+                tier_before=frozen["tier"],
+                tier_after=tier_after,
+                receipt_id=self.id_factory(),
+                now=_utc(self.now()),
+            )
+        except TerminalConflict:
+            original = self.repository.get_receipt(user_uuid=claims.user_uuid, game_id=claims.game_id)
+            code = (
+                "reservation_terminal_conflict"
+                if original and original["status"] != terminal_state
+                else "payload_conflict"
+            )
+            raise RankedServiceError(
+                409, code, "Another immutable terminal fact already won this reservation."
+            ) from None
+        except (ReservationConflict, StaleProfile):
+            raise RankedServiceError(
+                409, "reservation_terminal_conflict", "Another immutable terminal fact already won this reservation."
+            ) from None
+        return {"code": "confirmed", "receipt": receipt}
+
+    def health_metrics(self) -> dict[str, Any]:
+        return self.repository.health_metrics(now=_utc(self.now()))

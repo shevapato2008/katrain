@@ -56,16 +56,32 @@ describe('GalaxySidebar', () => {
     expect(requestNavigation).toHaveBeenCalledWith('/galaxy/research');
   });
 
-  it('has a zero-width collapsed wrapper and a native 44px translated expand button', () => {
+  it('keeps the native 44px toggle centered on the sidebar edge when collapsed', () => {
     const sidebarState = state({ dockedWidth: 0, dockedExpanded: false });
     renderSidebar(sidebarState);
 
     expect(screen.getByTestId('galaxy-sidebar-wrapper')).toHaveStyle({ width: '0px' });
     const toggle = screen.getByRole('button', { name: 'Expand navigation' });
     expect(toggle.tagName).toBe('BUTTON');
-    expect(toggle).toHaveStyle({ width: '44px', height: '44px' });
+    expect(toggle).toHaveStyle({
+      width: '44px',
+      height: '44px',
+      left: '0px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+    });
     fireEvent.click(toggle);
     expect(sidebarState.toggle).toHaveBeenCalled();
+  });
+
+  it('keeps the toggle centered on the sidebar edge when expanded', () => {
+    renderSidebar();
+
+    expect(screen.getByRole('button', { name: 'Collapse navigation' })).toHaveStyle({
+      left: '240px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+    });
   });
 
   it('uses a temporary Drawer in overlay mode and exposes a native close control', () => {

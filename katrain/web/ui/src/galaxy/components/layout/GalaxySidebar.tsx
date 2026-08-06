@@ -155,7 +155,14 @@ const GalaxySidebar = ({
         aria-label={toggleLabel}
         aria-expanded={overlay ? overlayOpen : dockedExpanded}
         onClick={toggle}
-        style={{ width: 44, height: 44, position: 'absolute', left: dockedWidth, top: 4 }}
+        style={{
+          width: 44,
+          height: 44,
+          position: 'absolute',
+          left: dockedWidth,
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
       >
         {dockedExpanded && !overlay ? <ChevronLeftIcon /> : <MenuIcon />}

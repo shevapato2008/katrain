@@ -22,7 +22,9 @@ uv run --with fonttools==4.61.1 --with brotli==1.2.0 python scripts/build_galaxy
   --out "$OUT"
 ```
 
-调用者须先把三个固定上游 TTF 放入上述 `/private/tmp/galaxy-font-sources` 路径。生成器在任何输出变更前逐一校验 SHA-256，不下载、不修改也不把 TTF 写入仓库。所有产物先在输出目录同级的私有 staging 目录完成；成功后才替换生成器拥有的 WOFF2、CSS，并最后发布 manifest。非生产输出目录必须不存在或为空。
+调用者须先把三个固定上游 TTF 放入上述 `/private/tmp/galaxy-font-sources` 路径。生成器对每个输入只打开一次，流式复制到同父私有 staging 并同步校验 SHA-256；后续生成只读取私有快照，不下载、不修改也不把 TTF 写入仓库。所有产物在 staging 完成；成功发布前先把旧生成资源移入同文件系统 backup，失败会完整回滚，成功时最后原子替换 manifest。非生产输出目录必须不存在或为空。
+
+这是供受信任开发环境使用的本地生成器；运行期间不要让其他进程修改输入或输出路径。本工具不试图防御同权限恶意本地进程，因为该进程本就能直接修改仓库。
 
 固定输入及其 `sources.json` 哈希为：
 

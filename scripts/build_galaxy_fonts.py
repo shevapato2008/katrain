@@ -154,6 +154,7 @@ def is_generated_name(name: str) -> bool:
 
 
 def validate_output_directory(output: Path, repo_root: Path) -> bool:
+    # Trusted local build tool: these are static guardrails, so callers must not concurrently mutate input/output paths.
     output = output.absolute()
     expected_production = production_output(repo_root)
     if output == expected_production:
@@ -188,19 +189,28 @@ def validate_toolchain() -> None:
         raise RuntimeError(f"Toolchain mismatch: expected {TOOLCHAIN}, got {actual}")
 
 
-def validate_input_files(regular: Path, medium: Path, longcang: Path) -> dict[str, Path]:
+def snapshot_input_files(regular: Path, medium: Path, longcang: Path, staging: Path) -> dict[str, Path]:
     paths = (regular, medium, longcang)
-    validated: dict[str, Path] = {}
+    inputs_dir = staging / ".inputs"
+    inputs_dir.mkdir(mode=0o700)
+    snapshots: dict[str, Path] = {}
     for source, path in zip(INPUTS, paths, strict=True):
         if path.is_symlink():
             raise RuntimeError(f"Refusing input symlink for {source.name}: {path}")
         if not path.is_file():
             raise RuntimeError(f"Missing local input for {source.name}: {path}")
-        actual = sha256_file(path)
+        snapshot = inputs_dir / source.filename
+        digest = hashlib.sha256()
+        with path.open("rb") as source_stream, snapshot.open("xb") as snapshot_stream:
+            for block in iter(lambda: source_stream.read(1024 * 1024), b""):
+                digest.update(block)
+                snapshot_stream.write(block)
+        snapshot.chmod(0o600)
+        actual = digest.hexdigest()
         if actual != source.sha256:
             raise RuntimeError(f"SHA-256 mismatch for {source.name}: expected {source.sha256}, got {actual}")
-        validated[source.name] = path
-    return validated
+        snapshots[source.name] = snapshot
+    return snapshots
 
 
 def font_codepoints(path: Path) -> set[int]:
@@ -308,25 +318,43 @@ def publish_staging(staging: Path, output: Path, repo_root: Path) -> None:
         return
 
     output.mkdir(parents=True, exist_ok=True)
-    for path in [path for path in output.iterdir() if is_generated_name(path.name)]:
-        path.unlink()
-    manifest = staging / "sources.json"
-    for path in sorted(staging.iterdir(), key=lambda item: item.name):
-        if path != manifest:
+    backup = Path(tempfile.mkdtemp(prefix=".galaxy-fonts-backup-", dir=output.parent))
+    published: list[Path] = []
+    try:
+        for path in sorted(
+            (path for path in output.iterdir() if is_generated_name(path.name)), key=lambda item: item.name
+        ):
+            path.replace(backup / path.name)
+        manifest = staging / "sources.json"
+        for path in sorted(staging.iterdir(), key=lambda item: item.name):
+            if path != manifest:
+                destination = output / path.name
+                path.replace(destination)
+                published.append(destination)
+        manifest_destination = output / manifest.name
+        manifest.replace(manifest_destination)
+        published.append(manifest_destination)
+    except BaseException:
+        for path in published:
+            path.unlink(missing_ok=True)
+        for path in sorted(backup.iterdir(), key=lambda item: item.name):
             path.replace(output / path.name)
-    manifest.replace(output / manifest.name)
+        shutil.rmtree(backup, ignore_errors=True)
+        raise
+    shutil.rmtree(backup)
     staging.rmdir()
 
 
 def build_fonts(output: Path, repo_root: Path, *, regular: Path, medium: Path, longcang: Path) -> None:
     validate_toolchain()
-    sources = validate_input_files(regular, medium, longcang)
     output = output.absolute()
     validate_output_directory(output, repo_root)
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=".galaxy-fonts-staging-", dir=output.parent))
     try:
+        sources = snapshot_input_files(regular, medium, longcang, staging)
         generate_fonts(staging, repo_root, sources)
+        shutil.rmtree(staging / ".inputs")
         publish_staging(staging, output, repo_root)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)

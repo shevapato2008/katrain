@@ -1,6 +1,7 @@
 import hashlib
 import json
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -291,8 +292,8 @@ def test_subset_failure_leaves_existing_production_generated_files_unchanged(tmp
         path.write_bytes(b"fake")
     monkeypatch.setattr(
         fonts,
-        "validate_input_files",
-        lambda regular, medium, longcang: {
+        "snapshot_input_files",
+        lambda regular, medium, longcang, staging: {
             source.name: path for source, path in zip(INPUTS, fake_inputs, strict=True)
         },
     )
@@ -321,3 +322,89 @@ def test_committed_upstream_license_files_are_unmodified_and_documented():
         path = FONT_ASSETS / filename
         assert hashlib.sha256(path.read_bytes()).hexdigest() == sha256
         assert filename in readme
+
+
+def test_publish_failure_restores_all_old_production_files_without_mixing(tmp_path, monkeypatch):
+    repo_root = tmp_path / "repo"
+    output = repo_root / "katrain/web/ui/src/galaxy/assets/fonts"
+    output.mkdir(parents=True)
+    preserved = {
+        "README.md": b"docs",
+        "OFL-LXGW-WenKai.txt": b"lxgw license",
+        "OFL-Long-Cang.txt": b"long cang license",
+    }
+    old_generated = {
+        "wenkai-400-000.woff2": b"old regular",
+        "wenkai-500-000.woff2": b"old medium",
+        "longcang-brand.woff2": b"old brand",
+        "galaxy-fonts.css": b"old css",
+        "sources.json": b'{"old": true}\n',
+    }
+    for filename, content in (preserved | old_generated).items():
+        (output / filename).write_bytes(content)
+
+    staging = output.parent / ".galaxy-fonts-staging-test"
+    staging.mkdir()
+    new_generated = {
+        "wenkai-400-000.woff2": b"new regular",
+        "wenkai-500-000.woff2": b"new medium",
+        "longcang-brand.woff2": b"new brand",
+        "galaxy-fonts.css": b"new css",
+        "sources.json": b'{"new": true}\n',
+    }
+    for filename, content in new_generated.items():
+        (staging / filename).write_bytes(content)
+
+    original_replace = Path.replace
+
+    def fail_during_new_publish(path, target):
+        if path.parent == staging and path.name == "wenkai-500-000.woff2":
+            raise OSError("injected publish failure")
+        return original_replace(path, target)
+
+    monkeypatch.setattr(Path, "replace", fail_during_new_publish)
+
+    with pytest.raises(OSError, match="injected publish failure"):
+        fonts.publish_staging(staging, output, repo_root)
+
+    assert {name: (output / name).read_bytes() for name in old_generated} == old_generated
+    assert {name: (output / name).read_bytes() for name in preserved} == preserved
+    assert {path.name for path in output.iterdir()} == set(old_generated) | set(preserved)
+    assert not list(output.parent.glob(".galaxy-fonts-backup-*"))
+
+
+def test_build_uses_private_input_snapshot_after_hash_validation(tmp_path, monkeypatch):
+    input_bytes = (b"approved regular", b"approved medium", b"approved longcang")
+    input_paths = tuple(tmp_path / source.filename for source in INPUTS)
+    for path, content in zip(input_paths, input_bytes, strict=True):
+        path.write_bytes(content)
+    approved_inputs = tuple(
+        replace(source, sha256=hashlib.sha256(content).hexdigest())
+        for source, content in zip(INPUTS, input_bytes, strict=True)
+    )
+    monkeypatch.setattr(fonts, "INPUTS", approved_inputs)
+    observed = {}
+
+    def observe_private_sources(staging, repo_root, sources):
+        replacement = tmp_path / "replacement.ttf"
+        replacement.write_bytes(b"changed after validation")
+        replacement.replace(input_paths[0])
+        snapshot = sources["LXGW WenKai Regular"]
+        observed["path"] = snapshot
+        observed["bytes"] = snapshot.read_bytes()
+        raise RuntimeError("stop after observing snapshot")
+
+    monkeypatch.setattr(fonts, "generate_fonts", observe_private_sources)
+
+    with pytest.raises(RuntimeError, match="stop after observing snapshot"):
+        fonts.build_fonts(
+            tmp_path / "out",
+            tmp_path / "repo",
+            regular=input_paths[0],
+            medium=input_paths[1],
+            longcang=input_paths[2],
+        )
+
+    assert observed["bytes"] == input_bytes[0]
+    assert observed["path"] != input_paths[0]
+    assert not list(tmp_path.glob(".galaxy-fonts-staging-*"))

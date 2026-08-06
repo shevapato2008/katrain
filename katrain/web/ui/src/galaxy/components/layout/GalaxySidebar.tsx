@@ -127,14 +127,16 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
   );
 };
 
-const GalaxySidebar = ({ sidebarState }: GalaxySidebarProps) => {
+const GalaxySidebar = ({
+  sidebarState: { mode, dockedWidth, dockedExpanded, overlayOpen, toggle, closeOverlay, toggleButtonRef },
+}: GalaxySidebarProps) => {
   const { t } = useTranslation();
-  if (sidebarState.mode === 'mobile') return null;
+  if (mode === 'mobile') return null;
 
-  const overlay = sidebarState.mode === 'narrow-overlay';
-  const toggleLabel = overlay && sidebarState.overlayOpen
+  const overlay = mode === 'narrow-overlay';
+  const toggleLabel = overlay && overlayOpen
     ? t('galaxy.close_navigation', 'Close navigation')
-    : sidebarState.dockedExpanded && !overlay
+    : dockedExpanded && !overlay
       ? t('galaxy.collapse_navigation', 'Collapse navigation')
       : t('galaxy.expand_navigation', 'Expand navigation');
 
@@ -142,31 +144,31 @@ const GalaxySidebar = ({ sidebarState }: GalaxySidebarProps) => {
     <>
       <Box
         data-testid="galaxy-sidebar-wrapper"
-        style={{ width: sidebarState.dockedWidth }}
-        sx={{ flex: `0 0 ${sidebarState.dockedWidth}px`, minWidth: 0, height: '100%', overflow: 'hidden', borderRight: sidebarState.dockedWidth ? '1px solid' : 0, borderColor: 'divider' }}
+        style={{ width: dockedWidth }}
+        sx={{ flex: `0 0 ${dockedWidth}px`, minWidth: 0, height: '100%', overflow: 'hidden', borderRight: dockedWidth ? '1px solid' : 0, borderColor: 'divider' }}
       >
-        {!overlay && sidebarState.dockedExpanded && <SidebarContents overlay={false} closeOverlay={sidebarState.closeOverlay} />}
+        {!overlay && dockedExpanded && <SidebarContents overlay={false} closeOverlay={closeOverlay} />}
       </Box>
       <IconButton
-        ref={sidebarState.toggleButtonRef}
+        ref={toggleButtonRef}
         data-testid="galaxy-sidebar-toggle"
         aria-label={toggleLabel}
-        aria-expanded={overlay ? sidebarState.overlayOpen : sidebarState.dockedExpanded}
-        onClick={sidebarState.toggle}
-        style={{ width: 44, height: 44, position: 'absolute', left: sidebarState.dockedWidth, top: 4 }}
+        aria-expanded={overlay ? overlayOpen : dockedExpanded}
+        onClick={toggle}
+        style={{ width: 44, height: 44, position: 'absolute', left: dockedWidth, top: 4 }}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
       >
-        {sidebarState.dockedExpanded && !overlay ? <ChevronLeftIcon /> : <MenuIcon />}
+        {dockedExpanded && !overlay ? <ChevronLeftIcon /> : <MenuIcon />}
       </IconButton>
       {overlay && (
         <Drawer
           variant="temporary"
-          open={sidebarState.overlayOpen}
-          onClose={sidebarState.closeOverlay}
+          open={overlayOpen}
+          onClose={closeOverlay}
           ModalProps={{ keepMounted: false }}
           slotProps={{ paper: { sx: { width: 280, maxWidth: 'calc(100vw - 56px)' } } }}
         >
-          <SidebarContents overlay closeOverlay={sidebarState.closeOverlay} />
+          <SidebarContents overlay closeOverlay={closeOverlay} />
         </Drawer>
       )}
     </>

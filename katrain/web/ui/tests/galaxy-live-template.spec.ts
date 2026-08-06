@@ -141,7 +141,10 @@ test.describe('Galaxy live template breakpoint geometry', () => {
         await expect.poll(async () => (await rect(actions)).bottom).toBeLessThanOrEqual(target.height - 63 + 1);
       }
 
-      if (target.width === 1440) expect(canvasRect.width).toBeGreaterThanOrEqual(826), expect(canvasRect.width).toBeLessThanOrEqual(830);
+      if (target.width === 1440) {
+        expect(canvasRect.width).toBeGreaterThanOrEqual(826);
+        expect(canvasRect.width).toBeLessThanOrEqual(830);
+      }
       if (target.width === 430) {
         await expect(page.getByTestId('galaxy-bottom-nav')).toBeVisible();
         await expect(page.getByTestId('live-coordinate-toggle')).toHaveAttribute('aria-pressed', 'false');

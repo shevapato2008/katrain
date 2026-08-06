@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BottomNavigation, BottomNavigationAction, Menu, MenuItem, Paper } from '@mui/material';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { useLocation } from 'react-router-dom';
@@ -8,6 +8,11 @@ import { getGalaxyNavigation, isGalaxyNavigationActive } from './galaxyNavigatio
 
 export const GALAXY_BOTTOM_NAV_HEIGHT = 64;
 
+interface MoreMenuState {
+  pathname: string;
+  anchor: HTMLElement | null;
+}
+
 const GalaxyBottomNav = () => {
   const { t } = useTranslation();
   const { requestNavigation } = useGameNavigation();
@@ -15,9 +20,10 @@ const GalaxyBottomNav = () => {
   const items = useMemo(() => getGalaxyNavigation(t), [t]);
   const directItems = items.slice(0, 5);
   const moreItems = items.slice(5);
-  const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
-
-  useEffect(() => setMoreAnchor(null), [pathname]);
+  const [moreMenu, setMoreMenu] = useState<MoreMenuState>({ pathname, anchor: null });
+  const moreMenuIdentityChanged = moreMenu.pathname !== pathname;
+  if (moreMenuIdentityChanged) setMoreMenu({ pathname, anchor: null });
+  const moreAnchor = moreMenuIdentityChanged ? null : moreMenu.anchor;
 
   const activeItem = items.find((item) => isGalaxyNavigationActive(pathname, item.path));
 
@@ -47,16 +53,16 @@ const GalaxyBottomNav = () => {
           label={t('More', 'More')}
           aria-label={t('More', 'More')}
           icon={<MoreHorizIcon />}
-          onClick={(event) => setMoreAnchor(event.currentTarget)}
+          onClick={(event) => setMoreMenu({ pathname, anchor: event.currentTarget })}
         />
       </BottomNavigation>
-      <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreAnchor(null)}>
+      <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreMenu({ pathname, anchor: null })}>
         {moreItems.map((item) => (
           <MenuItem
             key={item.key}
             selected={isGalaxyNavigationActive(pathname, item.path)}
             onClick={() => {
-              setMoreAnchor(null);
+              setMoreMenu({ pathname, anchor: null });
               requestNavigation(item.path);
             }}
           >

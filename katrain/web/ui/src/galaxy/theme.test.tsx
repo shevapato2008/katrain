@@ -34,7 +34,7 @@ vi.mock('../context/TsumegoProgressContext', () => ({
 }));
 
 vi.mock('./components/layout/MainLayout', () => ({
-  default: () => {
+  default: function MainLayoutMock() {
     const theme = useTheme();
     return (
       <div data-testid="theme-probe" data-font-family={theme.typography.fontFamily}>
@@ -81,6 +81,9 @@ describe('createGalaxyTheme', () => {
 
     expect(SYSTEM_UI_FONT).not.toContain('Manrope');
     expect(zenTheme.typography.fontFamily).toContain('Manrope');
+    typographyVariants.forEach(variant => {
+      expect(theme.typography[variant].fontFamily).toBe(SYSTEM_UI_FONT);
+    });
   });
 });
 

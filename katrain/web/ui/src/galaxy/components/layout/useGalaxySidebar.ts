@@ -16,6 +16,12 @@ export interface GalaxySidebarState {
   toggleButtonRef: React.RefObject<HTMLButtonElement | null>;
 }
 
+interface OverlayState {
+  mode: GalaxyNavMode;
+  pathname: string;
+  open: boolean;
+}
+
 const readDockedPreference = () => {
   try {
     const value = window.localStorage?.getItem(GALAXY_SIDEBAR_STORAGE_KEY);
@@ -46,19 +52,22 @@ export const useGalaxySidebar = (): GalaxySidebarState => {
         : 'mobile';
   const pathname = useLocation().pathname;
   const [dockedExpanded, setDockedExpanded] = useState(readDockedPreference);
-  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlayState, setOverlayState] = useState<OverlayState>({ mode, pathname, open: false });
   const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previousMode = useRef(mode);
-  const previousPathname = useRef(pathname);
+  const previousOverlay = useRef({ pathname, open: false });
+
+  const overlayIdentityChanged = overlayState.mode !== mode || overlayState.pathname !== pathname;
+  if (overlayIdentityChanged) setOverlayState({ mode, pathname, open: false });
+  const overlayOpen = !overlayIdentityChanged && overlayState.open;
 
   const returnFocus = useCallback(() => {
     window.requestAnimationFrame?.(() => toggleButtonRef.current?.focus());
   }, []);
 
   const closeOverlay = useCallback(() => {
-    setOverlayOpen(false);
+    setOverlayState({ mode, pathname, open: false });
     returnFocus();
-  }, [returnFocus]);
+  }, [mode, pathname, returnFocus]);
 
   const toggle = useCallback(() => {
     if (mode === 'wide-docked' || mode === 'standard-docked') {
@@ -70,26 +79,18 @@ export const useGalaxySidebar = (): GalaxySidebarState => {
       return;
     }
     if (mode === 'narrow-overlay') {
-      setOverlayOpen((open) => {
+      setOverlayState((current) => {
+        const open = current.mode === mode && current.pathname === pathname && current.open;
         if (open) returnFocus();
-        return !open;
+        return { mode, pathname, open: !open };
       });
     }
-  }, [mode, returnFocus]);
+  }, [mode, pathname, returnFocus]);
 
   useEffect(() => {
-    if (previousMode.current !== mode) {
-      setOverlayOpen(false);
-      previousMode.current = mode;
-    }
-  }, [mode]);
-
-  useEffect(() => {
-    if (previousPathname.current !== pathname) {
-      if (overlayOpen) closeOverlay();
-      previousPathname.current = pathname;
-    }
-  }, [closeOverlay, overlayOpen, pathname]);
+    if (previousOverlay.current.pathname !== pathname && previousOverlay.current.open) returnFocus();
+    previousOverlay.current = { pathname, open: overlayOpen };
+  }, [overlayOpen, pathname, returnFocus]);
 
   const dockedWidth: 240 | 216 | 0 = dockedExpanded
     ? mode === 'wide-docked'

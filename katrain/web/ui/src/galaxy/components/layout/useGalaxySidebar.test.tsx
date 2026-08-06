@@ -55,13 +55,14 @@ const setViewport = (width: number) => {
 const wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
 
 const NavigationHarness = () => {
-  const sidebar = useGalaxySidebar();
+  const { dockedExpanded, dockedWidth, mode, overlayOpen, toggle, toggleButtonRef } = useGalaxySidebar();
   const navigate = useNavigate();
   return (
     <>
-      <button ref={sidebar.toggleButtonRef} onClick={sidebar.toggle}>toggle</button>
+      <button ref={toggleButtonRef} onClick={toggle}>toggle</button>
       <button onClick={() => navigate('/galaxy/live')}>route</button>
-      <output>{String(sidebar.overlayOpen)}</output>
+      <button onClick={() => navigate(-1)}>back</button>
+      <output>{JSON.stringify({ dockedExpanded, dockedWidth, mode, overlayOpen })}</output>
     </>
   );
 };
@@ -141,11 +142,27 @@ describe('useGalaxySidebar', () => {
     window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => { callback(0); return 1; });
     render(<MemoryRouter><NavigationHarness /></MemoryRouter>);
     fireEvent.click(screen.getByRole('button', { name: 'toggle' }));
-    expect(screen.getByText('true')).toBeInTheDocument();
+    expect(screen.getByText(/"overlayOpen":true/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'route' }));
 
-    await waitFor(() => expect(screen.getByText('false')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/"overlayOpen":false/)).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'toggle' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText(/"overlayOpen":false/)).toBeInTheDocument();
+  });
+
+  it('keeps temporary navigation closed after leaving and returning to its breakpoint', () => {
+    setViewport(1199);
+    render(<MemoryRouter><NavigationHarness /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'toggle' }));
+    expect(screen.getByText(/"overlayOpen":true/)).toBeInTheDocument();
+
+    setViewport(899);
+    expect(screen.getByText(/"mode":"mobile"/)).toHaveTextContent('"overlayOpen":false');
+    setViewport(1199);
+
+    expect(screen.getByText(/"mode":"narrow-overlay"/)).toHaveTextContent('"overlayOpen":false');
   });
 });

@@ -1,6 +1,8 @@
 import hashlib
 import json
+import os
 import re
+import stat
 from dataclasses import replace
 from pathlib import Path
 
@@ -408,3 +410,43 @@ def test_build_uses_private_input_snapshot_after_hash_validation(tmp_path, monke
     assert observed["bytes"] == input_bytes[0]
     assert observed["path"] != input_paths[0]
     assert not list(tmp_path.glob(".galaxy-fonts-staging-*"))
+
+
+@pytest.mark.parametrize("operation", ["validate", "build", "publish"])
+@pytest.mark.parametrize("entry_kind", ["directory", "fifo"])
+def test_generated_name_non_regular_file_is_rejected_and_preserved(tmp_path, operation, entry_kind):
+    if entry_kind == "fifo" and not hasattr(os, "mkfifo"):
+        pytest.skip("FIFO is not supported on this platform")
+    repo_root = tmp_path / "repo"
+    output = repo_root / "katrain/web/ui/src/galaxy/assets/fonts"
+    output.mkdir(parents=True)
+    generated_entry = output / "wenkai-notes.woff2"
+    if entry_kind == "directory":
+        generated_entry.mkdir()
+        (generated_entry / "keep.txt").write_bytes(b"preserve me")
+    else:
+        os.mkfifo(generated_entry)
+
+    if operation == "validate":
+        invoke = lambda: fonts.validate_output_directory(output, repo_root)
+    elif operation == "build":
+        invoke = lambda: fonts.build_fonts(
+            output,
+            repo_root,
+            regular=tmp_path / "regular.ttf",
+            medium=tmp_path / "medium.ttf",
+            longcang=tmp_path / "longcang.ttf",
+        )
+    else:
+        staging = output.parent / ".galaxy-fonts-staging-test"
+        staging.mkdir()
+        invoke = lambda: fonts.publish_staging(staging, output, repo_root)
+
+    with pytest.raises(RuntimeError, match="regular file"):
+        invoke()
+
+    if entry_kind == "directory":
+        assert (generated_entry / "keep.txt").read_bytes() == b"preserve me"
+    else:
+        assert stat.S_ISFIFO(generated_entry.lstat().st_mode)
+    assert not list(output.parent.glob(".galaxy-fonts-backup-*"))

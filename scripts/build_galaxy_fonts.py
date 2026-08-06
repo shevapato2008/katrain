@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import shutil
+import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -162,9 +163,12 @@ def validate_output_directory(output: Path, repo_root: Path) -> bool:
         if output.exists() and not output.is_dir():
             raise RuntimeError(f"Production output must be a directory: {output}")
         generated_paths = [path for path in output.iterdir() if is_generated_name(path.name)] if output.exists() else []
-        symlinks = [path for path in generated_paths if path.is_symlink()]
-        if symlinks:
-            raise RuntimeError(f"Refusing generated target symlink: {symlinks[0]}")
+        for path in generated_paths:
+            mode = path.lstat().st_mode
+            if stat.S_ISLNK(mode):
+                raise RuntimeError(f"Refusing generated target symlink: {path}")
+            if not stat.S_ISREG(mode):
+                raise RuntimeError(f"Generated target must be a regular file: {path}")
         return True
     if output.is_symlink():
         raise RuntimeError(f"Non-production output must not be a symlink: {output}")

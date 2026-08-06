@@ -9,6 +9,10 @@ from typing import Mapping
 from .canonical import canonical_hash, float_hex
 
 ACTIVE_CATALOG_VERSION = "pikafish-r1"
+# This version covers choose_move, review.to_cp score normalization, tie breaks,
+# and RNG draw order. Any semantic change requires a new append-only catalog.
+MOVE_SELECTOR_VERSION = "xiangqi-strength-v1"
+ONLY_MOVE_LOSS_CP = 100
 
 
 @dataclass(frozen=True)
@@ -28,6 +32,8 @@ class EngineProfile:
     resignation_enabled: bool
     resignation_score_cp: int
     resignation_move_count: int
+    move_selector_version: str
+    only_move_loss_cp: int
     profile_hash: str = ""
 
 
@@ -52,9 +58,11 @@ def profile_public_config(profile: EngineProfile) -> dict[str, object]:
         "band_lo": profile.band_lo,
         "level": profile.level,
         "movetime_ms": profile.movetime_ms,
+        "move_selector_version": profile.move_selector_version,
         "multipv": profile.multipv,
         "name": profile.name,
         "nodes": profile.nodes,
+        "only_move_loss_cp": profile.only_move_loss_cp,
         "p_hex": float_hex(profile.p),
         "resignation_enabled": profile.resignation_enabled,
         "resignation_move_count": profile.resignation_move_count,
@@ -82,6 +90,8 @@ def _profile(
     band_lo: int | None,
     band_hi: int | None,
     sharp_gain: float,
+    move_selector_version: str,
+    only_move_loss_cp: int,
 ) -> EngineProfile:
     profile = EngineProfile(
         level=level,
@@ -99,35 +109,37 @@ def _profile(
         resignation_enabled=level >= 3,
         resignation_score_cp=500,
         resignation_move_count=3,
+        move_selector_version=move_selector_version,
+        only_move_loss_cp=only_move_loss_cp,
     )
     return replace(profile, profile_hash=profile_hash(profile))
 
 
 _ACTIVE_PROFILES = (
-    _profile(1, "新手", 1010, 10_000, None, 128, 180, 130, 0.30, 200, 700, 2.0),
-    _profile(2, "入门", 1260, 10_000, None, 20, 165, 120, 0.27, 185, 630, 2.0),
-    _profile(3, "初级", 1510, 16_000, None, 12, 130, 88, 0.20, 150, 500, 1.9),
-    _profile(4, "中级", 1760, 24_000, None, 10, 105, 70, 0.155, 125, 410, 1.85),
-    _profile(5, "高级", 1960, 40_000, None, 8, 85, 55, 0.115, 100, 330, 1.75),
-    _profile(6, "精英", 2160, 60_000, None, 6, 66, 42, 0.085, 80, 260, 1.65),
-    _profile(7, "大师", 2360, 100_000, None, 4, 50, 31, 0.06, 60, 200, 1.5),
-    _profile(8, "特级", 2560, 120_000, None, 3, 23, 14, 0.028, 33, 115, 1.35),
-    _profile(9, "满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0),
+    _profile(1, "新手", 1010, 10_000, None, 128, 180, 130, 0.30, 200, 700, 2.0, "xiangqi-strength-v1", 100),
+    _profile(2, "入门", 1260, 10_000, None, 20, 165, 120, 0.27, 185, 630, 2.0, "xiangqi-strength-v1", 100),
+    _profile(3, "初级", 1510, 16_000, None, 12, 130, 88, 0.20, 150, 500, 1.9, "xiangqi-strength-v1", 100),
+    _profile(4, "中级", 1760, 24_000, None, 10, 105, 70, 0.155, 125, 410, 1.85, "xiangqi-strength-v1", 100),
+    _profile(5, "高级", 1960, 40_000, None, 8, 85, 55, 0.115, 100, 330, 1.75, "xiangqi-strength-v1", 100),
+    _profile(6, "精英", 2160, 60_000, None, 6, 66, 42, 0.085, 80, 260, 1.65, "xiangqi-strength-v1", 100),
+    _profile(7, "大师", 2360, 100_000, None, 4, 50, 31, 0.06, 60, 200, 1.5, "xiangqi-strength-v1", 100),
+    _profile(8, "特级", 2560, 120_000, None, 3, 23, 14, 0.028, 33, 115, 1.35, "xiangqi-strength-v1", 100),
+    _profile(9, "满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0, "xiangqi-strength-v1", 100),
 )
 
 # r0 is an independent, complete archival source snapshot. The intentional
 # repetition prevents later active-profile construction changes from rewriting
 # the meaning of reservations/Outbox rows already frozen against r0.
 _R0_PROFILES = (
-    _profile(1, "新手", 1010, 10_000, None, 128, 180, 130, 0.30, 200, 700, 2.0),
-    _profile(2, "入门", 1260, 10_000, None, 20, 165, 120, 0.27, 185, 630, 2.0),
-    _profile(3, "初级", 1510, 16_000, None, 12, 130, 88, 0.20, 150, 500, 1.9),
-    _profile(4, "中级", 1760, 24_000, None, 10, 105, 70, 0.155, 125, 410, 1.85),
-    _profile(5, "高级", 1960, 40_000, None, 8, 85, 55, 0.115, 100, 330, 1.75),
-    _profile(6, "精英", 2160, 60_000, None, 6, 66, 42, 0.085, 80, 260, 1.65),
-    _profile(7, "大师", 2360, 100_000, None, 4, 50, 31, 0.06, 60, 200, 1.5),
-    _profile(8, "特级", 2560, 150_000, None, 3, 23, 14, 0.028, 33, 115, 1.35),
-    _profile(9, "满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0),
+    _profile(1, "新手", 1010, 10_000, None, 128, 180, 130, 0.30, 200, 700, 2.0, "xiangqi-strength-v1", 100),
+    _profile(2, "入门", 1260, 10_000, None, 20, 165, 120, 0.27, 185, 630, 2.0, "xiangqi-strength-v1", 100),
+    _profile(3, "初级", 1510, 16_000, None, 12, 130, 88, 0.20, 150, 500, 1.9, "xiangqi-strength-v1", 100),
+    _profile(4, "中级", 1760, 24_000, None, 10, 105, 70, 0.155, 125, 410, 1.85, "xiangqi-strength-v1", 100),
+    _profile(5, "高级", 1960, 40_000, None, 8, 85, 55, 0.115, 100, 330, 1.75, "xiangqi-strength-v1", 100),
+    _profile(6, "精英", 2160, 60_000, None, 6, 66, 42, 0.085, 80, 260, 1.65, "xiangqi-strength-v1", 100),
+    _profile(7, "大师", 2360, 100_000, None, 4, 50, 31, 0.06, 60, 200, 1.5, "xiangqi-strength-v1", 100),
+    _profile(8, "特级", 2560, 150_000, None, 3, 23, 14, 0.028, 33, 115, 1.35, "xiangqi-strength-v1", 100),
+    _profile(9, "满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0, "xiangqi-strength-v1", 100),
 )
 
 SUPPORTED_CATALOGS: Mapping[str, EngineCatalog] = MappingProxyType(

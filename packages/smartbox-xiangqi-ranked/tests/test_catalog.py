@@ -24,26 +24,26 @@ EXPECTED = {
     9: ("满血", 2900, None, 1200, 1, None, None, 0.0, None, None, 1.0, True),
 }
 EXPECTED_HASHES = {
-    1: "0eda775901eb617a0d09b805329d3a4c9c177f9b76faeaadaaec46c9c2bea9ca",
-    2: "57c528bd3c3b39acccb78beac47777ee87285fccae495b14869d08eb858ae37e",
-    3: "e0eb5605101c7968a6721215399c04244da98d6a10ca8e473f67db0ed646b6a2",
-    4: "48a1792fd784400a2ebf24c9d169d719b7193bc5a164313db327a5f2cb8b181f",
-    5: "41c26646b6182b2d87538b26c84fdc0ae219c7b66bef28cb6b4c55b716a2dcba",
-    6: "2954aa6aaa48de0243138fb3536e28ba8c682c5427f6cbfffdb2078690378916",
-    7: "ddd0ead289e8169874238fbb762d0698b7fbaa40ad401c658541c132af879d39",
-    8: "cbe47980b2dcb414ec397af38408ec8b02219a0210c67c7658cafe2c58d72685",
-    9: "bbdcd8f399bd4481c96d0bfc665db56ae3ea574d25ec8b20ed013bf9695cee17",
+    1: "6cd19ce04c5b4e3e8ba68af24710bd4c1b7c68082d78e3552b92452a9e07b593",
+    2: "013524bf9f5b7b6033e65058f2894246697853d635329db98885c586e17abb69",
+    3: "9ae9c8eae3302c455273143ab7bc19f8d8ba50d50df059941d2fdf6e9ebf2c9a",
+    4: "20c877fddcd246d9528be3f59d7c26b7e7174439b82e53142002f7c750b94086",
+    5: "cf74d19dc6e4e744ea6fbc773f7da4051466958efeb3052d5cbec664426277db",
+    6: "44edac3c5181c8e3a5e57da3c1107f3a5baef37266db370f22589c0436eb8e39",
+    7: "10d810515ec1c7cc97db07501244993ef75b434de4736c79677a0afbe9cb4bcc",
+    8: "bd753ae518bcbebe89423a00f66a9e851a704d1954cf3c694c6b690cb3cb06d7",
+    9: "f8052c3b769b02e7a6a2a4d462069d974653a3effe8c0abee0027da4c3b0235c",
 }
 R0_EXPECTED_HASHES = {
-    1: "0eda775901eb617a0d09b805329d3a4c9c177f9b76faeaadaaec46c9c2bea9ca",
-    2: "57c528bd3c3b39acccb78beac47777ee87285fccae495b14869d08eb858ae37e",
-    3: "e0eb5605101c7968a6721215399c04244da98d6a10ca8e473f67db0ed646b6a2",
-    4: "48a1792fd784400a2ebf24c9d169d719b7193bc5a164313db327a5f2cb8b181f",
-    5: "41c26646b6182b2d87538b26c84fdc0ae219c7b66bef28cb6b4c55b716a2dcba",
-    6: "2954aa6aaa48de0243138fb3536e28ba8c682c5427f6cbfffdb2078690378916",
-    7: "ddd0ead289e8169874238fbb762d0698b7fbaa40ad401c658541c132af879d39",
-    8: "381b636c178f8b56d1c1d529fd682d4130e09122faf35963dd1c4fe90465ae06",
-    9: "bbdcd8f399bd4481c96d0bfc665db56ae3ea574d25ec8b20ed013bf9695cee17",
+    1: "6cd19ce04c5b4e3e8ba68af24710bd4c1b7c68082d78e3552b92452a9e07b593",
+    2: "013524bf9f5b7b6033e65058f2894246697853d635329db98885c586e17abb69",
+    3: "9ae9c8eae3302c455273143ab7bc19f8d8ba50d50df059941d2fdf6e9ebf2c9a",
+    4: "20c877fddcd246d9528be3f59d7c26b7e7174439b82e53142002f7c750b94086",
+    5: "cf74d19dc6e4e744ea6fbc773f7da4051466958efeb3052d5cbec664426277db",
+    6: "44edac3c5181c8e3a5e57da3c1107f3a5baef37266db370f22589c0436eb8e39",
+    7: "10d810515ec1c7cc97db07501244993ef75b434de4736c79677a0afbe9cb4bcc",
+    8: "4756a3851eaee5cdf2a443c86ffc30618c591e33eda1b14242f1c5cfc70b63b2",
+    9: "f8052c3b769b02e7a6a2a4d462069d974653a3effe8c0abee0027da4c3b0235c",
 }
 
 
@@ -106,6 +106,14 @@ def test_every_search_sampling_and_resignation_field_changes_profile_hash(field,
     original = SUPPORTED_CATALOGS[ACTIVE_CATALOG_VERSION].profiles[0]
     changed = replace(original, **{field: value})
     assert profile_hash(changed) != original.profile_hash
+
+
+def test_profile_hash_binds_the_versioned_move_selector_and_only_move_threshold():
+    original = SUPPORTED_CATALOGS[ACTIVE_CATALOG_VERSION].profiles[0]
+    assert original.move_selector_version == "xiangqi-strength-v1"
+    assert original.only_move_loss_cp == 100
+    assert profile_hash(replace(original, move_selector_version="xiangqi-strength-v2")) != original.profile_hash
+    assert profile_hash(replace(original, only_move_loss_cp=101)) != original.profile_hash
 
 
 def test_catalog_retains_a_complete_old_snapshot_for_existing_outbox_events():

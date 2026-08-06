@@ -7,28 +7,32 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Mapping
 from typing import Literal
 
 SCORING_CONTRACT_VERSION = 4
 INITIAL_RATING = 1000
 
-ANCHORS = {
-    1: 1010,
-    2: 1260,
-    3: 1510,
-    4: 1760,
-    5: 1960,
-    6: 2160,
-    7: 2360,
-    8: 2560,
-    9: 2900,
-}
+ANCHORS: Mapping[int, int] = MappingProxyType(
+    {
+        1: 1010,
+        2: 1260,
+        3: 1510,
+        4: 1760,
+        5: 1960,
+        6: 2160,
+        7: 2360,
+        8: 2560,
+        9: 2900,
+    }
+)
 K_PROVISIONAL = 40
 K_STABLE = 20
 PROVISIONAL_GAMES = 20
 RATING_FLOOR = 100
 FARM_MARGIN = 130
-FARM_CEIL = {level: anchor + FARM_MARGIN for level, anchor in ANCHORS.items()}
+FARM_CEIL: Mapping[int, int] = MappingProxyType({level: anchor + FARM_MARGIN for level, anchor in ANCHORS.items()})
 
 TIERS = (
     (100, "十二级棋士"),
@@ -124,7 +128,7 @@ def apply_one_v4(state: RatingState, *, opponent_level: int, outcome: Outcome) -
 
 # Append-only compatibility registry. Never delete a version that an issued
 # reservation or a durable Outbox event may still reference.
-SUPPORTED_CONTRACTS = {4: apply_one_v4}
+SUPPORTED_CONTRACTS: Mapping[int, object] = MappingProxyType({4: apply_one_v4})
 
 
 def apply_one(

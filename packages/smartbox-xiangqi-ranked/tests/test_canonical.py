@@ -59,6 +59,26 @@ INCOMPLETE_EVENT_V2_COMPAT = {
 }
 EVENT_V2 = dict(INCOMPLETE_EVENT_V2_COMPAT, player_color="red", final_position_hash="3" * 64)
 
+PREVIEW = {
+    "schema": "xiangqi-ranked-preview-v1",
+    "user_uuid": "0123456789abcdef0123456789abcdef",
+    "profile_version": 2,
+    "rating_hex": float_hex(1000.0),
+    "rated_games": 5,
+    "scoring_contract_version": 4,
+    "catalog_version": "pikafish-r1",
+    "opponent_profile_hash": "2" * 64,
+    "outcome_win_hex": float_hex(1038.0),
+    "outcome_draw_hex": float_hex(1018.0),
+    "outcome_loss_hex": float_hex(998.0),
+    "delta_win": 38,
+    "delta_draw": 18,
+    "delta_loss": -2,
+    "tier_win": "十二级棋士",
+    "tier_draw": "十二级棋士",
+    "tier_loss": "十二级棋士",
+}
+
 
 def test_canonical_json_normalizes_nfc_sorts_unicode_code_points_and_is_compact_utf8():
     payload = {"é": "e\u0301", "z": ["二", "一"], "a": True}
@@ -83,59 +103,113 @@ def test_binary64_crosses_protocol_boundaries_only_as_lowercase_float_hex():
 
 
 def test_preview_has_an_explicit_allowlist_and_excludes_operational_metadata():
-    preview = {
-        "schema": "xiangqi-ranked-preview-v1",
-        "user_uuid": "u",
-        "profile_version": 2,
-        "rating_hex": float_hex(1000.0),
-        "rated_games": 5,
-        "scoring_contract_version": 4,
-        "catalog_version": "pikafish-r1",
-        "opponent_profile_hash": "2" * 64,
-        "outcome_win_hex": float_hex(1038.0),
-        "outcome_draw_hex": float_hex(1018.0),
-        "outcome_loss_hex": float_hex(998.0),
-        "delta_win": 38,
-        "delta_draw": 18,
-        "delta_loss": -2,
-        "tier_win": "十二级棋士",
-        "tier_draw": "十二级棋士",
-        "tier_loss": "十二级棋士",
-    }
-    expected = canonical_preview(preview)
-    polluted = dict(preview, terminal_capability="bearer", retry_count=9, lease_until="later", receipt={"ok": True})
+    expected = canonical_preview(PREVIEW)
+    polluted = dict(PREVIEW, terminal_capability="bearer", retry_count=9, lease_until="later", receipt={"ok": True})
     assert canonical_preview(polluted) == expected
 
 
 @pytest.mark.parametrize("bad_hex", ["1000.0", "0X1.F4P+9", "0x1.f4p+9", "nan", "inf"])
 def test_preview_rejects_values_that_are_not_exact_lowercase_python_float_hex(bad_hex):
-    preview = {
-        "schema": "xiangqi-ranked-preview-v1",
-        "user_uuid": "u",
-        "profile_version": 2,
-        "rating_hex": bad_hex,
-        "rated_games": 5,
-        "scoring_contract_version": 4,
-        "catalog_version": "pikafish-r1",
-        "opponent_profile_hash": "2" * 64,
-        "outcome_win_hex": float_hex(1038.0),
-        "outcome_draw_hex": float_hex(1018.0),
-        "outcome_loss_hex": float_hex(998.0),
-        "delta_win": 38,
-        "delta_draw": 18,
-        "delta_loss": -2,
-        "tier_win": "十二级棋士",
-        "tier_draw": "十二级棋士",
-        "tier_loss": "十二级棋士",
-    }
+    preview = dict(PREVIEW, rating_hex=bad_hex)
     with pytest.raises(ValueError):
         canonical_preview(preview)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("schema", "xiangqi-ranked-preview-v2"),
+        ("user_uuid", "u"),
+        ("user_uuid", "A" * 32),
+        ("profile_version", -1),
+        ("profile_version", True),
+        ("rated_games", -1),
+        ("rated_games", 1.5),
+        ("scoring_contract_version", 999),
+        ("scoring_contract_version", True),
+        ("catalog_version", "pikafish-unknown"),
+        ("opponent_profile_hash", "A" * 64),
+        ("opponent_profile_hash", "2" * 63),
+        ("delta_win", True),
+        ("delta_draw", 1.5),
+        ("tier_loss", "  "),
+        ("tier_win", 7),
+    ],
+)
+def test_preview_rejects_invalid_typed_or_unregistered_fields(field, value):
+    with pytest.raises((TypeError, ValueError), match=field):
+        canonical_preview(dict(PREVIEW, **{field: value}))
+
+
+@pytest.mark.parametrize(
+    "user_uuid",
+    ["0123456789abcdef0123456789abcdef", "550e8400-e29b-41d4-a716-446655440000"],
+)
+def test_preview_accepts_both_authoritative_user_uuid_forms(user_uuid):
+    assert canonical_preview(dict(PREVIEW, user_uuid=user_uuid))
 
 
 def test_legacy_settlement_v1_vector_remains_verifiable():
     assert (
         canonical_hash(canonical_event(LEGACY_V1)) == "8280e6ce6b18ea0914b6a67167390e30174f0c718d3d4717cf2f08f38b7c402b"
     )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("base_profile_version", -1),
+        ("base_profile_version", True),
+        ("base_rated_games", -1),
+        ("base_rated_games", 1.5),
+        ("catalog_version", "pikafish-r9"),
+        ("device_id", "  "),
+        ("game_id", "550E8400-E29B-41D4-A716-446655440000"),
+        ("grant_slot_id", ""),
+        ("local_seq", -1),
+        ("opponent_anchor", 0),
+        ("opponent_anchor", True),
+        ("opponent_level", 0),
+        ("opponent_level", 10),
+        ("opponent_profile_hash", "g" * 64),
+        ("pgn_sha256", "0" * 63),
+        ("player_color", "red"),
+        ("projection_fingerprint", "1" * 65),
+        ("reservation_id", "not-a-uuid"),
+        ("result", "1-0"),
+        ("scoring_contract_version", 5),
+        ("time_control", "rapid"),
+        ("user_uuid", "550E8400-E29B-41D4-A716-446655440000"),
+    ],
+)
+def test_v1_settle_rejects_invalid_fields_before_hashing(field, value):
+    with pytest.raises((TypeError, ValueError), match=field):
+        hash_event(dict(LEGACY_V1, **{field: value}))
+
+
+@pytest.mark.parametrize(
+    "event_kind,abort_reason",
+    [
+        ("cancel", "user_cancelled"),
+        ("system_abort", "engine_unavailable"),
+        ("system_abort", "system_fault"),
+    ],
+)
+def test_v1_abort_kinds_accept_only_their_frozen_reason_enums(event_kind, abort_reason):
+    event = dict(LEGACY_V1, event_kind=event_kind, abort_reason=abort_reason)
+    event.pop("result")
+    assert canonical_event(event)
+
+
+@pytest.mark.parametrize(
+    "event_kind,abort_reason",
+    [("cancel", "system_fault"), ("system_abort", "user_cancelled"), ("system_abort", "network")],
+)
+def test_v1_abort_kinds_reject_mismatched_or_unknown_reasons(event_kind, abort_reason):
+    event = dict(LEGACY_V1, event_kind=event_kind, abort_reason=abort_reason)
+    event.pop("result")
+    with pytest.raises(ValueError, match="abort_reason"):
+        hash_event(event)
 
 
 def test_incomplete_historical_v2_vector_remains_generic_canonical_hash_compatible():
@@ -161,6 +235,44 @@ def test_current_event_v2_hashes_color_and_final_position_hash():
     assert hash_event(dict(EVENT_V2, final_position_hash="4" * 64)) != hash_event(EVENT_V2)
 
 
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("catalog_version", "pikafish-r9"),
+        ("device_id", ""),
+        ("game_id", "550e8400e29b41d4a716446655440000"),
+        ("local_seq", True),
+        ("opponent_profile_hash", "2" * 63),
+        ("projection_fingerprint", "G" * 64),
+        ("reservation_id", None),
+        ("scoring_contract_version", 999),
+        ("time_control", "standard"),
+        ("user_uuid", "not-a-user"),
+        ("clock_revision", -1),
+        ("final_fen", " "),
+        ("final_position_hash", "3" * 65),
+        ("moves", "e2e3"),
+        ("moves", ["e2e3", "e9e"]),
+        ("moves", ["e2e2"]),
+        ("pgn_sha256", "A" * 64),
+        ("player_clock_ms", -1),
+        ("player_color", "white"),
+        ("result", "1-0"),
+        ("terminal_kind", None),
+        ("terminal_kind", "resign"),
+    ],
+)
+def test_v2_settle_invalid_terminal_matrix_is_rejected_before_hashing(field, value):
+    with pytest.raises((TypeError, ValueError), match=field):
+        hash_event(dict(EVENT_V2, **{field: value}))
+
+
+@pytest.mark.parametrize("terminal_kind", ["rules", "timeout"])
+@pytest.mark.parametrize("result", ["win", "draw", "loss"])
+def test_v2_settle_accepts_only_the_complete_terminal_matrix(terminal_kind, result):
+    assert hash_event(dict(EVENT_V2, terminal_kind=terminal_kind, result=result))
+
+
 def test_event_hash_is_insertion_order_independent_and_excludes_operational_metadata():
     reversed_event = dict(reversed(list(EVENT_V2.items())))
     reversed_event.update(capability="secret", retry_count=3, lease="held", receipt="accepted")
@@ -173,6 +285,9 @@ def test_resign_has_the_same_complete_evidence_shape_and_forces_a_loss():
 
     with pytest.raises(ValueError):
         canonical_event(dict(resigned, result="win"))
+
+    with pytest.raises(ValueError, match="terminal_kind"):
+        canonical_event(dict(resigned, terminal_kind="rules"))
 
 
 FAULT_EVIDENCE = {

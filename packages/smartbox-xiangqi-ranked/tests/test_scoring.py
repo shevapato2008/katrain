@@ -103,6 +103,32 @@ def test_contract_registry_is_append_only_and_routes_active_v4():
     assert SUPPORTED_CONTRACTS[4] is apply_one_v4
 
 
+@pytest.mark.parametrize(
+    "mapping,key,value",
+    [
+        (ANCHORS, 1, 9999),
+        (FARM_CEIL, 1, 9999),
+        (SUPPORTED_CONTRACTS, 4, lambda *_args, **_kwargs: None),
+    ],
+)
+def test_public_scoring_registries_are_deeply_immutable(mapping, key, value):
+    before = dict(mapping)
+    try:
+        with pytest.raises(TypeError):
+            mapping[key] = value
+    finally:
+        if isinstance(mapping, dict):
+            mapping.clear()
+            mapping.update(before)
+
+
+def test_registry_immutability_keeps_the_frozen_v4_output_unchanged():
+    assert (
+        apply_one_v4(RatingState(1377.25, 7), opponent_level=5, outcome="draw").after.rating.hex()
+        == "0x1.5cf99c843bf9bp+10"
+    )
+
+
 def test_pick_level_is_monotone_and_every_catalog_level_is_reachable():
     picked = [pick_level(float(rating)) for rating in range(RATING_FLOOR, 3401)]
     assert picked == sorted(picked)

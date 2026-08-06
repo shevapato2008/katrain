@@ -1,0 +1,826 @@
+{
+  "matchId": "yike_184016",
+  "livePath": "/galaxy/live/yike_184016",
+  "captures": [
+    {
+      "viewportName": "1535x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1535,
+        "height": 900
+      },
+      "canvas": {
+        "x": 260,
+        "y": 99.203125,
+        "width": 755,
+        "height": 755,
+        "top": 99.203125,
+        "right": 1015,
+        "bottom": 854.203125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 900,
+        "top": 0,
+        "right": 240,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1035,
+        "y": 0,
+        "width": 500,
+        "height": 900,
+        "top": 0,
+        "right": 1535,
+        "bottom": 900,
+        "left": 1035
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1535,
+        "clientWidth": 1535,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856"
+        ],
+        "buttons": []
+      }
+    },
+    {
+      "viewportName": "1536x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1536,
+        "height": 900
+      },
+      "canvas": {
+        "x": 260,
+        "y": 98.703125,
+        "width": 756,
+        "height": 756,
+        "top": 98.703125,
+        "right": 1016,
+        "bottom": 854.703125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 900,
+        "top": 0,
+        "right": 240,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1036,
+        "y": 0,
+        "width": 500,
+        "height": 900,
+        "top": 0,
+        "right": 1536,
+        "bottom": 900,
+        "left": 1036
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1536,
+        "clientWidth": 1536,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856"
+        ],
+        "buttons": []
+      }
+    },
+    {
+      "viewportName": "1537x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1537,
+        "height": 900
+      },
+      "canvas": {
+        "x": 260,
+        "y": 98.203125,
+        "width": 757,
+        "height": 757,
+        "top": 98.203125,
+        "right": 1017,
+        "bottom": 855.203125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 900,
+        "top": 0,
+        "right": 240,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1037,
+        "y": 0,
+        "width": 500,
+        "height": 900,
+        "top": 0,
+        "right": 1537,
+        "bottom": 900,
+        "left": 1037
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1537,
+        "clientWidth": 1537,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856"
+        ],
+        "buttons": []
+      }
+    },
+    {
+      "viewportName": "1440x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "canvas": {
+        "x": 260,
+        "y": 146.703125,
+        "width": 660,
+        "height": 660,
+        "top": 146.703125,
+        "right": 920,
+        "bottom": 806.703125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 900,
+        "top": 0,
+        "right": 240,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 940,
+        "y": 0,
+        "width": 500,
+        "height": 900,
+        "top": 0,
+        "right": 1440,
+        "bottom": 900,
+        "left": 940
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀"
+        ],
+        "buttons": []
+      }
+    },
+    {
+      "viewportName": "1201x800",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1201,
+        "height": 800
+      },
+      "canvas": {
+        "x": 260,
+        "y": 216.203125,
+        "width": 421,
+        "height": 421,
+        "top": 216.203125,
+        "right": 681,
+        "bottom": 637.203125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 800,
+        "top": 0,
+        "right": 240,
+        "bottom": 800,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 701,
+        "y": 0,
+        "width": 500,
+        "height": 800,
+        "top": 0,
+        "right": 1201,
+        "bottom": 800,
+        "left": 701
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1201,
+        "clientWidth": 1201,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5"
+        ],
+        "buttons": [
+          "Play"
+        ]
+      }
+    },
+    {
+      "viewportName": "1200x800",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1200,
+        "height": 800
+      },
+      "canvas": {
+        "x": 260,
+        "y": 216.703125,
+        "width": 420,
+        "height": 420,
+        "top": 216.703125,
+        "right": 680,
+        "bottom": 636.703125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 800,
+        "top": 0,
+        "right": 240,
+        "bottom": 800,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 700,
+        "y": 0,
+        "width": 500,
+        "height": 800,
+        "top": 0,
+        "right": 1200,
+        "bottom": 800,
+        "left": 700
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1200,
+        "clientWidth": 1200,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5"
+        ],
+        "buttons": [
+          "Play"
+        ]
+      }
+    },
+    {
+      "viewportName": "1199x800",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1199,
+        "height": 800
+      },
+      "canvas": {
+        "x": 260,
+        "y": 217.203125,
+        "width": 419,
+        "height": 419,
+        "top": 217.203125,
+        "right": 679,
+        "bottom": 636.203125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 800,
+        "top": 0,
+        "right": 240,
+        "bottom": 800,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 699,
+        "y": 0,
+        "width": 500,
+        "height": 800,
+        "top": 0,
+        "right": 1199,
+        "bottom": 800,
+        "left": 699
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1199,
+        "clientWidth": 1199,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5"
+        ],
+        "buttons": [
+          "Play"
+        ]
+      }
+    },
+    {
+      "viewportName": "1024x768",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "canvas": {
+        "x": 260,
+        "y": 288.703125,
+        "width": 244,
+        "height": 244,
+        "top": 288.703125,
+        "right": 504,
+        "bottom": 532.703125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 768,
+        "top": 0,
+        "right": 240,
+        "bottom": 768,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 524,
+        "y": 0,
+        "width": 500,
+        "height": 768,
+        "top": 0,
+        "right": 1024,
+        "bottom": 768,
+        "left": 524
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 1024,
+        "clientWidth": 1024,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "Research",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5",
+          "TRY",
+          "TERRITORY",
+          "NUMBERS",
+          "ADVICE"
+        ],
+        "buttons": [
+          "Play",
+          "Research",
+          "Try Move",
+          "Territory (needs analysis)",
+          "Numbers",
+          "Hide Advice"
+        ]
+      }
+    },
+    {
+      "viewportName": "901x700",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 901,
+        "height": 700
+      },
+      "canvas": {
+        "x": 260,
+        "y": 316.203125,
+        "width": 121,
+        "height": 121,
+        "top": 316.203125,
+        "right": 381,
+        "bottom": 437.203125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 700,
+        "top": 0,
+        "right": 240,
+        "bottom": 700,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 401,
+        "y": 0,
+        "width": 500,
+        "height": 700,
+        "top": 0,
+        "right": 901,
+        "bottom": 700,
+        "left": 401
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 901,
+        "clientWidth": 901,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "Research",
+          "Tsumego",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5",
+          "TRY",
+          "TERRITORY",
+          "NUMBERS",
+          "ADVICE",
+          "AI Recommendations"
+        ],
+        "buttons": [
+          "Play",
+          "Research",
+          "Tsumego",
+          "Try Move",
+          "Territory (needs analysis)",
+          "Numbers",
+          "Hide Advice"
+        ]
+      }
+    },
+    {
+      "viewportName": "900x700",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 900,
+        "height": 700
+      },
+      "canvas": {
+        "x": 260,
+        "y": 316.703125,
+        "width": 120,
+        "height": 120,
+        "top": 316.703125,
+        "right": 380,
+        "bottom": 436.703125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 700,
+        "top": 0,
+        "right": 240,
+        "bottom": 700,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 400,
+        "y": 0,
+        "width": 500,
+        "height": 700,
+        "top": 0,
+        "right": 900,
+        "bottom": 700,
+        "left": 400
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 900,
+        "clientWidth": 900,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "Research",
+          "Tsumego",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5",
+          "TRY",
+          "TERRITORY",
+          "NUMBERS",
+          "ADVICE",
+          "AI Recommendations"
+        ],
+        "buttons": [
+          "Play",
+          "Research",
+          "Tsumego",
+          "Try Move",
+          "Territory (needs analysis)",
+          "Numbers",
+          "Hide Advice"
+        ]
+      }
+    },
+    {
+      "viewportName": "899x700",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 899,
+        "height": 700
+      },
+      "canvas": {
+        "x": 260,
+        "y": 317.203125,
+        "width": 119,
+        "height": 119,
+        "top": 317.203125,
+        "right": 379,
+        "bottom": 436.203125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 700,
+        "top": 0,
+        "right": 240,
+        "bottom": 700,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 399,
+        "y": 0,
+        "width": 500,
+        "height": 700,
+        "top": 0,
+        "right": 899,
+        "bottom": 700,
+        "left": 399
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 899,
+        "clientWidth": 899,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "Research",
+          "Tsumego",
+          "陈泓明 vs 姚钧耀",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5",
+          "TRY",
+          "TERRITORY",
+          "NUMBERS",
+          "ADVICE",
+          "AI Recommendations"
+        ],
+        "buttons": [
+          "Play",
+          "Research",
+          "Tsumego",
+          "Try Move",
+          "Territory (needs analysis)",
+          "Numbers",
+          "Hide Advice"
+        ]
+      }
+    },
+    {
+      "viewportName": "430x880",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 430,
+        "height": 880
+      },
+      "canvas": {
+        "x": 260,
+        "y": 466.703125,
+        "width": 0,
+        "height": 0,
+        "top": 466.703125,
+        "right": 260,
+        "bottom": 466.703125,
+        "left": 260
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 880,
+        "top": 0,
+        "right": 240,
+        "bottom": 880,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 272,
+        "y": 0,
+        "width": 158,
+        "height": 880,
+        "top": 0,
+        "right": 430,
+        "bottom": 880,
+        "left": 272
+      },
+      "horizontalOverflow": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "弈航",
+          "棋道导航者",
+          "Play",
+          "Research",
+          "Tsumego",
+          "Review",
+          "Live",
+          "Game Records",
+          "LIVE",
+          "2026年3月27日",
+          "弈客",
+          "天元记谱-2603211856",
+          "陈泓明",
+          "vs",
+          "姚钧耀",
+          "8.5%",
+          "91.5%",
+          "Chinese Rules",
+          "Komi 7.5",
+          "TRY",
+          "TERRITORY",
+          "NUMBERS",
+          "ADVICE"
+        ],
+        "buttons": [
+          "Play",
+          "Research",
+          "Tsumego",
+          "Review",
+          "Live",
+          "Try Move",
+          "Territory (needs analysis)",
+          "Numbers",
+          "Hide Advice"
+        ]
+      }
+    }
+  ]
+}

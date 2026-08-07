@@ -275,6 +275,15 @@ class XiangqiRankedRepository:
                 terminal_at=None,
             )
             session.add(reservation)
+            # Flush the parent row on its own before the capability JTI that points at
+            # it.  There is no ORM relationship between these two mappers, so the unit
+            # of work is free to order the two INSERTs the other way round; PostgreSQL
+            # then rejects the child with a foreign-key violation, and the blanket
+            # IntegrityError handler below reports it as "already reserved elsewhere".
+            # SQLite does not enforce foreign keys by default, which is why every
+            # same-process test passed while no account could ever reserve on the
+            # production database.  Both statements still commit atomically.
+            session.flush([reservation])
             session.add(
                 models_db.XiangqiRankedCapabilityJti(
                     jti=capability_jti,

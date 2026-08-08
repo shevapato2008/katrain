@@ -740,14 +740,13 @@ class AiLadderRankedRepository:
                 return self._replay_result(session, existing, user_id)
 
             active = (
-                session.query(models_db.AiLadderActiveGame.game_id)
-                .filter(
-                    models_db.AiLadderActiveGame.user_id == user_id,
-                    models_db.AiLadderActiveGame.game_id == game_id,
-                )
+                session.query(models_db.AiLadderActiveGame)
+                .filter(models_db.AiLadderActiveGame.game_id == game_id)
                 .one_or_none()
             )
             if active is not None:
+                if active.user_id != user_id:
+                    raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
                 raise AiLadderLifecycleConflict("active ranked AI game must use the lifecycle finalizer")
 
             ignored_reason = self._ignored_reason(
@@ -857,8 +856,10 @@ class AiLadderRankedRepository:
     def _verify_origin(cls, row, *, reservation_key: Optional[str], origin_device_id: str) -> None:
         supplied_hash = cls._hash_reservation_key(reservation_key) if isinstance(reservation_key, str) else ""
         key_matches = hmac.compare_digest(row.reservation_key_hash, supplied_hash)
-        device_matches = hmac.compare_digest(row.origin_device_id, origin_device_id or "")
-        if not (key_matches and device_matches):
+        # Device IDs are mutable provenance labels, never credentials. Ownership is
+        # already scoped by authenticated user_id + game_id; the unguessable key is
+        # the sole origin capability for origin-only transitions.
+        if not key_matches:
             raise InvalidReservationKey("invalid reservation credential")
 
     @staticmethod

@@ -309,7 +309,7 @@ def reserve_ranked_game(
     current_user: User = Depends(get_current_user),
 ):
     _require_authority(request)
-    device_id = _device_id(request)
+    device_id = _device_id(request, required=False)
     try:
         reserved = _reserve(body=body, request=request, current_user=current_user, device_id=device_id)
     except HTTPException as exc:
@@ -345,7 +345,7 @@ def activate_ranked_game(
             user_id=current_user.id,
             game_id=game_id,
             reservation_key=body.reservation_key,
-            origin_device_id=_device_id(request),
+            origin_device_id=_device_id(request, required=False),
             origin_session_id=body.session_id,
         )
     except ValueError as exc:
@@ -366,7 +366,7 @@ def mark_ranked_game_pending(
             user_id=current_user.id,
             game_id=game_id,
             reservation_key=body.reservation_key,
-            origin_device_id=_device_id(request),
+            origin_device_id=_device_id(request, required=False),
         )
     except ValueError as exc:
         raise _lifecycle_error(exc) from exc
@@ -386,7 +386,7 @@ def cancel_ranked_game_reservation(
             user_id=current_user.id,
             game_id=game_id,
             reservation_key=body.reservation_key,
-            origin_device_id=_device_id(request),
+            origin_device_id=_device_id(request, required=False),
         )
     except ValueError as exc:
         raise _lifecycle_error(exc) from exc
@@ -402,7 +402,10 @@ def get_ranked_game_status(
     current_user: User = Depends(get_current_user),
 ):
     _require_authority(request)
-    lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    try:
+        lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranked game not found") from exc
     if lifecycle is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranked game not found")
     if isinstance(lifecycle, AiLadderLifecycleReceipt):
@@ -694,7 +697,7 @@ def submit_settlement(
                 game_id=body.game_id,
                 terminal_source="played_result",
                 result=body.result,
-                deciding_device_id=_device_id(request),
+                deciding_device_id=_device_id(request, required=False),
                 reservation_key=body.reservation_key,
                 game_record=body.game_record.model_dump() if body.game_record is not None else None,
                 engine_stalled=body.engine_stalled,

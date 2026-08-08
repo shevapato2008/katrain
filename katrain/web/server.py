@@ -1503,37 +1503,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     lifecycle, "origin_device_id"
                 ):
                     data["origin_device_id"] = lifecycle.origin_device_id
-
-                # Deliberately NOT the repository dispatcher, on any node. Settlement only
-                # moves the rank after re-reading the row it just wrote, and the dispatcher
-                # may have sent that row to the cloud (online) or queued it (offline) --
-                # neither is readable here. The ranked row is written to this node's own
-                # authoritative store; getting it to the cloud is the sync queue's job.
-                saved = app.state.user_game_repo.create_ai_ladder_ranked(
-                    user_id=current_user.id,
-                    game_id=snapshot.game_id,
-                    **data,
-                )
-                confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
-                    snapshot.game_id, current_user.id
-                )
-                if (
-                    saved.get("id") != snapshot.game_id
-                    or confirmed is None
-                    or confirmed.get("game_type") != "ai_ladder_ranked"
-                ):
-                    raise RuntimeError("authoritative ranked AI game row was not confirmed")
-                app.state.ai_ladder_repo.mark_pending_game_saved(
-                    user_id=current_user.id,
-                    game_id=snapshot.game_id,
-                    result=confirmed["result"],
-                )
-
-                terminal_result = result_for_user(confirmed["result"], snapshot.user_color)
+                terminal_result = result_for_user(data["result"], snapshot.user_color)
                 engine_stalled = bool(getattr(session.katrain, "last_ladder_error", False))
                 if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
                     lifecycle, "origin_device_id"
                 ):
+                    # New lifecycle games commit their game record, ledger, profile and
+                    # reservation release in one repository transaction.
                     app.state.ai_ladder_repo.finalize_reserved_game(
                         user_id=current_user.id,
                         game_id=snapshot.game_id,
@@ -1544,7 +1520,42 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         game_record=data,
                         engine_stalled=engine_stalled,
                     )
+                    confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                        snapshot.game_id, current_user.id
+                    )
+                    if confirmed is None:
+                        raise RuntimeError("authoritative ranked AI game row was not confirmed")
+                elif getattr(lifecycle, "state", None) == "settled":
+                    # A remote /end won the terminal race. Its minimal resignation
+                    # record is immutable; the late local callback is a successful no-op.
+                    app.state.ai_ladder_repo.clear_pending_game(
+                        user_id=current_user.id, game_id=snapshot.game_id
+                    )
+                    session.ai_ladder_settlement_pending = False
+                    session._recorded = True
+                    return
                 else:
+                    # Legacy games predate account reservations. Preserve their old
+                    # save-then-settle path for backward compatibility.
+                    saved = app.state.user_game_repo.create_ai_ladder_ranked(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        **data,
+                    )
+                    confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                        snapshot.game_id, current_user.id
+                    )
+                    if (
+                        saved.get("id") != snapshot.game_id
+                        or confirmed is None
+                        or confirmed.get("game_type") != "ai_ladder_ranked"
+                    ):
+                        raise RuntimeError("authoritative ranked AI game row was not confirmed")
+                    app.state.ai_ladder_repo.mark_pending_game_saved(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        result=confirmed["result"],
+                    )
                     app.state.ai_ladder_repo.settle_game(
                         user_id=current_user.id,
                         game_id=snapshot.game_id,
@@ -1560,7 +1571,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         engine_stalled=engine_stalled,
                     )
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
-                _enqueue_ladder_settlement_sync(app, current_user, snapshot, confirmed["result"], session)
+                _enqueue_ladder_settlement_sync(app, current_user, snapshot, data["result"], session)
                 session.ai_ladder_settlement_pending = False
                 session._recorded = True
                 return

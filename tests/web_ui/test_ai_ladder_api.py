@@ -1397,7 +1397,7 @@ async def test_repeated_ranked_resign_is_rejected_without_changing_authoritative
         sgf_after = session.katrain.get_sgf()
 
     assert first.status_code == 200
-    assert second.status_code == 403
+    assert second.status_code == 409
     assert sgf_after == sgf_before
     assert session.katrain.game.current_node.end_state == "W+R"
     with api_app.state._test_session_factory() as db:
@@ -3060,6 +3060,7 @@ async def test_board_terminal_queues_the_full_record_with_reservation_and_device
             headers=api_app.state._test_headers,
             json={"color": "black", "time_enabled": False},
         )
+        remote.get_ai_ladder_game_status.return_value = {"state": "active", "game_id": started.json()["game_id"]}
         response = await ac.post(
             "/api/resign",
             headers=api_app.state._test_headers,
@@ -3095,6 +3096,7 @@ async def test_board_terminal_retains_pending_credential_until_outbox_is_durable
             headers=api_app.state._test_headers,
             json={"color": "black", "time_enabled": False},
         )
+        remote.get_ai_ladder_game_status.return_value = {"state": "active", "game_id": started.json()["game_id"]}
         await ac.post(
             "/api/resign",
             headers=api_app.state._test_headers,
@@ -3136,6 +3138,7 @@ async def test_board_status_rebuilds_missing_settlement_outbox_after_restart(api
             headers=api_app.state._test_headers,
             json={"color": "black", "time_enabled": False},
         )
+        remote.get_ai_ladder_game_status.return_value = {"state": "active", "game_id": started.json()["game_id"]}
         await ac.post(
             "/api/resign",
             headers=api_app.state._test_headers,
@@ -3174,6 +3177,7 @@ async def test_board_recovery_preserves_engine_unavailable_as_non_counting(api_a
             headers=api_app.state._test_headers,
             json={"color": "black", "time_enabled": False},
         )
+        remote.get_ai_ladder_game_status.return_value = {"state": "active", "game_id": started.json()["game_id"]}
         await ac.post(
             "/api/resign",
             headers=api_app.state._test_headers,

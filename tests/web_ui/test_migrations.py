@@ -408,6 +408,7 @@ def test_backfill_ai_ladder_decisions_preserves_old_valid_history(tmp_path):
             )
         )
 
+    models_db.Base.metadata.create_all(bind=engine)
     migrations.migrate_ai_ladder_decision_schema(engine)
     migrations.add_missing_columns(engine)
     migrations.backfill_ai_ladder_decisions(engine)

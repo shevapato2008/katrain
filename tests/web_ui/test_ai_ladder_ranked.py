@@ -262,8 +262,12 @@ def test_a_game_whose_engine_recovered_still_counts(session_factory, user, oppon
     assert outcome.reason is None
 
 
-@pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 21), (20, ["loss"] * 3, 19)])
-def test_plus_or_minus_three_changes_exactly_one_rung_and_resets(
+# 1级 is rung 20 and 准1段 is rung 21, which has no fitted recipe. This used to expect
+# 21 -- plain `rung + 1` -- which promotes the player onto a rung no opponent can ever be
+# built for. §6 of 2026-08-04-41-tier-rated-play-integration-design.md requires the step
+# to count rungs a player can actually be seated on, so 1级 goes to 1段 (22).
+@pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 22), (20, ["loss"] * 3, 19)])
+def test_plus_or_minus_three_changes_exactly_one_playable_rung_and_resets(
     session_factory, user, opponent, start, results, expected
 ):
     placed_profile(session_factory, user.id, start)

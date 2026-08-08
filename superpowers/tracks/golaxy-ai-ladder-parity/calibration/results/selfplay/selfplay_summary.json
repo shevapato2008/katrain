@@ -1,0 +1,23 @@
+{
+  "matchups": [
+    {
+      "player_a": "rank_9d@20",
+      "player_b": "b28@20",
+      "games": 20,
+      "conclusive": 18,
+      "a_wins": 9,
+      "a_winrate": 0.5,
+      "a_elo_vs_b": -0.0,
+      "a_elo_ci95": [
+        -173.65562780950418,
+        173.65562780950427
+      ],
+      "reason_counts": {
+        "our_loss": 9,
+        "our_win": 9,
+        "inconclusive_unsettled": 2
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

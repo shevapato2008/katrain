@@ -1,25 +1,17 @@
 import { createElement, useEffect, useRef, useState } from 'react';
 import { Alert, Button } from '@mui/material';
 import { getAiLadderStatus } from './api';
-import type { AiLadderReadyStatus } from './types';
+import { AI_LADDER_COPY, settlementCopy } from './copy';
+import { useTranslation } from '../../hooks/useTranslation';
+import { isAiLadderReadyStatus, type AiLadderReadyStatus } from './types';
 
 export type SettlementFeedbackKind = 'placement_progress' | 'placement_complete' | 'promotion' | 'demotion' | 'score_change' | 'no_change' | 'authoritative_complete' | 'pending' | 'error';
 export interface SettlementFeedback { kind: SettlementFeedbackKind; message: string; status?: AiLadderReadyStatus; retry?: () => void }
 
 const keyFor = (sessionId: string) => `ai-ladder-before:${sessionId}`;
-const isReadyStatus = (value: unknown): value is AiLadderReadyStatus => {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<AiLadderReadyStatus>;
-  const placement = candidate.placement_state;
-  return candidate.view_state === 'ready'
-    && typeof candidate.net_score === 'number'
-    && Array.isArray(candidate.recent_ranked_results)
-    && typeof candidate.pending_settlement === 'boolean'
-    && !!placement && typeof placement === 'object'
-    && (placement.phase === 'placement'
-      ? typeof placement.completed_games === 'number' && placement.total_games === 5
-      : placement.phase === 'placed' && typeof placement.rung?.rung === 'number' && typeof placement.rung.rank_name === 'string');
-};
+// Same guard the status hook uses — it lives in types.ts now so both entry points agree
+// on what "a usable ready status" means.
+const isReadyStatus = isAiLadderReadyStatus;
 
 export const saveAiLadderBefore = (sessionId: string, status: AiLadderReadyStatus, identity: string) => {
   if (!sessionId || !identity || !isReadyStatus(status)) return;
@@ -38,18 +30,18 @@ const clearAiLadderBefore = (sessionId: string) => { try { sessionStorage.remove
 
 const score = (value: number) => value > 0 ? `+${value}` : String(value);
 export const deriveSettlementFeedback = (before: AiLadderReadyStatus | null, after: AiLadderReadyStatus): SettlementFeedback => {
-  if (!before) return { kind: 'authoritative_complete', message: '升降级结算已完成，当前状态已更新', status: after };
+  if (!before) return { kind: 'authoritative_complete', message: settlementCopy.authoritativeComplete(), status: after };
   if (before.placement_state.phase === 'placement') {
-    if (after.placement_state.phase === 'placed') return { kind: 'placement_complete', message: `定级完成：${after.placement_state.rung.rank_name}`, status: after };
-    return { kind: 'placement_progress', message: `定级中 ${after.placement_state.completed_games}/${after.placement_state.total_games}`, status: after };
+    if (after.placement_state.phase === 'placed') return { kind: 'placement_complete', message: settlementCopy.placementComplete(after.placement_state.rung.rank_name), status: after };
+    return { kind: 'placement_progress', message: settlementCopy.placementProgress(after.placement_state.completed_games, after.placement_state.total_games), status: after };
   }
   if (after.placement_state.phase === 'placed') {
     const delta = after.placement_state.rung.rung - before.placement_state.rung.rung;
-    if (delta > 0) return { kind: 'promotion', message: `升级：${after.placement_state.rung.rank_name}`, status: after };
-    if (delta < 0) return { kind: 'demotion', message: `降级：${after.placement_state.rung.rank_name}`, status: after };
+    if (delta > 0) return { kind: 'promotion', message: settlementCopy.promotion(after.placement_state.rung.rank_name), status: after };
+    if (delta < 0) return { kind: 'demotion', message: settlementCopy.demotion(after.placement_state.rung.rank_name), status: after };
   }
-  if (after.net_score !== before.net_score) return { kind: 'score_change', message: `累计净胜分：${score(after.net_score)}`, status: after };
-  return { kind: 'no_change', message: `段位未变化，累计净胜分：${score(after.net_score)}`, status: after };
+  if (after.net_score !== before.net_score) return { kind: 'score_change', message: settlementCopy.scoreChange(score(after.net_score)), status: after };
+  return { kind: 'no_change', message: settlementCopy.noChange(score(after.net_score)), status: after };
 };
 
 type GetStatus = (token?: string, signal?: AbortSignal) => Promise<AiLadderReadyStatus>;
@@ -87,21 +79,25 @@ export const useAiLadderSettlement = (
     void pollAiLadderSettlement(getAiLadderStatus, token, controller.signal, 5, wait).then((after) => {
       if (controller.signal.aborted) return;
       if (after.pending_settlement) {
-        setFeedback({ kind: 'pending', message: '升降级结算仍在处理中', status: after, retry });
+        setFeedback({ kind: 'pending', message: settlementCopy.pending(), status: after, retry });
       } else {
         clearAiLadderBefore(sessionId);
         setFeedback(deriveSettlementFeedback(before, after));
       }
     }).catch((error) => {
-      if (!controller.signal.aborted) setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '结算状态暂不可用', status: before ?? undefined, retry });
+      if (!controller.signal.aborted) setFeedback({ kind: 'error', message: error instanceof Error ? error.message : settlementCopy.unavailable(), status: before ?? undefined, retry });
     });
     return () => controller.abort();
   }, [endResult, gameType, identity, retryGeneration, sessionId, token, wait]);
   return feedback;
 };
 
-export const AiLadderSettlementAlert = ({ feedback }: { feedback: SettlementFeedback | null }) =>
-  feedback ? createElement(Alert, {
+export const AiLadderSettlementAlert = ({ feedback }: { feedback: SettlementFeedback | null }) => {
+  // The message itself was formatted when the game ended and is held in state, so a
+  // language switch mid-alert does not rewrite it; the retry label re-renders with the hook.
+  useTranslation();
+  return feedback ? createElement(Alert, {
     severity: feedback.kind === 'error' ? 'error' : feedback.kind === 'pending' || feedback.kind === 'demotion' ? 'warning' : 'success',
-    action: feedback.retry ? createElement(Button, { color: 'inherit', size: 'small', onClick: feedback.retry }, '重试') : undefined,
+    action: feedback.retry ? createElement(Button, { color: 'inherit', size: 'small', onClick: feedback.retry }, AI_LADDER_COPY.retry) : undefined,
   }, feedback.message) : null;
+};

@@ -5,6 +5,7 @@ import Tooltip from '@mui/material/Tooltip';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AudioPlayerProps {
   src: string | null;
@@ -13,6 +14,7 @@ interface AudioPlayerProps {
 }
 
 export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPlayerProps) {
+  const { t } = useTranslation();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(false);
@@ -51,11 +53,11 @@ export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPla
         onPause={() => setPlaying(false)}
         onPlay={() => setPlaying(true)}
       />
-      <IconButton onClick={toggle} size="small" color={error ? 'default' : 'primary'} aria-label={playing ? 'Pause' : 'Play'} disabled={error}>
+      <IconButton onClick={toggle} size="small" color={error ? 'default' : 'primary'} aria-label={playing ? t('audio:pause', '暂停') : t('audio:play', '播放')} disabled={error}>
         {playing ? <PauseIcon /> : <PlayArrowIcon />}
       </IconButton>
       {error && (
-        <Tooltip title="Audio unavailable">
+        <Tooltip title={t('audio:unavailable', '音频不可用')}>
           <VolumeOffIcon fontSize="small" color="disabled" />
         </Tooltip>
       )}

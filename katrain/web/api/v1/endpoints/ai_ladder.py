@@ -24,6 +24,7 @@ from katrain.web.core.ai_ladder_ranked import (
     AI_LADDER_GAME_TYPE,
     PLACEMENT_GAMES,
     AiLadderOpponentSnapshot,
+    expected_opponent_rung,
     initial_placement_window,
 )
 from katrain.web.models import User
@@ -127,7 +128,7 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
     finally:
         db.close()
 
-    opponent_rung = rung if rung is not None else (lo + hi) // 2
+    opponent_rung = expected_opponent_rung(rung, lo, hi)
     opponent = catalog_entry(opponent_rung)
     placement_state: dict[str, object]
     if rung is None:

@@ -1129,3 +1129,65 @@ def test_pikl_numeric_boundaries_are_accepted(key, value):
     params = dict(HUMANSL_PIKL_BASELINE)
     params[key] = value
     assert rung_strength_spec(_humansl_search_rung(human_sl_params=params)).override_settings[key] == value
+
+
+# ---------------------------------------------------------------------------
+# Playable-rung stepping.
+#
+# Ten of the 41 rungs (准1段–准9段, 职业顶尖) never had a strength recipe fitted.
+# Arithmetic on the raw rung number walks straight onto them: 5段 is rung 30,
+# 准6段 is rung 31, so `rung + 1` promotes a 5段 player onto a rung no opponent
+# can be built for. These tests pin the stepper that walks over the holes.
+# ---------------------------------------------------------------------------
+
+
+def test_playable_rungs_excludes_every_recipeless_rung():
+    assert set(ladder.PLAYABLE_RUNGS) == {level.rung for level in ladder.LADDER_LEVELS if level.recipe is not None}
+    assert set(ladder.PLAYABLE_RUNGS).isdisjoint({21, 23, 25, 27, 29, 31, 33, 35, 37, 40})
+    assert len(ladder.PLAYABLE_RUNGS) == 31
+
+
+def test_promotion_from_5dan_reaches_6dan_not_the_hole_between_them():
+    assert ladder.get_level(30).rank_name == "5段"
+    assert ladder.get_level(31).rank_name == "准6段"
+    assert ladder.get_level(31).recipe is None
+    assert ladder.step_playable_rung(30, 1) == 32
+    assert ladder.get_level(32).rank_name == "6段"
+
+
+def test_demotion_also_steps_over_the_hole():
+    assert ladder.get_level(29).recipe is None  # 准5段
+    assert ladder.step_playable_rung(30, -1) == 28
+    assert ladder.get_level(28).rank_name == "4段"
+
+
+def test_stepping_never_lands_on_a_recipeless_rung_from_anywhere():
+    for rung in range(1, 42):
+        for step in (-3, -1, 1, 3):
+            landed = ladder.step_playable_rung(rung, step)
+            assert ladder.get_level(landed).recipe is not None, (rung, step, landed)
+
+
+def test_stepping_saturates_at_both_ends_instead_of_raising():
+    lowest, highest = ladder.PLAYABLE_RUNGS[0], ladder.PLAYABLE_RUNGS[-1]
+    assert ladder.step_playable_rung(lowest, -1) == lowest
+    assert ladder.step_playable_rung(highest, 1) == highest
+    assert ladder.step_playable_rung(lowest, -99) == lowest
+    assert ladder.step_playable_rung(highest, 99) == highest
+
+
+def test_nearest_playable_rung_snaps_holes_and_leaves_playable_rungs_alone():
+    for rung in ladder.PLAYABLE_RUNGS:
+        assert ladder.nearest_playable_rung(rung) == rung
+    # 准6段(31) sits between 5段(30) and 6段(32); the tie resolves downward.
+    assert ladder.nearest_playable_rung(31) == 30
+    for rung in (21, 23, 25, 27, 29, 31, 33, 35, 37, 40):
+        assert ladder.get_level(ladder.nearest_playable_rung(rung)).recipe is not None
+
+
+@pytest.mark.parametrize("bad", [0, 42, -1, "30", 30.0, None])
+def test_rung_helpers_reject_values_outside_the_catalog(bad):
+    with pytest.raises(ValueError):
+        ladder.nearest_playable_rung(bad)
+    with pytest.raises(ValueError):
+        ladder.step_playable_rung(bad, 1)

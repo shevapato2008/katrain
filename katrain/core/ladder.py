@@ -519,10 +519,44 @@ def _build_levels() -> Tuple[LadderLevel, ...]:
 LADDER_LEVELS = _build_levels()
 
 
+#: The rungs a player can actually be seated on. Ten of the 41 (准1段–准9段 and
+#: 职业顶尖) never had a strength recipe fitted, so they are names on the ladder
+#: with nothing behind them. Anything that MOVES a player -- promotion, demotion,
+#: the landing of a placement search -- has to step over them, otherwise it parks
+#: someone on a rung no opponent can ever be built for.
+PLAYABLE_RUNGS: Tuple[int, ...] = tuple(level.rung for level in LADDER_LEVELS if level.recipe is not None)
+
+
 def get_level(n: int) -> LadderLevel:
     if type(n) is not int or not 1 <= n <= len(LADDER_LEVELS):
         raise ValueError(f"level out of range 1..41: {n!r}")
     return LADDER_LEVELS[n - 1]
+
+
+def nearest_playable_rung(n: int) -> int:
+    """The playable rung closest to `n`, preferring the lower one on a tie.
+
+    Used when a rung arrives from outside this module (a stored value, a search
+    landing) and may point at one of the ten recipe-less rungs.
+    """
+    if type(n) is not int or not 1 <= n <= len(LADDER_LEVELS):
+        raise ValueError(f"level out of range 1..41: {n!r}")
+    return min(PLAYABLE_RUNGS, key=lambda rung: (abs(rung - n), rung))
+
+
+def step_playable_rung(n: int, step: int) -> int:
+    """Move `step` playable rungs from `n`, saturating at both ends.
+
+    `step` counts rungs a player can be seated on, not raw catalog positions:
+    5段(30) + 1 is 6段(32), because 准6段(31) has no recipe. Arithmetic on the raw
+    rung number lands on 31 and seats the player where no game can be played.
+    """
+    if type(step) is not int:
+        raise ValueError(f"step must be an integer: {step!r}")
+    start = nearest_playable_rung(n)
+    index = PLAYABLE_RUNGS.index(start) + step
+    index = max(0, min(index, len(PLAYABLE_RUNGS) - 1))
+    return PLAYABLE_RUNGS[index]
 
 
 def get_recipe_for_calibration(n: int) -> LadderRung:

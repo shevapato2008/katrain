@@ -795,6 +795,14 @@ def _stage_spec(stage: object) -> tuple[str, str, int]:
     raise ValueError(f"unknown campaign stage: {stage!r}")
 
 
+def _color_for_slot(slot: int) -> str:
+    if FIRST_HUMANSL_COLOR not in {"B", "W"}:
+        raise ValueError("FIRST_HUMANSL_COLOR must be 'B' or 'W'")
+    if slot % 2 == 0:
+        return FIRST_HUMANSL_COLOR
+    return "W" if FIRST_HUMANSL_COLOR == "B" else "B"
+
+
 def _validate_records(records: Sequence[Mapping[str, object]]) -> tuple[Mapping[str, object], ...]:
     validated: list[Mapping[str, object]] = []
     origin_ids: set[str] = set()
@@ -822,12 +830,14 @@ def _validate_records(records: Sequence[Mapping[str, object]]) -> tuple[Mapping[
                 raise ValueError(f"unknown player {player!r} for stage {stage!r}")
 
             slot = row.get("slot")
-            if type(slot) is not int or not 0 <= slot < 10:
-                raise ValueError("slot must be a plain integer from 0 through 9")
+            if type(slot) is not int or not 0 <= slot < VALID_SLOTS_PER_STAGE:
+                raise ValueError(
+                    f"slot must be a plain integer from 0 through {VALID_SLOTS_PER_STAGE - 1}"
+                )
             color = row.get("color")
             if color not in {"B", "W"}:
                 raise ValueError("color must be 'B' or 'W'")
-            expected_color = "B" if slot % 2 == 0 else "W"
+            expected_color = _color_for_slot(slot)
             if color != expected_color:
                 raise ValueError(f"slot {slot} must use HumanSL color {expected_color}")
 
@@ -836,8 +846,10 @@ def _validate_records(records: Sequence[Mapping[str, object]]) -> tuple[Mapping[
                 raise ValueError(f"unknown result outcome: {outcome!r}")
             if outcome in {"win", "loss"}:
                 valid_by_stage[stage] += 1
-                if valid_by_stage[stage] > 10:
-                    raise ValueError(f"stage {stage!r} has more than 10 valid results")
+                if valid_by_stage[stage] > VALID_SLOTS_PER_STAGE:
+                    raise ValueError(
+                        f"stage {stage!r} has more than {VALID_SLOTS_PER_STAGE} valid results"
+                    )
 
         validated.append(row)
 
@@ -863,7 +875,7 @@ def summarize_candidate(records: Sequence[Mapping[str, object]], stage: str) -> 
 
 def stage_decision(records: Sequence[Mapping[str, object]], stage: str) -> StageDecision | None:
     summary = summarize_candidate(records, stage)
-    if summary.valid < 10:
+    if summary.valid < VALID_SLOTS_PER_STAGE:
         return None
     return StageDecision(stage=stage, status="completed", summary=summary)
 
@@ -895,7 +907,7 @@ def _validate_sequence(records: Sequence[Mapping[str, object]]) -> None:
 
         if row["outcome"] in {"win", "loss"}:
             valid_in_stage += 1
-            if valid_in_stage == 10:
+            if valid_in_stage == VALID_SLOTS_PER_STAGE:
                 active_stage_index += 1
                 valid_in_stage = 0
 
@@ -918,5 +930,5 @@ def next_action(records: Sequence[Mapping[str, object]]) -> GameRequest | Campai
         player=player,
         golaxy_api_level=api_level,
         slot=slot,
-        color="B" if slot % 2 == 0 else "W",
+        color=_color_for_slot(slot),
     )

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import secrets
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Mapping, Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -54,6 +58,66 @@ class AiLadderSettlementResult:
     net_score: Optional[int]
 
 
+class AiLadderLifecycleError(ValueError):
+    """Base class for account-level ranked game lifecycle failures."""
+
+
+class AiLadderLifecycleNotFound(AiLadderLifecycleError):
+    """The requested lifecycle does not exist for this account."""
+
+
+class AiLadderLifecycleConflict(AiLadderLifecycleError):
+    """The account already has a conflicting lifecycle or transition."""
+
+
+class InvalidReservationKey(AiLadderLifecycleError):
+    """An origin-only action did not prove possession of its reservation key."""
+
+
+@dataclass(frozen=True)
+class AiLadderBlockingGame:
+    game_id: str
+    user_id: int
+    state: str
+    origin_device_id: str
+    origin_session_id: Optional[str]
+    user_color: str
+    opponent: AiLadderOpponentSnapshot
+    ai_subtype: str
+    execution_identity: str
+    rules_snapshot: Mapping[str, Any]
+    time_control_snapshot: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class AiLadderReservationResult:
+    created: bool
+    game: AiLadderBlockingGame
+    reservation_key: Optional[str] = field(repr=False, compare=False)
+
+
+@dataclass(frozen=True)
+class AiLadderLifecycleReceipt:
+    state: str
+    game_id: str
+    result: str
+    terminal_source: str
+    counted: bool
+    reason: Optional[str]
+    replayed: bool
+    ai_ladder_rung: Optional[int]
+    placement_lo: Optional[int]
+    placement_hi: Optional[int]
+    placement_completed: Optional[int]
+    net_score: Optional[int]
+
+
+@dataclass(frozen=True)
+class AiLadderCancelResult:
+    cancelled: bool
+    receipt: Optional[AiLadderLifecycleReceipt] = None
+
+
 def initial_placement_window(legacy_rank: Optional[str]) -> tuple[int, int]:
     """Map a legacy rank to a 32-rung search window without granting a rung."""
 
@@ -83,6 +147,240 @@ class AiLadderRankedRepository:
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
+
+    def reserve_game(
+        self,
+        *,
+        user_id: int,
+        game_id: str,
+        user_color: str,
+        opponent: AiLadderOpponentSnapshot,
+        origin_device_id: str,
+        ai_subtype: str,
+        execution_identity: str,
+        rules_snapshot: Mapping[str, Any],
+        time_control_snapshot: Mapping[str, Any],
+    ) -> AiLadderReservationResult:
+        """Reserve the account's single ranked game and reveal its secret once.
+
+        A replay of the same immutable request returns the same public reservation,
+        but never re-discloses the raw credential because only its digest is durable.
+        """
+
+        self._validate_reservation_contract(
+            game_id=game_id,
+            user_color=user_color,
+            origin_device_id=origin_device_id,
+            ai_subtype=ai_subtype,
+            execution_identity=execution_identity,
+            rules_snapshot=rules_snapshot,
+            time_control_snapshot=time_control_snapshot,
+        )
+        reservation_key = secrets.token_urlsafe(32)
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            existing = (
+                session.query(models_db.AiLadderActiveGame)
+                .filter(models_db.AiLadderActiveGame.user_id == user_id)
+                .with_for_update()
+                .one_or_none()
+            )
+            if existing is not None:
+                if self._reservation_matches(
+                    existing,
+                    game_id=game_id,
+                    user_color=user_color,
+                    opponent=opponent,
+                    origin_device_id=origin_device_id,
+                    ai_subtype=ai_subtype,
+                    execution_identity=execution_identity,
+                    rules_snapshot=rules_snapshot,
+                    time_control_snapshot=time_control_snapshot,
+                ):
+                    return AiLadderReservationResult(
+                        created=False,
+                        game=self._blocking_from_row(existing),
+                        reservation_key=None,
+                    )
+                raise AiLadderLifecycleConflict("account already has an active ranked AI game")
+            if session.get(models_db.User, user_id) is None:
+                raise AiLadderLifecycleNotFound("account not found")
+            if session.query(models_db.AiLadderGameLedger).filter_by(game_id=game_id).one_or_none() is not None:
+                raise AiLadderLifecycleConflict("game_id is already settled")
+            row = models_db.AiLadderActiveGame(
+                game_id=game_id,
+                user_id=user_id,
+                origin_device_id=origin_device_id,
+                origin_session_id=None,
+                state="reserved",
+                version=0,
+                reservation_key_hash=self._hash_reservation_key(reservation_key),
+                user_color=user_color,
+                game_type=AI_LADDER_GAME_TYPE,
+                opponent_rung=opponent.rung,
+                opponent_rank_name=opponent.rank_name,
+                opponent_config_snapshot=deepcopy(dict(opponent.config_snapshot)),
+                opponent_certification_status=opponent.certification_status,
+                opponent_availability=opponent.availability,
+                opponent_route=opponent.route,
+                ai_subtype=ai_subtype,
+                execution_identity=execution_identity,
+                rules_snapshot=deepcopy(dict(rules_snapshot)),
+                time_control_snapshot=deepcopy(dict(time_control_snapshot)),
+            )
+            session.add(row)
+            session.commit()
+            return AiLadderReservationResult(
+                created=True,
+                game=self._blocking_from_row(row),
+                reservation_key=reservation_key,
+            )
+        except IntegrityError as exc:
+            session.rollback()
+            existing = (
+                session.query(models_db.AiLadderActiveGame)
+                .filter(models_db.AiLadderActiveGame.user_id == user_id)
+                .one_or_none()
+            )
+            if existing is not None and self._reservation_matches(
+                existing,
+                game_id=game_id,
+                user_color=user_color,
+                opponent=opponent,
+                origin_device_id=origin_device_id,
+                ai_subtype=ai_subtype,
+                execution_identity=execution_identity,
+                rules_snapshot=rules_snapshot,
+                time_control_snapshot=time_control_snapshot,
+            ):
+                return AiLadderReservationResult(
+                    created=False,
+                    game=self._blocking_from_row(existing),
+                    reservation_key=None,
+                )
+            raise AiLadderLifecycleConflict("account already has an active ranked AI game") from exc
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def activate_reservation(
+        self,
+        *,
+        user_id: int,
+        game_id: str,
+        reservation_key: str,
+        origin_device_id: str,
+        origin_session_id: str,
+    ) -> AiLadderBlockingGame:
+        if not isinstance(origin_session_id, str) or not origin_session_id.strip():
+            raise ValueError("origin_session_id must be non-empty")
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
+            if row.state == "pending_settlement":
+                raise AiLadderLifecycleConflict("pending settlement cannot be activated")
+            if row.origin_session_id not in {None, origin_session_id}:
+                raise AiLadderLifecycleConflict("reservation is already bound to another session")
+            if row.state == "reserved":
+                row.state = "active"
+                row.origin_session_id = origin_session_id
+                row.version += 1
+            session.commit()
+            return self._blocking_from_row(row)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def mark_pending_settlement(
+        self, *, user_id: int, game_id: str, reservation_key: str, origin_device_id: str
+    ) -> AiLadderBlockingGame:
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
+            if row.state == "reserved":
+                raise AiLadderLifecycleConflict("reservation has not been activated")
+            if row.state == "active":
+                row.state = "pending_settlement"
+                row.version += 1
+            session.commit()
+            return self._blocking_from_row(row)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def cancel_reservation(
+        self, *, user_id: int, game_id: str, reservation_key: str, origin_device_id: str
+    ) -> AiLadderCancelResult:
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            ledger = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if ledger is not None:
+                return AiLadderCancelResult(
+                    cancelled=False,
+                    receipt=self._lifecycle_receipt(session, ledger, replayed=True),
+                )
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            ledger = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if ledger is not None:
+                return AiLadderCancelResult(
+                    cancelled=False,
+                    receipt=self._lifecycle_receipt(session, ledger, replayed=True),
+                )
+            self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
+            if row.state != "reserved":
+                raise AiLadderLifecycleConflict("only an unactivated reservation may be cancelled")
+            session.delete(row)
+            session.commit()
+            return AiLadderCancelResult(cancelled=True)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def get_blocking_game(self, user_id: int) -> Optional[AiLadderBlockingGame]:
+        session = self.session_factory()
+        try:
+            row = (
+                session.query(models_db.AiLadderActiveGame)
+                .filter(models_db.AiLadderActiveGame.user_id == user_id)
+                .one_or_none()
+            )
+            return self._blocking_from_row(row) if row is not None else None
+        finally:
+            session.close()
+
+    def get_game_lifecycle(
+        self, *, user_id: int, game_id: str
+    ) -> Optional[AiLadderBlockingGame | AiLadderLifecycleReceipt]:
+        session = self.session_factory()
+        try:
+            row = (
+                session.query(models_db.AiLadderActiveGame)
+                .filter(
+                    models_db.AiLadderActiveGame.user_id == user_id,
+                    models_db.AiLadderActiveGame.game_id == game_id,
+                )
+                .one_or_none()
+            )
+            if row is not None:
+                return self._blocking_from_row(row)
+            ledger = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            return self._lifecycle_receipt(session, ledger, replayed=True) if ledger is not None else None
+        finally:
+            session.close()
 
     def recent_counted_results(self, user_id: int, *, limit: int = 5) -> list[str]:
         """Return newest valid win/loss decisions; excluded receipts never enter recent form."""
@@ -308,6 +606,103 @@ class AiLadderRankedRepository:
         finally:
             session.close()
 
+    def finalize_reserved_game(
+        self,
+        *,
+        user_id: int,
+        game_id: str,
+        terminal_source: str,
+        result: str,
+        deciding_device_id: str,
+        reservation_key: Optional[str] = None,
+        game_record: Optional[Mapping[str, Any]] = None,
+        engine_stalled: bool = False,
+    ) -> AiLadderLifecycleReceipt:
+        """Atomically record, rate, audit and release one account reservation."""
+
+        if terminal_source not in {"played_result", "remote_resign", "recovery"}:
+            raise ValueError("invalid terminal_source")
+        if result not in {"win", "loss", "inconclusive"}:
+            raise ValueError("invalid result")
+        if not isinstance(deciding_device_id, str) or not deciding_device_id.strip():
+            raise ValueError("deciding_device_id must be non-empty")
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if existing is not None:
+                return self._lifecycle_receipt(session, existing, replayed=True)
+
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if existing is not None:
+                return self._lifecycle_receipt(session, existing, replayed=True)
+            if terminal_source == "played_result":
+                self._verify_origin(
+                    row,
+                    reservation_key=reservation_key,
+                    origin_device_id=deciding_device_id,
+                )
+            elif terminal_source == "recovery" and reservation_key is not None:
+                self._verify_origin(
+                    row,
+                    reservation_key=reservation_key,
+                    origin_device_id=row.origin_device_id,
+                )
+
+            opponent = self._opponent_from_row(row)
+            record = self._validated_game_record(
+                row=row,
+                result=result,
+                terminal_source=terminal_source,
+                record=game_record,
+            )
+            self._create_or_validate_user_game(session, row=row, record=record)
+
+            user = session.query(models_db.User).filter(models_db.User.id == user_id).with_for_update().one_or_none()
+            if user is None:
+                raise AiLadderLifecycleNotFound("account not found")
+            ignored_reason, profile = self._prepare_profile(
+                session,
+                user=user,
+                user_id=user_id,
+                game_type=row.game_type,
+                result=result,
+                opponent=opponent,
+                engine_stalled=engine_stalled,
+            )
+            ledger = self._new_ledger(
+                user_id=user_id,
+                game_id=game_id,
+                user_color=row.user_color,
+                result=result,
+                game_type=row.game_type,
+                opponent=opponent,
+                reason=ignored_reason,
+            )
+            ledger.origin_device_id = row.origin_device_id
+            ledger.deciding_device_id = deciding_device_id
+            ledger.terminal_source = terminal_source
+            ledger.decided_at = datetime.now(timezone.utc)
+            session.add(ledger)
+            if ignored_reason is None:
+                self._apply_result(profile, result)
+                profile.version += 1
+            session.delete(row)
+            session.commit()
+            return self._lifecycle_receipt(session, ledger, replayed=False)
+        except IntegrityError:
+            session.rollback()
+            existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if existing is None:
+                raise
+            return self._lifecycle_receipt(session, existing, replayed=True)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
     def settle_game(
         self,
         *,
@@ -410,6 +805,276 @@ class AiLadderRankedRepository:
             raise
         finally:
             session.close()
+
+    @staticmethod
+    def _validate_reservation_contract(
+        *,
+        game_id: str,
+        user_color: str,
+        origin_device_id: str,
+        ai_subtype: str,
+        execution_identity: str,
+        rules_snapshot: Mapping[str, Any],
+        time_control_snapshot: Mapping[str, Any],
+    ) -> None:
+        if not isinstance(game_id, str) or not game_id.strip() or len(game_id) > 32:
+            raise ValueError("game_id must be a non-empty string of at most 32 characters")
+        if user_color not in {"B", "W"}:
+            raise ValueError("user_color must be B or W")
+        for name, value in {
+            "origin_device_id": origin_device_id,
+            "ai_subtype": ai_subtype,
+            "execution_identity": execution_identity,
+        }.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be non-empty")
+        if not isinstance(rules_snapshot, Mapping) or not isinstance(time_control_snapshot, Mapping):
+            raise ValueError("rules and time control snapshots must be mappings")
+        if rules_snapshot.get("board_size") != 19:
+            raise ValueError("ranked AI reservation requires a 19x19 board")
+
+    @staticmethod
+    def _hash_reservation_key(reservation_key: str) -> str:
+        return hashlib.sha256(reservation_key.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def _verify_origin(cls, row, *, reservation_key: Optional[str], origin_device_id: str) -> None:
+        supplied_hash = cls._hash_reservation_key(reservation_key) if isinstance(reservation_key, str) else ""
+        key_matches = hmac.compare_digest(row.reservation_key_hash, supplied_hash)
+        device_matches = hmac.compare_digest(row.origin_device_id, origin_device_id or "")
+        if not (key_matches and device_matches):
+            raise InvalidReservationKey("invalid reservation credential")
+
+    @staticmethod
+    def _opponent_from_row(row) -> AiLadderOpponentSnapshot:
+        return AiLadderOpponentSnapshot(
+            rung=row.opponent_rung,
+            rank_name=row.opponent_rank_name,
+            config_snapshot=deepcopy(dict(row.opponent_config_snapshot)),
+            certification_status=row.opponent_certification_status,
+            availability=row.opponent_availability,
+            route=row.opponent_route,
+        )
+
+    @classmethod
+    def _blocking_from_row(cls, row) -> AiLadderBlockingGame:
+        return AiLadderBlockingGame(
+            game_id=row.game_id,
+            user_id=row.user_id,
+            state=row.state,
+            origin_device_id=row.origin_device_id,
+            origin_session_id=row.origin_session_id,
+            user_color=row.user_color,
+            opponent=cls._opponent_from_row(row),
+            ai_subtype=row.ai_subtype,
+            execution_identity=row.execution_identity,
+            rules_snapshot=deepcopy(dict(row.rules_snapshot)),
+            time_control_snapshot=deepcopy(dict(row.time_control_snapshot)),
+        )
+
+    @staticmethod
+    def _reservation_matches(
+        row,
+        *,
+        game_id: str,
+        user_color: str,
+        opponent: AiLadderOpponentSnapshot,
+        origin_device_id: str,
+        ai_subtype: str,
+        execution_identity: str,
+        rules_snapshot: Mapping[str, Any],
+        time_control_snapshot: Mapping[str, Any],
+    ) -> bool:
+        return all(
+            (
+                row.game_id == game_id,
+                row.user_color == user_color,
+                row.origin_device_id == origin_device_id,
+                row.ai_subtype == ai_subtype,
+                row.execution_identity == execution_identity,
+                row.opponent_rung == opponent.rung,
+                row.opponent_rank_name == opponent.rank_name,
+                row.opponent_config_snapshot == dict(opponent.config_snapshot),
+                row.opponent_certification_status == opponent.certification_status,
+                row.opponent_availability == opponent.availability,
+                row.opponent_route == opponent.route,
+                row.rules_snapshot == dict(rules_snapshot),
+                row.time_control_snapshot == dict(time_control_snapshot),
+            )
+        )
+
+    @staticmethod
+    def _lock_lifecycle(session, *, user_id: int, game_id: str):
+        row = (
+            session.query(models_db.AiLadderActiveGame)
+            .filter(
+                models_db.AiLadderActiveGame.user_id == user_id,
+                models_db.AiLadderActiveGame.game_id == game_id,
+            )
+            .with_for_update()
+            .one_or_none()
+        )
+        if row is None:
+            raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
+        return row
+
+    @staticmethod
+    def _find_ledger(session, *, user_id: int, game_id: str):
+        ledger = session.query(models_db.AiLadderGameLedger).filter_by(game_id=game_id).one_or_none()
+        if ledger is not None and ledger.user_id != user_id:
+            raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
+        return ledger
+
+    def _prepare_profile(self, session, *, user, user_id, game_type, result, opponent, engine_stalled):
+        ignored_reason = self._ignored_reason(
+            game_type=game_type,
+            result=result,
+            opponent=opponent,
+            engine_stalled=engine_stalled,
+        )
+        profile = None
+        if ignored_reason is None:
+            profile = (
+                session.query(models_db.AiLadderProfile)
+                .filter(models_db.AiLadderProfile.user_id == user_id)
+                .with_for_update()
+                .one_or_none()
+            )
+            if profile is None:
+                lo, hi = initial_placement_window(user.rank)
+                expected_opponent_rung = (lo + hi) // 2
+                if opponent.rung != expected_opponent_rung:
+                    ignored_reason = "opponent_rung_mismatch"
+                else:
+                    profile = models_db.AiLadderProfile(
+                        user_id=user_id,
+                        ai_ladder_rung=None,
+                        placement_lo=lo,
+                        placement_hi=hi,
+                        placement_completed=0,
+                        net_score=0,
+                        version=0,
+                    )
+                    session.add(profile)
+            else:
+                expected_opponent_rung = (
+                    profile.ai_ladder_rung
+                    if profile.ai_ladder_rung is not None
+                    else (profile.placement_lo + profile.placement_hi) // 2
+                )
+                if opponent.rung != expected_opponent_rung:
+                    ignored_reason = "opponent_rung_mismatch"
+        return ignored_reason, profile
+
+    @staticmethod
+    def _validated_game_record(*, row, result: str, terminal_source: str, record: Optional[Mapping[str, Any]]) -> dict:
+        rules = deepcopy(dict(row.rules_snapshot))
+        if terminal_source == "remote_resign":
+            winner = "W" if row.user_color == "B" else "B"
+            sgf_result = f"{winner}+R"
+            return {
+                "sgf_content": (
+                    f"(;GM[1]FF[4]SZ[19]RU[{rules.get('rules', 'chinese')}]"
+                    f"KM[{rules.get('komi', 7.5)}]PB[{'User' if row.user_color == 'B' else 'AI'}]"
+                    f"PW[{'AI' if row.user_color == 'B' else 'User'}]RE[{sgf_result}])"
+                ),
+                "result": sgf_result,
+                "board_size": 19,
+                "rules": rules.get("rules", "chinese"),
+                "komi": rules.get("komi", 7.5),
+                "move_count": 0,
+                "player_black": "User" if row.user_color == "B" else "AI",
+                "player_white": "AI" if row.user_color == "B" else "User",
+            }
+        if not isinstance(record, Mapping):
+            raise ValueError("played or recovered result requires a complete game_record")
+        required = {
+            "sgf_content",
+            "result",
+            "board_size",
+            "rules",
+            "komi",
+            "move_count",
+            "player_black",
+            "player_white",
+        }
+        if not required.issubset(record) or not isinstance(record.get("sgf_content"), str) or not record["sgf_content"]:
+            raise ValueError("game_record is incomplete")
+        normalized = dict(record)
+        for name, frozen in {
+            "board_size": rules.get("board_size", 19),
+            "rules": rules.get("rules", "chinese"),
+            "komi": rules.get("komi", 7.5),
+        }.items():
+            if normalized.get(name) != frozen:
+                raise ValueError(f"game_record {name} does not match reservation")
+        sgf_result = normalized["result"]
+        winner = row.user_color if result == "win" else ("W" if row.user_color == "B" else "B")
+        if result in {"win", "loss"} and (not isinstance(sgf_result, str) or not sgf_result.startswith(f"{winner}+")):
+            raise ValueError("game_record result does not match user result")
+        return normalized
+
+    @staticmethod
+    def _create_or_validate_user_game(session, *, row, record: Mapping[str, Any]) -> None:
+        existing = session.get(models_db.UserGame, row.game_id)
+        expected = {
+            "user_id": row.user_id,
+            "sgf_content": record["sgf_content"],
+            "source": "play_ai",
+            "game_type": AI_LADDER_GAME_TYPE,
+            "origin_device_id": row.origin_device_id,
+            "result": record["result"],
+            "board_size": record["board_size"],
+            "rules": record["rules"],
+            "komi": record["komi"],
+            "move_count": record["move_count"],
+        }
+        if existing is not None:
+            if any(getattr(existing, name) != value for name, value in expected.items()):
+                raise AiLadderLifecycleConflict("existing user game does not match reserved result")
+            return
+        session.add(
+            models_db.UserGame(
+                id=row.game_id,
+                user_id=row.user_id,
+                sgf_content=record["sgf_content"],
+                sgf_hash=hashlib.sha256(record["sgf_content"].encode("utf-8")).hexdigest(),
+                source="play_ai",
+                game_type=AI_LADDER_GAME_TYPE,
+                origin_device_id=row.origin_device_id,
+                result=record["result"],
+                board_size=record["board_size"],
+                rules=record["rules"],
+                komi=record["komi"],
+                move_count=record["move_count"],
+                player_black=record.get("player_black"),
+                player_white=record.get("player_white"),
+                black_rank=record.get("black_rank"),
+                white_rank=record.get("white_rank"),
+                title=record.get("title"),
+                category="game",
+                event=record.get("event"),
+                round_name=record.get("round_name"),
+                game_date=record.get("game_date"),
+            )
+        )
+
+    def _lifecycle_receipt(self, session, ledger, *, replayed: bool) -> AiLadderLifecycleReceipt:
+        profile = session.get(models_db.AiLadderProfile, ledger.user_id) if ledger.counted else None
+        return AiLadderLifecycleReceipt(
+            state="settled",
+            game_id=ledger.game_id,
+            result=ledger.result,
+            terminal_source=ledger.terminal_source or "recovery",
+            counted=ledger.counted,
+            reason=ledger.reason,
+            replayed=replayed,
+            ai_ladder_rung=profile.ai_ladder_rung if profile is not None else None,
+            placement_lo=profile.placement_lo if profile is not None else None,
+            placement_hi=profile.placement_hi if profile is not None else None,
+            placement_completed=profile.placement_completed if profile is not None else None,
+            net_score=profile.net_score if profile is not None else None,
+        )
 
     @staticmethod
     def _begin_write_transaction(session) -> None:

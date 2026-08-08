@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import secrets
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping, Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -161,11 +160,12 @@ class AiLadderRankedRepository:
         execution_identity: str,
         rules_snapshot: Mapping[str, Any],
         time_control_snapshot: Mapping[str, Any],
+        reservation_key: str,
     ) -> AiLadderReservationResult:
-        """Reserve the account's single ranked game and reveal its secret once.
+        """Reserve the account's single ranked game with a caller-owned credential.
 
-        A replay of the same immutable request returns the same public reservation,
-        but never re-discloses the raw credential because only its digest is durable.
+        Only the digest is durable. Replaying the same immutable request and raw key
+        succeeds because the caller already owns that key; a different key conflicts.
         """
 
         self._validate_reservation_contract(
@@ -177,7 +177,8 @@ class AiLadderRankedRepository:
             rules_snapshot=rules_snapshot,
             time_control_snapshot=time_control_snapshot,
         )
-        reservation_key = secrets.token_urlsafe(32)
+        if not isinstance(reservation_key, str) or not reservation_key.strip() or len(reservation_key) > 128:
+            raise ValueError("reservation_key must be a non-empty string of at most 128 characters")
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
@@ -189,6 +190,11 @@ class AiLadderRankedRepository:
                 .one_or_none()
             )
             if existing is not None:
+                if self._is_stale_reserved(existing):
+                    session.delete(existing)
+                    session.flush()
+                    existing = None
+            if existing is not None:
                 if self._reservation_matches(
                     existing,
                     game_id=game_id,
@@ -199,11 +205,12 @@ class AiLadderRankedRepository:
                     execution_identity=execution_identity,
                     rules_snapshot=rules_snapshot,
                     time_control_snapshot=time_control_snapshot,
+                    reservation_key=reservation_key,
                 ):
                     return AiLadderReservationResult(
                         created=False,
                         game=self._blocking_from_row(existing),
-                        reservation_key=None,
+                        reservation_key=reservation_key,
                     )
                 raise AiLadderLifecycleConflict("account already has an active ranked AI game")
             if self._find_ledger_by_game_id(session, game_id=game_id) is not None:
@@ -253,11 +260,12 @@ class AiLadderRankedRepository:
                 execution_identity=execution_identity,
                 rules_snapshot=rules_snapshot,
                 time_control_snapshot=time_control_snapshot,
+                reservation_key=reservation_key,
             ):
                 return AiLadderReservationResult(
                     created=False,
                     game=self._blocking_from_row(existing),
-                    reservation_key=None,
+                    reservation_key=reservation_key,
                 )
             raise AiLadderLifecycleConflict("account already has an active ranked AI game") from exc
         except Exception:
@@ -366,6 +374,10 @@ class AiLadderRankedRepository:
                 .filter(models_db.AiLadderActiveGame.user_id == user_id)
                 .one_or_none()
             )
+            if row is not None and self._is_stale_reserved(row):
+                session.delete(row)
+                session.commit()
+                return None
             return self._blocking_from_row(row) if row is not None else None
         finally:
             session.close()
@@ -470,6 +482,8 @@ class AiLadderRankedRepository:
             session.close()
 
     def create_pending_game(self, snapshot, *, reservation_key: Optional[str] = None) -> None:
+        if reservation_key is None:
+            reservation_key = getattr(snapshot, "reservation_key", None)
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
@@ -901,6 +915,7 @@ class AiLadderRankedRepository:
         execution_identity: str,
         rules_snapshot: Mapping[str, Any],
         time_control_snapshot: Mapping[str, Any],
+        reservation_key: str,
     ) -> bool:
         return all(
             (
@@ -917,8 +932,21 @@ class AiLadderRankedRepository:
                 row.opponent_route == opponent.route,
                 row.rules_snapshot == dict(rules_snapshot),
                 row.time_control_snapshot == dict(time_control_snapshot),
+                hmac.compare_digest(
+                    row.reservation_key_hash,
+                    AiLadderRankedRepository._hash_reservation_key(reservation_key),
+                ),
             )
         )
+
+    @staticmethod
+    def _is_stale_reserved(row) -> bool:
+        if row.state != "reserved" or row.created_at is None:
+            return False
+        created = row.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) - created > timedelta(minutes=5)
 
     @staticmethod
     def _lock_lifecycle_or_none(session, *, user_id: int, game_id: str):

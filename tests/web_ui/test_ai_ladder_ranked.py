@@ -112,7 +112,9 @@ def concurrent_repo(session_factory):
     return repo
 
 
-def reserve(repo, user_id, opponent, *, game_id="b" * 32, user_color="B", device_id="device-a"):
+def reserve(
+    repo, user_id, opponent, *, game_id="b" * 32, user_color="B", device_id="device-a", reservation_key="f" * 43
+):
     return repo.reserve_game(
         user_id=user_id,
         game_id=game_id,
@@ -123,6 +125,7 @@ def reserve(repo, user_id, opponent, *, game_id="b" * 32, user_color="B", device
         execution_identity="fixture-identity",
         rules_snapshot={"board_size": 19, "rules": "chinese", "komi": 7.5},
         time_control_snapshot={"main_time_seconds": 600, "byo_yomi_periods": 3, "byo_yomi_seconds": 30},
+        reservation_key=reservation_key,
     )
 
 
@@ -143,7 +146,7 @@ def complete_game_record(*, user_color="B", result="win"):
     }
 
 
-def test_account_reservation_freezes_contract_and_replay_never_discloses_key(session_factory, user, opponent):
+def test_account_reservation_freezes_contract_and_same_key_replay_is_idempotent(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
 
     created = reserve(repo, user.id, opponent)
@@ -151,8 +154,10 @@ def test_account_reservation_freezes_contract_and_replay_never_discloses_key(ses
 
     assert created.created and created.reservation_key
     assert len(created.reservation_key) >= 43
-    assert not replay.created and replay.reservation_key is None
+    assert not replay.created and replay.reservation_key == created.reservation_key
     assert replay.game == created.game
+    with pytest.raises(AiLadderLifecycleConflict):
+        reserve(repo, user.id, opponent, reservation_key="different-key")
     assert repo.get_blocking_game(user.id) == created.game
     with session_factory() as db:
         row = db.get(models_db.AiLadderActiveGame, created.game.game_id)
@@ -178,6 +183,21 @@ def test_one_reservation_per_account_but_different_accounts_are_independent(sess
     second = reserve(repo, other_id, opponent, game_id="3" * 32, device_id="device-b")
 
     assert second.game.user_id == other_id
+
+
+def test_stale_unactivated_reservation_is_lazily_released(session_factory, user, opponent):
+    from datetime import datetime, timedelta
+
+    repo = AiLadderRankedRepository(session_factory)
+    first = reserve(repo, user.id, opponent, game_id="1" * 32)
+    with session_factory() as db:
+        row = db.get(models_db.AiLadderActiveGame, first.game.game_id)
+        row.created_at = datetime.utcnow() - timedelta(minutes=6)
+        db.commit()
+
+    assert repo.get_blocking_game(user.id) is None
+    second = reserve(repo, user.id, opponent, game_id="2" * 32, reservation_key="s" * 43)
+    assert second.created is True
 
 
 def test_origin_transitions_require_constant_time_secret_and_cancel_only_reserved(session_factory, user, opponent):

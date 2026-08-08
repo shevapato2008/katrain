@@ -1344,30 +1344,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if enqueue is None:
             return False
         try:
-            from katrain.web.core.ai_ladder_catalog import result_for_user
+            from katrain.web.core.ai_ladder_sync import build_settlement_payload
 
             return enqueue(
                 operation="settle_ai_ladder_ranked",
                 endpoint="/api/v1/ai-ladder/settlements",
                 method="POST",
-                payload={
-                    "game_id": snapshot.game_id,
-                    "user_color": snapshot.user_color,
-                    "result": result_for_user(raw_result, snapshot.user_color),
-                    "game_type": snapshot.game_type,
-                    "opponent": {
-                        "rung": snapshot.opponent.rung,
-                        "rank_name": snapshot.opponent.rank_name,
-                        "config_snapshot": dict(snapshot.opponent.config_snapshot),
-                        "certification_status": snapshot.opponent.certification_status,
-                        "availability": snapshot.opponent.availability,
-                        "route": snapshot.opponent.route,
-                    },
-                    "engine_stalled": bool(getattr(session.katrain, "last_ladder_error", False)),
-                    "device_id": settings.DEVICE_ID,
-                    "reservation_key": reservation_key,
-                    "game_record": game_record,
-                },
+                payload=build_settlement_payload(
+                    snapshot,
+                    raw_result,
+                    reservation_key=reservation_key,
+                    game_record=game_record,
+                    device_id=settings.DEVICE_ID,
+                    engine_stalled=getattr(session.katrain, "last_ladder_error", False),
+                ),
                 user_id=str(current_user.id),
                 idempotency_key=f"ladder-settlement:{snapshot.game_id}",
             ) is True

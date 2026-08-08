@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 import logging
+import secrets
 from typing import Literal, Optional
 
 import httpx
@@ -12,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.core import models_db
+from katrain.web.core.config import settings
 from katrain.web.core.ai_ladder_catalog import (
     AiLadderSessionSnapshot,
     build_opponent_snapshot,
@@ -42,6 +44,11 @@ def _is_board(request: Request) -> bool:
         getattr(request.app.state, "remote_client", None)
         and getattr(request.app.state, "repository_dispatcher", None)
     )
+
+
+def _require_bound_board_user(request: Request, current_user: User) -> None:
+    if str(getattr(request.app.state.remote_client, "bound_user_id", "")) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cloud session does not match local user")
 
 
 async def _remote(call, what: str):
@@ -86,6 +93,7 @@ class AiLadderStartRequest(BaseModel):
 
 class AiLadderReserveRequest(AiLadderStartRequest):
     game_id: str = Field(min_length=1, max_length=32)
+    reservation_key: str = Field(min_length=1, max_length=128)
 
 
 class AiLadderReservationKeyRequest(BaseModel):
@@ -201,8 +209,38 @@ def _local_ranked_session_matches(request: Request, current_user: User, pending:
 
 def _recover_pending(request: Request, user_id: int) -> None:
     if _is_board(request):
-        # This row is only the board's durable mirror. Losing the in-memory session
-        # does not release the account reservation held by the cloud.
+        repo = request.app.state.ai_ladder_repo
+        pending = repo.get_pending_game(user_id)
+        if pending is None or not pending.get("reservation_key"):
+            return
+        try:
+            game = request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                pending["game_id"], user_id
+            )
+            enqueue = getattr(request.app.state, "sync_enqueue_fn", None)
+            if game is None or enqueue is None:
+                return
+            from katrain.web.core.ai_ladder_sync import build_settlement_payload
+
+            snapshot = session_snapshot_from_pending(pending)
+            durable = enqueue(
+                operation="settle_ai_ladder_ranked",
+                endpoint="/api/v1/ai-ladder/settlements",
+                method="POST",
+                payload=build_settlement_payload(
+                    snapshot,
+                    game["result"],
+                    reservation_key=pending["reservation_key"],
+                    game_record=game,
+                    device_id=settings.DEVICE_ID,
+                ),
+                user_id=str(user_id),
+                idempotency_key=f"ladder-settlement:{snapshot.game_id}",
+            ) is True
+            if durable:
+                repo.clear_pending_game(user_id=user_id, game_id=snapshot.game_id)
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Could not recover ranked settlement outbox: %s", exc)
         return
     repo = request.app.state.ai_ladder_repo
     pending = repo.get_pending_game(user_id)
@@ -309,6 +347,8 @@ def get_catalog(current_user: User = Depends(get_current_user)):
 @router.get("/status")
 async def get_status(request: Request, current_user: User = Depends(get_current_user)):
     if _is_board(request):
+        _require_bound_board_user(request, current_user)
+        _recover_pending(request, current_user.id)
         payload = await _remote(
             lambda: request.app.state.remote_client.get_ai_ladder_status(), "AI ladder status"
         )
@@ -330,8 +370,40 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 and pending.get("game_id") == blocking.get("game_id")
                 and _local_ranked_session_matches(request, current_user, pending, blocking["game_id"])
             ):
+                await _remote(
+                    lambda: request.app.state.remote_client.activate_ai_ladder_game(
+                        blocking["game_id"], pending["reservation_key"], pending["session_id"]
+                    ),
+                    "AI ladder activation reconciliation",
+                )
                 # Work on a copy: never pass through any cloud-side session/key.
                 payload["blocking_game"]["session_id"] = pending["session_id"]
+            elif pending is not None and pending.get("game_id") == blocking.get("game_id"):
+                try:
+                    cancelled = await request.app.state.remote_client.cancel_ai_ladder_reservation(
+                        blocking["game_id"], pending["reservation_key"]
+                    )
+                    if cancelled.get("state") == "cancelled":
+                        request.app.state.ai_ladder_repo.clear_pending_game(
+                            user_id=current_user.id, game_id=blocking["game_id"]
+                        )
+                except Exception:
+                    # An active cloud game cannot be cancelled; a transient failure is
+                    # retried on the next status refresh without dropping the key.
+                    pass
+        elif blocking is None:
+            pending = request.app.state.ai_ladder_repo.get_pending_game(current_user.id)
+            game = (
+                request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                    pending["game_id"], current_user.id
+                )
+                if pending is not None
+                else None
+            )
+            if pending is not None and game is None:
+                request.app.state.ai_ladder_repo.clear_pending_game(
+                    user_id=current_user.id, game_id=pending["game_id"]
+                )
         return payload
     _require_authority(request)
     return _status_payload(request, current_user, device_id=_device_id(request, required=False))
@@ -368,6 +440,7 @@ def _reserve(
                 "byo_length": body.byo_length,
                 "byo_periods": body.byo_periods,
             },
+            reservation_key=body.reservation_key,
         )
     except (ValueError, AiLadderLifecycleConflict) as exc:
         raise _lifecycle_error(exc) from exc
@@ -388,7 +461,7 @@ def reserve_ranked_game(
         if exc.status_code == status.HTTP_409_CONFLICT and blocking is not None:
             exc.detail = {"message": str(exc.detail), "blocking_game": _blocking_payload(request, blocking, device_id)}
         raise
-    if not reserved.created or reserved.reservation_key is None:
+    if reserved.reservation_key is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -482,6 +555,7 @@ async def get_ranked_game_status(
     current_user: User = Depends(get_current_user),
 ):
     if _is_board(request):
+        _require_bound_board_user(request, current_user)
         return await _remote(
             lambda: request.app.state.remote_client.get_ai_ladder_game_status(game_id),
             "AI ladder game status",
@@ -509,6 +583,7 @@ async def end_ranked_game(
     current_user: User = Depends(get_current_user),
 ):
     if _is_board(request):
+        _require_bound_board_user(request, current_user)
         return await _remote(
             lambda: request.app.state.remote_client.end_ai_ladder_game(game_id), "AI ladder game end"
         )
@@ -535,26 +610,30 @@ async def start_ranked_game(
     board = _is_board(request)
     if not board:
         _require_authority(request)
+    else:
+        _require_bound_board_user(request, current_user)
     device_id = _device_id(request, required=False)
     game_id = uuid.uuid4().hex
+    reservation_key = secrets.token_urlsafe(32)
     if board:
-        reservation_payload = await _remote(
-            lambda: request.app.state.remote_client.reserve_ai_ladder_game(
-                {"game_id": game_id, **body.model_dump()}
-            ),
-            "AI ladder reservation",
-        )
+        reserve_payload = {"game_id": game_id, "reservation_key": reservation_key, **body.model_dump()}
+        try:
+            reservation_payload = await request.app.state.remote_client.reserve_ai_ladder_game(reserve_payload)
+        except httpx.RequestError:
+            reservation_payload = await _remote(
+                lambda: request.app.state.remote_client.reserve_ai_ladder_game(reserve_payload),
+                "AI ladder reservation",
+            )
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         try:
             if reservation_payload["game_id"] != game_id:
                 raise ValueError("cloud reservation game_id mismatch")
-            reservation_key = reservation_payload["reservation_key"]
             opponent = AiLadderOpponentSnapshot(**reservation_payload["opponent"])
             execution_identity = reservation_payload["execution_identity"]
         except (KeyError, TypeError, ValueError) as exc:
             try:
-                key = reservation_payload.get("reservation_key") if isinstance(reservation_payload, dict) else None
-                if isinstance(key, str):
-                    await request.app.state.remote_client.cancel_ai_ladder_reservation(game_id, key)
+                await request.app.state.remote_client.cancel_ai_ladder_reservation(game_id, reservation_key)
             except Exception:
                 pass
             raise HTTPException(status_code=503, detail="Cloud returned an invalid ranked reservation") from exc
@@ -565,7 +644,7 @@ async def start_ranked_game(
                 status_code=status.HTTP_409_CONFLICT, detail="Previous ranked game settlement is pending"
             )
         reservation = _reserve(
-            body=AiLadderReserveRequest(game_id=game_id, **body.model_dump()),
+            body=AiLadderReserveRequest(game_id=game_id, reservation_key=reservation_key, **body.model_dump()),
             request=request,
             current_user=current_user,
             device_id=device_id,
@@ -577,6 +656,20 @@ async def start_ranked_game(
 
     manager = request.app.state.session_manager
     activity = getattr(request.app.state, "ranked_analysis_activity", None)
+    user_color = "B" if body.color == "black" else "W"
+    ai_color = "W" if user_color == "B" else "B"
+
+    def snapshot_for(session_id: str) -> AiLadderSessionSnapshot:
+        return AiLadderSessionSnapshot(
+            game_id=game_id,
+            session_id=session_id,
+            user_id=current_user.id,
+            user_color=user_color,
+            game_type=AI_LADDER_GAME_TYPE,
+            opponent=opponent,
+            ai_subtype="ai:ladder",
+            execution_identity=execution_identity,
+        )
 
     def analysis_is_active(session_id: str, kinds: dict[str, int]) -> bool:
         if any(kind.startswith(("quick-analysis", "platform:")) for kind in kinds):
@@ -621,10 +714,19 @@ async def start_ranked_game(
         if activity is not None:
             activity.release_ranked_start(current_user.id)
         if board:
+            cancelled = False
             try:
                 await request.app.state.remote_client.cancel_ai_ladder_reservation(game_id, reservation_key)
+                cancelled = True
             except Exception:
                 pass
+            if not cancelled:
+                try:
+                    request.app.state.ai_ladder_repo.create_pending_game(
+                        snapshot_for(f"unconfigured-{game_id}"), reservation_key=reservation_key
+                    )
+                except Exception:
+                    pass
         else:
             request.app.state.ai_ladder_repo.cancel_reservation(
                 user_id=current_user.id,
@@ -636,18 +738,7 @@ async def start_ranked_game(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not create game session"
         ) from exc
 
-    user_color = "B" if body.color == "black" else "W"
-    ai_color = "W" if user_color == "B" else "B"
-    snapshot = AiLadderSessionSnapshot(
-        game_id=game_id,
-        session_id=session.session_id,
-        user_id=current_user.id,
-        user_color=user_color,
-        game_type=AI_LADDER_GAME_TYPE,
-        opponent=opponent,
-        ai_subtype="ai:ladder",
-        execution_identity=execution_identity,
-    )
+    snapshot = snapshot_for(session.session_id)
     frozen_recipe = frozen_recipe_from_snapshot(opponent)
 
     try:
@@ -730,13 +821,11 @@ async def start_ranked_game(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="Ranked game activation is awaiting cloud reconciliation",
                 ) from exc
-        try:
-            request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=game_id)
-        except Exception:
-            pass
+        cancelled = not board
         try:
             if board:
                 await request.app.state.remote_client.cancel_ai_ladder_reservation(game_id, reservation_key)
+                cancelled = True
             else:
                 request.app.state.ai_ladder_repo.cancel_reservation(
                     user_id=current_user.id,
@@ -746,6 +835,11 @@ async def start_ranked_game(
                 )
         except Exception:
             pass
+        if cancelled:
+            try:
+                request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=game_id)
+            except Exception:
+                pass
         try:
             manager.remove_session(session.session_id)
         except Exception:

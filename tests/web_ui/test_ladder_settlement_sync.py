@@ -114,6 +114,17 @@ async def test_an_unbound_cloud_session_is_not_good_enough_to_post_a_rank_event(
 
 
 @pytest.mark.asyncio
+async def test_ranked_settlement_409_is_a_permanent_failure_not_a_duplicate_success(factory):
+    _enqueue(factory, user_id="1", game_id="conflict")
+    worker = SyncWorker(factory, _client(bound_user_id="1", status_code=409))
+
+    assert await worker.run_sync() == 0
+    row = _rows(factory)[0]
+    assert row.status == "failed"
+    assert "409" in row.last_error
+
+
+@pytest.mark.asyncio
 async def test_one_users_stuck_game_holds_their_later_games_but_not_another_users(factory):
     _enqueue(factory, user_id="1", game_id="a1")
     _enqueue(factory, user_id="1", game_id="a2")

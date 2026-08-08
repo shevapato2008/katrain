@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AiLadderRatedSetup from './AiLadderRatedSetup';
-import type { AiLadderReadyStatus } from '../../../features/aiLadder/types';
+import type { AiLadderReadyStatus, AiLadderStatus } from '../../../features/aiLadder/types';
 
 const readyStatus: AiLadderReadyStatus = {
   view_state: 'ready',
@@ -41,6 +41,24 @@ const renderSetup = (
 const blockingStatus = (
   blockingGame: NonNullable<AiLadderReadyStatus['blocking_game']>,
 ): AiLadderReadyStatus => ({ ...readyStatus, blocking_game: blockingGame });
+
+const renderReceiptStatus = (
+  status: AiLadderStatus,
+  lifecycleReceipt: NonNullable<React.ComponentProps<typeof AiLadderRatedSetup>['lifecycleReceipt']>,
+) => render(
+  <AiLadderRatedSetup
+    status={status}
+    color="B"
+    mainTime={10}
+    byoLength={30}
+    byoPeriods={3}
+    startPending={false}
+    lifecycleReceipt={lifecycleReceipt}
+    onColorChange={vi.fn()}
+    onRetry={vi.fn()}
+    onStart={vi.fn()}
+  />,
+);
 
 describe('AiLadderRatedSetup', () => {
   it('shows the ready ranked journey without exposing the internal rung', () => {
@@ -131,8 +149,37 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
   });
 
+  it('supports the legacy pending-settlement flag without challenge controls', async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    renderSetup({ ...readyStatus, pending_settlement: true }, { onRetry });
+
+    expect(screen.getByText('本局已结束，成绩正在结算中。')).toBeInTheDocument();
+    const actions = screen.getAllByRole('button');
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toHaveAccessibleName('刷新状态');
+    await user.click(actions[0]);
+    expect(onRetry).toHaveBeenCalledOnce();
+    expect(screen.queryByText('智星棋手')).not.toBeInTheDocument();
+    expect(screen.queryByText('选择执子')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /继续对局|等待结算|结束该对局/ })).not.toBeInTheDocument();
+  });
+
+  it('treats an explicit null blocking game as authoritative over a stale legacy flag', () => {
+    renderSetup({ ...readyStatus, pending_settlement: true, blocking_game: null });
+
+    expect(screen.queryByText('本局已结束，成绩正在结算中。')).not.toBeInTheDocument();
+    expect(screen.getByText('本局挑战')).toBeInTheDocument();
+    expect(screen.getByText('智星棋手')).toBeInTheDocument();
+    expect(screen.getByText('选择执子')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '开始正式对局' })).toBeInTheDocument();
+  });
+
   it('keeps the settlement receipt visible after the blocking game disappears', () => {
-    renderSetup(readyStatus, { lifecycleReceipt: { counted: false, reason: 'engine_unavailable' } });
+    renderSetup(
+      { ...readyStatus, pending_settlement: true },
+      { lifecycleReceipt: { counted: false, reason: 'engine_unavailable' } },
+    );
 
     expect(screen.getByText('结算已完成')).toBeInTheDocument();
     expect(screen.getByText(/本局不计入升降级/)).toBeInTheDocument();
@@ -151,6 +198,25 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
   });
 
+  it('keeps a settlement receipt visible while status is loading', () => {
+    renderReceiptStatus({ view_state: 'loading' }, { counted: true, reason: null });
+
+    expect(screen.getByText('结算已完成')).toBeInTheDocument();
+    expect(screen.getByText(/本局已计入升降级/)).toBeInTheDocument();
+  });
+
+  it('keeps a settlement receipt above an error status', () => {
+    renderReceiptStatus(
+      { view_state: 'error', message: '状态刷新失败' },
+      { counted: false, reason: 'engine_unavailable' },
+    );
+
+    expect(screen.getByText('结算已完成')).toBeInTheDocument();
+    expect(screen.getByText(/本局不计入升降级/)).toBeInTheDocument();
+    expect(screen.queryByText('状态刷新失败')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '重试' })).not.toBeInTheDocument();
+  });
+
   it('keeps lifecycle state visible and disables both actions while pending', () => {
     const status = blockingStatus({
       game_id: 'game-6', state: 'active', ownership: 'current_device', session_id: 'session-6',
@@ -163,6 +229,31 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.getByRole('button', { name: '结束该对局' })).toBeDisabled();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('未完成对局')).toBeInTheDocument();
+  });
+
+  it('safely disables lifecycle actions when a legacy caller omits the new props', () => {
+    const status = blockingStatus({
+      game_id: 'game-legacy', state: 'active', ownership: 'current_device', session_id: 'session-legacy',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+
+    render(
+      <AiLadderRatedSetup
+        status={status}
+        color="B"
+        mainTime={10}
+        byoLength={30}
+        byoPeriods={3}
+        startPending={false}
+        onColorChange={vi.fn()}
+        onRetry={vi.fn()}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '结束该对局' })).toBeDisabled();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
   it('closes the end-game confirmation with Escape without ending the game', async () => {
@@ -178,5 +269,77 @@ describe('AiLadderRatedSetup', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(props.onEndGame).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the captured end-game target when authoritative lifecycle state changes', async () => {
+    const user = userEvent.setup();
+    const onEndGame = vi.fn();
+    const commonProps = {
+      color: 'B',
+      mainTime: 10,
+      byoLength: 30,
+      byoPeriods: 3,
+      startPending: false,
+      lifecyclePending: false,
+      onColorChange: vi.fn(),
+      onRetry: vi.fn(),
+      onStart: vi.fn(),
+      onContinue: vi.fn(),
+      onEndGame,
+    };
+    const gameA = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'current_device', session_id: 'session-a',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    const gameB = blockingStatus({
+      game_id: 'game-b', state: 'active', ownership: 'current_device', session_id: 'session-b',
+      user_color: 'W', opponent_rank_name: '2段',
+    });
+    const view = render(<AiLadderRatedSetup {...commonProps} status={gameA} />);
+
+    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(onEndGame).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    view.rerender(<AiLadderRatedSetup {...commonProps} status={readyStatus} />);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(onEndGame).not.toHaveBeenCalled();
+
+    view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
+    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    view.rerender(
+      <AiLadderRatedSetup
+        {...commonProps}
+        status={gameB}
+        lifecycleReceipt={{ counted: true, reason: null }}
+      />,
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onEndGame).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the end-game target when the same game starts settling', async () => {
+    const user = userEvent.setup();
+    const onEndGame = vi.fn();
+    const active = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'current_device', session_id: 'session-a',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    const pending = blockingStatus({
+      game_id: 'game-a', state: 'pending_settlement', ownership: 'current_device', session_id: 'session-a',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    const { props, rerender } = renderSetup(active, { onEndGame });
+
+    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    rerender(<AiLadderRatedSetup {...props} status={pending} />);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(onEndGame).not.toHaveBeenCalled();
   });
 });

@@ -31,21 +31,22 @@ const aiLadderCountingReasons: readonly AiLadderCountingReason[] = [
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-const isSettledLifecycle = (
+const isGameLifecycle = (
   value: unknown,
   gameId: string,
-): value is Extract<AiLadderGameLifecycle, { state: 'settled' }> => {
-  if (!isRecord(value) || value.state !== 'settled' || value.game_id !== gameId || !isRecord(value.receipt)) {
+): value is AiLadderGameLifecycle => {
+  if (!isRecord(value) || value.game_id !== gameId) {
     return false;
   }
+  if (value.state === 'active' || value.state === 'pending_settlement') return true;
+  if (value.state !== 'settled' || !isRecord(value.receipt)) return false;
   const { counted, reason } = value.receipt;
   return typeof counted === 'boolean'
     && (reason === null
       || (typeof reason === 'string' && aiLadderCountingReasons.includes(reason as AiLadderCountingReason)));
 };
 
-const parseResponse = async <T,>(response: Response): Promise<T> => {
-  if (response.ok) return response.json() as Promise<T>;
+const createApiError = async (response: Response): Promise<AiLadderApiError> => {
   let detail = `Request failed ${response.status}`;
   try {
     const body = await response.json() as { detail?: unknown };
@@ -53,7 +54,27 @@ const parseResponse = async <T,>(response: Response): Promise<T> => {
   } catch {
     // Keep the status-based fallback for non-JSON gateway errors.
   }
-  throw new AiLadderApiError(response.status, detail);
+  return new AiLadderApiError(response.status, detail);
+};
+
+const parseResponse = async <T,>(response: Response): Promise<T> => {
+  if (response.ok) return response.json() as Promise<T>;
+  throw await createApiError(response);
+};
+
+const parseGameLifecycleResponse = async (
+  response: Response,
+  gameId: string,
+): Promise<AiLadderGameLifecycle> => {
+  if (response.ok || response.status === 409) {
+    try {
+      const lifecycle: unknown = await response.clone().json();
+      if (isGameLifecycle(lifecycle, gameId) && lifecycle.state !== 'active') return lifecycle;
+    } catch {
+      // Invalid lifecycle responses use the same API error mapping as other failures.
+    }
+  }
+  throw await createApiError(response);
 };
 
 export const getAiLadderStatus = async (token?: string, signal?: AbortSignal): Promise<AiLadderReadyStatus> =>
@@ -95,13 +116,5 @@ export const endAiLadderGame = async (
     credentials: 'same-origin',
     body: JSON.stringify({ reason: 'user_resigned' }),
   });
-  if (response.status === 409) {
-    try {
-      const lifecycle: unknown = await response.clone().json();
-      if (isSettledLifecycle(lifecycle, gameId)) return lifecycle;
-    } catch {
-      // Let the shared parser preserve the normal error mapping for invalid responses.
-    }
-  }
-  return parseResponse(response);
+  return parseGameLifecycleResponse(response, gameId);
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import {
   Alert,
@@ -28,14 +28,14 @@ interface AiLadderRatedSetupProps {
   byoLength: number;
   byoPeriods: number;
   startPending: boolean;
-  lifecyclePending: boolean;
+  lifecyclePending?: boolean;
   lifecycleError?: string;
   lifecycleReceipt?: { counted: boolean; reason: AiLadderCountingReason | null };
   onColorChange: (color: 'B' | 'W') => void;
   onRetry: () => void;
   onStart: () => void;
-  onContinue: (sessionId: string) => void;
-  onEndGame: (gameId: string) => void;
+  onContinue?: (sessionId: string) => void;
+  onEndGame?: (gameId: string) => void;
 }
 
 const notCountedMessages: Record<AiLadderCountingReason, string> = {
@@ -91,7 +91,7 @@ const AiLadderRatedSetup = ({
   byoLength,
   byoPeriods,
   startPending,
-  lifecyclePending,
+  lifecyclePending = false,
   lifecycleError,
   lifecycleReceipt,
   onColorChange,
@@ -100,7 +100,29 @@ const AiLadderRatedSetup = ({
   onContinue,
   onEndGame,
 }: AiLadderRatedSetupProps) => {
-  const [endDialogOpen, setEndDialogOpen] = useState(false);
+  const [endGameId, setEndGameId] = useState<string | null>(null);
+  const activeBlockingGameId = status.view_state === 'ready' && status.blocking_game?.state === 'active'
+    ? status.blocking_game.game_id
+    : undefined;
+  const receiptVisible = Boolean(lifecycleReceipt);
+  const endDialogOpen = endGameId !== null && activeBlockingGameId === endGameId && !receiptVisible;
+
+  useEffect(() => {
+    if (endGameId !== null && (activeBlockingGameId !== endGameId || receiptVisible)) {
+      setEndGameId(null);
+    }
+  }, [activeBlockingGameId, endGameId, receiptVisible]);
+
+  if (lifecycleReceipt && status.view_state !== 'ready') {
+    return (
+      <Paper component="section" sx={{ width: '100%', p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+        <Typography sx={{ fontSize: 34, lineHeight: 1.15, fontWeight: 800 }}>结算已完成</Typography>
+        <Alert severity={lifecycleReceipt.counted ? 'success' : 'warning'} sx={{ mt: 3 }}>
+          {receiptMessage(lifecycleReceipt.counted, lifecycleReceipt.reason)}
+        </Alert>
+      </Paper>
+    );
+  }
 
   if (status.view_state === 'loading') {
     return <Paper sx={{ p: 4, borderRadius: 3 }}><Skeleton height={420} /></Paper>;
@@ -124,9 +146,15 @@ const AiLadderRatedSetup = ({
   const blockingGame = status.blocking_game;
 
   const confirmEndGame = () => {
-    if (!blockingGame) return;
-    setEndDialogOpen(false);
-    onEndGame(blockingGame.game_id);
+    if (
+      !endGameId
+      || blockingGame?.state !== 'active'
+      || blockingGame.game_id !== endGameId
+      || lifecycleReceipt
+      || !onEndGame
+    ) return;
+    setEndGameId(null);
+    onEndGame(endGameId);
   };
 
   let challengeContent;
@@ -155,7 +183,7 @@ const AiLadderRatedSetup = ({
           : '刷新状态';
     const primaryAction = () => {
       if (hasCurrentSession && blockingGame.session_id) {
-        onContinue(blockingGame.session_id);
+        onContinue?.(blockingGame.session_id);
         return;
       }
       onRetry();
@@ -202,7 +230,7 @@ const AiLadderRatedSetup = ({
             size="large"
             variant="contained"
             onClick={primaryAction}
-            disabled={lifecyclePending}
+            disabled={lifecyclePending || (hasCurrentSession && !onContinue)}
             startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
             sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
           >
@@ -214,14 +242,37 @@ const AiLadderRatedSetup = ({
               size="large"
               variant="outlined"
               color="error"
-              onClick={() => setEndDialogOpen(true)}
-              disabled={lifecyclePending}
+              onClick={() => setEndGameId(blockingGame.game_id)}
+              disabled={lifecyclePending || !onEndGame}
               sx={{ minHeight: 48, fontWeight: 750 }}
             >
               结束该对局
             </Button>
           )}
         </Stack>
+      </>
+    );
+  } else if (status.blocking_game === undefined && status.pending_settlement) {
+    challengeContent = (
+      <>
+        <Typography color="text.secondary" fontWeight={650}>未完成对局</Typography>
+        <Box sx={{ my: 'auto', py: 6 }}>
+          <Typography sx={{ fontSize: 24, lineHeight: 1.4, fontWeight: 800 }}>
+            本局已结束，成绩正在结算中。
+          </Typography>
+          {lifecycleError && <Alert severity="error" sx={{ mt: 2 }}>{lifecycleError}</Alert>}
+        </Box>
+        <Button
+          fullWidth
+          size="large"
+          variant="contained"
+          onClick={onRetry}
+          disabled={lifecyclePending}
+          startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
+          sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+        >
+          刷新状态
+        </Button>
       </>
     );
   } else {
@@ -279,18 +330,18 @@ const AiLadderRatedSetup = ({
   return (
     <>
       <Paper
-      component="section"
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) minmax(340px, 402px)' },
-        overflow: 'hidden',
-        borderRadius: 3,
-        border: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: '0 18px 50px rgba(0,0,0,.18)',
-      }}
-    >
+        component="section"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) minmax(340px, 402px)' },
+          overflow: 'hidden',
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          boxShadow: '0 18px 50px rgba(0,0,0,.18)',
+        }}
+      >
       <Box sx={{ p: { xs: 3, md: 4 }, minHeight: { lg: 560 }, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 3, flexWrap: 'wrap' }}>
           <Box>
@@ -348,14 +399,14 @@ const AiLadderRatedSetup = ({
       </Box>
       </Paper>
 
-      <Dialog open={endDialogOpen} onClose={() => setEndDialogOpen(false)} aria-labelledby="end-game-dialog-title">
+      <Dialog open={endDialogOpen} onClose={() => setEndGameId(null)} aria-labelledby="end-game-dialog-title">
         <DialogTitle id="end-game-dialog-title">结束该对局？</DialogTitle>
         <DialogContent>
           <DialogContentText>结束后将按你认输处理，并计为本局负。此操作不可撤销。</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button autoFocus onClick={() => setEndDialogOpen(false)}>取消</Button>
-          <Button color="error" onClick={confirmEndGame} disabled={lifecyclePending}>确认结束</Button>
+          <Button autoFocus onClick={() => setEndGameId(null)}>取消</Button>
+          <Button color="error" onClick={confirmEndGame} disabled={lifecyclePending || !onEndGame}>确认结束</Button>
         </DialogActions>
       </Dialog>
     </>

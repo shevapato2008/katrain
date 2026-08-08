@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AiSetupPage from './AiSetupPage';
+import { AiLadderApiError } from '../../features/aiLadder/api';
 
 // Task 11: 棋力阶梯 (strength ladder) 37-rung opponent selector on the galaxy AiSetupPage.
 // Mirrors the Vitest/RTL pattern in kiosk/pages/PlatformEngineSetupPage.test.tsx: mock the
@@ -26,7 +27,7 @@ vi.mock('../context/GameNavigationContext', () => ({
   useGameNavigation: () => ({ requestNavigation: mockRequestNavigation }),
 }));
 
-const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mockUpdateConfig, mockStartRanked, rankedState, mockRetry } = vi.hoisted(() => ({
+const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mockUpdateConfig, mockStartRanked, mockEndRanked, rankedState, authState, mockRetry } = vi.hoisted(() => ({
   mockAiConstants: {
     strategies: ['ai:human', 'ai:ladder'],
     options: {},
@@ -47,8 +48,10 @@ const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mock
   mockNewGame: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
   mockUpdateConfig: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
   mockStartRanked: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }),
+  mockEndRanked: vi.fn(),
   mockRetry: vi.fn(),
   rankedState: { current: null as any },
+  authState: { current: { token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true } as any },
 }));
 
 vi.mock('../../api', () => ({
@@ -64,13 +67,16 @@ vi.mock('../../api', () => ({
   },
 }));
 
-vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: mockStartRanked }));
+vi.mock('../../features/aiLadder/api', async () => {
+  const actual = await vi.importActual<typeof import('../../features/aiLadder/api')>('../../features/aiLadder/api');
+  return { ...actual, startAiLadderGame: mockStartRanked, endAiLadderGame: mockEndRanked };
+});
 vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({
   useAiLadderStatus: () => ({ status: rankedState.current, retry: mockRetry }),
 }));
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
+  useAuth: () => authState.current,
 }));
 
 vi.mock('../../context/SettingsContext', () => ({
@@ -86,6 +92,29 @@ const renderPage = (mode = 'free') => {
       </Routes>
     </MemoryRouter>
   );
+};
+
+const blockingGame = (
+  state: 'active' | 'pending_settlement' = 'active',
+  ownership: 'current_device' | 'other_device' = 'current_device',
+  sessionId: string | undefined = 'occupied-session',
+) => ({
+  game_id: 'occupied-game',
+  state,
+  ownership,
+  ...(sessionId ? { session_id: sessionId } : {}),
+  user_color: 'B' as const,
+  opponent_rank_name: '4级',
+});
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
 };
 
 // Locate a Select's combobox by its <label> text (no labelId wiring on this page's Selects,
@@ -168,6 +197,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockCreateSession.mockClear();
     mockNewGame.mockClear();
     mockRetry.mockClear();
+    mockEndRanked.mockReset();
+    authState.current = { token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true };
     rankedState.current = {
       view_state: 'ready',
       placement_state: { phase: 'placement', completed_games: 3, total_games: 5 },
@@ -236,5 +267,212 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
 
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
     expect(screen.queryByRole('heading', { name: '升降级对弈' })).not.toBeInTheDocument();
+  });
+
+  it('continues the occupied rated game through its rated session route', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '继续对局' }));
+
+    expect(mockNavigate).toHaveBeenCalledOnce();
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/occupied-session?mode=rated');
+  });
+
+  it.each([
+    ['等待结算', blockingGame('active', 'other_device')],
+    ['刷新状态', blockingGame('pending_settlement')],
+  ])('uses ranked-status retry for %s', async (buttonName, occupiedGame) => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: occupiedGame };
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: buttonName }));
+
+    expect(mockRetry).toHaveBeenCalledOnce();
+  });
+
+  it('ends a confirmed occupied game through the authenticated lifecycle API', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockResolvedValue({ state: 'pending_settlement', game_id: 'occupied-game' });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+
+    await waitFor(() => expect(mockEndRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
+  });
+
+  it('refreshes ranked status when ending enters pending settlement', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockResolvedValue({ state: 'pending_settlement', game_id: 'occupied-game' });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+
+    await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
+  });
+
+  it('keeps a settled receipt visible after refreshed status removes the blocking game', async () => {
+    const user = userEvent.setup();
+    const refreshedStatus = { ...rankedState.current };
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockResolvedValue({
+      state: 'settled',
+      game_id: 'occupied-game',
+      receipt: { counted: true, reason: null },
+    });
+    mockRetry.mockImplementation(() => {
+      rankedState.current = refreshedStatus;
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+
+    expect(await screen.findByText('结算已完成')).toBeInTheDocument();
+    expect(screen.getByText(/本局已计入升降级/)).toBeInTheDocument();
+    expect(screen.queryByText('未完成对局')).not.toBeInTheDocument();
+    expect(mockRetry).toHaveBeenCalledOnce();
+  });
+
+  it('preserves the occupied panel and shows an inline error when ending fails', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockRejectedValue(new Error('gateway exploded'));
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+
+    expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('未完成对局')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '继续对局' })).toBeEnabled();
+    expect(mockRetry).not.toHaveBeenCalled();
+  });
+
+  it('ignores an old end response after the account and blocking game change', async () => {
+    const user = userEvent.setup();
+    const oldEnd = deferred<any>();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockReturnValue(oldEnd.promise);
+    const view = renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await waitFor(() => expect(mockEndRanked).toHaveBeenCalledOnce());
+
+    authState.current = { token: 'new-token', user: { id: 2, username: 'new-user' }, isAuthenticated: true };
+    rankedState.current = {
+      ...rankedState.current,
+      blocking_game: { ...blockingGame(), game_id: 'new-game', session_id: 'new-session' },
+    };
+    view.rerender(
+      <MemoryRouter initialEntries={['/galaxy/play/ai/setup?mode=rated']}>
+        <Routes><Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} /></Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByRole('button', { name: '继续对局' })).toBeEnabled());
+
+    await act(async () => {
+      oldEnd.resolve({
+        state: 'settled', game_id: 'occupied-game', receipt: { counted: true, reason: null },
+      });
+      await oldEnd.promise;
+    });
+
+    expect(screen.getByText('未完成对局')).toBeInTheDocument();
+    expect(screen.queryByText('结算已完成')).not.toBeInTheDocument();
+    expect(mockRetry).not.toHaveBeenCalled();
+  });
+
+  it('releases lifecycle pending when the same account moves from game A to game B', async () => {
+    const user = userEvent.setup();
+    const oldEnd = deferred<any>();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockReturnValue(oldEnd.promise);
+    const view = renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled());
+
+    rankedState.current = {
+      ...rankedState.current,
+      blocking_game: { ...blockingGame(), game_id: 'game-b', session_id: 'session-b' },
+    };
+    view.rerender(
+      <MemoryRouter initialEntries={['/galaxy/play/ai/setup?mode=rated']}>
+        <Routes><Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '继续对局' })).toBeEnabled());
+    await act(async () => {
+      oldEnd.resolve({
+        state: 'settled', game_id: 'occupied-game', receipt: { counted: true, reason: null },
+      });
+      await oldEnd.promise;
+    });
+    expect(screen.queryByText('结算已完成')).not.toBeInTheDocument();
+    expect(mockRetry).not.toHaveBeenCalled();
+  });
+
+  it('clears a lifecycle error before refreshing into pending settlement', async () => {
+    const user = userEvent.setup();
+    rankedState.current = {
+      ...rankedState.current,
+      blocking_game: blockingGame('active', 'other_device'),
+    };
+    mockEndRanked.mockRejectedValue(new Error('gateway exploded'));
+    mockRetry.mockImplementation(() => {
+      rankedState.current = {
+        ...rankedState.current,
+        blocking_game: blockingGame('pending_settlement', 'other_device'),
+      };
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: '等待结算' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '刷新状态' })).toBeInTheDocument());
+    expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
+    expect(mockRetry).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes status without a stale error when the occupied game already vanished', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockRejectedValue(new AiLadderApiError(404, 'not found'));
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+
+    await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
+    expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
+  });
+
+  it.each([401, 403])('shows an expired-login message for lifecycle HTTP %s', async (status) => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: blockingGame() };
+    mockEndRanked.mockRejectedValue(new AiLadderApiError(status, 'operator detail'));
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '确认结束' }));
+
+    expect(await screen.findByText('登录已失效，请重新登录后再试')).toBeInTheDocument();
+    expect(screen.queryByText('operator detail')).not.toBeInTheDocument();
   });
 });

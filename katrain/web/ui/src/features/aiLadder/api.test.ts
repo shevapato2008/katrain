@@ -126,6 +126,16 @@ describe('ai ladder API', () => {
     });
   });
 
+  it('returns a matching pending lifecycle from a 409 response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      state: 'pending_settlement', game_id: 'game-1',
+    }), { status: 409 })));
+
+    await expect(endAiLadderGame('game-1')).resolves.toEqual({
+      state: 'pending_settlement', game_id: 'game-1',
+    });
+  });
+
   it('keeps API error mapping for a 409 that is not a settled lifecycle', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
       JSON.stringify({ detail: 'game is still active' }),
@@ -149,6 +159,28 @@ describe('ai ladder API', () => {
 
     await expect(endAiLadderGame('game-1')).rejects.toEqual(expect.objectContaining<Partial<AiLadderApiError>>({
       status: 409,
+    }));
+  });
+
+  it.each([
+    { state: 'pending_settlement', game_id: 'another-game' },
+    { state: 'settled', game_id: 'game-1' },
+    { state: 'settled', game_id: 'game-1', receipt: { counted: true, reason: 'unexpected_reason' } },
+  ])('maps a malformed successful lifecycle to an API error: %j', async (body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })));
+
+    await expect(endAiLadderGame('game-1')).rejects.toEqual(expect.objectContaining<Partial<AiLadderApiError>>({
+      status: 200,
+    }));
+  });
+
+  it.each([200, 409])('maps an active end-game lifecycle with status %i to an API error', async (status) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      state: 'active', game_id: 'game-1',
+    }), { status })));
+
+    await expect(endAiLadderGame('game-1')).rejects.toEqual(expect.objectContaining<Partial<AiLadderApiError>>({
+      status,
     }));
   });
 

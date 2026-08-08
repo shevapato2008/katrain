@@ -23,7 +23,12 @@ from katrain.web.core.ai_ladder_catalog import (
 from katrain.web.core.ai_ladder_ranked import (
     AI_LADDER_GAME_TYPE,
     PLACEMENT_GAMES,
+    AiLadderBlockingGame,
+    AiLadderLifecycleConflict,
+    AiLadderLifecycleNotFound,
+    AiLadderLifecycleReceipt,
     AiLadderOpponentSnapshot,
+    InvalidReservationKey,
     initial_placement_window,
 )
 from katrain.web.models import User
@@ -59,6 +64,26 @@ class AiLadderStartRequest(BaseModel):
     byo_periods: int = Field(default=3, ge=0, le=100)
 
 
+class AiLadderReserveRequest(AiLadderStartRequest):
+    game_id: str = Field(min_length=1, max_length=32)
+
+
+class AiLadderReservationKeyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reservation_key: str = Field(min_length=1, max_length=128)
+
+
+class AiLadderActivateRequest(AiLadderReservationKeyRequest):
+    session_id: str = Field(min_length=1, max_length=128)
+
+
+class AiLadderEndRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: Literal["user_resigned"]
+
+
 def _require_authority(request: Request) -> None:
     if not getattr(request.app.state, "ai_ladder_authoritative", False):
         raise HTTPException(
@@ -68,7 +93,57 @@ def _require_authority(request: Request) -> None:
 
 
 def _pending_settlement(request: Request, user_id: int) -> bool:
+    lifecycle = request.app.state.ai_ladder_repo.get_blocking_game(user_id)
+    if lifecycle is not None:
+        return lifecycle.state == "pending_settlement"
     return request.app.state.ai_ladder_repo.get_pending_game(user_id) is not None
+
+
+def _device_id(request: Request, *, required: bool = True) -> str:
+    value = request.headers.get("X-StellaBox-Device-ID")
+    normalized = value.strip() if isinstance(value, str) else ""
+    if len(normalized) > 64 or (required and not normalized):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="X-StellaBox-Device-ID must be a non-empty label of at most 64 characters",
+        )
+    return normalized or "cloud-local"
+
+
+def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: str) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "game_id": game.game_id,
+        # A reservation already occupies the account and therefore has the same
+        # product meaning as an active game, even before its board session is bound.
+        "state": "pending_settlement" if game.state == "pending_settlement" else "active",
+        "ownership": "current_device" if game.origin_device_id == device_id else "other_device",
+        "user_color": game.user_color,
+        "opponent_rank_name": game.opponent.rank_name,
+    }
+    if (
+        game.state == "active"
+        and game.origin_device_id == device_id
+        and game.origin_session_id
+        and _active_session(request, game.origin_session_id)
+    ):
+        payload["session_id"] = game.origin_session_id
+    return payload
+
+
+def _lifecycle_payload(receipt: AiLadderLifecycleReceipt) -> dict[str, object]:
+    return {
+        "state": "settled",
+        "game_id": receipt.game_id,
+        "receipt": {"counted": receipt.counted, "reason": receipt.reason},
+    }
+
+
+def _lifecycle_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, AiLadderLifecycleNotFound):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranked game not found")
+    if isinstance(exc, (AiLadderLifecycleConflict, InvalidReservationKey)):
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
 
 def _active_session(request: Request, session_id: str) -> bool:
@@ -87,8 +162,28 @@ def _recover_pending(request: Request, user_id: int) -> None:
     pending = repo.get_pending_game(user_id)
     if pending is None:
         return
+    lifecycle = repo.get_blocking_game(user_id)
     try:
         game = request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(pending["game_id"], user_id)
+        if lifecycle is not None:
+            # Account occupancy is cloud-authoritative. Never abandon it merely
+            # because this process lost its session. A fully saved origin result may
+            # still complete the same credentialed terminal transaction after restart.
+            if game is None or not pending.get("reservation_key"):
+                return
+            snapshot = session_snapshot_from_pending(pending)
+            repo.mark_pending_game_saved(user_id=user_id, game_id=snapshot.game_id, result=game["result"])
+            repo.finalize_reserved_game(
+                user_id=user_id,
+                game_id=snapshot.game_id,
+                terminal_source="recovery",
+                result=result_for_user(game["result"], snapshot.user_color),
+                deciding_device_id=lifecycle.origin_device_id,
+                reservation_key=pending["reservation_key"],
+                game_record=game,
+            )
+            repo.clear_pending_game(user_id=user_id, game_id=snapshot.game_id)
+            return
         if game is None:
             if not _active_session(request, pending["session_id"]):
                 repo.clear_pending_game(user_id=user_id, game_id=pending["game_id"])
@@ -108,7 +203,7 @@ def _recover_pending(request: Request, user_id: int) -> None:
         logging.getLogger("katrain_web").error("Failed to recover ranked AI settlement: %s", exc)
 
 
-def _status_payload(request: Request, current_user: User) -> dict[str, object]:
+def _status_payload(request: Request, current_user: User, *, device_id: Optional[str] = None) -> dict[str, object]:
     _recover_pending(request, current_user.id)
     repo = request.app.state.ai_ladder_repo
     db = repo.session_factory()
@@ -143,6 +238,7 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
 
     from katrain.core import ladder
 
+    blocking = repo.get_blocking_game(current_user.id)
     return {
         "view_state": "ready",
         "placement_state": placement_state,
@@ -150,6 +246,7 @@ def _status_payload(request: Request, current_user: User) -> dict[str, object]:
         "recent_ranked_results": repo.recent_counted_results(current_user.id, limit=5),
         "net_score": net_score,
         "pending_settlement": _pending_settlement(request, current_user.id),
+        "blocking_game": _blocking_payload(request, blocking, device_id or "cloud-local") if blocking else None,
         # Whether THIS node will seat an uncertified rung. The rung's own
         # certification_status/availability keep telling the truth about the rung; this
         # says what the server will do about it, so the client can stop guessing why a
@@ -166,7 +263,175 @@ def get_catalog(current_user: User = Depends(get_current_user)):
 @router.get("/status")
 def get_status(request: Request, current_user: User = Depends(get_current_user)):
     _require_authority(request)
-    return _status_payload(request, current_user)
+    return _status_payload(request, current_user, device_id=_device_id(request, required=False))
+
+
+def _reserve(
+    *, body: AiLadderReserveRequest, request: Request, current_user: User, device_id: str
+):
+    status_payload = _status_payload(request, current_user, device_id=device_id)
+    opponent_entry = status_payload["current_opponent"]
+    assert isinstance(opponent_entry, dict)
+    try:
+        opponent, execution_identity = build_opponent_snapshot(int(opponent_entry["rung"]))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    try:
+        return request.app.state.ai_ladder_repo.reserve_game(
+            user_id=current_user.id,
+            game_id=body.game_id,
+            user_color="B" if body.color == "black" else "W",
+            opponent=opponent,
+            origin_device_id=device_id,
+            ai_subtype="ai:ladder",
+            execution_identity=execution_identity,
+            rules_snapshot={
+                "board_size": LADDER_BOARD_SIZE,
+                "rules": LADDER_RULES,
+                "komi": LADDER_KOMI,
+                "handicap": LADDER_HANDICAP,
+            },
+            time_control_snapshot={
+                "time_enabled": body.time_enabled,
+                "main_time": body.main_time,
+                "byo_length": body.byo_length,
+                "byo_periods": body.byo_periods,
+            },
+        )
+    except (ValueError, AiLadderLifecycleConflict) as exc:
+        raise _lifecycle_error(exc) from exc
+
+
+@router.post("/games/reserve", status_code=status.HTTP_201_CREATED)
+def reserve_ranked_game(
+    body: AiLadderReserveRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    device_id = _device_id(request)
+    try:
+        reserved = _reserve(body=body, request=request, current_user=current_user, device_id=device_id)
+    except HTTPException as exc:
+        blocking = request.app.state.ai_ladder_repo.get_blocking_game(current_user.id)
+        if exc.status_code == status.HTTP_409_CONFLICT and blocking is not None:
+            exc.detail = {"message": str(exc.detail), "blocking_game": _blocking_payload(request, blocking, device_id)}
+        raise
+    if not reserved.created or reserved.reservation_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "Reservation already exists; its credential cannot be replayed",
+                "blocking_game": _blocking_payload(request, reserved.game, device_id),
+            },
+        )
+    return {
+        "game_id": reserved.game.game_id,
+        "reservation_key": reserved.reservation_key,
+        "blocking_game": _blocking_payload(request, reserved.game, device_id),
+    }
+
+
+@router.post("/games/{game_id}/activate")
+def activate_ranked_game(
+    game_id: str,
+    body: AiLadderActivateRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    try:
+        game = request.app.state.ai_ladder_repo.activate_reservation(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=body.reservation_key,
+            origin_device_id=_device_id(request),
+            origin_session_id=body.session_id,
+        )
+    except ValueError as exc:
+        raise _lifecycle_error(exc) from exc
+    return {"state": "active", "game_id": game.game_id}
+
+
+@router.post("/games/{game_id}/pending-settlement")
+def mark_ranked_game_pending(
+    game_id: str,
+    body: AiLadderReservationKeyRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    try:
+        game = request.app.state.ai_ladder_repo.mark_pending_settlement(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=body.reservation_key,
+            origin_device_id=_device_id(request),
+        )
+    except ValueError as exc:
+        raise _lifecycle_error(exc) from exc
+    return {"state": "pending_settlement", "game_id": game.game_id}
+
+
+@router.delete("/games/{game_id}/reservation")
+def cancel_ranked_game_reservation(
+    game_id: str,
+    body: AiLadderReservationKeyRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    try:
+        result = request.app.state.ai_ladder_repo.cancel_reservation(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=body.reservation_key,
+            origin_device_id=_device_id(request),
+        )
+    except ValueError as exc:
+        raise _lifecycle_error(exc) from exc
+    if result.receipt is not None:
+        return _lifecycle_payload(result.receipt)
+    return {"state": "cancelled", "game_id": game_id}
+
+
+@router.get("/games/{game_id}/status")
+def get_ranked_game_status(
+    game_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    if lifecycle is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranked game not found")
+    if isinstance(lifecycle, AiLadderLifecycleReceipt):
+        return _lifecycle_payload(lifecycle)
+    return {
+        "state": "pending_settlement" if lifecycle.state == "pending_settlement" else "active",
+        "game_id": lifecycle.game_id,
+    }
+
+
+@router.post("/games/{game_id}/end")
+def end_ranked_game(
+    game_id: str,
+    body: AiLadderEndRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    try:
+        receipt = request.app.state.ai_ladder_repo.finalize_reserved_game(
+            user_id=current_user.id,
+            game_id=game_id,
+            terminal_source="remote_resign",
+            result="loss",
+            deciding_device_id=_device_id(request, required=False),
+        )
+    except ValueError as exc:
+        raise _lifecycle_error(exc) from exc
+    return _lifecycle_payload(receipt)
 
 
 @router.post("/start", status_code=status.HTTP_201_CREATED)
@@ -176,17 +441,21 @@ def start_ranked_game(
     current_user: User = Depends(get_current_user),
 ):
     _require_authority(request)
-    status_payload = _status_payload(request, current_user)
+    device_id = _device_id(request, required=False)
+    status_payload = _status_payload(request, current_user, device_id=device_id)
     if status_payload["pending_settlement"]:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Previous ranked game settlement is pending")
-    opponent_entry = status_payload["current_opponent"]
-    assert isinstance(opponent_entry, dict)
-    opponent_rung = opponent_entry["rung"]
-    assert isinstance(opponent_rung, int)
-    try:
-        opponent, execution_identity = build_opponent_snapshot(opponent_rung)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    game_id = uuid.uuid4().hex
+    reservation = _reserve(
+        body=AiLadderReserveRequest(game_id=game_id, **body.model_dump()),
+        request=request,
+        current_user=current_user,
+        device_id=device_id,
+    )
+    assert reservation.reservation_key is not None
+    reservation_key = reservation.reservation_key
+    opponent = reservation.game.opponent
+    execution_identity = reservation.game.execution_identity
 
     manager = request.app.state.session_manager
     activity = getattr(request.app.state, "ranked_analysis_activity", None)
@@ -206,6 +475,12 @@ def start_ranked_game(
         return True
 
     if activity is not None and not activity.reserve_ranked_start(current_user.id, analysis_is_active):
+        request.app.state.ai_ladder_repo.cancel_reservation(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=reservation_key,
+            origin_device_id=device_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Stop active analysis before starting a ranked AI game",
@@ -221,11 +496,16 @@ def start_ranked_game(
     except Exception as exc:
         if activity is not None:
             activity.release_ranked_start(current_user.id)
+        request.app.state.ai_ladder_repo.cancel_reservation(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=reservation_key,
+            origin_device_id=device_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not create game session"
         ) from exc
 
-    game_id = uuid.uuid4().hex
     user_color = "B" if body.color == "black" else "W"
     ai_color = "W" if user_color == "B" else "B"
     snapshot = AiLadderSessionSnapshot(
@@ -241,7 +521,7 @@ def start_ranked_game(
     frozen_recipe = frozen_recipe_from_snapshot(opponent)
 
     try:
-        request.app.state.ai_ladder_repo.create_pending_game(snapshot)
+        request.app.state.ai_ladder_repo.create_pending_game(snapshot, reservation_key=reservation_key)
         if activity is not None:
             activity.release_ranked_start(current_user.id)
         with session.lock:
@@ -251,6 +531,7 @@ def start_ranked_game(
             session.ai_ladder_runtime_identity = execution_identity
             session.ai_ladder_ai_subtype = "ai:ladder"
             session.ai_ladder_settlement_pending = False
+            session.ai_ladder_reservation_key = reservation_key
             session._recorded = False
             session.katrain(
                 "update_player",
@@ -288,11 +569,27 @@ def start_ranked_game(
             )
             session.katrain.game_type = AI_LADDER_GAME_TYPE
             session.last_state = session.katrain.get_state()
+        request.app.state.ai_ladder_repo.activate_reservation(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=reservation_key,
+            origin_device_id=device_id,
+            origin_session_id=session.session_id,
+        )
     except Exception as exc:
         if activity is not None:
             activity.release_ranked_start(current_user.id)
         try:
             request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=game_id)
+        except Exception:
+            pass
+        try:
+            request.app.state.ai_ladder_repo.cancel_reservation(
+                user_id=current_user.id,
+                game_id=game_id,
+                reservation_key=reservation_key,
+                origin_device_id=device_id,
+            )
         except Exception:
             pass
         try:
@@ -306,7 +603,7 @@ def start_ranked_game(
         "session_id": session.session_id,
         "game_id": game_id,
         "opponent": catalog_entry(opponent.rung),
-        "status": status_payload,
+        "status": _status_payload(request, current_user, device_id=device_id),
     }
 
 
@@ -321,6 +618,28 @@ class AiLadderOpponentPayload(BaseModel):
     certification_status: str = Field(min_length=1)
     availability: str = Field(min_length=1)
     route: Literal["local", "server"]
+
+
+class AiLadderGameRecordPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sgf_content: str = Field(min_length=1)
+    result: str = Field(min_length=1)
+    board_size: int
+    rules: str = Field(min_length=1)
+    komi: float
+    move_count: int = Field(ge=0)
+    player_black: str = Field(min_length=1)
+    player_white: str = Field(min_length=1)
+    source: Literal["play_ai"]
+    category: Literal["game"]
+    game_type: Literal["ai_ladder_ranked"]
+    black_rank: Optional[str] = None
+    white_rank: Optional[str] = None
+    title: Optional[str] = None
+    event: Optional[str] = None
+    round_name: Optional[str] = None
+    game_date: Optional[str] = None
 
 
 class AiLadderSettlementSubmission(BaseModel):
@@ -341,6 +660,8 @@ class AiLadderSettlementSubmission(BaseModel):
     opponent: Optional[AiLadderOpponentPayload] = None
     engine_stalled: bool = False
     device_id: Optional[str] = Field(default=None, max_length=64)
+    reservation_key: Optional[str] = Field(default=None, min_length=1, max_length=128)
+    game_record: Optional[AiLadderGameRecordPayload] = None
 
 
 @router.post("/settlements")
@@ -364,17 +685,37 @@ def submit_settlement(
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
     try:
-        outcome = request.app.state.ai_ladder_repo.settle_game(
-            user_id=current_user.id,
-            game_id=body.game_id,
-            user_color=body.user_color,
-            result=body.result,
-            game_type=body.game_type,
-            opponent=opponent,
-            engine_stalled=body.engine_stalled,
+        lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(
+            user_id=current_user.id, game_id=body.game_id
         )
+        if isinstance(lifecycle, AiLadderBlockingGame):
+            receipt = request.app.state.ai_ladder_repo.finalize_reserved_game(
+                user_id=current_user.id,
+                game_id=body.game_id,
+                terminal_source="played_result",
+                result=body.result,
+                deciding_device_id=_device_id(request),
+                reservation_key=body.reservation_key,
+                game_record=body.game_record.model_dump() if body.game_record is not None else None,
+                engine_stalled=body.engine_stalled,
+            )
+            outcome = receipt
+        elif isinstance(lifecycle, AiLadderLifecycleReceipt):
+            outcome = lifecycle
+            receipt = lifecycle
+        else:
+            receipt = None
+            outcome = request.app.state.ai_ladder_repo.settle_game(
+                user_id=current_user.id,
+                game_id=body.game_id,
+                user_color=body.user_color,
+                result=body.result,
+                game_type=body.game_type,
+                opponent=opponent,
+                engine_stalled=body.engine_stalled,
+            )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise _lifecycle_error(exc) from exc
 
     logging.getLogger("katrain_web").info(
         "ai-ladder settlement from device %s: game=%s counted=%s reason=%s",
@@ -383,7 +724,7 @@ def submit_settlement(
         outcome.counted,
         outcome.reason,
     )
-    return {
+    response = {
         "game_id": body.game_id,
         "counted": outcome.counted,
         "replayed": outcome.replayed,
@@ -398,6 +739,9 @@ def submit_settlement(
             "net_score": outcome.net_score,
         },
     }
+    if receipt is not None:
+        response["lifecycle"] = _lifecycle_payload(receipt)
+    return response
 
 
 @router.get("/settlements/{game_id}")
@@ -407,6 +751,9 @@ def get_settlement_receipt(
     current_user: User = Depends(get_current_user),
 ):
     _require_authority(request)
+    lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    if isinstance(lifecycle, AiLadderBlockingGame):
+        return {"state": "pending"}
     receipt = request.app.state.ai_ladder_repo.get_settlement_receipt(
         user_id=current_user.id,
         game_id=game_id,

@@ -151,7 +151,11 @@ class FakeKaTrain:
         return dict(self._state)
 
     def get_sgf(self):
-        return "(;FF[4]SZ[19];B[pd])"
+        result = self._state.get("end_result") or "Void"
+        return (
+            f"(;FF[4]GM[1]SZ[19]RU[chinese]KM[7.5]PB[{self.players_info['B'].name}]"
+            f"PW[{self.players_info['W'].name}]RE[{result}];B[pd])"
+        )
 
 
 @pytest.fixture
@@ -271,6 +275,7 @@ async def test_status_projects_uncreated_profile_and_server_selected_midpoint(ap
         "recent_ranked_results": [],
         "net_score": 0,
         "pending_settlement": False,
+        "blocking_game": None,
         "provisional_play_allowed": False,
     }
 
@@ -306,20 +311,23 @@ async def test_status_explains_when_the_current_opponent_will_not_count(api_app,
 
 @pytest.mark.asyncio
 async def test_game_scoped_settlement_receipt_moves_from_pending_to_settled(api_app, client):
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "receipt-device"}
     async with client as ac:
-        started = await start_ranked(api_app, ac)
-        game_id = started.json()["game_id"]
+        reserved = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload()
+        )
+        game_id = reserved.json()["game_id"]
 
         pending = await ac.get(
-            f"/api/v1/ai-ladder/settlements/{game_id}", headers=api_app.state._test_headers
+            f"/api/v1/ai-ladder/settlements/{game_id}", headers=headers
         )
         settled_post = await ac.post(
-            "/api/v1/ai-ladder/settlements",
-            headers=api_app.state._test_headers,
-            json=settlement_payload(game_id=game_id),
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers=headers,
+            json={"reason": "user_resigned"},
         )
         settled = await ac.get(
-            f"/api/v1/ai-ladder/settlements/{game_id}", headers=api_app.state._test_headers
+            f"/api/v1/ai-ladder/settlements/{game_id}", headers=headers
         )
         missing = await ac.get(
             "/api/v1/ai-ladder/settlements/not-this-users-game", headers=api_app.state._test_headers
@@ -1565,8 +1573,11 @@ async def test_recovery_rejects_non_authoritative_user_game_using_pending_id(api
         api_app.state.session_manager._sessions.clear()
         status_response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
 
-    assert status_response.json()["pending_settlement"] is True
-    assert "authoritative ranked AI" in caplog.text
+    # The cloud reservation is authoritative across restarts. Status must not
+    # inspect an unrelated/incomplete local row and clear or settle that occupancy.
+    assert status_response.json()["pending_settlement"] is False
+    assert status_response.json()["blocking_game"]["game_id"] == game_id
+    assert status_response.json()["blocking_game"]["state"] == "active"
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.AiLadderGameLedger).count() == 0
         assert db.query(models_db.AiLadderProfile).count() == 0
@@ -1803,12 +1814,12 @@ async def test_settlement_failure_remains_pending_and_retries_same_saved_game(ap
         session.katrain.game.end_result = "B+R"
         session.katrain._state["end_result"] = "B+R"
 
-        original_settle = api_app.state.ai_ladder_repo.settle_game
+        original_settle = api_app.state.ai_ladder_repo.finalize_reserved_game
 
         def fail_once(**kwargs):
             raise RuntimeError("fixture settlement failure")
 
-        monkeypatch.setattr(api_app.state.ai_ladder_repo, "settle_game", fail_once)
+        monkeypatch.setattr(api_app.state.ai_ladder_repo, "finalize_reserved_game", fail_once)
         await record(session, api_app, user, "B+R")
 
         pending = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
@@ -1821,7 +1832,7 @@ async def test_settlement_failure_remains_pending_and_retries_same_saved_game(ap
         # Simulate a restart: discard the only session and restore the real repository
         # method. Recovery must use only the database snapshot + saved UserGame.
         api_app.state.session_manager._sessions.clear()
-        monkeypatch.setattr(api_app.state.ai_ladder_repo, "settle_game", original_settle)
+        monkeypatch.setattr(api_app.state.ai_ladder_repo, "finalize_reserved_game", original_settle)
         recovered = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
         assert recovered.json()["pending_settlement"] is False
 
@@ -1834,7 +1845,7 @@ async def test_settlement_failure_remains_pending_and_retries_same_saved_game(ap
 
 
 @pytest.mark.asyncio
-async def test_orphan_pending_without_saved_game_is_abandoned_after_restart(api_app, client):
+async def test_active_cloud_reservation_is_not_abandoned_after_restart(api_app, client):
     async with client as ac:
         await start_ranked(api_app, ac)
         api_app.state.session_manager._sessions.clear()
@@ -1842,7 +1853,8 @@ async def test_orphan_pending_without_saved_game_is_abandoned_after_restart(api_
         restarted = await start_ranked(api_app, ac)
 
     assert status_response.json()["pending_settlement"] is False
-    assert restarted.status_code == 201
+    assert status_response.json()["blocking_game"]["state"] == "active"
+    assert restarted.status_code == 409
     with api_app.state._test_session_factory() as db:
         assert db.execute(text("SELECT COUNT(*) FROM ai_ladder_pending_games")).scalar_one() == 1
 
@@ -1855,7 +1867,8 @@ async def test_pending_is_not_abandoned_while_its_session_is_still_being_configu
         session.user_id = None
         status_response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
 
-    assert status_response.json()["pending_settlement"] is True
+    assert status_response.json()["pending_settlement"] is False
+    assert status_response.json()["blocking_game"]["state"] == "active"
     with api_app.state._test_session_factory() as db:
         assert db.execute(text("SELECT COUNT(*) FROM ai_ladder_pending_games")).scalar_one() == 1
 
@@ -1869,10 +1882,10 @@ async def test_conflicting_retry_after_saved_result_is_rejected_without_settleme
         user = SimpleNamespace(id=api_app.state._test_user_id, username="ladder-user")
         session.katrain.game.end_result = "B+R"
         session.katrain._state["end_result"] = "B+R"
-        original_settle = api_app.state.ai_ladder_repo.settle_game
+        original_settle = api_app.state.ai_ladder_repo.finalize_reserved_game
         monkeypatch.setattr(
             api_app.state.ai_ladder_repo,
-            "settle_game",
+            "finalize_reserved_game",
             lambda **kwargs: (_ for _ in ()).throw(RuntimeError("first settle fails")),
         )
         await record(session, api_app, user, "B+R")
@@ -1880,7 +1893,7 @@ async def test_conflicting_retry_after_saved_result_is_rejected_without_settleme
         session.katrain.game.end_result = "W+R"
         session.katrain._state["end_result"] = "W+R"
         session.katrain.get_sgf = lambda: "(;FF[4]SZ[19];W[dd])"
-        monkeypatch.setattr(api_app.state.ai_ladder_repo, "settle_game", original_settle)
+        monkeypatch.setattr(api_app.state.ai_ladder_repo, "finalize_reserved_game", original_settle)
         await record(session, api_app, user, "W+R")
 
     with api_app.state._test_session_factory() as db:
@@ -2009,6 +2022,255 @@ async def test_a_settlement_submission_needs_authentication(client):
     async with client as ac:
         response = await ac.post("/api/v1/ai-ladder/settlements", json=settlement_payload())
     assert response.status_code == 401
+
+
+def reservation_payload(**overrides):
+    return {
+        "game_id": "0123456789abcdef0123456789abcdef",
+        "color": "black",
+        "time_enabled": False,
+        "main_time": 0,
+        "byo_length": 30,
+        "byo_periods": 3,
+        **overrides,
+    }
+
+
+@pytest.mark.asyncio
+async def test_cloud_reservation_is_account_unique_and_status_hides_origin_secrets(api_app, client):
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "  board-a  "}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    async with client as ac:
+        reserved = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload()
+        )
+        replay = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload()
+        )
+        blocked = await ac.post(
+            "/api/v1/ai-ladder/games/reserve",
+            headers=other,
+            json=reservation_payload(game_id="fedcba9876543210fedcba9876543210"),
+        )
+        owner_status = await ac.get("/api/v1/ai-ladder/status", headers=origin)
+        other_status = await ac.get("/api/v1/ai-ladder/status", headers=other)
+
+    assert reserved.status_code == 201
+    assert set(reserved.json()) == {"game_id", "reservation_key", "blocking_game"}
+    assert reserved.json()["reservation_key"]
+    assert replay.status_code == 409
+    assert blocked.status_code == 409
+    assert blocked.json()["detail"]["blocking_game"]["ownership"] == "other_device"
+    assert owner_status.json()["blocking_game"] == {
+        "game_id": reservation_payload()["game_id"],
+        "state": "active",
+        "ownership": "current_device",
+        "user_color": "B",
+        "opponent_rank_name": "fixture-16",
+    }
+    assert other_status.json()["blocking_game"]["ownership"] == "other_device"
+    assert "session_id" not in other_status.json()["blocking_game"]
+    assert "reservation_key" not in str(other_status.json())
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).one().origin_device_id == "board-a"
+
+
+@pytest.mark.asyncio
+async def test_origin_can_activate_mark_pending_and_cancel_only_unactivated(api_app, client):
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    async with client as ac:
+        reserved = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload()
+        )
+        key = reserved.json()["reservation_key"]
+        activated = await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/activate",
+            headers=headers,
+            json={"reservation_key": key, "session_id": "local-session"},
+        )
+        pending = await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/pending-settlement",
+            headers=headers,
+            json={"reservation_key": key},
+        )
+        cancel = await ac.request(
+            "DELETE",
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/reservation",
+            headers=headers,
+            json={"reservation_key": key},
+        )
+        game_status = await ac.get(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/status", headers=headers
+        )
+
+    assert activated.status_code == 200
+    assert activated.json() == {"state": "active", "game_id": reservation_payload()["game_id"]}
+    assert pending.json() == {"state": "pending_settlement", "game_id": reservation_payload()["game_id"]}
+    assert cancel.status_code == 409
+    assert game_status.json() == {"state": "pending_settlement", "game_id": reservation_payload()["game_id"]}
+
+
+@pytest.mark.asyncio
+async def test_any_account_device_can_end_immediately_and_replay_same_receipt(api_app, client):
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    async with client as ac:
+        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        first = await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/end",
+            headers=other,
+            json={"reason": "user_resigned"},
+        )
+        second = await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/end",
+            headers=origin,
+            json={"reason": "user_resigned"},
+        )
+        status_response = await ac.get(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/status", headers=other
+        )
+
+    expected = {
+        "state": "settled",
+        "game_id": reservation_payload()["game_id"],
+        "receipt": {"counted": True, "reason": None},
+    }
+    assert first.status_code == 200
+    assert first.json() == expected
+    assert second.json() == expected
+    assert status_response.json() == expected
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        game = db.query(models_db.UserGame).one()
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (game.source, game.game_type, game.origin_device_id) == ("play_ai", "ai_ladder_ranked", "board-a")
+        assert (ledger.origin_device_id, ledger.deciding_device_id, ledger.terminal_source) == (
+            "board-a", "board-b", "remote_resign"
+        )
+        assert db.query(models_db.AiLadderProfile).one().placement_completed == 1
+
+
+@pytest.mark.asyncio
+async def test_game_lifecycle_is_private_and_requests_are_strict(api_app, client):
+    with api_app.state._test_session_factory() as db:
+        other_user = models_db.User(username="other-lifecycle-user", hashed_password="x", rank="20k")
+        db.add(other_user)
+        db.commit()
+    other_auth = {"Authorization": f"Bearer {create_access_token({'sub': 'other-lifecycle-user'})}", "X-StellaBox-Device-ID": "x"}
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    async with client as ac:
+        unauthenticated = await ac.post("/api/v1/ai-ladder/games/reserve", json=reservation_payload())
+        missing_device = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=api_app.state._test_headers, json=reservation_payload()
+        )
+        extra = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload(extra=True)
+        )
+        reserved = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload()
+        )
+        private = await ac.get(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/status", headers=other_auth
+        )
+        bad_end = await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/end",
+            headers=headers,
+            json={"reason": "abandon", "extra": True},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert missing_device.status_code == 422
+    assert extra.status_code == 422
+    assert reserved.status_code == 201
+    assert private.status_code == 404
+    assert bad_end.status_code == 422
+
+
+def lifecycle_game_record(*, result="B+R"):
+    return {
+        "sgf_content": f"(;GM[1]FF[4]SZ[19]RU[chinese]KM[7.5]PB[ladder-user]PW[fixture-16]RE[{result}])",
+        "result": result,
+        "board_size": 19,
+        "rules": "chinese",
+        "komi": 7.5,
+        "move_count": 0,
+        "player_black": "ladder-user",
+        "player_white": "fixture-16",
+        "source": "play_ai",
+        "category": "game",
+        "game_type": "ai_ladder_ranked",
+    }
+
+
+@pytest.mark.asyncio
+async def test_origin_settlement_finalizes_reserved_game_and_end_replays_first_terminal_decision(api_app, client):
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    async with client as ac:
+        reserved = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload()
+        )
+        key = reserved.json()["reservation_key"]
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/activate",
+            headers=headers,
+            json={"reservation_key": key, "session_id": "board-session"},
+        )
+        settled = await ac.post(
+            "/api/v1/ai-ladder/settlements",
+            headers=headers,
+            json=settlement_payload(
+                game_id=reservation_payload()["game_id"],
+                result="win",
+                reservation_key=key,
+                game_record=lifecycle_game_record(),
+            ),
+        )
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/end",
+            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"},
+            json={"reason": "user_resigned"},
+        )
+
+    assert settled.status_code == 200
+    assert settled.json()["lifecycle"] == {
+        "state": "settled",
+        "game_id": reservation_payload()["game_id"],
+        "receipt": {"counted": True, "reason": None},
+    }
+    assert ended.json() == settled.json()["lifecycle"]
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (ledger.result, ledger.terminal_source, ledger.deciding_device_id) == ("win", "played_result", "board-a")
+        assert db.query(models_db.AiLadderProfile).one().placement_completed == 1
+
+
+@pytest.mark.asyncio
+async def test_direct_authoritative_start_reserves_and_activates_before_returning(api_app, client):
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-a"}
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        status_response = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+
+    assert started.status_code == 201
+    assert status_response.json()["blocking_game"] == {
+        "game_id": started.json()["game_id"],
+        "state": "active",
+        "ownership": "current_device",
+        "session_id": started.json()["session_id"],
+        "user_color": "B",
+        "opponent_rank_name": "fixture-16",
+    }
+    with api_app.state._test_session_factory() as db:
+        active = db.query(models_db.AiLadderActiveGame).one()
+        assert (active.state, active.origin_device_id, active.origin_session_id) == (
+            "active", "galaxy-a", started.json()["session_id"]
+        )
 
 
 class RecordingDispatcher:

@@ -1496,6 +1496,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if not getattr(app.state, "ai_ladder_authoritative", False):
                     raise RuntimeError("ranked AI settlement is unavailable on this node")
 
+                lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
+                    user_id=current_user.id, game_id=snapshot.game_id
+                )
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
+                    lifecycle, "origin_device_id"
+                ):
+                    data["origin_device_id"] = lifecycle.origin_device_id
+
                 # Deliberately NOT the repository dispatcher, on any node. Settlement only
                 # moves the rank after re-reading the row it just wrote, and the dispatcher
                 # may have sent that row to the cloud (online) or queued it (offline) --
@@ -1521,20 +1529,36 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     result=confirmed["result"],
                 )
 
-                app.state.ai_ladder_repo.settle_game(
-                    user_id=current_user.id,
-                    game_id=snapshot.game_id,
-                    user_color=snapshot.user_color,
-                    result=result_for_user(confirmed["result"], snapshot.user_color),
-                    game_type=game_type,
-                    opponent=snapshot.opponent,
-                    # The AI refused to move because the engine could not seat the rung
-                    # at its calibrated strength. The ledger still gets a row -- it just
-                    # says engine_unavailable instead of moving the rank. Cleared by the
-                    # next successful AI move, so a game that stalled and recovered
-                    # settles normally.
-                    engine_stalled=bool(getattr(session.katrain, "last_ladder_error", False)),
-                )
+                terminal_result = result_for_user(confirmed["result"], snapshot.user_color)
+                engine_stalled = bool(getattr(session.katrain, "last_ladder_error", False))
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
+                    lifecycle, "origin_device_id"
+                ):
+                    app.state.ai_ladder_repo.finalize_reserved_game(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        terminal_source="played_result",
+                        result=terminal_result,
+                        deciding_device_id=lifecycle.origin_device_id,
+                        reservation_key=pending.get("reservation_key"),
+                        game_record=data,
+                        engine_stalled=engine_stalled,
+                    )
+                else:
+                    app.state.ai_ladder_repo.settle_game(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        user_color=snapshot.user_color,
+                        result=terminal_result,
+                        game_type=game_type,
+                        opponent=snapshot.opponent,
+                        # The AI refused to move because the engine could not seat the rung
+                        # at its calibrated strength. The ledger still gets a row -- it just
+                        # says engine_unavailable instead of moving the rank. Cleared by the
+                        # next successful AI move, so a game that stalled and recovered
+                        # settles normally.
+                        engine_stalled=engine_stalled,
+                    )
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
                 _enqueue_ladder_settlement_sync(app, current_user, snapshot, confirmed["result"], session)
                 session.ai_ladder_settlement_pending = False
@@ -1552,6 +1576,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except Exception as e:
             if getattr(session, "game_type", None) == "ai_ladder_ranked":
                 session.ai_ladder_settlement_pending = True
+                try:
+                    snapshot = getattr(session, "ai_ladder_snapshot", None)
+                    pending = app.state.ai_ladder_repo.get_pending_game(session.user_id)
+                    lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
+                        user_id=session.user_id, game_id=snapshot.game_id
+                    )
+                    if (
+                        pending is not None
+                        and pending.get("game_saved")
+                        and getattr(lifecycle, "state", None) == "active"
+                    ):
+                        app.state.ai_ladder_repo.mark_pending_settlement(
+                            user_id=session.user_id,
+                            game_id=snapshot.game_id,
+                            reservation_key=pending.get("reservation_key"),
+                            origin_device_id=lifecycle.origin_device_id,
+                        )
+                except Exception:
+                    pass
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 
     async def _record_ai_game(session, app, current_user, result):

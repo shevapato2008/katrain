@@ -469,7 +469,7 @@ class AiLadderRankedRepository:
         finally:
             session.close()
 
-    def create_pending_game(self, snapshot) -> None:
+    def create_pending_game(self, snapshot, *, reservation_key: Optional[str] = None) -> None:
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
@@ -478,7 +478,7 @@ class AiLadderRankedRepository:
                     game_id=snapshot.game_id,
                     user_id=snapshot.user_id,
                     session_id=snapshot.session_id,
-                    reservation_key=getattr(snapshot, "reservation_key", None),
+                    reservation_key=reservation_key,
                     user_color=snapshot.user_color,
                     game_type=snapshot.game_type,
                     opponent_rung=snapshot.opponent.rung,

@@ -12,6 +12,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.exc import IntegrityError
 
+from katrain.core.sgf_parser import ParseError, SGF
 from katrain.web.core import models_db
 
 AI_LADDER_GAME_TYPE = "ai_ladder_ranked"
@@ -331,7 +332,15 @@ class AiLadderRankedRepository:
                     cancelled=False,
                     receipt=self._lifecycle_receipt(session, ledger, replayed=True),
                 )
-            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            row = self._lock_lifecycle_or_none(session, user_id=user_id, game_id=game_id)
+            if row is None:
+                ledger = self._find_ledger(session, user_id=user_id, game_id=game_id)
+                if ledger is not None:
+                    return AiLadderCancelResult(
+                        cancelled=False,
+                        receipt=self._lifecycle_receipt(session, ledger, replayed=True),
+                    )
+                raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
             ledger = self._find_ledger(session, user_id=user_id, game_id=game_id)
             if ledger is not None:
                 return AiLadderCancelResult(
@@ -624,6 +633,8 @@ class AiLadderRankedRepository:
             raise ValueError("invalid terminal_source")
         if result not in {"win", "loss", "inconclusive"}:
             raise ValueError("invalid result")
+        if terminal_source == "remote_resign" and result != "loss":
+            raise ValueError("remote_resign must record a user loss")
         if not isinstance(deciding_device_id, str) or not deciding_device_id.strip():
             raise ValueError("deciding_device_id must be non-empty")
         session = self.session_factory()
@@ -633,22 +644,23 @@ class AiLadderRankedRepository:
             if existing is not None:
                 return self._lifecycle_receipt(session, existing, replayed=True)
 
-            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            row = self._lock_lifecycle_or_none(session, user_id=user_id, game_id=game_id)
+            if row is None:
+                existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
+                if existing is not None:
+                    return self._lifecycle_receipt(session, existing, replayed=True)
+                raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
             existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
             if existing is not None:
                 return self._lifecycle_receipt(session, existing, replayed=True)
-            if terminal_source == "played_result":
+            if terminal_source in {"played_result", "recovery"}:
                 self._verify_origin(
                     row,
                     reservation_key=reservation_key,
                     origin_device_id=deciding_device_id,
                 )
-            elif terminal_source == "recovery" and reservation_key is not None:
-                self._verify_origin(
-                    row,
-                    reservation_key=reservation_key,
-                    origin_device_id=row.origin_device_id,
-                )
+                if row.state not in {"active", "pending_settlement"}:
+                    raise AiLadderLifecycleConflict("reservation must be activated before terminal submission")
 
             opponent = self._opponent_from_row(row)
             record = self._validated_game_record(
@@ -729,6 +741,17 @@ class AiLadderRankedRepository:
             )
             if existing is not None:
                 return self._replay_result(session, existing, user_id)
+
+            active = (
+                session.query(models_db.AiLadderActiveGame.game_id)
+                .filter(
+                    models_db.AiLadderActiveGame.user_id == user_id,
+                    models_db.AiLadderActiveGame.game_id == game_id,
+                )
+                .one_or_none()
+            )
+            if active is not None:
+                raise AiLadderLifecycleConflict("active ranked AI game must use the lifecycle finalizer")
 
             user = session.query(models_db.User).filter(models_db.User.id == user_id).with_for_update().one_or_none()
             if user is None:
@@ -904,8 +927,8 @@ class AiLadderRankedRepository:
         )
 
     @staticmethod
-    def _lock_lifecycle(session, *, user_id: int, game_id: str):
-        row = (
+    def _lock_lifecycle_or_none(session, *, user_id: int, game_id: str):
+        return (
             session.query(models_db.AiLadderActiveGame)
             .filter(
                 models_db.AiLadderActiveGame.user_id == user_id,
@@ -914,6 +937,10 @@ class AiLadderRankedRepository:
             .with_for_update()
             .one_or_none()
         )
+
+    @classmethod
+    def _lock_lifecycle(cls, session, *, user_id: int, game_id: str):
+        row = cls._lock_lifecycle_or_none(session, user_id=user_id, game_id=game_id)
         if row is None:
             raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
         return row
@@ -997,10 +1024,28 @@ class AiLadderRankedRepository:
             "move_count",
             "player_black",
             "player_white",
+            "source",
+            "category",
+            "game_type",
         }
         if not required.issubset(record) or not isinstance(record.get("sgf_content"), str) or not record["sgf_content"]:
             raise ValueError("game_record is incomplete")
         normalized = dict(record)
+        for name in ("player_black", "player_white", "result", "rules"):
+            if not isinstance(normalized.get(name), str) or not normalized[name].strip():
+                raise ValueError(f"game_record {name} must be non-empty")
+        if normalized.get("source") != "play_ai":
+            raise ValueError("game_record source must be play_ai")
+        if normalized.get("category") != "game":
+            raise ValueError("game_record category must be game")
+        if normalized.get("game_type") != AI_LADDER_GAME_TYPE:
+            raise ValueError(f"game_record game_type must be {AI_LADDER_GAME_TYPE}")
+        if type(normalized.get("board_size")) is not int or normalized["board_size"] != 19:
+            raise ValueError("game_record board_size must be 19")
+        if type(normalized.get("move_count")) is not int or normalized["move_count"] < 0:
+            raise ValueError("game_record move_count must be a non-negative integer")
+        if isinstance(normalized.get("komi"), bool) or not isinstance(normalized.get("komi"), (int, float)):
+            raise ValueError("game_record komi must be numeric")
         for name, frozen in {
             "board_size": rules.get("board_size", 19),
             "rules": rules.get("rules", "chinese"),
@@ -1012,6 +1057,21 @@ class AiLadderRankedRepository:
         winner = row.user_color if result == "win" else ("W" if row.user_color == "B" else "B")
         if result in {"win", "loss"} and (not isinstance(sgf_result, str) or not sgf_result.startswith(f"{winner}+")):
             raise ValueError("game_record result does not match user result")
+        try:
+            root = SGF.parse_sgf(normalized["sgf_content"])
+        except (ParseError, TypeError, ValueError, IndexError) as exc:
+            raise ValueError("game_record SGF is invalid") from exc
+        parsed = {
+            "board_size": root.get_property("SZ"),
+            "result": root.get_property("RE"),
+            "player_black": root.get_property("PB"),
+            "player_white": root.get_property("PW"),
+        }
+        if str(parsed["board_size"]) != "19":
+            raise ValueError("game_record SGF board_size does not match")
+        for name in ("result", "player_black", "player_white"):
+            if parsed[name] != normalized[name]:
+                raise ValueError(f"game_record SGF {name} does not match")
         return normalized
 
     @staticmethod

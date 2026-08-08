@@ -137,6 +137,9 @@ def complete_game_record(*, user_color="B", result="win"):
         "move_count": 0,
         "player_black": "User" if user_color == "B" else "AI",
         "player_white": "AI" if user_color == "B" else "User",
+        "source": "play_ai",
+        "category": "game",
+        "game_type": AI_LADDER_GAME_TYPE,
     }
 
 
@@ -334,6 +337,13 @@ def test_sqlite_concurrent_played_result_and_remote_resign_have_one_winner(tmp_p
         user_id = user.id
     repo = AiLadderRankedRepository(sessions)
     reservation = reserve(repo, user_id, replace(opponent, rung=16))
+    repo.activate_reservation(
+        user_id=user_id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
 
     def played():
         return repo.finalize_reserved_game(
@@ -421,6 +431,13 @@ def test_sqlite_cancel_and_remote_end_share_one_serialized_decision(tmp_path, op
 def test_mismatched_frozen_game_record_rolls_back_everything(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
     reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
     bad_record = complete_game_record()
     bad_record["komi"] = 6.5
 
@@ -439,6 +456,158 @@ def test_mismatched_frozen_game_record_rolls_back_everything(session_factory, us
         assert db.query(models_db.AiLadderActiveGame).count() == 1
         assert db.query(models_db.UserGame).count() == 0
         assert db.query(models_db.AiLadderGameLedger).count() == 0
+
+
+def test_legacy_settlement_cannot_bypass_an_account_reservation(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+
+    with pytest.raises(AiLadderLifecycleConflict):
+        settle(repo, user.id, reservation.game.game_id, "win", replace(opponent, rung=25))
+
+    with session_factory() as db:
+        active = db.get(models_db.AiLadderActiveGame, reservation.game.game_id)
+        assert active is not None and active.state == "reserved"
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+def test_remote_resign_can_only_record_a_user_loss(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+
+    with pytest.raises(ValueError, match="remote_resign"):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source="remote_resign",
+            result="win",
+            deciding_device_id="device-b",
+        )
+
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).count() == 1
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+@pytest.mark.parametrize("terminal_source", ["played_result", "recovery"])
+def test_origin_terminal_paths_require_active_state_and_secret(
+    session_factory, user, opponent, terminal_source
+):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+
+    with pytest.raises(AiLadderLifecycleConflict, match="activated"):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source=terminal_source,
+            result="win",
+            deciding_device_id="device-a",
+            reservation_key=reservation.reservation_key,
+            game_record=complete_game_record(),
+        )
+
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+    with pytest.raises(InvalidReservationKey):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source=terminal_source,
+            result="win",
+            deciding_device_id="device-a",
+            reservation_key=None,
+            game_record=complete_game_record(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("sgf_content", "not sgf", "SGF"),
+        ("player_black", "", "player_black"),
+        ("player_white", "   ", "player_white"),
+        ("move_count", -1, "move_count"),
+        ("move_count", 1.5, "move_count"),
+        ("komi", "7.5", "komi"),
+        ("source", "import", "source"),
+        ("category", "position", "category"),
+        ("game_type", "free", "game_type"),
+        ("rules", "", "rules"),
+    ],
+)
+def test_invalid_authoritative_game_record_rolls_back(
+    session_factory, user, opponent, field, value, message
+):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+    record = complete_game_record()
+    record[field] = value
+
+    with pytest.raises(ValueError, match=message):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source="played_result",
+            result="win",
+            deciding_device_id="device-a",
+            reservation_key=reservation.reservation_key,
+            game_record=record,
+        )
+
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).count() == 1
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+def test_finalizer_rechecks_ledger_when_locked_active_row_disappears(
+    session_factory, user, opponent, monkeypatch
+):
+    repo = AiLadderRankedRepository(session_factory)
+    ledger = models_db.AiLadderGameLedger(
+        game_id="lock-race",
+        user_id=user.id,
+        user_color="B",
+        result="loss",
+        game_type=AI_LADDER_GAME_TYPE,
+        counted=False,
+        reason="inconclusive",
+        origin_device_id="device-a",
+        deciding_device_id="device-b",
+        terminal_source="remote_resign",
+        decided_at=models_db.func.now(),
+    )
+    lookups = iter([None, ledger])
+    monkeypatch.setattr(repo, "_find_ledger", lambda *args, **kwargs: next(lookups))
+    monkeypatch.setattr(repo, "_lock_lifecycle_or_none", lambda *args, **kwargs: None)
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id="lock-race",
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-b",
+    )
+
+    assert (receipt.state, receipt.result, receipt.replayed) == ("settled", "loss", True)
 
 
 def test_pending_reservation_key_survives_repository_restart(tmp_path, opponent):

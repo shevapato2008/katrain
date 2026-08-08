@@ -53,6 +53,23 @@ describe('useAiLadderStatus', () => {
     }));
   });
 
+  // A 200 whose body is not a ready status used to be handed straight to the card, which
+  // read `placement_state.phase` off undefined and threw. There is no error boundary above
+  // it, so React unmounted the whole app: a blank screen where "failed to load" belongs.
+  it.each([
+    ['an empty body', {}],
+    ['a ready status with no placement_state', { view_state: 'ready', net_score: 0, recent_ranked_results: [], pending_settlement: false }],
+    ['a placed status with no rung', { view_state: 'ready', placement_state: { phase: 'placed' }, net_score: 0, recent_ranked_results: [], pending_settlement: false }],
+    ['null', null],
+  ])('treats %s as a load failure instead of passing it on', async (_label, body) => {
+    getStatus.mockResolvedValue(body);
+    const { result } = renderHook(() => useAiLadderStatus('token', true));
+    await waitFor(() => expect(result.current.status).toEqual({
+      view_state: 'error',
+      message: AI_LADDER_COPY.loadError,
+    }));
+  });
+
   it('does not call the ranked endpoint for free play', () => {
     renderHook(() => useAiLadderStatus('token', false));
     expect(getStatus).not.toHaveBeenCalled();

@@ -1,0 +1,22 @@
+{
+  "anchors": [
+    {
+      "rung": 36,
+      "golaxy_level_name": "星阵3星",
+      "games_played": 6,
+      "conclusive": 6,
+      "wins": 6,
+      "elo_vs_opponent": 445.5773409227349,
+      "elo_ci95": [
+        159.54405124451543,
+        445.5773409227349
+      ],
+      "golaxy_terminal_rate": 0.0,
+      "illegal_query_count": 0,
+      "reason_counts": {
+        "our_win": 6
+      }
+    }
+  ],
+  "wide_root_noise": 0.04
+}

@@ -32,6 +32,7 @@ from katrain.web.core.ai_ladder_ranked import (
     AiLadderLifecycleReceipt,
     AiLadderOpponentSnapshot,
     InvalidReservationKey,
+    expected_opponent_rung,
     initial_placement_window,
 )
 from katrain.web.models import User
@@ -373,7 +374,7 @@ def _status_payload(request: Request, current_user: User, *, device_id: Optional
     finally:
         db.close()
 
-    opponent_rung = rung if rung is not None else (lo + hi) // 2
+    opponent_rung = expected_opponent_rung(rung, lo, hi)
     opponent = catalog_entry(opponent_rung)
     current_opponent = dict(opponent)
     if opponent["certification_status"] == "certified" and opponent["availability"] == "available":

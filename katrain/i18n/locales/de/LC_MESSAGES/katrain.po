@@ -1809,7 +1809,7 @@ msgid "live:show_ai"
 msgstr "KI anzeigen"
 
 msgid "live:clear"
-msgstr "Löschen"
+msgstr "Leeren"
 
 msgid "live:ai_recommendations"
 msgstr "KI-Empfehlungen"
@@ -2941,3 +2941,203 @@ msgstr ""
 "Dein Gegner konnte nicht in seiner kalibrierten Stärke spielen, daher zählt "
 "diese Partie nicht — dein Rang bleibt unverändert und es wird keine "
 "Platzierungspartie verbraucht."
+
+msgid "ladder:title"
+msgstr "KI-Ranglistenpartien"
+
+msgid "ladder:setup_title"
+msgstr "KI-Leiter mit 41 Stufen"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "Einstufungsgegner: "
+
+msgid "ladder:game_opponent_prefix"
+msgstr "Gegner dieser Partie: "
+
+msgid "ladder:loading_status"
+msgstr "Ranglistenstatus wird geladen…"
+
+msgid "ladder:load_error"
+msgstr "Ranglistenstatus konnte nicht geladen werden"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr ""
+"Dieses Gerät wertet keine Ranglistenpartien, daher kann hier nicht gestartet"
+" werden"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "Sitzung abgelaufen — bitte erneut anmelden"
+
+msgid "ladder:retry"
+msgstr "Erneut versuchen"
+
+msgid "ladder:provisional_seating"
+msgstr ""
+"Diese Stufe ist noch nicht kalibriert — spielbar, aber diese Partie zählt "
+"nicht"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "Aktueller Gegner: "
+
+msgid "ladder:current_rank_prefix"
+msgstr "Aktueller Rang: "
+
+msgid "ladder:available"
+msgstr "Spielbar"
+
+msgid "ladder:unavailable_rung"
+msgstr "Diese Stufe ist noch nicht herausforderbar"
+
+msgid "ladder:unavailable_cta"
+msgstr "Noch nicht verfügbar"
+
+msgid "ladder:continue_placement_cta"
+msgstr "Einstufung fortsetzen"
+
+msgid "ladder:start_ranked_cta"
+msgstr "Ranglistenpartie starten"
+
+msgid "ladder:pending_settlement"
+msgstr "Ergebnis dieser Partie wird verrechnet"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Wird verrechnet…"
+
+msgid "ladder:recent_heading"
+msgstr "Letzte 5 Partien"
+
+msgid "ladder:recent_aria"
+msgstr "Ergebnisse der letzten 5 KI-Ranglistenpartien"
+
+msgid "ladder:recent_display_note"
+msgstr ""
+"Die letzten 5 Partien dienen nur der Übersicht; entscheidend sind allein die"
+" Nettopunkte"
+
+msgid "ladder:recent_empty"
+msgstr "Noch keine KI-Ranglistenpartien"
+
+msgid "ladder:net_score_prefix"
+msgstr "Nettopunkte: "
+
+msgid "ladder:net_score_aria"
+msgstr "Nettopunkte; negativ Richtung Abstieg, positiv Richtung Aufstieg"
+
+msgid "ladder:demotion_threshold"
+msgstr "Abstieg -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "Aufstieg +3"
+
+msgid "ladder:route_local"
+msgstr "Auf diesem Gerät"
+
+msgid "ladder:route_server"
+msgstr "Auf dem Server"
+
+msgid "ladder:cert_provisional"
+msgstr "Vorläufig"
+
+msgid "ladder:cert_certified"
+msgstr "Bestätigt"
+
+msgid "ladder:placement_progress_n"
+msgstr "Einstufung {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "Einstufungsfortschritt: {n} von {total} Partien gespielt"
+
+msgid "ladder:net_score_positive"
+msgstr "Nettopunkte +{n}, Richtung Aufstieg; bei +3 erfolgt der Aufstieg"
+
+msgid "ladder:net_score_negative"
+msgstr "Nettopunkte {n}, Richtung Abstieg; bei -3 erfolgt der Abstieg"
+
+msgid "ladder:net_score_zero"
+msgstr "Nettopunkte 0; +3 steigt auf, -3 steigt ab"
+
+msgid "ladder:outcome_label"
+msgstr "Partie {n}: {result}"
+
+msgid "ladder:settled_generic"
+msgstr "Ranglistenverrechnung abgeschlossen, Status aktualisiert"
+
+msgid "ladder:settled_placement_done"
+msgstr "Einstufung abgeschlossen: {rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "Einstufung läuft {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "Aufgestiegen: {rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "Abgestiegen: {rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "Rang unverändert; Nettopunkte: {score}"
+
+msgid "ladder:settled_pending"
+msgstr "Ranglistenverrechnung läuft noch"
+
+msgid "ladder:settled_unavailable"
+msgstr "Verrechnungsstatus derzeit nicht verfügbar"
+
+msgid "ok"
+msgstr "OK"
+
+msgid "accept"
+msgstr "Annehmen"
+
+msgid "reject"
+msgstr "Ablehnen"
+
+msgid "common:cancel"
+msgstr "Abbrechen"
+
+msgid "common:retry"
+msgstr "Erneut versuchen"
+
+msgid "Tutorials"
+msgstr "Tutorials"
+
+msgid "Stone Effect"
+msgstr "Steineffekt"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "Analyse abbrechen?"
+
+msgid "research:cancel_analysis_warning"
+msgstr "Die Analyse läuft noch. Abbrechen und verlassen?"
+
+msgid "research:continue_analysis"
+msgstr "Weiter analysieren"
+
+msgid "research:cancel_and_leave"
+msgstr "Abbrechen und verlassen"
+
+msgid "tsumego:loadError"
+msgstr ""
+"Die Tsumego-Bibliothek konnte nicht geladen werden. Bitte gleich erneut "
+"versuchen."
+
+msgid "tsumego:noData"
+msgstr "Noch keine Tsumego-Aufgaben."
+
+msgid "chat:title"
+msgstr "Chat"
+
+msgid "chat:placeholder"
+msgstr "Nachricht eingeben…"
+
+msgid "audio:play"
+msgstr "Abspielen"
+
+msgid "audio:pause"
+msgstr "Pause"
+
+msgid "audio:unavailable"
+msgstr "Audio nicht verfügbar"

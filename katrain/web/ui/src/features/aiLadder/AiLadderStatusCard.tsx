@@ -25,6 +25,7 @@ import {
   formatPlacementProgress,
   formatPlacementProgressLabel,
 } from './copy';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { AiLadderCatalogEntry, AiLadderRankedOutcome, AiLadderStatus } from './types';
 
 interface AiLadderStatusCardProps {
@@ -149,6 +150,10 @@ const CardFrame = ({ children, compact = false }: { children: React.ReactNode; c
 );
 
 const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry, compact = false }: AiLadderStatusCardProps) => {
+  // See AiLadderSetupOpponent: the copy getters read i18n at render, and this is what
+  // makes "render again" happen when the language changes.
+  useTranslation();
+
   if (status.view_state === 'loading') {
     return (
       <CardFrame compact={compact}>

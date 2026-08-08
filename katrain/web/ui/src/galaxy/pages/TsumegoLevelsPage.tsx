@@ -47,7 +47,7 @@ const TsumegoLevelsPage = () => {
     return (
       <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
         <Alert severity="error">
-          {t('tsumego:loadError', 'Failed to load tsumego data. Please run: python scripts/sync_tsumego_db.py')}
+          {t('tsumego:loadError', '死活题库加载失败，请稍后重试。')}
         </Alert>
       </Box>
     );
@@ -58,7 +58,7 @@ const TsumegoLevelsPage = () => {
       <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
         <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{t('Tsumego')}</Typography>
         <Alert severity="info">
-          {t('tsumego:noData', 'No tsumego problems available.')}
+          {t('tsumego:noData', '暂无死活题。')}
         </Alert>
       </Box>
     );

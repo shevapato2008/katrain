@@ -613,6 +613,7 @@ const AiSetupPage = () => {
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button onClick={() => navigate('/galaxy/play')}>{t('cancel', 'Cancel')}</Button>
                 <Button
+                    data-testid={isRated ? 'ranked-start-action' : undefined}
                     variant="contained"
                     size="large"
                     onClick={handleStartGame}

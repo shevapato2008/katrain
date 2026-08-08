@@ -112,3 +112,27 @@ export interface AiLadderReadyStatus {
 }
 
 export type AiLadderStatus = AiLadderLoadingStatus | AiLadderErrorStatus | AiLadderReadyStatus;
+
+/**
+ * The status endpoint's body is parsed JSON, not a typed value — an older server, a
+ * gateway that answers 200 with something else, or a partial payload all arrive here as
+ * `AiLadderReadyStatus` because that is what the cast says. Rendering one of those used to
+ * throw inside AiLadderStatusCard on `placement_state.phase`, and with no error boundary
+ * above it that unmounts the entire app: a blank screen instead of "failed to load".
+ * Anything that does not satisfy this guard is treated as a load failure.
+ */
+export const isAiLadderReadyStatus = (value: unknown): value is AiLadderReadyStatus => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<AiLadderReadyStatus>;
+  const placement = candidate.placement_state;
+  return candidate.view_state === 'ready'
+    && typeof candidate.net_score === 'number'
+    && Array.isArray(candidate.recent_ranked_results)
+    && typeof candidate.pending_settlement === 'boolean'
+    && !!placement && typeof placement === 'object'
+    && (placement.phase === 'placement'
+      ? typeof placement.completed_games === 'number' && placement.total_games === 5
+      : placement.phase === 'placed'
+        && typeof placement.rung?.rung === 'number'
+        && typeof placement.rung.rank_name === 'string');
+};

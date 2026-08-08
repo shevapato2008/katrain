@@ -231,6 +231,22 @@ def _local_ranked_session_matches(request: Request, current_user: User, pending:
     )
 
 
+def _mark_local_remote_ended(request: Request, current_user: User, game_id: str, lifecycle: dict) -> None:
+    pending = request.app.state.ai_ladder_repo.get_pending_game(current_user.id)
+    if pending is None or pending.get("game_id") != game_id:
+        return
+    if not _local_ranked_session_matches(request, current_user, pending, game_id):
+        return
+    session = request.app.state.session_manager._sessions.get(pending["session_id"])
+    if session is None:
+        return
+    session.ai_ladder_remote_ended = True
+    session.ai_ladder_remote_lifecycle = lifecycle
+    stop = getattr(getattr(session, "katrain", None), "stop_pondering", None)
+    if callable(stop):
+        stop()
+
+
 def _recover_pending(request: Request, user_id: int) -> None:
     if _is_board(request):
         repo = request.app.state.ai_ladder_repo
@@ -584,10 +600,13 @@ async def get_ranked_game_status(
 ):
     if _is_board(request):
         _require_bound_board_user(request, current_user)
-        return await _remote(
+        lifecycle = await _remote(
             lambda: request.app.state.remote_client.get_ai_ladder_game_status(game_id),
             "AI ladder game status",
         )
+        if isinstance(lifecycle, dict) and lifecycle.get("state") in {"pending_settlement", "settled"}:
+            _mark_local_remote_ended(request, current_user, game_id, lifecycle)
+        return lifecycle
     _require_authority(request)
     try:
         lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)

@@ -256,7 +256,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(sent).not.toHaveProperty('handicap');
     expect(mockCreateSession).not.toHaveBeenCalled();
     expect(mockNewGame).not.toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/ranked-s1?mode=rated');
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/ranked-s1?mode=rated&game_id=g1');
     expect(JSON.parse(sessionStorage.getItem('ai-ladder-before:ranked-s1')!)).toEqual(expect.objectContaining({
       game_id: 'g1',
     }));
@@ -277,7 +277,10 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     await user.click(await screen.findByRole('button', { name: '继续对局' }));
 
     expect(mockNavigate).toHaveBeenCalledOnce();
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/occupied-session?mode=rated');
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/occupied-session?mode=rated&game_id=occupied-game');
+    expect(JSON.parse(sessionStorage.getItem('ai-ladder-before:occupied-session')!)).toEqual(expect.objectContaining({
+      game_id: 'occupied-game',
+    }));
   });
 
   it.each([

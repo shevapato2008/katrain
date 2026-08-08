@@ -1,18 +1,29 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameState } from '../../api';
 import GamePage from './GamePage';
 
-const { getStatus } = vi.hoisted(() => ({ getStatus: vi.fn() }));
-vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: getStatus }));
+const mocks = vi.hoisted(() => ({
+  getStatus: vi.fn(), getGameStatus: vi.fn(), onMove: vi.fn(), handleAction: vi.fn(), gameState: null as GameState | null,
+}));
+vi.mock('../../features/aiLadder/api', () => ({
+  getAiLadderStatus: mocks.getStatus,
+  getAiLadderGameStatus: mocks.getGameStatus,
+}));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: undefined, user: { username: 'fan' } }) }));
 vi.mock('../../context/SettingsContext', () => ({ useSettings: () => ({}) }));
 vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_en: string, zh: string) => zh }) }));
 vi.mock('../context/GameNavigationContext', () => ({ useGameNavigation: () => ({ registerActiveGame: vi.fn(), unregisterActiveGame: vi.fn() }) }));
-vi.mock('../../components/Board', () => ({ default: () => <div>board</div> }));
+vi.mock('../../components/Board', () => ({ default: ({ onMove, gameState }: { onMove: (x: number, y: number) => void; gameState: GameState }) => (
+  <button disabled={Boolean(gameState.end_result)} onClick={() => onMove(3, 3)}>board</button>
+) }));
 vi.mock('../components/game/RightSidebarPanel', () => ({
-  default: ({ embedded }: { embedded?: boolean }) => <div data-testid="game-controls" data-embedded={String(Boolean(embedded))}>controls</div>,
+  default: ({ embedded, gameState, onAction }: { embedded?: boolean; gameState: GameState; onAction: (action: string) => void }) => (
+    <div data-testid="game-controls" data-embedded={String(Boolean(embedded))}>
+      <button disabled={Boolean(gameState.end_result)} onClick={() => onAction('pass')}>pass</button>
+    </div>
+  ),
 }));
 
 const rung = (value: number) => ({ rung: value, rank_name: `${value}级`, certification_status: 'certified' as const, availability: 'available' as const, route: 'server' as const });
@@ -30,27 +41,35 @@ const gameState = {
 } satisfies GameState;
 
 vi.mock('../../hooks/useGameSession', () => ({ useGameSession: () => ({
-  sessionId: 's1', setSessionId: vi.fn(), gameState, setGameState: vi.fn(), error: null, onMove: vi.fn(),
-  onNavigate: vi.fn(), handleAction: vi.fn(), initNewSession: vi.fn(), lastLog: null, chatMessages: [], sendChat: vi.fn(),
+  sessionId: 's1', setSessionId: vi.fn(), gameState: mocks.gameState, setGameState: vi.fn(), error: null, onMove: mocks.onMove,
+  onNavigate: vi.fn(), handleAction: mocks.handleAction, initNewSession: vi.fn(), lastLog: null, chatMessages: [], sendChat: vi.fn(),
 }) }));
 
 describe('Galaxy GamePage ranked settlement', () => {
-  beforeEach(() => { sessionStorage.clear(); getStatus.mockReset(); });
+  beforeEach(() => {
+    sessionStorage.clear();
+    mocks.getStatus.mockReset();
+    mocks.getGameStatus.mockReset();
+    mocks.onMove.mockReset();
+    mocks.handleAction.mockReset();
+    mocks.gameState = gameState;
+  });
+  afterEach(() => vi.useRealTimers());
 
   it('renders the authoritative feedback and supports cookie-only status refresh', async () => {
     sessionStorage.setItem('ai-ladder-before:s1', JSON.stringify({ identity: 'fan', status: status(18) }));
-    getStatus.mockResolvedValue(status(17));
+    mocks.getStatus.mockResolvedValue(status(17));
     render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     expect(await screen.findByText('降级：17级')).toBeInTheDocument();
     const rail = screen.getByTestId('board-rail-scroll');
     expect(rail).toHaveTextContent('本局已结算');
     expect(rail).toContainElement(screen.getByRole('button', { name: '再来一局' }));
     expect(rail).toContainElement(screen.getByRole('button', { name: '返回对局' }));
-    expect(getStatus).toHaveBeenCalledWith(undefined, expect.any(AbortSignal));
+    expect(mocks.getStatus).toHaveBeenCalledWith(undefined, expect.any(AbortSignal));
   });
 
   it('keeps the rated board clear and puts the named parent action in the right rail', () => {
-    getStatus.mockResolvedValue(status(18));
+    mocks.getStatus.mockResolvedValue(status(18));
     render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
 
     const stage = screen.getByTestId('board-stage');
@@ -60,5 +79,55 @@ describe('Galaxy GamePage ranked settlement', () => {
     expect(module).toHaveTextContent('升降级对弈');
     expect(module).toContainElement(screen.getByRole('button', { name: '返回升降级' }));
     expect(screen.getByTestId('game-controls')).toHaveAttribute('data-embedded', 'true');
+  });
+
+  it('polls an active ranked game every five seconds and stops at remote pending settlement', async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.gameState = { ...gameState, end_result: null };
+      mocks.getGameStatus
+        .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
+        .mockResolvedValueOnce({ state: 'pending_settlement', game_id: 'g1' });
+      render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(mocks.getGameStatus).toHaveBeenCalledTimes(1);
+      await act(async () => { vi.advanceTimersByTime(5000); await Promise.resolve(); await Promise.resolve(); });
+      expect(screen.getByText('本局已在其他设备结束，正在结算')).toBeInTheDocument();
+      await act(async () => { vi.advanceTimersByTime(10000); });
+      expect(mocks.getGameStatus).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('blocks board moves and rail actions after remote settlement without inventing a board result', async () => {
+    mocks.gameState = { ...gameState, end_result: null };
+    mocks.getGameStatus.mockResolvedValue({
+      state: 'settled', game_id: 'g1', receipt: { counted: true, reason: null },
+    });
+    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+
+    expect(await screen.findByText('本局已在其他设备结束，结算已完成')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'pass' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'board' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pass' }));
+    expect(mocks.onMove).not.toHaveBeenCalled();
+    expect(mocks.handleAction).not.toHaveBeenCalled();
+  });
+
+  it('checks authority immediately before a human move and keeps play alive on status errors', async () => {
+    mocks.gameState = { ...gameState, end_result: null };
+    mocks.getGameStatus
+      .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
+      .mockRejectedValueOnce(new Error('offline'));
+    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'board' }));
+    await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(2));
+    expect(mocks.onMove).not.toHaveBeenCalled();
+    expect(screen.getByText('暂时无法确认本局状态，请重试')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'board' })).not.toBeDisabled();
   });
 });

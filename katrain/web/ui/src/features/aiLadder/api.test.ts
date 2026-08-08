@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   AiLadderApiError,
   endAiLadderGame,
+  getAiLadderGameStatus,
   getAiLadderSettlementReceipt,
   getAiLadderStatus,
   startAiLadderGame,
@@ -10,6 +11,31 @@ import {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ai ladder API', () => {
+  it.each([
+    { state: 'active', game_id: 'game-1' },
+    { state: 'pending_settlement', game_id: 'game-1' },
+    { state: 'settled', game_id: 'game-1', receipt: { counted: true, reason: null } },
+  ])('loads a strict per-game lifecycle: %j', async (body) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getAiLadderGameStatus('game-1', 'galaxy-token')).resolves.toEqual(body);
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/ai-ladder/games/game-1/status', expect.objectContaining({
+      headers: { Authorization: 'Bearer galaxy-token' }, credentials: 'same-origin',
+    }));
+  });
+
+  it('rejects a malformed or failed per-game lifecycle response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ detail: 'Ranked game not found' }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } },
+    )));
+
+    await expect(getAiLadderGameStatus('missing')).rejects.toEqual(expect.objectContaining({
+      status: 404, message: 'Ranked game not found',
+    }));
+  });
+
   it('loads status with bearer authentication when a token exists', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ view_state: 'ready' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);

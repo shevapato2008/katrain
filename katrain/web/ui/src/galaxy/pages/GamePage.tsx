@@ -13,7 +13,9 @@ import { API } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
-import { useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import { getAiLadderGameStatus } from '../../features/aiLadder/api';
+import type { AiLadderGameLifecycle } from '../../features/aiLadder/types';
+import { peekAiLadderBefore, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import AiLadderSettlementPanel from '../components/aiLadder/AiLadderSettlementPanel';
@@ -32,6 +34,12 @@ const GamePage = () => {
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const routeIsRated = mode === 'rated';
+    const identity = String(user?.id ?? user?.username ?? 'anonymous');
+    const rankedGameId = searchParams.get('game_id')
+        || (sessionId ? peekAiLadderBefore(sessionId, identity)?.gameId : undefined);
+    const [remoteLifecycle, setRemoteLifecycle] = useState<AiLadderGameLifecycle | null>(null);
+    const [lifecycleError, setLifecycleError] = useState(false);
+    const [lifecycleRetry, setLifecycleRetry] = useState(0);
 
     // Dynamic Board3D import — loaded once, then cached
     const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
@@ -48,7 +56,42 @@ const GamePage = () => {
         handleAction
     } = useGameSession({ token: token || undefined });
     const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
-    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, String(user?.id ?? user?.username ?? 'anonymous'));
+    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, identity);
+
+    useEffect(() => {
+        if (!routeIsRated || !rankedGameId || gameState?.end_result) return;
+        const controller = new AbortController();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const poll = async () => {
+            try {
+                const lifecycle = await getAiLadderGameStatus(rankedGameId, token || undefined, controller.signal);
+                if (controller.signal.aborted) return;
+                setLifecycleError(false);
+                setRemoteLifecycle(lifecycle.state === 'active' ? null : lifecycle);
+                if (lifecycle.state === 'active') timer = setTimeout(() => { void poll(); }, 5000);
+            } catch {
+                if (!controller.signal.aborted) setLifecycleError(true);
+            }
+        };
+        void poll();
+        return () => {
+            controller.abort();
+            if (timer) clearTimeout(timer);
+        };
+    }, [gameState?.end_result, lifecycleRetry, rankedGameId, routeIsRated, token]);
+
+    const checkRankedStillActive = useCallback(async () => {
+        if (!isRated || !rankedGameId) return !isRated;
+        try {
+            const lifecycle = await getAiLadderGameStatus(rankedGameId, token || undefined);
+            setLifecycleError(false);
+            if (lifecycle.state === 'active') return true;
+            setRemoteLifecycle(lifecycle);
+        } catch {
+            setLifecycleError(true);
+        }
+        return false;
+    }, [isRated, rankedGameId, token]);
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -157,7 +200,7 @@ const GamePage = () => {
 
     // Register/unregister active game for sidebar navigation protection
     useEffect(() => {
-        if (gameState && !gameState.end_result) {
+        if (gameState && !gameState.end_result && !remoteLifecycle) {
             registerActiveGame(async () => {
                 await handleAction('resign');
             });
@@ -165,7 +208,7 @@ const GamePage = () => {
             unregisterActiveGame();
         }
         return () => unregisterActiveGame();
-    }, [gameState?.end_result, registerActiveGame, unregisterActiveGame, handleAction]);
+    }, [gameState?.end_result, remoteLifecycle, registerActiveGame, unregisterActiveGame, handleAction]);
 
     const handleToggleChange = (setting: string) => {
         if (setting === 'view3d') {
@@ -201,6 +244,13 @@ const GamePage = () => {
     };
 
     const handleActionWrapper = (action: string) => {
+        if (remoteLifecycle) return;
+        if (isRated && action === 'pass') {
+            void (async () => {
+                if (await checkRankedStillActive()) await handleAction(action);
+            })();
+            return;
+        }
         if (action === 'resign') {
             if (!gameState?.end_result) {
                 setShowResignConfirm(true);
@@ -266,8 +316,24 @@ const GamePage = () => {
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
+    const handleRankedMove = async (x: number, y: number) => {
+        if (remoteLifecycle || !(await checkRankedStillActive())) return;
+        onMove(x, y);
+    };
+    const controlsGameState = remoteLifecycle ? { ...gameState, end_result: 'REMOTE_ENDED' } : gameState;
+    const remoteFeedback = remoteLifecycle?.state === 'pending_settlement'
+        ? { kind: 'pending' as const, message: '本局已在其他设备结束，正在结算' }
+        : remoteLifecycle?.state === 'settled'
+            ? {
+                kind: remoteLifecycle.receipt.counted ? 'authoritative_complete' as const : 'not_counted' as const,
+                message: remoteLifecycle.receipt.counted
+                    ? '本局已在其他设备结束，结算已完成'
+                    : '本局已在其他设备结束，结算已完成（本局不计入升降级）',
+            }
+            : null;
+
     const board = (
-        <Box sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0 }}>
+        <Box sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0, pointerEvents: remoteLifecycle ? 'none' : 'auto' }}>
             <div style={{
                 display: (analysisToggles.view3d && Board3D) ? 'none' : 'flex',
                 width: '100%', height: '100%',
@@ -275,7 +341,7 @@ const GamePage = () => {
             }}>
                 <Board
                     gameState={gameState}
-                    onMove={onMove}
+                    onMove={isRated ? handleRankedMove : onMove}
                     analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                     playerColor={humanColor}
                 />
@@ -283,7 +349,7 @@ const GamePage = () => {
             {analysisToggles.view3d && Board3D && (
                 <Board3D
                     gameState={gameState}
-                    onMove={onMove}
+                    onMove={isRated ? handleRankedMove : onMove}
                     analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
                     playerColor={humanColor}
                 />
@@ -294,7 +360,7 @@ const GamePage = () => {
 
     const controls = (embedded = false) => (
         <RightSidebarPanel
-            gameState={gameState}
+            gameState={controlsGameState}
             analysisToggles={analysisToggles}
             onToggleChange={handleToggleChange}
             onNavigate={onNavigate}
@@ -320,6 +386,11 @@ const GamePage = () => {
                     </Alert>
                 )}
                 {resignError && <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>}
+                {lifecycleError && !remoteLifecycle && (
+                    <Alert severity="warning" action={<Button color="inherit" size="small" onClick={() => setLifecycleRetry((value) => value + 1)}>重试</Button>}>
+                        暂时无法确认本局状态，请重试
+                    </Alert>
+                )}
             </Box>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
@@ -389,9 +460,9 @@ const GamePage = () => {
                     )}
                     railBody={(
                         <>
-                            {gameState.end_result && (
+                            {(gameState.end_result || remoteFeedback) && (
                                 <AiLadderSettlementPanel
-                                    feedback={settlementFeedback ?? { kind: 'pending', message: '正在读取服务器结算结果' }}
+                                    feedback={remoteFeedback ?? settlementFeedback ?? { kind: 'pending', message: '正在读取服务器结算结果' }}
                                     onPlayAgain={() => navigate('/galaxy/play/ai?mode=rated')}
                                     onReturn={() => navigate('/galaxy/play')}
                                 />

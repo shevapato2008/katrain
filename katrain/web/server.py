@@ -53,6 +53,51 @@ def _json_safe(obj):
     return obj
 
 
+def _mark_ai_ladder_remote_ended(session, lifecycle) -> None:
+    session.ai_ladder_remote_ended = True
+    session.ai_ladder_remote_lifecycle = lifecycle
+    stop = getattr(getattr(session, "katrain", None), "stop_pondering", None)
+    if callable(stop):
+        stop()
+
+
+async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> None:
+    """Fail closed before a ranked board mutation when another device ended it."""
+    if not is_ai_ladder_ranked_session(session):
+        return
+    snapshot = guard_ai_ladder_ranked_owner(session, current_user, "ranked lifecycle")
+    if getattr(session, "ai_ladder_remote_ended", False):
+        raise HTTPException(status_code=409, detail="Ranked game has ended on another device")
+    local_state = session.katrain.get_state()
+    if getattr(session, "_recorded", False) or (isinstance(local_state, dict) and local_state.get("end_result")):
+        # A normal terminal on this origin device keeps the existing SGF/export flow.
+        return
+    try:
+        if getattr(app.state, "remote_client", None) and getattr(app.state, "repository_dispatcher", None):
+            if str(getattr(app.state.remote_client, "bound_user_id", "")) != str(current_user.id):
+                raise HTTPException(status_code=401, detail="Cloud session does not match local user")
+            lifecycle = await app.state.remote_client.get_ai_ladder_game_status(snapshot.game_id)
+            if not isinstance(lifecycle, dict) or lifecycle.get("game_id") != snapshot.game_id:
+                raise RuntimeError("Invalid ranked lifecycle response")
+            lifecycle_state = lifecycle.get("state")
+        else:
+            lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
+                user_id=current_user.id, game_id=snapshot.game_id
+            )
+            lifecycle_state = getattr(lifecycle, "state", "settled")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.getLogger("katrain_web").warning("Could not verify ranked lifecycle: %s", exc)
+        raise HTTPException(status_code=503, detail="Ranked game status is temporarily unavailable") from exc
+    if lifecycle_state == "active":
+        return
+    if lifecycle_state not in {"pending_settlement", "settled"}:
+        raise HTTPException(status_code=503, detail="Ranked game status is temporarily unavailable")
+    _mark_ai_ladder_remote_ended(session, lifecycle)
+    raise HTTPException(status_code=409, detail="Ranked game has ended on another device")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log = logging.getLogger("katrain_web")
@@ -737,6 +782,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
         tracks_auto_analysis = not is_ai_ladder_ranked_session(session) and bool(
             getattr(session.katrain, "analysis_allowed", True)
         )
@@ -829,10 +875,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.get("/api/sgf/save")
-    def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
+    async def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, session_id)
         if is_ai_ladder_ranked_session(session):
             guard_ai_ladder_ranked_owner(session, current_user, "save-sgf")
+            await _guard_ai_ladder_cloud_active(app, session, current_user)
             if not getattr(session, "_recorded", False) or getattr(session, "ai_ladder_settlement_pending", False):
                 raise HTTPException(status_code=403, detail="SGF is unavailable until ranked settlement completes")
         with session.lock:

@@ -2,7 +2,7 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-li
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAiLadderSettlementReceipt, getAiLadderStatus } from './api';
-import { AiLadderSettlementAlert, deriveSettlementFeedback, pollAiLadderSettlement, saveAiLadderBefore, useAiLadderSettlement } from './settlement';
+import { AiLadderSettlementAlert, deriveSettlementFeedback, peekAiLadderBefore, pollAiLadderSettlement, saveAiLadderBefore, useAiLadderSettlement } from './settlement';
 
 vi.mock('./api', () => ({ getAiLadderStatus: vi.fn(), getAiLadderSettlementReceipt: vi.fn() }));
 
@@ -13,6 +13,11 @@ const noWait = async () => {};
 
 describe('AI ladder settlement feedback', () => {
   beforeEach(() => { sessionStorage.clear(); vi.clearAllMocks(); });
+  it('peeks the authoritative game id without consuming the settlement snapshot', () => {
+    saveAiLadderBefore('s1', placed(18), 'fan', 'game-1');
+    expect(peekAiLadderBefore('s1', 'fan')?.gameId).toBe('game-1');
+    expect(peekAiLadderBefore('s1', 'fan')?.gameId).toBe('game-1');
+  });
   it('distinguishes placement completion, promotion, demotion and score-only change', () => {
     expect(deriveSettlementFeedback(placement(4), placed(18)).kind).toBe('placement_complete');
     expect(deriveSettlementFeedback(placed(18, 2), placed(19, 0)).kind).toBe('promotion');

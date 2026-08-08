@@ -2371,6 +2371,29 @@ async def test_remote_end_first_makes_late_direct_record_a_noop(api_app, client)
         assert db.query(models_db.AiLadderPendingGame).count() == 0
 
 
+@pytest.mark.asyncio
+async def test_cloud_authority_blocks_origin_move_after_another_device_ends_game(api_app, client):
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        session = api_app.state._test_created_sessions[0]
+        history_before = list(session.katrain._state["history"])
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{started.json()['game_id']}/end",
+            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-b"},
+            json={"reason": "user_resigned"},
+        )
+        moved = await ac.post(
+            "/api/move", headers=api_app.state._test_headers,
+            json={"session_id": session.session_id, "coords": [3, 3]},
+        )
+
+    assert moved.status_code == 409
+    assert session.katrain._state["history"] == history_before
+
+
 class RecordingDispatcher:
     """Stand-in for board mode's online/offline repository dispatcher."""
 
@@ -2786,6 +2809,110 @@ async def test_board_end_and_game_status_are_cloud_proxies(api_app, client):
 
     assert lifecycle.json() == remote.get_ai_ladder_game_status.return_value
     assert ended.json() == remote.end_ai_ladder_game.return_value
+
+
+@pytest.mark.asyncio
+async def test_board_game_status_proxy_stops_the_matching_local_session_after_remote_end(api_app, client):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+        session = api_app.state._test_created_sessions[0]
+        session.katrain.stop_pondering = MagicMock()
+        remote.get_ai_ladder_game_status.return_value = {
+            "state": "pending_settlement", "game_id": game_id,
+        }
+        response = await ac.get(
+            f"/api/v1/ai-ladder/games/{game_id}/status", headers=api_app.state._test_headers,
+        )
+
+    assert response.status_code == 200
+    assert session.ai_ladder_remote_ended is True
+    session.katrain.stop_pondering.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("state", ["pending_settlement", "settled"])
+async def test_board_remote_terminal_blocks_move_and_save_before_local_mutation(api_app, client, state):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+        lifecycle = {"state": state, "game_id": game_id}
+        if state == "settled":
+            lifecycle["receipt"] = {"counted": True, "reason": None}
+        remote.get_ai_ladder_game_status.return_value = lifecycle
+        session = api_app.state._test_created_sessions[0]
+        session.katrain.stop_pondering = MagicMock()
+        history_before = list(session.katrain._state["history"])
+        moved = await ac.post(
+            "/api/move", headers=api_app.state._test_headers,
+            json={"session_id": session.session_id, "coords": [3, 3]},
+        )
+        session._recorded = True
+        session.ai_ladder_settlement_pending = False
+        saved = await ac.get(
+            "/api/sgf/save", headers=api_app.state._test_headers,
+            params={"session_id": session.session_id},
+        )
+
+    assert (moved.status_code, saved.status_code) == (409, 409)
+    assert session.katrain._state["history"] == history_before
+    assert session.ai_ladder_remote_ended is True
+    session.katrain.stop_pondering.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_board_remote_active_allows_move_and_save(api_app, client):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+        remote.get_ai_ladder_game_status.return_value = {"state": "active", "game_id": game_id}
+        session = api_app.state._test_created_sessions[0]
+        history_before = len(session.katrain._state["history"])
+        moved = await ac.post(
+            "/api/move", headers=api_app.state._test_headers,
+            json={"session_id": session.session_id, "coords": [3, 3]},
+        )
+        session._recorded = True
+        session.ai_ladder_settlement_pending = False
+        saved = await ac.get(
+            "/api/sgf/save", headers=api_app.state._test_headers,
+            params={"session_id": session.session_id},
+        )
+
+    assert (moved.status_code, saved.status_code) == (200, 200)
+    assert len(session.katrain._state["history"]) == history_before + 1
+
+
+@pytest.mark.asyncio
+async def test_board_remote_lifecycle_error_returns_503_without_mutating_move(api_app, client):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        session = api_app.state._test_created_sessions[0]
+        history_before = list(session.katrain._state["history"])
+        remote.get_ai_ladder_game_status.side_effect = RuntimeError("cloud offline")
+        moved = await ac.post(
+            "/api/move", headers=api_app.state._test_headers,
+            json={"session_id": session.session_id, "coords": [3, 3]},
+        )
+
+    assert moved.status_code == 503
+    assert session.katrain._state["history"] == history_before
 
 
 @pytest.mark.asyncio

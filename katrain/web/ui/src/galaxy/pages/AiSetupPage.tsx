@@ -207,7 +207,7 @@ const AiSetupPage = () => {
                     String(user?.id ?? user?.username ?? 'anonymous'),
                     session.game_id,
                 );
-                navigate(`/galaxy/play/game/${session.session_id}?mode=rated`);
+                navigate(`/galaxy/play/game/${session.session_id}?mode=rated&game_id=${encodeURIComponent(session.game_id)}`);
                 return;
             }
             const session = await API.createSession(token || undefined);
@@ -405,7 +405,17 @@ const AiSetupPage = () => {
                             onColorChange={setColor}
                             onRetry={handleLifecycleRetry}
                             onStart={handleStartGame}
-                            onContinue={(sessionId) => navigate(`/galaxy/play/game/${sessionId}?mode=rated`)}
+                            onContinue={(sessionId) => {
+                                if (aiLadderStatus.view_state !== 'ready' || !aiLadderStatus.blocking_game) return;
+                                const gameId = aiLadderStatus.blocking_game.game_id;
+                                saveAiLadderBefore(
+                                    sessionId,
+                                    aiLadderStatus,
+                                    String(user?.id ?? user?.username ?? 'anonymous'),
+                                    gameId,
+                                );
+                                navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
+                            }}
                             onEndGame={handleEndGame}
                         />
                     </Box>

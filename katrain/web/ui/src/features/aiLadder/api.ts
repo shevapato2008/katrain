@@ -65,17 +65,27 @@ const parseResponse = async <T,>(response: Response): Promise<T> => {
 const parseGameLifecycleResponse = async (
   response: Response,
   gameId: string,
+  allowActive = false,
 ): Promise<AiLadderGameLifecycle> => {
   if (response.ok || response.status === 409) {
     try {
       const lifecycle: unknown = await response.clone().json();
-      if (isGameLifecycle(lifecycle, gameId) && lifecycle.state !== 'active') return lifecycle;
+      if (isGameLifecycle(lifecycle, gameId) && (allowActive || lifecycle.state !== 'active')) return lifecycle;
     } catch {
       // Invalid lifecycle responses use the same API error mapping as other failures.
     }
   }
   throw await createApiError(response);
 };
+
+export const getAiLadderGameStatus = async (
+  gameId: string,
+  token?: string,
+  signal?: AbortSignal,
+): Promise<AiLadderGameLifecycle> => parseGameLifecycleResponse(await fetch(
+  `/api/v1/ai-ladder/games/${encodeURIComponent(gameId)}/status`,
+  { headers: authHeaders(token), credentials: 'same-origin', signal },
+), gameId, true);
 
 export const getAiLadderStatus = async (token?: string, signal?: AbortSignal): Promise<AiLadderReadyStatus> =>
   parseResponse(await fetch('/api/v1/ai-ladder/status', {

@@ -26,15 +26,21 @@ export const saveAiLadderBefore = (sessionId: string, status: AiLadderReadyStatu
   if (!sessionId || !identity || !isReadyStatus(status)) return;
   try { sessionStorage.setItem(keyFor(sessionId), JSON.stringify({ identity, status, game_id: gameId })); } catch { /* storage unavailable */ }
 };
-const takeAiLadderBefore = (sessionId: string, identity: string): StoredSettlementStart | null => {
+export const peekAiLadderBefore = (sessionId: string, identity: string): StoredSettlementStart | null => {
   try {
     const value = sessionStorage.getItem(keyFor(sessionId));
-    sessionStorage.removeItem(keyFor(sessionId));
     if (!value) return null;
     const parsed = JSON.parse(value) as { identity?: unknown; status?: unknown; game_id?: unknown };
     return parsed.identity === identity && isReadyStatus(parsed.status)
       ? { status: parsed.status, gameId: typeof parsed.game_id === 'string' ? parsed.game_id : undefined }
       : null;
+  } catch { return null; }
+};
+const takeAiLadderBefore = (sessionId: string, identity: string): StoredSettlementStart | null => {
+  try {
+    const stored = peekAiLadderBefore(sessionId, identity);
+    sessionStorage.removeItem(keyFor(sessionId));
+    return stored;
   } catch { return null; }
 };
 const clearAiLadderBefore = (sessionId: string) => { try { sessionStorage.removeItem(keyFor(sessionId)); } catch { /* noop */ } };

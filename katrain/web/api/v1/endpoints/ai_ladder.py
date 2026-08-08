@@ -754,7 +754,10 @@ def get_settlement_receipt(
     current_user: User = Depends(get_current_user),
 ):
     _require_authority(request)
-    lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    try:
+        lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranked game not found") from exc
     if isinstance(lifecycle, AiLadderBlockingGame):
         return {"state": "pending"}
     receipt = request.app.state.ai_ladder_repo.get_settlement_receipt(

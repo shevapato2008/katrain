@@ -347,6 +347,29 @@ async def test_game_scoped_settlement_receipt_moves_from_pending_to_settled(api_
 
 
 @pytest.mark.asyncio
+async def test_settled_receipt_is_hidden_from_other_accounts(api_app, client):
+    with api_app.state._test_session_factory() as db:
+        db.add(models_db.User(username="receipt-attacker", hashed_password="x", rank="20k"))
+        db.commit()
+    owner = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "owner-board"}
+    attacker = {"Authorization": f"Bearer {create_access_token({'sub': 'receipt-attacker'})}"}
+    async with client as ac:
+        reserved = await ac.post(
+            "/api/v1/ai-ladder/games/reserve", headers=owner, json=reservation_payload()
+        )
+        game_id = reserved.json()["game_id"]
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers=owner,
+            json={"reason": "user_resigned"},
+        )
+        response = await ac.get(f"/api/v1/ai-ladder/settlements/{game_id}", headers=attacker)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Ranked game not found"}
+
+
+@pytest.mark.asyncio
 async def test_status_projects_placed_profile_net_score_and_only_five_counted_results(api_app, client):
     from katrain.web.core.ai_ladder_catalog import build_opponent_snapshot
 

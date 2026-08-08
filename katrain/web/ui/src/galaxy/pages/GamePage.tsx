@@ -40,6 +40,9 @@ const GamePage = () => {
     const [remoteLifecycle, setRemoteLifecycle] = useState<AiLadderGameLifecycle | null>(null);
     const [lifecycleError, setLifecycleError] = useState(false);
     const [lifecycleRetry, setLifecycleRetry] = useState(0);
+    const lifecycleRef = useRef<AiLadderGameLifecycle | null>(null);
+    const lifecycleRequestRef = useRef<{ gameId: string; promise: Promise<AiLadderGameLifecycle> } | null>(null);
+    const lifecycleGenerationRef = useRef(0);
 
     // Dynamic Board3D import — loaded once, then cached
     const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
@@ -59,18 +62,56 @@ const GamePage = () => {
     const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, identity);
 
     useEffect(() => {
+        lifecycleGenerationRef.current += 1;
+        lifecycleRef.current = null;
+        lifecycleRequestRef.current = null;
+        setRemoteLifecycle(null);
+        setLifecycleError(false);
+    }, [rankedGameId]);
+
+    const applyLifecycle = useCallback((incoming: AiLadderGameLifecycle) => {
+        if (!rankedGameId || incoming.game_id !== rankedGameId) return lifecycleRef.current ?? incoming;
+        const rank = (value: AiLadderGameLifecycle) => value.state === 'active' ? 0 : value.state === 'pending_settlement' ? 1 : 2;
+        const current = lifecycleRef.current;
+        const applied = current && current.game_id === incoming.game_id && rank(current) > rank(incoming)
+            ? current
+            : incoming;
+        lifecycleRef.current = applied;
+        setRemoteLifecycle(applied.state === 'active' ? null : applied);
+        return applied;
+    }, [rankedGameId]);
+
+    const requestLifecycle = useCallback((signal?: AbortSignal) => {
+        if (!rankedGameId) return Promise.reject(new Error('Ranked game id is unavailable'));
+        const existing = lifecycleRequestRef.current;
+        if (existing?.gameId === rankedGameId) return existing.promise;
+        const generation = lifecycleGenerationRef.current;
+        let promise: Promise<AiLadderGameLifecycle>;
+        promise = getAiLadderGameStatus(rankedGameId, token || undefined, signal).then((incoming) => {
+            if (generation !== lifecycleGenerationRef.current) return lifecycleRef.current ?? incoming;
+            return applyLifecycle(incoming);
+        }).finally(() => {
+            if (lifecycleRequestRef.current?.promise === promise) lifecycleRequestRef.current = null;
+        });
+        lifecycleRequestRef.current = { gameId: rankedGameId, promise };
+        return promise;
+    }, [applyLifecycle, rankedGameId, token]);
+
+    useEffect(() => {
         if (!routeIsRated || !rankedGameId || gameState?.end_result) return;
         const controller = new AbortController();
         let timer: ReturnType<typeof setTimeout> | undefined;
         const poll = async () => {
             try {
-                const lifecycle = await getAiLadderGameStatus(rankedGameId, token || undefined, controller.signal);
+                const lifecycle = await requestLifecycle(controller.signal);
                 if (controller.signal.aborted) return;
                 setLifecycleError(false);
-                setRemoteLifecycle(lifecycle.state === 'active' ? null : lifecycle);
-                if (lifecycle.state === 'active') timer = setTimeout(() => { void poll(); }, 5000);
+                if (lifecycle.state !== 'settled') timer = setTimeout(() => { void poll(); }, 5000);
             } catch {
-                if (!controller.signal.aborted) setLifecycleError(true);
+                if (!controller.signal.aborted) {
+                    setLifecycleError(true);
+                    timer = setTimeout(() => { void poll(); }, 5000);
+                }
             }
         };
         void poll();
@@ -78,20 +119,20 @@ const GamePage = () => {
             controller.abort();
             if (timer) clearTimeout(timer);
         };
-    }, [gameState?.end_result, lifecycleRetry, rankedGameId, routeIsRated, token]);
+    }, [gameState?.end_result, lifecycleRetry, rankedGameId, requestLifecycle, routeIsRated]);
 
     const checkRankedStillActive = useCallback(async () => {
         if (!isRated || !rankedGameId) return !isRated;
+        if (lifecycleRef.current && lifecycleRef.current.state !== 'active') return false;
         try {
-            const lifecycle = await getAiLadderGameStatus(rankedGameId, token || undefined);
+            const lifecycle = await requestLifecycle();
             setLifecycleError(false);
             if (lifecycle.state === 'active') return true;
-            setRemoteLifecycle(lifecycle);
         } catch {
             setLifecycleError(true);
         }
         return false;
-    }, [isRated, rankedGameId, token]);
+    }, [isRated, rankedGameId, requestLifecycle]);
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -267,6 +308,7 @@ const GamePage = () => {
     const confirmCount = async () => {
         setShowCountConfirm(false);
         if (!sessionId) return;
+        if (isRated && !(await checkRankedStillActive())) return;
         try {
             const response = await API.requestCount(sessionId, token || undefined);
             if (response.result) {
@@ -283,6 +325,10 @@ const GamePage = () => {
 
     const confirmResign = async () => {
         try {
+            if (isRated && !(await checkRankedStillActive())) {
+                setShowResignConfirm(false);
+                return;
+            }
             await handleAction('resign');
             setShowResignConfirm(false);
         } catch (error) {
@@ -300,6 +346,10 @@ const GamePage = () => {
 
     const handleConfirmLeave = async () => {
         try {
+            if (isRated && !(await checkRankedStillActive())) {
+                setShowLeaveConfirm(false);
+                return;
+            }
             await handleAction('resign');
             setShowLeaveConfirm(false);
             navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');

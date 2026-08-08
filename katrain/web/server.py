@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
+from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.ranked_session_guard import (
@@ -53,14 +54,6 @@ def _json_safe(obj):
     return obj
 
 
-def _mark_ai_ladder_remote_ended(session, lifecycle) -> None:
-    session.ai_ladder_remote_ended = True
-    session.ai_ladder_remote_lifecycle = lifecycle
-    stop = getattr(getattr(session, "katrain", None), "stop_pondering", None)
-    if callable(stop):
-        stop()
-
-
 async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> None:
     """Fail closed before a ranked board mutation when another device ended it."""
     if not is_ai_ladder_ranked_session(session):
@@ -90,7 +83,7 @@ async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> 
         return
     if lifecycle_state not in {"pending_settlement", "settled"}:
         raise HTTPException(status_code=503, detail="Ranked game status is temporarily unavailable")
-    _mark_ai_ladder_remote_ended(session, lifecycle)
+    mark_ai_ladder_remote_terminal(session, lifecycle)
     raise HTTPException(status_code=409, detail="Ranked game has ended on another device")
 
 
@@ -1697,6 +1690,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
+            await _guard_ai_ladder_cloud_active(app, session, current_user)
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
@@ -1816,6 +1810,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
 
         # Verify move count >= configured minimum
         state = session.katrain.get_state()
@@ -1926,6 +1921,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
 
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None

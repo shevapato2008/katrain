@@ -23,6 +23,7 @@ vi.mock('../components/game/RightSidebarPanel', () => ({
   default: ({ embedded, gameState, onAction, onToggleChange }: { embedded?: boolean; gameState: GameState; onAction: (action: string) => void; onToggleChange: (setting: string) => void }) => (
     <div data-testid="game-controls" data-embedded={String(Boolean(embedded))} data-end-result={String(gameState.end_result)}>
       <button disabled={Boolean(gameState.end_result)} onClick={() => onAction('pass')}>pass</button>
+      <button onClick={() => onAction('resign')}>resign action</button>
       <button onClick={() => { mocks.railToggle(); onToggleChange('coords'); }}>toggle coords</button>
     </div>
   ),
@@ -84,24 +85,61 @@ describe('Galaxy GamePage ranked settlement', () => {
     expect(screen.getByTestId('game-controls')).toHaveAttribute('data-embedded', 'true');
   });
 
-  it('polls an active ranked game every five seconds and stops at remote pending settlement', async () => {
+  it('keeps polling pending settlement every five seconds until settled', async () => {
     vi.useFakeTimers();
     try {
       mocks.gameState = { ...gameState, end_result: null };
       mocks.getGameStatus
         .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
-        .mockResolvedValueOnce({ state: 'pending_settlement', game_id: 'g1' });
+        .mockResolvedValueOnce({ state: 'pending_settlement', game_id: 'g1' })
+        .mockResolvedValueOnce({ state: 'settled', game_id: 'g1', receipt: { counted: true, reason: null } });
       render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
 
       await act(async () => { await Promise.resolve(); await Promise.resolve(); });
       expect(mocks.getGameStatus).toHaveBeenCalledTimes(1);
       await act(async () => { vi.advanceTimersByTime(5000); await Promise.resolve(); await Promise.resolve(); });
       expect(screen.getByText('本局已在其他设备结束，正在结算')).toBeInTheDocument();
+      await act(async () => { vi.advanceTimersByTime(5000); await Promise.resolve(); await Promise.resolve(); });
+      expect(screen.getByText('本局已在其他设备结束，结算已完成')).toBeInTheDocument();
+      expect(mocks.getGameStatus).toHaveBeenCalledTimes(3);
       await act(async () => { vi.advanceTimersByTime(10000); });
-      expect(mocks.getGameStatus).toHaveBeenCalledTimes(2);
+      expect(mocks.getGameStatus).toHaveBeenCalledTimes(3);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('deduplicates an action check with polling and never re-enables after deferred settlement', async () => {
+    mocks.gameState = { ...gameState, end_result: null };
+    let resolveLifecycle!: (value: { state: 'settled'; game_id: string; receipt: { counted: boolean; reason: null } }) => void;
+    mocks.getGameStatus.mockReturnValueOnce(new Promise((resolve) => { resolveLifecycle = resolve; }));
+    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'board' }));
+    expect(mocks.getGameStatus).toHaveBeenCalledTimes(1);
+    resolveLifecycle({ state: 'settled', game_id: 'g1', receipt: { counted: true, reason: null } });
+    expect(await screen.findByText('本局已在其他设备结束，结算已完成')).toBeInTheDocument();
+
+    mocks.getGameStatus.mockResolvedValue({ state: 'active', game_id: 'g1' });
+    fireEvent.click(screen.getByRole('button', { name: 'board' }));
+    expect(mocks.getGameStatus).toHaveBeenCalledTimes(1);
+    expect(mocks.onMove).not.toHaveBeenCalled();
+  });
+
+  it('rechecks authority before confirming an already-open resign dialog', async () => {
+    mocks.gameState = { ...gameState, end_result: null };
+    mocks.getGameStatus
+      .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
+      .mockResolvedValueOnce({ state: 'pending_settlement', game_id: 'g1' });
+    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'resign action' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Resign' }));
+
+    expect(await screen.findByText('本局已在其他设备结束，正在结算')).toBeInTheDocument();
+    expect(mocks.handleAction).not.toHaveBeenCalled();
   });
 
   it('blocks board moves and rail actions after remote settlement without inventing a board result', async () => {

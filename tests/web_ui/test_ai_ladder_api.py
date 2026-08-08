@@ -2806,7 +2806,8 @@ async def test_board_game_status_proxy_stops_the_matching_local_session_after_re
         )
         game_id = started.json()["game_id"]
         session = api_app.state._test_created_sessions[0]
-        session.katrain.stop_pondering = MagicMock()
+        session.katrain.engine = SimpleNamespace(stop_pondering=MagicMock())
+        session.katrain.pondering = True
         remote.get_ai_ladder_game_status.return_value = {
             "state": "pending_settlement", "game_id": game_id,
         }
@@ -2816,7 +2817,61 @@ async def test_board_game_status_proxy_stops_the_matching_local_session_after_re
 
     assert response.status_code == 200
     assert session.ai_ladder_remote_ended is True
-    session.katrain.stop_pondering.assert_called_once()
+    session.katrain.engine.stop_pondering.assert_called_once()
+    assert session.katrain.pondering is False
+
+
+@pytest.mark.asyncio
+async def test_board_game_status_proxy_rejects_mismatched_remote_game_without_marking_session(api_app, client):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        session = api_app.state._test_created_sessions[0]
+        session.katrain.engine = SimpleNamespace(stop_pondering=MagicMock())
+        remote.get_ai_ladder_game_status.return_value = {
+            "state": "settled", "game_id": "different-game",
+            "receipt": {"counted": True, "reason": None},
+        }
+        response = await ac.get(
+            f"/api/v1/ai-ladder/games/{started.json()['game_id']}/status",
+            headers=api_app.state._test_headers,
+        )
+
+    assert response.status_code == 502
+    assert not getattr(session, "ai_ladder_remote_ended", False)
+    session.katrain.engine.stop_pondering.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path",
+    ["/api/resign", "/api/count/request", "/api/timeout"],
+)
+async def test_board_remote_terminal_blocks_ranked_terminal_actions_before_mutation(api_app, client, path):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+        session = api_app.state._test_created_sessions[0]
+        state_before = dict(session.katrain._state)
+        end_before = session.katrain.game.current_node.end_state
+        remote.get_ai_ladder_game_status.return_value = {
+            "state": "pending_settlement", "game_id": game_id,
+        }
+        response = await ac.post(
+            path, headers=api_app.state._test_headers,
+            json={"session_id": session.session_id},
+        )
+
+    assert response.status_code == 409
+    assert session.katrain._state == state_before
+    assert session.katrain.game.current_node.end_state == end_before
 
 
 @pytest.mark.asyncio

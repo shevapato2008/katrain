@@ -231,7 +231,20 @@ def _local_ranked_session_matches(request: Request, current_user: User, pending:
     )
 
 
-def _mark_local_remote_ended(request: Request, current_user: User, game_id: str, lifecycle: dict) -> None:
+def mark_ai_ladder_remote_terminal(session, lifecycle) -> None:
+    session.ai_ladder_remote_ended = True
+    session.ai_ladder_remote_lifecycle = lifecycle
+    runtime = getattr(session, "katrain", None)
+    engine_stop = getattr(getattr(runtime, "engine", None), "stop_pondering", None)
+    fallback_stop = getattr(runtime, "stop_pondering", None)
+    stop = engine_stop if callable(engine_stop) else fallback_stop
+    if callable(stop):
+        stop()
+    if runtime is not None:
+        runtime.pondering = False
+
+
+def _mark_local_remote_terminal(request: Request, current_user: User, game_id: str, lifecycle: dict) -> None:
     pending = request.app.state.ai_ladder_repo.get_pending_game(current_user.id)
     if pending is None or pending.get("game_id") != game_id:
         return
@@ -240,11 +253,7 @@ def _mark_local_remote_ended(request: Request, current_user: User, game_id: str,
     session = request.app.state.session_manager._sessions.get(pending["session_id"])
     if session is None:
         return
-    session.ai_ladder_remote_ended = True
-    session.ai_ladder_remote_lifecycle = lifecycle
-    stop = getattr(getattr(session, "katrain", None), "stop_pondering", None)
-    if callable(stop):
-        stop()
+    mark_ai_ladder_remote_terminal(session, lifecycle)
 
 
 def _recover_pending(request: Request, user_id: int) -> None:
@@ -604,8 +613,10 @@ async def get_ranked_game_status(
             lambda: request.app.state.remote_client.get_ai_ladder_game_status(game_id),
             "AI ladder game status",
         )
+        if not isinstance(lifecycle, dict) or lifecycle.get("game_id") != game_id:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Invalid ranked lifecycle response")
         if isinstance(lifecycle, dict) and lifecycle.get("state") in {"pending_settlement", "settled"}:
-            _mark_local_remote_ended(request, current_user, game_id, lifecycle)
+            _mark_local_remote_terminal(request, current_user, game_id, lifecycle)
         return lifecycle
     _require_authority(request)
     try:

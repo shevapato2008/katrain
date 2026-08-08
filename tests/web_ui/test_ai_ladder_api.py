@@ -7,6 +7,7 @@ import hashlib
 import logging
 import threading
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -2081,8 +2082,12 @@ async def test_cloud_reservation_is_account_unique_and_status_hides_origin_secre
         other_status = await ac.get("/api/v1/ai-ladder/status", headers=other)
 
     assert reserved.status_code == 201
-    assert set(reserved.json()) == {"game_id", "reservation_key", "blocking_game"}
+    assert set(reserved.json()) == {
+        "game_id", "reservation_key", "blocking_game", "opponent", "execution_identity"
+    }
     assert reserved.json()["reservation_key"]
+    assert reserved.json()["opponent"]["rank_name"] == "fixture-16"
+    assert reserved.json()["execution_identity"] == reserved.json()["opponent"]["config_snapshot"]["recipe_identity"]
     assert replay.status_code == 409
     assert blocked.status_code == 409
     assert blocked.json()["detail"]["blocking_game"]["ownership"] == "other_device"
@@ -2373,6 +2378,232 @@ class RecordingDispatcher:
     async def user_games_create(self, user_id, data):
         self.calls.append((user_id, data))
         return {"id": data.get("id"), **data}
+
+
+def _board_remote(api_app):
+    from katrain.web.core.ai_ladder_catalog import build_opponent_snapshot
+
+    opponent, identity = build_opponent_snapshot(16)
+    remote = SimpleNamespace(
+        get_ai_ladder_status=AsyncMock(
+            return_value={"view_state": "ready", "pending_settlement": False, "blocking_game": None}
+        ),
+        reserve_ai_ladder_game=AsyncMock(),
+        activate_ai_ladder_game=AsyncMock(return_value={"state": "active"}),
+        cancel_ai_ladder_reservation=AsyncMock(return_value={"state": "cancelled"}),
+        get_ai_ladder_game_status=AsyncMock(),
+        end_ai_ladder_game=AsyncMock(),
+    )
+    reservation = {
+        "game_id": "0123456789abcdef0123456789abcdef",
+        "reservation_key": "raw-reservation-key",
+        "opponent": {
+            "rung": opponent.rung,
+            "rank_name": opponent.rank_name,
+            "config_snapshot": dict(opponent.config_snapshot),
+            "certification_status": opponent.certification_status,
+            "availability": opponent.availability,
+            "route": opponent.route,
+        },
+        "execution_identity": identity,
+    }
+
+    def reserve(data):
+        return {**reservation, "game_id": data.get("game_id", reservation["game_id"])}
+
+    remote.reserve_ai_ladder_game.side_effect = reserve
+    api_app.state.remote_client = remote
+    api_app.state.repository_dispatcher = RecordingDispatcher()
+    api_app.state.ai_ladder_authoritative = True
+    return remote
+
+
+@pytest.mark.asyncio
+async def test_board_status_uses_cloud_authority_and_only_enriches_its_live_local_session(api_app, client):
+    remote = _board_remote(api_app)
+    game_id = "0123456789abcdef0123456789abcdef"
+    remote.get_ai_ladder_status.return_value = {
+        "view_state": "ready",
+        "pending_settlement": False,
+        "blocking_game": {
+            "game_id": game_id,
+            "state": "active",
+            "ownership": "current_device",
+            "user_color": "B",
+            "opponent_rank_name": "fixture-16",
+        },
+    }
+    # A local mirror with a live session proves that this board may reveal only its
+    # own local session id. The cloud never sends a session id/key back to the UI.
+    started = await remote.reserve_ai_ladder_game({})
+    from katrain.web.core.ai_ladder_ranked import AiLadderOpponentSnapshot
+    opponent = AiLadderOpponentSnapshot(**started["opponent"])
+    snapshot = __import__(
+        "katrain.web.core.ai_ladder_catalog", fromlist=["AiLadderSessionSnapshot"]
+    ).AiLadderSessionSnapshot(
+        game_id=game_id,
+        session_id="local-live-session",
+        user_id=api_app.state._test_user_id,
+        user_color="B",
+        game_type="ai_ladder_ranked",
+        opponent=opponent,
+        ai_subtype="ai:ladder",
+        execution_identity=started["execution_identity"],
+    )
+    api_app.state.ai_ladder_repo.create_pending_game(snapshot, reservation_key="never-relay")
+    api_app.state.session_manager._sessions["local-live-session"] = SimpleNamespace()
+
+    async with client as ac:
+        response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert response.status_code == 200
+    assert response.json()["blocking_game"]["session_id"] == "local-live-session"
+    assert "reservation_key" not in str(response.json())
+    remote.get_ai_ladder_status.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_board_status_never_relays_cloud_session_or_reservation_secrets(api_app, client):
+    remote = _board_remote(api_app)
+    remote.get_ai_ladder_status.return_value = {
+        "view_state": "ready",
+        "blocking_game": {
+            "game_id": "0123456789abcdef0123456789abcdef",
+            "state": "active",
+            "ownership": "other_device",
+            "session_id": "cloud-internal-session",
+            "reservation_key": "cloud-secret",
+            "user_color": "B",
+            "opponent_rank_name": "fixture-16",
+        },
+    }
+
+    async with client as ac:
+        response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert response.status_code == 200
+    assert "session_id" not in response.json()["blocking_game"]
+    assert "reservation_key" not in response.json()["blocking_game"]
+
+
+@pytest.mark.asyncio
+async def test_board_start_reserves_cloud_before_creating_and_activates_after_local_setup(api_app, client):
+    remote = _board_remote(api_app)
+
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+
+    assert response.status_code == 201
+    session = api_app.state._test_created_sessions[0]
+    remote.reserve_ai_ladder_game.assert_awaited_once()
+    remote.activate_ai_ladder_game.assert_awaited_once_with(
+        response.json()["game_id"], "raw-reservation-key", session.session_id
+    )
+    pending = api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id)
+    assert pending["reservation_key"] == "raw-reservation-key"
+    assert pending["game_id"] == response.json()["game_id"]
+
+
+@pytest.mark.asyncio
+async def test_board_start_compensates_cloud_reservation_when_local_session_creation_fails(
+    api_app, client, monkeypatch
+):
+    remote = _board_remote(api_app)
+    monkeypatch.setattr(
+        api_app.state.session_manager,
+        "create_session",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("no engine")),
+    )
+
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+
+    assert response.status_code == 503
+    reserved_game_id = remote.reserve_ai_ladder_game.await_args.args[0]["game_id"]
+    remote.cancel_ai_ladder_reservation.assert_awaited_once_with(reserved_game_id, "raw-reservation-key")
+    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_offline_board_cannot_start_an_official_ranked_game(api_app, client):
+    import httpx
+
+    remote = _board_remote(api_app)
+    upstream = httpx.Request("POST", "https://cloud.invalid/api/v1/ai-ladder/games/reserve")
+    remote.reserve_ai_ladder_game.side_effect = httpx.ConnectError("offline", request=upstream)
+
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+
+    assert response.status_code == 503
+    assert api_app.state._test_created_sessions == []
+
+
+@pytest.mark.asyncio
+async def test_board_end_and_game_status_are_cloud_proxies(api_app, client):
+    remote = _board_remote(api_app)
+    game_id = "0123456789abcdef0123456789abcdef"
+    remote.get_ai_ladder_game_status.return_value = {"state": "pending_settlement", "game_id": game_id}
+    remote.end_ai_ladder_game.return_value = {
+        "state": "settled", "game_id": game_id, "receipt": {"counted": True, "reason": None}
+    }
+
+    async with client as ac:
+        lifecycle = await ac.get(f"/api/v1/ai-ladder/games/{game_id}/status", headers=api_app.state._test_headers)
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers=api_app.state._test_headers,
+            json={"reason": "user_resigned"},
+        )
+
+    assert lifecycle.json() == remote.get_ai_ladder_game_status.return_value
+    assert ended.json() == remote.end_ai_ladder_game.return_value
+
+
+@pytest.mark.asyncio
+async def test_board_terminal_queues_the_full_record_with_reservation_and_device(api_app, client, monkeypatch):
+    from katrain.web import server as server_module
+
+    remote = _board_remote(api_app)
+    remote.mark_ai_ladder_game_pending = AsyncMock()
+    enqueue = MagicMock()
+    api_app.state.sync_enqueue_fn = enqueue
+    monkeypatch.setattr(server_module.settings, "DEVICE_ID", "box-17")
+
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        response = await ac.post(
+            "/api/resign",
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert response.status_code == 200
+    remote.mark_ai_ladder_game_pending.assert_awaited_once_with(
+        started.json()["game_id"], "raw-reservation-key"
+    )
+    payload = enqueue.call_args.kwargs["payload"]
+    assert payload["reservation_key"] == "raw-reservation-key"
+    assert payload["device_id"] == "box-17"
+    assert payload["game_record"]["sgf_content"].startswith("(;FF[4]")
+    assert payload["game_record"]["game_type"] == "ai_ladder_ranked"
+    assert payload["game_id"] == started.json()["game_id"]
 
 
 @pytest.mark.asyncio

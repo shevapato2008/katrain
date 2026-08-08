@@ -254,6 +254,46 @@ async def test_the_cloud_profile_in_the_reply_replaces_the_local_one(factory):
 
 
 @pytest.mark.asyncio
+async def test_a_200_terminal_replay_still_adopts_the_cloud_profile(factory):
+    with factory() as db:
+        db.add(models_db.User(id=1, username="fan", hashed_password="x", rank="5d"))
+        db.add(
+            models_db.AiLadderProfile(
+                user_id=1, ai_ladder_rung=20, placement_lo=1, placement_hi=41,
+                placement_completed=5, net_score=2
+            )
+        )
+        db.commit()
+    _enqueue(factory, user_id="1", game_id="remote-end-won")
+    repo = AiLadderRankedRepository(factory)
+    client = _client(
+        bound_user_id="1",
+        body={
+            "game_id": "remote-end-won",
+            "counted": True,
+            "replayed": True,
+            "lifecycle": {
+                "state": "settled",
+                "game_id": "remote-end-won",
+                "receipt": {"counted": True, "reason": None},
+            },
+            "profile": {
+                "ai_ladder_rung": 19,
+                "placement_lo": 1,
+                "placement_hi": 41,
+                "placement_completed": 5,
+                "net_score": 0,
+            },
+        },
+    )
+
+    assert await SyncWorker(factory, client, ai_ladder_repo=repo).run_sync() == 1
+    with factory() as db:
+        profile = db.get(models_db.AiLadderProfile, 1)
+        assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (19, 0, 1)
+
+
+@pytest.mark.asyncio
 async def test_a_settlement_the_cloud_did_not_count_carries_no_profile_to_adopt(factory):
     with factory() as db:
         db.add(models_db.User(id=1, username="fan", hashed_password="x", rank="5d"))

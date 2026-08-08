@@ -315,12 +315,9 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
     app.state.ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
-    # The board settles its own ranked games against its own SQLite. It has to: the game
-    # is played by THIS box's KataGo, and /start creates the session on whichever node
-    # serves it, so "authority elsewhere, engine here" is not a thing this design can
-    # express. Cross-device rank still needs the settlement to reach the cloud — that is
-    # the sync queue's job and is NOT wired yet, so a rank earned here is currently a
-    # rank earned on this box.
+    # The board keeps an optimistic local profile so a completed game remains durable
+    # through an outage. The cloud reservation/finalizer is canonical across devices;
+    # the settlement outbox below replaces this profile with the cloud reply.
     app.state.ai_ladder_authoritative = True
     app.state.tsumego_progress_repo = local_tsumego_progress_repo
     app.state.report_session_factory = SessionLocal
@@ -1331,7 +1328,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def _enqueue_ladder_settlement_sync(app, current_user, snapshot, raw_result, session):
+    def _enqueue_ladder_settlement_sync(
+        app, current_user, snapshot, raw_result, session, *, reservation_key=None, game_record=None
+    ):
         """Hand this board's settled ranked game to the sync queue for the cloud.
 
         Only on a node that HAS a queue (a board); a cloud server settles in place. The
@@ -1366,6 +1365,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     },
                     "engine_stalled": bool(getattr(session.katrain, "last_ladder_error", False)),
                     "device_id": settings.DEVICE_ID,
+                    "reservation_key": reservation_key,
+                    "game_record": game_record,
                 },
                 user_id=str(current_user.id),
                 idempotency_key=f"ladder-settlement:{snapshot.game_id}",
@@ -1499,6 +1500,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
                     user_id=current_user.id, game_id=snapshot.game_id
                 )
+                if getattr(app.state, "remote_client", None) is not None:
+                    data["origin_device_id"] = settings.DEVICE_ID
                 if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
                     lifecycle, "origin_device_id"
                 ):
@@ -1570,8 +1573,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         # settles normally.
                         engine_stalled=engine_stalled,
                     )
+                reservation_key = pending.get("reservation_key")
+                remote_client = getattr(app.state, "remote_client", None)
+                if remote_client is not None and reservation_key:
+                    try:
+                        await remote_client.mark_ai_ladder_game_pending(snapshot.game_id, reservation_key)
+                    except Exception as exc:
+                        # The durable outbox below is the recovery path; a best-effort
+                        # hint must never discard the result already saved locally.
+                        logging.getLogger("katrain_web").warning(
+                            "Could not mark ranked game pending on cloud: %s", exc
+                        )
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
-                _enqueue_ladder_settlement_sync(app, current_user, snapshot, data["result"], session)
+                game_record = {key: value for key, value in data.items() if key != "origin_device_id"}
+                _enqueue_ladder_settlement_sync(
+                    app,
+                    current_user,
+                    snapshot,
+                    data["result"],
+                    session,
+                    reservation_key=reservation_key,
+                    game_record=game_record,
+                )
                 session.ai_ladder_settlement_pending = False
                 session._recorded = True
                 return

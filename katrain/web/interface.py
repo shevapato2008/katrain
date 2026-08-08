@@ -175,6 +175,7 @@ class WebKaTrain(KaTrainBase):
         # Set when a LadderUnavailable failure suppresses a move; cleared on the next
         # successful AI move or new game. Surfaced via get_state() for the frontend.
         self.last_ladder_error = False
+        self.ai_ladder_remote_ended = False
         # R6: optional second engine for analysis/review (remote strong engine on kiosk).
         # None until start(); analysis_engine() falls back to self.engine.
         self.analysis_engine_instance = None
@@ -617,6 +618,7 @@ class WebKaTrain(KaTrainBase):
                     raise ValueError("frozen ladder recipe does not match injected rung")
             self.frozen_ladder_recipe = frozen_ladder_recipe
             self.last_ladder_error = False
+            self.ai_ladder_remote_ended = False
             if self.engine:
                 self.engine.on_new_game()
 
@@ -1060,6 +1062,8 @@ class WebKaTrain(KaTrainBase):
                     try:
                         result = generate_ai_move(game, mode, settings)  # local `game`, not self.game
                     except LadderUnavailable as e:
+                        if getattr(self, "ai_ladder_remote_ended", False):
+                            return
                         # Certified-strength failure. The exception embeds the rung index -> server-side
                         # stdlib logger ONLY (self.log broadcasts every level to the ZenMode TopBar; see
                         # interface.py:338-340). User surface is the generic last_ladder_error flag.

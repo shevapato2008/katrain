@@ -235,7 +235,13 @@ def mark_ai_ladder_remote_terminal(session, lifecycle) -> None:
     session.ai_ladder_remote_ended = True
     session.ai_ladder_remote_lifecycle = lifecycle
     runtime = getattr(session, "katrain", None)
-    engine_stop = getattr(getattr(runtime, "engine", None), "stop_pondering", None)
+    if runtime is not None:
+        runtime.ai_ladder_remote_ended = True
+    engine = getattr(runtime, "engine", None)
+    terminate = getattr(engine, "terminate_queries", None)
+    if callable(terminate):
+        terminate(only_for_node=getattr(getattr(runtime, "game", None), "current_node", None))
+    engine_stop = getattr(engine, "stop_pondering", None)
     fallback_stop = getattr(runtime, "stop_pondering", None)
     stop = engine_stop if callable(engine_stop) else fallback_stop
     if callable(stop):

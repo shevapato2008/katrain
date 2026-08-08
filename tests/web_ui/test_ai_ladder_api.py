@@ -2806,7 +2806,7 @@ async def test_board_game_status_proxy_stops_the_matching_local_session_after_re
         )
         game_id = started.json()["game_id"]
         session = api_app.state._test_created_sessions[0]
-        session.katrain.engine = SimpleNamespace(stop_pondering=MagicMock())
+        session.katrain.engine = SimpleNamespace(stop_pondering=MagicMock(), terminate_queries=MagicMock())
         session.katrain.pondering = True
         remote.get_ai_ladder_game_status.return_value = {
             "state": "pending_settlement", "game_id": game_id,
@@ -2817,7 +2817,11 @@ async def test_board_game_status_proxy_stops_the_matching_local_session_after_re
 
     assert response.status_code == 200
     assert session.ai_ladder_remote_ended is True
+    assert session.katrain.ai_ladder_remote_ended is True
     session.katrain.engine.stop_pondering.assert_called_once()
+    session.katrain.engine.terminate_queries.assert_called_once_with(
+        only_for_node=session.katrain.game.current_node
+    )
     assert session.katrain.pondering is False
 
 

@@ -471,6 +471,65 @@ def test_ladder_never_global_resigns(monkeypatch):
     assert game.current_node.end_state is None
 
 
+def test_remote_terminal_during_ladder_analysis_cancels_query_and_never_plays():
+    import threading
+    from katrain.core.ai import LadderUnavailable, generate_ai_move
+
+    started = threading.Event()
+
+    class DeferredEngine(FakeEngine):
+        def request_analysis(self, node, callback, **kwargs):
+            self.node = node
+            self.callback = callback
+            started.set()
+
+        def terminate_queries(self, only_for_node=None, **kwargs):
+            self.terminated_node = only_for_node
+
+    engine = DeferredEngine(_search_analysis(), call_back=False)
+    game = FakeGame(engine)
+    original_node = game.current_node
+    failure = []
+
+    def generate():
+        try:
+            generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
+        except Exception as exc:
+            failure.append(exc)
+
+    worker = threading.Thread(target=generate)
+    worker.start()
+    assert started.wait(timeout=1)
+    game.katrain.ai_ladder_remote_ended = True
+    engine.terminate_queries(only_for_node=original_node)
+    engine.callback(_search_analysis(), False)  # a result already in flight arrives late
+    worker.join(timeout=1)
+
+    assert not worker.is_alive()
+    assert engine.terminated_node is original_node
+    assert game.current_node is original_node
+    assert len(failure) == 1 and isinstance(failure[0], LadderUnavailable)
+
+
+def test_remote_terminal_after_move_generation_still_blocks_game_play():
+    from katrain.core.ai import LadderUnavailable, generate_ai_move
+
+    engine = FakeEngine(_search_analysis())
+    game = FakeGame(engine)
+    original_node = game.current_node
+
+    def mark_at_commit(message, *args, **kwargs):
+        if str(message).startswith("Playing move"):
+            game.katrain.ai_ladder_remote_ended = True
+
+    game.katrain.log = mark_at_commit
+
+    with pytest.raises(LadderUnavailable, match="before move commit"):
+        generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
+
+    assert game.current_node is original_node
+
+
 def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     # katrain.log is the WS-broadcast channel: WebKaTrain.log forwards EVERY level via
     # message_callback -> SessionManager WS -> ZenModeApp TopBar (codex round 3/5, verified).

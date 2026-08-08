@@ -68,10 +68,107 @@ def test_asset_tables_are_protected_from_the_drift_rebuild():
         "ai_ladder_profiles",
         "ai_ladder_game_ledger",
         "ai_ladder_pending_games",
+        "ai_ladder_active_games",
         "ai_ladder_game_ledger_legacy_v1",
     } == migrations.PROTECTED_TABLES
     # Billing is a strict subset: the drift rebuild must refuse both groups.
     assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES
+
+
+def test_ai_ladder_active_game_schema_and_terminal_origin_columns_are_added_without_data_loss():
+    engine = create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, hashed_password TEXT)"))
+        conn.execute(text("INSERT INTO users VALUES (1, 'legacy-user', 'hash')"))
+        conn.execute(
+            text(
+                "CREATE TABLE ai_ladder_pending_games ("
+                "game_id VARCHAR(32) PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, session_id VARCHAR(64) NOT NULL UNIQUE, "
+                "user_color VARCHAR(1) NOT NULL, game_type VARCHAR(32) NOT NULL, opponent_rung INTEGER NOT NULL, "
+                "opponent_rank_name VARCHAR(64) NOT NULL, opponent_config_snapshot JSON NOT NULL, "
+                "opponent_certification_status VARCHAR(16) NOT NULL, opponent_availability VARCHAR(16) NOT NULL, "
+                "opponent_route VARCHAR(16) NOT NULL, ai_subtype VARCHAR(32) NOT NULL, execution_identity VARCHAR(64) NOT NULL, "
+                "game_saved BOOLEAN NOT NULL, saved_result VARCHAR(50), created_at DATETIME, updated_at DATETIME)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO ai_ladder_pending_games VALUES ("
+                "'legacy-pending', 1, 'legacy-session', 'B', 'ai_ladder_ranked', 20, '1级', '{}', "
+                "'certified', 'available', 'server', 'ai:ladder', 'identity', FALSE, NULL, "
+                "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE ai_ladder_game_ledger ("
+                "id INTEGER PRIMARY KEY, game_id VARCHAR(64) NOT NULL UNIQUE, user_id INTEGER NOT NULL, "
+                "user_color VARCHAR(1) NOT NULL, result VARCHAR(16) NOT NULL, game_type VARCHAR(32) NOT NULL, "
+                "opponent_rung INTEGER, opponent_rank_name VARCHAR(64), opponent_config_snapshot JSON, "
+                "opponent_certification_status VARCHAR(16), opponent_availability VARCHAR(16), opponent_route VARCHAR(16), "
+                "counted BOOLEAN NOT NULL, reason VARCHAR(32), settled_at DATETIME NOT NULL)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO ai_ladder_game_ledger VALUES ("
+                "1, 'legacy-settled', 1, 'W', 'loss', 'ai_ladder_ranked', 20, '1级', '{}', "
+                "'certified', 'available', 'server', TRUE, NULL, CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE user_games (id VARCHAR(32) PRIMARY KEY, user_id INTEGER NOT NULL, "
+                "source VARCHAR(50) NOT NULL, sgf_content TEXT)"
+            )
+        )
+        conn.execute(text("INSERT INTO user_games VALUES ('legacy-game', 1, 'play_ai', '(;FF[4])')"))
+
+    models_db.Base.metadata.create_all(bind=engine)
+    migrations.add_missing_columns(engine)
+
+    inspector = inspect(engine)
+    assert "ai_ladder_active_games" in inspector.get_table_names()
+    active_columns = {column["name"] for column in inspector.get_columns("ai_ladder_active_games")}
+    assert {
+        "game_id",
+        "user_id",
+        "origin_device_id",
+        "origin_session_id",
+        "state",
+        "version",
+        "reservation_key_hash",
+        "rules_snapshot",
+        "time_control_snapshot",
+    } <= active_columns
+    assert "reservation_key" in {column["name"] for column in inspector.get_columns("ai_ladder_pending_games")}
+    assert {
+        "origin_device_id",
+        "deciding_device_id",
+        "terminal_source",
+        "decided_at",
+    } <= {column["name"] for column in inspector.get_columns("ai_ladder_game_ledger")}
+    assert "origin_device_id" in {column["name"] for column in inspector.get_columns("user_games")}
+
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT game_id, reservation_key FROM ai_ladder_pending_games")).one() == (
+            "legacy-pending",
+            None,
+        )
+        assert conn.execute(
+            text("SELECT game_id, origin_device_id, deciding_device_id, terminal_source, decided_at "
+                 "FROM ai_ladder_game_ledger")
+        ).one() == ("legacy-settled", None, None, None, None)
+        assert conn.execute(text("SELECT id, origin_device_id FROM user_games")).one() == ("legacy-game", None)
+
+    # Every step remains safe to re-run and keeps the legacy rows intact.
+    models_db.Base.metadata.create_all(bind=engine)
+    migrations.add_missing_columns(engine)
+    assert inspect(engine).get_unique_constraints("ai_ladder_active_games")
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM ai_ladder_pending_games")).scalar_one() == 1
+        assert conn.execute(text("SELECT COUNT(*) FROM ai_ladder_game_ledger")).scalar_one() == 1
+        assert conn.execute(text("SELECT COUNT(*) FROM user_games")).scalar_one() == 1
 
 
 def test_pending_ai_ladder_table_is_protected_and_has_one_pending_per_user_constraint():

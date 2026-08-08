@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import models_db
 from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+from katrain.web.api.v1.endpoints.user_games import UserGameCreate
 
 
 @pytest.fixture
@@ -48,6 +49,53 @@ class TestUserGameRepository:
         assert game["player_black"] == "Alice"
         assert game["sgf_content"] == "(;FF[4]SZ[19];B[pd];W[dp])"
 
+    def test_create_and_read_nullable_origin_device_id(self, db_session):
+        factory, user_id = db_session
+        repo = UserGameRepository(factory)
+
+        from_device = repo.create(
+            user_id=user_id,
+            sgf_content="(;FF[4]C[from-board])",
+            source="play_human",
+            origin_device_id="board-001",
+        )
+        legacy = repo.create(user_id=user_id, sgf_content="(;FF[4]C[legacy])", source="import")
+
+        assert from_device["origin_device_id"] == "board-001"
+        assert repo.get(from_device["id"], user_id)["origin_device_id"] == "board-001"
+        assert legacy["origin_device_id"] is None
+        assert {game["origin_device_id"] for game in repo.list(user_id)["items"]} == {"board-001", None}
+
+    def test_ranked_authoritative_create_keeps_origin_device_immutable(self, db_session):
+        factory, user_id = db_session
+        repo = UserGameRepository(factory)
+        kwargs = {
+            "sgf_content": "(;FF[4]RE[B+R])",
+            "result": "B+R",
+            "origin_device_id": "board-ranked",
+        }
+
+        created = repo.create_ai_ladder_ranked(user_id=user_id, game_id="ranked-origin", **kwargs)
+        assert created["origin_device_id"] == "board-ranked"
+
+        with pytest.raises(ValueError, match="immutable"):
+            repo.create_ai_ladder_ranked(
+                user_id=user_id,
+                game_id="ranked-origin",
+                **{**kwargs, "origin_device_id": "forged-device"},
+            )
+
+    def test_user_game_create_contract_accepts_origin_but_still_identifies_ranked_rows(self):
+        payload = UserGameCreate(
+            sgf_content="(;FF[4])",
+            source="play_ai",
+            game_type="ai_ladder_ranked",
+            origin_device_id="board-002",
+        )
+
+        assert payload.origin_device_id == "board-002"
+        assert payload.game_type == "ai_ladder_ranked"
+
     def test_get_game(self, db_session):
         factory, user_id = db_session
         repo = UserGameRepository(factory)
@@ -70,9 +118,9 @@ class TestUserGameRepository:
         factory, user_id = db_session
         repo = UserGameRepository(factory)
 
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", title="Game 1")
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", title="Game 2")
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", title="Game 3")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[1])", source="research", title="Game 1")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[2])", source="research", title="Game 2")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[3])", source="research", title="Game 3")
 
         result = repo.list(user_id=user_id)
         assert result["total"] == 3
@@ -97,8 +145,8 @@ class TestUserGameRepository:
         factory, user_id = db_session
         repo = UserGameRepository(factory)
 
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", category="game")
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", category="position")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[game])", source="research", category="game")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[position])", source="research", category="position")
 
         games = repo.list(user_id=user_id, category="game")
         assert games["total"] == 1

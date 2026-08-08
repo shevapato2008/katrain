@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from types import SimpleNamespace
 from threading import Barrier, BrokenBarrierError
 
 import pytest
@@ -106,6 +107,30 @@ def concurrent_repo(session_factory):
 
     repo._apply_result = synchronized_apply
     return repo
+
+
+def test_pending_reservation_key_survives_repository_restart(tmp_path, opponent):
+    factory = file_session_factory(tmp_path)
+    with factory() as db:
+        db.add(models_db.User(id=1, username="reservation-owner", hashed_password="x"))
+        db.commit()
+    snapshot = SimpleNamespace(
+        game_id="a" * 32,
+        user_id=1,
+        session_id="session-reserved",
+        reservation_key="secret-reservation-key",
+        user_color="B",
+        game_type=AI_LADDER_GAME_TYPE,
+        opponent=opponent,
+        ai_subtype="ai:ladder",
+        execution_identity="fixture-identity",
+    )
+
+    AiLadderRankedRepository(factory).create_pending_game(snapshot)
+    recovered = AiLadderRankedRepository(factory).get_pending_game(1)
+
+    assert recovered is not None
+    assert recovered["reservation_key"] == "secret-reservation-key"
 
 
 def test_catalog_consumes_the_exact_41_product_names_in_order():

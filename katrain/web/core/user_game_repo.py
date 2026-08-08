@@ -68,6 +68,7 @@ class UserGameRepository:
                 move_count=kwargs.get("move_count", 0),
                 category=kwargs.get("category", "game"),
                 game_type=kwargs.get("game_type"),
+                origin_device_id=kwargs.get("origin_device_id"),
                 event=kwargs.get("event"),
                 round_name=kwargs.get("round_name"),
                 game_date=kwargs.get("game_date"),
@@ -115,6 +116,7 @@ class UserGameRepository:
                     "white_rank": kwargs.get("white_rank"),
                     "source": "play_ai",
                     "category": kwargs.get("category", "game"),
+                    "origin_device_id": kwargs.get("origin_device_id"),
                 }
                 if any(getattr(existing, field) != value for field, value in immutable_fields.items()):
                     raise ValueError("authoritative ranked AI game is immutable")
@@ -138,6 +140,7 @@ class UserGameRepository:
                 move_count=kwargs.get("move_count", 0),
                 category=kwargs.get("category", "game"),
                 game_type="ai_ladder_ranked",
+                origin_device_id=kwargs.get("origin_device_id"),
                 event=kwargs.get("event"),
                 round_name=kwargs.get("round_name"),
                 game_date=kwargs.get("game_date"),
@@ -321,6 +324,7 @@ class UserGameRepository:
             "source": game.source,
             "category": game.category,
             "game_type": game.game_type,
+            "origin_device_id": game.origin_device_id,
             "event": game.event,
             "round_name": game.round_name,
             "game_date": game.game_date,

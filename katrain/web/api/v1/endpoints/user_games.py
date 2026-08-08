@@ -32,6 +32,7 @@ class UserGameCreate(BaseModel):
     move_count: int = 0
     category: str = "game"  # game / position
     game_type: Optional[str] = None
+    origin_device_id: Optional[str] = None
     event: Optional[str] = None
     round_name: Optional[str] = None
     game_date: Optional[str] = None
@@ -125,6 +126,7 @@ async def create_user_game(
             move_count=game_in.move_count,
             category=game_in.category,
             game_type=game_in.game_type,
+            origin_device_id=game_in.origin_device_id,
             event=game_in.event,
             game_date=game_in.game_date,
         )

@@ -29,6 +29,14 @@ AI_LADDER_TABLES = {
 AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
 PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | {AI_LADDER_LEGACY_TABLE}
 
+AI_LADDER_TERMINAL_AUDIT_CONDITION = (
+    "(terminal_source IS NULL AND origin_device_id IS NULL "
+    "AND deciding_device_id IS NULL AND decided_at IS NULL) OR "
+    "(terminal_source IS NOT NULL "
+    "AND terminal_source IN ('played_result', 'remote_resign', 'recovery') "
+    "AND origin_device_id IS NOT NULL AND deciding_device_id IS NOT NULL AND decided_at IS NOT NULL)"
+)
+
 
 def migrate_ai_ladder_decision_schema(engine) -> None:
     """Upgrade the short-lived valid-only ledger without deleting history.
@@ -186,6 +194,58 @@ def postgres_ai_ladder_decision_statements(*, existing_columns: set[str], existi
     return statements
 
 
+def postgres_ai_ladder_terminal_audit_statements(*, existing_checks: set[str]) -> list[str]:
+    """Return the non-destructive PostgreSQL constraint upgrade for provenance fields."""
+
+    constraint = "ck_ai_ladder_ledger_terminal_audit"
+    if constraint in existing_checks:
+        return []
+    return [
+        f"ALTER TABLE ai_ladder_game_ledger ADD CONSTRAINT {constraint} "
+        f"CHECK ({AI_LADDER_TERMINAL_AUDIT_CONDITION})"
+    ]
+
+
+def enforce_ai_ladder_terminal_audit_schema(engine) -> None:
+    """Constrain terminal provenance without rebuilding the protected ledger."""
+
+    table = "ai_ladder_game_ledger"
+    inspector = inspect(engine)
+    if table not in inspector.get_table_names():
+        return
+    required = {"terminal_source", "origin_device_id", "deciding_device_id", "decided_at"}
+    if not required.issubset({column["name"] for column in inspector.get_columns(table)}):
+        return
+
+    checks = {constraint.get("name") for constraint in inspector.get_check_constraints(table)}
+    if "ck_ai_ladder_ledger_terminal_audit" in checks:
+        return
+
+    with engine.begin() as conn:
+        invalid = conn.execute(
+            text(f"SELECT COUNT(*) FROM {table} WHERE NOT ({AI_LADDER_TERMINAL_AUDIT_CONDITION})")
+        ).scalar_one()
+        if invalid:
+            raise RuntimeError(f"AI ladder terminal audit migration found {invalid} invalid row(s)")
+
+        if engine.dialect.name == "sqlite":
+            new_condition = AI_LADDER_TERMINAL_AUDIT_CONDITION
+            for column in required:
+                new_condition = new_condition.replace(column, f"NEW.{column}")
+            for action in ("INSERT", "UPDATE"):
+                trigger = f"trg_ai_ladder_ledger_terminal_audit_{action.lower()}"
+                conn.execute(
+                    text(
+                        f'CREATE TRIGGER IF NOT EXISTS "{trigger}" BEFORE {action} ON "{table}" '
+                        f"FOR EACH ROW WHEN NOT ({new_condition}) "
+                        "BEGIN SELECT RAISE(ABORT, 'invalid AI ladder terminal audit provenance'); END"
+                    )
+                )
+        elif engine.dialect.name == "postgresql":
+            for statement in postgres_ai_ladder_terminal_audit_statements(existing_checks=checks):
+                conn.execute(text(statement))
+
+
 def add_missing_columns(engine) -> None:
     """ADD COLUMN for any model column missing from an existing table.
 
@@ -209,6 +269,7 @@ def add_missing_columns(engine) -> None:
                     ddl += f" DEFAULT {default}"
                 conn.execute(text(ddl))
                 logger.info(f"migrate: added column {table.name}.{col.name}")
+    enforce_ai_ladder_terminal_audit_schema(engine)
 
 
 def _default_clause(col):

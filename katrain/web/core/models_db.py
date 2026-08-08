@@ -249,6 +249,14 @@ class AiLadderGameLedger(Base):
             "AND game_type = 'ai_ladder_ranked')",
             name="ck_ai_ladder_ledger_decision",
         ),
+        CheckConstraint(
+            "(terminal_source IS NULL AND origin_device_id IS NULL "
+            "AND deciding_device_id IS NULL AND decided_at IS NULL) OR "
+            "(terminal_source IS NOT NULL "
+            "AND terminal_source IN ('played_result', 'remote_resign', 'recovery') "
+            "AND origin_device_id IS NOT NULL AND deciding_device_id IS NOT NULL AND decided_at IS NOT NULL)",
+            name="ck_ai_ladder_ledger_terminal_audit",
+        ),
     )
 
 

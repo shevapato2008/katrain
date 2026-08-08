@@ -1,12 +1,16 @@
 """Tests for UserGameRepository and UserGameAnalysisRepository."""
 
+import asyncio
+from types import SimpleNamespace
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from fastapi import HTTPException
 
 from katrain.web.core import models_db
 from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
-from katrain.web.api.v1.endpoints.user_games import UserGameCreate
+from katrain.web.api.v1.endpoints.user_games import UserGameCreate, create_user_game
 
 
 @pytest.fixture
@@ -28,7 +32,66 @@ def db_session():
     return SessionLocal, user_id
 
 
+def add_active_game(factory, user_id: int, game_id: str = "reserved-active"):
+    with factory() as db:
+        db.add(
+            models_db.AiLadderActiveGame(
+                game_id=game_id,
+                user_id=user_id,
+                origin_device_id="board-origin",
+                origin_session_id="session-origin",
+                state="active",
+                version=1,
+                reservation_key_hash="a" * 64,
+                user_color="B",
+                game_type="ai_ladder_ranked",
+                opponent_rung=16,
+                opponent_rank_name="5级",
+                opponent_config_snapshot={"config_digest": "d", "config_version": "v"},
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                ai_subtype="ai:ladder",
+                execution_identity="identity",
+                rules_snapshot={"board_size": 19, "rules": "chinese", "komi": 7.5},
+                time_control_snapshot={"time_enabled": False},
+            )
+        )
+        db.commit()
+
+
 class TestUserGameRepository:
+    def test_generic_create_cannot_claim_an_active_ranked_game_id(self, db_session):
+        factory, user_id = db_session
+        add_active_game(factory, user_id)
+        repo = UserGameRepository(factory)
+
+        assert repo.is_ai_ladder_game_id_reserved("reserved-active")
+        with pytest.raises(ValueError, match="reserved"):
+            repo.create(
+                user_id=user_id,
+                game_id="reserved-active",
+                sgf_content="(;FF[4])",
+                source="research",
+            )
+
+    def test_public_create_api_rejects_an_active_ranked_game_id(self, db_session):
+        factory, user_id = db_session
+        add_active_game(factory, user_id)
+        request = SimpleNamespace(
+            app=SimpleNamespace(state=SimpleNamespace(user_game_repo=UserGameRepository(factory)))
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_user_game(
+                    request,
+                    UserGameCreate(id="reserved-active", sgf_content="(;FF[4])", source="research"),
+                    SimpleNamespace(id=user_id),
+                )
+            )
+        assert exc_info.value.status_code == 409
+
     def test_create_game(self, db_session):
         factory, user_id = db_session
         repo = UserGameRepository(factory)

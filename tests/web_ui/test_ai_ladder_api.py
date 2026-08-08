@@ -2626,6 +2626,81 @@ async def test_board_reserve_timeout_retries_the_same_game_and_client_key(api_ap
 
 
 @pytest.mark.asyncio
+async def test_board_reserve_gateway_502_retries_the_same_game_and_client_key(api_app, client):
+    import httpx
+
+    remote = _board_remote(api_app)
+    original = remote.reserve_ai_ladder_game.side_effect
+    attempts = 0
+
+    def reserve_with_gateway_error(data):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            request = httpx.Request("POST", "https://cloud.invalid/api/v1/ai-ladder/games/reserve")
+            response = httpx.Response(502, request=request, text="bad gateway")
+            raise httpx.HTTPStatusError("502", request=request, response=response)
+        return original(data)
+
+    remote.reserve_ai_ladder_game.side_effect = reserve_with_gateway_error
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+
+    assert response.status_code == 201
+    assert remote.reserve_ai_ladder_game.await_count == 2
+    assert (
+        remote.reserve_ai_ladder_game.await_args_list[0].args[0]
+        == remote.reserve_ai_ladder_game.await_args_list[1].args[0]
+    )
+
+
+@pytest.mark.asyncio
+async def test_board_activation_two_gateway_failures_preserve_live_session_for_status_reconcile(api_app, client):
+    import httpx
+
+    remote = _board_remote(api_app)
+    request = httpx.Request("POST", "https://cloud.invalid/api/v1/ai-ladder/games/g/activate")
+    gateway = httpx.HTTPStatusError(
+        "504", request=request, response=httpx.Response(504, request=request, text="gateway timeout")
+    )
+    remote.activate_ai_ladder_game.side_effect = [gateway, gateway, {"state": "active"}]
+    remote.get_ai_ladder_game_status.side_effect = [gateway]
+
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+
+        assert started.status_code == 503
+        session = api_app.state._test_created_sessions[0]
+        pending = api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id)
+        assert pending["session_id"] == session.session_id
+        assert session.session_id in api_app.state.session_manager._sessions
+
+        remote.get_ai_ladder_status.return_value = {
+            "view_state": "ready",
+            "blocking_game": {
+                "game_id": pending["game_id"],
+                "state": "active",
+                "ownership": "current_device",
+                "user_color": "B",
+                "opponent_rank_name": "fixture-16",
+            },
+        }
+        reconciled = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert reconciled.status_code == 200
+    assert reconciled.json()["blocking_game"]["session_id"] == session.session_id
+    assert remote.activate_ai_ladder_game.await_count == 3
+
+
+@pytest.mark.asyncio
 async def test_board_start_compensates_cloud_reservation_when_local_session_creation_fails(
     api_app, client, monkeypatch
 ):
@@ -2825,6 +2900,40 @@ async def test_board_status_rebuilds_missing_settlement_outbox_after_restart(api
     assert recovered_payload["game_id"] == started.json()["game_id"]
     assert recovered_payload["game_record"]["sgf_content"].startswith("(;FF[4]")
     assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_board_recovery_preserves_engine_unavailable_as_non_counting(api_app, client, monkeypatch):
+    from katrain.web import server as server_module
+
+    remote = _board_remote(api_app)
+    remote.mark_ai_ladder_game_pending = AsyncMock()
+    enqueue = MagicMock(side_effect=[False, True])
+    api_app.state.sync_enqueue_fn = enqueue
+    monkeypatch.setattr(server_module.settings, "DEVICE_ID", "box-17")
+
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        await ac.post(
+            "/api/resign",
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+        with api_app.state._test_session_factory() as db:
+            ledger = db.query(models_db.AiLadderGameLedger).filter_by(game_id=started.json()["game_id"]).one()
+            ledger.reason = "engine_unavailable"
+            ledger.counted = False
+            db.commit()
+        api_app.state.session_manager._sessions.pop(started.json()["session_id"])
+
+        recovered = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert recovered.status_code == 200
+    assert enqueue.call_args.kwargs["payload"]["engine_stalled"] is True
 
 
 @pytest.mark.asyncio

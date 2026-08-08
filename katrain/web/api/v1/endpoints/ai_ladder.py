@@ -39,6 +39,10 @@ from katrain.web.models import User
 router = APIRouter()
 
 
+class _IndeterminateRemoteTransition(RuntimeError):
+    pass
+
+
 def _is_board(request: Request) -> bool:
     return bool(
         getattr(request.app.state, "remote_client", None)
@@ -61,6 +65,26 @@ async def _remote(call, what: str):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Remote server unavailable"
         ) from exc
+
+
+def _is_indeterminate_remote_error(exc: Exception) -> bool:
+    return isinstance(exc, httpx.RequestError) or (
+        isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code >= 500
+    )
+
+
+async def _retry_indeterminate(call):
+    try:
+        return await call()
+    except Exception as first:
+        if not _is_indeterminate_remote_error(first):
+            raise
+        try:
+            return await call()
+        except Exception as second:
+            if _is_indeterminate_remote_error(second):
+                raise _IndeterminateRemoteTransition(str(second)) from second
+            raise
 
 
 #: The board every rung was measured on. Fixed here rather than taken from the
@@ -223,6 +247,7 @@ def _recover_pending(request: Request, user_id: int) -> None:
             from katrain.web.core.ai_ladder_sync import build_settlement_payload
 
             snapshot = session_snapshot_from_pending(pending)
+            lifecycle = repo.get_game_lifecycle(user_id=user_id, game_id=snapshot.game_id)
             durable = enqueue(
                 operation="settle_ai_ladder_ranked",
                 endpoint="/api/v1/ai-ladder/settlements",
@@ -233,6 +258,7 @@ def _recover_pending(request: Request, user_id: int) -> None:
                     reservation_key=pending["reservation_key"],
                     game_record=game,
                     device_id=settings.DEVICE_ID,
+                    engine_stalled=getattr(lifecycle, "reason", None) == "engine_unavailable",
                 ),
                 user_id=str(user_id),
                 idempotency_key=f"ladder-settlement:{snapshot.game_id}",
@@ -371,8 +397,10 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 and _local_ranked_session_matches(request, current_user, pending, blocking["game_id"])
             ):
                 await _remote(
-                    lambda: request.app.state.remote_client.activate_ai_ladder_game(
-                        blocking["game_id"], pending["reservation_key"], pending["session_id"]
+                    lambda: _retry_indeterminate(
+                        lambda: request.app.state.remote_client.activate_ai_ladder_game(
+                            blocking["game_id"], pending["reservation_key"], pending["session_id"]
+                        )
                     ),
                     "AI ladder activation reconciliation",
                 )
@@ -618,12 +646,14 @@ async def start_ranked_game(
     if board:
         reserve_payload = {"game_id": game_id, "reservation_key": reservation_key, **body.model_dump()}
         try:
-            reservation_payload = await request.app.state.remote_client.reserve_ai_ladder_game(reserve_payload)
-        except httpx.RequestError:
-            reservation_payload = await _remote(
-                lambda: request.app.state.remote_client.reserve_ai_ladder_game(reserve_payload),
-                "AI ladder reservation",
+            reservation_payload = await _retry_indeterminate(
+                lambda: request.app.state.remote_client.reserve_ai_ladder_game(reserve_payload)
             )
+        except _IndeterminateRemoteTransition as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Ranked game reservation is awaiting cloud expiry",
+            ) from exc
         except httpx.HTTPStatusError as exc:
             raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         try:
@@ -791,8 +821,10 @@ async def start_ranked_game(
             session.katrain.game_type = AI_LADDER_GAME_TYPE
             session.last_state = session.katrain.get_state()
         if board:
-            await request.app.state.remote_client.activate_ai_ladder_game(
-                game_id, reservation_key, session.session_id
+            await _retry_indeterminate(
+                lambda: request.app.state.remote_client.activate_ai_ladder_game(
+                    game_id, reservation_key, session.session_id
+                )
             )
         else:
             request.app.state.ai_ladder_repo.activate_reservation(
@@ -805,7 +837,9 @@ async def start_ranked_game(
     except Exception as exc:
         if activity is not None:
             activity.release_ranked_start(current_user.id)
-        ambiguous_activation = board and isinstance(exc, httpx.RequestError)
+        ambiguous_activation = board and (
+            isinstance(exc, _IndeterminateRemoteTransition) or _is_indeterminate_remote_error(exc)
+        )
         if ambiguous_activation:
             try:
                 lifecycle = await request.app.state.remote_client.get_ai_ladder_game_status(game_id)

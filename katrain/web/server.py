@@ -68,10 +68,6 @@ async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> 
     snapshot = guard_ai_ladder_ranked_owner(session, current_user, "ranked lifecycle")
     if getattr(session, "ai_ladder_remote_ended", False):
         raise HTTPException(status_code=409, detail="Ranked game has ended on another device")
-    local_state = session.katrain.get_state()
-    if getattr(session, "_recorded", False) or (isinstance(local_state, dict) and local_state.get("end_result")):
-        # A normal terminal on this origin device keeps the existing SGF/export flow.
-        return
     try:
         if getattr(app.state, "remote_client", None) and getattr(app.state, "repository_dispatcher", None):
             if str(getattr(app.state.remote_client, "bound_user_id", "")) != str(current_user.id):

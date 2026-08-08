@@ -1039,7 +1039,7 @@ async def test_active_ranked_sgf_export_is_blocked(api_app, client):
 
 
 @pytest.mark.asyncio
-async def test_settled_ranked_sgf_export_is_available_to_owner(api_app, client):
+async def test_settled_ranked_sgf_export_uses_shared_game_history_instead_of_live_session(api_app, client):
     async with client as ac:
         started = await start_ranked(api_app, ac)
         session_id = started.json()["session_id"]
@@ -1047,8 +1047,7 @@ async def test_settled_ranked_sgf_export_is_available_to_owner(api_app, client):
         response = await ac.get("/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id})
 
     assert resigned.status_code == 200
-    assert response.status_code == 200
-    assert response.json()["sgf"].startswith("(;FF[4]")
+    assert response.status_code == 409
 
 
 @pytest.mark.asyncio
@@ -1060,15 +1059,7 @@ async def test_settled_ranked_game_rejects_public_and_vision_moves_without_chang
         assert (
             await ac.post("/api/resign", headers=api_app.state._test_headers, json={"session_id": session_id})
         ).status_code == 200
-        exported_before = await ac.get(
-            "/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id}
-        )
-        assert exported_before.status_code == 200, (
-            exported_before.text,
-            session._recorded,
-            session.ai_ladder_settlement_pending,
-        )
-        sgf_before = exported_before.json()["sgf"]
+        sgf_before = session.katrain.get_sgf()
         snapshot = session.ai_ladder_snapshot
         vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
         api_app.state.ranked_vision_binding = SimpleNamespace(
@@ -1085,9 +1076,7 @@ async def test_settled_ranked_game_rejects_public_and_vision_moves_without_chang
         delay = await __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move(
             api_app, vision, session_id, SimpleNamespace(col=4, row=4, color=1), logging.getLogger("vision")
         )
-        sgf_after = (
-            await ac.get("/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id})
-        ).json()["sgf"]
+        sgf_after = session.katrain.get_sgf()
 
     assert public_move.status_code == 403
     assert delay == 0.5
@@ -1402,18 +1391,14 @@ async def test_repeated_ranked_resign_is_rejected_without_changing_authoritative
         started = await start_ranked(api_app, ac)
         session_id = started.json()["session_id"]
         first = await ac.post("/api/resign", headers=api_app.state._test_headers, json={"session_id": session_id})
-        sgf_before = (
-            await ac.get("/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id})
-        ).json()["sgf"]
+        session = api_app.state._test_created_sessions[0]
+        sgf_before = session.katrain.get_sgf()
         second = await ac.post("/api/resign", headers=api_app.state._test_headers, json={"session_id": session_id})
-        sgf_after = (
-            await ac.get("/api/sgf/save", headers=api_app.state._test_headers, params={"session_id": session_id})
-        ).json()["sgf"]
+        sgf_after = session.katrain.get_sgf()
 
     assert first.status_code == 200
     assert second.status_code == 403
     assert sgf_after == sgf_before
-    session = api_app.state._test_created_sessions[0]
     assert session.katrain.game.current_node.end_state == "W+R"
     with api_app.state._test_session_factory() as db:
         ledger = db.query(models_db.AiLadderGameLedger).all()
@@ -2866,6 +2851,57 @@ async def test_board_remote_terminal_blocks_move_and_save_before_local_mutation(
     assert session.katrain._state["history"] == history_before
     assert session.ai_ladder_remote_ended is True
     session.katrain.stop_pondering.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_board_remote_settled_blocks_direct_save_even_when_local_game_already_ended(api_app, client):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+        session = api_app.state._test_created_sessions[0]
+        session.katrain.stop_pondering = MagicMock()
+        session.katrain._state["end_result"] = "W+R"
+        session._recorded = True
+        session.ai_ladder_settlement_pending = False
+        remote.get_ai_ladder_game_status.return_value = {
+            "state": "settled", "game_id": game_id,
+            "receipt": {"counted": True, "reason": None},
+        }
+
+        saved = await ac.get(
+            "/api/sgf/save", headers=api_app.state._test_headers,
+            params={"session_id": session.session_id},
+        )
+
+    assert saved.status_code == 409
+    remote.get_ai_ladder_game_status.assert_awaited_once_with(game_id)
+    session.katrain.stop_pondering.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_board_remote_error_blocks_direct_ranked_save_with_503(api_app, client):
+    remote = _board_remote(api_app)
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        session = api_app.state._test_created_sessions[0]
+        session.katrain._state["end_result"] = "W+R"
+        session._recorded = True
+        session.ai_ladder_settlement_pending = False
+        remote.get_ai_ladder_game_status.side_effect = RuntimeError("cloud offline")
+
+        saved = await ac.get(
+            "/api/sgf/save", headers=api_app.state._test_headers,
+            params={"session_id": session.session_id},
+        )
+
+    assert saved.status_code == 503
 
 
 @pytest.mark.asyncio

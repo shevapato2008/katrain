@@ -320,7 +320,6 @@ const GamePage = () => {
         if (remoteLifecycle || !(await checkRankedStillActive())) return;
         onMove(x, y);
     };
-    const controlsGameState = remoteLifecycle ? { ...gameState, end_result: 'REMOTE_ENDED' } : gameState;
     const remoteFeedback = remoteLifecycle?.state === 'pending_settlement'
         ? { kind: 'pending' as const, message: '本局已在其他设备结束，正在结算' }
         : remoteLifecycle?.state === 'settled'
@@ -333,7 +332,11 @@ const GamePage = () => {
             : null;
 
     const board = (
-        <Box sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0, pointerEvents: remoteLifecycle ? 'none' : 'auto' }}>
+        <Box
+            data-testid="ranked-board-interaction"
+            aria-disabled={Boolean(remoteLifecycle)}
+            sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0, pointerEvents: remoteLifecycle ? 'none' : 'auto' }}
+        >
             <div style={{
                 display: (analysisToggles.view3d && Board3D) ? 'none' : 'flex',
                 width: '100%', height: '100%',
@@ -358,9 +361,9 @@ const GamePage = () => {
         </Box>
     );
 
-    const controls = (embedded = false) => (
+    const controlsPanel = (embedded = false) => (
         <RightSidebarPanel
-            gameState={controlsGameState}
+            gameState={gameState}
             analysisToggles={analysisToggles}
             onToggleChange={handleToggleChange}
             onNavigate={onNavigate}
@@ -372,6 +375,16 @@ const GamePage = () => {
             embedded={embedded}
         />
     );
+    const controls = (embedded = false) => isRated ? (
+        <Box
+            component="fieldset"
+            disabled={Boolean(remoteLifecycle)}
+            aria-disabled={Boolean(remoteLifecycle)}
+            sx={{ border: 0, m: 0, p: 0, minWidth: 0, width: '100%', height: '100%' }}
+        >
+            {controlsPanel(embedded)}
+        </Box>
+    ) : controlsPanel(embedded);
 
     return (
         <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', position: 'relative' }}>

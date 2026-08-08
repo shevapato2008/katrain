@@ -1,11 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameState } from '../../api';
 import GamePage from './GamePage';
 
 const mocks = vi.hoisted(() => ({
-  getStatus: vi.fn(), getGameStatus: vi.fn(), onMove: vi.fn(), handleAction: vi.fn(), gameState: null as GameState | null,
+  getStatus: vi.fn(), getGameStatus: vi.fn(), onMove: vi.fn(), handleAction: vi.fn(), railToggle: vi.fn(), gameState: null as GameState | null,
 }));
 vi.mock('../../features/aiLadder/api', () => ({
   getAiLadderStatus: mocks.getStatus,
@@ -19,9 +20,10 @@ vi.mock('../../components/Board', () => ({ default: ({ onMove, gameState }: { on
   <button disabled={Boolean(gameState.end_result)} onClick={() => onMove(3, 3)}>board</button>
 ) }));
 vi.mock('../components/game/RightSidebarPanel', () => ({
-  default: ({ embedded, gameState, onAction }: { embedded?: boolean; gameState: GameState; onAction: (action: string) => void }) => (
-    <div data-testid="game-controls" data-embedded={String(Boolean(embedded))}>
+  default: ({ embedded, gameState, onAction, onToggleChange }: { embedded?: boolean; gameState: GameState; onAction: (action: string) => void; onToggleChange: (setting: string) => void }) => (
+    <div data-testid="game-controls" data-embedded={String(Boolean(embedded))} data-end-result={String(gameState.end_result)}>
       <button disabled={Boolean(gameState.end_result)} onClick={() => onAction('pass')}>pass</button>
+      <button onClick={() => { mocks.railToggle(); onToggleChange('coords'); }}>toggle coords</button>
     </div>
   ),
 }));
@@ -52,6 +54,7 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.getGameStatus.mockReset();
     mocks.onMove.mockReset();
     mocks.handleAction.mockReset();
+    mocks.railToggle.mockReset();
     mocks.gameState = gameState;
   });
   afterEach(() => vi.useRealTimers());
@@ -107,13 +110,19 @@ describe('Galaxy GamePage ranked settlement', () => {
       state: 'settled', game_id: 'g1', receipt: { counted: true, reason: null },
     });
     render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    const user = userEvent.setup();
 
     expect(await screen.findByText('本局已在其他设备结束，结算已完成')).toBeInTheDocument();
+    expect(screen.getByTestId('game-controls')).toHaveAttribute('data-end-result', 'null');
     expect(screen.getByRole('button', { name: 'pass' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'toggle coords' })).toBeDisabled();
+    expect(screen.getByTestId('ranked-board-interaction')).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'board' }));
     fireEvent.click(screen.getByRole('button', { name: 'pass' }));
+    await user.click(screen.getByRole('button', { name: 'toggle coords' }));
     expect(mocks.onMove).not.toHaveBeenCalled();
     expect(mocks.handleAction).not.toHaveBeenCalled();
+    expect(mocks.railToggle).not.toHaveBeenCalled();
   });
 
   it('checks authority immediately before a human move and keeps play alive on status errors', async () => {

@@ -73,6 +73,21 @@ def test_the_same_game_cannot_be_queued_twice_under_two_names(factory):
     assert rows[0].idempotency_key == "ladder-settlement:same-game"
 
 
+def test_enqueue_reports_both_insert_and_idempotent_duplicate_as_durable(factory):
+    common = dict(
+        operation="settle_ai_ladder_ranked",
+        endpoint="/api/v1/ai-ladder/settlements",
+        method="POST",
+        payload={"game_id": "durable"},
+        user_id="1",
+        idempotency_key="ladder-settlement:durable",
+    )
+
+    assert enqueue_sync_item(factory, **common) is True
+    assert enqueue_sync_item(factory, **common) is True
+    assert len(_rows(factory)) == 1
+
+
 @pytest.mark.asyncio
 async def test_a_rank_event_waits_for_its_own_owners_cloud_session(factory):
     """A board is shared. Posting under whoever logged in last moves the wrong rank."""

@@ -177,6 +177,28 @@ def _active_session(request: Request, session_id: str) -> bool:
     return session is not None
 
 
+def _local_ranked_session_matches(request: Request, current_user: User, pending: dict, game_id: str) -> bool:
+    session_id = pending.get("session_id")
+    manager = request.app.state.session_manager
+    lock = getattr(manager, "_lock", None)
+    if lock is None:
+        session = getattr(manager, "_sessions", {}).get(session_id)
+    else:
+        with lock:
+            session = manager._sessions.get(session_id)
+    if session is None:
+        return False
+    snapshot = getattr(session, "ai_ladder_snapshot", None)
+    return bool(
+        getattr(session, "user_id", None) == current_user.id
+        and getattr(session, "game_type", None) == AI_LADDER_GAME_TYPE
+        and isinstance(snapshot, AiLadderSessionSnapshot)
+        and snapshot.game_id == game_id
+        and snapshot.user_id == current_user.id
+        and snapshot.session_id == session_id
+    )
+
+
 def _recover_pending(request: Request, user_id: int) -> None:
     if _is_board(request):
         # This row is only the board's durable mirror. Losing the in-memory session
@@ -306,7 +328,7 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
             if (
                 pending is not None
                 and pending.get("game_id") == blocking.get("game_id")
-                and _active_session(request, pending.get("session_id", ""))
+                and _local_ranked_session_matches(request, current_user, pending, blocking["game_id"])
             ):
                 # Work on a copy: never pass through any cloud-side session/key.
                 payload["blocking_game"]["session_id"] = pending["session_id"]

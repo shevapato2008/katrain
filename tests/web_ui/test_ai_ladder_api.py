@@ -2451,7 +2451,11 @@ async def test_board_status_uses_cloud_authority_and_only_enriches_its_live_loca
         execution_identity=started["execution_identity"],
     )
     api_app.state.ai_ladder_repo.create_pending_game(snapshot, reservation_key="never-relay")
-    api_app.state.session_manager._sessions["local-live-session"] = SimpleNamespace()
+    api_app.state.session_manager._sessions["local-live-session"] = SimpleNamespace(
+        user_id=api_app.state._test_user_id,
+        game_type="ai_ladder_ranked",
+        ai_ladder_snapshot=snapshot,
+    )
 
     async with client as ac:
         response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
@@ -2460,6 +2464,62 @@ async def test_board_status_uses_cloud_authority_and_only_enriches_its_live_loca
     assert response.json()["blocking_game"]["session_id"] == "local-live-session"
     assert "reservation_key" not in str(response.json())
     remote.get_ai_ladder_status.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_session", ["wrong_owner", "replaced_snapshot", "reset_game"])
+async def test_board_status_rejects_stale_or_mismatched_local_sessions(api_app, client, bad_session):
+    remote = _board_remote(api_app)
+    game_id = "0123456789abcdef0123456789abcdef"
+    remote.get_ai_ladder_status.return_value = {
+        "view_state": "ready",
+        "blocking_game": {
+            "game_id": game_id,
+            "state": "active",
+            "ownership": "current_device",
+            "user_color": "B",
+            "opponent_rank_name": "fixture-16",
+        },
+    }
+    reserved = await remote.reserve_ai_ladder_game({})
+    from katrain.web.core.ai_ladder_ranked import AiLadderOpponentSnapshot
+
+    opponent = AiLadderOpponentSnapshot(**reserved["opponent"])
+    snapshot = __import__(
+        "katrain.web.core.ai_ladder_catalog", fromlist=["AiLadderSessionSnapshot"]
+    ).AiLadderSessionSnapshot(
+        game_id=game_id,
+        session_id="local-live-session",
+        user_id=api_app.state._test_user_id,
+        user_color="B",
+        game_type="ai_ladder_ranked",
+        opponent=opponent,
+        ai_subtype="ai:ladder",
+        execution_identity=reserved["execution_identity"],
+    )
+    api_app.state.ai_ladder_repo.create_pending_game(snapshot, reservation_key="secret")
+    session = SimpleNamespace(
+        user_id=api_app.state._test_user_id,
+        game_type="ai_ladder_ranked",
+        ai_ladder_snapshot=snapshot,
+    )
+    if bad_session == "wrong_owner":
+        session.user_id += 1
+    elif bad_session == "replaced_snapshot":
+        session.ai_ladder_snapshot = SimpleNamespace(
+            game_id="fedcba9876543210fedcba9876543210",
+            user_id=api_app.state._test_user_id,
+            session_id="local-live-session",
+        )
+    else:
+        session.game_type = "free"
+    api_app.state.session_manager._sessions["local-live-session"] = session
+
+    async with client as ac:
+        response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
+
+    assert response.status_code == 200
+    assert "session_id" not in response.json()["blocking_game"]
 
 
 @pytest.mark.asyncio
@@ -2578,7 +2638,7 @@ async def test_board_terminal_queues_the_full_record_with_reservation_and_device
 
     remote = _board_remote(api_app)
     remote.mark_ai_ladder_game_pending = AsyncMock()
-    enqueue = MagicMock()
+    enqueue = MagicMock(return_value=True)
     api_app.state.sync_enqueue_fn = enqueue
     monkeypatch.setattr(server_module.settings, "DEVICE_ID", "box-17")
 
@@ -2604,6 +2664,47 @@ async def test_board_terminal_queues_the_full_record_with_reservation_and_device
     assert payload["game_record"]["sgf_content"].startswith("(;FF[4]")
     assert payload["game_record"]["game_type"] == "ai_ladder_ranked"
     assert payload["game_id"] == started.json()["game_id"]
+
+
+@pytest.mark.asyncio
+async def test_board_terminal_retains_pending_credential_until_outbox_is_durable(api_app, client, monkeypatch):
+    from katrain.web import server as server_module
+
+    remote = _board_remote(api_app)
+    remote.mark_ai_ladder_game_pending = AsyncMock()
+    enqueue = MagicMock(side_effect=[False, True])
+    api_app.state.sync_enqueue_fn = enqueue
+    monkeypatch.setattr(server_module.settings, "DEVICE_ID", "box-17")
+
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=api_app.state._test_headers,
+            json={"color": "black", "time_enabled": False},
+        )
+        await ac.post(
+            "/api/resign",
+            headers=api_app.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    session = api_app.state._test_created_sessions[0]
+    pending = api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id)
+    assert pending["reservation_key"] == "raw-reservation-key"
+    assert session.ai_ladder_settlement_pending is True
+    assert session._recorded is False
+
+    await server_module._RECORD_FN(
+        session,
+        api_app,
+        SimpleNamespace(id=api_app.state._test_user_id, username="ladder-user"),
+        "W+R",
+    )
+
+    assert enqueue.call_count == 2
+    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+    assert session.ai_ladder_settlement_pending is False
+    assert session._recorded is True
 
 
 @pytest.mark.asyncio

@@ -417,7 +417,8 @@ def enqueue_sync_item(
             # hand the server the same event under two names.
             db.rollback()
             logger.info(f"Sync item already queued, not duplicating: {operation} [{idempotency_key}]")
-            return
+            return True
         logger.debug(f"Enqueued sync: {operation} → {endpoint}")
+        return True
     finally:
         db.close()

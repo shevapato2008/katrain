@@ -198,24 +198,31 @@ Commit: `完成升降级跨设备对局闭环`
 ### Task 6: 当前旅程自动化验收
 
 **Files:**
-- Modify: `katrain/web/ui/tests/galaxy-ai-ladder-active-game-visual.spec.ts`
+- Modify: `docs/superpowers/plans/2026-08-09-galaxy-ai-ladder-active-game-backend.md`
 - Test: `tests/web_ui/test_ai_ladder_api.py`
+- Retain unchanged: `katrain/web/ui/tests/galaxy-ai-ladder-active-game-visual.spec.ts`
 
-- [ ] **Step 1: 用真实后端替换业务 Fixture**
+- [x] **Step 1: 明确真实契约与视觉回归的测试分层**
 
-保留登录/引擎最小测试隔离；状态、预约、结束、回执和数据库断言必须来自真实 FastAPI/SQLite 测试实例。
+状态、预约/激活、结束、回执和数据库约束由真实 FastAPI/SQLite 测试实例验收；Playwright 的网络 route
+继续只承担已确认页面的确定性视觉回归，不作为业务契约证据，也不引入生产测试端点或 seed 服务。生产组件中已无
+模拟生命周期业务数据，因此本切片的生产 Fixture 删除条件已经满足；测试目录中的隔离 route 作为回归资产保留。
 
-- [ ] **Step 2: 执行最小验收矩阵**
+- [x] **Step 2: 执行最小验收矩阵**
 
-设备 A 开局；设备 B 看到 `other_device` 并主动结束；A 的下一次状态校验停止对局；两端读取同一 settled receipt；数据库只有一条 `user_games` 和一条 ledger，来源设备与终局设备可审计。
+`test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_write` 通过公共 API 串起：设备 A 开局（内部完成
+reserve/activate）；设备 B 看到 `other_device` 并主动结束；A 读取 settled 后继续落子被 409 拒绝；两端读取同一
+receipt；SQLite 中恰有一条 `user_games` 和一条 ledger，且 `origin_device_id=galaxy-a`、
+`deciding_device_id=galaxy-b`、`terminal_source=remote_resign`。这些行为此前已有分散测试覆盖，本步骤是验收测试组织，
+没有发现需要生产改动的 RED 缺口。
 
-- [ ] **Step 3: 运行切片验证**
+- [x] **Step 3: 运行聚焦切片验证**
 
-Run: `python -m pytest tests/web_ui/test_ai_ladder_ranked.py tests/web_ui/test_ai_ladder_api.py tests/web_ui/test_ladder_settlement_sync.py tests/web_ui/test_migrations.py tests/test_user_game_repo.py -q`
+Run: `python -m pytest tests/web_ui/test_ai_ladder_api.py::test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_write -q`
 
-Run: `cd katrain/web/ui && npm test -- --run src/features/aiLadder/api.test.ts src/galaxy/pages/AiSetupPage.test.tsx src/galaxy/components/aiLadder/AiLadderRatedSetup.test.tsx && npx tsc -p tsconfig.app.json --noEmit`
+Expected: PASS；不重复运行本阶段无改动的视觉和全量前端测试。
 
-- [ ] **Step 4: 提交验收资产**
+- [x] **Step 4: 提交验收资产**
 
 Commit: `验收升降级跨设备对局闭环`
 

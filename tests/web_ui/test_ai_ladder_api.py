@@ -2357,26 +2357,60 @@ async def test_remote_end_first_makes_late_direct_record_a_noop(api_app, client)
 
 
 @pytest.mark.asyncio
-async def test_cloud_authority_blocks_origin_move_after_another_device_ends_game(api_app, client):
+async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_write(api_app, client):
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-b"}
     async with client as ac:
         started = await ac.post(
-            "/api/v1/ai-ladder/start", headers=api_app.state._test_headers,
+            "/api/v1/ai-ladder/start", headers=origin,
             json={"color": "black", "time_enabled": False},
         )
+        game_id = started.json()["game_id"]
         session = api_app.state._test_created_sessions[0]
         history_before = list(session.katrain._state["history"])
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{started.json()['game_id']}/end",
-            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-b"},
+        other_status = await ac.get("/api/v1/ai-ladder/status", headers=other)
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers=other,
             json={"reason": "user_resigned"},
         )
+        origin_lifecycle = await ac.get(f"/api/v1/ai-ladder/games/{game_id}/status", headers=origin)
+        other_lifecycle = await ac.get(f"/api/v1/ai-ladder/games/{game_id}/status", headers=other)
         moved = await ac.post(
-            "/api/move", headers=api_app.state._test_headers,
+            "/api/move", headers=origin,
             json={"session_id": session.session_id, "coords": [3, 3]},
         )
 
+    assert started.status_code == 201
+    assert other_status.json()["blocking_game"] == {
+        "game_id": game_id,
+        "state": "active",
+        "ownership": "other_device",
+        "user_color": "B",
+        "opponent_rank_name": "fixture-16",
+    }
+    receipt = ended.json()
+    assert ended.status_code == 200
+    assert receipt == {
+        "state": "settled",
+        "game_id": game_id,
+        "receipt": {"counted": True, "reason": None},
+    }
+    assert origin_lifecycle.json() == receipt
+    assert other_lifecycle.json() == receipt
     assert moved.status_code == 409
     assert session.katrain._state["history"] == history_before
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.UserGame).count() == 1
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        game = db.query(models_db.UserGame).one()
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (game.source, game.game_type, game.origin_device_id) == (
+            "play_ai", "ai_ladder_ranked", "galaxy-a"
+        )
+        assert (ledger.origin_device_id, ledger.deciding_device_id, ledger.terminal_source) == (
+            "galaxy-a", "galaxy-b", "remote_resign"
+        )
 
 
 class RecordingDispatcher:

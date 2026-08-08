@@ -610,6 +610,126 @@ def test_finalizer_rechecks_ledger_when_locked_active_row_disappears(
     assert (receipt.state, receipt.result, receipt.replayed) == ("settled", "loss", True)
 
 
+def test_reserve_and_legacy_settle_lock_account_before_terminal_absence_read(
+    session_factory, user, opponent, monkeypatch
+):
+    events = []
+    repo = AiLadderRankedRepository(session_factory)
+    original_lock_user = repo._lock_user
+    original_find_ledger = repo._find_ledger_by_game_id
+
+    def lock_user(*args, **kwargs):
+        events.append("lock_user")
+        return original_lock_user(*args, **kwargs)
+
+    def find_ledger(*args, **kwargs):
+        events.append("find_ledger")
+        return original_find_ledger(*args, **kwargs)
+
+    monkeypatch.setattr(repo, "_lock_user", lock_user)
+    monkeypatch.setattr(repo, "_find_ledger_by_game_id", find_ledger)
+
+    reservation = reserve(repo, user.id, opponent)
+    assert events.index("lock_user") < events.index("find_ledger")
+
+    repo.cancel_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+    )
+    events.clear()
+    settle(repo, user.id, "legacy-ordered", "win", replace(opponent, rung=25))
+    assert events.index("lock_user") < events.index("find_ledger")
+
+
+def test_legacy_settled_game_prevents_later_reservation_for_same_game(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    settle(repo, user.id, "legacy-before-reserve", "win", replace(opponent, rung=25))
+
+    with pytest.raises(AiLadderLifecycleConflict):
+        reserve(repo, user.id, opponent, game_id="legacy-before-reserve")
+
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        assert db.query(models_db.AiLadderActiveGame).count() == 0
+
+
+def test_terminal_replay_clears_exact_stale_active_row(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, opponent)
+    with session_factory() as db:
+        db.add(
+            models_db.AiLadderGameLedger(
+                game_id=reservation.game.game_id,
+                user_id=user.id,
+                user_color="B",
+                result="loss",
+                game_type=AI_LADDER_GAME_TYPE,
+                counted=False,
+                reason="inconclusive",
+                origin_device_id="device-a",
+                deciding_device_id="device-b",
+                terminal_source="remote_resign",
+                decided_at=models_db.func.now(),
+            )
+        )
+        db.commit()
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-b",
+    )
+
+    assert receipt.replayed
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 1
+        assert db.query(models_db.AiLadderActiveGame).count() == 0
+
+
+@pytest.mark.parametrize(
+    ("sgf_content", "submitted_result", "message"),
+    [
+        ("(;GM[1]FF[4]SZ[19]RU[Chinese]KM[7.5]PB[User]PW[AI]RE[B+R])", "inconclusive", "inconclusive"),
+        ("(;GM[1]FF[4]SZ[19]RU[Japanese]KM[7.5]PB[User]PW[AI]RE[B+R])", "win", "rules"),
+        ("(;GM[1]FF[4]SZ[19]RU[Chinese]KM[6.5]PB[User]PW[AI]RE[B+R])", "win", "komi"),
+    ],
+)
+def test_sgf_terminal_and_rules_must_match_submission_and_frozen_contract(
+    session_factory, user, opponent, sgf_content, submitted_result, message
+):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+    record = complete_game_record()
+    record["sgf_content"] = sgf_content
+
+    with pytest.raises(ValueError, match=message):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source="played_result",
+            result=submitted_result,
+            deciding_device_id="device-a",
+            reservation_key=reservation.reservation_key,
+            game_record=record,
+        )
+
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).count() == 1
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+
+
 def test_pending_reservation_key_survives_repository_restart(tmp_path, opponent):
     factory = file_session_factory(tmp_path)
     with factory() as db:

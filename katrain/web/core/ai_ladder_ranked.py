@@ -181,6 +181,7 @@ class AiLadderRankedRepository:
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
+            self._lock_user(session, user_id=user_id)
             existing = (
                 session.query(models_db.AiLadderActiveGame)
                 .filter(models_db.AiLadderActiveGame.user_id == user_id)
@@ -205,9 +206,7 @@ class AiLadderRankedRepository:
                         reservation_key=None,
                     )
                 raise AiLadderLifecycleConflict("account already has an active ranked AI game")
-            if session.get(models_db.User, user_id) is None:
-                raise AiLadderLifecycleNotFound("account not found")
-            if session.query(models_db.AiLadderGameLedger).filter_by(game_id=game_id).one_or_none() is not None:
+            if self._find_ledger_by_game_id(session, game_id=game_id) is not None:
                 raise AiLadderLifecycleConflict("game_id is already settled")
             row = models_db.AiLadderActiveGame(
                 game_id=game_id,
@@ -640,19 +639,20 @@ class AiLadderRankedRepository:
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
+            self._lock_user(session, user_id=user_id)
             existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
             if existing is not None:
-                return self._lifecycle_receipt(session, existing, replayed=True)
+                return self._replay_lifecycle_receipt(session, existing)
 
             row = self._lock_lifecycle_or_none(session, user_id=user_id, game_id=game_id)
             if row is None:
                 existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
                 if existing is not None:
-                    return self._lifecycle_receipt(session, existing, replayed=True)
+                    return self._replay_lifecycle_receipt(session, existing)
                 raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
             existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
             if existing is not None:
-                return self._lifecycle_receipt(session, existing, replayed=True)
+                return self._replay_lifecycle_receipt(session, existing)
             if terminal_source in {"played_result", "recovery"}:
                 self._verify_origin(
                     row,
@@ -708,7 +708,7 @@ class AiLadderRankedRepository:
             existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
             if existing is None:
                 raise
-            return self._lifecycle_receipt(session, existing, replayed=True)
+            return self._replay_lifecycle_receipt(session, existing)
         except Exception:
             session.rollback()
             raise
@@ -734,11 +734,8 @@ class AiLadderRankedRepository:
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
-            existing = (
-                session.query(models_db.AiLadderGameLedger)
-                .filter(models_db.AiLadderGameLedger.game_id == game_id)
-                .one_or_none()
-            )
+            user = self._lock_user(session, user_id=user_id)
+            existing = self._find_ledger_by_game_id(session, game_id=game_id)
             if existing is not None:
                 return self._replay_result(session, existing, user_id)
 
@@ -752,10 +749,6 @@ class AiLadderRankedRepository:
             )
             if active is not None:
                 raise AiLadderLifecycleConflict("active ranked AI game must use the lifecycle finalizer")
-
-            user = session.query(models_db.User).filter(models_db.User.id == user_id).with_for_update().one_or_none()
-            if user is None:
-                raise ValueError(f"unknown user_id: {user_id}")
 
             ignored_reason = self._ignored_reason(
                 game_type=game_type, result=result, opponent=opponent, engine_stalled=engine_stalled
@@ -946,8 +939,19 @@ class AiLadderRankedRepository:
         return row
 
     @staticmethod
+    def _lock_user(session, *, user_id: int):
+        user = session.query(models_db.User).filter(models_db.User.id == user_id).with_for_update().one_or_none()
+        if user is None:
+            raise AiLadderLifecycleNotFound("account not found")
+        return user
+
+    @staticmethod
+    def _find_ledger_by_game_id(session, *, game_id: str):
+        return session.query(models_db.AiLadderGameLedger).filter_by(game_id=game_id).one_or_none()
+
+    @staticmethod
     def _find_ledger(session, *, user_id: int, game_id: str):
-        ledger = session.query(models_db.AiLadderGameLedger).filter_by(game_id=game_id).one_or_none()
+        ledger = AiLadderRankedRepository._find_ledger_by_game_id(session, game_id=game_id)
         if ledger is not None and ledger.user_id != user_id:
             raise AiLadderLifecycleNotFound("ranked AI lifecycle not found")
         return ledger
@@ -1057,6 +1061,8 @@ class AiLadderRankedRepository:
         winner = row.user_color if result == "win" else ("W" if row.user_color == "B" else "B")
         if result in {"win", "loss"} and (not isinstance(sgf_result, str) or not sgf_result.startswith(f"{winner}+")):
             raise ValueError("game_record result does not match user result")
+        if result == "inconclusive" and sgf_result.upper().startswith(("B+", "W+")):
+            raise ValueError("inconclusive result cannot carry a decisive SGF result")
         try:
             root = SGF.parse_sgf(normalized["sgf_content"])
         except (ParseError, TypeError, ValueError, IndexError) as exc:
@@ -1066,13 +1072,30 @@ class AiLadderRankedRepository:
             "result": root.get_property("RE"),
             "player_black": root.get_property("PB"),
             "player_white": root.get_property("PW"),
+            "rules": root.get_property("RU"),
+            "komi": root.get_property("KM"),
         }
         if str(parsed["board_size"]) != "19":
             raise ValueError("game_record SGF board_size does not match")
         for name in ("result", "player_black", "player_white"):
             if parsed[name] != normalized[name]:
                 raise ValueError(f"game_record SGF {name} does not match")
+        if AiLadderRankedRepository._normalize_rules(parsed["rules"]) != AiLadderRankedRepository._normalize_rules(
+            normalized["rules"]
+        ):
+            raise ValueError("game_record SGF rules do not match")
+        try:
+            parsed_komi = float(parsed["komi"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError("game_record SGF komi is invalid") from exc
+        if parsed_komi != float(normalized["komi"]):
+            raise ValueError("game_record SGF komi does not match")
         return normalized
+
+    @staticmethod
+    def _normalize_rules(value: Any) -> str:
+        normalized = str(value or "").strip().casefold()
+        return {"cn": "chinese", "jp": "japanese"}.get(normalized, normalized)
 
     @staticmethod
     def _create_or_validate_user_game(session, *, row, record: Mapping[str, Any]) -> None:
@@ -1135,6 +1158,24 @@ class AiLadderRankedRepository:
             placement_completed=profile.placement_completed if profile is not None else None,
             net_score=profile.net_score if profile is not None else None,
         )
+
+    def _replay_lifecycle_receipt(self, session, ledger) -> AiLadderLifecycleReceipt:
+        """Replay terminal truth and remove an exact stale pre-fix active row."""
+
+        receipt = self._lifecycle_receipt(session, ledger, replayed=True)
+        stale = (
+            session.query(models_db.AiLadderActiveGame)
+            .filter(
+                models_db.AiLadderActiveGame.user_id == ledger.user_id,
+                models_db.AiLadderActiveGame.game_id == ledger.game_id,
+            )
+            .with_for_update()
+            .one_or_none()
+        )
+        if stale is not None:
+            session.delete(stale)
+            session.commit()
+        return receipt
 
     @staticmethod
     def _begin_write_transaction(session) -> None:

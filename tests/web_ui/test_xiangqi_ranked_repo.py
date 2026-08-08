@@ -410,3 +410,24 @@ def test_device_and_settlement_pages_have_independent_monotone_cursors(repo):
     assert summaries["items"][0]["settlement_seq"] == summaries["next_cursor"] == 1
     assert statuses["items"][0]["payload_hash"] == "3" * 64
     assert summaries["items"][0]["rating_after_hex"] == (1038.0).hex()
+
+
+def test_a_defect_shaped_integrity_error_is_not_dressed_up_as_a_conflict(repo):
+    """外键、非空这类违例是自己这边的缺陷,不许穿上"别人先占了"这件外衣。
+
+    云端在 PostgreSQL 上「每个账号第一次预约都失败、API 却回一句平静的 409 本账号已有
+    进行中的预约」能藏那么久,就是因为这里把任何 IntegrityError 都翻成冲突——等于给自己的
+    缺陷配了一个调用方会照单全收的解释。只有真的撞上唯一键才算冲突,其余照原样炸出来。
+    """
+    repository, _ = repo
+    with pytest.raises(IntegrityError):
+        repository.create_reservation_cas(
+            user_uuid=USER_UUID,
+            reservation_id=RESERVATION_ID,
+            game_id=GAME_ID,
+            device_id=None,          # NOT NULL:是我们自己传错了,不是别人抢先
+            expected_profile_version=0,
+            projection_fingerprint="1" * 64,
+            frozen_snapshot=snapshot(),
+            now=NOW,
+        )

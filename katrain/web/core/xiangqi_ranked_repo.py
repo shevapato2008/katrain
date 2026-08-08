@@ -40,6 +40,28 @@ class TerminalConflict(XiangqiRankedConflict):
     """A different immutable terminal fact already won for this game."""
 
 
+def _is_uniqueness_violation(exc: IntegrityError) -> bool:
+    """Answer whether this really is two writers racing for the same unique key.
+
+    Only a uniqueness loss may be reported to the caller as a conflict.  Every
+    other integrity error -- a foreign key inserted out of order, a NOT NULL, a
+    check constraint -- is a defect on this side, and dressing it up as "someone
+    else got there first" gives the caller a plausible story to accept instead of
+    a failure to report.  That is precisely how the capability-JTI foreign key
+    survived: on PostgreSQL *every* account's first reservation failed, and the
+    API answered a calm 409 "this account already has a reservation" to accounts
+    that had never played a game.
+
+    psycopg exposes SQLSTATE (23505 is unique_violation); SQLite only has the
+    message, so fall back to matching it.
+    """
+    orig = getattr(exc, "orig", None)
+    sqlstate = getattr(orig, "sqlstate", None) or getattr(orig, "pgcode", None)
+    if isinstance(sqlstate, str):
+        return sqlstate == "23505"
+    return "UNIQUE constraint failed" in str(orig if orig is not None else exc)
+
+
 FailureHook = Callable[[str], None]
 ReservationProposalFactory = Callable[[models_db.XiangqiRatingProfile], "XiangqiRankedReservationDraft"]
 
@@ -217,6 +239,8 @@ class XiangqiRankedRepository:
             raise
         except IntegrityError as exc:
             session.rollback()
+            if not _is_uniqueness_violation(exc):
+                raise
             raise ReservationConflict("reservation CAS lost to another writer or game_id already exists") from exc
         except Exception:
             session.rollback()
@@ -301,6 +325,8 @@ class XiangqiRankedRepository:
             raise
         except IntegrityError as exc:
             session.rollback()
+            if not _is_uniqueness_violation(exc):
+                raise
             raise ReservationConflict("reservation or initial capability lost an atomic uniqueness race") from exc
         except Exception:
             session.rollback()
@@ -455,6 +481,8 @@ class XiangqiRankedRepository:
             )
             if existing is not None:
                 return existing
+            if not _is_uniqueness_violation(exc):
+                raise
             raise TerminalConflict("terminal transaction lost an immutable uniqueness race") from exc
         except Exception:
             session.rollback()

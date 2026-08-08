@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 import heapq
 import logging
 import math
@@ -1970,9 +1971,14 @@ def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tu
 
     # Play the move and return
     game.katrain.log(f"Playing move {move.gtp()} and creating game node", OUTPUT_DEBUG)
-    if ai_mode == AI_LADDER and _ladder_remote_terminal(game):
-        raise LadderUnavailable("ranked game ended remotely before move commit")
-    played_node = game.play(move)
+    if ai_mode == AI_LADDER:
+        commit_lock = getattr(getattr(game, "katrain", None), "ai_ladder_commit_lock", None)
+        with commit_lock if commit_lock is not None else nullcontext():
+            if _ladder_remote_terminal(game):
+                raise LadderUnavailable("ranked game ended remotely before move commit")
+            played_node = game.play(move)
+    else:
+        played_node = game.play(move)
     game.katrain.log(f"AI thoughts: {ai_thoughts}", OUTPUT_DEBUG)
     played_node.ai_thoughts = ai_thoughts
 

@@ -232,11 +232,21 @@ def _local_ranked_session_matches(request: Request, current_user: User, pending:
 
 
 def mark_ai_ladder_remote_terminal(session, lifecycle) -> None:
-    session.ai_ladder_remote_ended = True
-    session.ai_ladder_remote_lifecycle = lifecycle
     runtime = getattr(session, "katrain", None)
-    if runtime is not None:
-        runtime.ai_ladder_remote_ended = True
+    commit_lock = getattr(runtime, "ai_ladder_commit_lock", None)
+
+    def commit_marker() -> None:
+        session.ai_ladder_remote_ended = True
+        session.ai_ladder_remote_lifecycle = lifecycle
+        if runtime is not None:
+            runtime.ai_ladder_remote_ended = True
+
+    if commit_lock is None:
+        commit_marker()
+    else:
+        with commit_lock:
+            commit_marker()
+
     engine = getattr(runtime, "engine", None)
     terminate = getattr(engine, "terminate_queries", None)
     if callable(terminate):

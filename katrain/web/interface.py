@@ -129,6 +129,7 @@ class WebKaTrain(KaTrainBase):
         self.enable_engine = enable_engine
         self.user_id = user_id
         self.ai_lock = threading.Lock()
+        self.ai_ladder_commit_lock = threading.RLock()
         self._ai_move_pending = False
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
@@ -618,7 +619,8 @@ class WebKaTrain(KaTrainBase):
                     raise ValueError("frozen ladder recipe does not match injected rung")
             self.frozen_ladder_recipe = frozen_ladder_recipe
             self.last_ladder_error = False
-            self.ai_ladder_remote_ended = False
+            with self.ai_ladder_commit_lock:
+                self.ai_ladder_remote_ended = False
             if self.engine:
                 self.engine.on_new_game()
 

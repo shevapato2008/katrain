@@ -3,3 +3,11 @@
 __pycache__
 venv
 .env
+
+# Training artifacts. home-ubuntu doubles as the YOLO training box and the
+# production build host, so without these the web image bakes in ~3.5GB of
+# checkpoints and datasets that no deployment ever reads (measured 2026-08-05:
+# an 8GB build context producing a 12.3GB image).
+runs/
+data/go4_*
+/yolo*.pt

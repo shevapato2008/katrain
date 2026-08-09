@@ -1,12 +1,12 @@
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from katrain.web.core.config import settings
 
 router = APIRouter()
 
 
 @router.get("/health")
-async def health():
+async def health(request: Request):
     engines = {"local": "unknown", "cloud": "unknown"}
 
     # Check local
@@ -29,4 +29,8 @@ async def health():
         except Exception:
             engines["cloud"] = "unreachable"
 
-    return {"status": "ok", "engines": engines}
+    result = {"status": "ok", "engines": engines}
+    ranked = getattr(request.app.state, "xiangqi_ranked_service", None)
+    if ranked is not None:
+        result["xiangqi_ranked"] = ranked.health_metrics()
+    return result

@@ -27,7 +27,59 @@ AI_LADDER_TABLES = {
     "ai_ladder_active_games",
 }
 AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | {AI_LADDER_LEGACY_TABLE}
+XIANGQI_RANKED_TABLES = {
+    "xiangqi_rating_profiles",
+    "xiangqi_ranked_reservations",
+    "xiangqi_ranked_ledger",
+    "xiangqi_ranked_capability_jtis",
+}
+PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | XIANGQI_RANKED_TABLES | {AI_LADDER_LEGACY_TABLE}
+
+
+def install_xiangqi_ranked_immutability(engine) -> None:
+    """Install idempotent database triggers that make terminal facts append-only."""
+
+    if "xiangqi_ranked_ledger" not in inspect(engine).get_table_names():
+        return
+    if engine.dialect.name == "sqlite":
+        statements = (
+            "CREATE TRIGGER IF NOT EXISTS trg_xiangqi_ranked_ledger_no_update "
+            "BEFORE UPDATE ON xiangqi_ranked_ledger BEGIN "
+            "SELECT RAISE(ABORT, 'xiangqi ranked ledger is immutable'); END",
+            "CREATE TRIGGER IF NOT EXISTS trg_xiangqi_ranked_ledger_no_delete "
+            "BEFORE DELETE ON xiangqi_ranked_ledger BEGIN "
+            "SELECT RAISE(ABORT, 'xiangqi ranked ledger is immutable'); END",
+        )
+    elif engine.dialect.name == "postgresql":
+        statements = (
+            "CREATE OR REPLACE FUNCTION reject_xiangqi_ranked_ledger_mutation() RETURNS trigger AS $$ "
+            "BEGIN RAISE EXCEPTION 'xiangqi ranked ledger is immutable'; END; $$ LANGUAGE plpgsql",
+            "DROP TRIGGER IF EXISTS trg_xiangqi_ranked_ledger_no_update ON xiangqi_ranked_ledger",
+            "CREATE TRIGGER trg_xiangqi_ranked_ledger_no_update BEFORE UPDATE ON xiangqi_ranked_ledger "
+            "FOR EACH ROW EXECUTE FUNCTION reject_xiangqi_ranked_ledger_mutation()",
+            "DROP TRIGGER IF EXISTS trg_xiangqi_ranked_ledger_no_delete ON xiangqi_ranked_ledger",
+            "CREATE TRIGGER trg_xiangqi_ranked_ledger_no_delete BEFORE DELETE ON xiangqi_ranked_ledger "
+            "FOR EACH ROW EXECUTE FUNCTION reject_xiangqi_ranked_ledger_mutation()",
+        )
+    else:
+        raise RuntimeError(f"unsupported Xiangqi ranked ledger dialect: {engine.dialect.name}")
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
+def _fail_on_xiangqi_ranked_column_drift(engine, inspector) -> None:
+    existing_tables = set(inspector.get_table_names())
+    for table_name in XIANGQI_RANKED_TABLES & existing_tables:
+        expected = {column.name for column in models_db.Base.metadata.tables[table_name].columns}
+        actual = {column["name"] for column in inspector.get_columns(table_name)}
+        missing = expected - actual
+        if missing:
+            raise RuntimeError(
+                f"schema drift in protected table {table_name}: missing columns {sorted(missing)!r}; "
+                "refusing generic rebuild"
+            )
 
 AI_LADDER_TERMINAL_AUDIT_CONDITION = (
     "(terminal_source IS NULL AND origin_device_id IS NULL "
@@ -253,6 +305,7 @@ def add_missing_columns(engine) -> None:
     that a simple new column (e.g. users.is_admin) doesn't trigger a full rebuild.
     """
     inspector = inspect(engine)
+    _fail_on_xiangqi_ranked_column_drift(engine, inspector)
     existing_tables = set(inspector.get_table_names())
     with engine.begin() as conn:
         for table in models_db.Base.metadata.sorted_tables:
@@ -307,10 +360,13 @@ def create_missing_indexes(engine) -> None:
             for index in table.indexes:
                 if index.name in existing_idx:
                     continue
-                cols = ", ".join(f'"{c.name}"' for c in index.columns)
-                unique = "UNIQUE " if index.unique else ""
-                conn.execute(text(f'CREATE {unique}INDEX IF NOT EXISTS "{index.name}" ON "{table.name}" ({cols})'))
+                # Let SQLAlchemy compile dialect clauses such as the Xiangqi
+                # reservation's partial unique predicate. Reconstructing an
+                # index from column names would silently turn it into a global
+                # unique constraint and prevent a user from playing again.
+                index.create(bind=conn, checkfirst=True)
                 logger.info(f"migrate: created index {index.name} on {table.name}")
+    install_xiangqi_ranked_immutability(engine)
 
 
 def backfill_ai_ladder_decisions(engine) -> None:

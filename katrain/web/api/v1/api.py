@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter
 from katrain.web.api.v1.endpoints import (
     health,
@@ -20,8 +22,17 @@ from katrain.web.api.v1.endpoints import (
     geometry,
     hint,
     ai_ladder,
-    xiangqi_ranked,
 )
+
+logger = logging.getLogger("katrain_web")
+
+try:
+    from katrain.web.api.v1.endpoints import xiangqi_ranked
+except ModuleNotFoundError as exc:
+    if exc.name not in {"smartbox_xiangqi_ranked", "xiangqi_rules_core"}:
+        raise
+    xiangqi_ranked = None
+    logger.warning("Xiangqi ranked API disabled: optional runtime package %s is unavailable", exc.name)
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
@@ -44,4 +55,5 @@ api_router.include_router(led.router, prefix="/led", tags=["led"])
 api_router.include_router(geometry.router, prefix="/geometry", tags=["geometry"])
 api_router.include_router(hint.router, prefix="/hint", tags=["hint"])
 api_router.include_router(ai_ladder.router, prefix="/ai-ladder", tags=["ai-ladder"])
-api_router.include_router(xiangqi_ranked.router, prefix="/xiangqi-ranked", tags=["xiangqi-ranked"])
+if xiangqi_ranked is not None:
+    api_router.include_router(xiangqi_ranked.router, prefix="/xiangqi-ranked", tags=["xiangqi-ranked"])

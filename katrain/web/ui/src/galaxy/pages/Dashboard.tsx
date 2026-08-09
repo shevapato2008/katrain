@@ -8,9 +8,6 @@ import ExtensionIcon from '@mui/icons-material/Extension';
 import type { ReactNode } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../i18n';
-import { useAuth } from '../../context/AuthContext';
-import AiLadderStatusCard from '../../features/aiLadder/AiLadderStatusCard';
-import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 
 interface ModuleCardProps {
     title: string;
@@ -45,9 +42,6 @@ const ModuleCard = ({ title, desc, icon, path, disabled }: ModuleCardProps) => {
 
 const Dashboard = () => {
     useSettings(); // Subscribe to translation changes for re-render
-    const navigate = useNavigate();
-    const { token, user } = useAuth();
-    const { status: aiLadderStatus, retry } = useAiLadderStatus(token || undefined, Boolean(user));
     const modules = [
         { 
             title: i18n.t('btn:Play', 'Play'), 
@@ -92,16 +86,6 @@ const Dashboard = () => {
                     {i18n.t('dashboard:tagline', '棋道导航者')}
                 </Typography>
             </Box>
-
-            {user && (
-                <Box sx={{ mb: 4 }}>
-                    <AiLadderStatusCard
-                        status={aiLadderStatus}
-                        onRetry={retry}
-                        onPrimaryAction={() => navigate('/galaxy/play/ai?mode=rated')}
-                    />
-                </Box>
-            )}
 
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
                 {modules.map((m) => (

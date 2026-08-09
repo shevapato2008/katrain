@@ -33,6 +33,9 @@ sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 alembic>=1.13.0
 
+# Bundled cloud contract used by the Xiangqi ranked API at import time.
+-e packages/smartbox-xiangqi-ranked
+
 # TTS for tutorial narration audio generation
 edge-tts>=6.1.0
 

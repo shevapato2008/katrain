@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AiLadderApiError, getAiLadderStatus } from './api';
 import { AI_LADDER_COPY } from './copy';
-import type { AiLadderStatus } from './types';
+import { isAiLadderReadyStatus, type AiLadderStatus } from './types';
 
 /**
  * The message the player sees. The server's `detail` is English operator text
@@ -31,7 +31,10 @@ export const useAiLadderStatus = (token?: string, enabled = true) => {
     setStatus({ view_state: 'loading' });
     try {
       const next = await getAiLadderStatus(token, controller.signal);
-      if (!controller.signal.aborted && generation.current === requestGeneration) setStatus(next);
+      if (controller.signal.aborted || generation.current !== requestGeneration) return;
+      // A 200 is not a promise about the body's shape. Say "failed to load" rather than
+      // handing a half-formed object to the card and taking the page down with it.
+      setStatus(isAiLadderReadyStatus(next) ? next : { view_state: 'error', message: AI_LADDER_COPY.loadError });
     } catch (error) {
       if (controller.signal.aborted || generation.current !== requestGeneration) return;
       setStatus({ view_state: 'error', message: aiLadderStatusErrorMessage(error) });

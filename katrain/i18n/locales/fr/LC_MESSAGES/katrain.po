@@ -1255,7 +1255,7 @@ msgid "lobby:custom_game"
 msgstr "Partie personnalisée"
 
 msgid "dashboard:welcome"
-msgstr "Bienvenue sur Galaxy Go"
+msgstr "Bienvenue sur StellaBox"
 
 msgid "game_end:forfeit_loss"
 msgstr "Vous avez abandonné la partie."
@@ -1596,7 +1596,7 @@ msgid "tsumego:problemRange"
 msgstr "Problèmes {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Connexion à Galaxy Go"
+msgstr "Connexion à StellaBox"
 
 msgid "auth:register_title"
 msgstr "Créer un compte"

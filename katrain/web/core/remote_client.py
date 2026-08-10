@@ -89,9 +89,10 @@ class RemoteAPIClient:
         return self._auth_required
 
     def _auth_headers(self) -> Dict[str, str]:
+        headers = {"X-StellaBox-Device-ID": self.device_id}
         if self._access_token:
-            return {"Authorization": f"Bearer {self._access_token}"}
-        return {}
+            headers["Authorization"] = f"Bearer {self._access_token}"
+        return headers
 
     async def _refresh_access_token(self) -> bool:
         """Attempt to refresh the access token. Returns True on success."""
@@ -234,6 +235,57 @@ class RemoteAPIClient:
 
     async def delete_user_game(self, game_id: str) -> Dict:
         resp = await self._request("DELETE", f"/api/v1/user-games/{game_id}")
+        resp.raise_for_status()
+        return resp.json()
+
+    # ── Ranked AI ladder (cloud-authoritative lifecycle) ──
+
+    async def get_ai_ladder_status(self) -> Dict:
+        resp = await self._request("GET", "/api/v1/ai-ladder/status")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def reserve_ai_ladder_game(self, data: Dict) -> Dict:
+        resp = await self._request("POST", "/api/v1/ai-ladder/games/reserve", json=data)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def activate_ai_ladder_game(self, game_id: str, reservation_key: str, session_id: str) -> Dict:
+        resp = await self._request(
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            json={"reservation_key": reservation_key, "session_id": session_id},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def mark_ai_ladder_game_pending(self, game_id: str, reservation_key: str) -> Dict:
+        resp = await self._request(
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement",
+            json={"reservation_key": reservation_key},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def cancel_ai_ladder_reservation(self, game_id: str, reservation_key: str) -> Dict:
+        resp = await self._request(
+            "DELETE",
+            f"/api/v1/ai-ladder/games/{game_id}/reservation",
+            json={"reservation_key": reservation_key},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_ai_ladder_game_status(self, game_id: str) -> Dict:
+        resp = await self._request("GET", f"/api/v1/ai-ladder/games/{game_id}/status")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def end_ai_ladder_game(self, game_id: str) -> Dict:
+        resp = await self._request(
+            "POST", f"/api/v1/ai-ladder/games/{game_id}/end", json={"reason": "user_resigned"}
+        )
         resp.raise_for_status()
         return resp.json()
 

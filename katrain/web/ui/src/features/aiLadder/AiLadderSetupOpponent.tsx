@@ -5,6 +5,7 @@ import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { Alert, Box, Button, Chip, LinearProgress, Skeleton, Stack, Typography } from '@mui/material';
 import { AI_LADDER_COPY, formatPlacementProgress, formatPlacementProgressLabel } from './copy';
 import { aiLadderStartBlock, isProvisionalSeating } from './startGate';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { AiLadderCatalogEntry, AiLadderStatus } from './types';
 
 interface AiLadderSetupOpponentProps {
@@ -47,6 +48,10 @@ const Frame = ({ children, compact = false }: { children: React.ReactNode; compa
 );
 
 const AiLadderSetupOpponent = ({ status, onRetry, compact = false }: AiLadderSetupOpponentProps) => {
+  // Subscribes to i18n.notify(); without it every AI_LADDER_COPY getter below keeps
+  // returning the language that happened to be loaded when this first rendered.
+  useTranslation();
+
   if (status.view_state === 'loading') {
     return (
       <Frame compact={compact}>

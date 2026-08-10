@@ -168,6 +168,27 @@ def test_new_game_without_rung_resets_to_none(monkeypatch):
     assert wkt.ladder_rung is None
 
 
+def test_new_game_clears_remote_terminal_marker():
+    wkt = _make_katrain()
+    wkt.ai_ladder_remote_ended = True
+
+    wkt("new_game")
+
+    assert wkt.ai_ladder_remote_ended is False
+
+
+def test_remote_terminal_does_not_surface_as_ladder_engine_failure(monkeypatch):
+    _certify_fixture_rungs(monkeypatch, 5)
+    wkt = _make_katrain()
+    wkt._do_new_game(ladder_rung=5)
+    _make_ladder_player(wkt, wkt.game.current_node.next_player)
+    wkt.ai_ladder_remote_ended = True
+
+    wkt._do_ai_move()
+
+    assert wkt.last_ladder_error is False
+
+
 def test_load_sgf_without_rung_resets_to_none(monkeypatch):
     _certify_fixture_rungs(monkeypatch, 7)
     wkt = _make_katrain()

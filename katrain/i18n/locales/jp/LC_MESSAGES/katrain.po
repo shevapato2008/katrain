@@ -1255,7 +1255,7 @@ msgid "lobby:custom_game"
 msgstr "カスタムゲーム"
 
 msgid "dashboard:welcome"
-msgstr "Galaxy Goへようこそ"
+msgstr "StellaBoxへようこそ"
 
 msgid "game_end:forfeit_loss"
 msgstr "あなたが棄権しました。"
@@ -1588,7 +1588,7 @@ msgid "tsumego:problemRange"
 msgstr "問題 {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Galaxy Goにログイン"
+msgstr "StellaBoxにログイン"
 
 msgid "auth:register_title"
 msgstr "アカウント作成"

@@ -154,6 +154,18 @@ class SyncWorker:
                 self._absorb_response(item, resp)
                 return  # Success
             elif resp.status_code == 409:
+                if item.operation == "settle_ai_ladder_ranked":
+                    try:
+                        body = resp.json()
+                        lifecycle = body.get("lifecycle", body) if isinstance(body, dict) else None
+                        if isinstance(lifecycle, dict) and lifecycle.get("state") == "settled" and isinstance(
+                            lifecycle.get("receipt"), dict
+                        ):
+                            self._absorb_response(item, resp)
+                            return
+                    except Exception:
+                        pass
+                    raise PermanentError(f"HTTP 409 without settled receipt: {resp.text[:200]}")
                 # Idempotent duplicate — treat as success
                 logger.info(f"409 Conflict (idempotent duplicate): {item.operation}")
                 return

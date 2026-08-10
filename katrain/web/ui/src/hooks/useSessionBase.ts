@@ -7,6 +7,9 @@ import { API, type GameState } from '../api';
 
 export interface UseSessionBaseOptions {
     onStateUpdate?: (state: GameState) => void;
+    /** Auth token. /api/state requires an authenticated user; without this the initial
+     *  connect 401s on any host that is not the 127.0.0.1 loopback (see API.getState). */
+    token?: string;
 }
 
 export interface UseSessionBaseReturn {
@@ -34,7 +37,7 @@ export interface UseSessionBaseReturn {
 }
 
 export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionBaseReturn {
-    const { onStateUpdate } = options;
+    const { onStateUpdate, token } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -57,7 +60,7 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
 
         const connect = async () => {
             try {
-                const data = await API.getState(sessionId);
+                const data = await API.getState(sessionId, token);
                 setGameState(data.state);
                 onStateUpdate?.(data.state);
 

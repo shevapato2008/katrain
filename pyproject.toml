@@ -37,7 +37,12 @@ web = [
     # (older starlette's TestClient passes app= to httpx.Client, removed in httpx 0.28;
     #  google-genai pins httpx>=0.28.1, so downgrading httpx is not an option).
     "fastapi>=0.115.2,<0.116",
-    "uvicorn>=0.27.1",
+    # `[standard]` is load-bearing, not a nicety: it is what brings a WebSocket
+    # implementation. Bare uvicorn answers /ws/{session_id} with a 404 handshake, and the
+    # game page has no polling fallback -- the AI's move reaches the browser only over that
+    # socket. requirements-web.txt has always said uvicorn[standard]; this line disagreeing
+    # is why `uv sync` and `pip install -r requirements-web.txt` produced different servers.
+    "uvicorn[standard]>=0.27.1",
     "pydantic>=2.6.1",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
@@ -98,6 +103,14 @@ dev = [
     "pyinstaller>=6.14.1",
     "pytest>=8.3.2,<9",
     "pytest-asyncio>=0.23,<1",
+    # tests/web_ui/test_katago_client.py and test_analysis_endpoint.py import respx at
+    # module level. It was declared only in requirements-web.txt, which the uv path never
+    # reads -- so `uv sync` produced an env where those two modules fail to import, and a
+    # collection error aborts the whole session before -k can deselect them. Anyone running
+    # any subset of tests/web_ui got a red run unrelated to their change.
+    # Floor set so the resolver cannot pick a pre-httpx-0.28 respx; httpx is pinned to
+    # >=0.28.1 above by the web extra, and respx wraps httpx's transport internals.
+    "respx>=0.22.0",
 ]
 
 [tool.uv]

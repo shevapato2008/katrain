@@ -1,0 +1,2834 @@
+{
+  "matchId": "yike_184016",
+  "livePath": "/galaxy/live/yike_184016",
+  "captures": [
+    {
+      "viewportName": "1535x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1535,
+        "height": 900
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1535,
+        "height": 52,
+        "top": 0,
+        "right": 1535,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 216,
+        "y": 52,
+        "width": 1319,
+        "height": 848,
+        "top": 52,
+        "right": 1535,
+        "bottom": 900,
+        "left": 216,
+        "scrollHeight": 848,
+        "clientHeight": 848,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 216,
+        "y": 52,
+        "width": 979,
+        "height": 848,
+        "top": 52,
+        "right": 1195,
+        "bottom": 900,
+        "left": 216
+      },
+      "canvas": {
+        "x": 291.5,
+        "y": 62,
+        "width": 828,
+        "height": 828,
+        "top": 62,
+        "right": 1119.5,
+        "bottom": 890,
+        "left": 291.5
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 216,
+        "height": 848,
+        "top": 52,
+        "right": 216,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1195,
+        "y": 52,
+        "width": 340,
+        "height": 848,
+        "top": 52,
+        "right": 1535,
+        "bottom": 900,
+        "left": 1195
+      },
+      "module": {
+        "x": 1195,
+        "y": 52,
+        "width": 340,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1535,
+        "bottom": 111.4375,
+        "left": 1195
+      },
+      "railScroll": {
+        "x": 1195,
+        "y": 111.4375,
+        "width": 340,
+        "height": 649.84375,
+        "top": 111.4375,
+        "right": 1535,
+        "bottom": 761.28125,
+        "left": 1195,
+        "scrollHeight": 724,
+        "clientHeight": 650,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 1195,
+        "y": 761.28125,
+        "width": 340,
+        "height": 138.71875,
+        "top": 761.28125,
+        "right": 1535,
+        "bottom": 900,
+        "left": 1195
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 216,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 260,
+          "bottom": 100,
+          "left": 216
+        },
+        "expanded": "true",
+        "label": "Collapse navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 1211,
+          "y": 782.171875,
+          "width": 146.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1357.5,
+          "bottom": 822.171875,
+          "left": 1211
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1535,
+        "clientWidth": 1535,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "1536x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1536,
+        "height": 900
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1536,
+        "height": 52,
+        "top": 0,
+        "right": 1536,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 240,
+        "y": 52,
+        "width": 1296,
+        "height": 848,
+        "top": 52,
+        "right": 1536,
+        "bottom": 900,
+        "left": 240,
+        "scrollHeight": 848,
+        "clientHeight": 848,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 240,
+        "y": 52,
+        "width": 916,
+        "height": 848,
+        "top": 52,
+        "right": 1156,
+        "bottom": 900,
+        "left": 240
+      },
+      "canvas": {
+        "x": 284,
+        "y": 62,
+        "width": 828,
+        "height": 828,
+        "top": 62,
+        "right": 1112,
+        "bottom": 890,
+        "left": 284
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 240,
+        "height": 848,
+        "top": 52,
+        "right": 240,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1156,
+        "y": 52,
+        "width": 380,
+        "height": 848,
+        "top": 52,
+        "right": 1536,
+        "bottom": 900,
+        "left": 1156
+      },
+      "module": {
+        "x": 1156,
+        "y": 52,
+        "width": 380,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1536,
+        "bottom": 111.4375,
+        "left": 1156
+      },
+      "railScroll": {
+        "x": 1156,
+        "y": 111.4375,
+        "width": 380,
+        "height": 674.71875,
+        "top": 111.4375,
+        "right": 1536,
+        "bottom": 786.15625,
+        "left": 1156,
+        "scrollHeight": 724,
+        "clientHeight": 675,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 1156,
+        "y": 786.15625,
+        "width": 380,
+        "height": 113.84375,
+        "top": 786.15625,
+        "right": 1536,
+        "bottom": 900,
+        "left": 1156
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 240,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 284,
+          "bottom": 100,
+          "left": 240
+        },
+        "expanded": "true",
+        "label": "Collapse navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 1172,
+          "y": 782.171875,
+          "width": 166.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1338.5,
+          "bottom": 822.171875,
+          "left": 1172
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1536,
+        "clientWidth": 1536,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "1537x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1537,
+        "height": 900
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1537,
+        "height": 52,
+        "top": 0,
+        "right": 1537,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 240,
+        "y": 52,
+        "width": 1297,
+        "height": 848,
+        "top": 52,
+        "right": 1537,
+        "bottom": 900,
+        "left": 240,
+        "scrollHeight": 848,
+        "clientHeight": 848,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 240,
+        "y": 52,
+        "width": 917,
+        "height": 848,
+        "top": 52,
+        "right": 1157,
+        "bottom": 900,
+        "left": 240
+      },
+      "canvas": {
+        "x": 284.5,
+        "y": 62,
+        "width": 828,
+        "height": 828,
+        "top": 62,
+        "right": 1112.5,
+        "bottom": 890,
+        "left": 284.5
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 240,
+        "height": 848,
+        "top": 52,
+        "right": 240,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1157,
+        "y": 52,
+        "width": 380,
+        "height": 848,
+        "top": 52,
+        "right": 1537,
+        "bottom": 900,
+        "left": 1157
+      },
+      "module": {
+        "x": 1157,
+        "y": 52,
+        "width": 380,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1537,
+        "bottom": 111.4375,
+        "left": 1157
+      },
+      "railScroll": {
+        "x": 1157,
+        "y": 111.4375,
+        "width": 380,
+        "height": 674.71875,
+        "top": 111.4375,
+        "right": 1537,
+        "bottom": 786.15625,
+        "left": 1157,
+        "scrollHeight": 724,
+        "clientHeight": 675,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 1157,
+        "y": 786.15625,
+        "width": 380,
+        "height": 113.84375,
+        "top": 786.15625,
+        "right": 1537,
+        "bottom": 900,
+        "left": 1157
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 240,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 284,
+          "bottom": 100,
+          "left": 240
+        },
+        "expanded": "true",
+        "label": "Collapse navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 1173,
+          "y": 782.171875,
+          "width": 166.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1339.5,
+          "bottom": 822.171875,
+          "left": 1173
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1537,
+        "clientWidth": 1537,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "1440x900",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "top": 0,
+        "right": 1440,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 216,
+        "y": 52,
+        "width": 1224,
+        "height": 848,
+        "top": 52,
+        "right": 1440,
+        "bottom": 900,
+        "left": 216,
+        "scrollHeight": 848,
+        "clientHeight": 848,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 216,
+        "y": 52,
+        "width": 884,
+        "height": 848,
+        "top": 52,
+        "right": 1100,
+        "bottom": 900,
+        "left": 216
+      },
+      "canvas": {
+        "x": 244,
+        "y": 62,
+        "width": 828,
+        "height": 828,
+        "top": 62,
+        "right": 1072,
+        "bottom": 890,
+        "left": 244
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 216,
+        "height": 848,
+        "top": 52,
+        "right": 216,
+        "bottom": 900,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 1100,
+        "y": 52,
+        "width": 340,
+        "height": 848,
+        "top": 52,
+        "right": 1440,
+        "bottom": 900,
+        "left": 1100
+      },
+      "module": {
+        "x": 1100,
+        "y": 52,
+        "width": 340,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1440,
+        "bottom": 111.4375,
+        "left": 1100
+      },
+      "railScroll": {
+        "x": 1100,
+        "y": 111.4375,
+        "width": 340,
+        "height": 649.84375,
+        "top": 111.4375,
+        "right": 1440,
+        "bottom": 761.28125,
+        "left": 1100,
+        "scrollHeight": 724,
+        "clientHeight": 650,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 1100,
+        "y": 761.28125,
+        "width": 340,
+        "height": 138.71875,
+        "top": 761.28125,
+        "right": 1440,
+        "bottom": 900,
+        "left": 1100
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 216,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 260,
+          "bottom": 100,
+          "left": 216
+        },
+        "expanded": "true",
+        "label": "Collapse navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 1116,
+          "y": 782.171875,
+          "width": 146.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1262.5,
+          "bottom": 822.171875,
+          "left": 1116
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "1201x800",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1201,
+        "height": 800
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1201,
+        "height": 52,
+        "top": 0,
+        "right": 1201,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 216,
+        "y": 52,
+        "width": 985,
+        "height": 748,
+        "top": 52,
+        "right": 1201,
+        "bottom": 800,
+        "left": 216,
+        "scrollHeight": 748,
+        "clientHeight": 748,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 216,
+        "y": 52,
+        "width": 645,
+        "height": 748,
+        "top": 52,
+        "right": 861,
+        "bottom": 800,
+        "left": 216
+      },
+      "canvas": {
+        "x": 226,
+        "y": 113.5,
+        "width": 625,
+        "height": 625,
+        "top": 113.5,
+        "right": 851,
+        "bottom": 738.5,
+        "left": 226
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 216,
+        "height": 748,
+        "top": 52,
+        "right": 216,
+        "bottom": 800,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 861,
+        "y": 52,
+        "width": 340,
+        "height": 748,
+        "top": 52,
+        "right": 1201,
+        "bottom": 800,
+        "left": 861
+      },
+      "module": {
+        "x": 861,
+        "y": 52,
+        "width": 340,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1201,
+        "bottom": 111.4375,
+        "left": 861
+      },
+      "railScroll": {
+        "x": 861,
+        "y": 111.4375,
+        "width": 340,
+        "height": 549.84375,
+        "top": 111.4375,
+        "right": 1201,
+        "bottom": 661.28125,
+        "left": 861,
+        "scrollHeight": 724,
+        "clientHeight": 550,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 861,
+        "y": 661.28125,
+        "width": 340,
+        "height": 138.71875,
+        "top": 661.28125,
+        "right": 1201,
+        "bottom": 800,
+        "left": 861
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 216,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 260,
+          "bottom": 100,
+          "left": 216
+        },
+        "expanded": "true",
+        "label": "Collapse navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 877,
+          "y": 782.171875,
+          "width": 146.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1023.5,
+          "bottom": 822.171875,
+          "left": 877
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1201,
+        "clientWidth": 1201,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox",
+          "首页",
+          "陈泓明 vs 姚钧耀",
+          "天元记谱-2603211856 · 194 / 194 手",
+          "直播中"
+        ],
+        "buttons": [
+          "回到首页",
+          "Collapse navigation",
+          "Back"
+        ]
+      }
+    },
+    {
+      "viewportName": "1200x800",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1200,
+        "height": 800
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1200,
+        "height": 52,
+        "top": 0,
+        "right": 1200,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 216,
+        "y": 52,
+        "width": 984,
+        "height": 748,
+        "top": 52,
+        "right": 1200,
+        "bottom": 800,
+        "left": 216,
+        "scrollHeight": 748,
+        "clientHeight": 748,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 216,
+        "y": 52,
+        "width": 644,
+        "height": 748,
+        "top": 52,
+        "right": 860,
+        "bottom": 800,
+        "left": 216
+      },
+      "canvas": {
+        "x": 226,
+        "y": 114,
+        "width": 624,
+        "height": 624,
+        "top": 114,
+        "right": 850,
+        "bottom": 738,
+        "left": 226
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 216,
+        "height": 748,
+        "top": 52,
+        "right": 216,
+        "bottom": 800,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 860,
+        "y": 52,
+        "width": 340,
+        "height": 748,
+        "top": 52,
+        "right": 1200,
+        "bottom": 800,
+        "left": 860
+      },
+      "module": {
+        "x": 860,
+        "y": 52,
+        "width": 340,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1200,
+        "bottom": 111.4375,
+        "left": 860
+      },
+      "railScroll": {
+        "x": 860,
+        "y": 111.4375,
+        "width": 340,
+        "height": 549.84375,
+        "top": 111.4375,
+        "right": 1200,
+        "bottom": 661.28125,
+        "left": 860,
+        "scrollHeight": 724,
+        "clientHeight": 550,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 860,
+        "y": 661.28125,
+        "width": 340,
+        "height": 138.71875,
+        "top": 661.28125,
+        "right": 1200,
+        "bottom": 800,
+        "left": 860
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 216,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 260,
+          "bottom": 100,
+          "left": 216
+        },
+        "expanded": "true",
+        "label": "Collapse navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 876,
+          "y": 782.171875,
+          "width": 146.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1022.5,
+          "bottom": 822.171875,
+          "left": 876
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1200,
+        "clientWidth": 1200,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox",
+          "首页",
+          "陈泓明 vs 姚钧耀",
+          "天元记谱-2603211856 · 194 / 194 手",
+          "直播中"
+        ],
+        "buttons": [
+          "回到首页",
+          "Collapse navigation",
+          "Back"
+        ]
+      }
+    },
+    {
+      "viewportName": "1199x800",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1199,
+        "height": 800
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1199,
+        "height": 52,
+        "top": 0,
+        "right": 1199,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 0,
+        "y": 52,
+        "width": 1199,
+        "height": 748,
+        "top": 52,
+        "right": 1199,
+        "bottom": 800,
+        "left": 0,
+        "scrollHeight": 748,
+        "clientHeight": 748,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 0,
+        "y": 52,
+        "width": 879,
+        "height": 748,
+        "top": 52,
+        "right": 879,
+        "bottom": 800,
+        "left": 0
+      },
+      "canvas": {
+        "x": 75.5,
+        "y": 62,
+        "width": 728,
+        "height": 728,
+        "top": 62,
+        "right": 803.5,
+        "bottom": 790,
+        "left": 75.5
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 0,
+        "height": 748,
+        "top": 52,
+        "right": 0,
+        "bottom": 800,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 879,
+        "y": 52,
+        "width": 320,
+        "height": 748,
+        "top": 52,
+        "right": 1199,
+        "bottom": 800,
+        "left": 879
+      },
+      "module": {
+        "x": 879,
+        "y": 52,
+        "width": 320,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1199,
+        "bottom": 111.4375,
+        "left": 879
+      },
+      "railScroll": {
+        "x": 879,
+        "y": 111.4375,
+        "width": 320,
+        "height": 549.84375,
+        "top": 111.4375,
+        "right": 1199,
+        "bottom": 661.28125,
+        "left": 879,
+        "scrollHeight": 724,
+        "clientHeight": 550,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 879,
+        "y": 661.28125,
+        "width": 320,
+        "height": 138.71875,
+        "top": 661.28125,
+        "right": 1199,
+        "bottom": 800,
+        "left": 879
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 0,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 44,
+          "bottom": 100,
+          "left": 0
+        },
+        "expanded": "false",
+        "label": "Expand navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 895,
+          "y": 782.171875,
+          "width": 136.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 1031.5,
+          "bottom": 822.171875,
+          "left": 895
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1199,
+        "clientWidth": 1199,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "1024x768",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 52,
+        "top": 0,
+        "right": 1024,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 0,
+        "y": 52,
+        "width": 1024,
+        "height": 716,
+        "top": 52,
+        "right": 1024,
+        "bottom": 768,
+        "left": 0,
+        "scrollHeight": 716,
+        "clientHeight": 716,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 0,
+        "y": 52,
+        "width": 704,
+        "height": 716,
+        "top": 52,
+        "right": 704,
+        "bottom": 768,
+        "left": 0
+      },
+      "canvas": {
+        "x": 10,
+        "y": 68,
+        "width": 684,
+        "height": 684,
+        "top": 68,
+        "right": 694,
+        "bottom": 752,
+        "left": 10
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 0,
+        "height": 716,
+        "top": 52,
+        "right": 0,
+        "bottom": 768,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 704,
+        "y": 52,
+        "width": 320,
+        "height": 716,
+        "top": 52,
+        "right": 1024,
+        "bottom": 768,
+        "left": 704
+      },
+      "module": {
+        "x": 704,
+        "y": 52,
+        "width": 320,
+        "height": 59.4375,
+        "top": 52,
+        "right": 1024,
+        "bottom": 111.4375,
+        "left": 704
+      },
+      "railScroll": {
+        "x": 704,
+        "y": 111.4375,
+        "width": 320,
+        "height": 517.84375,
+        "top": 111.4375,
+        "right": 1024,
+        "bottom": 629.28125,
+        "left": 704,
+        "scrollHeight": 724,
+        "clientHeight": 518,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 704,
+        "y": 629.28125,
+        "width": 320,
+        "height": 138.71875,
+        "top": 629.28125,
+        "right": 1024,
+        "bottom": 768,
+        "left": 704
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 0,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 44,
+          "bottom": 100,
+          "left": 0
+        },
+        "expanded": "false",
+        "label": "Expand navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 720,
+          "y": 782.171875,
+          "width": 136.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 856.5,
+          "bottom": 822.171875,
+          "left": 720
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 1024,
+        "clientWidth": 1024,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "901x700",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 901,
+        "height": 700
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 901,
+        "height": 52,
+        "top": 0,
+        "right": 901,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 0,
+        "y": 52,
+        "width": 901,
+        "height": 648,
+        "top": 52,
+        "right": 901,
+        "bottom": 700,
+        "left": 0,
+        "scrollHeight": 648,
+        "clientHeight": 648,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 0,
+        "y": 52,
+        "width": 581,
+        "height": 648,
+        "top": 52,
+        "right": 581,
+        "bottom": 700,
+        "left": 0
+      },
+      "canvas": {
+        "x": 10,
+        "y": 95.5,
+        "width": 561,
+        "height": 561,
+        "top": 95.5,
+        "right": 571,
+        "bottom": 656.5,
+        "left": 10
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 0,
+        "height": 648,
+        "top": 52,
+        "right": 0,
+        "bottom": 700,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 581,
+        "y": 52,
+        "width": 320,
+        "height": 648,
+        "top": 52,
+        "right": 901,
+        "bottom": 700,
+        "left": 581
+      },
+      "module": {
+        "x": 581,
+        "y": 52,
+        "width": 320,
+        "height": 59.4375,
+        "top": 52,
+        "right": 901,
+        "bottom": 111.4375,
+        "left": 581
+      },
+      "railScroll": {
+        "x": 581,
+        "y": 111.4375,
+        "width": 320,
+        "height": 449.84375,
+        "top": 111.4375,
+        "right": 901,
+        "bottom": 561.28125,
+        "left": 581,
+        "scrollHeight": 724,
+        "clientHeight": 450,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 581,
+        "y": 561.28125,
+        "width": 320,
+        "height": 138.71875,
+        "top": 561.28125,
+        "right": 901,
+        "bottom": 700,
+        "left": 581
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 0,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 44,
+          "bottom": 100,
+          "left": 0
+        },
+        "expanded": "false",
+        "label": "Expand navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 597,
+          "y": 782.171875,
+          "width": 136.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 733.5,
+          "bottom": 822.171875,
+          "left": 597
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 901,
+        "clientWidth": 901,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox",
+          "陈泓明 vs 姚钧耀",
+          "直播中"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "900x700",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 900,
+        "height": 700
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 900,
+        "height": 52,
+        "top": 0,
+        "right": 900,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 0,
+        "y": 52,
+        "width": 900,
+        "height": 648,
+        "top": 52,
+        "right": 900,
+        "bottom": 700,
+        "left": 0,
+        "scrollHeight": 648,
+        "clientHeight": 648,
+        "scrollTop": 0,
+        "overflowY": "hidden"
+      },
+      "boardStage": {
+        "x": 0,
+        "y": 52,
+        "width": 580,
+        "height": 648,
+        "top": 52,
+        "right": 580,
+        "bottom": 700,
+        "left": 0
+      },
+      "canvas": {
+        "x": 10,
+        "y": 96,
+        "width": 560,
+        "height": 560,
+        "top": 96,
+        "right": 570,
+        "bottom": 656,
+        "left": 10
+      },
+      "sidebar": {
+        "x": 0,
+        "y": 52,
+        "width": 0,
+        "height": 648,
+        "top": 52,
+        "right": 0,
+        "bottom": 700,
+        "left": 0
+      },
+      "rightRail": {
+        "x": 580,
+        "y": 52,
+        "width": 320,
+        "height": 648,
+        "top": 52,
+        "right": 900,
+        "bottom": 700,
+        "left": 580
+      },
+      "module": {
+        "x": 580,
+        "y": 52,
+        "width": 320,
+        "height": 59.4375,
+        "top": 52,
+        "right": 900,
+        "bottom": 111.4375,
+        "left": 580
+      },
+      "railScroll": {
+        "x": 580,
+        "y": 111.4375,
+        "width": 320,
+        "height": 449.84375,
+        "top": 111.4375,
+        "right": 900,
+        "bottom": 561.28125,
+        "left": 580,
+        "scrollHeight": 724,
+        "clientHeight": 450,
+        "overflowX": "hidden",
+        "overflowY": "auto"
+      },
+      "actions": {
+        "x": 580,
+        "y": 561.28125,
+        "width": 320,
+        "height": 138.71875,
+        "top": 561.28125,
+        "right": 900,
+        "bottom": 700,
+        "left": 580
+      },
+      "sidebarToggle": {
+        "rect": {
+          "x": 0,
+          "y": 56,
+          "width": 44,
+          "height": 44,
+          "top": 56,
+          "right": 44,
+          "bottom": 100,
+          "left": 0
+        },
+        "expanded": "false",
+        "label": "Expand navigation"
+      },
+      "bottomNav": {
+        "rect": null,
+        "visible": false
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 596,
+          "y": 782.171875,
+          "width": 136.5,
+          "height": 40,
+          "top": 782.171875,
+          "right": 732.5,
+          "bottom": 822.171875,
+          "left": 596
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 900,
+        "clientWidth": 900,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox",
+          "陈泓明 vs 姚钧耀",
+          "直播中"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      }
+    },
+    {
+      "viewportName": "899x700",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 899,
+        "height": 700
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 899,
+        "height": 52,
+        "top": 0,
+        "right": 899,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 0,
+        "y": 52,
+        "width": 899,
+        "height": 648,
+        "top": 52,
+        "right": 899,
+        "bottom": 700,
+        "left": 0,
+        "scrollHeight": 1860,
+        "clientHeight": 648,
+        "scrollTop": 0,
+        "overflowY": "auto"
+      },
+      "boardStage": {
+        "x": 0,
+        "y": 52,
+        "width": 899,
+        "height": 899,
+        "top": 52,
+        "right": 899,
+        "bottom": 951,
+        "left": 0
+      },
+      "canvas": {
+        "x": 10,
+        "y": 62,
+        "width": 879,
+        "height": 879,
+        "top": 62,
+        "right": 889,
+        "bottom": 941,
+        "left": 10
+      },
+      "sidebar": null,
+      "rightRail": {
+        "x": 0,
+        "y": 951,
+        "width": 899,
+        "height": 897.015625,
+        "top": 951,
+        "right": 899,
+        "bottom": 1848.015625,
+        "left": 0
+      },
+      "module": {
+        "x": 0,
+        "y": 951,
+        "width": 899,
+        "height": 59.4375,
+        "top": 951,
+        "right": 899,
+        "bottom": 1010.4375,
+        "left": 0
+      },
+      "railScroll": {
+        "x": 0,
+        "y": 1010.4375,
+        "width": 899,
+        "height": 723.734375,
+        "top": 1010.4375,
+        "right": 899,
+        "bottom": 1734.171875,
+        "left": 0,
+        "scrollHeight": 724,
+        "clientHeight": 724,
+        "overflowX": "visible",
+        "overflowY": "visible"
+      },
+      "actions": {
+        "x": 0,
+        "y": 1734.171875,
+        "width": 899,
+        "height": 113.84375,
+        "top": 1734.171875,
+        "right": 899,
+        "bottom": 1848.015625,
+        "left": 0
+      },
+      "sidebarToggle": {
+        "rect": null
+      },
+      "bottomNav": {
+        "rect": {
+          "x": 0,
+          "y": 636,
+          "width": 899,
+          "height": 64,
+          "top": 636,
+          "right": 899,
+          "bottom": 700,
+          "left": 0
+        },
+        "visible": true
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 16,
+          "y": 1681.171875,
+          "width": 431.5,
+          "height": 40,
+          "top": 1681.171875,
+          "right": 447.5,
+          "bottom": 1721.171875,
+          "left": 16
+        },
+        "selected": true
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 899,
+        "clientWidth": 899,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      },
+      "scrolledActionRegion": {
+        "shell": {
+          "scrollTop": 1212,
+          "scrollHeight": 1860,
+          "clientHeight": 648,
+          "maxScrollTop": 1212
+        },
+        "actions": {
+          "top": 522.171875,
+          "right": 899,
+          "bottom": 636.015625,
+          "left": 0,
+          "width": 899,
+          "height": 113.84375
+        },
+        "bottomNav": {
+          "top": 636,
+          "right": 899,
+          "bottom": 700,
+          "left": 0,
+          "width": 899,
+          "height": 64
+        },
+        "actionsUnobscured": true
+      }
+    },
+    {
+      "viewportName": "430x880",
+      "url": "http://127.0.0.1:8901/galaxy/live/yike_184016",
+      "viewport": {
+        "width": 430,
+        "height": 880
+      },
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52,
+        "top": 0,
+        "right": 430,
+        "bottom": 52,
+        "left": 0
+      },
+      "shell": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 828,
+        "top": 52,
+        "right": 430,
+        "bottom": 880,
+        "left": 0,
+        "scrollHeight": 1391,
+        "clientHeight": 828,
+        "scrollTop": 0,
+        "overflowY": "auto"
+      },
+      "boardStage": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 430,
+        "top": 52,
+        "right": 430,
+        "bottom": 482,
+        "left": 0
+      },
+      "canvas": {
+        "x": 10,
+        "y": 62,
+        "width": 410,
+        "height": 410,
+        "top": 62,
+        "right": 420,
+        "bottom": 472,
+        "left": 10
+      },
+      "sidebar": null,
+      "rightRail": {
+        "x": 0,
+        "y": 482,
+        "width": 430,
+        "height": 897.015625,
+        "top": 482,
+        "right": 430,
+        "bottom": 1379.015625,
+        "left": 0
+      },
+      "module": {
+        "x": 0,
+        "y": 482,
+        "width": 430,
+        "height": 59.4375,
+        "top": 482,
+        "right": 430,
+        "bottom": 541.4375,
+        "left": 0
+      },
+      "railScroll": {
+        "x": 0,
+        "y": 541.4375,
+        "width": 430,
+        "height": 723.734375,
+        "top": 541.4375,
+        "right": 430,
+        "bottom": 1265.171875,
+        "left": 0,
+        "scrollHeight": 724,
+        "clientHeight": 724,
+        "overflowX": "visible",
+        "overflowY": "visible"
+      },
+      "actions": {
+        "x": 0,
+        "y": 1265.171875,
+        "width": 430,
+        "height": 113.84375,
+        "top": 1265.171875,
+        "right": 430,
+        "bottom": 1379.015625,
+        "left": 0
+      },
+      "sidebarToggle": {
+        "rect": null
+      },
+      "bottomNav": {
+        "rect": {
+          "x": 0,
+          "y": 816,
+          "width": 430,
+          "height": 64,
+          "top": 816,
+          "right": 430,
+          "bottom": 880,
+          "left": 0
+        },
+        "visible": true
+      },
+      "coordinateToggle": {
+        "rect": {
+          "x": 16,
+          "y": 1212.171875,
+          "width": 197,
+          "height": 40,
+          "top": 1212.171875,
+          "right": 213,
+          "bottom": 1252.171875,
+          "left": 16
+        },
+        "selected": false
+      },
+      "canvasVisibility": {
+        "insideStage": true,
+        "insideViewportHorizontally": true,
+        "squareDelta": 0
+      },
+      "fontFamilies": {
+        "brandChinese": "\"Galaxy Long Cang\"",
+        "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+      },
+      "fontResources": [
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+          "transfer_bytes": 230420,
+          "encoded_bytes": 230120,
+          "decoded_bytes": 230120
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+          "transfer_bytes": 230560,
+          "encoded_bytes": 230260,
+          "decoded_bytes": 230260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+          "transfer_bytes": 358632,
+          "encoded_bytes": 358332,
+          "decoded_bytes": 358332
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+          "transfer_bytes": 330788,
+          "encoded_bytes": 330488,
+          "decoded_bytes": 330488
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+          "transfer_bytes": 373540,
+          "encoded_bytes": 373240,
+          "decoded_bytes": 373240
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+          "transfer_bytes": 354560,
+          "encoded_bytes": 354260,
+          "decoded_bytes": 354260
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+          "transfer_bytes": 371472,
+          "encoded_bytes": 371172,
+          "decoded_bytes": 371172
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+          "transfer_bytes": 354776,
+          "encoded_bytes": 354476,
+          "decoded_bytes": 354476
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+          "transfer_bytes": 326512,
+          "encoded_bytes": 326212,
+          "decoded_bytes": 326212
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+          "transfer_bytes": 327356,
+          "encoded_bytes": 327056,
+          "decoded_bytes": 327056
+        },
+        {
+          "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+          "transfer_bytes": 346684,
+          "encoded_bytes": 346384,
+          "decoded_bytes": 346384
+        }
+      ],
+      "horizontalOverflow": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "overflowPx": 0,
+        "hasOverflow": false
+      },
+      "visibleAboveCanvas": {
+        "texts": [
+          "智星盒",
+          "StellaBox"
+        ],
+        "buttons": [
+          "回到首页"
+        ]
+      },
+      "scrolledActionRegion": {
+        "shell": {
+          "scrollTop": 563,
+          "scrollHeight": 1391,
+          "clientHeight": 828,
+          "maxScrollTop": 563
+        },
+        "actions": {
+          "top": 702.171875,
+          "right": 430,
+          "bottom": 816.015625,
+          "left": 0,
+          "width": 430,
+          "height": 113.84375
+        },
+        "bottomNav": {
+          "top": 816,
+          "right": 430,
+          "bottom": 880,
+          "left": 0,
+          "width": 430,
+          "height": 64
+        },
+        "actionsUnobscured": true
+      }
+    }
+  ]
+}

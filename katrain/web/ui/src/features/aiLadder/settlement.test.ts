@@ -1,10 +1,10 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAiLadderStatus } from './api';
-import { AiLadderSettlementAlert, deriveSettlementFeedback, pollAiLadderSettlement, saveAiLadderBefore, useAiLadderSettlement } from './settlement';
+import { getAiLadderSettlementReceipt, getAiLadderStatus } from './api';
+import { AiLadderSettlementAlert, deriveSettlementFeedback, peekAiLadderBefore, pollAiLadderSettlement, saveAiLadderBefore, useAiLadderSettlement } from './settlement';
 
-vi.mock('./api', () => ({ getAiLadderStatus: vi.fn() }));
+vi.mock('./api', () => ({ getAiLadderStatus: vi.fn(), getAiLadderSettlementReceipt: vi.fn() }));
 
 const entry = (rung: number, rank_name = `${rung}级`) => ({ rung, rank_name, certification_status: 'certified' as const, availability: 'available' as const, route: 'server' as const });
 const placed = (rung: number, net_score = 0) => ({ view_state: 'ready' as const, placement_state: { phase: 'placed' as const, rung: entry(rung) }, current_opponent: entry(rung), recent_ranked_results: [], net_score: net_score as -2 | -1 | 0 | 1 | 2, pending_settlement: false });
@@ -13,6 +13,11 @@ const noWait = async () => {};
 
 describe('AI ladder settlement feedback', () => {
   beforeEach(() => { sessionStorage.clear(); vi.clearAllMocks(); });
+  it('peeks the authoritative game id without consuming the settlement snapshot', () => {
+    saveAiLadderBefore('s1', placed(18), 'fan', 'game-1');
+    expect(peekAiLadderBefore('s1', 'fan')?.gameId).toBe('game-1');
+    expect(peekAiLadderBefore('s1', 'fan')?.gameId).toBe('game-1');
+  });
   it('distinguishes placement completion, promotion, demotion and score-only change', () => {
     expect(deriveSettlementFeedback(placement(4), placed(18)).kind).toBe('placement_complete');
     expect(deriveSettlementFeedback(placed(18, 2), placed(19, 0)).kind).toBe('promotion');
@@ -87,5 +92,20 @@ describe('AI ladder settlement feedback', () => {
     await waitFor(() => expect(result.current).not.toBeNull());
     rerender({ gameType: 'free' });
     await waitFor(() => expect(result.current).toBeNull());
+  });
+
+  it('uses the game-scoped receipt to explain a result that the server did not count', async () => {
+    saveAiLadderBefore('s6', placed(18), 'fan', 'g6');
+    vi.mocked(getAiLadderSettlementReceipt).mockResolvedValue({
+      state: 'settled', game_id: 'g6', counted: false, reason: 'engine_unavailable',
+    });
+    vi.mocked(getAiLadderStatus).mockResolvedValue(placed(18));
+
+    const hook = renderHook(() => useAiLadderSettlement('s6', 'ai_ladder_ranked', 'W+R', undefined, 'fan', noWait));
+
+    await waitFor(() => expect(hook.result.current).toEqual(expect.objectContaining({
+      kind: 'not_counted', message: '本局不计入升降级：棋力服务未能正常完成对局',
+    })));
+    expect(getAiLadderSettlementReceipt).toHaveBeenCalledWith('g6', undefined, expect.any(AbortSignal));
   });
 });

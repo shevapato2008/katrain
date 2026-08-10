@@ -132,6 +132,9 @@ class AiLadderPendingGame(Base):
     game_id = Column(String(32), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     session_id = Column(String(64), nullable=False, unique=True)
+    # Opaque cloud reservation credential retained only for internal recovery.
+    # Nullable keeps pre-reservation local rows readable after migration.
+    reservation_key = Column(String(128), nullable=True)
     user_color = Column(String(1), nullable=False)
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=False)
@@ -160,6 +163,47 @@ class AiLadderPendingGame(Base):
     )
 
 
+class AiLadderActiveGame(Base):
+    """Cloud-owned reservation for the account's one in-flight ranked AI game."""
+
+    __tablename__ = "ai_ladder_active_games"
+
+    game_id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    origin_device_id = Column(String(64), nullable=False)
+    origin_session_id = Column(String(64), nullable=True)
+    state = Column(String(24), nullable=False, default="reserved")
+    version = Column(Integer, nullable=False, default=0)
+    reservation_key_hash = Column(String(64), nullable=False)
+    user_color = Column(String(1), nullable=False)
+    game_type = Column(String(32), nullable=False, default="ai_ladder_ranked")
+    opponent_rung = Column(Integer, nullable=False)
+    opponent_rank_name = Column(String(64), nullable=False)
+    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_certification_status = Column(String(16), nullable=False)
+    opponent_availability = Column(String(16), nullable=False)
+    opponent_route = Column(String(16), nullable=False)
+    ai_subtype = Column(String(32), nullable=False)
+    execution_identity = Column(String(64), nullable=False)
+    rules_snapshot = Column(JSON, nullable=False)
+    time_control_snapshot = Column(JSON, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_ai_ladder_active_user"),
+        CheckConstraint(
+            "state IN ('reserved', 'active', 'pending_settlement')",
+            name="ck_ai_ladder_active_state",
+        ),
+        CheckConstraint("version >= 0", name="ck_ai_ladder_active_version"),
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_active_user_color"),
+        CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_active_game_type"),
+        CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_active_rung"),
+        CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_active_route"),
+    )
+
+
 class AiLadderGameLedger(Base):
     """Append-only, globally idempotent decision for every settlement attempt."""
 
@@ -179,7 +223,19 @@ class AiLadderGameLedger(Base):
     opponent_route = Column(String(16), nullable=True)
     counted = Column(Boolean, nullable=False)
     reason = Column(String(32), nullable=True)
+    origin_device_id = Column(String(64), nullable=True)
+    deciding_device_id = Column(String(64), nullable=True)
+    terminal_source = Column(String(32), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
     settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    # account_subject frozen at settlement: the 32-hex users.uuid as it was WHEN THIS GAME SETTLED.
+    # Deliberately NOT a ForeignKey and never joined on -- user_id above is the runtime operational
+    # key; this is an immutable historical fact, written once and never updated. An audit row is
+    # allowed to disagree with the present, because it records the past. Test: take the whole
+    # database away and keep only this row -- can you still tell whose game it was?
+    # Nullable for rows written before this column existed. See
+    # superpowers/tracks/golaxy-ai-ladder-parity/identity-p3-preconditions.md §E.
+    account_subject = Column(String(32), nullable=True)
 
     user = relationship("User", backref="ai_ladder_game_ledger")
 
@@ -201,6 +257,14 @@ class AiLadderGameLedger(Base):
             "AND opponent_route IS NOT NULL AND result IN ('win', 'loss') "
             "AND game_type = 'ai_ladder_ranked')",
             name="ck_ai_ladder_ledger_decision",
+        ),
+        CheckConstraint(
+            "(terminal_source IS NULL AND origin_device_id IS NULL "
+            "AND deciding_device_id IS NULL AND decided_at IS NULL) OR "
+            "(terminal_source IS NOT NULL "
+            "AND terminal_source IN ('played_result', 'remote_resign', 'recovery') "
+            "AND origin_device_id IS NOT NULL AND deciding_device_id IS NOT NULL AND decided_at IS NOT NULL)",
+            name="ck_ai_ladder_ledger_terminal_audit",
         ),
     )
 
@@ -610,6 +674,7 @@ class UserGame(Base):
     source = Column(String(50), nullable=False)  # play_ai / play_human / import / research
     category = Column(String(50), default="game")  # game / position
     game_type = Column(String(50), nullable=True)  # free / rated / null
+    origin_device_id = Column(String(64), nullable=True)
     sgf_hash = Column(String(64), nullable=True, index=True)
     event = Column(String(255), nullable=True)
     round_name = Column(String(100), nullable=True)

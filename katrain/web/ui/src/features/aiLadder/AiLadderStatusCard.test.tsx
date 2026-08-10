@@ -51,20 +51,22 @@ describe('AiLadderStatusCard', () => {
   });
 
   it('shows a placed rung, certification, local route, and ranked CTA', () => {
+    // `current_opponent` mirrors `placement_state.rung` here because the server builds both
+    // from one value (`ai_ladder.py _status_payload`: `opponent = catalog_entry(...)` is
+    // assigned to both), and never sends null -- POST /start asserts it is a dict. The
+    // fixture used to say null, which no server can produce.
+    const placedRung: AiLadderCatalogEntry = {
+      rung: 32,
+      rank_name: '6段',
+      certification_status: 'certified',
+      availability: 'available',
+      route: 'local',
+    };
     renderCard(
       {
         ...readyPlacement,
-        placement_state: {
-          phase: 'placed',
-          rung: {
-            rung: 32,
-            rank_name: '6段',
-            certification_status: 'certified',
-            availability: 'available',
-            route: 'local',
-          },
-        },
-        current_opponent: null,
+        placement_state: { phase: 'placed', rung: placedRung },
+        current_opponent: placedRung,
       },
       { onPrimaryAction: vi.fn() },
     );
@@ -155,6 +157,35 @@ describe('AiLadderStatusCard', () => {
 
     expect(screen.getByText('该档位暂不可挑战')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '暂不可挑战' })).toBeDisabled();
+  });
+
+  it('lets an uncertified rung be started on a node that allows provisional play', () => {
+    // The two tests above are a node WITHOUT the switch, where failing closed is right.
+    // With the switch on, the server accepts the start (POST /start seats the rung), so a
+    // card that still refuses is disagreeing with the very server it is displaying. The
+    // rung's own certification_status is identical in both cases -- only the node differs
+    // -- which is why this has to be read from the payload and cannot be inferred.
+    const onPrimaryAction = vi.fn();
+    renderCard(
+      {
+        ...readyPlacement,
+        current_opponent: {
+          ...availableOpponent,
+          certification_status: 'provisional',
+          availability: 'unavailable',
+        },
+        provisional_play_allowed: true,
+      },
+      { onPrimaryAction },
+    );
+
+    expect(screen.queryByText('该档位暂不可挑战')).not.toBeInTheDocument();
+    expect(screen.getByText('该档位尚未标定，可以试下，但本局不计入升降级')).toBeInTheDocument();
+
+    const cta = screen.getByRole('button', { name: '继续定级' });
+    expect(cta).toBeEnabled();
+    fireEvent.click(cta);
+    expect(onPrimaryAction).toHaveBeenCalledTimes(1);
   });
 
   it('offers an accessible retry action in the error state', () => {

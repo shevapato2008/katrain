@@ -38,6 +38,7 @@ interface RightSidebarPanelProps {
     onPauseTimer?: () => void;
     onPlaySound?: (sound: string) => void;
     isAnalysisPending?: boolean;  // True when waiting for KataGo analysis
+    embedded?: boolean;
 }
 
 const RightSidebarPanel = ({
@@ -50,7 +51,8 @@ const RightSidebarPanel = ({
     onTimeout,
     onPauseTimer,
     onPlaySound,
-    isAnalysisPending = false
+    isAnalysisPending = false,
+    embedded = false,
 }: RightSidebarPanelProps) => {
     const { user, token } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
@@ -103,8 +105,8 @@ const RightSidebarPanel = ({
     };
 
     return (
-        <Box sx={{ width: 500, height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
-            <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ width: embedded ? '100%' : 500, height: embedded ? 'auto' : '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', borderLeft: embedded ? 0 : '1px solid rgba(255,255,255,0.05)' }}>
+            <Box sx={{ flexGrow: embedded ? 0 : 1, overflow: embedded ? 'visible' : 'auto', display: 'flex', flexDirection: 'column' }}>
                 {/* Players */}
                 <Box sx={{ p: 2 }}>
                     <Stack direction="row" spacing={1}>
@@ -253,8 +255,12 @@ const RightSidebarPanel = ({
                     )}
                 </Box>
 
-                {/* Game Result Progress (If Rated) */}
-                {isRated && (
+                {/* Game Result Progress (If Rated).
+                    Gated on the game still being in play: this banner says "进行中", and once
+                    end_result is set that is simply false -- the settlement Alert above is what
+                    reports the finished game. Leaving it up meant a resigned game still claimed
+                    to be running. */}
+                {isRated && !gameState.end_result && (
                     <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.dark' }}>
                         <Typography variant="subtitle2" sx={{ color: '#fff' }}>
                             {t('rated_mode_active', 'Rated Mode: Progressing')}

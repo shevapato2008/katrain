@@ -1,5 +1,10 @@
+import { useMemo } from 'react';
+import { Box, ThemeProvider } from '@mui/material';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
+import { useSettings } from './context/SettingsContext';
+import { createGalaxyTheme } from './galaxy/theme';
+import './galaxy/assets/fonts/galaxy-fonts.css';
 import MainLayout from './galaxy/components/layout/MainLayout';
 import Dashboard from './galaxy/pages/Dashboard';
 import ResearchPage from './galaxy/pages/ResearchPage';
@@ -24,36 +29,47 @@ import ReportsPage from './galaxy/pages/report/ReportsPage';
 import ReportDetailPage from './galaxy/pages/report/ReportDetailPage';
 
 const GalaxyApp = () => {
+  const { language } = useSettings();
+  const galaxyTheme = useMemo(() => createGalaxyTheme(language), [language]);
+
   console.log("GalaxyApp rendering");
   return (
-    <TsumegoProgressProvider>
-      <Routes>
-      <Route element={<MainLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="play" element={<PlayMenu />} />
-        <Route path="play/ai" element={<AiSetupPage />} />
-        <Route path="play/game/:sessionId" element={<GamePage />} />
-        <Route path="play/human" element={<HvHLobbyPage />} />
-        <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
-        <Route path="research" element={<ResearchPage />} />
-        <Route path="report" element={<ReportsPage />} />
-        <Route path="report/:taskId" element={<ReportDetailPage />} />
-        <Route path="kifu" element={<KifuLibraryPage />} />
-        <Route path="live" element={<LivePage />} />
-        <Route path="live/:matchId" element={<LiveMatchPage />} />
-        <Route path="tsumego" element={<TsumegoLevelsPage />} />
-        <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
-        <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
-        <Route path="tsumego/:level/:category/:unit" element={<TsumegoListPage />} />
-        <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
-        <Route path="tutorials" element={<TutorialLandingPage />} />
-        <Route path="tutorials/:category" element={<TutorialBooksPage />} />
-        <Route path="tutorials/book/:bookId" element={<TutorialBookDetailPage />} />
-        <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
-        <Route path="*" element={<Navigate to="/galaxy" replace />} />
-      </Route>
-      </Routes>
-    </TsumegoProgressProvider>
+    <ThemeProvider theme={galaxyTheme}>
+      <Box
+        className="galaxy-root"
+        data-language={language}
+        sx={{ width: '100vw', height: '100dvh', overflow: 'hidden', fontSynthesis: 'none' }}
+      >
+        <TsumegoProgressProvider>
+          <Routes>
+          <Route element={<MainLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="play" element={<PlayMenu />} />
+            <Route path="play/ai" element={<AiSetupPage />} />
+            <Route path="play/game/:sessionId" element={<GamePage />} />
+            <Route path="play/human" element={<HvHLobbyPage />} />
+            <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
+            <Route path="research" element={<ResearchPage />} />
+            <Route path="report" element={<ReportsPage />} />
+            <Route path="report/:taskId" element={<ReportDetailPage />} />
+            <Route path="kifu" element={<KifuLibraryPage />} />
+            <Route path="live" element={<LivePage />} />
+            <Route path="live/:matchId" element={<LiveMatchPage />} />
+            <Route path="tsumego" element={<TsumegoLevelsPage />} />
+            <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
+            <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
+            <Route path="tsumego/:level/:category/:unit" element={<TsumegoListPage />} />
+            <Route path="tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+            <Route path="tutorials" element={<TutorialLandingPage />} />
+            <Route path="tutorials/:category" element={<TutorialBooksPage />} />
+            <Route path="tutorials/book/:bookId" element={<TutorialBookDetailPage />} />
+            <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
+            <Route path="*" element={<Navigate to="/galaxy" replace />} />
+          </Route>
+          </Routes>
+        </TsumegoProgressProvider>
+      </Box>
+    </ThemeProvider>
   );
 };
 

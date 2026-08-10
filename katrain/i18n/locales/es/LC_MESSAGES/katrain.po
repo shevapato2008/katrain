@@ -1042,7 +1042,7 @@ msgid "Human"
 msgstr "Human"
 
 msgid "dashboard:welcome"
-msgstr "Bienvenido a Galaxy Go"
+msgstr "Bienvenido a StellaBox"
 
 msgid "dashboard:tagline"
 msgstr "Tu plataforma profesional de entrenamiento y análisis de Go."
@@ -1469,7 +1469,7 @@ msgid "tsumego:problemRange"
 msgstr "Problemas {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Iniciar sesión en Galaxy Go"
+msgstr "Iniciar sesión en StellaBox"
 
 msgid "auth:register_title"
 msgstr "Crear cuenta"
@@ -1646,7 +1646,7 @@ msgid "live:show_ai"
 msgstr "Mostrar IA"
 
 msgid "live:clear"
-msgstr "Limpiar"
+msgstr "Vaciar"
 
 msgid "live:ai_recommendations"
 msgstr "Recomendaciones IA"
@@ -2772,3 +2772,203 @@ msgid "ladder:unscored_engine"
 msgstr ""
 "Tu rival no pudo jugar con su fuerza calibrada, así que esta partida no "
 "cuenta: tu rango no cambia y no consume una partida de clasificación."
+
+msgid "ladder:title"
+msgstr "Partidas clasificatorias con IA"
+
+msgid "ladder:setup_title"
+msgstr "IA de escalera de 41 niveles"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "Rival de clasificación: "
+
+msgid "ladder:game_opponent_prefix"
+msgstr "Rival de esta partida: "
+
+msgid "ladder:loading_status"
+msgstr "Cargando tu estado de partidas clasificatorias…"
+
+msgid "ladder:load_error"
+msgstr "No se pudo cargar el estado de partidas clasificatorias"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr ""
+"Este equipo no registra resultados clasificatorios, así que no se puede "
+"empezar aquí"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "Tu sesión ha caducado: vuelve a iniciar sesión"
+
+msgid "ladder:retry"
+msgstr "Reintentar"
+
+msgid "ladder:provisional_seating"
+msgstr ""
+"Este nivel aún no está calibrado: puedes jugar, pero esta partida no cuenta"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "Rival actual: "
+
+msgid "ladder:current_rank_prefix"
+msgstr "Rango actual: "
+
+msgid "ladder:available"
+msgstr "Disponible"
+
+msgid "ladder:unavailable_rung"
+msgstr "Este nivel aún no se puede desafiar"
+
+msgid "ladder:unavailable_cta"
+msgstr "No disponible"
+
+msgid "ladder:continue_placement_cta"
+msgstr "Continuar clasificación"
+
+msgid "ladder:start_ranked_cta"
+msgstr "Empezar partida clasificatoria"
+
+msgid "ladder:pending_settlement"
+msgstr "Registrando el resultado de esta partida"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Registrando…"
+
+msgid "ladder:recent_heading"
+msgstr "Últimas 5 partidas"
+
+msgid "ladder:recent_aria"
+msgstr "Resultados de las últimas 5 partidas clasificatorias con IA"
+
+msgid "ladder:recent_display_note"
+msgstr ""
+"Las últimas 5 partidas son solo informativas; el ascenso depende solo de la "
+"puntuación neta"
+
+msgid "ladder:recent_empty"
+msgstr "Aún no hay partidas clasificatorias con IA"
+
+msgid "ladder:net_score_prefix"
+msgstr "Puntuación neta: "
+
+msgid "ladder:net_score_aria"
+msgstr ""
+"Puntuación neta; negativa hacia el descenso, positiva hacia el ascenso"
+
+msgid "ladder:demotion_threshold"
+msgstr "Descenso -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "Ascenso +3"
+
+msgid "ladder:route_local"
+msgstr "En este equipo"
+
+msgid "ladder:route_server"
+msgstr "En el servidor"
+
+msgid "ladder:cert_provisional"
+msgstr "Provisional"
+
+msgid "ladder:cert_certified"
+msgstr "Certificado"
+
+msgid "ladder:placement_progress_n"
+msgstr "Clasificación {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "Progreso de clasificación: {n} de {total} partidas jugadas"
+
+msgid "ladder:net_score_positive"
+msgstr "Puntuación neta +{n}, hacia el ascenso; con +3 asciendes"
+
+msgid "ladder:net_score_negative"
+msgstr "Puntuación neta {n}, hacia el descenso; con -3 desciendes"
+
+msgid "ladder:net_score_zero"
+msgstr "Puntuación neta 0; con +3 asciendes y con -3 desciendes"
+
+msgid "ladder:outcome_label"
+msgstr "Partida {n}: {result}"
+
+msgid "ladder:settled_generic"
+msgstr "Registro clasificatorio completado; tu estado está actualizado"
+
+msgid "ladder:settled_placement_done"
+msgstr "Clasificación completada: {rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "Clasificando {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "Ascenso: {rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "Descenso: {rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "Rango sin cambios; puntuación neta: {score}"
+
+msgid "ladder:settled_pending"
+msgstr "El registro clasificatorio sigue en curso"
+
+msgid "ladder:settled_unavailable"
+msgstr "El estado del registro no está disponible ahora"
+
+msgid "ok"
+msgstr "Aceptar"
+
+msgid "accept"
+msgstr "Aceptar"
+
+msgid "reject"
+msgstr "Rechazar"
+
+msgid "common:cancel"
+msgstr "Cancelar"
+
+msgid "common:retry"
+msgstr "Reintentar"
+
+msgid "Tutorials"
+msgstr "Tutoriales"
+
+msgid "Stone Effect"
+msgstr "Efecto de piedra"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "¿Cancelar el análisis?"
+
+msgid "research:cancel_analysis_warning"
+msgstr "El análisis sigue en curso. ¿Cancelarlo y salir?"
+
+msgid "research:continue_analysis"
+msgstr "Seguir analizando"
+
+msgid "research:cancel_and_leave"
+msgstr "Cancelar y salir"
+
+msgid "tsumego:loadError"
+msgstr ""
+"No se pudo cargar la biblioteca de tsumego. Inténtalo de nuevo en un "
+"momento."
+
+msgid "tsumego:noData"
+msgstr "Aún no hay problemas de tsumego."
+
+msgid "chat:title"
+msgstr "Chat"
+
+msgid "chat:placeholder"
+msgstr "Escribe un mensaje…"
+
+msgid "audio:play"
+msgstr "Reproducir"
+
+msgid "audio:pause"
+msgstr "Pausar"
+
+msgid "audio:unavailable"
+msgstr "Audio no disponible"

@@ -19,7 +19,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import models_db
-from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
+from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository, takeover_eligibility
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
 from katrain.web.core.db import Base
 from katrain.web.core.engine_recovery import EngineRecoveryConfig, EngineRecoveryTracker
@@ -4259,3 +4259,97 @@ async def test_the_blocking_screen_on_another_device_always_carries_both_doors(a
     assert blocking["can_force_resign"] is False
     assert blocking["takeover_eligible_at"] is None
     assert blocking["takeover_threshold_seconds"] == 300
+
+
+@pytest.mark.asyncio
+async def test_an_over_long_device_id_fails_closed_and_leaves_nothing_behind(tmp_path, monkeypatch, api_app):
+    """审计 P1 #7:`KATRAIN_DEVICE_ID` 是运维给的、没上界的值,超过 64 字符会怎样。
+
+    造出来看:**失败得很响,而且失败得干净**。整局起不来,422 带着确切原因一路传回来,
+    云端一行都没落下 —— 账号也就无从被卡住。
+
+    值得钉的不是那个 422,是**没有半成品**:盒端 `/start` 是「先预约、再激活」两跳,
+    要是第一跳过、第二跳挂,云端就会剩一行 `reserved` 占着这个账号,而盒子这边什么都没有。
+    这里两跳带的是同一个头,所以第一跳就被挡下,连预约都不存在。
+
+    (审计把它列进「可能锁死账号」的清单;造出来看是反的 —— 它 fail closed。
+    跟另外两条误报一样,结论转成钉住的不变量,免得下一个人再来「修」。)
+    """
+
+    long_id = "b" * 65
+    cloud = api_app
+    box = _build_ladder_app(tmp_path, monkeypatch, db_name="box.db")
+    box.state.remote_client = _CloudOverAsgi(cloud, device_id=long_id)
+    box.state.repository_dispatcher = RecordingDispatcher()
+    box.state.sync_enqueue_fn = MagicMock(return_value=True)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", long_id)
+
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=box.state._test_headers, json={"color": "black", "time_enabled": False}
+        )
+
+    assert started.status_code == 422
+    assert "at most 64 characters" in started.text
+    with cloud.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).count() == 0, "第一跳过了第二跳挂,云端剩一行占着账号"
+    assert cloud.state.ai_ladder_repo.get_blocking_game(cloud.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_an_authority_outage_is_not_permanent_for_liveness(box_and_cloud):
+    """审计 P1 #6:权威节点中途掉线(`ai_ladder_authoritative` 变假)。
+
+    掉线期间心跳全 503,盒子逐局吞掉只写警告 —— 于是云端那行的时间戳越来越旧,
+    到点之后判据说「这局可以接管了」。**这一半是设计,不是缺陷**:一台连不上云端的
+    盒子,和一台已经死掉的盒子,从云端看是同一件事,接管阈值本来就是对这句「分不清」
+    的回答。
+
+    真正要钉的是另外两件:
+
+      1. **掉线期间那扇门是关着的**。`/end` 同样要权威,一起 503 —— 判据说「可以接管」
+         但没有任何人拿得到那把刀,所以掉线不会让一局正在下的棋被判负;
+      2. **恢复之后盒子必须能把新鲜度补回来**。心跳循环吞掉所有异常继续转,不是图省事:
+         它要是在一串 503 之后自己停了,那台盒子从此再不报生存,一局还在下的棋
+         五分钟后就成了别人的战利品 —— 而现场没有任何现象指向那个停掉的循环。
+
+    这两条都得对着真云端跑才算数:掉线的是**权威那一层**,mock 掉的 remote_client
+    根本没有那一层。
+    """
+
+    box, cloud, _ = box_and_cloud
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers={**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"},
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+        await server._send_ai_ladder_heartbeats(box)
+        await server._send_ai_ladder_heartbeats(box)
+        assert _active_row(cloud, game_id).heartbeat_generation == 2
+
+        cloud.state.ai_ladder_authoritative = False  # 权威掉线
+        for _ in range(5):
+            await server._send_ai_ladder_heartbeats(box)
+        assert _active_row(cloud, game_id).heartbeat_generation == 2, "503 竟然还写进去了"
+
+        # 1. 掉线期间没人拿得到那把刀。
+        transport = ASGITransport(app=cloud)
+        async with AsyncClient(transport=transport, base_url="http://cloud") as cloud_ac:
+            blocked = await cloud_ac.post(
+                f"/api/v1/ai-ladder/games/{game_id}/end",
+                headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "phone-9"},
+                json={"reason": "user_resigned"},
+            )
+        assert blocked.status_code == 503
+        assert _active_row(cloud, game_id).state == "active"
+
+        # 2. 恢复之后,下一轮心跳就把新鲜度补回来 —— 循环没有在那串 503 里自己停掉。
+        cloud.state.ai_ladder_authoritative = True
+        await server._send_ai_ladder_heartbeats(box)
+
+    row = _active_row(cloud, game_id)
+    assert row.heartbeat_generation == 3, "权威回来了,盒子却再也不报生存 —— 五分钟后这局就是别人的了"
+    can_take_over, _ = takeover_eligibility(row)
+    assert can_take_over is False

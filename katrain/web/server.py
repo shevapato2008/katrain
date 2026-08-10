@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Union, Dict
 
 import numpy as np
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager, contextmanager, nullcontext
@@ -715,10 +715,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     app.state.session_manager = manager
 
     @app.get("/health")
-    async def health():
+    async def health(request: Request):
+        # Unversioned alias for /api/v1/health, kept because things outside this repo probe
+        # it: the Playwright webServer readiness gate (playwright.config.ts) and the kiosk
+        # devices' reachability check. It must forward the Request -- the v1 handler reads
+        # `request.app.state` for the xiangqi-ranked metrics, so calling it bare raises
+        # TypeError and this route 500s while /api/v1/health stays green. That asymmetry is
+        # what makes the breakage easy to miss.
         from katrain.web.api.v1.endpoints.health import health as health_v1
 
-        return await health_v1()
+        return await health_v1(request)
 
     @app.post("/api/session")
     def create_session(current_user: User = Depends(get_current_user_optional), mode: str = "play"):

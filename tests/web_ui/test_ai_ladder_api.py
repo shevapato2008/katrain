@@ -4195,11 +4195,6 @@ async def test_a_box_that_restarted_mid_game_is_not_left_with_every_exit_hidden(
 
         box.state.session_manager._sessions.pop(session_id)  # 断电重启
 
-        with cloud.state._test_session_factory() as db:
-            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
-            row.last_heartbeat_at = datetime.now(timezone.utc) - timedelta(minutes=6)
-            db.commit()
-
         stranded = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
         blocked = await ac.post(
             "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
@@ -4208,10 +4203,13 @@ async def test_a_box_that_restarted_mid_game_is_not_left_with_every_exit_hidden(
     assert stranded["ownership"] == "current_device" and stranded["state"] == "active"
     assert "session_id" not in stranded, "会话已经没了,却还在告诉前端可以接回来"
     assert stranded["can_force_resign"] is True, (
-        "局接不回来、心跳早停了,服务端那扇接管的门已经开着 —— 而这台设备的载荷里"
-        "一个字都没有。三条出路同时是暗的,用户只能走到另一台设备上去"
+        "局接不回来,而这台设备的载荷里一个字都没有 —— 三条出路同时是暗的," "用户只能走到另一台设备上去"
     )
-    assert stranded["takeover_eligible_at"] is not None
+    # 这里的 `None` 是「已经开着,没什么可等」,不是「永远不会开」。原盒结束自己这局
+    # 就是认输,不进接管窗口(见 `test_the_origin_box_can_end_its_own_stranded_game_at_once`)。
+    # 这条断言原本写的是「必须有个未来时刻」—— 我当时以为原盒也得等那 5 分钟,
+    # 是国象的同设备自查把这个前提问倒的。
+    assert stranded["takeover_eligible_at"] is None
     assert blocked.status_code == 409 and "can_force_resign" in blocked.text
 
 
@@ -4353,3 +4351,83 @@ async def test_an_authority_outage_is_not_permanent_for_liveness(box_and_cloud):
     assert row.heartbeat_generation == 3, "权威回来了,盒子却再也不报生存 —— 五分钟后这局就是别人的了"
     can_take_over, _ = takeover_eligibility(row)
     assert can_take_over is False
+
+
+@pytest.mark.asyncio
+async def test_the_origin_box_can_end_its_own_stranded_game_at_once_and_the_screen_says_so(box_and_cloud):
+    """原盒结束**自己**这局,不必等那 5 分钟 —— 而载荷此前告诉它要等。
+
+    国象在自查里发现:它的 force-resign 压根没有「发起方必须不同于原盒」的判断,
+    所以单机门店走得通。同一个问题回问围棋,答案在
+    `ai_ladder_ranked.py:929` —— 那道接管窗口挂在 `deciding_device_id != origin_device_id`
+    上,原盒自己来根本不进这一支:「从正在下这局的那台机器上认输,那就只是认输,永远允许」。
+
+    可 `_blocking_payload` 里 `can_force_resign` 取的是 `takeover_eligibility(row)`,
+    那是**别处那台**的判据。于是刚重启的盒子拿到 `can_force_resign: false` +
+    一个 5 分钟后的到期时刻 —— **一句假话**:那扇门此刻就是开的。
+    用户对着一个其实能按的按钮干等五分钟,而店里往往只有这一台机器。
+
+    这条是我昨天那个 P0 #5 修复自己带出来的:我把接管字段递给了原盒,却让它们
+    继续回答「别处那台能不能接管」。递出一个字段,和递出**这台设备的**答案,是两件事。
+    """
+
+    box, cloud, _ = box_and_cloud
+    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        game_id, session_id = started.json()["game_id"], started.json()["session_id"]
+        await server._send_ai_ladder_heartbeats(box)
+        await server._send_ai_ladder_heartbeats(box)
+
+        box.state.session_manager._sessions.pop(session_id)  # 断电重启,心跳还很新鲜
+
+        stranded = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
+        assert stranded["ownership"] == "current_device"
+        assert stranded["can_force_resign"] is True, (
+            "心跳还新鲜,于是载荷按「别处那台」的判据答了 false —— 可这是原盒自己,"
+            "那扇门此刻就是开的。用户对着一个能按的按钮干等五分钟"
+        )
+        assert stranded["takeover_eligible_at"] is None, "既然此刻就能按,就不该再给一个未来时刻去倒计时"
+
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=headers, json={"reason": "user_resigned"}
+        )
+
+    assert ended.status_code == 200, ended.text
+    assert ended.json()["state"] == "settled"
+    with cloud.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
+
+
+@pytest.mark.asyncio
+async def test_another_device_still_has_to_wait_out_the_window(box_and_cloud):
+    """反向:同一局、同一时刻,**别处那台**必须还是等。
+
+    没有这条,上面那条会被一个「谁都能立刻结束」的实现满足 —— 那等于把接管窗口整个作废,
+    一台设备就能把另一台正在下的棋判负。窗口挡的从来不是「谁」,是「那台机器还在不在报生存」。
+    """
+
+    box, cloud, _ = box_and_cloud
+    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        game_id = started.json()["game_id"]
+        await server._send_ai_ladder_heartbeats(box)
+        await server._send_ai_ladder_heartbeats(box)
+
+    transport = ASGITransport(app=cloud)
+    async with AsyncClient(transport=transport, base_url="http://cloud") as cloud_ac:
+        other = {**cloud.state._test_headers, "X-StellaBox-Device-ID": "phone-9"}
+        refused = await cloud_ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
+        )
+        seen = (await cloud_ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+
+    assert refused.status_code == 409
+    assert seen["ownership"] == "other_device"
+    assert seen["can_force_resign"] is False
+    assert seen["takeover_eligible_at"] is not None, "别处那台该拿到一个真的倒计时终点"

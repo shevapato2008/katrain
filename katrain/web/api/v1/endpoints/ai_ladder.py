@@ -207,9 +207,20 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         # is no game to end yet, and a `pending_settlement` row is answered by the release block
         # below. Offering an exit that is structurally False on those two would be noise, and the
         # rule here is that a field appears when it can carry an answer.
-        payload["can_force_resign"] = game.can_force_resign
+        #
+        # Whose answer this is matters as much as whether it is sent. `game.can_force_resign` is
+        # computed by the takeover rule, and that rule is about *another* device reaching in: it
+        # waits for the origin to stop reporting. Ending a game from the box the game is on is not
+        # a takeover, it is a resignation, and the repository allows it with no window at all. So
+        # for our own unresumable game the honest answer is "yes, now" -- reporting the takeover
+        # rule's `False` here would sit the user in front of a button that already works and tell
+        # them to wait five minutes, in a shop that usually has exactly one machine.
+        own_game = not elsewhere
+        payload["can_force_resign"] = True if own_game else game.can_force_resign
         payload["takeover_eligible_at"] = (
-            game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None
+            None
+            if own_game
+            else (game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None)
         )
         payload["takeover_threshold_seconds"] = int(AI_LADDER_TAKEOVER_THRESHOLD.total_seconds())
         payload["takeover_threshold_version"] = AI_LADDER_TAKEOVER_THRESHOLD_VERSION

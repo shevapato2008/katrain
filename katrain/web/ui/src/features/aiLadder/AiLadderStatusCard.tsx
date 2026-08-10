@@ -26,6 +26,7 @@ import {
   formatPlacementProgressLabel,
 } from './copy';
 import { useTranslation } from '../../hooks/useTranslation';
+import { aiLadderStartBlock, isProvisionalSeating } from './startGate';
 import type { AiLadderCatalogEntry, AiLadderRankedOutcome, AiLadderStatus } from './types';
 
 interface AiLadderStatusCardProps {
@@ -182,11 +183,18 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry, compact = false 
   const placementState = status.placement_state;
   const isPlacement = placementState.phase === 'placement';
   const activeEntry = placementState.phase === 'placement' ? status.current_opponent : placementState.rung;
-  const unavailable =
-    !activeEntry || activeEntry.certification_status !== 'certified' || activeEntry.availability === 'unavailable';
+  // Ask the shared gate rather than re-deriving "can this start?" from the rung. This card
+  // used to spell it out inline -- `certification_status !== 'certified'` -- which is the
+  // exact divergence startGate.ts was extracted to end: on a node running with provisional
+  // play the server accepts the start, so an inline gate disables a button the server would
+  // have honoured. The gate reads `provisional_play_allowed`, which is the only thing that
+  // distinguishes the two nodes; the rung looks identical in both.
+  const startBlock = aiLadderStartBlock(status);
+  const blockedByCertification = startBlock === 'rung_not_certified';
+  const provisionalSeating = isProvisionalSeating(status);
   const actionLabel = status.pending_settlement
     ? AI_LADDER_COPY.pendingSettlementCta
-    : unavailable
+    : blockedByCertification
       ? AI_LADDER_COPY.unavailableCta
       : isPlacement
         ? AI_LADDER_COPY.continuePlacementCta
@@ -272,17 +280,26 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry, compact = false 
           </Stack>
         )}
 
-        {unavailable && !status.pending_settlement && (
+        {blockedByCertification && !status.pending_settlement && (
           <Stack direction="row" alignItems="center" gap={1} color="warning.main">
             <WarningAmberRoundedIcon fontSize="small" />
             <Typography fontWeight={700}>{AI_LADDER_COPY.unavailable}</Typography>
           </Stack>
         )}
 
+        {/* Startable, but the result will not move a rank. Same sentence the setup page
+            shows, so the promise a player reads is identical wherever they enter from. */}
+        {provisionalSeating && !status.pending_settlement && (
+          <Stack direction="row" alignItems="center" gap={1} color="warning.main">
+            <WarningAmberRoundedIcon fontSize="small" />
+            <Typography fontWeight={700}>{AI_LADDER_COPY.provisionalSeating}</Typography>
+          </Stack>
+        )}
+
         {!compact && <Button
           variant="contained"
           onClick={onPrimaryAction}
-          disabled={status.pending_settlement || unavailable || !onPrimaryAction}
+          disabled={startBlock !== null || !onPrimaryAction}
           sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' }, minHeight: 44 }}
         >
           {actionLabel}

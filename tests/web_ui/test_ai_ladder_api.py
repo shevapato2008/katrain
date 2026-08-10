@@ -4151,3 +4151,111 @@ async def test_the_box_holding_the_undelivered_result_is_told_how_to_get_out(box
     # 409 的 detail 走的是同一个投影。开不了新局的那一刻正是用户最需要出路的那一刻,
     # 所以这两处必须给出同一份信息,而不是只有其中一处。
     assert "abandoned_settlement_eligible_at" in blocked.text
+
+
+@pytest.mark.asyncio
+async def test_a_box_that_restarted_mid_game_is_not_left_with_every_exit_hidden(box_and_cloud):
+    """盒子中途重启:局接不回来,而出路一个都没露出来 —— 三扇门同时是暗的。
+
+    审计 P0 #5(「所有出路同时为假」那一格),真缺陷。构造:局在下,盒子断电重启,
+    内存里的会话没了,云端行还是 `active`、`origin_device_id` 还是这台盒子。于是:
+
+      · 接着下 —— 没有 `session_id`(要求本地会话还活着),接不回来;
+      · 接管   —— `can_force_resign` / `takeover_eligible_at` 只发给 `other_device`,这台拿不到;
+      · 放弃等待 —— 只对 `pending_settlement` 有意义,这局是 `active`,本来就不适用。
+
+    最能说明问题的是**失联六分钟前后那两份载荷一模一样**:里面没有任何一个字段
+    跟时间有关,所以等多久屏幕上都不会变。服务端那扇 5 分钟的门其实已经开了,
+    只是从来没告诉这台设备。用户的唯一出路是走到另一台设备上去 —— 而店里那台
+    一体机常常就是唯一一台。
+
+    所以判据不是「局在不在别处」,是「有没有一局可以接着下」:能接着下的时候
+    该做的是接着下;接不回来的时候,接管就是出路,必须说出来。
+    """
+
+    box, cloud, _ = box_and_cloud
+    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        game_id, session_id = started.json()["game_id"], started.json()["session_id"]
+        # 走满两轮心跳,让接管判据落在真分支上而不是「没证明过生存」的兼容分支
+        # ——兼容分支答的是 `(True, None)`,那样「到期时刻」这一半就没被测到。
+        await server._send_ai_ladder_heartbeats(box)
+        await server._send_ai_ladder_heartbeats(box)
+
+        # 正对照先立住:局还在、会话还在的时候,给的是「接着下」,不是「接管」。
+        healthy = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
+        assert healthy.get("session_id") == session_id
+        # 而且**不许同时**递出接管 —— 用户正坐在这局前面,「别人可以替你判负」是句假话。
+        # 会话住在盒子上,云端分不清「能接着下」和「没人了」,所以这一步的更正只能由盒子做,
+        # 跟它补 `session_id` 是同一件事的两面(我第一版只做了一半,正是这条控制组抓住的)。
+        assert "can_force_resign" not in healthy and "takeover_eligible_at" not in healthy
+
+        box.state.session_manager._sessions.pop(session_id)  # 断电重启
+
+        with cloud.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            row.last_heartbeat_at = datetime.now(timezone.utc) - timedelta(minutes=6)
+            db.commit()
+
+        stranded = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
+        blocked = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+
+    assert stranded["ownership"] == "current_device" and stranded["state"] == "active"
+    assert "session_id" not in stranded, "会话已经没了,却还在告诉前端可以接回来"
+    assert stranded["can_force_resign"] is True, (
+        "局接不回来、心跳早停了,服务端那扇接管的门已经开着 —— 而这台设备的载荷里"
+        "一个字都没有。三条出路同时是暗的,用户只能走到另一台设备上去"
+    )
+    assert stranded["takeover_eligible_at"] is not None
+    assert blocked.status_code == 409 and "can_force_resign" in blocked.text
+
+
+@pytest.mark.asyncio
+async def test_the_blocking_screen_on_another_device_always_carries_both_doors(api_app, client):
+    """挡住你的那块屏永远同时带着两扇门和它们各自的状态,哪扇适用都一样。
+
+    这条钉的是投影的**形状**,不是某一格的取值。两条规矩里我选的是这一条:
+
+      (一)「字段有答案时才出现」—— 于是同一块屏时有时无,前端得先判断键在不在,
+           而键不在既可能是「不适用」也可能是「服务端还没升级」,两者分不开;
+      (二)「别处那块屏恒定带两扇门 + 各自布尔」—— 前端只读值,不猜键。
+
+    选 (二) 的代价是:结算在飞时接管那组恒为 `False`/`None`(接管只对 `active` 有意义)。
+    那不是谎话,是「这扇门此刻走不通」,而这正是这块屏该说的话。
+
+    有这条之前,`_blocking_payload` 里 `elsewhere` 那一项**逐项删下来 0 红**——
+    它承载的规矩当时只活在注释里(契约 ⑧h/⑧i:恒真式要连着「它凭什么」一起钉住,
+    否则前提变了没人知道)。删掉那一项唯一变的就是这一格,所以判据就落在这一格上。
+    """
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    game_id = reservation_payload()["game_id"]
+    key = reservation_payload()["reservation_key"]
+    async with client as ac:
+        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=origin,
+            json={"reservation_key": key, "session_id": "session-gone"},
+        )
+        pended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement", headers=origin, json={"reservation_key": key}
+        )
+        seen_from_elsewhere = await ac.get("/api/v1/ai-ladder/status", headers=other)
+
+    assert pended.status_code == 200
+    blocking = seen_from_elsewhere.json()["blocking_game"]
+    assert blocking["ownership"] == "other_device" and blocking["state"] == "pending_settlement"
+    # 放弃等待:这一格真正的出路,值随时间变。
+    assert blocking["can_release_abandoned_settlement"] is False
+    assert blocking["abandoned_settlement_eligible_at"] is not None
+    # 接管:这一格走不通,但门还在屏上,前端读到的是 False 而不是「键不在」。
+    assert blocking["can_force_resign"] is False
+    assert blocking["takeover_eligible_at"] is None
+    assert blocking["takeover_threshold_seconds"] == 300

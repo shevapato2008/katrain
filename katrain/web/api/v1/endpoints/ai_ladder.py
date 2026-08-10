@@ -178,11 +178,35 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         "opponent_rank_name": game.opponent.rank_name,
     }
     elsewhere = payload["ownership"] == "other_device"
-    if elsewhere:
-        # Only meaningful when the game is somewhere else -- this is the screen where the user is
-        # told why they cannot start a new game, so it must also say what they can do about it and
-        # when. `takeover_eligible_at` is None when waiting will never help, so the UI shows a
-        # deadline only when one really exists rather than counting down to nothing.
+    # "There is a game here to go back to" -- the one condition under which the user's move is
+    # to resume rather than to get out. Everything below keys off this rather than off ownership:
+    # a game whose device restarted is still `current_device` on the cloud, but its session died
+    # with the process and no amount of ownership makes it resumable.
+    resumable = bool(
+        game.state == "active"
+        and game.origin_device_id == device_id
+        and game.origin_session_id
+        and _active_session(request, game.origin_session_id)
+    )
+    if resumable:
+        payload["session_id"] = game.origin_session_id
+    if not resumable and (elsewhere or game.state == "active"):
+        # This is the screen where the user is told why they cannot start a new game, so it must
+        # also say what they can do about it and when. `takeover_eligible_at` is None when waiting
+        # will never help, so the UI shows a deadline only when one really exists rather than
+        # counting down to nothing.
+        #
+        # Not `elsewhere`: a box that restarted mid-game cannot resume (no session), cannot take
+        # over (these very fields were withheld from it), and cannot release (that exit belongs to
+        # `pending_settlement`) -- every door dark at once, with a payload that does not change no
+        # matter how long the user waits, because nothing in it depends on time. The 5-minute door
+        # on the server had been open the whole time; only this projection never said so. The user
+        # is then told to go find a second device, and a shop's single kiosk does not have one.
+        #
+        # Still bounded by `active`: a bare `reserved` row has its own short lazy reclaim and there
+        # is no game to end yet, and a `pending_settlement` row is answered by the release block
+        # below. Offering an exit that is structurally False on those two would be noise, and the
+        # rule here is that a field appears when it can carry an answer.
         payload["can_force_resign"] = game.can_force_resign
         payload["takeover_eligible_at"] = (
             game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None
@@ -212,13 +236,6 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
             AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD.total_seconds()
         )
         payload["abandoned_settlement_threshold_version"] = AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION
-    if (
-        game.state == "active"
-        and game.origin_device_id == device_id
-        and game.origin_session_id
-        and _active_session(request, game.origin_session_id)
-    ):
-        payload["session_id"] = game.origin_session_id
     return payload
 
 
@@ -486,6 +503,20 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 )
                 # Work on a copy: never pass through any cloud-side session/key.
                 payload["blocking_game"]["session_id"] = pending["session_id"]
+                # Sessions live on the box, so the cloud cannot tell a resumable game from an
+                # orphaned one and answers "not resumable" for every board game -- which is why
+                # `session_id` is added here in the first place. The takeover fields are the same
+                # projection seen from the other side, and the same correction has to be made to
+                # them: a game the user is sitting in front of and can go on playing must not also
+                # be advertised as one another device may forfeit. Leaving them would put "someone
+                # can end this for you" on a live board.
+                for stale in (
+                    "can_force_resign",
+                    "takeover_eligible_at",
+                    "takeover_threshold_seconds",
+                    "takeover_threshold_version",
+                ):
+                    payload["blocking_game"].pop(stale, None)
             elif pending is not None and pending.get("game_id") == blocking.get("game_id"):
                 try:
                     cancelled = await request.app.state.remote_client.cancel_ai_ladder_reservation(

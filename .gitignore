@@ -211,6 +211,13 @@ data.zip
 # board-mode test sqlite db (generated at runtime by KATRAIN_DATABASE_URL=sqlite:///./board_test.db)
 board_test.db
 
+# pytest sqlite dbs written into the repo root by tests/web_ui (relative paths, so they
+# land wherever pytest was invoked). Both were tracked by accident and got re-committed
+# with fresh bytes on every test run; each is ~557 KB of churn per commit. Same reasoning
+# as board_test.db above -- generated at runtime, never an input.
+test_analysis.db
+test_lobby_api.db
+
 # RKNN / ONNX conversion build outputs (regenerate via export_onnx_split + export_rknn)
 rknn_build/
 rknn_build_fp/

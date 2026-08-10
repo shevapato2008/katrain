@@ -12,8 +12,14 @@ WebSocket and never reconnects), and a human move renders from its own HTTP resp
 so the board shows YOUR stone and the AI's reply never arrives. It looks like a dead
 engine, not a missing dependency.
 
-The xiangqi test below is the mirror image: a package that must stay OPTIONAL, so the
-web API has to import and route cleanly on a machine that does not have it.
+There used to be a mirror-image test here for xiangqi -- a package that had to stay
+OPTIONAL, so the web API could import and route cleanly on a machine without it.
+It was removed on 2026-08-10 when xiangqi ranked left this repository entirely
+(it lives in smartbox-software `ranked_api/xiangqi/` now). Both path dependencies
+are gone and nothing here imports `smartbox_xiangqi_ranked` or `xiangqi_rules_core`,
+so its assertion -- that no `/xiangqi-ranked` route appears when those packages are
+absent -- became true by construction and could no longer fail. A test that cannot
+fail reads as coverage while guarding nothing.
 """
 
 import importlib.util
@@ -80,24 +86,3 @@ def test_a_websocket_implementation_is_importable():
             "that socket. Re-sync the environment after the declaration fix "
             "(`uv sync`), or `pip install -r requirements-web.txt`."
         )
-
-
-def test_web_api_starts_without_optional_xiangqi_runtime_packages():
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(REPO_ROOT)
-
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            "from katrain.web.api.v1.api import api_router; "
-            "print(any(route.path.startswith('/xiangqi-ranked') for route in api_router.routes))",
-        ],
-        cwd=REPO_ROOT,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.rstrip().endswith("False")

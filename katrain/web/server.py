@@ -713,10 +713,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def health(request: Request):
         # Unversioned alias for /api/v1/health, kept because things outside this repo probe
         # it: the Playwright webServer readiness gate (playwright.config.ts) and the kiosk
-        # devices' reachability check. It must forward the Request -- the v1 handler reads
-        # `request.app.state` for the xiangqi-ranked metrics, so calling it bare raises
-        # TypeError and this route 500s while /api/v1/health stays green. That asymmetry is
-        # what makes the breakage easy to miss.
+        # devices' reachability check. It must forward the Request because the v1 handler
+        # declares one; calling it bare raises TypeError and this route 500s while
+        # /api/v1/health stays green. That asymmetry is what makes the breakage easy to miss.
+        #
+        # The v1 handler no longer *reads* the Request -- it did, for the xiangqi-ranked
+        # metrics off `request.app.state`, until xiangqi ranked left this repo on
+        # 2026-08-10. The parameter is now unused, so anyone tidying it away must fix this
+        # call site in the same commit or re-break exactly the asymmetry described above.
         from katrain.web.api.v1.endpoints.health import health as health_v1
 
         return await health_v1(request)
